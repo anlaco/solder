@@ -520,6 +520,19 @@ svg { display: block; overflow: visible; }
 .celda-array { box-sizing: border-box; height: 21px; margin-top: 1px; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid; white-space: pre; }
 .celda-array.vacia { background: #e8e8f8; color: #8a8aa0; }
 .celda-array.editando { cursor: text; }
+/* A constant with two dimensions (array-2d/constant-2d-empty.png, constant-2d-2x3-values.png): frame, white, frame. */
+.indice-array-2d { position: absolute; left: 0; top: 0; box-sizing: border-box; background: #fff; border: 1px solid var(--tipo); padding: 1px; }
+.indice-array-2d .interior-indice { box-sizing: border-box; width: 100%; height: 100%; border: 1px solid var(--tipo); background: var(--tipo); display: grid; grid-template-rows: 15px 15px; row-gap: 2px; }
+.indice-array-2d .fila-indice { display: grid; grid-template-columns: 5px 19px; column-gap: 2px; background: var(--tipo); }
+.indice-array-2d .paso-indice { background: #fff; font-size: 6px; line-height: 7px; overflow: hidden; text-align: center; color: #000; display: flex; align-items: center; justify-content: center; }
+.indice-array-2d .campo-indice { background: #fff; padding-left: 2px; display: flex; align-items: center; }
+.caja-array-2d { position: absolute; top: 0; box-sizing: border-box; background: #fff; border: 1px solid var(--tipo); padding: 1px; }
+.caja-array-2d .interior-caja { position: relative; box-sizing: border-box; width: 100%; height: 100%; border: 1px solid var(--tipo); background: color-mix(in srgb, var(--tipo) 40%, white); }
+.celda-grid { position: absolute; box-sizing: border-box; padding: 2px; background: color-mix(in srgb, var(--tipo) 40%, white); }
+.celda-grid.definida { background: var(--tipo); }
+.celda-grid .contenido-celda { box-sizing: border-box; width: 100%; height: 100%; background: #fff; display: flex; align-items: center; justify-content: center; white-space: pre; color: #9a9aa8; }
+.celda-grid.definida .contenido-celda { color: #000; }
+.celda-grid.editando { cursor: text; }
 
 /* Un array del panel: el índice y la caja de sus elementos (array/panel-array-1a1.png). */
 .objeto-panel.array { background: none; }
@@ -533,4 +546,7 @@ svg { display: block; overflow: visible; }
 .objeto-panel.array .elem-array.indicador .casilla-elem { background: #d1d1d1; cursor: default; }
 .objeto-panel.array .elem-array.vacio .casilla-elem { background: #ececec; color: #9a9a9a; }
 .objeto-panel.array .casilla-elem.cadena { line-height: 15px; }
+/* A panel array with two dimensions (array-2d/panel-array-2d-stretched.png): the cells are placed one by one. */
+.objeto-panel.array.dos-dimensiones .arr-caja { display: block; }
+.objeto-panel.array.dos-dimensiones .elem-array { position: absolute; }
 .asa-array { position: absolute; width: 7px; height: 7px; background: #0078d7; border: 1px solid #fff; box-sizing: border-box; cursor: ew-resize; }

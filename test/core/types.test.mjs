@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { COLORES, POR_ABREVIATURA, aspecto, comun, conversion, convertirValor, nombre } from "../../core/model/types.mjs";
+import { COLORES, POR_ABREVIATURA, arrayOf, aspecto, comun, conversion, convertirValor, dimensionsOf, flattenArrayValue, iguales, nestArrayValue, nombre, withoutOneDimension } from "../../core/model/types.mjs";
 
 // «Numeric Conversion», en la ayuda de NI: gana la representación con más
 // bits; con los mismos, la sin signo. La coma flotante gana al entero.
@@ -35,7 +35,7 @@ test("el cable lleva el color de su tipo y el grosor de su dimensión", () => {
   assert.equal(aspecto("u8").color, COLORES.entero);
   assert.equal(aspecto({ enum: [] }).color, COLORES.entero);
   assert.deepEqual(aspecto({ array: "i32" }), { color: COLORES.entero, dimension: 1 });
-  assert.equal(aspecto({ array: { array: "number" } }).dimension, 2);
+  assert.equal(aspecto({ array: "number", dims: 2 }).dimension, 2);
   assert.equal(nombre("number"), "DBL");
   assert.equal(nombre({ array: "u16" }), "array de U16");
 });
@@ -77,4 +77,31 @@ test("cada abreviatura de Representation nombra su tipo", () => {
   assert.equal(POR_ABREVIATURA.sgl, "sgl");
   assert.equal(POR_ABREVIATURA.u16, "u16");
   assert.equal(POR_ABREVIATURA.ext, undefined, "EXT, FXP y los complejos aún no son tipos (DT-038 §5)");
+});
+
+// DT-044: like LabVIEW's type descriptor, an array is an element type plus a
+// dimension count, and the element is never an array.
+test("an array has an element type and a number of dimensions", () => {
+  assert.equal(dimensionsOf({ array: "number" }), 1);
+  assert.equal(dimensionsOf({ array: "number", dims: 2 }), 2);
+  assert.equal(dimensionsOf("number"), 0);
+  assert.deepEqual(arrayOf("number"), { array: "number" });
+  assert.deepEqual(arrayOf({ array: "i32" }), { array: "i32", dims: 2 }, "an array of arrays is a 2D array");
+  assert.deepEqual(arrayOf({ array: "i32", dims: 2 }), { array: "i32", dims: 3 });
+  assert.deepEqual(withoutOneDimension({ array: "i32", dims: 2 }), { array: "i32" }, "one index of a 2D gives a row");
+  assert.equal(withoutOneDimension({ array: "i32" }), "i32");
+  assert.equal(iguales({ array: "number" }, { array: "number", dims: 2 }), false);
+  assert.equal(conversion({ array: "i32", dims: 2 }, { array: "number", dims: 2 }), "coercion");
+  assert.equal(conversion({ array: "number" }, { array: "number", dims: 2 }), null, "dimensions never convert");
+  assert.equal(nombre({ array: "number", dims: 2 }), "2D array de DBL");
+});
+
+test("a nested array value flattens in row order and nests back", () => {
+  const { sizes, elements } = flattenArrayValue([[1, 2, 3], [4]], 2, 0);
+  assert.deepEqual(sizes, [2, 3]);
+  assert.deepEqual(elements, [1, 2, 3, 4, 0, 0], "a ragged value is padded with the default");
+  assert.deepEqual(nestArrayValue(elements, sizes), [[1, 2, 3], [4, 0, 0]]);
+  assert.deepEqual(flattenArrayValue([], 2, 0), { sizes: [0, 0], elements: [] });
+  assert.deepEqual(flattenArrayValue([7, 8], 1, 0), { sizes: [2], elements: [7, 8] });
+  assert.deepEqual(nestArrayValue([], [0, 3]), []);
 });

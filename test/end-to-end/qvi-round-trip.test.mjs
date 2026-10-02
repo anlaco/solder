@@ -244,3 +244,49 @@ test("el indexado de un túnel de bucle se guarda y se abre", () => {
   assert.ok(abierto.nodos.find((n) => n.tipo === "tunnel-in").config.indexado, "el túnel vuelve indexado");
   assert.equal(aTexto(abierto, CAT), texto);
 });
+
+test("a VI with 2D arrays is saved and opens the same (DT-044)", () => {
+  let g = Gr.nuevo();
+  const poner = (tipo, config) => {
+    const r = Gr.crearNodo(g, CAT, tipo, 0, 0);
+    g = config ? Gr.fijarConfig(r.g, r.id, config) : r.g;
+    return r.id;
+  };
+  const tabla = poner("arr-const", { type: { array: "number", dims: 2 }, value: [[1, 2], [3, 4]] });
+  const indice = poner("index-array");
+  poner("initialize-array", { dims: 2 });
+  g = Gr.conectar(g, CAT, { nodo: tabla, puerto: "result", dir: "out" }, { nodo: indice, puerto: "array", dir: "in" }).g;
+  const r = Gr.crearEnPanel(g, CAT, "arr-control", 60, 80, "Array");
+  g = Gr.fijarConfig(r.g, r.id, { type: { array: "i32", dims: 2 }, value: [[5, 6]] });
+  const datos = escribir(g, CAT);
+  assert.ok(validar(datos), errores());
+  const leido = leer(JSON.parse(JSON.stringify(datos)), CAT);
+  assert.equal(aTexto(leido, CAT), aTexto(g, CAT));
+  assert.equal(leido.nodos.find((n) => n.tipo === "index-array").config.dims, 2);
+});
+
+// The editor stores the visible rows and columns and both indices of a 2D array as pairs [row, column]
+// (editor/src/common/array-grid.mjs); the 1D format (a number) is unchanged.
+test("the visible elements and the index of 2D arrays are saved as pairs and open the same", () => {
+  let g = Gr.nuevo();
+  let r = Gr.crearNodo(g, CAT, "arr-const", 0, 0);
+  g = Gr.fijarConfig(r.g, r.id, { type: { array: "i32", dims: 2 }, value: [[1, 2, 3], [4, 5, 6]], visibles: [4, 9], indice: [1, 2] });
+  const constante = r.id;
+  r = Gr.crearEnPanel(g, CAT, "arr-indicator", 60, 80, "Array");
+  g = Gr.fijarConfig(r.g, r.id, { type: { array: "number", dims: 2 }, value: [], visibles: [2, 3], indice: [0, 1] });
+  const indicador = r.id;
+  r = Gr.crearEnPanel(g, CAT, "arr-control", 60, 200, "Array 2");
+  g = Gr.fijarConfig(r.g, r.id, { type: { array: "number" }, value: [1, 2], visibles: 2, indice: 1 });
+  r = Gr.crearNodo(g, CAT, "arr-const", 0, 100);
+  g = Gr.fijarConfig(r.g, r.id, { type: { array: "number" }, value: [1, 2, 3], visibles: 3, indice: 1 });
+  const unaDimension = r.id;
+  const datos = escribir(g, CAT);
+  assert.ok(validar(datos), errores());
+  const abierto = leer(JSON.parse(JSON.stringify(datos)), CAT);
+  assert.equal(aTexto(abierto, CAT), aTexto(g, CAT), "saving what was opened gives the same file");
+  const config = (id) => abierto.nodos.find((n) => n.id === id).config;
+  assert.deepEqual([config(constante).visibles, config(constante).indice], [[4, 9], [1, 2]]);
+  assert.deepEqual([config(indicador).visibles, config(indicador).indice], [[2, 3], [0, 1]]);
+  assert.deepEqual([abierto.nodos.find((n) => n.config?.visibles === 2).config.indice], [1], "a 1D array keeps its numbers");
+  assert.deepEqual([config(unaDimension).visibles, config(unaDimension).indice], [3, 1], "also a 1D constant on the diagram, which the schema did not allow");
+});

@@ -440,6 +440,45 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > (the last two, greyed out). **Unverified:** the gesture of stretching the panel array with the mouse (the handles moved
 > the object in the VM) and that it is born empty, with the type of the control dropped inside.
 
+> **Rule 40k — Arrays with two dimensions in the editor.** Measured in LabVIEW 2026 Q3 at 1:1
+> (`labview-captures/array-2d/`); the semantics are DT-044 and Rule 21i. The editor handles one and two dimensions
+> (`MAX_EDITOR_DIMENSIONS`, `editor/src/common/array-grid.mjs`); more would need a decision of their own.
+> - *Menu.* The right-click menu of an array constant (`context.array-constant`: `constant-2d-menu-index.png`,
+> `constant-2d-menu-shell.png`, `constant-1d-menu-index.png`; the same on the index and on the shell) and of a panel array
+> (`context.panel-array`: `panel-array-menu-index.png`, which has no Size to Widest Element) gains **Add Dimension** and
+> **Remove Dimension**, in that order, after Advanced (and Fit Control to Pane and Scale Object with Pane on the panel).
+> Remove Dimension is greyed on a 1D array. Add Dimension turns `{ array: E }` into `{ array: E, dims: 2 }` and `[a, b, c]` into
+> `[[a, b, c]]` (the box shows one row and the same columns); Remove Dimension keeps the first row
+> (`constant-remove-dimension-2x3-to-1d.png`: `[[1,2,3],[4,5,6]]` becomes `[1,2,3]`). On a 2D array Add Dimension is a
+> placeholder (`context.array-dimensions-limit`, need `arrays-mas-de-2d`): the compiler handles two. The rest of the rows
+> of both menus are placeholders with their captures. The indicator's menu was not captured: it is taken as the control's
+> with Change to Control (**unverified**).
+> - *Presentation settings.* `config.visibles` is how many elements the box shows: a number in 1D (unchanged) and
+> `[rows, columns]` in 2D; `config.indice`, the first position shown: a number in 1D and `[row, column]` in 2D. They
+> are saved in the `.qvi` (`visible-elements` and `index` of a panel item, `visibles` and `indice` of a diagram constant) and
+> come back equal. A cell is addressed by its position in 1D and by `"row,column"` in 2D.
+> - *Cells.* A tile the value defines (inside its rows and its widest row) is solid in the type's color with a white cell and
+> black text; one outside the value is pale (`#ffcc99` for DBL) with a grey default. Typing into a tile defines it, and
+> there are no gaps: a row or column beyond the value grows it, padding with the default of the element
+> (`constant-2d-2x3-values.png`). An indicator ignores the value of a run that does not have its dimensions (the one
+> left before an Add Dimension).
+> - *Stretching.* The constant is stretched by its right handle (columns, 13 px each), its bottom one (rows, 19 px
+> each) and its corner (both), as in `constant-2d-stretched-4x9-empty.png`; the panel array, by the same three
+> handles (65 px across and 26 px down for a numeric element, `panel-array-2d-stretched.png`). How a mouse gesture
+> selects the handles in LabVIEW and the 2D stretch of the panel were not recorded as a video: **unverified** as a
+> gesture; the measures are of the result.
+> - *Index Array.* With a 2D array wired it is 32 × 35 instead of 32 × 27, with the array input and then the row and the
+> column index (8 px apart); the output drawing is a 2D grid with no index wired, a 1D row with one and a single
+> square with both (`indexarray-2d-node-icon.png`, `indexarray-2d-wired-array-only.png`). Stretching to more index groups
+> (`indexarray-2d-stretched.png`) is **not done**.
+> - *Initialize Array.* It is stretched downwards by a handle and gets a dimension size input for each 8 px, up to two
+> (`config.dims`); shrinking it removes the wire of the size that goes. 32 × 35 with two sizes is taken from Index
+> Array's size (**unverified**); in `initializearray-contexthelp.png` the 1D node measures 32 × 27, not the 21 that
+> a first reading of the notes gave.
+> - *Not done.* The concatenation lock of Build Array between a 2D and a 1D input (`buildarray-concat-2d-1d.png`);
+> Reshape Array, Transpose 2D Array and Sort and Shuffle 2D Array stay as placeholders (need `arrays-2d`);
+> Add Element Gap and Size to Widest Element.
+
 > **Rule 40i — The error cluster on the diagram and on the panel.** Captured in
 > LabVIEW 2026 Q3 (`labview-captures/errores/`, `docs/reference/labview-errors.md`),
 > at 1:1; the behavior is DT-043:
@@ -575,6 +614,7 @@ would have required naming a test that did not exist.)*
 | 40h Strings on the diagram and on the panel | Tests in `palettes.test.mjs` (each String function with its terminals and measurements), `window-state.test.mjs` (the four palettes), `front-panel.test.mjs` (control and indicator), `diagram-editing.test.mjs` (multi-line constant, Concatenate Strings, a string VI made with the mouse that runs) and `qvi-round-trip.test.mjs` (save and open) | **Verified**; what is unverified, in the rule itself |
 | 40i The error cluster | Tests in `error-cluster.test.mjs` (the wire, the constant and its edits, the two dialogs, Simple Error Handler and Merge Errors at 32 × 18), `front-panel.test.mjs` (Error In and Error Out) and `window-state.test.mjs` (the two palettes) | **Verified**; what is unverified, in the rule itself |
 | 40j One-dimensional arrays | Tests in `front-panel.test.mjs` (array control and indicator), `diagram-editing.test.mjs` (array constant, menu of the indexed tunnels), `window-state.test.mjs` (the Array subpalette), `palettes.test.mjs` (its functions) and `qvi-round-trip.test.mjs` | **Verified** for what was measured; the gesture of stretching the panel array and the array's menu, unverified (see the rule) |
+| 40k Arrays with two dimensions | Tests in `array-grid.test.mjs` (cells, Add and Remove Dimension), `diagram-editing.test.mjs` (menu, constant, stretching, wire, Index Array, Initialize Array), `front-panel.test.mjs` (panel array), `qvi-round-trip.test.mjs` (pairs saved) and `labview-inventory.test.mjs` (the menus) | **Verified** for the measurements; the stretching gestures, the indicator's menu and Initialize Array's second size, unverified (see the rule) |
 | 31 the rejection explains the reason | Test: each cause of `can_connect` produces its message | **Verified** for two outputs, two inputs, incompatible types and cycle (`palettes.test.mjs`); the scope one no longer comes out in the editor: a wire between scopes creates the tunnel (rule 40e); the rejection remains in `Gr.conectar` |
 | 32 replace on fan-in | Test "a wire to an occupied input replaces the previous one" | **Verified** |
 | 36, 37 keyboard | Interaction test | **Rule 36 verified** ("the selection moves with the arrows…"); rule 37, pending |

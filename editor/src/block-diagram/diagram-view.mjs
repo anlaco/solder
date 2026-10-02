@@ -12,6 +12,7 @@ import * as G from "../common/glyphs.mjs";
 import { esHueco, ultimo } from "../common/labview-inventory.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
 import { COLORES, aspecto, esArray, esEntero, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
+import { MAX_EDITOR_DIMENSIONS, cellAddress, dimensionsOfNode, firstShown, isDefined, readCell, visibleGrid } from "../common/array-grid.mjs";
 
 const esNumericoNoEntero = (t) => typeof t === "string" && esNumerico(t) && !esEntero(t);
 
@@ -36,8 +37,23 @@ export function glifosPorBloque(inv) {
  */
 export const contexto = (cat, glifos, separador = ".", medir = Et.medirAproximado) => ({ cat, glifos, separador, medir });
 
-/** El glifo de un nodo: el de su elemento de la paleta; el de una constante booleana, según su valor. */
-const glifoDe = (n, ctx) => (n.tipo === "bool-const" ? (n.config?.value ? "true-constant" : "false-constant") : ctx.glifos.get(n.tipo));
+/** The nodes that grow by 8 px for each dimension beyond the first, as LabVIEW stretches them by itself (array-2d/indexarray-2d-node-icon.png). */
+const NODOS_POR_DIMENSION = new Set(["index-array", "initialize-array"]);
+const tieneDosDimensiones = (n) => NODOS_POR_DIMENSION.has(n.tipo) && n.config?.dims === 2;
+
+/**
+ * Where the inputs of those nodes with two dimensions sit, from the top of the node, in px: the array (or the element)
+ * and then one index (or size) per dimension 8 px apart (measured in array-2d/initializearray-contexthelp.png).
+ */
+export const ENTRADAS_DOS_DIMENSIONES = [9.5, 22.5, 30.5];
+export const PASO_ENTRADAS_DOS_DIMENSIONES = 8;
+
+/** El glifo de un nodo: el de su elemento de la paleta; el de una constante booleana, según su valor; el de dos dimensiones, el suyo. */
+const glifoDe = (n, ctx) => {
+  if (n.tipo === "bool-const") return n.config?.value ? "true-constant" : "false-constant";
+  const glifo = ctx.glifos.get(n.tipo);
+  return tieneDosDimensiones(n) ? `${glifo}-2d` : glifo;
+};
 
 const tipoConfig = (n, ctx) => n.config?.type ?? ctx.cat.bloque(n.tipo).config?.default?.type ?? "number";
 
@@ -86,21 +102,65 @@ export const MEDIDAS_CADENA = { linea: 15, vertical: 4, horizontal: 8, minimo: 1
  * dos bordes del color del tipo; cada elemento mide lo que una constante más 2 px de borde y 3 de alto (15 × 21).
  */
 export const MEDIDAS_ARRAY = { indice: 33, altoIndice: 21, solape: 1, alto: 25, relleno: 2, bordeElemento: 1, altoElemento: 21 };
-/** El tipo de los elementos de una constante de array, y sus valores. */
+/**
+ * A constant with two dimensions, measured at 1:1 in labview-captures/array-2d/constant-2d-empty.png,
+ * constant-2d-2x3-values.png and constant-2d-stretched-4x9-empty.png (DBL, #ff7f00):
+ * - the index block is 32 × 38: a 1 px frame, 1 px of white and another frame around two 15 px cells
+ *   (the first at y + 3, the second at y + 20) that a 2 px bar of the type color separates; each cell is
+ *   a 5 px spinner, a 2 px bar and a 19 px field;
+ * - the element box sits flush against the index block, at the top, with the same three layers (frame,
+ *   white, frame) and then the tiles: 13 px wide (the white cell is 9) and 19 px tall (15), no gaps;
+ *   13 × columns + 6 wide and 19 × rows + 6 tall, so the empty constant is 51 × 38;
+ * - a tile the value defines is solid in the type color; one outside the value is pale (#ffcc99 for
+ *   DBL) with a grey default.
+ */
+export const MEDIDAS_ARRAY_2D = { indice: 32, altoIndice: 38, margenCaja: 3, anchoCelda: 13, altoCelda: 19, textoExtra: 6 };
+
+/** The type of the elements of an array constant, and its values. */
 export const tipoElementoArray = (n) => n.config?.type?.array ?? "number";
 export const valoresArray = (n) => n.config?.value ?? [];
-/** Cuántos elementos enseña la constante: los que se le han dejado ver (de uno, de fábrica). */
-export const visiblesArray = (n) => Math.max(1, n.config?.visibles ?? 1);
+/** How many elements the constant shows: the ones it was stretched to (one by default). */
+export const visiblesArray = (n) => visibleGrid(n.config).columns;
 const textoElemento = (v, t, sep) => (t === "string" ? String(v ?? "") : t === "boolean" ? (v ? "T" : "F") : formatear(v ?? 0, t, sep));
-/** El ancho de la caja de cada elemento de la constante: el del más ancho de los que se ven. */
-export function anchoElementoArray(n, ctx, edicion) {
-  const [t, valores, k0] = [tipoElementoArray(n), valoresArray(n), n.config?.indice ?? 0];
-  let ancho = 0;
-  for (let k = 0; k < visiblesArray(n); k++) {
-    const txt = edicion?.nodo === n.id && edicion.elem === k0 + k ? edicion.texto : textoElemento(valores[k0 + k], t, ctx.separador);
-    ancho = Math.max(ancho, MEDIDAS_CONSTANTE.minimo, anchoTexto(txt) + MEDIDAS_CONSTANTE.relleno);
+
+/** The address of the cell that sits at that row and column of the box. */
+function addressShown(n, rowInBox, columnInBox) {
+  const dimensions = dimensionsOfNode(n.config);
+  const first = firstShown(n.config);
+  return cellAddress(dimensions, first.row + rowInBox, first.column + columnInBox);
+}
+
+/** The text a cell shows: what is being typed into it, or its element. */
+function cellText(n, address, ctx, edicion) {
+  if (edicion?.nodo === n.id && edicion.elem === address) return edicion.texto;
+  return textoElemento(readCell(valoresArray(n), dimensionsOfNode(n.config), address), tipoElementoArray(n), ctx.separador);
+}
+
+/** The widest text among the cells the constant shows. */
+function widestShownText(n, ctx, edicion) {
+  const { rows, columns } = visibleGrid(n.config);
+  let widest = 0;
+  for (let row = 0; row < rows; row++) {
+    for (let column = 0; column < columns; column++) widest = Math.max(widest, anchoTexto(cellText(n, addressShown(n, row, column), ctx, edicion)));
   }
-  return ancho + 2 * MEDIDAS_ARRAY.bordeElemento;
+  return widest;
+}
+
+/**
+ * The width of the box of each element of the constant: the widest of the ones shown. With two
+ * dimensions it is the column pitch (13 px at least).
+ */
+export function anchoElementoArray(n, ctx, edicion) {
+  const widest = widestShownText(n, ctx, edicion);
+  if (dimensionsOfNode(n.config) === 2) return Math.max(MEDIDAS_ARRAY_2D.anchoCelda, Math.ceil(widest) + MEDIDAS_ARRAY_2D.textoExtra);
+  return Math.max(MEDIDAS_CONSTANTE.minimo, widest + MEDIDAS_CONSTANTE.relleno) + 2 * MEDIDAS_ARRAY.bordeElemento;
+}
+
+/** The size of the box of elements of a constant with two dimensions. */
+function box2D(n, ctx, edicion) {
+  const { rows, columns } = visibleGrid(n.config);
+  const margin = 2 * MEDIDAS_ARRAY_2D.margenCaja;
+  return { ancho: columns * anchoElementoArray(n, ctx, edicion) + margin, alto: rows * MEDIDAS_ARRAY_2D.altoCelda + margin };
 }
 const ANCHOS = { ",": 3, ".": 3, "-": 4, "+": 7, " ": 3 };
 /** El ancho de un texto en la fuente del diagrama, a falta de medirlo en pantalla. */
@@ -354,6 +414,10 @@ export function caja(n, ctx, edicion) {
     return { x: n.x, y: n.y, ancho: M.izquierda + M.derecha, alto: entradas * M.celda };
   }
   const c = CONSTANTES[n.tipo];
+  if (c?.array && dimensionsOfNode(n.config) === 2) {
+    const box = box2D(n, ctx, edicion);
+    return { x: n.x, y: n.y, ancho: MEDIDAS_ARRAY_2D.indice + box.ancho, alto: Math.max(MEDIDAS_ARRAY_2D.altoIndice, box.alto) };
+  }
   if (c?.array) {
     const A = MEDIDAS_ARRAY;
     return { x: n.x, y: n.y, ancho: A.indice - A.solape + visiblesArray(n) * anchoElementoArray(n, ctx, edicion) + 2 * A.relleno, alto: A.alto };
@@ -393,15 +457,17 @@ export function terminales(n, ctx, edicion) {
     lista.map((p, i0) => {
       // El túnel de salida de un Case tiene una entrada por marco, pero todas en el mismo sitio.
       const [i, cuantos] = n.tipo === "case-tunnel-out" && dir === "in" ? [0, 1] : [i0, lista.length];
-      const alto = k.alto / cuantos;
-      const zona = { x: dir === "in" ? k.x : k.x + k.ancho - anchoZona, y: k.y + alto * i, ancho: anchoZona, alto };
+      const fija = dir === "in" && tieneDosDimensiones(n);
+      const alto = fija ? PASO_ENTRADAS_DOS_DIMENSIONES : k.alto / cuantos;
+      const arriba = fija ? k.y + ENTRADAS_DOS_DIMENSIONES[i] - alto / 2 : k.y + alto * i;
+      const zona = { x: dir === "in" ? k.x : k.x + k.ancho - anchoZona, y: arriba, ancho: anchoZona, alto };
       return {
         puerto: p.name,
         // Una constante no tiene nombre en su terminal: LabVIEW no enseña tip.
         etiqueta: p.label ?? p.name,
         dir,
         x: dir === "in" ? k.x : k.x + k.ancho,
-        y: flecha !== null ? k.y + flecha : k.y + alto * (i + 0.5),
+        y: flecha !== null ? k.y + flecha : fija ? k.y + ENTRADAS_DOS_DIMENSIONES[i] : k.y + alto * (i + 0.5),
         zona,
         centro: { x: zona.x + zona.ancho / 2, y: zona.y + zona.alto / 2 },
       };
@@ -505,7 +571,9 @@ function trazo(r, tipo, roto) {
   if (dimension === 0) return `<polyline points="${puntos(r)}" stroke="${color}" stroke-width="1.33"/>`;
   // Un array de una dimensión: 2 px, de un color sólido (medido a 1:1 en labview-captures/array/array-indicador-terminal.png).
   if (dimension === 1) return `<polyline points="${puntos(r)}" stroke="${color}" stroke-width="2"/>`;
-  return `<polyline points="${puntos(r)}" stroke="${color}" stroke-width="5"/><polyline points="${puntos(r)}" stroke="#fff" stroke-width="1"/>`;
+  // Two dimensions or more: 3 px, the type color, white and the type color, solid (labview-captures/array-2d/wire-2d-dbl.png
+  // and wire-2d-vs-1d-diagram.png). Three dimensions are drawn the same until they are measured.
+  return `<polyline points="${puntos(r)}" stroke="${color}" stroke-width="3"/><polyline points="${puntos(r)}" stroke="#fff" stroke-width="1"/>`;
 }
 
 /** El tipo que lleva el cable que llega a una entrada, o el de la entrada si no llega ninguno. */
@@ -706,8 +774,42 @@ function constanteError(n, edicion) {
   return `<div class="constante-error${ed ? " editando" : ""}"><div class="celda-error celda-status" data-campo="status" style="height:${a}px">${v.status ? "T" : "F"}</div><div class="celda-error celda-code" data-campo="code" style="height:${b}px">${texto("code", String(v.code))}</div><div class="celda-error celda-source" data-campo="source" style="height:${c}px"><span>${texto("source", v.source)}</span></div></div>`;
 }
 
-/** La constante de array: el índice a la izquierda y, a su derecha, la caja con los elementos que se ven. */
+/** What a cell shows: its text, or the text being typed into it with its caret or selection. */
+function cellContent(text, editing) {
+  const escaped = esc(text);
+  if (!editing) return `<span>${escaped}</span>`;
+  return editing.todo ? `<span class="texto-elegido">${escaped}</span>` : `<span>${escaped}</span><span class="caret"></span>`;
+}
+
+/** One row of the index block of a 2D constant: the spinner and the field with the first position shown. */
+const indexRow2D = (position) => `<div class="fila-indice"><span class="paso-indice">▴▾</span><span class="campo-indice">${position}</span></div>`;
+
+/**
+ * The constant with two dimensions (see MEDIDAS_ARRAY_2D): the index block with its two positions and, flush
+ * against it, the grid of tiles. Each tile carries the address "row,column" of the element it shows.
+ */
+function constanteArray2D(n, k, ctx, edicion) {
+  const M = MEDIDAS_ARRAY_2D;
+  const [type, value] = [tipoElementoArray(n), valoresArray(n)];
+  const first = firstShown(n.config);
+  const { rows, columns } = visibleGrid(n.config);
+  const pitch = anchoElementoArray(n, ctx, edicion);
+  const box = box2D(n, ctx, edicion);
+  const tiles = Array.from({ length: rows * columns }, (_, i) => {
+    const [row, column] = [Math.floor(i / columns), i % columns];
+    const address = addressShown(n, row, column);
+    const editing = edicion?.nodo === n.id && edicion.elem === address ? edicion : null;
+    const defined = isDefined(value, 2, address);
+    return `<div class="celda-grid${defined ? " definida" : ""}${editing ? " editando" : ""}" data-campo="${address}" style="left:${px(column * pitch)};top:${px(row * M.altoCelda)};width:${px(pitch)};height:${px(M.altoCelda)}"><div class="contenido-celda">${cellContent(cellText(n, address, ctx, edicion), editing)}</div></div>`;
+  }).join("");
+  return `<div class="constante-array dos-dimensiones" style="width:${px(k.ancho)};height:${px(k.alto)};--tipo:${aspecto(type).color}">` +
+    `<div class="indice-array-2d" style="width:${px(M.indice)};height:${px(M.altoIndice)}"><div class="interior-indice">${indexRow2D(first.row)}${indexRow2D(first.column)}</div></div>` +
+    `<div class="caja-array-2d" style="left:${px(M.indice)};width:${px(box.ancho)};height:${px(box.alto)}"><div class="interior-caja">${tiles}</div></div></div>`;
+}
+
+/** The array constant: the index on the left and, to its right, the box with the elements that show. */
 function constanteArray(n, k, ctx, edicion) {
+  if (dimensionsOfNode(n.config) === 2) return constanteArray2D(n, k, ctx, edicion);
   const A = MEDIDAS_ARRAY;
   const [t, valores, k0] = [tipoElementoArray(n), valoresArray(n), n.config?.indice ?? 0];
   const color = aspecto(t).color;
@@ -723,6 +825,21 @@ function constanteArray(n, k, ctx, edicion) {
     `<div class="indice-array" style="width:${px(A.indice)};height:${px(A.altoIndice)};border-color:${color}"><span class="paso-indice">▴▾</span><span class="campo-indice">${k0}</span></div>` +
     `<div class="caja-array" style="left:${px(A.indice - A.solape)};width:${px(k.ancho - A.indice + A.solape)};height:${px(A.alto)};border-color:${color}">${celdas}</div></div>`;
 }
+
+/**
+ * The handles to stretch an array constant: one on the right edge of the box of elements and, with two
+ * dimensions, one on the bottom edge and one in the corner (each shows more columns, rows, or both).
+ */
+function asasArray(n, k, ctx, edicion) {
+  const handle = (side, left, top) => `<div class="asa" data-nodo="${esc(n.id)}" data-asa="${side}" style="left:${px(left - 3)};top:${px(top - 3)}"></div>`;
+  if (dimensionsOfNode(n.config) < MAX_EDITOR_DIMENSIONS) return handle("derecha", k.ancho, k.alto / 2);
+  const box = box2D(n, ctx, edicion);
+  const boxLeft = MEDIDAS_ARRAY_2D.indice;
+  return handle("derecha", k.ancho, box.alto / 2) + handle("abajo", boxLeft + box.ancho / 2, box.alto) + handle("esquina", k.ancho, box.alto);
+}
+
+/** Whether a wire reaches that input of the node. */
+const indexCableado = (g, n, puerto) => g.cables.some((cable) => cable.a.nodo === n.id && cable.a.puerto === puerto);
 
 function nodo(n, d, ctx, resueltos, elegido) {
   const k = caja(n, ctx, d.edicion);
@@ -766,7 +883,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
     cuerpo = vistaTerminales(n, k, d.g, ctx, resueltos);
   } else {
     const clave = glifoDe(n, ctx);
-    const glifo = G.FUNCIONES[clave] ?? "";
+    const glifo = clave === "index-array-2d" ? G.indexArray2DGlyph(indexCableado(d.g, n, "index"), indexCableado(d.g, n, "index-1")) : G.FUNCIONES[clave] ?? "";
     // Un glifo de cadena trae su tamaño (más ancho que los 32 px de la rejilla).
     const [gw, gh] = G.TAMANOS[clave] ?? [];
     cuerpo = `<div class="glifo-nodo" style="left:${px(-k.dx)};top:${px(-k.dy)}${gw ? `;width:${px(gw)};height:${px(gh)}` : ""}">${glifo}</div>`;
@@ -781,7 +898,9 @@ function nodo(n, d, ctx, resueltos, elegido) {
   const editable = c?.editable ? " editable" : "";
   // Las asas para estirar un nodo de entradas variables, si está seleccionado.
   let asas = "";
-  if (elegido && c?.array) asas = `<div class="asa" data-nodo="${esc(n.id)}" data-asa="derecha" style="left:${px(k.ancho - 3)};top:${px(k.alto / 2 - 3)}"></div>`;
+  if (elegido && c?.array) asas = asasArray(n, k, ctx, d.edicion);
+  // Initialize Array is stretched downwards to add a dimension size (array-2d/initializearray-contexthelp.png).
+  if (elegido && n.tipo === "initialize-array") asas = `<div class="asa" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(k.ancho / 2 - 3)};top:${px(k.alto - 3)}"></div>`;
   if (elegido && esCompuesto(n, ctx)) {
     const M = medidasCompuesto(n, ctx);
     const x = M.izquierda - M.asa / 2;
@@ -995,8 +1114,10 @@ export function menuDe(n, puerto, g) {
   // Los menús de la constante, el control y el indicador de cadena tampoco (M3: sin capturar).
   if (n.tipo === "str-control" || n.tipo === "str-indicator" || CONSTANTES[n.tipo]?.cadena) return null;
   if (n.tipo === "indicator") return "context.numeric-indicator";
-  // El menú de la constante, el control y el indicador de array tampoco está capturado (array/panel-array-menu.png es el del panel).
-  if (n.tipo === "arr-const" || n.tipo === "arr-control" || n.tipo === "arr-indicator") return null;
+  // The menu of the array constant (labview-captures/array-2d/constant-2d-menu-index.png and constant-2d-menu-shell.png).
+  // The terminal of an array control or indicator has no menu captured yet.
+  if (n.tipo === "arr-const") return "context.array-constant";
+  if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return null;
   if (n.tipo === "compound-arithmetic") return puerto?.startsWith("value-") ? "context.compound-arithmetic-input" : "context.compound-arithmetic";
   if (n.tipo in MENU_COMPARISON) return MENU_COMPARISON[n.tipo];
   return CONSTANTES[n.tipo]?.editable ? "context.numeric-constant" : CONSTANTES[n.tipo] ? null : "context.function";
@@ -1075,7 +1196,9 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
   // Los menús de la barra llevan sus atajos en una segunda columna, como en
   // front-panel/menu-file.png: tras el texto más largo, y a 18 px del borde.
   // Algunos menús cambian de filas y de nombres según el estado (el Case: booleano o numérico, qué marco se ve).
-  const { ocultos = new Set(), rotulos = new Map() } = variante;
+  // Rows can also be greyed by context (`desactivados`, as Remove Dimension on a 1D array) or stand for a hole
+  // that explains a limit of Solder (`redirigidos`: the row id to the inventory entry it explains).
+  const { ocultos = new Set(), rotulos = new Map(), desactivados = new Set(), redirigidos = new Map() } = variante;
   const hijos = (padre) => inv.hijos(padre).filter((e) => !ocultos.has(e.id));
   const rotuloDe = (e) => rotulos.get(e.id) ?? e.etiqueta;
   const anchoAtajos = (padre) => Math.max(0, ...hijos(padre).map((e) => (e.atajo ? medir(e.atajo) : 0)));
@@ -1111,10 +1234,11 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
       }
       const conSub = inv.tieneContenido(e.id) || CON_SUBMENU.includes(ultimo(e.id));
       const abierto = menu.abierto === e.id;
-      const clases = `item-menu${esHueco(e) ? " hueco" : ""}${abierto ? " activo" : ""}${marcados.has(e.id) ? " marcado" : ""}`;
+      const hueco = esHueco(e) || redirigidos.has(e.id);
+      const clases = `item-menu${hueco ? " hueco" : ""}${desactivados.has(e.id) ? " desactivado" : ""}${abierto ? " activo" : ""}${marcados.has(e.id) ? " marcado" : ""}`;
       const flecha = conSub ? `<span class="flecha-menu" style="right:${px(M.flecha)}">${G.FLECHA_CATEGORIA}</span>` : "";
       const atajo = e.atajo ? `<span class="atajo-menu" style="left:${px(M.texto + anchoTextos(padre) + M.antesAtajo)}">${esc(e.atajo)}</span>` : "";
-      filas += `<div class="${clases}" data-id="${esc(e.id)}" style="top:${px(top)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(rotuloDe(e))}</span>${atajo}${flecha}</div>`;
+      filas += `<div class="${clases}" data-id="${esc(redirigidos.get(e.id) ?? e.id)}" style="top:${px(top)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(rotuloDe(e))}</span>${atajo}${flecha}</div>`;
       if (abierto && inv.tieneContenido(e.id)) sub = lista(e.id, x + ancho - M.solape, y + top - M.arriba);
       top += M.fila;
     }

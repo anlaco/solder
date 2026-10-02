@@ -19,6 +19,7 @@ import * as G from "../common/glyphs.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import * as H from "../block-diagram/undo-history.mjs";
 import { cargarInventario, esHueco } from "../common/labview-inventory.mjs";
+import { addressFromText } from "../common/array-grid.mjs";
 import * as P from "../front-panel/front-panel.mjs";
 import * as Q from "../../../core/model/qvi-format.mjs";
 import { compilar } from "../../../core/compiler/compiler.mjs";
@@ -323,7 +324,7 @@ function pintar() {
     extra.editandoTexto = !!dia.edicion;
   } else {
     extra.lienzo = P.contenido(pan, ctx);
-    extra.encima = pan.menu ? D.menuContextual(inv, pan.menu, ED.marcados(pan), medirMenu) : "";
+    extra.encima = pan.menu ? D.menuContextual(inv, pan.menu, ED.marcados(pan), medirMenu, ED.variantes(pan)) : "";
     extra.editandoTexto = !!pan.edicion;
   }
   // El menú de la barra que está abierto, bajo su título.
@@ -400,7 +401,7 @@ function objetivo(el) {
   if (t) return { tipo: "terminal", nodo: t.dataset.nodo, puerto: t.dataset.puerto, dir: t.dataset.dir };
   const n = el.closest(".nodo");
   // Un nodo con celdas (la constante de error) dice sobre cuál se pulsó.
-  if (n && !n.closest(".fantasma")) return { tipo: "nodo", id: n.dataset.nodo, ...(el.closest(".celda-error") ? { campo: el.closest(".celda-error").dataset.campo } : {}), ...(el.closest(".celda-array") ? { campo: Number(el.closest(".celda-array").dataset.campo) } : {}) };
+  if (n && !n.closest(".fantasma")) return { tipo: "nodo", id: n.dataset.nodo, ...(el.closest(".celda-error") ? { campo: el.closest(".celda-error").dataset.campo } : {}), ...(el.closest(".celda-array, .celda-grid") ? { campo: addressFromText(el.closest(".celda-array, .celda-grid").dataset.campo) } : {}) };
   const c = el.closest(".tramo-zona");
   if (c) return { tipo: "tramo", cable: c.dataset.cable, k: Number(c.dataset.tramo) };
   return { tipo: "fondo" };
@@ -414,11 +415,11 @@ function objetivoPanel(el) {
   const campo = el.closest(".ec-campo");
   if (campo) return { tipo: "campo", id: campo.closest(".objeto-panel").dataset.nodo, campo: campo.dataset.campo };
   const asaArray = el.closest(".asa-array");
-  if (asaArray) return { tipo: "asa-array", id: asaArray.closest(".objeto-panel").dataset.nodo };
+  if (asaArray) return { tipo: "asa-array", id: asaArray.closest(".objeto-panel").dataset.nodo, lado: asaArray.dataset.lado };
   const elem = el.closest(".elem-array");
-  if (elem) return { tipo: "elem", id: elem.closest(".objeto-panel").dataset.nodo, k: Number(elem.dataset.k) };
+  if (elem) return { tipo: "elem", id: elem.closest(".objeto-panel").dataset.nodo, k: addressFromText(elem.dataset.k) };
   const flecha = el.closest(".flecha-inc");
-  if (flecha) return { tipo: "paso", id: flecha.closest(".objeto-panel").dataset.nodo, paso: Number(flecha.dataset.paso) };
+  if (flecha) return { tipo: "paso", id: flecha.closest(".objeto-panel").dataset.nodo, paso: Number(flecha.dataset.paso), eje: flecha.closest(".arr-indice")?.dataset.eje };
   const casilla = el.closest(".casilla");
   if (casilla) return { tipo: "casilla", id: casilla.dataset.casilla };
   const o = el.closest(".objeto-panel");

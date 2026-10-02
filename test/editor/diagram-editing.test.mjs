@@ -1523,3 +1523,174 @@ test("la constante de array se escribe y se estira", () => {
   b = ED.editar(b, CTX, bid, 0);
   assert.deepEqual(nodoDe(b, bid).config.value, [true]);
 });
+
+// array-2d/constant-2d-menu-index.png, constant-2d-menu-shell.png and constant-1d-menu-index.png: the menu of an array
+// constant is the same on the index and on the shell, and has Add Dimension and Remove Dimension after Advanced.
+test("Add Dimension and Remove Dimension change an array between one and two dimensions", () => {
+  let d = poner(ED.inicial(), "arr-const", { x: 100, y: 100 });
+  const id = d.seleccion[0];
+  d = { ...d, g: Gr.fijarConfig(d.g, id, { type: { array: "i32" }, value: [1, 2, 3], visibles: 3 }) };
+  assert.equal(D.menuDe(nodoDe(d, id), "result", d.g), "context.array-constant");
+
+  // The rows, in the order of the capture, and Remove Dimension greyed on a 1D array.
+  const filas = INV.hijos("context.array-constant").map((e) => e.etiqueta);
+  assert.deepEqual(filas.slice(0, 4), ["Visible Items", "Change to Control", "Change to Indicator", "Change to Element"]);
+  assert.deepEqual(filas.slice(-7), ["Advanced", "Add Dimension", "Remove Dimension", "Add Element Gap", "Size to Widest Element", "Export", "Properties"]);
+  let menu = ED.abrirMenu(d, "context.array-constant", id, 0, 0);
+  let html = D.menuContextual(INV, menu.menu, ED.marcados(menu), undefined, ED.variantes(menu));
+  assert.match(html, /class="item-menu desactivado" data-id="context.array-constant.remove-dimension"/);
+  assert.match(html, /class="item-menu" data-id="context.array-constant.add-dimension"/);
+  assert.equal(ED.orden(menu, "context.array-constant.remove-dimension", CTX), menu, "a greyed row does nothing and keeps the menu open");
+
+  // Add Dimension: [1, 2, 3] becomes the single row of a 2D array, keeping the three columns it showed: 32 + 3 × 13 + 6 wide and 38 tall.
+  d = ED.orden(menu, "context.array-constant.add-dimension", CTX);
+  assert.equal(d.menu, null);
+  assert.deepEqual(nodoDe(d, id).config.type, { array: "i32", dims: 2 });
+  assert.deepEqual(nodoDe(d, id).config.value, [[1, 2, 3]]);
+  const grande = caja(nodoDe(d, id), CTX);
+  assert.deepEqual([grande.ancho, grande.alto], [32 + 3 * 13 + 6, 38]);
+
+  // On a 2D array Add Dimension is greyed and explains the limit; Remove Dimension is available.
+  menu = ED.abrirMenu(d, "context.array-constant", id, 0, 0);
+  html = D.menuContextual(INV, menu.menu, ED.marcados(menu), undefined, ED.variantes(menu));
+  assert.match(html, /class="item-menu hueco" data-id="context.array-dimensions-limit"/);
+  assert.ok(!/desactivado" data-id="context.array-constant.remove-dimension/.test(html));
+  assert.match(INV.explicacion(INV.resolver("context.array-dimensions-limit")).solder, /tres dimensiones/);
+  assert.equal(ED.orden(menu, "context.array-constant.add-dimension", CTX), menu, "the row does nothing in 2D");
+
+  // Remove Dimension keeps the first row.
+  d = { ...d, g: Gr.fijarConfig(d.g, id, { value: [[1, 2, 3], [4, 5, 6]] }) };
+  d = ED.orden(ED.abrirMenu(d, "context.array-constant", id, 0, 0), "context.array-constant.remove-dimension", CTX);
+  assert.deepEqual([nodoDe(d, id).config.type, nodoDe(d, id).config.value], [{ array: "i32" }, [1, 2, 3]]);
+});
+
+// array-2d/constant-2d-empty.png, constant-2d-2x3-values.png and constant-2d-stretched-4x9-empty.png.
+test("the constant with two dimensions is drawn as an index block and a grid of tiles", () => {
+  let d = poner(ED.inicial(), "arr-const", { x: 100, y: 100 });
+  const id = d.seleccion[0];
+  d = { ...d, g: Gr.fijarConfig(d.g, id, { type: { array: "number", dims: 2 }, value: [[1, 2, 3], [4, 5, 6]], visibles: [4, 9] }) };
+  const vacia = { ...nodoDe(d, id), config: { type: { array: "number", dims: 2 }, value: [] } };
+  assert.deepEqual([caja(vacia, CTX).ancho, caja(vacia, CTX).alto], [51, 38], "the empty constant (constant-2d-empty.png)");
+  const k = caja(nodoDe(d, id), CTX);
+  assert.deepEqual([k.ancho, k.alto], [32 + 13 * 9 + 6, 19 * 4 + 6], "155 × 82, as measured");
+  const html = contenido(d, CTX, tipos(d.g, CAT));
+  assert.equal((html.match(/class="celda-grid/g) ?? []).length, 36);
+  assert.equal((html.match(/class="celda-grid definida/g) ?? []).length, 6, "the tiles the value defines are solid, the rest pale");
+  assert.match(html, /data-campo="1,2"[^>]*><div class="contenido-celda"><span>6<\/span>/, "the element in row 1, column 2");
+  assert.match(html, /data-campo="3,8"[^>]*><div class="contenido-celda"><span>0<\/span>/, "outside the value: the default");
+  assert.equal((html.match(/class="fila-indice"/g) ?? []).length, 2, "two index fields");
+  assert.match(html, /class="caja-array-2d" style="left:32px;width:123px;height:82px"/);
+
+  // The index shows the first position of each dimension, and the tiles start there.
+  d = { ...d, g: Gr.fijarConfig(d.g, id, { indice: [1, 2], visibles: [1, 2] }) };
+  const desplazado = contenido(d, CTX, tipos(d.g, CAT));
+  assert.match(desplazado, /campo-indice">1<\/span>.*campo-indice">2<\/span>/s);
+  assert.match(desplazado, /data-campo="1,2"/);
+  assert.ok(!desplazado.includes('data-campo="0,0"'));
+});
+
+test("a cell of the constant with two dimensions is typed into and the value grows without gaps", () => {
+  let d = poner(ED.inicial(), "arr-const", { x: 100, y: 100 });
+  const id = d.seleccion[0];
+  d = { ...d, g: Gr.fijarConfig(d.g, id, { type: { array: "i32", dims: 2 }, value: [[1, 2, 3], [4, 5, 6]], visibles: [3, 4] }) };
+  d = ED.editar(d, CTX, id, "2,3");
+  assert.equal(d.edicion.elem, "2,3");
+  d = ED.confirmar(ED.teclear(d, "9"), CTX);
+  assert.deepEqual(nodoDe(d, id).config.value, [[1, 2, 3, 0], [4, 5, 6, 0], [0, 0, 0, 9]]);
+  d = ED.editar(d, CTX, id, "0,0");
+  assert.match(contenido(d, CTX, tipos(d.g, CAT)), /celda-grid definida editando" data-campo="0,0"/);
+  d = ED.confirmar(ED.teclear(ED.teclear(d, "Backspace"), "7"), CTX);
+  assert.equal(nodoDe(d, id).config.value[0][0], 7);
+  // A boolean toggles with the double click.
+  d = { ...d, g: Gr.fijarConfig(d.g, id, { type: { array: "boolean", dims: 2 }, value: [] }) };
+  d = ED.editar(d, CTX, id, "1,1");
+  assert.deepEqual(nodoDe(d, id).config.value, [[false, false], [false, true]]);
+});
+
+test("the constant with two dimensions is stretched by the right, the bottom and the corner", () => {
+  let d = poner(ED.inicial(), "arr-const", { x: 100, y: 100 });
+  const id = d.seleccion[0];
+  d = { ...d, g: Gr.fijarConfig(d.g, id, { type: { array: "number", dims: 2 }, value: [] }), seleccion: [id] };
+  const asas = contenido(d, CTX, tipos(d.g, CAT)).match(/data-asa="(\w+)"/g);
+  assert.deepEqual(asas, ['data-asa="derecha"', 'data-asa="abajo"', 'data-asa="esquina"']);
+  const estirar = (lado, dx, dy) => {
+    let e = ED.pulsar({ ...d, seleccion: [id] }, CTX, { tipo: "asa", nodo: id, lado }, { x: 200, y: 200 });
+    e = ED.moverA(e, CTX, { x: 200 + dx, y: 200 + dy });
+    return nodoDe(ED.soltar(e, CTX, FONDO, { x: 200 + dx, y: 200 + dy }), id).config.visibles;
+  };
+  assert.deepEqual(estirar("derecha", 3 * 13, 100), [1, 4], "only columns, 13 px each");
+  assert.deepEqual(estirar("abajo", 100, 3 * 19), [4, 1], "only rows, 19 px each");
+  assert.deepEqual(estirar("esquina", 8 * 13, 3 * 19), [4, 9], "both, as in constant-2d-stretched-4x9-empty.png");
+});
+
+// array-2d/wire-2d-dbl.png and wire-2d-vs-1d-diagram.png: 3 px, the type color, white and the type color.
+test("a wire of a 2D array is 3 px with a white line in the middle, between the 1 px scalar and the 2 px 1D", () => {
+  const cable = (tipo) => {
+    let d = poner(ED.inicial(), "arr-const", { x: 40, y: 40 });
+    const a = d.seleccion[0];
+    d = poner(d, "arr-indicator", { x: 300, y: 40 });
+    const b = d.seleccion[0];
+    d = { ...d, g: Gr.fijarConfig(Gr.fijarConfig(d.g, a, { type: tipo, value: [] }), b, { type: tipo, value: [] }) };
+    d = cablear(d, terminal(d, a, "result"), terminal(d, b, "value"));
+    return contenido(d, CTX, tipos(d.g, CAT));
+  };
+  assert.match(cable({ array: "number", dims: 2 }), /stroke="#fb7c00" stroke-width="3"\/><polyline[^>]*stroke="#fff" stroke-width="1"/);
+  assert.match(cable({ array: "number" }), /stroke="#fb7c00" stroke-width="2"/);
+});
+
+// array-2d/indexarray-2d-node-icon.png, indexarray-2d-wired-array-only.png: with a 2D array wired, Index Array is
+// 32 × 35 and shows two indices 8 px apart; what comes out depends on the indices wired.
+test("Index Array with a 2D array wired is 32 × 35 and has two indices", () => {
+  let d = poner(ED.inicial(), "arr-const", { x: 40, y: 40 });
+  const tabla = d.seleccion[0];
+  d = { ...d, g: Gr.fijarConfig(d.g, tabla, { type: { array: "number", dims: 2 }, value: [[1, 2], [3, 4]] }) };
+  d = poner(d, "index-array", { x: 300, y: 40 });
+  const indice = d.seleccion[0];
+  let k = caja(nodoDe(d, indice), CTX);
+  assert.deepEqual([k.ancho, k.alto], [32, 27], "1D until a 2D array arrives");
+  d = cablear(d, terminal(d, tabla, "result"), terminal(d, indice, "array"));
+  assert.equal(nodoDe(d, indice).config.dims, 2);
+  k = caja(nodoDe(d, indice), CTX);
+  assert.deepEqual([k.ancho, k.alto], [32, 35]);
+  const entradas = terminales(nodoDe(d, indice), CTX).filter((t) => t.dir === "in");
+  assert.deepEqual(entradas.map((t) => t.puerto), ["array", "index", "index-1"]);
+  assert.deepEqual(entradas.map((t) => t.y - k.y), [9.5, 22.5, 30.5], "the indices are 8 px apart");
+  const salida = (cableados) => {
+    let e = d;
+    for (const puerto of cableados) {
+      e = poner(e, "const", { x: 200, y: 100 });
+      const c = e.seleccion[0];
+      e = cablear(e, terminal(e, c, "result"), terminal(e, indice, puerto));
+    }
+    return contenido(e, CTX, tipos(e.g, CAT)).match(/<svg[^>]*viewBox="0 0 48 52.5"[\s\S]*?<\/svg>/)[0];
+  };
+  const [ninguno, uno, ambos] = [salida([]), salida(["index"]), salida(["index", "index-1"])];
+  assert.notEqual(ninguno, uno);
+  assert.notEqual(uno, ambos);
+  assert.equal((ninguno.match(/<rect[^>]*fill="#2b2b22"/g) ?? []).length, 4, "no index wired: a 2D grid of four cells");
+  assert.equal((ambos.match(/<rect[^>]*fill="#2b2b22"/g) ?? []).length, 3, "both wired: the two filled index icons and one square");
+});
+
+// array-2d/initializearray-contexthelp.png: Initialize Array is stretched downwards for each dimension size.
+test("Initialize Array is stretched to add a dimension size and shrinks back removing its wire", () => {
+  let d = poner(ED.inicial(), "initialize-array", { x: 300, y: 100 });
+  const ini = d.seleccion[0];
+  assert.deepEqual(terminales(nodoDe(d, ini), CTX).filter((t) => t.dir === "in").map((t) => t.puerto), ["element", "size"]);
+  const estirar = (d0, dy) => {
+    let e = ED.pulsar({ ...d0, seleccion: [ini] }, CTX, { tipo: "asa", nodo: ini, lado: "abajo" }, { x: 316, y: 130 });
+    e = ED.moverA(e, CTX, { x: 316, y: 130 + dy });
+    return ED.soltar(e, CTX, FONDO, { x: 316, y: 130 + dy });
+  };
+  assert.match(contenido({ ...d, seleccion: [ini] }, CTX, tipos(d.g, CAT)), /data-asa="abajo"/);
+  d = estirar(d, 8);
+  assert.equal(nodoDe(d, ini).config.dims, 2);
+  assert.deepEqual(terminales(nodoDe(d, ini), CTX).filter((t) => t.dir === "in").map((t) => t.puerto), ["element", "size", "size-1"]);
+  assert.equal(caja(nodoDe(d, ini), CTX).alto, 35);
+  assert.equal(nodoDe(estirar(d, 80), ini).config.dims, 2, "no more than two dimensions");
+  d = poner(d, "const", { x: 100, y: 100 });
+  d = cablear(d, terminal(d, d.seleccion[0], "result"), terminal(d, ini, "size-1"));
+  assert.equal(d.g.cables.length, 1);
+  d = estirar(d, -8);
+  assert.equal(nodoDe(d, ini).config.dims, 1);
+  assert.equal(d.g.cables.length, 0, "the wire of the size that went away goes too");
+});

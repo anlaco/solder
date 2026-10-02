@@ -1873,6 +1873,37 @@ for (const [id, w, h, r, t] of [
   ["remove-duplicates-from-1d-array", 32, 32, "[≠]", 12],
 ]) nodoCadena(id, w, h, r, t);
 
+// Index Array and Initialize Array with two dimensions are 32 × 35 instead of 32 × 27 (labview-captures/array-2d/
+// indexarray-2d-node-icon.png, indexarray-2d-wired-array-only.png and initializearray-contexthelp.png: eight more px
+// for the second index or size, which are 8 px apart). The size of Initialize Array with two sizes is taken from
+// Index Array's: unverified.
+nodoCadena("index-array-2d", 32, 35, "", 12);
+nodoCadena("initialize-array-2d", 32, 35, "[n×m]", 10);
+
+/** What an index of Index Array takes out of a 2D array: with none wired the whole grid, with one a 1D row or column, with both a single element. */
+const salidaIndexArray2D = (cableados) => {
+  const celda = (x, y) => lleno(x, y, x + 5, y + 5, BORDE);
+  if (cableados === 0) return celda(30, 18) + celda(37, 18) + celda(30, 25) + celda(37, 25);
+  if (cableados === 1) return celda(28, 21.5) + celda(34, 21.5) + celda(40, 21.5);
+  return lleno(33, 20.5, 41, 28.5, BORDE);
+};
+
+/**
+ * The drawing of Index Array with two dimensions: the array input on the left, the row index and the column index
+ * below it (hollow when unwired, filled when wired) and, on the right, what comes out. Drawn anew; the layout is the
+ * one measured in labview-captures/array-2d/indexarray-2d-node-icon.png.
+ */
+export function indexArray2DGlyph(rowWired, columnWired) {
+  const entrada = (y, cableada, ancho, alto) => caja(5, y - alto / 2, 5 + ancho, y + alto / 2, cableada ? BORDE : PRIM, 1, BORDE);
+  return svg(
+    caja(0.75, 0.75, 47.25, 51.75, PRIM, 1.5, BORDE) +
+      caja(5, 9, 15, 19.5, PRIM, 1, BORDE) + linea(10, 9, 10, 19.5, 1, BORDE) + linea(5, 14.25, 15, 14.25, 1, BORDE) +
+      entrada(33.75, rowWired, 10, 5) + entrada(45.75, columnWired, 5, 7) +
+      salidaIndexArray2D(Number(rowWired) + Number(columnWired)),
+    "0 0 48 52.5",
+  );
+}
+
 // Build Array se estira como Compound Arithmetic: una caja de 32 × 9 con una celda por entrada.
 FUNCIONES["build-array"] = svg48(caja(0.75, 0.75, 47.25, 13.25, PRIM, 1.5, BORDE) + caja(5, 4, 12, 10, "#fff", 1, BORDE) + caja(36, 4, 43, 10, "#fff", 1, BORDE) + texto48(24, 7.3, "…", 8));
 CAJAS["build-array"] = [0, 0, 48, 14];

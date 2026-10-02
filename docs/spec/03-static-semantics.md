@@ -185,14 +185,19 @@ A type is **a string** if it is scalar and **an object** if it is compound:
 ```json
 "number"
 { "array": "number" }
-{ "array": { "array": "number" } }
+{ "array": "number", "dims": 2 }
 { "cluster": [ { "name": "total", "type": "number" },
                { "name": "ok",    "type": "boolean" } ] }
 { "array": { "cluster": [ ... ] } }
 ```
 
-The definition is **recursive**, so arrays of arrays and arrays of clusters come
-for free. `06-visual.md` §4.3 already anticipated 2D arrays.
+An array is its element type plus a number of dimensions, `dims`, left out
+when it is 1; this is how LabVIEW's type descriptor describes it (DT-044).
+Clusters may contain arrays and arrays may contain clusters, but **an array
+never contains an array**: LabVIEW has no arrays of arrays, and wherever one
+would appear (an indexed output tunnel that receives arrays, Build Array of
+arrays without Concatenate Inputs) a multidimensional array appears instead.
+`06-visual.md` §4.3 already anticipated 2D arrays.
 
 > **Rule 2b.** `array` and `cluster` **MUST NOT** appear without their parameter.
 > A bare `"type": "array"` is not a valid type.

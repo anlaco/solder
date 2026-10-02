@@ -4,7 +4,8 @@
 // Módulo puro: sin DOM. Lo usan el modelo del grafo, la vista y los tests.
 //
 // Un tipo es una cadena si es escalar y un objeto si es compuesto:
-// "i32", "number", { "array": "sgl" }, { "enum": ["a", "b"] }. `number` es el
+// "i32", "number", { "array": "sgl" }, { "array": "sgl", "dims": 2 },
+// { "enum": ["a", "b"] }. `number` es el
 // DBL de LabVIEW, el f64: se conserva el nombre que ya usaban el esquema y el
 // corpus.
 
@@ -26,6 +27,27 @@ export const DBL = "number";
 
 export const esEnum = (t) => !!t && typeof t === "object" && Array.isArray(t.enum);
 export const esArray = (t) => !!t && typeof t === "object" && "array" in t;
+/**
+ * How many dimensions an array has (DT-044). As in LabVIEW's type descriptor,
+ * an array is its element type plus a dimension count; `dims` is left out for
+ * one dimension. The element is never an array: LabVIEW has no arrays of arrays.
+ */
+export const dimensionsOf = (t) => (esArray(t) ? t.dims ?? 1 : 0);
+
+/**
+ * The array whose elements are `element`. An array of arrays does not exist in
+ * LabVIEW, so an array element adds dimensions instead (what an indexed output
+ * tunnel does with the rows it receives).
+ */
+export function arrayOf(element, addedDimensions = 1) {
+  const elementType = esArray(element) ? element.array : element;
+  const dims = dimensionsOf(element) + addedDimensions;
+  return dims === 1 ? { array: elementType } : { array: elementType, dims };
+}
+
+/** What one index takes out of an array: a 2D gives a 1D row, a 1D gives its element. */
+export const withoutOneDimension = (t) => (dimensionsOf(t) > 1 ? arrayOf(t.array, dimensionsOf(t) - 1) : t.array);
+
 export const esCluster = (t) => !!t && typeof t === "object" && Array.isArray(t.cluster);
 
 /**
@@ -66,7 +88,7 @@ export function comun(a, b) {
 /** Igualdad estructural (spec/03 §3.4). */
 export function iguales(a, b) {
   if (typeof a === "string" || typeof b === "string") return a === b;
-  if (esArray(a) && esArray(b)) return iguales(a.array, b.array);
+  if (esArray(a) && esArray(b)) return dimensionsOf(a) === dimensionsOf(b) && iguales(a.array, b.array);
   if (esEnum(a) && esEnum(b)) return a.enum.length === b.enum.length && a.enum.every((x, i) => x === b.enum[i]);
   return JSON.stringify(a) === JSON.stringify(b);
 }
@@ -80,14 +102,14 @@ export function iguales(a, b) {
 export function conversion(desde, hacia) {
   if (iguales(desde, hacia)) return "igual";
   if (esNumerico(desde) && esNumerico(hacia)) return "coercion";
-  if (esArray(desde) && esArray(hacia)) return conversion(desde.array, hacia.array) ? "coercion" : null;
+  if (esArray(desde) && esArray(hacia)) return dimensionsOf(desde) === dimensionsOf(hacia) && conversion(desde.array, hacia.array) ? "coercion" : null;
   return null;
 }
 
-/** Cómo se nombra un tipo al explicar un cable roto: «DBL», «array de I32». */
+/** Cómo se nombra un tipo al explicar un cable roto: «DBL», «array de I32», «2D array de DBL». */
 export function nombre(t) {
   if (esEnum(t)) return "enum";
-  if (esArray(t)) return `array de ${nombre(t.array)}`;
+  if (esArray(t)) return `${dimensionsOf(t) > 1 ? `${dimensionsOf(t)}D ` : ""}array de ${nombre(t.array)}`;
   if (typeof t === "string") return NUMERICOS[t]?.abrev ?? t;
   if (t && typeof t === "object" && "cluster" in t) return "cluster";
   return String(t);
@@ -101,7 +123,7 @@ export function nombre(t) {
 export function aspecto(t) {
   // El cluster de error: oliva, con trazos amarillos y negros (docs/reference/labview-errors.md §1).
   if (esError(t)) return { color: COLORES.error, dimension: 0, error: true };
-  const dimension = esArray(t) ? 1 + aspecto(t.array).dimension : 0;
+  const dimension = dimensionsOf(t);
   const base = esArray(t) ? aspecto(t.array).color : colorEscalar(t);
   return { color: base, dimension };
 }
@@ -225,4 +247,40 @@ export function ponerElemento(lista, k, valor, t) {
   while (r.length < k) r.push(elementoPorDefecto(t));
   r[k] = valor;
   return r;
+}
+
+// ——— Multidimensional array values (DT-044) ———
+// On the panel and in a constant, an array of N dimensions is N nested
+// JavaScript arrays; in memory, its sizes and its elements in row order.
+
+/**
+ * The sizes and the row-order elements of a nested value with `dims`
+ * dimensions. A ragged value becomes rectangular: each dimension is as long as
+ * its longest part, and what is missing gets `defaultValue`.
+ */
+export function flattenArrayValue(value, dims, defaultValue) {
+  const sizes = Array(dims).fill(0);
+  const measure = (part, depth) => {
+    const list = Array.isArray(part) ? part : [];
+    sizes[depth] = Math.max(sizes[depth], list.length);
+    if (depth + 1 < dims) list.forEach((inner) => measure(inner, depth + 1));
+  };
+  measure(value, 0);
+  const elements = [];
+  const collect = (part, depth) => {
+    for (let k = 0; k < sizes[depth]; k++) {
+      const inner = Array.isArray(part) ? part[k] : undefined;
+      if (depth + 1 < dims) collect(inner, depth + 1);
+      else elements.push(inner === undefined ? defaultValue : inner);
+    }
+  };
+  if (sizes.every((size) => size > 0)) collect(value, 0);
+  return { sizes, elements };
+}
+
+/** The nested value of row-order `elements` with those `sizes`: the inverse of flattenArrayValue. */
+export function nestArrayValue(elements, sizes) {
+  if (sizes.length <= 1) return elements.slice(0, sizes[0] ?? elements.length);
+  const innerCount = sizes.slice(1).reduce((product, size) => product * size, 1);
+  return Array.from({ length: sizes[0] }, (_, row) => nestArrayValue(elements.slice(row * innerCount, (row + 1) * innerCount), sizes.slice(1)));
 }

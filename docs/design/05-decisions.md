@@ -1274,3 +1274,54 @@ b. The panel gains the Error In and Error Out controls and the editor, its two
    dialogs (the automatic one and that of Simple Error Handler).
 c. spec/04 §8 is rewritten: it stops being "any error stops the VI".
 
+
+## DT-044
+
+**Multidimensional arrays: how their type is written and how they are stored.**
+
+- **Status:** **Accepted on 2026-10-03** by the developer, after comparing the
+  two options against LabVIEW's own documentation ("whichever respects
+  LabVIEW's philosophy more").
+- **Complements:** [DT-042](#dt-042) (memory of strings, arrays and clusters).
+
+### How LabVIEW does it (NI documentation)
+
+1. **The type of an array is an element type plus a dimension count.** The
+   array type descriptor is the type code 0x40, a word with the number of
+   dimensions, the size of each one and then the element's descriptor; "the
+   element type can be any type except an array" (*Type Descriptors*).
+2. **There are no arrays of arrays.** NI has an error for it ("Type definition
+   cannot have array of arrays"); the workaround is an array of clusters that
+   contain arrays.
+3. **In memory, one block:** "the size of each dimension of the array in 32-bit
+   integers followed by the data", with padding so that the first element is
+   aligned; handle 0 is the empty array (*How LabVIEW Stores Data in Memory*).
+4. NI publishes no maximum number of dimensions (the descriptor field is a
+   16-bit word); what LabVIEW 2026 Q3 allows is measured in the VM.
+
+### Decision
+
+1. **Type:** `{ array: E, dims: N }`, with `dims` left out when it is 1, so every
+   1D array already written stays the same. `E` is never an array. Wherever an
+   array of arrays would appear —an indexed output tunnel that receives
+   arrays, Build Array of arrays without Concatenate Inputs— the type gains a
+   dimension instead (`arrayOf` in `core/model/types.mjs`), and one index takes
+   one away (`withoutOneDimension`).
+2. **Catalog:** a port `{ array: X }` takes only one dimension. A port
+   `{ array: X, dims: "any" }` takes an array of any dimensions and binds `X` to
+   what is left after one index (a 2D gives `X` = a 1D row); this is how the
+   indexed tunnels are declared.
+3. **Memory:** a single block `[size of each dimension I32][padding to 8][elements]`,
+   the elements in row order (the last dimension varies fastest). The 1D
+   block of DT-042 d is the case of one dimension; a 2D needs no padding.
+4. **A row or a column taken out** (Index Array with fewer indices than
+   dimensions, a loop indexing a 2D) is copied into the node's own buffer;
+   avoiding that copy belongs to inplaceness (DT-042 §5).
+
+### Consequences
+
+a. spec/03 §3 and the `.qvi` schema stop allowing arrays of arrays.
+b. Each array function declares which dimensions it accepts, as LabVIEW does:
+   most 1D functions (Sort, Search, Reverse…) break the wire with a 2D.
+c. The panel reads and writes an N-dimensional array as a typed view plus its
+   sizes.

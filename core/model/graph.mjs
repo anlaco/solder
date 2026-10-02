@@ -11,7 +11,7 @@
 //
 // A pure module with no mutation: every operation returns a new diagram.
 
-import { DBL, ERROR, NUMERICOS, comun, convertirValor, conversion, esArray, esCluster, esEntero, esNumerico, nombre } from "./types.mjs";
+import { DBL, ERROR, NUMERICOS, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, nombre, withoutOneDimension } from "./types.mjs";
 
 /** El catálogo de bloques, `docs/schema/blocks.json`. */
 export function cargarCatalogo(datos) {
@@ -47,12 +47,27 @@ export function cargarCatalogo(datos) {
         const rotulo = (i) => (prefijo === "error-in-" ? `${label} ${i}` : label);
         return Array.from({ length: n }, (_, i) => ({ name: `${prefijo}${i}`, label: rotulo(i), type, dir, ...extra }));
       }
+      // Index Array: the array and one index per dimension, as LabVIEW grows it when an array is wired (DT-044).
+      if (b[dir] === "dynamic:array-indices") {
+        const dims = nodo.config?.dims ?? b.config.dims.value;
+        const array = { name: "array", label: "n-dimension array", type: { array: { var: "E" }, dims: "any" }, dir };
+        // The first index keeps the name it has always had in the `.qvi`; in 1D it defaults to 0.
+        const index = (k) => ({ name: k === 0 ? "index" : `index-${k}`, label: `index ${k}`, type: "i32", dir, ...(dims === 1 ? { default: 0 } : { optional: true }) });
+        return [array, ...Array.from({ length: dims }, (_, k) => index(k))];
+      }
+      // Initialize Array: the element and one size per dimension, as many as the node is stretched to (DT-044).
+      if (b[dir] === "dynamic:dimension-sizes") {
+        const dims = nodo.config?.dims ?? b.config.dims.value;
+        const size = (k) => ({ name: k === 0 ? "size" : `size-${k}`, label: `dimension size ${k}`, type: "i32", dir });
+        return [{ name: "element", label: "element", type: { var: "E" }, dir }, ...Array.from({ length: dims }, (_, k) => size(k))];
+      }
       return (Array.isArray(b[dir]) ? b[dir] : []).map((p) => ({ ...p, dir }));
     };
     // Un puerto de tipo "error" es el cluster de error (DT-043).
     const conError = (l) => l.map((p) => (p.type === "error" ? { ...p, type: ERROR } : p));
     // Un túnel indexado (autoindexado): fuera, un array de lo que hay dentro.
-    const indexado = (l, lado) => (nodo.config?.indexado ? l.map((p) => (p.lado === lado ? { ...p, type: { array: p.type } } : p)) : l);
+    // With `dims: "any"`, a 2D array outside is a 1D row inside, as in LabVIEW.
+    const indexado = (l, lado) => (nodo.config?.indexado ? l.map((p) => (p.lado === lado ? { ...p, type: { array: p.type, dims: "any" } } : p)) : l);
     const ins = indexado(conError(lista("in")), nodo.tipo === "tunnel-in" ? "fuera" : null);
     const outs = indexado(conError(lista("out")), nodo.tipo === "tunnel-out" ? "fuera" : null);
     return { in: ins, out: outs };
@@ -488,7 +503,23 @@ export function conectar(g, cat, t1, t2, codos) {
   const id = `c${g.siguiente}`;
   const cable = { id, de: { nodo: de.nodo, puerto: de.puerto }, a: { nodo: a.nodo, puerto: a.puerto } };
   if (codos) cable.codos = codos;
-  return { g: { ...g, cables: [...cables, cable], siguiente: g.siguiente + 1 }, id };
+  const conCable = { ...g, cables: [...cables, cable], siguiente: g.siguiente + 1 };
+  return { g: ajustarIndices(conCable, cat, a), id };
+}
+
+/**
+ * Index Array shows one index per dimension of the array wired to it, as
+ * LabVIEW does by itself (DT-044); the wires of indices that disappear go away.
+ */
+function ajustarIndices(g, cat, destino) {
+  const nodo = nodoDe(g, destino.nodo);
+  if (nodo.tipo !== "index-array" || destino.puerto !== "array") return g;
+  const cable = g.cables.find((c) => c.a.nodo === nodo.id && c.a.puerto === "array");
+  const dims = dimensionsOf(tipos(g, cat).salidas.get(`${cable.de.nodo}.${cable.de.puerto}`));
+  if (!dims || dims === (nodo.config?.dims ?? 1)) return g;
+  const conDims = cambiarNodo(g, nodo.id, (n) => ({ ...n, config: { ...n.config, dims } }));
+  const quedan = new Set(cat.puertos(nodoDe(conDims, nodo.id)).in.map((p) => p.name));
+  return { ...conDims, cables: conDims.cables.filter((c) => c.a.nodo !== nodo.id || quedan.has(c.a.puerto)) };
 }
 
 /**
@@ -542,10 +573,67 @@ function sustituir(t, vars) {
     if ("var" in t) return vars[t.var];
     if ("array" in t) {
       const e = sustituir(t.array, vars);
-      return e === undefined ? undefined : { array: e };
+      return e === undefined ? undefined : arrayOf(e);
     }
   }
   return t;
+}
+
+/**
+ * The dimensions of Build Array (DT-044, measured in LabVIEW 2026 Q3): inputs
+ * that all have the same dimensions are stacked into one more (two 1D give a
+ * 2D, two 2D a 3D); otherwise the largest ones are appended to (a 2D and a 1D
+ * give a 2D with one more row, an element and a 1D a longer 1D). With
+ * Concatenate Inputs, arrays are joined without adding a dimension. An input
+ * with fewer than one dimension less breaks its wire. `null` if the node is
+ * not a Build Array.
+ */
+function dimensionesDeBuildArray(n, ins, tipoQueLlega) {
+  if (n.tipo !== "build-array") return null;
+  const entradas = ins.filter((p) => p.type && typeof p.type === "object" && "elemOArray" in p.type);
+  const dims = entradas.map((p) => tipoQueLlega(p.name)).filter((t) => t !== undefined).map(dimensionsOf);
+  const mayor = Math.max(0, ...dims);
+  const todasIguales = dims.length > 0 && dims.every((d) => d === mayor);
+  const salida = n.config?.concatenate ? Math.max(mayor, 1) : todasIguales ? mayor + 1 : mayor;
+  return {
+    salida,
+    entrada: (nombrePuerto, elemento) => {
+      if (elemento === undefined || !entradas.some((p) => p.name === nombrePuerto)) return elemento;
+      const llega = dimensionsOf(tipoQueLlega(nombrePuerto));
+      const esperado = llega >= salida - 1 ? llega : salida - 1;
+      return esperado === 0 ? elemento : arrayOf(elemento, esperado);
+    },
+  };
+}
+
+/**
+ * The type of an output that depends on what is wired, not only on the
+ * variables (DT-044, measured in LabVIEW 2026 Q3):
+ * - `sizesOf`: Array Size gives an I32 for a 1D array and a 1D array of I32,
+ *   one size per dimension, for more.
+ * - `indexedFrom`: Index Array takes one dimension away for each wired index; in
+ *   1D the index defaults to 0 and gives the element.
+ */
+function tipoDeSalida(declarado, vars, nodo, ins, tipoEntrada, cableada) {
+  if (declarado && typeof declarado === "object" && "sizesOf" in declarado) {
+    const array = tipoEntrada(declarado.sizesOf);
+    return esArray(array) && dimensionsOf(array) > 1 ? { array: "i32" } : "i32";
+  }
+  if (declarado && typeof declarado === "object" && "indexedFrom" in declarado) {
+    const array = tipoEntrada(declarado.indexedFrom);
+    if (!esArray(array)) return undefined;
+    const dims = dimensionsOf(array);
+    if (dims === 1) return array.array;
+    const indices = ins.filter((p) => p.name.startsWith("index"));
+    const unwired = indices.filter((p) => !cableada(p.name)).length;
+    return unwired === 0 ? array.array : arrayOf(array.array, unwired);
+  }
+  // Initialize Array: as many dimensions as size inputs.
+  if (declarado && typeof declarado === "object" && declarado.dims === "config") {
+    const e = sustituir(declarado.array, vars);
+    return e === undefined ? undefined : arrayOf(e, nodo.config?.dims ?? 1);
+  }
+  return sustituir(declarado, vars);
 }
 
 /**
@@ -586,7 +674,12 @@ function ligar(declarado, llega, vars) {
     if (vars[declarado.texto] === undefined) vars[declarado.texto] = llega;
   } else if ("var" in declarado) {
     if (vars[declarado.var] === undefined) vars[declarado.var] = llega;
-  } else if ("array" in declarado && esArray(llega)) ligar(declarado.array, llega.array, vars);
+  } else if ("array" in declarado && esArray(llega)) {
+    // A port declared with `dims: "any"` takes an array of any dimensions and its
+    // variable the rest (DT-044); any other array port, only one dimension.
+    if (declarado.dims === "any") ligar(declarado.array, withoutOneDimension(llega), vars);
+    else if (dimensionsOf(llega) === 1) ligar(declarado.array, llega.array, vars);
+  }
   // Una entrada de Build Array: un elemento o un array de elementos; E es el elemento.
   else if ("elemOArray" in declarado) {
     const e = esArray(llega) ? llega.array : llega;
@@ -656,16 +749,26 @@ function resolverTipos(g, cat, pistas) {
       for (const p of [...ins, ...outs]) if (p.type?.num && !vars[p.type.num]) vars[p.type.num] = DBL;
       for (const [k, v] of Object.entries(vars)) if (esNumerico(v) && !esEntero(v)) vars[k] = v === "sgl" ? "i32" : "i64";
     }
+    const construido = dimensionesDeBuildArray(n, ins, (puerto) => {
+      const c = llegaA.get(`${n.id}.${puerto}`);
+      return c ? salidas.get(`${c.de.nodo}.${c.de.puerto}`) : undefined;
+    });
     for (const p of ins) {
       let t = sustituir(p.type, vars);
-      // Build Array: una entrada cableada con un array es un array de E.
-      if (p.type && typeof p.type === "object" && "elemOArray" in p.type) {
+      if (construido) t = construido.entrada(p.name, t);
+      // Replace and Insert: an input wired with an array is an array of E.
+      else if (p.type && typeof p.type === "object" && "elemOArray" in p.type) {
         const c = llegaA.get(`${n.id}.${p.name}`);
-        if (c && esArray(salidas.get(`${c.de.nodo}.${c.de.puerto}`))) t = { array: t };
+        if (c && esArray(salidas.get(`${c.de.nodo}.${c.de.puerto}`))) t = arrayOf(t);
       }
       entradas.set(`${n.id}.${p.name}`, t);
     }
-    for (const p of outs) salidas.set(`${n.id}.${p.name}`, sustituir(p.type, vars));
+    if (construido) {
+      const e = sustituir(outs[0].type.array, vars);
+      salidas.set(`${n.id}.${outs[0].name}`, e === undefined ? undefined : arrayOf(e, construido.salida));
+      return;
+    }
+    for (const p of outs) salidas.set(`${n.id}.${p.name}`, tipoDeSalida(p.type, vars, n, ins, (puerto) => entradas.get(`${n.id}.${puerto}`), (puerto) => llegaA.has(`${n.id}.${puerto}`)));
   };
   for (const id of ord) resolverNodo(nodoDe(g, id));
   for (const id of ciclo) resolverNodo(nodoDe(g, id));
@@ -706,7 +809,7 @@ export function ejecutable(g, cat, resueltos) {
  * como elementos tenga (DT-041, autoindexado).
  */
 export function requerido(g, n, p) {
-  if (p.default !== undefined) return false;
+  if (p.default !== undefined || p.optional) return false;
   if (n.tipo === "loop-count") return !g.nodos.some((k) => k.dentro === n.dentro && k.tipo === "tunnel-in" && k.config?.indexado);
   return true;
 }

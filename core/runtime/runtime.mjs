@@ -8,7 +8,7 @@
 // gates other than what is imported into it (DT-039, decision 4). The editor's
 // worker and the command line, in Node, use it the same way.
 
-import { NUMERICOS, representacion } from "../model/types.mjs";
+import { NUMERICOS, flattenArrayValue, nestArrayValue, representacion } from "../model/types.mjs";
 import { FUNCIONES } from "../compiler/expression-parser.mjs";
 import { tipoWasm } from "../compiler/compiler.mjs";
 import { mensaje as mensajeDeError } from "./error-codes.mjs";
@@ -353,8 +353,15 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   // de clusters lo pone a cero `nuevo_array`.
   const LEER = { "i32.load8_s": "getInt8", "i32.load8_u": "getUint8", "i32.load16_s": "getInt16", "i32.load16_u": "getUint16", "i32.load": "getInt32", "i64.load": "getBigInt64", "f32.load": "getFloat32", "f64.load": "getFloat64" };
   const ESCRIBIR = { "i32.store8": "setInt8", "i32.store16": "setInt16", "i32.store": "setInt32", "i64.store": "setBigInt64", "f32.store": "setFloat32", "f64.store": "setFloat64" };
-  const ponerArray = (celda, el, lista = []) => {
+  // An array of two dimensions is nested JavaScript arrays, its rows (DT-044):
+  // in memory, [rows][columns][elements in row order].
+  const ponerArray = (celda, el, valor = [], dims = 1) => {
+    const { sizes, elements: lista } = flattenArrayValue(valor, dims, undefined);
+    const p = memoria().getInt32(celda, true);
+    // `nuevo_array` reads the old element count in the first word.
+    if (p && dims > 1) memoria().setInt32(p, memoria().getInt32(p, true) * memoria().getInt32(p + 4, true), true);
     const d = ex.nuevo_array(celda, lista.length, el.tam, el.ref ? 1 : 0);
+    sizes.forEach((size, dimension) => memoria().setInt32(d - 8 + 4 * dimension, size, true));
     lista.forEach((v, k) => {
       const a = d + k * el.tam;
       if (el.tipo === "string") ponerCadena(a, v);
@@ -362,21 +369,23 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
       else memoria()[ESCRIBIR[el.guarda]](a, aWasm(v, el.tipo), true);
     });
   };
-  const leerArray = (handle, el) => {
+  const leerArray = (handle, el, dims = 1) => {
     const m = memoria();
     const p = m.getInt32(handle, true);
-    const n = p ? m.getInt32(p, true) : 0;
-    return Array.from({ length: n }, (_, k) => {
+    const sizes = Array.from({ length: dims }, (_, dimension) => (p ? m.getInt32(p + 4 * dimension, true) : 0));
+    const n = sizes.reduce((product, size) => product * size, 1);
+    const elements = Array.from({ length: n }, (_, k) => {
       const a = p + 8 + k * el.tam;
       if (el.tipo === "string") return leerCadena(a);
       if (el.disposicion) return leerCluster(a, el.disposicion);
       return deWasm(m[LEER[el.carga]](a, true), el.tipo);
     });
+    return nestArrayValue(elements, sizes);
   };
-  panel.leer_arr = (i, celda) => ponerArray(celda, controles[i].elemento, valores[controles[i].nodo]);
+  panel.leer_arr = (i, celda) => ponerArray(celda, controles[i].elemento, valores[controles[i].nodo], controles[i].dims);
   panel.escribir_arr = (i, handle) => {
-    const { nodo, elemento } = indicadores[i];
-    escritos[nodo] = leerArray(handle, elemento);
+    const { nodo, elemento, dims } = indicadores[i];
+    escritos[nodo] = leerArray(handle, elemento, dims);
     alEscribir?.(nodo, escritos[nodo]);
   };
   panel.leer_clu = (i, dir) => ponerCluster(dir, controles[i].disposicion, valores[controles[i].nodo]);

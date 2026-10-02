@@ -62,8 +62,8 @@ test("build array: los elementos se añaden y un array, mezclado, se concatena",
   assert.deepEqual(await correr(m), { r: [1, 2, 3] });
   const cat = vi([constante("a", "number", [1]), constante("b", "number", [2, 3]), ["c", "build-array", { inputs: 2, concatenate: true }], indicador("r", "number")], [["a.result", "c.element-0"], ["b.result", "c.element-1"], ["c.result", "r.value"]]);
   assert.deepEqual(await correr(cat), { r: [1, 2, 3] });
-  const dosD = vi([constante("a", "number", [1]), constante("b", "number", [2]), ["c", "build-array", { inputs: 2 }], indicador("r", "number")], [["a.result", "c.element-0"], ["b.result", "c.element-1"]]);
-  assert.match(compilar(dosD.g, CAT).errores.map((e) => e.motivo).join(), /2 dimensiones/);
+  const dosD = vi([constante("a", "number", [1]), constante("b", "number", [2]), ["c", "build-array", { inputs: 2 }], ["r", "arr-indicator", { type: { array: "number", dims: 2 } }]], [["a.result", "c.element-0"], ["b.result", "c.element-1"], ["c.result", "r.value"]]);
+  assert.deepEqual(await correr(dosD), { r: [[1], [2]] }, "two arrays without Concatenate Inputs give a 2D array (DT-044)");
 });
 
 test("initialize array, array subset recortado, y reverse", async () => {
@@ -286,4 +286,161 @@ test("un array de i32 que entra donde se espera un dbl se convierte elemento a e
   assert.deepEqual(await correr(v), { r: [0.5, 1, -2, 3] });
   const w = vi([constante("a", "number", [1.5, 2.5, -0.5]), indicador("r", "i32")], [["a.result", "r.value"]]);
   assert.deepEqual(await correr(w), { r: [2, 2, 0] }, "a entero, al par");
+});
+
+// ——— Two dimensions (DT-044): one block [rows][columns][elements in row order] ———
+
+const A2 = (e) => ({ array: e, dims: 2 });
+
+test("a 2D constant reaches a 2D indicator with its rows and columns", async () => {
+  const v = vi([["a", "arr-const", { type: A2("number"), value: [[1, 2, 3], [4, 5, 6]] }], ["r", "arr-indicator", { type: A2("number") }]], [["a.result", "r.value"]]);
+  assert.deepEqual(await correr(v), { r: [[1, 2, 3], [4, 5, 6]] });
+});
+
+test("a 2D control is read from the panel and an empty one stays empty", async () => {
+  const v = vi([["c", "arr-control", { type: A2("i32") }], ["r", "arr-indicator", { type: A2("i32") }]], [["c.result", "r.value"]]);
+  assert.deepEqual(await correr(v, { c: [[7, 8], [9]] }), { r: [[7, 8], [9, 0]] }, "a ragged value is padded, as the panel shows it");
+  assert.deepEqual(await correr(v, { c: [] }), { r: [] });
+});
+
+test("a 2D array of strings is copied element by element", async () => {
+  const v = vi([["a", "arr-const", { type: A2("string"), value: [["a", "bc"], ["", "def"]] }], ["r", "arr-indicator", { type: A2("string") }]], [["a.result", "r.value"]]);
+  assert.deepEqual(await correr(v), { r: [["a", "bc"], ["", "def"]] });
+});
+
+// Measured in LabVIEW 2026 Q3 with [[1,2,3],[4,5,6]] (labview-captures/array-2d/arraysize-2d-2x3.png, indexarray-2d-*.png).
+const tabla = (nombre) => [nombre, "arr-const", { type: A2("number"), value: [[1, 2, 3], [4, 5, 6]] }];
+
+test("Array Size of a 2D array gives its rows and columns", async () => {
+  const v = vi([tabla("a"), ["s", "array-size"], ["r", "arr-indicator", { type: A("i32") }]], [["a.result", "s.array"], ["s.size", "r.value"]]);
+  assert.deepEqual(await correr(v), { r: [2, 3] });
+});
+
+async function indexar(fila, columna) {
+  const nodos = [tabla("a"), ["x", "index-array"]];
+  const cables = [["a.result", "x.array"]];
+  if (fila !== undefined) nodos.push(["f", "const", { value: fila, type: "i32" }]), cables.push(["f.result", "x.index"]);
+  if (columna !== undefined) nodos.push(["c", "const", { value: columna, type: "i32" }]), cables.push(["c.result", "x.index-1"]);
+  const tipo = fila !== undefined && columna !== undefined ? "number" : fila === undefined && columna === undefined ? A2("number") : A("number");
+  nodos.push(esTipoArray(tipo) ? ["r", "arr-indicator", { type: tipo }] : ["r", "indicator"]);
+  cables.push(["x.element", "r.value"]);
+  return (await correr(vi(nodos, cables))).r;
+}
+const esTipoArray = (t) => typeof t === "object";
+
+test("Index Array on a 2D array: element, row, column or the whole array", async () => {
+  assert.equal(await indexar(1, 2), 6);
+  assert.equal(await indexar(-1, 2), 0, "out of range, the default value");
+  assert.equal(await indexar(1, 10), 0);
+  assert.deepEqual(await indexar(1, undefined), [4, 5, 6], "only the row: that row");
+  assert.deepEqual(await indexar(10, undefined), [], "a row out of range: an empty array");
+  assert.deepEqual(await indexar(undefined, 1), [2, 5], "only the column: that column");
+  assert.deepEqual(await indexar(undefined, -1), []);
+  assert.deepEqual(await indexar(undefined, undefined), [[1, 2, 3], [4, 5, 6]]);
+});
+
+test("Index Array grows one index per dimension when a 2D array is wired", () => {
+  const v = vi([tabla("a"), ["x", "index-array"]], [["a.result", "x.array"]]);
+  const x = v.g.nodos.find((n) => n.id === v.id.x);
+  assert.equal(x.config.dims, 2);
+  assert.deepEqual(CAT.puertos(x).in.map((p) => p.name), ["array", "index", "index-1"]);
+});
+
+// Measured in LabVIEW 2026 Q3 (labview-captures/array-2d/buildarray-*.png).
+test("Build Array of 1D arrays stacks them as rows, padded with the default value", async () => {
+  const v = vi([constante("a", "number", [1, 2, 3]), constante("b", "number", [4, 5]), ["c", "build-array", { inputs: 2 }], ["r", "arr-indicator", { type: A2("number") }]],
+    [["a.result", "c.element-0"], ["b.result", "c.element-1"], ["c.result", "r.value"]]);
+  assert.deepEqual(await correr(v), { r: [[1, 2, 3], [4, 5, 0]] });
+});
+
+test("Build Array of a 2D and a 1D appends a row, with or without Concatenate Inputs", async () => {
+  for (const concatenate of [false, true]) {
+    const v = vi([tabla("a"), constante("b", "number", [4, 5]), ["c", "build-array", { inputs: 2, concatenate }], ["r", "arr-indicator", { type: A2("number") }]],
+      [["a.result", "c.element-0"], ["b.result", "c.element-1"], ["c.result", "r.value"]]);
+    assert.deepEqual(await correr(v), { r: [[1, 2, 3], [4, 5, 6], [4, 5, 0]] }, `concatenate ${concatenate}`);
+  }
+});
+
+test("Build Array of two 2D arrays with Concatenate Inputs appends the rows; without it, it would be 3D", async () => {
+  const v = vi([tabla("a"), tabla("b"), ["c", "build-array", { inputs: 2, concatenate: true }], ["r", "arr-indicator", { type: A2("number") }]],
+    [["a.result", "c.element-0"], ["b.result", "c.element-1"], ["c.result", "r.value"]]);
+  assert.deepEqual(await correr(v), { r: [[1, 2, 3], [4, 5, 6], [1, 2, 3], [4, 5, 6]] });
+  const sinConcatenar = vi([tabla("a"), tabla("b"), ["c", "build-array", { inputs: 2 }]], [["a.result", "c.element-0"], ["b.result", "c.element-1"]]);
+  assert.deepEqual(Gr.tipos(sinConcatenar.g, CAT).salidas.get(`${sinConcatenar.id.c}.result`), { array: "number", dims: 3 });
+});
+
+test("Build Array of strings pads short rows with empty strings", async () => {
+  const v = vi([constante("a", "string", ["x", "yy"]), constante("b", "string", ["z"]), ["c", "build-array", { inputs: 2 }], ["r", "arr-indicator", { type: A2("string") }]],
+    [["a.result", "c.element-0"], ["b.result", "c.element-1"], ["c.result", "r.value"]]);
+  assert.deepEqual(await correr(v), { r: [["x", "yy"], ["z", ""]] });
+});
+
+test("Build Array breaks the wire of an input with two dimensions less, as LabVIEW", () => {
+  const v = vi([tabla("a"), ["x", "const", { value: 1 }], ["c", "build-array", { inputs: 2 }]], [["a.result", "c.element-0"]]);
+  v.con("x.result", "c.element-1");
+  const rotos = [...Gr.tipos(v.g, CAT).cables.values()].filter((c) => c.roto);
+  assert.equal(rotos.length, 1);
+});
+
+test("Initialize Array with two sizes, and 0 rows keep their columns, as LabVIEW", async () => {
+  const v = vi([["k", "const", { value: 7, type: "i32" }], ["f", "const", { value: 2, type: "i32" }], ["c", "const", { value: 3, type: "i32" }], ["ini", "initialize-array", { dims: 2 }], ["r", "arr-indicator", { type: A2("i32") }]],
+    [["k.result", "ini.element"], ["f.result", "ini.size"], ["c.result", "ini.size-1"], ["ini.result", "r.value"]]);
+  assert.deepEqual(await correr(v), { r: [[7, 7, 7], [7, 7, 7]] });
+  // labview-captures/array-2d/arraysize-init-0x3.png: Array Size gives [0, 3].
+  const vacio = vi([["k", "const", { value: 7, type: "i32" }], ["f", "const", { value: 0, type: "i32" }], ["c", "const", { value: 3, type: "i32" }], ["ini", "initialize-array", { dims: 2 }], ["s", "array-size"], ["r", "arr-indicator", { type: A("i32") }]],
+    [["k.result", "ini.element"], ["f.result", "ini.size"], ["c.result", "ini.size-1"], ["ini.result", "s.array"], ["s.size", "r.value"]]);
+  assert.deepEqual(await correr(vacio), { r: [0, 3] });
+});
+
+// labview-captures/array-2d/for-indexed-input-tunnel-2d.png: a 2D array enters a For as rows.
+test("a 2D array entering a For through an indexed tunnel gives one row per iteration", async () => {
+  const v = vi([["f", "for-loop"], tabla("a"), ["suma", "add-array-elements", null, "f"], indicador("r", "number")], []);
+  tunel(v, "ti", "in");
+  tunel(v, "to", "out");
+  for (const [de, a] of [["a.result", "ti.x"], ["ti.y", "suma.numeric-array"], ["suma.sum", "to.x"], ["to.y", "r.value"]]) v.con(de, a);
+  assert.deepEqual(await correr(v), { r: [6, 15] });
+});
+
+test("rows passing through a For come out as the same 2D array", async () => {
+  const v = vi([["f", "for-loop"], ["a", "arr-const", { type: A2("string"), value: [["a", "bc"], ["d", ""]] }], ["r", "arr-indicator", { type: A2("string") }]], []);
+  tunel(v, "ti", "in");
+  tunel(v, "to", "out");
+  for (const [de, a] of [["a.result", "ti.x"], ["ti.y", "to.x"], ["to.y", "r.value"]]) v.con(de, a);
+  assert.deepEqual(await correr(v), { r: [["a", "bc"], ["d", ""]] });
+});
+
+// labview-captures/array-2d/nested-for-2d-result.png: outer N = 2, inner N = 3, i + j → [[0,1,2],[1,2,3]].
+test("two nested Fors build a 2D array through their indexed output tunnels", async () => {
+  let g = Gr.nuevo();
+  let r = Gr.crearEstructura(g, CAT, "for-loop", 0, 0, 400, 300);
+  const exterior = r.id;
+  r = Gr.crearEstructura(r.g, CAT, "for-loop", 50, 50, 200, 150);
+  const interior = r.id;
+  g = Gr.meter(r.g, CAT, [interior], exterior);
+  const nodo = (tipo, config, dentro) => {
+    const k = Gr.crearNodo(g, CAT, tipo, 0, 0);
+    g = config ? Gr.fijarConfig(k.g, k.id, config) : k.g;
+    if (dentro) g = Gr.meter(g, CAT, [k.id], dentro);
+    return k.id;
+  };
+  const [dos, tres, suma, indicadorId] = [nodo("const", { value: 2, type: "i32" }), nodo("const", { value: 3, type: "i32" }), nodo("add", null, interior), nodo("arr-indicator", { type: A2("i32") })];
+  const de = (estructura, tipo) => g.nodos.find((n) => n.dentro === estructura && n.tipo === tipo).id;
+  const unir = (a, pa, b, pb) => {
+    const x = Gr.conectarCruzando(g, CAT, { nodo: a, puerto: pa, dir: "out" }, { nodo: b, puerto: pb, dir: "in" });
+    assert.ok(!x.motivo, x.motivo);
+    g = x.g;
+  };
+  unir(dos, "result", de(exterior, "loop-count"), "count");
+  unir(tres, "result", de(interior, "loop-count"), "count");
+  unir(de(exterior, "loop-iteration"), "i", suma, "a");
+  unir(de(interior, "loop-iteration"), "i", suma, "b");
+  unir(suma, "result", indicadorId, "value");
+  const c = compilar(g, CAT);
+  assert.ok(!c.errores, JSON.stringify(c.errores));
+  assert.deepEqual(Object.values(await ejecutar(c, {})), [[[0, 1, 2], [1, 2, 3]]]);
+});
+
+test("a 2D I32 array is converted element by element where a 2D DBL is expected", async () => {
+  const v = vi([["a", "arr-const", { type: A2("i32"), value: [[1, 2], [3, 4]] }], ["r", "arr-indicator", { type: A2("number") }]], [["a.result", "r.value"]]);
+  assert.deepEqual(await correr(v), { r: [[1, 2], [3, 4]] });
 });

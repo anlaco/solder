@@ -34,7 +34,7 @@ When the developer says "keep going":
   §3. First what is needed to program (types, functions, structures); then what
   organizes programs (subVIs, projects, classes).
 
-## 2. Where we are (2026-10-02)
+## 2. Where we are (2026-10-03)
 
 **The full circuit works:** a VI is built, saved to `.qvi`, opened the same way,
 and Run compiles it to WebAssembly and executes it **by dataflow, like
@@ -42,7 +42,7 @@ LabVIEW** (DT-040): independent branches run at the same time, each indicator is
 painted when its data arrives, Abort stops at once and the panel switches to Run
 mode. Since 2026-10-01 also **with loops**: While and For are placed, stretched
 and wired in the diagram, and the compiler runs them (DT-041).
-291 tests green.
+327 tests green.
 
 | Piece | Status |
 |-------|--------|
@@ -52,16 +52,14 @@ and wired in the diagram, and the compiler runs them (DT-041).
 | Diagram editing | Place, move, wire (also as a branch from another wire), bends, selection, delete, undo, editable constants, complete Compound Arithmetic, View As Icon, labels. **Structures** (M4, spec/05 Rule 40e): While Loop and For Loop placed with two clicks or by dragging a rectangle, drawn at 1:1 with their "i", condition and "N" terminals, tunnels and shift registers attached to the border; they move with what is inside, stretch by their eight handles, a node dropped inside or outside enters or leaves, a wire from one scope to another creates its tunnels, and their menus (Add Shift Register, Stop if True and Continue if True); Case Structure (Rule 40f: frames, selector, tunnels, menus); **Flat and Stacked Sequence** (Rule 40g): film border at 1:1, frames of their own width, wire between frames through tunnels on the separators, selector and local variables in the Stacked, Add/Delete Frame and Replace |
 | Panel editing | Place controls, labels on both canvases, value typed and with the arrows, delete synchronized with the diagram. A click on the body of a Boolean triggers it, as in LabVIEW (spec/05 Rule 40c); right-click on a Boolean opens its menu, with Mechanical Action. In Run mode only the controls are triggered |
 | Array / Data Containers palette | **Functions ▸ Programming ▸ Array**, captured in full (34 elements in 5 columns, with the context help of each): 17 done (the one-dimensional ones) and the rest greyed out with their reason. **Controls ▸ Modern ▸ Data Containers ▸ Array** done (control and indicator with index and visible elements, editable), array constant in the diagram and indexed tunnels with their menu |
-| Types | DBL, SGL, integers from 8 to 64 bits with and without sign, Boolean and **string** (also on the panel: controls and indicators), with coercion (DT-038) and the logical type of Boolean; constants, controls and indicators change representation with the Representation menu. **One-dimensional arrays** (DT-042 d, with their control, indicator and constant); no 2D; clusters, only in memory (DT-042); the **error cluster** (DT-043) with its wire, controls, constant and dialogs in the editor |
+| Types | DBL, SGL, integers from 8 to 64 bits with and without sign, Boolean and **string** (also on the panel: controls and indicators), with coercion (DT-038) and the logical type of Boolean; constants, controls and indicators change representation with the Representation menu. **Arrays of one and two dimensions** (DT-042 d and DT-044: element type plus dimension count, one contiguous block; control, indicator and constant, Add/Remove Dimension; the compiler stops at 2D); clusters, only in memory (DT-042); the **error cluster** (DT-043) with its wire, controls, constant and dialogs in the editor |
 | `.qvi` | Reading and writing with exact round-trip (`core/model/qvi-format.mjs`) |
 | Compiler | Numeric (with Conversion, Data Manipulation, constants, Enum, Ring, Range Limits and Expression Node), Boolean, Comparison and Timing over scalars, numeric and Boolean controls and indicators (`core/compiler/compiler.mjs`). The diagram is split into clumps and runs by dataflow with JSPI (`core/runtime/runtime.mjs`, DT-040). `cli/solder.mjs run|wat|check` |
 | Execution | Live indicators, parallel branches, Abort (button and Ctrl+.), Latch When Released (Stop, OK and Cancel) and Run mode in both windows; While and For with shift registers and tunnels (Last Value), on top of the clumps. Still missing: each iteration yielding, and two waits in the same body overlapping |
 
-**Catalog blocks that the compiler does not emit yet:** arrays (`arr-*`, `build-array`,
-`index-array`, `array-size`, `array-subset`, `add/multiply-array-elements`,
-`and/or-array-elements`, `number-to-boolean-array`, `boolean-array-to-number`),
-clusters (`bundle`, `unbundle`, `cluster-*`),
-`subvi` and TCP.
+**Catalog blocks that the compiler does not emit yet:** arrays of more than two
+dimensions, Transpose 2D Array and Reshape Array, `number-to-boolean-array`,
+`boolean-array-to-number`, `subvi` and TCP.
 
 ## 3. When a module is finished
 
@@ -111,6 +109,7 @@ programs goes **before the rest of the modules**, in this order:
 
 1. **2-dimensional arrays** (M6): Build Array of several 1Ds, Index Array with
    two indices, 2D control, indicator and constant, with the memory of DT-042.
+   *Done on 2026-10-03 (DT-044, spec/04 Rule 21i, spec/05 Rule 40k).*
 2. **SubVIs** (R6): connector pane, icon editor and compiled call.
 3. **What is used every minute in the editor:** Create ▸ Constant / Control /
    Indicator on a terminal (M1) and copy, cut and paste (Edit menu).
@@ -496,3 +495,4 @@ probes and execution highlighting.
 - 2026-10-02 — Decided: the error cluster goes into M6, after the basic clusters and before arrays. Arrays and clusters go on the memory of DT-042, not on WasmGC.
 - 2026-10-02 — M6, the error cluster in the editor (DT-043): captured in LabVIEW the Controls ▸ Modern ▸ Data Containers subpalette (2 columns, 8 elements: Array, Cluster, RealMatrix.ctl, ComplexMatrix.ctl, Set, Map, Error In 3D.ctl and Error Out 3D.ctl) and the Error Out control at 1:1 (155 × 121 px). Done: the wire (3 px, olive border and yellow and black dashes), the Error In/Out controls with their terminal, the editable error constant (22 × 57 px), Dialog & User Interface declared in full (23 elements, 4 columns; 5 done), Simple Error Handler, the two modal dialogs (the automatic handling one with Continue and Stop, and the Simple Error Handler one with OK), `core/runtime/error-codes.mjs` with codes 1, 2, 7, 8, 42, 43, 56, 63 and 66 and the paragraph for the undefined code, and the error terminals of Search and Replace String. 266 tests. Next: arrays (M6), the basic clusters with their controls (Bundle, Unbundle, Cluster) or Explain Error.
 - 2026-10-02 — M6, arrays in the editor: Functions ▸ Programming ▸ Array captured in full (34 elements, 5 columns, context help of each one, measurements of each function dropped in the diagram) and Controls ▸ Modern ▸ Data Containers ▸ Array; the panel array menu, the indexed output tunnel menu and that of a function, captured. Done: Replace Array Subset, Insert Into Array, Delete From Array, Sort 1D Array, Rotate 1D Array, Split 1D Array and Increment/Decrement Array Element (JavaScript module `arr`), the array control, indicator and constant, indexed tunnels with their menu and the 2 px array wire; the `.qvi` saves `indexed`, `visible-elements` and `index`. LabVIEW's edge cases remain unverified (see M6). 287 tests.
+- 2026-10-03 — M6, 2D arrays (second stage, item 1). Researched how LabVIEW types arrays (type descriptor: element plus dimension count, no arrays of arrays) and decided DT-044: `{ array: E, dims: N }` and one block `[rows][columns][elements]`. Captured in LabVIEW (`labview-captures/array-2d/`): the 2D constant, panel array, terminal and 3 px wire at 1:1, the menus with Add/Remove Dimension, and the results of Array Size, Index Array (element, row, column, out of range), Build Array (padding, 2D + 1D, Concatenate Inputs), Initialize Array, Transpose, Reshape and nested Fors; Add Dimension still enabled at 34 dimensions. Core: types, memory, panel, coercion, Array Size, Index Array, Build Array, Initialize Array and auto-indexing in 2D. Editor: the wire, the 2D constant and panel array (editable, stretchable), Index Array and Initialize Array with two inputs. Unverified: Index Array with no index wired, ragged rows out of a loop. Not done: more than 2 dimensions, Transpose/Reshape, Index Array's extra index groups, Build Array's Concatenate lock. 327 tests. Next: subVIs (R6).

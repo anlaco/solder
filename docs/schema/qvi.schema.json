@@ -117,7 +117,7 @@
     },
 
     "dataType": {
-      "description": "Un tipo de dato. Escalar (cadena) o compuesto (objeto). Recursivo: un array de arrays y un array de clusters son expresables. Semántica en spec/03-static-semantics.md.",
+      "description": "A data type. Scalar (string) or compound (object). An array of clusters is expressible; an array of arrays is not, as in LabVIEW: it is a multidimensional array (DT-044). Semantics in spec/03-static-semantics.md.",
       "oneOf": [
         { "$ref": "#/$defs/scalarType" },
         { "$ref": "#/$defs/arrayType" },
@@ -145,11 +145,14 @@
     },
 
     "arrayType": {
-      "description": "Array del tipo indicado. El elemento DEBE conocerse: el compilador necesita saber si emite (array (mut f64)) o (array (mut i8)).",
+      "description": "An array of the given element type with `dims` dimensions (1 when left out), like LabVIEW's type descriptor (DT-044). The element MUST be known and is never an array.",
       "type": "object",
       "required": ["array"],
       "additionalProperties": false,
-      "properties": { "array": { "$ref": "#/$defs/dataType" } }
+      "properties": {
+        "array": { "oneOf": [{ "$ref": "#/$defs/scalarType" }, { "$ref": "#/$defs/clusterType" }, { "$ref": "#/$defs/enumType" }] },
+        "dims": { "type": "integer", "minimum": 2 }
+      }
     },
 
     "clusterType": {
@@ -245,8 +248,20 @@
           "description": "La clase de control booleano (push-button, horizontal-toggle-switch, round-led, stop-button…): su aspecto y su acción mecánica de fábrica. Sólo en los booleanos.",
           "type": "string"
         },
-        "visible-elements": { "description": "Array: cuántos elementos enseña la caja (presentación; de fábrica, 1).", "type": "integer", "minimum": 1 },
-        "index": { "description": "Array: la primera posición que se ve (presentación; de fábrica, 0).", "type": "integer", "minimum": 0 },
+        "visible-elements": {
+          "description": "Array: cuántos elementos enseña la caja (presentación; de fábrica, 1). Un array de dos dimensiones guarda [filas, columnas] (DT-044).",
+          "oneOf": [
+            { "type": "integer", "minimum": 1 },
+            { "type": "array", "items": { "type": "integer", "minimum": 1 }, "minItems": 2, "maxItems": 2 }
+          ]
+        },
+        "index": {
+          "description": "Array: la primera posición que se ve (presentación; de fábrica, 0). Un array de dos dimensiones guarda [fila, columna] (DT-044).",
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "array", "items": { "type": "integer", "minimum": 0 }, "minItems": 2, "maxItems": 2 }
+          ]
+        },
         "mechanical-action": {
           "description": "Cómo cambia el valor de un control booleano al pulsarlo. SEMÁNTICO: define cuándo cambia el valor. Si falta, la de fábrica de su `style`.",
           "enum": ["switch-when-pressed", "switch-when-released", "switch-until-released", "latch-when-pressed", "latch-when-released", "latch-until-released"]
@@ -307,6 +322,24 @@
             "inputs": {
               "description": "Para compound-arithmetic: cuántas entradas tiene.",
               "type": "integer", "minimum": 2
+            },
+            "dims": {
+              "description": "For index-array and initialize-array: how many dimensions, one index or size input each (DT-044).",
+              "type": "integer", "minimum": 1
+            },
+            "visibles": {
+              "description": "For arr-const: how many elements the box shows (presentation; 1 by default). A constant with two dimensions stores [rows, columns] (DT-044).",
+              "oneOf": [
+                { "type": "integer", "minimum": 1 },
+                { "type": "array", "items": { "type": "integer", "minimum": 1 }, "minItems": 2, "maxItems": 2 }
+              ]
+            },
+            "indice": {
+              "description": "For arr-const: the first position shown (presentation; 0 by default). A constant with two dimensions stores [row, column] (DT-044).",
+              "oneOf": [
+                { "type": "integer", "minimum": 0 },
+                { "type": "array", "items": { "type": "integer", "minimum": 0 }, "minItems": 2, "maxItems": 2 }
+              ]
             },
             "inverted": {
               "description": "Para compound-arithmetic: los puertos invertidos (`value-0`…, `result`).",

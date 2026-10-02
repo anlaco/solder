@@ -25,7 +25,8 @@
 import * as Et from "../common/labels.mjs";
 import { BOOLEANOS, dibujoBooleano, estadoError } from "../common/glyphs.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
-import { convertirValor, elementoPorDefecto, formatear, leerElemento, leerNumero, ponerElemento } from "../../../core/model/types.mjs";
+import { convertirValor, elementoPorDefecto, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
+import { cellAddress, dimensionsOfNode, firstShown, indexSetting, isDefined, readCell, valueFitsDimensions, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
 
 export const inicial = (g = Gr.nuevo()) => ({ g, seleccion: [], accion: null, edicion: null, menu: null });
 
@@ -55,13 +56,30 @@ export const CONTROLES = {
  * 67 × 25, con 3 px de bisel a los lados y 4 arriba y abajo). Los otros elementos tienen las medidas de su control.
  */
 export const MEDIDAS_ARRAY_PANEL = { indice: 41, altoIndice: 26, bajaCaja: 3, biselX: 3, biselY: 4, numerico: [67, 25], cadena: [100, 24], booleano: [30, 25] };
+/**
+ * A panel array with two dimensions, measured at 1:1 in labview-captures/array-2d/panel-array-2d-control-empty.png and
+ * panel-array-2d-stretched.png: the index column is still 41 px wide but holds two fields, 28 px apart; the box of
+ * elements sits at the top right as in 1D and its cells repeat every 65 px across and 26 px down for a numeric
+ * element, so the box is 65 × columns + 7 wide and 26 × rows + 5 tall. How the 7 and the 5 split between the sides is
+ * unverified, and so is the pitch of string and Boolean elements (taken as the element size less 2 across and plus 1 down).
+ */
+export const MEDIDAS_ARRAY_PANEL_2D = { pasoIndices: 28, margenIzquierdo: 3, margenDerecho: 4, margenArriba: 3, margenAbajo: 2, bordeCaja: 1, restaPasoAncho: 2, sumaPasoAlto: 1 };
 export const tipoElemento = (n) => n.config?.type?.array ?? "number";
-export const visiblesPanel = (config) => Math.max(1, config?.visibles ?? 1);
+/** How many columns an array shows (its elements, for a 1D one). */
+export const visiblesPanel = (config) => visibleGrid(config).columns;
 /** Lo que mide cada elemento, según su tipo. */
 export const medidaElemento = (t) => (t === "string" ? MEDIDAS_ARRAY_PANEL.cadena : t === "boolean" ? MEDIDAS_ARRAY_PANEL.booleano : MEDIDAS_ARRAY_PANEL.numerico);
+/** The distance between the cells of a 2D array: across and down. */
+export function pasoCeldas2D(t) {
+  const [ancho, alto] = medidaElemento(t);
+  return [ancho - MEDIDAS_ARRAY_PANEL_2D.restaPasoAncho, alto + MEDIDAS_ARRAY_PANEL_2D.sumaPasoAlto];
+}
 const esArrayPanel = (n) => !!CONTROLES[n?.tipo]?.array;
-/** Los valores de un array del panel: los que le dejó el último Run, si es un indicador, o los suyos. */
-export const valoresDeArray = (n, valores) => valores?.[n.id] ?? n.config?.value ?? [];
+/** Los valores de un array del panel: los que le dejó el último Run, si es un indicador (y encajan en sus dimensiones), o los suyos. */
+export function valoresDeArray(n, valores) {
+  const delRun = valores?.[n.id];
+  return delRun && valueFitsDimensions(delRun, dimensionsOfNode(n.config)) ? delRun : n.config?.value ?? [];
+}
 
 /**
  * Los controles de error de Controls ▸ Modern ▸ Data Containers (DT-043): un cluster
@@ -123,6 +141,12 @@ const inicioCasilla = (tipo) => (CONTROLES[tipo]?.incrementador ? MEDIDAS_PANEL.
 export function cajaObjeto(tipo, x, y, config) {
   const M = MEDIDAS_PANEL;
   if (claseError(tipo, config)) return { x, y, ancho: MEDIDAS_ERROR.ancho, alto: MEDIDAS_ERROR.alto, casilla: 0 };
+  if (CONTROLES[tipo]?.array && dimensionsOfNode(config) === 2) {
+    const [A, B] = [MEDIDAS_ARRAY_PANEL, MEDIDAS_ARRAY_PANEL_2D];
+    const [pasoAncho, pasoAlto] = pasoCeldas2D(config?.type?.array ?? "number");
+    const { rows, columns } = visibleGrid(config);
+    return { x, y, ancho: A.indice + columns * pasoAncho + B.margenIzquierdo + B.margenDerecho, alto: Math.max(B.pasoIndices + A.altoIndice, A.bajaCaja + rows * pasoAlto + B.margenArriba + B.margenAbajo), casilla: A.indice };
+  }
   if (CONTROLES[tipo]?.array) {
     const A = MEDIDAS_ARRAY_PANEL;
     const [ew, eh] = medidaElemento(config?.type?.array ?? "number");
@@ -192,10 +216,17 @@ function objetoError(n, elegido, edicion, valores) {
 /** El incrementador de un elemento numérico: sólo el dibujo (no se pulsa: los pasos son los del índice). */
 const INCREMENTADOR_DECORADO = INCREMENTADOR.replace(/<div class="flecha-inc"[^>]*><\/div>/g, "");
 
+/** The text of an element of an array of the panel: what is being typed into it, or its value. */
+function elementText(lista, address, dimensions, type, ctx, editing) {
+  if (editing) return editing.todo ? `<span class="texto-elegido">${esc(editing.texto)}</span>` : `<span>${esc(editing.texto)}</span><span class="caret"></span>`;
+  const value = readCell(lista, dimensions, address);
+  return `<span>${esc(type === "string" ? String(value ?? "") : type === "boolean" ? (value ? "T" : "F") : formatear(value ?? elementoPorDefecto(type), type, ctx.separador))}</span>`;
+}
+
 /**
  * Un array del panel: el índice con su incrementador a la izquierda y, a su derecha, la caja con los elementos que se
  * ven a partir del índice. Los que pasan del final se enseñan en gris, con su valor por defecto. Cada elemento lleva
- * `data-k` (su posición en el array) para que un clic escriba en él (sólo en un control).
+ * `data-k` (su posición en el array, o "fila,columna" en uno de dos dimensiones) para que un clic escriba en él (sólo en un control).
  */
 function objetoArray(n, ctx, elegido, edicion, valores) {
   const k = caja(n);
@@ -203,22 +234,36 @@ function objetoArray(n, ctx, elegido, edicion, valores) {
   const t = tipoElemento(n);
   const control = CONTROLES[n.tipo].control;
   const lista = valoresDeArray(n, valores);
+  const dimensions = dimensionsOfNode(n.config);
   const [ew, eh] = medidaElemento(t);
-  const i0 = n.config?.indice ?? 0;
+  const first = firstShown(n.config);
+  const { rows, columns } = visibleGrid(n.config);
   const e = edicion?.valor && edicion.nodo === n.id && edicion.elem !== undefined ? edicion : null;
-  const celdas = Array.from({ length: visiblesPanel(n.config) }, (_, j) => {
-    const i = i0 + j;
-    const hay = i < lista.length;
-    const editando = e?.elem === i;
-    const texto = editando ? (e.todo ? `<span class="texto-elegido">${esc(e.texto)}</span>` : `<span>${esc(e.texto)}</span><span class="caret"></span>`) : `<span>${esc(t === "string" ? String(lista[i] ?? "") : t === "boolean" ? (lista[i] ? "T" : "F") : formatear(lista[i] ?? elementoPorDefecto(t), t, ctx.separador))}</span>`;
+  const pitch = dimensions === 2 ? pasoCeldas2D(t) : [ew, eh];
+  const celdas = Array.from({ length: rows * columns }, (_, i) => {
+    const [row, column] = [Math.floor(i / columns), i % columns];
+    const address = cellAddress(dimensions, first.row + row, first.column + column);
+    const hay = dimensions === 2 ? isDefined(lista, 2, address) : address < lista.length;
+    const editando = e?.elem === address;
     const inc = t !== "string" && t !== "boolean" && control ? INCREMENTADOR_DECORADO : "";
     const ini = inc ? MEDIDAS_PANEL.incrementador - MEDIDAS_PANEL.solape : 0;
-    return `<div class="elem-array${hay ? "" : " vacio"}${control ? "" : " indicador"}${editando ? " editando-valor" : ""}" data-k="${i}" style="width:${px(ew)};height:${px(eh)}">${inc}<div class="casilla-elem${t === "string" ? " cadena" : ""}" style="left:${px(ini)};right:0"><span class="valor">${texto}</span></div></div>`;
+    const B = MEDIDAS_ARRAY_PANEL_2D;
+    const place = dimensions === 2 ? `position:absolute;left:${px(B.margenIzquierdo - B.bordeCaja + column * pitch[0])};top:${px(B.margenArriba - B.bordeCaja + row * pitch[1])};` : "";
+    return `<div class="elem-array${hay ? "" : " vacio"}${control ? "" : " indicador"}${editando ? " editando-valor" : ""}" data-k="${address}" style="${place}width:${px(ew)};height:${px(eh)}">${inc}<div class="casilla-elem${t === "string" ? " cadena" : ""}" style="left:${px(ini)};right:0"><span class="valor">${elementText(lista, address, dimensions, t, ctx, editando ? e : null)}</span></div></div>`;
   }).join("");
-  const indice = `<div class="arr-indice" style="width:${px(A.indice)};height:${px(A.altoIndice)}">${INCREMENTADOR}<div class="arr-campo"><span>${i0}</span></div></div>`;
-  const asa = elegido ? `<div class="asa-array" data-asa-array="1" style="left:${px(k.ancho - 4)};top:${px(A.bajaCaja + (eh + 2 * A.biselY) / 2 - 3)}"></div>` : "";
-  return `<div class="objeto-panel array ${control ? "control" : "indicador"}${elegido ? " seleccionado" : ""}${e ? " editando-valor" : ""}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">` +
-    `${indice}<div class="arr-caja" style="left:${px(A.indice - 0)};top:${px(A.bajaCaja)};width:${px(k.ancho - A.indice)};height:${px(eh + 2 * A.biselY)};padding:${A.biselY}px ${A.biselX}px">${celdas}</div>${asa}</div>`;
+  const indexField = (axis, top, position) => `<div class="arr-indice" data-eje="${axis}" style="top:${px(top)};width:${px(A.indice)};height:${px(A.altoIndice)}">${INCREMENTADOR}<div class="arr-campo"><span>${position}</span></div></div>`;
+  const indices = dimensions === 2
+    ? indexField("fila", 0, first.row) + indexField("columna", MEDIDAS_ARRAY_PANEL_2D.pasoIndices, first.column)
+    : indexField("columna", 0, first.column);
+  const cajaAlto = dimensions === 2 ? k.alto - A.bajaCaja : eh + 2 * A.biselY;
+  const cajaEstilo = dimensions === 2 ? "" : `padding:${A.biselY}px ${A.biselX}px`;
+  const asa = (lado, left, top) => `<div class="asa-array" data-asa-array="1" data-lado="${lado}" style="left:${px(left - 3)};top:${px(top - 3)}"></div>`;
+  const asas = !elegido ? ""
+    : dimensions === 2
+      ? asa("derecha", k.ancho, A.bajaCaja + cajaAlto / 2) + asa("abajo", A.indice + (k.ancho - A.indice) / 2, A.bajaCaja + cajaAlto) + asa("esquina", k.ancho, A.bajaCaja + cajaAlto)
+      : asa("derecha", k.ancho - 1, A.bajaCaja + cajaAlto / 2);
+  return `<div class="objeto-panel array ${control ? "control" : "indicador"}${dimensions === 2 ? " dos-dimensiones" : ""}${elegido ? " seleccionado" : ""}${e ? " editando-valor" : ""}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">` +
+    `${indices}<div class="arr-caja" style="left:${px(A.indice)};top:${px(A.bajaCaja)};width:${px(k.ancho - A.indice)};height:${px(cajaAlto)};${cajaEstilo}">${celdas}</div>${asas}</div>`;
 }
 
 function objeto(n, ctx, elegido, edicion, valores) {
@@ -313,7 +358,7 @@ export function pulsar(p, ctx, sobre, pt, shift = false) {
     return editarValor(p, ctx, sobre.id, false, sobre.campo);
   }
   // Las flechas del incrementador suman o restan 1 por clic, como en LabVIEW; en un array, mueven el índice.
-  if (sobre.tipo === "paso") return { ...p, g: esArrayPanel(p.g.nodos.find((m) => m.id === sobre.id)) ? pasoIndice(p.g, sobre.id, sobre.paso) : pasoValor(p.g, sobre.id, sobre.paso) };
+  if (sobre.tipo === "paso") return { ...p, g: esArrayPanel(p.g.nodos.find((m) => m.id === sobre.id)) ? pasoIndice(p.g, sobre.id, sobre.paso, sobre.eje) : pasoValor(p.g, sobre.id, sobre.paso) };
   // Un elemento de un array de control se escribe; la asa de la caja la estira.
   if (sobre.tipo === "elem") {
     const nodo = p.g.nodos.find((m) => m.id === sobre.id);
@@ -321,7 +366,8 @@ export function pulsar(p, ctx, sobre, pt, shift = false) {
   }
   if (sobre.tipo === "asa-array") {
     const nodo = p.g.nodos.find((m) => m.id === sobre.id);
-    return { ...p, accion: { tipo: "estirar-array", nodo: sobre.id, x0: pt.x, visibles0: visiblesPanel(nodo.config), ancho: medidaElemento(tipoElemento(nodo))[0] } };
+    const [pasoAncho, pasoAlto] = dimensionsOfNode(nodo.config) === 2 ? pasoCeldas2D(tipoElemento(nodo)) : [medidaElemento(tipoElemento(nodo))[0], 0];
+    return { ...p, accion: { tipo: "estirar-array", nodo: sobre.id, lado: sobre.lado ?? "derecha", x0: pt.x, y0: pt.y, visibles0: visibleGrid(nodo.config), pasoAncho, pasoAlto } };
   }
   // Un clic en la casilla de un control escribe en ella, con el cursor al final.
   const n = p.g.nodos.find((m) => m.id === sobre.id);
@@ -358,7 +404,7 @@ export function moverA(p, ctx, pt) {
     case "rectangulo":
       return { ...p, accion: { ...accion, x1: pt.x, y1: pt.y } };
     case "estirar-array":
-      return { ...p, g: Gr.fijarConfig(p.g, accion.nodo, { visibles: Math.max(1, accion.visibles0 + Math.round((pt.x - accion.x0) / accion.ancho)) }) };
+      return { ...p, g: Gr.fijarConfig(p.g, accion.nodo, estirarArray(p.g.nodos.find((m) => m.id === accion.nodo), accion, pt)) };
     default:
       return p;
   }
@@ -410,6 +456,8 @@ const alternar = (g, n) => Gr.fijarValor(g, n.id, !n.config?.value);
 
 /** El menú de clic derecho de un objeto del panel, en el inventario; los numéricos aún no están capturados. */
 export function menuDe(n) {
+  // An array control (labview-captures/array-2d/panel-array-menu-index.png); the indicator's is not captured and is taken as the same.
+  if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return "context.panel-array";
   if (n.tipo === "bool-control") return "context.boolean-control";
   if (n.tipo === "bool-indicator") return "context.boolean-indicator";
   return null;
@@ -442,17 +490,39 @@ export function editarValor(p, ctx, id, todo, campo) {
   return n ? { ...p, edicion: { nodo: id, valor: true, texto: textoValor(n, ctx, p.valores), todo, ...(esCadena(n) ? { cadena: true } : {}) }, seleccion: [], accion: null } : p;
 }
 
-/** Una flecha del índice de un array: baja o sube la primera posición que se ve (nunca por debajo de 0). */
-const pasoIndice = (g, id, paso) => Gr.fijarConfig(g, id, { indice: Math.max(0, (g.nodos.find((m) => m.id === id).config?.indice ?? 0) + paso) });
+/**
+ * Stretching the box of a panel array shows one more column for each cell width dragged to the right and, with two
+ * dimensions, one more row for each cell height dragged down (the corner handle does both).
+ */
+function estirarArray(nodo, accion, pt) {
+  const dimensions = dimensionsOfNode(nodo.config);
+  const growsColumns = accion.lado === "derecha" || accion.lado === "esquina";
+  const growsRows = dimensions === 2 && (accion.lado === "abajo" || accion.lado === "esquina");
+  const columns = growsColumns ? accion.visibles0.columns + Math.round((pt.x - accion.x0) / accion.pasoAncho) : accion.visibles0.columns;
+  const rows = growsRows ? accion.visibles0.rows + Math.round((pt.y - accion.y0) / accion.pasoAlto) : accion.visibles0.rows;
+  return { visibles: visibleSetting(dimensions, Math.max(1, rows), Math.max(1, columns)) };
+}
+
+/**
+ * Una flecha del índice de un array: baja o sube la primera posición que se ve (nunca por debajo de 0). En uno de dos
+ * dimensiones hay un índice por eje ("fila" o "columna").
+ */
+function pasoIndice(g, id, paso, eje = "columna") {
+  const config = g.nodos.find((m) => m.id === id).config;
+  const { row, column } = firstShown(config);
+  const moved = eje === "fila" ? { row: Math.max(0, row + paso), column } : { row, column: Math.max(0, column + paso) };
+  return Gr.fijarConfig(g, id, { indice: indexSetting(dimensionsOfNode(config), moved.row, moved.column) });
+}
 
 /** Escribir en un elemento de un array: con un clic, el cursor al final; con doble clic, todo seleccionado. */
 export function editarElemento(p, ctx, id, k, todo) {
   const n = p.g.nodos.find((m) => m.id === id);
   if (!n) return p;
   const t = tipoElemento(n);
-  const v = valoresDeArray(n, p.valores)[k];
+  const dimensions = dimensionsOfNode(n.config);
+  const v = readCell(valoresDeArray(n, p.valores), dimensions, k);
   // Un booleano se alterna con el clic, como un interruptor.
-  if (t === "boolean") return { ...p, g: Gr.fijarValor(p.g, id, ponerElemento(valoresDeArray(n, p.valores), k, !v, t)), seleccion: [], accion: null };
+  if (t === "boolean") return { ...p, g: Gr.fijarValor(p.g, id, writeCell(valoresDeArray(n, p.valores), dimensions, k, !v, t)), seleccion: [], accion: null };
   const texto = t === "string" ? String(v ?? "") : formatear(v ?? 0, t, ctx.separador);
   return { ...p, edicion: { nodo: id, valor: true, elem: k, texto, todo, ...(t === "string" ? { cadena: true } : {}) }, seleccion: [], accion: null };
 }
@@ -479,7 +549,7 @@ export function confirmar(p) {
     const v = leerElemento(e.texto, t);
     if (v === undefined) return { ...p, edicion: null };
     const { [e.nodo]: _, ...valores } = p.valores ?? {};
-    return { ...p, g: Gr.fijarValor(p.g, e.nodo, ponerElemento(valoresDeArray(n, p.valores), e.elem, v, t)), valores, edicion: null };
+    return { ...p, g: Gr.fijarValor(p.g, e.nodo, writeCell(valoresDeArray(n, p.valores), dimensionsOfNode(n.config), e.elem, v, t)), valores, edicion: null };
   }
   // Un campo de un control de error: code se lleva a I32 y source se guarda tal cual.
   if (e.campo) {

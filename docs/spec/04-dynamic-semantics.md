@@ -282,6 +282,34 @@ only work with fixed-size elements (numbers and booleans); with strings or clust
 **Measured in LabVIEW 2026 Q3:** the indexed tunnel is drawn with a bracket.
 A one-dimensional array is a 2 px wire in the color of the element's type.
 
+### 6.3c Two-dimensional arrays (DT-044, 2026-10-03)
+
+A 2D array is a `[rows][columns][elements in row order]` block in its node's cell. On the panel and in a
+constant its value is a list of rows; a ragged value is padded with the element's default value.
+
+> **Rule 21i — 2D arrays.** Measured in LabVIEW 2026 Q3 with `[[1,2,3],[4,5,6]]`
+> (`labview-captures/array-2d/`), tested in `test/core/arrays.test.mjs`:
+>
+> - **Array Size** gives a 1D array of I32, rows first: `[2, 3]`. An empty 2D constant gives `[0, 0]`; a 2D array
+>   can have 0 rows and 3 columns (Initialize Array with 0 and 3 gives `[0, 3]`).
+> - **Index Array** grows to one index per dimension when a 2D array is wired. With row and column it gives the element
+>   (`1, 2` gives 6) and, out of range, the default value. With only the row it gives that row (`1` gives `[4, 5, 6]`);
+>   with only the column, that column (`1` gives `[2, 5]`); out of range, an empty array. Unverified: with no index wired,
+>   the whole array (LabVIEW shows a 2D output glyph; the value was not run).
+> - **Build Array** without Concatenate Inputs: inputs of the same dimensions are stacked into one more
+>   (`[1,2,3]` and `[4,5]` give `[[1,2,3],[4,5,0]]`, padded with the default value; two 2D give a 3D); a 2D and a 1D give
+>   the 2D with the 1D appended as a row, the same with Concatenate Inputs. With Concatenate Inputs, two 2D arrays
+>   join their rows. An input with two dimensions less breaks its wire.
+> - **Initialize Array** stretched to two sizes gives rows × columns copies of the element.
+> - **For Loop:** a 2D array through an indexed input tunnel gives one row per iteration, and N is its number of rows;
+>   1D arrays through an indexed output tunnel make a 2D array (two nested Fors with N = 2 and 3 wiring `i + j` give
+>   `[[0,1,2],[1,2,3]]`). Unverified: rows of different lengths through an output tunnel (here, padded as in Build Array).
+> - **Arrays of arrays** do not exist: dropping an array into an array shell does not nest it.
+> - **Number of dimensions:** LabVIEW kept Add Dimension enabled up to 34 dimensions, when the
+>   capture stopped; NI documents no limit. The compiler handles up to two for now.
+
+**Measured in LabVIEW 2026 Q3:** a 2D wire is 3 px —the type's color, white, the type's color—; a 1D one, 2 px; a scalar, 1 px.
+
 ### 6.4 String functions
 
 Measured in LabVIEW 2026 Q3 by building each function with one control per input and one

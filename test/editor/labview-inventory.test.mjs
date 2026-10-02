@@ -139,3 +139,27 @@ test("cuántos huecos espera cada desbloqueo", () => {
   for (const e of INV.entradas) if (e.necesita) cuenta[e.necesita] = (cuenta[e.necesita] ?? 0) + 1;
   for (const [nombre, n] of Object.entries(cuenta).sort((a, b) => b[1] - a[1])) console.log(`${String(n).padStart(4)}  ${nombre}`);
 });
+
+// DT-044 and Rule 40k: the menus of the arrays with two dimensions, in the order of the captures
+// (array-2d/constant-2d-menu-index.png, panel-array-menu-index.png).
+test("the menus of the array constant and of the panel array declare Add and Remove Dimension, and the rest as placeholders", () => {
+  const filas = (raiz) => INV.hijos(raiz).map((e) => `${e.etiqueta}${e.separado ? " |" : ""}`);
+  assert.deepEqual(filas("context.array-constant"), [
+    "Visible Items", "Change to Control", "Change to Indicator", "Change to Element", "Make Type Def. |", "Description and Tip... |",
+    "Numeric Palette |", "Array Palette", "Create", "Replace", "Data Operations", "Advanced",
+    "Add Dimension |", "Remove Dimension", "Add Element Gap", "Size to Widest Element", "Export |", "Properties |",
+  ]);
+  assert.deepEqual(filas("context.panel-array").slice(-6), ["Scale Object with Pane", "Add Dimension |", "Remove Dimension", "Add Element Gap", "Export |", "Properties |"]);
+  for (const raiz of ["context.array-constant", "context.panel-array"]) {
+    assert.equal(INV.entrada(`${raiz}.add-dimension`).estado, "built");
+    assert.equal(INV.entrada(`${raiz}.remove-dimension`).estado, "built");
+    assert.ok(esHueco(INV.entrada(`${raiz}.add-element-gap`)));
+  }
+  // The functions of 2D arrays that are not compiled yet stay greyed out with their reason.
+  for (const funcion of ["transpose-2d-array", "reshape-array"]) {
+    const entrada = INV.entrada(`palette.functions.programming.array.${funcion}`);
+    assert.equal(entrada.estado, "todo");
+    assert.equal(entrada.necesita, "arrays-2d");
+  }
+  assert.match(INV.explicacion(INV.entrada("context.array-dimensions-limit")).solder, /tres dimensiones o más/);
+});

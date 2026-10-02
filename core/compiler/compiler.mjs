@@ -22,7 +22,7 @@
 import { ejecutable, orden, requerido, tipos } from "../model/graph.mjs";
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
-import { ERROR, NUMERICOS, esArray, esCluster, esEntero, esNumerico, limites, representacion } from "../model/types.mjs";
+import { ERROR, NUMERICOS, dimensionsOf, esArray, esCluster, esEntero, esNumerico, flattenArrayValue, limites, representacion } from "../model/types.mjs";
 import { codificar } from "./wasm-encoder.mjs";
 import { CELDAS, CIMA, EXPORTADAS, bloqueCadena, funcionesMemoria, i32 } from "./linear-memory.mjs";
 
@@ -599,8 +599,9 @@ const BLOQUES = {
     ];
   },
   // Arrays de una dimensión (DT-042): un bloque [n][relleno][elementos]; cada nodo, en su celda.
-  "array-size": (e) => [...e.entrada(0), llamarMemoria("longitud")],
+  "array-size": (e) => (dimensionsOf(e.tIn(0)) === 1 ? [...e.entrada(0), llamarMemoria("longitud")] : arraySizes(e)),
   "index-array": (e) => {
+    if (dimensionsOf(e.tIn(0)) === 2) return indexArray2d(e);
     // Fuera de rango, el valor por defecto del tipo (spec/04 §6).
     const t = e.tOut(0);
     const el = elemento(t);
@@ -615,12 +616,13 @@ const BLOQUES = {
     ];
   },
   "build-array": (e) => {
-    // Un elemento se añade; un array se concatena. Varios arrays sin «Concatenate Inputs» dan un 2D, todavía no.
+    // Un elemento se añade; un array se concatena; arrays que se apilan dan una dimensión más (DT-044).
+    if (dimensionsOf(e.tOut(0)) === 2) return buildArray2d(e);
+    if (dimensionsOf(e.tOut(0)) > 2) throw new Error("Build Array que da un array de más de 2 dimensiones: todavía no (DT-044).");
     const t = e.tOut(0).array;
     const el = elemento(t);
     const n = e.cat.puertos(e.nodo).in.length;
     const esArr = Array.from({ length: n }, (_, i) => esArray(e.tIn(i)));
-    if (esArr.every(Boolean) && !e.nodo.config?.concatenate) throw new Error("Build Array con arrays sin «Concatenate Inputs» da un array de 2 dimensiones: todavía no (M6).");
     const celda = e.celda();
     const ent = esArr.map(() => e.temporal("i32"));
     const valores = esArr.map((a) => (a ? null : e.temporal(tipoWasm(t))));
@@ -650,6 +652,7 @@ const BLOQUES = {
     return [...c, ins("i32.const", celda)];
   },
   "initialize-array": (e) => {
+    if (dimensionsOf(e.tOut(0)) > 1) return initializeArrayNd(e);
     const t = e.tIn(0);
     const el = elemento(t);
     const celda = e.celda();
@@ -1023,6 +1026,220 @@ function enRango(e) {
   ];
 }
 
+/** Array Size of an array of several dimensions: a 1D array of I32 with the size of each one, rows first. */
+function arraySizes(e) {
+  const dims = dimensionsOf(e.tIn(0));
+  const [handle, data, size] = [e.temporal("i32"), e.temporal("i32"), e.temporal("i32")];
+  const cell = e.celda();
+  const code = [...e.entrada(0), ins("local.set", handle), ins("i32.const", dims), ins("local.set", size), ...reserveArray({ array: "i32" }, cell, [size], e.temporal), ins("local.set", data)];
+  for (let dimension = 0; dimension < dims; dimension++) {
+    code.push(ins("local.get", data), ...dimensionSize(handle, dimension, e.temporal), ins("i32.store", dimension * SECOND_SIZE_OFFSET));
+  }
+  return [...code, ins("i32.const", cell)];
+}
+
+/**
+ * Build Array that gives a 2D array (DT-044, measured in LabVIEW 2026 Q3): each
+ * 1D input is one row and each 2D input brings its rows. The array is as wide
+ * as its longest row and the shorter ones are padded with the default value:
+ * Build Array([1,2,3], [4,5]) gives [[1,2,3],[4,5,0]].
+ */
+function buildArray2d(e) {
+  const t = e.tOut(0);
+  const element = elemento(t.array);
+  const g = (local) => ins("local.get", local);
+  const inputCount = e.cat.puertos(e.nodo).in.length;
+  const [rows, columns, target, cell] = [e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.celda()];
+  const inputs = Array.from({ length: inputCount }, (_, i) => ({
+    is2d: dimensionsOf(e.tIn(i)) === 2, handle: e.temporal("i32"), rows: e.temporal("i32"), columns: e.temporal("i32"), data: e.temporal("i32"),
+  }));
+  const code = [ins("i32.const", 0), ins("local.set", rows), ins("i32.const", 0), ins("local.set", columns)];
+  inputs.forEach((input, i) => {
+    code.push(...e.entrada(i), ins("local.set", input.handle), g(input.handle), llamarMemoria("datos8"), ins("local.set", input.data));
+    if (input.is2d) code.push(...dimensionSize(input.handle, 0, e.temporal), ins("local.set", input.rows), ...dimensionSize(input.handle, 1, e.temporal), ins("local.set", input.columns));
+    else code.push(ins("i32.const", 1), ins("local.set", input.rows), g(input.handle), llamarMemoria("longitud"), ins("local.set", input.columns));
+    code.push(
+      g(rows), g(input.rows), ins("i32.add"), ins("local.set", rows),
+      g(input.columns), g(columns), g(input.columns), g(columns), ins("i32.gt_s"), ins("select"), ins("local.set", columns),
+    );
+  });
+  code.push(...reserveArray(t, cell, [rows, columns], e.temporal), ins("local.set", target));
+  const rowBytes = (count) => [g(count), ins("i32.const", element.tam), ins("i32.mul")];
+  const defaultSource = element.ref ? (t.array === "string" ? NULL_HANDLE : e.bufer(element.tam)) : null;
+  for (const input of inputs) {
+    const [row, source] = [e.temporal("i32"), e.temporal("i32")];
+    code.push(
+      g(input.data), ins("local.set", source),
+      ins("i32.const", 0), ins("local.set", row), ins("block"), ins("loop"), g(row), g(input.rows), ins("i32.ge_s"), ins("br_if", 1),
+      ...copyRow(t.array, source, input.columns, target, columns, defaultSource, e.temporal),
+      g(source), ...rowBytes(input.columns), ins("i32.add"), ins("local.set", source),
+      g(target), ...rowBytes(columns), ins("i32.add"), ins("local.set", target),
+      g(row), ins("i32.const", 1), ins("i32.add"), ins("local.set", row), ins("br", 0), ins("end"), ins("end"),
+    );
+  }
+  return [...code, ins("i32.const", cell)];
+}
+
+/** Initialize Array with two dimensions: rows × columns copies of the element; a negative size counts as 0. */
+function initializeArrayNd(e) {
+  const t = e.tOut(0);
+  if (dimensionsOf(t) > MAX_COMPILED_DIMENSIONS) throw new Error("Initialize Array de más de 2 dimensiones: todavía no (DT-044).");
+  const element = elemento(t.array);
+  const g = (local) => ins("local.get", local);
+  const [value, rows, columns, target, count, k] = [e.temporal(tipoWasm(t.array)), e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.temporal("i32")];
+  const cell = e.celda();
+  const atLeastZero = (local) => [g(local), ins("i32.const", 0), g(local), ins("i32.const", 0), ins("i32.gt_s"), ins("select"), ins("local.set", local)];
+  const place = [g(target), g(k), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add")];
+  return [
+    ...e.entrada(0), ins("local.set", value),
+    ...e.entrada(1), ins("local.set", rows), ...atLeastZero(rows),
+    ...e.entrada(2), ins("local.set", columns), ...atLeastZero(columns),
+    ...reserveArray(t, cell, [rows, columns], e.temporal), ins("local.set", target),
+    g(rows), g(columns), ins("i32.mul"), ins("local.set", count),
+    ins("i32.const", 0), ins("local.set", k), ins("block"), ins("loop"), g(k), g(count), ins("i32.ge_s"), ins("br_if", 1),
+    ...guardarElemento(t.array, place, [g(value)], e.temporal), g(k), ins("i32.const", 1), ins("i32.add"), ins("local.set", k), ins("br", 0), ins("end"), ins("end"),
+    ins("i32.const", cell),
+  ];
+}
+
+/**
+ * The row of iteration `i` of a 2D array that enters a loop through an indexed
+ * tunnel, copied into the tunnel's own cell; past the last row, an empty array.
+ */
+function filaDeLaVuelta(x, i, temporal) {
+  const element = elemento(x.t.array);
+  const g = (local) => ins("local.get", local);
+  const [count, source, target] = [temporal("i32"), temporal("i32"), temporal("i32")];
+  return [
+    g(x.fila.columnas), ins("i32.const", 0), g(i), g(x.m), ins("i32.lt_s"), ins("select"), ins("local.set", count),
+    g(x.d), g(i), g(x.fila.columnas), ins("i32.mul"), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add"), ins("local.set", source),
+    ...reserveArray(x.t, x.fila.celda, [count], temporal), ins("local.set", target),
+    ...copyRow(x.t.array, source, count, target, count, NULL_HANDLE, temporal),
+    ins("i32.const", x.fila.celda), ins("local.set", x.l),
+  ];
+}
+
+/**
+ * Packs the rows gathered by an indexed output tunnel —a 1D array whose
+ * elements are the cells of 1D arrays— into the 2D array `t` in `cell`, as wide
+ * as its longest row and the shorter ones padded with the default value, like
+ * Build Array (padding not measured for a loop).
+ */
+function juntarFilas(t, rowsCell, cell, temporal) {
+  const element = elemento(t.array);
+  const g = (local) => ins("local.get", local);
+  const [rows, columns, rowCells, row, rowHandle, length, target, source] = Array.from({ length: 8 }, () => temporal("i32"));
+  const defaultSource = element.ref && t.array === "string" ? NULL_HANDLE : null;
+  if (element.ref && defaultSource === null) throw new Error("Un bucle que junta filas de clusters en un array 2D: todavía no (DT-044).");
+  const eachRow = (body) => [
+    ins("i32.const", 0), ins("local.set", row), ins("block"), ins("loop"), g(row), g(rows), ins("i32.ge_s"), ins("br_if", 1),
+    g(rowCells), g(row), ins("i32.const", 4), ins("i32.mul"), ins("i32.add"), ins("local.set", rowHandle),
+    ...body,
+    g(row), ins("i32.const", 1), ins("i32.add"), ins("local.set", row), ins("br", 0), ins("end"), ins("end"),
+  ];
+  return [
+    ins("i32.const", rowsCell), llamarMemoria("longitud"), ins("local.set", rows),
+    ins("i32.const", rowsCell), llamarMemoria("datos8"), ins("local.set", rowCells),
+    ins("i32.const", 0), ins("local.set", columns),
+    ...eachRow([g(rowHandle), llamarMemoria("longitud"), ins("local.tee", length), g(columns), g(length), g(columns), ins("i32.gt_s"), ins("select"), ins("local.set", columns)]),
+    ...reserveArray(t, cell, [rows, columns], temporal), ins("local.set", target),
+    ...eachRow([
+      g(rowHandle), llamarMemoria("longitud"), ins("local.set", length), g(rowHandle), llamarMemoria("datos8"), ins("local.set", source),
+      ...copyRow(t.array, source, length, target, columns, defaultSource, temporal),
+      g(target), g(columns), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add"), ins("local.set", target),
+    ]),
+  ];
+}
+
+/** The address of the null handle: a cell that always holds 0, the empty string or array. */
+const NULL_HANDLE = 0;
+
+/**
+ * Copies a row of `length` elements of type `t` from the address in the local
+ * `source` to the one in `target`, in a row `width` elements wide: what does
+ * not fit is left out and what is missing gets the default value, which for an
+ * element by reference is copied from `defaultSource`.
+ */
+function copyRow(t, source, length, target, width, defaultSource, temporal) {
+  const element = elemento(t);
+  const g = (local) => ins("local.get", local);
+  const copied = temporal("i32");
+  const code = [g(length), g(width), g(length), g(width), ins("i32.lt_s"), ins("select"), ins("local.set", copied)];
+  if (!element.ref) {
+    return [
+      ...code,
+      g(target), g(source), g(copied), ins("i32.const", element.tam), ins("i32.mul"), ins("memory.copy"),
+      g(target), g(copied), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add"),
+      ins("i32.const", 0), g(width), g(copied), ins("i32.sub"), ins("i32.const", element.tam), ins("i32.mul"), ins("memory.fill"),
+    ];
+  }
+  const [k, from, to] = [temporal("i32"), temporal("i32"), temporal("i32")];
+  const at = (base) => [g(base), g(k), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add")];
+  return [
+    ...code,
+    ins("i32.const", 0), ins("local.set", k), ins("block"), ins("loop"), g(k), g(width), ins("i32.ge_s"), ins("br_if", 1),
+    ...at(target), ins("local.set", to),
+    g(k), g(copied), ins("i32.lt_s"),
+    ins("if"), ...at(source), ins("local.set", from), ins("else"), ins("i32.const", defaultSource), ins("local.set", from), ins("end"),
+    ...copyElement(t, from, to, temporal),
+    g(k), ins("i32.const", 1), ins("i32.add"), ins("local.set", k), ins("br", 0), ins("end"), ins("end"),
+  ];
+}
+
+/** Copies the element of type `t` at the address in the local `from` to the one in the local `to`. */
+function copyElement(t, from, to, temporal) {
+  const element = elemento(t);
+  if (element.ref) return copiarA(t, [ins("local.get", from)], [ins("local.get", to)], temporal);
+  return [ins("local.get", to), ins("local.get", from), ins("i32.const", element.tam), ins("memory.copy")];
+}
+
+/**
+ * Index Array on a 2D array (DT-044, measured in LabVIEW 2026 Q3): with row and
+ * column, the element (out of range, the default value); with only the row, that
+ * row; with only the column, that column (out of range, an empty array); with
+ * neither, the whole array.
+ */
+function indexArray2d(e) {
+  const t = e.tIn(0);
+  const element = elemento(t.array);
+  const [rowWired, columnWired] = [e.cableada(1), e.cableada(2)];
+  const g = (local) => ins("local.get", local);
+  const [handle, rows, columns, row, column, source, target, count, k] = Array.from({ length: 9 }, () => e.temporal("i32"));
+  const code = [
+    ...e.entrada(0), ins("local.set", handle),
+    ...dimensionSize(handle, 0, e.temporal), ins("local.set", rows),
+    ...dimensionSize(handle, 1, e.temporal), ins("local.set", columns),
+  ];
+  const inRange = (index, size) => [g(index), ins("i32.const", 0), ins("i32.ge_s"), g(index), g(size), ins("i32.lt_s"), ins("i32.and")];
+  const addressOf = (rowIndex, columnIndex) => [g(handle), llamarMemoria("datos8"), g(rowIndex), g(columns), ins("i32.mul"), g(columnIndex), ins("i32.add"), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add")];
+  if (rowWired && columnWired) {
+    const result = e.temporal(tipoWasm(t.array));
+    return [
+      ...code, ...e.entrada(1), ins("local.set", row), ...e.entrada(2), ins("local.set", column),
+      ...constante(t.array, 0), ins("local.set", result),
+      ...inRange(row, rows), ...inRange(column, columns), ins("i32.and"),
+      ins("if"), ...cargarElemento(t.array, addressOf(row, column)), ins("local.set", result), ins("end"),
+      g(result),
+    ];
+  }
+  const cell = e.celda();
+  if (!rowWired && !columnWired) return [...code, ...copiarA(t, [g(handle)], [ins("i32.const", cell)], e.temporal), ins("i32.const", cell)];
+  // One line of the array: a row runs along the columns, a column along the rows.
+  const [fixed, fixedSize, along, alongSize] = rowWired ? [row, rows, column, columns] : [column, columns, row, rows];
+  code.push(...e.entrada(rowWired ? 1 : 2), ins("local.set", fixed));
+  code.push(g(alongSize), ins("i32.const", 0), ...inRange(fixed, fixedSize), ins("select"), ins("local.set", count));
+  code.push(...reserveArray({ array: t.array }, cell, [count], e.temporal), ins("local.set", target));
+  code.push(
+    ins("i32.const", 0), ins("local.set", k), ins("block"), ins("loop"), g(k), g(count), ins("i32.ge_s"), ins("br_if", 1),
+    g(k), ins("local.set", along),
+    ...addressOf(row, column), ins("local.set", source),
+    ...copyElement(t.array, source, target, e.temporal),
+    g(target), ins("i32.const", element.tam), ins("i32.add"), ins("local.set", target),
+    g(k), ins("i32.const", 1), ins("i32.add"), ins("local.set", k), ins("br", 0), ins("end"), ins("end"),
+  );
+  return [...code, ins("i32.const", cell)];
+}
+
 /**
  * Suma, producto, AND u OR de los elementos de un array (Add/Multiply Array
  * Elements y And/Or Array Elements): empieza en `neutro` y opera elemento a
@@ -1132,10 +1349,10 @@ function mecanica(cat, n) {
 
 /**
  * Los tipos que el compilador sabe llevar hoy por un cable: numéricos,
- * booleanos, cadenas, clusters de ellos y arrays de una dimensión de ellos.
+ * booleanos, cadenas, clusters de ellos y arrays de una o dos dimensiones de ellos.
  */
 const escalar = (t) =>
-  t === "boolean" || t === "string" || esNumerico(t) || (esCluster(t) && t.cluster.every((f) => escalar(f.type))) || (esArray(t) && !esArray(t.array) && escalar(t.array));
+  t === "boolean" || t === "string" || esNumerico(t) || (esCluster(t) && t.cluster.every((f) => escalar(f.type))) || (esArray(t) && dimensionsOf(t) <= MAX_COMPILED_DIMENSIONS && escalar(t.array));
 
 /** ¿Es un valor que vive por referencia (una celda o un bloque): cadena, cluster o array? */
 const porReferencia = (t) => t === "string" || esCluster(t) || esArray(t);
@@ -1157,13 +1374,69 @@ function elemento(t) {
   return { tam: 1, carga: n.signo ? "i32.load8_s" : "i32.load8_u", guarda: "i32.store8" };
 }
 
+/**
+ * An array block is `[size of each dimension I32][padding][elements]` (DT-044).
+ * With one or two dimensions the header is 8 bytes, so `datos8` finds the
+ * elements of both; more dimensions are not compiled yet.
+ */
+const MAX_COMPILED_DIMENSIONS = 2;
+const SECOND_SIZE_OFFSET = 4;
+const ARRAY_HEADER_BYTES = 8;
+
+/** Leaves the number of elements of the array in the local `handle`: the product of its sizes, 0 when it is empty. */
+function elementCount(t, handle, temporal) {
+  if (dimensionsOf(t) === 1) return [ins("local.get", handle), llamarMemoria("longitud")];
+  const block = temporal("i32");
+  return [
+    ins("local.get", handle), ins("i32.load"), ins("local.tee", block), ins("i32.load"),
+    ins("local.get", block), ins("i32.load", SECOND_SIZE_OFFSET), ins("i32.mul"),
+    ins("i32.const", 0), ins("local.get", block), ins("select"),
+  ];
+}
+
+/** Leaves size `dimension` (0 the rows, 1 the columns) of the array in the local `handle`; 0 when it is empty. */
+function dimensionSize(handle, dimension, temporal) {
+  const block = temporal("i32");
+  return [
+    ins("local.get", handle), ins("i32.load"), ins("local.tee", block), ins("i32.load", dimension * SECOND_SIZE_OFFSET),
+    ins("i32.const", 0), ins("local.get", block), ins("select"),
+  ];
+}
+
+/**
+ * Makes the block of `cell` an array of type `t` with the sizes held in the
+ * locals `sizes` and leaves where its elements start, like `nuevo_array`. For
+ * two dimensions, the old header is first turned into an element count, which
+ * is what `nuevo_array` reads to know which elements are new.
+ */
+function reserveArray(t, cell, sizes, temporal) {
+  return reserveArrayAt(t, [ins("i32.const", cell)], sizes, temporal);
+}
+
+/** Like reserveArray, with the cell left on the stack by the instructions `cell`. */
+function reserveArrayAt(t, cell, sizes, temporal) {
+  const element = elemento(t.array);
+  const g = (local) => ins("local.get", local);
+  const allocate = (count) => [...cell, ...count, ins("i32.const", element.tam), ins("i32.const", element.ref ? 1 : 0), llamarMemoria("nuevo_array")];
+  if (dimensionsOf(t) === 1) return allocate([g(sizes[0])]);
+  const [block, data] = [temporal("i32"), temporal("i32")];
+  return [
+    ...cell, ins("i32.load"), ins("local.tee", block),
+    ins("if"), g(block), g(block), ins("i32.load"), g(block), ins("i32.load", SECOND_SIZE_OFFSET), ins("i32.mul"), ins("i32.store"), ins("end"),
+    ...allocate([g(sizes[0]), g(sizes[1]), ins("i32.mul")]), ins("local.tee", data),
+    ins("i32.const", ARRAY_HEADER_BYTES), ins("i32.sub"), ins("local.tee", block), g(sizes[0]), ins("i32.store"),
+    g(block), g(sizes[1]), ins("i32.store", SECOND_SIZE_OFFSET),
+    g(data),
+  ];
+}
+
 /** El elemento de tipo `t` que está en la dirección que deja `dir`: su valor o, si va por referencia, esa dirección. */
 const cargarElemento = (t, dir) => (elemento(t).ref ? dir : [...dir, ins(elemento(t).carga)]);
 
 /** Lo que necesita el anfitrión para leer y escribir un valor compuesto del panel: la disposición de un cluster o el elemento de un array. */
 function datosDePanel(t) {
   if (esCluster(t)) return { disposicion: disposicionCompleta(t) };
-  if (esArray(t)) return { elemento: { ...elemento(t.array), tipo: t.array, ...(esCluster(t.array) ? { disposicion: disposicionCompleta(t.array) } : {}) } };
+  if (esArray(t)) return { dims: dimensionsOf(t), elemento: { ...elemento(t.array), tipo: t.array, ...(esCluster(t.array) ? { disposicion: disposicionCompleta(t.array) } : {}) } };
   return {};
 }
 
@@ -1193,10 +1466,10 @@ function copiarA(t, origen, destino, temporal) {
     // n elementos al bloque de la celda destino: de golpe o, si van por referencia, uno a uno.
     const e = elemento(t.array);
     const [n, od, dd, i] = [temporal("i32"), temporal("i32"), temporal("i32"), temporal("i32")];
-    r.push(
-      g(de), llamarMemoria("longitud"), ins("local.set", n), g(de), llamarMemoria("datos8"), ins("local.set", od),
-      g(a), g(n), ins("i32.const", e.tam), ins("i32.const", e.ref ? 1 : 0), llamarMemoria("nuevo_array"), ins("local.set", dd),
-    );
+    const sizes = Array.from({ length: dimensionsOf(t) }, () => temporal("i32"));
+    sizes.forEach((size, dimension) => r.push(...dimensionSize(de, dimension, temporal), ins("local.set", size)));
+    r.push(...elementCount(t, de, temporal), ins("local.set", n), g(de), llamarMemoria("datos8"), ins("local.set", od));
+    r.push(...reserveArrayAt(t, [g(a)], sizes, temporal), ins("local.set", dd));
     if (!e.ref) r.push(g(dd), g(od), g(n), ins("i32.const", e.tam), ins("i32.mul"), ins("memory.copy"));
     else {
       const paso = (l) => [g(l), g(i), ins("i32.const", e.tam), ins("i32.mul"), ins("i32.add")];
@@ -1409,14 +1682,16 @@ export function compilar(g, cat) {
    * ya escrito al instanciar, y la celda que lo apunta. Sus cadenas, en la zona
    * estática; sus clusters, con clusterConstante.
    */
-  const arrayConstante = (t, valores) => {
+  const arrayConstante = (t, valoresAnidados) => {
     const el = elemento(t.array);
     const celda = nuevaCelda();
+    const { sizes, elements: valores } = flattenArrayValue(valoresAnidados, dimensionsOf(t), undefined);
     if (!valores.length) return celda;
-    const b = bufer(8 + valores.length * el.tam);
-    datosFijos.push({ desde: b, bytes: i32(valores.length) }, { desde: celda, bytes: i32(b) });
+    const b = bufer(ARRAY_HEADER_BYTES + valores.length * el.tam);
+    sizes.forEach((size, dimension) => datosFijos.push({ desde: b + dimension * SECOND_SIZE_OFFSET, bytes: i32(size) }));
+    datosFijos.push({ desde: celda, bytes: i32(b) });
     valores.forEach((v, i) => {
-      const dir = b + 8 + i * el.tam;
+      const dir = b + ARRAY_HEADER_BYTES + i * el.tam;
       if (t.array === "string") constantes.push({ celda: dir, bytes: bloqueCadena(String(v ?? "")) });
       else if (esCluster(t.array)) clusterConstante(t.array, v, dir);
       else {
@@ -1498,9 +1773,12 @@ export function compilar(g, cat) {
       const celda = nuevaCelda();
       const [h, n, o, d, j] = Array.from({ length: 5 }, () => nuevoLocal("i32"));
       const g = (l) => ins("local.get", l);
+      // The converted array keeps the sizes of the original, whatever its dimensions.
+      const tamanos = Array.from({ length: dimensionsOf(desde) }, () => nuevoLocal("i32"));
       return [
-        ...origen, ins("local.tee", h), llamarMemoria("longitud"), ins("local.set", n), g(h), llamarMemoria("datos8"), ins("local.set", o),
-        ins("i32.const", celda), g(n), ins("i32.const", elH.tam), ins("i32.const", 0), llamarMemoria("nuevo_array"), ins("local.set", d),
+        ...origen, ins("local.set", h), ...elementCount(desde, h, nuevoLocal), ins("local.set", n), g(h), llamarMemoria("datos8"), ins("local.set", o),
+        ...tamanos.flatMap((tamano, dimension) => [...dimensionSize(h, dimension, nuevoLocal), ins("local.set", tamano)]),
+        ...reserveArray(hacia, celda, tamanos, nuevoLocal), ins("local.set", d),
         ins("i32.const", 0), ins("local.set", j), ins("block"), ins("loop"), g(j), g(n), ins("i32.ge_s"), ins("br_if", 1),
         g(d), g(j), ins("i32.const", elH.tam), ins("i32.mul"), ins("i32.add"),
         g(o), g(j), ins("i32.const", elD.tam), ins("i32.mul"), ins("i32.add"), ins(elD.carga), ...conv, ins(elH.guarda),
@@ -1600,9 +1878,12 @@ export function compilar(g, cat) {
       const x = contexto(id, k);
       const l = L(tipoWasm(x.tOut(0)));
       if (porId.get(id).config?.indexado) {
+        // `m` is the length of a 1D array or the rows of a 2D one: the first word of the block either way.
         const [h, m, d] = [L("i32"), L("i32"), L("i32")];
         c.push(...x.entrada(0), ins("local.tee", h), llamarMemoria("longitud"), ins("local.set", m), ins("local.get", h), llamarMemoria("datos8"), ins("local.set", d));
-        indexados.push({ t: x.tOut(0), l, m, d });
+        const fila = esArray(x.tOut(0)) ? { celda: nuevaCelda(), columnas: L("i32") } : null;
+        if (fila) c.push(...dimensionSize(h, 1, L), ins("local.set", fila.columnas));
+        indexados.push({ t: x.tOut(0), l, m, d, fila });
       } else c.push(...x.entrada(0), ins("local.set", l));
       valor.set(`${id}.y`, { local: l, clump: k });
     }
@@ -1652,6 +1933,10 @@ export function compilar(g, cat) {
     c.push(ins("loop"));
     // El elemento de cada túnel indexado en esta vuelta (fuera del array, el valor por defecto).
     for (const x of indexados) {
+      if (x.fila) {
+        c.push(...filaDeLaVuelta(x, i, L));
+        continue;
+      }
       const el = elemento(x.t);
       c.push(...constante(x.t, 0), ins("local.set", x.l), ins("local.get", i), ins("local.get", x.m), ins("i32.lt_s"),
         ins("if"), ...cargarElemento(x.t, [ins("local.get", x.d), ins("local.get", i), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add")]), ins("local.set", x.l), ins("end"));
@@ -1692,7 +1977,11 @@ export function compilar(g, cat) {
     c.push(ins("end"), ins("end"));
     // Al acabar: lo que sale por el borde.
     for (const t of salidas) {
-      if (t.indexado) c.push(ins("i32.const", t.indexado.celda), ins("local.set", t.l));
+      // Rows that come out of an indexed tunnel make a 2D array: one block, not an array of arrays (DT-044).
+      if (t.indexado && esArray(t.indexado.t)) {
+        const celda = nuevaCelda();
+        c.push(...juntarFilas(contexto(t.id, k).tOut(0), t.indexado.celda, celda, L), ins("i32.const", celda), ins("local.set", t.l));
+      } else if (t.indexado) c.push(ins("i32.const", t.indexado.celda), ins("local.set", t.l));
       dejar(k, t.id, "y", t.l, tipoWasm(contexto(t.id, k).tOut(0)));
     }
     for (const r of registros) dejar(k, r.der, "result", r.ahora, r.vt);

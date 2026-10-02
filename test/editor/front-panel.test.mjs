@@ -517,3 +517,80 @@ test("un control y un indicador de array se ponen en el panel con su terminal en
   b = P.pulsar(b, CTX, { tipo: "elem", id: b.g.nodos[0].id, k: 0 }, { x: 200, y: 112 });
   assert.deepEqual(b.g.nodos[0].config.value, [true], "un booleano se alterna con el clic");
 });
+
+// array-2d/panel-array-menu-index.png, panel-array-2d-control-empty.png and panel-array-2d-stretched.png.
+test("Add Dimension and Remove Dimension on a panel array turn it into a 2D one and back", () => {
+  let p = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "number" }, value: [1, 2, 3] });
+  const id = p.g.nodos[0].id;
+  assert.equal(P.menuDe(p.g.nodos[0]), "context.panel-array");
+  const filas = INV.hijos("context.panel-array").map((e) => e.etiqueta);
+  assert.deepEqual(filas.slice(-5), ["Add Dimension", "Remove Dimension", "Add Element Gap", "Export", "Properties"], "the panel menu has no Size to Widest Element");
+
+  // Remove Dimension is greyed on a 1D array.
+  let abierto = ED.abrirMenu(p, "context.panel-array", id, 0, 0);
+  assert.match(D.menuContextual(INV, abierto.menu, ED.marcados(abierto), undefined, ED.variantes(abierto)), /item-menu desactivado" data-id="context.panel-array.remove-dimension"/);
+  p = ED.orden(abierto, "context.panel-array.add-dimension", CTX);
+  const control = p.g.nodos[0];
+  assert.deepEqual([control.config.type, control.config.value], [{ array: "number", dims: 2 }, [[1, 2, 3]]]);
+
+  // Two index fields 28 px apart in a 41 px column; the box is 65 × columns + 7 wide and 26 × rows + 5 tall.
+  const k = P.caja(control);
+  assert.deepEqual([k.ancho, k.alto], [41 + 65 + 7, 54], "the index column is taller than one row of elements");
+  let html = P.contenido(p, CTX);
+  assert.equal((html.match(/class="arr-indice"/g) ?? []).length, 2);
+  assert.match(html, /data-eje="fila" style="top:0px;width:41px/);
+  assert.match(html, /data-eje="columna" style="top:28px;width:41px/);
+  assert.match(html, /class="objeto-panel array control dos-dimensiones/);
+
+  // Both axes stretch from the corner handle: 3 columns and 4 rows.
+  p = { ...p, seleccion: [id] };
+  assert.equal((P.contenido(p, CTX).match(/data-lado="(derecha|abajo|esquina)"/g) ?? []).length, 3);
+  p = P.pulsar(p, CTX, { tipo: "asa-array", id, lado: "esquina" }, { x: 300, y: 200 });
+  p = P.moverA(p, CTX, { x: 300 + 2 * 65, y: 200 + 3 * 26 });
+  p = P.soltar(p, CTX, FONDO, { x: 430, y: 278 });
+  assert.deepEqual(p.g.nodos[0].config.visibles, [4, 3]);
+  const grande = P.caja(p.g.nodos[0]);
+  assert.deepEqual([grande.ancho, grande.alto], [41 + 3 * 65 + 7, 3 + 4 * 26 + 5], "stretched cells repeat every 65 px across and 26 px down");
+  html = P.contenido(p, CTX);
+  assert.equal((html.match(/class="elem-array/g) ?? []).length, 12);
+  assert.equal((html.match(/class="elem-array"/g) ?? []).length, 3, "the three defined elements; the rest are shown greyed");
+
+  // The arrows move each index on its own axis and never go below 0.
+  const paso = (eje, valor) => { p = P.pulsar(p, CTX, { tipo: "paso", id, paso: valor, eje }, { x: 160, y: 110 }); };
+  paso("fila", 1);
+  paso("columna", 1);
+  paso("columna", 1);
+  assert.deepEqual(p.g.nodos[0].config.indice, [1, 2]);
+  paso("fila", -1);
+  paso("fila", -1);
+  assert.deepEqual(p.g.nodos[0].config.indice, [0, 2]);
+  paso("columna", -1);
+  paso("columna", -1);
+  paso("columna", -1);
+
+  // Writing in a cell beyond the value grows it with the default and addresses it by row and column.
+  p = P.pulsar(p, CTX, { tipo: "elem", id, k: "1,2" }, { x: 200, y: 112 });
+  assert.equal(p.edicion.elem, "1,2");
+  for (const t of ["7", ",", "5"]) p = P.teclear(p, t);
+  p = P.teclear(p, "Enter");
+  assert.deepEqual(p.g.nodos[0].config.value, [[1, 2, 3], [0, 0, 7.5]]);
+  assert.match(P.contenido(p, CTX), /data-k="1,2"[^>]*>.*?7,5/s);
+
+  // Remove Dimension keeps the first row and the 1D format.
+  p = ED.orden(ED.abrirMenu(p, "context.panel-array", id, 0, 0), "context.panel-array.remove-dimension", CTX);
+  assert.deepEqual([p.g.nodos[0].config.type, p.g.nodos[0].config.value, p.g.nodos[0].config.visibles], [{ array: "number" }, [1, 2, 3], 3]);
+  // At two dimensions Add Dimension explains the limit instead.
+  p = ED.orden(ED.abrirMenu(p, "context.panel-array", id, 0, 0), "context.panel-array.add-dimension", CTX);
+  abierto = ED.abrirMenu(p, "context.panel-array", id, 0, 0);
+  assert.match(D.menuContextual(INV, abierto.menu, ED.marcados(abierto), undefined, ED.variantes(abierto)), /item-menu hueco" data-id="context.array-dimensions-limit"/);
+});
+
+test("a 2D indicator shows the rows the run left and ignores a value with other dimensions", () => {
+  let p = ponerYConfirmar(P.inicial(), "arr-indicator", { x: 150, y: 100 }, { type: { array: "i32", dims: 2 }, value: [] });
+  const id = p.g.nodos[0].id;
+  p = { ...p, g: Gr.fijarConfig(p.g, id, { visibles: [2, 2] }) };
+  const mostrado = (valores) => [...P.contenido({ ...p, valores }, CTX).matchAll(/<span class="valor"><span>([^<]*)<\/span>/g)].map((m) => m[1]);
+  assert.deepEqual(mostrado({ [id]: [[1, 2], [3, 4]] }), ["1", "2", "3", "4"]);
+  assert.deepEqual(mostrado({ [id]: [1, 2, 3] }), ["0", "0", "0", "0"], "a 1D value left before Add Dimension is not shown");
+  assert.equal((P.contenido({ ...p, valores: { [id]: [[1]] } }, CTX).match(/class="elem-array indicador"/g) ?? []).length, 1, "only the cell the run defined is solid");
+});

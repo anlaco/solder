@@ -266,7 +266,8 @@
       "desc": "Los tipos Set y Map y sus controles",
       "ref": "design/labview-plan.md M6"
     },
-    "arrays-2d": {"desc": "Los arrays de dos dimensiones y las matrices: Build Array de varios arrays, Reshape, Transpose, Sort 2D y las funciones de Matrix"},
+    "arrays-2d": {"desc": "Lo que falta de los arrays de dos dimensiones (los propios ya están, DT-044): Reshape Array, Transpose 2D Array, Sort y Shuffle 2D y las funciones de Matrix, que no se compilan todavía", "ref": "design/05-decisions.md DT-044"},
+    "arrays-mas-de-2d": {"desc": "Los arrays de tres dimensiones o más: el compilador maneja dos, y Add Dimension se queda en gris al llegar a ellas", "ref": "design/05-decisions.md DT-044"},
     "tipo-array": {
       "desc": "El tipo array en WebAssembly: constantes, controles e indicadores de array y sus funciones",
       "ref": "design/labview-plan.md M6"
@@ -8675,6 +8676,316 @@
       "necesita": "propiedades",
       "captura": "structures/case-menu-tunel-salida.png",
       "separado": true
+    },
+    {
+      "id": "context.array-constant",
+      "etiqueta": "Array Constant",
+      "estado": "built",
+      "prueba": "test/editor/diagram-editing.test.mjs::Add Dimension and Remove Dimension change an array between one and two dimensions",
+      "captura": "array-2d/constant-2d-menu-index.png"
+    },
+    {
+      "id": "context.array-constant.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Qué partes de la constante se ven: su etiqueta, el índice y la barra de desplazamiento.",
+      "necesita": "etiquetas",
+      "captura": "array-2d/constant-2d-menu-index.png"
+    },
+    {
+      "id": "context.array-constant.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Convierte la constante en un control de array del panel.",
+      "necesita": "panel-frontal",
+      "captura": "array-2d/constant-2d-menu-index.png"
+    },
+    {
+      "id": "context.array-constant.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Convierte la constante en un indicador de array del panel.",
+      "necesita": "panel-frontal",
+      "captura": "array-2d/constant-2d-menu-index.png"
+    },
+    {
+      "id": "context.array-constant.change-to-element",
+      "etiqueta": "Change to Element",
+      "estado": "todo",
+      "labview": "Convierte la constante de array en una constante de su elemento.",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/constant-2d-menu-index.png"
+    },
+    {
+      "id": "context.array-constant.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Convierte la constante en una definición de tipo guardada aparte.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "array-2d/constant-2d-menu-index.png",
+      "separado": true
+    },
+    {
+      "id": "context.array-constant.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edita la descripción y el tip strip del objeto.",
+      "necesita": "descripciones",
+      "captura": "array-2d/constant-2d-menu-index.png",
+      "separado": true
+    },
+    {
+      "id": "context.array-constant.numeric-palette",
+      "etiqueta": "Numeric Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta del elemento.",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/constant-2d-menu-index.png",
+      "separado": true
+    },
+    {
+      "id": "context.array-constant.array-palette",
+      "etiqueta": "Array Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta Array.",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/constant-2d-menu-index.png"
+    },
+    {
+      "id": "context.array-constant.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Crea objetos relacionados con la constante.",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/constant-2d-menu-index.png"
+    },
+    {
+      "id": "context.array-constant.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Cambia la constante por otro objeto.",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/constant-2d-menu-index.png"
+    },
+    {
+      "id": "context.array-constant.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Cortar, copiar y pegar datos, y guardar el valor actual como el valor por defecto.",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/constant-2d-menu-index.png"
+    },
+    {
+      "id": "context.array-constant.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Opciones avanzadas del objeto.",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/constant-2d-menu-index.png"
+    },
+    {
+      "id": "context.array-constant.add-dimension",
+      "etiqueta": "Add Dimension",
+      "estado": "built",
+      "prueba": "test/editor/diagram-editing.test.mjs::Add Dimension and Remove Dimension change an array between one and two dimensions",
+      "captura": "array-2d/constant-2d-menu-index.png",
+      "separado": true
+    },
+    {
+      "id": "context.array-constant.remove-dimension",
+      "etiqueta": "Remove Dimension",
+      "estado": "built",
+      "prueba": "test/editor/diagram-editing.test.mjs::Add Dimension and Remove Dimension change an array between one and two dimensions",
+      "captura": "array-2d/constant-2d-menu-index.png"
+    },
+    {
+      "id": "context.array-constant.add-element-gap",
+      "etiqueta": "Add Element Gap",
+      "estado": "todo",
+      "labview": "Separa los elementos de la caja con un hueco.",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/constant-2d-menu-index.png"
+    },
+    {
+      "id": "context.array-constant.size-to-widest-element",
+      "etiqueta": "Size to Widest Element",
+      "estado": "todo",
+      "labview": "Iguala el ancho de todos los elementos al del más ancho.",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/constant-2d-menu-index.png"
+    },
+    {
+      "id": "context.array-constant.export",
+      "etiqueta": "Export",
+      "estado": "todo",
+      "labview": "Exporta el objeto: una imagen, un valor…",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/constant-2d-menu-index.png",
+      "separado": true
+    },
+    {
+      "id": "context.array-constant.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Abre el diálogo de propiedades del objeto.",
+      "necesita": "propiedades",
+      "captura": "array-2d/constant-2d-menu-index.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array",
+      "etiqueta": "Array Control",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::Add Dimension and Remove Dimension on a panel array turn it into a 2D one and back",
+      "captura": "array-2d/panel-array-menu-index.png"
+    },
+    {
+      "id": "context.panel-array.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Qué partes del array se ven: su etiqueta, el índice y la barra de desplazamiento.",
+      "necesita": "etiquetas",
+      "captura": "array-2d/panel-array-menu-index.png"
+    },
+    {
+      "id": "context.panel-array.find-terminal",
+      "etiqueta": "Find Terminal",
+      "estado": "todo",
+      "labview": "Enseña el terminal del control en el diagrama, seleccionado.",
+      "necesita": "diagrama",
+      "captura": "array-2d/panel-array-menu-index.png"
+    },
+    {
+      "id": "context.panel-array.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Lo convierte en indicador; los cables que dejen de valer se rompen.",
+      "necesita": "panel-frontal",
+      "captura": "array-2d/panel-array-menu-index.png"
+    },
+    {
+      "id": "context.panel-array.change-to-element",
+      "etiqueta": "Change to Element",
+      "estado": "todo",
+      "labview": "Convierte el array en un control de su elemento.",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/panel-array-menu-index.png"
+    },
+    {
+      "id": "context.panel-array.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Convierte el objeto en una definición de tipo guardada aparte.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "array-2d/panel-array-menu-index.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edita la descripción y el tip strip del objeto.",
+      "necesita": "descripciones",
+      "captura": "array-2d/panel-array-menu-index.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Crea objetos relacionados: una variable local, un nodo de propiedad, una referencia…",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/panel-array-menu-index.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Cambia el control por otro de la paleta, conservando su terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/panel-array-menu-index.png"
+    },
+    {
+      "id": "context.panel-array.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Cortar, copiar y pegar datos, y guardar el valor actual como el valor por defecto.",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/panel-array-menu-index.png"
+    },
+    {
+      "id": "context.panel-array.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Opciones avanzadas del objeto.",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/panel-array-menu-index.png"
+    },
+    {
+      "id": "context.panel-array.fit-control-to-pane",
+      "etiqueta": "Fit Control to Pane",
+      "estado": "todo",
+      "labview": "Estira el control hasta llenar el panel.",
+      "necesita": "panel-frontal",
+      "captura": "array-2d/panel-array-menu-index.png"
+    },
+    {
+      "id": "context.panel-array.scale-object-with-pane",
+      "etiqueta": "Scale Object with Pane",
+      "estado": "todo",
+      "labview": "El objeto crece y mengua con el panel cuando se cambia el tamaño de la ventana.",
+      "necesita": "panel-frontal",
+      "captura": "array-2d/panel-array-menu-index.png"
+    },
+    {
+      "id": "context.panel-array.add-dimension",
+      "etiqueta": "Add Dimension",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::Add Dimension and Remove Dimension on a panel array turn it into a 2D one and back",
+      "captura": "array-2d/panel-array-menu-index.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array.remove-dimension",
+      "etiqueta": "Remove Dimension",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::Add Dimension and Remove Dimension on a panel array turn it into a 2D one and back",
+      "captura": "array-2d/panel-array-menu-index.png"
+    },
+    {
+      "id": "context.panel-array.add-element-gap",
+      "etiqueta": "Add Element Gap",
+      "estado": "todo",
+      "labview": "Separa los elementos de la caja con un hueco.",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/panel-array-menu-index.png"
+    },
+    {
+      "id": "context.panel-array.export",
+      "etiqueta": "Export",
+      "estado": "todo",
+      "labview": "Exporta el objeto: una imagen, un valor…",
+      "necesita": "menus-contextuales",
+      "captura": "array-2d/panel-array-menu-index.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Abre el diálogo de propiedades del objeto.",
+      "necesita": "propiedades",
+      "captura": "array-2d/panel-array-menu-index.png",
+      "separado": true
+    },
+    {
+      "id": "context.array-dimensions-limit",
+      "etiqueta": "Add Dimension",
+      "estado": "todo",
+      "labview": "Añade una tercera dimensión (y las siguientes) a un array de dos: LabVIEW no pone límite.",
+      "necesita": "arrays-mas-de-2d",
+      "captura": "array-2d/constant-2d-menu-index.png"
     }
   ]
 }

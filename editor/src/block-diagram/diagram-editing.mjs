@@ -26,10 +26,11 @@
 //              node or one of its terminals; `en`, the canvas point where it was opened
 //   aviso      why the last action could not be done (spec/05 rule 31)
 
-import { CONSTANTES, MEDIDAS_ESTRUCTURA, anchoElementoArray, tipoElementoArray, valoresArray, visiblesArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, extremos, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
+import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, extremos, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
 import * as Et from "../common/labels.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
-import { DBL, NUMERICOS, POR_ABREVIATURA, convertirValor, esArray, esEntero, esNumerico, formatear, leerElemento, leerNumero, ponerElemento } from "../../../core/model/types.mjs";
+import { DBL, NUMERICOS, POR_ABREVIATURA, convertirValor, esArray, esEntero, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
+import { MAX_EDITOR_DIMENSIONS, addDimensionPatch, dimensionsOfNode, firstShown, readCell, removeDimensionPatch, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
 
 /** El valor de una constante de error: el suyo, con lo que falte a cero. */
 const valorConstanteError = (n) => ({ status: false, code: 0, source: "", ...(n.config?.value ?? {}) });
@@ -295,6 +296,32 @@ function desplazar(g, ctx, ids, dx, dy) {
     r = { ...r, nodos: r.nodos.map((k) => (k.id === id || k.id === par ? { ...k, y: k.y + dy } : k)) };
   }
   return fijarBordes(r, ctx.cat);
+}
+
+/**
+ * An array constant shows one more column for each element width it is stretched to the right and, with two
+ * dimensions, one more row for each 19 px it is stretched downwards (the corner does both).
+ */
+function stretchedArrayConstant(arr, ctx, accion, p) {
+  const dimensions = dimensionsOfNode(arr.config);
+  const { rows, columns } = visibleGrid(arr.config);
+  const growsColumns = accion.lado === "derecha" || accion.lado === "esquina";
+  const growsRows = dimensions === 2 && (accion.lado === "abajo" || accion.lado === "esquina");
+  const newColumns = growsColumns ? columns + Math.round((p.x - accion.x0) / anchoElementoArray(arr, ctx)) : columns;
+  const newRows = growsRows ? rows + Math.round((p.y - accion.y0) / MEDIDAS_ARRAY_2D.altoCelda) : rows;
+  return { visibles: visibleSetting(dimensions, Math.max(1, newRows), Math.max(1, newColumns)) };
+}
+
+/**
+ * Initialize Array has one size input per dimension and is stretched downwards to add them (like Build Array's
+ * inputs): one more for each 8 px, up to the dimensions the editor allows. The wires of the sizes that go away go too.
+ */
+function stretchedInitializeArray(accion, p, ctx) {
+  const node = accion.g0.nodos.find((k) => k.id === accion.nodo);
+  const dims = Math.min(MAX_EDITOR_DIMENSIONS, Math.max(1, (node.config?.dims ?? 1) + Math.round((p.y - accion.y0) / PASO_ENTRADAS_DOS_DIMENSIONES)));
+  const resized = Gr.fijarConfig(accion.g0, accion.nodo, { dims });
+  const remaining = new Set(ctx.cat.puertos(resized.nodos.find((k) => k.id === accion.nodo)).in.map((port) => port.name));
+  return { ...resized, cables: resized.cables.filter((cable) => cable.a.nodo !== accion.nodo || remaining.has(cable.a.puerto)) };
 }
 
 /** Estirar una estructura por su asa: los lados que la asa toca, sin bajar del tamaño mínimo. */
@@ -624,12 +651,9 @@ export function moverA(d, ctx, p) {
       return { ...d, g: Gr.fijarSitioEtiqueta(d.g, accion.nodo, "diagrama", k.dx + dx, k.dy + dy), accion: { ...accion, x: accion.x + dx, y: accion.y + dy } };
     }
     case "estirar": {
-      // Una constante de array enseña un elemento más por cada ancho de elemento que se estira por la derecha.
       const arr = accion.g0.nodos.find((k) => k.id === accion.nodo);
-      if (arr?.tipo === "arr-const") {
-        const visibles = Math.max(1, visiblesArray(arr) + Math.round((p.x - accion.x0) / anchoElementoArray(arr, ctx)));
-        return { ...d, g: Gr.fijarConfig(accion.g0, accion.nodo, { visibles }) };
-      }
+      if (arr?.tipo === "arr-const") return { ...d, g: Gr.fijarConfig(accion.g0, accion.nodo, stretchedArrayConstant(arr, ctx, accion, p)) };
+      if (arr?.tipo === "initialize-array") return { ...d, g: stretchedInitializeArray(accion, p, ctx) };
       if (esEstructura(accion.g0.nodos.find((k) => k.id === accion.nodo), ctx)) return { ...d, g: estirarEstructura(accion, p, ctx) };
       // Cada celda que se estira es una entrada más; por arriba, las nuevas
       // entran encima y las que había conservan sus cables.
@@ -746,14 +770,16 @@ export function editar(d, ctx, id, campo) {
     return { ...d, edicion: { nodo: id, campo, texto: String(valorConstanteError(n)[campo]), todo: true, ...(campo === "source" ? { cadena: true } : {}) }, seleccion: [id], accion: null, menu: null };
   }
   if (n?.tipo === "expression-node") return { ...d, edicion: { nodo: id, texto: n.config?.expression ?? "x", todo: true }, seleccion: [id], accion: null, menu: null };
-  // La constante de array: se escribe en un elemento (`campo` es su índice); un booleano se alterna.
+  // The array constant: one of its elements is typed into (`campo` is its address, see array-grid.mjs); a boolean toggles.
   if (n?.tipo === "arr-const") {
-    const k = Number(campo ?? n.config?.indice ?? 0);
+    const dimensions = dimensionsOfNode(n.config);
+    const first = firstShown(n.config);
+    const address = campo ?? (dimensions === 2 ? `${first.row},${first.column}` : first.column);
     const t = tipoElementoArray(n);
-    const v = valoresArray(n)[k];
-    if (t === "boolean") return { ...d, g: Gr.fijarConfig(d.g, id, { value: ponerElemento(valoresArray(n), k, !v, t) }), seleccion: [id], accion: null, menu: null };
+    const v = readCell(valoresArray(n), dimensions, address);
+    if (t === "boolean") return { ...d, g: Gr.fijarConfig(d.g, id, { value: writeCell(valoresArray(n), dimensions, address, !v, t) }), seleccion: [id], accion: null, menu: null };
     const texto = t === "string" ? String(v ?? "") : formatear(v ?? 0, t, ctx.separador);
-    return { ...d, edicion: { nodo: id, elem: k, texto, todo: true, ...(t === "string" ? { cadena: true } : {}) }, seleccion: [id], accion: null, menu: null };
+    return { ...d, edicion: { nodo: id, elem: dimensions === 2 ? address : Number(address), texto, todo: true, ...(t === "string" ? { cadena: true } : {}) }, seleccion: [id], accion: null, menu: null };
   }
   if (!n || !CONSTANTES[n.tipo]?.editable) return d;
   // En una constante de cadena Intro baja de línea (como en una etiqueta), y el texto se guarda tal cual.
@@ -791,7 +817,7 @@ export function confirmar(d, ctx) {
   if (e.elem !== undefined) {
     const t = tipoElementoArray(n);
     const v = leerElemento(e.texto, t);
-    return v === undefined ? { ...d, edicion: null } : { ...d, g: Gr.fijarConfig(d.g, n.id, { value: ponerElemento(valoresArray(n), e.elem, v, t) }), edicion: null };
+    return v === undefined ? { ...d, edicion: null } : { ...d, g: Gr.fijarConfig(d.g, n.id, { value: writeCell(valoresArray(n), dimensionsOfNode(n.config), e.elem, v, t) }), edicion: null };
   }
   // Un campo de la constante de error: code se lleva a I32 y source se guarda tal cual.
   if (e.campo) {
@@ -863,6 +889,12 @@ export function orden(d, id, ctx) {
     const cable = d.g.cables.find((k) => k.a.nodo === nodo);
     return esArray(cable && Gr.tipos(d.g, ctx.cat).cables.get(cable.id)?.tipo) ? cerrar(Gr.fijarConfig(d.g, nodo, { indexado: true })) : cerrar(d.g);
   }
+  // Add Dimension and Remove Dimension of an array constant, control or indicator (array-2d/constant-2d-menu-index.png).
+  if (id.endsWith(".add-dimension") || id.endsWith(".remove-dimension")) {
+    const n = d.g.nodos.find((k) => k.id === nodo);
+    const patch = (id.endsWith(".add-dimension") ? addDimensionPatch : removeDimensionPatch)(n.config);
+    return patch ? cerrar(Gr.fijarConfig(d.g, nodo, patch)) : d;
+  }
   if (id.endsWith(".create.constant")) return crearConstante({ ...d, menu: null }, ctx, nodo, puerto);
   // Add Shift Register: el par aparece en los bordes, a la altura del clic (structures/shift-register.png).
   if (id.endsWith(".add-shift-register")) {
@@ -900,6 +932,16 @@ const condicionDe = (g, id) => {
   return n?.tipo === "while-loop" ? g.nodos.find((k) => k.dentro === n.id && k.tipo === "loop-condition") : undefined;
 };
 
+/** The rows of the menu of an array that change with its dimensions (and, on the panel, with being an indicator). */
+function arrayVariants(n, root) {
+  const dimensions = dimensionsOfNode(n.config);
+  const variants = { desactivados: new Set(), redirigidos: new Map(), rotulos: new Map() };
+  if (dimensions < 2) variants.desactivados.add(`${root}.remove-dimension`);
+  if (dimensions >= MAX_EDITOR_DIMENSIONS) variants.redirigidos.set(`${root}.add-dimension`, "context.array-dimensions-limit");
+  if (n.tipo === "arr-indicator") variants.rotulos.set(`${root}.change-to-indicator`, "Change to Control");
+  return variants;
+}
+
 /**
  * Las filas que el menú de un Case enseña según lo que es: un Case booleano
  * lleva «Show Case True/False» y «Make This Case True/False» y uno numérico, los
@@ -926,6 +968,8 @@ export function variantes(d) {
   }
   // Un túnel de entrada indexado ofrece apagar el indexado: la misma fila cambia de nombre.
   if (n?.tipo === "tunnel-in" && n.config?.indexado) return { ocultos: new Set(), rotulos: new Map([[`${r}.enable-indexing`, "Disable Indexing"]]) };
+  // An array: Remove Dimension is greyed on a 1D one, and Add Dimension on a 2D one explains the limit of Solder.
+  if (n && ["arr-const", "arr-control", "arr-indicator"].includes(n.tipo)) return arrayVariants(n, r);
   if (n?.tipo === "case-selector") {
     const caso = d.g.nodos.find((k) => k.id === n.dentro);
     return { ocultos: fila(caso && esBooleano(caso) ? "numeric-palette" : "boolean-palette"), rotulos: new Map() };

@@ -146,8 +146,8 @@ Wires encode the data type through **three visual channels**:
 > [DT-038](../design/05-decisions.md#dt-038)): orange `#fb7c00` for DBL and
 > SGL, blue `#0000ff` for integers and enums —measured on the border of the
 > constants and on the wires in the LabVIEW videos; the palette icons
-> use another orange, `#ff6633`—; 1.33 px for the scalar, 3 px for the 1D array and
-> double that for the 2D. The broken wire, dashed black with a red X in the middle and its reason
+> use another orange, `#ff6633`—; 1.33 px for the scalar, 2 px for the 1D array and
+> 3 px for the 2D (see §4.3). The broken wire, dashed black with a red X in the middle and its reason
 > in the tip strip. Wires run at right angles: they leave horizontally, turn at
 > their elbows and enter horizontally; a new wire turns 4 px from the input
 > ([`05-editor.md`](05-editor.md) §5.4). **Compared with the video**
@@ -181,13 +181,35 @@ Wires encode the data type through **three visual channels**:
 > **In the palette**, what is under the mouse is framed in blue and its name comes out
 > centered under the subpalette's title (`numeric-nombre-al-pasar.png`).
 
-### 4.3 Array wires (future)
+### 4.3 Array wires
 
-When arrays are implemented:
-- **1D array** → thick thickness + double border
-- **2D array** → even thicker
+Measured in LabVIEW 2026 Q3 at 1:1 (`labview-captures/array/array-indicador-terminal.png`, `labview-captures/array-2d/wire-2d-dbl.png`,
+`wire-2d-vs-1d-diagram.png`, `wire-2d-i32-initarray.png`):
+- **Scalar** → 1 px (1.33 in the editor's scale).
+- **1D array** → 2 px, a solid line in the type's color.
+- **2D array** → 3 px: the type's color, a white line and the type's color again, solid.
+- **3 dimensions or more** → drawn like the 2D until they are measured (the editor only makes two).
 
-The color remains that of the base type (array of DBL = thick orange).
+The color remains that of the base type (array of DBL = orange, of I32 = blue).
+
+### 4.3b Constants and panel arrays with two dimensions
+
+Measured at 1:1 in `labview-captures/array-2d/` (DBL):
+- *Constant on the diagram* (`constant-2d-empty.png`, `constant-2d-2x3-values.png`, `constant-2d-stretched-4x9-empty.png`):
+  the empty one is 51 × 38 (the 1D one is 51 × 25). The index block is 32 × 38: a 1 px frame, 1 px of white and
+  another 1 px frame around two 15 px cells (the first at y + 3, the second at y + 20) separated by a 2 px bar of the type's
+  color; each cell is a 5 px spinner, a 2 px bar and a white field of 19 px. The element box is flush against it, at the
+  top, with the same three layers; its tiles are 13 px wide (white cell of 9) and 19 px tall (15), with no gap, so it
+  is 13 × columns + 6 wide and 19 × rows + 6 tall (4 × 9 shown: 155 × 82 the whole constant). A defined tile is solid in the type's
+  color and an undefined one is pale (`#ffcc99`) with a grey "0".
+- *Panel array* (`panel-array-2d-control-empty.png`, `panel-array-2d-stretched.png`): the index column is 41 px wide with
+  two fields 28 px apart; the box of elements is at the top right as in 1D; the cells repeat every 65 px across and
+  26 px down, and the box is 65 × columns + 7 wide and 26 × rows + 5 tall. Undefined cells are drawn greyed. How the 7 and
+  the 5 split between the sides, and the pitch of strings and Booleans, are **unverified**.
+- *Terminal on the diagram:* the same glyph as in 1D (`terminal-2d-icon.png`, `terminal-2d-noicon.png`).
+- *Index Array* with a 2D wired: 32 × 35, inputs at 9.5, 22.5 and 30.5 px from the top; the output drawing is a 2D
+  grid, a 1D row or a single square depending on the indices wired. *Initialize Array*: 32 × 27 with one size.
+  The drawings are our own.
 
 ### 4.4 Wire color by type (quick reference)
 
