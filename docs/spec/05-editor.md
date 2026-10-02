@@ -1,0 +1,598 @@
+# 05 — Editor interaction
+
+> Status: **DRAFT** — pending review
+> Normative. Defines **how a VI is manipulated**: mouse, keyboard, dialogs.
+> [`06-visual.md`](06-visual.md) defines how it **looks**; this one, how it is **used**.
+
+## 1. Scope
+
+Covers the two canvases —*Block Diagram* and *Front Panel*— in edit mode. Execution
+is defined by [`04-dynamic-semantics.md`](04-dynamic-semantics.md).
+§9 also covers what surrounds the canvases —menus, toolbars, palettes and
+windows— in what the editor shows of the *reference* without doing it.
+
+This document is based on the current behavior of the editor in Red, but
+**does not replicate it unfiltered**: §2 lists what is expressly not ported.
+
+## 2. What is NOT ported
+
+Six restrictions of the current editor **are not product decisions: they are patches
+for failures of the graphics engine**. None of them appears in `06-visual.md`; they only live
+in the code and in `GTK_ISSUES.md` (from the Red stage, outside this repository). See [`whitelist.md`](../reference/history/whitelist.md) §11.3.
+
+| Current restriction | Cause | What the new editor MUST do |
+|---|---|---|
+| Fixed 900×600 windows | GTK-014, **patch already declared unnecessary** | Resizable windows |
+| Non-modal dialogs | GTK-007: the modal lost keyboard focus | Normal modal dialogs |
+| **`Tab` does not navigate** | GTK-015: pressing `Tab` **caused an unexpected crash** | Full keyboard navigation |
+| Fixed colors, no system theme | GTK-005: the color query returned empty | Respect the light/dark theme |
+| No HiDPI, everything assumes 96 dpi | GTK-001/002: the dpi query returned empty | Scaling by screen density |
+| Hand-drawn scrollbars | Consequence of the fixed windows | Standard scroll area |
+
+> The third is the most important and the easiest to overlook. **The absence
+> of keyboard navigation is not a design choice: it is a failure of the graphics
+> engine that was accepted as a limitation.** Replicating it would be inheriting an
+> accessibility problem for no reason at all.
+
+## 3. Interaction model
+
+### 3.1 Selection
+
+> **Rule 22.** A click on an element selects it and deselects the
+> others. A click on the empty background clears the selection.
+
+> **Rule 23.** The selection **MUST** be able to contain several elements, and all
+> the operations that act on the selection —move, delete— **MUST**
+> act on all of them at once.
+
+### 3.2 Hot zones
+
+A point of the canvas belongs to **a single** zone. They are resolved in this order, from
+most specific to most general:
+
+1. *Shift register* terminal
+2. *Port* of a node
+3. Control terminal of a structure (`condition`, `count`, `selector`)
+4. *Tunnel* of a structure
+5. Label of an element
+6. Body of a node
+7. Border of a structure
+8. Interior of a structure
+9. Canvas background
+
+> **Rule 24.** The resolution order **MUST** be stable and not depend on the
+> creation order of the elements. Two overlapping elements **MUST**
+> always be resolved the same way.
+
+### 3.3 Dragging
+
+> **Rule 25.** Dragging an element changes only its *presentation layer*.
+> It **MUST NOT** alter the compiled program ([`02-syntax.md`](02-syntax.md) §2).
+
+> **Rule 26.** Dragging a node **into or out of** a structure
+> **changes which scope it belongs to**, as in LabVIEW: when dropped, the node belongs to
+> the smallest structure that contains its center, or to the VI's diagram if it
+> falls in none. The same applies when placing a node from the palette and when dropping
+> a structure around nodes already placed, which enter it. The
+> membership is still explicit in the file (`dentro`, DT-041): what
+> changes is who decides it.
+
+*(Amended on 2026-10-01. The previous version said the opposite, so as not to lose
+rule 25 —if position decided the scope, moving a node would change the
+program—. It was verified in LabVIEW 2026 Q3 that it reassigns by geometry
+(`labview-captures/structures/`: a node dragged into a loop enters, and
+dragged out, leaves), and LabVIEW rules. Moving a node **within the same scope** still
+does not change the program. When the scope changes, the wires that cross the border
+go through tunnels and the tunnels that are no longer needed are removed: rule 40e.)*
+
+## 4. Nodes
+
+### 4.1 Create
+
+> **Rule 27.** Right-click opens the palette. Inside a structure, the
+> palette creates the node **in the scope of that structure**; on the background, in the
+> root scope.
+
+### 4.2 Delete
+
+> **Rule 28.** Deleting a node **MUST** also delete all the wires
+> connected to it. No wires **MUST** be left dangling.
+
+> **Rule 29.** Deleting a structure **MUST** delete its entire body, and
+> **MUST** ask for confirmation if the body is not empty.
+
+*(The confirmation is new: today there is none, and a structure can take a dozen nodes
+with it without warning.)*
+
+### 4.3 Edit values
+
+Double-clicking a node opens the dialog that corresponds to its type:
+
+| Node type | What it edits |
+|---|---|
+| `const`, `str-const`, `bool-const`, `arr-const` | Its value |
+| `arr-control`, `str-control` | Its default value |
+| `bundle`, `unbundle`, `cluster-*` | The cluster's field list |
+| *Shift register* terminal | Its initial value |
+| Any other | Its label |
+
+> **Rule 30.** Editing a cluster's field list **MUST** invalidate the
+> wires left without a port, and **MUST** warn how many before applying.
+
+## 5. Wires
+
+### 5.1 Create
+
+Clicking on a *port* starts a wire; releasing over another port completes it. The
+connection is accepted if it satisfies `can_connect`
+([`03-static-semantics.md`](03-static-semantics.md) rule 5).
+
+> **Rule 31.** If the connection is not valid, the editor **MUST** indicate **why**
+> —incompatible types, input occupied, wrong scope, cycle— and not
+> just reject it silently.
+
+*(Today a "broken wire" is drawn with no explanation. With rule 1 of `03` —an unknown
+port is an error instead of a default type— cases that are accepted today by accident
+will also start being detected.)*
+
+### 5.2 Dropping onto an already occupied input
+
+The model forbids *fan-in* ([`03`](03-static-semantics.md) rule 7). What the editor does
+is still to be decided, and today it does **three different things**: reject on
+normal ports, **replace** on the `count` terminal, and **overwrite** on the
+`condition` terminal.
+
+> **Rule 32.** Dropping a wire onto an input port that is already connected
+> **MUST replace** the previous wire.
+
+*(Replacing is chosen, rather than rejecting, for three reasons: it is what LabVIEW does; it is
+what the `count` terminal already did, so it breaks no habit; and rejecting
+forces the user to delete first, which is a step with no use at all. What
+matters is that there is **one** rule, not three.)*
+
+### 5.3 Delete
+
+> **Rule 33.** A wire is selected by clicking on it and is deleted like
+> any other element.
+
+*(As in LabVIEW, the click selects the **segment** clicked, not the whole wire;
+deleting it deletes the whole wire, which is a difference: LabVIEW leaves the pieces
+loose. See §5.4.)*
+
+### 5.4 Pulling a wire and repositioning it
+
+*(informative)* Cloned from the video
+`labview-captures/block-diagram/numeric-cablear.mp4` and done in the editor
+(`editor/src/edicion.mjs`):
+
+- While pulling, the wire is a **black dotted** line that leaves the
+  terminal horizontally up to the mouse's x and then goes vertically to it.
+- When released on a terminal, the vertical segment ends up almost attached to it: at 4 px.
+- A **segment** is selected with a click, with marching ants only on it, and is
+  dragged sideways: vertical ones horizontally and horizontal ones
+  vertically. Dragging the first or the last, which are attached to a terminal,
+  adds an elbow. Elbows are presentation layer (rule 25) and are kept when
+  moving the nodes.
+
+### 5.5 Typing into a constant
+
+Double-click on a numeric constant: the text comes out selected and what is typed
+replaces it; the box grows with the text. Enter, a click outside or the
+*Enter Text* button —which only appears in the toolbar while typing, to the left
+of Run— confirm it; `Esc` leaves it as it was. A number with decimals in an
+integer constant turns it into DBL, as LabVIEW does. What is not a number
+changes nothing. Both comma and period are accepted, and it is shown with the
+system separator.
+
+A **string** constant is something else (rule 40h): Enter starts a new line and does not
+confirm; it is confirmed with *Enter Text* or with a click outside.
+
+## 6. Navigation
+
+> **Rule 34.** The mouse wheel scrolls vertically; with `Shift`, horizontally.
+> The scrollable area **MUST** fit the real content.
+
+> **Rule 35.** There is no zoom. *(Explicit product decision, inherited from
+> `06-visual.md` §1.1.)*
+
+*(It is a difference from LabVIEW, not a coincidence: LabVIEW has zoom in the
+diagram since 2023 Q3 —View ▸ Zoom In, Zoom Out, Actual Size, Toggle Zoom, and
+`Ctrl`+wheel—, according to NI's help. It was decided on 2026-09-29 to keep it out, so as not to
+complicate the editor; changing it requires a new decision. When the View
+menu is broken down, its zoom entries will go as `never` citing this rule.)*
+
+> **Rule 36.** The keyboard arrows move the selection one pixel; with
+> `Shift`, a larger jump.
+
+> **Rule 36 is implemented in the web editor** (2026-09-29,
+> `editor/src/edicion.mjs`): one pixel, and 8 with `Shift`, provisional until
+> the jump is verified in LabVIEW (§11, issue 3).
+
+> **Rule 37.** `Tab` **MUST** cycle through the elements of the canvas. See §2.
+
+## 7. Synchronization between canvases
+
+Front Panel and Block Diagram are two views of the **same** VI, not two documents.
+
+> **Rule 38.** Creating a control or indicator on the Front Panel **MUST** create its
+> terminal node on the Block Diagram, and vice versa.
+
+> **Rule 39.** Deleting an element in either of the two canvases **MUST**
+> delete it from the other, with its wires.
+
+> **Rule 40.** Changing a control's *data type* **MUST** invalidate the
+> wires that stop being valid, warning beforehand.
+
+> **Rules 38 and 39 are implemented in the web editor** (2026-09-30,
+> `editor/src/panel.mjs`) for the numeric control and indicator: a control
+> is a single node of the graph with its place in each canvas and a single label,
+> so placing it on the panel puts its terminal on the diagram, and deleting it in
+> either of the two deletes it from the other, with its wires. Each window has its
+> own copy of the graph and sends it to the other through a `BroadcastChannel` every time it
+> comes to rest. Creating a control from the diagram (Create ▸ Control) is still
+> a placeholder. Rule 40 is half done: Representation (2026-10-01,
+> right-click menu of numeric constants, controls and indicators) changes
+> the terminal's type and resolves the wires again, but between numerics a
+> wire is never broken —a coercion dot wins—, so the prior warning
+> waits for the types that do not convert.
+
+> **Rule 40b.** A **boolean** control or indicator (Controls ▸ Modern ▸
+> Boolean) is a green terminal with "TF" on the diagram, and its value travels as
+> an `i32` 0/1 through the panel imports, like the numeric one. What kind of
+> control it is (`style`: Push Button, Round LED, Stop Button…) and its **mechanical
+> action** (`mechanical-action`) are saved in the `.qvi`'s `front-panel`: the
+> second is semantic, because it says when the value changes. LabVIEW makes the
+> LEDs indicators and everything else controls; the factory action is
+> Switch When Pressed except on OK, Cancel and Stop, which are Latch When Released
+> (captured in LabVIEW 2026 Q3, 2026-10-01). An indicator has no mechanical
+> action: its row comes out disabled.
+
+> **Rule 40c — the click on a stopped boolean.** In edit mode, LabVIEW's
+> automatic tool **actuates** a boolean if its body is clicked (a Push Button
+> changes on every click), **edits its text** if the text is clicked
+> (the "STOP" of the Stop Button) and **selects it** if its border is clicked.
+> Verified in LabVIEW 2026 Q3 (`labview-captures/run/e-stop.png`,
+> `e2-stop.png`, `e4.png`). The editor actuates with a click without dragging and
+> selects; editing the button's text is not done yet.
+
+> **Rule 40d — Run mode.** While the VI runs, both windows are in Run
+> mode: the Run arrow is filled, Abort lights up, the editing
+> tools disappear (font, align, distribute, size, order) and the panel
+> loses the grid. On the panel, a click **actuates** the controls according to their
+> mechanical action and nothing is moved, selected or deleted; the diagram is not
+> edited. Ctrl+R does nothing while it runs and Ctrl+. is Abort. When it finishes, edit
+> mode returns. Verified in LabVIEW 2026 Q3 (`labview-captures/run/r1.png`,
+> `r2.png`). Switch When Pressed and Latch When Released are done; the other four
+> actions, greyed out. Ctrl+M (Run mode without running) and the right-click menu in
+> Run mode, not done.
+
+> **Rule 40e — While Loop and For Loop on the diagram.** Captured in LabVIEW 2026
+> Q3 (`labview-captures/structures/`), at 1:1, and done with the measurements below
+> (tests in `editor/test/diagrama.test.mjs` and `edicion.test.mjs`):
+>
+> - **Placing.** It is taken from Functions ▸ Programming ▸ Structures. The first click on
+>   the canvas fixes one corner and the second, the opposite one (a 1 px gray rectangle
+>   on white follows the cursor); pressing, dragging and releasing also
+>   works. A click without moving leaves the minimum size, **48 × 48**, centered on the
+>   click, and no structure goes below it. Freshly placed it is not selected.
+>   What the rectangle surrounds enters the loop.
+> - **Appearance.** A loop measures what its box does: the While is a `#7f7f7f` gray frame
+>   of **6 px** with rounded corners (stepped row by row) and, at the bottom
+>   right, the stretch mark, which sticks out 1 px; the For is **three sheets**
+>   of 1 px black line offset by 2 px, with the fold at the bottom right
+>   (the box is that of the three together: the front sheet measures 4 px less). Inside
+>   it there is no fill: a click in its interior is a click on the background, and it is
+>   grabbed by the border.
+> - **Loop terminals**, **16 × 16**: the "i" (2 px blue border) 10 px
+>   from the left and 26 from the bottom; in the While, the condition (1 px green border;
+>   Stop if True, stop sign; Continue if True, circular arrow) 26 from
+>   the right and from the bottom; in the For, the "N" in the top left corner. They are not
+>   moved or deleted, and they follow their corner when stretching.
+> - **Tunnels** of **9 × 9**, `#4c4c3d` 1 px border and fill in the color of their
+>   type, attached to the outer side of the loop (the input one, on the left; the
+>   output one, on the right), at the height of the inner terminal they go to. **Shift
+>   registers** of **16 × 12**, 2 px black border (in the type's color if
+>   wired) with a ▼ arrow on the left and a ▲ on the right, at the same
+>   height; Add Shift Register puts them at the height of the click. A tunnel or a
+>   shift register slides along its border without leaving it, and stays on its side
+>   when moving or stretching the loop.
+> - **Selecting** a loop (click on its border) tints it `#f5f5fc`, gives it a
+>   contour of blue dashes and eight blue handles of 6 × 6, set into the corners and
+>   the center of the sides. The handles stretch (minimum 48 × 48); what is inside does not move when
+>   stretching. Moving the loop by its border takes everything it contains with it.
+> - **Wiring across the border.** A wire between two scopes goes through a tunnel
+>   at each border it crosses, at the height of the inner terminal; a tunnel that
+>   is no longer needed (its ends are now in the same scope) is removed and the
+>   wire is left direct. A wire within its own scope carries no tunnel.
+> - **Right-click menus** of the loop border, of "i", the condition, "N", the
+>   tunnels and the shift registers: Add Shift Register, Stop if True and Continue if
+>   True done; Tunnel Mode shows Last Value (the only mode) checked; the rest,
+>   greyed out. Deleting a loop deletes what is its own; deleting a shift register, its partner.
+>
+> *Unverified or not done:* whether stretching a loop over nodes encloses them (in the
+> capture the node stayed outside, but it is not conclusive); that LabVIEW **pushes aside** a
+> loop that overlaps another when stretching it (the For shifted 20 px); that when
+> dropping a loop around a node wired on both sides LabVIEW created
+> **a shift register** and not tunnels (not reproduced: tunnels are placed); tunnels
+> on the opposite side; Indexing, Concatenating and Conditional modes (they wait for
+> arrays); stacked shift registers; the For's condition terminal; Auto
+> Grow; Remove, Replace, Remove and Rewire and Visible Items.
+
+> **Rule 40f — Case Structure on the diagram.** Captured in LabVIEW 2026 Q3
+> (`labview-captures/structures/case-*.png`), at 1:1 and compared pixel by pixel
+> (tests in `diagrama.test.mjs` and `edicion.test.mjs`):
+>
+> - **Placing** like a loop (two clicks or drag). A rectangle smaller than
+>   48 × 48 is enlarged about its center. Freshly placed it comes with False and True and True is shown.
+> - **Frame:** 1 px black line and 5 px of dot pattern (4 × 4 tile that
+>   starts at (1, 1)). Selected it shows only the eight handles, with no tint or contour.
+> - **Frame selector:** 17 px high, centered on the top border: previous
+>   arrow (7 px), text, dropdown triangle and next arrow; width = that
+>   of the widest text of its frames + 17 + 18 (45 + 18 with True and False). The
+>   arrows wrap around; the triangle opens a list at the click point with
+>   ✓ on the frame being shown; a double click on the text edits it ("2..4", "7, 9",
+>   "Default"; Default passes from one frame to another).
+> - **Selector terminal** of 8 × 12 with its base at the middle of the left side, green
+>   "?" when unwired and blue with an integer (a DBL carries a coercion wedge). With an
+>   integer wired, False and True become "0, Default" and "1".
+> - **Tunnels:** input ones like those of a loop; output ones, hollow if some frame
+>   does not wire them, and with *Use Default If Unwired* filled with a dot.
+> - **Only what is in the active frame is seen and clicked.**
+> - **Menus** (border and frame selector): Add Case After/Before (the new one takes the
+>   first free integer after the previous frame; on a boolean, empty), Delete
+>   This Case, Make This The Default Case / Remove Default, Show Case True/False
+>   and Use Default If Unwired, done; the rest, greyed out.
+>
+> *Unverified or not done:* what Add Case Before gives on the first frame, Delete
+> with a single frame, Make This Case True/False, Duplicate Case, Swap/Shift/
+> Rearrange, Show Case..., Radix, the clipping of the selector in a narrow Case,
+> going back to boolean when unwiring, Auto Grow and the exact width of the text (it depends
+> on the font).
+
+> **Rule 40g — Flat and Stacked Sequence on the diagram.** Captured in LabVIEW 2026
+> Q3 (`labview-captures/structures/secuencia-*.png`), at 1:1; the film border,
+> compared pixel by pixel (tests in `diagrama.test.mjs` and `edicion.test.mjs`):
+>
+> - **Placing** like a loop (two clicks or drag; minimum 48 × 48). Freshly
+>   placed it has a single frame. The Stacked is not in the palette: it comes from
+>   *Replace with Stacked Sequence* on a Flat.
+> - **Film border:** gray #e2e2e2 with a 1 px black line at the top and bottom
+>   (9 px band at the top and bottom, 5 on the sides), 2 px zigzag on the
+>   sides and 6 × 6 holes every 12 px, the first whole one 9 px from the corner.
+>   Each frame is a rectangle with a 1 px black border; between two frames, a 5 px
+>   separator. Minimum of one frame: 38 × 30.
+> - **Flat:** all frames at once, each with its own width (`marcos[k].ancho`,
+>   border included; it is saved in the file as the layout's `frame-widths`). The
+>   structure measures 10 + the frames + 5 for each separator. It is stretched by the right
+>   handle (last frame) or the left one (first). A node falls in the
+>   frame beneath it (the separator, halfway); if when changing frame the wire
+>   would go backwards, it breaks.
+> - **Wire from one frame to the next** (Flat): it crosses each separator through a
+>   9 × 9 tunnel in the type's color, at the height of the wire.
+> - **Stacked:** a single frame, as wide as the widest, with the Case's frame selector
+>   (arrows with wraparound, dropdown list) and the text "k [0..n-1]", which is not
+>   edited. Only what is in the active frame is seen and clicked. A wire from one frame to a
+>   later one is seen as its **sequence local variable**: a 13 × 13 box,
+>   attached to the border, with an arrow toward the border in the frame that writes, inward in
+>   the later ones and checkered in the earlier ones.
+> - **Menus** (border): Add Frame After/Before (the new one measures 38; in a Flat, next to the
+>   frame where the click was made and what is on the right shifts; in a Stacked, next to the
+>   one being shown, and it becomes the one shown), Delete This Frame (the last one is not deleted) and Replace
+>   with Stacked/Flat Sequence (a Stacked measures the widest frame; a Flat distributes
+>   the frames with that width each), done; the rest, greyed out.
+> - **Execution, measured in LabVIEW:** the output tunnel of a Flat gives its value **when
+>   the frame it comes from finishes**, not when the sequence finishes; the core does it that way
+>   (DT-041 §9, spec/04 rule 17c).
+>
+> *Unverified or not done:* Add Sequence Local and wiring in a Stacked (only
+> the wires coming from a Flat or from a file exist), Duplicate Frame,
+> Show Frame / Make This Frame, Remove Sequence, Replace with Timed Sequence / Case,
+> Auto Grow (LabVIEW enlarged a frame when creating an indicator inside), tunnels on the
+> top or bottom border (here they go on the sides, as in a loop), the selector's list of
+> a Stacked, Visible Items of the Flat and the size of the Stacked when
+> changing its shape with frames of different widths beyond "the widest".
+
+> **Rule 40h — Strings on the diagram and on the panel.** Captured in LabVIEW 2026 Q3
+> (`labview-captures/string/`), at 1:1:
+>
+> - **Palettes:** Functions ▸ Programming ▸ String is a grid of 5 columns and 28
+>   elements (`string-subpaleta.png`), with the folders Path/Array/String Conversion,
+>   Number/String Conversion (7 columns, 12 elements; Scan Value in the last
+>   cell of the second row), Flatten/Unflatten String (2 columns, 9) and Additional
+>   String Functions (4 columns, 13). Controls ▸ Modern ▸ String & Path
+>   (`controls-string-path.png`): String Control, String Indicator, Combo Box, File
+>   Path Control and File Path Indicator, in 3 columns; the last two and the Combo Box
+>   are greyed out.
+> - **String functions** (`bd-funciones-1.png`): yellow boxes of 32 × 17 (String
+>   Length), 44 × 17 (Rotate String), 44 × 20 (Trim Whitespace), 44 × 32 (String
+>   Subset, Replace Substring, Number To Decimal String, Decimal String To Number),
+>   44 × 38 (Number To Fractional String), 32 × 37 (Search and Replace String) and 37 × 11
+>   (To Upper/Lower Case); wider than the 32 × 32 grid of the palette. The
+>   drawings inside are our own. Concatenate Strings measures 31 × 17 with two inputs
+>   (15 of terminals, 16 of symbol, 8.5 per input) and is stretched by its handles.
+> - **String constant:** box with a 2 px pink border and white background, 15 px
+>   high per line plus 4 and as wide as the text plus 8 (minimum 15): 15 × 19 empty and
+>   22 × 34 with "ab" and "cd". Freshly dropped it is ready to type in (with the cursor);
+>   **Enter starts a new line**; it is confirmed with *Enter Text* or with a click outside, and Esc leaves it
+>   as it was. The fixed constants (Empty String, Space, Tab, Carriage
+>   Return, Line Feed, End Of Line) carry a sign and are not edited.
+> - **String control and indicator** (`panel-string-editando.png`): a box of
+>   100 × 24 px with the bevel of the numeric ones, white on the control and gray on the
+>   indicator, with the label "String" above (and "String 2"…). It is typed into the
+>   control with a click, in edit mode **and in Run mode** (the VI reads the new value);
+>   Enter starts a new line; *Enter Text* or a click outside confirm. In edit mode the
+>   toolbar shows the *Enter Text* mark. Its terminal on the diagram is pink, with
+>   "abc".
+> - **Not captured:** the right-click menus of the string constant, control and
+>   indicator (they open no menu), *Normal / '\' Codes / Password / Hex
+>   Display* of the control (only Normal Display) and the dropdown of the string
+>   constants. Concatenate Strings does not have the *Add Input* menu: it is stretched by the handles.
+
+> **Rule 40j — One-dimensional arrays on the diagram and on the panel.** Measured in LabVIEW 2026 Q3 at 1:1
+> (`labview-captures/array/`). Empty array constant: 52 × 25 px (33 × 21 index and element box with two
+> borders in the type's color; each element, 15 × 21); it is typed into each element with a double click (a boolean is
+> toggled) and stretched by its right handle to show more. The panel array with a DBL: 114 × 36 px (41 × 26 index
+> and 72 × 33 box); it is typed into its elements, the index scrolls through them and a handle stretches the box. Its
+> terminal on the diagram (37 × 37) carries the border in the element's color and the cells i, j and k. The
+> one-dimensional array wire measures 2 px. An indexed loop tunnel is drawn 9 × 9 with `#ffffcc` background and a bracket in the type's
+> color; a For lets it be born indexed; the input's menu says Enable or Disable Indexing (it only turns on
+> if what arrives is an array) and the output's, Tunnel Mode ▸ Last Value, Indexing, Concatenating and Conditional
+> (the last two, greyed out). **Unverified:** the gesture of stretching the panel array with the mouse (the handles moved
+> the object in the VM) and that it is born empty, with the type of the control dropped inside.
+
+> **Rule 40i — The error cluster on the diagram and on the panel.** Captured in
+> LabVIEW 2026 Q3 (`labview-captures/errores/`, `docs/reference/labview-errors.md`),
+> at 1:1; the behavior is DT-043:
+>
+> - **Wire:** 3 px, olive #7f7f00 border at the top and bottom and, in the center, 2 px strokes of
+>   yellow #ffff00 and black #000000 alternating. The terminal of an error control or
+>   indicator is the 38 × 38 one with an olive frame and inside it the gray box with the
+>   colored bars of its fields; the tab carries three strokes, not a text.
+> - **Error constant** (`202.png`): 22 × 57 px, 1 px olive frame and three cells:
+>   status (F, green border), code (0, blue border) and source (pink border). A click on the
+>   status cell toggles it; with a double click on code a number is typed (Enter
+>   confirms) and on source, several lines (Enter starts a new line; Enter Text or a click
+>   outside confirm).
+> - **Error In and Error Out controls** (Controls ▸ Modern ▸ Data Containers, 2 columns,
+>   8 elements: Array, Cluster, RealMatrix.ctl, ComplexMatrix.ctl, Set, Map, Error In
+>   3D.ctl and Error Out 3D.ctl; the first six, greyed out): 155 × 121 px, gray with
+>   relief, with "status" (20 × 19 button with green ✔ if FALSE and red ✘ if TRUE),
+>   "code" (prefix "d"; on the control, with ▲▼) and "source" (box of ~4 lines with a bar).
+>   They are born with the label "error in (no error)" and "error out", with status FALSE, code 0 and
+>   empty source. On the control, a click on status toggles it and a click on code or on
+>   source types into it (on source, Enter starts a new line and **Ctrl+Enter confirms**), in
+>   edit mode and in Run mode; on the indicator, a click does not type.
+> - **Dialog & User Interface** (`59-paleta-dialog-ui.png`): 4 columns and 23 elements
+>   in LabVIEW's order. Done: Simple Error Handler, Clear Errors, Merge Errors
+>   (stretched like Compound Arithmetic, born with 2 inputs and measures 32 × 18),
+>   Error Cluster From Error Code and Error Cluster Constant; the rest, greyed out with their
+>   reason; the five folders (Multiple Errors, Events, Menu, Cursor and Help), not opened.
+> - **The two error dialogs** are modal over the window that launched the VI, with no
+>   title text (program icon and ✕ in its bar), and the VI **waits** until they are
+>   answered. The automatic handling one (`44b-dialogo-x3.png`): red ✘ icon, "Error N
+>   occurred at …" and "Possible reason(s):" in bold, the text, the detail of the
+>   source, "Search ni.com for error" (greyed out) and the buttons **Continue**, the factory default
+>   (Enter), and **Stop**; Stop aborts the VI. The Simple Error Handler one
+>   (`102b-dialogo-x2.png`): no icon or bold, with **OK**; on an undefined code,
+>   "Why not found?" (greyed out). Abort with a dialog open closes it. The text comes from
+>   `nucleo/errores.mjs`: the codes are LabVIEW's and the texts, our own (DT-043 §5).
+> - **Unverified or not done:** the right-click menu of the error controls and
+>   constant (Explain Error…), Help ▸ Explain Error… (greyed out), Run mode with
+>   several dialogs at once, values of "type of dialog" other than 1 and a warning
+>   (status FALSE, code ≠ 0) at the input of Simple Error Handler, the contents of the
+>   folders Multiple Errors, Events, Menu, Cursor and Help, and Error Ring, General Error
+>   Handler and Find First Error (only their terminals were measured).
+
+*(The coupling between the two canvases belongs to the domain, not technical debt: they are a
+1:1 unit. What is debt is how it was implemented —a global model mutated
+through a generic field of the interface, with no notification
+mechanism.)*
+
+## 8. Editing state
+
+> **Rule 41.** The editor **MUST** distinguish a VI with unsaved changes and
+> **MUST** ask for confirmation before discarding them.
+
+> **Rule 41 is implemented in the web editor** (2026-09-30,
+> `editor/electron/main.mjs`): each window tells the main process how
+> the VI stands after each change; if it does not match what is saved, the title carries
+> an asterisk, as in LabVIEW, and before opening another VI or closing the panel it
+> asks whether to save, not save or not continue. An automatic test is missing: it has been
+> verified in the application.
+
+> **Rule 42.** The editor **MUST** offer undo and redo on every
+> operation that modifies the VI.
+
+> **Rule 42 is implemented for the diagram** (2026-09-30,
+> `editor/src/historial.mjs`): since the graph is never mutated, each stable state
+> is a snapshot, and a gesture —dragging a node or a segment, typing into a
+> constant— is a single step. `Ctrl+Z` undoes and `Ctrl+Shift+Z` redoes. The
+> Edit menu is missing, which is not captured. On the panel it also undoes (2026-09-30),
+> but each window carries its own history: what is undone in one reaches the other
+> as one more change. It was going to be inherited from
+> `red-sg` (DT-031, see [`whitelist.md`](../reference/history/whitelist.md) §3).
+
+## 9. What the editor does not do
+
+*(informative)* The editor clones LabVIEW's information architecture
+—menus, toolbars, palettes and windows, with their names and their order—
+and declares in its place what Solder does not do, so that the interface itself is
+the guide to what is missing. The decision, its scope and its rationale are in
+[DT-035](../design/05-decisions.md#dt-035). The verdict on each element lives
+in the *LabVIEW inventory*,
+[`../schema/inventario-labview.json`](../schema/inventario-labview.json), and not in
+the editor's code.
+
+> **Rule 52.** Everything the *reference* shows within the scope of DT-035
+> **MUST** appear in the editor where LabVIEW puts it and with its name, at the level
+> of detail the inventory declares, **even if Solder does not do it**. A
+> *placeholder* is shown disabled; it **MUST NOT** be omitted.
+
+> **Rule 53.** An element whose *verdict* is not `built` **MUST NOT** modify the
+> VI or start any action. Activating it —with the mouse, from a menu or with
+> its keyboard shortcut— only shows its explanation.
+
+*(The shortcut matters. Someone coming from LabVIEW will press `Ctrl+Z` without looking at the menu. A
+shortcut that does nothing reads as a failure; one that says "this does not exist yet, and
+is waiting for such-and-such" reads as what it is.)*
+
+> **Rule 53b.** A container —a menu, a palette, a palette category—
+> whose content is declared in the inventory **MUST** be openable even if
+> it is a placeholder: opening it does nothing, it only shows what it contains, which responds
+> according to its own verdict. If its content is not declared, activating it only
+> shows its explanation, as rule 53 requires.
+
+> **Rule 54.** The explanation of a placeholder **MUST** say what LabVIEW does there and
+> what its verdict obliges to declare: what is missing (`todo`), how it is done in
+> Solder (`elsewhere`) or what decision excludes it (`never`).
+
+> **Rule 55.** The editor **MUST** take the verdict of each element from the
+> inventory, and **MUST NOT** decide in its own code whether something is done.
+
+> **Rule 56.** An inventory entry **MAY** only become `built` when
+> what is behind it is implemented and verified **without an interface**, and **MUST**
+> name the test that proves it. If it is a function or a control of the
+> palettes, its block **MUST** exist in
+> [`../schema/blocks.json`](../schema/blocks.json).
+
+*(It is the rule that closes the way to the false green: `waveform-chart` and
+`waveform-graph` appeared as completed without doing anything —see
+[`whitelist.md`](../reference/history/whitelist.md) §6.2—. With this rule, declaring them done
+would have required naming a test that did not exist.)*
+
+## 10. Verification
+
+| Rule | Mechanism | Status |
+|-------|-----------|--------|
+| 22, 23 selection | Tests in `editor/test/edicion.test.mjs`: the click selects, `Shift` adds, the rectangle selects what it touches, everything selected is moved | **Verified** on the diagram, without structures |
+| 24 stable zone order | Hit-test test with overlapping elements. The editor resolves terminal, node, wire and background, in that order (`app.mjs`); the test is missing | Pending |
+| 25 dragging does not change the program | Compile before and after moving: same bytes | Pending |
+| 26 dragging between scopes reassigns | Tests "dropping a node inside a loop puts it in and outside takes it out" and "wiring across the border creates the tunnel" (`editor/test/edicion.test.mjs`) | **Verified** (amended: LabVIEW rules) |
+| 40e While Loop and For Loop | Tests in `editor/test/diagrama.test.mjs` (measurements at 1:1, compared pixel by pixel against the captures) and `edicion.test.mjs` (place, move, stretch, tunnels, menus and a loop made with the mouse that runs) | **Verified**; what is unverified, in the rule itself |
+| 28, 29 deleting takes the wires with it | Test: after deleting no orphan wire remains | **Rule 28 verified** ("deleting a node deletes its wires"); rule 29: a loop goes with everything that is its own, but still without asking for confirmation |
+| 40f Case Structure | Tests in `diagrama.test.mjs` and `edicion.test.mjs` (measurements, frames, menus, compile and run) | **Verified**; what is unverified, in the rule itself |
+| 40g Flat and Stacked Sequence | Tests in `diagrama.test.mjs` (film border, frames, tunnels, selector and local variables), `edicion.test.mjs` (place, stretch, frames, menus, change shape, compile and run) and `estructuras.test.mjs` (widths in the file) | **Verified**; what is unverified, in the rule itself |
+| 40h Strings on the diagram and on the panel | Tests in `grafo.test.mjs` (each String function with its terminals and measurements), `estado.test.mjs` (the four palettes), `panel.test.mjs` (control and indicator), `edicion.test.mjs` (multi-line constant, Concatenate Strings, a string VI made with the mouse that runs) and `qvi.test.mjs` (save and open) | **Verified**; what is unverified, in the rule itself |
+| 40i The error cluster | Tests in `errores.test.mjs` (the wire, the constant and its edits, the two dialogs, Simple Error Handler and Merge Errors at 32 × 18), `panel.test.mjs` (Error In and Error Out) and `estado.test.mjs` (the two palettes) | **Verified**; what is unverified, in the rule itself |
+| 40j One-dimensional arrays | Tests in `panel.test.mjs` (array control and indicator), `edicion.test.mjs` (array constant, menu of the indexed tunnels), `estado.test.mjs` (the Array subpalette), `grafo.test.mjs` (its functions) and `qvi.test.mjs` | **Verified** for what was measured; the gesture of stretching the panel array and the array's menu, unverified (see the rule) |
+| 31 the rejection explains the reason | Test: each cause of `can_connect` produces its message | **Verified** for two outputs, two inputs, incompatible types and cycle (`grafo.test.mjs`); the scope one no longer comes out in the editor: a wire between scopes creates the tunnel (rule 40e); the rejection remains in `Gr.conectar` |
+| 32 replace on fan-in | Test "a wire to an occupied input replaces the previous one" | **Verified** |
+| 36, 37 keyboard | Interaction test | **Rule 36 verified** ("the selection moves with the arrows…"); rule 37, pending |
+| 38–40 synchronization | Test: create, delete and retype from each canvas | Pending |
+| 42 undo | Test "undo goes back a whole gesture" (`editor/test/edicion.test.mjs`) | **Verified** on the diagram |
+| 52, 55 what is declared is painted, and what is painted is declared | Screenless painting test against the inventory: each painted element has its entry, and each entry is painted in its order (`editor/test/vista.test.mjs`) | **Verified** for the *Front Panel* and the *Block Diagram* |
+| 52 where LabVIEW puts it | Position test: each element of the toolbar, within 2 px at most of its place in the captures ("the toolbar falls where it does in LabVIEW") | **Verified** for the *Front Panel* and the *Block Diagram* |
+| 53 a placeholder does not act | Interaction test: the click, the right-click on the canvas and a shortcut only open the explanation, and Esc closes it (`editor/test/estado.test.mjs`) | **Verified**. That it does not change the VI is trivial as long as there is no model |
+| 53b a declared container opens | Tests of the function palette: right-click on the diagram opens it; a category with content opens and closes; one without content is only explained (`editor/test/estado.test.mjs`) | **Verified** |
+| 54 the explanation is complete | Inventory schema: each verdict requires its field and only its own; explanation test (`editor/test/inventario.test.mjs`) | **Verified** |
+| 56 `built` requires proof | Schema: `built` requires `prueba`. Test: the proof exists and the block is in `blocks.json` | **Verified**. The only `built` ones are the palette's double arrows, with their test |
+
+## 11. Pending
+
+| # | Issue | Blocks |
+|---|----------|---------|
+| 1 | **Undo and redo** (§8) | Nothing in the spec, but it is the biggest functional debt |
+| 2 | Explicit "move to scope" command (§3.3) | Nothing; it is a refinement of rule 26 |
+| 3 | Exact jump of `Shift`+arrow: 8 px or 12 px? | Nothing. Open in `06-visual.md` §1.3 since the beginning. The editor uses 8, provisional: it still has to be verified in LabVIEW |
+| 4 | Selection by drag rectangle | Unspecified. The web editor has it like LabVIEW: it selects what the rectangle touches, and `Shift` adds |
+| 5 | Break the inventory down area by area, with captures of the reference in front (DT-035 §5 and §8). **Started**: the *Project Explorer*, the *Front Panel*, the *Block Diagram* and the function palette, 127 entries; the contents of the menus, not yet | That rules 52–56 have something to check |

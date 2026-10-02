@@ -1,0 +1,24 @@
+# Node dependencies of the editor (DT-037)
+node_modules/
+
+# LabVIEW 2026 Q3 captures (DT-035): local evidence to clone from.
+# They are NI's interface, not ours: they are never published.
+labview-captures/
+
+# Rust build output (the hardware host, when it exists)
+target/
+
+# Python cache of the tools
+__pycache__/
+
+# OS and editors
+.DS_Store
+Thumbs.db
+*.swp
+*~
+.vscode/
+.idea/
+
+# Secrets
+.env
+*.token

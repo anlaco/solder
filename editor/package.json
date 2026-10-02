@@ -1,0 +1,17 @@
+{
+  "name": "@solder/editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Editor de Solder: las ventanas de un VI calcadas de LabVIEW 2026Q3, en Electron (DT-037).",
+  "license": "AGPL-3.0-only",
+  "main": "electron/main.mjs",
+  "scripts": {
+    "app": "node scripts/app.mjs",
+    "test": "node --experimental-wasm-jspi --test 'test/*.test.mjs' '../nucleo/test/*.test.mjs'"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "electron": "^40.10.6"
+  }
+}

@@ -1,0 +1,158 @@
+{
+  "solder": 1,
+  "meta": {
+    "title": "while-loop-suma",
+    "description": "Suma 0+1+...+9 = 45 con un shift register",
+    "tags": [
+      "while-loop",
+      "shift-register"
+    ]
+  },
+  "front-panel": [
+    {
+      "name": "ind_1",
+      "role": "indicator",
+      "type": "number",
+      "default": 0
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      {
+        "name": "cero",
+        "type": "const",
+        "config": {
+          "default": 0
+        }
+      },
+      {
+        "name": "ind_1",
+        "type": "indicator"
+      }
+    ],
+    "wires": [
+      {
+        "from": "cero.result",
+        "to": "while_1.sr_acc"
+      },
+      {
+        "from": "while_1.sr_acc",
+        "to": "ind_1.value"
+      }
+    ],
+    "structures": [
+      {
+        "name": "while_1",
+        "kind": "while-loop",
+        "shift-registers": [
+          {
+            "name": "sr_acc"
+          }
+        ],
+        "body": {
+          "nodes": [
+            {
+              "name": "iadd",
+              "type": "add"
+            },
+            {
+              "name": "ilim",
+              "type": "const",
+              "config": {
+                "default": 9
+              }
+            },
+            {
+              "name": "icond",
+              "type": "equal"
+            }
+          ],
+          "wires": [
+            {
+              "from": "sr_acc.left",
+              "to": "iadd.a"
+            },
+            {
+              "from": "while_1.i",
+              "to": "iadd.b"
+            },
+            {
+              "from": "iadd.result",
+              "to": "sr_acc.right"
+            },
+            {
+              "from": "ilim.result",
+              "to": "icond.x"
+            },
+            {
+              "from": "while_1.i",
+              "to": "icond.y"
+            },
+            {
+              "from": "icond.result",
+              "to": "while_1.condition"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "cero": {
+        "x": 20,
+        "y": 120
+      },
+      "ind_1": {
+        "x": 520,
+        "y": 150,
+        "label": {
+          "text": "Resultado"
+        }
+      },
+      "while_1": {
+        "x": 80,
+        "y": 60,
+        "w": 360,
+        "h": 180
+      },
+      "while_1.i": {
+        "x": 88,
+        "y": 216
+      },
+      "while_1.condition": {
+        "x": 416,
+        "y": 216
+      },
+      "sr_acc": {
+        "x": 80,
+        "y": 120
+      },
+      "sr_acc.right": {
+        "x": 440,
+        "y": 120
+      },
+      "iadd": {
+        "x": 230,
+        "y": 100
+      },
+      "ilim": {
+        "x": 120,
+        "y": 160
+      },
+      "icond": {
+        "x": 300,
+        "y": 160
+      }
+    },
+    "panel": {
+      "ind_1": {
+        "x": 20,
+        "y": 20,
+        "label": {
+          "text": "Resultado"
+        }
+      }
+    }
+  }
+}

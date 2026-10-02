@@ -1,0 +1,3 @@
+# Version pinned in docs/reference/history/00-provisional-plan.md §2.2.
+[toolchain]
+channel = "1.97.1"
