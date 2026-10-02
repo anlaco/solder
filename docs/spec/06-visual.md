@@ -142,7 +142,7 @@ Wires encode the data type through **three visual channels**:
 
 *Arrays, clusters and composite types will be defined when implemented in Phase 2.*
 
-> **Implemented in the web editor** (2026-09-29, `nucleo/tipos.mjs`,
+> **Implemented in the web editor** (2026-09-29, `core/model/types.mjs`,
 > [DT-038](../design/05-decisions.md#dt-038)): orange `#fb7c00` for DBL and
 > SGL, blue `#0000ff` for integers and enums —measured on the border of the
 > constants and on the wires in the LabVIEW videos; the palette icons
@@ -269,8 +269,8 @@ The palette is a menu with folders organized by category:
 *Note: this is a complex behavior. It will be implemented progressively,
 starting with a basic palette and adding hover + pin later.*
 
-> **Hover implemented** (2026-09-29, `editor/src/app.mjs` and
-> `editor/src/estado.mjs`): when the mouse rests a quarter of a second over a
+> **Hover implemented** (2026-09-29, `editor/src/window/editor-window.mjs` and
+> `editor/src/window/window-state.mjs`): when the mouse rests a quarter of a second over a
 > folder with declared content, its subpalette opens beside it, as a separate window,
 > and the folder is framed in blue; a click does the same. Moving over
 > another folder of the same palette closes what hung from it; a click outside or
@@ -388,7 +388,7 @@ If they are confused, whoever uses the editor does not know whether something do
 right now, and the two cases call for different things: one, wait or look for another way; the
 other, change what is selected.
 
-**Mark implemented** in the editor skeleton (`editor/src/estilo.css`):
+**Mark implemented** in the editor skeleton (`editor/src/styles.css`):
 a placeholder is grey —somewhat darker than a disabled one, so that it reads when
 almost everything is a placeholder—, with the label in italics if it is text and with the **top
 right corner folded** if it is an icon-only button. The corner is the top one because LabVIEW already uses the bottom right one: there it puts the little triangle of
@@ -396,7 +396,7 @@ the buttons that open a menu when held down. The three verdicts do not
 need different looks: the explanation says which it is.
 
 *Verification: test "a placeholder is not confused with one disabled by context"
-(`editor/test/estilo.test.mjs`): the italics and the corner are only applied to
+(`test/editor/styles.test.mjs`): the italics and the corner are only applied to
 placeholders, and a placeholder's grey is not a disabled one's. **Verified** on the
 style side; that it is seen at a glance has been checked by eye, not with a
 test.*
@@ -409,7 +409,7 @@ The *Front Panel* and the *Block Diagram* clone the LabVIEW 2026Q3 captures
 (`labview-captures/front-panel/vi-nuevo.png` and
 `labview-captures/block-diagram/vi-nuevo.png`), taken at 150 % scale.
 
-**Measurements.** They live in `editor/src/vista.mjs`, each with the row or column
+**Measurements.** They live in `editor/src/window/window-view.mjs`, each with the row or column
 of the capture it comes from, in CSS pixels (those of the capture divided by 1.5): heights
 of the menu bar (19.3 px, rows 0–28), of the groove (3.3, rows 29–33), of the
 toolbar (22, rows 34–66), of its border (2, rows 67–69) and of the status
@@ -417,7 +417,7 @@ bar (15.3); step of the buttons (23 px, 36.5 with triangle), widths
 of Text Settings (146.7) and of the search (300), 12 px grid from the edge
 of the canvas, 16 px gutter. The thin lines —the groove, the bar's border,
 the icon separator— are painted row by row from the capture, at 2/3 px each,
-in `editor/src/estilo.css`.
+in `editor/src/styles.css`.
 
 **Typography.** LabVIEW's is Segoe UI at 12 px. The editor uses the first
 one it finds:
@@ -443,7 +443,7 @@ separator; 21 px category rows with the text at the **top**, not centered, as
 in LabVIEW, and the arrow at its height; the unfolded category, with a 16
 px header and a grid of folders —tab, spine and 40 × 36 px box— at a 48 px
 step, on a light background; and a 2 px highlight inside the bevel on the sides and at the foot
-of the list. It lives in `editor/src/vista.mjs` and `editor/src/estilo.css`.
+of the list. It lives in `editor/src/window/window-view.mjs` and `editor/src/styles.css`.
 
 **The subpalettes** clone `labview-captures/paletas/functions-numeric.png`: a
 separate window whose corner falls 43.3 px to the right and 20 px below that of
@@ -452,7 +452,7 @@ title bar —2 more than the palette— with the pin and the name 4 px further t
 right; and a grid of 32 px boxes at a 48 px step, on a light background. The
 folders sit 2.7 px above the center of their cell. How many columns each
 subpalette has and which cells it skips —in Numeric, Expression Node sits alone in the
-last column— is layout and lives in `REJILLAS`, in `vista.mjs`; the size
+last column— is layout and lives in `REJILLAS`, in `window-view.mjs`; the size
 of the window comes from there. The palette and the subpalettes carry LabVIEW's window
 shadow, 7 px to the right and down. The function glyphs are
 our own (DT-035 §1), drawn on a 48 × 48 grid that is that of the capture's
@@ -461,7 +461,7 @@ pixels.
 *Verification:* the tests "the Numeric subpalette measures what it does in LabVIEW" (its
 cells, its size and where it opens) and "the bar falls where it does in LabVIEW" (the center of each
 element of the bar, within 2 px at most of LabVIEW's) and "the header measures what
-it does in LabVIEW", in `editor/test/vista.test.mjs`. The header, the status bar
+it does in LabVIEW", in `test/editor/window-view.test.mjs`. The header, the status bar
 and the palette have no pixel test: they have been compared pixel by pixel and fall within 1
 px of LabVIEW —the folders, the rows, the foot and the palette's borders, on the
 same pixel—. The comparisons are made by starting the editor on a virtual screen at 150 % scale

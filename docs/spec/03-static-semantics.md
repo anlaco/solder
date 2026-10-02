@@ -513,7 +513,7 @@ fails when it is broken.)*
 | Rule | Mechanism | Status |
 |------|-----------|--------|
 | 1 unknown port = error | Test "un puerto que no existe es un error"; the `check` case is missing | **Verified in the editor** |
-| 2 strict equality, conversion between numerics | Tests `nucleo/test/tipos.test.mjs` and `grafo.test.mjs` (coercion, broken wire) | **Verified in the editor** |
+| 2 strict equality, conversion between numerics | Tests `test/core/types.test.mjs` and `palettes.test.mjs` (coercion, broken wire) | **Verified in the editor** |
 | 2f common type | Test "el tipo común sigue la regla de LabVIEW" | **Verified in the editor** |
 | 2b `array`/`cluster` without parameter | **Negative schema cases** | ✅ **Verified** |
 | 2c forward propagation | Test: `index-array` on `array<string>` returns `string` | Pending |
@@ -527,7 +527,7 @@ fails when it is broken.)*
 | 10 unconnected inputs | Negative `check` case | Pending |
 | All | The 14 files of the repaired corpus **MUST** pass `check` | Pending |
 
-Those marked "in the editor" are so in `nucleo/grafo.mjs`: since DT-039 it is the
+Those marked "in the editor" are so in `core/model/graph.mjs`: since DT-039 it is the
 core, which the editor uses just the same and, when they exist, so will the
 compiler and `check`.
 **The rest is not verified**: it describes rules whose implementation does not

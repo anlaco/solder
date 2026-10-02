@@ -18,7 +18,7 @@ const INVENTARIO = path.resolve(EDITOR, "../docs/schema/inventario-labview.json"
 const CATALOGO = path.resolve(EDITOR, "../docs/schema/blocks.json");
 const FUERA = { "/inventario.json": INVENTARIO, "/blocks.json": CATALOGO };
 /** El núcleo (DT-039): lo importan la página y la línea de órdenes, así que vive fuera del editor. */
-const NUCLEO = path.resolve(EDITOR, "../nucleo");
+const NUCLEO = path.resolve(EDITOR, "../core");
 
 const TIPOS = {
   ".html": "text/html",
@@ -36,7 +36,7 @@ protocol.registerSchemesAsPrivileged([
 function servir() {
   protocol.handle("solder", async (peticion) => {
     const ruta = decodeURIComponent(new URL(peticion.url).pathname);
-    const raiz = ruta.startsWith("/nucleo/") ? path.dirname(NUCLEO) : EDITOR;
+    const raiz = ruta.startsWith("/core/") ? path.dirname(NUCLEO) : EDITOR;
     const fichero = FUERA[ruta] ?? path.normalize(path.join(raiz, ruta === "/" ? "index.html" : ruta));
     if (!Object.values(FUERA).includes(fichero) && !fichero.startsWith(EDITOR + path.sep) && !fichero.startsWith(NUCLEO + path.sep)) {
       return new Response("fuera del editor", { status: 403 });

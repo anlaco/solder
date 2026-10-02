@@ -24,19 +24,19 @@
 
 ## 2. The tool
 
-[`tools/vmqmp.py`](../../tools/vmqmp.py) does clicks, drags, keys and captures
+[`tools/vm_control.py`](../../tools/vm_control.py) does clicks, drags, keys and captures
 over QMP, in VM screen coordinates:
 
 ```
-tools/vmqmp.py foto fichero.png
-tools/vmqmp.py clic 500 200 derecho
-tools/vmqmp.py arrastrar 576 390 800 450
-tools/vmqmp.py tecla ctrl-e
-tools/vmqmp.py texto "labview"
+tools/vm_control.py foto fichero.png
+tools/vm_control.py clic 500 200 derecho
+tools/vm_control.py arrastrar 576 390 800 450
+tools/vm_control.py tecla ctrl-e
+tools/vm_control.py texto "labview"
 ```
 
 The socket is changed with `SOLDER_QMP`. It can also be imported as a module
-(`from vmqmp import Vm`) to write a multi-step script.
+(`from vm_control import Vm`) to write a multi-step script.
 
 What was learned using it:
 
@@ -100,8 +100,8 @@ resolved here, it is left declared as pending.
 - The names, the order and what is done, to the inventory
   (`schema/inventario-labview.json`), with the capture they come from.
 - The terminals and the types, to the catalog (`schema/blocks.json`).
-- The measurements, next to the code that uses them (`editor/src/glifos.mjs`,
-  `editor/src/diagrama.mjs`), citing the capture.
+- The measurements, next to the code that uses them (`editor/src/common/glyphs.mjs`,
+  `editor/src/block-diagram/diagram-view.mjs`), citing the capture.
 - The behavior, to a test that checks it, and to `spec/` if it is a rule.
 
 ## 5. Comparing

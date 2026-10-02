@@ -29,16 +29,15 @@ What comes next is in [`docs/design/labview-plan.md`](docs/design/labview-plan.m
 Requires Node 24.
 
 ```bash
-cd editor
 npm install
 npm run app     # opens the editor in Electron
-npm test        # core and editor tests
+npm test        # all tests
 ```
 
 Without the user interface, from the repository root:
 
 ```bash
-node --experimental-wasm-jspi nucleo/cli.mjs run docs/schema/examples/suma-basica.qvi.json
+node --experimental-wasm-jspi cli/solder.mjs run docs/schema/examples/suma-basica.qvi.json
 ```
 
 `run` executes a VI and prints its indicators, `wat` prints the WebAssembly
@@ -48,8 +47,13 @@ module as text and `check` says whether it can run.
 
 | Folder | What it is |
 |--------|------------|
-| `nucleo/` | The language core, in JavaScript: graph, types, `.qvi`, compiler to WebAssembly, memory and execution |
-| `editor/` | The user interface, a web page in Electron |
+| `core/model/` | The program model: graph, data types, constants and the `.qvi` file format |
+| `core/compiler/` | Diagram to WebAssembly: compiler, wasm encoder, linear memory, expression parser |
+| `core/runtime/` | Running a compiled VI by dataflow, and the error codes |
+| `cli/` | The command-line entry point (`run`, `wat`, `check`) |
+| `editor/` | The Electron application: `electron/` (main process) and `src/` (the page: `window/`, `block-diagram/`, `front-panel/`, `common/`) |
+| `test/` | All tests: `core/`, `editor/`, `end-to-end/` and `schema/` |
+| `scripts/` | Developer scripts (launching the editor) |
 | `docs/` | Specification, schemas, decisions and plan ([index](docs/README.md)) |
 | `tools/` | Development helpers (driving LabVIEW in a virtual machine to measure it) |
 | `spikes/` | Proofs of concept that back some decision |

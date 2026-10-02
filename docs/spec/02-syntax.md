@@ -191,8 +191,8 @@ correct program that the editor will arrange as best it can.
 
 > **Normative requirement.** Writing a VI, reading it and writing it again **MUST**
 > give the same text, and what is read **MUST** be drawn the same as what was saved. It is
-> checked by `editor/test/qvi.test.mjs` ("lo que se guarda se abre igual"), with
-> the reading and writing of `nucleo/qvi.mjs`.
+> checked by `test/end-to-end/qvi-round-trip.test.mjs` ("lo que se guarda se abre igual"), with
+> the reading and writing of `core/model/qvi-format.mjs`.
 
 ## 5. Structures
 

@@ -43,7 +43,7 @@ its place what it does not do.**
 - **Status:** Accepted on 2026-09-29. **Implementation started** the same day:
   the skeleton of the *Front Panel* and the *Block Diagram* (`editor/`, in Electron
   since [DT-037](#dt-037)), cloned from the captures and with everything it shows
-  taken from the inventory. It is started with `npm run app` in `editor/`.
+  taken from the inventory. It is started with `npm run app`.
 - **What it obliges:** rules 52–56 of [`spec/05-editor.md`](../spec/05-editor.md)
   §9, rule 57 of [`spec/06-visual.md`](../spec/06-visual.md) §9 and the format
   of [`schema/inventario-labview.schema.json`](../schema/inventario-labview.schema.json).
@@ -288,11 +288,11 @@ h. **Not decided here:** the order in which each box is built; the exact
 
 | What | Mechanism | Status |
 |------|-----------|--------|
-| The inventory has the right shape: each verdict carries its field and only its own, `built` requires `prueba`, a `never` cites a decision | [`inventario-labview.schema.json`](../schema/inventario-labview.schema.json) + [negative cases](../schema/examples/inventario-casos-no-validos.json), in `npm test` (`editor/test/esquema.test.mjs`) | **Verified** |
-| Each `necesita` names a declared unlock, and each unlock is awaited by some entry | Inventory test (`editor/test/inventario.test.mjs`) | **Verified** |
+| The inventory has the right shape: each verdict carries its field and only its own, `built` requires `prueba`, a `never` cites a decision | [`inventario-labview.schema.json`](../schema/inventario-labview.schema.json) + [negative cases](../schema/examples/inventario-casos-no-validos.json), in `npm test` (`test/schema/schemas.test.mjs`) | **Verified** |
+| Each `necesita` names a declared unlock, and each unlock is awaited by some entry | Inventory test (`test/editor/labview-inventory.test.mjs`) | **Verified** |
 | Each `prueba` names a test that exists, and each `bloque`, a block of `blocks.json` | Inventory test | **Verified**. The first `built` entry is the palette's double arrows, with their test |
 | The identifiers are unique | Inventory test | **Verified** |
-| The editor draws exactly what is declared, and in its order | Screenless drawing test (`editor/test/vista.test.mjs`, rules 52 and 55 of [`05`](../spec/05-editor.md)) | **Verified** for the *Front Panel* and the *Block Diagram*; the *Project Explorer* is not drawn yet |
+| The editor draws exactly what is declared, and in its order | Screenless drawing test (`test/editor/window-view.test.mjs`, rules 52 and 55 of [`05`](../spec/05-editor.md)) | **Verified** for the *Front Panel* and the *Block Diagram*; the *Project Explorer* is not drawn yet |
 | And in the place where LabVIEW puts it | Position test against the captures, to 2 px ([`06-visual.md`](../spec/06-visual.md) §10) | **Verified** for the *Front Panel* and *Block Diagram* bar; the header and the palette, compared pixel by pixel |
 | The generated page matches the data | Generator with a check mode in CI | Pending |
 | Each entry is checked against 2026Q3 | `captura` field | **In progress**: 127 of 127 with a capture. Broken down: the *Project Explorer*, the *Front Panel*, the *Block Diagram* and the functions palette; the contents of the menus, not yet |
@@ -347,7 +347,7 @@ c. The search box does not change: it keeps waiting for `busqueda-en-paletas`.
   [`editor/`](../../editor/) —the two windows of a VI and the functions
   palette, cloned from LabVIEW 2026Q3 ([DT-035](#dt-035))—, which replaces the
   skeleton that had been started in egui, withdrawn the same day. It is started
-  with `npm run app` in `editor/`.
+  with `npm run app`.
 - **How it was decided:** in a conversation with the developer of the project. The
   skeleton had been started in egui, as the provisional plan said; on
   reviewing it, it was remembered that the August study already proposed a web editor, and it was
@@ -398,11 +398,11 @@ b. **The egui skeleton is withdrawn**: `crates/tk-ui`, the `crates/solder`
    keeps fixing the Rust version of the plan (§2.2).
 
 c. **Dependencies.** The editor adds `electron` and, only for the tests, `ajv`,
-   pinned in `editor/package.json`. The rule that replaces DT-001 ("everything in
+   pinned in `package.json`. The rule that replaces DT-001 ("everything in
    Rust, no dependencies outside the pinned crates.io ecosystem",
    `reference/history/00-provisional-plan.md` §5) stays for the core; the interface is web.
 
-d. **Tests without a browser.** `vista.mjs` returns HTML and `estado.mjs` are
+d. **Tests without a browser.** `window-view.mjs` returns HTML and `window-state.mjs` are
    pure functions, so `npm test` (`node:test`) checks what is drawn,
    where, in what order and how it reacts, against the inventory.
 
@@ -425,7 +425,7 @@ g. **Not decided here** is how the editor talks to the core in Rust —compiled 
 
 | What | Mechanism | Status |
 |------|-----------|--------|
-| The editor draws and reacts as the inventory says, without a browser | `npm test` in `editor/` | **Verified**: 33 tests |
+| The editor draws and reacts as the inventory says, without a browser | `npm test` | **Verified**: 33 tests |
 | It looks like LabVIEW | Electron on a virtual screen at 150 % scale (`--force-device-scale-factor=1.5`), compared pixel by pixel with the captures | **Checked** with measurements, not with a test: the header, the status bar and the palette fall within 1 px of LabVIEW |
 
 ---
@@ -436,8 +436,8 @@ g. **Not decided here** is how the editor talks to the core in Rust —compiled 
 as in LabVIEW: with a coercion dot, not a broken wire.**
 
 - **Status:** Accepted on 2026-09-29. **Implemented in the editor**
-  ([`nucleo/tipos.mjs`](../../nucleo/tipos.mjs) and
-  [`nucleo/grafo.mjs`](../../nucleo/grafo.mjs)); the compiler and the
+  ([`core/model/types.mjs`](../../core/model/types.mjs) and
+  [`core/model/graph.mjs`](../../core/model/graph.mjs)); the compiler and the
   runtime, which do not exist yet, inherit it.
 - **How it was decided:** when the developer of the project asked that the Numeric
   blocks could be placed on the diagram and wired with the color of their type, it
@@ -501,12 +501,12 @@ b. **A palette function is done when it is placed on the diagram with its
 
 c. **The graph model lives, for now, in the editor**, in JavaScript: the
    ports come from `blocks.json`, and `can_connect`, type resolution and
-   cycles are in `grafo.mjs`. This contradicts for the moment rule 4 of `03` —a
+   cycles are in `graph.mjs`. This contradicts for the moment rule 4 of `03` —a
    single core function for editor, compiler and `check`—, because the core
-   does not exist. When it exists, the editor will call it and `grafo.mjs` will disappear.
+   does not exist. When it exists, the editor will call it and `graph.mjs` will disappear.
    It is open whether the core ends up being JavaScript too: it changes nothing in
    this decision. *(Closed by [DT-039](#dt-039): the core is JavaScript;
-   `grafo.mjs` does not disappear, it moves to `nucleo/`.)*
+   `graph.mjs` does not disappear, it moves to `core/`.)*
 
 d. **Ports carry `label`**, the terminal name in LabVIEW ("x+y",
    "floor(x/y)"), which the editor shows in the tip strip. `name` remains the
@@ -521,8 +521,8 @@ e. **Pending, no captures yet:** how LabVIEW draws a node, a constant
 
 | What | Mechanism | Status |
 |------|-----------|--------|
-| The common type rule | Test "the common type follows LabVIEW's rule" (`nucleo/test/tipos.test.mjs`) | **Verified** |
-| Coercion and broken wire | Tests "a function takes the common type and marks the coercion" and "a wire between incompatible types is left broken and explains why" (`editor/test/grafo.test.mjs`) | **Verified** |
+| The common type rule | Test "the common type follows LabVIEW's rule" (`test/core/types.test.mjs`) | **Verified** |
+| Coercion and broken wire | Tests "a function takes the common type and marks the coercion" and "a wire between incompatible types is left broken and explains why" (`test/editor/palettes.test.mjs`) | **Verified** |
 | The 32 functions are placed with their terminals | Test "each numeric function is placed on the diagram with its terminals" | **Verified** |
 | It looks like LabVIEW on the diagram | Captures of a LabVIEW diagram with these blocks | **Pending**: there are no captures |
 
@@ -534,10 +534,10 @@ e. **Pending, no captures yet:** how LabVIEW draws a node, a constant
 the compiled VI runs in the page's own WebAssembly engine. Rust is left
 only for the hardware host.**
 
-- **Status:** Accepted on 2026-09-30. **Being implemented**: `nucleo/` has the
+- **Status:** Accepted on 2026-09-30. **Being implemented**: `core/` has the
   graph, the types, reading and writing of the `.qvi`, the compiler to
   WebAssembly with its encoder and the executor, which the editor's worker and
-  the command line use (`nucleo/cli.mjs run|wat|check`). Still missing are the structures,
+  the command line use (`cli/solder.mjs run|wat|check`). Still missing are the structures,
   the aggregates and the hardware host.
 - **How it was decided:** in a conversation with the developer of the project, on
   reaching step 2 of the 2026-09-30 roadmap: decide where the
@@ -553,8 +553,8 @@ only for the hardware host.**
 ### Context
 
 **1. The graph is already in JavaScript, and it works.** DT-038 left `can_connect`,
-type resolution, coercion and cycles in `nucleo/grafo.mjs` and
-`tipos.mjs`, with tests. It left them as provisional because it contradicts rule 4 of
+type resolution, coercion and cycles in `core/model/graph.mjs` and
+`types.mjs`, with tests. It left them as provisional because it contradicts rule 4 of
 [`03-static-semantics.md`](../spec/03-static-semantics.md): a single
 implementation for editor, compiler and `check`. With the core in Rust, that
 rule forces porting everything and having the editor call it across a boundary
@@ -583,7 +583,7 @@ I/O subpalette (step 4 of the roadmap) or phase R7.
    step, like the editor (DT-037). It contains the format (`.qvi`, `.qlib`,
    `.qproj`), the graph model, the block registry, the compiler and
    `check`. The editor, in the page, and the command line, in
-   Node, use it equally. It lives in its own directory, `nucleo/`, outside `editor/`.
+   Node, use it equally. It lives in its own directory, `core/`, outside `editor/`.
 2. **The compiler builds a typed WASM tree** —as §1 of the plan already asked for
    the WAT— and serializes it in two ways: to **binary**, with its own encoder,
    to run it; and to **WAT text**, to read it when debugging and for the
@@ -605,8 +605,8 @@ I/O subpalette (step 4 of the roadmap) or phase R7.
 
 ### Consequences
 
-a. **Rule 4 of `03` is met** as soon as `grafo.mjs` and `tipos.mjs` move to
-   `nucleo/`: they stop being provisional and become the core. They are moved when writing the
+a. **Rule 4 of `03` is met** as soon as `graph.mjs` and `types.mjs` move to
+   `core/`: they stop being provisional and become the core. They are moved when writing the
    compiler, not before.
 
 b. **Tests.** The whole core is tested with `node:test`, like the editor. The plan's
@@ -635,10 +635,10 @@ g. **Accepted risk: compiler performance.** Compiling in JavaScript is
 
 | What | Mechanism | Status |
 |------|-----------|--------|
-| A single implementation of the graph | `grafo.mjs` and `tipos.mjs` in `nucleo/`, imported by the editor and by `check` | **Done in the editor** (2026-09-30), next to `nucleo/qvi.mjs`; `check` does not exist yet |
-| The generated binary is valid | `WebAssembly.validate` on the output of each compiler test | **Verified** (`editor/test/compilador.test.mjs`) |
+| A single implementation of the graph | `graph.mjs` and `types.mjs` in `core/`, imported by the editor and by `check` | **Done in the editor** (2026-09-30), next to `core/model/qvi-format.mjs`; `check` does not exist yet |
+| The generated binary is valid | `WebAssembly.validate` on the output of each compiler test | **Verified** (`test/core/compiler.test.mjs`) |
 | The WAT text is the same program | Golden-output tests of the `.wat` | **Pending** |
-| R0 | `solder run examples/suma-basica.qvi` prints `8.0` | **Verified**: `node nucleo/cli.mjs run docs/schema/examples/suma-basica.qvi.json` prints `Resultado = 8` (test "suma basica se compila a webassembly y da 8"). The `examples/` corpus is still in the Red format |
+| R0 | `solder run examples/suma-basica.qvi` prints `8.0` | **Verified**: `node cli/solder.mjs run docs/schema/examples/suma-basica.qvi.json` prints `Resultado = 8` (test "suma basica se compila a webassembly y da 8"). The `examples/` corpus is still in the Red format |
 | An infinite loop does not freeze the interface | *Worker* test: Abort terminates it | **Pending** |
 
 ---
@@ -661,10 +661,10 @@ that change while running, Abort, Latch, parallel loops and Wait (ms).**
 
 ### Context
 
-Today `run()` runs from start to finish. `nucleo/ejecutar.mjs` instantiates the module,
+Today `run()` runs from start to finish. `core/runtime/runtime.mjs` instantiates the module,
 gives it the controls through `panel.leer_*` **once, when it reads them**, collects the
-indicators into an object and returns them at the end. `editor/src/app.mjs`
-(`ejecutarVI`) launches it in a worker (`ejecutor.mjs`) and draws the results
+indicators into an object and returns them at the end. `editor/src/window/editor-window.mjs`
+(`ejecutarVI`) launches it in a worker (`run-worker.mjs`) and draws the results
 when the single message back arrives. Without loops that is enough. With loops,
 in LabVIEW:
 
@@ -681,7 +681,7 @@ in LabVIEW:
 
 Facts checked to decide (2026-10-01, in the project's Electron):
 
-- **Version.** `editor/package.json` asks for Electron `^40.10.6`; installed, 40.10.6
+- **Version.** `package.json` asks for Electron `^40.10.6`; installed, 40.10.6
   with Chrome/V8 144. Node 24.19 (V8 13.6) for the command line.
 - **How the page is loaded.** Through its own protocol, `solder://`, served by
   `protocol.handle` in `editor/electron/main.mjs`, with
@@ -905,7 +905,7 @@ and 2000 ms outside the loop (`labview-captures/run/r1.png` to `r4.png`):
 | Run mode | The arrow fills in, Abort lights up, the editing tools and the panel grid disappear |
 
 **The design.** The compiler splits the diagram into clumps
-(`nucleo/compilador.mjs`, `partir`): each node that takes time (Wait (ms), Wait Until
+(`core/compiler/compiler.mjs`, `partir`): each node that takes time (Wait (ms), Wait Until
 Next ms Multiple; later, loops, subVIs and I/O) goes alone in its own, and
 the instantaneous ones are grouped by the set of time-taking nodes they
 depend on. An instantaneous node thus runs as soon as the last long node it
@@ -913,7 +913,7 @@ depends on ends, which is exactly when its data arrives: what is observable (whe
 indicator is written, when a control is read) is the same as if each node ran on
 its own, without paying one task per node. Each clump is an exported function
 (`c0`, `c1`…); the values that cross from one clump to another go through globals. The
-host (`nucleo/ejecutar.mjs`, `planificar`) launches each clump when those from which it receives
+host (`core/runtime/runtime.mjs`, `planificar`) launches each clump when those from which it receives
 something have ended; the long ones, with `WebAssembly.promising`,
 and their waits are `Suspending` imports. A VI with no long nodes is a single
 clump and runs in one go, without JSPI.
@@ -922,7 +922,7 @@ clump and runs in one go, without JSPI.
 scheduler, live writes (the worker gathers them and sends them when the VI
 yields), Abort (with `terminate()` if it does not answer within 500 ms), Latch When Released
 (the factory action of Stop, OK and Cancel, which now take it when placed), Run
-mode in both windows and Ctrl+. Tested in `editor/test/ejecucion.test.mjs` and in
+mode in both windows and Ctrl+. Tested in `test/core/execution.test.mjs` and in
 the real editor, in Xvfb (`labview-captures/run/solder/`).
 
 **For M4:** a loop is a long node; its body is emitted inline and calls
@@ -934,7 +934,7 @@ Ctrl+M (toggle Run mode without running) is left undone.
 
 ### Consequences
 
-a. `nucleo/ejecutar.mjs` stops being "instantiate and call `run` once": it becomes
+a. `core/runtime/runtime.mjs` stops being "instantiate and call `run` once": it becomes
    an asynchronous host with `Suspending`/`promising` wrappers, a
    task scheduler and a message channel with the panel (control values,
    indicator values, Latch resets, Abort).
@@ -945,13 +945,13 @@ c. The panel gains **Run mode** and the behavior of controls (mechanical
    action, Latch). The editor's worker is kept alive between Runs and is
    restarted only if Abort fails to stop it.
 d. This decision does not touch `.qvi`, the schema, or the format: it is execution only.
-e. `nucleo/cli.mjs` and `npm test` launch Node with `--experimental-wasm-jspi`
+e. `cli/solder.mjs` and `npm test` launch Node with `--experimental-wasm-jspi`
    until Node ships it stable. A VI with no waits also runs without it.
 
 ### Spike that validates C before building M4
 
 An afternoon's script, without touching the compiler (modules written by hand with the
-encoder from `nucleo/`):
+encoder from `core/`):
 
 1. A module with a While that counts, writes the counter to an indicator on each
    iteration, calls `ceder` and ends when `leer_bool(stop)` gives true.
@@ -980,9 +980,9 @@ moves to reduced B (yielding between iterations of each task's outermost loop).
 |------|-----------|--------|
 | JSPI available in the project's Electron, page and worker | Experiment of 2026-10-01 (`Suspending`/`promising`, 42 returned, ≈ 2 µs per yield) | **Verified**; CI test missing |
 | `SharedArrayBuffer` only with COOP/COEP | Same experiment | **Verified** |
-| Parallel branches, live indicators, chained waits (spike, 2) | `ejecucion.test.mjs`, and in the editor in Xvfb: Wait 1000 and 2000 end at 2 s | **Verified** |
-| Abort on a VI that is waiting (spike, 3) | `ejecucion.test.mjs`: stops at 30 ms of a 2000 Wait | **Verified** |
-| Latch When Released | `ejecucion.test.mjs` and the Stop in the real editor | **Verified** |
+| Parallel branches, live indicators, chained waits (spike, 2) | `execution.test.mjs`, and in the editor in Xvfb: Wait 1000 and 2000 end at 2 s | **Verified** |
+| Abort on a VI that is waiting (spike, 3) | `execution.test.mjs`: stops at 30 ms of a 2000 Wait | **Verified** |
+| Latch When Released | `execution.test.mjs` and the Stop in the real editor | **Verified** |
 | A loop that yields, its cost and Stop while running (spike, 1, 4 and 5) | With the loops, in M4 | **Pending** |
 
 ## DT-041
@@ -992,8 +992,8 @@ compiler.**
 
 - **Status:** **Accepted on 2026-10-01**, when starting M4. It is taken by the project's architect
   at the request of the developer, like DT-040. **Done** is the core
-  of While and For: model (`nucleo/grafo.mjs`), types, compilation, adaptive
-  yielding and `.qvi` (`editor/test/estructuras.test.mjs`, 13 tests: sum with
+  of While and For: model (`core/model/graph.mjs`), types, compilation, adaptive
+  yielding and `.qvi` (`test/core/structures.test.mjs`, 13 tests: sum with
   shift register, live Stop, For with N ≤ 0, nested, parallel, Abort of an
   infinite loop, a million iterations in ~10 ms, save and open).
 - **Complements:** [DT-040](#dt-040) (a loop is a long node of its scope) and
@@ -1001,7 +1001,7 @@ compiler.**
 
 ### Context
 
-The editor graph (`nucleo/grafo.mjs`) is flat: `nodos` and `cables`, with one id
+The editor graph (`core/model/graph.mjs`) is flat: `nodos` and `cables`, with one id
 per node. Selection, dragging, wires with
 bends, undo, synchronization of the two windows and type resolution are all built on that shape.
 The `.qvi` file, on the other hand, nests: each structure has its `body` (or its
@@ -1044,7 +1044,7 @@ iteration (`i`), condition and count (`N`) terminals are inside.
    suspends so that the other clumps, the panel and Abort can run. Calling it on every
    iteration cost ~310 ns (measured); with a budget, a million iterations take
    ~10 ms. Output tunnels give their value when the loop ends.
-5. **The file does not change shape:** `nucleo/qvi.mjs` translates from flat to nested
+5. **The file does not change shape:** `core/model/qvi-format.mjs` translates from flat to nested
    on save and the reverse on open.
 
 ### Consequences
@@ -1179,7 +1179,7 @@ c. **Clusters (done on 2026-10-02):** a flat fixed-size block in the node's data
    inside the cluster); a shift register keeps its copy; the default
    cluster is a zeroed zone that is never written. The panel reads and
    writes it field by field with the layout the compiler gives
-   (`editor/test/clusters.test.mjs`). Comparing clusters, not yet: it gives a
+   (`test/core/clusters.test.mjs`). Comparing clusters, not yet: it gives a
    compile error with its reason.
 d. **One-dimensional arrays (done on 2026-10-02):** the block
    `[n I32][4 of padding][elements]`, so that a DBL stays aligned; each
@@ -1192,7 +1192,7 @@ d. **One-dimensional arrays (done on 2026-10-02):** the block
    Array, Add/Multiply Array Elements, And/Or Array Elements, constants and the
    panel, and the **auto-indexing** of loops: an indexed input tunnel gives its
    element on each iteration and a For without N runs as many iterations as the shortest
-   array; an indexed output one builds the array (`editor/test/arrays.test.mjs`).
+   array; an indexed output one builds the array (`test/core/arrays.test.mjs`).
    **Update of 2026-10-02:** Replace Array Subset, Insert Into Array, Delete From Array, Sort 1D Array, Rotate 1D Array, Split 1D Array and Increment/Decrement Array Element are JavaScript imports (module `arr` of the `.wasm`, `a_*`) that read and rewrite the elements' bytes with `nuevo_array`; they do not touch the allocator. **Not yet:** 2-dimensional arrays (Build Array of several arrays without
    Concatenate Inputs gives an error with its reason) and *inplaceness* (§5).
 e. The data space lives as long as the module instance lives. For an uninitialized shift
@@ -1206,7 +1206,7 @@ The string functions that depend on LabVIEW's format are, as consequence b says,
 the input handles from memory and write the result into the node's cell
 with `ex.redimensionar`, like `panel.leer_cad`: `sub`, `mayus`, `minus`, `invertir`,
 `rotar`, `recortar`, `reemplazar`, `buscar` (+ `extra`), `cmp`, `dec`, `hex`, `oct`,
-`frac`, `exp`, `eng` and the four `leer_*` (`nucleo/ejecutar.mjs`, `CADENAS` object,
+`frac`, `exp`, `eng` and the four `leer_*` (`core/runtime/runtime.mjs`, `CADENAS` object,
 which are pure functions over "binary strings": one JavaScript character per
 byte, so a byte >127 arrives intact). These stay in WebAssembly: String Length,
 Concatenate Strings (N inputs, a single `redimensionar` and `memory.copy`), the
@@ -1223,7 +1223,7 @@ scalar (`cad.extra()`), because an import only returns one value.
   point. Only the functions with `use system decimal point` use it.
 - A string **is not copied when wired**: two nodes that read the same output read
   the same handle. Select with strings returns the handle of the chosen branch.
-- The allocator, memory and cells were not touched (nothing changes in `memoria.mjs`).
+- The allocator, memory and cells were not touched (nothing changes in `linear-memory.mjs`).
 
 ## DT-043
 
@@ -1260,7 +1260,7 @@ nobody wires it.**
 5. **The error texts are our own.** LabVIEW's are in NI files of its installation:
    they are not copied (like the captures, DT-035 §8). LabVIEW's **codes** are used
    (they are data: 7 is "file not found") with a text written in Solder, in
-   `nucleo/errores.mjs`, with the same structure
+   `core/runtime/error-codes.mjs`, with the same structure
    ("Possible reason(s):", several reasons separated by `=====`, the paragraph for an
    undefined code).
 6. **Errors are values, not exceptions.** They travel along the wire like any

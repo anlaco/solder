@@ -1,0 +1,536 @@
+/* Colors and look of a VI's windows, cloned from LabVIEW 2026Q3.
+ * Positions and sizes are set by window/window-view.mjs, with the measurements
+ * from the captures; colors, typography and placeholders live here (rule 57).
+ * The dark theme that spec/05-editor.md §2 asks for is pending. */
+
+:root {
+  /* Segoe UI at 12 px when available, which is LabVIEW's font; otherwise Noto Sans
+     at 11.3 px, which matches its widths. Chosen by window/editor-window.mjs (spec/06-visual.md §10). */
+  --fuente: 11.3px;
+  --cromo: #f0f0f0;
+  --borde-oscuro: #2a2a2a;
+  --borde-caja: #7a7a7a;
+  --texto-hueco: #696969;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--cromo);
+  font-family: "Segoe UI", "Noto Sans", sans-serif;
+  font-size: var(--fuente);
+  color: #000;
+  cursor: default;
+  user-select: none;
+}
+
+svg { display: block; overflow: visible; }
+
+.ventana { position: absolute; inset: 0; }
+
+/* Cabecera: menús, surco, barra de herramientas y zona de iconos */
+.cabecera { position: absolute; left: 0; right: 0; top: 0; background: var(--cromo); }
+.menus { position: absolute; left: 0; top: 0; display: flex; align-items: center; padding-left: 0.3px; }
+/* El texto va dos veces, apilado: el derecho, invisible, da el ancho. */
+.menu { padding: 0 7px; height: 100%; display: grid; align-items: center; white-space: nowrap; }
+.menu > span { grid-area: 1 / 1; }
+.menu > .medida { visibility: hidden; font-style: normal; }
+/* La línea base de LabVIEW cae en la fila 19 de la barra de menús. */
+.menu > .texto { position: relative; top: -0.667px; }
+/* Las líneas finas de la cabecera van fila a fila de la captura a 150 %:
+   cada una mide 2/3 px. */
+.surco {
+  position: absolute; left: 0;
+  background: linear-gradient(#e3e3e3 0 0.667px, #aeaeae 0.667px 1.333px, #cecece 1.333px 2px, #fdfdfd 2px 2.667px, #f3f3f3 2.667px);
+}
+.barra { position: absolute; left: 0; }
+.barra > div { position: absolute; top: 0; height: 100%; display: flex; align-items: center; }
+.borde-barra {
+  position: absolute; left: 0; right: 0; z-index: 1;
+  background: linear-gradient(#aeaeae 0 0.667px, #7c7c7c 0.667px 1.333px, #e2e2e2 1.333px);
+}
+.zona-iconos { position: absolute; right: 0; top: 0; }
+/* El separador baja desde arriba del todo hasta el borde de la barra, que lo cruza. */
+.zona-iconos::before {
+  content: ""; position: absolute; left: 0.33px; top: 0; bottom: 0;
+  border-left: 1px solid #808080;
+}
+.icono-vi { position: absolute; }
+.icono-vi svg { width: 100%; height: 100%; }
+
+.menu:hover, .boton:hover { box-shadow: inset 0 0 0 1px #b9b9b9; border-radius: 2px; }
+
+.boton { justify-content: center; }
+.boton .glifo svg { width: 16px; height: 16px; }
+.boton.con-desplegable { justify-content: flex-start; padding-left: 4px; }
+.boton.con-desplegable .triangulo { margin-left: 3px; }
+.triangulo svg { width: 6px; height: 3.6px; }
+
+/* Text Settings es un anillo: gris como la barra. La búsqueda, blanca. Las dos
+   ocupan de la fila 34 a la 66, con el borde centrado en la 35 y la 65. */
+.barra > .caja-valor, .barra > .caja-busqueda {
+  border: 1px solid var(--borde-caja);
+  top: 0.667px;
+  bottom: 0.5px;
+  height: auto;
+}
+.caja-busqueda { background: #fff; }
+.caja-valor .valor { padding-left: 5px; flex: 1; overflow: hidden; white-space: nowrap; }
+/* La flecha, a 12,7 px del borde derecho (597–604 px de 399–619). */
+.caja-valor .triangulo { position: absolute; right: 9.7px; }
+.caja-busqueda .selector {
+  width: 10.7px; align-self: stretch; display: flex; align-items: center; justify-content: center;
+  border-right: 1px solid #c8c8c8; margin: 3px 0;
+}
+.caja-busqueda .selector svg { width: 3.4px; height: 5px; }
+.caja-busqueda .valor { padding-left: 5.3px; flex: 1; white-space: nowrap; }
+.caja-busqueda .lupa svg { width: 14px; height: 14px; margin-right: 7px; }
+.texto-barra { white-space: nowrap; }
+/* La línea base del texto de la barra cae en la fila 55, como en LabVIEW. */
+.barra .valor { position: relative; top: -0.667px; }
+.barra > .texto-barra { top: -0.667px; }
+
+/* Lienzos */
+.lienzo { position: absolute; left: 0; }
+.lienzo-block-diagram { background: #fff; }
+/* La rejilla del panel: cada 12 px, desde el borde mismo del lienzo. */
+.lienzo-front-panel {
+  background-color: #e2e2e2;
+  background-image:
+    linear-gradient(#dadada 1px, transparent 1px),
+    linear-gradient(90deg, #dadada 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+/* En modo Run el panel pierde la rejilla: gris liso (labview-captures/run/r1.png). */
+.ejecutando .lienzo-front-panel { background-image: none; }
+.canalon { position: absolute; right: 0; background: var(--cromo); border-left: 1px solid #fcfcfc; }
+
+/* Barra de estado */
+.barra-estado { position: absolute; left: 0; right: 0; bottom: 0; background: var(--cromo); border-top: 1px solid #fcfcfc; }
+.instancia {
+  height: calc(100% + 1px); margin-top: -1px;
+  border-top: 1px solid var(--borde-oscuro);
+  box-shadow: 0 -0.7px 0 var(--borde-caja);
+  border-left: 1px solid var(--borde-oscuro);
+  border-right: 1px solid var(--borde-oscuro);
+  margin-left: 0.667px;
+  padding-left: 2px; white-space: nowrap; overflow: hidden;
+  display: flex; align-items: center;
+}
+
+/* Desactivado por contexto: gris más claro, sin cursiva ni esquina. Lo usará
+   lo que exista y no aplique ahora, como Undo sin nada que deshacer. */
+.desactivado { color: #a0a0a0; }
+.desactivado .glifo, .desactivado svg { opacity: 0.35; }
+
+/* Huecos (regla 57): gris, cursiva si es texto, esquina doblada si es icono.
+   La esquina va arriba a la derecha porque LabVIEW ya usa la de abajo para los
+   botones con menú al mantener pulsado. */
+.hueco { color: var(--texto-hueco); }
+.menu.hueco > .texto, .texto-barra.hueco, .instancia.hueco, .hueco .valor, .fila.hueco .fila-texto, .item-menu.hueco .texto-menu { font-style: italic; }
+.hueco .glifo, .icono-vi.hueco svg, .carpeta.hueco svg, .chincheta.hueco svg, .icono-funcion.hueco svg { opacity: 0.6; }
+.boton.hueco::after, .icono-vi.hueco::after, .carpeta.hueco .caja-carpeta::after, .chincheta.hueco::after, .icono-funcion.hueco::after {
+  content: ""; position: absolute; top: 1px; right: 1px; width: 5px; height: 5px; pointer-events: none;
+  background: linear-gradient(225deg, #c8c8c8 0 50%, #878787 50% calc(50% + 0.8px), transparent calc(50% + 0.8px));
+}
+
+/* Paleta, de paletas/functions-programming-desplegada.png. El borde mide
+   1 px a 150 %; dentro, un bisel: más oscuro en el título. */
+.paleta {
+  position: absolute; z-index: 10;
+  background: #dddddd;
+  border: 0.667px solid #a0a0a0;
+  /* La sombra de ventana: 7 px por fuera del borde a la derecha y abajo. */
+  box-shadow: 0.667px 0.667px 0 #bebebe, 3.333px 3.333px 3.333px -1.333px rgba(0, 0, 0, 0.66);
+}
+.paleta::after, .paleta::before { content: ""; position: absolute; left: 0; right: 0; pointer-events: none; z-index: 3; }
+.paleta::after { top: 0; bottom: 0; box-shadow: inset 0 0 0 0.667px #cccccc; }
+.paleta::before { top: 0; height: 22px; z-index: 4; box-shadow: inset 0.667px 0.667px 0 #bebebe, inset -0.667px 0 0 #bebebe; }
+.paleta-titulo { position: relative; }
+.chincheta { position: absolute; left: 9px; top: 4.33px; width: 17.33px; height: 17.33px; }
+.chincheta svg { width: 100%; height: 100%; }
+.paleta-nombre { position: absolute; left: 39px; top: 50%; transform: translateY(calc(-50% + 1.3px)); white-space: nowrap; }
+/* Columnas 221–313 y filas 8–33: pegada al separador, sin redondeo. */
+.paleta-busqueda { position: absolute; left: 146.67px; width: 62px; top: 4.67px; bottom: 0; background: #f8f8f8; }
+.paleta-busqueda .lupa { position: absolute; left: 4px; top: 0.67px; width: 16px; height: 16px; }
+.paleta-busqueda .lupa svg { width: 100%; height: 100%; }
+.paleta-busqueda .valor { position: absolute; left: 22.6px; top: 50%; transform: translateY(calc(-50% - 1px)); white-space: nowrap; }
+.paleta-separador { background: linear-gradient(#d4d4d4 0 0.667px, #d3d3d3 0.667px 1.333px, #f1f1f1 1.333px); }
+.fila { position: relative; background: #dddddd; }
+.fila.desplegada { background: #f8f8f8; }
+/* El texto va arriba en su fila, no centrado, como en LabVIEW. */
+.fila-texto { position: absolute; top: -0.6px; line-height: 16px; white-space: nowrap; }
+.fila.desplegada .fila-texto { top: -1.27px; }
+.fila .flecha { position: absolute; top: 2px; }
+.fila.desplegada .flecha { top: 2.67px; }
+.fila .flecha svg { width: 6.67px; height: 12px; }
+/* La lista de categorías lleva un realce dentro del bisel: a los lados y abajo. */
+.fila:not(.desplegada), .flechas-dobles, .paleta-enlace, .paleta-pie {
+  box-shadow: inset 1.333px 0 0 #f3f3f3, inset 2px 0 0 #e2e2e2, inset -1.333px 0 0 #f3f3f3, inset -2px 0 0 #e2e2e2;
+}
+.paleta-pie {
+  box-shadow: inset 0 -1.333px 0 #f3f3f3, inset 0 -2px 0 #e2e2e2,
+    inset 1.333px 0 0 #f3f3f3, inset 2px 0 0 #e2e2e2, inset -1.333px 0 0 #f3f3f3, inset -2px 0 0 #e2e2e2;
+}
+.rejilla { position: relative; background: #f8f8f8; }
+/* Una carpeta: pestaña (filas 84–86), lomo (87–88) y caja (90–143). */
+.carpeta { position: absolute; }
+.pestana {
+  position: absolute; left: 3.33px; top: 0; width: 16.67px; height: 2px; background: #6e706f;
+  clip-path: polygon(1.33px 0, calc(100% - 0.67px) 0, 100% 100%, 0 100%);
+}
+.lomo { position: absolute; left: 2px; top: 2px; width: 36px; height: 1.333px; background: linear-gradient(#7b7e7d 0 0.667px, #aeb0b0 0.667px); }
+.caja-carpeta {
+  position: absolute; left: 0; right: 0; top: 4px; bottom: 0;
+  background: #fff; border: 0.667px solid #858786; border-radius: 1px;
+  box-shadow: inset 0 0 0 0.667px #b6b7b7;
+  display: flex; align-items: center; justify-content: center;
+}
+.caja-carpeta svg { width: 30px; height: 30px; }
+.flechas-dobles { display: flex; align-items: center; justify-content: center; }
+.flechas-dobles svg { width: 7.33px; height: 8px; position: relative; top: 0.67px; }
+.paleta-enlace { position: relative; }
+.paleta-enlace .valor { position: absolute; left: 4px; right: 0; top: 1.5px; line-height: 16px; text-align: center; white-space: nowrap; }
+
+/* Explicaciones: la abierta al activar un hueco, y la que sale al pasar el ratón */
+.explicacion, .emergente {
+  position: absolute; z-index: 20; max-width: 360px;
+  background: #fff; border: 1px solid #b4b4b4; border-radius: 3px;
+  box-shadow: 0.667px 0.667px 0 #bebebe, 3.333px 3.333px 3.333px -1.333px rgba(0, 0, 0, 0.66);
+  padding: 6px 8px; font-size: 12px; font-style: normal; color: #000; user-select: text;
+}
+.emergente { z-index: 30; pointer-events: none; }
+.explicacion p, .emergente p { margin: 4px 0 0; }
+.explicacion-cabeza em { color: #6e6e6e; margin-left: 4px; }
+.explicacion code, .emergente code { display: block; margin-top: 4px; font-size: 10px; color: #828282; }
+
+/* Subpaleta, de paletas/functions-numeric.png: una ventana aparte, al lado de
+   la carpeta que la abre, con la barra de título 2 px más alta que la paleta. */
+.subpaleta { z-index: 11; }
+.subpaleta::before { height: 24px; }
+.subpaleta .chincheta { left: 13px; top: 6.33px; }
+.subpaleta .paleta-nombre { left: 43px; transform: translateY(calc(-50% + 2.3px)); }
+.rejilla-subpaleta { position: absolute; left: 0; right: 0; top: 26px; bottom: 0; background: #f8f8f8; }
+.icono-funcion { position: absolute; }
+.icono-funcion svg { width: 100%; height: 100%; }
+.icono-funcion text { font-family: Arial, "Liberation Sans", sans-serif; }
+
+/* La carpeta cuya subpaleta está abierta lleva un marco azul alrededor: la
+   línea en las columnas 228–293 y las filas 84–149 de la captura, con un halo
+   por fuera y otro por dentro. La carpeta no se mueve. */
+.carpeta .marco {
+  position: absolute; left: -2px; top: -2px; width: 44px; height: 44px; pointer-events: none;
+  border: 0.667px solid #2a8ddd;
+  box-shadow: 0 0 0 0.667px #cee2f2, inset 0 0 0 0.667px #7cb8e7;
+}
+
+/* The diagram: wires below, nodes above (spec/05 §3.2). Clones
+   labview-captures/block-diagram/numeric-*.png and the video they come from.
+   Wires take the color of their type and the thickness of their dimension
+   (spec/06-visual.md §4). The cursors are set by window/editor-window.mjs in
+   --cursor-cruz and --cursor-bobina: they are those of LabVIEW's automatic tool. */
+.lienzo-block-diagram { overflow: hidden; cursor: var(--cursor-cruz, crosshair); }
+.cables { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.cables polyline { fill: none; }
+.tramo-zona { stroke: transparent; stroke-width: 6; pointer-events: stroke; cursor: default; }
+/* Un tramo seleccionado: hormigas azules sobre el cable, sólo en ese tramo. */
+.tramo-elegido { stroke: #3c8fd8; stroke-width: 2.2; stroke-dasharray: 2 2; animation: hormigas 0.5s linear infinite; }
+.cable-roto { stroke: #000; stroke-width: 1; stroke-dasharray: 3 2; }
+.cable-x line { stroke: #e00000; stroke-width: 1.5; }
+/* El cable que se está tirando: punteado negro. */
+.cable-tirando { stroke: #000; stroke-width: 1.33; stroke-dasharray: 1.33 1.33; }
+@keyframes hormigas { to { stroke-dashoffset: -4; } }
+/* El punto de coerción: una cuña roja en la entrada que convierte. */
+.coercion { fill: #ff0000; }
+.nodo { position: absolute; cursor: default; }
+.glifo-nodo { position: absolute; width: 32px; height: 32px; pointer-events: none; }
+.glifo-nodo svg { width: 100%; height: 100%; }
+.glifo-nodo text { font-family: Arial, "Liberation Sans", sans-serif; }
+/* Lo seleccionado, con hormigas alrededor, como LabVIEW. */
+.nodo.seleccionado::before {
+  content: ""; position: absolute; inset: -2.5px; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, #5a7fb8 0 2px, transparent 2px 4px) top / 100% 1px no-repeat,
+    repeating-linear-gradient(90deg, #5a7fb8 0 2px, transparent 2px 4px) bottom / 100% 1px no-repeat,
+    repeating-linear-gradient(0deg, #5a7fb8 0 2px, transparent 2px 4px) left / 1px 100% no-repeat,
+    repeating-linear-gradient(0deg, #5a7fb8 0 2px, transparent 2px 4px) right / 1px 100% no-repeat;
+}
+.constante {
+  position: absolute; inset: 0; background: #fff; border: 2px solid;
+  display: flex; align-items: center; justify-content: center; gap: 2px;
+  font-size: var(--fuente); line-height: 1; white-space: nowrap;
+}
+.constante.editando { cursor: text; }
+/* Una constante de cadena puede tener varias líneas: Intro baja de línea. */
+.constante.cadena { white-space: pre; line-height: 15px; justify-content: flex-start; align-items: flex-start; padding: 0 2px; box-sizing: border-box; font-size: var(--fuente); }
+.constante.cadena .caret { display: inline-block; vertical-align: -2px; }
+/* Expression Node: celdas de terminal y la expresión en medio, de block-diagram/numeric-expression-node.png. */
+.expresion { position: relative; box-sizing: border-box; width: 100%; height: 100%; background: #fff; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 11px; white-space: nowrap; }
+.expresion .expresion-lados { position: absolute; left: -1px; top: -1px; width: calc(100% + 2px); height: calc(100% + 2px); pointer-events: none; }
+.expresion .expresion-lados .celda { fill: #ffffcc; stroke: #000; stroke-width: 1; }
+.expresion .texto-expresion { position: relative; }
+.expresion.editando { cursor: text; }
+/* Al editar, el texto sale seleccionado: blanco sobre negro. */
+.texto-elegido { background: #000; color: #fff; padding: 0 0.5px; }
+.caret { width: 1px; height: 11px; background: #000; animation: parpadeo 1s steps(1) infinite; }
+@keyframes parpadeo { 50% { opacity: 0; } }
+.selector-constante { margin-right: auto; padding-left: 1px; font-size: 8px; color: #0000ff; }
+/* Vista de terminales: cada terminal del color de su tipo, con bordes negros. */
+.vista-terminales { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.vista-terminales .divisiones line { stroke: #000; stroke-width: 1.33; }
+.vista-terminales .contorno { fill: none; stroke: #000; stroke-width: 1.6; stroke-linejoin: miter; }
+/* Sobre un terminal, la bobina de cablear. */
+.terminal { position: absolute; cursor: var(--cursor-bobina, crosshair); }
+.ventana.cableando, .ventana.cableando * { cursor: var(--cursor-bobina, crosshair) !important; }
+.rectangulo { position: absolute; border: 1px dashed #000; pointer-events: none; }
+.fantasma { opacity: 0.8; pointer-events: none; }
+.aviso {
+  position: absolute; z-index: 20; max-width: 300px;
+  background: #fff; border: 1px solid #b4b4b4; border-radius: 3px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  padding: 4px 6px; font-size: 12px;
+}
+/* Menú de clic derecho, de numeric-menu-funcion.png: el de Windows. */
+.menu-contextual {
+  position: absolute; z-index: 25; background: #f0f0f0;
+  border: 1px solid #979797; box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.35);
+}
+.item-menu { position: absolute; left: 2px; right: 2px; white-space: nowrap; }
+.item-menu .texto-menu { position: absolute; top: 50%; transform: translateY(-50%); }
+.item-menu.activo, .item-menu:hover { background: #0078d7; color: #fff; }
+.item-menu.activo svg polygon, .item-menu:hover svg polygon { fill: #fff; }
+.item-menu.hueco:hover, .item-menu.hueco.activo { color: #fff; }
+.item-menu .flecha-menu { position: absolute; top: 50%; transform: translateY(-50%); }
+.item-menu .atajo-menu { position: absolute; top: 50%; transform: translateY(-50%); }
+.item-menu.hueco .atajo-menu { font-style: italic; }
+/* El menú de la barra abierto: su título, resaltado en azul. */
+.menu.abierto { background: #0078d7; color: #fff; box-shadow: none; }
+.item-menu .flecha-menu svg { width: 4px; height: 7.2px; }
+.item-menu.marcado::before { content: "✓"; position: absolute; left: 6px; top: 50%; transform: translateY(-50%); }
+.separador-menu { position: absolute; left: 5px; right: 5px; height: 1px; background: #bdbdbd; }
+/* La rejilla de Representation: iconos de 32 px, la actual con un marco azul de 3 px que sobresale uno. */
+.menu-contextual.rejilla { background: #f8f8f8; }
+.item-menu.celda-rep { right: auto; width: 32px; height: 32px; }
+.item-menu.celda-rep svg { display: block; width: 32px; height: 32px; }
+.item-menu.celda-rep:hover, .item-menu.celda-rep.activo { background: none; }
+.item-menu.celda-rep.marcado::before { content: ""; left: -1px; top: -1px; width: 34px; height: 34px; transform: none; box-shadow: inset 0 0 0 3px #0078d7; }
+.item-menu.celda-rep.hueco svg { opacity: 0.45; }
+/* El nombre de la celda bajo el ratón sale centrado en la franja de arriba del submenú. */
+.item-menu.celda-rep .nombre-celda { display: none; position: absolute; text-align: center; white-space: nowrap; color: #000; font-style: normal; pointer-events: none; }
+.item-menu.celda-rep:hover .nombre-celda { display: block; }
+/* El tip strip de LabVIEW: el nombre de lo que hay bajo el ratón. */
+/* En el vídeo sale 22 px por debajo del ratón, con el texto centrado en una
+   caja alta: «x» ocupa 17 × 30 px. */
+.tip {
+  position: absolute; z-index: 40; pointer-events: none; white-space: nowrap;
+  background: #ffffe1; border: 1px solid #000; padding: 0 4px; font-size: var(--fuente);
+  min-width: 11px; height: 20px; line-height: 18px; text-align: center;
+}
+
+/* Compound Arithmetic en el diagrama, de compound-estirar.png: celdas de
+   entrada a la izquierda, el símbolo del modo a la derecha. */
+.compuesto { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.compuesto rect { fill: #ffffcc; stroke: #7a7a62; stroke-width: 1; }
+.compuesto .celdas line { stroke: #7a7a62; stroke-width: 1; }
+.compuesto .division { stroke: #000; stroke-width: 1.2; }
+.compuesto text { font-size: 9.5px; text-anchor: middle; dominant-baseline: central; fill: #505040; font-family: Arial, "Liberation Sans", sans-serif; }
+/* Las asas de un nodo que se estira: cuadritos azules arriba y abajo. */
+.asa { position: absolute; width: 4px; height: 4px; background: #1a7fd6; cursor: ns-resize; z-index: 2; }
+/* Invert: un circulito en el terminal invertido. */
+.invertida { position: absolute; width: 3.6px; height: 3.6px; border-radius: 50%; background: #fff; border: 1px solid #000; box-sizing: border-box; pointer-events: none; }
+/* En una subpaleta, el nombre de lo que está bajo el ratón, centrado bajo el título. */
+.nombre-sobre { position: absolute; left: 0; right: 0; transform: translateY(-50%); text-align: center; white-space: nowrap; }
+.icono-funcion .marco-funcion {
+  position: absolute; left: -6px; top: -6px; width: 44px; height: 44px; pointer-events: none;
+  border: 0.667px solid #2a8ddd; box-shadow: 0 0 0 0.667px #cee2f2, inset 0 0 0 0.667px #7cb8e7;
+}
+
+/* El panel: controles e indicadores numéricos, de front-panel/numeric-panel.png
+   y del vídeo numeric-colocar-etiquetas.mp4. La casilla es blanca en un control
+   y gris en un indicador, hundida con un bisel. */
+.lienzo-front-panel { overflow: hidden; cursor: var(--cursor-cruz, crosshair); }
+.objeto-panel { position: absolute; cursor: default; }
+.objeto-panel .incrementador { position: absolute; left: 0; top: 0; width: 16px; height: 100%; }
+.incrementador svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+/* Cada mitad del incrementador es una flecha que se pulsa. */
+.flecha-inc { position: absolute; left: 0; width: 13px; height: 50%; }
+.flecha-inc[data-paso="1"] { top: 0; }
+.flecha-inc[data-paso="-1"] { bottom: 0; }
+/* Mientras se escribe el valor de un control: cursor de texto y un marco negro alrededor. */
+.casilla { cursor: text; }
+.casilla.indicador { cursor: default; }
+/* Un control booleano es un dibujo de dos estados; el clic lo recibe el objeto, no el dibujo. */
+.objeto-panel.booleano svg { display: block; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+.objeto-panel.booleano text { font-family: Arial, "Liberation Sans", sans-serif; }
+.objeto-panel.editando-valor { outline: 1px solid #000; outline-offset: 1px; }
+.casilla {
+  position: absolute; top: 0; bottom: 0; box-sizing: border-box;
+  border: 4px solid; border-color: #c2c2c2 #ececec #f2f2f2 #cacaca;
+  background: #fafafa; box-shadow: inset 1px 1px 0 #a8a8a8;
+  display: flex; align-items: center; padding-left: 2px;
+  font-size: var(--fuente); line-height: 1; white-space: nowrap; overflow: hidden;
+}
+.casilla.indicador { background: #d1d1d1; }
+/* La casilla de un control de cadena: texto a la izquierda, con las líneas que tenga. */
+.casilla.cadena { white-space: pre; line-height: 15px; }
+.objeto-panel.seleccionado::before, .etiqueta.seleccionada::before {
+  content: ""; position: absolute; inset: -2.5px; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, #5a7fb8 0 2px, transparent 2px 4px) top / 100% 1px no-repeat,
+    repeating-linear-gradient(90deg, #5a7fb8 0 2px, transparent 2px 4px) bottom / 100% 1px no-repeat,
+    repeating-linear-gradient(0deg, #5a7fb8 0 2px, transparent 2px 4px) left / 1px 100% no-repeat,
+    repeating-linear-gradient(0deg, #5a7fb8 0 2px, transparent 2px 4px) right / 1px 100% no-repeat;
+}
+/* Mientras se arrastra un control desde la paleta: su contorno punteado y un
+   borde punteado alrededor del lienzo, como en el vídeo. */
+.contorno-colocar { position: absolute; border: 1px dashed #000; pointer-events: none; }
+.contorno-colocar.objeto { border-color: #c0203a; }
+.ventana.colocando .lienzo { outline: 1px dashed #000; outline-offset: -2px; }
+
+/* Las etiquetas de los controles, en el panel y en el diagrama: el texto libre
+   que se escribe al soltar el control (DT-022). */
+.etiqueta {
+  position: absolute; box-sizing: border-box; padding: 0 1px; cursor: default;
+  font-size: var(--fuente); line-height: 15px; white-space: pre; color: #000;
+}
+.etiqueta.editando { cursor: text; }
+.etiqueta .caret { display: inline-block; vertical-align: -2px; }
+.glifo-terminal-panel { position: absolute; inset: 0; pointer-events: none; }
+.glifo-terminal-panel svg { width: 100%; height: 100%; display: block; }
+.glifo-terminal-panel text { font-family: Arial, "Liberation Sans", sans-serif; }
+
+/* ——— Estructuras: While Loop y For Loop (labview-captures/structures/) ———
+   El nodo de una estructura es sólo su marco: el interior no recibe el ratón, de
+   modo que un clic dentro es un clic en el fondo; se agarra por las bandas del
+   borde. Sus terminales, túneles y shift registers son nodos pequeños encima. */
+.nodo.estructura { pointer-events: none; }
+.nodo.estructura .banda-estructura { position: absolute; pointer-events: auto; }
+.nodo.estructura .marco-bucle { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; shape-rendering: crispEdges; }
+.nodo.estructura.seleccionado::before { display: none; }
+.nodo.estructura .tinte-estructura { position: absolute; background: #f5f5fc; pointer-events: none; }
+/* La selección: un contorno de trazos azules de 4 px, 1 px por fuera del bucle (structures/seleccion.png). */
+.estructura.seleccionado::after {
+  content: ""; position: absolute; inset: -1px; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, #4386b9 0 2px, #bfdbf1 2px 6px, #4386b9 6px 8px) top / 100% 1px no-repeat,
+    repeating-linear-gradient(90deg, #4386b9 0 2px, #bfdbf1 2px 6px, #4386b9 6px 8px) bottom / 100% 1px no-repeat,
+    repeating-linear-gradient(180deg, #4386b9 0 2px, #bfdbf1 2px 6px, #4386b9 6px 8px) left / 1px 100% no-repeat,
+    repeating-linear-gradient(180deg, #4386b9 0 1px, #bfdbf1 1px 5px, #4386b9 5px 8px) right / 1px 100% no-repeat;
+}
+.asa-estructura { width: 6px; height: 6px; background: #0078d4; box-shadow: 0 0 0 1px #fff; pointer-events: auto; z-index: auto; }
+.asa-estructura[data-asa="nw"], .asa-estructura[data-asa="se"] { cursor: nwse-resize; }
+.asa-estructura[data-asa="ne"], .asa-estructura[data-asa="sw"] { cursor: nesw-resize; }
+.asa-estructura[data-asa="n"], .asa-estructura[data-asa="s"] { cursor: ns-resize; }
+.asa-estructura[data-asa="e"], .asa-estructura[data-asa="w"] { cursor: ew-resize; }
+.glifo-borde { position: absolute; left: 0; top: 0; pointer-events: none; }
+.glifo-borde svg { display: block; overflow: visible; shape-rendering: crispEdges; }
+/* El rectángulo con que se coloca una estructura: borde gris de 1 px sobre blanco. */
+.rectangulo-estructura { position: absolute; box-sizing: border-box; border: 1px solid #666; background: #fff; pointer-events: none; }
+
+/* ——— Case Structure (labview-captures/structures/case-*.png) ———
+   Seleccionado, un Case sólo enseña sus asas: ni tinte ni contorno. */
+.estructura-case.seleccionado::after { display: none; }
+.selector-de-marcos { position: absolute; width: 0; height: 0; pointer-events: none; }
+.selector-de-marcos .selector-marcos { position: absolute; left: 0; top: 0; display: block; overflow: visible; shape-rendering: crispEdges; pointer-events: none; }
+.selector-de-marcos .texto-selector { font-family: "Segoe UI", "Noto Sans", sans-serif; font-size: var(--fuente); fill: #000; shape-rendering: auto; }
+.marco-zona { position: absolute; pointer-events: auto; cursor: default; }
+.lista-marcos { z-index: 30; }
+.nodo.estructura .terminal-selector { display: block; }
+.selector-de-marcos .texto-selector.texto-blanco { fill: #fff; }
+
+/* ——— Flat y Stacked Sequence (labview-captures/structures/secuencia-*.png) ———
+   Los túneles de un cable que cruza el separador entre dos marcos de una Flat, y las variables locales de una Stacked. */
+.tunel-secuencia, .variable-local-secuencia { position: absolute; pointer-events: none; }
+.tunel-secuencia svg, .variable-local-secuencia svg { display: block; overflow: visible; shape-rendering: crispEdges; }
+
+/* El cluster de error (DT-043): la constante del diagrama, de labview-captures/errores/202.png ampliada
+   ×6 (marco oliva de 1 px y tres celdas: status verde, code azul, source rosa), y los controles del
+   panel, de errores/301-panel-error-out-1a1.png a 1:1 (155 × 121 px, gris con relieve). */
+.constante-error {
+  position: absolute; inset: 0; box-sizing: border-box; background: #fff; border: 1px solid #7f7f00;
+  padding: 2px; display: flex; flex-direction: column; font-size: var(--fuente); line-height: 1;
+}
+.constante-error.editando { cursor: text; }
+.celda-error { box-sizing: border-box; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: pre; }
+.celda-status { background: #fff; border: 3px solid #007f00; color: #007f00; font-weight: 700; font-size: 9px; }
+.celda-code { background: #fff; border: 3px solid #0000ff; color: #0000ff; }
+.celda-source { background: #fff; border: 3px solid #ff00ff; color: #000; align-items: flex-start; justify-content: flex-start; padding: 1px; }
+.constante-error .caret { display: inline-block; vertical-align: -2px; }
+
+.error-cluster {
+  box-sizing: border-box; background: #a9a9a9; border: 2px solid; border-color: #d4d4d4 #6e6e6e #6e6e6e #d4d4d4;
+  font-size: var(--fuente); line-height: 14px; overflow: hidden;
+}
+.error-cluster .ec-rotulo { position: absolute; color: #000; white-space: nowrap; pointer-events: none; }
+.error-cluster .ec-estado { position: absolute; width: 20px; height: 19px; }
+.error-cluster .ec-estado svg { display: block; width: 100%; height: 100%; pointer-events: none; }
+.error-cluster.control .ec-estado { cursor: pointer; }
+.error-cluster .ec-code {
+  position: absolute; width: 97px; height: 23px; box-sizing: border-box; display: flex; align-items: center;
+  border: 2px solid; border-color: #6e6e6e #d4d4d4 #d4d4d4 #6e6e6e; background: #d6d6d6; overflow: hidden;
+}
+.error-cluster.control .ec-code { background: #fff; cursor: text; }
+.error-cluster .ec-code .prefijo { display: inline-block; width: 8px; height: 100%; background: #8a8a8a; color: #e8e8e8; font-size: 10px; line-height: 19px; text-align: center; pointer-events: none; }
+.error-cluster .ec-code .ec-flechas { position: absolute; left: 9px; top: 2px; width: 8px; height: 15px; pointer-events: none; }
+.error-cluster .ec-code .valor { padding-left: 3px; white-space: pre; }
+.error-cluster.control .ec-code .valor { padding-left: 11px; }
+.error-cluster .ec-source {
+  position: absolute; width: 145px; height: 48px; box-sizing: border-box; border: 2px solid; border-color: #6e6e6e #d4d4d4 #d4d4d4 #6e6e6e;
+  background: #d6d6d6; overflow: hidden;
+}
+.error-cluster.control .ec-source { background: #fff; cursor: text; }
+.error-cluster .ec-source .valor { display: block; white-space: pre-wrap; word-break: break-all; padding: 0 2px; line-height: 14px; }
+.error-cluster .ec-source .ec-barra { position: absolute; right: 0; top: 0; bottom: 0; width: 18px; background: #bdbdbd; border-left: 1px solid #9a9a9a; }
+.error-cluster.control .ec-source .ec-barra { background: #f2f2f2; }
+.error-cluster .caret { display: inline-block; vertical-align: -2px; }
+
+/* Los diálogos de error (DT-043), de labview-captures/errores/44b-dialogo-x3.png y 102b-dialogo-x2.png:
+   modales sobre la ventana, sin título, con el icono del programa y la ✕ en su barra. */
+.modal-error { position: absolute; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.12); }
+.dialogo-error {
+  width: 340px; max-width: calc(100% - 24px); max-height: calc(100% - 24px); box-sizing: border-box; display: flex; flex-direction: column;
+  background: #f0f0f0; border: 1px solid #7a7a7a; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); color: #000;
+  font-family: "Segoe UI", "Noto Sans", sans-serif; font-size: 12px; line-height: 1.3;
+}
+.dialogo-barra { height: 24px; background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 0 0 8px; flex: none; }
+.dialogo-icono-app svg { width: 16px; height: 16px; display: block; }
+.dialogo-cerrar { width: 44px; text-align: center; font-size: 13px; color: #202020; }
+.dialogo-cuerpo { padding: 14px 14px 8px; overflow: auto; flex: 1 1 auto; }
+.dialogo-cabecera { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.dialogo-icono-error svg { width: 40px; height: 40px; display: block; flex: none; }
+.dialogo-texto p { margin: 0 0 8px; white-space: pre-wrap; }
+.dialogo-texto .separador-razones { color: #707070; overflow: hidden; }
+.dialogo-pie { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px 12px; flex: none; }
+.dialogo-enlace { color: #0645ad; text-decoration: underline; cursor: default; }
+.dialogo-enlace.hueco { color: #8a8a8a; }
+.dialogo-botones { display: flex; gap: 8px; }
+.dialogo-botones.centrado { width: 100%; justify-content: center; }
+.boton-dialogo { min-width: 70px; height: 22px; padding: 0 10px; font: inherit; color: #000; background: #fdfdfd; border: 1px solid #adadad; border-radius: 3px; cursor: default; }
+.boton-dialogo.defecto { border: 1px solid #0078d7; outline: 1px dotted #000; outline-offset: -3px; }
+.boton-dialogo.hueco { color: #8a8a8a; font-style: italic; }
+
+/* La constante de array: el índice y la caja de sus elementos (array/constante-array.png). */
+.constante-array { position: absolute; left: 0; top: 0; font-size: var(--fuente); line-height: 1; }
+.indice-array { position: absolute; left: 0; top: 0; box-sizing: border-box; background: #fff; border: 1px solid; padding: 1px; display: flex; align-items: center; }
+.indice-array .paso-indice { font-size: 7px; width: 9px; letter-spacing: -1px; color: #000; }
+.indice-array .campo-indice { flex: 1; border: 1px solid #7a7a7a; height: 100%; box-sizing: border-box; padding-left: 3px; display: flex; align-items: center; }
+.caja-array { position: absolute; top: 0; box-sizing: border-box; background: #fff; border: 1px solid; padding: 1px; display: flex; }
+.celda-array { box-sizing: border-box; height: 21px; margin-top: 1px; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid; white-space: pre; }
+.celda-array.vacia { background: #e8e8f8; color: #8a8aa0; }
+.celda-array.editando { cursor: text; }
+
+/* Un array del panel: el índice y la caja de sus elementos (array/panel-array-1a1.png). */
+.objeto-panel.array { background: none; }
+.objeto-panel.array .arr-indice { position: absolute; left: 0; top: 0; box-sizing: border-box; display: flex; align-items: center; background: #fff; border: 1px solid #b4b4b4; }
+.objeto-panel.array .arr-indice .incrementador { position: relative; left: 0; width: 16px; height: 25px; flex: none; }
+.objeto-panel.array .arr-campo { flex: 1; height: 100%; display: flex; align-items: center; padding-left: 3px; box-sizing: border-box; color: #0000ff; background: #fff; }
+.objeto-panel.array .arr-caja { position: absolute; box-sizing: border-box; display: flex; background: #a8a8a8; border: 1px solid; border-color: #7a7a7a #f2f2f2 #f2f2f2 #7a7a7a; }
+.objeto-panel.array .elem-array { position: relative; flex: none; box-sizing: border-box; }
+.objeto-panel.array .elem-array .incrementador { position: absolute; left: 0; top: 0; width: 16px; height: 25px; }
+.objeto-panel.array .casilla-elem { position: absolute; top: 0; bottom: 0; box-sizing: border-box; display: flex; align-items: center; padding: 0 3px; background: #fff; border: 1px solid #7a7a7a; cursor: text; white-space: pre; }
+.objeto-panel.array .elem-array.indicador .casilla-elem { background: #d1d1d1; cursor: default; }
+.objeto-panel.array .elem-array.vacio .casilla-elem { background: #ececec; color: #9a9a9a; }
+.objeto-panel.array .casilla-elem.cadena { line-height: 15px; }
+.asa-array { position: absolute; width: 7px; height: 7px; background: #0078d7; border: 1px solid #fff; box-sizing: border-box; cursor: ew-resize; }

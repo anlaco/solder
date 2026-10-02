@@ -631,14 +631,14 @@
       "id": "window.front-panel",
       "etiqueta": "Front Panel",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::un_control_y_un_indicador_numéricos_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::un_control_y_un_indicador_numéricos_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "front-panel/vi-nuevo.png"
     },
       {
         "id": "window.front-panel.menu.file",
         "etiqueta": "File",
         "estado": "built",
-        "prueba": "editor/test/estado.test.mjs::el_menú_file_se_abre_bajo_su_título_con_sus_atajos",
+        "prueba": "test/editor/window-state.test.mjs::el_menú_file_se_abre_bajo_su_título_con_sus_atajos",
         "captura": "front-panel/menu-file.png"
       },
       {
@@ -662,7 +662,7 @@
         "id": "window.front-panel.menu.file.open",
         "etiqueta": "Open...",
         "estado": "built",
-        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "prueba": "test/end-to-end/qvi-round-trip.test.mjs::lo_que_se_guarda_se_abre_igual",
         "atajo": "Ctrl+O",
         "captura": "front-panel/menu-file.png"
       },
@@ -687,7 +687,7 @@
         "id": "window.front-panel.menu.file.save",
         "etiqueta": "Save",
         "estado": "built",
-        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "prueba": "test/end-to-end/qvi-round-trip.test.mjs::lo_que_se_guarda_se_abre_igual",
         "atajo": "Ctrl+S",
         "captura": "front-panel/menu-file.png",
         "separado": true
@@ -696,7 +696,7 @@
         "id": "window.front-panel.menu.file.save-as",
         "etiqueta": "Save As...",
         "estado": "built",
-        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "prueba": "test/end-to-end/qvi-round-trip.test.mjs::lo_que_se_guarda_se_abre_igual",
         "captura": "front-panel/menu-file.png"
       },
       {
@@ -814,7 +814,7 @@
         "id": "window.front-panel.menu.file.exit",
         "etiqueta": "Exit",
         "estado": "built",
-        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "prueba": "test/end-to-end/qvi-round-trip.test.mjs::lo_que_se_guarda_se_abre_igual",
         "atajo": "Ctrl+Q",
         "captura": "front-panel/menu-file.png",
         "separado": true
@@ -879,14 +879,14 @@
       "id": "window.front-panel.toolbar.enter-text",
       "etiqueta": "Enter Text",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::al_soltar_un_control_su_etiqueta_se_edita_y_enter_añade_una_línea",
+      "prueba": "test/editor/front-panel.test.mjs::al_soltar_un_control_su_etiqueta_se_edita_y_enter_añade_una_línea",
       "captura": "front-panel/numeric-panel.png"
     },
     {
       "id": "window.front-panel.toolbar.run",
       "etiqueta": "Run",
       "estado": "built",
-      "prueba": "editor/test/compilador.test.mjs::un_control_y_un_indicador_del_panel_se_cablean_y_run_pasa_el_valor",
+      "prueba": "test/core/compiler.test.mjs::un_control_y_un_indicador_del_panel_se_cablean_y_run_pasa_el_valor",
       "captura": "front-panel/vi-nuevo.png"
     },
     {
@@ -901,7 +901,7 @@
       "id": "window.front-panel.toolbar.abort-execution",
       "etiqueta": "Abort Execution",
       "estado": "built",
-      "prueba": "editor/test/vista.test.mjs::en_modo_run_la_barra_enciende_abort_y_esconde_las_herramientas_de_editar",
+      "prueba": "test/editor/window-view.test.mjs::en_modo_run_la_barra_enciende_abort_y_esconde_las_herramientas_de_editar",
       "captura": "run/barra-run.png"
     },
     {
@@ -1017,7 +1017,7 @@
       "id": "window.front-panel.workspace",
       "etiqueta": "Workspace",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::un_control_y_un_indicador_numéricos_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::un_control_y_un_indicador_numéricos_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "front-panel/vi-nuevo.png"
     },
 
@@ -1025,14 +1025,14 @@
       "id": "window.block-diagram",
       "etiqueta": "Block Diagram",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::en_el_lienzo_se_colocan_mueven_y_cablean_los_bloques",
+      "prueba": "test/editor/diagram-editing.test.mjs::en_el_lienzo_se_colocan_mueven_y_cablean_los_bloques",
       "captura": "block-diagram/vi-nuevo.png"
     },
       {
         "id": "window.block-diagram.menu.file",
         "etiqueta": "File",
         "estado": "built",
-        "prueba": "editor/test/estado.test.mjs::el_menú_file_se_abre_bajo_su_título_con_sus_atajos",
+        "prueba": "test/editor/window-state.test.mjs::el_menú_file_se_abre_bajo_su_título_con_sus_atajos",
         "captura": "block-diagram/menu-file.png"
       },
       {
@@ -1056,7 +1056,7 @@
         "id": "window.block-diagram.menu.file.open",
         "etiqueta": "Open...",
         "estado": "built",
-        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "prueba": "test/end-to-end/qvi-round-trip.test.mjs::lo_que_se_guarda_se_abre_igual",
         "atajo": "Ctrl+O",
         "captura": "block-diagram/menu-file.png"
       },
@@ -1081,7 +1081,7 @@
         "id": "window.block-diagram.menu.file.save",
         "etiqueta": "Save",
         "estado": "built",
-        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "prueba": "test/end-to-end/qvi-round-trip.test.mjs::lo_que_se_guarda_se_abre_igual",
         "atajo": "Ctrl+S",
         "captura": "block-diagram/menu-file.png",
         "separado": true
@@ -1090,7 +1090,7 @@
         "id": "window.block-diagram.menu.file.save-as",
         "etiqueta": "Save As...",
         "estado": "built",
-        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "prueba": "test/end-to-end/qvi-round-trip.test.mjs::lo_que_se_guarda_se_abre_igual",
         "captura": "block-diagram/menu-file.png"
       },
       {
@@ -1208,7 +1208,7 @@
         "id": "window.block-diagram.menu.file.exit",
         "etiqueta": "Exit",
         "estado": "built",
-        "prueba": "editor/test/qvi.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "prueba": "test/end-to-end/qvi-round-trip.test.mjs::lo_que_se_guarda_se_abre_igual",
         "atajo": "Ctrl+Q",
         "captura": "block-diagram/menu-file.png",
         "separado": true
@@ -1273,14 +1273,14 @@
       "id": "window.block-diagram.toolbar.enter-text",
       "etiqueta": "Enter Text",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::una_constante_se_edita_y_escribir_un_decimal_la_vuelve_dbl",
+      "prueba": "test/editor/diagram-editing.test.mjs::una_constante_se_edita_y_escribir_un_decimal_la_vuelve_dbl",
       "captura": "block-diagram/numeric-editar-constante.png"
     },
     {
       "id": "window.block-diagram.toolbar.run",
       "etiqueta": "Run",
       "estado": "built",
-      "prueba": "editor/test/compilador.test.mjs::un_control_y_un_indicador_del_panel_se_cablean_y_run_pasa_el_valor",
+      "prueba": "test/core/compiler.test.mjs::un_control_y_un_indicador_del_panel_se_cablean_y_run_pasa_el_valor",
       "captura": "block-diagram/vi-nuevo.png"
     },
     {
@@ -1295,7 +1295,7 @@
       "id": "window.block-diagram.toolbar.abort-execution",
       "etiqueta": "Abort Execution",
       "estado": "built",
-      "prueba": "editor/test/vista.test.mjs::en_modo_run_la_barra_enciende_abort_y_esconde_las_herramientas_de_editar",
+      "prueba": "test/editor/window-view.test.mjs::en_modo_run_la_barra_enciende_abort_y_esconde_las_herramientas_de_editar",
       "captura": "run/barra-run.png"
     },
     {
@@ -1445,7 +1445,7 @@
       "id": "window.block-diagram.workspace",
       "etiqueta": "Workspace",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::en_el_lienzo_se_colocan_mueven_y_cablean_los_bloques",
+      "prueba": "test/editor/diagram-editing.test.mjs::en_el_lienzo_se_colocan_mueven_y_cablean_los_bloques",
       "captura": "block-diagram/vi-nuevo.png"
     },
 
@@ -1453,7 +1453,7 @@
       "id": "palette.functions",
       "etiqueta": "Functions",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::el_clic_derecho_en_el_diagrama_abre_la_paleta_de_funciones",
+      "prueba": "test/editor/window-state.test.mjs::el_clic_derecho_en_el_diagrama_abre_la_paleta_de_funciones",
       "captura": "paletas/functions-programming.png"
     },
     {
@@ -1476,14 +1476,14 @@
       "id": "palette.functions.programming",
       "etiqueta": "Programming",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::una_categoría_con_contenido_se_abre_y_se_cierra",
+      "prueba": "test/editor/window-state.test.mjs::una_categoría_con_contenido_se_abre_y_se_cierra",
       "captura": "paletas/functions-programming.png"
     },
     {
       "id": "palette.functions.programming.structures",
       "etiqueta": "Structures",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la_carpeta_structures_abre_su_subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la_carpeta_structures_abre_su_subpaleta",
       "captura": "structures/paleta.png"
     },
     {
@@ -1498,7 +1498,7 @@
       "id": "palette.functions.programming.structures.for-loop",
       "etiqueta": "For Loop",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::una_estructura_se_coloca_con_dos_clics_o_arrastrando_un_rectángulo",
+      "prueba": "test/editor/diagram-editing.test.mjs::una_estructura_se_coloca_con_dos_clics_o_arrastrando_un_rectángulo",
       "captura": "structures/paleta.png",
       "bloque": "for-loop"
     },
@@ -1506,7 +1506,7 @@
       "id": "palette.functions.programming.structures.while-loop",
       "etiqueta": "While Loop",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::una_estructura_se_coloca_con_dos_clics_o_arrastrando_un_rectángulo",
+      "prueba": "test/editor/diagram-editing.test.mjs::una_estructura_se_coloca_con_dos_clics_o_arrastrando_un_rectángulo",
       "captura": "structures/paleta.png",
       "bloque": "while-loop"
     },
@@ -1522,7 +1522,7 @@
       "id": "palette.functions.programming.structures.case-structure",
       "etiqueta": "Case Structure",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::un_case_se_coloca_con_dos_clics_o_arrastrando_y_sólo_se_ve_su_marco_activo",
+      "prueba": "test/editor/diagram-editing.test.mjs::un_case_se_coloca_con_dos_clics_o_arrastrando_y_sólo_se_ve_su_marco_activo",
       "captura": "structures/case-1.png",
       "bloque": "case-structure"
     },
@@ -1546,7 +1546,7 @@
       "id": "palette.functions.programming.structures.flat-sequence-structure",
       "etiqueta": "Flat Sequence Structure",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::una_flat_sequence_se_coloca_se_estira_y_reparte_sus_marcos",
+      "prueba": "test/editor/diagram-editing.test.mjs::una_flat_sequence_se_coloca_se_estira_y_reparte_sus_marcos",
       "captura": "structures/secuencia-2.png",
       "bloque": "flat-sequence"
     },
@@ -1626,7 +1626,7 @@
       "id": "palette.functions.programming.array",
       "etiqueta": "Array",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta array abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta array abre su subpaleta",
       "captura": "paletas/functions-programming.png"
     },
     {
@@ -1641,7 +1641,7 @@
       "id": "palette.functions.programming.array.array-size",
       "etiqueta": "Array Size",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "array-size"
     },
@@ -1649,7 +1649,7 @@
       "id": "palette.functions.programming.array.index-array",
       "etiqueta": "Index Array",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "index-array"
     },
@@ -1657,7 +1657,7 @@
       "id": "palette.functions.programming.array.replace-array-subset",
       "etiqueta": "Replace Array Subset",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "replace-array-subset"
     },
@@ -1665,7 +1665,7 @@
       "id": "palette.functions.programming.array.insert-into-array",
       "etiqueta": "Insert Into Array",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "insert-into-array"
     },
@@ -1673,7 +1673,7 @@
       "id": "palette.functions.programming.array.delete-from-array",
       "etiqueta": "Delete From Array",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "delete-from-array"
     },
@@ -1681,7 +1681,7 @@
       "id": "palette.functions.programming.array.initialize-array",
       "etiqueta": "Initialize Array",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "initialize-array"
     },
@@ -1689,7 +1689,7 @@
       "id": "palette.functions.programming.array.build-array",
       "etiqueta": "Build Array",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "build-array"
     },
@@ -1697,7 +1697,7 @@
       "id": "palette.functions.programming.array.array-subset",
       "etiqueta": "Array Subset",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "array-subset"
     },
@@ -1705,7 +1705,7 @@
       "id": "palette.functions.programming.array.array-max-and-min",
       "etiqueta": "Array Max & Min",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "array-max-min"
     },
@@ -1721,7 +1721,7 @@
       "id": "palette.functions.programming.array.sort-1d-array",
       "etiqueta": "Sort 1D Array",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "sort-1d-array"
     },
@@ -1753,7 +1753,7 @@
       "id": "palette.functions.programming.array.reverse-1d-array",
       "etiqueta": "Reverse 1D Array",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "reverse-1d-array"
     },
@@ -1761,7 +1761,7 @@
       "id": "palette.functions.programming.array.search-1d-array",
       "etiqueta": "Search 1D Array",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "search-1d-array"
     },
@@ -1769,7 +1769,7 @@
       "id": "palette.functions.programming.array.split-1d-array",
       "etiqueta": "Split 1D Array",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "split-1d-array"
     },
@@ -1777,7 +1777,7 @@
       "id": "palette.functions.programming.array.rotate-1d-array",
       "etiqueta": "Rotate 1D Array",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "rotate-1d-array"
     },
@@ -1785,7 +1785,7 @@
       "id": "palette.functions.programming.array.increment-array-element",
       "etiqueta": "Increment Array Element",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "increment-array-element"
     },
@@ -1793,7 +1793,7 @@
       "id": "palette.functions.programming.array.decrement-array-element",
       "etiqueta": "Decrement Array Element",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "decrement-array-element"
     },
@@ -1841,7 +1841,7 @@
       "id": "palette.functions.programming.array.array-constant",
       "etiqueta": "Array Constant",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de array se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de array se pone en el diagrama con sus terminales",
       "captura": "array/subpaleta-array-5-columnas.png",
       "bloque": "arr-const"
     },
@@ -1921,7 +1921,7 @@
       "id": "palette.functions.programming.numeric",
       "etiqueta": "Numeric",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::una_carpeta_con_contenido_abre_su_subpaleta_al_lado",
+      "prueba": "test/editor/window-state.test.mjs::una_carpeta_con_contenido_abre_su_subpaleta_al_lado",
       "captura": "paletas/functions-numeric.png"
     },
     {
@@ -1936,7 +1936,7 @@
       "id": "palette.functions.programming.numeric.add",
       "etiqueta": "Add",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "add",
       "captura": "paletas/functions-numeric.png"
     },
@@ -1944,7 +1944,7 @@
       "id": "palette.functions.programming.numeric.subtract",
       "etiqueta": "Subtract",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "sub",
       "captura": "paletas/functions-numeric.png"
     },
@@ -1952,7 +1952,7 @@
       "id": "palette.functions.programming.numeric.multiply",
       "etiqueta": "Multiply",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "mul",
       "captura": "paletas/functions-numeric.png"
     },
@@ -1960,7 +1960,7 @@
       "id": "palette.functions.programming.numeric.divide",
       "etiqueta": "Divide",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "div",
       "captura": "paletas/functions-numeric.png"
     },
@@ -1968,7 +1968,7 @@
       "id": "palette.functions.programming.numeric.quotient-and-remainder",
       "etiqueta": "Quotient & Remainder",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "quotient-remainder",
       "captura": "paletas/functions-numeric.png"
     },
@@ -1976,7 +1976,7 @@
       "id": "palette.functions.programming.numeric.conversion",
       "etiqueta": "Conversion",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
       "captura": "paletas/functions-numeric-conversion.png"
     },
     {
@@ -1991,7 +1991,7 @@
       "id": "palette.functions.programming.numeric.conversion.to-double-precision-float",
       "etiqueta": "To Double Precision Float",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
       "bloque": "to-double-precision-float",
       "captura": "paletas/functions-numeric-conversion.png"
     },
@@ -1999,7 +1999,7 @@
       "id": "palette.functions.programming.numeric.conversion.to-single-precision-float",
       "etiqueta": "To Single Precision Float",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
       "bloque": "to-single-precision-float",
       "captura": "paletas/functions-numeric-conversion.png"
     },
@@ -2015,7 +2015,7 @@
       "id": "palette.functions.programming.numeric.conversion.to-quad-integer",
       "etiqueta": "To Quad Integer",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
       "bloque": "to-quad-integer",
       "captura": "paletas/functions-numeric-conversion.png"
     },
@@ -2023,7 +2023,7 @@
       "id": "palette.functions.programming.numeric.conversion.to-long-integer",
       "etiqueta": "To Long Integer",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
       "bloque": "to-long-integer",
       "captura": "paletas/functions-numeric-conversion.png"
     },
@@ -2031,7 +2031,7 @@
       "id": "palette.functions.programming.numeric.conversion.to-word-integer",
       "etiqueta": "To Word Integer",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
       "bloque": "to-word-integer",
       "captura": "paletas/functions-numeric-conversion.png"
     },
@@ -2039,7 +2039,7 @@
       "id": "palette.functions.programming.numeric.conversion.to-byte-integer",
       "etiqueta": "To Byte Integer",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
       "bloque": "to-byte-integer",
       "captura": "paletas/functions-numeric-conversion.png"
     },
@@ -2047,7 +2047,7 @@
       "id": "palette.functions.programming.numeric.conversion.to-unsigned-quad-integer",
       "etiqueta": "To Unsigned Quad Integer",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
       "bloque": "to-unsigned-quad-integer",
       "captura": "paletas/functions-numeric-conversion.png"
     },
@@ -2055,7 +2055,7 @@
       "id": "palette.functions.programming.numeric.conversion.to-unsigned-long-integer",
       "etiqueta": "To Unsigned Long Integer",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
       "bloque": "to-unsigned-long-integer",
       "captura": "paletas/functions-numeric-conversion.png"
     },
@@ -2063,7 +2063,7 @@
       "id": "palette.functions.programming.numeric.conversion.to-unsigned-word-integer",
       "etiqueta": "To Unsigned Word Integer",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
       "bloque": "to-unsigned-word-integer",
       "captura": "paletas/functions-numeric-conversion.png"
     },
@@ -2071,7 +2071,7 @@
       "id": "palette.functions.programming.numeric.conversion.to-unsigned-byte-integer",
       "etiqueta": "To Unsigned Byte Integer",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
       "bloque": "to-unsigned-byte-integer",
       "captura": "paletas/functions-numeric-conversion.png"
     },
@@ -2111,7 +2111,7 @@
       "id": "palette.functions.programming.numeric.conversion.number-to-boolean-array",
       "etiqueta": "Number To Boolean Array",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
       "bloque": "number-to-boolean-array",
       "captura": "paletas/functions-numeric-conversion.png"
     },
@@ -2119,7 +2119,7 @@
       "id": "palette.functions.programming.numeric.conversion.boolean-array-to-number",
       "etiqueta": "Boolean Array To Number",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
       "bloque": "boolean-array-to-number",
       "captura": "paletas/functions-numeric-conversion.png"
     },
@@ -2127,7 +2127,7 @@
       "id": "palette.functions.programming.numeric.conversion.boolean-to-0-1",
       "etiqueta": "Boolean To (0,1)",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de conversion se pone en el diagrama con sus terminales",
       "bloque": "boolean-to-0-1",
       "captura": "paletas/functions-numeric-conversion.png"
     },
@@ -2199,7 +2199,7 @@
       "id": "palette.functions.programming.numeric.increment",
       "etiqueta": "Increment",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "increment",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2207,7 +2207,7 @@
       "id": "palette.functions.programming.numeric.decrement",
       "etiqueta": "Decrement",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "decrement",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2215,7 +2215,7 @@
       "id": "palette.functions.programming.numeric.add-array-elements",
       "etiqueta": "Add Array Elements",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "add-array-elements",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2223,7 +2223,7 @@
       "id": "palette.functions.programming.numeric.multiply-array-elements",
       "etiqueta": "Multiply Array Elements",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "multiply-array-elements",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2231,7 +2231,7 @@
       "id": "palette.functions.programming.numeric.compound-arithmetic",
       "etiqueta": "Compound Arithmetic",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "compound-arithmetic",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2239,7 +2239,7 @@
       "id": "palette.functions.programming.numeric.data-manipulation",
       "etiqueta": "Data Manipulation",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
       "captura": "paletas/functions-numeric-data-manipulation.png"
     },
     {
@@ -2270,7 +2270,7 @@
       "id": "palette.functions.programming.numeric.data-manipulation.mantissa-and-exponent",
       "etiqueta": "Mantissa & Exponent",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
       "bloque": "mantissa-and-exponent",
       "captura": "paletas/functions-numeric-data-manipulation.png"
     },
@@ -2278,7 +2278,7 @@
       "id": "palette.functions.programming.numeric.data-manipulation.rotate-left-with-carry",
       "etiqueta": "Rotate Left With Carry",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
       "bloque": "rotate-left-with-carry",
       "captura": "paletas/functions-numeric-data-manipulation.png"
     },
@@ -2286,7 +2286,7 @@
       "id": "palette.functions.programming.numeric.data-manipulation.rotate-right-with-carry",
       "etiqueta": "Rotate Right With Carry",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
       "bloque": "rotate-right-with-carry",
       "captura": "paletas/functions-numeric-data-manipulation.png"
     },
@@ -2294,7 +2294,7 @@
       "id": "palette.functions.programming.numeric.data-manipulation.logical-shift",
       "etiqueta": "Logical Shift",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
       "bloque": "logical-shift",
       "captura": "paletas/functions-numeric-data-manipulation.png"
     },
@@ -2302,7 +2302,7 @@
       "id": "palette.functions.programming.numeric.data-manipulation.rotate",
       "etiqueta": "Rotate",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
       "bloque": "rotate",
       "captura": "paletas/functions-numeric-data-manipulation.png"
     },
@@ -2310,7 +2310,7 @@
       "id": "palette.functions.programming.numeric.data-manipulation.split-number",
       "etiqueta": "Split Number",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
       "bloque": "split-number",
       "captura": "paletas/functions-numeric-data-manipulation.png"
     },
@@ -2318,7 +2318,7 @@
       "id": "palette.functions.programming.numeric.data-manipulation.join-numbers",
       "etiqueta": "Join Numbers",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
       "bloque": "join-numbers",
       "captura": "paletas/functions-numeric-data-manipulation.png"
     },
@@ -2326,7 +2326,7 @@
       "id": "palette.functions.programming.numeric.data-manipulation.swap-bytes",
       "etiqueta": "Swap Bytes",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
       "bloque": "swap-bytes",
       "captura": "paletas/functions-numeric-data-manipulation.png"
     },
@@ -2334,7 +2334,7 @@
       "id": "palette.functions.programming.numeric.data-manipulation.swap-words",
       "etiqueta": "Swap Words",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de data manipulation se pone en el diagrama con sus terminales",
       "bloque": "swap-words",
       "captura": "paletas/functions-numeric-data-manipulation.png"
     },
@@ -2350,7 +2350,7 @@
       "id": "palette.functions.programming.numeric.absolute-value",
       "etiqueta": "Absolute Value",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "absolute-value",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2358,7 +2358,7 @@
       "id": "palette.functions.programming.numeric.round-to-nearest",
       "etiqueta": "Round To Nearest",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "round-to-nearest",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2366,7 +2366,7 @@
       "id": "palette.functions.programming.numeric.round-toward-negative-infinity",
       "etiqueta": "Round Toward -Infinity",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "round-toward-negative-infinity",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2374,7 +2374,7 @@
       "id": "palette.functions.programming.numeric.round-toward-positive-infinity",
       "etiqueta": "Round Toward +Infinity",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "round-toward-positive-infinity",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2382,7 +2382,7 @@
       "id": "palette.functions.programming.numeric.scale-by-power-of-2",
       "etiqueta": "Scale By Power Of 2",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "scale-by-power-of-2",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2398,7 +2398,7 @@
       "id": "palette.functions.programming.numeric.square-root",
       "etiqueta": "Square Root",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "square-root",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2406,7 +2406,7 @@
       "id": "palette.functions.programming.numeric.square",
       "etiqueta": "Square",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "square",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2414,7 +2414,7 @@
       "id": "palette.functions.programming.numeric.negate",
       "etiqueta": "Negate",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "negate",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2422,7 +2422,7 @@
       "id": "palette.functions.programming.numeric.reciprocal",
       "etiqueta": "Reciprocal",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "reciprocal",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2430,7 +2430,7 @@
       "id": "palette.functions.programming.numeric.sign",
       "etiqueta": "Sign",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "sign",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2446,7 +2446,7 @@
       "id": "palette.functions.programming.numeric.numeric-constant",
       "etiqueta": "Numeric Constant",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "num-const",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2454,7 +2454,7 @@
       "id": "palette.functions.programming.numeric.enum-constant",
       "etiqueta": "Enum Constant",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "enum-const",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2462,7 +2462,7 @@
       "id": "palette.functions.programming.numeric.ring-constant",
       "etiqueta": "Ring Constant",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "ring-const",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2470,7 +2470,7 @@
       "id": "palette.functions.programming.numeric.random-number-0-1",
       "etiqueta": "Random Number (0-1)",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "random-number",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2478,7 +2478,7 @@
       "id": "palette.functions.programming.numeric.random-number-range",
       "etiqueta": "Random Number (Range)",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "random-number-range",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2494,7 +2494,7 @@
       "id": "palette.functions.programming.numeric.dbl-numeric-constant",
       "etiqueta": "DBL Numeric Constant",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "const",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2502,7 +2502,7 @@
       "id": "palette.functions.programming.numeric.positive-infinity",
       "etiqueta": "Positive Infinity",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "positive-infinity",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2510,7 +2510,7 @@
       "id": "palette.functions.programming.numeric.negative-infinity",
       "etiqueta": "Negative Infinity",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "negative-infinity",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2518,7 +2518,7 @@
       "id": "palette.functions.programming.numeric.machine-epsilon",
       "etiqueta": "Machine Epsilon",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "machine-epsilon",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2526,7 +2526,7 @@
       "id": "palette.functions.programming.numeric.not-a-number-constant",
       "etiqueta": "Not A Number Constant",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "not-a-number",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2534,14 +2534,14 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants",
       "etiqueta": "Math & Scientific Constants",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
     {
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.pi",
       "etiqueta": "Pi",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "pi",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2549,7 +2549,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.pi-multiplied-by-2",
       "etiqueta": "Pi Multiplied By 2",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "pi-multiplied-by-2",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2557,7 +2557,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.pi-divided-by-2",
       "etiqueta": "Pi Divided By 2",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "pi-divided-by-2",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2565,7 +2565,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.reciprocal-of-pi",
       "etiqueta": "Reciprocal Of Pi",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "reciprocal-of-pi",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2573,7 +2573,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.natural-logarithm-of-pi",
       "etiqueta": "Natural Logarithm Of Pi",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "natural-logarithm-of-pi",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2581,7 +2581,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.natural-logarithm-base",
       "etiqueta": "Natural Logarithm Base",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "natural-logarithm-base",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2589,7 +2589,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.reciprocal-of-e",
       "etiqueta": "Reciprocal Of e",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "reciprocal-of-e",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2597,7 +2597,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.base-10-logarithm-of-e",
       "etiqueta": "Base 10 Logarithm Of e",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "base-10-logarithm-of-e",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2605,7 +2605,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.natural-logarithm-of-10",
       "etiqueta": "Natural Logarithm Of 10",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "natural-logarithm-of-10",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2613,7 +2613,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.natural-logarithm-of-2",
       "etiqueta": "Natural Logarithm Of 2",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "natural-logarithm-of-2",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2621,7 +2621,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.plancks-constant",
       "etiqueta": "Planck's Constant (J/Hz)",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "plancks-constant",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2629,7 +2629,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.elementary-charge",
       "etiqueta": "Elementary Charge (C)",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "elementary-charge",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2637,7 +2637,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.speed-of-light-in-vacuum",
       "etiqueta": "Speed Of Light In Vacuum (m/sec)",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "speed-of-light-in-vacuum",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2645,7 +2645,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.gravitational-constant",
       "etiqueta": "Gravitational Constant (N m2/kg2)",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "gravitational-constant",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2653,7 +2653,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.avogadro-constant",
       "etiqueta": "Avogadro Constant (1/mol)",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "avogadro-constant",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2661,7 +2661,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.rydberg-constant",
       "etiqueta": "Rydberg Constant (1/m)",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "rydberg-constant",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2669,7 +2669,7 @@
       "id": "palette.functions.programming.numeric.math-and-scientific-constants.molar-gas-constant",
       "etiqueta": "Molar Gas Constant (J/(mol K))",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
+      "prueba": "test/editor/palettes.test.mjs::cada constante de math and scientific constants se pone en el diagrama y vale lo que en LabVIEW",
       "bloque": "molar-gas-constant",
       "captura": "paletas/functions-numeric-math-constants.png"
     },
@@ -2677,7 +2677,7 @@
       "id": "palette.functions.programming.numeric.range-limits-for-type",
       "etiqueta": "Range Limits for Type",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "range-limits-for-type",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2685,7 +2685,7 @@
       "id": "palette.functions.programming.numeric.expression-node",
       "etiqueta": "Expression Node",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_numeric_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "expression-node",
       "captura": "paletas/functions-numeric.png"
     },
@@ -2693,7 +2693,7 @@
         "id": "palette.functions.programming.boolean",
         "etiqueta": "Boolean",
         "estado": "built",
-        "prueba": "editor/test/estado.test.mjs::la_carpeta_boolean_abre_su_subpaleta",
+        "prueba": "test/editor/window-state.test.mjs::la_carpeta_boolean_abre_su_subpaleta",
         "captura": "paletas/functions-boolean.png"
       },
       {
@@ -2708,7 +2708,7 @@
         "id": "palette.functions.programming.boolean.and",
         "etiqueta": "And",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "and-op",
         "captura": "paletas/functions-boolean.png"
       },
@@ -2716,7 +2716,7 @@
         "id": "palette.functions.programming.boolean.or",
         "etiqueta": "Or",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "or-op",
         "captura": "paletas/functions-boolean.png"
       },
@@ -2724,7 +2724,7 @@
         "id": "palette.functions.programming.boolean.exclusive-or",
         "etiqueta": "Exclusive Or",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "xor-op",
         "captura": "paletas/functions-boolean.png"
       },
@@ -2732,7 +2732,7 @@
         "id": "palette.functions.programming.boolean.not",
         "etiqueta": "Not",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "not-op",
         "captura": "paletas/functions-boolean.png"
       },
@@ -2740,7 +2740,7 @@
         "id": "palette.functions.programming.boolean.compound-arithmetic",
         "etiqueta": "Compound Arithmetic",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "compound-arithmetic",
         "config": {
           "mode": "and"
@@ -2751,7 +2751,7 @@
         "id": "palette.functions.programming.boolean.not-and",
         "etiqueta": "Not And",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "nand-op",
         "captura": "paletas/functions-boolean.png"
       },
@@ -2759,7 +2759,7 @@
         "id": "palette.functions.programming.boolean.not-or",
         "etiqueta": "Not Or",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "nor-op",
         "captura": "paletas/functions-boolean.png"
       },
@@ -2767,7 +2767,7 @@
         "id": "palette.functions.programming.boolean.not-exclusive-or",
         "etiqueta": "Not Exclusive Or",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "nxor-op",
         "captura": "paletas/functions-boolean.png"
       },
@@ -2775,7 +2775,7 @@
         "id": "palette.functions.programming.boolean.implies",
         "etiqueta": "Implies",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "implies-op",
         "captura": "paletas/functions-boolean.png"
       },
@@ -2783,7 +2783,7 @@
         "id": "palette.functions.programming.boolean.and-array-elements",
         "etiqueta": "And Array Elements",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "and-array-elements",
         "captura": "paletas/functions-boolean.png"
       },
@@ -2791,7 +2791,7 @@
         "id": "palette.functions.programming.boolean.or-array-elements",
         "etiqueta": "Or Array Elements",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "or-array-elements",
         "captura": "paletas/functions-boolean.png"
       },
@@ -2799,7 +2799,7 @@
         "id": "palette.functions.programming.boolean.number-to-boolean-array",
         "etiqueta": "Number To Boolean Array",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "number-to-boolean-array",
         "captura": "paletas/functions-boolean.png"
       },
@@ -2807,7 +2807,7 @@
         "id": "palette.functions.programming.boolean.boolean-array-to-number",
         "etiqueta": "Boolean Array To Number",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "boolean-array-to-number",
         "captura": "paletas/functions-boolean.png"
       },
@@ -2815,7 +2815,7 @@
         "id": "palette.functions.programming.boolean.boolean-to-0-1",
         "etiqueta": "Boolean To (0,1)",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "boolean-to-0-1",
         "captura": "paletas/functions-boolean.png"
       },
@@ -2823,7 +2823,7 @@
         "id": "palette.functions.programming.boolean.true-constant",
         "etiqueta": "True Constant",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "bool-const",
         "config": {
           "value": true
@@ -2834,7 +2834,7 @@
         "id": "palette.functions.programming.boolean.false-constant",
         "etiqueta": "False Constant",
         "estado": "built",
-        "prueba": "editor/test/grafo.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
+        "prueba": "test/editor/palettes.test.mjs::cada_función_de_boolean_se_pone_en_el_diagrama_con_sus_terminales",
         "bloque": "bool-const",
         "config": {
           "value": false
@@ -2845,7 +2845,7 @@
       "id": "palette.functions.programming.string",
       "etiqueta": "String",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta string abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta string abre su subpaleta",
       "captura": "string/string-subpaleta.png"
     },
     {
@@ -2860,7 +2860,7 @@
       "id": "palette.functions.programming.string.string-length",
       "etiqueta": "String Length",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "string-length"
     },
@@ -2868,7 +2868,7 @@
       "id": "palette.functions.programming.string.concatenate-strings",
       "etiqueta": "Concatenate Strings",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "concatenate-strings"
     },
@@ -2876,7 +2876,7 @@
       "id": "palette.functions.programming.string.string-subset",
       "etiqueta": "String Subset",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "string-subset"
     },
@@ -2884,7 +2884,7 @@
       "id": "palette.functions.programming.string.trim-whitespace",
       "etiqueta": "Trim Whitespace.vi",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "trim-whitespace"
     },
@@ -2900,7 +2900,7 @@
       "id": "palette.functions.programming.string.replace-substring",
       "etiqueta": "Replace Substring",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "replace-substring"
     },
@@ -2908,7 +2908,7 @@
       "id": "palette.functions.programming.string.search-and-replace-string",
       "etiqueta": "Search and Replace String",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "search-and-replace-string"
     },
@@ -2972,7 +2972,7 @@
       "id": "palette.functions.programming.string.number-string-conversion",
       "etiqueta": "Number/String Conversion",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta number-string conversion abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta number-string conversion abre su subpaleta",
       "captura": "string/string-numstr-abierta.png"
     },
     {
@@ -2995,7 +2995,7 @@
       "id": "palette.functions.programming.string.to-upper-case",
       "etiqueta": "To Upper Case",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "to-upper-case"
     },
@@ -3003,7 +3003,7 @@
       "id": "palette.functions.programming.string.to-lower-case",
       "etiqueta": "To Lower Case",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "to-lower-case"
     },
@@ -3019,7 +3019,7 @@
       "id": "palette.functions.programming.string.string-constant",
       "etiqueta": "String Constant",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "str-const"
     },
@@ -3027,7 +3027,7 @@
       "id": "palette.functions.programming.string.empty-string-constant",
       "etiqueta": "Empty String Constant",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "empty-string-constant"
     },
@@ -3035,7 +3035,7 @@
       "id": "palette.functions.programming.string.space-constant",
       "etiqueta": "Space Constant",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "space-constant"
     },
@@ -3043,7 +3043,7 @@
       "id": "palette.functions.programming.string.tab-constant",
       "etiqueta": "Tab Constant",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "tab-constant"
     },
@@ -3051,14 +3051,14 @@
       "id": "palette.functions.programming.string.additional-string-functions",
       "etiqueta": "Additional String Functions",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta additional string functions abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta additional string functions abre su subpaleta",
       "captura": "string/string-additional-abierta.png"
     },
     {
       "id": "palette.functions.programming.string.carriage-return-constant",
       "etiqueta": "Carriage Return Constant",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "carriage-return-constant"
     },
@@ -3066,7 +3066,7 @@
       "id": "palette.functions.programming.string.line-feed-constant",
       "etiqueta": "Line Feed Constant",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "line-feed-constant"
     },
@@ -3074,7 +3074,7 @@
       "id": "palette.functions.programming.string.end-of-line-constant",
       "etiqueta": "End Of Line Constant",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
       "captura": "string/string-subpaleta.png",
       "bloque": "end-of-line-constant"
     },
@@ -3090,7 +3090,7 @@
       "id": "palette.functions.programming.string.number-string-conversion.number-to-decimal-string",
       "etiqueta": "Number To Decimal String",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta number-string conversion abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta number-string conversion abre su subpaleta",
       "captura": "string/string-numstr-abierta.png",
       "bloque": "number-to-decimal-string"
     },
@@ -3098,7 +3098,7 @@
       "id": "palette.functions.programming.string.number-string-conversion.number-to-hexadecimal-string",
       "etiqueta": "Number To Hexadecimal String",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta number-string conversion abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta number-string conversion abre su subpaleta",
       "captura": "string/string-numstr-abierta.png",
       "bloque": "number-to-hexadecimal-string"
     },
@@ -3106,7 +3106,7 @@
       "id": "palette.functions.programming.string.number-string-conversion.number-to-octal-string",
       "etiqueta": "Number To Octal String",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta number-string conversion abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta number-string conversion abre su subpaleta",
       "captura": "string/string-numstr-abierta.png",
       "bloque": "number-to-octal-string"
     },
@@ -3114,7 +3114,7 @@
       "id": "palette.functions.programming.string.number-string-conversion.number-to-fractional-string",
       "etiqueta": "Number To Fractional String",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta number-string conversion abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta number-string conversion abre su subpaleta",
       "captura": "string/string-numstr-abierta.png",
       "bloque": "number-to-fractional-string"
     },
@@ -3122,7 +3122,7 @@
       "id": "palette.functions.programming.string.number-string-conversion.number-to-exponential-string",
       "etiqueta": "Number To Exponential String",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta number-string conversion abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta number-string conversion abre su subpaleta",
       "captura": "string/string-numstr-abierta.png",
       "bloque": "number-to-exponential-string"
     },
@@ -3130,7 +3130,7 @@
       "id": "palette.functions.programming.string.number-string-conversion.number-to-engineering-string",
       "etiqueta": "Number To Engineering String",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta number-string conversion abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta number-string conversion abre su subpaleta",
       "captura": "string/string-numstr-abierta.png",
       "bloque": "number-to-engineering-string"
     },
@@ -3146,7 +3146,7 @@
       "id": "palette.functions.programming.string.number-string-conversion.decimal-string-to-number",
       "etiqueta": "Decimal String To Number",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta number-string conversion abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta number-string conversion abre su subpaleta",
       "captura": "string/string-numstr-abierta.png",
       "bloque": "decimal-string-to-number"
     },
@@ -3154,7 +3154,7 @@
       "id": "palette.functions.programming.string.number-string-conversion.hexadecimal-string-to-number",
       "etiqueta": "Hexadecimal String To Number",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta number-string conversion abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta number-string conversion abre su subpaleta",
       "captura": "string/string-numstr-abierta.png",
       "bloque": "hexadecimal-string-to-number"
     },
@@ -3162,7 +3162,7 @@
       "id": "palette.functions.programming.string.number-string-conversion.octal-string-to-number",
       "etiqueta": "Octal String To Number",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta number-string conversion abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta number-string conversion abre su subpaleta",
       "captura": "string/string-numstr-abierta.png",
       "bloque": "octal-string-to-number"
     },
@@ -3170,7 +3170,7 @@
       "id": "palette.functions.programming.string.number-string-conversion.fract-exp-string-to-number",
       "etiqueta": "Fract/Exp String To Number",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta number-string conversion abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta number-string conversion abre su subpaleta",
       "captura": "string/string-numstr-abierta.png",
       "bloque": "fract-exp-string-to-number"
     },
@@ -3258,7 +3258,7 @@
       "id": "palette.functions.programming.string.additional-string-functions.rotate-string",
       "etiqueta": "Rotate String",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta additional string functions abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta additional string functions abre su subpaleta",
       "captura": "string/string-additional-abierta.png",
       "bloque": "rotate-string"
     },
@@ -3266,7 +3266,7 @@
       "id": "palette.functions.programming.string.additional-string-functions.reverse-string",
       "etiqueta": "Reverse String",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta additional string functions abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta additional string functions abre su subpaleta",
       "captura": "string/string-additional-abierta.png",
       "bloque": "reverse-string"
     },
@@ -3450,7 +3450,7 @@
       "id": "palette.functions.programming.comparison",
       "etiqueta": "Comparison",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la_carpeta_comparison_abre_su_subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la_carpeta_comparison_abre_su_subpaleta",
       "captura": "paletas/functions-comparison.png"
     },
     {
@@ -3465,7 +3465,7 @@
       "id": "palette.functions.programming.comparison.equal",
       "etiqueta": "Equal?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "equal",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3473,7 +3473,7 @@
       "id": "palette.functions.programming.comparison.not-equal",
       "etiqueta": "Not Equal?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "not-equal",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3481,7 +3481,7 @@
       "id": "palette.functions.programming.comparison.greater",
       "etiqueta": "Greater?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "greater",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3489,7 +3489,7 @@
       "id": "palette.functions.programming.comparison.less",
       "etiqueta": "Less?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "less",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3497,7 +3497,7 @@
       "id": "palette.functions.programming.comparison.greater-or-equal",
       "etiqueta": "Greater Or Equal?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "greater-or-equal",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3505,7 +3505,7 @@
       "id": "palette.functions.programming.comparison.less-or-equal",
       "etiqueta": "Less Or Equal?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "less-or-equal",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3513,7 +3513,7 @@
       "id": "palette.functions.programming.comparison.equal-to-0",
       "etiqueta": "Equal To 0?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "equal-to-0",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3521,7 +3521,7 @@
       "id": "palette.functions.programming.comparison.not-equal-to-0",
       "etiqueta": "Not Equal To 0?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "not-equal-to-0",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3529,7 +3529,7 @@
       "id": "palette.functions.programming.comparison.greater-than-0",
       "etiqueta": "Greater Than 0?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "greater-than-0",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3537,7 +3537,7 @@
       "id": "palette.functions.programming.comparison.less-than-0",
       "etiqueta": "Less Than 0?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "less-than-0",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3545,7 +3545,7 @@
       "id": "palette.functions.programming.comparison.greater-or-equal-to-0",
       "etiqueta": "Greater Or Equal To 0?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "greater-or-equal-to-0",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3553,7 +3553,7 @@
       "id": "palette.functions.programming.comparison.less-or-equal-to-0",
       "etiqueta": "Less Or Equal To 0?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "less-or-equal-to-0",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3561,7 +3561,7 @@
       "id": "palette.functions.programming.comparison.select",
       "etiqueta": "Select",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "select",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3569,7 +3569,7 @@
       "id": "palette.functions.programming.comparison.max-and-min",
       "etiqueta": "Max & Min",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "max-and-min",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3577,7 +3577,7 @@
       "id": "palette.functions.programming.comparison.in-range-and-coerce",
       "etiqueta": "In Range and Coerce",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "in-range-and-coerce",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3585,7 +3585,7 @@
       "id": "palette.functions.programming.comparison.not-a-number-path-refnum",
       "etiqueta": "Not A Number/Path/Refnum?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_comparison_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "not-a-number-path-refnum",
       "captura": "paletas/functions-comparison.png"
     },
@@ -3601,7 +3601,7 @@
       "id": "palette.functions.programming.comparison.empty-string-path",
       "etiqueta": "Empty String/Path?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de comparison se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de comparison se pone en el diagrama con sus terminales",
       "captura": "paletas/functions-comparison.png",
       "bloque": "empty-string-path"
     },
@@ -3609,7 +3609,7 @@
       "id": "palette.functions.programming.comparison.decimal-digit",
       "etiqueta": "Decimal Digit?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de comparison se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de comparison se pone en el diagrama con sus terminales",
       "captura": "paletas/functions-comparison.png",
       "bloque": "decimal-digit"
     },
@@ -3617,7 +3617,7 @@
       "id": "palette.functions.programming.comparison.hex-digit",
       "etiqueta": "Hex Digit?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de comparison se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de comparison se pone en el diagrama con sus terminales",
       "captura": "paletas/functions-comparison.png",
       "bloque": "hex-digit"
     },
@@ -3625,7 +3625,7 @@
       "id": "palette.functions.programming.comparison.octal-digit",
       "etiqueta": "Octal Digit?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de comparison se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de comparison se pone en el diagrama con sus terminales",
       "captura": "paletas/functions-comparison.png",
       "bloque": "octal-digit"
     },
@@ -3641,7 +3641,7 @@
       "id": "palette.functions.programming.comparison.white-space",
       "etiqueta": "White Space?",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada función de comparison se pone en el diagrama con sus terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada función de comparison se pone en el diagrama con sus terminales",
       "captura": "paletas/functions-comparison.png",
       "bloque": "white-space"
     },
@@ -3721,7 +3721,7 @@
       "id": "palette.functions.programming.timing",
       "etiqueta": "Timing",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la_carpeta_timing_abre_su_subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la_carpeta_timing_abre_su_subpaleta",
       "captura": "run/timing-paleta.png"
     },
     {
@@ -3736,7 +3736,7 @@
       "id": "palette.functions.programming.timing.tick-count-ms",
       "etiqueta": "Tick Count (ms)",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_timing_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_timing_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "tick-count-ms",
       "captura": "run/timing-paleta.png"
     },
@@ -3752,7 +3752,7 @@
       "id": "palette.functions.programming.timing.wait-ms",
       "etiqueta": "Wait (ms)",
       "estado": "built",
-      "prueba": "editor/test/ejecucion.test.mjs::las_ramas_independientes_corren_a_la_vez_y_cada_indicador_se_escribe_cuando_le_llega_el_dato",
+      "prueba": "test/core/execution.test.mjs::las_ramas_independientes_corren_a_la_vez_y_cada_indicador_se_escribe_cuando_le_llega_el_dato",
       "bloque": "wait-ms",
       "captura": "run/timing-paleta.png"
     },
@@ -3760,7 +3760,7 @@
       "id": "palette.functions.programming.timing.wait-until-next-ms-multiple",
       "etiqueta": "Wait Until Next ms Multiple",
       "estado": "built",
-      "prueba": "editor/test/grafo.test.mjs::cada_función_de_timing_se_pone_en_el_diagrama_con_sus_terminales",
+      "prueba": "test/editor/palettes.test.mjs::cada_función_de_timing_se_pone_en_el_diagrama_con_sus_terminales",
       "bloque": "wait-until-next-ms-multiple",
       "captura": "run/timing-paleta.png"
     },
@@ -3856,7 +3856,7 @@
       "id": "palette.functions.programming.dialog-and-user-interface",
       "etiqueta": "Dialog & User Interface",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta dialog and user interface abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta dialog and user interface abre su subpaleta",
       "captura": "paletas/functions-programming.png"
     },
     {
@@ -3895,7 +3895,7 @@
       "id": "palette.functions.programming.dialog-and-user-interface.simple-error-handler",
       "etiqueta": "Simple Error Handler.vi",
       "estado": "built",
-      "prueba": "editor/test/errores.test.mjs::simple error handler: sin error no saca dialogo y con error espera al usuario",
+      "prueba": "test/end-to-end/error-cluster.test.mjs::simple error handler: sin error no saca dialogo y con error espera al usuario",
       "captura": "errores/59-paleta-dialog-ui.png",
       "bloque": "simple-error-handler"
     },
@@ -3911,7 +3911,7 @@
       "id": "palette.functions.programming.dialog-and-user-interface.clear-errors",
       "etiqueta": "Clear Errors.vi",
       "estado": "built",
-      "prueba": "editor/test/errores.test.mjs::clear errors deja el error a cero",
+      "prueba": "test/end-to-end/error-cluster.test.mjs::clear errors deja el error a cero",
       "captura": "errores/59-paleta-dialog-ui.png",
       "bloque": "clear-errors"
     },
@@ -3927,7 +3927,7 @@
       "id": "palette.functions.programming.dialog-and-user-interface.merge-errors",
       "etiqueta": "Merge Errors",
       "estado": "built",
-      "prueba": "editor/test/errores.test.mjs::merge errors: los errores antes que los avisos y, en cada clase, el primero de arriba",
+      "prueba": "test/end-to-end/error-cluster.test.mjs::merge errors: los errores antes que los avisos y, en cada clase, el primero de arriba",
       "captura": "errores/59-paleta-dialog-ui.png",
       "bloque": "merge-errors"
     },
@@ -3935,7 +3935,7 @@
       "id": "palette.functions.programming.dialog-and-user-interface.error-cluster-from-error-code",
       "etiqueta": "Error Cluster From Error Code.vi",
       "estado": "built",
-      "prueba": "editor/test/errores.test.mjs::una funcion con error a la entrada no trabaja y pasa el mismo error",
+      "prueba": "test/end-to-end/error-cluster.test.mjs::una funcion con error a la entrada no trabaja y pasa el mismo error",
       "captura": "errores/59-paleta-dialog-ui.png",
       "bloque": "error-cluster-from-error-code"
     },
@@ -3951,7 +3951,7 @@
       "id": "palette.functions.programming.dialog-and-user-interface.error-cluster-constant",
       "etiqueta": "Error Cluster Constant",
       "estado": "built",
-      "prueba": "editor/test/errores.test.mjs::el cluster de error es status, code y source, y la constante llega igual",
+      "prueba": "test/end-to-end/error-cluster.test.mjs::el cluster de error es status, code y source, y la constante llega igual",
       "captura": "errores/59-paleta-dialog-ui.png",
       "bloque": "error-cluster-constant"
     },
@@ -4177,7 +4177,7 @@
       "id": "palette.functions.double-arrows",
       "etiqueta": "Double Arrows",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::las_flechas_dobles_muestran_lo_oculto",
+      "prueba": "test/editor/window-state.test.mjs::las_flechas_dobles_muestran_lo_oculto",
       "captura": "paletas/functions-programming-desplegada.png"
     },
     {
@@ -4194,7 +4194,7 @@
       "id": "palette.controls",
       "etiqueta": "Controls",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::el_clic_derecho_en_el_panel_abre_la_paleta_de_controles_con_modern_desplegada",
+      "prueba": "test/editor/window-state.test.mjs::el_clic_derecho_en_el_panel_abre_la_paleta_de_controles_con_modern_desplegada",
       "captura": "paletas/controls.png"
     },
     {
@@ -4217,14 +4217,14 @@
       "id": "palette.controls.modern",
       "etiqueta": "Modern",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::el_clic_derecho_en_el_panel_abre_la_paleta_de_controles_con_modern_desplegada",
+      "prueba": "test/editor/window-state.test.mjs::el_clic_derecho_en_el_panel_abre_la_paleta_de_controles_con_modern_desplegada",
       "captura": "paletas/controls.png"
     },
     {
       "id": "palette.controls.modern.numeric",
       "etiqueta": "Numeric",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la_carpeta_numeric_de_controls_abre_su_subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la_carpeta_numeric_de_controls_abre_su_subpaleta",
       "captura": "paletas/controls-numeric.png"
     },
     {
@@ -4239,7 +4239,7 @@
       "id": "palette.controls.modern.numeric.numeric-control",
       "etiqueta": "Numeric Control",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::un_control_y_un_indicador_numéricos_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::un_control_y_un_indicador_numéricos_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "paletas/controls-numeric.png",
       "bloque": "control"
     },
@@ -4247,7 +4247,7 @@
       "id": "palette.controls.modern.numeric.numeric-indicator",
       "etiqueta": "Numeric Indicator",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::un_control_y_un_indicador_numéricos_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::un_control_y_un_indicador_numéricos_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "paletas/controls-numeric.png",
       "bloque": "indicator"
     },
@@ -4407,7 +4407,7 @@
       "id": "palette.controls.modern.boolean",
       "etiqueta": "Boolean",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la_carpeta_boolean_de_controls_abre_su_subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la_carpeta_boolean_de_controls_abre_su_subpaleta",
       "captura": "paletas/controls-boolean.png"
     },
     {
@@ -4422,7 +4422,7 @@
       "id": "palette.controls.modern.boolean.push-button",
       "etiqueta": "Push Button",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "paletas/controls-boolean.png",
       "bloque": "bool-control",
       "config": {
@@ -4460,7 +4460,7 @@
       "id": "palette.controls.modern.boolean.round-led",
       "etiqueta": "Round LED",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "paletas/controls-boolean.png",
       "bloque": "bool-indicator",
       "config": {
@@ -4471,7 +4471,7 @@
       "id": "palette.controls.modern.boolean.horizontal-toggle-switch",
       "etiqueta": "Horizontal Toggle Switch",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "paletas/controls-boolean.png",
       "bloque": "bool-control",
       "config": {
@@ -4483,7 +4483,7 @@
       "id": "palette.controls.modern.boolean.vertical-toggle-switch",
       "etiqueta": "Vertical Toggle Switch",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "paletas/controls-boolean.png",
       "bloque": "bool-control",
       "config": {
@@ -4495,7 +4495,7 @@
       "id": "palette.controls.modern.boolean.square-led",
       "etiqueta": "Square LED",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "paletas/controls-boolean.png",
       "bloque": "bool-indicator",
       "config": {
@@ -4506,7 +4506,7 @@
       "id": "palette.controls.modern.boolean.slide-switch",
       "etiqueta": "Slide Switch",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "paletas/controls-boolean.png",
       "bloque": "bool-control",
       "config": {
@@ -4518,7 +4518,7 @@
       "id": "palette.controls.modern.boolean.vertical-slide-switch",
       "etiqueta": "Vertical Slide Switch",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "paletas/controls-boolean.png",
       "bloque": "bool-control",
       "config": {
@@ -4530,7 +4530,7 @@
       "id": "palette.controls.modern.boolean.ok-button",
       "etiqueta": "OK Button",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "paletas/controls-boolean.png",
       "bloque": "bool-control",
       "config": {
@@ -4542,7 +4542,7 @@
       "id": "palette.controls.modern.boolean.cancel-button",
       "etiqueta": "Cancel Button",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "paletas/controls-boolean.png",
       "bloque": "bool-control",
       "config": {
@@ -4554,7 +4554,7 @@
       "id": "palette.controls.modern.boolean.stop-button",
       "etiqueta": "Stop Button",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::los_controles_booleanos_de_la_paleta_se_ponen_en_el_panel_con_su_terminal_en_el_diagrama",
       "captura": "paletas/controls-boolean.png",
       "bloque": "bool-control",
       "config": {
@@ -4574,7 +4574,7 @@
       "id": "palette.controls.modern.string-and-path",
       "etiqueta": "String & Path",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta string and path de controls abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta string and path de controls abre su subpaleta",
       "captura": "string/controls-string-path.png"
     },
     {
@@ -4589,7 +4589,7 @@
       "id": "palette.controls.modern.string-and-path.string-control",
       "etiqueta": "String Control",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::un control y un indicador de cadena se ponen en el panel con su terminal en el diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::un control y un indicador de cadena se ponen en el panel con su terminal en el diagrama",
       "captura": "string/controls-string-path.png",
       "bloque": "str-control"
     },
@@ -4597,7 +4597,7 @@
       "id": "palette.controls.modern.string-and-path.string-indicator",
       "etiqueta": "String Indicator",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::un control y un indicador de cadena se ponen en el panel con su terminal en el diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::un control y un indicador de cadena se ponen en el panel con su terminal en el diagrama",
       "captura": "string/controls-string-path.png",
       "bloque": "str-indicator"
     },
@@ -4629,7 +4629,7 @@
       "id": "palette.controls.modern.data-containers",
       "etiqueta": "Data Containers",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::la carpeta data containers de controls abre su subpaleta",
+      "prueba": "test/editor/window-state.test.mjs::la carpeta data containers de controls abre su subpaleta",
       "captura": "paletas/controls.png"
     },
     {
@@ -4644,7 +4644,7 @@
       "id": "palette.controls.modern.data-containers.array",
       "etiqueta": "Array",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::un control y un indicador de array se ponen en el panel con su terminal en el diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::un control y un indicador de array se ponen en el panel con su terminal en el diagrama",
       "captura": "array/controls-data-containers.png",
       "bloque": "arr-control",
       "config": {
@@ -4698,7 +4698,7 @@
       "id": "palette.controls.modern.data-containers.error-in",
       "etiqueta": "Error In 3D.ctl",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::los controles Error In y Error Out se ponen en el panel con su terminal en el diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::los controles Error In y Error Out se ponen en el panel con su terminal en el diagrama",
       "captura": "errores/300-controls-data-containers.png",
       "bloque": "cluster-control",
       "config": {"type": {"cluster": [{"name": "status", "type": "boolean"}, {"name": "code", "type": "i32"}, {"name": "source", "type": "string"}]}, "style": "error-in", "value": {"status": false, "code": 0, "source": ""}}
@@ -4707,7 +4707,7 @@
       "id": "palette.controls.modern.data-containers.error-out",
       "etiqueta": "Error Out 3D.ctl",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::los controles Error In y Error Out se ponen en el panel con su terminal en el diagrama",
+      "prueba": "test/editor/front-panel.test.mjs::los controles Error In y Error Out se ponen en el panel con su terminal en el diagrama",
       "captura": "errores/300-controls-data-containers.png",
       "bloque": "cluster-indicator",
       "config": {"type": {"cluster": [{"name": "status", "type": "boolean"}, {"name": "code", "type": "i32"}, {"name": "source", "type": "string"}]}, "style": "error-out", "value": {"status": false, "code": 0, "source": ""}}
@@ -4871,7 +4871,7 @@
       "id": "palette.controls.double-arrows",
       "etiqueta": "Double Arrows",
       "estado": "built",
-      "prueba": "editor/test/estado.test.mjs::las_flechas_dobles_muestran_lo_oculto",
+      "prueba": "test/editor/window-state.test.mjs::las_flechas_dobles_muestran_lo_oculto",
       "captura": "paletas/controls-desplegada.png"
     },
     {
@@ -4887,14 +4887,14 @@
       "id": "context.function",
       "etiqueta": "Function",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_una_función_enseña_sus_terminales",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_una_función_enseña_sus_terminales",
       "captura": "block-diagram/numeric-menu-funcion.png"
     },
     {
       "id": "context.function.visible-items",
       "etiqueta": "Visible Items",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_una_función_enseña_sus_terminales",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_una_función_enseña_sus_terminales",
       "captura": "block-diagram/numeric-menu-funcion.png"
     },
     {
@@ -4909,7 +4909,7 @@
       "id": "context.function.visible-items.terminals",
       "etiqueta": "Terminals",
       "estado": "built",
-      "prueba": "editor/test/diagrama.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
+      "prueba": "test/editor/diagram-view.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
       "captura": "block-diagram/numeric-vista-terminales.png"
     },
     {
@@ -4993,14 +4993,14 @@
       "id": "context.comparison-function",
       "etiqueta": "Comparison Function",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
       "captura": "block-diagram/comparison-menu-funcion.png"
     },
     {
       "id": "context.comparison-function.visible-items",
       "etiqueta": "Visible Items",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
       "captura": "block-diagram/comparison-menu-funcion.png"
     },
     {
@@ -5015,7 +5015,7 @@
       "id": "context.comparison-function.visible-items.terminals",
       "etiqueta": "Terminals",
       "estado": "built",
-      "prueba": "editor/test/diagrama.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
+      "prueba": "test/editor/diagram-view.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
       "captura": "block-diagram/comparison-menu-funcion.png"
     },
     {
@@ -5140,14 +5140,14 @@
       "id": "context.comparison-with-zero",
       "etiqueta": "Comparison With Zero Function",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
       "captura": "block-diagram/comparison-menu-cero.png"
     },
     {
       "id": "context.comparison-with-zero.visible-items",
       "etiqueta": "Visible Items",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
       "captura": "block-diagram/comparison-menu-cero.png"
     },
     {
@@ -5162,7 +5162,7 @@
       "id": "context.comparison-with-zero.visible-items.terminals",
       "etiqueta": "Terminals",
       "estado": "built",
-      "prueba": "editor/test/diagrama.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
+      "prueba": "test/editor/diagram-view.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
       "captura": "block-diagram/comparison-menu-cero.png"
     },
     {
@@ -5262,14 +5262,14 @@
       "id": "context.select",
       "etiqueta": "Select",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
       "captura": "block-diagram/comparison-menu-select.png"
     },
     {
       "id": "context.select.visible-items",
       "etiqueta": "Visible Items",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
       "captura": "block-diagram/comparison-menu-select.png"
     },
     {
@@ -5284,7 +5284,7 @@
       "id": "context.select.visible-items.terminals",
       "etiqueta": "Terminals",
       "estado": "built",
-      "prueba": "editor/test/diagrama.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
+      "prueba": "test/editor/diagram-view.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
       "captura": "block-diagram/comparison-menu-select.png"
     },
     {
@@ -5376,14 +5376,14 @@
       "id": "context.max-and-min",
       "etiqueta": "Max & Min",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
       "captura": "block-diagram/comparison-menu-max-min.png"
     },
     {
       "id": "context.max-and-min.visible-items",
       "etiqueta": "Visible Items",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
       "captura": "block-diagram/comparison-menu-max-min.png"
     },
     {
@@ -5398,7 +5398,7 @@
       "id": "context.max-and-min.visible-items.terminals",
       "etiqueta": "Terminals",
       "estado": "built",
-      "prueba": "editor/test/diagrama.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
+      "prueba": "test/editor/diagram-view.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
       "captura": "block-diagram/comparison-menu-max-min.png"
     },
     {
@@ -5515,14 +5515,14 @@
       "id": "context.in-range-and-coerce",
       "etiqueta": "In Range and Coerce",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
       "captura": "block-diagram/comparison-menu-in-range.png"
     },
     {
       "id": "context.in-range-and-coerce.visible-items",
       "etiqueta": "Visible Items",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_una_función_de_comparison_enseña_sus_terminales",
       "captura": "block-diagram/comparison-menu-in-range.png"
     },
     {
@@ -5537,7 +5537,7 @@
       "id": "context.in-range-and-coerce.visible-items.terminals",
       "etiqueta": "Terminals",
       "estado": "built",
-      "prueba": "editor/test/diagrama.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
+      "prueba": "test/editor/diagram-view.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
       "captura": "block-diagram/comparison-menu-in-range.png"
     },
     {
@@ -5636,14 +5636,14 @@
       "id": "context.in-range-and-coerce.include-upper-limit",
       "etiqueta": "Include upper limit",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::include_upper_limit_e_include_lower_limit_alternan_los_extremos_de_in_range_and_coerce",
+      "prueba": "test/editor/diagram-editing.test.mjs::include_upper_limit_e_include_lower_limit_alternan_los_extremos_de_in_range_and_coerce",
       "captura": "block-diagram/comparison-menu-in-range.png"
     },
     {
       "id": "context.in-range-and-coerce.include-lower-limit",
       "etiqueta": "Include lower limit",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::include_upper_limit_e_include_lower_limit_alternan_los_extremos_de_in_range_and_coerce",
+      "prueba": "test/editor/diagram-editing.test.mjs::include_upper_limit_e_include_lower_limit_alternan_los_extremos_de_in_range_and_coerce",
       "captura": "block-diagram/comparison-menu-in-range.png"
     },
     {
@@ -5668,7 +5668,7 @@
       "id": "context.numeric-constant",
       "etiqueta": "Numeric Constant",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-constante-completo.png"
     },
     {
@@ -5783,7 +5783,7 @@
       "id": "context.numeric-constant.representation",
       "etiqueta": "Representation",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-constante-representacion.png"
     },
     {
@@ -5798,14 +5798,14 @@
       "id": "context.numeric-constant.representation.dbl",
       "etiqueta": "DBL",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-constante-representacion.png"
     },
     {
       "id": "context.numeric-constant.representation.sgl",
       "etiqueta": "SGL",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-constante-representacion.png"
     },
     {
@@ -5820,56 +5820,56 @@
       "id": "context.numeric-constant.representation.i64",
       "etiqueta": "I64",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-constante-representacion.png"
     },
     {
       "id": "context.numeric-constant.representation.i32",
       "etiqueta": "I32",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-constante-representacion.png"
     },
     {
       "id": "context.numeric-constant.representation.i16",
       "etiqueta": "I16",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-constante-representacion.png"
     },
     {
       "id": "context.numeric-constant.representation.i8",
       "etiqueta": "I8",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-constante-representacion.png"
     },
     {
       "id": "context.numeric-constant.representation.u64",
       "etiqueta": "U64",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-constante-representacion.png"
     },
     {
       "id": "context.numeric-constant.representation.u32",
       "etiqueta": "U32",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-constante-representacion.png"
     },
     {
       "id": "context.numeric-constant.representation.u16",
       "etiqueta": "U16",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-constante-representacion.png"
     },
     {
       "id": "context.numeric-constant.representation.u8",
       "etiqueta": "U8",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-constante-representacion.png"
     },
     {
@@ -5918,7 +5918,7 @@
       "id": "context.numeric-control",
       "etiqueta": "Numeric Control",
       "estado": "built",
-      "prueba": "editor/test/diagrama.test.mjs::los_terminales_del_panel_se_ven_como_icono_o_compactos",
+      "prueba": "test/editor/diagram-view.test.mjs::los_terminales_del_panel_se_ven_como_icono_o_compactos",
       "captura": "block-diagram/numeric-menu-control.png"
     },
     {
@@ -6032,7 +6032,7 @@
       "id": "context.numeric-control.view-as-icon",
       "etiqueta": "View As Icon",
       "estado": "built",
-      "prueba": "editor/test/diagrama.test.mjs::los_terminales_del_panel_se_ven_como_icono_o_compactos",
+      "prueba": "test/editor/diagram-view.test.mjs::los_terminales_del_panel_se_ven_como_icono_o_compactos",
       "captura": "block-diagram/numeric-menu-control.png",
       "separado": true
     },
@@ -6040,7 +6040,7 @@
       "id": "context.numeric-control.representation",
       "etiqueta": "Representation",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png",
       "separado": true
     },
@@ -6056,14 +6056,14 @@
       "id": "context.numeric-control.representation.dbl",
       "etiqueta": "DBL",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-control.representation.sgl",
       "etiqueta": "SGL",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
@@ -6078,56 +6078,56 @@
       "id": "context.numeric-control.representation.i64",
       "etiqueta": "I64",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-control.representation.i32",
       "etiqueta": "I32",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-control.representation.i16",
       "etiqueta": "I16",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-control.representation.i8",
       "etiqueta": "I8",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-control.representation.u64",
       "etiqueta": "U64",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-control.representation.u32",
       "etiqueta": "U32",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-control.representation.u16",
       "etiqueta": "U16",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-control.representation.u8",
       "etiqueta": "U8",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
@@ -6167,7 +6167,7 @@
       "id": "context.numeric-indicator",
       "etiqueta": "Numeric Indicator",
       "estado": "built",
-      "prueba": "editor/test/diagrama.test.mjs::los_terminales_del_panel_se_ven_como_icono_o_compactos",
+      "prueba": "test/editor/diagram-view.test.mjs::los_terminales_del_panel_se_ven_como_icono_o_compactos",
       "captura": "block-diagram/numeric-menu-indicador.png"
     },
     {
@@ -6281,7 +6281,7 @@
       "id": "context.numeric-indicator.view-as-icon",
       "etiqueta": "View As Icon",
       "estado": "built",
-      "prueba": "editor/test/diagrama.test.mjs::los_terminales_del_panel_se_ven_como_icono_o_compactos",
+      "prueba": "test/editor/diagram-view.test.mjs::los_terminales_del_panel_se_ven_como_icono_o_compactos",
       "captura": "block-diagram/numeric-menu-indicador.png",
       "separado": true
     },
@@ -6298,7 +6298,7 @@
       "id": "context.numeric-indicator.representation",
       "etiqueta": "Representation",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png",
       "separado": true
     },
@@ -6314,14 +6314,14 @@
       "id": "context.numeric-indicator.representation.dbl",
       "etiqueta": "DBL",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-indicator.representation.sgl",
       "etiqueta": "SGL",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
@@ -6336,56 +6336,56 @@
       "id": "context.numeric-indicator.representation.i64",
       "etiqueta": "I64",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-indicator.representation.i32",
       "etiqueta": "I32",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-indicator.representation.i16",
       "etiqueta": "I16",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-indicator.representation.i8",
       "etiqueta": "I8",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-indicator.representation.u64",
       "etiqueta": "U64",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-indicator.representation.u32",
       "etiqueta": "U32",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-indicator.representation.u16",
       "etiqueta": "U16",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
       "id": "context.numeric-indicator.representation.u8",
       "etiqueta": "U8",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
       "captura": "block-diagram/numeric-menu-control-representacion.png"
     },
     {
@@ -6425,7 +6425,7 @@
       "id": "context.boolean-control",
       "etiqueta": "Boolean Control",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::el_menú_de_un_control_booleano_cambia_su_acción_mecánica",
+      "prueba": "test/editor/front-panel.test.mjs::el_menú_de_un_control_booleano_cambia_su_acción_mecánica",
       "captura": "front-panel/boolean-menu-control.png"
     },
     {
@@ -6531,7 +6531,7 @@
       "id": "context.boolean-control.mechanical-action",
       "etiqueta": "Mechanical Action",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::el_menú_de_un_control_booleano_cambia_su_acción_mecánica",
+      "prueba": "test/editor/front-panel.test.mjs::el_menú_de_un_control_booleano_cambia_su_acción_mecánica",
       "captura": "front-panel/boolean-menu-control.png",
       "separado": true
     },
@@ -6539,7 +6539,7 @@
       "id": "context.boolean-control.mechanical-action.switch-when-pressed",
       "etiqueta": "Switch When Pressed",
       "estado": "built",
-      "prueba": "editor/test/panel.test.mjs::el_menú_de_un_control_booleano_cambia_su_acción_mecánica",
+      "prueba": "test/editor/front-panel.test.mjs::el_menú_de_un_control_booleano_cambia_su_acción_mecánica",
       "captura": "front-panel/boolean-menu-control.png"
     },
     {
@@ -6570,7 +6570,7 @@
       "id": "context.boolean-control.mechanical-action.latch-when-released",
       "etiqueta": "Latch When Released",
       "estado": "built",
-      "prueba": "editor/test/ejecucion.test.mjs::un_control_latch_vuelve_a_false_cuando_el_diagrama_lo_lee_y_uno_switch_no",
+      "prueba": "test/core/execution.test.mjs::un_control_latch_vuelve_a_false_cuando_el_diagrama_lo_lee_y_uno_switch_no",
       "captura": "front-panel/boolean-menu-control.png"
     },
     {
@@ -6594,7 +6594,7 @@
       "id": "context.boolean-control-terminal",
       "etiqueta": "Boolean Control",
       "estado": "built",
-      "prueba": "editor/test/diagrama.test.mjs::el_terminal_de_un_control_booleano_se_ve_como_icono_o_compacto_y_su_menú_cambia_la_acción_mecánica",
+      "prueba": "test/editor/diagram-view.test.mjs::el_terminal_de_un_control_booleano_se_ve_como_icono_o_compacto_y_su_menú_cambia_la_acción_mecánica",
       "captura": "block-diagram/boolean-menu-control.png"
     },
     {
@@ -6692,14 +6692,14 @@
       "id": "context.boolean-control-terminal.mechanical-action",
       "etiqueta": "Mechanical Action",
       "estado": "built",
-      "prueba": "editor/test/diagrama.test.mjs::el_terminal_de_un_control_booleano_se_ve_como_icono_o_compacto_y_su_menú_cambia_la_acción_mecánica",
+      "prueba": "test/editor/diagram-view.test.mjs::el_terminal_de_un_control_booleano_se_ve_como_icono_o_compacto_y_su_menú_cambia_la_acción_mecánica",
       "captura": "block-diagram/boolean-menu-control.png"
     },
     {
       "id": "context.boolean-control-terminal.mechanical-action.switch-when-pressed",
       "etiqueta": "Switch When Pressed",
       "estado": "built",
-      "prueba": "editor/test/diagrama.test.mjs::el_terminal_de_un_control_booleano_se_ve_como_icono_o_compacto_y_su_menú_cambia_la_acción_mecánica",
+      "prueba": "test/editor/diagram-view.test.mjs::el_terminal_de_un_control_booleano_se_ve_como_icono_o_compacto_y_su_menú_cambia_la_acción_mecánica",
       "captura": "block-diagram/boolean-menu-control.png"
     },
     {
@@ -6754,7 +6754,7 @@
       "id": "context.boolean-control-terminal.view-as-icon",
       "etiqueta": "View As Icon",
       "estado": "built",
-      "prueba": "editor/test/diagrama.test.mjs::el_terminal_de_un_control_booleano_se_ve_como_icono_o_compacto_y_su_menú_cambia_la_acción_mecánica",
+      "prueba": "test/editor/diagram-view.test.mjs::el_terminal_de_un_control_booleano_se_ve_como_icono_o_compacto_y_su_menú_cambia_la_acción_mecánica",
       "captura": "block-diagram/boolean-menu-control.png",
       "separado": true
     },
@@ -6896,7 +6896,7 @@
       "id": "context.compound-arithmetic",
       "etiqueta": "Compound Arithmetic",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "prueba": "test/editor/diagram-editing.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
       "captura": "block-diagram/compound-menu.png"
     },
     {
@@ -6952,7 +6952,7 @@
       "id": "context.compound-arithmetic.invert",
       "etiqueta": "Invert",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
+      "prueba": "test/editor/diagram-editing.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
       "captura": "block-diagram/compound-menu.png",
       "separado": true
     },
@@ -6985,42 +6985,42 @@
       "id": "context.compound-arithmetic.change-mode",
       "etiqueta": "Change Mode",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "prueba": "test/editor/diagram-editing.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
       "captura": "block-diagram/compound-change-mode.png"
     },
     {
       "id": "context.compound-arithmetic.change-mode.add",
       "etiqueta": "Add",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "prueba": "test/editor/diagram-editing.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
       "captura": "block-diagram/compound-change-mode.png"
     },
     {
       "id": "context.compound-arithmetic.change-mode.multiply",
       "etiqueta": "Multiply",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "prueba": "test/editor/diagram-editing.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
       "captura": "block-diagram/compound-change-mode.png"
     },
     {
       "id": "context.compound-arithmetic.change-mode.and",
       "etiqueta": "AND",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "prueba": "test/editor/diagram-editing.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
       "captura": "block-diagram/compound-change-mode.png"
     },
     {
       "id": "context.compound-arithmetic.change-mode.or",
       "etiqueta": "OR",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "prueba": "test/editor/diagram-editing.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
       "captura": "block-diagram/compound-change-mode.png"
     },
     {
       "id": "context.compound-arithmetic.change-mode.xor",
       "etiqueta": "XOR",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "prueba": "test/editor/diagram-editing.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
       "captura": "block-diagram/compound-change-mode.png"
     },
     {
@@ -7053,7 +7053,7 @@
       "id": "context.compound-arithmetic-input",
       "etiqueta": "Compound Arithmetic Input",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
+      "prueba": "test/editor/diagram-editing.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
       "captura": "block-diagram/compound-menu-entrada.png"
     },
     {
@@ -7109,7 +7109,7 @@
       "id": "context.compound-arithmetic-input.add-input",
       "etiqueta": "Add Input",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
+      "prueba": "test/editor/diagram-editing.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
       "captura": "block-diagram/compound-menu-entrada.png",
       "separado": true
     },
@@ -7117,14 +7117,14 @@
       "id": "context.compound-arithmetic-input.remove-input",
       "etiqueta": "Remove Input",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
+      "prueba": "test/editor/diagram-editing.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
       "captura": "block-diagram/compound-menu-entrada.png"
     },
     {
       "id": "context.compound-arithmetic-input.invert",
       "etiqueta": "Invert",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
+      "prueba": "test/editor/diagram-editing.test.mjs::invertir_y_añadir_o_quitar_entradas_conserva_los_cables",
       "captura": "block-diagram/compound-menu-entrada.png"
     },
     {
@@ -7139,14 +7139,14 @@
       "id": "context.compound-arithmetic-input.create",
       "etiqueta": "Create",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::create_constant_crea_la_constante_cableada_y_lista_para_escribir",
+      "prueba": "test/editor/diagram-editing.test.mjs::create_constant_crea_la_constante_cableada_y_lista_para_escribir",
       "captura": "block-diagram/compound-create.png"
     },
     {
       "id": "context.compound-arithmetic-input.create.constant",
       "etiqueta": "Constant",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::create_constant_crea_la_constante_cableada_y_lista_para_escribir",
+      "prueba": "test/editor/diagram-editing.test.mjs::create_constant_crea_la_constante_cableada_y_lista_para_escribir",
       "captura": "block-diagram/compound-create.png"
     },
     {
@@ -7178,49 +7178,49 @@
       "id": "context.compound-arithmetic-input.change-mode",
       "etiqueta": "Change Mode",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "prueba": "test/editor/diagram-editing.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
       "captura": "block-diagram/compound-change-mode.png"
     },
     {
       "id": "context.compound-arithmetic-input.change-mode.add",
       "etiqueta": "Add",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "prueba": "test/editor/diagram-editing.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
       "captura": "block-diagram/compound-change-mode.png"
     },
     {
       "id": "context.compound-arithmetic-input.change-mode.multiply",
       "etiqueta": "Multiply",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "prueba": "test/editor/diagram-editing.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
       "captura": "block-diagram/compound-change-mode.png"
     },
     {
       "id": "context.compound-arithmetic-input.change-mode.and",
       "etiqueta": "AND",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "prueba": "test/editor/diagram-editing.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
       "captura": "block-diagram/compound-change-mode.png"
     },
     {
       "id": "context.compound-arithmetic-input.change-mode.or",
       "etiqueta": "OR",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "prueba": "test/editor/diagram-editing.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
       "captura": "block-diagram/compound-change-mode.png"
     },
     {
       "id": "context.compound-arithmetic-input.change-mode.xor",
       "etiqueta": "XOR",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
+      "prueba": "test/editor/diagram-editing.test.mjs::compound_arithmetic_cambia_de_modo_y_con_and_su_salida_es_entera",
       "captura": "block-diagram/compound-change-mode.png"
     },
     {
       "id": "context.while-loop",
       "etiqueta": "While Loop",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
       "captura": "structures/menu-while-loop.png"
     },
     {
@@ -7342,7 +7342,7 @@
       "id": "context.while-loop.add-shift-register",
       "etiqueta": "Add Shift Register",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
       "captura": "structures/menu-while-loop.png",
       "separado": true
     },
@@ -7350,7 +7350,7 @@
       "id": "context.while-loop.stop-if-true",
       "etiqueta": "Stop if True",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
       "captura": "structures/menu-while-loop.png",
       "separado": true
     },
@@ -7358,7 +7358,7 @@
       "id": "context.while-loop.continue-if-true",
       "etiqueta": "Continue if True",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
       "captura": "structures/menu-while-loop.png"
     },
     {
@@ -7383,7 +7383,7 @@
       "id": "context.for-loop",
       "etiqueta": "For Loop",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
       "captura": "structures/menu-for-loop.png"
     },
     {
@@ -7513,7 +7513,7 @@
       "id": "context.for-loop.add-shift-register",
       "etiqueta": "Add Shift Register",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
       "captura": "structures/menu-for-loop.png",
       "separado": true
     },
@@ -7539,14 +7539,14 @@
       "id": "context.loop-tunnel-input",
       "etiqueta": "Loop Tunnel Input",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_cada_nodo_del_borde_de_un_bucle_enseña_sus_filas",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_cada_nodo_del_borde_de_un_bucle_enseña_sus_filas",
       "captura": "structures/menu-tunel-entrada.png"
     },
     {
       "id": "context.loop-tunnel-input.enable-indexing",
       "etiqueta": "Enable Indexing",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el menú de un túnel de un bucle cambia el indexado",
+      "prueba": "test/editor/diagram-editing.test.mjs::el menú de un túnel de un bucle cambia el indexado",
       "captura": "structures/menu-tunel-entrada.png"
     },
     {
@@ -7595,28 +7595,28 @@
       "id": "context.loop-tunnel-output",
       "etiqueta": "Loop Tunnel Output",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_un_túnel_de_salida_marca_last_value",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_un_túnel_de_salida_marca_last_value",
       "captura": "structures/menu-tunel-salida.png"
     },
     {
       "id": "context.loop-tunnel-output.tunnel-mode",
       "etiqueta": "Tunnel Mode",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_un_túnel_de_salida_marca_last_value",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_un_túnel_de_salida_marca_last_value",
       "captura": "structures/menu-tunel-salida.png"
     },
     {
       "id": "context.loop-tunnel-output.tunnel-mode.last-value",
       "etiqueta": "Last Value",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_un_túnel_de_salida_marca_last_value",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_un_túnel_de_salida_marca_last_value",
       "captura": "structures/menu-tunel-salida.png"
     },
     {
       "id": "context.loop-tunnel-output.tunnel-mode.indexing",
       "etiqueta": "Indexing",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el menú de un túnel de un bucle cambia el indexado",
+      "prueba": "test/editor/diagram-editing.test.mjs::el menú de un túnel de un bucle cambia el indexado",
       "captura": "array/tunel-salida-menu-modo.png"
     },
     {
@@ -7682,7 +7682,7 @@
       "id": "context.loop-condition",
       "etiqueta": "Loop Condition",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
       "captura": "structures/menu-condicion.png"
     },
     {
@@ -7721,7 +7721,7 @@
       "id": "context.loop-condition.stop-if-true",
       "etiqueta": "Stop if True",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
       "captura": "structures/menu-condicion.png",
       "separado": true
     },
@@ -7729,7 +7729,7 @@
       "id": "context.loop-condition.continue-if-true",
       "etiqueta": "Continue if True",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_bucle_añaden_un_shift_register_y_cambian_la_condición",
       "captura": "structures/menu-condicion.png"
     },
     {
@@ -7753,7 +7753,7 @@
       "id": "context.loop-iteration",
       "etiqueta": "Loop Iteration",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_cada_nodo_del_borde_de_un_bucle_enseña_sus_filas",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_cada_nodo_del_borde_de_un_bucle_enseña_sus_filas",
       "captura": "structures/menu-iteracion.png"
     },
     {
@@ -7809,7 +7809,7 @@
       "id": "context.loop-count",
       "etiqueta": "Loop Count",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_cada_nodo_del_borde_de_un_bucle_enseña_sus_filas",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_cada_nodo_del_borde_de_un_bucle_enseña_sus_filas",
       "captura": "structures/menu-cuenta.png"
     },
     {
@@ -7866,7 +7866,7 @@
       "id": "context.shift-register",
       "etiqueta": "Shift Register",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_cada_nodo_del_borde_de_un_bucle_enseña_sus_filas",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_cada_nodo_del_borde_de_un_bucle_enseña_sus_filas",
       "captura": "structures/menu-shift-register.png"
     },
     {
@@ -7957,7 +7957,7 @@
       "id": "context.case-structure",
       "etiqueta": "Case Structure",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_case_añaden_quitan_y_marcan_el_default",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_case_añaden_quitan_y_marcan_el_default",
       "captura": "structures/case-menu-borde.png"
     },
     {
@@ -8063,7 +8063,7 @@
       "id": "context.case-structure.add-case-after",
       "etiqueta": "Add Case After",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_case_añaden_quitan_y_marcan_el_default",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_case_añaden_quitan_y_marcan_el_default",
       "captura": "structures/case-menu-borde.png",
       "separado": true
     },
@@ -8071,7 +8071,7 @@
       "id": "context.case-structure.add-case-before",
       "etiqueta": "Add Case Before",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_case_añaden_quitan_y_marcan_el_default",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_case_añaden_quitan_y_marcan_el_default",
       "captura": "structures/case-menu-borde.png"
     },
     {
@@ -8086,7 +8086,7 @@
       "id": "context.case-structure.delete-this-case",
       "etiqueta": "Delete This Case",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_case_añaden_quitan_y_marcan_el_default",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_case_añaden_quitan_y_marcan_el_default",
       "captura": "structures/case-menu-borde.png"
     },
     {
@@ -8101,7 +8101,7 @@
       "id": "context.case-structure.show-case-other",
       "etiqueta": "Show Case True / False",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_case_añaden_quitan_y_marcan_el_default",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_case_añaden_quitan_y_marcan_el_default",
       "captura": "structures/case-menu-borde.png",
       "separado": true
     },
@@ -8150,14 +8150,14 @@
       "id": "context.case-structure.make-this-the-default-case",
       "etiqueta": "Make This The Default Case",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_case_añaden_quitan_y_marcan_el_default",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_case_añaden_quitan_y_marcan_el_default",
       "captura": "structures/case-menu-borde-num2.png"
     },
     {
       "id": "context.case-structure.remove-default",
       "etiqueta": "Remove Default",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_un_case_añaden_quitan_y_marcan_el_default",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_un_case_añaden_quitan_y_marcan_el_default",
       "captura": "structures/case-menu-borde-num.png"
     },
     {
@@ -8190,7 +8190,7 @@
       "id": "context.flat-sequence",
       "etiqueta": "Flat Sequence Structure",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
       "captura": "structures/secuencia-menu-borde.png"
     },
     {
@@ -8263,7 +8263,7 @@
       "id": "context.flat-sequence.replace-with-stacked-sequence",
       "etiqueta": "Replace with Stacked Sequence",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
       "captura": "structures/secuencia-menu-borde.png"
     },
     {
@@ -8286,7 +8286,7 @@
       "id": "context.flat-sequence.add-frame-after",
       "etiqueta": "Add Frame After",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
       "captura": "structures/secuencia-menu-borde.png",
       "separado": true
     },
@@ -8294,14 +8294,14 @@
       "id": "context.flat-sequence.add-frame-before",
       "etiqueta": "Add Frame Before",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
       "captura": "structures/secuencia-menu-borde.png"
     },
     {
       "id": "context.flat-sequence.delete-this-frame",
       "etiqueta": "Delete This Frame",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
       "captura": "structures/secuencia-menu-borde.png"
     },
     {
@@ -8326,7 +8326,7 @@
       "id": "context.stacked-sequence",
       "etiqueta": "Stacked Sequence Structure",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
       "captura": "structures/secuencia-menu-stacked.png"
     },
     {
@@ -8407,14 +8407,14 @@
       "id": "context.stacked-sequence.replace",
       "etiqueta": "Replace",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
       "captura": "structures/secuencia-menu-stacked-replace.png"
     },
     {
       "id": "context.stacked-sequence.replace.replace-with-flat-sequence",
       "etiqueta": "Replace with Flat Sequence",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
       "captura": "structures/secuencia-menu-stacked-replace.png"
     },
     {
@@ -8446,14 +8446,14 @@
       "id": "context.stacked-sequence.add-frame-after",
       "etiqueta": "Add Frame After",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
       "captura": "structures/secuencia-menu-stacked.png"
     },
     {
       "id": "context.stacked-sequence.add-frame-before",
       "etiqueta": "Add Frame Before",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
       "captura": "structures/secuencia-menu-stacked.png"
     },
     {
@@ -8468,7 +8468,7 @@
       "id": "context.stacked-sequence.delete-this-frame",
       "etiqueta": "Delete This Frame",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
+      "prueba": "test/editor/diagram-editing.test.mjs::los_menús_de_una_secuencia_añaden_y_quitan_marcos_y_la_cambian_de_forma",
       "captura": "structures/secuencia-menu-stacked.png"
     },
     {
@@ -8510,7 +8510,7 @@
       "id": "context.case-selector",
       "etiqueta": "Case Selector",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_cada_nodo_del_borde_de_un_case_enseña_sus_filas",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_cada_nodo_del_borde_de_un_case_enseña_sus_filas",
       "captura": "structures/case-menu-terminal-selector.png"
     },
     {
@@ -8575,7 +8575,7 @@
       "id": "context.case-tunnel-input",
       "etiqueta": "Case Tunnel Input",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_cada_nodo_del_borde_de_un_case_enseña_sus_filas",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_cada_nodo_del_borde_de_un_case_enseña_sus_filas",
       "captura": "structures/case-menu-tunel-entrada.png"
     },
     {
@@ -8624,14 +8624,14 @@
       "id": "context.case-tunnel-output",
       "etiqueta": "Case Tunnel Output",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::el_menú_de_cada_nodo_del_borde_de_un_case_enseña_sus_filas",
+      "prueba": "test/editor/diagram-editing.test.mjs::el_menú_de_cada_nodo_del_borde_de_un_case_enseña_sus_filas",
       "captura": "structures/case-menu-tunel-salida.png"
     },
     {
       "id": "context.case-tunnel-output.use-default-if-unwired",
       "etiqueta": "Use Default If Unwired",
       "estado": "built",
-      "prueba": "editor/test/edicion.test.mjs::use_default_if_unwired_cambia_el_túnel_de_salida_del_case",
+      "prueba": "test/editor/diagram-editing.test.mjs::use_default_if_unwired_cambia_el_túnel_de_salida_del_case",
       "captura": "structures/case-menu-tunel-salida.png"
     },
     {

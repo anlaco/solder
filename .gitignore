@@ -22,3 +22,8 @@ Thumbs.db
 # Secrets
 .env
 *.token
+
+# Claude Code: local assistant context and settings, not part of the project
+CLAUDE.md
+CLAUDE.local.md
+.claude/

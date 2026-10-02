@@ -104,7 +104,7 @@ wasmtime publishes a release every month and marks an LTS every 12 (2 years of s
 ## 3. Architecture
 
 > **Replaced by [DT-039](../../design/05-decisions.md#dt-039)**: the core (format,
-> graph, blocks, compiler, `check`) is a `nucleo/` directory of ES modules
+> graph, blocks, compiler, `check`) is a `core/` directory of ES modules
 > used by the editor and by the command line in Node; the VI runs in the page's
 > WASM engine, in a worker, and wasmtime leaves the project. Rust remains only for
 > the hardware host. The original tree is kept as a record.
@@ -244,13 +244,13 @@ so that the interface does not grow without a program behind it.
      also the control, with their labels, cloned from the video
      `front-panel/numeric-colocar-etiquetas.mp4`.)*
    - [x] **Save and open** the VI as `.qvi`, with elbows, configuration and types
-     (exact round-trip: R2 criterion). *(2026-09-30: `nucleo/qvi.mjs`, with
+     (exact round-trip: R2 criterion). *(2026-09-30: `core/model/qvi-format.mjs`, with
      File ▸ Open, Save and Save As and the asterisk for unsaved changes.)*
    - [x] A real **Run**: compile to WebAssembly and see the result in the
      indicator. Run and Save stop being placeholders. *(2026-09-30:
-     `nucleo/compilador.mjs`, `nucleo/wasm.mjs` and `nucleo/ejecutar.mjs`; in the
+     `core/compiler/compiler.mjs`, `core/compiler/wasm-encoder.mjs` and `core/runtime/runtime.mjs`; in the
      editor, in a worker, with Ctrl+R. It also meets R0:
-     `node nucleo/cli.mjs run docs/schema/examples/suma-basica.qvi.json`
+     `node cli/solder.mjs run docs/schema/examples/suma-basica.qvi.json`
      prints 8.)*
 4. [ ] **Clone by acquisition priority**, not in palette order:
    - [ ] Controls ▸ Numeric (controls and indicators). *(The numeric control and

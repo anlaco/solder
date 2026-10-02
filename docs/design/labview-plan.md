@@ -13,9 +13,9 @@ When the developer says "keep going":
    §4 gives the detail of each module.
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
-   `win11 encender`, `tools/vmqmp.py foto|clic|arrastrar|tecla|texto`.
+   `win11 encender`, `tools/vm_control.py foto|clic|arrastrar|tecla|texto`.
    What has not been seen or tried in LabVIEW is not written from memory.
-3. When closing a step: tests green (`npm test` in `editor/`), mark it here with
+3. When closing a step: tests green (`npm test`), mark it here with
    the date and update §2. Commit only when asked, without co-authorship.
 4. If the step needs a decision that is not written down, propose it and ask
    before going on: decisions are not made halfway through.
@@ -26,7 +26,7 @@ When the developer says "keep going":
   names, order and behavior. What is not done yet looks the same, greyed out, and
   says why. If the spec and LabVIEW disagree, LabVIEW wins and the spec is fixed.
 - **Everything compiles to pure WebAssembly** (DT-039): the core in JavaScript
-  (`nucleo/`), our own encoder, no interpreter. The `.qvi` stores only the
+  (`core/`), our own encoder, no interpreter. The `.qvi` stores only the
   diagram; the `.wasm` lives in memory.
 - **Web technologies** (DT-037): the editor is a page in Electron. Rust, only
   for the hardware host.
@@ -53,8 +53,8 @@ and wired in the diagram, and the compiler runs them (DT-041).
 | Panel editing | Place controls, labels on both canvases, value typed and with the arrows, delete synchronized with the diagram. A click on the body of a Boolean triggers it, as in LabVIEW (spec/05 Rule 40c); right-click on a Boolean opens its menu, with Mechanical Action. In Run mode only the controls are triggered |
 | Array / Data Containers palette | **Functions ▸ Programming ▸ Array**, captured in full (34 elements in 5 columns, with the context help of each): 17 done (the one-dimensional ones) and the rest greyed out with their reason. **Controls ▸ Modern ▸ Data Containers ▸ Array** done (control and indicator with index and visible elements, editable), array constant in the diagram and indexed tunnels with their menu |
 | Types | DBL, SGL, integers from 8 to 64 bits with and without sign, Boolean and **string** (also on the panel: controls and indicators), with coercion (DT-038) and the logical type of Boolean; constants, controls and indicators change representation with the Representation menu. **One-dimensional arrays** (DT-042 d, with their control, indicator and constant); no 2D; clusters, only in memory (DT-042); the **error cluster** (DT-043) with its wire, controls, constant and dialogs in the editor |
-| `.qvi` | Reading and writing with exact round-trip (`nucleo/qvi.mjs`) |
-| Compiler | Numeric (with Conversion, Data Manipulation, constants, Enum, Ring, Range Limits and Expression Node), Boolean, Comparison and Timing over scalars, numeric and Boolean controls and indicators (`nucleo/compilador.mjs`). The diagram is split into clumps and runs by dataflow with JSPI (`nucleo/ejecutar.mjs`, DT-040). `nucleo/cli.mjs run|wat|check` |
+| `.qvi` | Reading and writing with exact round-trip (`core/model/qvi-format.mjs`) |
+| Compiler | Numeric (with Conversion, Data Manipulation, constants, Enum, Ring, Range Limits and Expression Node), Boolean, Comparison and Timing over scalars, numeric and Boolean controls and indicators (`core/compiler/compiler.mjs`). The diagram is split into clumps and runs by dataflow with JSPI (`core/runtime/runtime.mjs`, DT-040). `cli/solder.mjs run|wat|check` |
 | Execution | Live indicators, parallel branches, Abort (button and Ctrl+.), Latch When Released (Stop, OK and Cancel) and Run mode in both windows; While and For with shift registers and tunnels (Last Value), on top of the clumps. Still missing: each iteration yielding, and two waits in the same body overlapping |
 
 **Catalog blocks that the compiler does not emit yet:** arrays (`arr-*`, `build-array`,
@@ -182,7 +182,7 @@ right-click menus of the panel and the 19 missing Numeric controls.
   subnormal.
 - [x] **Math & Scientific Constants** subpalette: capture and compile.
   *(2026-10-01.)* 17 DBL constants in 4 columns, with name, symbol and value from
-  their context help (`nucleo/constantes.mjs`): π and its derivatives, e, the
+  their context help (`core/model/math-constants.mjs`): π and its derivatives, e, the
   logarithms and the physical ones (h, e, c, G, N_A, R∞, R). They are drawn in the diagram
   as boxes with their symbol.
 - [~] **Enum** and **Ring**: the enum type (as U16 when converting, DT-038), its
@@ -197,7 +197,7 @@ right-click menus of the panel and the 19 missing Numeric controls.
   enum gives its last value, according to its help; SGL, by symmetry). Expression
   Node: the expression is typed inside the node (24 × 17 px with "x", measured in
   LabVIEW), with a double click; a single variable, with whatever name you want
-  (`nucleo/expresion.mjs`). **Verified in LabVIEW** (2026-10-01, rule 2h of
+  (`core/compiler/expression-parser.mjs`). **Verified in LabVIEW** (2026-10-01, rule 2h of
   `spec/03`): the syntax is that of C, with `**` for power and `^` for
   exclusive or (only with integers: with a DBL, *Integer type required*); `%`, `mod`
   and `rem` truncate; the 39 functions of its context help, also the two-argument
@@ -232,7 +232,7 @@ right-click menus of the panel and the 19 missing Numeric controls.
   Only Switch When Pressed can be chosen; the other five, greyed out
   (`acciones-mecanicas`). The drawings of the ten controls were compared with
   the captures at 1:1, off and on (section 5 of `capturing-labview.md`),
-  and carry their measurements in `glifos.mjs`; the toggles are the ones that stray most
+  and carry their measurements in `glyphs.mjs`; the toggles are the ones that stray most
   (their shadow and perspective are a bitmap in LabVIEW).
 - [x] Boolean terminals in the diagram (`bool-control`, `bool-indicator`) and their
   compilation: the panel reads and writes Booleans. *(2026-10-01.)* Green terminal
@@ -303,7 +303,7 @@ right-click menus of the panel and the 19 missing Numeric controls.
 - [x] **Editable string constant in the diagram**, multi-line *(2026-10-01)*:
   15 × 19 px empty and 22 × 34 with two lines, measured in LabVIEW; just dropped it is
   ready to type; Enter goes down a line, it is confirmed with Enter Text or a click
-  outside. A VI with strings is saved, opened and runs (`qvi.test.mjs`).
+  outside. A VI with strings is saved, opened and runs (`qvi-round-trip.test.mjs`).
 
 ### M4 — Structures: sequences and loops
 
@@ -334,7 +334,7 @@ right-click menus of the panel and the 19 missing Numeric controls.
   loop made with the mouse compiles and runs. The whole Structures subpalette
   is in the inventory. The core (DT-041): flat model with `dentro`,
   types, inline compilation inside its clump, adaptive yielding and nested `.qvi`
-  with exact round-trip (`editor/test/estructuras.test.mjs`); the example
+  with exact round-trip (`test/core/structures.test.mjs`); the example
   `while-loop-suma` gives 45 in the editor and on the command line. **Missing:** the Indexing, Concatenating and
   Conditional tunnel modes (arrays, M6), stacked shift registers, the For's
   condition terminal, Auto Grow and the fact that LabVIEW pushes aside a loop that overlaps
@@ -395,10 +395,10 @@ right-click menus of the panel and the 19 missing Numeric controls.
   arrays by handle): Bundle, Unbundle, By Name, constants, controls and
   indicators.
 - [x] **The error cluster** *(done on 2026-10-02, DT-043)*. The core
-  (`editor/test/errores.test.mjs`): the type, the constant, Clear Errors, Merge
+  (`test/end-to-end/error-cluster.test.mjs`): the type, the constant, Clear Errors, Merge
   Errors, Error Cluster From Error Code, error passing, automatic
   handling and **Simple Error Handler** (a suspendable import,
-  `opciones.alDialogoError`), with the texts of `nucleo/errores.mjs` (LabVIEW
+  `opciones.alDialogoError`), with the texts of `core/runtime/error-codes.mjs` (LabVIEW
   codes, our own texts). The editor: the yellow wire with black
   dashes, **Error In and Error Out** on the panel (Controls ▸ Modern ▸ Data
   Containers, its other six elements greyed out), the terminal and the editable
@@ -455,7 +455,7 @@ right-click menus of the panel and the 19 missing Numeric controls.
   the growing gesture was cloned from the documentation, not from a capture. The panel array is born with one DBL element; the
   LabVIEW one is born empty and takes the type of the control dropped inside it (Change to Element, not done).
 - **Array coercion (resolved):** an array of I32 that enters where one of DBL is expected is converted element by
-  element into a new buffer, like LabVIEW's coercion point (`editor/test/arrays.test.mjs`).
+  element into a new buffer, like LabVIEW's coercion point (`test/core/arrays.test.mjs`).
 
 ### Afterwards, in this order
 
@@ -494,5 +494,5 @@ probes and execution highlighting.
 - 2026-10-01 — M4, Flat and Stacked Sequence in the editor: captured in LabVIEW (film border of 250 × 200 with frames, separators of 5 px and holes every 12; minimum frame of 38; tunnels of 9 × 9 on the separators; selector "0 [0..1]" of 72 × 17; local variable of 13 × 13 with write arrow, read arrow and in checkerboard; menus of both) and done with the border compared pixel by pixel (66 px of difference, all from the tunnel and the wire that LabVIEW did not have in that capture). Verified by building and running the VI in LabVIEW: the output tunnel of a Flat writes the indicator when its frame ends (at ~1 s with a Wait of 1000 ms in frame 0), not when the sequence ends as the core did; fixed the same day (each frame of a Flat is an element of the dataflow, DT-041 §9). Next: Add Sequence Local, or arrays (M6).
 - 2026-10-01 — M3, String: Functions ▸ Programming ▸ String captured in full (28 elements in 5 columns, plus Number/String Conversion of 12, Additional String Functions of 13, Path/Array/String Conversion of 6 and Flatten/Unflatten String of 9, with the context help of each function), Controls ▸ Modern ▸ String & Path (5) and the string constant and control (measured at 1:1: constant of 15 × 19 px empty and 22 × 34 with two lines; control of 100 × 24 px). 27 functions and constants and the two controls done; the rest greyed out with their reason. Results measured by building each function in LabVIEW (String Subset, Replace Substring, Search and Replace String, the Number To … String and … String To Number, and the string comparisons, byte by byte) and carried into `spec/04` (rules 21b–21f) and into tests. The functions that depend on LabVIEW's format are JavaScript imports over the memory of DT-042 (`cad.*`), with round-to-even for exact numbers; the allocator and the cells do not change. Comparison accepts strings and gains Empty String/Path?, Decimal/Hex/Octal Digit? and White Space?. The editor writes the constant and the control with Enter as line break; a string VI is saved, opened and runs. 248 tests. Next: M6 (arrays and clusters), or the right-click menus of the string constant and control, and Format Into String.
 - 2026-10-02 — Decided: the error cluster goes into M6, after the basic clusters and before arrays. Arrays and clusters go on the memory of DT-042, not on WasmGC.
-- 2026-10-02 — M6, the error cluster in the editor (DT-043): captured in LabVIEW the Controls ▸ Modern ▸ Data Containers subpalette (2 columns, 8 elements: Array, Cluster, RealMatrix.ctl, ComplexMatrix.ctl, Set, Map, Error In 3D.ctl and Error Out 3D.ctl) and the Error Out control at 1:1 (155 × 121 px). Done: the wire (3 px, olive border and yellow and black dashes), the Error In/Out controls with their terminal, the editable error constant (22 × 57 px), Dialog & User Interface declared in full (23 elements, 4 columns; 5 done), Simple Error Handler, the two modal dialogs (the automatic handling one with Continue and Stop, and the Simple Error Handler one with OK), `nucleo/errores.mjs` with codes 1, 2, 7, 8, 42, 43, 56, 63 and 66 and the paragraph for the undefined code, and the error terminals of Search and Replace String. 266 tests. Next: arrays (M6), the basic clusters with their controls (Bundle, Unbundle, Cluster) or Explain Error.
+- 2026-10-02 — M6, the error cluster in the editor (DT-043): captured in LabVIEW the Controls ▸ Modern ▸ Data Containers subpalette (2 columns, 8 elements: Array, Cluster, RealMatrix.ctl, ComplexMatrix.ctl, Set, Map, Error In 3D.ctl and Error Out 3D.ctl) and the Error Out control at 1:1 (155 × 121 px). Done: the wire (3 px, olive border and yellow and black dashes), the Error In/Out controls with their terminal, the editable error constant (22 × 57 px), Dialog & User Interface declared in full (23 elements, 4 columns; 5 done), Simple Error Handler, the two modal dialogs (the automatic handling one with Continue and Stop, and the Simple Error Handler one with OK), `core/runtime/error-codes.mjs` with codes 1, 2, 7, 8, 42, 43, 56, 63 and 66 and the paragraph for the undefined code, and the error terminals of Search and Replace String. 266 tests. Next: arrays (M6), the basic clusters with their controls (Bundle, Unbundle, Cluster) or Explain Error.
 - 2026-10-02 — M6, arrays in the editor: Functions ▸ Programming ▸ Array captured in full (34 elements, 5 columns, context help of each one, measurements of each function dropped in the diagram) and Controls ▸ Modern ▸ Data Containers ▸ Array; the panel array menu, the indexed output tunnel menu and that of a function, captured. Done: Replace Array Subset, Insert Into Array, Delete From Array, Sort 1D Array, Rotate 1D Array, Split 1D Array and Increment/Decrement Array Element (JavaScript module `arr`), the array control, indicator and constant, indexed tunnels with their menu and the 2 px array wire; the `.qvi` saves `indexed`, `visible-elements` and `index`. LabVIEW's edge cases remain unverified (see M6). 287 tests.

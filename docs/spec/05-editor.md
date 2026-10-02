@@ -163,7 +163,7 @@ loose. See §5.4.)*
 
 *(informative)* Cloned from the video
 `labview-captures/block-diagram/numeric-cablear.mp4` and done in the editor
-(`editor/src/edicion.mjs`):
+(`editor/src/block-diagram/diagram-editing.mjs`):
 
 - While pulling, the wire is a **black dotted** line that leaves the
   terminal horizontally up to the mouse's x and then goes vertically to it.
@@ -205,7 +205,7 @@ menu is broken down, its zoom entries will go as `never` citing this rule.)*
 > `Shift`, a larger jump.
 
 > **Rule 36 is implemented in the web editor** (2026-09-29,
-> `editor/src/edicion.mjs`): one pixel, and 8 with `Shift`, provisional until
+> `editor/src/block-diagram/diagram-editing.mjs`): one pixel, and 8 with `Shift`, provisional until
 > the jump is verified in LabVIEW (§11, issue 3).
 
 > **Rule 37.** `Tab` **MUST** cycle through the elements of the canvas. See §2.
@@ -224,7 +224,7 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > wires that stop being valid, warning beforehand.
 
 > **Rules 38 and 39 are implemented in the web editor** (2026-09-30,
-> `editor/src/panel.mjs`) for the numeric control and indicator: a control
+> `editor/src/front-panel/front-panel.mjs`) for the numeric control and indicator: a control
 > is a single node of the graph with its place in each canvas and a single label,
 > so placing it on the panel puts its terminal on the diagram, and deleting it in
 > either of the two deletes it from the other, with its wires. Each window has its
@@ -268,7 +268,7 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 
 > **Rule 40e — While Loop and For Loop on the diagram.** Captured in LabVIEW 2026
 > Q3 (`labview-captures/structures/`), at 1:1, and done with the measurements below
-> (tests in `editor/test/diagrama.test.mjs` and `edicion.test.mjs`):
+> (tests in `test/editor/diagram-view.test.mjs` and `diagram-editing.test.mjs`):
 >
 > - **Placing.** It is taken from Functions ▸ Programming ▸ Structures. The first click on
 >   the canvas fixes one corner and the second, the opposite one (a 1 px gray rectangle
@@ -320,7 +320,7 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 
 > **Rule 40f — Case Structure on the diagram.** Captured in LabVIEW 2026 Q3
 > (`labview-captures/structures/case-*.png`), at 1:1 and compared pixel by pixel
-> (tests in `diagrama.test.mjs` and `edicion.test.mjs`):
+> (tests in `diagram-view.test.mjs` and `diagram-editing.test.mjs`):
 >
 > - **Placing** like a loop (two clicks or drag). A rectangle smaller than
 >   48 × 48 is enlarged about its center. Freshly placed it comes with False and True and True is shown.
@@ -351,7 +351,7 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 
 > **Rule 40g — Flat and Stacked Sequence on the diagram.** Captured in LabVIEW 2026
 > Q3 (`labview-captures/structures/secuencia-*.png`), at 1:1; the film border,
-> compared pixel by pixel (tests in `diagrama.test.mjs` and `edicion.test.mjs`):
+> compared pixel by pixel (tests in `diagram-view.test.mjs` and `diagram-editing.test.mjs`):
 >
 > - **Placing** like a loop (two clicks or drag; minimum 48 × 48). Freshly
 >   placed it has a single frame. The Stacked is not in the palette: it comes from
@@ -475,7 +475,7 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   (Enter), and **Stop**; Stop aborts the VI. The Simple Error Handler one
 >   (`102b-dialogo-x2.png`): no icon or bold, with **OK**; on an undefined code,
 >   "Why not found?" (greyed out). Abort with a dialog open closes it. The text comes from
->   `nucleo/errores.mjs`: the codes are LabVIEW's and the texts, our own (DT-043 §5).
+>   `core/runtime/error-codes.mjs`: the codes are LabVIEW's and the texts, our own (DT-043 §5).
 > - **Unverified or not done:** the right-click menu of the error controls and
 >   constant (Explain Error…), Help ▸ Explain Error… (greyed out), Run mode with
 >   several dialogs at once, values of "type of dialog" other than 1 and a warning
@@ -504,7 +504,7 @@ mechanism.)*
 > operation that modifies the VI.
 
 > **Rule 42 is implemented for the diagram** (2026-09-30,
-> `editor/src/historial.mjs`): since the graph is never mutated, each stable state
+> `editor/src/block-diagram/undo-history.mjs`): since the graph is never mutated, each stable state
 > is a snapshot, and a gesture —dragging a node or a segment, typing into a
 > constant— is a single step. `Ctrl+Z` undoes and `Ctrl+Shift+Z` redoes. The
 > Edit menu is missing, which is not captured. On the panel it also undoes (2026-09-30),
@@ -564,27 +564,27 @@ would have required naming a test that did not exist.)*
 
 | Rule | Mechanism | Status |
 |-------|-----------|--------|
-| 22, 23 selection | Tests in `editor/test/edicion.test.mjs`: the click selects, `Shift` adds, the rectangle selects what it touches, everything selected is moved | **Verified** on the diagram, without structures |
+| 22, 23 selection | Tests in `test/editor/diagram-editing.test.mjs`: the click selects, `Shift` adds, the rectangle selects what it touches, everything selected is moved | **Verified** on the diagram, without structures |
 | 24 stable zone order | Hit-test test with overlapping elements. The editor resolves terminal, node, wire and background, in that order (`app.mjs`); the test is missing | Pending |
 | 25 dragging does not change the program | Compile before and after moving: same bytes | Pending |
-| 26 dragging between scopes reassigns | Tests "dropping a node inside a loop puts it in and outside takes it out" and "wiring across the border creates the tunnel" (`editor/test/edicion.test.mjs`) | **Verified** (amended: LabVIEW rules) |
-| 40e While Loop and For Loop | Tests in `editor/test/diagrama.test.mjs` (measurements at 1:1, compared pixel by pixel against the captures) and `edicion.test.mjs` (place, move, stretch, tunnels, menus and a loop made with the mouse that runs) | **Verified**; what is unverified, in the rule itself |
+| 26 dragging between scopes reassigns | Tests "dropping a node inside a loop puts it in and outside takes it out" and "wiring across the border creates the tunnel" (`test/editor/diagram-editing.test.mjs`) | **Verified** (amended: LabVIEW rules) |
+| 40e While Loop and For Loop | Tests in `test/editor/diagram-view.test.mjs` (measurements at 1:1, compared pixel by pixel against the captures) and `diagram-editing.test.mjs` (place, move, stretch, tunnels, menus and a loop made with the mouse that runs) | **Verified**; what is unverified, in the rule itself |
 | 28, 29 deleting takes the wires with it | Test: after deleting no orphan wire remains | **Rule 28 verified** ("deleting a node deletes its wires"); rule 29: a loop goes with everything that is its own, but still without asking for confirmation |
-| 40f Case Structure | Tests in `diagrama.test.mjs` and `edicion.test.mjs` (measurements, frames, menus, compile and run) | **Verified**; what is unverified, in the rule itself |
-| 40g Flat and Stacked Sequence | Tests in `diagrama.test.mjs` (film border, frames, tunnels, selector and local variables), `edicion.test.mjs` (place, stretch, frames, menus, change shape, compile and run) and `estructuras.test.mjs` (widths in the file) | **Verified**; what is unverified, in the rule itself |
-| 40h Strings on the diagram and on the panel | Tests in `grafo.test.mjs` (each String function with its terminals and measurements), `estado.test.mjs` (the four palettes), `panel.test.mjs` (control and indicator), `edicion.test.mjs` (multi-line constant, Concatenate Strings, a string VI made with the mouse that runs) and `qvi.test.mjs` (save and open) | **Verified**; what is unverified, in the rule itself |
-| 40i The error cluster | Tests in `errores.test.mjs` (the wire, the constant and its edits, the two dialogs, Simple Error Handler and Merge Errors at 32 × 18), `panel.test.mjs` (Error In and Error Out) and `estado.test.mjs` (the two palettes) | **Verified**; what is unverified, in the rule itself |
-| 40j One-dimensional arrays | Tests in `panel.test.mjs` (array control and indicator), `edicion.test.mjs` (array constant, menu of the indexed tunnels), `estado.test.mjs` (the Array subpalette), `grafo.test.mjs` (its functions) and `qvi.test.mjs` | **Verified** for what was measured; the gesture of stretching the panel array and the array's menu, unverified (see the rule) |
-| 31 the rejection explains the reason | Test: each cause of `can_connect` produces its message | **Verified** for two outputs, two inputs, incompatible types and cycle (`grafo.test.mjs`); the scope one no longer comes out in the editor: a wire between scopes creates the tunnel (rule 40e); the rejection remains in `Gr.conectar` |
+| 40f Case Structure | Tests in `diagram-view.test.mjs` and `diagram-editing.test.mjs` (measurements, frames, menus, compile and run) | **Verified**; what is unverified, in the rule itself |
+| 40g Flat and Stacked Sequence | Tests in `diagram-view.test.mjs` (film border, frames, tunnels, selector and local variables), `diagram-editing.test.mjs` (place, stretch, frames, menus, change shape, compile and run) and `structures.test.mjs` (widths in the file) | **Verified**; what is unverified, in the rule itself |
+| 40h Strings on the diagram and on the panel | Tests in `palettes.test.mjs` (each String function with its terminals and measurements), `window-state.test.mjs` (the four palettes), `front-panel.test.mjs` (control and indicator), `diagram-editing.test.mjs` (multi-line constant, Concatenate Strings, a string VI made with the mouse that runs) and `qvi-round-trip.test.mjs` (save and open) | **Verified**; what is unverified, in the rule itself |
+| 40i The error cluster | Tests in `error-cluster.test.mjs` (the wire, the constant and its edits, the two dialogs, Simple Error Handler and Merge Errors at 32 × 18), `front-panel.test.mjs` (Error In and Error Out) and `window-state.test.mjs` (the two palettes) | **Verified**; what is unverified, in the rule itself |
+| 40j One-dimensional arrays | Tests in `front-panel.test.mjs` (array control and indicator), `diagram-editing.test.mjs` (array constant, menu of the indexed tunnels), `window-state.test.mjs` (the Array subpalette), `palettes.test.mjs` (its functions) and `qvi-round-trip.test.mjs` | **Verified** for what was measured; the gesture of stretching the panel array and the array's menu, unverified (see the rule) |
+| 31 the rejection explains the reason | Test: each cause of `can_connect` produces its message | **Verified** for two outputs, two inputs, incompatible types and cycle (`palettes.test.mjs`); the scope one no longer comes out in the editor: a wire between scopes creates the tunnel (rule 40e); the rejection remains in `Gr.conectar` |
 | 32 replace on fan-in | Test "a wire to an occupied input replaces the previous one" | **Verified** |
 | 36, 37 keyboard | Interaction test | **Rule 36 verified** ("the selection moves with the arrows…"); rule 37, pending |
 | 38–40 synchronization | Test: create, delete and retype from each canvas | Pending |
-| 42 undo | Test "undo goes back a whole gesture" (`editor/test/edicion.test.mjs`) | **Verified** on the diagram |
-| 52, 55 what is declared is painted, and what is painted is declared | Screenless painting test against the inventory: each painted element has its entry, and each entry is painted in its order (`editor/test/vista.test.mjs`) | **Verified** for the *Front Panel* and the *Block Diagram* |
+| 42 undo | Test "undo goes back a whole gesture" (`test/editor/diagram-editing.test.mjs`) | **Verified** on the diagram |
+| 52, 55 what is declared is painted, and what is painted is declared | Screenless painting test against the inventory: each painted element has its entry, and each entry is painted in its order (`test/editor/window-view.test.mjs`) | **Verified** for the *Front Panel* and the *Block Diagram* |
 | 52 where LabVIEW puts it | Position test: each element of the toolbar, within 2 px at most of its place in the captures ("the toolbar falls where it does in LabVIEW") | **Verified** for the *Front Panel* and the *Block Diagram* |
-| 53 a placeholder does not act | Interaction test: the click, the right-click on the canvas and a shortcut only open the explanation, and Esc closes it (`editor/test/estado.test.mjs`) | **Verified**. That it does not change the VI is trivial as long as there is no model |
-| 53b a declared container opens | Tests of the function palette: right-click on the diagram opens it; a category with content opens and closes; one without content is only explained (`editor/test/estado.test.mjs`) | **Verified** |
-| 54 the explanation is complete | Inventory schema: each verdict requires its field and only its own; explanation test (`editor/test/inventario.test.mjs`) | **Verified** |
+| 53 a placeholder does not act | Interaction test: the click, the right-click on the canvas and a shortcut only open the explanation, and Esc closes it (`test/editor/window-state.test.mjs`) | **Verified**. That it does not change the VI is trivial as long as there is no model |
+| 53b a declared container opens | Tests of the function palette: right-click on the diagram opens it; a category with content opens and closes; one without content is only explained (`test/editor/window-state.test.mjs`) | **Verified** |
+| 54 the explanation is complete | Inventory schema: each verdict requires its field and only its own; explanation test (`test/editor/labview-inventory.test.mjs`) | **Verified** |
 | 56 `built` requires proof | Schema: `built` requires `prueba`. Test: the proof exists and the block is in `blocks.json` | **Verified**. The only `built` ones are the palette's double arrows, with their test |
 
 ## 11. Pending

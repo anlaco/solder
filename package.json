@@ -1,0 +1,17 @@
+{
+  "name": "@solder/editor",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Solder's editor: the windows of a VI, cloned from LabVIEW 2026 Q3, in Electron (DT-037).",
+  "license": "AGPL-3.0-only",
+  "main": "editor/electron/main.mjs",
+  "scripts": {
+    "app": "node scripts/start-editor.mjs",
+    "test": "node --experimental-wasm-jspi --test 'test/**/*.test.mjs'"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "electron": "^40.10.6"
+  }
+}

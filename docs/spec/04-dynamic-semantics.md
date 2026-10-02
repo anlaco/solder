@@ -377,7 +377,7 @@ The blocks marked `blocking` —today only `tcp-read`— can take seconds.
 ### 7.1 Verified — probe T8
 
 The three rules above are not wishes: they were checked by measuring. The spike is
-in `spikes/t8-io-bloqueante/`, simulates a 3 s `tcp_read` against an instrument
+in `spikes/t8-blocking-io/`, simulates a 3 s `tcp_read` against an instrument
 that does not respond and measures the duration of the worst frame of a 60 fps loop.
 
 | Case | Worst frame | Stop takes | Result |
@@ -452,7 +452,7 @@ The texts of the errors are Solder's own; the codes are LabVIEW's
 | 17 all frames assign | Negative `check` case | Pending |
 | 18 number format | Golden corpus + test with different regional settings | Pending |
 | 19 IEEE 754 | Test: division by zero gives infinity and does not abort | Pending |
-| 20, 20b, 20c do not freeze the interface | **Probe T8** (`spikes/t8-io-bloqueante/`) | ✅ **Verified** |
+| 20, 20b, 20c do not freeze the interface | **Probe T8** (`spikes/t8-blocking-io/`) | ✅ **Verified** |
 | 21 the error names the node | Test | Pending |
 
 ## 10. Pending items
