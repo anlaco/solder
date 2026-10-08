@@ -323,7 +323,7 @@ export function leer(datos, cat) {
     if (union) c.union = union;
     return c;
   });
-  const extra = limpio({ meta: vi.meta, capabilities: vi.capabilities, connector: vi.connector });
+  const extra = limpio({ meta: vi.meta, capabilities: vi.capabilities, connector: vi.connector, execution: vi.execution });
   g = { ...g, cables, siguiente: g.siguiente + cables.length };
   if (Object.keys(extra).length) g.vi = extra;
   return g;

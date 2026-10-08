@@ -34,7 +34,7 @@ When the developer says "keep going":
   §3. First what is needed to program (types, functions, structures); then what
   organizes programs (subVIs, projects, classes).
 
-## 2. Where we are (2026-10-03)
+## 2. Where we are (2026-10-08)
 
 **The full circuit works:** a VI is built, saved to `.qvi`, opened the same way,
 and Run compiles it to WebAssembly and executes it **by dataflow, like
@@ -42,7 +42,7 @@ LabVIEW** (DT-040): independent branches run at the same time, each indicator is
 painted when its data arrives, Abort stops at once and the panel switches to Run
 mode. Since 2026-10-01 also **with loops**: While and For are placed, stretched
 and wired in the diagram, and the compiler runs them (DT-041).
-327 tests green.
+360 tests green. **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, and the editor opens several VIs with their connector pane.
 
 | Piece | Status |
 |-------|--------|
@@ -59,7 +59,7 @@ and wired in the diagram, and the compiler runs them (DT-041).
 
 **Catalog blocks that the compiler does not emit yet:** arrays of more than two
 dimensions, Transpose 2D Array and Reshape Array, `number-to-boolean-array`,
-`boolean-array-to-number`, `subvi` and TCP.
+`boolean-array-to-number` and TCP.
 
 ## 3. When a module is finished
 
@@ -111,6 +111,8 @@ programs goes **before the rest of the modules**, in this order:
    two indices, 2D control, indicator and constant, with the memory of DT-042.
    *Done on 2026-10-03 (DT-044, spec/04 Rule 21i, spec/05 Rule 40k).*
 2. **SubVIs** (R6): connector pane, icon editor and compiled call.
+   *Core and editor done on 2026-10-08 (DT-045, spec/04 Rules 19c–19d, spec/05 §12); the icon
+   editor, the other 35 connector patterns, shared clones and recursion are missing.*
 3. **What is used every minute in the editor:** Create ▸ Constant / Control /
    Indicator on a terminal (M1) and copy, cut and paste (Edit menu).
 4. **Graphs** (M8): Waveform Chart and Waveform Graph, and XY Graph.
@@ -496,3 +498,4 @@ probes and execution highlighting.
 - 2026-10-02 — M6, the error cluster in the editor (DT-043): captured in LabVIEW the Controls ▸ Modern ▸ Data Containers subpalette (2 columns, 8 elements: Array, Cluster, RealMatrix.ctl, ComplexMatrix.ctl, Set, Map, Error In 3D.ctl and Error Out 3D.ctl) and the Error Out control at 1:1 (155 × 121 px). Done: the wire (3 px, olive border and yellow and black dashes), the Error In/Out controls with their terminal, the editable error constant (22 × 57 px), Dialog & User Interface declared in full (23 elements, 4 columns; 5 done), Simple Error Handler, the two modal dialogs (the automatic handling one with Continue and Stop, and the Simple Error Handler one with OK), `core/runtime/error-codes.mjs` with codes 1, 2, 7, 8, 42, 43, 56, 63 and 66 and the paragraph for the undefined code, and the error terminals of Search and Replace String. 266 tests. Next: arrays (M6), the basic clusters with their controls (Bundle, Unbundle, Cluster) or Explain Error.
 - 2026-10-02 — M6, arrays in the editor: Functions ▸ Programming ▸ Array captured in full (34 elements, 5 columns, context help of each one, measurements of each function dropped in the diagram) and Controls ▸ Modern ▸ Data Containers ▸ Array; the panel array menu, the indexed output tunnel menu and that of a function, captured. Done: Replace Array Subset, Insert Into Array, Delete From Array, Sort 1D Array, Rotate 1D Array, Split 1D Array and Increment/Decrement Array Element (JavaScript module `arr`), the array control, indicator and constant, indexed tunnels with their menu and the 2 px array wire; the `.qvi` saves `indexed`, `visible-elements` and `index`. LabVIEW's edge cases remain unverified (see M6). 287 tests.
 - 2026-10-03 — M6, 2D arrays (second stage, item 1). Researched how LabVIEW types arrays (type descriptor: element plus dimension count, no arrays of arrays) and decided DT-044: `{ array: E, dims: N }` and one block `[rows][columns][elements]`. Captured in LabVIEW (`labview-captures/array-2d/`): the 2D constant, panel array, terminal and 3 px wire at 1:1, the menus with Add/Remove Dimension, and the results of Array Size, Index Array (element, row, column, out of range), Build Array (padding, 2D + 1D, Concatenate Inputs), Initialize Array, Transpose, Reshape and nested Fors; Add Dimension still enabled at 34 dimensions. Core: types, memory, panel, coercion, Array Size, Index Array, Build Array, Initialize Array and auto-indexing in 2D. Editor: the wire, the 2D constant and panel array (editable, stretchable), Index Array and Initialize Array with two inputs. Unverified: Index Array with no index wired, ragged rows out of a loop. Not done: more than 2 dimensions, Transpose/Reshape, Index Array's extra index groups, Build Array's Concatenate lock. 327 tests. Next: subVIs (R6).
+- 2026-10-08 — SubVIs, stages (a) and (b) of DT-045. Researched how LabVIEW calls a subVI (separate compiled code, one data space when non-reentrant, clones when reentrant, recursion only with shared clones), checked again by an independent review, and decided DT-045. Captured in LabVIEW (`labview-captures/subvi/`): the 4-2-2-4 connector pane and its menus, Recommended by default and no Required outputs, the subVI node and its menu, the unwired input taking the control's default (5 + 3 = 8), the broken Run with a Required input unwired, the functional global counting 1, 2 and then 3, 4 in the next Run (1, 1 and 2, 2 with preallocated clones), VI Properties ▸ Execution, the icon editor and the recursion error. Core: one module per hierarchy with a data space per instance, direct calls or JSPI plans, a queue per non-reentrant VI, uninitialized shift registers that keep their value, state kept between Runs, the hierarchy loaded from relative paths, the command line. Editor: several VIs open, connector pane, Select a VI..., the subVI node, double click to open, VI Properties ▸ Execution. DBL orange corrected to the measured `#ff7f00`. Unverified: the total time of two parallel calls. Not done: the icon editor (stage c), the other connector patterns, View As Icon off, shared clones, recursion; a caller whose saved wires point to ports its subVI no longer has does not open. 360 tests.

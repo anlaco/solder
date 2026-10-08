@@ -1,0 +1,261 @@
+// SubVIs (DT-045): every VI of a hierarchy is compiled into one module, each
+// with its own data space; a non-reentrant subVI serves one call at a time and
+// keeps its state between calls.
+
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
+import { compilar } from "../../core/compiler/compiler.mjs";
+import { ejecutar } from "../../core/runtime/runtime.mjs";
+import * as Gr from "../../core/model/graph.mjs";
+import { loadHierarchy } from "../../core/model/hierarchy.mjs";
+import { CAT } from "../helpers.mjs";
+
+/** Builds a VI with the catalog `cat`; `steps` receives an API that names each node. */
+function buildVI(cat, steps) {
+  const vi = { g: Gr.nuevo(), id: {} };
+  const api = {
+    node(name, block, config, inside) {
+      const r = Gr.crearNodo(vi.g, cat, block, 0, 0);
+      vi.g = config ? Gr.fijarConfig(r.g, r.id, config) : r.g;
+      vi.id[name] = r.id;
+      if (inside) vi.g = Gr.meter(vi.g, cat, [r.id], vi.id[inside]);
+    },
+    loop(name, block) {
+      const r = Gr.crearEstructura(vi.g, cat, block, 0, 0, 200, 150);
+      vi.g = r.g;
+      vi.id[name] = r.id;
+      for (const n of vi.g.nodos.filter((k) => k.dentro === r.id)) vi.id[`${name}:${{ "loop-iteration": "i", "loop-condition": "stop", "loop-count": "N" }[n.tipo]}`] = n.id;
+    },
+    shiftRegister(name, loop) {
+      const r = Gr.crearRegistro(vi.g, cat, vi.id[loop], 0);
+      vi.g = r.g;
+      vi.id[`${name}.left`] = r.izquierdo;
+      vi.id[`${name}.right`] = r.derecho;
+    },
+    wire(from, to) {
+      const split = (end) => [end.slice(0, end.lastIndexOf(".")), end.slice(end.lastIndexOf(".") + 1)];
+      const [[n1, p1], [n2, p2]] = [split(from), split(to)];
+      const r = Gr.conectarCruzando(vi.g, cat, { nodo: vi.id[n1], puerto: p1, dir: "out" }, { nodo: vi.id[n2], puerto: p2, dir: "in" });
+      assert.ok(!r.motivo, `${from} → ${to}: ${r.motivo}`);
+      vi.g = r.g;
+    },
+    connector(inputs, outputs) {
+      const name = (n) => (typeof n === "string" ? vi.g.nodos.find((k) => k.id === vi.id[n]).name : { ...n, name: vi.g.nodos.find((k) => k.id === vi.id[n.name]).name });
+      vi.g = { ...vi.g, vi: { ...vi.g.vi, connector: { inputs: inputs.map(name), outputs: outputs.map(name) } } };
+    },
+    execution(execution) {
+      vi.g = { ...vi.g, vi: { ...vi.g.vi, execution } };
+    },
+  };
+  steps(api);
+  return vi;
+}
+
+/** The catalog of a caller whose subVIs are `library` (relative path → VI built with buildVI). */
+function callerCatalog(library) {
+  const entries = new Map(Object.entries(library).map(([path, vi]) => [path, { key: path, g: vi.g, cat: CAT }]));
+  return Gr.conSubVIs(CAT, (path) => entries.get(path) ?? null);
+}
+
+async function run(vi, cat, values = {}, options = {}, compiled = compilar(vi.g, cat)) {
+  assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
+  assert.ok(WebAssembly.validate(compiled.bytes), "the module is valid WebAssembly");
+  const byId = Object.fromEntries(Object.entries(vi.id).map(([k, x]) => [x, k]));
+  const written = await ejecutar(compiled, Object.fromEntries(Object.entries(values).map(([k, x]) => [vi.id[k], x])), options);
+  return Object.fromEntries(Object.entries(written).map(([k, x]) => [byId[k], x]));
+}
+
+/** add2: x + y, with y's default value set to 10. */
+const add2 = () =>
+  buildVI(CAT, (b) => {
+    b.node("x", "control");
+    b.node("y", "control", { value: 10 });
+    b.node("add", "add");
+    b.node("sum", "indicator");
+    b.wire("x.result", "add.a");
+    b.wire("y.result", "add.b");
+    b.wire("add.result", "sum.value");
+    b.connector(["x", "y"], ["sum"]);
+  });
+
+test("a subVI node has the ports of the connector of the VI it calls", () => {
+  const cat = callerCatalog({ "add2.qvi": add2() });
+  const caller = buildVI(cat, (b) => b.node("call", "subvi", { vi: "add2.qvi" }));
+  const ports = cat.puertos(caller.g.nodos[0]);
+  assert.deepEqual(ports.in.map((p) => [p.name, p.type, !!p.optional]), [["control_1", "number", true], ["control_2", "number", true]]);
+  assert.deepEqual(ports.out.map((p) => [p.name, p.type]), [["indicator_1", "number"]]);
+});
+
+test("a call runs the subVI and an unwired input takes the default value of its control", async () => {
+  const cat = callerCatalog({ "add2.qvi": add2() });
+  const caller = buildVI(cat, (b) => {
+    b.node("two", "const", { value: 2 });
+    b.node("three", "const", { value: 3 });
+    b.node("call", "subvi", { vi: "add2.qvi" });
+    b.node("alone", "subvi", { vi: "add2.qvi" });
+    b.node("r", "indicator");
+    b.node("r2", "indicator");
+    b.wire("two.result", "call.control_1");
+    b.wire("three.result", "call.control_2");
+    b.wire("call.indicator_1", "r.value");
+    b.wire("two.result", "alone.control_1");
+    b.wire("alone.indicator_1", "r2.value");
+  });
+  assert.deepEqual(await run(caller, cat), { r: 5, r2: 12 });
+});
+
+test("a subVI passes strings and arrays by value", async () => {
+  const join = buildVI(CAT, (b) => {
+    b.node("s", "str-control");
+    b.node("t", "str-const", { value: "!" });
+    b.node("cat", "concatenate-strings");
+    b.node("out", "str-indicator");
+    b.node("a", "arr-control", { type: { array: "number" } });
+    b.node("size", "array-size");
+    b.node("n", "indicator", { type: "i32" });
+    b.wire("s.result", "cat.string-0");
+    b.wire("t.result", "cat.string-1");
+    b.wire("cat.concatenated-string", "out.value");
+    b.wire("a.result", "size.array");
+    b.wire("size.size", "n.value");
+    b.connector(["s", "a"], ["out", "n"]);
+  });
+  const cat = callerCatalog({ "join.qvi": join });
+  const caller = buildVI(cat, (b) => {
+    b.node("text", "str-const", { value: "hola" });
+    b.node("arr", "arr-const", { type: { array: "number" }, value: [1, 2, 3] });
+    b.node("call", "subvi", { vi: "join.qvi" });
+    b.node("r", "str-indicator");
+    b.node("rn", "indicator", { type: "i32" });
+    b.wire("text.result", "call.str-control_1");
+    b.wire("arr.result", "call.arr-control_1");
+    b.wire("call.str-indicator_1", "r.value");
+    b.wire("call.indicator_1", "rn.value");
+  });
+  assert.deepEqual(await run(caller, cat), { r: "hola!", rn: 3 });
+});
+
+/** A functional global variable: a While that runs once with an uninitialized shift register that counts the calls. */
+const counter = (execution) =>
+  buildVI(CAT, (b) => {
+    b.loop("w", "while-loop");
+    b.shiftRegister("sr", "w");
+    b.node("one", "const", { value: 1, type: "i32" }, "w");
+    b.node("plus", "add", null, "w");
+    b.node("true", "bool-const", { value: true }, "w");
+    b.node("count", "indicator", { type: "i32" });
+    b.wire("sr.left.value", "plus.a");
+    b.wire("one.result", "plus.b");
+    b.wire("plus.result", "sr.right.value");
+    b.wire("true.result", "w:stop.stop");
+    b.wire("sr.right.result", "count.value");
+    b.connector([], ["count"]);
+    if (execution) b.execution(execution);
+  });
+
+/** Two calls to the same subVI from one caller. */
+function twoCalls(cat, path) {
+  return buildVI(cat, (b) => {
+    b.node("first", "subvi", { vi: path });
+    b.node("second", "subvi", { vi: path });
+    b.node("r1", "indicator", { type: "i32" });
+    b.node("r2", "indicator", { type: "i32" });
+    b.wire("first.indicator_1", "r1.value");
+    b.wire("second.indicator_1", "r2.value");
+  });
+}
+
+test("a non-reentrant subVI keeps its uninitialized shift register between calls (functional global)", async () => {
+  const cat = callerCatalog({ "counter.qvi": counter() });
+  const caller = twoCalls(cat, "counter.qvi");
+  const r = await run(caller, cat);
+  assert.deepEqual([r.r1, r.r2].sort(), [1, 2], "both calls share one data space");
+});
+
+test("a preallocated-clone reentrant subVI has one data space per call site", async () => {
+  const cat = callerCatalog({ "counter.qvi": counter({ reentrancy: "preallocated" }) });
+  const caller = twoCalls(cat, "counter.qvi");
+  const r = await run(caller, cat);
+  assert.deepEqual([r.r1, r.r2], [1, 1]);
+});
+
+/** A subVI that waits `ms` milliseconds. */
+const waiter = (execution) =>
+  buildVI(CAT, (b) => {
+    b.node("ms", "const", { value: 150, type: "i32" });
+    b.node("wait", "wait-ms");
+    b.node("done", "indicator", { type: "u32" });
+    b.wire("ms.result", "wait.ms");
+    b.wire("wait.result", "done.value");
+    b.connector([], ["done"]);
+    if (execution) b.execution(execution);
+  });
+
+async function timeTwoParallelCalls(execution) {
+  const cat = callerCatalog({ "wait.qvi": waiter(execution) });
+  const caller = buildVI(cat, (b) => {
+    b.node("a", "subvi", { vi: "wait.qvi" });
+    b.node("b", "subvi", { vi: "wait.qvi" });
+    b.node("ra", "indicator", { type: "u32" });
+    b.node("rb", "indicator", { type: "u32" });
+    b.wire("a.indicator_1", "ra.value");
+    b.wire("b.indicator_1", "rb.value");
+  });
+  const start = performance.now();
+  await run(caller, cat);
+  return performance.now() - start;
+}
+
+test("two parallel calls to a non-reentrant subVI that waits take turns; reentrant ones overlap", async () => {
+  const serialized = await timeTwoParallelCalls();
+  assert.ok(serialized >= 290, `non-reentrant: ${serialized} ms, expected about 300`);
+  const overlapped = await timeTwoParallelCalls({ reentrancy: "preallocated" });
+  assert.ok(overlapped < 250, `preallocated clones: ${overlapped} ms, expected about 150`);
+});
+
+test("the hierarchy is loaded from relative paths and a recursive cycle is an error", () => {
+  const leaf = add2();
+  const cat = callerCatalog({ "add2.qvi": leaf });
+  const top = buildVI(cat, (b) => b.node("call", "subvi", { vi: "add2.qvi" }));
+  const files = new Map([["lib/top.qvi", top.g], ["lib/add2.qvi", leaf.g]]);
+  const resolvePath = (caller, relative) => `${caller.slice(0, caller.lastIndexOf("/") + 1)}${relative}`;
+  const loaded = loadHierarchy("lib/top.qvi", CAT, { resolvePath, loadVI: (key) => files.get(key) ?? null });
+  assert.deepEqual(loaded.errors, []);
+  assert.deepEqual([...loaded.vis.keys()], ["lib/add2.qvi", "lib/top.qvi"], "callees before callers");
+  assert.equal(loaded.vis.get("lib/top.qvi").cat.puertos(top.g.nodos[0]).in.length, 2);
+
+  const itself = buildVI(CAT, (b) => b.node("call", "subvi", { vi: "self.qvi" }));
+  const recursive = loadHierarchy("self.qvi", CAT, { resolvePath, loadVI: () => itself.g });
+  assert.match(recursive.errors[0].motivo, /recursion/);
+  const missing = loadHierarchy("lib/top.qvi", CAT, { resolvePath, loadVI: (key) => (key === "lib/top.qvi" ? top.g : null) });
+  assert.match(missing.errors[0].motivo, /cannot be found/);
+});
+
+// labview-captures/subvi/functional-global-*: non-reentrant, Run 1 gives 1 and 2 and Run 2 gives 3 and 4;
+// preallocated clones, 1 and 1 and then 2 and 2.
+test("a subVI keeps its state from one Run to the next while it stays loaded", async () => {
+  for (const [execution, runs] of [[undefined, [[1, 2], [3, 4]]], [{ reentrancy: "preallocated" }, [[1, 1], [2, 2]]]]) {
+    const cat = callerCatalog({ "counter.qvi": counter(execution) });
+    const caller = twoCalls(cat, "counter.qvi");
+    const compiled = compilar(caller.g, cat);
+    const estado = {};
+    for (const expected of runs) {
+      const r = await run(caller, cat, {}, { estado }, compiled);
+      assert.deepEqual([r.r1, r.r2].sort(), expected, JSON.stringify(execution));
+    }
+    const edited = buildVI(cat, (b) => {
+      b.node("first", "subvi", { vi: "counter.qvi" });
+      b.node("second", "subvi", { vi: "counter.qvi" });
+      b.node("r1", "indicator", { type: "i32" });
+      b.node("r2", "indicator", { type: "i32" });
+      b.node("seven", "const", { value: 7 });
+      b.node("extra", "indicator");
+      b.wire("first.indicator_1", "r1.value");
+      b.wire("second.indicator_1", "r2.value");
+      b.wire("seven.result", "extra.value");
+    });
+    const recompiled = await run(edited, cat, {}, { estado }, compilar(edited.g, cat));
+    assert.deepEqual([recompiled.r1, recompiled.r2].sort(), runs[0], "an edited VI is another module and starts afresh");
+  }
+});

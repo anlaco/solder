@@ -165,11 +165,40 @@ compatibility rules are in [`03-static-semantics.md`](03-static-semantics.md) §
 ### 4.5 `connector` *(optional)*
 
 Enables use as a *sub-VI*. It lists which panel elements act as inputs
-and which as outputs:
+and which as outputs, by their `name`:
 
 ```json
 "connector": { "inputs": ["a", "b"], "outputs": ["resultado"] }
 ```
+
+A terminal can also say which cell of the pattern it occupies and how it must
+be wired (DT-045); `pattern` is LabVIEW's default, `4-2-2-4`, whose twelve cells
+are numbered by columns, left to right and top to bottom:
+
+```json
+"connector": {
+  "pattern": "4-2-2-4",
+  "inputs": [{ "name": "a", "cell": 0, "connection": "required" }, "b"],
+  "outputs": [{ "name": "resultado", "cell": 8 }]
+}
+```
+
+A terminal without `cell` takes the first free cell on its side (inputs from the left column, outputs from the right one: our default, unverified in LabVIEW).
+
+`connection` is `required`, `recommended` (when left out, as a new terminal in
+LabVIEW) or `optional`; an output cannot be `required`.
+
+### 4.5b `execution` *(optional)*
+
+VI Properties ▸ Execution. `{ "reentrancy": "preallocated" }` gives each call
+site its own copy of the VI; without it the VI is non-reentrant, as a new VI in
+LabVIEW (DT-045).
+
+### 4.5c The `subvi` node
+
+`config.vi` is the path of the called `.qvi`, relative to the file of the
+caller; the ports of the node are the terminals of its connector, named after
+its panel elements.
 
 ### 4.6 `block-diagram` *(required)*
 

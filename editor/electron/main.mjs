@@ -1,26 +1,29 @@
-// El proceso principal: sirve el editor y abre las dos ventanas de un VI, el
-// Front Panel y el Block Diagram, como en LabVIEW.
+// The main process: serves the editor and opens the two windows of each VI, the
+// Front Panel and the Block Diagram, as LabVIEW does. Several VIs can be open at
+// once (DT-045), each with its own windows, its own file and its own unsaved
+// changes.
 //
-// La página se sirve por un protocolo propio, `solder://`, y no desde
-// file://: así los módulos ES y el `fetch` del inventario funcionan igual que
-// en un navegador.
+// The page is served over a protocol of its own, `solder://`, and not from
+// file://: so ES modules and the inventory's `fetch` work as in a browser.
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, dialog, ipcMain, Menu, protocol } from "electron";
+import { pathKey, readHierarchyTexts, rebaseText, untitledKey } from "../src/common/vi-paths.mjs";
+import { WINDOW_KINDS, createRegistry, isDirty, recordChange, recordSave, viName, windowTitle } from "./vi-registry.mjs";
 
-const AQUI = path.dirname(fileURLToPath(import.meta.url));
-const EDITOR = path.resolve(AQUI, "..");
-/** El inventario de LabVIEW (DT-035): la única fuente de lo que está hecho. */
-const INVENTARIO = path.resolve(EDITOR, "../docs/schema/inventario-labview.json");
-/** El catálogo de bloques: la única fuente de los terminales (spec/03, regla 3). */
-const CATALOGO = path.resolve(EDITOR, "../docs/schema/blocks.json");
-const FUERA = { "/inventario.json": INVENTARIO, "/blocks.json": CATALOGO };
-/** El núcleo (DT-039): lo importan la página y la línea de órdenes, así que vive fuera del editor. */
-const NUCLEO = path.resolve(EDITOR, "../core");
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const EDITOR = path.resolve(HERE, "..");
+/** LabVIEW's inventory (DT-035): the only source of what is done. */
+const INVENTORY = path.resolve(EDITOR, "../docs/schema/inventario-labview.json");
+/** The block catalog: the only source of terminals (spec/03, rule 3). */
+const CATALOG = path.resolve(EDITOR, "../docs/schema/blocks.json");
+const OUTSIDE = { "/inventario.json": INVENTORY, "/blocks.json": CATALOG };
+/** The core (DT-039): the page and the command line import it, so it lives outside the editor. */
+const CORE = path.resolve(EDITOR, "../core");
 
-const TIPOS = {
+const MEDIA_TYPES = {
   ".html": "text/html",
   ".mjs": "text/javascript",
   ".js": "text/javascript",
@@ -33,202 +36,293 @@ protocol.registerSchemesAsPrivileged([
   { scheme: "solder", privileges: { standard: true, secure: true, supportFetchAPI: true } },
 ]);
 
-function servir() {
-  protocol.handle("solder", async (peticion) => {
-    const ruta = decodeURIComponent(new URL(peticion.url).pathname);
-    const raiz = ruta.startsWith("/core/") ? path.dirname(NUCLEO) : EDITOR;
-    const fichero = FUERA[ruta] ?? path.normalize(path.join(raiz, ruta === "/" ? "index.html" : ruta));
-    if (!Object.values(FUERA).includes(fichero) && !fichero.startsWith(EDITOR + path.sep) && !fichero.startsWith(NUCLEO + path.sep)) {
-      return new Response("fuera del editor", { status: 403 });
+function serve() {
+  protocol.handle("solder", async (request) => {
+    const route = decodeURIComponent(new URL(request.url).pathname);
+    const root = route.startsWith("/core/") ? path.dirname(CORE) : EDITOR;
+    const file = OUTSIDE[route] ?? path.normalize(path.join(root, route === "/" ? "index.html" : route));
+    if (!Object.values(OUTSIDE).includes(file) && !file.startsWith(EDITOR + path.sep) && !file.startsWith(CORE + path.sep)) {
+      return new Response("outside the editor", { status: 403 });
     }
     try {
-      const tipo = TIPOS[path.extname(fichero)] ?? "application/octet-stream";
-      return new Response(await readFile(fichero), { headers: { "content-type": tipo } });
+      const type = MEDIA_TYPES[path.extname(file)] ?? "application/octet-stream";
+      return new Response(await readFile(file), { headers: { "content-type": type } });
     } catch {
-      return new Response("no encontrado", { status: 404 });
+      return new Response("not found", { status: 404 });
     }
   });
 }
 
-const VENTANAS = {
-  "front-panel": { titulo: "Untitled 1 Front Panel", x: 40, y: 40 },
-  "block-diagram": { titulo: "Untitled 1 Block Diagram", x: 120, y: 110 },
+const WINDOW_PLACES = {
+  "front-panel": { x: 40, y: 40 },
+  "block-diagram": { x: 120, y: 110 },
 };
+/** Each VI opened after the first sits this far down and right of the one before, so none hides another. */
+const CASCADE_STEP = 30;
 
-// Para las comparaciones con las capturas: el tamaño de su zona cliente.
-const [ancho, alto] = (process.env.SOLDER_TAMANO ?? "1040x640").split("x").map(Number);
+// To compare with the captures: the size of their client area.
+const [WIDTH, HEIGHT] = (process.env.SOLDER_TAMANO ?? "1040x640").split("x").map(Number);
 
-function abrir(nombre) {
-  const { titulo, x, y } = VENTANAS[nombre];
-  const ventana = new BrowserWindow({
-    width: ancho,
-    height: alto,
-    x,
-    y,
+function createWindow(entry, kind, cascade) {
+  const { x, y } = WINDOW_PLACES[kind];
+  const window = new BrowserWindow({
+    width: WIDTH,
+    height: HEIGHT,
+    x: x + cascade * CASCADE_STEP,
+    y: y + cascade * CASCADE_STEP,
     minWidth: 700,
     minHeight: 360,
     useContentSize: true,
-    title: titulo,
+    title: windowTitle(entry, kind),
     backgroundColor: "#f0f0f0",
     show: false,
-    webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(AQUI, "preload.cjs") },
+    webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(HERE, "preload.cjs") },
   });
-  ventana.on("page-title-updated", (ev) => ev.preventDefault());
-  ventana.once("ready-to-show", () => ventana.show());
-  ventana.loadURL(`solder://editor/index.html?ventana=${nombre}`);
-  return ventana;
+  window.on("page-title-updated", (event) => event.preventDefault());
+  window.once("ready-to-show", () => window.show());
+  window.loadURL(`solder://editor/index.html?ventana=${kind}&vi=${entry.id}`);
+  return window;
 }
 
 /**
- * SOLDER_CAPTURAS=<directorio>: guarda las dos ventanas en PNG y sale. Con
- * SOLDER_PALETA=x,y, antes abre la paleta del diagrama con un clic derecho en
- * ese punto; con SOLDER_CLICS=<id> <id>…, después hace clic en esos
- * elementos del inventario, por ejemplo en una carpeta para abrir su
- * subpaleta. Es lo que usan las comparaciones píxel a píxel con LabVIEW.
+ * SOLDER_CAPTURAS=<directory>: saves the two windows of the first VI as PNG and
+ * quits. With SOLDER_PALETA=x,y, first opens the diagram's palette with a right
+ * click at that point; with SOLDER_CLICS=<id> <id>…, then clicks those
+ * inventory elements, for example a folder, to open its subpalette. It is what
+ * the pixel-by-pixel comparisons with LabVIEW use.
  */
-async function capturar(ventanas, directorio) {
-  const espera = (ms) => new Promise((r) => setTimeout(r, ms));
+async function capture(windows, directory) {
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   await Promise.all(
-    Object.values(ventanas).map(
-      (v) => new Promise((r) => (v.webContents.isLoading() ? v.webContents.once("did-finish-load", r) : r())),
+    Object.values(windows).map(
+      (window) => new Promise((resolve) => (window.webContents.isLoading() ? window.webContents.once("did-finish-load", resolve) : resolve())),
     ),
   );
-  await espera(1000);
+  await wait(1000);
   if (process.env.SOLDER_PALETA) {
     const [x, y] = process.env.SOLDER_PALETA.split(",").map(Number);
-    await ventanas["block-diagram"].webContents.executeJavaScript(
+    await windows["block-diagram"].webContents.executeJavaScript(
       `document.elementFromPoint(${x}, ${y}).dispatchEvent(new MouseEvent("contextmenu", { bubbles: true, clientX: ${x}, clientY: ${y} }))`,
     );
-    await espera(400);
+    await wait(400);
   }
   for (const id of (process.env.SOLDER_CLICS ?? "").split(/\s+/).filter(Boolean)) {
-    await ventanas["block-diagram"].webContents.executeJavaScript(
+    await windows["block-diagram"].webContents.executeJavaScript(
       `document.querySelector('[data-id="${id}"]')?.dispatchEvent(new MouseEvent("click", { bubbles: true }))`,
     );
-    await espera(300);
+    await wait(300);
   }
-  await mkdir(directorio, { recursive: true });
-  for (const [nombre, v] of Object.entries(ventanas)) {
-    const imagen = await v.webContents.capturePage();
-    await writeFile(path.join(directorio, `${nombre}.png`), imagen.toPNG());
+  await mkdir(directory, { recursive: true });
+  for (const [kind, window] of Object.entries(windows)) {
+    const image = await window.webContents.capturePage();
+    await writeFile(path.join(directory, `${kind}.png`), image.toPNG());
   }
   app.quit();
 }
 
-let saliendo = false;
-
-// ——— El VI en disco ———
+// ——— The VIs that are open ———
 //
-// Las dos ventanas son el mismo VI: aquí se recuerda dónde está guardado y cómo
-// quedó al guardarlo. Si lo que cuentan las ventanas no coincide, hay cambios
-// sin guardar: el título lleva un asterisco, como en LabVIEW, y antes de
-// perderlos se pregunta (spec/05 regla 41).
+// The two windows of a VI are the same VI: here we remember where it is saved
+// and how it was when it was saved. If what the windows report differs, there
+// are unsaved changes: the title carries an asterisk, as in LabVIEW, and before
+// losing them the editor asks (spec/05 rule 41). vi-registry.mjs has the rules;
+// this file has the windows.
 
-const vi = { ruta: null, guardado: null, actual: null };
-const sucio = () => vi.guardado !== null && vi.actual !== vi.guardado;
-const nombreVI = () => (vi.ruta ? path.basename(vi.ruta) : "Untitled 1");
-const FILTROS = [{ name: "VI de Solder", extensions: ["qvi"] }];
+const registry = createRegistry();
+/** Open VI id → `{ entry, windows: { kind: BrowserWindow }, closing }`. */
+const openVIs = new Map();
+/** Web contents id → the open VI whose window it is. */
+const viOfContents = new Map();
+const FILTERS = [{ name: "Solder VI", extensions: ["qvi"] }];
+let quitting = false;
 
-function titulos(ventanas) {
-  for (const [nombre, v] of Object.entries(ventanas)) {
-    if (v.isDestroyed()) continue;
-    v.setTitle(`${nombreVI()} ${nombre === "front-panel" ? "Front Panel" : "Block Diagram"}${sucio() ? " *" : ""}`);
+const keyOf = (entry) => (entry.path ? pathKey(entry.path) : untitledKey(entry.id));
+
+function setTitles(open) {
+  for (const [kind, window] of Object.entries(open.windows)) {
+    if (!window.isDestroyed()) window.setTitle(windowTitle(open.entry, kind));
   }
 }
 
-/** Escribe el VI. Sin ruta, o con Save As, pregunta dónde. Devuelve si se guardó. */
-async function escribirVI(ventanas, dueño, texto, como) {
-  let ruta = vi.ruta;
-  if (!ruta || como) {
-    const r = await dialog.showSaveDialog(dueño, { title: "Save As", defaultPath: ruta ?? `${nombreVI()}.qvi`, filters: FILTROS });
-    if (r.canceled || !r.filePath) return false;
-    ruta = r.filePath.endsWith(".qvi") ? r.filePath : `${r.filePath}.qvi`;
+/** Opens the windows of a VI the registry has just created. */
+function openWindows(entry) {
+  const cascade = openVIs.size;
+  const open = { entry, windows: {}, closing: false };
+  openVIs.set(entry.id, open);
+  for (const kind of WINDOW_KINDS) {
+    const window = createWindow(entry, kind, cascade);
+    open.windows[kind] = window;
+    viOfContents.set(window.webContents.id, open);
   }
-  await writeFile(ruta, texto);
-  Object.assign(vi, { ruta, guardado: texto, actual: texto });
-  titulos(ventanas);
-  return true;
+  const panel = open.windows["front-panel"];
+  // Closing the panel closes the VI, asking first if it has unsaved changes.
+  panel.on("close", (event) => {
+    if (open.closing || process.env.SOLDER_CAPTURAS) return;
+    event.preventDefault();
+    closeVI(open);
+  });
+  panel.on("closed", () => {
+    registry.close(entry.id);
+    openVIs.delete(entry.id);
+    for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.destroy();
+    if (!openVIs.size) app.quit();
+  });
+  // Closing the diagram only hides it, as in LabVIEW; showing it again is
+  // Window ▸ Show Block Diagram, which has not been captured yet.
+  open.windows["block-diagram"].on("close", (event) => {
+    if (open.closing || quitting) return;
+    event.preventDefault();
+    open.windows["block-diagram"].hide();
+  });
+  return open;
 }
 
-/**
- * Antes de perder los cambios, lo que pregunta LabVIEW: guardarlos, no
- * guardarlos o no seguir. Devuelve si se puede seguir.
- */
-async function puedoDescartar(ventanas, dueño) {
-  if (!sucio()) return true;
-  const { response } = await dialog.showMessageBox(dueño, {
+function focusPanel(open) {
+  const panel = open.windows["front-panel"];
+  if (panel.isMinimized()) panel.restore();
+  panel.show();
+  panel.focus();
+}
+
+/** Opens a VI from disk in its own windows, or brings its windows forward if it is already open. */
+async function openPath(filePath, owner) {
+  const existing = registry.findByPath(filePath);
+  if (existing) return focusPanel(openVIs.get(existing.id));
+  let text;
+  try {
+    text = await readFile(filePath, "utf8");
+  } catch (error) {
+    dialog.showMessageBox(owner, { type: "error", message: "The VI cannot be opened.", detail: error.message });
+    return;
+  }
+  const { entry } = registry.open({ path: filePath, initialText: text });
+  openWindows(entry);
+}
+
+function openNewVI() {
+  const { entry } = registry.open();
+  return openWindows(entry);
+}
+
+/** Asks what LabVIEW asks before losing changes: save, don't save or don't go on. Returns whether to go on. */
+async function canDiscard(open, owner) {
+  if (!isDirty(open.entry)) return true;
+  const { response } = await dialog.showMessageBox(owner, {
     type: "question",
-    message: `Save changes to «${nombreVI()}» before closing?`,
+    message: `Save changes to «${viName(open.entry)}» before closing?`,
     buttons: ["Save", "Don't Save", "Cancel"],
     defaultId: 0,
     cancelId: 2,
   });
   if (response === 2) return false;
   if (response === 1) return true;
-  return escribirVI(ventanas, dueño, vi.actual, false);
+  return writeVI(open, owner, open.entry.current, false);
 }
 
-function atenderVI(ventanas) {
-  const dueñoDe = (ev) => BrowserWindow.fromWebContents(ev.sender);
-  ipcMain.on("vi:cambio", (_ev, texto) => {
-    vi.actual = texto;
-    // Lo primero que cuentan las ventanas es el VI recién abierto o creado: sin cambios.
-    if (vi.guardado === null) vi.guardado = texto;
-    titulos(ventanas);
+/** Closes a VI and its windows, after asking about unsaved changes unless `force`. Returns whether it closed. */
+async function closeVI(open, { force = false } = {}) {
+  if (!force && !(await canDiscard(open, open.windows["front-panel"]))) return false;
+  open.closing = true;
+  for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.close();
+  return true;
+}
+
+/**
+ * Writes the VI. Without a path, or with Save As, it asks where. The paths of
+ * its subVIs are stored relative to the file, so they are rebased to where it
+ * is written now (spec/05 rule 69). Returns the text written, or `null` if the
+ * user cancelled.
+ */
+async function writeVI(open, owner, text, saveAs) {
+  const { entry } = open;
+  let target = entry.path;
+  if (!target || saveAs) {
+    const result = await dialog.showSaveDialog(owner, { title: "Save As", defaultPath: target ?? `${viName(entry)}.qvi`, filters: FILTERS });
+    if (result.canceled || !result.filePath) return null;
+    target = result.filePath.endsWith(".qvi") ? result.filePath : `${result.filePath}.qvi`;
+  }
+  const rebased = rebaseText(text, keyOf(entry), pathKey(target));
+  await writeFile(target, rebased);
+  recordSave(entry, target, rebased);
+  setTitles(open);
+  // The callers of this VI that are open must see its new connector.
+  for (const other of BrowserWindow.getAllWindows()) other.webContents.send("vi:saved", { id: entry.id, key: pathKey(target) });
+  return rebased;
+}
+
+/** What a page learns about its VI when it starts. */
+const describe = (entry) => ({ id: entry.id, text: entry.initialText, key: keyOf(entry), name: viName(entry), untitledNumber: entry.untitledNumber });
+
+async function readTextOrNull(key) {
+  try {
+    return await readFile(key, "utf8");
+  } catch {
+    return null;
+  }
+}
+
+function handleRequests() {
+  const openOf = (event) => viOfContents.get(event.sender.id);
+  const ownerOf = (event) => BrowserWindow.fromWebContents(event.sender);
+
+  ipcMain.handle("vi:init", (event) => describe(openOf(event).entry));
+  ipcMain.on("vi:cambio", (event, text) => {
+    const open = openOf(event);
+    recordChange(open.entry, text);
+    setTitles(open);
   });
-  ipcMain.handle("vi:guardar", async (ev, texto, como) => {
-    vi.actual = texto;
-    return (await escribirVI(ventanas, dueñoDe(ev), texto, como)) ? { ruta: vi.ruta, nombre: nombreVI() } : null;
+  ipcMain.handle("vi:guardar", async (event, text, saveAs) => {
+    const open = openOf(event);
+    const written = await writeVI(open, ownerOf(event), text, saveAs);
+    return written === null ? null : { ruta: keyOf(open.entry), nombre: viName(open.entry), texto: written };
   });
-  ipcMain.handle("vi:abrir", async (ev) => {
-    const dueño = dueñoDe(ev);
-    if (!(await puedoDescartar(ventanas, dueño))) return null;
-    const r = await dialog.showOpenDialog(dueño, { title: "Open", properties: ["openFile"], filters: FILTROS });
-    if (r.canceled || !r.filePaths.length) return null;
-    const texto = await readFile(r.filePaths[0], "utf8");
-    // Lo que las ventanas cuenten al cargarlo será la versión guardada.
-    Object.assign(vi, { ruta: r.filePaths[0], guardado: null, actual: null });
-    titulos(ventanas);
-    return { texto, ruta: vi.ruta, nombre: nombreVI() };
+  // File ▸ Open: another VI, in its own windows.
+  ipcMain.handle("vi:abrir", async (event) => {
+    const owner = ownerOf(event);
+    const result = await dialog.showOpenDialog(owner, { title: "Open", properties: ["openFile"], filters: FILTERS });
+    if (!result.canceled && result.filePaths.length) await openPath(result.filePaths[0], owner);
   });
-  ipcMain.on("vi:error", (ev, mensaje) => {
-    dialog.showMessageBox(dueñoDe(ev), { type: "error", message: "No se puede abrir el VI.", detail: mensaje });
+  // A subVI opened by double click or Open Front Panel; `key` is its absolute path.
+  ipcMain.handle("vi:open-path", (event, key) => openPath(key, ownerOf(event)));
+  // Select a VI...: the file dialog; returns the absolute path or nothing.
+  ipcMain.handle("vi:choose-subvi", async (event) => {
+    const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select a VI", properties: ["openFile"], filters: FILTERS });
+    return result.canceled || !result.filePaths.length ? null : pathKey(result.filePaths[0]);
   });
-  ipcMain.on("vi:avisar", (ev, mensaje, detalle) => {
-    dialog.showMessageBox(dueñoDe(ev), { type: "warning", message: mensaje, detail: detalle });
+  // The text of every VI that a VI reaches, from the disk (not from the other open VIs: a caller sees a subVI when it is saved).
+  ipcMain.handle("vi:subvi-texts", (event, text) => {
+    const entry = openOf(event).entry;
+    return readHierarchyTexts(keyOf(entry), text, readTextOrNull);
   });
-  ipcMain.on("vi:salir", () => ventanas["front-panel"].close());
+  // The same for a VI that is about to be placed as a subVI: its own text and that of its subVIs.
+  ipcMain.handle("vi:subvi-texts-of", async (_event, key) => {
+    const text = await readTextOrNull(key);
+    if (text === null) return { texts: {}, missing: [key] };
+    const { texts, missing } = await readHierarchyTexts(key, text, readTextOrNull);
+    return { texts: { [key]: text, ...texts }, missing };
+  });
+  ipcMain.on("vi:error", (event, message) => {
+    dialog.showMessageBox(ownerOf(event), { type: "error", message: "The VI cannot be opened.", detail: message });
+  });
+  ipcMain.on("vi:avisar", (event, message, detail) => {
+    dialog.showMessageBox(ownerOf(event), { type: "warning", message, detail });
+  });
+  // A VI that could not be read closes without asking: there is nothing to save.
+  ipcMain.on("vi:close", (event) => closeVI(openOf(event), { force: true }));
+  // File ▸ Exit: every VI closes, asking about its unsaved changes; one cancel stops it.
+  ipcMain.on("vi:salir", async () => {
+    for (const open of [...openVIs.values()]) if (!(await closeVI(open))) return;
+  });
 }
 
 app.whenReady().then(() => {
-  // La barra de menús es la de LabVIEW, pintada en la página.
+  // The menu bar is LabVIEW's, painted in the page.
   Menu.setApplicationMenu(null);
-  servir();
-  const ventanas = { "front-panel": abrir("front-panel"), "block-diagram": abrir("block-diagram") };
-  // Cerrar el panel cierra el VI; cerrar el diagrama sólo lo esconde, como en
-  // LabVIEW. Volver a abrirlo es Window ▸ Show Block Diagram, aún sin capturar.
-  atenderVI(ventanas);
-  // Cerrar el panel cierra el VI: si tiene cambios sin guardar, antes se pregunta.
-  let confirmado = false;
-  ventanas["front-panel"].on("close", async (ev) => {
-    if (confirmado || !sucio() || process.env.SOLDER_CAPTURAS) return;
-    ev.preventDefault();
-    if (await puedoDescartar(ventanas, ventanas["front-panel"])) {
-      confirmado = true;
-      ventanas["front-panel"].close();
-    }
-  });
-  ventanas["front-panel"].on("closed", () => {
-    saliendo = true;
-    app.quit();
-  });
-  ventanas["block-diagram"].on("close", (ev) => {
-    if (saliendo) return;
-    ev.preventDefault();
-    ventanas["block-diagram"].hide();
-  });
-  app.on("before-quit", () => (saliendo = true));
-  if (process.env.SOLDER_CAPTURAS) capturar(ventanas, process.env.SOLDER_CAPTURAS);
+  serve();
+  handleRequests();
+  const first = openNewVI();
+  app.on("before-quit", () => (quitting = true));
+  if (process.env.SOLDER_CAPTURAS) capture(first.windows, process.env.SOLDER_CAPTURAS);
 });
 
 app.on("window-all-closed", () => app.quit());

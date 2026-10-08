@@ -202,7 +202,9 @@ svg { display: block; overflow: visible; }
   box-shadow: 0.667px 0.667px 0 #bebebe, 3.333px 3.333px 3.333px -1.333px rgba(0, 0, 0, 0.66);
   padding: 6px 8px; font-size: 12px; font-style: normal; color: #000; user-select: text;
 }
-.emergente { z-index: 30; pointer-events: none; }
+.emergente { z-index: 60; pointer-events: none; }
+/* An explanation opened from inside the VI Properties dialog goes over it. */
+.pv-velo ~ .explicacion, .pv-velo ~ .menu-contextual { z-index: 45; }
 .explicacion p, .emergente p { margin: 4px 0 0; }
 .explicacion-cabeza em { color: #6e6e6e; margin-left: 4px; }
 .explicacion code, .emergente code { display: block; margin-top: 4px; font-size: 10px; color: #828282; }
@@ -550,3 +552,30 @@ svg { display: block; overflow: visible; }
 .objeto-panel.array.dos-dimensiones .arr-caja { display: block; }
 .objeto-panel.array.dos-dimensiones .elem-array { position: absolute; }
 .asa-array { position: absolute; width: 7px; height: 7px; background: #0078d7; border: 1px solid #fff; box-sizing: border-box; cursor: ew-resize; }
+
+/* A subVI node: the icon of the VI it calls, 32 × 32 with a black border (labview-captures/subvi/subvi-placed-on-diagram.png). */
+.glifo-subvi { position: absolute; inset: 0; pointer-events: none; }
+.glifo-subvi svg { width: 100%; height: 100%; }
+
+/* VI Properties, from labview-captures/subvi/vi-properties-execution-default.png. The positions are set by window/vi-properties.mjs. */
+.pv-velo { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; }
+.pv-dialogo { position: relative; background: #f0f0f0; border: 1px solid #636363; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35); }
+.pv-titulo { background: #fff; display: flex; align-items: center; justify-content: space-between; padding: 0 14px 0 30px; }
+.pv-cerrar { font-size: 14px; cursor: default; }
+.pv-dialogo > div { position: absolute; }
+.pv-dialogo > .pv-titulo { position: relative; }
+.pv-pagina { border: 1px solid #d9d9d9; background: #f0f0f0; }
+.pv-etiqueta { white-space: nowrap; }
+.pv-grupo { border: 1px solid #dcdcdc; }
+.pv-grupo-titulo { position: absolute; left: 6px; top: -9px; background: #f0f0f0; padding: 0 3px; }
+.pv-nota { line-height: 15px; }
+.pv-check, .pv-radio { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
+.pv-casilla { width: 13px; height: 13px; border: 1px solid #333; background: #fff; display: inline-block; box-sizing: border-box; }
+.pv-casilla.redonda { border-radius: 50%; }
+.pv-check.marcada .pv-casilla { background: #0078d7; border-color: #0078d7; box-shadow: inset 0 0 0 2px #fff; }
+.pv-radio.marcada .pv-casilla { border-color: #0078d7; box-shadow: inset 0 0 0 3px #fff; background: #0078d7; }
+.pv-combo { display: flex; align-items: center; justify-content: center; border: 1px solid #7a7a7a; background: #fff; box-sizing: border-box; position: absolute; }
+.pv-combo .pv-flecha { position: absolute; right: 4px; width: 5px; height: 5px; border-right: 1px solid #333; border-bottom: 1px solid #333; transform: rotate(45deg) translate(-1px, -1px); }
+.pv-boton { border: 1px solid #adadad; background: #e1e1e1; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.pv-boton.defecto { border-color: #0078d7; }
+.pv-check.hueco .pv-texto, .pv-radio.hueco .pv-texto, .pv-combo.hueco .pv-texto, .pv-boton.hueco { font-style: italic; color: var(--texto-hueco); }

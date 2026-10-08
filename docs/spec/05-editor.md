@@ -636,3 +636,46 @@ would have required naming a test that did not exist.)*
 | 3 | Exact jump of `Shift`+arrow: 8 px or 12 px? | Nothing. Open in `06-visual.md` §1.3 since the beginning. The editor uses 8, provisional: it still has to be verified in LabVIEW |
 | 4 | Selection by drag rectangle | Unspecified. The web editor has it like LabVIEW: it selects what the rectangle touches, and `Shift` adds |
 | 5 | Break the inventory down area by area, with captures of the reference in front (DT-035 §5 and §8). **Started**: the *Project Explorer*, the *Front Panel*, the *Block Diagram* and the function palette, 127 entries; the contents of the menus, not yet | That rules 52–56 have something to check |
+
+## 12. SubVIs (DT-045, 2026-10-03)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/subvi/`).
+
+> **Rule 66 — Several VIs open.** Each open VI has its own Front Panel and Block Diagram, its own file and its
+> own unsaved changes (asterisk and "Save changes?" per VI). File ▸ Open opens another VI in new windows, or
+> brings forward the windows of one already open; File ▸ Exit closes them all, asking for each. Tested in
+> `test/editor/vi-registry.test.mjs`.
+
+> **Rule 67 — Connector pane.** The Front Panel shows the pattern 4-2-2-4 (cells 0-3 left, 4-5 and 6-7 middle,
+> 8-11 right) left of the icon. Click a cell, then a control or an indicator: it is assigned (a control is an
+> input, an indicator an output) and the cell is filled with the type colour; an output cell is black with a
+> small square of that colour. Right-click: Disconnect All Terminals, Disconnect This Terminal and This
+> Connection Is ▸ Required / Recommended (default, checked) / Optional work; the last two are greyed without a
+> terminal under the cursor, and Required is greyed for an output. Add/Remove Terminal, Rotate and Flip
+> are placeholders (only 4-2-2-4 exists). Patterns ▸ opens, on hover, a grid of 36 icon-only thumbnails (6 × 6,
+> `connector-menu-patterns.png`) with the pattern in use outlined in blue; only 4-2-2-4 can be chosen (choosing it
+> only closes the menu) and the other 35 are greyed, and hovering one says why. The shapes are in
+> `core/model/connector-patterns.mjs`. Unverified: LabVIEW's names for the 35 other patterns, and what choosing
+> one does to the terminals already assigned. A deleted control leaves the connector. Written as `vi.connector`.
+> Unverified: how LabVIEW marks the cell that waits for an element (ours: blue frame); the edge of the icon for the
+> middle cells (ours: top for 4 and 6, bottom for 5 and 7); the default cell of a terminal written without one.
+> Tested in `test/editor/connector-pane.test.mjs` and `test/editor/connector-patterns.test.mjs`.
+
+> **Rule 68 — SubVI node.** Select a VI... (Functions palette) opens the file dialog; the VI follows the cursor
+> and a click drops it. The node is the 32 × 32 icon of the callee; its terminals sit on the edge next to their
+> connector cell, with the wire touching the border. Double click or Open Front Panel opens the callee's windows.
+> The other menu rows are placeholders. Tested in `test/editor/subvi-nodes.test.mjs`.
+
+> **Rule 69 — Stored path.** `config.vi` is relative to the caller's file. A caller never saved stores the
+> absolute path, and every save (first save or Save As elsewhere) rebases it relative to the new file.
+> Tested in `test/editor/vi-paths.test.mjs`.
+
+> **Rule 70 — Hierarchy in the editor.** A VI is loaded with its subVIs (`loadHierarchy`); Run compiles what is on
+> disk and keeps one `estado` per top-level VI between Runs. When a subVI is saved, the open callers rebuild their
+> view; wires to ports that no longer exist are dropped (LabVIEW keeps them broken: unverified). A missing subVI or
+> a recursive call breaks the Run arrow and Run reports why. Tested in `test/end-to-end/subvi-editor.test.mjs`.
+
+> **Rule 71 — VI Properties.** File ▸ VI Properties (Ctrl+I) and the connector and icon menus open a modal dialog on
+> Execution; Non-reentrant and Preallocated clone work and write `vi.execution`; the rest is greyed with its reason.
+> Tested in `test/editor/vi-properties.test.mjs`.
+

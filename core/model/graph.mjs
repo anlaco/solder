@@ -11,6 +11,7 @@
 //
 // A pure module with no mutation: every operation returns a new diagram.
 
+import { connectorTerminals } from "./connector.mjs";
 import { DBL, ERROR, NUMERICOS, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, nombre, withoutOneDimension } from "./types.mjs";
 
 /** El catálogo de bloques, `docs/schema/blocks.json`. */
@@ -78,6 +79,57 @@ export function cargarCatalogo(datos) {
     return p;
   }
   return { datos, bloque, puertos, puerto, tiene: (tipo) => tipo in bloques };
+}
+
+/**
+ * The catalog seen from one VI of a hierarchy (DT-045): the same blocks, and
+ * the ports of each `subvi` node taken from the connector of the VI it calls.
+ * `findSubVI(relativePath)` gives that VI as `{ g, cat }`, or `null`; without
+ * it, a `subvi` node has no ports.
+ */
+export function conSubVIs(cat, findSubVI) {
+  const puertos = (nodo) => {
+    if (nodo.tipo !== "subvi") return cat.puertos(nodo);
+    const callee = findSubVI(nodo.config?.vi);
+    return callee ? connectorPorts(callee) : { in: [], out: [] };
+  };
+  const puerto = (nodo, nombrePuerto, dir) => {
+    const p = puertos(nodo)[dir].find((q) => q.name === nombrePuerto);
+    if (!p) throw new Error(`«${nodo.tipo}» no tiene el puerto de ${dir === "in" ? "entrada" : "salida"} «${nombrePuerto}»`);
+    return p;
+  };
+  return { ...cat, puertos, puerto, findSubVI };
+}
+
+const connectorPortsCache = new WeakMap();
+
+/**
+ * The ports of a call to a VI: one input for each control on its connector and
+ * one output for each indicator, named after the panel element and of its
+ * type. An input that is not Required may stay unwired: the subVI then uses
+ * its control's default value (DT-045). A terminal is the name of a panel
+ * element or `{ name, cell, connection }`; Recommended when not said.
+ */
+export function connectorPorts({ g, cat }) {
+  if (connectorPortsCache.has(g)) return connectorPortsCache.get(g);
+  const resolved = tipos(g, cat);
+  const panelNode = (name) => g.nodos.find((n) => n.name === name && cat.bloque(n.tipo).panel);
+  const port = ({ name, dir, cell, connection }) => {
+    const required = dir === "in" && connection === "required";
+    const node = panelNode(name);
+    if (!node) return null;
+    const own = cat.puertos(node)[dir === "in" ? "out" : "in"][0];
+    const type = dir === "in" ? resolved.salidas.get(`${node.id}.${own.name}`) : resolved.entradas.get(`${node.id}.${own.name}`);
+    const defaultValue = dir === "in" ? node.config?.value : undefined;
+    return { name, label: node.label?.text ?? name, type, dir, cell, connection, nodo: node.id, defaultValue, ...(dir === "in" && !required ? { optional: true } : {}) };
+  };
+  const terminals = connectorTerminals(g.vi?.connector);
+  const ports = {
+    in: terminals.filter((t) => t.dir === "in").map(port).filter(Boolean),
+    out: terminals.filter((t) => t.dir === "out").map(port).filter(Boolean),
+  };
+  connectorPortsCache.set(g, ports);
+  return ports;
 }
 
 export const nuevo = () => ({ nodos: [], cables: [], siguiente: 1 });

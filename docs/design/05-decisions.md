@@ -1325,3 +1325,80 @@ b. Each array function declares which dimensions it accepts, as LabVIEW does:
    most 1D functions (Sort, Search, Reverse…) break the wire with a 2D.
 c. The panel reads and writes an N-dimensional array as a typed view plus its
    sizes.
+
+## DT-045
+
+**SubVIs: how a call is compiled, how its state lives and how the file refers to it.**
+
+- **Status:** **Accepted on 2026-10-03** by the developer, after researching LabVIEW's
+  model and having the premises checked again by an independent review
+  (11 of 12 confirmed; the path search, partly).
+- **Complements:** [DT-040](#dt-040) (clumps and JSPI), [DT-041](#dt-041),
+  [DT-042](#dt-042) (data space).
+
+### How LabVIEW does it (NI documentation, LabVIEW Wiki, NI forums)
+
+1. **Each VI is compiled separately**, and a call to a subVI is a call into its
+   compiled code. A statically linked subVI is loaded into memory with its caller.
+2. **A new VI is non-reentrant by default:** it has a single data space for its
+   parameters, its temporary values and the state it keeps between calls, and
+   simultaneous calls are serialized ("callers take turns").
+3. **That state survives between calls** —an uninitialized shift register keeps
+   its value: the "functional global variable"— and also **between runs of the
+   top-level VI, while the VI stays in memory**; it is lost when it is unloaded.
+4. **Reentrant VIs use clones**, each with its own data space: *preallocated*, one per
+   call site, which keeps its own state; *shared*, a pool allocated on demand,
+   with no per-call-site state.
+5. **Recursion**, direct or mutual, requires shared-clone reentrancy; with
+   preallocated clones LabVIEW reports a broken recursive cycle.
+6. **Inlining** is an option the user enables; it requires preallocated clones,
+   forbids recursion, ignores priority and reentrancy, and disables automatic
+   error handling and debugging.
+7. **A subVI node** runs when all its inputs have arrived and gives all its
+   outputs when the whole subVI has finished. An unwired input takes the default
+   value of the subVI's control, as saved; an unwired **Required** input breaks the
+   caller.
+8. **The caller stores the subVI's path relative to itself.** On load, LabVIEW looks
+   first in memory by name, then at that path, then in the VI search paths.
+9. The default connector pattern is 4×2×2×4, twelve terminals (to be measured
+   in the VM).
+
+### Decision
+
+1. **One WebAssembly module per hierarchy**, the equivalent of LabVIEW's static
+   linking: every VI that the top-level VI uses is compiled into it, **each with its
+   own functions and its own data space** (its cells, constants and buffers),
+   never copied into its callers.
+2. **The call:** a subVI without long nodes is a direct `call` between functions of
+   the module. One that waits (Wait, loops, I/O) is a long node of its caller: the
+   call suspends with JSPI and the host runs the subVI's clumps with the same
+   scheduler as the top-level VI (DT-040). Inputs go into the subVI's data space;
+   outputs are read from it when it ends.
+3. **Non-reentrant by default:** one data space for all the call sites, and
+   simultaneous calls wait in a queue in the host.
+4. **Preallocated clone reentrancy:** one data space per call site. Shared clones,
+   recursion and inlining are left for later; a recursive cycle, direct or mutual,
+   is a compile error with its reason ("not yet"), as LabVIEW breaks a recursive
+   cycle without shared clones.
+5. **State between runs:** the instance of the module, with its data spaces,
+   survives between Runs while the hierarchy is loaded in the editor, as DT-042 e
+   anticipated; it is discarded when a VI of the hierarchy is edited (it must be
+   recompiled) or closed. What "unloaded" means in the editor is measured in
+   LabVIEW before closing this point.
+6. **The file:** the `subvi` node keeps the path of the `.qvi` relative to the
+   caller (`config.vi`). The `connector` of the `.qvi` stores the pattern, which
+   control or indicator is in each terminal, and whether it is Required,
+   Recommended or Optional. The ports of a `subvi` node come from that connector, by
+   a single core function (spec/03 Rule 4). Search on load: VIs already loaded by
+   name, then the relative path; the search paths, later.
+7. **In stages:** (a) the core —format, catalog of a hierarchy, compiled call,
+   reentrancy, the command line—; (b) the editor —several VIs open, connector pane,
+   placing a subVI, opening it with a double click—; (c) the icon editor.
+
+### Consequences
+
+a. The compiler receives the hierarchy (a function that loads a `.qvi` by path)
+   and the catalog resolves the ports of each `subvi` node from it.
+b. The editor's main process stops being "one VI, two windows" and keeps a set of
+   open VIs, each with its own windows.
+c. The host keeps a queue per non-reentrant VI and the module instance between Runs.

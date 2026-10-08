@@ -19,7 +19,7 @@
 // enters, like LabVIEW's coercion dot. Whatever the compiler cannot emit yet is
 // returned as an error, with its node; nothing is emitted halfway.
 
-import { ejecutable, orden, requerido, tipos } from "../model/graph.mjs";
+import { connectorPorts, ejecutable, orden, requerido, tipos } from "../model/graph.mjs";
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
 import { ERROR, NUMERICOS, dimensionsOf, esArray, esCluster, esEntero, esNumerico, flattenArrayValue, limites, representacion } from "../model/types.mjs";
@@ -93,6 +93,9 @@ const IMPORTACIONES = [
   // Corre un subplan —los clumps de un cuerpo con varios nodos largos— y
   // espera a que acaben todos (suspende quien lo llama).
   { modulo: "tiempo", nombre: "correr_plan", params: ["i32"], results: ["i32"] },
+  // Calls a subVI that waits: runs its plan when the subVI is free, since a
+  // non-reentrant VI serves one call at a time (DT-045), and suspends the caller.
+  { modulo: "tiempo", nombre: "correr_subvi", params: ["i32"], results: ["i32"] },
   // Manejo automático de errores (DT-043): el error de un nodo con «error out» sin
   // cablear; el anfitrión saca el diálogo y espera Continue o Stop (suspende).
   { modulo: "tiempo", nombre: "error_automatico", params: ["i32", "i32"], results: ["i32"] },
@@ -1151,6 +1154,100 @@ function juntarFilas(t, rowsCell, cell, temporal) {
   ];
 }
 
+const PANEL_CONTROLS = ["control", "bool-control", "str-control", "cluster-control", "arr-control"];
+
+/**
+ * The instance of a subVI that a `subvi` node calls (DT-045): a non-reentrant
+ * VI has one for all its callers; a preallocated-clone reentrant VI, one per
+ * call site. Each instance has its own data space —slots for its connector,
+ * cells and buffers— and either a function that is called directly (it never
+ * waits) or a plan that the host runs (it waits).
+ */
+function subVIInstance(callee, node, module, callerKey) {
+  const reentrant = callee.g.vi?.execution?.reentrancy === "preallocated";
+  const key = reentrant ? `${callee.key}@${callerKey}/${node.id}` : callee.key;
+  if (module.instances.has(key)) return module.instances.get(key);
+  const slots = new Map();
+  const ports = connectorPorts(callee);
+  for (const port of [...ports.in, ...ports.out]) slots.set(port.name, { address: slotFor(port.type, module), type: port.type });
+  const compiled = compileVI(callee.g, callee.cat, module, slots, key);
+  if (compiled.errores) return { errores: compiled.errores.map((e) => ({ ...e, vi: callee.key })) };
+  const { clumps } = compiled;
+  const waits = clumps.length > 1 || clumps.some((k) => k.largo);
+  const instance = {
+    key, slots,
+    direct: waits ? null : module.directFunctions.push(clumps[0] ?? { locales: [], cuerpo: [] }) - 1,
+    plan: waits ? module.planes.push(clumps) - 1 : null,
+  };
+  module.instances.set(key, instance);
+  return instance;
+}
+
+/** A slot of the data space for a value of type `t`: 8 bytes for a scalar, a cell for a string or an array, a buffer for a cluster. */
+function slotFor(t, module) {
+  if (esCluster(t)) return module.bufer(disposicion(t).tam);
+  if (t === "string" || esArray(t)) return module.bufer(4, 4);
+  return module.bufer(8);
+}
+
+/** Stores the value that `value` leaves on the stack into `slot`: a scalar, or a copy of a string, array or cluster. */
+function storeInSlot(t, slot, value, temporal) {
+  if (porReferencia(t)) return copiarA(t, value, [ins("i32.const", slot.address)], temporal);
+  return [ins("i32.const", slot.address), ...value, ins(`${tipoWasm(t)}.store`)];
+}
+
+/** Leaves on the stack the value in `slot`: a scalar, or the address of the string, array or cluster. */
+const loadFromSlot = (t, slot) => (porReferencia(t) ? [ins("i32.const", slot.address)] : [ins("i32.const", slot.address), ins(`${tipoWasm(t)}.load`)]);
+
+/**
+ * A control inside a subVI: a connector control reads the value the caller left
+ * in its slot; any other one gives its default value, as nobody can set it.
+ */
+function subVIControl(e, slot) {
+  const t = e.tOut(0);
+  return slot ? loadFromSlot(t, slot) : defaultValueCode(e, t, e.nodo.config?.value);
+}
+
+/** The instructions that leave the value `value` of type `t`, as a constant of the module. */
+function defaultValueCode(e, t, value) {
+  if (t === "string") return [ins("i32.const", e.cadena(String(value ?? "")))];
+  if (esArray(t)) return [ins("i32.const", e.arrayConstante(t, value ?? []))];
+  if (esCluster(t)) {
+    const buffer = e.bufer(disposicion(t).tam);
+    e.clusterConstante(t, value ?? {}, buffer);
+    return [ins("i32.const", buffer)];
+  }
+  return constante(t, value === true ? 1 : value ?? 0);
+}
+
+/**
+ * A call to a subVI (DT-045): each input into its slot —an unwired one, with the
+ * default value of the subVI's control—, the call, and each output read back. A
+ * string, array or cluster output is copied into the caller's own buffer, since
+ * the next call overwrites the slot.
+ */
+function callSubVI(e, instance) {
+  const { in: inputs, out: outputs } = e.cat.puertos(e.nodo);
+  const code = [];
+  inputs.forEach((port, i) => {
+    const slot = instance.slots.get(port.name);
+    const value = e.cableada(i) ? e.entrada(i) : defaultValueCode(e, port.type, port.defaultValue);
+    code.push(...storeInSlot(port.type, slot, value, e.temporal));
+  });
+  if (instance.direct !== null) code.push(ins("call", IMPORTACIONES.length + MEMORIA.length + instance.direct));
+  else code.push(ins("i32.const", instance.plan), ins("call", idImport("correr_subvi")), ins("drop"));
+  for (const port of outputs) {
+    const slot = instance.slots.get(port.name);
+    if (!porReferencia(port.type)) {
+      code.push(...loadFromSlot(port.type, slot));
+      continue;
+    }
+    const own = esCluster(port.type) ? e.bufer(disposicion(port.type).tam) : e.celda();
+    code.push(...copiarA(port.type, loadFromSlot(port.type, slot), [ins("i32.const", own)], e.temporal), ins("i32.const", own));
+  }
+  return code;
+}
+
 /** The address of the null handle: a cell that always holds 0, the empty string or array. */
 const NULL_HANDLE = 0;
 
@@ -1566,9 +1663,49 @@ function partir(g, ids, raiz, largo, cadenas = []) {
  * con los controles y los indicadores en el orden de sus índices y, por cada
  * clump (la función exportada `c<i>`), de cuáles depende y si tarda; o
  * `{ errores }`: los motivos por los que no se puede, cada uno con su nodo si lo
- * tiene.
+ * tiene. With a catalog from a hierarchy (`conSubVIs`), its subVIs are compiled
+ * into the same module (DT-045).
  */
 export function compilar(g, cat) {
+  const module = newModule();
+  const vi = compileVI(g, cat, module, null, "");
+  if (vi.errores) return { errores: vi.errores };
+  return assemble(module, vi);
+}
+
+/**
+ * What the VIs of one module share: the data space and its static data, the
+ * globals, the subplans run by the host, the nodes that may raise the automatic
+ * error dialog and the functions of synchronous subVIs, called directly.
+ */
+function newModule() {
+  const module = {
+    space: 0, // bytes of the data space already reserved
+    globales: [],
+    constantes: [], // { celda, bytes }
+    datosFijos: [], // { desde, bytes }: escalares de las constantes de cluster
+    planes: [], // los subplanes: por cada uno, sus clumps
+    automaticos: [], // los nodos que pueden sacar el diálogo, por índice
+    directFunctions: [], // the single clump of each synchronous subVI instance
+    instances: new Map(), // instance key → compiled subVI instance
+  };
+  // El data space (DT-042): una celda por búfer; las constantes, aparte.
+  module.bufer = (tam, al = 8) => {
+    module.space = (module.space + al - 1) & ~(al - 1);
+    const d = CELDAS + module.space;
+    module.space += tam;
+    return d;
+  };
+  return module;
+}
+
+/**
+ * Compiles one VI into `module`. `asSubVI` is null for the top-level VI, whose
+ * controls and indicators are the panel's; for a subVI it maps the name of each
+ * connector control and indicator to its slot in the data space, through which
+ * the caller passes inputs and reads outputs (DT-045).
+ */
+function compileVI(g, cat, module, asSubVI, instanceKey) {
   const resueltos = tipos(g, cat);
   if (!ejecutable(g, cat, resueltos)) {
     const errores = [...resueltos.cables.entries()].filter(([, c]) => c.roto).map(([id, c]) => ({ cable: id, motivo: c.roto }));
@@ -1580,6 +1717,15 @@ export function compilar(g, cat) {
       }
     }
     return { errores };
+  }
+  // The subVIs first, each into its own instance, before this VI claims the zero zone (DT-045).
+  const calls = new Map(); // subvi node id → compiled instance
+  for (const n of g.nodos.filter((x) => x.tipo === "subvi")) {
+    const callee = cat.findSubVI?.(n.config?.vi);
+    if (!callee) return { errores: [{ nodo: n.id, motivo: `The subVI «${n.config?.vi}» is not loaded.` }] };
+    const instance = subVIInstance(callee, n, module, instanceKey);
+    if (instance.errores) return { errores: instance.errores };
+    calls.set(n.id, instance);
   }
   const { orden: ids } = orden(g);
   const porId = new Map(g.nodos.map((n) => [n.id, n]));
@@ -1598,6 +1744,7 @@ export function compilar(g, cat) {
     if (m) return g.nodos.some((k) => k.dentro === m[0] && k.marco === Number(m[1]) && esLargo(k.id));
     const n = porId.get(id);
     if (LARGOS.has(n.tipo) || n.tipo === "while-loop" || n.tipo === "for-loop") return true;
+    if (n.tipo === "subvi") return calls.get(n.id).plan !== null;
     // Un «error out» sin cablear puede sacar el diálogo del manejo automático, que espera al usuario.
     if (g.vi?.["automatic-error-handling"] !== false && n.tipo !== "simple-error-handler" && cat.puertos(n).out.some((p) => p.name === "error-out") && !g.cables.some((c) => c.de.nodo === id && c.de.puerto === "error-out")) return true;
     return esEstructura(id) && g.nodos.some((k) => k.dentro === id && esLargo(k.id));
@@ -1657,26 +1804,16 @@ export function compilar(g, cat) {
   const arriba = ordenArriba(g, deArriba.lista, raiz, deArriba.cadenas);
   const { clumpDe: clumpRaiz, clumps } = partir(g, arriba, raiz, esLargo, deArriba.cadenas);
   const clumpDe = (id) => clumpRaiz.get(raiz(id));
-  const globales = [];
-  // El data space (DT-042): una celda por búfer; las constantes, aparte.
-  let espacio = 0; // bytes del data space ya reservados
-  const bufer = (tam, al = 8) => {
-    espacio = (espacio + al - 1) & ~(al - 1);
-    const d = CELDAS + espacio;
-    espacio += tam;
-    return d;
-  };
+  const { globales, constantes, datosFijos, planes, automaticos, bufer } = module;
   const nuevaCelda = () => bufer(4, 4);
   // El cluster «cero»: tan grande como el mayor cluster del VI; no se escribe nunca.
   const tamMax = Math.max(0, ...[...resueltos.entradas.values(), ...resueltos.salidas.values()].filter(esCluster).map((t) => disposicion(t).tam));
   zonaCero = bufer(Math.max(tamMax, 8));
-  const constantes = []; // { celda, bytes }
   const cadena = (texto) => {
     const celda = nuevaCelda();
     constantes.push({ celda, bytes: bloqueCadena(texto) });
     return celda;
   };
-  const datosFijos = []; // { desde, bytes }: escalares de las constantes de cluster
   /**
    * Una constante de array: su bloque [n][relleno][elementos] en el data space,
    * ya escrito al instanciar, y la celda que lo apunta. Sus cadenas, en la zona
@@ -1725,10 +1862,8 @@ export function compilar(g, cat) {
     }
     return b;
   };
-  const planes = []; // los subplanes: por cada uno, sus clumps
   // Manejo automático de errores, activo de fábrica (VI Properties ▸ Execution).
   const autoErrores = g.vi?.["automatic-error-handling"] !== false;
-  const automaticos = []; // los nodos que pueden sacar el diálogo, por índice
   const valor = new Map(); // `${nodo}.${puerto}` → { local, global, clump }
   const controles = [];
   const indicadores = [];
@@ -1807,15 +1942,21 @@ export function compilar(g, cat) {
     // Un indicador sin cable no se escribe: conserva su valor, como en LabVIEW.
     if (["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator"].includes(n.tipo)) {
       if (!llegaA.has(`${id}.value`)) return;
+      // In a subVI, a connector indicator leaves its value in its slot for the caller; any other one, nowhere.
+      if (asSubVI) {
+        const slot = asSubVI.get(n.name);
+        if (slot) k.cuerpo.push(...storeInSlot(tIn(0), slot, entrada(0), nuevoLocal));
+        return;
+      }
       indicadores.push({ nodo: id, name: n.name, tipo: tIn(0), ...datosDePanel(tIn(0)) });
       const escribe = tIn(0) === "string" ? "escribir_cad" : esCluster(tIn(0)) ? "escribir_clu" : esArray(tIn(0)) ? "escribir_arr" : `escribir_${tipoWasm(tIn(0))}`;
       k.cuerpo.push(ins("i32.const", indicadores.length - 1), ...entrada(0), ins("call", idImport(escribe)));
       return;
     }
-    const emitir = BLOQUES[n.tipo];
+    const emitir = n.tipo === "subvi" ? (e) => callSubVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subVIControl(e, asSubVI.get(n.name)) : BLOQUES[n.tipo];
     if (!emitir) return errores.push({ nodo: id, motivo: `El compilador aún no sabe emitir «${nombre}» (${n.tipo}).` });
     const e = { nodo: n, cat, tIn, tOut, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante };
-    if (["control", "bool-control", "str-control", "cluster-control", "arr-control"].includes(n.tipo))
+    if (!asSubVI && PANEL_CONTROLS.includes(n.tipo))
       controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), ...datosDePanel(tOut(0)) });
     try {
       const b = cat.bloque(n.tipo);
@@ -1895,10 +2036,16 @@ export function compilar(g, cat) {
       // para que quien la produjo pueda reescribir su búfer en la vuelta siguiente.
       const t = x.tOut(0);
       const celda = t === "string" || esArray(t) ? nuevaCelda() : esCluster(t) ? bufer(disposicion(t).tam) : null;
-      if (celda !== null) c.push(...copiarValor(t, x.entrada(0), celda, x.nuevoLocal), ins("i32.const", celda), ins("local.set", ahora));
+      // Uninitialized, it starts with what it held when the loop last ended, kept in
+      // the data space: a functional global variable relies on it (DT-045).
+      const inicializado = x.cableada(0);
+      const guardado = !inicializado && celda === null ? bufer(8) : null;
+      if (celda !== null && inicializado) c.push(...copiarValor(t, x.entrada(0), celda, x.nuevoLocal));
+      if (celda !== null) c.push(ins("i32.const", celda), ins("local.set", ahora));
+      else if (guardado !== null) c.push(ins("i32.const", guardado), ins(`${vt}.load`), ins("local.set", ahora));
       else c.push(...x.entrada(0), ins("local.set", ahora));
       valor.set(`${id}.value`, { local: ahora, clump: k });
-      return { izq: id, der: porId.get(id).config.par, ahora, nuevo, vt, celda, t };
+      return { izq: id, der: porId.get(id).config.par, ahora, nuevo, vt, celda, t, guardado };
     });
     // La cuenta de un For: la cableada, recortada a la longitud de cada array indexado.
     let n = null;
@@ -1984,6 +2131,7 @@ export function compilar(g, cat) {
       } else if (t.indexado) c.push(ins("i32.const", t.indexado.celda), ins("local.set", t.l));
       dejar(k, t.id, "y", t.l, tipoWasm(contexto(t.id, k).tOut(0)));
     }
+    for (const r of registros) if (r.guardado !== null) c.push(ins("i32.const", r.guardado), ins("local.get", r.ahora), ins(`${r.vt}.store`));
     for (const r of registros) dejar(k, r.der, "result", r.ahora, r.vt);
     void s;
   }
@@ -2154,6 +2302,13 @@ export function compilar(g, cat) {
   };
   for (const id of arriba) emitirEn(id, clumps[clumpRaiz.get(id)]);
   if (errores.length) return { errores };
+  return { clumps, controles, indicadores };
+}
+
+/** The module with the top-level VI `vi`, its subVIs and the memory functions, ready to instantiate. */
+function assemble(module, vi) {
+  const { clumps, controles, indicadores } = vi;
+  const { globales, constantes, datosFijos, planes, automaticos, directFunctions } = module;
 
   const tiposF = [];
   const tipo = (params, results) => {
@@ -2164,7 +2319,7 @@ export function compilar(g, cat) {
   };
   // La zona estática, detrás del data space; el montón, detrás (alineado a 8).
   const datos = [];
-  let libre = CELDAS + ((espacio + 7) & ~7);
+  let libre = CELDAS + ((module.space + 7) & ~7);
   for (const { celda, bytes } of constantes) {
     datos.push({ desde: libre, bytes }, { desde: celda, bytes: i32(libre) });
     libre = (libre + bytes.length + 3) & ~3;
@@ -2177,14 +2332,14 @@ export function compilar(g, cat) {
     importaciones: IMPORTACIONES.map((im) => ({ modulo: im.modulo, nombre: im.nombre, tipo: tipo(im.params, im.results) })),
     funciones: [
       ...MEMORIA.map((f) => ({ tipo: tipo(f.params, f.results), locales: f.locales, cuerpo: f.cuerpo })),
-      ...[...clumps, ...planes.flat()].map((k) => ({ tipo: tipo([], []), locales: k.locales, cuerpo: k.cuerpo })),
+      ...[...directFunctions, ...clumps, ...planes.flat()].map((k) => ({ tipo: tipo([], []), locales: k.locales, cuerpo: k.cuerpo })),
     ],
     globales,
     memoria: { paginas: 1 },
     datos,
     exportaciones: [
       ...EXPORTADAS.map((nombre) => ({ nombre, funcion: IMPORTACIONES.length + MEMORIA_NOMBRES.indexOf(nombre) })),
-      ...[...clumps.map((_, i) => `c${i}`), ...planes.flatMap((sub, p) => sub.map((_, i) => `p${p}c${i}`))].map((nombre, i) => ({ nombre, funcion: primera + i })),
+      ...[...clumps.map((_, i) => `c${i}`), ...planes.flatMap((sub, p) => sub.map((_, i) => `p${p}c${i}`))].map((nombre, i) => ({ nombre, funcion: primera + directFunctions.length + i })),
     ],
   };
   const plan = (lista) => lista.map((k) => ({ deps: [...k.deps], largo: k.largo }));

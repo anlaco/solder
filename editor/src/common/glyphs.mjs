@@ -3,6 +3,8 @@
 // Se calca dónde está cada botón y qué hace, no su dibujo (DT-035 §1): los
 // iconos de LabVIEW son de NI. Cada glifo se dibuja en una rejilla de 16 × 16.
 
+import { cellRect } from "../../../core/model/connector.mjs";
+import { CONNECTOR_PATTERNS } from "../../../core/model/connector-patterns.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
 
 const TINTA = "#141414";
@@ -172,18 +174,42 @@ export function flechasDobles(haciaArriba) {
   return svg(galon(0.5) + galon(3.5), "0 0 7.33 8");
 }
 
-/** El connector pane con el patrón 4-2-2-4 (spec/06-visual.md §3.2). */
-export const CONNECTOR_PANE = (() => {
-  let c = lleno(0, 0, 32, 32, "#fff") + caja(0.5, 0.5, 31.5, 31.5, "none", 1);
+/**
+ * The connector pane with the pattern 4-2-2-4 (spec/06-visual.md §3.2), 32 × 32
+ * px with its grid lines every 8 px. `terminals`: `{ cell, dir, color }` for
+ * each assigned cell: an input fills its cell with the colour of its type; an
+ * output is a black cell with a smaller square of that colour
+ * (labview-captures/subvi/connector-assigned-zoom8x.png). `selectedCell` is the
+ * cell waiting for a control or an indicator to be clicked: how LabVIEW marks
+ * it was not captured, so it is drawn with a blue frame of our own.
+ */
+export function conectorPane(terminals = [], selectedCell = null) {
+  let c = lleno(0, 0, 32, 32, "#fff");
+  for (const { cell, dir, color } of terminals) {
+    const { x, y, width, height } = cellRect(cell);
+    c += dir === "in" ? lleno(x, y, x + width, y + height, color) : lleno(x, y, x + width, y + height, TINTA) + lleno(x + 2, y + 2, x + width - 2, y + height - 2, color);
+  }
+  c += caja(0.5, 0.5, 31.5, 31.5, "none", 1);
   for (let i = 1; i < 4; i++) c += linea(i * 8, 0, i * 8, 32, 1);
   [4, 2, 2, 4].forEach((filas, i) => {
     for (let k = 1; k < filas; k++) c += linea(i * 8, (32 * k) / filas, i * 8 + 8, (32 * k) / filas, 1);
   });
+  if (selectedCell !== null) {
+    const { x, y, width, height } = cellRect(selectedCell);
+    c += caja(x + 1, y + 1, x + width - 1, y + height - 1, "none", 1.5, "#0078d7");
+  }
   return svg(c, "0 0 32 32");
-})();
+}
 
-/** El icono por defecto de un VI nuevo. Glifo propio: el de LabVIEW es de NI. */
-export const ICONO_VI = (() => {
+export const CONNECTOR_PANE = conectorPane();
+
+/**
+ * The default icon of a VI: a 32 × 32 drawing with a 1 px black border and, at
+ * the bottom right, the number of the untitled VI it was born as, if known
+ * (labview-captures/subvi/new-vi-front-panel.png). The drawing is ours: the
+ * one in LabVIEW is NI's.
+ */
+export function iconoVI(numero) {
   const puntos = [];
   for (let i = 0; i <= 20; i++) {
     const t = i / 20;
@@ -194,10 +220,20 @@ export const ICONO_VI = (() => {
       caja(0.5, 0.5, 31.5, 31.5, "none", 1) +
       lleno(4, 4, 28, 18, "#1e2d3c", 1) +
       `<polyline points="${puntos.join(" ")}" fill="none" stroke="#6edc78" stroke-width="1.3"/>` +
-      `<text x="28" y="29" text-anchor="end" font-size="10" fill="${TINTA}">1</text>`,
+      (numero === undefined ? "" : `<text x="28" y="29" text-anchor="end" font-size="10" fill="${TINTA}">${numero}</text>`),
     "0 0 32 32",
   );
-})();
+}
+
+/** The icon of a subVI whose file cannot be found: the same frame, dashed and with a question mark. */
+export const ICONO_VI_FALTA = svg(
+  lleno(0, 0, 32, 32, "#fff") +
+    `<rect x="0.5" y="0.5" width="31" height="31" fill="none" stroke="${TINTA}" stroke-width="1" stroke-dasharray="3 2"/>` +
+    `<text x="16" y="17" text-anchor="middle" dominant-baseline="central" font-size="20" fill="${TINTA}">?</text>`,
+  "0 0 32 32",
+);
+
+export const ICONO_VI = iconoVI(1);
 
 export const CHINCHETA = svg(
   linea(1, 8, 5, 8) + caja(5, 5.5, 11, 10.5) + linea(11, 3.5, 11, 12.5, 1.6) + lleno(11.5, 5, 14.5, 11, "#969696", 1),
@@ -1297,6 +1333,22 @@ export const ACCIONES_MECANICAS = {
   "latch-when-released": iconoMecanica("9,19 24,19 24,13 29,13 29,19 30,19", lectura([26, 29])),
   "latch-until-released": iconoMecanica("9,19 13,19 13,13 29,13 29,19 30,19", lectura([17, 27])),
 };
+
+// ——— Connector patterns: the thumbnails of the Patterns submenu ———
+//
+// 32 × 32, a white box with 1 px black lines, one rectangle per cell, no labels
+// (labview-captures/subvi/connector-menu-patterns.png at 1:1). Drawn anew from
+// the cells of core/model/connector-patterns.mjs.
+
+const patternCellBox = ({ left, top, right, bottom }) =>
+  `<rect x="${left + 0.5}" y="${top + 0.5}" width="${right - left}" height="${bottom - top}" fill="none" stroke="#000" stroke-width="1"/>`;
+
+/** The thumbnail of a connector pattern: the white frame and the lines of its cells. */
+export const patternThumbnail = (pattern) =>
+  svg(`<rect x="0.5" y="0.5" width="31" height="31" fill="#fff"/>${pattern.cells.map(patternCellBox).join("")}`, "0 0 32 32");
+
+/** The thumbnails of the 36 patterns, by pattern id (`pattern-01` … `pattern-36`). */
+export const PATRONES_CONECTOR = Object.fromEntries(CONNECTOR_PATTERNS.map((pattern) => [pattern.id, patternThumbnail(pattern)]));
 
 // ——— Estructuras: While Loop y For Loop (M4) ———
 //

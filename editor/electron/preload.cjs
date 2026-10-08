@@ -1,20 +1,35 @@
-// Lo que la página puede pedir al proceso principal: guardar y abrir el VI con
-// los diálogos del sistema, avisar de que cambió (para el asterisco del título y
-// la regla 41) y salir. La página no toca el disco: sólo pasa texto.
+// What the page can ask of the main process: saving and opening VIs with the
+// system dialogs, telling it that the VI changed (for the asterisk in the title
+// and rule 41), reading the files of a VI's subVIs and opening other VIs. The
+// page never touches the disk: it only passes text.
 
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("solder", {
-  /** Guarda el texto del VI; `como`, Save As. Devuelve la ruta y el nombre, o nada si se cancela. */
+  /** The VI these windows belong to: `{ id, text, key, name, untitledNumber }`; `text` is null for a new VI. */
+  iniciar: () => ipcRenderer.invoke("vi:init"),
+  /** Saves the text of the VI; `como`, Save As. Returns `{ ruta, nombre, texto }` (the text as written), or nothing if cancelled. */
   guardar: (texto, como) => ipcRenderer.invoke("vi:guardar", texto, como),
-  /** Abre un .qvi con el diálogo del sistema. Devuelve su texto, su ruta y su nombre, o nada. */
+  /** File ▸ Open: another VI, in its own windows. */
   abrir: () => ipcRenderer.invoke("vi:abrir"),
-  /** El VI ha quedado así: el proceso principal decide si hay cambios sin guardar. */
+  /** Opens the windows of the VI at an absolute path (a subVI), or brings them forward if it is already open. */
+  abrirRuta: (ruta) => ipcRenderer.invoke("vi:open-path", ruta),
+  /** The file dialog of Select a VI...: the absolute path chosen, or nothing. */
+  elegirVI: () => ipcRenderer.invoke("vi:choose-subvi"),
+  /** The text of every VI reached from this one, by absolute path: `{ texts, missing }`. */
+  textosDeSubVIs: (texto) => ipcRenderer.invoke("vi:subvi-texts", texto),
+  /** The same for the VI at an absolute path, which is included. */
+  textosDeVI: (ruta) => ipcRenderer.invoke("vi:subvi-texts-of", ruta),
+  /** The VI has become this: the main process decides whether there are unsaved changes. */
   cambio: (texto) => ipcRenderer.send("vi:cambio", texto),
-  /** Un fichero que no se pudo abrir, con el motivo. */
+  /** A file that could not be opened, with the reason. */
   error: (mensaje) => ipcRenderer.send("vi:error", mensaje),
-  /** Un aviso con su detalle: por qué no se puede ejecutar el VI, por ejemplo. */
+  /** A notice with its detail: why the VI cannot run, for example. */
   avisar: (mensaje, detalle) => ipcRenderer.send("vi:avisar", mensaje, detalle),
+  /** Closes the windows of this VI without asking (it could not be read). */
+  cerrar: () => ipcRenderer.send("vi:close"),
   /** File ▸ Exit. */
   salir: () => ipcRenderer.send("vi:salir"),
+  /** Some VI was saved, at this absolute path: `callback({ id, key })`. The callers of a saved subVI must see its new connector. */
+  alGuardar: (callback) => ipcRenderer.on("vi:saved", (_event, saved) => callback(saved)),
 });

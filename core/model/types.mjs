@@ -129,13 +129,14 @@ export function aspecto(t) {
 }
 
 /**
- * Medidos en el diagrama de los vídeos de LabVIEW (numeric-cablear.mp4,
- * compound-arithmetic.mp4): el borde de una constante DBL y su cable son
- * #fb7c00; los de una I32, azul puro. Los iconos de la paleta usan otro naranja
- * (#ff6633), que es el suyo.
+ * The colors of each type family. DBL orange is #ff7f00, measured at 1:1 in
+ * LabVIEW 2026 Q3 on wires, constants and connector cells
+ * (labview-captures/array-2d/wire-2d-dbl.png, subvi/connector-assigned-zoom8x.png);
+ * the #fb7c00 read before from compressed videos was off. I32 is pure blue.
+ * The palette icons use another orange (#ff6633), which is their own.
  */
 export const COLORES = {
-  flotante: "#fb7c00",
+  flotante: "#ff7f00",
   entero: "#0000ff",
   booleano: "#008000",
   cadena: "#ff33cc",

@@ -290,3 +290,42 @@ test("the visible elements and the index of 2D arrays are saved as pairs and ope
   assert.deepEqual([abierto.nodos.find((n) => n.config?.visibles === 2).config.indice], [1], "a 1D array keeps its numbers");
   assert.deepEqual([config(unaDimension).visibles, config(unaDimension).indice], [3, 1], "also a 1D constant on the diagram, which the schema did not allow");
 });
+
+test("a hierarchy with a subVI is saved, validated and read back through its relative path (DT-045)", async () => {
+  const { loadHierarchy } = await import("../../core/model/hierarchy.mjs");
+  let sub = Gr.nuevo();
+  let r = Gr.crearEnPanel(sub, CAT, "control", 50, 50, "x");
+  sub = Gr.fijarConfig(r.g, r.id, { value: 4 });
+  const x = r.id;
+  r = Gr.crearEnPanel(sub, CAT, "indicator", 250, 50, "double");
+  sub = r.g;
+  const doble = r.id;
+  r = Gr.crearNodo(sub, CAT, "add", 150, 50);
+  sub = r.g;
+  for (const [a, pa, b, pb] of [[x, "result", r.id, "a"], [x, "result", r.id, "b"], [r.id, "result", doble, "value"]]) sub = Gr.conectar(sub, CAT, { nodo: a, puerto: pa, dir: "out" }, { nodo: b, puerto: pb, dir: "in" }).g;
+  const nameOf = (id) => sub.nodos.find((n) => n.id === id).name;
+  sub = { ...sub, vi: { connector: { pattern: "4-2-2-4", inputs: [{ name: nameOf(x), cell: 0, connection: "required" }], outputs: [{ name: nameOf(doble), cell: 8, connection: "recommended" }] }, execution: { reentrancy: "preallocated" } } };
+  const subText = aTexto(sub, CAT);
+  assert.ok(validar(JSON.parse(subText)), errores());
+
+  const cat = Gr.conSubVIs(CAT, (path) => (path === "util/double.qvi" ? { key: "util/double.qvi", g: sub, cat: CAT } : null));
+  let top = Gr.nuevo();
+  r = Gr.crearNodo(top, cat, "subvi", 100, 100);
+  top = Gr.fijarConfig(r.g, r.id, { vi: "util/double.qvi" });
+  const call = r.id;
+  r = Gr.crearEnPanel(top, cat, "indicator", 300, 100, "result");
+  top = Gr.conectar(r.g, cat, { nodo: call, puerto: nameOf(doble), dir: "out" }, { nodo: r.id, puerto: "value", dir: "in" }).g;
+  const topText = aTexto(top, cat);
+  assert.ok(validar(JSON.parse(topText)), errores());
+
+  const files = new Map([["app/top.qvi", topText], ["app/util/double.qvi", subText]]);
+  const resolvePath = (caller, relative) => `${caller.slice(0, caller.lastIndexOf("/") + 1)}${relative}`;
+  const loaded = loadHierarchy("app/top.qvi", CAT, { resolvePath, loadVI: (key, viCatalog) => (files.has(key) ? leer(files.get(key), viCatalog) : null) });
+  assert.deepEqual(loaded.errors, []);
+  const readTop = loaded.vis.get("app/top.qvi");
+  assert.equal(aTexto(readTop.g, readTop.cat), topText);
+  assert.deepEqual(loaded.vis.get("app/util/double.qvi").g.vi, sub.vi);
+  // The Required input is left unwired: the caller cannot run.
+  const { compilar } = await import("../../core/compiler/compiler.mjs");
+  assert.match(compilar(readTop.g, readTop.cat).errores.map((e) => e.motivo).join(), /le falta un cable/);
+});

@@ -143,9 +143,9 @@ Wires encode the data type through **three visual channels**:
 *Arrays, clusters and composite types will be defined when implemented in Phase 2.*
 
 > **Implemented in the web editor** (2026-09-29, `core/model/types.mjs`,
-> [DT-038](../design/05-decisions.md#dt-038)): orange `#fb7c00` for DBL and
+> [DT-038](../design/05-decisions.md#dt-038)): orange `#ff7f00` for DBL and
 > SGL, blue `#0000ff` for integers and enums —measured on the border of the
-> constants and on the wires in the LabVIEW videos; the palette icons
+> constants and on the wires (first read as `#fb7c00` from the videos; corrected on 2026-10-08 with 1:1 captures of the wires and the connector pane); the palette icons
 > use another orange, `#ff6633`—; 1.33 px for the scalar, 2 px for the 1D array and
 > 3 px for the 2D (see §4.3). The broken wire, dashed black with a red X in the middle and its reason
 > in the tip strip. Wires run at right angles: they leave horizontally, turn at
@@ -489,6 +489,28 @@ px of LabVIEW —the folders, the rows, the foot and the palette's borders, on t
 same pixel—. The comparisons are made by starting the editor on a virtual screen at 150 % scale
 (Electron with `--force-device-scale-factor=1.5`) and
 overlaying it on the captures; that is not a test.
+
+## 11. SubVIs: connector pane, icon and node (DT-045)
+
+From `labview-captures/subvi/` (1:1, window pixels). The connector pane is 32 × 32 px, top right, left of the
+icon (x 1355..1386, y 71..102 in the capture), grid every 8 px, 1 px black lines (`connector-assigned-zoom8x.png`):
+an input cell is filled with its type colour; an output cell is black with a 4 × 4 square of the colour. The
+icon is 32 × 32 with a 1 px black border; the default icon is ours, with the untitled-VI number at the bottom right
+when known (opened files show none). The subVI node is that icon, wires touching its border
+(`caller-x-unwired-diagram.png`); on hover each terminal shows a dot and a 4.5 px whisker in its type colour.
+Menus: `connector-menu.png`, `icon-menu.png`, `subvi-node-menu.png`. VI Properties: dialog 640 × 380, positions
+in `editor/src/window/vi-properties.mjs` (`vi-properties-execution-default.png`). Type colours are the wire colours,
+`#ff7f00` for DBL, the same as measured in the connector cells.
+
+Patterns submenu (`connector-menu-patterns.png` at 1:1, `connector-patterns-grid-zoom2x.png`): it opens at the
+right of the Patterns row, 302 × 301 px including a 1 px `#a0a0a0` border, background `#f8f8f8`, with a shadow.
+36 thumbnails in 6 columns × 6 rows, 32 × 32 px each, every 48 px, the first 9 px from the border on the left
+and the top; no labels. A thumbnail is a white box with 1 px black lines (outer frame at 0 and 31), one rectangle
+per cell. The pattern in use (row 6, column 3, 4-2-2-4) is outlined in blue `#0078d4`, 3 px, centred on the frame,
+so it sticks out 1 px (ours reuses the
+`#0078d7` frame of the other icon grids: 3 units of colour apart, unverified to matter). The cells were read from the
+pixels of the capture. In LabVIEW all 36 are available; ours draws the 35 it cannot do greyed (45 % opacity) and
+explains them on hover (DT-035). Tested in `test/editor/connector-patterns.test.mjs`.
 
 ---
 

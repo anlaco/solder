@@ -1634,8 +1634,8 @@ test("a wire of a 2D array is 3 px with a white line in the middle, between the 
     d = cablear(d, terminal(d, a, "result"), terminal(d, b, "value"));
     return contenido(d, CTX, tipos(d.g, CAT));
   };
-  assert.match(cable({ array: "number", dims: 2 }), /stroke="#fb7c00" stroke-width="3"\/><polyline[^>]*stroke="#fff" stroke-width="1"/);
-  assert.match(cable({ array: "number" }), /stroke="#fb7c00" stroke-width="2"/);
+  assert.match(cable({ array: "number", dims: 2 }), /stroke="#ff7f00" stroke-width="3"\/><polyline[^>]*stroke="#fff" stroke-width="1"/);
+  assert.match(cable({ array: "number" }), /stroke="#ff7f00" stroke-width="2"/);
 });
 
 // array-2d/indexarray-2d-node-icon.png, indexarray-2d-wired-array-only.png: with a 2D array wired, Index Array is

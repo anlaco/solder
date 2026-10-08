@@ -27,6 +27,7 @@
 //   aviso      why the last action could not be done (spec/05 rule 31)
 
 import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, extremos, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
+import * as CP from "../front-panel/connector-pane.mjs";
 import * as Et from "../common/labels.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { DBL, NUMERICOS, POR_ABREVIATURA, convertirValor, esArray, esEntero, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
@@ -858,6 +859,8 @@ export const sobreMenu = (d, id, conSubmenu) => {
  */
 export function orden(d, id, ctx) {
   if (!d.menu) return d;
+  // The connector pane's menu belongs to the panel's state and changes the VI's connector.
+  if (id.startsWith(`${CP.MENU_ROOT}.`)) return CP.runMenuCommand(d, id);
   const { nodo, puerto } = d.menu;
   const cerrar = (g) => ({ ...d, g, menu: null });
   const ultimo = id.slice(id.lastIndexOf(".") + 1);
@@ -949,6 +952,7 @@ function arrayVariants(n, root) {
  * Default» si el marco que se ve lo es. El terminal selector, Boolean o Numeric Palette.
  */
 export function variantes(d) {
+  if (CP.hasConnectorMenu(d)) return CP.menuVariants(d);
   const n = d.menu && d.g.nodos.find((k) => k.id === d.menu.nodo);
   const r = d.menu?.raiz;
   const fila = (...ids) => new Set(ids.map((i) => `${r}.${i}`));
@@ -979,6 +983,7 @@ export function variantes(d) {
 
 /** Qué filas del menú llevan la marca: Terminals si el nodo los enseña, el modo actual, Invert si lo está, la representación de un número. */
 export function marcados(d) {
+  if (CP.hasConnectorMenu(d)) return CP.menuMarks(d);
   const n = d.menu && d.g.nodos.find((k) => k.id === d.menu.nodo);
   if (!n) return new Set();
   const r = d.menu.raiz;

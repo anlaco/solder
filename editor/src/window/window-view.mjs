@@ -216,8 +216,9 @@ function elementoBarra(inv, e, sitio, extra) {
 /**
  * Pinta una ventana entera. `extra`: `lienzo`, lo que va dentro del lienzo (el
  * diagrama); `encima`, lo que va sobre todo (un menú de clic derecho);
- * `runRoto`, si el VI no se puede ejecutar; `ejecutando`, si corre (modo Run), y
- * `editandoTexto`.
+ * `runRoto`, si el VI no se puede ejecutar; `ejecutando`, si corre (modo Run),
+ * `editandoTexto`, `conectorGlifo`, the connector pane drawn with its assigned cells,
+ * `numeroVI`, the number on the VI's icon, and `propiedades`, the VI Properties dialog.
  */
 export function ventana(inv, nombre, estado, extra = {}) {
   const { lienzo = "", encima = "" } = extra;
@@ -238,10 +239,10 @@ export function ventana(inv, nombre, estado, extra = {}) {
   const iconos = [];
   let x = 1.3;
   if (nombre === "front-panel") {
-    iconos.push(icono(inv, `${pre}.connector-pane`, x, G.CONNECTOR_PANE));
+    iconos.push(icono(inv, `${pre}.connector-pane`, x, extra.conectorGlifo ?? G.CONNECTOR_PANE));
     x += M.pasoIcono;
   }
-  iconos.push(icono(inv, `${pre}.icon`, x, G.ICONO_VI));
+  iconos.push(icono(inv, `${pre}.icon`, x, G.iconoVI(extra.numeroVI)));
 
   const instancia = inv.entrada(`${pre}.application-instance`);
   const estadoHTML = instancia
@@ -260,6 +261,7 @@ export function ventana(inv, nombre, estado, extra = {}) {
   <div class="canalon" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};width:${px(M.anchoCanalon)}"></div>
   <div class="barra-estado" style="height:${px(M.altoEstado)}">${estadoHTML}</div>
   ${estado.paleta ? paleta(inv, estado.paleta) + subpaletas(inv, estado.paleta) : ""}
+  ${extra.propiedades ?? ""}
   ${encima}
   ${estado.abierta ? explicacionFlotante(inv, estado.abierta) : ""}
   ${extra.dialogo ? dialogoError(extra.dialogo) : ""}

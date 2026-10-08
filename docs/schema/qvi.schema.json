@@ -51,13 +51,23 @@
     },
 
     "connector": {
-      "description": "Parámetros del VI cuando se usa como sub-VI. Su presencia habilita ese uso.",
+      "description": "Parámetros del VI cuando se usa como sub-VI. Su presencia habilita ese uso. Each terminal is the name of a panel element or `{ name, cell, connection }`: the cell of the pattern it occupies and whether it is Required, Recommended (the default, as in LabVIEW) or Optional; an output cannot be Required (DT-045, measured in LabVIEW 2026 Q3).",
       "type": "object",
       "required": ["inputs", "outputs"],
       "additionalProperties": false,
       "properties": {
-        "inputs": { "type": "array", "items": { "$ref": "#/$defs/name" } },
-        "outputs": { "type": "array", "items": { "$ref": "#/$defs/name" } }
+        "pattern": { "description": "The connector pattern; only LabVIEW's default, 4-2-2-4, for now. Its 12 cells are numbered by columns, left to right and top to bottom: 0-3 the left column, 4-5 and 6-7 the middle ones, 8-11 the right one.", "enum": ["4-2-2-4"] },
+        "inputs": { "type": "array", "items": { "$ref": "#/$defs/connectorTerminal" } },
+        "outputs": { "type": "array", "items": { "$ref": "#/$defs/connectorTerminal" } }
+      }
+    },
+
+    "execution": {
+      "description": "VI Properties ▸ Execution. Without it, non-reentrant, as a new VI in LabVIEW (DT-045).",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reentrancy": { "enum": ["non-reentrant", "preallocated"] }
       }
     },
 
@@ -114,6 +124,22 @@
       "description": "Referencia a un puerto concreto, en la forma nombre.puerto",
       "type": "string",
       "pattern": "^[A-Za-z_][A-Za-z0-9_-]*\\.[A-Za-z_][A-Za-z0-9_-]*$"
+    },
+
+    "connectorTerminal": {
+      "oneOf": [
+        { "$ref": "#/$defs/name" },
+        {
+          "type": "object",
+          "required": ["name"],
+          "additionalProperties": false,
+          "properties": {
+            "name": { "$ref": "#/$defs/name" },
+            "cell": { "type": "integer", "minimum": 0, "maximum": 11 },
+            "connection": { "enum": ["required", "recommended", "optional"] }
+          }
+        }
+      ]
     },
 
     "dataType": {

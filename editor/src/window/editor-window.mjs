@@ -9,30 +9,46 @@
 //
 // The two windows are two views of the same VI (spec/05 §7): each one holds a
 // copy of the graph and, every time its own comes to rest, sends it to the other
-// over a BroadcastChannel. So a control placed on the panel appears on the
-// diagram, and a terminal deleted on the diagram disappears from the panel.
+// over a BroadcastChannel (one per VI, as several VIs can be open: DT-045). So a
+// control placed on the panel appears on the diagram, and a terminal deleted on
+// the diagram disappears from the panel.
+//
+// A VI is loaded with the subVIs it calls: the main process reads their files
+// and hierarchy-client.mjs turns them into the catalog view in which the ports of
+// each `subvi` node come from the connector of the VI it calls. That view
+// replaces the plain catalog everywhere (`cat`).
 
+import * as CP from "../front-panel/connector-pane.mjs";
 import * as D from "../block-diagram/diagram-view.mjs";
 import * as ED from "../block-diagram/diagram-editing.mjs";
 import * as E from "./window-state.mjs";
 import * as G from "../common/glyphs.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import * as H from "../block-diagram/undo-history.mjs";
-import { cargarInventario, esHueco } from "../common/labview-inventory.mjs";
+import { cargarInventario, esHueco, ultimo } from "../common/labview-inventory.mjs";
 import { addressFromText } from "../common/array-grid.mjs";
 import * as P from "../front-panel/front-panel.mjs";
+import * as Paths from "../common/vi-paths.mjs";
 import * as Q from "../../../core/model/qvi-format.mjs";
-import { compilar } from "../../../core/compiler/compiler.mjs";
+import * as SN from "../block-diagram/subvi-nodes.mjs";
+import * as VP from "./vi-properties.mjs";
 import * as V from "./window-view.mjs";
+import { buildHierarchy } from "./hierarchy-client.mjs";
+import { compilar } from "../../../core/compiler/compiler.mjs";
+import { pruneConnector } from "../../../core/model/connector.mjs";
 
 const nombre = new URLSearchParams(location.search).get("ventana") ?? "front-panel";
 const prefijo = `window.${nombre}`;
 document.title = V.TITULOS[nombre];
 
-const [inv, cat] = await Promise.all([
+const [inv, baseCatalog] = await Promise.all([
   fetch("/inventario.json").then((r) => r.json()).then(cargarInventario),
   fetch("/blocks.json").then((r) => r.json()).then(Gr.cargarCatalogo),
 ]);
+/** The VI these windows show, as the main process knows it (without it, as in a plain browser, a new VI). */
+const viInfo = (await window.solder?.iniciar()) ?? { id: "0", text: null, key: Paths.untitledKey(0), name: "Untitled 1", untitledNumber: 1 };
+/** The catalog of this VI: the blocks, and for each subVI node the connector of the VI it calls. */
+let cat = baseCatalog;
 const glifos = D.glifosPorBloque(inv);
 /** El Block Diagram edita el diagrama; el Front Panel, el panel. */
 const conDiagrama = nombre === "block-diagram";
@@ -60,7 +76,7 @@ const medirMenu = (() => {
     return lienzo.measureText(t).width;
   };
 })();
-const ctx = D.contexto(cat, glifos, separador, medirMenu);
+let ctx = D.contexto(cat, glifos, separador, medirMenu);
 
 // Los cursores de la herramienta automática de LabVIEW.
 for (const [clave, c] of Object.entries(G.CURSORES)) {
@@ -75,23 +91,87 @@ let historial = H.nuevo(dia.g);
 /** El grafo de esta ventana. */
 const grafo = () => (conDiagrama ? dia.g : pan.g);
 
-// ——— Las dos ventanas, un solo VI ———
+// ——— The two windows, one VI ———
 
-const canal = new BroadcastChannel("solder-vi");
-/** El último grafo que se mandó a la otra ventana o que llegó de ella. */
+const canal = new BroadcastChannel(`solder-vi-${viInfo.id}`);
+/** The last graph that was sent to the other window or came from it. */
 let publicado = dia.g;
+/** The window answers the other one only once it has loaded its VI: before that, its graph is an empty one. */
+let listo = false;
 
 /**
- * El grafo ha quedado quieto —sin nada a medias ni texto a medio escribir—:
- * el paso se guarda para deshacerlo y la otra ventana lo recibe.
+ * The graph has come to rest —nothing half done, no text half written—: the
+ * step is kept to undo it and the other window receives it, with the subVI
+ * texts it needs to understand it.
  */
 function quieto(g) {
   historial = H.registrar(historial, g);
   if (g === publicado) return;
   publicado = g;
-  canal.postMessage({ g });
+  canal.postMessage({ g, subVITexts });
   avisar(g);
 }
+
+// ——— The hierarchy: the subVIs of this VI ———
+//
+// A VI is compiled and drawn with the connectors of the VIs it calls. The main
+// process reads their files from disk; a subVI that is saved while its callers
+// are open reaches them through `vi:saved` (alGuardarOtroVI).
+
+/** The path this VI is saved at, or the key of an untitled one (see common/vi-paths.mjs). */
+let viKey = viInfo.key;
+/** The text of every other VI of the hierarchy, by absolute path. */
+let subVITexts = {};
+/** Why the hierarchy cannot be compiled: a subVI that cannot be found, a recursive call… */
+let hierarchyErrors = [];
+/** The keys of the subVIs this VI reaches. */
+let hierarchyKeys = [];
+
+/**
+ * Builds the catalog view of this VI over `g` and the subVI texts held now, and
+ * returns `g` without the wires to ports a subVI no longer has.
+ */
+function rebuildHierarchy(g) {
+  const result = buildHierarchy({ rootKey: viKey, rootGraph: g, texts: subVITexts, baseCatalog, readVI: Q.leer });
+  cat = result.catalog;
+  ctx = D.contexto(cat, glifos, separador, medirMenu);
+  hierarchyErrors = result.errors;
+  hierarchyKeys = result.keys;
+  return SN.pruneOrphanWires(g, cat);
+}
+
+/** Puts a graph in this window's view, without it counting as an edit. */
+function ponerGrafo(g) {
+  if (conDiagrama) dia = { ...dia, g };
+  else pan = { ...pan, g };
+  publicado = g;
+}
+
+/** Reads the subVI files again and redraws: a subVI was saved, or a Run is about to start. */
+async function refrescarJerarquia() {
+  const { texts } = await window.solder.textosDeSubVIs(Q.aTexto(grafo(), cat));
+  subVITexts = texts;
+  ponerGrafo(rebuildHierarchy(grafo()));
+  pintar();
+}
+
+/** Does this graph have a subVI node whose callee this window does not know yet? */
+const faltaSubVI = (g) => g.nodos.some((n) => SN.isSubVI(n) && !cat.findSubVI?.(n.config?.vi));
+
+/** Some VI was saved, here or elsewhere (preload `alGuardar`). */
+function alGuardarOtroVI({ id, key }) {
+  if (id !== viInfo.id) {
+    if (hierarchyKeys.includes(key)) refrescarJerarquia();
+    return;
+  }
+  // This VI was saved, maybe for the first time or somewhere else: its subVI paths are now relative to the new file.
+  if (key === viKey) return;
+  const old = viKey;
+  viKey = key;
+  ponerGrafo(rebuildHierarchy(Paths.rebaseGraph(grafo(), old, key)));
+  pintar();
+}
+window.solder?.alGuardar(alGuardarOtroVI);
 
 // ——— Save and open (core/model/qvi-format.mjs) ———
 //
@@ -99,23 +179,23 @@ function quieto(g) {
 // and the asterisk in the title belong to the main process
 // (electron/main.mjs), which receives every change to know if anything is unsaved.
 
-/** El VI ha cambiado: el proceso principal compara con lo guardado. */
+/** The VI has changed: the main process compares it with what was saved. */
 const avisar = (g) => window.solder?.cambio(Q.aTexto(g, cat));
 
-/** Lo que se está escribiendo se confirma antes de guardar, como con Enter Text. */
+/** What is being typed is confirmed before saving, as with Enter Text. */
 function confirmarEscritura() {
   if (conDiagrama && dia.edicion) cambiarDiagrama(ED.confirmar(dia, ctx));
   if (conPanel && pan.edicion) cambiarPanel(P.confirmar(pan));
 }
 
-/** File ▸ Save y Save As. */
+/** File ▸ Save and Save As. */
 async function guardarVI(como) {
   if (!window.solder) return;
   confirmarEscritura();
   await window.solder.guardar(Q.aTexto(grafo(), cat), como);
 }
 
-/** Un VI recién abierto: empieza sin historia y sin nada seleccionado. */
+/** A VI just opened or created: it starts with no history and nothing selected. */
 function cargar(g) {
   publicado = g;
   historial = H.nuevo(g);
@@ -125,19 +205,25 @@ function cargar(g) {
   avisar(g);
 }
 
-/** File ▸ Open: el VI se lee aquí y se manda a la otra ventana. */
-async function abrirVI() {
-  const r = await window.solder?.abrir();
-  if (!r) return;
-  let g;
+/** Loads the VI the main process gave this window: its subVIs first, so that its wires find their ports. */
+async function cargarTexto(text) {
+  const { texts } = await window.solder.textosDeSubVIs(text);
+  subVITexts = texts;
   try {
-    g = Q.leer(r.texto, cat);
+    const result = buildHierarchy({ rootKey: viKey, rootText: text, texts, baseCatalog, readVI: Q.leer });
+    cat = result.catalog;
+    ctx = D.contexto(cat, glifos, separador, medirMenu);
+    hierarchyErrors = result.errors;
+    hierarchyKeys = result.keys;
+    cargar(result.graph);
   } catch (e) {
-    return window.solder.error(e.message);
+    window.solder.error(e.message);
+    window.solder.cerrar();
   }
-  cargar(g);
-  canal.postMessage({ g, nuevo: true });
 }
+
+/** File ▸ Open: another VI, in its own windows (or those it already has). */
+const abrirVI = () => window.solder?.abrir();
 
 // ——— Run ———
 //
@@ -151,6 +237,8 @@ async function abrirVI() {
 // like LabVIEW's error list.
 
 let trabajador = null;
+/** The VI Properties dialog while it is open (vi-properties.mjs), or `null`. */
+let propiedades = null;
 /** El VI corre (en cualquiera de las dos ventanas): las dos están en modo Run. */
 let ejecutando = false;
 /** Esta ventana lanzó el Run: el worker es suyo. */
@@ -237,16 +325,20 @@ function acabar(data) {
   lanzado = false;
   canal.postMessage({ ejecutando: false });
   modoRun(false);
-  if (data.error) window.solder?.avisar("El VI se detuvo con un error.", data.error);
+  if (data.error) window.solder?.avisar("The VI stopped with an error.", data.error);
 }
 
 async function ejecutarVI() {
   // Run con el VI corriendo no hace nada, como en LabVIEW.
   if (ejecutando) return;
   confirmarEscritura();
+  // The subVIs may have been saved since this VI was opened: Run compiles what is on disk now.
+  await refrescarJerarquia();
+  if (ejecutando) return;
   const g = grafo();
+  if (hierarchyErrors.length) return window.solder?.avisar("The VI cannot run.", hierarchyErrors.join("\n"));
   const c = compilar(g, cat);
-  if (c.errores) return window.solder?.avisar("El VI no se puede ejecutar.", c.errores.map((e) => e.motivo).join("\n"));
+  if (c.errores) return window.solder?.avisar("The VI cannot run.", c.errores.map((e) => e.motivo).join("\n"));
   if (!trabajador) {
     trabajador = new Worker(new URL("./run-worker.mjs", import.meta.url), { type: "module" });
     trabajador.onmessage = ({ data }) => alMensaje(data);
@@ -254,7 +346,7 @@ async function ejecutarVI() {
   lanzado = true;
   canal.postMessage({ ejecutando: true });
   modoRun(true);
-  trabajador.postMessage({ orden: "run", compilado: { bytes: c.bytes, controles: c.controles, indicadores: c.indicadores, clumps: c.clumps, planes: c.planes, automaticos: c.automaticos, disposicionError: c.disposicionError }, valores: valoresDeControles(g), separador });
+  trabajador.postMessage({ orden: "run", clave: viKey, compilado: { bytes: c.bytes, controles: c.controles, indicadores: c.indicadores, clumps: c.clumps, planes: c.planes, automaticos: c.automaticos, disposicionError: c.disposicionError }, valores: valoresDeControles(g), separador });
 }
 
 /**
@@ -274,11 +366,89 @@ function abortar() {
 }
 
 /** Las órdenes hechas del menú File, por el último segmento de su id. */
-const ORDENES_MENU = { save: () => guardarVI(false), "save-as": () => guardarVI(true), open: abrirVI, exit: () => window.solder?.salir() };
+const ORDENES_MENU = { save: () => guardarVI(false), "save-as": () => guardarVI(true), open: abrirVI, exit: () => window.solder?.salir(), "vi-properties": abrirPropiedades };
+
+/** The orders of the context menus (subVI node, connector pane, icon) that act on the window and not on the graph; they receive the node the menu was opened on. */
+const ORDENES_CONTEXTUALES = { "vi-properties": () => abrirPropiedades(), "open-front-panel": (nodeId) => abrirSubVI(nodeId) };
+
+// ——— VI Properties (vi-properties.mjs) ———
+
+function abrirPropiedades() {
+  if (ejecutando || propiedades) return;
+  confirmarEscritura();
+  estado = { ...estado, paleta: null, abierta: null, menuBarra: null };
+  dia = { ...dia, menu: null };
+  pan = { ...pan, menu: null };
+  propiedades = VP.open(grafo());
+  pintar();
+}
+
+/** OK writes the dialog into the VI; Cancel leaves it as it was. */
+function cerrarPropiedades(aceptar) {
+  const dialogo = propiedades;
+  propiedades = null;
+  estado = { ...estado, abierta: null, menuBarra: null };
+  const nuevo = VP.apply(grafo(), dialogo);
+  if (aceptar && JSON.stringify(nuevo.vi) !== JSON.stringify(grafo().vi)) {
+    if (conDiagrama) cambiarDiagrama({ ...dia, g: nuevo });
+    else cambiarPanel({ ...pan, g: nuevo });
+  }
+  pintar();
+}
+
+/** A click inside the dialog: its buttons, the reentrancy options that work and, on what is not done, its explanation. */
+function clicPropiedades(ev) {
+  const elemento = ev.target.closest("[data-id]");
+  if (!elemento) return;
+  const id = elemento.dataset.id;
+  if (id === `${VP.DIALOG_ID}.ok`) return cerrarPropiedades(true);
+  if (id === `${VP.DIALOG_ID}.cancel`) return cerrarPropiedades(false);
+  if (id === VP.CATEGORIES_ID) return cambiar(E.abrirMenuBarra(estado, inv, id, anclaMenu(elemento)));
+  const opcion = VP.REENTRANCY_OPTIONS.find((o) => o.id === id);
+  if (opcion && !esHueco(inv.resolver(id))) {
+    propiedades = VP.choose(propiedades, opcion.value);
+    return pintar();
+  }
+  cambiar(E.clic(estado, inv, id, ancla(elemento)));
+}
+
+// ——— SubVIs: placing one, opening its Front Panel ———
+
+/** Select a VI...: the file dialog, then the VI follows the cursor until a click drops it (labview-captures/subvi/select-a-vi-dialog.png). */
+async function seleccionarVI() {
+  if (!conDiagrama || ejecutando) return;
+  estado = { ...estado, paleta: null, abierta: null };
+  pintar();
+  const absolutePath = await window.solder?.elegirVI();
+  if (!absolutePath) return;
+  const { texts } = await window.solder.textosDeVI(absolutePath);
+  subVITexts = { ...subVITexts, ...texts };
+  const g = rebuildHierarchy(dia.g);
+  dia = ED.coger({ ...dia, g }, "subvi", SN.subVIConfig(Paths.storedPathFor(viKey, absolutePath)));
+  pintar();
+}
+
+/** Opens the windows of the VI that a `subvi` node calls (or brings them forward if they are open). */
+function abrirSubVI(nodeId) {
+  const node = grafo().nodos.find((n) => n.id === nodeId);
+  if (node?.config?.vi) window.solder?.abrirRuta(Paths.resolveRelative(viKey, node.config.vi));
+}
+
+/** The right-click menu of the connector pane (on a cell) or of the icon of the VI. */
+function menuDelIcono(ev, elemento) {
+  const esConector = elemento.dataset.id === `${prefijo}.connector-pane`;
+  const raiz = esConector ? CP.MENU_ROOT : CP.ICON_MENU_ROOT;
+  const celda = esConector ? CP.cellUnderPointer(elemento.getBoundingClientRect(), ev) : null;
+  estado = { ...estado, paleta: null, abierta: null };
+  if (conDiagrama) return cambiarDiagrama(CP.openMenu(dia, raiz, ev.clientX, ev.clientY, celda));
+  cambiarPanel(CP.openMenu(pan, raiz, ev.clientX, ev.clientY, celda));
+}
 
 canal.onmessage = ({ data }) => {
+  // Before this window has loaded its VI, what it holds is not the VI.
+  if (!listo) return;
   // Una ventana que acaba de abrirse pide el VI; la que lo tiene lo manda.
-  if (data.pide) return canal.postMessage({ g: grafo() });
+  if (data.pide) return canal.postMessage({ g: grafo(), subVITexts });
   // Lo que ya se tiene no es un paso nuevo: la respuesta a una ventana recién abierta, por ejemplo.
   if (data.valores) return mostrarValores(data.valores);
   if ("ejecutando" in data) return modoRun(data.ejecutando);
@@ -291,13 +461,18 @@ canal.onmessage = ({ data }) => {
   if (data.abortar) return abortar();
   if (data.nuevo) return cargar(data.g);
   if (!data.g || JSON.stringify(data.g) === JSON.stringify(grafo())) return;
-  publicado = data.g;
-  historial = H.registrar(historial, data.g);
-  if (conDiagrama) dia = ED.recibir(dia, data.g);
-  else pan = P.recibir(pan, data.g);
+  let g = data.g;
+  // The other window may have placed a subVI this one has not read yet: its view of the hierarchy comes first.
+  if (data.subVITexts && (JSON.stringify(data.subVITexts) !== JSON.stringify(subVITexts) || faltaSubVI(g))) {
+    subVITexts = data.subVITexts;
+    g = rebuildHierarchy(g);
+  }
+  publicado = g;
+  historial = H.registrar(historial, g);
+  if (conDiagrama) dia = ED.recibir(dia, g);
+  else pan = P.recibir(pan, g);
   pintar();
 };
-canal.postMessage({ pide: true });
 
 /** Lo que no se activa con un clic: la ventana, el lienzo y el fondo de las paletas. */
 const inerte = (el) => el.dataset.id === prefijo || el.dataset.id === `${prefijo}.workspace` || el.classList.contains("paleta");
@@ -317,18 +492,19 @@ function dentro(el, max) {
 
 function pintar() {
   const resueltos = Gr.tipos(grafo(), cat);
-  const extra = { runRoto: !Gr.ejecutable(grafo(), cat, resueltos), ejecutando, dialogo: dialogoError };
+  const extra = { runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, dialogo: dialogoError, numeroVI: viInfo.untitledNumber ?? undefined, propiedades: propiedades ? VP.view(inv, propiedades) : "" };
   if (conDiagrama) {
     extra.lienzo = D.contenido(dia, ctx, resueltos);
     extra.encima = dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia), medirMenu, ED.variantes(dia)) : "";
     extra.editandoTexto = !!dia.edicion;
   } else {
     extra.lienzo = P.contenido(pan, ctx);
+    extra.conectorGlifo = CP.paneGlyph(pan.g, cat, pan.conector?.celda ?? null);
     extra.encima = pan.menu ? D.menuContextual(inv, pan.menu, ED.marcados(pan), medirMenu, ED.variantes(pan)) : "";
     extra.editandoTexto = !!pan.edicion;
   }
   // El menú de la barra que está abierto, bajo su título.
-  if (estado.menuBarra) extra.encima = (extra.encima ?? "") + D.menuContextual(inv, { raiz: estado.menuBarra.id, x: estado.menuBarra.x, y: estado.menuBarra.y }, new Set(), medirMenu);
+  if (estado.menuBarra) extra.encima = (extra.encima ?? "") + D.menuContextual(inv, { raiz: estado.menuBarra.id, x: estado.menuBarra.x, y: estado.menuBarra.y }, marcasDelMenuBarra(estado.menuBarra.id), medirMenu);
   document.body.innerHTML = V.ventana(inv, nombre, estado, extra);
   const ventana = document.querySelector(".ventana");
   ventana.classList.toggle("cableando", dia.accion?.tipo === "cablear");
@@ -339,11 +515,20 @@ function pintar() {
   if (tip.visible) ponerTip();
 }
 
+/** The check marks of a menu opened from the page and not from the menu bar: the current page of VI Properties. */
+const marcasDelMenuBarra = (id) => new Set(id === VP.CATEGORIES_ID ? [`${VP.CATEGORIES_ID}.execution`] : []);
+
 function cambiar(nuevo) {
   if (nuevo === estado) return;
   estado = nuevo;
   ocultarEmergente();
   pintar();
+}
+
+/** A deleted control or indicator leaves the connector pane too: its terminal goes with it. */
+function sinTerminalesHuerfanos(view) {
+  const g = pruneConnector(view.g, cat);
+  return g === view.g ? view : { ...view, g };
 }
 
 /**
@@ -352,7 +537,7 @@ function cambiar(nuevo) {
  */
 function cambiarDiagrama(nuevo) {
   if (nuevo === dia) return;
-  dia = nuevo;
+  dia = sinTerminalesHuerfanos(nuevo);
   if (!dia.accion && !dia.edicion) quieto(dia.g);
   pintar();
 }
@@ -360,7 +545,7 @@ function cambiarDiagrama(nuevo) {
 /** Cambiar el panel. Como el diagrama: el paso se guarda cuando queda quieto. */
 function cambiarPanel(nuevo) {
   if (nuevo === pan) return;
-  pan = nuevo;
+  pan = sinTerminalesHuerfanos(nuevo);
   if (!pan.accion && !pan.edicion) quieto(pan.g);
   mandarControles(pan.g);
   pintar();
@@ -445,6 +630,8 @@ addEventListener("mousedown", (ev) => {
   if (ev.button !== 0) return;
   // Un diálogo de error es modal: sólo responden sus botones.
   if (document.querySelector(".modal-error")) return;
+  // VI Properties is modal too: its buttons answer to the click event.
+  if (propiedades && !estado.menuBarra) return;
   // Con un menú de la barra abierto, pulsar fuera de él y de los títulos lo cierra.
   if (estado.menuBarra && !ev.target.closest(".menu-contextual, .menu")) return cambiar({ ...estado, menuBarra: null });
   if (estado.menuBarra) return;
@@ -479,6 +666,12 @@ addEventListener("mousedown", (ev) => {
     if (enPaleta && (enExplicacion || !estado.abierta)) return;
     return cambiar(E.clicFuera(estado, { enPaleta, enExplicacion }));
   }
+  // A click on a cell of the connector pane selects it, to give it a control or an indicator next.
+  const panelConector = conPanel && ev.target.closest(`[data-id="${prefijo}.connector-pane"]`);
+  if (panelConector) {
+    ev.preventDefault();
+    return cambiarPanel(CP.selectCell(pan, CP.cellUnderPointer(panelConector.getBoundingClientRect(), ev)));
+  }
   if (conPanel) return pulsarPanel(ev);
   const sobreDiagrama = objetivo(ev.target);
   if (!sobreDiagrama) {
@@ -493,6 +686,8 @@ addEventListener("mousedown", (ev) => {
   if (ev.detail >= 2 && sobreDiagrama.tipo === "etiqueta") return cambiarDiagrama(ED.editarEtiqueta(dia, sobreDiagrama.id));
   // Un doble clic en el texto del selector de marcos de un Case escribe en él.
   if (ev.detail >= 2 && sobreDiagrama.tipo === "marco" && sobreDiagrama.zona === "texto") return cambiarDiagrama(ED.editarMarco(dia, sobreDiagrama.nodo));
+  // A double click on a subVI opens its Front Panel.
+  if (ev.detail >= 2 && sobreDiagrama.tipo === "nodo" && SN.isSubVI(dia.g.nodos.find((n) => n.id === sobreDiagrama.id))) return abrirSubVI(sobreDiagrama.id);
   const id = ev.detail >= 2 && nodoDe(sobreDiagrama);
   if (id && (D.CONSTANTES[dia.g.nodos.find((n) => n.id === id)?.tipo]?.editable || dia.g.nodos.find((n) => n.id === id)?.tipo === "expression-node")) return cambiarDiagrama(ED.editar(dia, ctx, id, sobreDiagrama.campo));
   cambiarDiagrama(ED.pulsar(dia, ctx, sobreDiagrama, punto(ev), ev.shiftKey));
@@ -546,6 +741,9 @@ function accionar(n, cuando, antes) {
   if (nuevo !== v) cambiarPanel({ ...pan, g: Gr.fijarValor(pan.g, n.id, nuevo) });
 }
 
+/** What can be clicked on a panel object to give it a cell of the connector pane. */
+const CONECTABLES = ["objeto", "casilla", "campo", "elem", "paso", "asa-array"];
+
 /** Pulsar en el panel: como en el diagrama, un doble clic en una etiqueta escribe en ella. */
 function pulsarPanel(ev) {
   const sobre = objetivoPanel(ev.target);
@@ -556,6 +754,8 @@ function pulsarPanel(ev) {
     return;
   }
   ev.preventDefault();
+  // A cell of the connector pane is waiting for a control or an indicator: this click gives it one.
+  if (pan.conector) return cambiarPanel(CP.assignClicked(pan, cat, CONECTABLES.includes(sobre.tipo) ? sobre.id : null));
   if (ev.detail >= 2 && sobre.tipo === "etiqueta") return cambiarPanel(P.editar(pan, sobre.id));
   // Doble clic en la casilla de un control: todo el valor seleccionado.
   if (ev.detail >= 2 && sobre.tipo === "casilla" && pan.edicion?.valor) return cambiarPanel(P.editarValor(pan, ctx, sobre.id, true));
@@ -606,6 +806,7 @@ addEventListener("click", (ev) => {
   if (boton) return responderDialogo(boton.dataset.boton);
   if (ev.target.closest(".modal-error")) return;
   if (ev.target.closest(".explicacion")) return;
+  if (propiedades && !ev.target.closest(".menu-contextual")) return clicPropiedades(ev);
   // Una fila del menú de la barra: lo hecho se hace; un hueco, se explica.
   const filaBarra = estado.menuBarra && ev.target.closest(".item-menu");
   if (filaBarra) {
@@ -627,7 +828,16 @@ addEventListener("click", (ev) => {
     const [actual, cambiarActual] = conDiagrama ? [dia, cambiarDiagrama] : [pan, cambiarPanel];
     if (inv.tieneContenido(id)) return cambiarActual(ED.sobreMenu(actual, id, true));
     const e = inv.resolver(id);
-    if (!esHueco(e)) return cambiarActual(ED.orden(actual, id, ctx));
+    if (!esHueco(e)) {
+      // A row greyed by the context (no terminal under the cursor) does nothing.
+      if (fila.classList.contains("desactivado")) return;
+      const orden = ORDENES_CONTEXTUALES[ultimo(id)];
+      if (orden) {
+        cambiarActual({ ...actual, menu: null });
+        return orden(actual.menu.nodo);
+      }
+      return cambiarActual(ED.orden(actual, id, ctx));
+    }
     const donde = ancla(fila);
     if (conDiagrama) dia = { ...dia, menu: null };
     else pan = { ...pan, menu: null };
@@ -638,6 +848,7 @@ addEventListener("click", (ev) => {
   // La flecha de Run, hecha: ejecuta el VI; rota, dice por qué no se puede.
   if (el.dataset.id === `${prefijo}.toolbar.run` && !esHueco(inv.resolver(el.dataset.id))) return ejecutarVI();
   if (el.dataset.id === `${prefijo}.toolbar.abort-execution`) return abortar();
+  if (el.dataset.id === "palette.functions.select-a-vi" && !esHueco(inv.resolver(el.dataset.id))) return seleccionarVI();
   const donde = abreSubpaleta(el) ? V.anclaSubpaleta(el.getBoundingClientRect()) : el.classList.contains("menu") ? anclaMenu(el) : ancla(el);
   cambiar(E.clic(estado, inv, el.dataset.id, donde, nivelDe(el)));
 });
@@ -645,7 +856,10 @@ addEventListener("click", (ev) => {
 addEventListener("contextmenu", (ev) => {
   ev.preventDefault();
   // En modo Run, LabVIEW da otro menú (el de ejecución), sin capturar todavía.
-  if (ejecutando) return;
+  if (ejecutando || propiedades) return;
+  // The connector pane and the icon have menus of their own.
+  const iconoVI = ev.target.closest(".icono-vi");
+  if (iconoVI) return menuDelIcono(ev, iconoVI);
   if (!ev.target.closest(".lienzo")) return;
   // En el panel, la paleta sale sobre el fondo y, sobre un control booleano,
   // su menú. El de los numéricos aún no está capturado: sobre ellos, el clic
@@ -685,6 +899,13 @@ addEventListener("keydown", (ev) => {
     if (ev.key === "Enter") responderDialogo(dialogoError.pregunta === "error-automatico" ? "continuar" : "ok");
     return ev.preventDefault();
   }
+  // VI Properties: Esc cancels (or closes what is open over it) and Enter accepts.
+  if (propiedades) {
+    ev.preventDefault();
+    if (ev.key === "Escape") return estado.abierta || estado.menuBarra ? cambiar(E.escape(estado)) : cerrarPropiedades(false);
+    if (ev.key === "Enter") cerrarPropiedades(true);
+    return;
+  }
   // Ctrl+Intro confirma lo escrito en el source de un control de error (labview-captures/errores/35.png).
   if (conPanel && pan.edicion?.campo === "source" && ctrl && ev.key === "Enter") {
     ev.preventDefault();
@@ -692,7 +913,7 @@ addEventListener("keydown", (ev) => {
   }
   // File ▸ Save, Open y Exit, con los atajos de LabVIEW.
   if (ctrl && !ev.shiftKey && !ev.altKey) {
-    const orden = { s: "save", o: "open", q: "exit" }[ev.key.toLowerCase()];
+    const orden = { s: "save", o: "open", q: "exit", i: "vi-properties" }[ev.key.toLowerCase()];
     if (orden) {
       ev.preventDefault();
       return ORDENES_MENU[orden]();
@@ -811,7 +1032,8 @@ addEventListener("mouseover", (ev) => {
     cambiar(E.cerrarSubpaletas(estado, nivel));
     el = sobre = document.querySelector(`[data-id="${CSS.escape(id)}"]`);
   }
-  if (!el || inerte(el) || ev.target.closest(".explicacion") || el.closest(".menu-contextual")) return;
+  // The rows of a right-click menu are explained by clicking them, except the nameless thumbnails of the connector patterns: hovering one says why it is greyed.
+  if (!el || inerte(el) || ev.target.closest(".explicacion") || (el.closest(".menu-contextual") && !el.classList.contains("celda-patron"))) return;
   const e = inv.resolver(el.dataset.id);
   if (!e || !esHueco(e)) return;
   temporizador = setTimeout(() => {
@@ -864,5 +1086,9 @@ function mostrarTip(ev) {
   }, 150);
 }
 
+// Everything above is declared: now the VI is loaded and the window starts to talk to the other one.
+if (viInfo.text) await cargarTexto(viInfo.text);
 pintar();
 avisar(grafo());
+listo = true;
+canal.postMessage({ pide: true });

@@ -228,7 +228,7 @@
       "desc": "Controles que incrustan componentes de la plataforma, como .NET y ActiveX en Windows. Sin decidir si Solder tendrá un equivalente"
     },
     "varios-vis": {
-      "desc": "Tener varios VIs abiertos a la vez: crearlos, cerrarlos y guardarlos todos. Hoy el editor abre un solo VI"
+      "desc": "Crear VIs nuevos y cerrarlos o guardarlos todos a la vez. El editor ya tiene varios VIs abiertos (DT-045), pero sólo se abren con Open o como subVIs"
     },
     "versiones-del-formato": {
       "desc": "Guardar un VI en una versión anterior del formato .qvi. Hoy sólo existe la 1"
@@ -243,8 +243,20 @@
       "desc": "La lista de los VIs y proyectos abiertos hace poco"
     },
     "sub-vis": {
-      "desc": "Usar un VI como subVI: su connector pane y su llamada compilada",
-      "ref": "reference/history/00-provisional-plan.md §7, fase R6"
+      "desc": "Los VIs de las librerías de LabVIEW que se usan como subVIs (los que trae la paleta). Usar un VI propio como subVI ya está hecho (DT-045)",
+      "ref": "design/05-decisions.md DT-045"
+    },
+    "patrones-del-connector": {
+      "desc": "Los otros 35 patrones del connector pane y las órdenes que cambian el patrón: Add y Remove Terminal, Rotate y Flip",
+      "ref": "spec/05-editor.md §12"
+    },
+    "clones-compartidos": {
+      "desc": "Reentrancia con clones compartidos, que necesita la recursión, y el inlining de un subVI",
+      "ref": "design/05-decisions.md DT-045 §4"
+    },
+    "jerarquia-de-vis": {
+      "desc": "Lo que LabVIEW sabe de los VIs que se llaman entre sí: Find All Instances, Show VI Hierarchy, Relink To SubVI y el resto de las órdenes de un nodo subVI",
+      "ref": "spec/05-editor.md §12"
     },
     "acciones-mecanicas": {
       "desc": "Las cinco acciones mecánicas que faltan (Switch When Released, Switch Until Released y los tres Latch): cuándo cambia un control booleano y cuándo vuelve solo. Los Latch dependen de cómo se ejecuta un VI mientras corre",
@@ -787,9 +799,8 @@
       {
         "id": "window.front-panel.menu.file.vi-properties",
         "etiqueta": "VI Properties",
-        "estado": "todo",
-        "labview": "Abre las propiedades del VI: su descripción, su aspecto de ventana, su ejecución y más.",
-        "necesita": "propiedades-del-vi",
+        "estado": "built",
+        "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
         "atajo": "Ctrl+I",
         "captura": "front-panel/menu-file.png",
         "separado": true
@@ -992,17 +1003,15 @@
     {
       "id": "window.front-panel.connector-pane",
       "etiqueta": "Connector Pane",
-      "estado": "todo",
-      "labview": "Asigna controles e indicadores a los terminales con que el VI se usa como subVI.",
-      "necesita": "sub-vis",
+      "estado": "built",
+      "prueba": "test/editor/connector-pane.test.mjs::assigning_a_control_and_an_indicator_to_cells_writes_the_connector_with_its_pattern_cells_and_connections",
       "captura": "front-panel/vi-nuevo.png"
     },
     {
       "id": "window.front-panel.icon",
       "etiqueta": "Icon",
-      "estado": "todo",
-      "labview": "El icono del VI, que lo representa cuando se usa como subVI. Se edita con un doble clic.",
-      "necesita": "icono-del-vi",
+      "estado": "built",
+      "prueba": "test/editor/connector-pane.test.mjs::the_menus_of_the_connector_pane_and_of_the_icon_are_declared_in_the_order_of_LabVIEW",
       "captura": "front-panel/vi-nuevo.png"
     },
     {
@@ -1181,9 +1190,8 @@
       {
         "id": "window.block-diagram.menu.file.vi-properties",
         "etiqueta": "VI Properties",
-        "estado": "todo",
-        "labview": "Abre las propiedades del VI: su descripción, su aspecto de ventana, su ejecución y más.",
-        "necesita": "propiedades-del-vi",
+        "estado": "built",
+        "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
         "atajo": "Ctrl+I",
         "captura": "block-diagram/menu-file.png",
         "separado": true
@@ -1428,9 +1436,8 @@
     {
       "id": "window.block-diagram.icon",
       "etiqueta": "Icon",
-      "estado": "todo",
-      "labview": "El icono del VI, que lo representa cuando se usa como subVI. Se edita con un doble clic.",
-      "necesita": "icono-del-vi",
+      "estado": "built",
+      "prueba": "test/editor/connector-pane.test.mjs::the_menus_of_the_connector_pane_and_of_the_icon_are_declared_in_the_order_of_LabVIEW",
       "captura": "block-diagram/vi-nuevo.png"
     },
     {
@@ -4169,9 +4176,8 @@
     {
       "id": "palette.functions.select-a-vi",
       "etiqueta": "Select a VI...",
-      "estado": "todo",
-      "labview": "Abre un diálogo para elegir un VI del disco y ponerlo en el diagrama como subVI.",
-      "necesita": "sub-vis",
+      "estado": "built",
+      "prueba": "test/editor/subvi-nodes.test.mjs::Select_a_VI_places_a_subVI_node_and_stores_its_path_relative_to_the_caller",
       "captura": "paletas/functions-programming.png"
     },
     {
@@ -8986,6 +8992,908 @@
       "labview": "Añade una tercera dimensión (y las siguientes) a un array de dos: LabVIEW no pone límite.",
       "necesita": "arrays-mas-de-2d",
       "captura": "array-2d/constant-2d-menu-index.png"
+    },
+    {
+      "id": "context.connector-pane",
+      "etiqueta": "Connector Pane",
+      "estado": "built",
+      "prueba": "test/editor/connector-pane.test.mjs::the_menus_of_the_connector_pane_and_of_the_icon_are_declared_in_the_order_of_LabVIEW",
+      "captura": "subvi/connector-menu.png"
+    },
+    {
+      "id": "context.connector-pane.vi-properties",
+      "etiqueta": "VI Properties",
+      "estado": "built",
+      "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
+      "captura": "subvi/connector-menu.png"
+    },
+    {
+      "id": "context.connector-pane.set-icon-to-vi-name",
+      "etiqueta": "Set Icon to VI Name",
+      "estado": "todo",
+      "labview": "Writes the name of the VI as the text of its icon.",
+      "necesita": "icono-del-vi",
+      "captura": "subvi/connector-menu.png"
+    },
+    {
+      "id": "context.connector-pane.find-all-instances",
+      "etiqueta": "Find All Instances",
+      "estado": "todo",
+      "labview": "Lists every place where the VI is used as a subVI.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/connector-menu.png"
+    },
+    {
+      "id": "context.connector-pane.add-terminal",
+      "etiqueta": "Add Terminal",
+      "estado": "todo",
+      "labview": "Adds a cell to the connector pane, which changes its pattern.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.connector-pane.remove-terminal",
+      "etiqueta": "Remove Terminal",
+      "estado": "todo",
+      "labview": "Removes a cell from the connector pane, which changes its pattern.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu.png"
+    },
+    {
+      "id": "context.connector-pane.patterns",
+      "etiqueta": "Patterns",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::the_Patterns_row_opens_a_6_by_6_grid_of_36_thumbnails_and_only_4-2-2-4_can_be_chosen",
+      "captura": "subvi/connector-patterns-grid-zoom2x.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-01",
+      "etiqueta": "Pattern 1",
+      "estado": "todo",
+      "labview": "A connector pattern of 1 cell, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-02",
+      "etiqueta": "Pattern 2",
+      "estado": "todo",
+      "labview": "A connector pattern of 3 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-03",
+      "etiqueta": "Pattern 3",
+      "estado": "todo",
+      "labview": "A connector pattern of 4 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-04",
+      "etiqueta": "Pattern 4",
+      "estado": "todo",
+      "labview": "A connector pattern of 2 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-05",
+      "etiqueta": "Pattern 5",
+      "estado": "todo",
+      "labview": "A connector pattern of 3 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-06",
+      "etiqueta": "Pattern 6",
+      "estado": "todo",
+      "labview": "A connector pattern of 4 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-07",
+      "etiqueta": "Pattern 7",
+      "estado": "todo",
+      "labview": "A connector pattern of 4 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-08",
+      "etiqueta": "Pattern 8",
+      "estado": "todo",
+      "labview": "A connector pattern of 4 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-09",
+      "etiqueta": "Pattern 9",
+      "estado": "todo",
+      "labview": "A connector pattern of 5 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-10",
+      "etiqueta": "Pattern 10",
+      "estado": "todo",
+      "labview": "A connector pattern of 5 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-11",
+      "etiqueta": "Pattern 11",
+      "estado": "todo",
+      "labview": "A connector pattern of 6 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-12",
+      "etiqueta": "Pattern 12",
+      "estado": "todo",
+      "labview": "A connector pattern of 6 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-13",
+      "etiqueta": "Pattern 13",
+      "estado": "todo",
+      "labview": "A connector pattern of 5 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-14",
+      "etiqueta": "Pattern 14",
+      "estado": "todo",
+      "labview": "A connector pattern of 6 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-15",
+      "etiqueta": "Pattern 15",
+      "estado": "todo",
+      "labview": "A connector pattern of 7 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-16",
+      "etiqueta": "Pattern 16",
+      "estado": "todo",
+      "labview": "A connector pattern of 8 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-17",
+      "etiqueta": "Pattern 17",
+      "estado": "todo",
+      "labview": "A connector pattern of 6 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-18",
+      "etiqueta": "Pattern 18",
+      "estado": "todo",
+      "labview": "A connector pattern of 6 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-19",
+      "etiqueta": "Pattern 19",
+      "estado": "todo",
+      "labview": "A connector pattern of 7 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-20",
+      "etiqueta": "Pattern 20",
+      "estado": "todo",
+      "labview": "A connector pattern of 7 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-21",
+      "etiqueta": "Pattern 21",
+      "estado": "todo",
+      "labview": "A connector pattern of 8 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-22",
+      "etiqueta": "Pattern 22",
+      "estado": "todo",
+      "labview": "A connector pattern of 8 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-23",
+      "etiqueta": "Pattern 23",
+      "estado": "todo",
+      "labview": "A connector pattern of 9 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-24",
+      "etiqueta": "Pattern 24",
+      "estado": "todo",
+      "labview": "A connector pattern of 9 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-25",
+      "etiqueta": "Pattern 25",
+      "estado": "todo",
+      "labview": "A connector pattern of 10 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-26",
+      "etiqueta": "Pattern 26",
+      "estado": "todo",
+      "labview": "A connector pattern of 10 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-27",
+      "etiqueta": "Pattern 27",
+      "estado": "todo",
+      "labview": "A connector pattern of 11 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-28",
+      "etiqueta": "Pattern 28",
+      "estado": "todo",
+      "labview": "A connector pattern of 7 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-29",
+      "etiqueta": "Pattern 29",
+      "estado": "todo",
+      "labview": "A connector pattern of 8 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-30",
+      "etiqueta": "Pattern 30",
+      "estado": "todo",
+      "labview": "A connector pattern of 9 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-31",
+      "etiqueta": "Pattern 31",
+      "estado": "todo",
+      "labview": "A connector pattern of 10 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-32",
+      "etiqueta": "Pattern 32",
+      "estado": "todo",
+      "labview": "A connector pattern of 11 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-33",
+      "etiqueta": "4-2-2-4",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::the_Patterns_row_opens_a_6_by_6_grid_of_36_thumbnails_and_only_4-2-2-4_can_be_chosen",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-34",
+      "etiqueta": "Pattern 34",
+      "estado": "todo",
+      "labview": "A connector pattern of 16 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-35",
+      "etiqueta": "Pattern 35",
+      "estado": "todo",
+      "labview": "A connector pattern of 20 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.patterns.pattern-36",
+      "etiqueta": "Pattern 36",
+      "estado": "todo",
+      "labview": "A connector pattern of 28 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu-patterns.png"
+    },
+    {
+      "id": "context.connector-pane.rotate-90-degrees",
+      "etiqueta": "Rotate 90 Degrees",
+      "estado": "todo",
+      "labview": "Rotates the pattern of the connector pane, with its terminals.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu.png"
+    },
+    {
+      "id": "context.connector-pane.flip-horizontal",
+      "etiqueta": "Flip Horizontal",
+      "estado": "todo",
+      "labview": "Mirrors the pattern of the connector pane from left to right.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu.png"
+    },
+    {
+      "id": "context.connector-pane.flip-vertical",
+      "etiqueta": "Flip Vertical",
+      "estado": "todo",
+      "labview": "Mirrors the pattern of the connector pane from top to bottom.",
+      "necesita": "patrones-del-connector",
+      "captura": "subvi/connector-menu.png"
+    },
+    {
+      "id": "context.connector-pane.disconnect-all-terminals",
+      "etiqueta": "Disconnect All Terminals",
+      "estado": "built",
+      "prueba": "test/editor/connector-pane.test.mjs::disconnecting_terminals_and_This_Connection_Is_change_the_connector_and_an_output_cannot_be_Required",
+      "captura": "subvi/connector-menu.png"
+    },
+    {
+      "id": "context.connector-pane.disconnect-this-terminal",
+      "etiqueta": "Disconnect This Terminal",
+      "estado": "built",
+      "prueba": "test/editor/connector-pane.test.mjs::disconnecting_terminals_and_This_Connection_Is_change_the_connector_and_an_output_cannot_be_Required",
+      "captura": "subvi/connector-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.connector-pane.this-connection-is",
+      "etiqueta": "This Connection Is",
+      "estado": "built",
+      "prueba": "test/editor/connector-pane.test.mjs::disconnecting_terminals_and_This_Connection_Is_change_the_connector_and_an_output_cannot_be_Required",
+      "captura": "subvi/connector-this-connection-is-submenu-input.png"
+    },
+    {
+      "id": "context.connector-pane.this-connection-is.required",
+      "etiqueta": "Required",
+      "estado": "built",
+      "prueba": "test/editor/connector-pane.test.mjs::disconnecting_terminals_and_This_Connection_Is_change_the_connector_and_an_output_cannot_be_Required",
+      "captura": "subvi/connector-this-connection-is-input-x.png"
+    },
+    {
+      "id": "context.connector-pane.this-connection-is.recommended",
+      "etiqueta": "Recommended",
+      "estado": "built",
+      "prueba": "test/editor/connector-pane.test.mjs::disconnecting_terminals_and_This_Connection_Is_change_the_connector_and_an_output_cannot_be_Required",
+      "captura": "subvi/connector-this-connection-is-input-x.png"
+    },
+    {
+      "id": "context.connector-pane.this-connection-is.optional",
+      "etiqueta": "Optional",
+      "estado": "built",
+      "prueba": "test/editor/connector-pane.test.mjs::disconnecting_terminals_and_This_Connection_Is_change_the_connector_and_an_output_cannot_be_Required",
+      "captura": "subvi/connector-this-connection-is-input-x.png"
+    },
+    {
+      "id": "context.vi-icon",
+      "etiqueta": "VI Icon",
+      "estado": "built",
+      "prueba": "test/editor/connector-pane.test.mjs::the_menus_of_the_connector_pane_and_of_the_icon_are_declared_in_the_order_of_LabVIEW",
+      "captura": "subvi/icon-menu.png"
+    },
+    {
+      "id": "context.vi-icon.vi-properties",
+      "etiqueta": "VI Properties",
+      "estado": "built",
+      "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
+      "captura": "subvi/icon-menu.png"
+    },
+    {
+      "id": "context.vi-icon.edit-icon",
+      "etiqueta": "Edit Icon...",
+      "estado": "todo",
+      "labview": "Opens the icon editor, with its drawing tools, glyphs, layers and text.",
+      "necesita": "icono-del-vi",
+      "captura": "subvi/icon-menu.png"
+    },
+    {
+      "id": "context.vi-icon.set-icon-to-vi-name",
+      "etiqueta": "Set Icon to VI Name",
+      "estado": "todo",
+      "labview": "Writes the name of the VI as the text of its icon.",
+      "necesita": "icono-del-vi",
+      "captura": "subvi/icon-menu.png"
+    },
+    {
+      "id": "context.vi-icon.find-all-instances",
+      "etiqueta": "Find All Instances",
+      "estado": "todo",
+      "labview": "Lists every place where the VI is used as a subVI.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/icon-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.subvi",
+      "etiqueta": "SubVI",
+      "estado": "built",
+      "prueba": "test/editor/subvi-nodes.test.mjs::a_subVI_node_is_drawn_as_a_32_by_32_icon_and_its_menu_is_declared_in_the_order_of_LabVIEW",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.subvi.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Shows or hides the label and the terminals of the node.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.subvi.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the label of the node.",
+      "necesita": "etiquetas",
+      "captura": "subvi/subvi-node-menu-visible-items.png"
+    },
+    {
+      "id": "context.subvi.visible-items.terminals",
+      "etiqueta": "Terminals",
+      "estado": "todo",
+      "labview": "Shows the terminals of the node, each in the colour of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu-visible-items.png"
+    },
+    {
+      "id": "context.subvi.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of the VI. LabVIEW greys it out when the VI has none.",
+      "necesita": "ayuda-contextual",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.subvi.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Looks for examples that use the VI. LabVIEW greys it out when there are none.",
+      "necesita": "ejemplos",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.subvi.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the description and the tip strip of the node.",
+      "necesita": "descripciones",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.subvi.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "todo",
+      "labview": "Puts a breakpoint on the node.",
+      "necesita": "detener-entre-nodos",
+      "captura": "subvi/subvi-node-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.subvi.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates a constant, a control or an indicator wired to a terminal; on the node, all of them at once.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu-create.png",
+      "separado": true
+    },
+    {
+      "id": "context.subvi.create.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Creates a constant wired to the terminal under the cursor; greyed out when there is none.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu-create.png"
+    },
+    {
+      "id": "context.subvi.create.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Creates a control wired to the terminal under the cursor; greyed out when there is none.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu-create.png"
+    },
+    {
+      "id": "context.subvi.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "todo",
+      "labview": "Creates an indicator wired to the terminal under the cursor; greyed out when there is none.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu-create.png"
+    },
+    {
+      "id": "context.subvi.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Creates a channel writer wired to the terminal under the cursor; greyed out when there is none.",
+      "necesita": "canales",
+      "captura": "subvi/subvi-node-menu-create.png"
+    },
+    {
+      "id": "context.subvi.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "todo",
+      "labview": "Creates a control for every input of the node and an indicator for every output, all wired.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu-create.png",
+      "separado": true
+    },
+    {
+      "id": "context.subvi.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "todo",
+      "labview": "Creates a constant for every input of the node, all wired.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu-create.png"
+    },
+    {
+      "id": "context.subvi.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the node with another function or VI, keeping the wires that fit.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.subvi.replace-with-subvi-contents",
+      "etiqueta": "Replace with SubVI Contents...",
+      "estado": "todo",
+      "labview": "Puts the diagram of the subVI in the place of the node.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.subvi.relink-to-subvi",
+      "etiqueta": "Relink To SubVI",
+      "estado": "todo",
+      "labview": "Points the node to another VI file; LabVIEW greys it out when the VI is found.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.subvi.subvi-node-setup",
+      "etiqueta": "SubVI Node Setup...",
+      "estado": "todo",
+      "labview": "Sets what the VI does when the node calls it: open its panel, close it afterwards, suspend.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.subvi.enable-database-access",
+      "etiqueta": "Enable Database Access",
+      "estado": "todo",
+      "labview": "Lets a database tool read the values of the controls of the subVI.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.subvi.call-setup",
+      "etiqueta": "Call Setup...",
+      "estado": "todo",
+      "labview": "Sets how the call is made: the priority and the execution system.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.subvi.find-all-instances",
+      "etiqueta": "Find All Instances",
+      "estado": "todo",
+      "labview": "Lists every place where the VI is used as a subVI.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.subvi.open-front-panel",
+      "etiqueta": "Open Front Panel",
+      "estado": "built",
+      "prueba": "test/editor/vi-paths.test.mjs::Open_Front_Panel_names_the_absolute_file_of_the_subVI_that_a_node_stores_relative_to_its_caller",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.subvi.show-vi-hierarchy",
+      "etiqueta": "Show VI Hierarchy",
+      "estado": "todo",
+      "labview": "Opens the window with the tree of VIs that call and are called.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.subvi.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens a window with the VI and what it holds.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.subvi.view-as-icon",
+      "etiqueta": "View As Icon",
+      "estado": "todo",
+      "labview": "Shows the node as its icon (checked) or expanded into rows, one per terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu-view-as-icon-off.png",
+      "separado": true
+    },
+    {
+      "id": "context.subvi.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the node and joins the wires that entered with the ones that left.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.subvi.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties dialog of the node.",
+      "necesita": "propiedades",
+      "captura": "subvi/subvi-node-menu.png",
+      "separado": true
+    },
+    {
+      "id": "dialog.vi-properties",
+      "etiqueta": "VI Properties",
+      "estado": "built",
+      "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.categories",
+      "etiqueta": "Category",
+      "estado": "built",
+      "prueba": "test/editor/vi-properties.test.mjs::the_dialog_is_drawn_from_the_inventory_with_the_unfinished_settings_greyed_out",
+      "captura": "subvi/vi-properties-category-list.png"
+    },
+    {
+      "id": "dialog.vi-properties.categories.general",
+      "etiqueta": "General",
+      "estado": "todo",
+      "labview": "A page of the VI Properties dialog.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-category-list.png"
+    },
+    {
+      "id": "dialog.vi-properties.categories.memory-usage",
+      "etiqueta": "Memory Usage",
+      "estado": "todo",
+      "labview": "A page of the VI Properties dialog.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-category-list.png"
+    },
+    {
+      "id": "dialog.vi-properties.categories.documentation",
+      "etiqueta": "Documentation",
+      "estado": "todo",
+      "labview": "A page of the VI Properties dialog.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-category-list.png"
+    },
+    {
+      "id": "dialog.vi-properties.categories.revision-history",
+      "etiqueta": "Revision History",
+      "estado": "todo",
+      "labview": "A page of the VI Properties dialog.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-category-list.png"
+    },
+    {
+      "id": "dialog.vi-properties.categories.editor-options",
+      "etiqueta": "Editor Options",
+      "estado": "todo",
+      "labview": "A page of the VI Properties dialog.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-category-list.png"
+    },
+    {
+      "id": "dialog.vi-properties.categories.protection",
+      "etiqueta": "Protection",
+      "estado": "todo",
+      "labview": "A page of the VI Properties dialog.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-category-list.png"
+    },
+    {
+      "id": "dialog.vi-properties.categories.window-appearance",
+      "etiqueta": "Window Appearance",
+      "estado": "todo",
+      "labview": "A page of the VI Properties dialog.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-category-list.png"
+    },
+    {
+      "id": "dialog.vi-properties.categories.window-size",
+      "etiqueta": "Window Size",
+      "estado": "todo",
+      "labview": "A page of the VI Properties dialog.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-category-list.png"
+    },
+    {
+      "id": "dialog.vi-properties.categories.window-run-time-position",
+      "etiqueta": "Window Run-Time Position",
+      "estado": "todo",
+      "labview": "A page of the VI Properties dialog.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-category-list.png"
+    },
+    {
+      "id": "dialog.vi-properties.categories.execution",
+      "etiqueta": "Execution",
+      "estado": "built",
+      "prueba": "test/editor/vi-properties.test.mjs::the_dialog_is_drawn_from_the_inventory_with_the_unfinished_settings_greyed_out",
+      "captura": "subvi/vi-properties-category-list.png"
+    },
+    {
+      "id": "dialog.vi-properties.categories.print-options",
+      "etiqueta": "Print Options",
+      "estado": "todo",
+      "labview": "A page of the VI Properties dialog.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-category-list.png"
+    },
+    {
+      "id": "dialog.vi-properties.execution",
+      "etiqueta": "Execution",
+      "estado": "built",
+      "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.execution.allow-debugging",
+      "etiqueta": "Allow debugging",
+      "estado": "todo",
+      "labview": "Lets breakpoints and probes work in this VI.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.execution.non-reentrant-execution",
+      "etiqueta": "Non-reentrant execution",
+      "estado": "built",
+      "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.execution.shared-clone-reentrant-execution",
+      "etiqueta": "Shared clone reentrant execution",
+      "estado": "todo",
+      "labview": "Each call takes a clone from a pool, which keeps no state between calls.",
+      "necesita": "clones-compartidos",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.execution.preallocated-clone-reentrant-execution",
+      "etiqueta": "Preallocated clone reentrant execution",
+      "estado": "built",
+      "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.execution.inline-subvi-into-calling-vis",
+      "etiqueta": "Inline subVI into calling VIs",
+      "estado": "todo",
+      "labview": "Compiles the VI into its callers, with no call.",
+      "necesita": "clones-compartidos",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.execution.priority",
+      "etiqueta": "Priority",
+      "estado": "todo",
+      "labview": "The priority the VI runs with.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.execution.preferred-execution-system",
+      "etiqueta": "Preferred Execution System",
+      "estado": "todo",
+      "labview": "The execution system the VI prefers to run in.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.execution.enable-automatic-error-handling",
+      "etiqueta": "Enable automatic error handling",
+      "estado": "todo",
+      "labview": "Whether an error that nobody handles opens a dialog. Solder always has it on.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.execution.run-when-opened",
+      "etiqueta": "Run when opened",
+      "estado": "todo",
+      "labview": "Runs the VI as soon as it is opened.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.execution.suspend-when-called",
+      "etiqueta": "Suspend when called",
+      "estado": "todo",
+      "labview": "Pauses the VI before it runs when it is called as a subVI.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.execution.clear-indicators-when-called",
+      "etiqueta": "Clear indicators when called",
+      "estado": "todo",
+      "labview": "Sets the indicators to their default value every time the VI is called.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.execution.auto-handle-menus-at-launch",
+      "etiqueta": "Auto handle menus at launch",
+      "estado": "todo",
+      "labview": "Lets LabVIEW handle the menu of the VI when it opens.",
+      "necesita": "propiedades-del-vi",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.ok",
+      "etiqueta": "OK",
+      "estado": "built",
+      "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.cancel",
+      "etiqueta": "Cancel",
+      "estado": "built",
+      "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
+      "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.vi-properties.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of this dialog.",
+      "necesita": "ayuda-contextual",
+      "captura": "subvi/vi-properties-execution-default.png"
     }
   ]
 }

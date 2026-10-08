@@ -204,6 +204,30 @@ not exist. LabVIEW requires the same.)*
 | `sr.right` | — | At the end of each iteration |
 | `estructura.sr` | After the loop ends | — |
 
+> **Rule 19c — Uninitialized shift register.** A shift register whose initial value is not wired starts
+> each execution of its loop with the value it held when the loop last ended (the type's default the first
+> time), and keeps it while the VI stays loaded: this is LabVIEW's functional global variable (NI, *Reentrancy*;
+> measured with a subVI in `labview-captures/subvi/functional-global-*`). Tested in `test/core/subvis.test.mjs`.
+
+### 5.5 SubVIs (DT-045, 2026-10-03)
+
+A `subvi` node calls another VI; its ports are the connector of that VI (spec/03 Rule 4). Measured in LabVIEW
+2026 Q3 (`labview-captures/subvi/`) and tested in `test/core/subvis.test.mjs`:
+
+> **Rule 19d — SubVI calls.**
+>
+> - The node runs when all its wired inputs have arrived and gives all its outputs when the subVI has finished.
+> - An unwired input takes the default value of the subVI's control (`x` with default 5 and `y` = 3 gives 8).
+> - An unwired **Required** input breaks the caller; outputs cannot be Required. A new terminal is Recommended.
+> - A VI is **non-reentrant** by default: all its callers share one data space, its state survives between
+>   calls and between Runs while the hierarchy stays loaded (two calls to a counter give 1 and 2, and the next
+>   Run 3 and 4), and simultaneous calls wait for each other. With **preallocated clones**, each call site has
+>   its own data space (1 and 1, then 2 and 2). Shared clones are not done yet.
+> - **Recursion**, direct or mutual, is an error: LabVIEW refuses a recursive call in a non-reentrant VI, and the
+>   reentrancy it needs (shared clones) is not done yet.
+> - Unverified: the timing of two parallel calls to a non-reentrant subVI that waits (the capture compared their
+>   timer values, 1000 ms apart, not the total time); here they take turns, as NI documents.
+
 ## 6. Observable behavior in the edge cases
 
 This section exists because **the golden corpus compares displayed values**, and

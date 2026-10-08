@@ -257,6 +257,32 @@ export function planificar(clumps, correr, senal) {
 }
 
 /**
+ * What a VI and its subVIs keep from one Run to the next while they stay loaded
+ * (DT-045, measured in LabVIEW 2026 Q3: a functional global counts 1, 2 in one
+ * Run and 3, 4 in the next). The whole memory —data spaces, uninitialized shift
+ * registers, buffers— is kept and put back into the next instance of the same
+ * module; another module (the VI was edited and recompiled) starts afresh.
+ * `estado` is an object the caller keeps between Runs.
+ */
+function restoreState(estado, bytes, memory) {
+  if (!estado?.memory || !sameBytes(estado.bytes, bytes)) return;
+  const missingPages = (estado.memory.byteLength - memory.buffer.byteLength) / PAGE_BYTES;
+  if (missingPages > 0) memory.grow(missingPages);
+  new Uint8Array(memory.buffer).set(estado.memory);
+}
+
+function saveState(estado, bytes, memory) {
+  if (!estado || !memory) return;
+  estado.bytes = bytes;
+  estado.memory = new Uint8Array(memory.buffer).slice();
+}
+
+const PAGE_BYTES = 65536;
+
+/** Is it the same module? The editor recompiles on every Run, so it is compared by content. */
+const sameBytes = (a, b) => !!a && a.length === b.length && a.every((byte, i) => byte === b[i]);
+
+/**
  * Ejecuta el VI compilado. `valores` da el valor de cada control por su id de
  * nodo, y se lee cada vez que el diagrama lee el control: quien llama puede
  * cambiarlo mientras el VI corre. Devuelve el valor de cada indicador escrito,
@@ -266,6 +292,8 @@ export function planificar(clumps, correr, senal) {
  *   vuelve solo a FALSE (comprobado en LabVIEW con el botón Stop).
  * - `separador`: el separador decimal del sistema, para los números a cadena con
  *   «use system decimal point?» (por defecto, el punto).
+ * - `estado`: an object kept between Runs, through which the VI keeps its
+ *   state while it stays loaded (DT-045).
  * - `senal`: un AbortSignal; el Abort para el VI aunque esté esperando, y la
  *   promesa se rechaza con un error `abortado`.
  */
@@ -575,6 +603,17 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     await planificar(compilado.planes[p], (i) => correrClump(`p${p}c${i}`, compilado.planes[p][i].largo), senal);
     return 0;
   });
+  // A subVI that waits (DT-045): a non-reentrant VI serves one call at a time,
+  // so each call waits for the one before on the same plan, as LabVIEW
+  // serializes simultaneous calls.
+  const busySubVIs = new Map(); // plan → promise of the call in progress
+  const correr_subvi = suspendible(async (p) => {
+    const previous = busySubVIs.get(p) ?? Promise.resolve();
+    const call = previous.catch(() => {}).then(() => planificar(compilado.planes[p], (i) => correrClump(`p${p}c${i}`, compilado.planes[p][i].largo), senal));
+    busySubVIs.set(p, call);
+    await call;
+    return 0;
+  });
   // Manejo automático de errores (DT-043): el diálogo lo saca quien llama
   // (`alErrorAutomatico`, que resuelve «continuar» o «parar»). Sin él —la línea
   // de órdenes—, el VI se detiene con el error.
@@ -606,6 +645,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     error_automatico,
     dialogo_error,
     correr_plan,
+    correr_subvi,
     esperar: suspendible(async (ms) => {
       await dormir(ms);
       return reloj();
@@ -617,6 +657,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   };
   const { instance } = await WebAssembly.instantiate(bytes, { panel, tiempo, cad, arr, math: { random: Math.random, pow: Math.pow, ...funcionesMath } });
   ex = instance.exports;
+  restoreState(opciones.estado, bytes, ex.memoria);
   const prometidas = new Map();
   correrClump = (nombre, largo) => {
     if (!largo) return ex[nombre]();
@@ -629,6 +670,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   try {
     await planificar(clumps, (i) => correrClump(`c${i}`, clumps[i].largo), senal);
   } finally {
+    saveState(opciones.estado, bytes, ex.memoria);
     canalCeder?.port1.close();
   }
   return escritos;

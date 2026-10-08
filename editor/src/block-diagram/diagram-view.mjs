@@ -10,6 +10,8 @@
 import * as Et from "../common/labels.mjs";
 import * as G from "../common/glyphs.mjs";
 import { esHueco, ultimo } from "../common/labview-inventory.mjs";
+import { PANE_SIZE } from "../../../core/model/connector.mjs";
+import { isSubVI, portsWithAnchors } from "./subvi-nodes.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
 import { COLORES, aspecto, esArray, esEntero, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
 import { MAX_EDITOR_DIMENSIONS, cellAddress, dimensionsOfNode, firstShown, isDefined, readCell, visibleGrid } from "../common/array-grid.mjs";
@@ -404,6 +406,7 @@ export function caja(n, ctx, edicion) {
     const M = medidasPanel(n);
     return { x: n.x, y: n.y, ancho: M.ancho, alto: M.alto };
   }
+  if (isSubVI(n)) return { x: n.x, y: n.y, ancho: PANE_SIZE, alto: PANE_SIZE };
   if (esExpresion(n)) {
     const M = MEDIDAS_EXPRESION;
     return { x: n.x, y: n.y, ancho: 2 * M.lado + Math.max(M.minimoTexto, anchoTexto(textoExpresion(n, edicion)) + M.relleno), alto: M.alto };
@@ -446,6 +449,7 @@ export function caja(n, ctx, edicion) {
  */
 export function terminales(n, ctx, edicion) {
   const k = caja(n, ctx, edicion);
+  if (isSubVI(n)) return terminalesSubVI(n, k, ctx);
   const { in: ins, out: outs } = ctx.cat.puertos(n);
   // Cada lado se queda con algo más de un tercio del nodo; lo del medio es el
   // cuerpo, que es lo que se agarra para moverlo. Una constante sólo tiene
@@ -473,6 +477,30 @@ export function terminales(n, ctx, edicion) {
       };
     });
   return [...reparte(ins, "in"), ...reparte(outs, "out")];
+}
+
+/**
+ * The size of the area of a subVI terminal that is clicked to wire it, centred on the edge of the icon
+ * (the wire touches the border of the icon: labview-captures/subvi/caller-x-unwired-diagram.png).
+ */
+const SUBVI_TERMINAL_ZONE = 6;
+
+/** The terminals of a subVI node: each one on the edge of the icon next to its connector cell (core/model/connector.mjs). */
+function terminalesSubVI(n, k, ctx) {
+  const half = SUBVI_TERMINAL_ZONE / 2;
+  return portsWithAnchors(n, ctx.cat).map((port) => {
+    const [x, y] = [k.x + port.anchor.x, k.y + port.anchor.y];
+    return {
+      puerto: port.name,
+      etiqueta: port.label ?? port.name,
+      dir: port.dir,
+      lado: port.anchor.side,
+      x,
+      y,
+      zona: { x: x - half, y: y - half, ancho: SUBVI_TERMINAL_ZONE, alto: SUBVI_TERMINAL_ZONE },
+      centro: { x, y },
+    };
+  });
 }
 
 /** Todos los terminales del diagrama, por `nodo.puerto`. */
@@ -663,7 +691,7 @@ export function contenido(d0, ctx, resueltos) {
       fantasma = `<div class="rectangulo-estructura" style="left:${px(x)};top:${px(y)};width:${px(Math.abs(accion.x - accion.esquina.x))};height:${px(Math.abs(accion.y - accion.esquina.y))}"></div>`;
     }
   } else if (accion?.tipo === "colocar" && accion.x !== undefined) {
-    const n = { id: "fantasma", tipo: accion.bloque, x: accion.x, y: accion.y };
+    const n = { id: "fantasma", tipo: accion.bloque, x: accion.x, y: accion.y, ...(isSubVI({ tipo: accion.bloque }) ? { config: accion.config } : {}) };
     fantasma = `<div class="fantasma">${nodo(n, { g, seleccion: [] }, ctx, null, false)}</div>`;
   }
   const lista = d.lista ? listaMarcos(d, ctx) : "";
@@ -752,8 +780,11 @@ function pistasTerminales(n, d, ctx, resueltos) {
     if (cableadas.has(clave) && d.sobre.puerto !== t.puerto) continue;
     const tipo = (t.dir === "in" ? resueltos.entradas : resueltos.salidas).get(clave);
     const { color } = aspecto(tipo ?? "number");
+    // A tip sticks out of the edge it is on: a subVI also has terminals on its top and bottom edges.
     const fuera = t.dir === "in" ? -4.5 : 4.5;
-    h += `<g class="pista"><line x1="${f2(t.x)}" y1="${f2(t.y)}" x2="${f2(t.x + fuera)}" y2="${f2(t.y)}" stroke="${color}" stroke-width="1.33"/><circle cx="${f2(t.x)}" cy="${f2(t.y)}" r="1.9" fill="${color}"/></g>`;
+    const vertical = t.lado === "top" || t.lado === "bottom";
+    const [dx, dy] = vertical ? [0, t.lado === "top" ? -4.5 : 4.5] : [fuera, 0];
+    h += `<g class="pista"><line x1="${f2(t.x)}" y1="${f2(t.y)}" x2="${f2(t.x + dx)}" y2="${f2(t.y + dy)}" stroke="${color}" stroke-width="1.33"/><circle cx="${f2(t.x)}" cy="${f2(t.y)}" r="1.9" fill="${color}"/></g>`;
   }
   return h;
 }
@@ -875,6 +906,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
         ? (n.vista?.compacto ? G.terminalPanelCompacto(control, aspecto(tipo).color, "abc") : G.terminalPanelIcono(control, aspecto(tipo).color, "abc", G.dibujoCadena(control)))
         : (n.vista?.compacto ? G.terminalPanelCompacto : G.terminalPanelIcono)(control, aspecto(tipo).color, nombre(tipo));
     cuerpo = `<div class="glifo-terminal-panel">${glifo}</div>`;
+  } else if (isSubVI(n)) {
+    cuerpo = `<div class="glifo-subvi">${ctx.cat.findSubVI?.(n.config?.vi) ? G.iconoVI() : G.ICONO_VI_FALTA}</div>`;
   } else if (esExpresion(n)) {
     cuerpo = expresion(n, k, ctx, resueltos, d.edicion);
   } else if (esCompuesto(n, ctx)) {
@@ -1107,6 +1140,7 @@ export function menuDe(n, puerto, g) {
   // Un túnel de entrada de un Case tiene otro menú que el de un bucle (case-menu-tunel-entrada.png).
   if (n.tipo === "tunnel-in" && g?.nodos.find((k) => k.id === n.dentro)?.tipo === "case-structure") return "context.case-tunnel-input";
   if (n.tipo in MENU_ESTRUCTURA) return MENU_ESTRUCTURA[n.tipo];
+  if (isSubVI(n)) return "context.subvi";
   if (n.tipo === "control") return "context.numeric-control";
   if (n.tipo === "bool-control") return "context.boolean-control-terminal";
   // El menú de la constante booleana no está capturado.
@@ -1151,7 +1185,7 @@ const MENU_COMPARISON = {
 };
 
 /** Filas que en LabVIEW abren un submenú aunque su contenido no esté declarado. Es disposición. */
-const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "linked-input-tunnel", "swap-diagram-with-case", "shift-diagram-to-case", "radix"];
+const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "swap-diagram-with-case", "shift-diagram-to-case", "radix"];
 
 /**
  * El submenú Representation no es una lista: es una rejilla de iconos de 4
@@ -1168,10 +1202,19 @@ export const MEDIDAS_REJILLA = { columnas: 4, paso: 48, caja: 32, izquierda: 10,
  */
 export const MEDIDAS_REJILLA_MECANICA = { columnas: 3, paso: 48, caja: 32, izquierda: 9, arriba: 24, ancho: 156, alto: 123 };
 
+/**
+ * Patterns of the connector pane, from connector-menu-patterns.png at 1:1: 6
+ * columns of 32 px boxes every 48 px, 9 px from the border on the left and the
+ * top, background #f8f8f8, 302 × 301 px with the border. The thumbnails have no
+ * name: what a greyed one says is its explanation, on hover (editor-window.mjs).
+ */
+export const MEDIDAS_REJILLA_PATRONES = { columnas: 6, paso: 48, caja: 32, izquierda: 9, arriba: 9, ancho: 302, alto: 301, sinNombre: true };
+
 /** Los submenús que son una rejilla de iconos: sus medidas y sus iconos, por el último segmento de su id. */
 const REJILLAS_MENU = {
   representation: { medidas: MEDIDAS_REJILLA, iconos: G.REPRESENTACIONES },
   "mechanical-action": { medidas: MEDIDAS_REJILLA_MECANICA, iconos: G.ACCIONES_MECANICAS },
+  patterns: { medidas: MEDIDAS_REJILLA_PATRONES, iconos: G.PATRONES_CONECTOR },
 };
 
 /**
@@ -1213,9 +1256,9 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
       .hijos(padre)
       .map((e, i) => {
         const [fila, col] = [Math.floor(i / R.columnas), i % R.columnas];
-        const clases = `item-menu celda-rep${esHueco(e) ? " hueco" : ""}${marcados.has(e.id) ? " marcado" : ""}`;
+        const clases = `item-menu celda-rep${R.sinNombre ? " celda-patron" : ""}${esHueco(e) ? " hueco" : ""}${marcados.has(e.id) ? " marcado" : ""}`;
         // Al pasar el ratón, el nombre sale en la franja de arriba, centrado en el submenú (CSS, con estas variables).
-        const nombre = `<span class="nombre-celda" style="left:${px(-(R.izquierda + col * R.paso))};top:${px(-(R.arriba + fila * R.paso) + 3)};width:${px(R.ancho)}">${esc(e.etiqueta)}</span>`;
+        const nombre = R.sinNombre ? "" : `<span class="nombre-celda" style="left:${px(-(R.izquierda + col * R.paso))};top:${px(-(R.arriba + fila * R.paso) + 3)};width:${px(R.ancho)}">${esc(e.etiqueta)}</span>`;
         return `<div class="${clases}" data-id="${esc(e.id)}" style="left:${px(R.izquierda + col * R.paso)};top:${px(R.arriba + fila * R.paso)}">${iconos[ultimo(e.id)] ?? ""}${nombre}</div>`;
       })
       .join("");

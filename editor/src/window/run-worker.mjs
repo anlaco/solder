@@ -2,7 +2,7 @@
 // la página, para que la interfaz no se congele mientras el VI trabaja.
 //
 // Recibe:
-//   { orden: "run", compilado, valores, separador }  el módulo, el valor de los controles y el separador decimal del sistema
+//   { orden: "run", clave, compilado, valores, separador }  la clave del VI de nivel superior (su ruta), el módulo, el valor de los controles y el separador decimal del sistema
 //   { orden: "control", nodo, valor }      un control cambiado mientras corre
 //   { orden: "abort" }                     Abort
 //   { orden: "respuesta", id, valor }      lo que contestó el usuario a un diálogo: «continuar» o «parar»
@@ -19,6 +19,13 @@
 // enseña el último valor, como LabVIEW.
 
 import { ejecutar } from "../../../core/runtime/runtime.mjs";
+
+/**
+ * What each top-level VI and its subVIs keep from one Run to the next, by the key of the VI
+ * (DT-045): a functional global keeps counting while the hierarchy stays loaded. The core
+ * discards it by itself when the compiled module changes.
+ */
+const statesByVI = new Map();
 
 let valores = null;
 let parar = null;
@@ -63,7 +70,9 @@ onmessage = async ({ data }) => {
   if (data.orden !== "run") return;
   valores = { ...data.valores };
   parar = new AbortController();
+  if (!statesByVI.has(data.clave)) statesByVI.set(data.clave, {});
   const opciones = {
+    estado: statesByVI.get(data.clave),
     senal: parar.signal,
     separador: data.separador,
     alErrorAutomatico: (e) => preguntar("error-automatico", e),
