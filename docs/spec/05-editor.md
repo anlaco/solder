@@ -783,7 +783,54 @@ unverified is unverified here too.
 > **Unverified:** the exact vertical position of the fixed terminals (read from the captures at about 8x, to half a
 > pixel); the terminals of Scan From String are placed from the context help (`30-scan-context-help.png`) because the
 > capture of the placed node (`31z-scan-placed.png`) does not show them; where Add Parameter inserts the row (below the
-> clicked one is our choice); whether Remove Parameter of the last row is greyed in LabVIEW; that a new row takes the
-> type of the previous one when it is not DBL (the captures only show DBL rows; an unwired row is DBL here); the mark of
+> clicked one is our choice); whether Remove Parameter of the last row is greyed in LabVIEW; whether a row keeps its type after its wire is
+> deleted (here it does once it has been stretched or added, from `config.rowTypes`). **Measured:** a stretched or
+> added row takes the type of the row above it (`16-node-stretched.png`, I8 rows after an I8 one); the mark of
 > the default of each row and the icon on the top are our own drawings (diagonal and `!` marks of the original are
 > not reproduced); there is no Context Help window yet, so the terminal texts are only the tips.
+
+## 15. Waveform Chart, Waveform Graph and XY Graph (2026-10-09)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/graphs/`, with `REPORT.md`); how they look is in
+[`06-visual.md`](06-visual.md) §8. What the report marks unverified is unverified here too.
+
+> **Rule 79 — Placing and wiring.** Controls ▸ Modern ▸ Graph is a 4 × 4 grid (`01-palette-graph-grid.png`): Waveform Chart,
+> Waveform Graph, XY Graph, Express XY Graph | Intensity Chart, Intensity Graph, Digital Waveform Graph, Mixed Signal Graph | Compass
+> Plot, Error Bar Plot, Feather Plot, XY Plot Matrix | the folder Controls (`02-palette-graph-subfolder-controls.png`: Polar Plot,
+> Smith Plot, Min-Max Plot, Distribution Plot and Radar Plot Indicators, 2D Picture and the folder Datatypes), a free cell, 3D Picture
+> and 3D Graph. The three first are built; the others are greyed with their reason. A graph is placed as any control (it hangs from
+> the pointer by its centre), with its label ("Waveform Chart", "Waveform Graph", "XY Graph") and its terminal on the diagram. The
+> terminal is an indicator that takes the wire in; it accepts what `graphAccepts` (`core/model/types.mjs`) says and breaks
+> any other wire with "This waveform chart does not accept …": a chart takes a number, a 1D or 2D array of numbers or a cluster of
+> numbers (a cluster of arrays breaks it, 73); a graph, a 1D or 2D array or a cluster of x0, dx and an array (87); an XY Graph, a
+> cluster of two arrays (85). Unverified: an array of timed clusters on the graph, an array of points on the XY Graph, a 2D array on the chart.
+> Tested in `test/editor/graphs.test.mjs`.
+>
+> **Rule 80 — A chart keeps its history.** Each write to a Waveform Chart adds points to its history (a number, one; a 1D array, all of
+> them at once, 72; a cluster, one per plot, 74); the history lasts after the VI stops and through the next Runs (the X axis goes on, 71),
+> and is cleared by Data Operations ▸ Clear Chart (75) and when the type of its wire changes (71). Its length is 1024 by default
+> (Chart History Length..., `50-chart-history-length-dialog.png`: "Number of data points in chart history buffer", OK, Cancel, Help;
+> here a whole number of at least 1; what LabVIEW does with another value is unverified). The history belongs to the window, not to the VI:
+> it is not saved in the `.qvi`. The run worker sends the chart **every** write, in order, and the other indicators only the last
+> one of each pause. A Waveform Graph or an XY Graph keeps the last value it received (Clear Graph empties it).
+>
+> **Rule 81 — The menus.** Right-click on a graph in edit mode opens its menu (`10`–`23`, `30`–`35`, `40`–`45`); the rows and their
+> order are the inventory's (`context.waveform-chart`, `context.waveform-graph`, `context.xy-graph`). Done: Visible Items ▸
+> Label, Plot Legend, X Scale and Y Scale (hide or show), Data Operations ▸ Clear Chart / Clear Graph, X Scale ▸ and Y Scale ▸
+> AutoScale (switching it off keeps the range the axis showed; switching it on again follows the data), Loose Fit (greyed while its
+> axis does not autoscale, as in 14) and Visible Scale Label (the name of the axis), and the chart's Chart History Length.... The
+> chart's X is the Strip window and has AutoScale X unchecked; switching it on fits the whole history (unverified). Everything else is
+> a hole with its reason (rule 55), among them the legend's and the plot swatch's menus (`90`–`98`, `context.plot-legend`,
+> `context.plot-swatch`: opened by right-clicking them, all greyed), Update Mode (Scope and Sweep), Stack Plots, markers, cursors
+> and annotations, Export and Create ▸. While the VI runs, right-click on a chart or a graph opens its run-time menu (`88`, `89`:
+> `context.run-chart`, `context.run-graph`; the XY Graph takes the graph's, unverified) with Clear Chart / Graph, AutoScale X and Y
+> and Visible Items ▸ (its content unverified: the same four toggles); the rest is greyed.
+>
+> **Rule 82 — In the file.** What a user can change is saved with the panel item as `graph` (`docs/schema/qvi.schema.json`):
+> `autoscale-x`, `autoscale-y`, `loose-fit-x`, `loose-fit-y`, `scale-x` and `scale-y` (the range kept when an axis does not
+> autoscale), `history-length` and `hidden` (what Visible Items hid). Only what differs from the defaults is written
+> (chart: AutoScale X off; every other axis on, with Loose Fit; 1024 points).
+>
+> **Unverified:** that hiding a scale leaves the plot where it is (here it does); the compact view of the terminal; the legend of
+> several plots (it always shows Plot 0); what the chart does with AutoScale X on and with a 2D array; the behaviour of the mouse over the
+> plot at run time (not determined in the report); the exact rule of autoscale (see `06-visual.md` §8.3).

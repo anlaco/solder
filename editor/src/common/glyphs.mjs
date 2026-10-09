@@ -1984,3 +1984,53 @@ export const dibujoArray = (control) =>
   `<rect x="2.5" y="2.5" width="4.5" height="4.5" fill="#cfcfcf" stroke="#000" stroke-width="0.8"/><rect x="2.5" y="7" width="4.5" height="4.5" fill="#cfcfcf" stroke="#000" stroke-width="0.8"/><rect x="2.5" y="11.5" width="4.5" height="4.5" fill="#cfcfcf" stroke="#000" stroke-width="0.8"/>` +
   texto(4.75, 5, "i", 3.6, "#000", 700) + texto(4.75, 9.5, "j", 3.6, "#000", 700) + texto(4.75, 14, "k", 3.6, "#000", 700) +
   `<rect x="8" y="2.5" width="${control ? 18 : 17}" height="7" fill="#a8a8a8" stroke="#4c4c4c" stroke-width="1"/>` + texto(17, 6.2, "123", 4.6, "#000", 700);
+
+// ——— Waveform Chart, Waveform Graph and XY Graph (labview-captures/graphs/) ———
+
+/**
+ * The border of the terminal of an XY Graph and of a chart or a graph with a cluster wired:
+ * #993300, measured at 1:1 on 60-diagram-terminals.png and 74-diagram-chart-cluster-two-scalars.png.
+ */
+export const GRAPH_CLUSTER_COLOR = "#993300";
+
+/**
+ * What the terminal of a graph shows inside its 38 × 38 icon (60, at 16×): a small plot, black with a dark
+ * edge on the top and left and a light one on the bottom and right, 17 × 17 px from (12, 7), with tick marks
+ * and digit smudges around it and the line of the data in white; the XY Graph's has tan grid lines. The
+ * coordinates are those of `terminalPanelIcono`'s drawing (the icon's, less one).
+ */
+export function graphDrawing(kind) {
+  const [left, top, size] = [11, 6, 17];
+  const grid = kind === "xy-graph" ? [5, 9, 13].map((offset) => `<rect x="${left + offset}" y="${top}" width="1" height="${size}" fill="#cc9966"/><rect x="${left}" y="${top + offset}" width="${size}" height="1" fill="#cc9966"/>`).join("") : "";
+  const line = kind === "waveform-chart" ? "12,12 15,9 18,15 22,10 27,13" : "12,16 15,8 19,15 23,11 27,18";
+  const marks = [[8, 6], [8, 14], [8, 22]].map(([x, y]) => `<rect x="${x}" y="${y}" width="2" height="1" fill="#000"/>`).join("") + [[11, 25], [19, 25], [27, 25]].map(([x, y]) => `<rect x="${x}" y="${y}" width="1" height="2" fill="#000"/>`).join("") +
+    `<rect x="3" y="6" width="4" height="1" fill="#000"/><rect x="4" y="8" width="3" height="1" fill="#000"/><rect x="3" y="14" width="3" height="1" fill="#000"/><rect x="3" y="22" width="3" height="3" fill="none" stroke="#000" stroke-width="1"/>`;
+  return `<rect x="${left}" y="${top}" width="${size + 1}" height="${size + 1}" fill="#404040"/><rect x="${left + 1}" y="${top + 1}" width="${size}" height="${size}" fill="#000"/>` +
+    `<rect x="${left + size}" y="${top + 1}" width="1" height="${size}" fill="#d9d9d9"/><rect x="${left + 1}" y="${top + size}" width="${size}" height="1" fill="#d9d9d9"/>` +
+    grid + `<polyline points="${line}" fill="none" stroke="#fff" stroke-width="1" shape-rendering="crispEdges"/>` + marks;
+}
+
+/**
+ * The terminal of a graph on the diagram: an indicator whose border is orange with the tag DBL, or
+ * #993300 with the cluster tag when a cluster is wired and always on an XY Graph. `compacto` is the
+ * view without icon, whose drawing for a graph was not captured (the box of every other terminal).
+ */
+export function graphTerminal(kind, cluster, compacto) {
+  const color = cluster ? GRAPH_CLUSTER_COLOR : "#ff7f00";
+  return compacto ? terminalPanelCompacto(false, color, cluster ? "" : "DBL") : terminalPanelIcono(false, color, cluster ? "cluster" : "DBL", graphDrawing(kind));
+}
+
+/** A plot in a palette icon: black with a coloured grid and a white trace, in a grey frame. */
+function graphPaletteIcon(kind) {
+  const grid = kind === "waveform-chart" ? "" : [14, 20, 26, 32].map((offset) => `<rect x="${offset}" y="9" width="1" height="26" fill="${kind === "xy-graph" ? "#8a8a00" : "#00802a"}"/><rect x="9" y="${offset + 1}" width="30" height="1" fill="${kind === "xy-graph" ? "#8a8a00" : "#00802a"}"/>`).join("");
+  const trace = kind === "xy-graph" ? "12,32 18,14 25,28 31,12 36,22" : "10,26 16,14 22,28 28,12 34,24 38,18";
+  return svg48(ampliar(1.05, `<rect x="4" y="5" width="40" height="38" fill="#bfbfbf" stroke="#6e6e6e" stroke-width="1"/><rect x="8" y="9" width="32" height="26" fill="#000"/>${grid}<polyline points="${trace}" fill="none" stroke="#fff" stroke-width="1.4"/>` +
+    `<rect x="8" y="37" width="32" height="1" fill="#404040"/>${[10, 24, 38].map((x) => `<rect x="${x}" y="36" width="1" height="3" fill="#000"/>`).join("")}`));
+}
+Object.assign(CONTROLES, { "waveform-chart": graphPaletteIcon("waveform-chart"), "waveform-graph": graphPaletteIcon("waveform-graph"), "xy-graph": graphPaletteIcon("xy-graph") });
+
+// The two folders of Controls ▸ Modern ▸ Graph ▸ Controls (02-palette-graph-subfolder-controls.png).
+Object.assign(CARPETAS_CONTROLES, {
+  controls: svg(`<circle cx="8" cy="8" r="6" fill="#f0f0f0" stroke="${TINTA}" stroke-width="0.8"/><circle cx="8" cy="8" r="3.4" fill="none" stroke="#7a7a7a" stroke-width="0.6"/>${linea(8, 2, 8, 14, 0.6, "#7a7a7a")}${linea(2, 8, 14, 8, 0.6, "#7a7a7a")}`),
+  datatypes: svg(`${caja(2, 2.5, 14, 13.5, "#fff", 0.8)}${linea(2, 6, 14, 6, 0.6)}${linea(6.5, 2.5, 6.5, 13.5, 0.6)}`),
+});

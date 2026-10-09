@@ -118,6 +118,10 @@ const REJILLAS = {
   "palette.functions.programming.dialog-and-user-interface": { columnas: 4, celdas: {} },
   // Data Containers (Array, Matrix & Cluster), de errores/300-controls-data-containers.png: 2 columnas y 8 elementos.
   "palette.controls.modern.data-containers": { columnas: 2, celdas: {} },
+  // Graph, from labview-captures/graphs/01-palette-graph-grid.png: 4 × 4; the last row has the folder Controls, a free cell, 3D Picture and 3D Graph.
+  "palette.controls.modern.graph": { columnas: 4, celdas: { "3d-picture": [3, 2] } },
+  // Its folder Controls, from 02-palette-graph-subfolder-controls.png: 4 + 3.
+  "palette.controls.modern.graph.controls": { columnas: 4, celdas: {} },
 };
 const REJILLA_POR_DEFECTO = { columnas: 6, celdas: {} };
 

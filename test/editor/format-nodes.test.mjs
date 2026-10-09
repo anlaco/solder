@@ -196,3 +196,22 @@ test("a stretched Scan From String resolves the type of its new rows", () => {
   d = stretch(d, d.g.nodos[0].id, 2 * STEP);
   assert.equal(Gr.tipos(d.g, CAT).salidas.get(`${d.g.nodos[0].id}.output-2`), DBL);
 });
+
+// labview-captures/format-scan/16-node-stretched.png: after input 1 became I8, stretching gave I8 rows.
+test("a stretched or added row copies the type of the row above, and keeps it unwired", async () => {
+  const Gr = await import("../../core/model/graph.mjs");
+  const { CAT } = await import("../helpers.mjs");
+  const F = await import("../../editor/src/block-diagram/format-nodes.mjs");
+  let r = Gr.crearNodo(Gr.nuevo(), CAT, "format-into-string", 0, 0);
+  const node = r.id;
+  r = Gr.crearNodo(r.g, CAT, "num-const", 0, 0);
+  let g = Gr.fijarConfig(r.g, r.id, { type: "i8", value: 1 });
+  g = Gr.conectar(g, CAT, { nodo: r.id, puerto: "result", dir: "out" }, { nodo: node, puerto: "input-0", dir: "in" }).g;
+  g = F.stretchedRows(g, node, CAT, 2);
+  const types = () => [0, 1, 2].map((k) => Gr.tipos(g, CAT).entradas.get(`${node}.input-${k}`));
+  assert.deepEqual(types(), ["i8", "i8", "i8"]);
+  g = Gr.borrar(g, [r.id]);
+  assert.deepEqual(types().slice(1), ["i8", "i8"], "the stretched rows keep their type without a wire");
+  g = F.removedRow(g, node, CAT, 0);
+  assert.deepEqual(g.nodos.find((n) => n.id === node).config.rowTypes, ["i8", "i8"]);
+});

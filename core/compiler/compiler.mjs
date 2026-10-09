@@ -1612,7 +1612,8 @@ function datosDePanel(t) {
 /** La disposición de un cluster con la de sus clusters de dentro, para que el anfitrión lo lea y lo escriba. */
 function disposicionCompleta(t) {
   const d = disposicion(t);
-  return { ...d, campos: d.campos.map((c) => ({ ...c, wasm: tipoWasm(c.tipo), ...(esCluster(c.tipo) ? { disposicion: disposicionCompleta(c.tipo) } : {}) })) };
+  // A field that is an array carries what the host needs to read it (its element and dimensions).
+  return { ...d, campos: d.campos.map((c) => ({ ...c, wasm: tipoWasm(c.tipo), ...(esCluster(c.tipo) ? { disposicion: disposicionCompleta(c.tipo) } : {}), ...(esArray(c.tipo) ? { array: datosDePanel(c.tipo) } : {}) })) };
 }
 
 /**
@@ -2012,7 +2013,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey) {
     const tiposNodo = [...entradas.map((_, i) => tIn(i)), ...salidas.map((_, j) => tOut(j))];
     if (tiposNodo.some((t) => !escalar(t))) return errores.push({ nodo: id, motivo: `«${nombre}» lleva un tipo que el compilador aún no sabe emitir.` });
     // Un indicador sin cable no se escribe: conserva su valor, como en LabVIEW.
-    if (["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator"].includes(n.tipo)) {
+    if (["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator", "waveform-chart", "waveform-graph", "xy-graph"].includes(n.tipo)) {
       if (!llegaA.has(`${id}.value`)) return;
       // In a subVI, a connector indicator leaves its value in its slot for the caller; any other one, nowhere.
       if (asSubVI) {

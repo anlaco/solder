@@ -12,7 +12,7 @@
 // A pure module with no mutation: every operation returns a new diagram.
 
 import { connectorTerminals } from "./connector.mjs";
-import { DBL, ERROR, NUMERICOS, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, nombre, withoutOneDimension } from "./types.mjs";
+import { DBL, ERROR, NUMERICOS, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, nombre, withoutOneDimension } from "./types.mjs";
 
 /** El catálogo de bloques, `docs/schema/blocks.json`. */
 export function cargarCatalogo(datos) {
@@ -54,7 +54,9 @@ export function cargarCatalogo(datos) {
       if (b[dir] === "dynamic:format-rows") {
         const rows = nodo.config?.inputs ?? b.config.inputs.value;
         const { filas } = b;
-        const rowType = (k) => ({ escalar: `R${k}` });
+        // An unwired row keeps the type it has in `config.rowTypes` (a stretched row copies the one
+        // above it, labview-captures/format-scan/16-node-stretched.png); DBL when it has none.
+        const rowType = (k) => ({ escalar: `R${k}`, ...(nodo.config?.rowTypes?.[k] !== undefined ? { defecto: nodo.config.rowTypes[k] } : {}) });
         if (dir === "in") {
           const row = (k) => ({ name: `${filas.prefijo}${k}`, label: `${filas.label} ${k + 1}`, type: rowType(k), dir, ...(filas.obligatoria && k === 0 ? {} : { default: 0 }) });
           return [...filas.fijas.map((p) => ({ ...p, dir })), ...Array.from({ length: rows }, (_, k) => row(k))];
@@ -633,7 +635,7 @@ function sustituir(t, vars) {
       return esNumerico(v) && !esEntero(v) ? (v === "sgl" ? "i32" : "i64") : v;
     }
     // Comparison: un booleano, un número o una cadena; sin nada cableado, DBL.
-    if ("escalar" in t) return vars[t.escalar] ?? DBL;
+    if ("escalar" in t) return vars[t.escalar] ?? t.defecto ?? DBL;
     // Las funciones de carácter (Decimal Digit?…): una cadena o un número; sin nada cableado, una cadena.
     if ("texto" in t) return vars[t.texto] ?? "string";
     if ("var" in t) return vars[t.var];
@@ -840,6 +842,8 @@ function resolverTipos(g, cat, pistas) {
   for (const id of ciclo) resolverNodo(nodoDe(g, id));
 
   const cables = new Map();
+  /** The port a wire ends on, to see what it accepts (a chart or a graph). */
+  const puertoDestino = (c) => cat.puertos(nodoDe(g, c.a.nodo)).in.find((p) => p.name === c.a.puerto);
   for (const c of g.cables) {
     const desde = salidas.get(`${c.de.nodo}.${c.de.puerto}`);
     const hacia = entradas.get(`${c.a.nodo}.${c.a.puerto}`);
@@ -847,6 +851,7 @@ function resolverTipos(g, cat, pistas) {
     let coercion = false;
     if (enCiclo.has(c.de.nodo) && enCiclo.has(c.a.nodo)) roto = "Este cable cierra un ciclo: un nodo no puede depender de su propia salida.";
     else if (desde === undefined || hacia === undefined) roto = "El tipo de uno de los extremos no se puede determinar.";
+    else if (puertoDestino(c)?.acepta && !graphAccepts(puertoDestino(c).acepta, desde)) roto = `This ${puertoDestino(c).acepta.replace("-", " ")} does not accept ${nombre(desde)}.`;
     else {
       const conv = conversion(desde, hacia);
       if (!conv) roto = `Tipos incompatibles: el terminal espera ${nombre(hacia)} y el cable lleva ${nombre(desde)}.`;

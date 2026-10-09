@@ -29,6 +29,7 @@
 import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
 import * as FN from "./format-nodes.mjs";
 import * as CP from "../front-panel/connector-pane.mjs";
+import { graphCommand, graphMenuMarks, graphMenuVariants, isGraphMenu } from "../front-panel/graph-menus.mjs";
 import * as Et from "../common/labels.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import * as TC from "./terminal-creation.mjs";
@@ -897,6 +898,9 @@ export function orden(d, id, ctx) {
   if (!d.menu) return d;
   // The connector pane's menu belongs to the panel's state and changes the VI's connector.
   if (id.startsWith(`${CP.MENU_ROOT}.`)) return CP.runMenuCommand(d, id);
+  // The menus of the graphs on the panel (graph-menus.mjs).
+  const graphResult = graphCommand(d, id, ctx);
+  if (graphResult) return graphResult;
   const { nodo, puerto } = d.menu;
   const cerrar = (g) => ({ ...d, g, menu: null });
   const ultimo = id.slice(id.lastIndexOf(".") + 1);
@@ -1057,11 +1061,12 @@ const mergeVariants = (a, b) => ({
 });
 
 /** What changes in the rows of the open menu: the node's own variants and those of Create ▸. `ctx` is needed for the terminal's type. */
-export const variantes = (d, ctx) => mergeVariants(nodeVariants(d), createVariants(d, ctx));
+export const variantes = (d, ctx) => (isGraphMenu(d) ? graphMenuVariants(d) : mergeVariants(nodeVariants(d), createVariants(d, ctx)));
 
 /** Qué filas del menú llevan la marca: Terminals si el nodo los enseña, el modo actual, Invert si lo está, la representación de un número. */
 export function marcados(d) {
   if (CP.hasConnectorMenu(d)) return CP.menuMarks(d);
+  if (isGraphMenu(d)) return graphMenuMarks(d);
   const n = d.menu && d.g.nodos.find((k) => k.id === d.menu.nodo);
   if (!n) return new Set();
   const r = d.menu.raiz;

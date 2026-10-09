@@ -14,7 +14,8 @@ import { PANE_SIZE } from "../../../core/model/connector.mjs";
 import { isSubVI, portsWithAnchors } from "./subvi-nodes.mjs";
 import * as FN from "./format-nodes.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
-import { COLORES, aspecto, esArray, esEntero, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
+import { COLORES, aspecto, esArray, esCluster, esEntero, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
+import { GRAPH_KINDS, labelShown } from "../front-panel/graph-state.mjs";
 import { MAX_EDITOR_DIMENSIONS, cellAddress, dimensionsOfNode, firstShown, isDefined, readCell, visibleGrid } from "../common/array-grid.mjs";
 
 const esNumericoNoEntero = (t) => typeof t === "string" && esNumerico(t) && !esEntero(t);
@@ -678,7 +679,7 @@ export function contenido(d0, ctx, resueltos) {
     .join("");
   const nodos = g.nodos.filter((n) => !esEstructura(n, ctx)).map((n) => nodo(n, d, ctx, resueltos, elegidos.has(n.id))).join("");
   const etiquetas = g.nodos
-    .filter((n) => n.label)
+    .filter((n) => n.label && labelShown(n))
     .map((n) => Et.pintar(n, cajaEtiqueta(n, ctx, edicion), { edicion, elegida: elegidos.has(`${n.id}#etiqueta`) }))
     .join("");
   let rect = "";
@@ -899,7 +900,9 @@ function nodo(n, d, ctx, resueltos, elegido) {
     const control = ctx.cat.puertos(n).out.length > 0;
     let hoja = tipo;
     while (esArray(hoja)) hoja = hoja.array;
-    const glifo = esArray(tipo)
+    const glifo = GRAPH_KINDS.includes(n.tipo)
+      ? G.graphTerminal(n.tipo, n.tipo === "xy-graph" || esCluster(tipo), !!n.vista?.compacto)
+      : esArray(tipo)
       ? G.terminalPanelIcono(control, aspecto(tipo).color, nombre(hoja), G.dibujoArray(control))
       : esError(tipo)
       ? (n.vista?.compacto ? G.terminalPanelCompacto(control, COLORES.error, "") : G.terminalPanelIcono(control, COLORES.error, "", G.dibujoError(control), "cluster"))
@@ -1162,6 +1165,8 @@ export function menuDe(n, puerto, g) {
   // The terminal of an array control or indicator has no menu captured yet.
   if (n.tipo === "arr-const") return "context.array-constant";
   if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return null;
+  // The right-click menu of the terminal of a graph was not captured.
+  if (GRAPH_KINDS.includes(n.tipo)) return null;
   if (n.tipo === "format-into-string") return "context.format-into-string";
   if (n.tipo === "scan-from-string") return puerto && /^(default|output)-\d+$/.test(puerto) ? "context.scan-from-string-parameter" : "context.scan-from-string";
   if (n.tipo === "compound-arithmetic") return puerto?.startsWith("value-") ? "context.compound-arithmetic-input" : "context.compound-arithmetic";
@@ -1197,7 +1202,9 @@ const MENU_COMPARISON = {
 };
 
 /** Filas que en LabVIEW abren un submenú aunque su contenido no esté declarado. Es disposición. */
-const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix"];
+const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
+  // The graphs (labview-captures/graphs/): rows whose submenus are not declared yet.
+  "marker-spacing", "style", "property-node", "invoke-node", "run-time-shortcut-menu", "enabled-state", "update-mode", "export", "x-scale", "y-scale", "common-plots", "color", "line-style", "line-width", "bar-plots", "fill-base-line", "interpolation", "point-style"];
 
 /**
  * El submenú Representation no es una lista: es una rejilla de iconos de 4

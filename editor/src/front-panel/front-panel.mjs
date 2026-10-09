@@ -28,6 +28,8 @@ import * as Gr from "../../../core/model/graph.mjs";
 import { REPEATED_PASTE_STEP } from "../common/paste-memory.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { convertirValor, elementoPorDefecto, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
+import { GRAPH_MEASURES, LABEL_PLACEMENT, graphSvg } from "./graph-view.mjs";
+import { isGraph, labelShown, wireTypeOf } from "./graph-state.mjs";
 import { cellAddress, dimensionsOfNode, firstShown, indexSetting, isDefined, readCell, valueFitsDimensions, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
 
 export const inicial = (g = Gr.nuevo()) => ({ g, seleccion: [], accion: null, edicion: null, menu: null });
@@ -50,6 +52,10 @@ export const CONTROLES = {
   // Un array de una dimensión: el índice y la caja de sus elementos (labview-captures/array/panel-array-1a1.png).
   "arr-control": { etiqueta: "Array", incrementador: false, array: true, control: true },
   "arr-indicator": { etiqueta: "Array", incrementador: false, array: true, control: false },
+  // The graphs of Controls ▸ Modern ▸ Graph: indicators, labelled as LabVIEW does (labview-captures/graphs/03-three-fresh-panel.png).
+  "waveform-chart": { etiqueta: "Waveform Chart", incrementador: false, grafico: true },
+  "waveform-graph": { etiqueta: "Waveform Graph", incrementador: false, grafico: true },
+  "xy-graph": { etiqueta: "XY Graph", incrementador: false, grafico: true },
 };
 
 /**
@@ -154,6 +160,8 @@ export function cajaObjeto(tipo, x, y, config) {
     const [ew, eh] = medidaElemento(config?.type?.array ?? "number");
     return { x, y, ancho: A.indice + visiblesPanel(config) * ew + 2 * A.biselX, alto: Math.max(A.altoIndice, A.bajaCaja + eh + 2 * A.biselY), casilla: A.indice };
   }
+  // A graph is its frame; the legend and the label go above it (graph-view.mjs).
+  if (CONTROLES[tipo]?.grafico) return { x, y, ancho: GRAPH_MEASURES[tipo].width, alto: GRAPH_MEASURES[tipo].height, casilla: LABEL_PLACEMENT.indent, separacion: LABEL_PLACEMENT.gap };
   const b = estiloDe(tipo, config);
   if (b) return { x, y, ancho: b.ancho, alto: b.alto, casilla: 0, separacion: SEPARACION_BOOLEANO };
   if (CONTROLES[tipo]?.cadena) return { x, y, ancho: MEDIDAS_CADENA_PANEL.ancho, alto: MEDIDAS_CADENA_PANEL.alto, casilla: 0 };
@@ -268,6 +276,14 @@ function objetoArray(n, ctx, elegido, edicion, valores) {
     `${indices}<div class="arr-caja" style="left:${px(A.indice)};top:${px(A.bajaCaja)};width:${px(k.ancho - A.indice)};height:${px(cajaAlto)};${cajaEstilo}">${celdas}</div>${asas}</div>`;
 }
 
+/** A graph: its drawing in a box the size of its frame; the legend and the plot swatch are parts of it (`data-parte`) with menus of their own. */
+function graphObject(n, ctx, elegido, p, resueltos) {
+  const k = caja(n);
+  const type = resueltos ? wireTypeOf(p.g, resueltos, n.id) : undefined;
+  const drawing = graphSvg(n, { type, value: p.valores?.[n.id], charts: p.charts, separator: ctx.separador });
+  return `<div class="objeto-panel grafico${elegido ? " seleccionado" : ""}" data-nodo="${esc(n.id)}" data-grafico="${esc(n.tipo)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${drawing}</div>`;
+}
+
 function objeto(n, ctx, elegido, edicion, valores) {
   if (esArrayPanel(n)) return objetoArray(n, ctx, elegido, edicion, valores);
   if (claseError(n.tipo, n.config)) return objetoError(n, elegido, edicion, valores);
@@ -286,13 +302,17 @@ function objeto(n, ctx, elegido, edicion, valores) {
   return `<div class="objeto-panel${elegido ? " seleccionado" : ""}${e ? " editando-valor" : ""}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${c?.incrementador ? INCREMENTADOR : ""}${casilla}</div>`;
 }
 
-/** Todo lo que el panel pinta dentro del lienzo. */
-export function contenido(p, ctx) {
+/**
+ * Todo lo que el panel pinta dentro del lienzo. `resueltos`: los tipos del diagrama (`Gr.tipos`), que las gráficas
+ * necesitan para saber qué reciben; si no se dan y hay una gráfica, se calculan.
+ */
+export function contenido(p, ctx, resueltos) {
   const elegidos = new Set(p.seleccion);
+  const tipos = resueltos ?? (objetos(p.g).some(isGraph) ? Gr.tipos(p.g, ctx.cat) : undefined);
   let html = "";
   for (const n of objetos(p.g)) {
-    html += objeto(n, ctx, elegidos.has(n.id), p.edicion, p.valores);
-    html += Et.pintar(n, cajaEtiqueta(n, ctx.medir, p.edicion), { edicion: p.edicion, elegida: elegidos.has(idEtiqueta(n.id)) });
+    html += isGraph(n) ? graphObject(n, ctx, elegidos.has(n.id), p, tipos) : objeto(n, ctx, elegidos.has(n.id), p.edicion, p.valores);
+    if (labelShown(n)) html += Et.pintar(n, cajaEtiqueta(n, ctx.medir, p.edicion), { edicion: p.edicion, elegida: elegidos.has(idEtiqueta(n.id)) });
   }
   const { accion } = p;
   if (accion?.tipo === "colocar" && accion.x !== undefined) {
@@ -316,7 +336,7 @@ export function contenido(p, ctx) {
 function esquina(bloque, pt, config) {
   const k = cajaObjeto(bloque, 0, 0, config);
   // Un booleano cuelga por el centro de su dibujo.
-  const mitad = estiloDe(bloque, config) || CONTROLES[bloque]?.cadena || CONTROLES[bloque]?.array || claseError(bloque, config) ? k.ancho / 2 : k.casilla + MEDIDAS_PANEL.casilla / 2;
+  const mitad = estiloDe(bloque, config) || CONTROLES[bloque]?.cadena || CONTROLES[bloque]?.array || CONTROLES[bloque]?.grafico || claseError(bloque, config) ? k.ancho / 2 : k.casilla + MEDIDAS_PANEL.casilla / 2;
   return { x: Math.round(pt.x - mitad), y: Math.round(pt.y - k.alto / 2) };
 }
 
@@ -440,7 +460,7 @@ function dentroDe(p, ctx, r) {
   const ids = [];
   for (const n of objetos(p.g)) {
     if (toca(caja(n))) ids.push(n.id);
-    else if (toca(cajaEtiqueta(n, ctx.medir))) ids.push(idEtiqueta(n.id));
+    else if (labelShown(n) && toca(cajaEtiqueta(n, ctx.medir))) ids.push(idEtiqueta(n.id));
   }
   return ids;
 }
@@ -474,6 +494,8 @@ const alternar = (g, n) => Gr.fijarValor(g, n.id, !n.config?.value);
 export function menuDe(n) {
   // An array control (labview-captures/array-2d/panel-array-menu-index.png); the indicator's is not captured and is taken as the same.
   if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return "context.panel-array";
+  // A graph's menu, with its settings (labview-captures/graphs/10..45); the same root in Run mode is another one (graph-menus.mjs).
+  if (isGraph(n)) return `context.${n.tipo}`;
   if (n.tipo === "bool-control") return "context.boolean-control";
   if (n.tipo === "bool-indicator") return "context.boolean-indicator";
   return null;

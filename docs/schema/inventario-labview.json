@@ -340,6 +340,33 @@
     },
     "crear-escalar": {
       "desc": "Create ▸ Scalar on an array terminal: the constant or control of the array's element type, not of the array"
+    },
+    "escalas-de-graficas": {
+      "desc": "The scales of a graph beyond the autoscale: formatting, markers, styles, mapping, the optional planes and the Scale Legend",
+      "ref": "labview-captures/graphs/REPORT.md §3"
+    },
+    "cursores-y-anotaciones": {
+      "desc": "The cursors, the annotations and the Graph Palette of a graph, to read and mark points at run time",
+      "ref": "labview-captures/graphs/REPORT.md §3"
+    },
+    "trazos-de-graficas": {
+      "desc": "How each plot looks and the legend that lists them: colour, line style and width, points, bars, fill and interpolation, with the menus of the legend and of the swatch of a plot",
+      "ref": "labview-captures/graphs/REPORT.md §3 and §5"
+    },
+    "modos-de-chart": {
+      "desc": "How a chart is updated: Scope Chart and Sweep Chart (Strip Chart is done), and Stack Plots",
+      "ref": "labview-captures/graphs/REPORT.md §3"
+    },
+    "graficas-especiales": {
+      "desc": "The other graphs and plots of Controls ▸ Modern ▸ Graph: intensity, digital, mixed signal, polar, 3D…, and the digital display and scrollbar of the ones that exist",
+      "ref": "labview-captures/graphs/REPORT.md §1"
+    },
+    "exportar-graficas": {
+      "desc": "Copying and exporting the data and the image of a graph: to the clipboard, to Excel, to DIAdem or to a file",
+      "ref": "labview-captures/graphs/REPORT.md §3"
+    },
+    "copiar-datos": {
+      "desc": "Copy, cut and paste the data of a control or indicator through the clipboard of the system"
     }
   },
 
@@ -5208,10 +5235,193 @@
     {
       "id": "palette.controls.modern.graph",
       "etiqueta": "Graph",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Controls_Modern_Graph_opens_the_4_x_4_grid_with_the_three_graphs_built_and_the_rest_greyed_out",
+      "captura": "graphs/01-palette-graph-grid.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.thumbtack",
+      "etiqueta": "Thumbtack",
       "estado": "todo",
-      "labview": "Gráficas y charts.",
-      "necesita": "panel-frontal",
-      "captura": "paletas/controls.png"
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "graphs/01-palette-graph-grid.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.waveform-chart",
+      "etiqueta": "Waveform Chart",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::a_Waveform_Chart,_a_Waveform_Graph_and_an_XY_Graph_are_placed_on_the_panel_with_their_terminal_on_the_diagram",
+      "captura": "graphs/01-palette-graph-grid.png",
+      "bloque": "waveform-chart"
+    },
+    {
+      "id": "palette.controls.modern.graph.waveform-graph",
+      "etiqueta": "Waveform Graph",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::a_Waveform_Chart,_a_Waveform_Graph_and_an_XY_Graph_are_placed_on_the_panel_with_their_terminal_on_the_diagram",
+      "captura": "graphs/01-palette-graph-grid.png",
+      "bloque": "waveform-graph"
+    },
+    {
+      "id": "palette.controls.modern.graph.xy-graph",
+      "etiqueta": "XY Graph",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::a_Waveform_Chart,_a_Waveform_Graph_and_an_XY_Graph_are_placed_on_the_panel_with_their_terminal_on_the_diagram",
+      "captura": "graphs/01-palette-graph-grid.png",
+      "bloque": "xy-graph"
+    },
+    {
+      "id": "palette.controls.modern.graph.express-xy-graph",
+      "etiqueta": "Express XY Graph",
+      "estado": "todo",
+      "labview": "An XY Graph that comes with an Express VI which builds its data.",
+      "necesita": "express-vis",
+      "captura": "graphs/01-palette-graph-grid.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.intensity-chart",
+      "etiqueta": "Intensity Chart",
+      "estado": "todo",
+      "labview": "A chart of a third value shown as colour, scrolling like a Waveform Chart.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/01-palette-graph-grid.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.intensity-graph",
+      "etiqueta": "Intensity Graph",
+      "estado": "todo",
+      "labview": "A graph of a third value shown as colour on a plane.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/01-palette-graph-grid.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.digital-waveform-graph",
+      "etiqueta": "Digital Waveform Graph",
+      "estado": "todo",
+      "labview": "A graph of digital waveforms, one line per bit or bus.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/01-palette-graph-grid.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.mixed-signal-graph",
+      "etiqueta": "Mixed Signal Graph",
+      "estado": "todo",
+      "labview": "A graph that shows analog and digital waveforms together.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/01-palette-graph-grid.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.compass-plot",
+      "etiqueta": "Compass Plot",
+      "estado": "todo",
+      "labview": "A plot of vectors drawn from the origin of a polar plane.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/01-palette-graph-grid.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.error-bar-plot",
+      "etiqueta": "Error Bar Plot",
+      "estado": "todo",
+      "labview": "A plot of points with error bars.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/01-palette-graph-grid.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.feather-plot",
+      "etiqueta": "Feather Plot",
+      "estado": "todo",
+      "labview": "A plot of vectors drawn along a line.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/01-palette-graph-grid.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.xy-plot-matrix",
+      "etiqueta": "XY Plot Matrix",
+      "estado": "todo",
+      "labview": "A matrix of XY plots of the columns of the data against each other.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/01-palette-graph-grid.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.controls",
+      "etiqueta": "Controls",
+      "estado": "todo",
+      "labview": "A folder with the plot indicators of the polar, Smith, min-max, distribution and radar kinds, the 2D Picture and the Datatypes.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/01-palette-graph-grid.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.3d-picture",
+      "etiqueta": "3D Picture",
+      "estado": "todo",
+      "labview": "A 3D scene that is drawn with the 3D Picture functions.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/01-palette-graph-grid.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.3d-graph",
+      "etiqueta": "3D Graph",
+      "estado": "todo",
+      "labview": "A graph of surfaces, curves and points in three dimensions.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/01-palette-graph-grid.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.controls.polar-plot-indicator",
+      "etiqueta": "Polar Plot Indicator",
+      "estado": "todo",
+      "labview": "A plot on a polar plane.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/02-palette-graph-subfolder-controls.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.controls.smith-plot-indicator",
+      "etiqueta": "Smith Plot Indicator",
+      "estado": "todo",
+      "labview": "A plot of impedances on a Smith chart.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/02-palette-graph-subfolder-controls.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.controls.min-max-plot-indicator",
+      "etiqueta": "Min-Max Plot Indicator",
+      "estado": "todo",
+      "labview": "A plot of the minimum and maximum of each group of points.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/02-palette-graph-subfolder-controls.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.controls.distribution-plot-indicator",
+      "etiqueta": "Distribution Plot Indicator",
+      "estado": "todo",
+      "labview": "A plot of the distribution of the values in the data.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/02-palette-graph-subfolder-controls.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.controls.radar-plot-indicator",
+      "etiqueta": "Radar Plot Indicator",
+      "estado": "todo",
+      "labview": "A plot of the values on axes that start at the same centre.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/02-palette-graph-subfolder-controls.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.controls.2d-picture",
+      "etiqueta": "2D Picture",
+      "estado": "todo",
+      "labview": "A canvas drawn with the 2D Picture functions.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/02-palette-graph-subfolder-controls.png"
+    },
+    {
+      "id": "palette.controls.modern.graph.controls.datatypes",
+      "etiqueta": "Datatypes",
+      "estado": "todo",
+      "labview": "A folder with the data types that graphs use, as controls.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/02-palette-graph-subfolder-controls.png"
     },
     {
       "id": "palette.controls.modern.ring-and-enum",
@@ -10525,6 +10735,2313 @@
       "separado": true
     },
     {
+      "id": "context.waveform-chart",
+      "etiqueta": "Waveform Chart",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_menus_of_the_graphs_have_LabVIEW's_rows_in_their_order",
+      "captura": "graphs/10-chart-menu.png"
+    },
+    {
+      "id": "context.waveform-chart.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/10-chart-menu.png"
+    },
+    {
+      "id": "context.waveform-chart.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/11-chart-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-chart.visible-items.caption",
+      "etiqueta": "Caption",
+      "estado": "todo",
+      "labview": "Shows a caption over the object, apart from its label.",
+      "necesita": "etiquetas",
+      "captura": "graphs/11-chart-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-chart.visible-items.plot-legend",
+      "etiqueta": "Plot Legend",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/11-chart-menu-visible-items.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.visible-items.scale-legend",
+      "etiqueta": "Scale Legend",
+      "estado": "todo",
+      "labview": "A table with the scale options of each axis, next to the object.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/11-chart-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-chart.visible-items.graph-palette",
+      "etiqueta": "Graph Palette",
+      "estado": "todo",
+      "labview": "The tools to zoom, pan and move the cursor of the graph at run time.",
+      "necesita": "cursores-y-anotaciones",
+      "captura": "graphs/11-chart-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-chart.visible-items.digital-display",
+      "etiqueta": "Digital Display",
+      "estado": "todo",
+      "labview": "A digital display with the value of the plot.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/11-chart-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-chart.visible-items.x-scrollbar",
+      "etiqueta": "X Scrollbar",
+      "estado": "todo",
+      "labview": "A scrollbar under the X axis, to move along the data.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/11-chart-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-chart.visible-items.x-scale",
+      "etiqueta": "X Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/11-chart-menu-visible-items.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.visible-items.y-scale",
+      "etiqueta": "Y Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/11-chart-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-chart.visible-items.unit-label",
+      "etiqueta": "Unit Label",
+      "estado": "todo",
+      "labview": "A label with the unit of the value (greyed out in LabVIEW too, on these objects).",
+      "necesita": "etiquetas",
+      "captura": "graphs/11-chart-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-chart.find-terminal",
+      "etiqueta": "Find Terminal",
+      "estado": "todo",
+      "labview": "Shows the terminal of the object on the diagram, selected.",
+      "necesita": "diagrama",
+      "captura": "graphs/10-chart-menu.png"
+    },
+    {
+      "id": "context.waveform-chart.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Turns the indicator into a control; the wires that no longer fit break.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/10-chart-menu.png"
+    },
+    {
+      "id": "context.waveform-chart.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved apart.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "graphs/10-chart-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the description and the tip strip of the object.",
+      "necesita": "descripciones",
+      "captura": "graphs/10-chart-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates related objects: a local variable, a reference, a property node.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/10-chart-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "A local variable of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.waveform-chart.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "A reference to the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.waveform-chart.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "A property node of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.waveform-chart.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "An invoke node of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.waveform-chart.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "A cluster with the selected objects.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.waveform-chart.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the object with another one of the Controls palette, keeping its terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/10-chart-menu.png"
+    },
+    {
+      "id": "context.waveform-chart.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Clear_Chart_and_Clear_Graph_empty_what_the_object_shows",
+      "captura": "graphs/10-chart-menu.png"
+    },
+    {
+      "id": "context.waveform-chart.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "todo",
+      "labview": "Puts the object back to its default value.",
+      "necesita": "valores-por-defecto",
+      "captura": "graphs/12-chart-menu-data-operations.png"
+    },
+    {
+      "id": "context.waveform-chart.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "todo",
+      "labview": "Keeps the current value as the default of the object.",
+      "necesita": "valores-por-defecto",
+      "captura": "graphs/12-chart-menu-data-operations.png"
+    },
+    {
+      "id": "context.waveform-chart.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the data of the object to the clipboard (greyed out in LabVIEW on an indicator).",
+      "necesita": "copiar-datos",
+      "captura": "graphs/12-chart-menu-data-operations.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "graphs/12-chart-menu-data-operations.png"
+    },
+    {
+      "id": "context.waveform-chart.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes the data of the clipboard into the object (greyed out in LabVIEW on an indicator).",
+      "necesita": "copiar-datos",
+      "captura": "graphs/12-chart-menu-data-operations.png"
+    },
+    {
+      "id": "context.waveform-chart.data-operations.clear-chart",
+      "etiqueta": "Clear Chart",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Clear_Chart_and_Clear_Graph_empty_what_the_object_shows",
+      "captura": "graphs/12-chart-menu-data-operations.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/10-chart-menu.png"
+    },
+    {
+      "id": "context.waveform-chart.advanced.key-navigation",
+      "etiqueta": "Key Navigation...",
+      "estado": "todo",
+      "labview": "Which key goes to the object and in which order (greyed out in LabVIEW on an indicator).",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/13-chart-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-chart.advanced.synchronous-display",
+      "etiqueta": "Synchronous Display",
+      "estado": "todo",
+      "labview": "Redraws the object each time it is written, and not when the screen refreshes.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/13-chart-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-chart.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Opens the object in the control editor.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/13-chart-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-chart.advanced.run-time-shortcut-menu",
+      "etiqueta": "Run-Time Shortcut Menu",
+      "estado": "todo",
+      "labview": "Which items the menu of the object has when the VI runs.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/13-chart-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-chart.advanced.hide-indicator",
+      "etiqueta": "Hide Indicator",
+      "estado": "todo",
+      "labview": "Hides the object on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/13-chart-menu-advanced.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.advanced.enabled-state",
+      "etiqueta": "Enabled State",
+      "estado": "todo",
+      "labview": "Whether the object is enabled, disabled or disabled and greyed.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/13-chart-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-chart.advanced.update-mode",
+      "etiqueta": "Update Mode",
+      "estado": "todo",
+      "labview": "How a chart scrolls: Strip Chart, Scope Chart or Sweep Chart. Only the strip chart is done.",
+      "necesita": "modos-de-chart",
+      "captura": "graphs/13-chart-menu-advanced.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.advanced.auto-adjust-scales",
+      "etiqueta": "Auto Adjust Scales",
+      "estado": "todo",
+      "labview": "Lets the scales follow the data.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/13-chart-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-chart.advanced.cursors-scroll-graph",
+      "etiqueta": "Cursors Scroll Graph",
+      "estado": "todo",
+      "labview": "Moves the cursors with the data (greyed out in LabVIEW on a chart).",
+      "necesita": "cursores-y-anotaciones",
+      "captura": "graphs/13-chart-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-chart.advanced.disable-plot-legend",
+      "etiqueta": "Disable Plot Legend",
+      "estado": "todo",
+      "labview": "Removes the plot legend from the object.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/13-chart-menu-advanced.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.advanced.reset-scale-layout",
+      "etiqueta": "Reset Scale Layout",
+      "estado": "todo",
+      "labview": "Puts the scales back where a new object has them.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/13-chart-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-chart.fit-control-to-pane",
+      "etiqueta": "Fit Control to Pane",
+      "estado": "todo",
+      "labview": "Stretches the object until it fills the panel.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/10-chart-menu.png"
+    },
+    {
+      "id": "context.waveform-chart.scale-object-with-pane",
+      "etiqueta": "Scale Object with Pane",
+      "estado": "todo",
+      "labview": "The object grows and shrinks with the panel when the window is resized.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/10-chart-menu.png"
+    },
+    {
+      "id": "context.waveform-chart.x-scale",
+      "etiqueta": "X Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/10-chart-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.x-scale.marker-spacing",
+      "etiqueta": "Marker Spacing",
+      "estado": "todo",
+      "labview": "How the labels of the axis are spaced: uniform or arbitrary.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/14-chart-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.x-scale.add-marker",
+      "etiqueta": "Add Marker",
+      "estado": "todo",
+      "labview": "Adds a label to the axis (greyed out in LabVIEW with uniform spacing).",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/14-chart-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.x-scale.delete-marker",
+      "etiqueta": "Delete Marker",
+      "estado": "todo",
+      "labview": "Deletes a label of the axis (greyed out in LabVIEW with uniform spacing).",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/14-chart-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.x-scale.formatting",
+      "etiqueta": "Formatting...",
+      "estado": "todo",
+      "labview": "The format of the numbers of the axis and its precision.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/14-chart-menu-x-scale.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.x-scale.style",
+      "etiqueta": "Style",
+      "estado": "todo",
+      "labview": "The marks of the axis: which ticks it draws and where.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/14-chart-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.x-scale.mapping",
+      "etiqueta": "Mapping",
+      "estado": "todo",
+      "labview": "A linear or a logarithmic scale.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/14-chart-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.x-scale.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the axis.",
+      "necesita": "propiedades",
+      "captura": "graphs/14-chart-menu-x-scale.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.x-scale.autoscale-x",
+      "etiqueta": "AutoScale X",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/14-chart-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.x-scale.loose-fit",
+      "etiqueta": "Loose Fit",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/14-chart-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.x-scale.visible-scale-label",
+      "etiqueta": "Visible Scale Label",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/14-chart-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.y-scale",
+      "etiqueta": "Y Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/10-chart-menu.png"
+    },
+    {
+      "id": "context.waveform-chart.y-scale.marker-spacing",
+      "etiqueta": "Marker Spacing",
+      "estado": "todo",
+      "labview": "How the labels of the axis are spaced: uniform or arbitrary.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/15-chart-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.y-scale.add-marker",
+      "etiqueta": "Add Marker",
+      "estado": "todo",
+      "labview": "Adds a label to the axis (greyed out in LabVIEW with uniform spacing).",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/15-chart-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.y-scale.delete-marker",
+      "etiqueta": "Delete Marker",
+      "estado": "todo",
+      "labview": "Deletes a label of the axis (greyed out in LabVIEW with uniform spacing).",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/15-chart-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.y-scale.formatting",
+      "etiqueta": "Formatting...",
+      "estado": "todo",
+      "labview": "The format of the numbers of the axis and its precision.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/15-chart-menu-y-scale.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.y-scale.style",
+      "etiqueta": "Style",
+      "estado": "todo",
+      "labview": "The marks of the axis: which ticks it draws and where.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/15-chart-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.y-scale.mapping",
+      "etiqueta": "Mapping",
+      "estado": "todo",
+      "labview": "A linear or a logarithmic scale.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/15-chart-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.y-scale.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the axis.",
+      "necesita": "propiedades",
+      "captura": "graphs/15-chart-menu-y-scale.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.y-scale.autoscale-y",
+      "etiqueta": "AutoScale Y",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/15-chart-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.y-scale.loose-fit",
+      "etiqueta": "Loose Fit",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/15-chart-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.y-scale.visible-scale-label",
+      "etiqueta": "Visible Scale Label",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/15-chart-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-chart.transpose-array",
+      "etiqueta": "Transpose Array",
+      "estado": "todo",
+      "labview": "Draws the rows of a 2D array as columns and the other way round (greyed out in LabVIEW while it does not apply).",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/10-chart-menu.png"
+    },
+    {
+      "id": "context.waveform-chart.autosize-plot-legend",
+      "etiqueta": "Autosize Plot Legend",
+      "estado": "todo",
+      "labview": "The legend grows to hold all the plots.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/10-chart-menu.png"
+    },
+    {
+      "id": "context.waveform-chart.stack-plots",
+      "etiqueta": "Stack Plots",
+      "estado": "todo",
+      "labview": "Draws each plot of the chart in its own band over the same X axis.",
+      "necesita": "modos-de-chart",
+      "captura": "graphs/10-chart-menu.png"
+    },
+    {
+      "id": "context.waveform-chart.chart-history-length",
+      "etiqueta": "Chart History Length...",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Chart_History_Length_sets_the_history_from_its_dialog",
+      "captura": "graphs/50-chart-history-length-dialog.png"
+    },
+    {
+      "id": "context.waveform-chart.export",
+      "etiqueta": "Export",
+      "estado": "todo",
+      "labview": "Exports the object: data, a spreadsheet, an image.",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/10-chart-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-chart.export.export-data-to-clipboard",
+      "etiqueta": "Export Data To Clipboard",
+      "estado": "todo",
+      "labview": "Copies the data of the plots to the clipboard as text.",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/18-chart-menu-export.png"
+    },
+    {
+      "id": "context.waveform-chart.export.export-data-to-excel",
+      "etiqueta": "Export Data To Excel",
+      "estado": "todo",
+      "labview": "Sends the data to Excel (greyed out in LabVIEW without Excel).",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/18-chart-menu-export.png"
+    },
+    {
+      "id": "context.waveform-chart.export.export-data-to-diadem",
+      "etiqueta": "Export Data To DIAdem",
+      "estado": "todo",
+      "labview": "Sends the data to DIAdem (greyed out in LabVIEW without DIAdem).",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/18-chart-menu-export.png"
+    },
+    {
+      "id": "context.waveform-chart.export.export-simplified-image",
+      "etiqueta": "Export Simplified Image...",
+      "estado": "todo",
+      "labview": "Saves the object as an image file.",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/18-chart-menu-export.png"
+    },
+    {
+      "id": "context.waveform-chart.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties dialog of the object.",
+      "necesita": "propiedades",
+      "captura": "graphs/10-chart-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph",
+      "etiqueta": "Waveform Graph",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_menus_of_the_graphs_have_LabVIEW's_rows_in_their_order",
+      "captura": "graphs/30-graph-menu.png"
+    },
+    {
+      "id": "context.waveform-graph.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/30-graph-menu.png"
+    },
+    {
+      "id": "context.waveform-graph.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/31-graph-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-graph.visible-items.caption",
+      "etiqueta": "Caption",
+      "estado": "todo",
+      "labview": "Shows a caption over the object, apart from its label.",
+      "necesita": "etiquetas",
+      "captura": "graphs/31-graph-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-graph.visible-items.plot-legend",
+      "etiqueta": "Plot Legend",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/31-graph-menu-visible-items.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.visible-items.scale-legend",
+      "etiqueta": "Scale Legend",
+      "estado": "todo",
+      "labview": "A table with the scale options of each axis, next to the object.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/31-graph-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-graph.visible-items.graph-palette",
+      "etiqueta": "Graph Palette",
+      "estado": "todo",
+      "labview": "The tools to zoom, pan and move the cursor of the graph at run time.",
+      "necesita": "cursores-y-anotaciones",
+      "captura": "graphs/31-graph-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-graph.visible-items.cursor-legend",
+      "etiqueta": "Cursor Legend",
+      "estado": "todo",
+      "labview": "A table with the cursors of the graph and where they are.",
+      "necesita": "cursores-y-anotaciones",
+      "captura": "graphs/31-graph-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-graph.visible-items.digital-display",
+      "etiqueta": "Digital Display",
+      "estado": "todo",
+      "labview": "A digital display with the value of the plot.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/31-graph-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-graph.visible-items.x-scrollbar",
+      "etiqueta": "X Scrollbar",
+      "estado": "todo",
+      "labview": "A scrollbar under the X axis, to move along the data.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/31-graph-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-graph.visible-items.x-scale",
+      "etiqueta": "X Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/31-graph-menu-visible-items.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.visible-items.y-scale",
+      "etiqueta": "Y Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/31-graph-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-graph.visible-items.unit-label",
+      "etiqueta": "Unit Label",
+      "estado": "todo",
+      "labview": "A label with the unit of the value (greyed out in LabVIEW too, on these objects).",
+      "necesita": "etiquetas",
+      "captura": "graphs/31-graph-menu-visible-items.png"
+    },
+    {
+      "id": "context.waveform-graph.find-terminal",
+      "etiqueta": "Find Terminal",
+      "estado": "todo",
+      "labview": "Shows the terminal of the object on the diagram, selected.",
+      "necesita": "diagrama",
+      "captura": "graphs/30-graph-menu.png"
+    },
+    {
+      "id": "context.waveform-graph.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Turns the indicator into a control; the wires that no longer fit break.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/30-graph-menu.png"
+    },
+    {
+      "id": "context.waveform-graph.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved apart.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "graphs/30-graph-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the description and the tip strip of the object.",
+      "necesita": "descripciones",
+      "captura": "graphs/30-graph-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates related objects: a local variable, a reference, a property node.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/30-graph-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "A local variable of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.waveform-graph.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "A reference to the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.waveform-graph.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "A property node of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.waveform-graph.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "An invoke node of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.waveform-graph.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "A cluster with the selected objects.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.waveform-graph.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the object with another one of the Controls palette, keeping its terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/30-graph-menu.png"
+    },
+    {
+      "id": "context.waveform-graph.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Clear_Chart_and_Clear_Graph_empty_what_the_object_shows",
+      "captura": "graphs/30-graph-menu.png"
+    },
+    {
+      "id": "context.waveform-graph.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "todo",
+      "labview": "Puts the object back to its default value.",
+      "necesita": "valores-por-defecto",
+      "captura": "graphs/32-graph-menu-data-operations.png"
+    },
+    {
+      "id": "context.waveform-graph.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "todo",
+      "labview": "Keeps the current value as the default of the object.",
+      "necesita": "valores-por-defecto",
+      "captura": "graphs/32-graph-menu-data-operations.png"
+    },
+    {
+      "id": "context.waveform-graph.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the data of the object to the clipboard (greyed out in LabVIEW on an indicator).",
+      "necesita": "copiar-datos",
+      "captura": "graphs/32-graph-menu-data-operations.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "graphs/32-graph-menu-data-operations.png"
+    },
+    {
+      "id": "context.waveform-graph.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes the data of the clipboard into the object (greyed out in LabVIEW on an indicator).",
+      "necesita": "copiar-datos",
+      "captura": "graphs/32-graph-menu-data-operations.png"
+    },
+    {
+      "id": "context.waveform-graph.data-operations.clear-graph",
+      "etiqueta": "Clear Graph",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Clear_Chart_and_Clear_Graph_empty_what_the_object_shows",
+      "captura": "graphs/32-graph-menu-data-operations.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.data-operations.create-annotation",
+      "etiqueta": "Create Annotation",
+      "estado": "todo",
+      "labview": "Writes a note on a point of the graph.",
+      "necesita": "cursores-y-anotaciones",
+      "captura": "graphs/32-graph-menu-data-operations.png"
+    },
+    {
+      "id": "context.waveform-graph.data-operations.delete-all-annotations",
+      "etiqueta": "Delete All Annotations",
+      "estado": "todo",
+      "labview": "Deletes the notes of the graph (greyed out in LabVIEW while there are none).",
+      "necesita": "cursores-y-anotaciones",
+      "captura": "graphs/32-graph-menu-data-operations.png"
+    },
+    {
+      "id": "context.waveform-graph.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/30-graph-menu.png"
+    },
+    {
+      "id": "context.waveform-graph.advanced.key-navigation",
+      "etiqueta": "Key Navigation...",
+      "estado": "todo",
+      "labview": "Which key goes to the object and in which order (greyed out in LabVIEW on an indicator).",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/33-graph-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-graph.advanced.synchronous-display",
+      "etiqueta": "Synchronous Display",
+      "estado": "todo",
+      "labview": "Redraws the object each time it is written, and not when the screen refreshes.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/33-graph-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-graph.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Opens the object in the control editor.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/33-graph-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-graph.advanced.run-time-shortcut-menu",
+      "etiqueta": "Run-Time Shortcut Menu",
+      "estado": "todo",
+      "labview": "Which items the menu of the object has when the VI runs.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/33-graph-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-graph.advanced.hide-indicator",
+      "etiqueta": "Hide Indicator",
+      "estado": "todo",
+      "labview": "Hides the object on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/33-graph-menu-advanced.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.advanced.enabled-state",
+      "etiqueta": "Enabled State",
+      "estado": "todo",
+      "labview": "Whether the object is enabled, disabled or disabled and greyed.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/33-graph-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-graph.advanced.smooth-updates",
+      "etiqueta": "Smooth Updates",
+      "estado": "todo",
+      "labview": "Redraws the graph without flicker.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/33-graph-menu-advanced.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.advanced.auto-adjust-scales",
+      "etiqueta": "Auto Adjust Scales",
+      "estado": "todo",
+      "labview": "Lets the scales follow the data.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/33-graph-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-graph.advanced.cursors-scroll-graph",
+      "etiqueta": "Cursors Scroll Graph",
+      "estado": "todo",
+      "labview": "Moves the cursors with the data.",
+      "necesita": "cursores-y-anotaciones",
+      "captura": "graphs/33-graph-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-graph.advanced.disable-plot-legend",
+      "etiqueta": "Disable Plot Legend",
+      "estado": "todo",
+      "labview": "Removes the plot legend from the object.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/33-graph-menu-advanced.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.advanced.reset-scale-layout",
+      "etiqueta": "Reset Scale Layout",
+      "estado": "todo",
+      "labview": "Puts the scales back where a new object has them.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/33-graph-menu-advanced.png"
+    },
+    {
+      "id": "context.waveform-graph.fit-control-to-pane",
+      "etiqueta": "Fit Control to Pane",
+      "estado": "todo",
+      "labview": "Stretches the object until it fills the panel.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/30-graph-menu.png"
+    },
+    {
+      "id": "context.waveform-graph.scale-object-with-pane",
+      "etiqueta": "Scale Object with Pane",
+      "estado": "todo",
+      "labview": "The object grows and shrinks with the panel when the window is resized.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/30-graph-menu.png"
+    },
+    {
+      "id": "context.waveform-graph.x-scale",
+      "etiqueta": "X Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/30-graph-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.x-scale.marker-spacing",
+      "etiqueta": "Marker Spacing",
+      "estado": "todo",
+      "labview": "How the labels of the axis are spaced: uniform or arbitrary.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/34-graph-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.x-scale.add-marker",
+      "etiqueta": "Add Marker",
+      "estado": "todo",
+      "labview": "Adds a label to the axis (greyed out in LabVIEW with uniform spacing).",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/34-graph-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.x-scale.delete-marker",
+      "etiqueta": "Delete Marker",
+      "estado": "todo",
+      "labview": "Deletes a label of the axis (greyed out in LabVIEW with uniform spacing).",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/34-graph-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.x-scale.formatting",
+      "etiqueta": "Formatting...",
+      "estado": "todo",
+      "labview": "The format of the numbers of the axis and its precision.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/34-graph-menu-x-scale.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.x-scale.style",
+      "etiqueta": "Style",
+      "estado": "todo",
+      "labview": "The marks of the axis: which ticks it draws and where.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/34-graph-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.x-scale.mapping",
+      "etiqueta": "Mapping",
+      "estado": "todo",
+      "labview": "A linear or a logarithmic scale.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/34-graph-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.x-scale.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the axis.",
+      "necesita": "propiedades",
+      "captura": "graphs/34-graph-menu-x-scale.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.x-scale.autoscale-x",
+      "etiqueta": "AutoScale X",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/34-graph-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.x-scale.loose-fit",
+      "etiqueta": "Loose Fit",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/34-graph-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.x-scale.visible-scale-label",
+      "etiqueta": "Visible Scale Label",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/34-graph-menu-x-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.y-scale",
+      "etiqueta": "Y Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/30-graph-menu.png"
+    },
+    {
+      "id": "context.waveform-graph.y-scale.marker-spacing",
+      "etiqueta": "Marker Spacing",
+      "estado": "todo",
+      "labview": "How the labels of the axis are spaced: uniform or arbitrary.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/35-graph-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.y-scale.add-marker",
+      "etiqueta": "Add Marker",
+      "estado": "todo",
+      "labview": "Adds a label to the axis (greyed out in LabVIEW with uniform spacing).",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/35-graph-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.y-scale.delete-marker",
+      "etiqueta": "Delete Marker",
+      "estado": "todo",
+      "labview": "Deletes a label of the axis (greyed out in LabVIEW with uniform spacing).",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/35-graph-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.y-scale.formatting",
+      "etiqueta": "Formatting...",
+      "estado": "todo",
+      "labview": "The format of the numbers of the axis and its precision.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/35-graph-menu-y-scale.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.y-scale.style",
+      "etiqueta": "Style",
+      "estado": "todo",
+      "labview": "The marks of the axis: which ticks it draws and where.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/35-graph-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.y-scale.mapping",
+      "etiqueta": "Mapping",
+      "estado": "todo",
+      "labview": "A linear or a logarithmic scale.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/35-graph-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.y-scale.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the axis.",
+      "necesita": "propiedades",
+      "captura": "graphs/35-graph-menu-y-scale.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.y-scale.autoscale-y",
+      "etiqueta": "AutoScale Y",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/35-graph-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.y-scale.loose-fit",
+      "etiqueta": "Loose Fit",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/35-graph-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.y-scale.visible-scale-label",
+      "etiqueta": "Visible Scale Label",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/35-graph-menu-y-scale.png"
+    },
+    {
+      "id": "context.waveform-graph.transpose-array",
+      "etiqueta": "Transpose Array",
+      "estado": "todo",
+      "labview": "Draws the rows of a 2D array as columns and the other way round (greyed out in LabVIEW while it does not apply).",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/30-graph-menu.png"
+    },
+    {
+      "id": "context.waveform-graph.autosize-plot-legend",
+      "etiqueta": "Autosize Plot Legend",
+      "estado": "todo",
+      "labview": "The legend grows to hold all the plots.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/30-graph-menu.png"
+    },
+    {
+      "id": "context.waveform-graph.export",
+      "etiqueta": "Export",
+      "estado": "todo",
+      "labview": "Exports the object: data, a spreadsheet, an image.",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/30-graph-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.waveform-graph.export.export-data-to-clipboard",
+      "etiqueta": "Export Data To Clipboard",
+      "estado": "todo",
+      "labview": "Copies the data of the plots to the clipboard as text.",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/18-chart-menu-export.png"
+    },
+    {
+      "id": "context.waveform-graph.export.export-data-to-excel",
+      "etiqueta": "Export Data To Excel",
+      "estado": "todo",
+      "labview": "Sends the data to Excel (greyed out in LabVIEW without Excel).",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/18-chart-menu-export.png"
+    },
+    {
+      "id": "context.waveform-graph.export.export-data-to-diadem",
+      "etiqueta": "Export Data To DIAdem",
+      "estado": "todo",
+      "labview": "Sends the data to DIAdem (greyed out in LabVIEW without DIAdem).",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/18-chart-menu-export.png"
+    },
+    {
+      "id": "context.waveform-graph.export.export-simplified-image",
+      "etiqueta": "Export Simplified Image...",
+      "estado": "todo",
+      "labview": "Saves the object as an image file.",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/18-chart-menu-export.png"
+    },
+    {
+      "id": "context.waveform-graph.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties dialog of the object.",
+      "necesita": "propiedades",
+      "captura": "graphs/30-graph-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph",
+      "etiqueta": "XY Graph",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_menus_of_the_graphs_have_LabVIEW's_rows_in_their_order",
+      "captura": "graphs/40-xy-menu.png"
+    },
+    {
+      "id": "context.xy-graph.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/40-xy-menu.png"
+    },
+    {
+      "id": "context.xy-graph.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/41-xy-menu-visible-items.png"
+    },
+    {
+      "id": "context.xy-graph.visible-items.caption",
+      "etiqueta": "Caption",
+      "estado": "todo",
+      "labview": "Shows a caption over the object, apart from its label.",
+      "necesita": "etiquetas",
+      "captura": "graphs/41-xy-menu-visible-items.png"
+    },
+    {
+      "id": "context.xy-graph.visible-items.plot-legend",
+      "etiqueta": "Plot Legend",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/41-xy-menu-visible-items.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.visible-items.scale-legend",
+      "etiqueta": "Scale Legend",
+      "estado": "todo",
+      "labview": "A table with the scale options of each axis, next to the object.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/41-xy-menu-visible-items.png"
+    },
+    {
+      "id": "context.xy-graph.visible-items.graph-palette",
+      "etiqueta": "Graph Palette",
+      "estado": "todo",
+      "labview": "The tools to zoom, pan and move the cursor of the graph at run time.",
+      "necesita": "cursores-y-anotaciones",
+      "captura": "graphs/41-xy-menu-visible-items.png"
+    },
+    {
+      "id": "context.xy-graph.visible-items.cursor-legend",
+      "etiqueta": "Cursor Legend",
+      "estado": "todo",
+      "labview": "A table with the cursors of the graph and where they are.",
+      "necesita": "cursores-y-anotaciones",
+      "captura": "graphs/41-xy-menu-visible-items.png"
+    },
+    {
+      "id": "context.xy-graph.visible-items.digital-display",
+      "etiqueta": "Digital Display",
+      "estado": "todo",
+      "labview": "A digital display with the value of the plot.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/41-xy-menu-visible-items.png"
+    },
+    {
+      "id": "context.xy-graph.visible-items.x-scrollbar",
+      "etiqueta": "X Scrollbar",
+      "estado": "todo",
+      "labview": "A scrollbar under the X axis, to move along the data.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/41-xy-menu-visible-items.png"
+    },
+    {
+      "id": "context.xy-graph.visible-items.x-scale",
+      "etiqueta": "X Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/41-xy-menu-visible-items.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.visible-items.y-scale",
+      "etiqueta": "Y Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/41-xy-menu-visible-items.png"
+    },
+    {
+      "id": "context.xy-graph.visible-items.unit-label",
+      "etiqueta": "Unit Label",
+      "estado": "todo",
+      "labview": "A label with the unit of the value (greyed out in LabVIEW too, on these objects).",
+      "necesita": "etiquetas",
+      "captura": "graphs/41-xy-menu-visible-items.png"
+    },
+    {
+      "id": "context.xy-graph.find-terminal",
+      "etiqueta": "Find Terminal",
+      "estado": "todo",
+      "labview": "Shows the terminal of the object on the diagram, selected.",
+      "necesita": "diagrama",
+      "captura": "graphs/40-xy-menu.png"
+    },
+    {
+      "id": "context.xy-graph.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Turns the indicator into a control; the wires that no longer fit break.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/40-xy-menu.png"
+    },
+    {
+      "id": "context.xy-graph.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved apart.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "graphs/40-xy-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the description and the tip strip of the object.",
+      "necesita": "descripciones",
+      "captura": "graphs/40-xy-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates related objects: a local variable, a reference, a property node.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/40-xy-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "A local variable of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.xy-graph.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "A reference to the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.xy-graph.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "A property node of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.xy-graph.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "An invoke node of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.xy-graph.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "A cluster with the selected objects.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/16-chart-menu-create.png"
+    },
+    {
+      "id": "context.xy-graph.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the object with another one of the Controls palette, keeping its terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/40-xy-menu.png"
+    },
+    {
+      "id": "context.xy-graph.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Clear_Chart_and_Clear_Graph_empty_what_the_object_shows",
+      "captura": "graphs/40-xy-menu.png"
+    },
+    {
+      "id": "context.xy-graph.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "todo",
+      "labview": "Puts the object back to its default value.",
+      "necesita": "valores-por-defecto",
+      "captura": "graphs/42-xy-menu-data-operations.png"
+    },
+    {
+      "id": "context.xy-graph.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "todo",
+      "labview": "Keeps the current value as the default of the object.",
+      "necesita": "valores-por-defecto",
+      "captura": "graphs/42-xy-menu-data-operations.png"
+    },
+    {
+      "id": "context.xy-graph.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the data of the object to the clipboard (greyed out in LabVIEW on an indicator).",
+      "necesita": "copiar-datos",
+      "captura": "graphs/42-xy-menu-data-operations.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "graphs/42-xy-menu-data-operations.png"
+    },
+    {
+      "id": "context.xy-graph.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes the data of the clipboard into the object (greyed out in LabVIEW on an indicator).",
+      "necesita": "copiar-datos",
+      "captura": "graphs/42-xy-menu-data-operations.png"
+    },
+    {
+      "id": "context.xy-graph.data-operations.clear-graph",
+      "etiqueta": "Clear Graph",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Clear_Chart_and_Clear_Graph_empty_what_the_object_shows",
+      "captura": "graphs/42-xy-menu-data-operations.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.data-operations.create-annotation",
+      "etiqueta": "Create Annotation",
+      "estado": "todo",
+      "labview": "Writes a note on a point of the graph.",
+      "necesita": "cursores-y-anotaciones",
+      "captura": "graphs/42-xy-menu-data-operations.png"
+    },
+    {
+      "id": "context.xy-graph.data-operations.delete-all-annotations",
+      "etiqueta": "Delete All Annotations",
+      "estado": "todo",
+      "labview": "Deletes the notes of the graph (greyed out in LabVIEW while there are none).",
+      "necesita": "cursores-y-anotaciones",
+      "captura": "graphs/42-xy-menu-data-operations.png"
+    },
+    {
+      "id": "context.xy-graph.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/40-xy-menu.png"
+    },
+    {
+      "id": "context.xy-graph.advanced.key-navigation",
+      "etiqueta": "Key Navigation...",
+      "estado": "todo",
+      "labview": "Which key goes to the object and in which order (greyed out in LabVIEW on an indicator).",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/43-xy-menu-advanced.png"
+    },
+    {
+      "id": "context.xy-graph.advanced.synchronous-display",
+      "etiqueta": "Synchronous Display",
+      "estado": "todo",
+      "labview": "Redraws the object each time it is written, and not when the screen refreshes.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/43-xy-menu-advanced.png"
+    },
+    {
+      "id": "context.xy-graph.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Opens the object in the control editor.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/43-xy-menu-advanced.png"
+    },
+    {
+      "id": "context.xy-graph.advanced.run-time-shortcut-menu",
+      "etiqueta": "Run-Time Shortcut Menu",
+      "estado": "todo",
+      "labview": "Which items the menu of the object has when the VI runs.",
+      "necesita": "menus-contextuales",
+      "captura": "graphs/43-xy-menu-advanced.png"
+    },
+    {
+      "id": "context.xy-graph.advanced.hide-indicator",
+      "etiqueta": "Hide Indicator",
+      "estado": "todo",
+      "labview": "Hides the object on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/43-xy-menu-advanced.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.advanced.enabled-state",
+      "etiqueta": "Enabled State",
+      "estado": "todo",
+      "labview": "Whether the object is enabled, disabled or disabled and greyed.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/43-xy-menu-advanced.png"
+    },
+    {
+      "id": "context.xy-graph.advanced.smooth-updates",
+      "etiqueta": "Smooth Updates",
+      "estado": "todo",
+      "labview": "Redraws the graph without flicker.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/43-xy-menu-advanced.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.advanced.auto-adjust-scales",
+      "etiqueta": "Auto Adjust Scales",
+      "estado": "todo",
+      "labview": "Lets the scales follow the data.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/43-xy-menu-advanced.png"
+    },
+    {
+      "id": "context.xy-graph.advanced.cursors-scroll-graph",
+      "etiqueta": "Cursors Scroll Graph",
+      "estado": "todo",
+      "labview": "Moves the cursors with the data.",
+      "necesita": "cursores-y-anotaciones",
+      "captura": "graphs/43-xy-menu-advanced.png"
+    },
+    {
+      "id": "context.xy-graph.advanced.disable-plot-legend",
+      "etiqueta": "Disable Plot Legend",
+      "estado": "todo",
+      "labview": "Removes the plot legend from the object.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/43-xy-menu-advanced.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.advanced.reset-scale-layout",
+      "etiqueta": "Reset Scale Layout",
+      "estado": "todo",
+      "labview": "Puts the scales back where a new object has them.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/43-xy-menu-advanced.png"
+    },
+    {
+      "id": "context.xy-graph.fit-control-to-pane",
+      "etiqueta": "Fit Control to Pane",
+      "estado": "todo",
+      "labview": "Stretches the object until it fills the panel.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/40-xy-menu.png"
+    },
+    {
+      "id": "context.xy-graph.scale-object-with-pane",
+      "etiqueta": "Scale Object with Pane",
+      "estado": "todo",
+      "labview": "The object grows and shrinks with the panel when the window is resized.",
+      "necesita": "panel-frontal",
+      "captura": "graphs/40-xy-menu.png"
+    },
+    {
+      "id": "context.xy-graph.optional-plane",
+      "etiqueta": "Optional Plane",
+      "estado": "todo",
+      "labview": "A plane drawn over the plot: Nyquist, Nichols, S or Z.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/44-xy-menu-optional-plane.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.optional-plane.none",
+      "etiqueta": "None",
+      "estado": "todo",
+      "labview": "A plane of the Optional Plane menu.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/44-xy-menu-optional-plane.png"
+    },
+    {
+      "id": "context.xy-graph.optional-plane.nyquist",
+      "etiqueta": "Nyquist",
+      "estado": "todo",
+      "labview": "A plane of the Optional Plane menu.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/44-xy-menu-optional-plane.png"
+    },
+    {
+      "id": "context.xy-graph.optional-plane.nichols",
+      "etiqueta": "Nichols",
+      "estado": "todo",
+      "labview": "A plane of the Optional Plane menu.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/44-xy-menu-optional-plane.png"
+    },
+    {
+      "id": "context.xy-graph.optional-plane.s-plane",
+      "etiqueta": "S Plane",
+      "estado": "todo",
+      "labview": "A plane of the Optional Plane menu.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/44-xy-menu-optional-plane.png"
+    },
+    {
+      "id": "context.xy-graph.optional-plane.z-plane",
+      "etiqueta": "Z Plane",
+      "estado": "todo",
+      "labview": "A plane of the Optional Plane menu.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/44-xy-menu-optional-plane.png"
+    },
+    {
+      "id": "context.xy-graph.x-scale",
+      "etiqueta": "X Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/40-xy-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.x-scale.marker-spacing",
+      "etiqueta": "Marker Spacing",
+      "estado": "todo",
+      "labview": "How the labels of the axis are spaced: uniform or arbitrary.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.x-scale.add-marker",
+      "etiqueta": "Add Marker",
+      "estado": "todo",
+      "labview": "Adds a label to the axis (greyed out in LabVIEW with uniform spacing).",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.x-scale.delete-marker",
+      "etiqueta": "Delete Marker",
+      "estado": "todo",
+      "labview": "Deletes a label of the axis (greyed out in LabVIEW with uniform spacing).",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.x-scale.formatting",
+      "etiqueta": "Formatting...",
+      "estado": "todo",
+      "labview": "The format of the numbers of the axis and its precision.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/45-xy-menu-x-scale.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.x-scale.style",
+      "etiqueta": "Style",
+      "estado": "todo",
+      "labview": "The marks of the axis: which ticks it draws and where.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.x-scale.mapping",
+      "etiqueta": "Mapping",
+      "estado": "todo",
+      "labview": "A linear or a logarithmic scale.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.x-scale.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the axis.",
+      "necesita": "propiedades",
+      "captura": "graphs/45-xy-menu-x-scale.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.x-scale.autoscale-x",
+      "etiqueta": "AutoScale X",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.x-scale.loose-fit",
+      "etiqueta": "Loose Fit",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.x-scale.visible-scale-label",
+      "etiqueta": "Visible Scale Label",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.y-scale",
+      "etiqueta": "Y Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/40-xy-menu.png"
+    },
+    {
+      "id": "context.xy-graph.y-scale.marker-spacing",
+      "etiqueta": "Marker Spacing",
+      "estado": "todo",
+      "labview": "How the labels of the axis are spaced: uniform or arbitrary.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.y-scale.add-marker",
+      "etiqueta": "Add Marker",
+      "estado": "todo",
+      "labview": "Adds a label to the axis (greyed out in LabVIEW with uniform spacing).",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.y-scale.delete-marker",
+      "etiqueta": "Delete Marker",
+      "estado": "todo",
+      "labview": "Deletes a label of the axis (greyed out in LabVIEW with uniform spacing).",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.y-scale.formatting",
+      "etiqueta": "Formatting...",
+      "estado": "todo",
+      "labview": "The format of the numbers of the axis and its precision.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/45-xy-menu-x-scale.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.y-scale.style",
+      "etiqueta": "Style",
+      "estado": "todo",
+      "labview": "The marks of the axis: which ticks it draws and where.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.y-scale.mapping",
+      "etiqueta": "Mapping",
+      "estado": "todo",
+      "labview": "A linear or a logarithmic scale.",
+      "necesita": "escalas-de-graficas",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.y-scale.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the axis.",
+      "necesita": "propiedades",
+      "captura": "graphs/45-xy-menu-x-scale.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.y-scale.autoscale-y",
+      "etiqueta": "AutoScale Y",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.y-scale.loose-fit",
+      "etiqueta": "Loose Fit",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::AutoScale_X_and_AutoScale_Y_switch_autoscale_off_and_keep_the_last_range",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.y-scale.visible-scale-label",
+      "etiqueta": "Visible Scale Label",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Visible_Items_hides_and_shows_the_label,_the_legend_and_the_scales",
+      "captura": "graphs/45-xy-menu-x-scale.png"
+    },
+    {
+      "id": "context.xy-graph.autosize-plot-legend",
+      "etiqueta": "Autosize Plot Legend",
+      "estado": "todo",
+      "labview": "The legend grows to hold all the plots.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/40-xy-menu.png"
+    },
+    {
+      "id": "context.xy-graph.export",
+      "etiqueta": "Export",
+      "estado": "todo",
+      "labview": "Exports the object: data, a spreadsheet, an image.",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/40-xy-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.xy-graph.export.export-data-to-clipboard",
+      "etiqueta": "Export Data To Clipboard",
+      "estado": "todo",
+      "labview": "Copies the data of the plots to the clipboard as text.",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/18-chart-menu-export.png"
+    },
+    {
+      "id": "context.xy-graph.export.export-data-to-excel",
+      "etiqueta": "Export Data To Excel",
+      "estado": "todo",
+      "labview": "Sends the data to Excel (greyed out in LabVIEW without Excel).",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/18-chart-menu-export.png"
+    },
+    {
+      "id": "context.xy-graph.export.export-data-to-diadem",
+      "etiqueta": "Export Data To DIAdem",
+      "estado": "todo",
+      "labview": "Sends the data to DIAdem (greyed out in LabVIEW without DIAdem).",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/18-chart-menu-export.png"
+    },
+    {
+      "id": "context.xy-graph.export.export-simplified-image",
+      "etiqueta": "Export Simplified Image...",
+      "estado": "todo",
+      "labview": "Saves the object as an image file.",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/18-chart-menu-export.png"
+    },
+    {
+      "id": "context.xy-graph.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties dialog of the object.",
+      "necesita": "propiedades",
+      "captura": "graphs/40-xy-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.run-chart",
+      "etiqueta": "Waveform Chart",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/89-chart-runmode-menu.png"
+    },
+    {
+      "id": "context.run-chart.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "graphs/89-chart-runmode-menu.png"
+    },
+    {
+      "id": "context.run-chart.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Shows the description and the tip strip of the object.",
+      "necesita": "descripciones",
+      "captura": "graphs/89-chart-runmode-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.run-chart.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/89-chart-runmode-menu.png"
+    },
+    {
+      "id": "context.run-chart.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/89-chart-runmode-menu.png"
+    },
+    {
+      "id": "context.run-chart.visible-items.plot-legend",
+      "etiqueta": "Plot Legend",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/89-chart-runmode-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.run-chart.visible-items.x-scale",
+      "etiqueta": "X Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/89-chart-runmode-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.run-chart.visible-items.y-scale",
+      "etiqueta": "Y Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/89-chart-runmode-menu.png"
+    },
+    {
+      "id": "context.run-chart.clear-chart",
+      "etiqueta": "Clear Chart",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/89-chart-runmode-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.run-chart.autoscale-x",
+      "etiqueta": "AutoScale X",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/89-chart-runmode-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.run-chart.autoscale-y",
+      "etiqueta": "AutoScale Y",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/89-chart-runmode-menu.png"
+    },
+    {
+      "id": "context.run-chart.update-mode",
+      "etiqueta": "Update Mode",
+      "estado": "todo",
+      "labview": "How a chart scrolls: Strip Chart, Scope Chart or Sweep Chart.",
+      "necesita": "modos-de-chart",
+      "captura": "graphs/89-chart-runmode-menu.png"
+    },
+    {
+      "id": "context.run-chart.autosize-plot-legend",
+      "etiqueta": "Autosize Plot Legend",
+      "estado": "todo",
+      "labview": "The legend grows to hold all the plots.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/89-chart-runmode-menu.png"
+    },
+    {
+      "id": "context.run-chart.export",
+      "etiqueta": "Export",
+      "estado": "todo",
+      "labview": "Exports the object: data, a spreadsheet, an image.",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/89-chart-runmode-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.run-graph",
+      "etiqueta": "Waveform Graph",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/88-graph-runmode-menu.png"
+    },
+    {
+      "id": "context.run-graph.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "graphs/88-graph-runmode-menu.png"
+    },
+    {
+      "id": "context.run-graph.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Shows the description and the tip strip of the object.",
+      "necesita": "descripciones",
+      "captura": "graphs/88-graph-runmode-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.run-graph.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/88-graph-runmode-menu.png"
+    },
+    {
+      "id": "context.run-graph.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/88-graph-runmode-menu.png"
+    },
+    {
+      "id": "context.run-graph.visible-items.plot-legend",
+      "etiqueta": "Plot Legend",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/88-graph-runmode-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.run-graph.visible-items.x-scale",
+      "etiqueta": "X Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/88-graph-runmode-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.run-graph.visible-items.y-scale",
+      "etiqueta": "Y Scale",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/88-graph-runmode-menu.png"
+    },
+    {
+      "id": "context.run-graph.clear-graph",
+      "etiqueta": "Clear Graph",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/88-graph-runmode-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.run-graph.create-annotation",
+      "etiqueta": "Create Annotation",
+      "estado": "todo",
+      "labview": "Writes a note on a point of the graph.",
+      "necesita": "cursores-y-anotaciones",
+      "captura": "graphs/88-graph-runmode-menu.png"
+    },
+    {
+      "id": "context.run-graph.delete-all-annotations",
+      "etiqueta": "Delete All Annotations",
+      "estado": "todo",
+      "labview": "Deletes the notes of the graph (greyed out in LabVIEW while there are none).",
+      "necesita": "cursores-y-anotaciones",
+      "captura": "graphs/88-graph-runmode-menu.png"
+    },
+    {
+      "id": "context.run-graph.autoscale-x",
+      "etiqueta": "AutoScale X",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/88-graph-runmode-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.run-graph.autoscale-y",
+      "etiqueta": "AutoScale Y",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::the_Run_mode_menu_of_a_chart_and_of_a_graph_works_while_the_VI_runs",
+      "captura": "graphs/88-graph-runmode-menu.png"
+    },
+    {
+      "id": "context.run-graph.smooth-updates",
+      "etiqueta": "Smooth Updates",
+      "estado": "todo",
+      "labview": "Redraws the graph without flicker.",
+      "necesita": "graficas-especiales",
+      "captura": "graphs/88-graph-runmode-menu.png"
+    },
+    {
+      "id": "context.run-graph.autosize-plot-legend",
+      "etiqueta": "Autosize Plot Legend",
+      "estado": "todo",
+      "labview": "The legend grows to hold all the plots.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/88-graph-runmode-menu.png"
+    },
+    {
+      "id": "context.run-graph.export",
+      "etiqueta": "Export",
+      "estado": "todo",
+      "labview": "Exports the object: data, a spreadsheet, an image.",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/88-graph-runmode-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.plot-legend",
+      "etiqueta": "Plot Legend",
+      "estado": "todo",
+      "labview": "The menu of the legend of the plots.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/90-legend-menu.png"
+    },
+    {
+      "id": "context.plot-legend.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the legend are shown.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/90-legend-menu.png"
+    },
+    {
+      "id": "context.plot-legend.visible-items.index-display",
+      "etiqueta": "Index Display",
+      "estado": "todo",
+      "labview": "The number of each plot.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/91-legend-menu-visible-items.png"
+    },
+    {
+      "id": "context.plot-legend.visible-items.vertical-scrollbar",
+      "etiqueta": "Vertical Scrollbar",
+      "estado": "todo",
+      "labview": "A scrollbar for a legend with more plots than it shows.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/91-legend-menu-visible-items.png"
+    },
+    {
+      "id": "context.plot-legend.visible-items.horizontal-scrollbar",
+      "etiqueta": "Horizontal Scrollbar",
+      "estado": "todo",
+      "labview": "A horizontal scrollbar (greyed out in LabVIEW on a fresh legend).",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/91-legend-menu-visible-items.png"
+    },
+    {
+      "id": "context.plot-legend.visible-items.plot-visibility-checkbox",
+      "etiqueta": "Plot Visibility Checkbox",
+      "estado": "todo",
+      "labview": "A box next to each plot to show or hide it.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/91-legend-menu-visible-items.png"
+    },
+    {
+      "id": "context.plot-legend.export",
+      "etiqueta": "Export",
+      "estado": "todo",
+      "labview": "Exports the legend (greyed out in LabVIEW).",
+      "necesita": "exportar-graficas",
+      "captura": "graphs/90-legend-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.plot-legend.create-cluster-from-selection",
+      "etiqueta": "Create Cluster from Selection",
+      "estado": "todo",
+      "labview": "A cluster with the selected plots of the legend.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/90-legend-menu.png"
+    },
+    {
+      "id": "context.plot-legend.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the legend.",
+      "necesita": "propiedades",
+      "captura": "graphs/90-legend-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.plot-swatch",
+      "etiqueta": "Plot",
+      "estado": "todo",
+      "labview": "The menu of the swatch of a plot.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/92-plot-swatch-menu.png"
+    },
+    {
+      "id": "context.plot-swatch.plot-visible",
+      "etiqueta": "Plot Visible",
+      "estado": "todo",
+      "labview": "Shows or hides the plot.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/92-plot-swatch-menu.png"
+    },
+    {
+      "id": "context.plot-swatch.common-plots",
+      "etiqueta": "Common Plots",
+      "estado": "todo",
+      "labview": "The usual styles of plot: lines, points, bars, areas.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/92-plot-swatch-menu.png"
+    },
+    {
+      "id": "context.plot-swatch.color",
+      "etiqueta": "Color",
+      "estado": "todo",
+      "labview": "The colour of the plot.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/92-plot-swatch-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.plot-swatch.line-style",
+      "etiqueta": "Line Style",
+      "estado": "todo",
+      "labview": "Solid, dashed or dotted.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/92-plot-swatch-menu.png"
+    },
+    {
+      "id": "context.plot-swatch.line-width",
+      "etiqueta": "Line Width",
+      "estado": "todo",
+      "labview": "The width of the line in pixels.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/92-plot-swatch-menu.png"
+    },
+    {
+      "id": "context.plot-swatch.anti-aliased",
+      "etiqueta": "Anti-Aliased",
+      "estado": "todo",
+      "labview": "Draws the line smoothed.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/92-plot-swatch-menu.png"
+    },
+    {
+      "id": "context.plot-swatch.bar-plots",
+      "etiqueta": "Bar Plots",
+      "estado": "todo",
+      "labview": "Draws the plot as bars.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/92-plot-swatch-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.plot-swatch.fill-base-line",
+      "etiqueta": "Fill Base Line",
+      "estado": "todo",
+      "labview": "Fills the area between the plot and a base line.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/92-plot-swatch-menu.png"
+    },
+    {
+      "id": "context.plot-swatch.interpolation",
+      "etiqueta": "Interpolation",
+      "estado": "todo",
+      "labview": "How the points are joined: lines, steps or none.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/92-plot-swatch-menu.png"
+    },
+    {
+      "id": "context.plot-swatch.point-style",
+      "etiqueta": "Point Style",
+      "estado": "todo",
+      "labview": "The mark drawn on each point.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/92-plot-swatch-menu.png"
+    },
+    {
+      "id": "context.plot-swatch.x-scale",
+      "etiqueta": "X Scale",
+      "estado": "todo",
+      "labview": "The X axis, from the plot.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/92-plot-swatch-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.plot-swatch.y-scale",
+      "etiqueta": "Y Scale",
+      "estado": "todo",
+      "labview": "The Y axis, from the plot.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/92-plot-swatch-menu.png"
+    },
+    {
+      "id": "context.plot-swatch.export",
+      "etiqueta": "Export",
+      "estado": "todo",
+      "labview": "Exports the plot.",
+      "necesita": "trazos-de-graficas",
+      "captura": "graphs/92-plot-swatch-menu.png",
+      "separado": true
+    },
+    {
       "id": "context.array-dimensions-limit",
       "etiqueta": "Add Dimension",
       "estado": "todo",
@@ -11574,6 +14091,35 @@
       "labview": "Opens the help of this dialog.",
       "necesita": "ayuda-contextual",
       "captura": "subvi/vi-properties-execution-default.png"
+    },
+    {
+      "id": "dialog.chart-history-length",
+      "etiqueta": "Chart History Length",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Chart_History_Length_sets_the_history_from_its_dialog",
+      "captura": "graphs/50-chart-history-length-dialog.png"
+    },
+    {
+      "id": "dialog.chart-history-length.ok",
+      "etiqueta": "OK",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Chart_History_Length_sets_the_history_from_its_dialog",
+      "captura": "graphs/50-chart-history-length-dialog.png"
+    },
+    {
+      "id": "dialog.chart-history-length.cancel",
+      "etiqueta": "Cancel",
+      "estado": "built",
+      "prueba": "test/editor/graphs.test.mjs::Chart_History_Length_sets_the_history_from_its_dialog",
+      "captura": "graphs/50-chart-history-length-dialog.png"
+    },
+    {
+      "id": "dialog.chart-history-length.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of this dialog.",
+      "necesita": "ayuda-contextual",
+      "captura": "graphs/50-chart-history-length-dialog.png"
     }
   ]
 }

@@ -288,10 +288,42 @@
             { "type": "array", "items": { "type": "integer", "minimum": 0 }, "minItems": 2, "maxItems": 2 }
           ]
         },
+        "graph": {
+          "description": "Waveform Chart, Waveform Graph and XY Graph: their settings (presentation). Only what differs from LabVIEW's defaults is written, and the history of a chart never is: it belongs to the window, not to the file (labview-captures/graphs/REPORT.md §3, §4).",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "autoscale-x": { "description": "Whether the X axis autoscales. By default it does, except on a chart, whose X is the Strip window.", "type": "boolean" },
+            "autoscale-y": { "description": "Whether the Y axis autoscales (by default, yes).", "type": "boolean" },
+            "loose-fit-x": { "description": "AutoScale X with Loose Fit: the ends go out to whole steps (by default, yes).", "type": "boolean" },
+            "loose-fit-y": { "description": "The same for Y.", "type": "boolean" },
+            "scale-x": { "$ref": "#/$defs/graphScale" },
+            "scale-y": { "$ref": "#/$defs/graphScale" },
+            "history-length": { "description": "Chart: how many data points it keeps (1024 by default).", "type": "integer", "minimum": 1 },
+            "hidden": {
+              "description": "What Visible Items and the scale menus have hidden: the label, the plot legend, a scale or the name of an axis.",
+              "type": "array",
+              "items": { "enum": ["label", "plot-legend", "x-scale", "y-scale", "x-scale-label", "y-scale-label"] },
+              "uniqueItems": true
+            }
+          }
+        },
         "mechanical-action": {
           "description": "Cómo cambia el valor de un control booleano al pulsarlo. SEMÁNTICO: define cuándo cambia el valor. Si falta, la de fábrica de su `style`.",
           "enum": ["switch-when-pressed", "switch-when-released", "switch-until-released", "latch-when-pressed", "latch-when-released", "latch-until-released"]
         }
+      }
+    },
+
+    "graphScale": {
+      "description": "The range an axis keeps when it does not autoscale: from `min` to `max`, with a label every `step`.",
+      "type": "object",
+      "required": ["min", "max", "step"],
+      "additionalProperties": false,
+      "properties": {
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "step": { "type": "number", "exclusiveMinimum": 0 }
       }
     },
 
@@ -346,8 +378,12 @@
               "type": "string"
             },
             "inputs": {
-              "description": "Para compound-arithmetic: cuántas entradas tiene.",
-              "type": "integer", "minimum": 2
+              "description": "How many inputs or rows a node with a variable number of them has (Compound Arithmetic, Build Array, Format Into String, Scan From String…).",
+              "type": "integer", "minimum": 1
+            },
+            "rowTypes": {
+              "description": "For format-into-string and scan-from-string: the type each row keeps when it is not wired (a stretched row copies the one above it, as in LabVIEW).",
+              "type": "array", "items": { "$ref": "#/$defs/dataType" }
             },
             "dims": {
               "description": "For index-array and initialize-array: how many dimensions, one index or size input each (DT-044).",

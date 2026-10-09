@@ -285,3 +285,29 @@ export function nestArrayValue(elements, sizes) {
   const innerCount = sizes.slice(1).reduce((product, size) => product * size, 1);
   return Array.from({ length: sizes[0] }, (_, row) => nestArrayValue(elements.slice(row * innerCount, (row + 1) * innerCount), sizes.slice(1)));
 }
+
+// ——— What a chart or a graph accepts (labview-captures/graphs/REPORT.md) ———
+
+const isNumericArray = (t, dims = 1) => esArray(t) && dimensionsOf(t) === dims && esNumerico(t.array);
+const isNumericCluster = (t) => esCluster(t) && t.cluster.length > 0 && t.cluster.every((f) => esNumerico(f.type));
+/** A cluster of x0, dx and a 1D array of values: a waveform for the Waveform Graph. */
+const isTimedArray = (t) => esCluster(t) && t.cluster.length === 3 && esNumerico(t.cluster[0].type) && esNumerico(t.cluster[1].type) && isNumericArray(t.cluster[2].type);
+/** A cluster of an X array and a Y array: one plot of the XY Graph. */
+const isXYPlot = (t) => esCluster(t) && t.cluster.length === 2 && t.cluster.every((f) => isNumericArray(f.type));
+/** A cluster of two numbers: one (X, Y) point. */
+const isPoint = (t) => esCluster(t) && t.cluster.length === 2 && t.cluster.every((f) => esNumerico(f.type));
+
+/**
+ * Whether a Waveform Chart, Waveform Graph or XY Graph accepts data of type `t`
+ * (the types its context help lists, measured: a chart takes a number, a 1D or
+ * 2D array or a cluster of numbers and breaks a cluster of arrays; a graph a
+ * 1D or 2D array or a cluster of x0, dx and an array; an XY graph a cluster of
+ * two arrays, an array of them, or an array of points). Arrays of timed clusters
+ * for the graph and of points for the XY graph are unverified.
+ */
+export function graphAccepts(kind, t) {
+  if (kind === "waveform-chart") return esNumerico(t) || isNumericArray(t, 1) || isNumericArray(t, 2) || isNumericCluster(t);
+  if (kind === "waveform-graph") return isNumericArray(t, 1) || isNumericArray(t, 2) || isTimedArray(t) || (esArray(t) && dimensionsOf(t) === 1 && isTimedArray(t.array));
+  if (kind === "xy-graph") return isXYPlot(t) || (esArray(t) && dimensionsOf(t) === 1 && (isXYPlot(t.array) || isPoint(t.array)));
+  return false;
+}

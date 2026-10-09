@@ -320,75 +320,78 @@ entry of the LabVIEW inventory when its area is broken down (DT-035):
 
 ---
 
-## 8. Waveform Chart and Graph
+## 8. Waveform Chart, Waveform Graph and XY Graph (2026-10-09)
 
-### 8.1 Fundamental difference
+Measured in LabVIEW 2026 Q3, pixel by pixel at 1:1, on `labview-captures/graphs/` (`REPORT.md`; the numbers of the
+captures are cited). What was not measured says "unverified". The drawing is ours: rectangles, lines and text, not NI's
+bitmaps (DT-035 §8). Implemented in `editor/src/front-panel/graph-view.mjs` and `graph-state.mjs`, and tested in
+`test/editor/graphs.test.mjs`. This section replaces the first sketch of §8, written before the captures.
 
-| Aspect | Waveform Chart | Waveform Graph |
-|--------|----------------|----------------|
-| **Data** | Circular buffer (history) | No buffer |
-| **Update** | Incremental (point by point) | Batch (replaces everything) |
-| **Input** | Accepts scalar OR array | Requires array |
-| **Use** | Real-time, loops | Post-analysis |
+### 8.1 What each one does
 
-### 8.2 Visual specification
+| | Waveform Chart | Waveform Graph | XY Graph |
+|---|---|---|---|
+| **Data** | A history: each write adds points (1024 by default, Chart History Length...) | What it last received, nothing is kept | What it last received |
+| **Takes** | A number, a 1D array (all its points at once), a 2D array (a plot per row) or a cluster of numbers (a plot per field); a cluster of arrays breaks the wire (73) | A 1D array against its index, a 2D array (a plot per row) or a cluster of x0, dx and a 1D array (87) | A cluster of an X array and a Y array (85) or an array of them |
+| **X axis** | The Strip window: the point index, 0..100 until 100 points are in, then the last 100 (70) | Autoscale (80, 87) | Autoscale (85) |
+| **Y axis** | Autoscale | Autoscale | Autoscale |
+| **Panel type** (context help, 61) | double | 1D array of double | 1D array of cluster of 2 elements (X, Y double) |
 
-**Dimensions:**
-- Plot area: 200x160 px
-- Black background (oscilloscope style)
-- Faint grey grid (optional)
-- Green signal line (RGB: 0.200.0)
+### 8.2 Frame, plot area and legend (`03-three-fresh-panel.png`)
 
-**Waveform Chart:**
-- "CHART" label in the top left corner
-- Number of points (n=X) in the top right corner
-- Configurable buffer (default: 1024 points)
-- Automatic scale in Y
+- **Frame** `#bfbfbf`: 328 × 218 (chart, graph) and 342 × 300 (XY). A bevel 13 px wide on the left (`#bbbbbb` to `#d3d3d3`
+  and back to `#c5c5c5`), a dark bar 13 px wide on the right (`#bababa` to `#404040`), two light rows on top (`#d0d0d0`,
+  `#d2d2d2`) and two dark ones at the bottom (`#a5a5a5`, `#858585`). The 1 px `#d8d8d8` the report sees on the right is a
+  line of the panel's grid (every 12 px), not an outline.
+- **Plot area** black, 232 × 166 (chart, graph; 72 px from the left of the frame and 10 from the top) and 248 × 248 (XY; 70 and 10),
+  with a 1 px `#595959` border on the left and the top and `#d9d9d9` on the right and the bottom.
+- **Legend** 100 × 22 (the report says 101: the 101st pixel of the capture is a grid line), right-aligned to the frame
+  and 3 px above it, with the same bevel and bar as the frame, the text "Plot 0" and a swatch of 28 × 18 (black, `#595959`
+  and `#d9d9d9` borders, the plot's colour as a zigzag). Autosize Plot Legend is checked; the legend of several plots is unverified (it always shows Plot 0).
+- **Label** above the top left of the frame, 3 px over it. The three captured labels start 8 to 10 px in; Solder puts it 8 px in (unverified).
+- **Font**: LabVIEW uses "15pt Application Font" (Segoe UI); the editor uses the font of its labels (`--fuente`, Segoe UI or Noto Sans),
+  for the tick labels, the axis names and the legend. Black, no antialiasing control (unverified).
 
-**Waveform Graph:**
-- "GRAPH" label in the top left corner
-- Number of points (n=X) in the top right corner
-- Shows the whole array
-- Automatic scale in Y
+### 8.3 Scales and grid
 
-### 8.3 On the Front Panel
+- Names "Time" (X, centred under the plot, baseline 37 px under its last row) and "Amplitude" (Y, rotated, 18 px to the left
+  of the widest label); the XY Graph has the same two names.
+- Ticks: 5 px long, black, 7 px before the plot on Y and 3 px under it on X, only at the labels. The first and the last value fall on
+  the first and the last pixel of the axis. The labels: Y right-aligned 9 px before the plot, X centred under their tick;
+  the decimal separator is the system's (comma in the Spanish captures); numbers are in their shortest form ("0,5", "-10").
+  The chart's X shows only both ends; the others, every step.
+- Defaults (no data): chart X 0..100, Y -10..10 every 5; graph X 0..100 every 20, Y -10..10 every 5; XY 0..10 every 1 on both.
+- Grid (graph and XY Graph only, 1 px): graph minor `#003300` and major `#006600`, 8 subdivisions per step on X and 5 on Y;
+  XY minor `#4c4c00` and major `#999900`, 5 and 5; none at the ends of an axis. A line falls at
+  `round(k · (length − 1) / divisions)` pixels, rounding halves down (it matches every line measured in 03).
+- Autoscale (`plot-data.mjs`): the step is the smallest of 1, 2, 5, 10… that keeps the labels 20 px (Y) or 30 px (X) apart; Loose
+  Fit moves the ends out to whole steps. These two distances are the only ones that explain all the measured cases
+  (Y of the XY Graph every 0,2 at 24,8 px and of the graph every 0,5 because 0,2 would be 16,6 px; X of the graph every 20 at 33 px
+  and of the XY Graph every 0,5 because 0,2 would be 24,8 px: 80, 87, 89) and are bounded by them, not measured. LabVIEW's own rule
+  is unverified. The XY Graph's Loose Fit is checked in its menu (45), as the graph's; the report's "tight" is the effect of the taller plot.
+  With no data or one value the scale keeps its defaults. The chart autoscales Y over the points it shows (unverified).
 
-**Rendering (Draw dialect):**
-```
-┌─────────────────────────────────┐
-│ CHART                    n=1024 │
-│  ┌───────────────────────────┐  │
-│  │ ░░░░░░░░░░░░░░░░░░░░░░░░░ │  │  <- grey grid
-│  │ ░░░░░░░░░░░░░░░░░░░░░░░░░ │  │
-│  │ ░░░░░░░░░░░░░░░░░░░░░░░░░ │  │
-│  │ ░░░░▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░ │  │  <- green signal
-│  │ ░░░░░░░░░░░░░░░░░░░░░░░░░ │  │
-│  └───────────────────────────┘  │
-└─────────────────────────────────┘
-```
+### 8.4 Plots
 
-### 8.4 On the Block Diagram
+1 px solid lines, linear interpolation, no point style, no antialiasing, clipped to the plot area; Plot 0 `#ffffff`, Plot 1
+`#ff4242`; plots 2 and beyond were not seen (they repeat here). Plot, line and bar styles, colours and the legend's
+list of plots are not done (menus of the legend and of the swatch, greyed).
 
-**Blocks:**
-- `waveform-chart`: 1 input (number), no outputs
-- `waveform-graph`: 1 input (array), no outputs
+### 8.5 On the Block Diagram
 
-**Wire colors:**
-- Chart input: orange (scalar numeric)
-- Graph input: orange with double border (array)
+The terminal is an indicator of 38 × 38 (`60-diagram-terminals.png`): the border in three layers as the other indicators (colour 1 +
+white 2 + colour 1), inside a small plot (black, with a dark edge on the top and left and a light one on the bottom and right,
+and the trace in white) and the tag of the type on the bottom: orange `#ff7f00` with "DBL" on a chart or a graph, and `#993300`
+with the cluster's tag on an XY Graph and on a chart or a graph with a cluster wired (74, 86). The compact view (32 × 16, the box of
+the other terminals) was not captured. The wire accepted is the one of §8.1; any other breaks, with the reason. Unexplained: the XY Graph's terminal
+is magenta in `74-diagram-chart-cluster-two-scalars.png`.
 
-### 8.5 Compilation
+### 8.6 Compilation
 
-The generated code uses `base` faces with Draw:
-
-```red
-; Waveform Chart
-chart_1: base 200x160 draw []
-
-; En el botón Run (dentro del loop):
-append chart_1/draw/values new-value
-chart_1/draw: render-waveform chart_1/draw/values
-```
+The three blocks (`waveform-chart`, `waveform-graph`, `xy-graph`) are panel indicators whose type is the wire's (`docs/schema/blocks.json`).
+When the VI runs the runtime writes their value like any indicator; the chart's history lives in the window (`pan.charts`), not in the VI
+or in the `.qvi`; a Run does not clear it and a change in the type of its wire does. The run worker sends the chart every write, in order,
+and the other indicators only the last one of each pause (`run-worker.mjs`).
 
 ---
 
@@ -545,6 +548,7 @@ Scan, each row also has a small target mark on the left (the default). Tested in
 
 | Date       | Change |
 |------------|--------|
+| 2026-10-09 | §8: Waveform Chart, Waveform Graph and XY Graph, measured in `labview-captures/graphs/` (replaces the first sketch). |
 | 2026-10-08 | §13: Format Into String and Scan From String, from `labview-captures/format-scan/`. |
 | 2026-10-08 | §12: Create ▸, paste and the Edit menu, from `labview-captures/create-paste/`. |
 | 2026-09-30 | §4: the diagram's orange, measured in the videos (`#fb7c00`). Compound Arithmetic: input cells, handles to stretch it, Invert's small circle, modes. |

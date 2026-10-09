@@ -12,6 +12,7 @@
 //
 // Pure geometry and drawing, like diagram-view.mjs: no DOM.
 
+import { tipos } from "../../../core/model/graph.mjs";
 import { DBL, aspecto, nombre } from "../../../core/model/types.mjs";
 
 export const FORMAT_NODE_WIDTH = 32;
@@ -134,7 +135,21 @@ export function lastWiredRow(graph, node, cat) {
   return last;
 }
 
-const withRows = (graph, nodeId, rows) => ({ ...graph, nodos: graph.nodos.map((node) => (node.id === nodeId ? { ...node, config: { ...node.config, inputs: rows } } : node)) });
+/**
+ * The type each row has now: the one of its wire, or the one it keeps in `config.rowTypes`
+ * (DBL by default). Read from the resolved types of the diagram.
+ */
+function currentRowTypes(graph, node, cat) {
+  const resolved = tipos(graph, cat);
+  const { prefijo } = rowsOf(node, cat);
+  return Array.from({ length: rowCount(node, cat) }, (_, row) => resolved.entradas.get(`${node.id}.${prefijo}${row}`) ?? DBL);
+}
+
+/** The node with `rowTypes` as its rows: as many rows as types. */
+const withRowTypes = (graph, nodeId, rowTypes) => ({
+  ...graph,
+  nodos: graph.nodos.map((node) => (node.id === nodeId ? { ...node, config: { ...node.config, inputs: rowTypes.length, rowTypes } } : node)),
+});
 
 /**
  * Stretching the node: `steps` rows more (or fewer) than it had. A row that goes away must have no
@@ -144,7 +159,11 @@ const withRows = (graph, nodeId, rows) => ({ ...graph, nodos: graph.nodos.map((n
 export function stretchedRows(graph, nodeId, cat, steps) {
   const node = graph.nodos.find((candidate) => candidate.id === nodeId);
   const smallest = Math.max(1, lastWiredRow(graph, node, cat) + 1);
-  return withRows(graph, nodeId, Math.max(smallest, rowCount(node, cat) + steps));
+  const rows = Math.max(smallest, rowCount(node, cat) + steps);
+  // A new row takes the type of the row above it (16-node-stretched.png: I8 rows after an I8 one).
+  const types = currentRowTypes(graph, node, cat);
+  while (types.length < rows) types.push(types.at(-1));
+  return withRowTypes(graph, nodeId, types.slice(0, rows));
 }
 
 /** Moves the wires of the ports of a row to another row (`toRow` -1: the wires are dropped). */
@@ -166,16 +185,20 @@ function renumberWires(graph, node, cat, mapRow) {
 /** Add Parameter on a row: a new row right below it; the rows below keep their wires and move down. */
 export function addedRow(graph, nodeId, cat, row) {
   const node = graph.nodos.find((candidate) => candidate.id === nodeId);
+  const types = currentRowTypes(graph, node, cat);
+  types.splice(row + 1, 0, types[row]);
   const renumbered = renumberWires(graph, node, cat, (index) => (index > row ? index + 1 : index));
-  return withRows(renumbered, nodeId, rowCount(node, cat) + 1);
+  return withRowTypes(renumbered, nodeId, types);
 }
 
 /** Remove Parameter on a row: it goes with its wires and the rows below move up. The last row stays (there is always one). */
 export function removedRow(graph, nodeId, cat, row) {
   const node = graph.nodos.find((candidate) => candidate.id === nodeId);
   if (rowCount(node, cat) <= 1) return graph;
+  const types = currentRowTypes(graph, node, cat);
+  types.splice(row, 1);
   const renumbered = renumberWires(graph, node, cat, (index) => (index === row ? -1 : index > row ? index - 1 : index));
-  return withRows(renumbered, nodeId, rowCount(node, cat) - 1);
+  return withRowTypes(renumbered, nodeId, types);
 }
 
 // ——— Drawing ———

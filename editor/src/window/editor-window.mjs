@@ -29,6 +29,9 @@ import * as Gr from "../../../core/model/graph.mjs";
 import * as H from "../block-diagram/undo-history.mjs";
 import { cargarInventario, esHueco, ultimo } from "../common/labview-inventory.mjs";
 import { addressFromText } from "../common/array-grid.mjs";
+import * as CH from "../front-panel/chart-history-dialog.mjs";
+import * as GM from "../front-panel/graph-menus.mjs";
+import * as GS from "../front-panel/graph-state.mjs";
 import * as P from "../front-panel/front-panel.mjs";
 import * as PC from "../front-panel/panel-clipboard.mjs";
 import * as Paths from "../common/vi-paths.mjs";
@@ -250,10 +253,26 @@ let lanzado = false;
 let vistos = {};
 let plazoAbort = null;
 
-/** Lo que llega a los indicadores: se enseña en el panel, no cambia el VI. */
-function mostrarValores(valores) {
-  pan = { ...pan, valores: { ...(pan.valores ?? {}), ...valores } };
+/**
+ * What reaches the indicators: it is shown on the panel and does not change the VI. `series`: each value
+ * written to a Waveform Chart since the last time, in order; the chart adds them to its history, which
+ * outlives the Run (labview-captures/graphs/REPORT.md §4).
+ */
+function mostrarValores(valores, series = {}) {
+  pan = { ...pan, valores: { ...(pan.valores ?? {}), ...valores }, charts: appendSeries(pan.charts, series) };
   pintar();
+}
+
+/** The charts with what the VI wrote to them appended, by the type their wire carries now. */
+function appendSeries(charts, series) {
+  const nodeIds = Object.keys(series);
+  if (!nodeIds.length) return charts;
+  const resolved = Gr.tipos(grafo(), cat);
+  return nodeIds.reduce((all, nodeId) => {
+    const node = grafo().nodos.find((candidate) => candidate.id === nodeId);
+    const type = GS.wireTypeOf(grafo(), resolved, nodeId);
+    return node && type !== undefined ? GS.appendedToChart(all, nodeId, series[nodeId], type, GS.graphSettings(node).historyLength) : all;
+  }, charts ?? {});
 }
 
 const esControl = (n) => n.tipo === "control" || n.tipo === "bool-control" || n.tipo === "str-control" || n.tipo === "cluster-control" || n.tipo === "arr-control";
@@ -294,9 +313,9 @@ function soltarLatch(nodo) {
 }
 
 function alMensaje(data) {
-  if (data.escritos) {
-    mostrarValores(data.escritos);
-    canal.postMessage({ valores: data.escritos });
+  if (data.escritos || data.series) {
+    mostrarValores(data.escritos ?? {}, data.series);
+    canal.postMessage({ valores: data.escritos ?? {}, series: data.series });
   }
   if (data.soltar) {
     soltarLatch(data.soltar);
@@ -349,7 +368,7 @@ async function ejecutarVI() {
   lanzado = true;
   canal.postMessage({ ejecutando: true });
   modoRun(true);
-  trabajador.postMessage({ orden: "run", clave: viKey, compilado: { bytes: c.bytes, controles: c.controles, indicadores: c.indicadores, clumps: c.clumps, planes: c.planes, automaticos: c.automaticos, disposicionError: c.disposicionError }, valores: valoresDeControles(g), separador });
+  trabajador.postMessage({ orden: "run", clave: viKey, compilado: { bytes: c.bytes, controles: c.controles, indicadores: c.indicadores, clumps: c.clumps, planes: c.planes, automaticos: c.automaticos, disposicionError: c.disposicionError }, valores: valoresDeControles(g), separador, charts: g.nodos.filter((n) => n.tipo === "waveform-chart").map((n) => n.id) });
 }
 
 /**
@@ -542,6 +561,37 @@ function clicPropiedades(ev) {
   cambiar(E.clic(estado, inv, id, ancla(elemento)));
 }
 
+// ——— Graphs: their menus in Run mode and the Chart History Length dialog ———
+
+/** The menus of the parts of a graph that have one (labview-captures/graphs/90..98). */
+const PART_MENUS = { legend: "context.plot-legend", "plot-swatch": "context.plot-swatch" };
+
+/** The right-click menu of a graph while the VI runs (88, 89); nothing else on the panel has one yet. */
+function runModeMenu(ev) {
+  if (!conPanel) return;
+  const sobre = objetivoPanel(ev.target);
+  const node = sobre?.tipo === "objeto" && !sobre.parte && pan.g.nodos.find((candidate) => candidate.id === sobre.id);
+  if (node && GS.isGraph(node)) cambiarPanel(ED.abrirMenu(pan, GM.runMenuRoot(node), node.id, ev.clientX, ev.clientY));
+}
+
+/** OK writes the length into the chart; Cancel leaves it as it was. */
+function closeHistoryDialog(aceptar) {
+  const dialogo = pan.graphDialog;
+  pan = { ...pan, graphDialog: null };
+  const g = aceptar ? CH.apply(pan.g, dialogo) : pan.g;
+  if (g !== pan.g) return cambiarPanel({ ...pan, g });
+  pintar();
+}
+
+/** A click on the dialog: its buttons, and on what is not done, its explanation. */
+function historyDialogClick(ev) {
+  const elemento = ev.target.closest("[data-id]");
+  if (!elemento) return;
+  if (elemento.dataset.id === `${CH.DIALOG_ID}.ok`) return closeHistoryDialog(true);
+  if (elemento.dataset.id === `${CH.DIALOG_ID}.cancel`) return closeHistoryDialog(false);
+  cambiar(E.clic(estado, inv, elemento.dataset.id, ancla(elemento)));
+}
+
 // ——— SubVIs: placing one, opening its Front Panel ———
 
 /** Select a VI...: the file dialog, then the VI follows the cursor until a click drops it (labview-captures/subvi/select-a-vi-dialog.png). */
@@ -580,7 +630,7 @@ canal.onmessage = ({ data }) => {
   // Una ventana que acaba de abrirse pide el VI; la que lo tiene lo manda.
   if (data.pide) return canal.postMessage({ g: grafo(), subVITexts });
   // Lo que ya se tiene no es un paso nuevo: la respuesta a una ventana recién abierta, por ejemplo.
-  if (data.valores) return mostrarValores(data.valores);
+  if (data.valores) return mostrarValores(data.valores, data.series);
   if ("ejecutando" in data) return modoRun(data.ejecutando);
   if (data.soltar) return soltarLatch(data.soltar);
   if (data.control) {
@@ -623,13 +673,16 @@ function dentro(el, max) {
 function pintar() {
   ctx.panelSize = tamanoDelLienzo();
   const resueltos = Gr.tipos(grafo(), cat);
-  const extra = { runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, dialogo: dialogoError, numeroVI: viInfo.untitledNumber ?? undefined, propiedades: propiedades ? VP.view(inv, propiedades) : "" };
+  // A chart whose wire changed has lost its history (REPORT §4).
+  const charts = GS.reconciledCharts(pan.charts, grafo(), resueltos);
+  if (charts !== pan.charts) pan = { ...pan, charts };
+  const extra = { runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, dialogo: dialogoError, numeroVI: viInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + (pan.graphDialog ? CH.view(inv, pan.graphDialog) : "") };
   if (conDiagrama) {
     extra.lienzo = D.contenido(dia, ctx, resueltos);
     extra.encima = dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia), medirMenu, ED.variantes(dia, ctx)) : "";
     extra.editandoTexto = !!dia.edicion;
   } else {
-    extra.lienzo = P.contenido(pan, ctx);
+    extra.lienzo = P.contenido(pan, ctx, resueltos);
     extra.conectorGlifo = CP.paneGlyph(pan.g, cat, pan.conector?.celda ?? null);
     extra.encima = pan.menu ? D.menuContextual(inv, pan.menu, ED.marcados(pan), medirMenu, ED.variantes(pan, ctx)) : "";
     extra.editandoTexto = !!pan.edicion;
@@ -742,6 +795,9 @@ function objetivoPanel(el) {
   if (flecha) return { tipo: "paso", id: flecha.closest(".objeto-panel").dataset.nodo, paso: Number(flecha.dataset.paso), eje: flecha.closest(".arr-indice")?.dataset.eje };
   const casilla = el.closest(".casilla");
   if (casilla) return { tipo: "casilla", id: casilla.dataset.casilla };
+  // The legend of a graph and the swatch of a plot are parts of it, with menus of their own.
+  const parte = el.closest("[data-parte]");
+  if (parte) return { tipo: "objeto", id: parte.closest(".objeto-panel").dataset.nodo, parte: parte.dataset.parte };
   const o = el.closest(".objeto-panel");
   if (o) return { tipo: "objeto", id: o.dataset.nodo };
   return { tipo: "fondo" };
@@ -778,7 +834,9 @@ addEventListener("mousedown", (ev) => {
   // Con un menú de la barra abierto, pulsar fuera de él y de los títulos lo cierra.
   if (estado.menuBarra && !ev.target.closest(".menu-contextual, .menu")) return cambiar({ ...estado, menuBarra: null });
   if (estado.menuBarra) return;
-  if (ejecutando) return pulsarEnRun(ev);
+  // The chart history dialog is modal: its buttons answer to the click event.
+  if (pan.graphDialog) return;
+  if (ejecutando && !pan.menu) return pulsarEnRun(ev);
   if (dia.menu) {
     if (ev.target.closest(".menu-contextual")) return;
     return cambiarDiagrama({ ...dia, menu: null });
@@ -951,6 +1009,7 @@ addEventListener("click", (ev) => {
   if (ev.target.closest(".modal-error")) return;
   if (ev.target.closest(".explicacion")) return;
   if (propiedades && !ev.target.closest(".menu-contextual")) return clicPropiedades(ev);
+  if (pan.graphDialog) return historyDialogClick(ev);
   // Una fila del menú de la barra: lo hecho se hace; un hueco, se explica.
   const filaBarra = estado.menuBarra && ev.target.closest(".item-menu");
   if (filaBarra) {
@@ -1001,8 +1060,9 @@ addEventListener("click", (ev) => {
 
 addEventListener("contextmenu", (ev) => {
   ev.preventDefault();
-  // En modo Run, LabVIEW da otro menú (el de ejecución), sin capturar todavía.
-  if (ejecutando || propiedades) return;
+  if (propiedades || pan.graphDialog) return;
+  // In Run mode LabVIEW gives another menu (the run-time one): captured only for the graphs.
+  if (ejecutando) return runModeMenu(ev);
   // The connector pane and the icon have menus of their own.
   const iconoVI = ev.target.closest(".icono-vi");
   if (iconoVI) return menuDelIcono(ev, iconoVI);
@@ -1014,7 +1074,7 @@ addEventListener("contextmenu", (ev) => {
     if (pan.edicion) pan = P.confirmar(pan);
     const sobrePanel = objetivoPanel(ev.target);
     if (sobrePanel?.tipo === "objeto") {
-      const raizPanel = P.menuDe(pan.g.nodos.find((k) => k.id === sobrePanel.id));
+      const raizPanel = sobrePanel.parte ? PART_MENUS[sobrePanel.parte] : P.menuDe(pan.g.nodos.find((k) => k.id === sobrePanel.id));
       if (raizPanel) {
         estado = { ...estado, paleta: null, abierta: null };
         return cambiarPanel(ED.abrirMenu(pan, raizPanel, sobrePanel.id, ev.clientX, ev.clientY));
@@ -1057,6 +1117,14 @@ addEventListener("keydown", (ev) => {
     if (ev.key === "Escape") return estado.abierta || estado.menuBarra ? cambiar(E.escape(estado)) : cerrarPropiedades(false);
     if (ev.key === "Enter") cerrarPropiedades(true);
     return;
+  }
+  // Chart History Length...: the digits go to its field; Enter accepts and Esc cancels.
+  if (conPanel && pan.graphDialog) {
+    ev.preventDefault();
+    if (ev.key === "Escape") return closeHistoryDialog(false);
+    if (ev.key === "Enter") return closeHistoryDialog(true);
+    pan = { ...pan, dialogo: CH.type(pan.graphDialog, ev.key) };
+    return pintar();
   }
   // Ctrl+Intro confirma lo escrito en el source de un control de error (labview-captures/errores/35.png).
   if (conPanel && pan.edicion?.campo === "source" && ctrl && ev.key === "Enter") {

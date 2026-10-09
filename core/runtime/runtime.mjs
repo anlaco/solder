@@ -302,6 +302,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     for (const c of d.campos) {
       const a = dir + c.off;
       if (c.disposicion) r[c.nombre] = leerCluster(a, c.disposicion);
+      else if (c.array) r[c.nombre] = leerArray(a, c.array.elemento, c.array.dims);
       else if (c.tipo === "string") r[c.nombre] = leerCadena(a);
       else {
         const m = memoria();

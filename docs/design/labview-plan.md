@@ -122,10 +122,18 @@ programs goes **before the rest of the modules**, in this order:
    menus' Create ▸ (constants, controls, tunnels, shift registers), and the broken wire that
    LabVIEW leaves when a control is deleted on the panel (rule 77, a decision to take).*
 4. **Graphs** (M8): Waveform Chart and Waveform Graph, and XY Graph.
+   *Done on 2026-10-09 (spec/05 Rules 79–82, spec/06 §8): what each accepts, the chart history kept
+   across Runs, autoscale, the menus; missing Scope/Sweep, cursors, plot styles and the other graphs.*
 5. **Format Into String and Scan From String** (M3), with their error terminals.
    *Done on 2026-10-08 (spec/04 Rule 21j, spec/05 Rule 78): engine measured case by case in LabVIEW;
    missing %t/%T, the Edit Format String dialog and Format Value / Scan Value as nodes.*
 6. **Debugging:** probes, execution highlighting and the error list.
+
+**Next, right after the graphs (decided 2026-10-09):** broken wires, as a decision of its own
+(DT-046, to be proposed): a wire may keep one loose end, drawn dashed with LabVIEW's red cross,
+which breaks Run. In LabVIEW it appears when a panel control is deleted (its wire stays on the
+diagram) and when a subVI loses a connector terminal; Edit ▸ Remove Broken Wires (Ctrl+B) clears
+them. It also fixes opening a caller whose subVI changed its connector, which today fails.
 
 **Postponed behind these six:** *inplaceness* (DT-042 §5), which changes memory
 and speed but not results; it will be done when a real program

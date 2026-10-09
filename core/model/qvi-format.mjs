@@ -38,6 +38,19 @@ const aGrafo = (config) => {
   return r;
 };
 
+/**
+ * The settings of a Waveform Chart, Waveform Graph or XY Graph that are saved with its panel item, as `graph`
+ * (presentation: autoscale, Loose Fit, the range kept when an axis does not autoscale, the history length of a
+ * chart and the items hidden by Visible Items). The history of a chart is not saved: it belongs to the window.
+ */
+const GRAPH_SETTINGS = { autoscaleX: "autoscale-x", autoscaleY: "autoscale-y", looseFitX: "loose-fit-x", looseFitY: "loose-fit-y", scaleX: "scale-x", scaleY: "scale-y", historyLength: "history-length", hidden: "hidden" };
+const graphToFile = (config) => {
+  const settings = {};
+  for (const [key, fileKey] of Object.entries(GRAPH_SETTINGS)) if (config?.[key] !== undefined && !(key === "hidden" && !config[key].length)) settings[fileKey] = config[key];
+  return Object.keys(settings).length ? settings : undefined;
+};
+const graphFromFile = (graph) => Object.fromEntries(Object.entries(GRAPH_SETTINGS).filter(([, fileKey]) => graph?.[fileKey] !== undefined).map(([key, fileKey]) => [key, graph[fileKey]]));
+
 /** Quita las claves sin valor, para que el fichero no lleve `undefined` ni objetos vacíos. */
 function limpio(o) {
   const r = {};
@@ -113,7 +126,7 @@ export function escribir(g, cat) {
     if (esPanel) {
       const salida = cat.puertos(n).out.length > 0;
       const tipoBase = b.config?.default?.type ?? "number";
-      panel.push(limpio({ name: n.name, role: salida ? "control" : "indicator", type: n.config?.type ?? tipoBase, default: n.config?.value, style: n.config?.style, "visible-elements": n.config?.visibles, index: n.config?.indice || undefined, "mechanical-action": n.config?.mechanical }));
+      panel.push(limpio({ name: n.name, role: salida ? "control" : "indicator", type: n.config?.type ?? tipoBase, default: n.config?.value, style: n.config?.style, "visible-elements": n.config?.visibles, index: n.config?.indice || undefined, "mechanical-action": n.config?.mechanical, graph: graphToFile(n.config) }));
       if (n.panel) placPanel[n.name] = limpio({ x: n.panel.x, y: n.panel.y, label: etiqueta, "label-offset": n.panel.etiqueta });
     }
   }
@@ -222,7 +235,7 @@ export function leer(datos, cat) {
           const item = fp.get(nodo.name);
           const tipoBase = cat.bloque(nodo.type).config?.default?.type ?? "number";
           // Lo que no es de fábrica del bloque se conserva; lo demás lo pone el bloque al crearse.
-          const config = limpio({ type: item && item.type !== tipoBase ? item.type : undefined, value: item?.default, style: item?.style, visibles: item?.["visible-elements"], indice: item?.index, mechanical: item?.["mechanical-action"] });
+          const config = limpio({ type: item && item.type !== tipoBase ? item.type : undefined, value: item?.default, style: item?.style, visibles: item?.["visible-elements"], indice: item?.index, mechanical: item?.["mechanical-action"], ...graphFromFile(item?.graph) });
           n.config = { ...n.config, ...config };
           if (!Object.keys(n.config).length) delete n.config;
         } else if (nodo.config) n.config = { ...n.config, ...aGrafo(nodo.config) };
