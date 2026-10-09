@@ -1448,3 +1448,20 @@ Done in `editor/src/debugging/`; the rules are spec/05 §16. Decisions taken the
    belongs to the window that launched the Run.
 4. **Probes and breakpoints are not saved** in the `.qvi`; `vi.execution["allow-debugging"]` is (only when false).
 5. **Highlight pace** = longest outgoing wire over a speed in px/s, with a floor per node; Fast and Very Fast are extrapolated (unverified).
+
+## DT-048
+
+**How Solder's versions are numbered.**
+
+- **Status:** **Accepted on 2026-10-09** by the developer.
+
+### Decision
+
+1. **Semantic versioning with an alpha label while unstable:** `0.MINOR.PATCH-alpha`. A release that adds
+   features raises MINOR (`0.2.0-alpha`); one that only fixes things raises PATCH (`0.1.1-alpha`).
+2. The `0.` and the `-alpha` label say that neither the language nor the `.qvi` format are stable. Beta
+   changes the label to `-beta`; the first stable version is `1.0.0`.
+3. Four numbers (as Java's `FEATURE.INTERIM.UPDATE.PATCH`) and the year as a number were considered:
+   npm and Electron only accept three numbers, and the label says "unstable" more clearly than the `0.`.
+4. Each release has a git tag `v<version>` and an entry in `CHANGELOG.md`; the version lives in
+   `package.json`.

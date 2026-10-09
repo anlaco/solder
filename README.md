@@ -9,18 +9,26 @@ Solder is part of anlaco's family of test tools: with **Solder** you write the
 program that talks to the instruments, **Anvil** sequences and tests it, and
 **Crucible** simulates the bench so you can test without hardware.
 
+> **Alpha.** Solder is in an early, unstable stage: things change and files saved
+> today may need adjusting tomorrow. Version **0.1.0-alpha** — see
+> [`CHANGELOG.md`](CHANGELOG.md).
+
 ## What works today
 
 - The editor: Front Panel and Block Diagram, the Functions and Controls
   palettes cloned from LabVIEW (what is missing shows greyed out and says why),
-  wiring, undo, saving and opening `.qvi` files.
-- Types: 8- to 64-bit integers and floating point, booleans, strings,
-  one-dimensional arrays, clusters and the error cluster.
-- Functions: Numeric, Boolean, Comparison, String, Array, Timing (partly) and
-  error handling.
+  wiring, undo, Create ▸ Constant/Control/Indicator, copy and paste, several
+  VIs open at once, saving and opening `.qvi` files.
+- Types: 8- to 64-bit integers and floating point, booleans, strings, arrays
+  of one and two dimensions, clusters and the error cluster.
+- Functions: Numeric, Boolean, Comparison, String (with Format Into String and
+  Scan From String), Array, Timing (partly) and error handling.
 - Structures: While Loop, For Loop (shift registers and auto-indexing), Case
   Structure and Flat/Stacked Sequence.
-- Execution: parallel branches, live indicators, Abort.
+- SubVIs, with their connector pane, reentrancy and state kept between calls.
+- Graphs: Waveform Chart, Waveform Graph and XY Graph.
+- Execution: parallel branches, live indicators, Abort; debugging with
+  Highlight Execution, probes, breakpoints and the Error List.
 
 What comes next is in [`docs/design/labview-plan.md`](docs/design/labview-plan.md).
 
