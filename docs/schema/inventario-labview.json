@@ -171,7 +171,7 @@
       "desc": "Describir lo que hay bajo el ratón, a partir del campo desc del catálogo de bloques"
     },
     "icono-del-vi": {
-      "desc": "El icono del VI: cómo se guarda en el .qvi y cómo se edita"
+      "desc": "The VI's own icon: how it is stored in the .qvi and the icon editor that draws it. Postponed on 2026-10-08 by the developer: the icon editor is almost an application of its own, and until then every VI uses Solder's standard subVI icon"
     },
     "bloques": {
       "desc": "Declarar en el catálogo los bloques de la categoría, con sus terminales y su icono, para ponerlos en el diagrama. Compilarlos es otra pieza: ejecutar-vi",
@@ -322,6 +322,24 @@
     },
     "canales": {
       "desc": "Los channel wires y los nodos Channel Writer y Channel Reader"
+    },
+    "historial-de-revisiones": {
+      "desc": "The revision history of a VI and the run-time menu that the VI shows when it runs"
+    },
+    "instantaneas-de-vi": {
+      "desc": "VI snippets: the selection saved as a picture that carries its diagram"
+    },
+    "buscar-y-reemplazar": {
+      "desc": "Find and Replace, and its list of search results"
+    },
+    "valores-por-defecto": {
+      "desc": "Make Current Values Default and Reinitialize Values to Default: the value a control starts with, stored in the .qvi"
+    },
+    "crear-subvi": {
+      "desc": "Create SubVI: the selected nodes or wires become a new VI, replaced by a call to it"
+    },
+    "crear-escalar": {
+      "desc": "Create ▸ Scalar on an array terminal: the constant or control of the array's element type, not of the array"
     }
   },
 
@@ -834,10 +852,240 @@
     {
       "id": "window.front-panel.menu.edit",
       "etiqueta": "Edit",
-      "estado": "todo",
-      "labview": "Edición: deshacer, portapapeles y búsqueda. Contenido sin capturar.",
-      "necesita": "editor-escritorio",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::the_Edit_menu_has_LabVIEW's_rows_in_order_on_the_diagram_and_on_the_panel",
       "captura": "front-panel/vi-nuevo.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.undo",
+      "etiqueta": "Undo",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::Undo_and_Redo_are_greyed_when_there_is_no_step_to_go_to",
+      "atajo": "Ctrl+Z",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.redo",
+      "etiqueta": "Redo",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::Undo_and_Redo_are_greyed_when_there_is_no_step_to_go_to",
+      "atajo": "Ctrl+Shift+Z",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.cut",
+      "etiqueta": "Cut",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::Cut_Copy_and_Delete_are_greyed_with_nothing_selected_and_Paste_with_nothing_copied",
+      "atajo": "Ctrl+X",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.menu.edit.copy",
+      "etiqueta": "Copy",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::Cut_Copy_and_Delete_are_greyed_with_nothing_selected_and_Paste_with_nothing_copied",
+      "atajo": "Ctrl+C",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.paste",
+      "etiqueta": "Paste",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::Cut_Copy_and_Delete_are_greyed_with_nothing_selected_and_Paste_with_nothing_copied",
+      "atajo": "Ctrl+V",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.paste-special",
+      "etiqueta": "Paste Special",
+      "estado": "todo",
+      "labview": "Pastes the clipboard letting you choose how, for example without the labels.",
+      "necesita": "editor-escritorio",
+      "atajo": "Ctrl+Shift+V",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.delete",
+      "etiqueta": "Delete",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::Cut_Copy_and_Delete_are_greyed_with_nothing_selected_and_Paste_with_nothing_copied",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.select-all",
+      "etiqueta": "Select All",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::the_Edit_menu_has_LabVIEW's_rows_in_order_on_the_diagram_and_on_the_panel",
+      "atajo": "Ctrl+A",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.make-selected-values-default",
+      "etiqueta": "Make Selected Values Default",
+      "estado": "todo",
+      "labview": "Makes the current value of the selected controls the value they start with.",
+      "necesita": "valores-por-defecto",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.menu.edit.reinitialize-selected-values-to-default",
+      "etiqueta": "Reinitialize Selected Values to Default",
+      "estado": "todo",
+      "labview": "Puts the selected controls back to the value they start with.",
+      "necesita": "valores-por-defecto",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.customize-control",
+      "etiqueta": "Customize Control...",
+      "estado": "todo",
+      "labview": "Opens the control editor to change how the selected control looks.",
+      "necesita": "estilos-de-controles",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.menu.edit.import-picture-to-clipboard",
+      "etiqueta": "Import Picture to Clipboard...",
+      "estado": "todo",
+      "labview": "Takes a picture file and puts it on the clipboard to paste it as a decoration.",
+      "necesita": "editor-escritorio",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.set-tabbing-order",
+      "etiqueta": "Set Tabbing Order...",
+      "estado": "todo",
+      "labview": "Lets you click the controls in the order the Tab key should visit them.",
+      "necesita": "panel-frontal",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.remove-broken-wires-from-selection",
+      "etiqueta": "Remove Broken Wires from Selection",
+      "estado": "todo",
+      "labview": "Deletes the broken wires among the selection, or in the whole diagram with nothing selected.",
+      "necesita": "diagrama",
+      "atajo": "Ctrl+B",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.menu.edit.clean-up-panel",
+      "etiqueta": "Clean Up Panel",
+      "estado": "todo",
+      "labview": "Arranges the objects of the panel.",
+      "necesita": "panel-frontal",
+      "atajo": "Ctrl+U",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.remove-breakpoints-from-hierarchy",
+      "etiqueta": "Remove Breakpoints from Hierarchy",
+      "estado": "todo",
+      "labview": "Takes away every breakpoint of this VI and its subVIs.",
+      "necesita": "detener-entre-nodos",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.create-vi-snippet-from-selection",
+      "etiqueta": "Create VI Snippet from Selection",
+      "estado": "todo",
+      "labview": "Saves the selection as a picture that carries its diagram. Greyed with nothing selected.",
+      "necesita": "instantaneas-de-vi",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.create-subvi",
+      "etiqueta": "Create SubVI",
+      "estado": "todo",
+      "labview": "Turns the selection into a new VI and puts a call to it in its place. Greyed with nothing selected.",
+      "necesita": "crear-subvi",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.disable-panel-grid-alignment",
+      "etiqueta": "Disable Panel Grid Alignment",
+      "estado": "todo",
+      "labview": "Turns the panel's grid alignment off, or on again.",
+      "necesita": "panel-frontal",
+      "atajo": "Ctrl+#",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.menu.edit.show-hidden-controls-while-editing",
+      "etiqueta": "Show Hidden Controls While Editing",
+      "estado": "todo",
+      "labview": "Shows the controls that are hidden while the VI is being edited.",
+      "necesita": "panel-frontal",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.align-items",
+      "etiqueta": "Align Items",
+      "estado": "todo",
+      "labview": "Aligns the selected objects along an edge or a centre.",
+      "necesita": "panel-frontal",
+      "atajo": "Ctrl+Shift+A",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.distribute-items",
+      "etiqueta": "Distribute Items",
+      "estado": "todo",
+      "labview": "Spaces the selected objects evenly.",
+      "necesita": "panel-frontal",
+      "atajo": "Ctrl+Shift+D",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.vi-revision-history",
+      "etiqueta": "VI Revision History...",
+      "estado": "todo",
+      "labview": "Opens the history of changes of the VI.",
+      "necesita": "historial-de-revisiones",
+      "atajo": "Ctrl+Y",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.menu.edit.run-time-menu",
+      "etiqueta": "Run-Time Menu...",
+      "estado": "todo",
+      "labview": "Edits the menu bar the VI shows when it runs.",
+      "necesita": "historial-de-revisiones",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.adjust-pane-origin",
+      "etiqueta": "Adjust Pane Origin",
+      "estado": "todo",
+      "labview": "Moves the window's origin so that the objects start at the top left; greyed on the diagram.",
+      "necesita": "panel-frontal",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
+    },
+    {
+      "id": "window.front-panel.menu.edit.find-and-replace",
+      "etiqueta": "Find and Replace...",
+      "estado": "todo",
+      "labview": "Searches the VI, and the VIs it calls, for an object or a text.",
+      "necesita": "buscar-y-reemplazar",
+      "atajo": "Ctrl+F",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.menu.edit.show-search-results",
+      "etiqueta": "Show Search Results",
+      "estado": "todo",
+      "labview": "Shows the list the last search found; greyed until one has been done.",
+      "necesita": "buscar-y-reemplazar",
+      "atajo": "Ctrl+Shift+F",
+      "captura": "create-paste/edit-menu-panel-with-control-selected.png"
     },
     {
       "id": "window.front-panel.menu.view",
@@ -1225,10 +1473,240 @@
     {
       "id": "window.block-diagram.menu.edit",
       "etiqueta": "Edit",
-      "estado": "todo",
-      "labview": "Edición: deshacer, portapapeles y búsqueda. Contenido sin capturar.",
-      "necesita": "editor-escritorio",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::the_Edit_menu_has_LabVIEW's_rows_in_order_on_the_diagram_and_on_the_panel",
       "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.undo",
+      "etiqueta": "Undo",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::Undo_and_Redo_are_greyed_when_there_is_no_step_to_go_to",
+      "atajo": "Ctrl+Z",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.redo",
+      "etiqueta": "Redo",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::Undo_and_Redo_are_greyed_when_there_is_no_step_to_go_to",
+      "atajo": "Ctrl+Shift+Z",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.cut",
+      "etiqueta": "Cut",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::Cut_Copy_and_Delete_are_greyed_with_nothing_selected_and_Paste_with_nothing_copied",
+      "atajo": "Ctrl+X",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.edit.copy",
+      "etiqueta": "Copy",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::Cut_Copy_and_Delete_are_greyed_with_nothing_selected_and_Paste_with_nothing_copied",
+      "atajo": "Ctrl+C",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.paste",
+      "etiqueta": "Paste",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::Cut_Copy_and_Delete_are_greyed_with_nothing_selected_and_Paste_with_nothing_copied",
+      "atajo": "Ctrl+V",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.paste-special",
+      "etiqueta": "Paste Special",
+      "estado": "todo",
+      "labview": "Pastes the clipboard letting you choose how, for example without the labels.",
+      "necesita": "editor-escritorio",
+      "atajo": "Ctrl+Shift+V",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.delete",
+      "etiqueta": "Delete",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::Cut_Copy_and_Delete_are_greyed_with_nothing_selected_and_Paste_with_nothing_copied",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.select-all",
+      "etiqueta": "Select All",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::the_Edit_menu_has_LabVIEW's_rows_in_order_on_the_diagram_and_on_the_panel",
+      "atajo": "Ctrl+A",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.make-current-values-default",
+      "etiqueta": "Make Current Values Default",
+      "estado": "todo",
+      "labview": "Makes the current values of the controls the values they start with.",
+      "necesita": "valores-por-defecto",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.edit.reinitialize-values-to-default",
+      "etiqueta": "Reinitialize Values to Default",
+      "estado": "todo",
+      "labview": "Puts every control back to the value it starts with.",
+      "necesita": "valores-por-defecto",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.customize-control",
+      "etiqueta": "Customize Control...",
+      "estado": "todo",
+      "labview": "Opens the control editor; greyed on the diagram, where there is no control selected to customize.",
+      "necesita": "estilos-de-controles",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.edit.import-picture-to-clipboard",
+      "etiqueta": "Import Picture to Clipboard...",
+      "estado": "todo",
+      "labview": "Takes a picture file and puts it on the clipboard to paste it as a decoration.",
+      "necesita": "editor-escritorio",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.set-tabbing-order",
+      "etiqueta": "Set Tabbing Order...",
+      "estado": "todo",
+      "labview": "Lets you click the controls in the order the Tab key should visit them.",
+      "necesita": "panel-frontal",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.remove-broken-wires-from-selection",
+      "etiqueta": "Remove Broken Wires from Selection",
+      "estado": "todo",
+      "labview": "Deletes the broken wires among the selection, or in the whole diagram with nothing selected.",
+      "necesita": "diagrama",
+      "atajo": "Ctrl+B",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.edit.clean-up-selection",
+      "etiqueta": "Clean Up Selection",
+      "estado": "todo",
+      "labview": "Redraws the wires and arranges the selection; with nothing selected it is Clean Up Diagram and works on the whole diagram.",
+      "necesita": "diagrama",
+      "atajo": "Ctrl+U",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.remove-breakpoints-from-hierarchy",
+      "etiqueta": "Remove Breakpoints from Hierarchy",
+      "estado": "todo",
+      "labview": "Takes away every breakpoint of this VI and its subVIs.",
+      "necesita": "detener-entre-nodos",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.create-vi-snippet-from-selection",
+      "etiqueta": "Create VI Snippet from Selection",
+      "estado": "todo",
+      "labview": "Saves the selection as a picture that carries its diagram. Greyed with nothing selected.",
+      "necesita": "instantaneas-de-vi",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.create-subvi",
+      "etiqueta": "Create SubVI",
+      "estado": "todo",
+      "labview": "Turns the selection into a new VI and puts a call to it in its place. Greyed with nothing selected.",
+      "necesita": "crear-subvi",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.enable-diagram-grid-alignment",
+      "etiqueta": "Enable Diagram Grid Alignment",
+      "estado": "todo",
+      "labview": "Makes what is moved snap to the diagram's grid.",
+      "necesita": "diagrama",
+      "atajo": "Ctrl+#",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.edit.show-hidden-controls-while-editing",
+      "etiqueta": "Show Hidden Controls While Editing",
+      "estado": "todo",
+      "labview": "Shows the controls that are hidden while the VI is being edited.",
+      "necesita": "panel-frontal",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.align-items",
+      "etiqueta": "Align Items",
+      "estado": "todo",
+      "labview": "Aligns the selected objects along an edge or a centre.",
+      "necesita": "diagrama",
+      "atajo": "Ctrl+Shift+A",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.distribute-items",
+      "etiqueta": "Distribute Items",
+      "estado": "todo",
+      "labview": "Spaces the selected objects evenly.",
+      "necesita": "diagrama",
+      "atajo": "Ctrl+Shift+D",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.vi-revision-history",
+      "etiqueta": "VI Revision History...",
+      "estado": "todo",
+      "labview": "Opens the history of changes of the VI.",
+      "necesita": "historial-de-revisiones",
+      "atajo": "Ctrl+Y",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.edit.run-time-menu",
+      "etiqueta": "Run-Time Menu...",
+      "estado": "todo",
+      "labview": "Edits the menu bar the VI shows when it runs.",
+      "necesita": "historial-de-revisiones",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.adjust-pane-origin",
+      "etiqueta": "Adjust Pane Origin",
+      "estado": "todo",
+      "labview": "Moves the window's origin so that the objects start at the top left; greyed on the diagram.",
+      "necesita": "panel-frontal",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
+    },
+    {
+      "id": "window.block-diagram.menu.edit.find-and-replace",
+      "etiqueta": "Find and Replace...",
+      "estado": "todo",
+      "labview": "Searches the VI, and the VIs it calls, for an object or a text.",
+      "necesita": "buscar-y-reemplazar",
+      "atajo": "Ctrl+F",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.edit.show-search-results",
+      "etiqueta": "Show Search Results",
+      "estado": "todo",
+      "labview": "Shows the list the last search found; greyed until one has been done.",
+      "necesita": "buscar-y-reemplazar",
+      "atajo": "Ctrl+Shift+F",
+      "captura": "create-paste/edit-menu-diagram-with-selection.png"
     },
     {
       "id": "window.block-diagram.menu.view",
@@ -2947,18 +3425,18 @@
     {
       "id": "palette.functions.programming.string.scan-from-string",
       "etiqueta": "Scan From String",
-      "estado": "todo",
-      "labview": "Convierte una cadena en números y otros datos según una cadena de formato; admite entradas que crecen.",
-      "necesita": "formato-con-dialogo",
-      "captura": "string/string-subpaleta.png"
+      "estado": "built",
+      "prueba": "test/editor/format-nodes.test.mjs::Scan_From_String_is_placed_at_32_by_37_with_its_terminals_where_LabVIEW_has_them",
+      "captura": "string/string-subpaleta.png",
+      "bloque": "scan-from-string"
     },
     {
       "id": "palette.functions.programming.string.format-into-string",
       "etiqueta": "Format Into String",
-      "estado": "todo",
-      "labview": "Da formato a números, cadenas, booleanos y rutas como texto según una cadena de formato; admite entradas que crecen.",
-      "necesita": "formato-con-dialogo",
-      "captura": "string/string-subpaleta.png"
+      "estado": "built",
+      "prueba": "test/editor/format-nodes.test.mjs::Format_Into_String_is_placed_at_32_by_29_with_its_terminals_where_LabVIEW_has_them",
+      "captura": "string/string-subpaleta.png",
+      "bloque": "format-into-string"
     },
     {
       "id": "palette.functions.programming.string.format-date-time-string",
@@ -4964,10 +5442,77 @@
     {
       "id": "context.function.create",
       "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_Create_submenu_of_the_nodes_has_LabVIEW's_rows_in_its_order",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.function.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.function.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.function.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.function.create.scalar",
+      "etiqueta": "Scalar",
       "estado": "todo",
-      "labview": "Crea una constante, un control o un indicador ya cableado a un terminal.",
-      "necesita": "menus-contextuales",
-      "captura": "block-diagram/numeric-menu-funcion.png"
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.function.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.function.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.function.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
+    },
+    {
+      "id": "context.function.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.function.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
     },
     {
       "id": "context.function.replace",
@@ -4994,6 +5539,553 @@
       "labview": "Abre el diálogo de propiedades del nodo.",
       "necesita": "propiedades",
       "captura": "block-diagram/numeric-menu-funcion.png",
+      "separado": true
+    },
+    {
+      "id": "context.format-into-string.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/format-nodes.test.mjs::the_menu_of_Format_Into_String_has_LabVIEW's_rows_in_its_order",
+      "captura": "format-scan/04-fmt-menu.png"
+    },
+    {
+      "id": "context.format-into-string.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Muestra u oculta la etiqueta del nodo.",
+      "necesita": "etiquetas",
+      "captura": "format-scan/04b-fmt-menu-visible.png"
+    },
+    {
+      "id": "context.format-into-string.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Abre la ayuda de la función.",
+      "necesita": "ayuda-contextual",
+      "captura": "format-scan/04-fmt-menu.png"
+    },
+    {
+      "id": "context.format-into-string.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Busca ejemplos que usan la función. En Format Into String sale activado.",
+      "necesita": "ejemplos",
+      "captura": "format-scan/04-fmt-menu.png"
+    },
+    {
+      "id": "context.format-into-string.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edita la descripción y el tip strip del objeto.",
+      "necesita": "descripciones",
+      "captura": "format-scan/04-fmt-menu.png"
+    },
+    {
+      "id": "context.format-into-string.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "todo",
+      "labview": "Pone un punto de ruptura en el nodo.",
+      "necesita": "detener-entre-nodos",
+      "captura": "format-scan/04-fmt-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.format-into-string.string-palette",
+      "etiqueta": "String Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de cadenas.",
+      "necesita": "menus-contextuales",
+      "captura": "format-scan/04-fmt-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.format-into-string.dialog-and-user-interface-palette",
+      "etiqueta": "Dialog & User Interface Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de la que viene la función.",
+      "necesita": "menus-contextuales",
+      "captura": "format-scan/04-fmt-menu.png"
+    },
+    {
+      "id": "context.format-into-string.cluster-class-and-variant-palette",
+      "etiqueta": "Cluster, Class, & Variant Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de la que viene la función.",
+      "necesita": "menus-contextuales",
+      "captura": "format-scan/04-fmt-menu.png"
+    },
+    {
+      "id": "context.format-into-string.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_Create_submenu_of_the_nodes_has_LabVIEW's_rows_in_its_order",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.format-into-string.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.format-into-string.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.format-into-string.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.format-into-string.create.scalar",
+      "etiqueta": "Scalar",
+      "estado": "todo",
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.format-into-string.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.format-into-string.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.format-into-string.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
+    },
+    {
+      "id": "context.format-into-string.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.format-into-string.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
+    },
+    {
+      "id": "context.format-into-string.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Cambia la función por otra de la paleta.",
+      "necesita": "menus-contextuales",
+      "captura": "format-scan/04d-fmt-menu-replace.png",
+      "separado": true
+    },
+    {
+      "id": "context.format-into-string.edit-format-string",
+      "etiqueta": "Edit Format String",
+      "estado": "todo",
+      "labview": "Abre el diálogo que construye la cadena de formato a partir de sus operaciones.",
+      "necesita": "formato-con-dialogo",
+      "captura": "format-scan/05-edit-format-dialog.png"
+    },
+    {
+      "id": "context.format-into-string.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Quita el nodo y une los cables que entraban con los que salían.",
+      "necesita": "menus-contextuales",
+      "captura": "format-scan/04-fmt-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.format-into-string.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Abre el diálogo de propiedades del nodo.",
+      "necesita": "propiedades",
+      "captura": "format-scan/04-fmt-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.scan-from-string.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/format-nodes.test.mjs::the_menu_of_Scan_From_String_has_LabVIEW's_rows_in_its_order",
+      "captura": "format-scan/32-scan-menu.png"
+    },
+    {
+      "id": "context.scan-from-string.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Muestra u oculta la etiqueta del nodo.",
+      "necesita": "etiquetas",
+      "captura": "format-scan/32-scan-menu.png"
+    },
+    {
+      "id": "context.scan-from-string.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Abre la ayuda de la función.",
+      "necesita": "ayuda-contextual",
+      "captura": "format-scan/32-scan-menu.png"
+    },
+    {
+      "id": "context.scan-from-string.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Busca ejemplos que usan la función. En la captura sale desactivado.",
+      "necesita": "ejemplos",
+      "captura": "format-scan/32-scan-menu.png"
+    },
+    {
+      "id": "context.scan-from-string.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edita la descripción y el tip strip del objeto.",
+      "necesita": "descripciones",
+      "captura": "format-scan/32-scan-menu.png"
+    },
+    {
+      "id": "context.scan-from-string.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "todo",
+      "labview": "Pone un punto de ruptura en el nodo.",
+      "necesita": "detener-entre-nodos",
+      "captura": "format-scan/32-scan-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.scan-from-string.string-palette",
+      "etiqueta": "String Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de cadenas.",
+      "necesita": "menus-contextuales",
+      "captura": "format-scan/32-scan-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.scan-from-string.numeric-palette",
+      "etiqueta": "Numeric Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de la que viene la función.",
+      "necesita": "menus-contextuales",
+      "captura": "format-scan/32-scan-menu.png"
+    },
+    {
+      "id": "context.scan-from-string.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_Create_submenu_of_the_nodes_has_LabVIEW's_rows_in_its_order",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.scan-from-string.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.scan-from-string.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.scan-from-string.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.scan-from-string.create.scalar",
+      "etiqueta": "Scalar",
+      "estado": "todo",
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.scan-from-string.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.scan-from-string.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.scan-from-string.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
+    },
+    {
+      "id": "context.scan-from-string.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.scan-from-string.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
+    },
+    {
+      "id": "context.scan-from-string.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Cambia la función por otra de la paleta.",
+      "necesita": "menus-contextuales",
+      "captura": "format-scan/32-scan-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.scan-from-string.edit-scan-string",
+      "etiqueta": "Edit Scan String",
+      "estado": "todo",
+      "labview": "Abre el diálogo que construye la cadena de formato a partir de sus operaciones.",
+      "necesita": "formato-con-dialogo",
+      "captura": "format-scan/33-scan-dialog.png"
+    },
+    {
+      "id": "context.scan-from-string.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Quita el nodo y une los cables que entraban con los que salían.",
+      "necesita": "menus-contextuales",
+      "captura": "format-scan/32-scan-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.scan-from-string.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Abre el diálogo de propiedades del nodo.",
+      "necesita": "propiedades",
+      "captura": "format-scan/32-scan-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.scan-from-string-parameter.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/format-nodes.test.mjs::the_menu_of_a_row_of_Scan_From_String_adds_Add_and_Remove_Parameter",
+      "captura": "format-scan/32b-scan-menu-param.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Muestra u oculta la etiqueta del nodo.",
+      "necesita": "etiquetas",
+      "captura": "format-scan/32b-scan-menu-param.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Abre la ayuda de la función.",
+      "necesita": "ayuda-contextual",
+      "captura": "format-scan/32b-scan-menu-param.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Busca ejemplos que usan la función. En la captura sale desactivado.",
+      "necesita": "ejemplos",
+      "captura": "format-scan/32b-scan-menu-param.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edita la descripción y el tip strip del objeto.",
+      "necesita": "descripciones",
+      "captura": "format-scan/32b-scan-menu-param.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "todo",
+      "labview": "Pone un punto de ruptura en el nodo.",
+      "necesita": "detener-entre-nodos",
+      "captura": "format-scan/32b-scan-menu-param.png",
+      "separado": true
+    },
+    {
+      "id": "context.scan-from-string-parameter.add-parameter",
+      "etiqueta": "Add Parameter",
+      "estado": "built",
+      "prueba": "test/editor/format-nodes.test.mjs::Add_and_Remove_Parameter_on_a_row_of_Scan_From_String_keep_the_wires_of_the_rest",
+      "captura": "format-scan/32b-scan-menu-param.png",
+      "separado": true
+    },
+    {
+      "id": "context.scan-from-string-parameter.remove-parameter",
+      "etiqueta": "Remove Parameter",
+      "estado": "built",
+      "prueba": "test/editor/format-nodes.test.mjs::Add_and_Remove_Parameter_on_a_row_of_Scan_From_String_keep_the_wires_of_the_rest",
+      "captura": "format-scan/32b-scan-menu-param.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.string-palette",
+      "etiqueta": "String Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de cadenas.",
+      "necesita": "menus-contextuales",
+      "captura": "format-scan/32b-scan-menu-param.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.numeric-palette",
+      "etiqueta": "Numeric Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de la que viene la función.",
+      "necesita": "menus-contextuales",
+      "captura": "format-scan/32b-scan-menu-param.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_Create_submenu_of_the_nodes_has_LabVIEW's_rows_in_its_order",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.create.scalar",
+      "etiqueta": "Scalar",
+      "estado": "todo",
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.scan-from-string-parameter.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Cambia la función por otra de la paleta.",
+      "necesita": "menus-contextuales",
+      "captura": "format-scan/32-scan-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.scan-from-string-parameter.edit-scan-string",
+      "etiqueta": "Edit Scan String",
+      "estado": "todo",
+      "labview": "Abre el diálogo que construye la cadena de formato a partir de sus operaciones.",
+      "necesita": "formato-con-dialogo",
+      "captura": "format-scan/33-scan-dialog.png"
+    },
+    {
+      "id": "context.scan-from-string-parameter.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Quita el nodo y une los cables que entraban con los que salían.",
+      "necesita": "menus-contextuales",
+      "captura": "format-scan/32b-scan-menu-param.png",
+      "separado": true
+    },
+    {
+      "id": "context.scan-from-string-parameter.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Abre el diálogo de propiedades del nodo.",
+      "necesita": "propiedades",
+      "captura": "format-scan/32b-scan-menu-param.png",
       "separado": true
     },
     {
@@ -5078,10 +6170,77 @@
     {
       "id": "context.comparison-function.create",
       "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_Create_submenu_of_the_nodes_has_LabVIEW's_rows_in_its_order",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.comparison-function.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.comparison-function.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.comparison-function.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.comparison-function.create.scalar",
+      "etiqueta": "Scalar",
       "estado": "todo",
-      "labview": "Crea una constante, un control o un indicador ya cableado a un terminal, o todos los que faltan.",
-      "necesita": "menus-contextuales",
-      "captura": "block-diagram/comparison-menu-funcion.png"
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.comparison-function.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.comparison-function.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.comparison-function.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
+    },
+    {
+      "id": "context.comparison-function.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.comparison-function.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
     },
     {
       "id": "context.comparison-function.replace",
@@ -5225,10 +6384,77 @@
     {
       "id": "context.comparison-with-zero.create",
       "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_Create_submenu_of_the_nodes_has_LabVIEW's_rows_in_its_order",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.comparison-with-zero.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.comparison-with-zero.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.comparison-with-zero.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.comparison-with-zero.create.scalar",
+      "etiqueta": "Scalar",
       "estado": "todo",
-      "labview": "Crea una constante, un control o un indicador ya cableado a un terminal, o todos los que faltan.",
-      "necesita": "menus-contextuales",
-      "captura": "block-diagram/comparison-menu-cero.png"
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.comparison-with-zero.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.comparison-with-zero.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.comparison-with-zero.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
+    },
+    {
+      "id": "context.comparison-with-zero.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.comparison-with-zero.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
     },
     {
       "id": "context.comparison-with-zero.replace",
@@ -5347,10 +6573,77 @@
     {
       "id": "context.select.create",
       "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_Create_submenu_of_the_nodes_has_LabVIEW's_rows_in_its_order",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.select.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.select.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.select.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.select.create.scalar",
+      "etiqueta": "Scalar",
       "estado": "todo",
-      "labview": "Crea una constante, un control o un indicador ya cableado a un terminal, o todos los que faltan.",
-      "necesita": "menus-contextuales",
-      "captura": "block-diagram/comparison-menu-select.png"
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.select.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.select.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.select.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
+    },
+    {
+      "id": "context.select.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.select.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
     },
     {
       "id": "context.select.replace",
@@ -5461,10 +6754,77 @@
     {
       "id": "context.max-and-min.create",
       "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_Create_submenu_of_the_nodes_has_LabVIEW's_rows_in_its_order",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.max-and-min.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.max-and-min.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.max-and-min.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.max-and-min.create.scalar",
+      "etiqueta": "Scalar",
       "estado": "todo",
-      "labview": "Crea una constante, un control o un indicador ya cableado a un terminal, o todos los que faltan.",
-      "necesita": "menus-contextuales",
-      "captura": "block-diagram/comparison-menu-max-min.png"
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.max-and-min.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.max-and-min.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.max-and-min.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
+    },
+    {
+      "id": "context.max-and-min.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.max-and-min.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
     },
     {
       "id": "context.max-and-min.replace",
@@ -5600,10 +6960,77 @@
     {
       "id": "context.in-range-and-coerce.create",
       "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_Create_submenu_of_the_nodes_has_LabVIEW's_rows_in_its_order",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.in-range-and-coerce.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.in-range-and-coerce.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.in-range-and-coerce.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.in-range-and-coerce.create.scalar",
+      "etiqueta": "Scalar",
       "estado": "todo",
-      "labview": "Crea una constante, un control o un indicador ya cableado a un terminal, o todos los que faltan.",
-      "necesita": "menus-contextuales",
-      "captura": "block-diagram/comparison-menu-in-range.png"
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.in-range-and-coerce.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.in-range-and-coerce.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.in-range-and-coerce.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
+    },
+    {
+      "id": "context.in-range-and-coerce.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.in-range-and-coerce.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
     },
     {
       "id": "context.in-range-and-coerce.replace",
@@ -6974,10 +8401,77 @@
     {
       "id": "context.compound-arithmetic.create",
       "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_Create_submenu_of_the_nodes_has_LabVIEW's_rows_in_its_order",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.compound-arithmetic.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.compound-arithmetic.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.compound-arithmetic.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.compound-arithmetic.create.scalar",
+      "etiqueta": "Scalar",
       "estado": "todo",
-      "labview": "Crea constantes, controles o indicadores cableados al nodo.",
-      "necesita": "menus-contextuales",
-      "captura": "block-diagram/compound-menu.png"
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.compound-arithmetic.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.compound-arithmetic.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.compound-arithmetic.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
+    },
+    {
+      "id": "context.compound-arithmetic.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.compound-arithmetic.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
     },
     {
       "id": "context.compound-arithmetic.replace",
@@ -7146,31 +8640,76 @@
       "id": "context.compound-arithmetic-input.create",
       "etiqueta": "Create",
       "estado": "built",
-      "prueba": "test/editor/diagram-editing.test.mjs::create_constant_crea_la_constante_cableada_y_lista_para_escribir",
-      "captura": "block-diagram/compound-create.png"
+      "prueba": "test/editor/create-and-paste.test.mjs::the_Create_submenu_of_the_nodes_has_LabVIEW's_rows_in_its_order",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
     },
     {
       "id": "context.compound-arithmetic-input.create.constant",
       "etiqueta": "Constant",
       "estado": "built",
-      "prueba": "test/editor/diagram-editing.test.mjs::create_constant_crea_la_constante_cableada_y_lista_para_escribir",
-      "captura": "block-diagram/compound-create.png"
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
     },
     {
       "id": "context.compound-arithmetic-input.create.control",
       "etiqueta": "Control",
-      "estado": "todo",
-      "labview": "Crea un control del panel cableado a la entrada.",
-      "necesita": "panel-frontal",
-      "captura": "block-diagram/compound-create.png"
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
     },
     {
       "id": "context.compound-arithmetic-input.create.indicator",
       "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.create.scalar",
+      "etiqueta": "Scalar",
       "estado": "todo",
-      "labview": "Crea un indicador del panel cableado al terminal.",
-      "necesita": "panel-frontal",
-      "captura": "block-diagram/compound-create.png"
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
+    },
+    {
+      "id": "context.compound-arithmetic-input.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.compound-arithmetic-input.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
     },
     {
       "id": "context.compound-arithmetic-input.replace",
@@ -9507,60 +11046,78 @@
     {
       "id": "context.subvi.create",
       "etiqueta": "Create",
-      "estado": "todo",
-      "labview": "Creates a constant, a control or an indicator wired to a terminal; on the node, all of them at once.",
-      "necesita": "menus-contextuales",
-      "captura": "subvi/subvi-node-menu-create.png",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_Create_submenu_of_the_nodes_has_LabVIEW's_rows_in_its_order",
+      "captura": "create-paste/node-menu-add-create-submenu.png",
       "separado": true
     },
     {
       "id": "context.subvi.create.constant",
       "etiqueta": "Constant",
-      "estado": "todo",
-      "labview": "Creates a constant wired to the terminal under the cursor; greyed out when there is none.",
-      "necesita": "menus-contextuales",
-      "captura": "subvi/subvi-node-menu-create.png"
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
     },
     {
       "id": "context.subvi.create.control",
       "etiqueta": "Control",
-      "estado": "todo",
-      "labview": "Creates a control wired to the terminal under the cursor; greyed out when there is none.",
-      "necesita": "menus-contextuales",
-      "captura": "subvi/subvi-node-menu-create.png"
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
     },
     {
       "id": "context.subvi.create.indicator",
       "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.subvi.create.scalar",
+      "etiqueta": "Scalar",
       "estado": "todo",
-      "labview": "Creates an indicator wired to the terminal under the cursor; greyed out when there is none.",
-      "necesita": "menus-contextuales",
-      "captura": "subvi/subvi-node-menu-create.png"
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.subvi.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.subvi.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
     },
     {
       "id": "context.subvi.create.channel-writer",
       "etiqueta": "Channel Writer...",
       "estado": "todo",
-      "labview": "Creates a channel writer wired to the terminal under the cursor; greyed out when there is none.",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
       "necesita": "canales",
-      "captura": "subvi/subvi-node-menu-create.png"
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
     },
     {
       "id": "context.subvi.create.all-controls-and-indicators",
       "etiqueta": "All Controls and Indicators",
-      "estado": "todo",
-      "labview": "Creates a control for every input of the node and an indicator for every output, all wired.",
-      "necesita": "menus-contextuales",
-      "captura": "subvi/subvi-node-menu-create.png",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
       "separado": true
     },
     {
       "id": "context.subvi.create.all-constants",
       "etiqueta": "All Constants",
-      "estado": "todo",
-      "labview": "Creates a constant for every input of the node, all wired.",
-      "necesita": "menus-contextuales",
-      "captura": "subvi/subvi-node-menu-create.png"
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
     },
     {
       "id": "context.subvi.replace",
@@ -9669,6 +11226,129 @@
       "labview": "Opens the properties dialog of the node.",
       "necesita": "propiedades",
       "captura": "subvi/subvi-node-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.wire",
+      "etiqueta": "Wire",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire_and_its_Create_makes_unwired_objects"
+    },
+    {
+      "id": "context.wire.clean-up-wire",
+      "etiqueta": "Clean Up Wire",
+      "estado": "todo",
+      "labview": "Redraws the wire with the shortest clean route.",
+      "necesita": "diagrama"
+    },
+    {
+      "id": "context.wire.create-wire-branch",
+      "etiqueta": "Create Wire Branch",
+      "estado": "todo",
+      "labview": "Starts a new branch from the wire at the point clicked.",
+      "necesita": "diagrama"
+    },
+    {
+      "id": "context.wire.delete-wire-branch",
+      "etiqueta": "Delete Wire Branch",
+      "estado": "todo",
+      "labview": "Removes the branch of the wire under the cursor and keeps the rest.",
+      "necesita": "diagrama"
+    },
+    {
+      "id": "context.wire.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Shows or hides what the wire can show, such as its label.",
+      "necesita": "menus-contextuales",
+      "separado": true
+    },
+    {
+      "id": "context.wire.insert",
+      "etiqueta": "Insert",
+      "estado": "todo",
+      "labview": "Puts a function on the wire, wired in both directions.",
+      "necesita": "menus-contextuales",
+      "separado": true
+    },
+    {
+      "id": "context.wire.numeric-palette",
+      "etiqueta": "Numeric Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the Numeric palette.",
+      "necesita": "menus-contextuales",
+      "separado": true
+    },
+    {
+      "id": "context.wire.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire_and_its_Create_makes_unwired_objects",
+      "captura": "create-paste/create-control-from-wire-menu-result.png"
+    },
+    {
+      "id": "context.wire.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire_and_its_Create_makes_unwired_objects",
+      "captura": "create-paste/create-control-from-wire-menu-result.png"
+    },
+    {
+      "id": "context.wire.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire_and_its_Create_makes_unwired_objects",
+      "captura": "create-paste/create-control-from-wire-menu-result.png"
+    },
+    {
+      "id": "context.wire.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire_and_its_Create_makes_unwired_objects",
+      "captura": "create-paste/create-control-from-wire-menu-result.png"
+    },
+    {
+      "id": "context.wire.create.create-subvi-from-selected-wires",
+      "etiqueta": "Create SubVI from Selected Wires",
+      "estado": "todo",
+      "labview": "Makes a new VI out of the selected wires and what they join, and calls it.",
+      "necesita": "crear-subvi"
+    },
+    {
+      "id": "context.wire.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer on the wire.",
+      "necesita": "canales"
+    },
+    {
+      "id": "context.wire.add-probe",
+      "etiqueta": "Add Probe",
+      "estado": "todo",
+      "labview": "Puts a probe on the wire to see the value that passes through it.",
+      "necesita": "sondas",
+      "separado": true
+    },
+    {
+      "id": "context.wire.custom-probe",
+      "etiqueta": "Custom Probe",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the kinds of probe to choose from.",
+      "necesita": "sondas"
+    },
+    {
+      "id": "context.wire.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "todo",
+      "labview": "Puts a breakpoint on the wire.",
+      "necesita": "detener-entre-nodos"
+    },
+    {
+      "id": "context.wire.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the description and the tip strip of the wire.",
+      "necesita": "descripciones",
       "separado": true
     },
     {

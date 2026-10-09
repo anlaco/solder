@@ -290,7 +290,7 @@ test("la carpeta string abre su subpaleta", () => {
   assert.deepEqual(sitios.map((s) => [s.fila, s.columna, s.e.etiqueta]), nombres.flatMap((fila, f) => fila.map((n, c) => [f, c, n])));
   // Lo hecho y lo que está en gris.
   const hechos = INV.hijos(id).filter((e) => !esHueco(e) && e.bloque).map((e) => ultimo(e.id));
-  assert.deepEqual(hechos, ["string-length", "concatenate-strings", "string-subset", "trim-whitespace", "replace-substring", "search-and-replace-string", "to-upper-case", "to-lower-case", "string-constant", "empty-string-constant", "space-constant", "tab-constant", "carriage-return-constant", "line-feed-constant", "end-of-line-constant"]);
+  assert.deepEqual(hechos, ["string-length", "concatenate-strings", "string-subset", "trim-whitespace", "replace-substring", "search-and-replace-string", "scan-from-string", "format-into-string", "to-upper-case", "to-lower-case", "string-constant", "empty-string-constant", "space-constant", "tab-constant", "carriage-return-constant", "line-feed-constant", "end-of-line-constant"]);
   const html = subpaletas(INV, abierta.paleta);
   assert.match(html, new RegExp(`class="icono-funcion" data-id="${id}\\.string-length"`));
   assert.match(html, new RegExp(`class="icono-funcion hueco" data-id="${id}\\.match-pattern"`));

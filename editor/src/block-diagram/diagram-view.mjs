@@ -12,6 +12,7 @@ import * as G from "../common/glyphs.mjs";
 import { esHueco, ultimo } from "../common/labview-inventory.mjs";
 import { PANE_SIZE } from "../../../core/model/connector.mjs";
 import { isSubVI, portsWithAnchors } from "./subvi-nodes.mjs";
+import * as FN from "./format-nodes.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
 import { COLORES, aspecto, esArray, esEntero, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
 import { MAX_EDITOR_DIMENSIONS, cellAddress, dimensionsOfNode, firstShown, isDefined, readCell, visibleGrid } from "../common/array-grid.mjs";
@@ -407,6 +408,7 @@ export function caja(n, ctx, edicion) {
     return { x: n.x, y: n.y, ancho: M.ancho, alto: M.alto };
   }
   if (isSubVI(n)) return { x: n.x, y: n.y, ancho: PANE_SIZE, alto: PANE_SIZE };
+  if (FN.isFormatNode(n, ctx.cat)) return { x: n.x, y: n.y, ...FN.formatNodeSize(n, ctx.cat) };
   if (esExpresion(n)) {
     const M = MEDIDAS_EXPRESION;
     return { x: n.x, y: n.y, ancho: 2 * M.lado + Math.max(M.minimoTexto, anchoTexto(textoExpresion(n, edicion)) + M.relleno), alto: M.alto };
@@ -450,6 +452,7 @@ export function caja(n, ctx, edicion) {
 export function terminales(n, ctx, edicion) {
   const k = caja(n, ctx, edicion);
   if (isSubVI(n)) return terminalesSubVI(n, k, ctx);
+  if (FN.isFormatNode(n, ctx.cat)) return FN.formatNodeTerminals(n, k, ctx.cat);
   const { in: ins, out: outs } = ctx.cat.puertos(n);
   // Cada lado se queda con algo más de un tercio del nodo; lo del medio es el
   // cuerpo, que es lo que se agarra para moverlo. Una constante sólo tiene
@@ -908,6 +911,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
     cuerpo = `<div class="glifo-terminal-panel">${glifo}</div>`;
   } else if (isSubVI(n)) {
     cuerpo = `<div class="glifo-subvi">${ctx.cat.findSubVI?.(n.config?.vi) ? G.iconoVI() : G.ICONO_VI_FALTA}</div>`;
+  } else if (FN.isFormatNode(n, ctx.cat)) {
+    cuerpo = `<div class="glifo-formato">${FN.formatNodeBody(n, k, ctx.cat, resueltos)}</div>`;
   } else if (esExpresion(n)) {
     cuerpo = expresion(n, k, ctx, resueltos, d.edicion);
   } else if (esCompuesto(n, ctx)) {
@@ -934,6 +939,11 @@ function nodo(n, d, ctx, resueltos, elegido) {
   if (elegido && c?.array) asas = asasArray(n, k, ctx, d.edicion);
   // Initialize Array is stretched downwards to add a dimension size (array-2d/initializearray-contexthelp.png).
   if (elegido && n.tipo === "initialize-array") asas = `<div class="asa" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(k.ancho / 2 - 3)};top:${px(k.alto - 3)}"></div>`;
+  // Format Into String and Scan From String are stretched downwards to add rows (format-scan/16-node-stretched.png).
+  if (elegido && FN.isFormatNode(n, ctx.cat)) {
+    const handle = FN.formatNodeHandle(k);
+    asas = `<div class="asa" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(handle.x)};top:${px(handle.y)}"></div>`;
+  }
   if (elegido && esCompuesto(n, ctx)) {
     const M = medidasCompuesto(n, ctx);
     const x = M.izquierda - M.asa / 2;
@@ -1152,6 +1162,8 @@ export function menuDe(n, puerto, g) {
   // The terminal of an array control or indicator has no menu captured yet.
   if (n.tipo === "arr-const") return "context.array-constant";
   if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return null;
+  if (n.tipo === "format-into-string") return "context.format-into-string";
+  if (n.tipo === "scan-from-string") return puerto && /^(default|output)-\d+$/.test(puerto) ? "context.scan-from-string-parameter" : "context.scan-from-string";
   if (n.tipo === "compound-arithmetic") return puerto?.startsWith("value-") ? "context.compound-arithmetic-input" : "context.compound-arithmetic";
   if (n.tipo in MENU_COMPARISON) return MENU_COMPARISON[n.tipo];
   return CONSTANTES[n.tipo]?.editable ? "context.numeric-constant" : CONSTANTES[n.tipo] ? null : "context.function";
@@ -1185,7 +1197,7 @@ const MENU_COMPARISON = {
 };
 
 /** Filas que en LabVIEW abren un submenú aunque su contenido no esté declarado. Es disposición. */
-const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "swap-diagram-with-case", "shift-diagram-to-case", "radix"];
+const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix"];
 
 /**
  * El submenú Representation no es una lista: es una rejilla de iconos de 4

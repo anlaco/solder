@@ -615,6 +615,8 @@ would have required naming a test that did not exist.)*
 | 40i The error cluster | Tests in `error-cluster.test.mjs` (the wire, the constant and its edits, the two dialogs, Simple Error Handler and Merge Errors at 32 × 18), `front-panel.test.mjs` (Error In and Error Out) and `window-state.test.mjs` (the two palettes) | **Verified**; what is unverified, in the rule itself |
 | 40j One-dimensional arrays | Tests in `front-panel.test.mjs` (array control and indicator), `diagram-editing.test.mjs` (array constant, menu of the indexed tunnels), `window-state.test.mjs` (the Array subpalette), `palettes.test.mjs` (its functions) and `qvi-round-trip.test.mjs` | **Verified** for what was measured; the gesture of stretching the panel array and the array's menu, unverified (see the rule) |
 | 40k Arrays with two dimensions | Tests in `array-grid.test.mjs` (cells, Add and Remove Dimension), `diagram-editing.test.mjs` (menu, constant, stretching, wire, Index Array, Initialize Array), `front-panel.test.mjs` (panel array), `qvi-round-trip.test.mjs` (pairs saved) and `labview-inventory.test.mjs` (the menus) | **Verified** for the measurements; the stretching gestures, the indicator's menu and Initialize Array's second size, unverified (see the rule) |
+| 78 Format Into String and Scan From String | Tests in `format-nodes.test.mjs` (size, terminals, stretching, type boxes, menus, Add and Remove Parameter) and `palettes.test.mjs` | **Verified** for the size, the stretching and the menus; the terminals' exact heights, unverified (see the rule) |
+| 72–76 Create ▸, the clipboard and the Edit menu | Tests in `terminal-creation.test.mjs` (placement), `create-and-paste.test.mjs` (menus, copy, cut, paste, duplicate) and `edit-menu.test.mjs` (rows and what is greyed) | **Verified** for what was measured; what is unverified, in the rules |
 | 31 the rejection explains the reason | Test: each cause of `can_connect` produces its message | **Verified** for two outputs, two inputs, incompatible types and cycle (`palettes.test.mjs`); the scope one no longer comes out in the editor: a wire between scopes creates the tunnel (rule 40e); the rejection remains in `Gr.conectar` |
 | 32 replace on fan-in | Test "a wire to an occupied input replaces the previous one" | **Verified** |
 | 36, 37 keyboard | Interaction test | **Rule 36 verified** ("the selection moves with the arrows…"); rule 37, pending |
@@ -679,3 +681,109 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/subvi/`).
 > Execution; Non-reentrant and Preallocated clone work and write `vi.execution`; the rest is greyed with its reason.
 > Tested in `test/editor/vi-properties.test.mjs`.
 
+## 13. Create ▸ and the clipboard (2026-10-08)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/create-paste/`, with `REPORT.md`). What the report marks
+unverified is unverified here too.
+
+> **Rule 72 — Create ▸ on a terminal.** The right-click menu of a function node (body, inputs and outputs alike)
+> has Create ▸ Constant, Control, Indicator, Scalar ▸ (Constant, Control; only on an array terminal), Channel
+> Writer..., | All Controls and Indicators, All Constants. It acts on the terminal under the pointer when the menu
+> opened; on the body of a node Constant, Control and Indicator are greyed (`subvi-node-menu-create.png`) and the
+> two All items work. Constant, Control and Indicator on a terminal of the right direction make an object of the
+> terminal's type (`core/model/create-on-terminal.mjs`), wired, and one undo removes all of it. On an input a
+> constant is `gap` px left of the node's left edge, centred on the terminal, with its value typed in (selected, not
+> an object selection); `gap` is 16 for Add, Quotient & Remainder and And and 8 for Index Array, String Length, Array
+> Size, Unbundle and Simple Error Handler (`CONSTANT_GAP_BY_BLOCK`; why they differ is unknown, and a block that was
+> not measured gets 16: unverified). A control is a 38 × 38 terminal 16 px left of the node, centred, labelled with
+> the terminal's name (typed in; numbered if taken, "x 2") on its left; an indicator, 16 px right of an output, label
+> on its right. A constant or a control on an output, or an indicator on an input, is created of that type and left
+> unwired: constants and controls above the node's upper left corner, the indicator touching its right edge (the
+> exact offsets: unverified). An object that would sit on another one is pushed up until their boxes touch, and its
+> wire turns 5 px inside the node (`create-two-constants-on-add-collision-avoidance.png`; only measured for
+> constants). On the panel a control goes to the first free place of a grid at the top left (66 px across, 42 down,
+> the first box at (2, 21)) and an indicator to the first free place of a row that starts at the panel's horizontal
+> centre, one box (minus a pixel) apart; how many rows a column holds and the order indicators fill are unverified
+> (ours: as many rows as fit; along the rows), and since the diagram cannot see the other window it takes the
+> size of its own canvas for the panel's. All Controls and Indicators and All Constants make one object for each
+> terminal that has no wire yet (the last terminal first, so the stack keeps their order, 2 px apart); only the
+> inputs get a constant. Whether LabVIEW skips the wired terminals is unverified. A type with no block yet (a
+> generic cluster) says so in a notice; Scalar ▸ and Channel Writer... are greyed with their reason. An object made
+> next to a node inside a structure is inside it. The step of undo closes before the typing: what is typed afterwards
+> is a step of its own. Tested in `test/editor/terminal-creation.test.mjs` and `test/editor/create-and-paste.test.mjs`.
+
+> **Rule 73 — The wire menu.** Right-click on a wire, or on a terminal that has one (not a structure's border), opens
+> the wire's menu (`context.wire`): Clean Up Wire, Create Wire Branch, Delete Wire Branch, | Visible Items ▸,
+> | Insert ▸, | Numeric Palette ▸, Create ▸, | Add Probe, Custom Probe ▸, Add Breakpoint, | Description and
+> Tip.... Create ▸ is Constant, Control, Indicator, Create SubVI from Selected Wires and Channel Writer...; the three
+> that work make the object of the wire's type, UNWIRED, centred on the point where the menu was opened (unverified:
+> LabVIEW's place). The rest of the menu is greyed with its reason. Tested in `test/editor/create-and-paste.test.mjs`.
+
+> **Rule 74 — Copy, cut, paste, delete and select all.** On the diagram and on the panel, Ctrl+C, Ctrl+X, Ctrl+V,
+> Ctrl+A and the Edit menu (Delete has no shortcut but the key). Copy takes the selected nodes with everything inside
+> a structure among them and the wires whose two ends are in the copy; the wires to what is left out are not copied
+> (`core/model/clipboard.mjs`). Cut removes the nodes and their wires (no broken wire is left) and one undo brings them
+> back. Paste puts the copy centred on the pointer (the last place it was over the canvas; Edit ▸ Paste uses the same;
+> unverified: LabVIEW's place for the menu), selects the copy, makes every pasted node a new id and name, and puts
+> each copy of a structure's contents in the structure it fell in (rule 26). Pasting again without moving the pointer
+> shifts the copy 8 px down and to the right each time (LabVIEW sometimes lands on the place the selection was made:
+> the cause is unverified and not reproduced). A pasted control gets its panel object in the first free place of the
+> panel's left column, with a numbered label ("x 5"); pasted on the panel, a control is centred on the pointer, numbered,
+> and gets its terminal on the diagram, unwired, 8 px down and to the right of the original's (unverified); a
+> diagram-only fragment pasted on the panel takes just its controls and indicators. One paste is one step of undo. The
+> clipboard is shared by every open VI through the main process (`clipboard:write` and `clipboard:read`; it is kept as
+> JSON text, not on the system clipboard, so what else the user copied does not matter): a subVI node pasted in
+> another VI has its stored path rebased to the file it is pasted in and its callee read first. Cut, Copy and Delete
+> are greyed with nothing selected (Delete also works on a selected wire); Paste is greyed with nothing copied
+> (unverified: the captures had something copied). Select All selects every node and wire of the diagram, or every
+> panel object. Tested in `test/editor/create-and-paste.test.mjs`.
+
+> **Rule 75 — The Edit menu.** Undo Ctrl+Z, Redo Ctrl+Shift+Z | Cut, Copy, Paste, Paste Special Ctrl+Shift+V, Delete,
+> Select All | Make Current Values Default, Reinitialize Values to Default | Customize Control..., Import Picture to
+> Clipboard..., Set Tabbing Order... | Remove Broken Wires from Selection Ctrl+B, Clean Up Selection Ctrl+U, Remove
+> Breakpoints from Hierarchy, Create VI Snippet from Selection, Create SubVI | Enable Diagram Grid Alignment Ctrl+#,
+> Show Hidden Controls While Editing, Align Items Ctrl+Shift+A, Distribute Items Ctrl+Shift+D | VI Revision History...
+> Ctrl+Y, Run-Time Menu..., Adjust Pane Origin | Find and Replace... Ctrl+F, Show Search Results Ctrl+Shift+F. On the
+> panel: Make Selected Values Default, Reinitialize Selected Values to Default, Clean Up Panel, Disable Panel Grid
+> Alignment; Customize Control... and Adjust Pane Origin are enabled there and greyed on the diagram (ours: all are
+> placeholders with their reason). With nothing selected the diagram's "...from Selection" rows read "Remove Broken
+> Wires" and "Clean Up Diagram", and Create VI Snippet and Create SubVI are greyed. Undo and Redo work (greyed with no step).
+> Unverified: LabVIEW names the step in the row ("Undo Create"); ours says "Undo". Tested in `test/editor/edit-menu.test.mjs`.
+
+> **Rule 76 — Ctrl+drag.** Dragging the selection with Ctrl held leaves the originals and carries copies of them,
+> without the wires to what is left out; on the diagram a copied control gets its own place on the panel, on the panel
+> a copy is numbered and gets its terminal on the diagram. The whole drag is one step of undo. Tested in
+> `test/editor/create-and-paste.test.mjs`.
+
+> **Rule 77 — Deleting a control on the panel.** LabVIEW removes its terminal and leaves the wire BROKEN on the
+> diagram (`panel-delete-control-diagram-leaves-broken-wire.png`). Solder's graph has no wire with a missing end (a wire
+> names two nodes that exist), so the wire goes with the control (rule 39), as before. Open decision: representing a
+> wire that ends nowhere.
+
+## 14. Format Into String and Scan From String (2026-10-08)
+
+> **Rule 78 — The two nodes with rows.** Format Into String and Scan From String are placed from Functions ▸ Programming ▸
+> String, centred on the click. Measured in LabVIEW 2026 Q3 (`labview-captures/format-scan/`, 1:1): Format Into String is
+> 32 × 29 px (`03z.png`) and Scan From String 32 × 37 px (`31z-scan-placed.png`), with a 1 px border `#4C4C3D` and fill
+> `#FFFFCC`. Terminals: the format string on top, in the middle; on the left, initial string and error in
+> (Format) or input string, initial scan location and error in (Scan), and then the rows (an input per row, `input N` in
+> Format and `default N` in Scan); on the right, resulting string and error out (Format) or remaining string,
+> offset past scan and error out and then one `output N` per row (Scan). Each row has the box of its type (DBL orange,
+> I32 blue, string pink `abc`, Boolean green `TF`): on the left in Format, on the right in Scan, following what is wired
+> (an unwired row is DBL). The tips are the names of the context help (`02-qd.png`, `30-scan-context-help.png`).
+> Stretching the bottom handle adds rows of 8 px (`16-node-stretched.png`, `36-scan-created.png`); the width does not
+> change, and shrinking only removes unwired rows, from the bottom, down to one. On Scan, right-clicking a row's
+> terminal (`default N` or `output N`) adds **Add Parameter** (a row right below it) and **Remove Parameter** to the menu
+> (`32b-scan-menu-param.png`); Remove Parameter takes the row's wires with it and is greyed when only one row is left.
+> The menus (`04-fmt-menu.png`, `32-scan-menu.png`) have LabVIEW's rows in its order; Create ▸ is the generic one
+> (rule 72); everything else is a hole, and Edit Format String / Edit Scan String is greyed because the dialog
+> (`05-edit-format-dialog.png`, `33-scan-dialog.png`) is not built.
+> Tests: `test/editor/format-nodes.test.mjs` and `palettes.test.mjs`.
+>
+> **Unverified:** the exact vertical position of the fixed terminals (read from the captures at about 8x, to half a
+> pixel); the terminals of Scan From String are placed from the context help (`30-scan-context-help.png`) because the
+> capture of the placed node (`31z-scan-placed.png`) does not show them; where Add Parameter inserts the row (below the
+> clicked one is our choice); whether Remove Parameter of the last row is greyed in LabVIEW; that a new row takes the
+> type of the previous one when it is not DBL (the captures only show DBL rows; an unwired row is DBL here); the mark of
+> the default of each row and the icon on the top are our own drawings (diagonal and `!` marks of the original are
+> not reproduced); there is no Context Help window yet, so the terminal texts are only the tips.

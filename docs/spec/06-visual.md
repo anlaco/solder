@@ -512,12 +512,41 @@ so it sticks out 1 px (ours reuses the
 pixels of the capture. In LabVIEW all 36 are available; ours draws the 35 it cannot do greyed (45 % opacity) and
 explains them on hover (DT-035). Tested in `test/editor/connector-patterns.test.mjs`.
 
+## 12. Create ▸, paste and the Edit menu (2026-10-08)
+
+From `labview-captures/create-paste/` (1:1). On the diagram: a constant made on an input is 13 × 19 (DBL, orange, "0"),
+16 × 14 Boolean (green, "F"), 15 × 19 empty string (pink), error cluster 22 × 58, and its right edge is 16 px (8 for some
+nodes, see spec/05 rule 72) from the node's left edge, centred on the terminal; a control or indicator terminal in icon
+view is 38 × 38, 16 px from the node, with its label on the left (control) or right (indicator). Where an object is
+pushed up its boxes touch, and its wire runs horizontally to 5 px inside the node's left edge and then vertically
+(`create-two-constants-on-add-collision-avoidance.png`). All Controls and Indicators stacks about 2 px apart
+(`create-all-controls-and-indicators-result.png`). On the panel: controls in a grid at the top left, 66 px across and
+42 down; indicators from the panel's horizontal centre, 54 px apart for 55 px wide boxes
+(`panel-placement-of-created-controls-and-indicators.png`). The right-click Create ▸ submenu is the width of its longest
+row with a line before All Controls and Indicators; Scalar ▸ sits between Indicator and Channel Writer...
+(`array-size-input-create-scalar-submenu.png`). The Edit menu (`edit-menu-diagram-nothing-selected.png`,
+`edit-menu-diagram-with-selection.png`, `edit-menu-panel-with-control-selected.png`): rows as in spec/05 rule 75, the
+shortcuts in a second column, greyed rows in light grey, a line between the eight groups. Solder's own marks: a hole
+is in italics, a row greyed by the state of the window is not. Pasted objects are drawn selected. Tested in
+`test/editor/terminal-creation.test.mjs` and `test/editor/edit-menu.test.mjs`.
+
+## 13. Format Into String and Scan From String (2026-10-08)
+
+From `labview-captures/format-scan/` (1:1; the nodes are small, so the captures are zoomed 8x). 32 × 29 px (Format, one row)
+and 32 × 37 px (Scan, one row); each extra row adds 8 px; border 1 px `#4C4C3D`, fill `#FFFFCC`. The icon is on the
+top: a checkerboard, a `%` and an arrow (the percent sign between the format and the string); the glyphs are our own
+vectors. The box of a row is 16 × 9 px with a black rule on the side that faces the inside of the node, the name of the
+type in the type's colour on it (`03z.png` for Format, on the left; `31z-scan-placed.png` for Scan, on the right). In
+Scan, each row also has a small target mark on the left (the default). Tested in `test/editor/format-nodes.test.mjs`.
+
 ---
 
 ## History
 
 | Date       | Change |
 |------------|--------|
+| 2026-10-08 | §13: Format Into String and Scan From String, from `labview-captures/format-scan/`. |
+| 2026-10-08 | §12: Create ▸, paste and the Edit menu, from `labview-captures/create-paste/`. |
 | 2026-09-30 | §4: the diagram's orange, measured in the videos (`#fb7c00`). Compound Arithmetic: input cells, handles to stretch it, Invert's small circle, modes. |
 | 2026-09-30 | §4 and §5.3: routes, terminal hints, cursors, terminals view and the coercion wedge, from the Numeric video. |
 | 2026-09-29 | §4 and §5.3: wire colors by type and coercion dot, implemented in the editor (DT-038). |

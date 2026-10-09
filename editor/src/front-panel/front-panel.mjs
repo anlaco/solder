@@ -25,6 +25,8 @@
 import * as Et from "../common/labels.mjs";
 import { BOOLEANOS, dibujoBooleano, estadoError } from "../common/glyphs.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
+import { REPEATED_PASTE_STEP } from "../common/paste-memory.mjs";
+import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { convertirValor, elementoPorDefecto, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import { cellAddress, dimensionsOfNode, firstShown, indexSetting, isDefined, readCell, valueFitsDimensions, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
 
@@ -337,7 +339,7 @@ function colocar(p, ctx, pt) {
  * Pulsar el botón principal en el panel. `sobre`: `{ tipo: "objeto", id }`,
  * `{ tipo: "etiqueta", id }` o `{ tipo: "fondo" }`; `pt`, el punto en el lienzo.
  */
-export function pulsar(p, ctx, sobre, pt, shift = false) {
+export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
   // Pulsar fuera de la etiqueta en la que se escribe confirma lo escrito, y
   // nada más.
   const enLoQueSeEscribe = sobre.id === p.edicion?.nodo && (p.edicion?.valor ? (sobre.tipo === "elem" && sobre.k === p.edicion.elem) || (sobre.tipo === "casilla" && !p.edicion.campo && p.edicion.elem === undefined) || (sobre.tipo === "campo" && sobre.campo === p.edicion.campo) : sobre.tipo === "etiqueta");
@@ -372,7 +374,7 @@ export function pulsar(p, ctx, sobre, pt, shift = false) {
   // Un clic en la casilla de un control escribe en ella, con el cursor al final.
   const n = p.g.nodos.find((m) => m.id === sobre.id);
   if (sobre.tipo === "casilla" && (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control")) return editarValor(p, ctx, sobre.id, false);
-  if (sobre.tipo === "objeto" || sobre.tipo === "casilla") return { ...p, seleccion: elegir(sobre.id), accion: { tipo: "mover", x: pt.x, y: pt.y, nodo: sobre.id, movido: false } };
+  if (sobre.tipo === "objeto" || sobre.tipo === "casilla") return { ...p, seleccion: elegir(sobre.id), accion: { tipo: "mover", x: pt.x, y: pt.y, nodo: sobre.id, movido: false, ...(duplicate ? { duplicar: true } : {}) } };
   if (sobre.tipo === "etiqueta") return { ...p, seleccion: elegir(idEtiqueta(sobre.id)), accion: { tipo: "etiqueta", nodo: sobre.id, x: pt.x, y: pt.y } };
   return { ...p, seleccion: shift ? p.seleccion : [], accion: { tipo: "rectangulo", x0: pt.x, y0: pt.y, x1: pt.x, y1: pt.y, base: shift ? p.seleccion : [] } };
 }
@@ -387,14 +389,16 @@ export function moverA(p, ctx, pt) {
     case "mover": {
       const [dx, dy] = [Math.round(pt.x - accion.x), Math.round(pt.y - accion.y)];
       if (!dx && !dy) return p;
+      // Ctrl+drag: the first move leaves the originals and carries numbered copies (REPORT.md §C).
+      const dragged = accion.duplicar && !accion.duplicado ? duplicarSeleccion(p) : p;
       // Mover un objeto se lleva su etiqueta; una etiqueta seleccionada sola se mueve sola.
-      const nodos = p.seleccion.filter((id) => !esEtiqueta(id));
-      let g = Gr.moverEnPanel(p.g, nodos, dx, dy);
-      for (const id of p.seleccion.filter(esEtiqueta)) {
+      const nodos = dragged.seleccion.filter((id) => !esEtiqueta(id));
+      let g = Gr.moverEnPanel(dragged.g, nodos, dx, dy);
+      for (const id of dragged.seleccion.filter(esEtiqueta)) {
         const nodo = nodoDeEtiqueta(id);
         if (!nodos.includes(nodo)) g = moverEtiqueta(g, ctx, nodo, dx, dy);
       }
-      return { ...p, g, accion: { ...accion, x: accion.x + dx, y: accion.y + dy, movido: true } };
+      return { ...dragged, g, accion: { ...accion, x: accion.x + dx, y: accion.y + dy, movido: true, ...(accion.duplicar ? { duplicado: true } : {}) } };
     }
     case "etiqueta": {
       const [dx, dy] = [Math.round(pt.x - accion.x), Math.round(pt.y - accion.y)];
@@ -408,6 +412,18 @@ export function moverA(p, ctx, pt) {
     default:
       return p;
   }
+}
+
+/**
+ * The copies Ctrl+drag carries: the selected objects, copied in place with
+ * numbered labels and, on the diagram, their terminals a little down and to
+ * the right of the originals' (where LabVIEW puts them is unverified).
+ */
+function duplicarSeleccion(p) {
+  const ids = p.seleccion.filter((id) => !esEtiqueta(id) && p.g.nodos.some((n) => n.id === id && n.panel));
+  if (!ids.length) return p;
+  const pasted = pasteFragment(p.g, { ...copyFragment(p.g, ids), wires: [] }, { dx: REPEATED_PASTE_STEP, dy: REPEATED_PASTE_STEP, panelDx: 0, panelDy: 0 });
+  return { ...p, g: pasted.g, seleccion: pasted.ids };
 }
 
 function moverEtiqueta(g, ctx, id, dx, dy) {

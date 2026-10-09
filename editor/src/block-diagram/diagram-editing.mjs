@@ -26,10 +26,13 @@
 //              node or one of its terminals; `en`, the canvas point where it was opened
 //   aviso      why the last action could not be done (spec/05 rule 31)
 
-import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, extremos, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
+import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
+import * as FN from "./format-nodes.mjs";
 import * as CP from "../front-panel/connector-pane.mjs";
 import * as Et from "../common/labels.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
+import * as TC from "./terminal-creation.mjs";
+import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { DBL, NUMERICOS, POR_ABREVIATURA, convertirValor, esArray, esEntero, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import { MAX_EDITOR_DIMENSIONS, addDimensionPatch, dimensionsOfNode, firstShown, readCell, removeDimensionPatch, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
 
@@ -42,10 +45,38 @@ export const inicial = () => ({ g: Gr.nuevo(), seleccion: [], accion: null, avis
 const UMBRAL = 3;
 /** Un bloque cogido de la paleta cuelga del cursor por esta esquina. */
 const AGARRE = { x: 4, y: 4 };
+/** The point of a block that hangs from the cursor: Format Into String and Scan From String, their centre (format-scan/31-scan-placed.png). */
+const grabPoint = (block, ctx) => (FN.isFormatNode({ tipo: block }, ctx.cat) ? FN.formatNodeGrabPoint(block, ctx.cat) : AGARRE);
 
 const lejos = (a, p) => Math.abs(p.x - a.x) > UMBRAL || Math.abs(p.y - a.y) > UMBRAL;
 const cableDe = (id) => id.split("#")[0];
 const esEtiqueta = (id) => id.endsWith("#etiqueta");
+
+/** The selected nodes a copy takes: not the border nodes of a structure (tunnels, shift registers, loop terminals), which only go with theirs. */
+export const copyableIds = (d) => d.seleccion.filter((id) => d.g.nodos.some((n) => n.id === id && !esBorde(n)));
+
+/**
+ * Ctrl+drag: the selection is copied in place (no wires to what is left out;
+ * the controls among it get their own place on the panel) and the copies
+ * become the selection, so the drag carries them.
+ */
+function duplicateSelection(d, ctx) {
+  const ids = copyableIds(d);
+  if (!ids.length) return d;
+  const before = new Set(d.g.nodos.map((n) => n.id));
+  const pasted = pasteFragment(d.g, copyFragment(d.g, ids), { panelDx: 0, panelDy: 0 });
+  const newIds = pasted.g.nodos.filter((n) => !before.has(n.id)).map((n) => n.id);
+  return { ...d, g: TC.placePastedPanelObjects(pasted.g, ctx, newIds, ctx.panelSize), seleccion: pasted.ids };
+}
+
+/** The wire that ends at a terminal, if any: its right-click menu is the wire's, not the node's (REPORT.md §A). */
+export const wireAtTerminal = (g, nodo, puerto, dir) => g.cables.find((c) => (dir === "in" ? c.a : c.de).nodo === nodo && (dir === "in" ? c.a : c.de).puerto === puerto);
+
+/** Select All (Ctrl+A): every node, and every wire between them. */
+export function selectAll(d) {
+  const shown = visibles(d.g);
+  return { ...d, seleccion: [...shown.nodos.map((n) => n.id), ...shown.cables.map((c) => c.id)], accion: null, menu: null };
+}
 
 /**
  * Coger un bloque de la paleta: queda colgando del cursor hasta soltarlo en el
@@ -55,7 +86,8 @@ const esEtiqueta = (id) => id.endsWith("#etiqueta");
 export const coger = (d, bloque, config) => ({ ...d, accion: { tipo: "colocar", bloque, config }, aviso: null, menu: null });
 
 function colocar(d, ctx, p) {
-  let { g, id } = Gr.crearNodo(d.g, ctx.cat, d.accion.bloque, Math.round(p.x - AGARRE.x), Math.round(p.y - AGARRE.y));
+  const grab = grabPoint(d.accion.bloque, ctx);
+  let { g, id } = Gr.crearNodo(d.g, ctx.cat, d.accion.bloque, Math.round(p.x - grab.x), Math.round(p.y - grab.y));
   if (d.accion.config) g = Gr.fijarConfig(g, id, d.accion.config);
   // Soltarlo dentro de un bucle lo mete en él (DT-041).
   // Una constante de cadena recién soltada queda lista para escribir en ella (bd-string-constant-editando.png).
@@ -565,13 +597,14 @@ function ajustarSelectores(g, ctx) {
 }
 
 /**
- * Pulsar el botón principal sobre algo del diagrama. `sobre` es lo que hay
- * debajo, resuelto en el orden de spec/05 §3.2: `{ tipo: "terminal", nodo,
- * puerto, dir }`, `{ tipo: "nodo", id }`, `{ tipo: "tramo", cable, k }` o
- * `{ tipo: "fondo" }`. `p`, el punto en el lienzo; `shift`, si suma a la
- * selección.
+ * Pressing the main button on something in the diagram. `sobre` is what is
+ * underneath, resolved in the order of spec/05 §3.2: `{ tipo: "terminal", nodo,
+ * puerto, dir }`, `{ tipo: "nodo", id }`, `{ tipo: "tramo", cable, k }` or
+ * `{ tipo: "fondo" }`. `p`, the point on the canvas; `shift`, whether it adds to
+ * the selection; `duplicate` (Ctrl), whether dragging copies the selection
+ * instead of moving it.
  */
-export function pulsar(d, ctx, sobre, p, shift = false) {
+export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
   if (d.menu) return { ...d, menu: null };
   // La lista de marcos de un Case se cierra al pulsar fuera de ella, y una de sus filas muestra ese marco.
   if (d.lista) return sobre.tipo === "fila-marco" ? mostrarMarco({ ...d, lista: null }, sobre.nodo, sobre.k) : { ...d, lista: null };
@@ -601,7 +634,7 @@ export function pulsar(d, ctx, sobre, p, shift = false) {
     // La constante de error, igual, con la celda de su status.
     const tipoNodo = d.g.nodos.find((n) => n.id === sobre.id)?.tipo;
     const alternar = tipoNodo === "bool-const" || (tipoNodo === "error-cluster-constant" && sobre.campo === "status") ? sobre.id : null;
-    return { ...d0, seleccion: elegir(sobre.id), accion: { tipo: "mover", x: p.x, y: p.y, alternar, campo: sobre.campo, movido: false } };
+    return { ...d0, seleccion: elegir(sobre.id), accion: { tipo: "mover", x: p.x, y: p.y, alternar, campo: sobre.campo, movido: false, ...(duplicate ? { duplicar: true } : {}) } };
   }
   // Una etiqueta se agarra sola: moverla no mueve su terminal.
   if (sobre.tipo === "etiqueta") return { ...d0, seleccion: elegir(`${sobre.id}#etiqueta`), accion: { tipo: "etiqueta", nodo: sobre.id, x: p.x, y: p.y } };
@@ -620,13 +653,15 @@ export function moverA(d, ctx, p) {
     case "colocar":
       // Una estructura sigue al cursor con su rectángulo; «arrastrado» es que ya se ha alejado de la esquina.
       if (ctx.cat.bloque(accion.bloque).estructura) return { ...d, accion: { ...accion, x: p.x, y: p.y, arrastrado: accion.esquina ? lejos(accion.esquina, p) : true } };
-      return { ...d, accion: { ...accion, x: Math.round(p.x - AGARRE.x), y: Math.round(p.y - AGARRE.y), arrastrado: true } };
+      return { ...d, accion: { ...accion, x: Math.round(p.x - grabPoint(accion.bloque, ctx).x), y: Math.round(p.y - grabPoint(accion.bloque, ctx).y), arrastrado: true } };
     case "mover": {
       const [dx, dy] = [Math.round(p.x - accion.x), Math.round(p.y - accion.y)];
       if (!dx && !dy) return d;
+      // Ctrl+drag: the first move leaves the originals where they are and carries copies (REPORT.md §B).
+      const dragged = accion.duplicar && !accion.duplicado ? duplicateSelection(d, ctx) : d;
       // Regla 23: se mueve todo lo seleccionado. Mover sólo cambia la presentación (regla 25).
-      const nodos = d.seleccion.filter((id) => d.g.nodos.some((n) => n.id === id));
-      return { ...d, g: desplazar(d.g, ctx, nodos, dx, dy), accion: { ...accion, x: accion.x + dx, y: accion.y + dy, movido: true } };
+      const nodos = dragged.seleccion.filter((id) => dragged.g.nodos.some((n) => n.id === id));
+      return { ...dragged, g: desplazar(dragged.g, ctx, nodos, dx, dy), accion: { ...accion, x: accion.x + dx, y: accion.y + dy, movido: true, ...(accion.duplicar ? { duplicado: true } : {}) } };
     }
     case "cablear":
       return { ...d, accion: { ...accion, x: p.x, y: p.y, arrastrado: accion.arrastrado || lejos({ x: accion.x0, y: accion.y0 }, p) } };
@@ -656,6 +691,7 @@ export function moverA(d, ctx, p) {
       if (arr?.tipo === "arr-const") return { ...d, g: Gr.fijarConfig(accion.g0, accion.nodo, stretchedArrayConstant(arr, ctx, accion, p)) };
       if (arr?.tipo === "initialize-array") return { ...d, g: stretchedInitializeArray(accion, p, ctx) };
       if (esEstructura(accion.g0.nodos.find((k) => k.id === accion.nodo), ctx)) return { ...d, g: estirarEstructura(accion, p, ctx) };
+      if (arr && FN.isFormatNode(arr, ctx.cat)) return { ...d, g: FN.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / FN.FORMAT_ROW_STEP)) };
       // Cada celda que se estira es una entrada más; por arriba, las nuevas
       // entran encima y las que había conservan sus cables.
       const n0 = accion.g0.nodos.find((k) => k.id === accion.nodo);
@@ -869,6 +905,8 @@ export function orden(d, id, ctx) {
   if (id.endsWith(".invert")) return cerrar(Gr.alternarInvertida(d.g, nodo, puerto ?? "result"));
   if (id.endsWith(".add-input")) return cerrar(Gr.anadirEntrada(d.g, ctx.cat, nodo, puerto));
   if (id.endsWith(".remove-input")) return cerrar(Gr.quitarEntrada(d.g, ctx.cat, nodo, puerto));
+  if (id.endsWith(".add-parameter")) return cerrar(FN.addedRow(d.g, nodo, ctx.cat, FN.rowOfPort(nodoPor(d.g, nodo), ctx.cat, puerto)));
+  if (id.endsWith(".remove-parameter")) return cerrar(FN.removedRow(d.g, nodo, ctx.cat, FN.rowOfPort(nodoPor(d.g, nodo), ctx.cat, puerto)));
   if (id.includes(".change-mode.")) return cerrar(Gr.fijarConfig(d.g, nodo, { mode: ultimo }));
   if (id.includes(".representation.") && POR_ABREVIATURA[ultimo]) return cerrar(Gr.fijarRepresentacion(d.g, nodo, POR_ABREVIATURA[ultimo]));
   if (id.includes(".mechanical-action.")) return cerrar(Gr.fijarConfig(d.g, nodo, { mechanical: ultimo }));
@@ -898,7 +936,12 @@ export function orden(d, id, ctx) {
     const patch = (id.endsWith(".add-dimension") ? addDimensionPatch : removeDimensionPatch)(n.config);
     return patch ? cerrar(Gr.fijarConfig(d.g, nodo, patch)) : d;
   }
-  if (id.endsWith(".create.constant")) return crearConstante({ ...d, menu: null }, ctx, nodo, puerto);
+  const createdKind = /\.create\.(constant|control|indicator)$/.exec(id)?.[1];
+  const createdAll = /\.create\.(all-controls-and-indicators|all-constants)$/.exec(id)?.[1];
+  const menuClosed = (r) => ({ ...r, menu: null });
+  if (d.menu.raiz === WIRE_MENU_ROOT && createdKind) return menuClosed(createOnWire(d, ctx, nodo, createdKind));
+  if (createdKind) return menuClosed(createOnTerminal(d, ctx, nodo, puerto, createdKind));
+  if (createdAll) return menuClosed(createOnNode(d, ctx, nodo, createdAll));
   // Add Shift Register: el par aparece en los bordes, a la altura del clic (structures/shift-register.png).
   if (id.endsWith(".add-shift-register")) {
     const s = d.g.nodos.find((k) => k.id === nodo);
@@ -946,12 +989,13 @@ function arrayVariants(n, root) {
 }
 
 /**
- * Las filas que el menú de un Case enseña según lo que es: un Case booleano
- * lleva «Show Case True/False» y «Make This Case True/False» y uno numérico, los
- * de «Show Case...», el Default y Radix; la fila del Default dice «Remove
- * Default» si el marco que se ve lo es. El terminal selector, Boolean o Numeric Palette.
+ * The rows that a node's menu shows or renames according to what it is: a
+ * Boolean Case has "Show Case True/False" and "Make This Case True/False", a
+ * numeric one has "Show Case...", the Default and Radix, and its Default row
+ * says "Remove Default" if the frame in view is the Default. A selector terminal
+ * has the Boolean or the Numeric Palette.
  */
-export function variantes(d) {
+function nodeVariants(d) {
   if (CP.hasConnectorMenu(d)) return CP.menuVariants(d);
   const n = d.menu && d.g.nodos.find((k) => k.id === d.menu.nodo);
   const r = d.menu?.raiz;
@@ -974,12 +1018,46 @@ export function variantes(d) {
   if (n?.tipo === "tunnel-in" && n.config?.indexado) return { ocultos: new Set(), rotulos: new Map([[`${r}.enable-indexing`, "Disable Indexing"]]) };
   // An array: Remove Dimension is greyed on a 1D one, and Add Dimension on a 2D one explains the limit of Solder.
   if (n && ["arr-const", "arr-control", "arr-indicator"].includes(n.tipo)) return arrayVariants(n, r);
+  // Remove Parameter on the only row of Scan From String does nothing: there is always one.
+  if (n?.tipo === "scan-from-string" && (n.config?.inputs ?? 1) <= 1) return { desactivados: new Set([`${r}.remove-parameter`]) };
   if (n?.tipo === "case-selector") {
     const caso = d.g.nodos.find((k) => k.id === n.dentro);
     return { ocultos: fila(caso && esBooleano(caso) ? "numeric-palette" : "boolean-palette"), rotulos: new Map() };
   }
   return {};
 }
+
+/** The Create rows that need a terminal under the pointer: LabVIEW greys them on the body of a node (subvi/subvi-node-menu-create.png). */
+const CREATE_ROWS_THAT_NEED_A_TERMINAL = ["constant", "control", "indicator"];
+
+/**
+ * The rows of Create ▸ that depend on where the menu was opened: Constant,
+ * Control and Indicator are greyed on the body of a node and work on a
+ * terminal; Scalar ▸ appears only on an array terminal
+ * (create-paste/array-size-input-create-scalar-submenu.png).
+ */
+function createVariants(d, ctx) {
+  const menu = d.menu;
+  if (!menu || menu.raiz === WIRE_MENU_ROOT || !ctx || CP.hasConnectorMenu(d)) return {};
+  const root = menu.raiz;
+  const node = nodoPor(d.g, menu.nodo);
+  if (!node) return {};
+  const desactivados = menu.puerto ? new Set() : new Set(CREATE_ROWS_THAT_NEED_A_TERMINAL.map((item) => `${root}.create.${item}`));
+  const terminal = menu.puerto && terminales(node, ctx).find((t) => t.puerto === menu.puerto);
+  const type = terminal && (terminal.dir === "in" ? Gr.tipos(d.g, ctx.cat).entradas : Gr.tipos(d.g, ctx.cat).salidas).get(`${menu.nodo}.${menu.puerto}`);
+  const ocultos = esArray(type) ? new Set() : new Set([`${root}.create.scalar`]);
+  return { desactivados, ocultos };
+}
+
+/** The union of two sets of variants (the node's own and Create's). */
+const mergeVariants = (a, b) => ({
+  ...a,
+  ocultos: new Set([...(a.ocultos ?? []), ...(b.ocultos ?? [])]),
+  desactivados: new Set([...(a.desactivados ?? []), ...(b.desactivados ?? [])]),
+});
+
+/** What changes in the rows of the open menu: the node's own variants and those of Create ▸. `ctx` is needed for the terminal's type. */
+export const variantes = (d, ctx) => mergeVariants(nodeVariants(d), createVariants(d, ctx));
 
 /** Qué filas del menú llevan la marca: Terminals si el nodo los enseña, el modo actual, Invert si lo está, la representación de un número. */
 export function marcados(d) {
@@ -1012,25 +1090,56 @@ export function marcados(d) {
   return m;
 }
 
-/** Hueco entre una constante creada y el terminal al que se cablea: 9 px del vídeo. */
-const HUECO_CONSTANTE = 6;
+// ——— Create ▸ on a terminal, a wire or a whole node (spec/05 rule 72) ———
+
+/** The id of the right-click menu of a wire (`menu.nodo` holds the wire's id). */
+export const WIRE_MENU_ROOT = "context.wire";
+
+/** The blocks whose value is typed into right after they are created (their constants have a text to edit). */
+const TYPED_CONSTANTS = new Set(["num-const", "const", "str-const"]);
 
 /**
- * Create ▸ Constant sobre una entrada: una constante del tipo de la entrada, a
- * su izquierda y a su altura, ya cableada y con el texto seleccionado para
- * escribir, como en compound-create.png.
+ * What is typed into right after a Create, as LabVIEW leaves it
+ * (REPORT.md §A): the value of a new numeric or string constant, selected, and
+ * the label of a new control or indicator. The step of undo is closed before
+ * (`edicion.nuevo`), so the typing is a step of its own. Several objects at
+ * once (the "All" items) are left alone.
  */
-export function crearConstante(d, ctx, nodo, puerto) {
-  const n = d.g.nodos.find((k) => k.id === nodo);
-  const t = terminales(n, ctx).find((k) => k.puerto === puerto);
-  const tipo = Gr.tipos(d.g, ctx.cat).entradas.get(`${nodo}.${puerto}`);
-  const bloque = esEntero(tipo) ? "num-const" : "const";
-  let { g, id } = Gr.crearNodo(d.g, ctx.cat, bloque, 0, 0);
-  if (bloque === "num-const") g = Gr.fijarValor(g, id, 0, tipo);
-  const k = caja(g.nodos.find((m) => m.id === id), ctx);
-  g = Gr.mover(g, [id], Math.round(t.x - HUECO_CONSTANTE - k.ancho), Math.round(t.y - k.alto / 2));
-  g = Gr.conectar(g, ctx.cat, { nodo: id, puerto: "result", dir: "out" }, { nodo, puerto, dir: "in" }).g;
-  return editar({ ...d, g }, ctx, id);
+function typeIntoCreated(d, ctx, ids) {
+  const created = ids.length === 1 ? d.g.nodos.find((n) => n.id === ids[0]) : null;
+  if (!created) return { ...d, seleccion: [] };
+  if (TYPED_CONSTANTS.has(created.tipo)) {
+    const typing = editar(d, ctx, created.id);
+    return { ...typing, edicion: { ...typing.edicion, nuevo: true }, seleccion: [] };
+  }
+  if (created.label) return { ...d, edicion: { ...Et.editar(created), nuevo: true }, seleccion: [], accion: null };
+  return { ...d, seleccion: [] };
+}
+
+/** Puts the reason a Create could not be done where the menu was opened. */
+const withReason = (d, motivo) => ({ ...d, aviso: { texto: motivo, x: d.menu?.en?.x ?? 0, y: d.menu?.en?.y ?? 0 } });
+
+/** Create ▸ Constant, Control or Indicator on the terminal `puerto` of `nodo`. */
+export function createOnTerminal(d, ctx, nodo, puerto, kind) {
+  if (!puerto) return d;
+  const made = TC.createForTerminal(d.g, ctx, { nodo, puerto, kind, panelSize: ctx.panelSize });
+  if (made.motivo) return withReason(d, made.motivo);
+  return typeIntoCreated({ ...d, g: made.g, aviso: null }, ctx, [made.id]);
+}
+
+/** Create ▸ All Controls and Indicators, or All Constants, on a node. */
+export function createOnNode(d, ctx, nodo, item) {
+  const made = TC.createForNode(d.g, ctx, { nodo, kinds: TC.ALL_KINDS[item], panelSize: ctx.panelSize });
+  if (made.motivo) return withReason(d, made.motivo);
+  return typeIntoCreated({ ...d, g: made.g, aviso: null }, ctx, made.ids);
+}
+
+/** Create ▸ Constant, Control or Indicator on a wire: an unwired object at the point where the menu was opened. */
+export function createOnWire(d, ctx, cable, kind) {
+  const point = d.menu?.en ?? { x: 0, y: 0 };
+  const made = TC.createOnWire(d.g, ctx, { cable, kind, point, panelSize: ctx.panelSize });
+  if (made.motivo) return withReason(d, made.motivo);
+  return typeIntoCreated({ ...d, g: made.g, aviso: null }, ctx, [made.id]);
 }
 
 // ——— Teclado ———

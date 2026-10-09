@@ -341,14 +341,15 @@ test("create constant crea la constante cableada y lista para escribir", () => {
   const [ca] = ids(d);
   d = ED.orden(menuCA(d, ca, "value-1"), "context.compound-arithmetic-input.create.constant", CTX);
   const c = d.g.nodos[1];
-  assert.equal(c.tipo, "const", "del tipo de la entrada: DBL");
+  assert.equal(c.tipo, "num-const", "del tipo de la entrada: DBL");
+  assert.equal(c.config.type, "number");
   assert.equal(d.g.cables.length, 1);
   assert.deepEqual([d.g.cables[0].de.nodo, d.g.cables[0].a.puerto], [c.id, "value-1"]);
   const [, pe] = terminal(d, ca, "value-1");
   const [, pc] = terminal(d, c.id, "result");
   assert.ok(Math.abs(pe.y - pc.y) < 0.6, "a la altura de la entrada");
-  assert.ok(pe.x - pc.x > 0 && pe.x - pc.x < 10, "justo a su izquierda");
-  assert.deepEqual(d.edicion, { nodo: c.id, texto: "0", todo: true }, "con el texto seleccionado");
+  assert.equal(pe.x - pc.x, 16, "16 px a su izquierda (labview-captures/create-paste/)");
+  assert.deepEqual(d.edicion, { nodo: c.id, texto: "0", todo: true, nuevo: true }, "con el texto seleccionado");
 });
 
 test("estirar compound arithmetic por sus asas añade y quita entradas", () => {

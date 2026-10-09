@@ -410,6 +410,40 @@ ASCII letters.
 > Decimal/Hexadecimal/Octal String receive the number as f64: an I64 or U64 of
 > more than 53 bits loses precision.
 
+### 6.5 Format Into String and Scan From String (2026-10-08)
+
+Measured in LabVIEW 2026 Q3 by running each case (`labview-captures/format-scan/`); the engine is
+`core/runtime/format-string.mjs` and every case below is a test in `test/core/format-string.test.mjs`.
+
+> **Rule 21j — Format and scan strings.**
+>
+> - **Specifiers:** `%[n$][flags][width][.precision]conversion` with `d u x X o b f F e E g G p s S`, `[set]` and
+>   `[^set]` (scan only), `%%`, and `%.;` / `%,;` to set the decimal separator for what follows. Without it, `%f`,
+>   `%e`, `%g`, `%p` and an empty format use the **system** separator, both to format and to scan.
+> - **Integers** from a real round to nearest, ties to even (`%d` of 2.5 is `2`, of −3.5 is `−4`) and saturate to
+>   I64 (NaN and +Inf give the maximum). `%x %o %b` print the two's complement in the width of the input type (a
+>   real goes through I64); hexadecimal is always uppercase; `#` is ignored.
+> - **Reals:** `%f` 6 decimals by default with exact half-to-even rounding of the double (`%.1f` of 0.25 is
+>   `0.2`); `%e` is `3.141590E+0` (exponent without padding); `%g` is fixed from 1e−4 up to 1e7 and scientific
+>   outside; `%p` uses SI prefixes (`12.345600k`); NaN and infinities print `NaN`, `Inf`, `-Inf`. An integer in
+>   `%f` is exact (U64 max gives `18446744073709551615.000000`).
+> - **Strings and Booleans:** `%s` pads to the width and truncates to the precision; a Boolean prints `TRUE`/`FALSE`
+>   with `%s` and 0/1 with numeric specifiers. An empty format prints each input in its default format (`%f`,
+>   `%d`, `%s`) joined by one space. `initial string` goes first.
+> - **Errors** (the output string is then empty, `initial string` included): 81 a type mismatch, 82 an unknown
+>   specifier (`%c`), 83 fewer specifiers than rows, 84 more; rows count wired or not. The source is the function's
+>   name with `(arg N)` when it is about an argument. Unverified: LabVIEW also appends ` in <VI name>`.
+> - **Scan:** numbers and `%s` skip leading whitespace; whitespace in the format matches any run of it; a width
+>   limits the characters read; `0x` is not a hexadecimal prefix. Each output has the type of its default; an
+>   integer output rounds to even and saturates (NaN gives the maximum). A failed conversion is error 85: the
+>   outputs before it keep what was read and the rest their defaults; `remaining string` starts where it failed.
+>   A count or type error is found before scanning. `offset past scan` counts from the beginning of the input,
+>   whatever the `initial scan location`.
+> - **With an error in:** nothing is done, the error passes, the result is empty and the outputs give their
+>   defaults (the common rule of `error in`).
+> - Not done: the time specifiers `%t` and `%T` (a run-time error says so), the Edit Format String dialog,
+>   and Format Value and Scan Value as nodes (their rules are in the engine).
+
 ## 7. Blocking operations
 
 The blocks marked `blocking` —today only `tcp-read`— can take seconds.

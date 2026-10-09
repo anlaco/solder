@@ -42,11 +42,11 @@ LabVIEW** (DT-040): independent branches run at the same time, each indicator is
 painted when its data arrives, Abort stops at once and the panel switches to Run
 mode. Since 2026-10-01 also **with loops**: While and For are placed, stretched
 and wired in the diagram, and the compiler runs them (DT-041).
-360 tests green. **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, and the editor opens several VIs with their connector pane.
+412 tests green. **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, and the editor opens several VIs with their connector pane.
 
 | Piece | Status |
 |-------|--------|
-| VI windows (Front Panel, Block Diagram) | Cloned; menus: only File has content (Open, Save, Save As, Exit done). Toolbar: Run, Abort and Enter Text done; in Run mode, the LabVIEW toolbar (filled arrow, no editing tools) |
+| VI windows (Front Panel, Block Diagram) | Cloned; menus: File (Open, Save, Save As, Exit done) and **Edit** (Undo, Redo, Cut, Copy, Paste, Delete and Select All done; the rest greyed with its reason). Toolbar: Run, Abort and Enter Text done; in Run mode, the LabVIEW toolbar (filled arrow, no editing tools) |
 | Functions ▸ Programming palette | Numeric: 32 functions placed and wireable, plus Conversion (13), Data Manipulation (9) and Math & Scientific Constants (17). Boolean: 16. Comparison: 16 of 29 (the twelve comparisons, Select, Max & Min, In Range and Coerce and Not A Number?), with their menus; the rest greyed out. Timing: 3 of 15 (Tick Count (ms), Wait (ms), Wait Until Next ms Multiple). Structures: 4 of 16 (For Loop, While Loop, Case Structure and Flat Sequence Structure), with their placeholders in place. **String: 27 functions and constants done** (with Number/String Conversion and Additional String Functions; the rest greyed out). **Dialog & User Interface: 5 of 23** (Simple Error Handler, Clear Errors, Merge Errors, Error Cluster From Error Code and Error Cluster Constant). The other categories, placeholders |
 | Controls ▸ Modern palette | Numeric Control and Numeric Indicator done, **String & Path: String Control and String Indicator (3 greyed out)**, **Data Containers: Error In and Error Out (6 greyed out)**, and Boolean: 10 of its 13 controls (Push Button, Round/Square LED, switches, sliders, OK, Cancel, Stop); Rocker, Vert Rocker and Radio Buttons, placeholders. 19 Numeric controls and 10 folders, placeholders |
 | Diagram editing | Place, move, wire (also as a branch from another wire), bends, selection, delete, undo, editable constants, complete Compound Arithmetic, View As Icon, labels. **Structures** (M4, spec/05 Rule 40e): While Loop and For Loop placed with two clicks or by dragging a rectangle, drawn at 1:1 with their "i", condition and "N" terminals, tunnels and shift registers attached to the border; they move with what is inside, stretch by their eight handles, a node dropped inside or outside enters or leaves, a wire from one scope to another creates its tunnels, and their menus (Add Shift Register, Stop if True and Continue if True); Case Structure (Rule 40f: frames, selector, tunnels, menus); **Flat and Stacked Sequence** (Rule 40g): film border at 1:1, frames of their own width, wire between frames through tunnels on the separators, selector and local variables in the Stacked, Add/Delete Frame and Replace |
@@ -111,19 +111,27 @@ programs goes **before the rest of the modules**, in this order:
    two indices, 2D control, indicator and constant, with the memory of DT-042.
    *Done on 2026-10-03 (DT-044, spec/04 Rule 21i, spec/05 Rule 40k).*
 2. **SubVIs** (R6): connector pane, icon editor and compiled call.
-   *Core and editor done on 2026-10-08 (DT-045, spec/04 Rules 19c–19d, spec/05 §12); the icon
-   editor, the other 35 connector patterns, shared clones and recursion are missing.*
+   *Core and editor done on 2026-10-08 (DT-045, spec/04 Rules 19c–19d, spec/05 §12); the other
+   35 connector patterns, shared clones and recursion are missing. The icon editor is postponed
+   (decided 2026-10-08): every VI uses the standard subVI icon.*
 3. **What is used every minute in the editor:** Create ▸ Constant / Control /
    Indicator on a terminal (M1) and copy, cut and paste (Edit menu).
+   *Done on 2026-10-08 (spec/05 §13, rules 72–77): Create ▸ on a node's terminals and on a wire,
+   All Controls and Indicators / All Constants, copy, cut, paste (shared between open VIs),
+   Ctrl+drag, Select All and the Edit menu. Missing: Scalar ▸ and Channel Writer..., the other
+   menus' Create ▸ (constants, controls, tunnels, shift registers), and the broken wire that
+   LabVIEW leaves when a control is deleted on the panel (rule 77, a decision to take).*
 4. **Graphs** (M8): Waveform Chart and Waveform Graph, and XY Graph.
 5. **Format Into String and Scan From String** (M3), with their error terminals.
+   *Done on 2026-10-08 (spec/04 Rule 21j, spec/05 Rule 78): engine measured case by case in LabVIEW;
+   missing %t/%T, the Edit Format String dialog and Format Value / Scan Value as nodes.*
 6. **Debugging:** probes, execution highlighting and the error list.
 
 **Postponed behind these six:** *inplaceness* (DT-042 §5), which changes memory
 and speed but not results; it will be done when a real program
 runs slowly.
 
-**Postponed**, but not forgotten: Change to … (half captured, see M1), the *Adapt To Entered Data* switch, the
+**Postponed**, but not forgotten: the icon editor (every VI keeps the standard icon), Change to … (half captured, see M1), the *Adapt To Entered Data* switch, the
 right-click menus of the panel and the 19 missing Numeric controls.
 
 ## 4. The modules, in order

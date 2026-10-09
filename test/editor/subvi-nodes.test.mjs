@@ -73,10 +73,10 @@ test("a subVI node is drawn as a 32 by 32 icon and its menu is declared in the o
     "| Relink To SubVI", "SubVI Node Setup...", "Enable Database Access", "Call Setup...", "| Find All Instances", "Open Front Panel", "Show VI Hierarchy", "Explore...",
     "| View As Icon", "| Remove and Rewire", "| Properties",
   ]);
-  assert.deepEqual(INV.hijos("context.subvi.create").map((e) => `${e.separado ? "| " : ""}${e.etiqueta}`), ["Constant", "Control", "Indicator", "Channel Writer...", "| All Controls and Indicators", "All Constants"]);
+  assert.deepEqual(INV.hijos("context.subvi.create").map((e) => `${e.separado ? "| " : ""}${e.etiqueta}`), ["Constant", "Control", "Indicator", "Scalar", "Channel Writer...", "| All Controls and Indicators", "All Constants"], "Scalar sits between Indicator and Channel Writer on an array terminal (create-paste/array-size-input-create-scalar-submenu.png)");
   // Open Front Panel is done; the rest says why not.
   assert.equal(INV.entrada("context.subvi.open-front-panel").estado, "built");
-  assert.deepEqual(INV.hijos("context.subvi").filter((e) => e.estado === "built").map((e) => e.etiqueta), ["Open Front Panel"]);
+  assert.deepEqual(INV.hijos("context.subvi").filter((e) => e.estado === "built").map((e) => e.etiqueta), ["Create", "Open Front Panel"]);
   // The menu is drawn with its checkmark on View As Icon, as in the capture.
   const opened = ED.abrirMenu({ ...ED.inicial(), g }, "context.subvi", g.nodos[0].id, 10, 10);
   assert.ok(ED.marcados(opened).has("context.subvi.view-as-icon"));
@@ -139,4 +139,19 @@ test("Select a VI places a subVI node and stores its path relative to the caller
   assert.equal(recursive.errors.length, 1);
   assert.match(recursive.errors[0], /calls itself/);
   assert.match(buildHierarchy({ rootKey: CALLER, rootGraph: d.g, texts: {}, baseCatalog: CAT, readVI: Q.leer }).errors[0], /cannot be found/);
+});
+
+test("Create on a subVI node makes the object of the terminal's type, labelled with the callee's control, and All Controls and Indicators fills every terminal", () => {
+  const { g, id, ctx } = callerWithAdder();
+  const menu = (d, port) => ED.abrirMenu(d, "context.subvi", id, 0, 0, port, { x: 5, y: 5 });
+  const state = { ...ED.inicial(), g };
+  const control = ED.orden(menu(state, "control_1"), "context.subvi.create.control", ctx);
+  const made = control.g.nodos.find((n) => n.tipo === "control");
+  assert.equal(made.label.text, "x", "the label of the callee's control, not the port's name");
+  assert.deepEqual(control.g.cables.map((c) => [c.a.nodo, c.a.puerto]), [[id, "control_1"]]);
+  const body = ED.variantes(menu(state, null), ctx);
+  assert.ok(body.desactivados.has("context.subvi.create.constant"), "greyed on the body of the node (subvi-node-menu-create.png)");
+  const all = ED.orden(menu(state, null), "context.subvi.create.all-controls-and-indicators", ctx);
+  assert.equal(all.g.cables.length, 3);
+  assert.deepEqual(all.g.nodos.filter((n) => n.panel).map((n) => n.label.text).sort(), ["sum", "x", "y"]);
 });

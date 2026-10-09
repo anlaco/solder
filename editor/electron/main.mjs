@@ -135,6 +135,8 @@ const openVIs = new Map();
 const viOfContents = new Map();
 const FILTERS = [{ name: "Solder VI", extensions: ["qvi"] }];
 let quitting = false;
+/** What was last copied in any VI, as the text its window sent. */
+let sharedClipboard = null;
 
 const keyOf = (entry) => (entry.path ? pathKey(entry.path) : untitledKey(entry.id));
 
@@ -300,6 +302,12 @@ function handleRequests() {
     if (text === null) return { texts: {}, missing: [key] };
     const { texts, missing } = await readHierarchyTexts(key, text, readTextOrNull);
     return { texts: { [key]: text, ...texts }, missing };
+  });
+  // One clipboard for all the open VIs, kept as text: what a window copies reaches every window (spec/05 rule 73).
+  ipcMain.handle("clipboard:read", () => sharedClipboard);
+  ipcMain.on("clipboard:write", (_event, text) => {
+    sharedClipboard = text;
+    for (const window of BrowserWindow.getAllWindows()) window.webContents.send("clipboard:changed", text);
   });
   ipcMain.on("vi:error", (event, message) => {
     dialog.showMessageBox(ownerOf(event), { type: "error", message: "The VI cannot be opened.", detail: message });

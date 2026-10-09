@@ -20,7 +20,9 @@
 
 import * as CP from "../front-panel/connector-pane.mjs";
 import * as D from "../block-diagram/diagram-view.mjs";
+import * as DC from "../block-diagram/diagram-clipboard.mjs";
 import * as ED from "../block-diagram/diagram-editing.mjs";
+import * as EM from "./edit-menu.mjs";
 import * as E from "./window-state.mjs";
 import * as G from "../common/glyphs.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
@@ -28,6 +30,7 @@ import * as H from "../block-diagram/undo-history.mjs";
 import { cargarInventario, esHueco, ultimo } from "../common/labview-inventory.mjs";
 import { addressFromText } from "../common/array-grid.mjs";
 import * as P from "../front-panel/front-panel.mjs";
+import * as PC from "../front-panel/panel-clipboard.mjs";
 import * as Paths from "../common/vi-paths.mjs";
 import * as Q from "../../../core/model/qvi-format.mjs";
 import * as SN from "../block-diagram/subvi-nodes.mjs";
@@ -366,10 +369,137 @@ function abortar() {
 }
 
 /** Las órdenes hechas del menú File, por el último segmento de su id. */
-const ORDENES_MENU = { save: () => guardarVI(false), "save-as": () => guardarVI(true), open: abrirVI, exit: () => window.solder?.salir(), "vi-properties": abrirPropiedades };
+const ORDENES_MENU = {
+  save: () => guardarVI(false),
+  "save-as": () => guardarVI(true),
+  open: abrirVI,
+  exit: () => window.solder?.salir(),
+  "vi-properties": abrirPropiedades,
+  // Edit menu (the same commands as the shortcuts):
+  undo: () => deshacerPaso(),
+  redo: () => rehacerPaso(),
+  cut: () => cortar(),
+  copy: () => copiar(),
+  paste: () => pegar(),
+  delete: () => borrarLoSeleccionado(),
+  "select-all": () => seleccionarTodo(),
+};
 
 /** The orders of the context menus (subVI node, connector pane, icon) that act on the window and not on the graph; they receive the node the menu was opened on. */
 const ORDENES_CONTEXTUALES = { "vi-properties": () => abrirPropiedades(), "open-front-panel": (nodeId) => abrirSubVI(nodeId) };
+
+// ——— Edit: undo, copy, cut, paste, delete and select all ———
+//
+// What is copied is plain data (core/model/clipboard.mjs). It is kept here for
+// this window and, through the main process, for every other open VI: the
+// system clipboard is not used, so that copying in one VI and pasting in another
+// does not depend on what else the user copied (spec/05 rule 73).
+
+/** The last thing copied or cut in this window (`{ viKey, fragment }`), and where the last paste was done. */
+let portapapeles = { paquete: null, memoria: null };
+/** The last point of the canvas the pointer was over: where Ctrl+V and Edit ▸ Paste paste. */
+let punteroEnLienzo = null;
+
+/** The size of this window's canvas: the best guess for the other window's, which this window cannot see. */
+function tamanoDelLienzo() {
+  const rect = document.querySelector(".lienzo")?.getBoundingClientRect();
+  return rect ? { width: Math.round(rect.width), height: Math.round(rect.height) } : undefined;
+}
+
+/** Where to paste: the pointer, or the middle of the canvas if it has not been over it yet. */
+function dondePegar() {
+  if (punteroEnLienzo) return punteroEnLienzo;
+  const tam = tamanoDelLienzo() ?? { width: 600, height: 400 };
+  return { x: Math.round(tam.width / 2), y: Math.round(tam.height / 2) };
+}
+
+/** What the main process says was copied in any VI (it tells every window, and a new window asks). */
+function recibirPortapapeles(texto) {
+  if (texto) portapapeles = { paquete: JSON.parse(texto), memoria: null };
+}
+
+/** Keeps what was copied here and tells the main process, which hands it to the other VIs. */
+function guardarEnPortapapeles(fragment) {
+  portapapeles = { paquete: { viKey, fragment }, memoria: null };
+  window.solder?.portapapeles.guardar(JSON.stringify(portapapeles.paquete));
+}
+
+/** The fragment as it reads in this VI: the paths of its subVIs are relative to the file it came from. */
+function fragmentoParaEsteVI({ viKey: origen, fragment }) {
+  if (origen === viKey) return fragment;
+  const nodes = fragment.nodes.map((n) => (SN.isSubVI(n) ? { ...n, config: { ...n.config, vi: Paths.rebaseStoredPath(n.config.vi, origen, viKey) } } : n));
+  return { ...fragment, nodes };
+}
+
+/** A pasted subVI must be known before it is drawn: its file is read, like Select a VI... does. */
+async function conocerSubVIs(fragment) {
+  const faltan = fragment.nodes.filter((n) => SN.isSubVI(n) && !cat.findSubVI?.(n.config.vi));
+  for (const n of faltan) {
+    const { texts } = await window.solder.textosDeVI(Paths.resolveRelative(viKey, n.config.vi));
+    subVITexts = { ...subVITexts, ...texts };
+  }
+  if (faltan.length) ponerGrafo(rebuildHierarchy(grafo()));
+}
+
+function copiar() {
+  const fragment = conDiagrama ? DC.copySelection(dia) : PC.copySelection(pan);
+  if (fragment) guardarEnPortapapeles(fragment);
+}
+
+function cortar() {
+  if (ejecutando) return;
+  if (conDiagrama) {
+    const cut = DC.cutSelection(dia);
+    if (!cut) return;
+    guardarEnPortapapeles(cut.fragment);
+    return cambiarDiagrama(cut.d);
+  }
+  const cut = PC.cutSelection(pan);
+  if (!cut) return;
+  guardarEnPortapapeles(cut.fragment);
+  cambiarPanel(cut.p);
+}
+
+async function pegar() {
+  if (ejecutando) return;
+  const { paquete } = portapapeles;
+  if (!paquete) return;
+  const fragment = fragmentoParaEsteVI(paquete);
+  if (conDiagrama) await conocerSubVIs(fragment);
+  const donde = dondePegar();
+  if (conDiagrama) {
+    const pasted = DC.pasteAt(dia, ctx, fragment, donde, portapapeles.memoria);
+    portapapeles = { ...portapapeles, memoria: pasted.memory };
+    return cambiarDiagrama(pasted.d);
+  }
+  const pasted = PC.pasteAt(pan, ctx, fragment, donde, portapapeles.memoria);
+  portapapeles = { ...portapapeles, memoria: pasted.memory };
+  cambiarPanel(pasted.p);
+}
+
+const borrarLoSeleccionado = () => ejecutando || (conDiagrama ? cambiarDiagrama(ED.borrarSeleccion(dia)) : cambiarPanel(P.borrarSeleccion(pan)));
+const seleccionarTodo = () => ejecutando || (conDiagrama ? cambiarDiagrama(ED.selectAll(dia)) : cambiarPanel(PC.selectAll(pan)));
+
+function deshacerPaso() {
+  if (!ejecutando && !(conDiagrama ? dia.accion : pan.accion)) volver(H.deshacer(historial));
+}
+
+function rehacerPaso() {
+  if (!ejecutando && !(conDiagrama ? dia.accion : pan.accion)) volver(H.rehacer(historial));
+}
+
+/** What the Edit menu greys out and renames, from what this window knows now. */
+function variantesDelMenuEdit() {
+  const seleccion = conDiagrama ? dia.seleccion : pan.seleccion;
+  const hayParaCopiar = conDiagrama ? ED.copyableIds(dia).length > 0 : PC.hasSelection(pan);
+  return EM.editMenuVariants(nombre, {
+    canUndo: historial.antes.length > 0,
+    canRedo: historial.despues.length > 0,
+    canCopy: hayParaCopiar,
+    hasSelection: seleccion.length > 0,
+    clipboardFilled: !!portapapeles.paquete,
+  });
+}
 
 // ——— VI Properties (vi-properties.mjs) ———
 
@@ -491,20 +621,24 @@ function dentro(el, max) {
 
 
 function pintar() {
+  ctx.panelSize = tamanoDelLienzo();
   const resueltos = Gr.tipos(grafo(), cat);
   const extra = { runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, dialogo: dialogoError, numeroVI: viInfo.untitledNumber ?? undefined, propiedades: propiedades ? VP.view(inv, propiedades) : "" };
   if (conDiagrama) {
     extra.lienzo = D.contenido(dia, ctx, resueltos);
-    extra.encima = dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia), medirMenu, ED.variantes(dia)) : "";
+    extra.encima = dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia), medirMenu, ED.variantes(dia, ctx)) : "";
     extra.editandoTexto = !!dia.edicion;
   } else {
     extra.lienzo = P.contenido(pan, ctx);
     extra.conectorGlifo = CP.paneGlyph(pan.g, cat, pan.conector?.celda ?? null);
-    extra.encima = pan.menu ? D.menuContextual(inv, pan.menu, ED.marcados(pan), medirMenu, ED.variantes(pan)) : "";
+    extra.encima = pan.menu ? D.menuContextual(inv, pan.menu, ED.marcados(pan), medirMenu, ED.variantes(pan, ctx)) : "";
     extra.editandoTexto = !!pan.edicion;
   }
   // El menú de la barra que está abierto, bajo su título.
-  if (estado.menuBarra) extra.encima = (extra.encima ?? "") + D.menuContextual(inv, { raiz: estado.menuBarra.id, x: estado.menuBarra.x, y: estado.menuBarra.y }, marcasDelMenuBarra(estado.menuBarra.id), medirMenu);
+  if (estado.menuBarra) {
+    const variantes = estado.menuBarra.id === EM.editMenuId(nombre) ? variantesDelMenuEdit() : {};
+    extra.encima = (extra.encima ?? "") + D.menuContextual(inv, { raiz: estado.menuBarra.id, x: estado.menuBarra.x, y: estado.menuBarra.y }, marcasDelMenuBarra(estado.menuBarra.id), medirMenu, variantes);
+  }
   document.body.innerHTML = V.ventana(inv, nombre, estado, extra);
   const ventana = document.querySelector(".ventana");
   ventana.classList.toggle("cableando", dia.accion?.tipo === "cablear");
@@ -532,13 +666,14 @@ function sinTerminalesHuerfanos(view) {
 }
 
 /**
- * Cambiar el diagrama. Cuando queda quieto —sin nada a medias ni texto a
- * medio escribir—, el paso se guarda para deshacerlo.
+ * Changes the diagram. When it comes to rest —nothing half done, no text half
+ * written—, the step is kept to undo it.
  */
 function cambiarDiagrama(nuevo) {
   if (nuevo === dia) return;
   dia = sinTerminalesHuerfanos(nuevo);
-  if (!dia.accion && !dia.edicion) quieto(dia.g);
+  // What Create made is a step of undo before its value or label is typed: the typing is another one (REPORT.md §A).
+  if (!dia.accion && (!dia.edicion || dia.edicion.nuevo)) quieto(dia.g);
   pintar();
 }
 
@@ -610,6 +745,14 @@ function objetivoPanel(el) {
   const o = el.closest(".objeto-panel");
   if (o) return { tipo: "objeto", id: o.dataset.nodo };
   return { tipo: "fondo" };
+}
+
+/** The wire under the pointer: a segment of it, or the terminal of a node it ends at (not a structure's border). */
+function cableBajoElRaton(sobreElRaton) {
+  if (sobreElRaton?.tipo === "tramo") return dia.g.cables.find((c) => c.id === sobreElRaton.cable);
+  if (sobreElRaton?.tipo !== "terminal") return undefined;
+  const node = dia.g.nodos.find((n) => n.id === sobreElRaton.nodo);
+  return node && !D.esBorde(node) ? ED.wireAtTerminal(dia.g, sobreElRaton.nodo, sobreElRaton.puerto, sobreElRaton.dir) : undefined;
 }
 
 /** El nodo de lo que hay bajo el ratón, si es un nodo o uno de sus terminales. */
@@ -690,7 +833,7 @@ addEventListener("mousedown", (ev) => {
   if (ev.detail >= 2 && sobreDiagrama.tipo === "nodo" && SN.isSubVI(dia.g.nodos.find((n) => n.id === sobreDiagrama.id))) return abrirSubVI(sobreDiagrama.id);
   const id = ev.detail >= 2 && nodoDe(sobreDiagrama);
   if (id && (D.CONSTANTES[dia.g.nodos.find((n) => n.id === id)?.tipo]?.editable || dia.g.nodos.find((n) => n.id === id)?.tipo === "expression-node")) return cambiarDiagrama(ED.editar(dia, ctx, id, sobreDiagrama.campo));
-  cambiarDiagrama(ED.pulsar(dia, ctx, sobreDiagrama, punto(ev), ev.shiftKey));
+  cambiarDiagrama(ED.pulsar(dia, ctx, sobreDiagrama, punto(ev), ev.shiftKey, ev.ctrlKey || ev.metaKey));
 });
 
 // ——— Accionar el panel en modo Run ———
@@ -761,11 +904,12 @@ function pulsarPanel(ev) {
   if (ev.detail >= 2 && sobre.tipo === "casilla" && pan.edicion?.valor) return cambiarPanel(P.editarValor(pan, ctx, sobre.id, true));
   if (ev.detail >= 2 && sobre.tipo === "elem" && pan.edicion?.elem === sobre.k) return cambiarPanel(P.editarElemento(pan, ctx, sobre.id, sobre.k, true));
   if (ev.detail >= 2 && sobre.tipo === "campo" && pan.edicion?.campo === sobre.campo) return cambiarPanel(P.editarValor(pan, ctx, sobre.id, true, sobre.campo));
-  cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), ev.shiftKey));
+  cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), ev.shiftKey, ev.ctrlKey || ev.metaKey));
 }
 
 addEventListener("mousemove", (ev) => {
   mostrarTip(ev);
+  if (ev.target.closest?.(".lienzo")) punteroEnLienzo = punto(ev);
   if (conPanel) {
     // Pasar por una fila con submenú lo abre; por otra, lo cierra.
     const fila = pan.menu && ev.target.closest(".item-menu");
@@ -810,6 +954,8 @@ addEventListener("click", (ev) => {
   // Una fila del menú de la barra: lo hecho se hace; un hueco, se explica.
   const filaBarra = estado.menuBarra && ev.target.closest(".item-menu");
   if (filaBarra) {
+    // A row greyed by the state of the window (Cut with nothing selected) does nothing and leaves the menu open.
+    if (filaBarra.classList.contains("desactivado")) return;
     const id = filaBarra.dataset.id;
     const e = inv.resolver(id);
     const orden = !esHueco(e) && ORDENES_MENU[id.slice(id.lastIndexOf(".") + 1)];
@@ -880,6 +1026,12 @@ addEventListener("contextmenu", (ev) => {
   }
   // Sobre un nodo, su menú; sobre el fondo, la paleta.
   const o = conDiagrama && objetivo(ev.target);
+  // On a wire, or on a terminal that has one, the menu is the wire's (REPORT.md §A).
+  const cable = cableBajoElRaton(o);
+  if (cable) {
+    estado = { ...estado, paleta: null, abierta: null };
+    return cambiarDiagrama(ED.abrirMenu(ED.confirmar(dia, ctx), ED.WIRE_MENU_ROOT, cable.id, ev.clientX, ev.clientY, null, punto(ev)));
+  }
   const id = nodoDe(o);
   const n = id && dia.g.nodos.find((k) => k.id === id);
   const puerto = o?.tipo === "terminal" ? o.puerto : null;
@@ -946,6 +1098,12 @@ addEventListener("keydown", (ev) => {
   if (ev.key === "Escape") {
     if (estado.paleta || estado.abierta || estado.menuBarra) return cambiar(E.escape(estado));
     return conDiagrama ? cambiarDiagrama(ED.escape(dia)) : cambiarPanel(P.escape(pan));
+  }
+  // Ctrl+C, Ctrl+X, Ctrl+V and Ctrl+A: the Edit menu's shortcuts, on what is selected on this canvas.
+  const ordenEdicion = ctrl && !ev.shiftKey && !ev.altKey && !estado.paleta && !(conDiagrama ? dia.edicion : pan.edicion) && { c: copiar, x: cortar, v: pegar, a: seleccionarTodo }[ev.key.toLowerCase()];
+  if (ordenEdicion) {
+    ev.preventDefault();
+    return ordenEdicion();
   }
   if (conPanel && !estado.paleta) {
     if (ctrl && ev.key.toLowerCase() === "z" && !pan.accion) {
@@ -1087,6 +1245,8 @@ function mostrarTip(ev) {
 }
 
 // Everything above is declared: now the VI is loaded and the window starts to talk to the other one.
+window.solder?.portapapeles.alCambiar(recibirPortapapeles);
+recibirPortapapeles(await window.solder?.portapapeles.leer());
 if (viInfo.text) await cargarTexto(viInfo.text);
 pintar();
 avisar(grafo());

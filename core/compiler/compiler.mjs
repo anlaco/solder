@@ -65,6 +65,10 @@ const IMPORTACIONES = [
   { modulo: "cad", nombre: "buscar", params: Array(6).fill("i32"), results: ["i32"] },
   { modulo: "cad", nombre: "extra", params: [], results: ["i32"] },
   { modulo: "cad", nombre: "cmp", params: ["i32", "i32"], results: ["i32"] },
+  // Format Into String and Scan From String (spec/04 Rule 21j): the rows go through a buffer of
+  // FORMAT_ROW_BYTES per row; the host writes the result and the error cluster.
+  { modulo: "cad", nombre: "formatear", params: Array(8).fill("i32"), results: [] },
+  { modulo: "cad", nombre: "escanear", params: Array(10).fill("i32"), results: ["i32"] },
   // celda, número, width y los bits de su tipo (un hexadecimal negativo es su complemento a dos).
   ...["dec", "hex", "oct"].map((nombre) => ({ modulo: "cad", nombre, params: ["i32", "f64", "i32", "i32"], results: [] })),
   ...["frac", "exp", "eng"].map((nombre) => ({ modulo: "cad", nombre, params: ["i32", "f64", "i32", "i32", "i32"], results: [] })),
@@ -408,6 +412,72 @@ function llamarCad(e, nombre, entradas) {
   return [k32(celda), ...entradas.flatMap((i) => e.entrada(i)), ins("call", idImport(nombre)), k32(celda)];
 }
 
+// ——— Format Into String and Scan From String (spec/04 Rule 21j) ———
+//
+// Each argument or output row is a record of FORMAT_ROW_BYTES in a buffer of the
+// node: [kind I32][bits I32][value: f64, i64 or I32], read and written by the host.
+// For a string row the value is its handle and the bits word holds the cell where
+// Scan From String writes the string it read.
+const FORMAT_ROW_BYTES = 16;
+const ROW_BITS_OFFSET = 4;
+const ROW_VALUE_OFFSET = 8;
+const ROW_KIND = { float: 0, signed: 1, unsigned: 2, bool: 3, string: 4 };
+
+const rowKind = (t) => (t === "string" ? ROW_KIND.string : t === "boolean" ? ROW_KIND.bool : !esEntero(t) ? ROW_KIND.float : conSigno(t) ? ROW_KIND.signed : ROW_KIND.unsigned);
+
+/** Writes the value that `value` leaves on the stack, of type `t`, into the row record at `record`. */
+function writeRow(t, record, value) {
+  const kind = rowKind(t);
+  const header = [ins("i32.const", record), ins("i32.const", kind), ins("i32.store"), ins("i32.const", record), ins("i32.const", t === "string" || t === "boolean" ? 0 : bits(t)), ins("i32.store", ROW_BITS_OFFSET)];
+  const at = [ins("i32.const", record)];
+  if (kind === ROW_KIND.float) return [...header, ...at, ...value, ...convertir(t, "number"), ins("f64.store", ROW_VALUE_OFFSET)];
+  if (kind === ROW_KIND.signed || kind === ROW_KIND.unsigned) return [...header, ...at, ...value, ...convertir(t, kind === ROW_KIND.signed ? "i64" : "u64"), ins("i64.store", ROW_VALUE_OFFSET)];
+  return [...header, ...at, ...value, ins("i32.store", ROW_VALUE_OFFSET)];
+}
+
+/** Leaves on the stack the value of type `t` that the host left in the row record at `record`. */
+function readRow(t, record) {
+  const kind = rowKind(t);
+  if (kind === ROW_KIND.float) return [ins("i32.const", record), ins("f64.load", ROW_VALUE_OFFSET), ...convertir("number", t)];
+  if (kind === ROW_KIND.signed || kind === ROW_KIND.unsigned) return [ins("i32.const", record), ins("i64.load", ROW_VALUE_OFFSET), ...convertir(kind === ROW_KIND.signed ? "i64" : "u64", t)];
+  if (kind === ROW_KIND.string) return [ins("i32.const", record), ins("i32.load", ROW_BITS_OFFSET)];
+  return [ins("i32.const", record), ins("i32.load", ROW_VALUE_OFFSET)];
+}
+
+/** The node's rows: those whose port names start with `prefix`, with their index among the inputs. */
+const formatRows = (e, prefix) => e.cat.puertos(e.nodo).in.map((port, index) => ({ port, index })).filter(({ port }) => port.name.startsWith(prefix));
+
+/** Format Into String: resulting string and error out (the host writes both). */
+function formatIntoString(e) {
+  const rows = formatRows(e, "input-");
+  const buffer = e.bufer(rows.length * FORMAT_ROW_BYTES);
+  const [result, errorOut] = [e.celda(), e.bufer(disposicion(ERROR).tam)];
+  const code = rows.flatMap(({ index }, k) => writeRow(e.tIn(index), buffer + k * FORMAT_ROW_BYTES, e.entrada(index)));
+  code.push(
+    ins("i32.const", result), ...e.entrada(0), ...e.entrada(1), ins("i32.const", buffer), ins("i32.const", rows.length),
+    ...e.entrada(2), ins("i32.const", errorOut), ins("i32.const", e.cadena("Format Into String")), ins("call", idImport("formatear")),
+  );
+  return [...code, ins("i32.const", result), ins("i32.const", errorOut)];
+}
+
+/** Scan From String: remaining string, offset past scan, error out and one output per row. */
+function scanFromString(e) {
+  const rows = formatRows(e, "default-");
+  const buffer = e.bufer(rows.length * FORMAT_ROW_BYTES);
+  const [remaining, errorOut, offset] = [e.celda(), e.bufer(disposicion(ERROR).tam), e.temporal("i32")];
+  const code = [];
+  rows.forEach(({ index }, k) => {
+    const record = buffer + k * FORMAT_ROW_BYTES;
+    code.push(...writeRow(e.tIn(index), record, e.entrada(index)));
+    if (e.tIn(index) === "string") code.push(ins("i32.const", record), ins("i32.const", e.celda()), ins("i32.store", ROW_BITS_OFFSET));
+  });
+  code.push(
+    ins("i32.const", remaining), ...e.entrada(0), ...e.entrada(1), ...e.entrada(2), ins("i32.const", buffer), ins("i32.const", rows.length),
+    ...e.entrada(3), ins("i32.const", errorOut), ins("i32.const", e.cadena("Scan From String")), ins("i32.const", 0), ins("call", idImport("escanear")), ins("local.set", offset),
+  );
+  return [...code, ins("i32.const", remaining), ins("local.get", offset), ins("i32.const", errorOut), ...rows.flatMap(({ index }, k) => readRow(e.tIn(index), buffer + k * FORMAT_ROW_BYTES))];
+}
+
 /** Number To Decimal/Hexadecimal/Octal String: número (f64) y width. */
 function numeroACadena(e, nombre) {
   const celda = e.celda();
@@ -488,6 +558,8 @@ const BLOQUES = {
     const [c1, c2] = [e.celda(), e.celda()];
     return [ins("i32.const", c1), ins("i32.const", c2), ...e.entrada(0), ...e.entrada(1), ...e.entrada(2), ...largo, ins("call", idImport("reemplazar")), ins("i32.const", c1), ins("i32.const", c2)];
   },
+  "format-into-string": (e) => formatIntoString(e),
+  "scan-from-string": (e) => scanFromString(e),
   "search-and-replace-string": (e) => {
     const [celda, n] = [e.celda(), e.temporal("i32")];
     // ignore case? es el bit 0 y replace all?, el bit 1.

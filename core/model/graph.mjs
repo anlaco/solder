@@ -48,6 +48,20 @@ export function cargarCatalogo(datos) {
         const rotulo = (i) => (prefijo === "error-in-" ? `${label} ${i}` : label);
         return Array.from({ length: n }, (_, i) => ({ name: `${prefijo}${i}`, label: rotulo(i), type, dir, ...extra }));
       }
+      // Format Into String and Scan From String: fixed terminals and one row per argument, each
+      // row with a type of its own (a number, a Boolean or a string); an output row has the type of
+      // its default (spec/04 Rule 21j).
+      if (b[dir] === "dynamic:format-rows") {
+        const rows = nodo.config?.inputs ?? b.config.inputs.value;
+        const { filas } = b;
+        const rowType = (k) => ({ escalar: `R${k}` });
+        if (dir === "in") {
+          const row = (k) => ({ name: `${filas.prefijo}${k}`, label: `${filas.label} ${k + 1}`, type: rowType(k), dir, ...(filas.obligatoria && k === 0 ? {} : { default: 0 }) });
+          return [...filas.fijas.map((p) => ({ ...p, dir })), ...Array.from({ length: rows }, (_, k) => row(k))];
+        }
+        const row = (k) => ({ name: `${filas.prefijoSalida}${k}`, label: `${filas.labelSalida} ${k + 1}`, type: rowType(k), dir });
+        return [...filas.salidasFijas.map((p) => ({ ...p, dir })), ...Array.from({ length: rows }, (_, k) => row(k))];
+      }
       // Index Array: the array and one index per dimension, as LabVIEW grows it when an array is wired (DT-044).
       if (b[dir] === "dynamic:array-indices") {
         const dims = nodo.config?.dims ?? b.config.dims.value;

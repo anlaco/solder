@@ -397,7 +397,7 @@ test("cada función de string se pone en el diagrama con sus terminales", () => 
     ...INV.hijos(`${STRING}.additional-string-functions`),
   ].filter((e) => !e.id.endsWith(".thumbtack") && !INV.tieneContenido(e.id) && !e.etiqueta.includes("Conversion"));
   const hechas = todas.filter((e) => !esHueco(e) && e.bloque);
-  assert.equal(hechas.length, 15 + 10 + 2, "String, Number/String Conversion y Additional String Functions");
+  assert.equal(hechas.length, 17 + 10 + 2, "String (with Scan From String and Format Into String), Number/String Conversion y Additional String Functions");
   for (const e of hechas) {
     assert.ok(CAT.tiene(e.bloque), `${e.id}: su bloque ${e.bloque} no está en el catálogo`);
     assert.ok(G.FUNCIONES[ultimo(e.id)] && G.CAJAS[ultimo(e.id)], `${e.id}: sin glifo o sin caja`);

@@ -30,6 +30,13 @@ contextBridge.exposeInMainWorld("solder", {
   cerrar: () => ipcRenderer.send("vi:close"),
   /** File ▸ Exit. */
   salir: () => ipcRenderer.send("vi:salir"),
+  /** What was copied in any VI, as text: one clipboard for all the open VIs (spec/05 rule 73). */
+  portapapeles: {
+    guardar: (texto) => ipcRenderer.send("clipboard:write", texto),
+    leer: () => ipcRenderer.invoke("clipboard:read"),
+    /** Something was copied or cut in some window: `callback(text)`. */
+    alCambiar: (callback) => ipcRenderer.on("clipboard:changed", (_event, texto) => callback(texto)),
+  },
   /** Some VI was saved, at this absolute path: `callback({ id, key })`. The callers of a saved subVI must see its new connector. */
   alGuardar: (callback) => ipcRenderer.on("vi:saved", (_event, saved) => callback(saved)),
 });
