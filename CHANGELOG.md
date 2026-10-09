@@ -3,7 +3,20 @@
 Solder follows [semantic versioning](https://semver.org) while in development:
 `0.MINOR.PATCH-alpha`. A release that adds features raises MINOR, one that only
 fixes things raises PATCH, and the `-alpha` label says the language and its file
-format are not stable yet (DT-048).
+format are not stable yet; the maintainable version will carry `-beta` and stay a
+`0.x` (DT-048).
+
+## Unreleased (0.2.0-alpha)
+
+### Broken wires (DT-046)
+- Delete on the diagram, and deleting a control or indicator on the panel, leave
+  their wires broken with a loose end, as LabVIEW does; Cut still takes them.
+- A VI whose subVI lost a connector terminal always opens, with those wires
+  broken, instead of failing to open.
+- Edit ▸ Remove Broken Wires (Ctrl+B) removes every broken wire, or only the
+  selected ones; a loose end can be wired again onto a terminal.
+- Broken wires are drawn as in LabVIEW and their reason shows on hover, in the
+  wire menu (List Errors) and in the Error List.
 
 ## 0.1.0-alpha — 2026-10-09
 

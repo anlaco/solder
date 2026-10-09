@@ -132,11 +132,38 @@ programs goes **before the rest of the modules**, in this order:
    and wires, Pause and the three steps, the Debug Window, the Error list and Allow debugging. Missing: the borders of the structures report no values (tunnels,
    shift registers, "i"), breakpoints on structures, stepping into a subVI, the custom probes, warnings (and the toolbar triangle) and several facts marked unverified.*
 
-**Next, right after the graphs (decided 2026-10-09):** broken wires, as a decision of its own
-(DT-046, to be proposed): a wire may keep one loose end, drawn dashed with LabVIEW's red cross,
-which breaks Run. In LabVIEW it appears when a panel control is deleted (its wire stays on the
-diagram) and when a subVI loses a connector terminal; Edit ▸ Remove Broken Wires (Ctrl+B) clears
-them. It also fixes opening a caller whose subVI changed its connector, which today fails.
+*Stage 1 closed on 2026-10-09 with version **0.1.0-alpha** (DT-048).*
+
+### Road to a maintainable version (decided 2026-10-09)
+
+The goal is a version that does what it does reliably and keeps the files it saves, not a complete
+LabVIEW: **maintainable does not mean complete**. It stays a `0.x` version, not a 1.0 (decided
+2026-10-09). New modules wait; these five steps go first, in order. When they are done, the
+**maintainable version** is released as the first `0.N.0-beta`, in **2027**, followed by one month
+of maintenance with fixes only (`0.N.x-beta`).
+
+1. **Broken wires** (DT-046, to be proposed) — `0.2.0-alpha`. A wire may keep one loose end, drawn
+   dashed with LabVIEW's red cross, which breaks Run: when a panel control is deleted its wire stays,
+   and a caller whose subVI lost a connector terminal **opens** with those wires broken (today it does
+   not open at all: a valid file that cannot be opened is the worst failure for a stable version).
+   Edit ▸ Remove Broken Wires (Ctrl+B) clears them. It changes the `.qvi`, so it goes before step 5.
+   *Done on 2026-10-09 (DT-046, spec/05 §17 rules 91–95, spec/06 §15): Delete on the diagram and on
+   the panel leaves the wires broken (Cut takes them), a caller whose subVI lost a terminal opens with
+   them broken, Ctrl+B, re-wiring a loose end, the drawing, the wire menu and the Error List.*
+2. **The Windows installer tested** in the virtual machine: install, open, save, run, uninstall. The
+   installers are built on Linux (`npm run dist`, electron-builder) and Windows was never run.
+3. **Real programs written with Solder**, as a user would: two or three complete VIs (for example a
+   measurement loop with a chart, a string protocol with Format/Scan and subVIs, a state machine with a
+   Case and shift registers). Every failure or annoyance found becomes a fix; they are the test of
+   whether the maintainable version is ready.
+4. **Loose ends that mislead**, left half done in stage 1: the borders of the structures report no
+   values to probes and Highlight Execution (tunnels, shift registers, "i", "N"); the warning triangle
+   and its list; anything step 3 finds that looks done but is not.
+5. **The `.qvi` format frozen as version 1**: written in spec/02 that from the maintainable version on every format change
+   comes with an automatic migration (the file's `"solder": 1` field is for that), with a test that
+   opens the example files of each version.
+
+Then: the maintainable `0.N.0-beta` in 2027, when steps 1–5 are done, and the month of maintenance.
 
 **Postponed behind these six:** *inplaceness* (DT-042 §5), which changes memory
 and speed but not results; it will be done when a real program

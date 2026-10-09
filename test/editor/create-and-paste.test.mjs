@@ -133,7 +133,8 @@ test("the wire menu is the one of a wire and its Create makes unwired objects", 
   assert.equal(ED.wireAtTerminal(confirmed.g, id, "a", "in").id, wire.id, "a terminal with a wire gives the wire's menu");
   assert.equal(ED.wireAtTerminal(confirmed.g, id, "b", "in"), undefined);
   const rows = INV.hijos(ED.WIRE_MENU_ROOT).map((e) => e.etiqueta).filter((label) => label !== "Disable Breakpoint");
-  assert.deepEqual(rows, ["Clean Up Wire", "Create Wire Branch", "Delete Wire Branch", "Visible Items", "Insert", "Numeric Palette", "Create", "Add Probe", "Custom Probe", "Add Breakpoint", "Description and Tip..."]);
+  // List Errors is hidden on a healthy wire (broken-wires.test.mjs); the rest is the menu of the capture.
+  assert.deepEqual(rows, ["List Errors", "Clean Up Wire", "Create Wire Branch", "Delete Wire Branch", "Visible Items", "Insert", "Numeric Palette", "Create", "Add Probe", "Custom Probe", "Add Breakpoint", "Description and Tip..."]);
   assert.deepEqual(INV.hijos(`${ED.WIRE_MENU_ROOT}.create`).map((e) => [e.etiqueta, e.estado]), [["Constant", "built"], ["Control", "built"], ["Indicator", "built"], ["Create SubVI from Selected Wires", "todo"], ["Channel Writer...", "todo"]]);
   const menu = ED.abrirMenu(confirmed, ED.WIRE_MENU_ROOT, wire.id, 0, 0, null, { x: 200, y: 300 });
   const control = ED.orden(menu, `${ED.WIRE_MENU_ROOT}.create.control`, CTX);

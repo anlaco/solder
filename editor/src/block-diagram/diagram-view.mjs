@@ -13,6 +13,8 @@ import { esHueco, ultimo } from "../common/labview-inventory.mjs";
 import { PANE_SIZE } from "../../../core/model/connector.mjs";
 import { isSubVI, portsWithAnchors } from "./subvi-nodes.mjs";
 import * as FN from "./format-nodes.mjs";
+import * as Gr from "../../../core/model/graph.mjs";
+import { ARROWHEAD_COLOR_OF_TYPE, brokenWireMarks, endPoint } from "./broken-wire.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
 import { COLORES, aspecto, esArray, esCluster, esEntero, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
 import { GRAPH_KINDS, labelShown } from "../front-panel/graph-state.mjs";
@@ -594,9 +596,8 @@ export function moverTramo(codos, a, b, k, delta) {
 
 const puntos = (r) => r.map(([x, y]) => `${f2(x)},${f2(y)}`).join(" ");
 
-/** Pinta un cable: su color es el de su tipo y su grosor, el de su dimensión. */
-function trazo(r, tipo, roto) {
-  if (roto) return `<polyline points="${puntos(r)}" class="cable-roto"/>`;
+/** Pinta un cable: su color es el de su tipo y su grosor, el de su dimensión. Uno roto se pinta aparte (broken-wire.mjs). */
+function trazo(r, tipo) {
   const { color, dimension, error } = aspecto(tipo);
   // Un cable de error mide 3 px: borde oliva y, en el centro, trazos de 2 px amarillos y negros (YYKK).
   if (error) return `<polyline points="${puntos(r)}" stroke="${color}" stroke-width="3"/><polyline points="${puntos(r)}" stroke="#ffff00" stroke-width="1" stroke-dasharray="2 2"/><polyline points="${puntos(r)}" stroke="#000" stroke-width="1" stroke-dasharray="2 2" stroke-dashoffset="-2"/>`;
@@ -607,6 +608,24 @@ function trazo(r, tipo, roto) {
   // and wire-2d-vs-1d-diagram.png). Three dimensions are drawn the same until they are measured.
   return `<polyline points="${puntos(r)}" stroke="${color}" stroke-width="3"/><polyline points="${puntos(r)}" stroke="#fff" stroke-width="1"/>`;
 }
+
+/** How far from a loose end a click still takes it (px): the end itself is not drawn, so this is the whole target. */
+const LOOSE_END_HIT_RADIUS = 4;
+
+/** The invisible targets of the loose ends of a wire: clicking one starts wiring it (diagram-editing.mjs `recablear`). */
+function looseEndZones(wire, source, sink, reason) {
+  return [["de", wire.de, source], ["a", wire.a, sink]]
+    .filter(([, end]) => Gr.esSuelto(end))
+    .map(([side, , point]) => `<circle class="extremo-suelto" data-cable="${esc(wire.id)}" data-extremo="${side}" data-tip="${esc(reason)}" cx="${f2(point.x)}" cy="${f2(point.y)}" r="${LOOSE_END_HIT_RADIUS}"/>`)
+    .join("");
+}
+
+/** The colour of the type at one end of a wire, or null when that end is loose (nothing is wired there). */
+const endColor = (end, typesByTerminal) => {
+  if (Gr.esSuelto(end)) return null;
+  const type = typesByTerminal.get(`${end.nodo}.${end.puerto}`) ?? "number";
+  return ARROWHEAD_COLOR_OF_TYPE[type] ?? aspecto(type).color;
+};
 
 /** El tipo que lleva el cable que llega a una entrada, o el de la entrada si no llega ninguno. */
 function tipoEntrada(n, t, g, resueltos) {
@@ -630,13 +649,15 @@ export function contenido(d0, ctx, resueltos) {
   let cunas = "";
   let tuneles = "";
   for (const c of g.cables) {
-    const a = ext.get(`${c.de.nodo}.${c.de.puerto}`);
-    const b = ext.get(`${c.a.nodo}.${c.a.puerto}`);
+    const a = endPoint(c.de, ext);
+    const b = endPoint(c.a, ext);
     const info = resueltos.cables.get(c.id);
     const r = ruta(a, b, c.codos);
     const entero = elegidos.has(c.id);
     const tip = info.roto ? ` data-tip="${esc(info.roto)}"` : "";
-    cables += `<g class="cable${entero ? " seleccionado" : ""}${info.roto ? " roto" : ""}${d.debug?.litWires.has(c.id) ? " dep-encendido" : ""}" data-cable="${esc(c.id)}"${tip}>${trazo(r, info.tipo, info.roto)}`;
+    cables += `<g class="cable${entero ? " seleccionado" : ""}${info.roto ? " roto" : ""}${d.debug?.litWires.has(c.id) ? " dep-encendido" : ""}" data-cable="${esc(c.id)}"${tip}>`;
+    const broken = info.roto && brokenWireMarks(r, { sourceColor: endColor(c.de, resueltos.salidas), sinkColor: endColor(c.a, resueltos.entradas) });
+    cables += broken ? broken.dashes : trazo(r, info.tipo);
     for (let k = 0; k < r.length - 1; k++) {
       const [[x1, y1], [x2, y2]] = [r[k], r[k + 1]];
       if (x1 === x2 && y1 === y2) continue;
@@ -644,19 +665,18 @@ export function contenido(d0, ctx, resueltos) {
       if (sel) cables += `<line class="tramo-elegido" x1="${f2(x1)}" y1="${f2(y1)}" x2="${f2(x2)}" y2="${f2(y2)}"/>`;
       cables += `<line class="tramo-zona" data-cable="${esc(c.id)}" data-tramo="${k}" x1="${f2(x1)}" y1="${f2(y1)}" x2="${f2(x2)}" y2="${f2(y2)}"/>`;
     }
-    if (info.roto) {
-      const [[x1, y1], [x2, y2]] = [r[Math.floor((r.length - 1) / 2)], r[Math.floor((r.length - 1) / 2) + 1]];
-      const [mx, my] = [(x1 + x2) / 2, (y1 + y2) / 2];
-      cables += `<g class="cable-x"><line x1="${mx - 3}" y1="${my - 3}" x2="${mx + 3}" y2="${my + 3}"/><line x1="${mx - 3}" y1="${my + 3}" x2="${mx + 3}" y2="${my - 3}"/></g>`;
+    if (broken) {
+      cables += broken.marks;
+      cunas += looseEndZones(c, a, b, info.roto);
     }
     cables += `</g>`;
     // En una Flat Sequence, un cable que va de un marco a uno posterior cruza cada separador por un túnel (secuencia-15.png).
-    tuneles += tunelesDeSecuencia(g, c, r, info.tipo);
+    if (Gr.conectado(c)) tuneles += tunelesDeSecuencia(g, c, r, info.tipo);
     // El punto de unión de una rama: un punto del color del cable.
     if (c.union && !info.roto) cunas += `<circle class="union" cx="${f2(c.union[0])}" cy="${f2(c.union[1])}" r="2.2" fill="${aspecto(info.tipo).color}"/>`;
     // El punto de coerción: una cuña roja en el borde de la entrada que convierte.
     const aSelector = g.nodos.find((k) => k.id === c.a.nodo)?.tipo === "case-selector";
-    if (info.coercion || (aSelector && esNumericoNoEntero(info.tipo))) cunas += `<polygon class="coercion" points="${f2(b.x)},${f2(b.y - 2.7)} ${f2(b.x + 3.3)},${f2(b.y)} ${f2(b.x)},${f2(b.y + 2.7)}"/>`;
+    if (!info.roto && (info.coercion || (aSelector && esNumericoNoEntero(info.tipo)))) cunas += `<polygon class="coercion" points="${f2(b.x)},${f2(b.y - 2.7)} ${f2(b.x + 3.3)},${f2(b.y)} ${f2(b.x)},${f2(b.y + 2.7)}"/>`;
   }
 
   // El cable que se está tirando: punteado, en horizontal hasta la x del ratón
@@ -665,6 +685,12 @@ export function contenido(d0, ctx, resueltos) {
   if (accion?.tipo === "cablear") {
     const t = ext.get(`${accion.desde.nodo}.${accion.desde.puerto}`);
     if (t) nuevo = `<polyline class="cable-tirando" points="${puntos([[t.centro.x, t.centro.y], [accion.x, t.centro.y], [accion.x, accion.y]])}"/>`;
+  }
+  // Wiring a loose end: the same dotted wire, from the point where the end is.
+  if (accion?.tipo === "recablear") {
+    const wire = g.cables.find((candidate) => candidate.id === accion.cable);
+    const start = wire && endPoint(wire[accion.extremo], ext);
+    if (start) nuevo = `<polyline class="cable-tirando" points="${puntos([[start.x, start.y], [accion.x, start.y], [accion.x, accion.y]])}"/>`;
   }
 
   // En una Stacked Sequence, un cable de un marco a uno posterior se ve como su variable local (secuencia-9.png a secuencia-14.png).
@@ -728,7 +754,7 @@ function localesDeApiladas(d0, ctx, resueltos) {
     if (oculto(g, s)) continue;
     const f = activoDe(s);
     const [x0, y0] = [s.x + G.MEDIDAS_SECUENCIA.lado, s.y + s.tam.alto - G.MEDIDAS_SECUENCIA.banda - 13];
-    const cruzan = g.cables.filter((c) => {
+    const cruzan = g.cables.filter(Gr.conectado).filter((c) => {
       const [m1, m2] = [g.nodos.find((n) => n.id === c.de.nodo), g.nodos.find((n) => n.id === c.a.nodo)].map((n) => marcoEnSecuencia(g, n, s));
       return m1 !== undefined && m2 !== undefined && m1 < m2;
     });
@@ -741,8 +767,8 @@ function localesDeApiladas(d0, ctx, resueltos) {
       cajas += `<div class="variable-local-secuencia" style="left:${px(x)};top:${px(y0)}">${G.variableLocal(estado, color, "abajo")}</div>`;
       // El cable, en el marco donde empieza y en el donde acaba: de su terminal a la caja y de la caja a su terminal.
       const [de, a] = [ext.get(`${c.de.nodo}.${c.de.puerto}`), ext.get(`${c.a.nodo}.${c.a.puerto}`)];
-      if (f === m1) cables += `<g class="cable">${trazo([[de.x, de.y], [x + 6, de.y], [x + 6, y0]], tipo, false)}</g>`;
-      if (f === m2) cables += `<g class="cable">${trazo([[x + 6, y0], [x + 6, a.y], [a.x, a.y]], tipo, false)}</g>`;
+      if (f === m1) cables += `<g class="cable">${trazo([[de.x, de.y], [x + 6, de.y], [x + 6, y0]], tipo)}</g>`;
+      if (f === m2) cables += `<g class="cable">${trazo([[x + 6, y0], [x + 6, a.y], [a.x, a.y]], tipo)}</g>`;
     });
   }
   return { cajas, cables };

@@ -1620,11 +1620,10 @@
     {
       "id": "window.block-diagram.menu.edit.remove-broken-wires-from-selection",
       "etiqueta": "Remove Broken Wires from Selection",
-      "estado": "todo",
-      "labview": "Deletes the broken wires among the selection, or in the whole diagram with nothing selected.",
-      "necesita": "diagrama",
+      "estado": "built",
+      "prueba": "test/editor/broken-wires.test.mjs::Remove_Broken_Wires_takes_every_broken_wire_or_only_those_selected_in_one_undo_step",
       "atajo": "Ctrl+B",
-      "captura": "create-paste/edit-menu-diagram-with-selection.png",
+      "captura": "broken-wires/44-edit-menu-selection.png",
       "separado": true
     },
     {
@@ -14318,6 +14317,13 @@
       "etiqueta": "Wire",
       "estado": "built",
       "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire_and_its_Create_makes_unwired_objects"
+    },
+    {
+      "id": "context.wire.list-errors",
+      "etiqueta": "List Errors",
+      "estado": "built",
+      "prueba": "test/editor/broken-wires.test.mjs::the_menu_of_a_broken_wire_opens_with_List_Errors_and_the_Error_list_shows_its_reason",
+      "captura": "broken-wires/51-rc-loose.png"
     },
     {
       "id": "context.wire.clean-up-wire",

@@ -83,7 +83,7 @@ test("a subVI node is drawn as a 32 by 32 icon and its menu is declared in the o
   assert.match(D.menuContextual(INV, opened.menu, ED.marcados(opened)), /data-id="context\.subvi\.open-front-panel"/);
 });
 
-test("a wire to a port the subVI no longer has is dropped when the hierarchy is rebuilt", () => {
+test("a wire to a port the subVI no longer has is kept, broken, when the hierarchy is rebuilt (DT-046)", () => {
   const { g, id } = callerWithAdder();
   // Wire a control of the caller to x and to y, and the sum to an indicator.
   let wired = g;
@@ -93,16 +93,21 @@ test("a wire to a port the subVI no longer has is dropped when the hierarchy is 
   wired = Gr.conectar(indicator.g, catalog, { nodo: control.id, puerto: "result", dir: "out" }, { nodo: id, puerto: "control_1", dir: "in" }).g;
   wired = Gr.conectar(wired, catalog, { nodo: id, puerto: "indicator_1", dir: "out" }, { nodo: indicator.id, puerto: "value", dir: "in" }).g;
   assert.equal(wired.cables.length, 2);
-  assert.equal(SN.pruneOrphanWires(wired, catalog), wired, "nothing to drop while the connector is the same");
+  const placeOfOldTerminal = ED.terminalPlacer(callerWithAdder().ctx);
+  assert.ok(Gr.aflojarCablesHuerfanos(wired, catalog, placeOfOldTerminal).cables.every(Gr.conectado), "nothing to loosen while the connector is the same");
 
   // The subVI is saved again with `x` taken off its connector.
   const { g: adder, ids } = buildAdder();
   const changed = assignPanelElement(assignPanelElement(adder, CAT, ids.y, 2), CAT, ids.sum, 9);
   const rebuilt = buildHierarchy({ rootKey: CALLER, rootGraph: wired, texts: { [ADDER]: Q.aTexto(changed, CAT) }, baseCatalog: CAT, readVI: Q.leer });
-  const pruned = SN.pruneOrphanWires(wired, rebuilt.catalog);
-  assert.equal(pruned.cables.length, 1, "the wire to x is gone");
-  assert.equal(pruned.cables[0].de.puerto, "indicator_1");
-  assert.equal(Gr.tipos(pruned, rebuilt.catalog).cables.size, 1, "the types resolve again");
+  const loosened = Gr.aflojarCablesHuerfanos(wired, rebuilt.catalog, placeOfOldTerminal);
+  assert.equal(loosened.cables.length, 2, "no wire is dropped");
+  const toX = loosened.cables.find((wire) => wire.de.nodo === control.id);
+  assert.ok(Gr.esSuelto(toX.a), "the wire to x keeps its source and loses its sink");
+  assert.deepEqual(toX.a.suelto, [100, 64], "the loose end is where the terminal was drawn (the left edge of the icon)");
+  assert.ok(Gr.conectado(loosened.cables.find((wire) => wire.de.nodo === id)), "the wire from the sum is intact");
+  assert.equal(Gr.tipos(loosened, rebuilt.catalog).cables.get(toX.id).roto, Gr.LOOSE_WIRE_REASONS.looseEnd);
+  assert.ok(!Gr.ejecutable(loosened, rebuilt.catalog, Gr.tipos(loosened, rebuilt.catalog)), "the caller is broken until the wire is removed");
 });
 
 test("Select a VI places a subVI node and stores its path relative to the caller", () => {

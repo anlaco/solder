@@ -17,7 +17,7 @@
 // and `registro.right` inside and `bucle.registro` outside, and `bucle.i`,
 // `bucle.condition` and `bucle.N` for the loop's terminals.
 
-import { ambitoDe, crearEstructura, crearNodo, marcoDe, nuevo } from "./graph.mjs";
+import { ambitoDe, crearEstructura, crearNodo, esSuelto, marcoDe, nuevo } from "./graph.mjs";
 
 export const VERSION = 1;
 
@@ -145,11 +145,13 @@ export function escribir(g, cat) {
   };
   const recorridos = {};
   for (const c of g.cables) {
-    const from = referencia(c.de.nodo, c.de.puerto);
-    const to = referencia(c.a.nodo, c.a.puerto);
-    const marco = marcoDe(g, cat, c.de.nodo, c.de.puerto, "out") ?? marcoDe(g, cat, c.a.nodo, c.a.puerto, "in");
-    ambito(ambitoDe(g, cat, c.de.nodo, c.de.puerto, "out"), marco).wires.push({ from, to });
-    if (c.codos || c.union) recorridos[to] = limpio({ bends: c.codos, junction: c.union });
+    // A loose end (DT-046) is saved as the point where the terminal was.
+    const from = esSuelto(c.de) ? { loose: c.de.suelto } : referencia(c.de.nodo, c.de.puerto);
+    const to = esSuelto(c.a) ? { loose: c.a.suelto } : referencia(c.a.nodo, c.a.puerto);
+    const [anchor, dir] = esSuelto(c.de) ? [c.a, "in"] : [c.de, "out"];
+    const marco = marcoDe(g, cat, anchor.nodo, anchor.puerto, dir) ?? (esSuelto(c.a) || esSuelto(c.de) ? undefined : marcoDe(g, cat, c.a.nodo, c.a.puerto, "in"));
+    ambito(ambitoDe(g, cat, anchor.nodo, anchor.puerto, dir), marco).wires.push({ from, to });
+    if (typeof to === "string" && (c.codos || c.union)) recorridos[to] = limpio({ bends: c.codos, junction: c.union });
   }
   // Un ámbito sin nada no lleva listas vacías.
   for (const a of ambitos.values()) {
@@ -304,6 +306,7 @@ export function leer(datos, cat) {
   const porId = new Map(g.nodos.map((n) => [n.id, n]));
   /** De una referencia del fichero al puerto del grafo, según vaya de salida (`from`) o de entrada (`to`). */
   const extremo = (ref, dir, marco) => {
+    if (ref && typeof ref === "object" && Array.isArray(ref.loose)) return { suelto: ref.loose };
     const [nombre, puerto] = ref.split(".");
     const e = estructuras.get(nombre);
     if (e) {
@@ -324,15 +327,17 @@ export function leer(datos, cat) {
     try {
       cat.puerto(n, puerto, dir);
     } catch (err) {
+      // A subVI that lost this connector terminal: the VI still opens, with this wire broken (DT-046).
+      if (n.tipo === "subvi") return { suelto: [n.x ?? 0, n.y ?? 0] };
       throw new ErrorQvi(err.message);
     }
     return { nodo: n.id, puerto };
   };
   const cables = cablesPendientes.map((w, i) => {
     const c = { id: `c${g.siguiente + i}`, de: extremo(w.from, "out", w.marco), a: extremo(w.to, "in", w.marco) };
-    const codos = lay.wires?.[w.to]?.bends;
+    const codos = typeof w.to === "string" ? lay.wires?.[w.to]?.bends : undefined;
     if (codos) c.codos = codos;
-    const union = lay.wires?.[w.to]?.junction;
+    const union = typeof w.to === "string" ? lay.wires?.[w.to]?.junction : undefined;
     if (union) c.union = union;
     return c;
   });

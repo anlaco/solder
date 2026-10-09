@@ -14,6 +14,14 @@ export const GROUP_TITLE = "Block Diagram Errors";
 /** What the Details box says of an unwired input (own words: the capture only fixes what it means). */
 export const UNWIRED_DETAILS = "A required input of this function is not wired, or is wired in a way it cannot accept. Open the Context Help window to see which connections the function needs.";
 const BROKEN_WIRE_DETAILS = "This wire cannot carry its data from one terminal to the other. Delete it or wire the terminals again.";
+/**
+ * What the Details box says of a wire with a loose end (own words; LabVIEW's measure what each case means,
+ * labview-captures/broken-wires/REPORT.md §6): one that lost its source and one that reaches nothing.
+ */
+const LOOSE_WIRE_DETAILS = {
+  [Gr.LOOSE_WIRE_REASONS.noSource]: "A wire needs exactly one data source, such as a control's terminal or a function output. Nothing feeds this wire, although it has sinks. Wire a source to its loose end (perhaps by changing an indicator to a control), or remove it with Edit > Remove Broken Wires.",
+  [Gr.LOOSE_WIRE_REASONS.looseEnd]: "One end of this wire is not connected to any terminal. Wire the loose end to one, or choose Edit > Remove Broken Wires to delete every broken wire.",
+};
 
 /**
  * The rows of the error list of a VI: `{ id, text, details, target }`, where `target` is the object
@@ -37,7 +45,7 @@ export function collect({ graph, catalog, resolved, hierarchyErrors = [], compil
 
   for (const wire of graph.cables) {
     const reason = resolved.cables.get(wire.id)?.roto;
-    if (reason) rows.push({ id: `wire.${wire.id}`, text: `Wire: ${reason}`, details: `${reason} ${BROKEN_WIRE_DETAILS}`, target: { wire: wire.id } });
+    if (reason) rows.push({ id: `wire.${wire.id}`, text: `Wire: ${reason}`, details: LOOSE_WIRE_DETAILS[reason] ?? `${reason} ${BROKEN_WIRE_DETAILS}`, target: { wire: wire.id } });
   }
 
   for (const error of compileErrors) {

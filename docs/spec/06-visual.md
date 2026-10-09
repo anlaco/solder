@@ -232,8 +232,7 @@ When a wire is connected between terminals of incompatible types:
 - When hovering over the broken wire: tooltip with the reason
   ("Type mismatch: expected DBL, got TF")
 
-*Note: Solder's current behavior prevents drawing the wire. It has to
-change to this model where it is drawn but marked as broken.*
+*Note: Solder's wire is drawn and marked as broken (§15); the type mismatch is drawn with the same marks as a loose end.*
 
 ### 5.2 One input, a single wire
 
@@ -570,10 +569,32 @@ Code: `editor/src/debugging/debug-view.mjs`, `editor/src/common/glyphs.mjs`, `ed
 - **Unverified / not drawn:** the warning triangle at the far left of the toolbar, the wire of an inverted node in yellow, the Debug Window's
   title color when inactive, its menu popups' exact position, the value colors of non-numeric types.
 
+## 15. Broken wires (2026-10-09, DT-046)
+
+Measured at 1:1 in LabVIEW 2026 Q3 (`labview-captures/broken-wires/REPORT.md` §5; pixel dumps of `19-delete-loop.png`, `42-all-three.png`,
+`55-state.png`). The drawing is ours. Code: `editor/src/block-diagram/broken-wire.mjs`; the constants name their capture. Tested in
+`test/editor/broken-wires.test.mjs`.
+
+- **Dashes:** black `#000000`, 1 px, **4 px dash / 4 px gap** along the whole path, horizontal and vertical alike, the corners of the solid
+  wire. Nothing is drawn at a loose end: the dashes stop (the last one can be shorter).
+- **Red cross:** ONE per broken wire, **10 × 10 px**, fill `#CC0000`, 1 px black outline, with 32 red pixels (the drawing gives exactly 32);
+  at half the length of the path (measured by eye in three cases: approximate). The dashes run under it.
+- **Arrowheads:** two solid triangles **5 px along the wire × 9 px across**, flanking the cross, 2 px of dash on the upstream side
+  and none on the downstream one (the side of the 2 px gap is not determined). Colour: the type colour of the terminal at that end,
+  black for a loose end. Layouts drawn: source and sink wired (including types that do not match, e.g. pink ▶ and orange ▶) and loose
+  sink: both point downstream; loose source: the first one is black and points back to the loose end, the second one is the sink's colour
+  and points downstream. A String's head is the pure `#FF00FF` (measured), not the `#FF33CC` of its wire. **Unverified:** the heads of the
+  other types beyond I32, DBL and String (the type colour is used), the two-source layout (Solder cannot make that wire), the loose
+  sink branch with both heads toward the end, and how the rule goes on a path of several bends.
+- **Broken by types:** the same marks, only the heads carry the two types.
+- **Not drawn:** the highlight of the wire while hovered (thicker, light-blue edge, `57`) and the marching ants of a clicked broken wire (`21`);
+  the selected segment uses the normal selection.
+
 ## History
 
 | Date       | Change |
 |------------|--------|
+| 2026-10-09 | §15: broken wires with a loose end (DT-046), from `labview-captures/broken-wires/`. §5.1 updated. |
 | 2026-10-09 | §14: debugging (Highlight Execution, probes, breakpoints, Debug Window, Error list), from `labview-captures/debugging/`. |
 | 2026-10-09 | §8: Waveform Chart, Waveform Graph and XY Graph, measured in `labview-captures/graphs/` (replaces the first sketch). |
 | 2026-10-08 | §13: Format Into String and Scan From String, from `labview-captures/format-scan/`. |

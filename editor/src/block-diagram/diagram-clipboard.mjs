@@ -6,7 +6,7 @@
 // keep it for any other VI that is open. What the window also keeps is the
 // "paste memory": where the last paste was done, to move the next one.
 
-import { alojar, borrarSeleccion, copyableIds } from "./diagram-editing.mjs";
+import { alojar, borrarConCables, copyableIds } from "./diagram-editing.mjs";
 import { caja } from "./diagram-view.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { REPEATED_PASTE_STEP, remember, repeatCount } from "../common/paste-memory.mjs";
@@ -21,10 +21,10 @@ export function copySelection(d) {
   return ids.length ? copyFragment(d.g, ids) : null;
 }
 
-/** Ctrl+X: the fragment, and the diagram without the selection and its wires (no broken wires are left). */
+/** Ctrl+X: the fragment, and the diagram without the selection and its wires: Cut takes the wires, Delete leaves them broken (DT-046). */
 export function cutSelection(d) {
   const fragment = copySelection(d);
-  return fragment ? { fragment, d: borrarSeleccion(d) } : null;
+  return fragment ? { fragment, d: borrarConCables(d) } : null;
 }
 
 /** The point at the middle of the boxes of the nodes of a fragment that are not inside another one. */

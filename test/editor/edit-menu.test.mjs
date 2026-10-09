@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { menuContextual } from "../../editor/src/block-diagram/diagram-view.mjs";
-import { EDIT_COMMANDS, editMenuId, editMenuVariants } from "../../editor/src/window/edit-menu.mjs";
+import { DIAGRAM_EDIT_COMMANDS, EDIT_COMMANDS, editMenuId, editMenuVariants } from "../../editor/src/window/edit-menu.mjs";
 import { esHueco, ultimo } from "../../editor/src/common/labview-inventory.mjs";
 import * as E from "../../editor/src/window/window-state.mjs";
 import { INV } from "../helpers.mjs";
@@ -35,7 +35,8 @@ test("the Edit menu has LabVIEW's rows in order on the diagram and on the panel"
   ]);
   for (const windowName of ["block-diagram", "front-panel"]) {
     const built = INV.hijos(editMenuId(windowName)).filter((e) => !esHueco(e)).map((e) => ultimo(e.id));
-    assert.deepEqual(built.sort(), [...EDIT_COMMANDS].sort(), `${windowName}: what is done is what the window can run`);
+    const expected = windowName === "block-diagram" ? [...EDIT_COMMANDS, ...DIAGRAM_EDIT_COMMANDS] : EDIT_COMMANDS;
+    assert.deepEqual(built.sort(), [...expected].sort(), `${windowName}: what is done is what the window can run`);
     // The menu opens under its title, as File does.
     const opened = E.abrirMenuBarra(E.inicial(), INV, editMenuId(windowName), { x: 10, y: 20 });
     assert.equal(opened.menuBarra.id, editMenuId(windowName));

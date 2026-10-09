@@ -140,15 +140,18 @@ let hierarchyKeys = [];
 
 /**
  * Builds the catalog view of this VI over `g` and the subVI texts held now, and
- * returns `g` without the wires to ports a subVI no longer has.
+ * returns `g` with the wires to ports a subVI no longer has left broken, with a
+ * loose end where those terminals were drawn (DT-046). The VI is not marked
+ * modified, as in LabVIEW (labview-captures/broken-wires/REPORT.md §2).
  */
 function rebuildHierarchy(g) {
+  const placeOfOldTerminal = ED.terminalPlacer(ctx);
   const result = buildHierarchy({ rootKey: viKey, rootGraph: g, texts: subVITexts, baseCatalog, readVI: Q.leer });
   cat = result.catalog;
   ctx = D.contexto(cat, glifos, separador, medirMenu);
   hierarchyErrors = result.errors;
   hierarchyKeys = result.keys;
-  return SN.pruneOrphanWires(g, cat);
+  return Gr.aflojarCablesHuerfanos(g, cat, placeOfOldTerminal);
 }
 
 /** Puts a graph in this window's view, without it counting as an edit. */
@@ -410,6 +413,7 @@ const ORDENES_MENU = {
   copy: () => copiar(),
   paste: () => pegar(),
   delete: () => borrarLoSeleccionado(),
+  "remove-broken-wires-from-selection": () => quitarCablesRotos(),
   "select-all": () => seleccionarTodo(),
   "remove-breakpoints-from-hierarchy": () => removeAllBreakpoints(),
   // View menu of the diagram:
@@ -418,7 +422,7 @@ const ORDENES_MENU = {
 };
 
 /** The orders of the context menus (subVI node, connector pane, icon) that act on the window and not on the graph; they receive the node the menu was opened on. */
-const ORDENES_CONTEXTUALES = { "vi-properties": () => abrirPropiedades(), "open-front-panel": (nodeId) => abrirSubVI(nodeId) };
+const ORDENES_CONTEXTUALES = { "vi-properties": () => abrirPropiedades(), "open-front-panel": (nodeId) => abrirSubVI(nodeId), "list-errors": (wireId) => openErrorList(`wire.${wireId}`) };
 
 // ——— Debugging (DT-047) ———
 //
@@ -577,10 +581,12 @@ function errorRows() {
   return rows;
 }
 
-function openErrorList() {
+/** View ▸ Error List; from a wire's menu (List Errors) the list opens with that wire's error selected. */
+function openErrorList(selectedRowId) {
   if (!conDiagrama) return canal.postMessage({ showTool: "error-list" });
   debugUi.errorListAt ??= defaultWindowPosition(DV.ERROR_LIST.width, DV.ERROR_LIST.height, 30);
-  errorList = { ...errorList, open: true, selected: errorList.selected ?? errorRows()[0]?.id ?? null };
+  const selected = errorRows().some((row) => row.id === selectedRowId) ? selectedRowId : (errorList.selected ?? errorRows()[0]?.id ?? null);
+  errorList = { ...errorList, open: true, selected };
   pintar();
 }
 
@@ -806,7 +812,18 @@ async function pegar() {
   cambiarPanel(pasted.p);
 }
 
-const borrarLoSeleccionado = () => ejecutando || (conDiagrama ? cambiarDiagrama(ED.borrarSeleccion(dia)) : cambiarPanel(P.borrarSeleccion(pan)));
+/** Delete (key and Edit menu): the wires of what goes stay, broken, where the terminals were (DT-046). */
+function borrarLoSeleccionado() {
+  if (ejecutando) return;
+  if (conDiagrama) return cambiarDiagrama(ED.borrarSeleccion(dia, ctx));
+  cambiarPanel(P.borrarSeleccion(pan, ED.terminalPlacer(ctx)));
+}
+
+/** Edit ▸ Remove Broken Wires (Ctrl+B): all of them, or those in the selection. */
+function quitarCablesRotos() {
+  if (ejecutando || !conDiagrama) return;
+  cambiarDiagrama(ED.removeBrokenWires(dia, ctx));
+}
 const seleccionarTodo = () => ejecutando || (conDiagrama ? cambiarDiagrama(ED.selectAll(dia)) : cambiarPanel(PC.selectAll(pan)));
 
 function deshacerPaso() {
@@ -1088,6 +1105,8 @@ function objetivo(el) {
   if (fila) return { tipo: "fila-marco", nodo: fila.dataset.nodo, k: Number(fila.dataset.marco) };
   const zona = el.closest(".marco-zona");
   if (zona) return { tipo: "marco", nodo: zona.dataset.nodo, zona: zona.dataset.zona };
+  const looseEnd = el.closest(".extremo-suelto");
+  if (looseEnd) return { tipo: "suelto", cable: looseEnd.dataset.cable, extremo: looseEnd.dataset.extremo };
   const t = el.closest(".terminal");
   if (t) return { tipo: "terminal", nodo: t.dataset.nodo, puerto: t.dataset.puerto, dir: t.dataset.dir };
   const n = el.closest(".nodo");
@@ -1121,9 +1140,9 @@ function objetivoPanel(el) {
   return { tipo: "fondo" };
 }
 
-/** The wire under the pointer: a segment of it, or the terminal of a node it ends at (not a structure's border). */
+/** The wire under the pointer: a segment of it, its loose end, or the terminal of a node it ends at (not a structure's border). */
 function cableBajoElRaton(sobreElRaton) {
-  if (sobreElRaton?.tipo === "tramo") return dia.g.cables.find((c) => c.id === sobreElRaton.cable);
+  if (sobreElRaton?.tipo === "tramo" || sobreElRaton?.tipo === "suelto") return dia.g.cables.find((c) => c.id === sobreElRaton.cable);
   if (sobreElRaton?.tipo !== "terminal") return undefined;
   const node = dia.g.nodos.find((n) => n.id === sobreElRaton.nodo);
   return node && !D.esBorde(node) ? ED.wireAtTerminal(dia.g, sobreElRaton.nodo, sobreElRaton.puerto, sobreElRaton.dir) : undefined;
@@ -1508,8 +1527,8 @@ addEventListener("keydown", (ev) => {
     if (estado.paleta || estado.abierta || estado.menuBarra) return cambiar(E.escape(estado));
     return conDiagrama ? cambiarDiagrama(ED.escape(dia)) : cambiarPanel(P.escape(pan));
   }
-  // Ctrl+C, Ctrl+X, Ctrl+V and Ctrl+A: the Edit menu's shortcuts, on what is selected on this canvas.
-  const ordenEdicion = ctrl && !ev.shiftKey && !ev.altKey && !estado.paleta && !(conDiagrama ? dia.edicion : pan.edicion) && { c: copiar, x: cortar, v: pegar, a: seleccionarTodo }[ev.key.toLowerCase()];
+  // Ctrl+C, Ctrl+X, Ctrl+V, Ctrl+A and Ctrl+B: the Edit menu's shortcuts, on what is selected on this canvas.
+  const ordenEdicion = ctrl && !ev.shiftKey && !ev.altKey && !estado.paleta && !(conDiagrama ? dia.edicion : pan.edicion) && { c: copiar, x: cortar, v: pegar, a: seleccionarTodo, b: quitarCablesRotos }[ev.key.toLowerCase()];
   if (ordenEdicion) {
     ev.preventDefault();
     return ordenEdicion();
@@ -1519,7 +1538,7 @@ addEventListener("keydown", (ev) => {
       ev.preventDefault();
       return volver(ev.shiftKey ? H.rehacer(historial) : H.deshacer(historial));
     }
-    if (ev.key === "Delete" || ev.key === "Backspace") return cambiarPanel(P.borrarSeleccion(pan));
+    if (ev.key === "Delete" || ev.key === "Backspace") return borrarLoSeleccionado();
     if (ev.key.startsWith("Arrow")) {
       ev.preventDefault();
       return cambiarPanel(P.flecha(pan, ctx, ev.key, ev.shiftKey));
@@ -1530,7 +1549,7 @@ addEventListener("keydown", (ev) => {
       ev.preventDefault();
       return volver(ev.shiftKey ? H.rehacer(historial) : H.deshacer(historial));
     }
-    if (ev.key === "Delete" || ev.key === "Backspace") return cambiarDiagrama(ED.borrarSeleccion(dia));
+    if (ev.key === "Delete" || ev.key === "Backspace") return borrarLoSeleccionado();
     if (ev.key.startsWith("Arrow")) {
       ev.preventDefault();
       return cambiarDiagrama(ED.flecha(dia, ev.key, ev.shiftKey, ctx));

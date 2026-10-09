@@ -8,6 +8,9 @@
 /** The commands of the menu that do something, by the last segment of their id. */
 export const EDIT_COMMANDS = ["undo", "redo", "cut", "copy", "paste", "delete", "select-all", "remove-breakpoints-from-hierarchy"];
 
+/** The commands only the Block Diagram's Edit menu runs: on the panel Remove Broken Wires is not done (DT-046 measured the diagram). */
+export const DIAGRAM_EDIT_COMMANDS = ["remove-broken-wires-from-selection"];
+
 /** The id of the Edit menu of a window ("front-panel" or "block-diagram"). */
 export const editMenuId = (windowName) => `window.${windowName}.menu.edit`;
 

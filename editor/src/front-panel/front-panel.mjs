@@ -621,12 +621,14 @@ export function escape(p) {
 }
 
 /**
- * Supr y Retroceso borran los objetos seleccionados; su terminal se va del
- * diagrama con sus cables (spec/05 regla 39). Una etiqueta sola no se borra.
+ * Supr y Retroceso borran los objetos seleccionados; su terminal se va del diagrama, pero **sus cables se
+ * quedan, rotos, con un extremo suelto donde estaba el terminal** (DT-046;
+ * labview-captures/create-paste/panel-delete-control-diagram-leaves-broken-wire.png). `placeOf(node, port)`
+ * es ese punto del diagrama. Una etiqueta sola no se borra.
  */
-export function borrarSeleccion(p) {
+export function borrarSeleccion(p, placeOf) {
   const nodos = p.seleccion.filter((id) => !esEtiqueta(id));
-  return nodos.length ? { ...p, g: Gr.borrar(p.g, nodos), seleccion: [] } : p;
+  return nodos.length ? { ...p, g: Gr.borrarDejandoCables(p.g, nodos, placeOf), seleccion: [] } : p;
 }
 
 /** Las flechas mueven la selección un píxel; con Shift, 8 (spec/05 regla 36). */

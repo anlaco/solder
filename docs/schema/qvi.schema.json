@@ -430,10 +430,23 @@
       "required": ["from", "to"],
       "additionalProperties": false,
       "properties": {
-        "from": { "$ref": "#/$defs/endpoint" },
-        "to": { "$ref": "#/$defs/endpoint" },
+        "from": { "$ref": "#/$defs/wireEnd" },
+        "to": { "$ref": "#/$defs/wireEnd" },
         "label": { "$ref": "#/$defs/label" }
       }
+    },
+
+    "wireEnd": {
+      "description": "A terminal, or a loose end: the point of the diagram where a terminal was, which makes the wire broken (DT-046).",
+      "oneOf": [
+        { "$ref": "#/$defs/endpoint" },
+        {
+          "type": "object",
+          "required": ["loose"],
+          "additionalProperties": false,
+          "properties": { "loose": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 } }
+        }
+      ]
     },
 
     "structure": {

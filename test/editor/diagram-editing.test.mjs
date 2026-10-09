@@ -249,7 +249,7 @@ test("unir dos salidas no crea nada y dice por qué", () => {
   assert.equal(ED.escape(d).aviso, null, "Esc lo quita");
 });
 
-test("la selección se mueve con las flechas y se borra con sus cables", () => {
+test("la selección se mueve con las flechas y se borra dejando sus cables rotos (DT-046)", () => {
   let d = poner(poner(ED.inicial(), "const", { x: 0, y: 0 }), "negate", { x: 100, y: 0 });
   const [c, neg] = ids(d);
   d = cablear(d, terminal(d, c, "result"), terminal(d, neg, "x"));
@@ -259,9 +259,10 @@ test("la selección se mueve con las flechas y se borra con sus cables", () => {
   d = ED.flecha(d, "ArrowRight", false);
   d = ED.flecha(d, "ArrowRight", true);
   assert.equal(d.g.nodos[1].x, x0 + 9);
-  d = ED.borrarSeleccion(d);
+  d = ED.borrarSeleccion(d, CTX);
   assert.deepEqual(ids(d), [c]);
-  assert.equal(d.g.cables.length, 0);
+  assert.equal(d.g.cables.length, 1, "the wire stays, broken (DT-046)");
+  assert.ok(Gr.esSuelto(d.g.cables[0].a), "with its loose end where the terminal was");
 });
 
 test("un tramo seleccionado borra su cable", () => {

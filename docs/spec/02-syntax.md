@@ -90,6 +90,17 @@ pattern to it that requires both halves to be non-empty.
 
 Port names **MUST** be the ones declared by the block registry.
 
+**A loose end (DT-046).** Either end of a wire may instead be `{ "loose": [x, y] }`, the point of the diagram where a
+terminal was. Such a wire is **broken**: the VI is valid to read and to draw but does not compile until the wire is
+wired again or removed (Edit ▸ Remove Broken Wires). The loose end appears when a node or a control is deleted
+leaving its wires, and when a subVI no longer has the terminal a wire went to; a wire with both ends loose is never
+saved. The `bends` of a wire whose destination is loose are not saved (the key of `layout.wires` is the destination);
+the route is drawn again by default. Existing files stay valid.
+
+```json
+{ "from": "const_1.result", "to": { "loose": [196, 64] } }
+```
+
 > ⚠️ **Change from the earlier format.** The Red corpus wrote `out` and
 > `in` where the registry declares `result` and `value`, and the loader also
 > silently corrupted the destination port. See `../reference/history/whitelist.md` §6.3. **Old

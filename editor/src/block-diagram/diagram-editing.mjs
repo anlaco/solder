@@ -13,6 +13,7 @@
 //                                                      structure also carries `esquina`, the first click
 //     { tipo: "mover", x, y }                          dragging the selection
 //     { tipo: "cablear", desde, x, y, arrastrado }     a wire coming out of a terminal
+//     { tipo: "recablear", cable, extremo, x, y }      a wire coming out of the loose end ("de" or "a") of a broken wire
 //     { tipo: "tramo", cable, k, x, y }                dragging one segment of a wire
 //     { tipo: "rectangulo", x0, y0, x1, y1, base }     selecting by dragging over the background
 //     { tipo: "estirar", nodo, lado, x0, y0, g0 }      resizing a node by its handle
@@ -28,6 +29,7 @@
 
 import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
 import * as FN from "./format-nodes.mjs";
+import { endPoint } from "./broken-wire.mjs";
 import * as CP from "../front-panel/connector-pane.mjs";
 import { graphCommand, graphMenuMarks, graphMenuVariants, isGraphMenu } from "../front-panel/graph-menus.mjs";
 import * as Et from "../common/labels.mjs";
@@ -200,6 +202,7 @@ function limpiarSecuencias(g, ctx) {
   const { cat } = ctx;
   const malos = new Set(
     g.cables
+      .filter(Gr.conectado)
       .filter((c) => {
         const ambito = Gr.ambitoDe(g, cat, c.de.nodo, c.de.puerto, "out");
         if (ambito !== Gr.ambitoDe(g, cat, c.a.nodo, c.a.puerto, "in") || !Gr.esSecuencia(nodoPor(g, ambito))) return false;
@@ -218,8 +221,8 @@ function colapsarTuneles(g, ctx) {
     cambio = false;
     for (const t of g.nodos) {
       if (t.tipo !== "tunnel-in" && t.tipo !== "tunnel-out") continue;
-      const entra = g.cables.find((c) => c.a.nodo === t.id);
-      const salen = g.cables.filter((c) => c.de.nodo === t.id);
+      const entra = g.cables.filter(Gr.conectado).find((c) => c.a.nodo === t.id);
+      const salen = g.cables.filter(Gr.conectado).filter((c) => c.de.nodo === t.id);
       if (!entra || !salen.length) continue;
       const ambito = Gr.ambitoDe(g, cat, entra.de.nodo, entra.de.puerto, "out");
       if (!salen.every((c) => Gr.ambitoDe(g, cat, c.a.nodo, c.a.puerto, "in") === ambito)) continue;
@@ -240,7 +243,7 @@ function colapsarTuneles(g, ctx) {
 function cruzarCables(g, ctx) {
   const { cat } = ctx;
   for (const c of [...g.cables]) {
-    if (!g.cables.some((k) => k.id === c.id)) continue;
+    if (!Gr.conectado(c) || !g.cables.some((k) => k.id === c.id)) continue;
     const [t1, t2] = [{ nodo: c.de.nodo, puerto: c.de.puerto, dir: "out" }, { nodo: c.a.nodo, puerto: c.a.puerto, dir: "in" }];
     if (Gr.ambitoDe(g, cat, t1.nodo, t1.puerto, "out") === Gr.ambitoDe(g, cat, t2.nodo, t2.puerto, "in")) continue;
     const sin = { ...g, cables: g.cables.filter((k) => k.id !== c.id) };
@@ -616,6 +619,7 @@ export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
   if (d.edicion) return d;
   const { accion } = d;
   if (accion?.tipo === "colocar") return ctx.cat.bloque(accion.bloque).estructura ? pulsarEstructura(d, ctx, p) : colocar(d, ctx, p);
+  if (accion?.tipo === "recablear") return sobre.tipo === "terminal" ? rewireLooseEnd(d, ctx, sobre, p) : d; // wiring by clicks: Esc cancels
   if (accion?.tipo === "cablear") {
     if (sobre.tipo === "terminal") return terminar(d, ctx, sobre, p);
     if (sobre.tipo === "tramo") return unirACable(d, ctx, sobre, p);
@@ -624,6 +628,7 @@ export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
   const d0 = { ...d, aviso: null };
   if (sobre.tipo === "marco") return pulsarMarco(d0, sobre, p);
   if (sobre.tipo === "asa") return { ...d0, accion: { tipo: "estirar", nodo: sobre.nodo, lado: sobre.lado, x0: p.x, y0: p.y, y: p.y, g0: d.g } };
+  if (sobre.tipo === "suelto") return { ...d0, accion: { tipo: "recablear", cable: sobre.cable, extremo: sobre.extremo, x: p.x, y: p.y, x0: p.x, y0: p.y, arrastrado: false } };
   if (sobre.tipo === "terminal") return { ...d0, accion: { tipo: "cablear", desde: sobre, x: p.x, y: p.y, x0: p.x, y0: p.y, arrastrado: false } };
   const elegir = (id) => {
     const ya = d.seleccion.includes(id);
@@ -665,11 +670,12 @@ export function moverA(d, ctx, p) {
       return { ...dragged, g: desplazar(dragged.g, ctx, nodos, dx, dy), accion: { ...accion, x: accion.x + dx, y: accion.y + dy, movido: true, ...(accion.duplicar ? { duplicado: true } : {}) } };
     }
     case "cablear":
+    case "recablear":
       return { ...d, accion: { ...accion, x: p.x, y: p.y, arrastrado: accion.arrastrado || lejos({ x: accion.x0, y: accion.y0 }, p) } };
     case "tramo": {
       const c = d.g.cables.find((k) => k.id === accion.cable);
       const ext = extremos(d.g, ctx);
-      const [a, b] = [ext.get(`${c.de.nodo}.${c.de.puerto}`), ext.get(`${c.a.nodo}.${c.a.puerto}`)];
+      const [a, b] = [endPoint(c.de, ext), endPoint(c.a, ext)];
       const codos = c.codos ?? codosPorDefecto(a, b);
       const horizontal = accion.k % 2 === 0;
       const delta = Math.round(horizontal ? p.y - accion.y : p.x - accion.x);
@@ -715,6 +721,11 @@ function terminar(d, ctx, sobre, p) {
   if (sobre.nodo === desde.nodo && sobre.puerto === desde.puerto && sobre.dir === desde.dir) {
     return d.accion.arrastrado ? { ...d, accion: null } : d; // soltar donde se pulsó: se sigue con clics
   }
+  return wireTerminals(d, ctx, desde, sobre, p);
+}
+
+/** Joins two terminals with a wire shaped like a new one; why it cannot be done goes in `aviso`. */
+function wireTerminals(d, ctx, desde, sobre, p) {
   let codos;
   if (desde.dir !== sobre.dir) {
     const ext = extremos(d.g, ctx);
@@ -724,6 +735,23 @@ function terminar(d, ctx, sobre, p) {
   const r = unir(d.g, ctx, desde, sobre, codos);
   if (r.motivo) return { ...d, accion: null, aviso: { texto: r.motivo, x: p.x, y: p.y } };
   return { ...d, g: ajustarSelectores(r.g, ctx), accion: null, seleccion: [] };
+}
+
+/**
+ * Wiring a loose end (DT-046): a click on the loose end of a broken wire starts a wire from it, and the
+ * click on a terminal turns the broken wire into a normal one that goes to that terminal. LabVIEW does it
+ * with the Wiring tool (REPORT.md §3); Solder has only the automatic tool, so the click on the loose end
+ * is the start. The connection passes the same rules as a new wire; if it does not, the wire stays
+ * broken and the reason is shown.
+ */
+function rewireLooseEnd(d, ctx, sobre, p) {
+  const { cable: wireId, extremo: looseSide } = d.accion;
+  const wire = d.g.cables.find((candidate) => candidate.id === wireId);
+  if (!wire) return { ...d, accion: null };
+  const keptEnd = looseSide === "de" ? { ...wire.a, dir: "in" } : { ...wire.de, dir: "out" };
+  const withoutWire = { ...d, g: { ...d.g, cables: d.g.cables.filter((candidate) => candidate.id !== wireId) } };
+  const result = wireTerminals(withoutWire, ctx, keptEnd, sobre, p);
+  return result.aviso ? { ...d, accion: null, aviso: result.aviso } : result;
 }
 
 /**
@@ -737,8 +765,9 @@ function unirACable(d, ctx, sobre, p) {
     return { ...d, accion: null, aviso: { texto: "Ese cable ya tiene una fuente: un cable sólo puede salir de una salida.", x: p.x, y: p.y } };
   }
   const c = d.g.cables.find((k) => k.id === sobre.cable);
+  if (Gr.esSuelto(c.de)) return { ...d, accion: null, aviso: { texto: "This wire has no source to branch from: wire its loose end first.", x: p.x, y: p.y } };
   const ext = extremos(d.g, ctx);
-  const [a, b] = [ext.get(`${c.de.nodo}.${c.de.puerto}`), ext.get(`${c.a.nodo}.${c.a.puerto}`)];
+  const [a, b] = [endPoint(c.de, ext), endPoint(c.a, ext)];
   const destino = ext.get(`${desde.nodo}.${desde.puerto}`);
   const r = rama(c.codos ?? codosPorDefecto(a, b), a, b, sobre.k, destino, p);
   const hecho = unir(d.g, ctx, { ...c.de, dir: "out" }, desde, r.codos);
@@ -775,6 +804,9 @@ export function soltar(d, ctx, sobre, p) {
       if (sobre?.tipo === "terminal") return terminar(d, ctx, sobre, p);
       if (sobre?.tipo === "tramo") return unirACable(d, ctx, sobre, p);
       return { ...d, accion: null };
+    case "recablear":
+      if (!accion.arrastrado) return d; // un clic en el extremo suelto: el cable sigue al ratón
+      return sobre?.tipo === "terminal" ? rewireLooseEnd(d, ctx, sobre, p) : { ...d, accion: null };
     case "rectangulo": {
       const dentro = dentroDe(d.g, ctx, accion);
       return { ...d, seleccion: [...new Set([...accion.base, ...dentro])], accion: null };
@@ -1053,6 +1085,20 @@ function createVariants(d, ctx) {
   return { desactivados, ocultos };
 }
 
+/**
+ * The menu of a wire. A broken one opens with List Errors and shows no Visible Items, probes or Clean Up
+ * Wire (that one only on a wire whose types do not match) and a greyed Add Breakpoint; a healthy wire has
+ * no List Errors (labview-captures/broken-wires/REPORT.md §5).
+ */
+function wireMenuVariants(d, ctx) {
+  if (d.menu?.raiz !== WIRE_MENU_ROOT || !ctx) return {};
+  const row = (name) => `${WIRE_MENU_ROOT}.${name}`;
+  const broken = Gr.tipos(d.g, ctx.cat).cables.get(d.menu.nodo);
+  if (!broken?.roto) return { ocultos: new Set([row("list-errors")]) };
+  const hidden = ["visible-items", "add-probe", "custom-probe", ...(broken.suelto ? ["clean-up-wire"] : [])];
+  return { ocultos: new Set(hidden.map(row)), desactivados: new Set([row("add-breakpoint")]) };
+}
+
 /** The union of two sets of variants (the node's own and Create's). */
 const mergeVariants = (a, b) => ({
   ...a,
@@ -1061,7 +1107,7 @@ const mergeVariants = (a, b) => ({
 });
 
 /** What changes in the rows of the open menu: the node's own variants and those of Create ▸. `ctx` is needed for the terminal's type. */
-export const variantes = (d, ctx) => (isGraphMenu(d) ? graphMenuVariants(d) : mergeVariants(nodeVariants(d), createVariants(d, ctx)));
+export const variantes = (d, ctx) => (isGraphMenu(d) ? graphMenuVariants(d) : mergeVariants(mergeVariants(nodeVariants(d), createVariants(d, ctx)), wireMenuVariants(d, ctx)));
 
 /** Qué filas del menú llevan la marca: Terminals si el nodo los enseña, el modo actual, Invert si lo está, la representación de un número. */
 export function marcados(d) {
@@ -1158,17 +1204,59 @@ export function escape(d) {
   return { ...d, seleccion: [] };
 }
 
-/**
- * Supr y Retroceso borran la selección, con los cables de los nodos (spec/05
- * regla 28). Un tramo seleccionado borra su cable entero.
- */
-export function borrarSeleccion(d) {
+/** What Delete and Cut take away: the selected nodes (and the nodes that go with them) apart from the wires selected. */
+function selectionToDelete(d) {
   const nodo = (id) => d.g.nodos.find((n) => n.id === id);
   // Los terminales «i», condición y cuenta no se borran; un shift register se va con su pareja.
   const ids = d.seleccion.filter((id) => !esEtiqueta(id)).map(cableDe).filter((id) => !nodo(id)?.tipo.startsWith("loop-") && nodo(id)?.tipo !== "case-selector");
   const pares = ids.map((id) => nodo(id)?.config?.par).filter(Boolean);
   const todos = [...new Set([...ids, ...pares])];
+  return { wires: todos.filter((id) => d.g.cables.some((wire) => wire.id === id)), nodes: todos.filter((id) => nodo(id)) };
+}
+
+/**
+ * Where a deleted node leaves the loose end of each wire: at the terminal it had, as drawn. A node
+ * with no terminal of that name (it should not happen) leaves it at its corner.
+ */
+export function terminalPlacer(ctx) {
+  return (node, port) => {
+    const terminal = ctx && node.tipo && terminales(node, ctx).find((candidate) => candidate.puerto === port);
+    return terminal ? [terminal.x, terminal.y] : [node.x ?? 0, node.y ?? 0];
+  };
+}
+
+/**
+ * Supr y Retroceso borran la selección. Un tramo seleccionado borra su cable entero. Un nodo se va con
+ * su contenido, pero **sus cables al resto se quedan, rotos, con un extremo suelto donde estaba el
+ * terminal** (DT-046; labview-captures/broken-wires/REPORT.md §1). Ctrl+X, en cambio, se lleva los cables
+ * (`borrarConCables`).
+ */
+export function borrarSeleccion(d, ctx) {
+  const { wires, nodes } = selectionToDelete(d);
+  if (!wires.length && !nodes.length) return d;
+  const withoutWires = wires.length ? Gr.borrar(d.g, wires) : d.g;
+  const g = nodes.length ? Gr.borrarDejandoCables(withoutWires, nodes, terminalPlacer(ctx)) : withoutWires;
+  return { ...d, g, seleccion: [], aviso: null };
+}
+
+/** Ctrl+X: the nodes go with their wires, so nothing is left broken (REPORT.md §1). */
+export function borrarConCables(d) {
+  const { wires, nodes } = selectionToDelete(d);
+  const todos = [...wires, ...nodes];
   return todos.length ? { ...d, g: Gr.borrar(d.g, todos), seleccion: [], aviso: null } : d;
+}
+
+/**
+ * Ctrl+B, Edit ▸ Remove Broken Wires: every broken wire of the diagram, or with a selection only the broken
+ * wires in it; selecting a node does not select its wires (REPORT.md §4). The same state when nothing goes.
+ */
+export function removeBrokenWires(d, ctx) {
+  const selectedWires = d.seleccion.map(cableDe).filter((id) => d.g.cables.some((wire) => wire.id === id));
+  const g = Gr.quitarCablesRotos(d.g, ctx.cat, d.seleccion.length ? selectedWires : undefined);
+  if (g.cables.length === d.g.cables.length) return d;
+  const remaining = new Set(g.cables.map((wire) => wire.id));
+  const isRemoved = (id) => d.g.cables.some((wire) => wire.id === cableDe(id)) && !remaining.has(cableDe(id));
+  return { ...d, g, seleccion: d.seleccion.filter((id) => !isRemoved(id)), menu: null, aviso: null };
 }
 
 /** El grafo cambió en la otra ventana: se toma, y lo que ya no existe deja de estar seleccionado. */

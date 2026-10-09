@@ -7,6 +7,7 @@
 //   - the Debug Window (§3) and the Error list window (§5).
 
 import * as D from "../block-diagram/diagram-view.mjs";
+import { endPoint } from "../block-diagram/broken-wire.mjs";
 import * as G from "../common/glyphs.mjs";
 import { esHueco } from "../common/labview-inventory.mjs";
 import { nombre as typeName } from "../../../core/model/types.mjs";
@@ -88,8 +89,8 @@ export function overlay(state, graph, context, resolved, options) {
   const { now, separator = ".", running, pausedAt = null, errorFocus = null } = options;
   const terminals = D.extremos(graph, context);
   const pathOf = (wire) => {
-    const from = terminals.get(`${wire.de.nodo}.${wire.de.puerto}`);
-    const to = terminals.get(`${wire.a.nodo}.${wire.a.puerto}`);
+    const from = endPoint(wire.de, terminals);
+    const to = endPoint(wire.a, terminals);
     return from && to ? D.ruta(from, to, wire.codos) : null;
   };
   let bands = "";

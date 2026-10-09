@@ -58,10 +58,10 @@ test("un control y un indicador numéricos se ponen en el panel con su terminal 
   const g = Gr.conectar(p.g, CAT, { nodo: control.id, puerto: "result", dir: "out" }, { nodo: indicador.id, puerto: "value", dir: "in" }).g;
   assert.ok(Gr.ejecutable(g, CAT, Gr.tipos(g, CAT)));
 
-  // Regla 39: borrar el control en el panel se lleva su terminal y su cable.
+  // Regla 39 (DT-046): borrar el control en el panel se lleva su terminal, pero su cable se queda, roto.
   const sinControl = P.borrarSeleccion({ ...p, g, seleccion: [control.id] });
   assert.deepEqual(sinControl.g.nodos.map((n) => n.id), [indicador.id]);
-  assert.equal(sinControl.g.cables.length, 0);
+  assert.equal(sinControl.g.cables.length, 1);
 });
 
 // En el vídeo: al soltar el control, su etiqueta sale en negro, seleccionada;

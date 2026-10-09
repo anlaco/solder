@@ -196,13 +196,16 @@ test("a caller sees the new connector when its subVI is saved", async () => {
     const preallocated = VP.apply(edited.g, VP.choose(VP.open(edited.g), "preallocated"));
     await save(adderFile, preallocated, CAT, Paths.pathKey(adderFile));
 
-    // The caller reads the files again, rebuilds its view over the graph it is editing and drops the wire that lost its port.
+    // The caller reads the files again, rebuilds its view over the graph it is editing and keeps the wire that lost its port, broken (DT-046).
     const { texts: fresh } = await Paths.readHierarchyTexts(callerKey, Q.aTexto(g, view.catalog), (key) => readFile(key, "utf8").catch(() => null));
     view = buildHierarchy({ rootKey: callerKey, rootGraph: g, texts: fresh, baseCatalog: CAT, readVI: Q.leer });
     assert.deepEqual(view.catalog.puertos(g.nodos[0]).out, [], "no output any more");
-    const pruned = SN.pruneOrphanWires(g, view.catalog);
-    assert.equal(pruned.cables.length, 0);
-    assert.ok(Gr.ejecutable(pruned, view.catalog, Gr.tipos(pruned, view.catalog)));
+    const loosened = Gr.aflojarCablesHuerfanos(g, view.catalog);
+    assert.equal(loosened.cables.length, 1, "the wire stays");
+    assert.ok(Gr.esSuelto(loosened.cables[0].de), "broken, with a loose end where the sum was");
+    assert.ok(!Gr.ejecutable(loosened, view.catalog, Gr.tipos(loosened, view.catalog)), "the caller does not run until the wire is removed");
+    const cleaned = Gr.quitarCablesRotos(loosened, view.catalog);
+    assert.ok(Gr.ejecutable(cleaned, view.catalog, Gr.tipos(cleaned, view.catalog)));
     // The new execution setting travelled with the file too.
     assert.equal(view.catalog.findSubVI("add2.qvi").g.vi.execution.reentrancy, "preallocated");
   } finally {

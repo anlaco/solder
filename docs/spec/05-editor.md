@@ -674,8 +674,9 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/subvi/`).
 
 > **Rule 70 — Hierarchy in the editor.** A VI is loaded with its subVIs (`loadHierarchy`); Run compiles what is on
 > disk and keeps one `estado` per top-level VI between Runs. When a subVI is saved, the open callers rebuild their
-> view; wires to ports that no longer exist are dropped (LabVIEW keeps them broken: unverified). A missing subVI or
-> a recursive call breaks the Run arrow and Run reports why. Tested in `test/end-to-end/subvi-editor.test.mjs`.
+> view; wires to ports that no longer exist **stay, broken, with a loose end where the terminal was drawn**, and the caller is
+> not marked modified (rule 91; measured, DT-046). A missing subVI or a recursive call breaks the Run arrow and Run reports why.
+> Tested in `test/end-to-end/subvi-editor.test.mjs` and `test/editor/subvi-nodes.test.mjs`.
 
 > **Rule 71 — VI Properties.** File ▸ VI Properties (Ctrl+I) and the connector and icon menus open a modal dialog on
 > Execution; Non-reentrant and Preallocated clone work and write `vi.execution`; the rest is greyed with its reason.
@@ -722,8 +723,8 @@ unverified is unverified here too.
 > **Rule 74 — Copy, cut, paste, delete and select all.** On the diagram and on the panel, Ctrl+C, Ctrl+X, Ctrl+V,
 > Ctrl+A and the Edit menu (Delete has no shortcut but the key). Copy takes the selected nodes with everything inside
 > a structure among them and the wires whose two ends are in the copy; the wires to what is left out are not copied
-> (`core/model/clipboard.mjs`). Cut removes the nodes and their wires (no broken wire is left) and one undo brings them
-> back. Paste puts the copy centred on the pointer (the last place it was over the canvas; Edit ▸ Paste uses the same;
+> (`core/model/clipboard.mjs`). Cut removes the nodes and their wires (no broken wire is left; Delete, in contrast, leaves them
+> broken: rule 91) and one undo brings them back. Paste puts the copy centred on the pointer (the last place it was over the canvas; Edit ▸ Paste uses the same;
 > unverified: LabVIEW's place for the menu), selects the copy, makes every pasted node a new id and name, and puts
 > each copy of a structure's contents in the structure it fell in (rule 26). Pasting again without moving the pointer
 > shifts the copy 8 px down and to the right each time (LabVIEW sometimes lands on the place the selection was made:
@@ -756,9 +757,9 @@ unverified is unverified here too.
 > `test/editor/create-and-paste.test.mjs`.
 
 > **Rule 77 — Deleting a control on the panel.** LabVIEW removes its terminal and leaves the wire BROKEN on the
-> diagram (`panel-delete-control-diagram-leaves-broken-wire.png`). Solder's graph has no wire with a missing end (a wire
-> names two nodes that exist), so the wire goes with the control (rule 39), as before. Open decision: representing a
-> wire that ends nowhere.
+> diagram (`panel-delete-control-diagram-leaves-broken-wire.png`). Solder does the same since DT-046: the wire stays,
+> still attached to the terminal that remains, with a loose end at the point of the diagram where the deleted terminal was
+> drawn (rule 91). One delete is one step of undo. Tested in `test/editor/broken-wires.test.mjs`.
 
 ## 14. Format Into String and Scan From String (2026-10-08)
 
@@ -905,3 +906,48 @@ looks is in [`06-visual.md`](06-visual.md) §14. What the report marks unverifie
 >
 > **Rule 90 — Allow debugging.** VI Properties ▸ Execution ▸ Allow debugging (on by default) writes `vi.execution["allow-debugging"]` (only when false). With it
 > off the compiler emits no debug hooks and Rule 83's buttons are greyed.
+
+## 17. Broken wires with a loose end (DT-046, 2026-10-09)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/broken-wires/REPORT.md`, cited by section). The model is in `core/model/graph.mjs`
+(`{ suelto: [x, y] }`, `borrarDejandoCables`, `aflojarCablesHuerfanos`, `quitarCablesRotos`); the editor, in
+`editor/src/block-diagram/diagram-editing.mjs` and `broken-wire.mjs`. Tested in `test/editor/broken-wires.test.mjs`.
+
+> **Rule 91 — When a wire is left with a loose end.** (1) **Delete** on the diagram (key, Edit ▸ Delete) removes the selected nodes,
+> constants or structures with everything inside and their tunnels, and **every wire to the rest stays, broken, with a loose end
+> where the terminal was** (REPORT §1: `13`, `15`, `19`); one delete is one step of undo, and Ctrl+Z restores node and wires (`14`).
+> (2) **Ctrl+X** (Cut) takes the wires with the nodes and leaves nothing broken (measured). (3) **Deleting a control or indicator
+> on the Front Panel** leaves its wires on the diagram broken (rule 77). (4) A subVI saved without a connector terminal leaves
+> the wires of its open callers, and of a caller opened later, broken with the loose end at the old terminal; the caller is not
+> marked modified and the VI always opens (REPORT §2). A wire whose two ends would be loose is not kept. Selecting a wire and
+> deleting it removes the whole wire.
+>
+> **Rule 92 — Where the loose end is and how the wire goes.** The loose end is the point where the terminal was drawn (the
+> measured position: where the dashes end). The route is the one the wire had, or the default one if it had none; the end that
+> is still wired follows its node when it moves; the loose end stays where it is. A wire with no source cannot be branched from
+> (the reason is shown). **Unverified:** what LabVIEW does with the wire's `union` (branch point) when a source is deleted, and the
+> two-source networks of REPORT §4, which Solder cannot make (a wire has one source).
+>
+> **Rule 93 — The reason, the tooltip, List Errors and the Error list.** A broken wire says why: a wire with a loose sink has
+> "a loose end"; one that lost its source has "no source" (our words, `LOOSE_WIRE_REASONS`; LabVIEW tells the same cases apart,
+> REPORT §6). The reason is the tooltip of the wire and of its loose end (`20`; the Context Help title "Broken wire" is not
+> done). The right-click menu of a broken wire starts with **List Errors**, and has no Visible Items, Add Probe or Custom Probe,
+> a greyed Add Breakpoint and, only on a wire broken by types that do not match, Clean Up Wire (`51`, `58`); a healthy wire has no
+> List Errors. List Errors opens the Error list (rule 89) with that wire's row selected; the row is under Block Diagram Errors with
+> the reason and a Details text of our own; Show Error frames the wire all the way to its loose end. **Unverified:** the Context
+> Help text, the Details of the "both ends loose" case (Solder does not keep such a wire), and the Numeric Palette item (it names the
+> wire's data type in LabVIEW; here it is the generic hole).
+>
+> **Rule 94 — Remove Broken Wires (Ctrl+B).** Edit ▸ Remove Broken Wires (with a selection, "Remove Broken Wires from Selection";
+> `43`, `44`) removes every broken wire of the diagram: loose ends and types that do not match. With a selection, only the broken
+> wires that are in it (wires or segments of wires selected; Select All takes them); **selecting a node does not select its wires**, so
+> nothing goes (`45`, `46`). One undo step restores them all (`50`). **Unverified:** the name Undo shows right after Ctrl+B (the
+> report did not capture it); the item is not greyed when there is nothing broken (not measured). On the Front Panel the same
+> row stays a placeholder.
+>
+> **Rule 95 — Wiring a loose end again.** LabVIEW does it with the Wiring tool: click on the loose end, move to a compatible
+> terminal, click: the wire becomes a normal one, from either side (`31`-`37`); the Automatic tool never connected it in three
+> tries (undetermined). Solder has no tool palette, so **a click, or a press and drag, on the loose end starts a wire from it**
+> (a dotted wire follows the pointer; Esc cancels) and the click or release on a terminal connects it with the same rules as a new
+> wire: the wire is replaced by a normal one with the usual route; if the terminal is not accepted (wrong direction, types, an
+> input already wired) the reason is shown and the wire stays broken. The loose end is a 4 px target that is not drawn.

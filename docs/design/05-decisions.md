@@ -1459,9 +1459,48 @@ Done in `editor/src/debugging/`; the rules are spec/05 §16. Decisions taken the
 
 1. **Semantic versioning with an alpha label while unstable:** `0.MINOR.PATCH-alpha`. A release that adds
    features raises MINOR (`0.2.0-alpha`); one that only fixes things raises PATCH (`0.1.1-alpha`).
-2. The `0.` and the `-alpha` label say that neither the language nor the `.qvi` format are stable. Beta
-   changes the label to `-beta`; the first stable version is `1.0.0`.
+2. The `0.` and the `-alpha` label say that neither the language nor the `.qvi` format are stable. The
+   maintainable version (plan, "Road to a maintainable version") changes the label to `-beta` and stays
+   a `0.x`: there is no 1.0 planned (decided 2026-10-09).
 3. Four numbers (as Java's `FEATURE.INTERIM.UPDATE.PATCH`) and the year as a number were considered:
    npm and Electron only accept three numbers, and the label says "unstable" more clearly than the `0.`.
 4. Each release has a git tag `v<version>` and an entry in `CHANGELOG.md`; the version lives in
    `package.json`.
+
+## DT-046
+
+**Broken wires: a wire may keep one loose end.**
+
+- **Status:** **Accepted on 2026-10-09** by the developer; the open facts were measured the same day
+  (`labview-captures/broken-wires/REPORT.md`) and are folded into points 2 and 4.
+- **Why now:** step 1 of the "Road to a maintainable version" (plan): a valid `.qvi` must always open, and
+  this is the last change of the file format before it is frozen.
+
+### What LabVIEW does (measured)
+
+1. Deleting a control on the front panel leaves its wire on the diagram, broken: dashed black with a red
+   cross, still attached to the terminal that remains
+   (`labview-captures/create-paste/panel-delete-control-diagram-leaves-broken-wire.png`).
+2. Ctrl+X on the diagram takes the node and its wires, leaving nothing broken.
+3. Edit ▸ Remove Broken Wires (Ctrl+B) clears broken wires. A VI with a broken wire does not run; the
+   Error List shows it.
+
+### Decision
+
+1. **Model:** one end of a wire may be a point of the diagram instead of a terminal: `{ suelto: [x, y] }`,
+   where the terminal was.
+2. **When a loose end appears:** deleting a control or indicator on the panel; **Delete on the diagram**
+   (a node, a constant or a structure with its tunnels: every wire to the rest stays, broken — measured;
+   Ctrl+X instead takes the wires); opening or refreshing a VI whose subVI no longer has the port a wire went
+   to — that VI **always opens** and is not marked modified (measured).
+3. **Types and compiler:** a wire with a loose end is broken, with a clear reason; the VI does not run and
+   the Error List shows it.
+4. **Editor:** drawn as in LabVIEW (1 px black dashes 4/4, a red cross near the middle flanked by two
+   arrowheads in the colours of the ends, nothing at the loose end); selected and deleted like any wire;
+   Ctrl+B removes every broken wire, or with a selection only the broken wires selected; the wiring tool
+   re-wires a loose end onto a terminal (all measured). The reasons tell apart a wire with no source and one
+   that reaches nothing, in our own words.
+5. **File:** a loose end is saved as `{ "loose": [x, y] }` in `from` or `to`. Existing files stay valid.
+
+Rejected: dropping the wires that no longer fit when a VI is opened — simpler, but it loses information
+without telling and it is not what LabVIEW does.

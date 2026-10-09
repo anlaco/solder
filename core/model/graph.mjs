@@ -150,6 +150,72 @@ export function connectorPorts({ g, cat }) {
 
 export const nuevo = () => ({ nodos: [], cables: [], siguiente: 1 });
 
+// ——— Broken wires with a loose end (DT-046) ———
+//
+// One end of a wire may be a point of the diagram instead of a terminal:
+// `{ suelto: [x, y] }`, where the terminal was. Such a wire is broken: the VI
+// does not run until it is removed (Ctrl+B) or wired again.
+
+/**
+ * Why a wire with a loose end is broken. LabVIEW tells apart a wire that lost
+ * its source and one that has a source but goes nowhere at the other end
+ * (labview-captures/broken-wires/REPORT.md §6); the wording here is our own.
+ */
+export const LOOSE_WIRE_REASONS = {
+  noSource: "This wire has no source: nothing feeds it data. Wire a source to it or remove it (Ctrl+B).",
+  looseEnd: "This wire has a loose end: it does not reach any terminal. Wire it to one or remove it (Ctrl+B).",
+};
+
+/** Is this end of a wire a loose point rather than a terminal? */
+export const esSuelto = (extremo) => Array.isArray(extremo?.suelto);
+
+/** Does the wire join two terminals? */
+export const conectado = (c) => !esSuelto(c.de) && !esSuelto(c.a);
+
+/**
+ * Deletes the nodes `ids` but keeps their wires to the rest, broken, with a
+ * loose end where each node was: what LabVIEW does when a control is deleted
+ * on the front panel (DT-046). `placeOf(node)` gives that point (the editor
+ * knows where each terminal is drawn); by default, the node's position.
+ */
+export function borrarDejandoCables(g, ids, placeOf = (n) => [n.x ?? 0, n.y ?? 0]) {
+  const fuera = conContenido(g, ids);
+  const loosen = (extremo) => (fuera.has(extremo.nodo) ? { suelto: placeOf(nodoDe(g, extremo.nodo), extremo.puerto) } : extremo);
+  const cables = g.cables
+    .filter((c) => !(fuera.has(c.de.nodo) && fuera.has(c.a.nodo)))
+    .map((c) => ({ ...c, de: loosen(c.de), a: loosen(c.a) }))
+    .filter((c) => !(esSuelto(c.de) && esSuelto(c.a)));
+  return { ...g, nodos: g.nodos.filter((n) => !fuera.has(n.id)), cables };
+}
+
+/**
+ * The wires whose terminal no longer exists —a subVI that lost a connector
+ * terminal— become broken, with a loose end at that node, instead of making
+ * the VI impossible to open (DT-046).
+ */
+export function aflojarCablesHuerfanos(g, cat, placeOf = (n) => [n.x ?? 0, n.y ?? 0]) {
+  const existe = (extremo, dir) => {
+    if (esSuelto(extremo)) return true;
+    const n = nodoDe(g, extremo.nodo);
+    return !!n && cat.puertos(n)[dir].some((p) => p.name === extremo.puerto);
+  };
+  const loosen = (extremo, dir) => (existe(extremo, dir) ? extremo : { suelto: placeOf(nodoDe(g, extremo.nodo) ?? {}, extremo.puerto) });
+  const cables = g.cables.map((c) => ({ ...c, de: loosen(c.de, "out"), a: loosen(c.a, "in") })).filter((c) => !(esSuelto(c.de) && esSuelto(c.a)));
+  return { ...g, cables };
+}
+
+/**
+ * Edit ▸ Remove Broken Wires (Ctrl+B): removes every broken wire —loose ends,
+ * mismatched types, two sources— or, with a selection, only the broken wires in
+ * `ids` (selecting a node does not take its wires; measured,
+ * labview-captures/broken-wires/REPORT.md §4).
+ */
+export function quitarCablesRotos(g, cat, ids) {
+  const resolved = tipos(g, cat);
+  const elegidos = ids ? new Set(ids) : null;
+  return { ...g, cables: g.cables.filter((c) => !resolved.cables.get(c.id)?.roto || (elegidos && !elegidos.has(c.id))) };
+}
+
 /**
  * Pone un bloque en el diagrama. El `name` es `tipo_N`, único en el VI (regla
  * 6); la etiqueta, libre, empieza vacía.
@@ -597,7 +663,7 @@ function ajustarIndices(g, cat, destino) {
 export function orden(g) {
   const entran = new Map(g.nodos.map((n) => [n.id, 0]));
   const salen = new Map(g.nodos.map((n) => [n.id, []]));
-  for (const c of g.cables) {
+  for (const c of g.cables.filter(conectado)) {
     entran.set(c.a.nodo, entran.get(c.a.nodo) + 1);
     salen.get(c.de.nodo).push(c.a.nodo);
   }
@@ -783,7 +849,7 @@ function resolverTipos(g, cat, pistas) {
   const enCiclo = new Set(ciclo);
   const salidas = new Map(); // `${nodo}.${puerto}` → tipo
   const entradas = new Map();
-  const llegaA = new Map(g.cables.map((c) => [`${c.a.nodo}.${c.a.puerto}`, c]));
+  const llegaA = new Map(g.cables.filter(conectado).map((c) => [`${c.a.nodo}.${c.a.puerto}`, c]));
 
   const resolverNodo = (n) => {
     const b = cat.bloque(n.tipo);
@@ -845,6 +911,11 @@ function resolverTipos(g, cat, pistas) {
   /** The port a wire ends on, to see what it accepts (a chart or a graph). */
   const puertoDestino = (c) => cat.puertos(nodoDe(g, c.a.nodo)).in.find((p) => p.name === c.a.puerto);
   for (const c of g.cables) {
+    if (!conectado(c)) {
+      const extremo = c.de.suelto ? salidas.get(`${c.a.nodo}.${c.a.puerto}`) ?? entradas.get(`${c.a.nodo}.${c.a.puerto}`) : salidas.get(`${c.de.nodo}.${c.de.puerto}`);
+      cables.set(c.id, { tipo: extremo, coercion: false, roto: c.de.suelto ? LOOSE_WIRE_REASONS.noSource : LOOSE_WIRE_REASONS.looseEnd, suelto: true });
+      continue;
+    }
     const desde = salidas.get(`${c.de.nodo}.${c.de.puerto}`);
     const hacia = entradas.get(`${c.a.nodo}.${c.a.puerto}`);
     let roto = null;

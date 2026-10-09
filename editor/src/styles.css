@@ -240,8 +240,12 @@ svg { display: block; overflow: visible; }
 .tramo-zona { stroke: transparent; stroke-width: 6; pointer-events: stroke; cursor: default; }
 /* Un tramo seleccionado: hormigas azules sobre el cable, sólo en ese tramo. */
 .tramo-elegido { stroke: #3c8fd8; stroke-width: 2.2; stroke-dasharray: 2 2; animation: hormigas 0.5s linear infinite; }
-.cable-roto { stroke: #000; stroke-width: 1; stroke-dasharray: 3 2; }
-.cable-x line { stroke: #e00000; stroke-width: 1.5; }
+/* A broken wire: 1 px black dashes 4/4 under a red cross flanked by two arrowheads (DT-046;
+   labview-captures/broken-wires/REPORT.md §5). The attributes of the SVG elements carry the measures; the
+   dashes are repeated here so that a stylesheet cannot make them differ. */
+.cable-roto { stroke: #000; stroke-width: 1; stroke-dasharray: 4 4; }
+/* The loose end of a broken wire is not drawn; this invisible circle is what is clicked to wire it. */
+.extremo-suelto { fill: transparent; pointer-events: all; cursor: crosshair; }
 /* El cable que se está tirando: punteado negro. */
 .cable-tirando { stroke: #000; stroke-width: 1.33; stroke-dasharray: 1.33 1.33; }
 @keyframes hormigas { to { stroke-dashoffset: -4; } }
