@@ -41,6 +41,14 @@ export function caja(n, lienzo, objeto, porDefecto, medir, edicion) {
 export const editar = (n) => ({ nodo: n.id, etiqueta: true, texto: n.label?.text ?? "", todo: true });
 
 /**
+ * Has this view's graph come to rest, to be kept for undo and sent to the other window? Not while
+ * something is half done, nor while text is typed (`edicion`), except for the first typing into
+ * an object just created (`edicion.nuevo`): the object exists from the moment it is dropped or created,
+ * and only its label or value is still being typed.
+ */
+export const graphAtRest = (view) => !view.accion && (!view.edicion || view.edicion.nuevo === true);
+
+/**
  * Una tecla mientras se escribe en una etiqueta: lo seleccionado se sustituye,
  * Retroceso borra e Intro empieza otra línea, como en LabVIEW.
  */

@@ -27,6 +27,7 @@ import * as D from "../block-diagram/diagram-view.mjs";
 import * as DC from "../block-diagram/diagram-clipboard.mjs";
 import * as ED from "../block-diagram/diagram-editing.mjs";
 import * as EM from "./edit-menu.mjs";
+import * as Et from "../common/labels.mjs";
 import * as E from "./window-state.mjs";
 import * as G from "../common/glyphs.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
@@ -41,6 +42,9 @@ import * as PC from "../front-panel/panel-clipboard.mjs";
 import * as Paths from "../common/vi-paths.mjs";
 import * as Q from "../../../core/model/qvi-format.mjs";
 import * as SN from "../block-diagram/subvi-nodes.mjs";
+import { commandForCtrlKey } from "./shortcuts.mjs";
+import * as RV from "./run-values.mjs";
+import * as Sync from "./graph-sync.mjs";
 import * as VP from "./vi-properties.mjs";
 import * as V from "./window-view.mjs";
 import { buildHierarchy } from "./hierarchy-client.mjs";
@@ -106,21 +110,34 @@ const grafo = () => (conDiagrama ? dia.g : pan.g);
 const canal = new BroadcastChannel(`solder-vi-${viInfo.id}`);
 /** The last graph that was sent to the other window or came from it. */
 let publicado = dia.g;
+/** The stamp of the graph this window holds, to tell a newer copy from an older one (graph-sync.mjs). */
+let stamp = Sync.initialStamp();
 /** The window answers the other one only once it has loaded its VI: before that, its graph is an empty one. */
 let listo = false;
 
 /**
+ * Sends the graph this window holds to the other one, stamped as a newer copy,
+ * with the subVI texts it needs to understand it. `markModified`: the main
+ * process learns the VI changed (the asterisk in the title); a graph rebuilt
+ * after a hierarchy change is shared without it.
+ */
+function publicarGrafo(g, { markModified = true } = {}) {
+  publicado = g;
+  stamp = Sync.afterLocalChange(stamp, nombre);
+  canal.postMessage({ g, subVITexts, stamp });
+  if (markModified) avisar(g);
+}
+
+/**
  * The graph has come to rest —nothing half done, no text half written—: the
- * step is kept to undo it and the other window receives it, with the subVI
- * texts it needs to understand it.
+ * step is kept to undo it and the other window receives it.
  */
 function quieto(g) {
-  historial = H.registrar(historial, g);
+  // The values of a Run are not steps to undo.
+  if (!ejecutando) historial = H.registrar(historial, g);
   if (conDiagrama) setDebug(DS.pruneToGraph(debug, g));
   if (g === publicado) return;
-  publicado = g;
-  canal.postMessage({ g, subVITexts });
-  avisar(g);
+  publicarGrafo(g);
 }
 
 // ——— The hierarchy: the subVIs of this VI ———
@@ -154,18 +171,23 @@ function rebuildHierarchy(g) {
   return Gr.aflojarCablesHuerfanos(g, cat, placeOfOldTerminal);
 }
 
-/** Puts a graph in this window's view, without it counting as an edit. */
-function ponerGrafo(g) {
+/**
+ * Puts a graph in this window's view, without it counting as an edit. `share`:
+ * only this window computed it (the rest compute theirs), so the other one is sent it, if it differs.
+ */
+function ponerGrafo(g, { share = false } = {}) {
+  const changed = share && JSON.stringify(g) !== JSON.stringify(grafo());
   if (conDiagrama) dia = { ...dia, g };
   else pan = { ...pan, g };
-  publicado = g;
+  if (changed) publicarGrafo(g, { markModified: false });
+  else publicado = g;
 }
 
 /** Reads the subVI files again and redraws: a subVI was saved, or a Run is about to start. */
 async function refrescarJerarquia() {
   const { texts } = await window.solder.textosDeSubVIs(Q.aTexto(grafo(), cat));
   subVITexts = texts;
-  ponerGrafo(rebuildHierarchy(grafo()));
+  ponerGrafo(rebuildHierarchy(grafo()), { share: true });
   pintar();
 }
 
@@ -186,6 +208,8 @@ function alGuardarOtroVI({ id, key }) {
   pintar();
 }
 window.solder?.alGuardar(alGuardarOtroVI);
+// Leaving this window (switching to the other one) commits what is being typed, as clicking outside does.
+addEventListener("blur", () => confirmarEscritura());
 
 // ——— Save and open (core/model/qvi-format.mjs) ———
 //
@@ -194,7 +218,7 @@ window.solder?.alGuardar(alGuardarOtroVI);
 // (electron/main.mjs), which receives every change to know if anything is unsaved.
 
 /** The VI has changed: the main process compares it with what was saved. */
-const avisar = (g) => window.solder?.cambio(Q.aTexto(g, cat));
+const avisar = (g) => window.solder?.cambio(Q.aTexto(graphAsSaved(g), cat));
 
 /** What is being typed is confirmed before saving, as with Enter Text. */
 function confirmarEscritura() {
@@ -206,12 +230,13 @@ function confirmarEscritura() {
 async function guardarVI(como) {
   if (!window.solder) return;
   confirmarEscritura();
-  await window.solder.guardar(Q.aTexto(grafo(), cat), como);
+  await window.solder.guardar(Q.aTexto(graphAsSaved(grafo()), cat), como);
 }
 
 /** A VI just opened or created: it starts with no history and nothing selected. */
 function cargar(g) {
   publicado = g;
+  stamp = Sync.initialStamp();
   historial = H.nuevo(g);
   dia = { ...ED.inicial(), g };
   pan = P.inicial(g);
@@ -283,14 +308,22 @@ function appendSeries(charts, series) {
   }, charts ?? {});
 }
 
-const esControl = (n) => n.tipo === "control" || n.tipo === "bool-control" || n.tipo === "str-control" || n.tipo === "cluster-control" || n.tipo === "arr-control";
-const valoresDeControles = (g) => Object.fromEntries(g.nodos.filter(esControl).map((n) => [n.id, n.config?.value ?? (n.tipo === "str-control" ? "" : n.tipo === "cluster-control" ? P.ERROR_VACIO : n.tipo === "arr-control" ? [] : 0)]));
-/** Dos valores de control iguales: un cluster de error es un objeto y se compara por lo que lleva. */
-const mismoValor = (a, b) => a === b || (typeof a === "object" && typeof b === "object" && JSON.stringify(a) === JSON.stringify(b));
+const valoresDeControles = (g) => Object.fromEntries(g.nodos.filter(RV.isControl).map((n) => [n.id, n.config?.value ?? (n.tipo === "str-control" ? "" : n.tipo === "cluster-control" ? P.ERROR_VACIO : n.tipo === "arr-control" ? [] : 0)]));
+/** The default value each control had when the Run started, by node id (run-values.mjs); `null` when no Run is in progress. */
+let defaultsBeforeRun = null;
+
+/** The graph as the file keeps it: the controls at their defaults even in the middle of a Run. */
+const graphAsSaved = (g) => (defaultsBeforeRun ? RV.withControlValues(g, defaultsBeforeRun) : g);
 
 /** Las dos ventanas entran en modo Run o salen de él. */
 function modoRun(si) {
   ejecutando = si;
+  if (si) defaultsBeforeRun = RV.controlValues(grafo());
+  else if (defaultsBeforeRun) {
+    // The controls return to their defaults; a Latch that was never read as TRUE does too.
+    ponerGrafo(RV.withControlValues(grafo(), defaultsBeforeRun));
+    defaultsBeforeRun = null;
+  }
   debug = si ? DS.startRun(debug, grafo(), Date.now()) : DS.endRun(debug, grafo());
   vistos = si ? valoresDeControles(grafo()) : {};
   if (si) {
@@ -306,7 +339,7 @@ function modoRun(si) {
 function mandarControles(g) {
   if (!ejecutando) return;
   for (const [nodo, valor] of Object.entries(valoresDeControles(g))) {
-    if (mismoValor(vistos[nodo], valor)) continue;
+    if (RV.sameValue(vistos[nodo], valor)) continue;
     vistos[nodo] = valor;
     if (lanzado) trabajador.postMessage({ orden: "control", nodo, valor });
     else canal.postMessage({ control: { nodo, valor } });
@@ -404,7 +437,9 @@ const ORDENES_MENU = {
   save: () => guardarVI(false),
   "save-as": () => guardarVI(true),
   open: abrirVI,
-  exit: () => window.solder?.salir(),
+  exit: () => (confirmarEscritura(), window.solder?.salir()),
+  "toggle-window": () => (confirmarEscritura(), window.solder?.alternarVentana()),
+  "tile-left-and-right": () => (confirmarEscritura(), window.solder?.teselar()),
   "vi-properties": abrirPropiedades,
   // Edit menu (the same commands as the shortcuts):
   undo: () => deshacerPaso(),
@@ -955,7 +990,7 @@ canal.onmessage = ({ data }) => {
   // Before this window has loaded its VI, what it holds is not the VI.
   if (!listo) return;
   // Una ventana que acaba de abrirse pide el VI; la que lo tiene lo manda.
-  if (data.pide) return canal.postMessage({ g: grafo(), subVITexts });
+  if (data.pide) return canal.postMessage({ g: grafo(), subVITexts, stamp });
   if (data.debugState) {
     debug = data.debugState;
     return pintar();
@@ -974,7 +1009,12 @@ canal.onmessage = ({ data }) => {
   }
   if (data.abortar) return abortar();
   if (data.nuevo) return cargar(data.g);
-  if (!data.g || JSON.stringify(data.g) === JSON.stringify(grafo())) return;
+  if (!data.g) return;
+  // A copy older than the one this window holds is not taken: it is answered with the newer one (graph-sync.mjs).
+  const verdict = Sync.judgeIncoming(stamp, data.stamp);
+  if (verdict === "stale") return canal.postMessage({ g: grafo(), subVITexts, stamp });
+  stamp = data.stamp;
+  if (JSON.stringify(data.g) === JSON.stringify(grafo())) return;
   let g = data.g;
   // The other window may have placed a subVI this one has not read yet: its view of the hierarchy comes first.
   if (data.subVITexts && (JSON.stringify(data.subVITexts) !== JSON.stringify(subVITexts) || faltaSubVI(g))) {
@@ -982,7 +1022,7 @@ canal.onmessage = ({ data }) => {
     g = rebuildHierarchy(g);
   }
   publicado = g;
-  historial = H.registrar(historial, g);
+  if (!ejecutando) historial = H.registrar(historial, g);
   if (conDiagrama) dia = ED.recibir(dia, g);
   else pan = P.recibir(pan, g);
   pintar();
@@ -1061,7 +1101,7 @@ function cambiarDiagrama(nuevo) {
   if (nuevo === dia) return;
   dia = sinTerminalesHuerfanos(nuevo);
   // What Create made is a step of undo before its value or label is typed: the typing is another one (REPORT.md §A).
-  if (!dia.accion && (!dia.edicion || dia.edicion.nuevo)) quieto(dia.g);
+  if (Et.graphAtRest(dia)) quieto(dia.g);
   pintar();
 }
 
@@ -1069,7 +1109,7 @@ function cambiarDiagrama(nuevo) {
 function cambiarPanel(nuevo) {
   if (nuevo === pan) return;
   pan = sinTerminalesHuerfanos(nuevo);
-  if (!pan.accion && !pan.edicion) quieto(pan.g);
+  if (Et.graphAtRest(pan)) quieto(pan.g);
   mandarControles(pan.g);
   pintar();
 }
@@ -1079,8 +1119,7 @@ function volver(r) {
   historial = r.h;
   if (conDiagrama) dia = { ...dia, g: r.g, seleccion: [], accion: null, menu: null, edicion: null };
   else pan = { ...pan, g: r.g, seleccion: [], accion: null, edicion: null };
-  publicado = r.g;
-  canal.postMessage({ g: r.g });
+  publicarGrafo(r.g);
   pintar();
 }
 
@@ -1431,7 +1470,7 @@ addEventListener("contextmenu", (ev) => {
   // su menú. El de los numéricos aún no está capturado: sobre ellos, el clic
   // derecho no hace nada.
   if (conPanel) {
-    if (pan.edicion) pan = P.confirmar(pan);
+    if (pan.edicion) cambiarPanel(P.confirmar(pan));
     const sobrePanel = objetivoPanel(ev.target);
     if (sobrePanel?.tipo === "objeto") {
       const raizPanel = sobrePanel.parte ? PART_MENUS[sobrePanel.parte] : P.menuDe(pan.g.nodos.find((k) => k.id === sobrePanel.id));
@@ -1491,9 +1530,9 @@ addEventListener("keydown", (ev) => {
     ev.preventDefault();
     return cambiarPanel(P.confirmar(pan));
   }
-  // File ▸ Save, Open y Exit, con los atajos de LabVIEW.
+  // LabVIEW's Ctrl shortcuts that run a menu command (shortcuts.mjs).
   if (ctrl && !ev.shiftKey && !ev.altKey) {
-    const orden = { s: "save", o: "open", q: "exit", i: "vi-properties", d: "debug-window", l: "error-list" }[ev.key.toLowerCase()];
+    const orden = commandForCtrlKey(ev.key);
     if (orden) {
       ev.preventDefault();
       return ORDENES_MENU[orden]();

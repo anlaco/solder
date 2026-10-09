@@ -879,7 +879,7 @@
         "id": "window.front-panel.menu.file.exit",
         "etiqueta": "Exit",
         "estado": "built",
-        "prueba": "test/end-to-end/qvi-round-trip.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "prueba": "test/editor/exit-flow.test.mjs::Exit_asks_only_about_the_VIs_with_unsaved_changes,_and_Don't_Save_lets_the_application_quit",
         "atajo": "Ctrl+Q",
         "captura": "front-panel/menu-file.png",
         "separado": true
@@ -1157,7 +1157,7 @@
       "id": "window.front-panel.menu.window",
       "etiqueta": "Window",
       "estado": "todo",
-      "labview": "Paso entre las ventanas abiertas. Contenido sin capturar.",
+      "labview": "Paso entre las ventanas abiertas. Contenido sin capturar; sólo se han medido sus atajos, que ya funcionan: Ctrl+E pasa de la ventana del panel a la del diagrama y al revés, y Ctrl+T pone las dos una al lado de la otra (editor-checks/REPORT.md §4 y §7).",
       "necesita": "editor-escritorio",
       "captura": "front-panel/vi-nuevo.png"
     },
@@ -1498,7 +1498,7 @@
         "id": "window.block-diagram.menu.file.exit",
         "etiqueta": "Exit",
         "estado": "built",
-        "prueba": "test/end-to-end/qvi-round-trip.test.mjs::lo_que_se_guarda_se_abre_igual",
+        "prueba": "test/editor/exit-flow.test.mjs::Exit_asks_only_about_the_VIs_with_unsaved_changes,_and_Don't_Save_lets_the_application_quit",
         "atajo": "Ctrl+Q",
         "captura": "block-diagram/menu-file.png",
         "separado": true
@@ -1969,7 +1969,7 @@
       "id": "window.block-diagram.menu.window",
       "etiqueta": "Window",
       "estado": "todo",
-      "labview": "Paso entre las ventanas abiertas. Contenido sin capturar.",
+      "labview": "Paso entre las ventanas abiertas. Contenido sin capturar; sólo se han medido sus atajos, que ya funcionan: Ctrl+E pasa de la ventana del panel a la del diagrama y al revés, y Ctrl+T pone las dos una al lado de la otra (editor-checks/REPORT.md §4 y §7).",
       "necesita": "editor-escritorio",
       "captura": "block-diagram/vi-nuevo.png"
     },
@@ -9981,26 +9981,23 @@
     {
       "id": "context.loop-condition.create-constant",
       "etiqueta": "Create Constant",
-      "estado": "todo",
-      "labview": "Crea una constante cableada al terminal.",
-      "necesita": "menus-contextuales",
-      "captura": "structures/menu-condicion.png"
+      "estado": "built",
+      "prueba": "test/editor/loop-terminals-create.test.mjs::Create_Constant_on_the_condition_makes_a_Boolean_constant_inside_the_loop,_wired",
+      "captura": "editor-checks/05-cond-terminal-rightclick.png"
     },
     {
       "id": "context.loop-condition.create-control",
       "etiqueta": "Create Control",
-      "estado": "todo",
-      "labview": "Crea un control del panel cableado al terminal.",
-      "necesita": "panel-frontal",
-      "captura": "structures/menu-condicion.png"
+      "estado": "built",
+      "prueba": "test/editor/loop-terminals-create.test.mjs::Create_Control_on_the_condition_of_a_While_Loop_makes_a_Stop_button_inside_the_loop,_wired,_with_its_label_stop_in_edit_mode",
+      "captura": "editor-checks/05-cond-terminal-rightclick.png"
     },
     {
       "id": "context.loop-condition.create-indicator",
       "etiqueta": "Create Indicator",
-      "estado": "todo",
-      "labview": "Crea un indicador del panel cableado al terminal.",
-      "necesita": "panel-frontal",
-      "captura": "structures/menu-condicion.png"
+      "estado": "built",
+      "prueba": "test/editor/loop-terminals-create.test.mjs::Create_Indicator_on_the_condition_makes_a_Boolean_indicator,_left_unwired_because_the_condition_is_an_input",
+      "captura": "editor-checks/05-cond-terminal-rightclick.png"
     },
     {
       "id": "context.loop-condition.create-channel-writer",
@@ -10052,25 +10049,22 @@
     {
       "id": "context.loop-iteration.create-constant",
       "etiqueta": "Create Constant",
-      "estado": "todo",
-      "labview": "Crea una constante cableada al terminal.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/loop-terminals-create.test.mjs::on_the_count_of_a_For_Loop_and_the_iteration_terminal_the_same_rows_make_an_I32_constant,_control_and_indicator",
       "captura": "structures/menu-iteracion.png"
     },
     {
       "id": "context.loop-iteration.create-control",
       "etiqueta": "Create Control",
-      "estado": "todo",
-      "labview": "Crea un control del panel cableado al terminal.",
-      "necesita": "panel-frontal",
+      "estado": "built",
+      "prueba": "test/editor/loop-terminals-create.test.mjs::on_the_count_of_a_For_Loop_and_the_iteration_terminal_the_same_rows_make_an_I32_constant,_control_and_indicator",
       "captura": "structures/menu-iteracion.png"
     },
     {
       "id": "context.loop-iteration.create-indicator",
       "etiqueta": "Create Indicator",
-      "estado": "todo",
-      "labview": "Crea un indicador del panel cableado al terminal.",
-      "necesita": "panel-frontal",
+      "estado": "built",
+      "prueba": "test/editor/loop-terminals-create.test.mjs::on_the_count_of_a_For_Loop_and_the_iteration_terminal_the_same_rows_make_an_I32_constant,_control_and_indicator",
       "captura": "structures/menu-iteracion.png"
     },
     {
@@ -10108,25 +10102,22 @@
     {
       "id": "context.loop-count.create-constant",
       "etiqueta": "Create Constant",
-      "estado": "todo",
-      "labview": "Crea una constante cableada al terminal.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/loop-terminals-create.test.mjs::on_the_count_of_a_For_Loop_and_the_iteration_terminal_the_same_rows_make_an_I32_constant,_control_and_indicator",
       "captura": "structures/menu-cuenta.png"
     },
     {
       "id": "context.loop-count.create-control",
       "etiqueta": "Create Control",
-      "estado": "todo",
-      "labview": "Crea un control del panel cableado al terminal.",
-      "necesita": "panel-frontal",
+      "estado": "built",
+      "prueba": "test/editor/loop-terminals-create.test.mjs::on_the_count_of_a_For_Loop_and_the_iteration_terminal_the_same_rows_make_an_I32_constant,_control_and_indicator",
       "captura": "structures/menu-cuenta.png"
     },
     {
       "id": "context.loop-count.create-indicator",
       "etiqueta": "Create Indicator",
-      "estado": "todo",
-      "labview": "Crea un indicador del panel cableado al terminal.",
-      "necesita": "panel-frontal",
+      "estado": "built",
+      "prueba": "test/editor/loop-terminals-create.test.mjs::on_the_count_of_a_For_Loop_and_the_iteration_terminal_the_same_rows_make_an_I32_constant,_control_and_indicator",
       "captura": "structures/menu-cuenta.png"
     },
     {

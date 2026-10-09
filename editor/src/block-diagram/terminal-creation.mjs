@@ -81,10 +81,30 @@ export function nextPanelSlot(g, { tipo, config, isControl, panelSize = ASSUMED_
   return { x: G.originX, y: G.originY };
 }
 
+/**
+ * What Create ▸ Control makes on the condition terminal of a While Loop: the
+ * Stop button of the Boolean palette, labelled "stop", with its label in edit
+ * mode (labview-captures/editor-checks/REPORT.md §5, 05-create-control-result.png).
+ */
+export const LOOP_CONDITION_CONTROL = { configOverride: { style: "stop-button" }, label: "stop" };
+
+/** The only terminal of a loop's border node (condition, count or iteration): its Create rows have no terminal under the pointer to name it. */
+export const borderTerminalPort = (node, ctx) => (node.tipo.startsWith("loop-") ? terminales(node, ctx)[0]?.puerto : undefined);
+
 /** The type that reaches or leaves a terminal, or undefined when it is not known yet. */
 const terminalType = (g, cat, terminal) => (terminal.dir === "in" ? Gr.tipos(g, cat).entradas : Gr.tipos(g, cat).salidas).get(`${terminal.nodo}.${terminal.puerto}`);
 
 const nodeOf = (g, id) => g.nodos.find((n) => n.id === id);
+
+/**
+ * Where an object wired to `terminal` of `node` goes: in the structure the node is in or, for a terminal that
+ * faces out of its border (the count of a For Loop), in the one around that structure, so the wire crosses no border.
+ */
+function scopeOfTerminal(g, cat, node, terminal) {
+  const port = cat.puertos(node)[terminal.dir].find((candidate) => candidate.name === terminal.puerto);
+  const placedBy = port?.lado === "fuera" ? nodeOf(g, node.dentro) : node;
+  return { dentro: placedBy.dentro, marco: placedBy.marco };
+}
 
 /** Nodes a new object must not sit on: everything but structures (they hold what is inside) and their border nodes. */
 const obstacles = (g, ctx, ignored) => visibles(g).nodos.filter((n) => n.id !== ignored && !esEstructura(n, ctx) && !esBorde(n)).map((n) => caja(n, ctx));
@@ -139,9 +159,10 @@ export function createForTerminal(g, ctx, { nodo, puerto, kind, panelSize, stack
   const block = blockForTerminal(type, kind);
   if (!block) return { g, motivo: `There is no ${kind} for this type yet.` };
   const isPanelObject = kind !== "constant";
-  const slot = isPanelObject ? nextPanelSlot(g, { tipo: block.tipo, config: block.config, isControl: kind === "control", panelSize }) : {};
-  const scope = { dentro: node.dentro, marco: node.marco };
-  const created = createOnTerminal(g, ctx.cat, { terminal: { nodo, puerto, dir: terminal.dir }, type, kind, x: 0, y: 0, panelX: slot.x, panelY: slot.y, label: terminal.etiqueta, scope });
+  const special = kind === "control" && node.tipo === "loop-condition" ? LOOP_CONDITION_CONTROL : null;
+  const slot = isPanelObject ? nextPanelSlot(g, { tipo: block.tipo, config: { ...block.config, ...special?.configOverride }, isControl: kind === "control", panelSize }) : {};
+  const scope = scopeOfTerminal(g, ctx.cat, node, terminal);
+  const created = createOnTerminal(g, ctx.cat, { terminal: { nodo, puerto, dir: terminal.dir }, type, kind, x: 0, y: 0, panelX: slot.x, panelY: slot.y, label: special?.label ?? terminal.etiqueta, scope, configOverride: special?.configOverride });
   if (created.motivo) return created;
   const size = caja(nodeOf(created.g, created.id), ctx);
   const gap = kind === "constant" ? (CONSTANT_GAP_BY_BLOCK[node.tipo] ?? DEFAULT_CONSTANT_GAP) : TERMINAL_GAP;

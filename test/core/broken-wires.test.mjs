@@ -89,3 +89,27 @@ test("a caller whose subVI lost a connector terminal still opens, with that wire
   const refreshed = Gr.aflojarCablesHuerfanos(caller, catWith(withoutInput));
   assert.ok(Gr.esSuelto(refreshed.cables[0].a), "an open caller loosens it too when its subVI changes");
 });
+
+// labview-captures/windows-install/test.qvi: a loop's output tunnel wired back into its own input tunnel
+// passed `check` and the compiler emitted invalid WebAssembly.
+test("a wire from a loop's output back into the same loop closes a cycle and is broken", () => {
+  let g = Gr.nuevo();
+  let r = Gr.crearEstructura(g, CAT, "while-loop", 0, 0, 200, 150);
+  g = r.g;
+  const loop = r.id;
+  r = Gr.crearNodo(g, CAT, "bool-control", 50, 50);
+  g = Gr.meter(r.g, CAT, [r.id], loop);
+  const stop = r.id;
+  const condition = g.nodos.find((n) => n.dentro === loop && n.tipo === "loop-condition").id;
+  g = Gr.conectar(g, CAT, { nodo: stop, puerto: "result", dir: "out" }, { nodo: condition, puerto: "stop", dir: "in" }).g;
+  const out = Gr.crearTunel(g, CAT, loop, "out", 40);
+  g = out.g;
+  const into = Gr.crearTunel(g, CAT, loop, "in", 80);
+  g = into.g;
+  g = Gr.conectar(g, CAT, { nodo: stop, puerto: "result", dir: "out" }, { nodo: out.id, puerto: "x", dir: "in" }).g;
+  const back = Gr.conectar(g, CAT, { nodo: out.id, puerto: "y", dir: "out" }, { nodo: into.id, puerto: "x", dir: "in" });
+  const resolved = Gr.tipos(back.g, CAT);
+  assert.equal(resolved.cables.get(back.id).roto, Gr.STRUCTURE_CYCLE_REASON);
+  assert.equal(Gr.ejecutable(back.g, CAT, resolved), false);
+  assert.ok(compilar(back.g, CAT).errores, "the compiler refuses it instead of emitting invalid WebAssembly");
+});

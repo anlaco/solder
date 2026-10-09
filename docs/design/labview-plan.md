@@ -152,6 +152,10 @@ of maintenance with fixes only (`0.N.x-beta`).
    them broken, Ctrl+B, re-wiring a loose end, the drawing, the wire menu and the Error List.*
 2. **The Windows installer tested** in the virtual machine: install, open, save, run, uninstall. The
    installers are built on Linux (`npm run dist`, electron-builder) and Windows was never run.
+   *Done on 2026-10-09: 0.2.0-alpha tested in the VM, its problems fixed in 0.2.1-alpha (its own icon,
+   `Solder.exe`, `.qvi` association, a clean uninstall, Exit, the windows of a new VI, the two windows
+   of a VI kept in step, a dropped control saved at once, latched Booleans not saved TRUE) and
+   0.2.1-alpha tested again (`labview-captures/windows-install-0.2.1*`).*
 3. **Real programs written with Solder**, as a user would: two or three complete VIs (for example a
    measurement loop with a chart, a string protocol with Format/Scan and subVIs, a state machine with a
    Case and shift registers). Every failure or annoyance found becomes a fix; they are the test of

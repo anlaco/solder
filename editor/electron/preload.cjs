@@ -30,6 +30,10 @@ contextBridge.exposeInMainWorld("solder", {
   cerrar: () => ipcRenderer.send("vi:close"),
   /** File ▸ Exit. */
   salir: () => ipcRenderer.send("vi:salir"),
+  /** Ctrl+E: brings forward the other window of this VI (Front Panel or Block Diagram). */
+  alternarVentana: () => ipcRenderer.send("vi:toggle-window"),
+  /** Ctrl+T, Window ▸ Tile Left and Right: the two windows of this VI side by side. */
+  teselar: () => ipcRenderer.send("vi:tile"),
   /** What was copied in any VI, as text: one clipboard for all the open VIs (spec/05 rule 73). */
   portapapeles: {
     guardar: (texto) => ipcRenderer.send("clipboard:write", texto),

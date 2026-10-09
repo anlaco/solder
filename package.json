@@ -1,10 +1,10 @@
 {
   "name": "@solder/editor",
   "productName": "Solder",
-  "version": "0.2.0-alpha",
+  "version": "0.2.1-alpha",
   "private": true,
   "type": "module",
-  "description": "Solder's editor: the windows of a VI, cloned from LabVIEW 2026 Q3, in Electron (DT-037).",
+  "description": "Solder: a free visual programming language that clones LabVIEW.",
   "author": "anlaco",
   "homepage": "https://github.com/anlaco/solder",
   "license": "AGPL-3.0-only",
@@ -31,7 +31,8 @@
       "editor/**/*",
       "core/**/*",
       "docs/schema/blocks.json",
-      "docs/schema/inventario-labview.json"
+      "docs/schema/inventario-labview.json",
+      "build/icon.png"
     ],
     "linux": {
       "target": [
@@ -47,13 +48,30 @@
     "win": {
       "target": [
         "nsis"
-      ]
+      ],
+      "icon": "build/icon.ico",
+      "executableName": "Solder"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "differentialPackage": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "shortcutName": "Solder",
+      "include": "build/installer.nsh"
     },
-    "executableName": "solder"
+    "executableName": "solder",
+    "icon": "build/icon.png",
+    "fileAssociations": [
+      {
+        "ext": "qvi",
+        "name": "Solder VI",
+        "description": "Solder VI",
+        "icon": "build/icon",
+        "role": "Editor"
+      }
+    ]
   },
   "desktopName": "solder.desktop"
 }

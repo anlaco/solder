@@ -266,6 +266,22 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > actions, greyed out. Ctrl+M (Run mode without running) and the right-click menu in
 > Run mode, not done.
 
+> **Rule 40m — An object exists when it is dropped, and a Run does not change the VI.**
+> A control or indicator dropped on the panel (and a string constant dropped on
+> the diagram) is in the VI at once, with its terminal in the diagram, in both
+> windows and with the modified mark; the label (or text) that opens in edit mode
+> only changes it, as LabVIEW does. Save, Save As, Exit, Run and switching
+> windows first commit whatever is being typed (tests in
+> `test/editor/front-panel.test.mjs`). Operating a control while the VI runs
+> changes its *current* value, not the value the file saves: the VI is not marked
+> modified, saving writes the value each control had when the Run started, and the
+> controls go back to it when the Run ends; a Latch that was read is FALSE again
+> in both windows (Rule 20e). Tests in `test/editor/run-values.test.mjs`. Not
+> done: LabVIEW keeps the current value of a control after the Run, apart from
+> its default, which changes only with Edit ▸ Make Current Values Default;
+> Solder has no such command yet, so in edit mode operating a control (Rule 40c)
+> still changes the value the file saves. Unverified in LabVIEW 2026 Q3.
+
 > **Rule 40e — While Loop and For Loop on the diagram.** Captured in LabVIEW 2026
 > Q3 (`labview-captures/structures/`), at 1:1, and done with the measurements below
 > (tests in `test/editor/diagram-view.test.mjs` and `diagram-editing.test.mjs`):
@@ -645,7 +661,7 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/subvi/`).
 
 > **Rule 66 — Several VIs open.** Each open VI has its own Front Panel and Block Diagram, its own file and its
 > own unsaved changes (asterisk and "Save changes?" per VI). File ▸ Open opens another VI in new windows, or
-> brings forward the windows of one already open; File ▸ Exit closes them all, asking for each. Tested in
+> brings forward the windows of one already open; File ▸ Exit asks about each VI with unsaved changes and quits (rule 98). Tested in
 > `test/editor/vi-registry.test.mjs`.
 
 > **Rule 67 — Connector pane.** The Front Panel shows the pattern 4-2-2-4 (cells 0-3 left, 4-5 and 6-7 middle,
@@ -951,3 +967,49 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/broken-wires/REPORT.md`, cited by
 > (a dotted wire follows the pointer; Esc cancels) and the click or release on a terminal connects it with the same rules as a new
 > wire: the wire is replaced by a normal one with the usual route; if the terminal is not accepted (wrong direction, types, an
 > input already wired) the reason is shown and the wire stays broken. The loose end is a 4 px target that is not drawn.
+
+## 18. Windows, Exit, Ctrl+E and Create on the loop terminals (2026-10-09)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/editor-checks/REPORT.md`; the captures are local evidence and are not committed).
+
+> **Rule 96 — The two windows of a VI always hold the same graph.** Each window keeps its own copy and sends it to the other when it
+> comes to rest; the copies are **stamped** (a revision number and the window that made it, `editor/src/window/graph-sync.mjs`).
+> A window takes an incoming copy only if its stamp is newer than the one it holds; an older copy is not taken and is answered
+> with the newer one. Two changes made at the same time carry the same revision and the window name decides, the same in both,
+> so both windows end up on one graph (the other change is lost, as there is nothing to merge it with). Before this, two copies
+> that crossed on their way swapped for good and Save wrote a different VI depending on the window it was pressed in. Undo and a
+> hierarchy rebuild that changes the graph (Run) are copies like any other. Tested in `test/editor/graph-sync.test.mjs`.
+> **Not reproduced:** the `.qvi` of the Windows tester, whose diagram showed an out-and-back wire after dragging the Stop
+> terminal into a While Loop, could not be obtained from the editor with pure drags (15 912 drops and 16 000 random drags
+> in a fuzz, and the same steps in the real window under Xvfb); the cause of that drag is unknown (see the report of this change).
+> A wire out of a structure and back into it is a broken wire (STRUCTURE_CYCLE_REASON), as in LabVIEW (`§1f`).
+
+> **Rule 97 — Delete inside a loop.** A node inside a While or For Loop is deleted by clicking it and pressing Delete, or by
+> a rubber band started on an empty point of the loop interior (the band does not move the loop) and Delete (REPORT §2).
+> Tested in `test/editor/diagram-editing.test.mjs` and checked in the real window.
+
+> **Rule 98 — File ▸ Exit (Ctrl+Q).** It asks about each VI with unsaved changes, one after the other: "Save changes? (Exit)",
+> "<VI> has unsaved changes. <VI> is about to leave memory. Its unsaved changes will be lost.", with **Save**, **Don't Save**
+> and **Cancel** (Cancel keeps everything open). Then it **quits the application**: no blank VI is opened afterwards. With nothing
+> modified it quits at once, without a question (REPORT §3). The "List unsaved changes..." link of LabVIEW's dialog is not
+> there (the dialog is the system's). **Unverified:** Exit with a new untitled VI that was never modified. Tested in
+> `test/editor/exit-flow.test.mjs`.
+
+> **Rule 99 — Where the windows of a VI go.** A new VI (and the first start) opens its Front Panel in front and its Block Diagram
+> behind it, 49 px to the left and 30 px up, both 1090 x 696 outer; scaled down if the screen is smaller. The pair starts where
+> LabVIEW put it on a 1920 x 1080 screen (61 % of the free width, 39 % of the free height: unverified for other screens) and each
+> VI opened later sits 30 px down and right of the one before. **Ctrl+T** (Window ▸ Tile Left and Right) puts the Front Panel
+> on the left and the Block Diagram on the right, side by side, no overlap (12 px at the sides, 3 px above and below, 20 px
+> between: 938 x 1018 each on the measured screen). **Ctrl+E** brings forward the other window of the VI, from either one, a pure
+> toggle. The Window menu itself is not captured yet, so only these two shortcuts exist (`editor/electron/window-layout.mjs`,
+> `editor/src/window/shortcuts.mjs`; `test/editor/window-layout.test.mjs`).
+
+> **Rule 100 — Create on the terminals of a loop.** Their menus have the rows directly (not under a "Create" submenu): Create
+> Constant, Create Control, Create Indicator, Create Channel Writer... (greyed with its reason), then Stop if True / Continue
+> if True (only on the condition), Boolean Palette (greyed) and Properties. **Create Control on the condition** makes the Stop
+> button of the Boolean palette (`style: stop-button`, Latch When Released) labelled `stop`, inside the loop to the left of the
+> condition, wired to it, with the label in edit mode; **Create Constant** makes a Boolean constant wired to it. **Create
+> Indicator** on the condition was not clicked in LabVIEW: it follows Create on any input (the indicator is made and left unwired,
+> **unverified**). On the For Loop's **count** and on the **iteration** terminal the rows work like those of a node's terminal
+> (the object made of the terminal's type, wired when it fits; the constant of the count goes outside the loop, where its wire
+> comes from); their labels and places are **unverified**. Tested in `test/editor/loop-terminals-create.test.mjs`.

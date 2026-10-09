@@ -6,6 +6,37 @@ fixes things raises PATCH, and the `-alpha` label says the language and its file
 format are not stable yet; the maintainable version will carry `-beta` and stay a
 `0.x` (DT-048).
 
+## 0.2.1-alpha — 2026-10-09
+
+Fixes found by installing and using 0.2.0-alpha on Windows.
+
+- A wire that leaves a structure and goes back into the same structure is now
+  broken with a clear reason; before, it passed the check and the compiler
+  produced invalid WebAssembly.
+- Solder has its own icon (two wires joined by a bead of solder), on the
+  installer, the program, its windows and `.qvi` files.
+- On Windows the program is `Solder.exe`, `.qvi` files open in Solder with a
+  double click (in the running Solder if there is one), and the shortcut no
+  longer describes the app in internal jargon. Uninstalling no longer leaves
+  a copy of the installer nor the `.qvi` registration behind.
+- File ▸ Exit (Ctrl+Q) asks about each VI with unsaved changes (Save, Don't Save,
+  Cancel) and quits, instead of closing the VI and opening a blank one.
+- A new VI opens its Front Panel in front and its Block Diagram behind it, as
+  LabVIEW does; Ctrl+T tiles them left and right and Ctrl+E goes from one to the
+  other.
+- Create Constant, Control and Indicator work on the condition terminal of a
+  While Loop (Create Control makes a Stop button) and on the count and iteration
+  terminals of the loops.
+- The two windows of a VI can no longer swap their copies of the diagram when
+  both change at the same moment, so Save always writes the latest one.
+- A control dropped on the Front Panel exists at once, with its terminal on the
+  diagram and the VI marked modified, while its label is still being typed.
+  Save, Save As, Exit, Run and switching windows commit a label or value being
+  typed first.
+- A Run no longer changes the VI: operating a control while it runs (a Stop
+  button, for instance) does not mark it modified nor change the values the
+  file saves, and a latched Boolean is FALSE again once it has been read.
+
 ## 0.2.0-alpha — 2026-10-09
 
 ### Broken wires (DT-046)

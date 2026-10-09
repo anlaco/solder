@@ -9,12 +9,16 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, BrowserWindow, dialog, ipcMain, Menu, protocol } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, protocol, screen } from "electron";
 import { pathKey, readHierarchyTexts, rebaseText, untitledKey } from "../src/common/vi-paths.mjs";
+import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
+import { newVIBounds, otherWindowKind, tiledBounds } from "./window-layout.mjs";
 import { WINDOW_KINDS, createRegistry, isDirty, recordChange, recordSave, viName, windowTitle } from "./vi-registry.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EDITOR = path.resolve(HERE, "..");
+/** Solder's own icon (build/icon.svg, rasterized to build/icon.png); Windows takes it from the executable. */
+const APP_ICON = path.resolve(EDITOR, "../build/icon.png");
 /** LabVIEW's inventory (DT-035): the only source of what is done. */
 const INVENTORY = path.resolve(EDITOR, "../docs/schema/inventario-labview.json");
 /** The block catalog: the only source of terminals (spec/03, rule 3). */
@@ -53,33 +57,30 @@ function serve() {
   });
 }
 
-const WINDOW_PLACES = {
-  "front-panel": { x: 40, y: 40 },
-  "block-diagram": { x: 120, y: 110 },
-};
-/** Each VI opened after the first sits this far down and right of the one before, so none hides another. */
-const CASCADE_STEP = 30;
+// SOLDER_TAMANO=<width>x<height>: the size of the client area of the windows, to compare with the captures.
+const CAPTURE_CLIENT_SIZE = process.env.SOLDER_TAMANO?.split("x").map(Number);
 
-// To compare with the captures: the size of their client area.
-const [WIDTH, HEIGHT] = (process.env.SOLDER_TAMANO ?? "1040x640").split("x").map(Number);
+/** The windows of a new VI: Front Panel in front, Block Diagram behind it (REPORT.md §4), the VI opened as number `index`. */
+function boundsForNewVI(index) {
+  const bounds = newVIBounds(screen.getPrimaryDisplay().workArea, index);
+  if (!CAPTURE_CLIENT_SIZE) return bounds;
+  const [width, height] = CAPTURE_CLIENT_SIZE;
+  return Object.fromEntries(Object.entries(bounds).map(([kind, place]) => [kind, { ...place, width, height }]));
+}
 
-function createWindow(entry, kind, cascade) {
-  const { x, y } = WINDOW_PLACES[kind];
+function createWindow(entry, kind, bounds) {
   const window = new BrowserWindow({
-    width: WIDTH,
-    height: HEIGHT,
-    x: x + cascade * CASCADE_STEP,
-    y: y + cascade * CASCADE_STEP,
+    ...bounds,
     minWidth: 700,
     minHeight: 360,
-    useContentSize: true,
+    useContentSize: !!CAPTURE_CLIENT_SIZE,
     title: windowTitle(entry, kind),
     backgroundColor: "#f0f0f0",
+    icon: APP_ICON,
     show: false,
     webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(HERE, "preload.cjs") },
   });
   window.on("page-title-updated", (event) => event.preventDefault());
-  window.once("ready-to-show", () => window.show());
   window.loadURL(`solder://editor/index.html?ventana=${kind}&vi=${entry.id}`);
   return window;
 }
@@ -148,15 +149,22 @@ function setTitles(open) {
 
 /** Opens the windows of a VI the registry has just created. */
 function openWindows(entry) {
-  const cascade = openVIs.size;
+  const bounds = boundsForNewVI(openVIs.size);
   const open = { entry, windows: {}, closing: false };
   openVIs.set(entry.id, open);
-  for (const kind of WINDOW_KINDS) {
-    const window = createWindow(entry, kind, cascade);
+  // The Block Diagram is created first so that the Front Panel is shown over it.
+  for (const kind of [...WINDOW_KINDS].reverse()) {
+    const window = createWindow(entry, kind, bounds[kind]);
     open.windows[kind] = window;
     viOfContents.set(window.webContents.id, open);
   }
   const panel = open.windows["front-panel"];
+  // Both are shown once loaded, the Front Panel last so that it is in front.
+  const loaded = (window) => new Promise((resolve) => window.once("ready-to-show", resolve));
+  Promise.all(Object.values(open.windows).map(loaded)).then(() => {
+    open.windows["block-diagram"].show();
+    panel.show();
+  });
   // Closing the panel closes the VI, asking first if it has unsaved changes.
   panel.on("close", (event) => {
     if (open.closing || process.env.SOLDER_CAPTURAS) return;
@@ -184,6 +192,41 @@ function focusPanel(open) {
   if (panel.isMinimized()) panel.restore();
   panel.show();
   panel.focus();
+}
+
+function showWindow(window) {
+  if (window.isMinimized()) window.restore();
+  window.show();
+  window.focus();
+}
+
+/** Window ▸ Tile Left and Right: the Front Panel and the Block Diagram of a VI side by side, both shown. */
+function tileWindows(open) {
+  const bounds = tiledBounds(screen.getPrimaryDisplay().workArea);
+  for (const kind of WINDOW_KINDS) {
+    if (open.windows[kind].isMaximized()) open.windows[kind].unmaximize();
+    open.windows[kind].setBounds(bounds[kind]);
+    open.windows[kind].show();
+  }
+}
+
+/**
+ * File ▸ Exit: LabVIEW asks about every VI with unsaved changes (Save, Don't
+ * Save, Cancel; Cancel keeps everything open) and then quits, without opening
+ * a blank VI (labview-captures/editor-checks/REPORT.md §3).
+ */
+async function exitApplication() {
+  const owner = BrowserWindow.getFocusedWindow() ?? undefined;
+  const ask = async (open) => {
+    const { title, message, detail } = exitDialogText(viName(open.entry));
+    const { response } = await dialog.showMessageBox(owner, { type: "question", title, message, detail, buttons: EXIT_BUTTONS, defaultId: 0, cancelId: EXIT_BUTTONS.length - 1 });
+    return EXIT_BUTTON_ANSWERS[response] ?? EXIT_ANSWERS.cancel;
+  };
+  const save = async (open) => (await writeVI(open, open.windows["front-panel"], open.entry.current, false)) !== null;
+  if (!(await confirmExit([...openVIs.values()], { isDirty: (open) => isDirty(open.entry), ask, save }))) return;
+  quitting = true;
+  for (const open of openVIs.values()) open.closing = true;
+  app.quit();
 }
 
 /** Opens a VI from disk in its own windows, or brings its windows forward if it is already open. */
@@ -322,11 +365,27 @@ function handleRequests() {
   });
   // A VI that could not be read closes without asking: there is nothing to save.
   ipcMain.on("vi:close", (event) => closeVI(openOf(event), { force: true }));
-  // File ▸ Exit: every VI closes, asking about its unsaved changes; one cancel stops it.
-  ipcMain.on("vi:salir", async () => {
-    for (const open of [...openVIs.values()]) if (!(await closeVI(open))) return;
+  // File ▸ Exit: asks about each VI with unsaved changes, then quits (REPORT.md §3).
+  ipcMain.on("vi:salir", exitApplication);
+  // Ctrl+E: the other window of the VI, from either (REPORT.md §7).
+  ipcMain.on("vi:toggle-window", (event) => {
+    const open = openOf(event);
+    const kind = WINDOW_KINDS.find((candidate) => open.windows[candidate].webContents.id === event.sender.id);
+    showWindow(open.windows[otherWindowKind(kind)]);
   });
+  // Ctrl+T: Window ▸ Tile Left and Right (REPORT.md §4).
+  ipcMain.on("vi:tile", (event) => tileWindows(openOf(event)));
 }
+
+/** The `.qvi` named on the command line: a double click on a file in the system's file manager starts Solder with it. */
+const qviInArguments = (argv) => argv.slice(1).find((argument) => argument.toLowerCase().endsWith(".qvi") && !argument.startsWith("-"));
+
+// One Solder at a time: opening a `.qvi` while it runs opens it in the running one.
+if (!app.requestSingleInstanceLock()) app.quit();
+app.on("second-instance", (_event, argv) => {
+  const file = qviInArguments(argv);
+  if (file) openPath(path.resolve(file));
+});
 
 app.whenReady().then(async () => {
   // The menu bar is LabVIEW's, painted in the page.
@@ -334,7 +393,8 @@ app.whenReady().then(async () => {
   serve();
   handleRequests();
   // SOLDER_ABRIR=<file.qvi>: starts with that VI open instead of a new one (for the comparisons of capturing-labview.md §5).
-  const first = process.env.SOLDER_ABRIR ? await openFirstFile(process.env.SOLDER_ABRIR) : openNewVI();
+  const fileToOpen = process.env.SOLDER_ABRIR ?? qviInArguments(process.argv);
+  const first = fileToOpen ? await openFirstFile(path.resolve(fileToOpen)) : openNewVI();
   app.on("before-quit", () => (quitting = true));
   if (process.env.SOLDER_CAPTURAS) capture(first.windows, process.env.SOLDER_CAPTURAS);
 });

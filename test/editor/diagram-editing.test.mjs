@@ -1355,7 +1355,7 @@ const nodoPorTipo = (d, tipo) => d.g.nodos.find((n) => n.tipo === tipo);
 test("una constante de cadena se escribe con varias líneas y mide lo que en LabVIEW", () => {
   let d = poner(ED.inicial(), "str-const", { x: 100, y: 100 });
   const c = nodoPorTipo(d, "str-const");
-  assert.deepEqual(d.edicion, { nodo: c.id, texto: "", todo: false, cadena: true }, "recién soltada queda lista para escribir");
+  assert.deepEqual(d.edicion, { nodo: c.id, texto: "", todo: false, cadena: true, nuevo: true }, "recién soltada queda lista para escribir");
   const medida = () => {
     const k = caja(nodoPorTipo(d, "str-const"), CTX, d.edicion);
     return [k.ancho, k.alto];
@@ -1695,4 +1695,40 @@ test("Initialize Array is stretched to add a dimension size and shrinks back rem
   d = estirar(d, -8);
   assert.equal(nodoDe(d, ini).config.dims, 1);
   assert.equal(d.g.cables.length, 0, "the wire of the size that went away goes too");
+});
+
+// editor-checks/REPORT.md §2: in LabVIEW a node inside a loop is deleted by clicking it or by a rubber band, then Delete.
+test("a node inside a loop is deleted by clicking it or with a rubber band, and the loop stays", () => {
+  let d = ED.moverA(ED.coger(ED.inicial(), "while-loop"), CTX, { x: 100, y: 100 });
+  d = ED.soltar(ED.pulsar(d, CTX, FONDO, { x: 100, y: 100 }), CTX, FONDO, { x: 100, y: 100 });
+  d = ED.pulsar(ED.moverA(d, CTX, { x: 500, y: 350 }), CTX, FONDO, { x: 500, y: 350 });
+  d = poner(d, "wait-ms", { x: 250, y: 200 });
+  d = poner(d, "tick-count-ms", { x: 400, y: 200 });
+  const [wait, tick] = d.g.nodos.filter((n) => n.tipo === "wait-ms" || n.tipo === "tick-count-ms").map((n) => n.id);
+  assert.ok(d.g.nodos.filter((n) => n.id === wait || n.id === tick).every((n) => n.dentro), "both are inside the loop");
+  const loops = () => d.g.nodos.filter((n) => n.tipo === "while-loop").length;
+
+  // Click on the node, then Delete.
+  const tickBox = caja(nodoDe(d, tick), CTX);
+  const onTick = { x: tickBox.x + 4, y: tickBox.y + 4 };
+  let clicked = ED.pulsar({ ...d, seleccion: [] }, CTX, { tipo: "nodo", id: tick }, onTick);
+  clicked = ED.soltar(clicked, CTX, { tipo: "nodo", id: tick }, onTick);
+  clicked = ED.borrarSeleccion(clicked, CTX);
+  assert.deepEqual(ids(clicked).includes(tick), false, "the clicked node is gone");
+  assert.ok(ids(clicked).includes(wait), "the other one stays");
+  assert.equal(clicked.g.nodos.filter((n) => n.tipo === "while-loop").length, loops(), "and so does the loop");
+
+  // A rubber band started on an empty point of the loop interior selects what it surrounds and does not move the loop.
+  const waitBox = caja(nodoDe(d, wait), CTX);
+  const [from, to] = [{ x: waitBox.x - 10, y: waitBox.y - 10 }, { x: waitBox.x + waitBox.ancho + 10, y: waitBox.y + waitBox.alto + 10 }];
+  const loopBefore = d.g.nodos.find((n) => n.tipo === "while-loop");
+  let banded = ED.pulsar({ ...d, seleccion: [] }, CTX, FONDO, from);
+  banded = ED.moverA(banded, CTX, to);
+  banded = ED.soltar(banded, CTX, FONDO, to);
+  assert.deepEqual(banded.seleccion, [wait]);
+  banded = ED.borrarSeleccion(banded, CTX);
+  assert.deepEqual(ids(banded).includes(wait), false);
+  assert.ok(ids(banded).includes(tick));
+  const loopAfter = banded.g.nodos.find((n) => n.tipo === "while-loop");
+  assert.deepEqual([loopAfter.x, loopAfter.y], [loopBefore.x, loopBefore.y], "the loop did not move");
 });

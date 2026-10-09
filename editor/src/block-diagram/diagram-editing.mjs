@@ -94,7 +94,7 @@ function colocar(d, ctx, p) {
   if (d.accion.config) g = Gr.fijarConfig(g, id, d.accion.config);
   // Soltarlo dentro de un bucle lo mete en él (DT-041).
   // Una constante de cadena recién soltada queda lista para escribir en ella (bd-string-constant-editando.png).
-  const escribir = CONSTANTES[d.accion.bloque]?.editable && CONSTANTES[d.accion.bloque].cadena ? { nodo: id, texto: "", todo: false, cadena: true } : d.edicion;
+  const escribir = CONSTANTES[d.accion.bloque]?.editable && CONSTANTES[d.accion.bloque].cadena ? { nodo: id, texto: "", todo: false, cadena: true, nuevo: true } : d.edicion;
   return { ...d, g: alojar(g, ctx, [id]), seleccion: [id], accion: null, aviso: null, edicion: escribir };
 }
 
@@ -977,6 +977,9 @@ export function orden(d, id, ctx) {
   const menuClosed = (r) => ({ ...r, menu: null });
   if (d.menu.raiz === WIRE_MENU_ROOT && createdKind) return menuClosed(createOnWire(d, ctx, nodo, createdKind));
   if (createdKind) return menuClosed(createOnTerminal(d, ctx, nodo, puerto, createdKind));
+  // The border nodes of a loop have the rows directly in their menu (REPORT.md §5): their one terminal is the one meant.
+  const loopTerminalKind = /\.create-(constant|control|indicator)$/.exec(id)?.[1];
+  if (loopTerminalKind) return menuClosed(createOnTerminal(d, ctx, nodo, TC.borderTerminalPort(nodoPor(d.g, nodo), ctx), loopTerminalKind));
   if (createdAll) return menuClosed(createOnNode(d, ctx, nodo, createdAll));
   // Add Shift Register: el par aparece en los bordes, a la altura del clic (structures/shift-register.png).
   if (id.endsWith(".add-shift-register")) {

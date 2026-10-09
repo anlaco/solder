@@ -44,15 +44,18 @@ function panelBlock(type, isControl) {
  * of type `type`, at (x, y) on the diagram and, for a control or indicator, at
  * (panelX, panelY) on the panel with `label`, and wires it to the terminal.
  * `scope` ({ dentro, marco }) puts the new node in the structure the terminal's
- * node is in, so that the wire does not have to cross a border.
+ * node is in, so that the wire does not have to cross a border. `configOverride`
+ * is merged into the configuration of the block made (the Stop button that
+ * Create ▸ Control makes on a loop condition is a Boolean control with another style).
  * As in LabVIEW, nothing is greyed: a constant or a control on an output, or
  * an indicator on an input, is created of that type but left unwired
  * (labview-captures/create-paste/, report §A4). Returns `{ g, id, wired }`, or
  * `{ g, motivo }` when there is no block for that type.
  */
-export function createOnTerminal(g, cat, { terminal, type, kind, x, y, panelX = x, panelY = y, label, scope }) {
-  const block = blockForTerminal(type, kind);
-  if (!block) return { g, motivo: `There is no ${kind} for this type yet.` };
+export function createOnTerminal(g, cat, { terminal, type, kind, x, y, panelX = x, panelY = y, label, scope, configOverride }) {
+  const baseBlock = blockForTerminal(type, kind);
+  if (!baseBlock) return { g, motivo: `There is no ${kind} for this type yet.` };
+  const block = configOverride ? { ...baseBlock, config: { ...baseBlock.config, ...configOverride } } : baseBlock;
   const created = kind === "constant" ? crearNodo(g, cat, block.tipo, x, y) : crearEnPanel(g, cat, block.tipo, panelX, panelY, label, block.config);
   let withNode = created.g;
   if (kind === "constant" && block.config) withNode = fijarConfig(withNode, created.id, block.config);

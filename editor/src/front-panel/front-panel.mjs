@@ -346,13 +346,15 @@ export const coger = (p, bloque, config) => ({ ...p, accion: { tipo: "colocar", 
 /**
  * Soltar el control cogido: se crea con su terminal en el diagrama y su
  * etiqueta queda escrita y seleccionada, lista para cambiarla, como en el vídeo.
+ * The object exists from this moment; the typing only changes its label
+ * (`edicion.nuevo`: the editor closes the step of undo before it).
  */
 function colocar(p, ctx, pt) {
   const { bloque, config } = p.accion;
   const { x, y } = esquina(bloque, pt, config);
   const { g, id } = Gr.crearEnPanel(p.g, ctx.cat, bloque, x, y, etiquetaNueva(bloque, config), config);
   const n = g.nodos.find((m) => m.id === id);
-  return { ...p, g, seleccion: [], accion: null, edicion: Et.editar(n) };
+  return { ...p, g, seleccion: [], accion: null, edicion: { ...Et.editar(n), nuevo: true } };
 }
 
 /**

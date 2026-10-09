@@ -930,7 +930,58 @@ function resolverTipos(g, cat, pistas) {
     }
     cables.set(c.id, { tipo: desde, coercion, roto });
   }
+  // A cycle through a structure (a loop's output wired back to its own input,
+  // directly or through other nodes) is not seen node by node: it is looked for
+  // with each structure as one node of the scope around it.
+  for (const id of cablesEnCicloDeEstructura(g, cat)) {
+    if (!cables.get(id)?.roto) cables.set(id, { ...cables.get(id), roto: STRUCTURE_CYCLE_REASON });
+  }
   return { entradas, salidas, cables, ciclo };
+}
+
+export const STRUCTURE_CYCLE_REASON = "This wire closes a cycle through a structure: what comes out of it cannot go back into it. Remove the wire or rewire it.";
+
+/**
+ * The wires that close a cycle through a structure. In each scope, every node
+ * stands for itself and every structure for everything inside it and on its
+ * border; a wire joins the two representatives of its ends. A wire whose two
+ * ends stand for the same structure, or that belongs to a cycle of
+ * representatives, is part of a cycle.
+ */
+function cablesEnCicloDeEstructura(g, cat) {
+  const porId = new Map(g.nodos.map((n) => [n.id, n]));
+  const representante = (id, ambito) => {
+    let n = porId.get(id);
+    while (n && n.dentro !== ambito) n = porId.get(n.dentro);
+    return n?.id;
+  };
+  const porAmbito = new Map(); // scope → [{ id, de, a }]
+  for (const c of g.cables.filter(conectado)) {
+    const ambito = ambitoDe(g, cat, c.de.nodo, c.de.puerto, "out");
+    const [de, a] = [representante(c.de.nodo, ambito), representante(c.a.nodo, ambito)];
+    if (de === undefined || a === undefined) continue;
+    if (!porAmbito.has(ambito)) porAmbito.set(ambito, []);
+    porAmbito.get(ambito).push({ id: c.id, de, a });
+  }
+  const enCiclo = new Set();
+  for (const aristas of porAmbito.values()) {
+    for (const arista of aristas) if (arista.de === arista.a && porId.get(arista.de)?.tam) enCiclo.add(arista.id);
+    // Kahn over the representatives of this scope: what never becomes free is in a cycle.
+    const entran = new Map();
+    const salen = new Map();
+    for (const { de, a } of aristas.filter((x) => x.de !== x.a)) {
+      entran.set(a, (entran.get(a) ?? 0) + 1);
+      if (!entran.has(de)) entran.set(de, 0);
+      salen.set(de, [...(salen.get(de) ?? []), a]);
+    }
+    const libres = [...entran].filter(([, n]) => n === 0).map(([id]) => id);
+    while (libres.length) {
+      const id = libres.pop();
+      for (const siguiente of salen.get(id) ?? []) if (entran.set(siguiente, entran.get(siguiente) - 1).get(siguiente) === 0) libres.push(siguiente);
+    }
+    for (const arista of aristas) if (arista.de !== arista.a && entran.get(arista.de) > 0 && entran.get(arista.a) > 0) enCiclo.add(arista.id);
+  }
+  return enCiclo;
 }
 
 /**

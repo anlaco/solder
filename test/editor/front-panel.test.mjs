@@ -594,3 +594,30 @@ test("a 2D indicator shows the rows the run left and ignores a value with other 
   assert.deepEqual(mostrado({ [id]: [1, 2, 3] }), ["0", "0", "0", "0"], "a 1D value left before Add Dimension is not shown");
   assert.equal((P.contenido({ ...p, valores: { [id]: [[1]] } }, CTX).match(/class="elem-array indicador"/g) ?? []).length, 1, "only the cell the run defined is solid");
 });
+
+// A tester on Windows saved a VI whose control was still being named: the file had no front panel.
+test("a control dropped on the panel exists, with its terminal, before its label is typed", () => {
+  const dropped = poner(P.inicial(), "control", { x: 100, y: 100 });
+  assert.equal(dropped.g.nodos.length, 1, "the control and its terminal are in the graph");
+  assert.deepEqual([dropped.edicion.etiqueta, dropped.edicion.nuevo], [true, true], "its label is waiting to be typed over");
+  assert.ok(Et.graphAtRest(dropped), "so the window keeps the step and sends the graph to the diagram");
+  // Typing in the label does not make the graph rest again until it is confirmed.
+  const typing = P.teclear(dropped, "x");
+  assert.ok(Et.graphAtRest(typing), "the typing of a new object does not hold back the object");
+  assert.equal(P.confirmar(typing).g.nodos[0].label.text, "x");
+});
+
+test("a half-done edit of an existing object, or a drag, is not a graph at rest", () => {
+  const placed = ponerYConfirmar(P.inicial(), "control", { x: 100, y: 100 });
+  assert.ok(Et.graphAtRest(placed));
+  assert.equal(Et.graphAtRest(P.editar(placed, placed.g.nodos[0].id)), false, "renaming an existing label");
+  assert.equal(Et.graphAtRest(P.coger(placed, "control")), false, "a control hanging from the cursor");
+});
+
+test("a string constant dropped on the diagram exists before its text is typed", () => {
+  let d = ED.moverA(ED.coger(ED.inicial(), "str-const"), CTX, { x: 100, y: 100 });
+  d = ED.pulsar(d, CTX, FONDO, { x: 100, y: 100 });
+  assert.equal(d.g.nodos.length, 1);
+  assert.ok(d.edicion?.cadena);
+  assert.ok(Et.graphAtRest(d));
+});
