@@ -155,8 +155,16 @@
       "desc": "Compilar un VI a WebAssembly y ejecutarlo desde el editor",
       "ref": "reference/history/00-provisional-plan.md §7, fases R0 y R3"
     },
-    "detener-entre-nodos": {
-      "desc": "Detener la ejecución entre dos nodos, mostrar dónde se ha detenido y reanudarla"
+    "puntos-de-parada-en-estructuras": {
+      "desc": "Poner un punto de parada en una estructura (While, For, Case, secuencias): el compilador sólo avisa al depurador de los nodos, no de sus bordes",
+      "ref": "design/05-decisions.md DT-047"
+    },
+    "sondas-a-medida": {
+      "desc": "Las sondas que no son la genérica: la que conmuta el resaltado, la condicional, la de historial, la hecha con un control y las propias",
+      "ref": "labview-captures/debugging/REPORT.md §3: sin probar"
+    },
+    "advertencias": {
+      "desc": "Calcular las advertencias de un VI (objetos sin usar u ocultos, terminales del panel sin cablear) para la lista de errores"
     },
     "sondas": {
       "desc": "Guardar y leer el último valor que pasó por cada wire"
@@ -1012,9 +1020,8 @@
     {
       "id": "window.front-panel.menu.edit.remove-breakpoints-from-hierarchy",
       "etiqueta": "Remove Breakpoints from Hierarchy",
-      "estado": "todo",
-      "labview": "Takes away every breakpoint of this VI and its subVIs.",
-      "necesita": "detener-entre-nodos",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::Remove_Breakpoints_from_Hierarchy_takes_away_every_breakpoint_of_the_VI",
       "captura": "create-paste/edit-menu-panel-with-control-selected.png"
     },
     {
@@ -1194,10 +1201,9 @@
     {
       "id": "window.front-panel.toolbar.pause",
       "etiqueta": "Pause",
-      "estado": "todo",
-      "labview": "Pausa o reanuda la ejecución, y marca en el diagrama dónde se ha detenido.",
-      "necesita": "detener-entre-nodos",
-      "captura": "front-panel/vi-nuevo.png"
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::Pause_becomes_Continue_when_the_VI_stops_and_the_step_buttons_follow",
+      "captura": "debugging/10b-toolbar-edit-x4.png"
     },
     {
       "id": "window.front-panel.toolbar.text-settings",
@@ -1633,9 +1639,8 @@
     {
       "id": "window.block-diagram.menu.edit.remove-breakpoints-from-hierarchy",
       "etiqueta": "Remove Breakpoints from Hierarchy",
-      "estado": "todo",
-      "labview": "Takes away every breakpoint of this VI and its subVIs.",
-      "necesita": "detener-entre-nodos",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::Remove_Breakpoints_from_Hierarchy_takes_away_every_breakpoint_of_the_VI",
       "captura": "create-paste/edit-menu-diagram-with-selection.png"
     },
     {
@@ -1738,10 +1743,204 @@
     {
       "id": "window.block-diagram.menu.view",
       "etiqueta": "View",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::View_opens_the_Debug_Window_and_the_Error_list",
+      "captura": "debugging/65-view-menu.png"
+    },
+    {
+      "id": "window.block-diagram.menu.view.controls-palette",
+      "etiqueta": "Controls Palette",
       "estado": "todo",
-      "labview": "Qué se muestra: paletas, ventanas auxiliares y barras de herramientas. Contenido sin capturar.",
+      "labview": "Shows the Controls palette (greyed on the diagram).",
       "necesita": "editor-escritorio",
-      "captura": "block-diagram/vi-nuevo.png"
+      "captura": "debugging/65-view-menu.png"
+    },
+    {
+      "id": "window.block-diagram.menu.view.functions-palette",
+      "etiqueta": "Functions Palette",
+      "estado": "todo",
+      "labview": "Shows the Functions palette.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png"
+    },
+    {
+      "id": "window.block-diagram.menu.view.tools-palette",
+      "etiqueta": "Tools Palette",
+      "estado": "todo",
+      "labview": "Shows the Tools palette.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png"
+    },
+    {
+      "id": "window.block-diagram.menu.view.quick-drop",
+      "etiqueta": "Quick Drop",
+      "estado": "todo",
+      "labview": "Searches for an object by name to drop it on the diagram.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png",
+      "atajo": "Ctrl+Space"
+    },
+    {
+      "id": "window.block-diagram.menu.view.debug-window",
+      "etiqueta": "Debug Window",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::View_opens_the_Debug_Window_and_the_Error_list",
+      "captura": "debugging/65-view-menu.png",
+      "atajo": "Ctrl+D",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.view.event-inspector-window",
+      "etiqueta": "Event Inspector Window",
+      "estado": "todo",
+      "labview": "Lists the events the VI registered and handled.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png"
+    },
+    {
+      "id": "window.block-diagram.menu.view.error-list",
+      "etiqueta": "Error List",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::View_opens_the_Debug_Window_and_the_Error_list",
+      "captura": "debugging/65-view-menu.png",
+      "atajo": "Ctrl+L"
+    },
+    {
+      "id": "window.block-diagram.menu.view.load-and-save-warning-list",
+      "etiqueta": "Load and Save Warning List",
+      "estado": "todo",
+      "labview": "Lists the warnings found when a VI was loaded or saved (greyed when there are none).",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png"
+    },
+    {
+      "id": "window.block-diagram.menu.view.externally-changed-files-list",
+      "etiqueta": "Externally Changed Files List",
+      "estado": "todo",
+      "labview": "Lists the files that changed on disk while they were open.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png"
+    },
+    {
+      "id": "window.block-diagram.menu.view.manage-trusted-files",
+      "etiqueta": "Manage Trusted Files...",
+      "estado": "todo",
+      "labview": "Edits which files LabVIEW trusts to run code.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png"
+    },
+    {
+      "id": "window.block-diagram.menu.view.vi-hierarchy",
+      "etiqueta": "VI Hierarchy",
+      "estado": "todo",
+      "labview": "Draws the tree of VIs that call each other.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.view.labview-class-hierarchy",
+      "etiqueta": "LabVIEW Class Hierarchy",
+      "estado": "todo",
+      "labview": "Draws the tree of classes.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png"
+    },
+    {
+      "id": "window.block-diagram.menu.view.browse-relationships",
+      "etiqueta": "Browse Relationships",
+      "estado": "todo",
+      "labview": "Opens a submenu to browse what a VI calls and what calls it.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png"
+    },
+    {
+      "id": "window.block-diagram.menu.view.bookmark-manager",
+      "etiqueta": "Bookmark Manager",
+      "estado": "todo",
+      "labview": "Lists the bookmarks of the diagram.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png"
+    },
+    {
+      "id": "window.block-diagram.menu.view.this-vi-in-project",
+      "etiqueta": "This VI in Project",
+      "estado": "todo",
+      "labview": "Shows this VI in its project (greyed outside a project).",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png",
+      "atajo": "Ctrl+Shift+E"
+    },
+    {
+      "id": "window.block-diagram.menu.view.zoom-in",
+      "etiqueta": "Zoom In",
+      "estado": "todo",
+      "labview": "Enlarges the diagram.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png",
+      "atajo": "Ctrl++",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.view.zoom-out",
+      "etiqueta": "Zoom Out",
+      "estado": "todo",
+      "labview": "Reduces the diagram.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png",
+      "atajo": "Ctrl+-"
+    },
+    {
+      "id": "window.block-diagram.menu.view.actual-size",
+      "etiqueta": "Actual Size",
+      "estado": "todo",
+      "labview": "Returns the diagram to 100 %.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png",
+      "atajo": "Ctrl+0"
+    },
+    {
+      "id": "window.block-diagram.menu.view.toggle-zoom",
+      "etiqueta": "Toggle Zoom",
+      "estado": "todo",
+      "labview": "Switches between the last zoom and 100 %.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png",
+      "atajo": "F2"
+    },
+    {
+      "id": "window.block-diagram.menu.view.class-browser",
+      "etiqueta": "Class Browser",
+      "estado": "todo",
+      "labview": "Browses the classes and their members.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png",
+      "atajo": "Ctrl+Shift+B",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.view.net-assemblies-in-memory",
+      "etiqueta": ".NET Assemblies in Memory",
+      "estado": "todo",
+      "labview": "Lists the .NET assemblies loaded.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png"
+    },
+    {
+      "id": "window.block-diagram.menu.view.activex-control-property-browser",
+      "etiqueta": "ActiveX Control Property Browser",
+      "estado": "todo",
+      "labview": "Browses the properties of an ActiveX control.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png"
+    },
+    {
+      "id": "window.block-diagram.menu.view.getting-started-window",
+      "etiqueta": "Getting Started Window...",
+      "estado": "todo",
+      "labview": "Opens the start window of the application.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/65-view-menu.png"
     },
     {
       "id": "window.block-diagram.menu.project",
@@ -1815,51 +2014,73 @@
     {
       "id": "window.block-diagram.toolbar.pause",
       "etiqueta": "Pause",
-      "estado": "todo",
-      "labview": "Pausa o reanuda la ejecución, y marca en el diagrama dónde se ha detenido.",
-      "necesita": "detener-entre-nodos",
-      "captura": "block-diagram/vi-nuevo.png"
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::Pause_becomes_Continue_when_the_VI_stops_and_the_step_buttons_follow",
+      "captura": "debugging/10b-toolbar-edit-x4.png"
     },
     {
       "id": "window.block-diagram.toolbar.highlight-execution",
       "etiqueta": "Highlight Execution",
-      "estado": "todo",
-      "labview": "Anima en el diagrama el recorrido de los datos mientras el VI se ejecuta.",
-      "necesita": "detener-entre-nodos",
-      "captura": "block-diagram/vi-nuevo.png",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::Highlight_Execution_is_a_toggle_with_four_speeds_and_Medium_by_default",
+      "captura": "debugging/20b-toolbar-hl-on-x6.png",
       "separado": true
+    },
+    {
+      "id": "window.block-diagram.toolbar.highlight-execution.slow",
+      "etiqueta": "Slow",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::Highlight_Execution_is_a_toggle_with_four_speeds_and_Medium_by_default",
+      "captura": "debugging/22-bulb-hold.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.highlight-execution.medium",
+      "etiqueta": "Medium",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::Highlight_Execution_is_a_toggle_with_four_speeds_and_Medium_by_default",
+      "captura": "debugging/22-bulb-hold.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.highlight-execution.fast",
+      "etiqueta": "Fast",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::Highlight_Execution_is_a_toggle_with_four_speeds_and_Medium_by_default",
+      "captura": "debugging/22-bulb-hold.png"
+    },
+    {
+      "id": "window.block-diagram.toolbar.highlight-execution.very-fast",
+      "etiqueta": "Very Fast",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::Highlight_Execution_is_a_toggle_with_four_speeds_and_Medium_by_default",
+      "captura": "debugging/22-bulb-hold.png"
     },
     {
       "id": "window.block-diagram.toolbar.retain-wire-values",
       "etiqueta": "Retain Wire Values",
-      "estado": "todo",
-      "labview": "Guarda el último valor que pasó por cada wire, para verlo con una sonda aunque el VI ya no se ejecute.",
-      "necesita": "sondas",
-      "captura": "block-diagram/vi-nuevo.png"
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::Retain_Wire_Values_keeps_the_last_values_of_the_wires_for_the_probes_of_the_next_Run",
+      "captura": "debugging/50-retain-on.png"
     },
     {
       "id": "window.block-diagram.toolbar.step-into",
       "etiqueta": "Step Into",
-      "estado": "todo",
-      "labview": "Entra en el nodo siguiente y se detiene en su primera acción.",
-      "necesita": "detener-entre-nodos",
-      "captura": "block-diagram/vi-nuevo.png"
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::Pause_becomes_Continue_when_the_VI_stops_and_the_step_buttons_follow",
+      "captura": "debugging/74b-toolbar-x6.png"
     },
     {
       "id": "window.block-diagram.toolbar.step-over",
       "etiqueta": "Step Over",
-      "estado": "todo",
-      "labview": "Ejecuta el nodo siguiente y se detiene en el que viene después.",
-      "necesita": "detener-entre-nodos",
-      "captura": "block-diagram/vi-nuevo.png"
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::Pause_becomes_Continue_when_the_VI_stops_and_the_step_buttons_follow",
+      "captura": "debugging/74b-toolbar-x6.png"
     },
     {
       "id": "window.block-diagram.toolbar.step-out",
       "etiqueta": "Step Out",
-      "estado": "todo",
-      "labview": "Termina de ejecutar el nodo en curso y se detiene.",
-      "necesita": "detener-entre-nodos",
-      "captura": "block-diagram/vi-nuevo.png"
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::Pause_becomes_Continue_when_the_VI_stops_and_the_step_buttons_follow",
+      "captura": "debugging/74b-toolbar-x6.png"
     },
     {
       "id": "window.block-diagram.toolbar.text-settings",
@@ -1960,6 +2181,241 @@
       "estado": "built",
       "prueba": "test/editor/diagram-editing.test.mjs::en_el_lienzo_se_colocan_mueven_y_cablean_los_bloques",
       "captura": "block-diagram/vi-nuevo.png"
+    },
+    {
+      "id": "window.debug-window",
+      "etiqueta": "Debug Window",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Debug_Window_lists_the_probes_and_breakpoints_of_the_VI_with_their_values",
+      "captura": "debugging/55-probe-added.png"
+    },
+    {
+      "id": "window.debug-window.toolbar.remove-selected",
+      "etiqueta": "Remove Selected Probes and Breakpoints",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Debug_Window_lists_the_probes_and_breakpoints_of_the_VI_with_their_values",
+      "captura": "debugging/55-probe-added.png"
+    },
+    {
+      "id": "window.debug-window.toolbar.enable-disable",
+      "etiqueta": "Enable/Disable",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Debug_Window_lists_the_probes_and_breakpoints_of_the_VI_with_their_values",
+      "captura": "debugging/55-probe-added.png"
+    },
+    {
+      "id": "window.debug-window.toolbar.project-environment-settings",
+      "etiqueta": "Project Environment Settings",
+      "estado": "todo",
+      "labview": "Opens the settings of the project environment (what it does was not tried).",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/55-probe-added.png"
+    },
+    {
+      "id": "window.debug-window.toolbar.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of the Debug Window.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/55-probe-added.png"
+    },
+    {
+      "id": "window.debug-window.toolbar.debug-options",
+      "etiqueta": "Debug Options",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Debug_Options_menu_checks_Keep_Window_on_Top_and_Show_Values_on_Wires",
+      "captura": "debugging/57-debug-options-menu.png"
+    },
+    {
+      "id": "window.debug-window.toolbar.debug-options.hide-probe-display",
+      "etiqueta": "Hide Probe Display",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Debug_Options_menu_checks_Keep_Window_on_Top_and_Show_Values_on_Wires",
+      "captura": "debugging/57-debug-options-menu.png"
+    },
+    {
+      "id": "window.debug-window.toolbar.debug-options.keep-window-on-top",
+      "etiqueta": "Keep Window on Top",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Debug_Options_menu_checks_Keep_Window_on_Top_and_Show_Values_on_Wires",
+      "captura": "debugging/57-debug-options-menu.png"
+    },
+    {
+      "id": "window.debug-window.toolbar.debug-options.show-values-on-wires",
+      "etiqueta": "Show Values on Wires",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Debug_Options_menu_checks_Keep_Window_on_Top_and_Show_Values_on_Wires",
+      "captura": "debugging/57-debug-options-menu.png"
+    },
+    {
+      "id": "window.debug-window.toolbar.debug-options.wrap-text",
+      "etiqueta": "Wrap Text",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Debug_Options_menu_checks_Keep_Window_on_Top_and_Show_Values_on_Wires",
+      "captura": "debugging/57-debug-options-menu.png"
+    },
+    {
+      "id": "window.debug-window.probe-display",
+      "etiqueta": "Probe Display",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Debug_Window_lists_the_probes_and_breakpoints_of_the_VI_with_their_values",
+      "captura": "debugging/55-probe-added.png"
+    },
+    {
+      "id": "window.debug-window.probe-display.probe-options",
+      "etiqueta": "Probe Options",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Custom_Probe_submenu_names_the_type_of_the_wire_and_only_Generic_Probe_is_done",
+      "captura": "debugging/58-probe-options-menu.png"
+    },
+    {
+      "id": "window.debug-window.probe-display.probe-options.probe-that-toggles-execution-highlighting",
+      "etiqueta": "Probe that Toggles Execution Highlighting",
+      "estado": "todo",
+      "labview": "A probe that switches Highlight Execution on and off when the VI passes through it.",
+      "necesita": "sondas-a-medida",
+      "captura": "debugging/58-probe-options-menu.png"
+    },
+    {
+      "id": "window.debug-window.probe-display.probe-options.conditional",
+      "etiqueta": "Conditional",
+      "estado": "todo",
+      "labview": "A probe that stops the VI when a condition on the value holds.",
+      "necesita": "sondas-a-medida",
+      "captura": "debugging/58-probe-options-menu.png"
+    },
+    {
+      "id": "window.debug-window.probe-display.probe-options.history",
+      "etiqueta": "History",
+      "estado": "todo",
+      "labview": "A probe that keeps the values that went through the wire.",
+      "necesita": "sondas-a-medida",
+      "captura": "debugging/58-probe-options-menu.png"
+    },
+    {
+      "id": "window.debug-window.probe-display.probe-options.generic-probe",
+      "etiqueta": "Generic Probe",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Custom_Probe_submenu_names_the_type_of_the_wire_and_only_Generic_Probe_is_done",
+      "captura": "debugging/58-probe-options-menu.png"
+    },
+    {
+      "id": "window.debug-window.probe-display.probe-options.controls",
+      "etiqueta": "Controls",
+      "estado": "todo",
+      "labview": "Uses a control of the Controls palette as the probe.",
+      "necesita": "sondas-a-medida",
+      "captura": "debugging/54-custom-probe-controls.png"
+    },
+    {
+      "id": "window.debug-window.probe-display.probe-options.new-custom-probe",
+      "etiqueta": "New Custom Probe...",
+      "estado": "todo",
+      "labview": "Makes a probe of your own from a VI.",
+      "necesita": "sondas-a-medida",
+      "captura": "debugging/58-probe-options-menu.png",
+      "separado": true
+    },
+    {
+      "id": "window.debug-window.close",
+      "etiqueta": "Close",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::closing_the_Debug_Window_removes_the_probes_and_asks_first",
+      "captura": "debugging/63-dialog-close-all-probes.png"
+    },
+    {
+      "id": "window.debug-window.close-dialog",
+      "etiqueta": "Close all probes",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::closing_the_Debug_Window_removes_the_probes_and_asks_first",
+      "captura": "debugging/63-dialog-close-all-probes.png"
+    },
+    {
+      "id": "window.debug-window.close-dialog.do-not-ask-again",
+      "etiqueta": "Do not ask again",
+      "estado": "todo",
+      "labview": "Stops the question from being asked again.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/63-dialog-close-all-probes.png"
+    },
+    {
+      "id": "window.debug-window.close-dialog.yes",
+      "etiqueta": "Yes",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::closing_the_Debug_Window_removes_the_probes_and_asks_first",
+      "captura": "debugging/63-dialog-close-all-probes.png"
+    },
+    {
+      "id": "window.debug-window.close-dialog.no",
+      "etiqueta": "No",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::closing_the_Debug_Window_removes_the_probes_and_asks_first",
+      "captura": "debugging/63-dialog-close-all-probes.png"
+    },
+    {
+      "id": "window.error-list",
+      "etiqueta": "Error list",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Error_list_lists_the_errors_of_a_VI_and_Show_Error_frames_the_object",
+      "captura": "debugging/92-error-list.png"
+    },
+    {
+      "id": "window.error-list.items-with-errors",
+      "etiqueta": "Items with errors",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Error_list_lists_the_errors_of_a_VI_and_Show_Error_frames_the_object",
+      "captura": "debugging/92-error-list.png"
+    },
+    {
+      "id": "window.error-list.show-warnings",
+      "etiqueta": "Show Warnings",
+      "estado": "todo",
+      "labview": "Adds the warnings of each VI to the list: unused objects, hidden objects and unwired panel terminals. Solder does not compute warnings yet.",
+      "necesita": "advertencias",
+      "captura": "debugging/96-show-warnings-on.png"
+    },
+    {
+      "id": "window.error-list.errors",
+      "etiqueta": "Errors",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Error_list_lists_the_errors_of_a_VI_and_Show_Error_frames_the_object",
+      "captura": "debugging/92-error-list.png"
+    },
+    {
+      "id": "window.error-list.details",
+      "etiqueta": "Details",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Error_list_lists_the_errors_of_a_VI_and_Show_Error_frames_the_object",
+      "captura": "debugging/92-error-list.png"
+    },
+    {
+      "id": "window.error-list.close",
+      "etiqueta": "Close",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Error_list_lists_the_errors_of_a_VI_and_Show_Error_frames_the_object",
+      "captura": "debugging/92-error-list.png"
+    },
+    {
+      "id": "window.error-list.close-x",
+      "etiqueta": "Close window",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Error_list_lists_the_errors_of_a_VI_and_Show_Error_frames_the_object",
+      "captura": "debugging/92-error-list.png"
+    },
+    {
+      "id": "window.error-list.show-error",
+      "etiqueta": "Show Error",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Error_list_lists_the_errors_of_a_VI_and_Show_Error_frames_the_object",
+      "captura": "debugging/93-show-error-a.png"
+    },
+    {
+      "id": "window.error-list.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of the Error list.",
+      "necesita": "editor-escritorio",
+      "captura": "debugging/92-error-list.png"
     },
 
     {
@@ -5634,11 +6090,17 @@
     {
       "id": "context.function.add-breakpoint",
       "etiqueta": "Add Breakpoint",
-      "estado": "todo",
-      "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
-      "captura": "block-diagram/numeric-menu-funcion.png",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
       "separado": true
+    },
+    {
+      "id": "context.function.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.function.numeric-palette",
@@ -5793,11 +6255,17 @@
     {
       "id": "context.format-into-string.add-breakpoint",
       "etiqueta": "Add Breakpoint",
-      "estado": "todo",
-      "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
-      "captura": "format-scan/04-fmt-menu.png",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
       "separado": true
+    },
+    {
+      "id": "context.format-into-string.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.format-into-string.string-palette",
@@ -5976,11 +6444,17 @@
     {
       "id": "context.scan-from-string.add-breakpoint",
       "etiqueta": "Add Breakpoint",
-      "estado": "todo",
-      "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
-      "captura": "format-scan/32-scan-menu.png",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
       "separado": true
+    },
+    {
+      "id": "context.scan-from-string.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.scan-from-string.string-palette",
@@ -6151,11 +6625,17 @@
     {
       "id": "context.scan-from-string-parameter.add-breakpoint",
       "etiqueta": "Add Breakpoint",
-      "estado": "todo",
-      "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
-      "captura": "format-scan/32b-scan-menu-param.png",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
       "separado": true
+    },
+    {
+      "id": "context.scan-from-string-parameter.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.scan-from-string-parameter.add-parameter",
@@ -6354,11 +6834,17 @@
     {
       "id": "context.comparison-function.add-breakpoint",
       "etiqueta": "Add Breakpoint",
-      "estado": "todo",
-      "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
-      "captura": "block-diagram/comparison-menu-funcion.png",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
       "separado": true
+    },
+    {
+      "id": "context.comparison-function.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.comparison-function.comparison-palette",
@@ -6568,11 +7054,17 @@
     {
       "id": "context.comparison-with-zero.add-breakpoint",
       "etiqueta": "Add Breakpoint",
-      "estado": "todo",
-      "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
-      "captura": "block-diagram/comparison-menu-cero.png",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
       "separado": true
+    },
+    {
+      "id": "context.comparison-with-zero.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.comparison-with-zero.comparison-palette",
@@ -6757,11 +7249,17 @@
     {
       "id": "context.select.add-breakpoint",
       "etiqueta": "Add Breakpoint",
-      "estado": "todo",
-      "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
-      "captura": "block-diagram/comparison-menu-select.png",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
       "separado": true
+    },
+    {
+      "id": "context.select.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.select.comparison-palette",
@@ -6938,11 +7436,17 @@
     {
       "id": "context.max-and-min.add-breakpoint",
       "etiqueta": "Add Breakpoint",
-      "estado": "todo",
-      "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
-      "captura": "block-diagram/comparison-menu-max-min.png",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
       "separado": true
+    },
+    {
+      "id": "context.max-and-min.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.max-and-min.comparison-palette",
@@ -7144,11 +7648,17 @@
     {
       "id": "context.in-range-and-coerce.add-breakpoint",
       "etiqueta": "Add Breakpoint",
-      "estado": "todo",
-      "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
-      "captura": "block-diagram/comparison-menu-in-range.png",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
       "separado": true
+    },
+    {
+      "id": "context.in-range-and-coerce.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.in-range-and-coerce.comparison-palette",
@@ -8586,11 +9096,17 @@
     {
       "id": "context.compound-arithmetic.add-breakpoint",
       "etiqueta": "Add Breakpoint",
-      "estado": "todo",
-      "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
-      "captura": "block-diagram/compound-menu.png",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
       "separado": true
+    },
+    {
+      "id": "context.compound-arithmetic.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.compound-arithmetic.invert",
@@ -8810,11 +9326,17 @@
     {
       "id": "context.compound-arithmetic-input.add-breakpoint",
       "etiqueta": "Add Breakpoint",
-      "estado": "todo",
-      "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
-      "captura": "block-diagram/compound-menu-entrada.png",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
       "separado": true
+    },
+    {
+      "id": "context.compound-arithmetic-input.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.compound-arithmetic-input.add-input",
@@ -9041,9 +9563,17 @@
       "etiqueta": "Add Breakpoint",
       "estado": "todo",
       "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
+      "necesita": "puntos-de-parada-en-estructuras",
       "captura": "structures/menu-while-loop.png",
       "separado": true
+    },
+    {
+      "id": "context.while-loop.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "todo",
+      "labview": "Stops disabling the breakpoint of the structure without removing it.",
+      "necesita": "puntos-de-parada-en-estructuras",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.while-loop.structures-palette",
@@ -9212,9 +9742,17 @@
       "etiqueta": "Add Breakpoint",
       "estado": "todo",
       "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
+      "necesita": "puntos-de-parada-en-estructuras",
       "captura": "structures/menu-for-loop.png",
       "separado": true
+    },
+    {
+      "id": "context.for-loop.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "todo",
+      "labview": "Stops disabling the breakpoint of the structure without removing it.",
+      "necesita": "puntos-de-parada-en-estructuras",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.for-loop.structures-palette",
@@ -9769,9 +10307,17 @@
       "etiqueta": "Add Breakpoint",
       "estado": "todo",
       "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
+      "necesita": "puntos-de-parada-en-estructuras",
       "captura": "structures/case-menu-borde.png",
       "separado": true
+    },
+    {
+      "id": "context.case-structure.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "todo",
+      "labview": "Stops disabling the breakpoint of the structure without removing it.",
+      "necesita": "puntos-de-parada-en-estructuras",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.case-structure.structures-palette",
@@ -9986,9 +10532,17 @@
       "etiqueta": "Add Breakpoint",
       "estado": "todo",
       "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
+      "necesita": "puntos-de-parada-en-estructuras",
       "captura": "structures/secuencia-menu-borde.png",
       "separado": true
+    },
+    {
+      "id": "context.flat-sequence.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "todo",
+      "labview": "Stops disabling the breakpoint of the structure without removing it.",
+      "necesita": "puntos-de-parada-en-estructuras",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.flat-sequence.structures-palette",
@@ -10138,9 +10692,17 @@
       "etiqueta": "Add Breakpoint",
       "estado": "todo",
       "labview": "Pone un punto de ruptura en el nodo.",
-      "necesita": "detener-entre-nodos",
+      "necesita": "puntos-de-parada-en-estructuras",
       "captura": "structures/secuencia-menu-stacked.png",
       "separado": true
+    },
+    {
+      "id": "context.stacked-sequence.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "todo",
+      "labview": "Stops disabling the breakpoint of the structure without removing it.",
+      "necesita": "puntos-de-parada-en-estructuras",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.stacked-sequence.auto-grow",
@@ -13554,11 +14116,17 @@
     {
       "id": "context.subvi.add-breakpoint",
       "etiqueta": "Add Breakpoint",
-      "estado": "todo",
-      "labview": "Puts a breakpoint on the node.",
-      "necesita": "detener-entre-nodos",
-      "captura": "subvi/subvi-node-menu.png",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
       "separado": true
+    },
+    {
+      "id": "context.subvi.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.subvi.create",
@@ -13841,24 +14409,79 @@
     {
       "id": "context.wire.add-probe",
       "etiqueta": "Add Probe",
-      "estado": "todo",
-      "labview": "Puts a probe on the wire to see the value that passes through it.",
-      "necesita": "sondas",
-      "separado": true
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_probe_is_added_to_a_wire,_numbered_together_with_the_breakpoints,_and_opens_the_Debug_Window",
+      "separado": true,
+      "captura": "debugging/52-wire-menu.png"
     },
     {
       "id": "context.wire.custom-probe",
       "etiqueta": "Custom Probe",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Custom_Probe_submenu_names_the_type_of_the_wire_and_only_Generic_Probe_is_done",
+      "captura": "debugging/53-custom-probe-submenu.png"
+    },
+    {
+      "id": "context.wire.custom-probe.probe-that-toggles-execution-highlighting",
+      "etiqueta": "Probe that Toggles Execution Highlighting",
       "estado": "todo",
-      "labview": "Opens, as a submenu, the kinds of probe to choose from.",
-      "necesita": "sondas"
+      "labview": "A probe that switches Highlight Execution on and off when the VI passes through it.",
+      "necesita": "sondas-a-medida",
+      "captura": "debugging/53-custom-probe-submenu.png"
+    },
+    {
+      "id": "context.wire.custom-probe.conditional",
+      "etiqueta": "Conditional",
+      "estado": "todo",
+      "labview": "A probe that stops the VI when a condition on the value holds.",
+      "necesita": "sondas-a-medida",
+      "captura": "debugging/53-custom-probe-submenu.png"
+    },
+    {
+      "id": "context.wire.custom-probe.history",
+      "etiqueta": "History",
+      "estado": "todo",
+      "labview": "A probe that keeps the values that went through the wire.",
+      "necesita": "sondas-a-medida",
+      "captura": "debugging/53-custom-probe-submenu.png"
+    },
+    {
+      "id": "context.wire.custom-probe.generic-probe",
+      "etiqueta": "Generic Probe",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_Custom_Probe_submenu_names_the_type_of_the_wire_and_only_Generic_Probe_is_done",
+      "captura": "debugging/53-custom-probe-submenu.png"
+    },
+    {
+      "id": "context.wire.custom-probe.controls",
+      "etiqueta": "Controls",
+      "estado": "todo",
+      "labview": "Uses a control of the Controls palette as the probe.",
+      "necesita": "sondas-a-medida",
+      "captura": "debugging/54-custom-probe-controls.png"
+    },
+    {
+      "id": "context.wire.custom-probe.new-custom-probe",
+      "etiqueta": "New Custom Probe...",
+      "estado": "todo",
+      "labview": "Makes a probe of your own from a VI.",
+      "necesita": "sondas-a-medida",
+      "captura": "debugging/53-custom-probe-submenu.png",
+      "separado": true
     },
     {
       "id": "context.wire.add-breakpoint",
       "etiqueta": "Add Breakpoint",
-      "estado": "todo",
-      "labview": "Puts a breakpoint on the wire.",
-      "necesita": "detener-entre-nodos"
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/71-breakpoint-wire.png"
+    },
+    {
+      "id": "context.wire.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
     },
     {
       "id": "context.wire.description-and-tip",
@@ -13979,9 +14602,8 @@
     {
       "id": "dialog.vi-properties.execution.allow-debugging",
       "etiqueta": "Allow debugging",
-      "estado": "todo",
-      "labview": "Lets breakpoints and probes work in this VI.",
-      "necesita": "propiedades-del-vi",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::VI_Properties_writes_Allow_debugging_into_the_VI",
       "captura": "subvi/vi-properties-execution-default.png"
     },
     {

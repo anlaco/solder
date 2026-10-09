@@ -67,7 +67,8 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "reentrancy": { "enum": ["non-reentrant", "preallocated"] }
+        "reentrancy": { "enum": ["non-reentrant", "preallocated"] },
+        "allow-debugging": { "description": "Allow debugging (DT-047). Only written when it is false: the compiler then emits no debug hooks and the debugging buttons are greyed.", "const": false }
       }
     },
 

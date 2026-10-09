@@ -595,3 +595,86 @@ svg { display: block; overflow: visible; }
 .pv-dialogo.dialogo-historial { font-size: var(--fuente); }
 .pv-campo { box-sizing: border-box; border: 1px solid #abadb3; background: #fff; display: flex; align-items: center; padding: 0 3px; }
 .pv-campo .caret { display: inline-block; }
+
+/* ——— Debugging (labview-captures/debugging/REPORT.md; markup in src/debugging/debug-view.mjs) ——— */
+
+/* Highlight Execution: everything is drawn about 60 % toward white until it runs (§1). */
+.lienzo.resaltando .nodo:not(.dep-encendido),
+.lienzo.resaltando svg.cables .cable:not(.dep-encendido),
+.lienzo.resaltando svg.cables .union { opacity: 0.4; }
+.dep-capa { pointer-events: none; }
+.dep-banda { fill: none; stroke-linecap: butt; stroke-linejoin: miter; animation-name: dep-crece; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes dep-crece { from { stroke-dashoffset: var(--dep-length); } to { stroke-dashoffset: 0; } }
+.dep-etiqueta { position: absolute; box-sizing: border-box; padding: 0 3px; background: #ccffff; border: 1px solid #333333; font-size: var(--fuente); line-height: 15px; text-align: center; white-space: nowrap; pointer-events: none; z-index: 5; }
+.dep-etiqueta.dep-aparece { visibility: hidden; animation: dep-aparece 0s linear forwards; }
+@keyframes dep-aparece { to { visibility: visible; } }
+.dep-sonda { position: absolute; box-sizing: border-box; background: #ffff66; border: 1px solid #000; border-radius: 3px; text-align: center; font-size: var(--fuente); line-height: 15px; pointer-events: none; z-index: 5; }
+.dep-bp-cable { position: absolute; box-sizing: border-box; border-radius: 50%; background: #cc0000; color: #fff; text-align: center; font-size: var(--fuente); line-height: 19px; pointer-events: none; z-index: 5; }
+.dep-bp-cable.apagado { background: #fff; color: #cc0000; border: 2px solid #cc0000; line-height: 15px; }
+.dep-bp-nodo { position: absolute; box-sizing: border-box; border: 3px solid #cc0000; pointer-events: none; z-index: 4; }
+.dep-bp-nodo.apagado { border-width: 2px; outline: 1px solid #fff; outline-offset: -3px; }
+/* The node the VI stopped at: inverse video and a marching frame (§4). */
+.dep-detenido { position: absolute; box-sizing: border-box; background: #fff; mix-blend-mode: difference; pointer-events: none; z-index: 4; }
+.dep-marquesina { position: absolute; box-sizing: border-box; border: 1px dashed #4386b9; pointer-events: none; z-index: 4; animation: dep-marcha 0.6s linear infinite; }
+.dep-detenido::after { content: ""; position: absolute; inset: 0; border: 1px dashed #4386b9; }
+.dep-detenido-cable { fill: none; stroke: #ffff00; stroke-width: 3; stroke-dasharray: 4 4; animation: dep-marcha 0.6s linear infinite; }
+@keyframes dep-marcha { to { stroke-dashoffset: -8px; border-color: #bfdbf1; } }
+
+/* The Debug Window (§3) and the Error list (§5): windows of the diagram. */
+.debug-window, .error-list { position: absolute; z-index: 30; box-sizing: border-box; background: #f0f0f0; border: 1px solid #828790; box-shadow: 0 6px 22px rgba(0, 0, 0, 0.3); font-size: var(--fuente); overflow: hidden; }
+.error-list { border-color: #b8b8b8; }
+.dw-titulo { display: flex; align-items: center; background: #f3f3f3; padding: 0 12px; }
+.debug-window:not(.activa) .dw-titulo-texto { color: #666; }
+.dw-icono-app { width: 16px; height: 16px; margin-right: 8px; display: inline-block; }
+.dw-icono-app svg { width: 100%; height: 100%; }
+.dw-titulo-texto { flex: 1; }
+.dw-cerrar { cursor: default; padding: 0 4px; }
+.dw-barra { position: absolute; left: 0; right: 0; }
+.dw-boton { position: absolute; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 3px; }
+.dw-boton:hover { background: #e5f1fb; border-color: #0078d4; }
+.dw-boton svg { width: 16px; height: 16px; }
+.dw-boton.desactivado { opacity: 0.4; }
+.dw-lista { position: absolute; left: 0; box-sizing: border-box; border-top: 1px solid #a0a0a0; }
+.dw-cabeceras { position: relative; border-bottom: 1px solid #a0a0a0; background: #f8f8f8; }
+.dw-cabecera { position: absolute; top: 0; line-height: 16px; white-space: nowrap; border-left: 1px solid #e0e0e0; padding-left: 4px; }
+.dw-cabecera:first-child { border-left: none; }
+.dw-filas { position: absolute; left: 0; }
+.dw-fila { position: absolute; left: 0; box-sizing: border-box; line-height: 16px; white-space: nowrap; overflow: hidden; }
+.dw-fila.par { background: #fff; }
+.dw-fila.impar { background: #eee; }
+.dw-fila.elegida { background: #0078d4; color: #fff; }
+.dw-fila.ajustada { white-space: normal; }
+.dw-fila.grupo .dw-expansor { margin: 0 4px 0 10px; }
+.dw-fila .dw-icono { position: absolute; left: 44px; top: 1px; width: 14px; height: 14px; }
+.dw-fila .dw-icono svg { width: 100%; height: 100%; }
+.dw-fila .dw-texto, .dw-fila .dw-valor, .dw-fila .dw-actualizado { position: absolute; }
+.dw-fila .dw-valor { color: #008000; }
+.dw-fila.elegida .dw-valor { color: #fff; }
+.dw-divisor { position: absolute; width: 3px; background: #787878; }
+.dw-visor-panel { position: absolute; background: #e2e2e2; }
+.dw-visor-titulo { position: absolute; left: 9px; top: 6px; }
+.dw-visor { position: absolute; left: 6px; right: 6px; height: 20px; display: flex; align-items: center; gap: 6px; }
+.dw-visor-valor { flex: 1; background: #b3b3b3; border: 1px solid #555; padding: 0 4px; min-height: 16px; text-align: right; }
+.dw-velo { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; }
+.dw-dialogo { position: relative; width: 262px; height: 158px; box-sizing: border-box; background: #f0f0f0; border: 1px solid #636363; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35); }
+.dw-dialogo-titulo { display: flex; justify-content: space-between; align-items: center; height: 30px; background: #fff; padding: 0 10px; }
+.dw-dialogo-texto { padding: 12px 14px 0; line-height: 15px; }
+.dw-dialogo-casilla { position: absolute; left: 14px; bottom: 44px; display: flex; gap: 6px; align-items: center; }
+.dw-dialogo-casilla.hueco { font-style: italic; color: var(--texto-hueco); }
+.dw-dialogo-botones { position: absolute; right: 14px; bottom: 12px; display: flex; gap: 8px; }
+.dw-dialogo-botones .pv-boton { position: static; width: 71px; height: 21px; }
+.el-etiqueta { position: absolute; white-space: nowrap; }
+.el-caja { position: absolute; box-sizing: border-box; border: 1px solid #828790; background: #fff; overflow: hidden; }
+.el-fila { position: absolute; left: 0; right: 0; height: 16px; line-height: 16px; white-space: nowrap; }
+.el-fila.elegida { background: #0078d4; color: #fff; }
+.el-fila .el-x { display: inline-block; width: 16px; height: 16px; vertical-align: top; margin: 0 4px 0 8px; }
+.el-fila .el-x svg { width: 100%; height: 100%; }
+.el-fila.grupo { padding-left: 6px; }
+.el-fila .el-punto { margin-right: 6px; }
+.el-casilla { position: absolute; display: flex; gap: 6px; align-items: center; }
+.el-casilla.hueco { font-style: italic; color: var(--texto-hueco); }
+.el-casilla.marcada .pv-casilla { background: #0078d4; border-color: #0078d4; }
+.el-detalles { position: absolute; box-sizing: border-box; border: 1px solid #abadb3; background: #fff; padding: 3px 4px; line-height: 15px; overflow: auto; }
+.el-boton { position: absolute; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: #fdfdfd; border: 1px solid #d0d0d0; }
+.el-boton.defecto { border-color: #0078d4; }
+.el-boton.hueco { font-style: italic; color: var(--texto-hueco); }

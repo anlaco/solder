@@ -11,7 +11,7 @@ import { INV } from "../helpers.mjs";
 
 const VENTANAS = ["front-panel", "block-diagram"];
 /** Lo que va dentro de un menú no se pinta hasta que el menú se abra. */
-const dentroDeUnMenu = (id) => (id.split(".menu.")[1] ?? "").includes(".");
+const dentroDeUnMenu = (id) => (id.split(".menu.")[1] ?? "").includes(".") || /\.toolbar\.[^.]+\./.test(id);
 
 test("lo pintado está declarado y lo declarado se pinta", () => {
   for (const v of VENTANAS) {

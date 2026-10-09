@@ -100,6 +100,11 @@ const IMPORTACIONES = [
   // Calls a subVI that waits: runs its plan when the subVI is free, since a
   // non-reentrant VI serves one call at a time (DT-045), and suspends the caller.
   { modulo: "tiempo", nombre: "correr_subvi", params: ["i32"], results: ["i32"] },
+  // Debugging (DT-047): the value of each output of a node that just ran, by its wasm type
+  // (a string, array or cluster goes by address), and then the node itself, which may
+  // suspend the clump (a breakpoint, a step, Highlight Execution's pace).
+  ...["i32", "i64", "f32", "f64"].map((vt) => ({ modulo: "dep", nombre: `valor_${vt}`, params: ["i32", "i32", vt], results: [] })),
+  { modulo: "dep", nombre: "nodo", params: ["i32"], results: ["i32"] },
   // Manejo automático de errores (DT-043): el error de un nodo con «error out» sin
   // cablear; el anfitrión saca el diálogo y espera Continue o Stop (suspende).
   { modulo: "tiempo", nombre: "error_automatico", params: ["i32", "i32"], results: ["i32"] },
@@ -1760,6 +1765,7 @@ function newModule() {
     planes: [], // los subplanes: por cada uno, sus clumps
     automaticos: [], // los nodos que pueden sacar el diálogo, por índice
     directFunctions: [], // the single clump of each synchronous subVI instance
+    debugNodes: [], // DT-047: the nodes that report to the debugger, by index: { vi, nodo, outputs }
     instances: new Map(), // instance key → compiled subVI instance
   };
   // El data space (DT-042): una celda por búfer; las constantes, aparte.
@@ -1769,6 +1775,8 @@ function newModule() {
     module.space += tam;
     return d;
   };
+  // DT-047: the host writes 1 here while debugging; the hooks read it after each node.
+  module.debugFlag = module.bufer(4, 4);
   return module;
 }
 
@@ -1941,6 +1949,19 @@ function compileVI(g, cat, module, asSubVI, instanceKey) {
   const controles = [];
   const indicadores = [];
   const errores = [];
+  // Allow Debugging (VI Properties ▸ Execution), on by default as in LabVIEW (DT-047).
+  const allowDebugging = g.vi?.execution?.["allow-debugging"] !== false;
+
+  /**
+   * The debug hook after node `id` (DT-047): only while the host has set the
+   * debug flag, the value of each output and then the node, which may suspend.
+   */
+  function debugHook(id, outputs) {
+    if (!allowDebugging) return [];
+    const index = module.debugNodes.push({ vi: instanceKey, nodo: id, outputs: outputs.map(({ port, type }) => ({ port, tipo: type, ...datosDePanel(type) })) }) - 1;
+    const values = outputs.flatMap(({ type, local }, j) => [ins("i32.const", index), ins("i32.const", j), ins("local.get", local), ins("call", idImport(`valor_${tipoWasm(type)}`))]);
+    return [ins("i32.const", module.debugFlag), ins("i32.load"), ins("if"), ...values, ins("i32.const", index), ins("call", idImport("nodo")), ins("drop"), ins("end")];
+  }
   // Las salidas que alguien lee desde otro clump necesitan una global.
   const cruzan = new Set(g.cables.filter((c) => clumpDe(c.de.nodo) !== clumpDe(c.a.nodo)).map((c) => `${c.de.nodo}.${c.de.puerto}`));
 
@@ -2023,7 +2044,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey) {
       }
       indicadores.push({ nodo: id, name: n.name, tipo: tIn(0), ...datosDePanel(tIn(0)) });
       const escribe = tIn(0) === "string" ? "escribir_cad" : esCluster(tIn(0)) ? "escribir_clu" : esArray(tIn(0)) ? "escribir_arr" : `escribir_${tipoWasm(tIn(0))}`;
-      k.cuerpo.push(ins("i32.const", indicadores.length - 1), ...entrada(0), ins("call", idImport(escribe)));
+      k.cuerpo.push(ins("i32.const", indicadores.length - 1), ...entrada(0), ins("call", idImport(escribe)), ...debugHook(id, []));
       return;
     }
     const emitir = n.tipo === "subvi" ? (e) => callSubVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subVIControl(e, asSubVI.get(n.name)) : BLOQUES[n.tipo];
@@ -2043,6 +2064,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey) {
     const locs = salidas.map((_, j) => nuevoLocal(tipoWasm(tOut(j))));
     for (let j = locs.length - 1; j >= 0; j--) k.cuerpo.push(ins("local.set", locs[j]));
     salidas.forEach((p, j) => dejar(k, id, p.name, locs[j], tipoWasm(tOut(j))));
+    k.cuerpo.push(...debugHook(id, salidas.map((p, j) => ({ port: p.name, type: tOut(j), local: locs[j] }))));
     // Manejo automático de errores (DT-043): un «error out» sin cablear que lleva un error para el VI y lo cuenta.
     const oe = salidas.findIndex((p) => p.name === "error-out");
     if (oe >= 0 && autoErrores && n.tipo !== "simple-error-handler" && !g.cables.some((c) => c.de.nodo === id && c.de.puerto === "error-out")) {
@@ -2416,5 +2438,5 @@ function assemble(module, vi) {
     ],
   };
   const plan = (lista) => lista.map((k) => ({ deps: [...k.deps], largo: k.largo }));
-  return { bytes: codificar(modulo), modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR) };
+  return { bytes: codificar(modulo), modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), debugFlag: module.debugFlag, debugNodes: module.debugNodes };
 }

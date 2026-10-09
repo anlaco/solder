@@ -227,6 +227,12 @@ const sameBytes = (a, b) => !!a && a.length === b.length && a.every((byte, i) =>
  *   vuelve solo a FALSE (comprobado en LabVIEW con el botón Stop).
  * - `separador`: el separador decimal del sistema, para los números a cadena con
  *   «use system decimal point?» (por defecto, el punto).
+ * - `depurador` (DT-047): `{ alValor(nodo, salida, valor), alNodo(nodo), unoACadaVez() }`. With it the
+ *   VI reports every node and the value of its outputs while debugging is on: `alNodo` may return a promise
+ *   (a breakpoint, a step, Highlight Execution's pace) and the clump waits for it. The runtime gives it
+ *   `activar(on)` to turn debugging on or off, also in the middle of a Run; `unoACadaVez()` true makes the
+ *   clumps run one at a time, as LabVIEW does with Highlight Execution. `compilado.debugNodes[i]` says which
+ *   node index `i` is.
  * - `estado`: an object kept between Runs, through which the VI keeps its
  *   state while it stays loaded (DT-045).
  * - `senal`: un AbortSignal; el Abort para el VI aunque esté esperando, y la
@@ -620,6 +626,27 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     ponerCadena(celdaMsg, texto);
     return err.status ? 1 : 0;
   });
+  // Debugging (DT-047): the hooks the compiled VI calls while the debug flag is set.
+  const depurador = opciones.depurador;
+  const valorDepurado = (nodo, salida, valor) => {
+    const out = compilado.debugNodes?.[nodo]?.outputs?.[salida];
+    if (!out || !depurador) return;
+    if (out.tipo === "string") return depurador.alValor(nodo, salida, leerCadena(valor));
+    if (out.disposicion) return depurador.alValor(nodo, salida, leerCluster(valor, out.disposicion));
+    if (out.elemento) return depurador.alValor(nodo, salida, leerArray(valor, out.elemento, out.dims));
+    depurador.alValor(nodo, salida, deWasm(valor, out.tipo));
+  };
+  const dep = {
+    ...Object.fromEntries(["i32", "i64", "f32", "f64"].map((vt) => [`valor_${vt}`, valorDepurado])),
+    nodo: suspendible((nodo) => {
+      const espera = depurador?.alNodo(nodo);
+      if (espera && typeof espera.then === "function") return espera.then(() => {
+        if (senal?.aborted) throw abortado();
+        return 0;
+      });
+      return 0;
+    }),
+  };
   const tiempo = {
     reloj,
     ceder,
@@ -636,14 +663,27 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
       return reloj();
     }),
   };
-  const { instance } = await WebAssembly.instantiate(bytes, { panel, tiempo, cad, arr, math: { random: Math.random, pow: Math.pow, ...funcionesMath } });
+  const { instance } = await WebAssembly.instantiate(bytes, { panel, tiempo, cad, arr, dep, math: { random: Math.random, pow: Math.pow, ...funcionesMath } });
   ex = instance.exports;
   restoreState(opciones.estado, bytes, ex.memoria);
+  if (depurador && compilado.debugFlag !== undefined) {
+    depurador.activar = (on) => memoria().setInt32(compilado.debugFlag, on ? 1 : 0, true);
+    depurador.alConectar?.();
+  }
   const prometidas = new Map();
-  correrClump = (nombre, largo) => {
-    if (!largo) return ex[nombre]();
+  // With a debugger every clump may stop at a node, so every one runs as a promise; with
+  // Highlight Execution they run one at a time (DT-047).
+  let enSerie = Promise.resolve();
+  const correrUno = (nombre, largo) => {
+    if (!largo && !(depurador && conJSPI)) return ex[nombre]();
     if (!prometidas.has(nombre)) prometidas.set(nombre, WebAssembly.promising(ex[nombre]));
     return prometidas.get(nombre)();
+  };
+  correrClump = (nombre, largo) => {
+    if (!depurador?.unoACadaVez?.()) return correrUno(nombre, largo);
+    const turno = enSerie.catch(() => {}).then(() => correrUno(nombre, largo));
+    enSerie = turno;
+    return turno;
   };
   if (clumps.some((k) => k.largo) || compilado.planes?.length) {
     if (!conJSPI) throw new Error("Este VI espera (Wait…) y este motor de JavaScript no trae JSPI. En Node: node --experimental-wasm-jspi.");

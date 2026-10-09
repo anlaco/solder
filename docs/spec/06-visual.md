@@ -544,10 +544,37 @@ Scan, each row also has a small target mark on the left (the default). Tested in
 
 ---
 
+## 14. Debugging (2026-10-09)
+
+Measured in LabVIEW 2026 Q3 at 1:1 (`labview-captures/debugging/`, `REPORT.md`; the captures are cited). The drawings are ours.
+Code: `editor/src/debugging/debug-view.mjs`, `editor/src/common/glyphs.mjs`, `editor/src/styles.css` (the `dep-*`, `dw-*`, `el-*` classes).
+
+- **Toolbar** (`10b`, `74b`, `20b`, `50`): cells of 20 × 21; hover frame 1 px `#0078d4`. Highlight Execution lit has a yellow glass
+  (`#f3d545`) and orange rays; Retain Wire Values on has the P filled yellow; Pause stopped has red bars `#dd0000`; Run while running is
+  the black arrow with speed lines; the step squares are yellow with a `#96960b` edge when enabled.
+- **Dimmed diagram** (§1): 60 % toward white, done as 0.4 opacity over the white canvas; a node, its wires and its structure return to full
+  color when something inside runs.
+- **Band and tags** (§1, `31`): band 5 px centred on the wire, `#a3a3d6` for numeric (measured), `#a3bca3` for Boolean (measured once);
+  other types use the numeric tone (**unverified**); it grows from source to destination (dash offset animation) and repaints go on from
+  where it was. Tag: fill `#ccffff`, border 1 px `#333333`, 17 px tall, text width + 8 px, at the source terminal, overlaying everything.
+- **Probe label** (`55c`): 21 × 17, `#ffff66`, 1 px black rounded border, number centred; it sits on the longest horizontal run of the wire
+  with the value tag at its right.
+- **Breakpoints** (`71d`, `73b`, `80b`): node, 3 px `#cc0000` frame outside the node (38 × 38 for a 32 × 32 node); disabled, 2 px red and 1 px white;
+  wire, a 19 px disc `#cc0000` with the number in white, a little after the output. Stopped node: inverse video (white `difference` over the
+  node) and a 1 px dashed `#4386b9` / `#bfdbf1` marching frame; wires of an inverted white node would turn yellow (unverified here).
+- **Debug Window** (`55`, `57`, `58`): 682 × 338, `#f0f0f0`, 1 px `#828790`; title bar 34 px; toolbar buttons 28 px (hover `#e5f1fb` with a `#0078d4` border); list 400 px with rows of 16 px, white
+  and `#eeeeee`, the selected `#0078d4` with white text; values in green `#008000` (not fully verified); right pane `#e2e2e2` with the display box
+  `#b3b3b3`; splitter 3 px `#787878`. The close question is 262 × 158 (`63`).
+- **Error list** (`92`, `97`): 661 × 412; lists of 638 px at x 11; row 16 px; the red cross is ours; buttons 100 × 21, Show Error with a `#0078d4` border;
+  the Show Error frame is the marching frame 1 px outside the object (`93`).
+- **Unverified / not drawn:** the warning triangle at the far left of the toolbar, the wire of an inverted node in yellow, the Debug Window's
+  title color when inactive, its menu popups' exact position, the value colors of non-numeric types.
+
 ## History
 
 | Date       | Change |
 |------------|--------|
+| 2026-10-09 | §14: debugging (Highlight Execution, probes, breakpoints, Debug Window, Error list), from `labview-captures/debugging/`. |
 | 2026-10-09 | §8: Waveform Chart, Waveform Graph and XY Graph, measured in `labview-captures/graphs/` (replaces the first sketch). |
 | 2026-10-08 | §13: Format Into String and Scan From String, from `labview-captures/format-scan/`. |
 | 2026-10-08 | §12: Create ▸, paste and the Edit menu, from `labview-captures/create-paste/`. |

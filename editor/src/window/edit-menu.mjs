@@ -6,7 +6,7 @@
 // A pure module: the window passes what it knows and gets what to paint.
 
 /** The commands of the menu that do something, by the last segment of their id. */
-export const EDIT_COMMANDS = ["undo", "redo", "cut", "copy", "paste", "delete", "select-all"];
+export const EDIT_COMMANDS = ["undo", "redo", "cut", "copy", "paste", "delete", "select-all", "remove-breakpoints-from-hierarchy"];
 
 /** The id of the Edit menu of a window ("front-panel" or "block-diagram"). */
 export const editMenuId = (windowName) => `window.${windowName}.menu.edit`;

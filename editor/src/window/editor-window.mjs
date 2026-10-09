@@ -19,6 +19,10 @@
 // replaces the plain catalog everywhere (`cat`).
 
 import * as CP from "../front-panel/connector-pane.mjs";
+import * as DS from "../debugging/debug-state.mjs";
+import * as DV from "../debugging/debug-view.mjs";
+import * as EL from "../debugging/error-list.mjs";
+import { buildDebugPlan } from "../debugging/debug-plan.mjs";
 import * as D from "../block-diagram/diagram-view.mjs";
 import * as DC from "../block-diagram/diagram-clipboard.mjs";
 import * as ED from "../block-diagram/diagram-editing.mjs";
@@ -112,6 +116,7 @@ let listo = false;
  */
 function quieto(g) {
   historial = H.registrar(historial, g);
+  if (conDiagrama) setDebug(DS.pruneToGraph(debug, g));
   if (g === publicado) return;
   publicado = g;
   canal.postMessage({ g, subVITexts });
@@ -283,6 +288,7 @@ const mismoValor = (a, b) => a === b || (typeof a === "object" && typeof b === "
 /** Las dos ventanas entran en modo Run o salen de él. */
 function modoRun(si) {
   ejecutando = si;
+  debug = si ? DS.startRun(debug, grafo(), Date.now()) : DS.endRun(debug, grafo());
   vistos = si ? valoresDeControles(grafo()) : {};
   if (si) {
     // Lo que estuviera a medias se deja: en modo Run no se edita.
@@ -317,6 +323,7 @@ function alMensaje(data) {
     mostrarValores(data.escritos ?? {}, data.series);
     canal.postMessage({ valores: data.escritos ?? {}, series: data.series });
   }
+  if (data.debug) applyDebugEvent(data.debug);
   if (data.soltar) {
     soltarLatch(data.soltar);
     canal.postMessage({ soltar: data.soltar });
@@ -350,7 +357,7 @@ function acabar(data) {
   if (data.error) window.solder?.avisar("The VI stopped with an error.", data.error);
 }
 
-async function ejecutarVI() {
+async function ejecutarVI({ stepFirst = false } = {}) {
   // Run con el VI corriendo no hace nada, como en LabVIEW.
   if (ejecutando) return;
   confirmarEscritura();
@@ -358,9 +365,11 @@ async function ejecutarVI() {
   await refrescarJerarquia();
   if (ejecutando) return;
   const g = grafo();
-  if (hierarchyErrors.length) return window.solder?.avisar("The VI cannot run.", hierarchyErrors.join("\n"));
+  // A VI that cannot run opens the Error list, as the broken arrow does in LabVIEW (REPORT.md §5).
+  if (errorRows().length) return openErrorList();
   const c = compilar(g, cat);
   if (c.errores) return window.solder?.avisar("The VI cannot run.", c.errores.map((e) => e.motivo).join("\n"));
+  const debugging = allowsDebugging(g) ? { plan: (debugPlan = buildDebugPlan(g, c.debugNodes, ctx, inv)), config: DS.controllerConfig(debug, g), stepFirst } : null;
   if (!trabajador) {
     trabajador = new Worker(new URL("./run-worker.mjs", import.meta.url), { type: "module" });
     trabajador.onmessage = ({ data }) => alMensaje(data);
@@ -368,7 +377,7 @@ async function ejecutarVI() {
   lanzado = true;
   canal.postMessage({ ejecutando: true });
   modoRun(true);
-  trabajador.postMessage({ orden: "run", clave: viKey, compilado: { bytes: c.bytes, controles: c.controles, indicadores: c.indicadores, clumps: c.clumps, planes: c.planes, automaticos: c.automaticos, disposicionError: c.disposicionError }, valores: valoresDeControles(g), separador, charts: g.nodos.filter((n) => n.tipo === "waveform-chart").map((n) => n.id) });
+  trabajador.postMessage({ orden: "run", clave: viKey, compilado: { bytes: c.bytes, controles: c.controles, indicadores: c.indicadores, clumps: c.clumps, planes: c.planes, automaticos: c.automaticos, disposicionError: c.disposicionError, debugFlag: c.debugFlag, debugNodes: c.debugNodes }, depuracion: debugging, valores: valoresDeControles(g), separador, charts: g.nodos.filter((n) => n.tipo === "waveform-chart").map((n) => n.id) });
 }
 
 /**
@@ -402,10 +411,311 @@ const ORDENES_MENU = {
   paste: () => pegar(),
   delete: () => borrarLoSeleccionado(),
   "select-all": () => seleccionarTodo(),
+  "remove-breakpoints-from-hierarchy": () => removeAllBreakpoints(),
+  // View menu of the diagram:
+  "debug-window": () => openDebugWindow(),
+  "error-list": () => openErrorList(),
 };
 
 /** The orders of the context menus (subVI node, connector pane, icon) that act on the window and not on the graph; they receive the node the menu was opened on. */
 const ORDENES_CONTEXTUALES = { "vi-properties": () => abrirPropiedades(), "open-front-panel": (nodeId) => abrirSubVI(nodeId) };
+
+// ——— Debugging (DT-047) ———
+//
+// Highlight Execution, Retain Wire Values, probes, breakpoints and the steps (debugging/debug-state.mjs)
+// are state of the VI that is open, shared by its two windows: the diagram is the one that changes it
+// and sends it to the panel (`debugState`), and both apply what the run worker reports (`debugEvent`).
+// The Debug Window and the Error list are windows of the diagram, drawn over it like the dialogs
+// (debugging/debug-view.mjs). The controller that stops and paces the VI is in the run worker.
+
+let debug = DS.initial();
+let errorList = EL.initial();
+/** The object Show Error framed on the diagram: `{ node }` or `{ wire }`, until the next click on the diagram. */
+let errorFocus = null;
+/** What the floating windows remember: where they are, the popup that hangs from them and the question of the X. */
+let debugUi = { debugWindowAt: null, errorListAt: null, menu: null, askingToCloseProbes: false, drag: null, speedMenuTimer: null, ignoreNextClick: false };
+/** The plan of the diagram of the Run in progress, for the names and the kind of container of the node it stops at. */
+let debugPlan = null;
+
+const allowsDebugging = (g) => g.vi?.execution?.["allow-debugging"] !== false;
+
+/** The debug state changed here (the diagram): the panel gets it and the worker learns what it wants now. */
+function setDebug(next) {
+  if (next === debug) return;
+  debug = next;
+  if (conDiagrama) canal.postMessage({ debugState: debug });
+  sendDebugConfig();
+  pintar();
+}
+
+/** What the controller in the worker must know now: Highlight Execution, probes, breakpoints. */
+function sendDebugConfig() {
+  if (ejecutando) toWorker({ orden: "debug-config", config: DS.controllerConfig(debug, grafo()) });
+}
+
+/** A message for the run worker, which lives in the window that launched the Run (the other one asks over the channel). */
+function toWorker(message) {
+  if (lanzado) trabajador?.postMessage(message);
+  else canal.postMessage({ workerMessage: message });
+}
+
+/** What the run worker said about the VI: it is applied here and the other window gets it too. */
+function applyDebugEvent(event, fromChannel = false) {
+  if (!fromChannel) canal.postMessage({ debugEvent: event });
+  debug = DS.applyDebugEvent(debug, event, grafo(), Date.now());
+  pintar();
+}
+
+/** The toolbar's debugging buttons in the state of the VI now (debugging/debug-state.mjs `toolbarState`). */
+function debugToolbar() {
+  const paused = debug.run.paused;
+  const node = paused && grafo().nodos.find((candidate) => candidate.id === paused.node);
+  const container = paused?.container && grafo().nodos.find((candidate) => candidate.id === paused.container);
+  return DS.toolbarState({
+    phase: DS.phaseOf({ running: ejecutando, run: debug.run }),
+    broken: !Gr.ejecutable(grafo(), cat, Gr.tipos(grafo(), cat)) || hierarchyErrors.length > 0,
+    allowDebugging: allowsDebugging(grafo()),
+    highlight: debug.highlight,
+    retain: debug.retain,
+    viName: viInfo.name,
+    nodeName: paused?.name ?? "",
+    nodeIsSubVI: !!node && SN.isSubVI(node),
+    container: container ? (container.tipo === "while-loop" || container.tipo === "for-loop" ? "loop" : "structure") : null,
+  });
+}
+
+/** Highlight Execution button: toggles; held, it opens the menu of speeds (REPORT.md §1). */
+const clickHighlight = () => allowsDebugging(grafo()) && setDebug(DS.toggleHighlight(debug));
+const clickRetain = () => allowsDebugging(grafo()) && setDebug(DS.toggleRetain(debug));
+
+/** Pause, Continue and the three steps. In edit mode the steps start the VI stopped at its first node (Start Single Stepping, unverified). */
+function clickPause() {
+  if (!allowsDebugging(grafo())) return;
+  if (!ejecutando) return;
+  if (debug.run.paused) return toWorker({ orden: "debug-resume", modo: "continue" });
+  toWorker({ orden: "debug-pause" });
+}
+
+function clickStep(mode) {
+  if (!allowsDebugging(grafo())) return;
+  if (!ejecutando) return mode === "out" ? undefined : ejecutarVI({ stepFirst: true });
+  if (!debug.run.paused) return;
+  if (mode === "into" && !debugToolbar()["step-into"].enabled) return;
+  toWorker({ orden: "debug-resume", modo: mode });
+}
+
+/** What each debugging button does, by the last segment of its id. */
+const TOOLBAR_ACTIONS = {
+  "highlight-execution": () => clickHighlight(),
+  "retain-wire-values": () => clickRetain(),
+  pause: () => clickPause(),
+  "step-into": () => clickStep("into"),
+  "step-over": () => clickStep("over"),
+  "step-out": () => clickStep("out"),
+};
+
+/** The speed menu hangs from the Highlight Execution button; its rows are the inventory's. */
+const HIGHLIGHT_BUTTON_ID = "window.block-diagram.toolbar.highlight-execution";
+const SPEED_ROWS = { slow: "slow", medium: "medium", fast: "fast", "very-fast": "very-fast" };
+
+function openSpeedMenu(button) {
+  const where = anclaMenu(button);
+  estado = E.abrirMenuBarra({ ...estado, menuBarra: null }, inv, HIGHLIGHT_BUTTON_ID, where);
+  pintar();
+}
+
+/** Releasing over a speed picks it; releasing anywhere else just closes the menu, and the bulb stays on (REPORT.md §1). */
+function finishSpeedMenu(ev) {
+  const row = ev.target.closest?.(".item-menu");
+  const speed = row && Object.keys(SPEED_ROWS).find((key) => row.dataset.id === `${HIGHLIGHT_BUTTON_ID}.${key}`);
+  estado = { ...estado, menuBarra: null };
+  debugUi.ignoreNextClick = true;
+  setDebug(speed ? DS.setHighlightSpeed(debug, speed) : debug.highlight.on ? debug : DS.toggleHighlight(debug));
+  pintar();
+}
+
+// ——— Probes and breakpoints, from the menus of the diagram ———
+
+/** The orders of the context menus that belong to the debugger; `target` is the node or the wire the menu was opened on. */
+function breakpointTarget(menu) {
+  return menu.raiz === ED.WIRE_MENU_ROOT ? { wire: menu.nodo } : { node: menu.nodo };
+}
+
+const DEBUG_CONTEXT_ORDERS = {
+  "add-probe": (_id, menu) => setDebug(DS.addProbe(debug, menu.nodo)),
+  "generic-probe": (_id, menu) => setDebug(DS.addProbe(debug, menu.nodo)),
+  "add-breakpoint": (_id, menu) => {
+    const target = breakpointTarget(menu);
+    setDebug(DS.breakpointOn(debug, target) ? DS.removeBreakpoint(debug, target) : DS.addBreakpoint(debug, target));
+  },
+  "disable-breakpoint": (_id, menu) => setDebug(DS.toggleBreakpointEnabled(debug, breakpointTarget(menu))),
+};
+
+// ——— The Debug Window and the Error list ———
+
+const WINDOW_MARGIN = 20;
+
+function defaultWindowPosition(width, height, shift = 0) {
+  const size = tamanoDelLienzo() ?? { width: innerWidth, height: innerHeight };
+  return { x: Math.max(WINDOW_MARGIN, Math.round((size.width - width) / 2) + shift), y: Math.max(WINDOW_MARGIN, Math.round((size.height - height) / 2) + shift) };
+}
+
+function openDebugWindow() {
+  if (!conDiagrama) return canal.postMessage({ showTool: "debug-window" });
+  debugUi.debugWindowAt ??= defaultWindowPosition(DV.DEBUG_WINDOW.width, DV.DEBUG_WINDOW.height);
+  setDebug(DS.openDebugWindow(debug));
+}
+
+/** The rows of the Error list for the VI now (cached by graph: compiling on each repaint would be wasteful). */
+let errorRowsCache = { graph: null, hierarchy: null, rows: [] };
+function errorRows() {
+  const g = grafo();
+  if (errorRowsCache.graph === g && errorRowsCache.hierarchy === hierarchyErrors) return errorRowsCache.rows;
+  const compiled = compilar(g, cat);
+  const rows = EL.collect({ graph: g, catalog: cat, resolved: Gr.tipos(g, cat), hierarchyErrors, compileErrors: compiled.errores ?? [], inventory: inv });
+  errorRowsCache = { graph: g, hierarchy: hierarchyErrors, rows };
+  return rows;
+}
+
+function openErrorList() {
+  if (!conDiagrama) return canal.postMessage({ showTool: "error-list" });
+  debugUi.errorListAt ??= defaultWindowPosition(DV.ERROR_LIST.width, DV.ERROR_LIST.height, 30);
+  errorList = { ...errorList, open: true, selected: errorList.selected ?? errorRows()[0]?.id ?? null };
+  pintar();
+}
+
+/** Show Error and a double click on a row: the diagram comes to the front and the object gets its marching frame. */
+function showError(rowId) {
+  const row = errorRows().find((candidate) => candidate.id === (rowId ?? errorList.selected));
+  if (!row?.target) return;
+  errorFocus = row.target;
+  window.focus();
+  pintar();
+}
+
+/** Remove Breakpoints from Hierarchy: this VI has no subVI breakpoints yet (subVIs are not debugged), so it clears its own. */
+function removeAllBreakpoints() {
+  const numbers = DS.breakpointsOf(debug).map((item) => item.number);
+  if (numbers.length) setDebug(DS.removeItems(debug, numbers));
+}
+
+/** The floating windows and their popups, for `pintar`. */
+function floatingWindows() {
+  if (!conDiagrama) return { windows: "", popup: "" };
+  let windows = "";
+  let popup = "";
+  if (debug.debugWindow.open) {
+    windows += DV.debugWindow(inv, debug, grafo(), { viName: viInfo.name, separator: separador, position: debugUi.debugWindowAt ?? defaultWindowPosition(DV.DEBUG_WINDOW.width, DV.DEBUG_WINDOW.height) });
+    if (debugUi.menu) popup += D.menuContextual(inv, debugUi.menu, DV.debugWindowMenuMarks(debug), medirMenu, DV.debugWindowMenuVariants(debug));
+    if (debugUi.askingToCloseProbes) windows += DV.closeProbesDialog(inv);
+  }
+  if (errorList.open) {
+    windows += DV.errorListWindow(inv, { rows: errorRows(), state: errorList, viName: viInfo.name, position: debugUi.errorListAt ?? defaultWindowPosition(DV.ERROR_LIST.width, DV.ERROR_LIST.height, 30) });
+  }
+  return { windows, popup };
+}
+
+/** Closing the Debug Window removes its probes, after asking if there are any (REPORT.md §3, 63). */
+function closeDebugWindow() {
+  if (DS.probesOf(debug).length) {
+    debugUi.askingToCloseProbes = true;
+    return pintar();
+  }
+  setDebug(DS.closeDebugWindow(debug));
+}
+
+/** A click on something of the Debug Window or the Error list; true if it was theirs. */
+function clickFloating(ev) {
+  const target = ev.target.closest("[data-id], [data-fila]");
+  const id = target?.dataset.id ?? "";
+  const DW = DV.DEBUG_WINDOW_ID;
+  const EW = DV.ERROR_LIST_ID;
+  if (!target && !debugUi.askingToCloseProbes) return false;
+  if (debugUi.askingToCloseProbes) {
+    if (id === `${DW}.close-dialog.yes`) {
+      debugUi.askingToCloseProbes = false;
+      debugUi.menu = null;
+      setDebug(DS.closeDebugWindow(debug));
+    } else if (id === `${DW}.close-dialog.no`) {
+      debugUi.askingToCloseProbes = false;
+      pintar();
+    }
+    return true;
+  }
+  if (debugUi.menu && target.classList.contains("item-menu")) return clickDebugPopup(id, target);
+  if (id.startsWith(`${DW}.`)) return clickDebugWindow(ev, id, target);
+  if (target.closest(".debug-window") && target.dataset.fila) {
+    setDebug(DS.selectItem(debug, Number(target.dataset.fila), ev.ctrlKey || ev.metaKey));
+    return true;
+  }
+  if (id.startsWith(`${EW}.`)) return clickErrorList(id);
+  if (target.closest(".error-list") && target.dataset.fila) {
+    errorList = EL.selectRow(errorList, target.dataset.fila);
+    if (ev.detail >= 2) showError(target.dataset.fila);
+    pintar();
+    return true;
+  }
+  return false;
+}
+
+function clickDebugWindow(ev, id, target) {
+  const DW = DV.DEBUG_WINDOW_ID;
+  const entry = inv.resolver(id);
+  if (id === `${DW}.close`) return closeDebugWindow(), true;
+  if (id === `${DW}.toolbar.remove-selected`) return !target.classList.contains("desactivado") && setDebug(DS.removeItems(debug, debug.debugWindow.selected)), true;
+  if (id === `${DW}.toolbar.enable-disable`) return !target.classList.contains("desactivado") && setDebug(DS.toggleSelectedEnabled(debug)), true;
+  if (id === `${DW}.toolbar.debug-options` || id === `${DW}.probe-display.probe-options`) {
+    const rect = target.getBoundingClientRect();
+    debugUi.menu = debugUi.menu?.raiz === id ? null : { raiz: id, x: rect.left, y: rect.bottom };
+    pintar();
+    return true;
+  }
+  if (esHueco(entry)) {
+    cambiar(E.clic(estado, inv, id, ancla(target)));
+    return true;
+  }
+  return false;
+}
+
+/** A row of the Debug Options menu or of Probe Options. */
+function clickDebugPopup(id, row) {
+  const DW = DV.DEBUG_WINDOW_ID;
+  const entry = inv.resolver(id);
+  if (esHueco(entry)) return cambiar(E.clic(estado, inv, id, ancla(row))), true;
+  debugUi.menu = null;
+  if (id.startsWith(`${DW}.toolbar.debug-options.`)) setDebug(DS.toggleOption(debug, ultimo(id)));
+  else pintar();
+  return true;
+}
+
+function clickErrorList(id) {
+  const EW = DV.ERROR_LIST_ID;
+  if (id === `${EW}.close` || id === `${EW}.close-x`) {
+    errorList = { ...errorList, open: false };
+    pintar();
+  } else if (id === `${EW}.show-error`) showError();
+  else if (esHueco(inv.resolver(id))) cambiar(E.clic(estado, inv, id, { x: 40, y: 40 }));
+  return true;
+}
+
+/** Dragging a floating window by its title bar. */
+function startFloatingDrag(ev) {
+  const title = ev.target.closest(".dw-titulo");
+  const floating = title?.parentElement;
+  if (!floating || ev.target.closest(".dw-cerrar")) return false;
+  const isDebug = floating.classList.contains("debug-window");
+  const current = isDebug ? debugUi.debugWindowAt : debugUi.errorListAt;
+  debugUi.drag = { isDebug, dx: ev.clientX - current.x, dy: ev.clientY - current.y };
+  return true;
+}
+
+function moveFloatingDrag(ev) {
+  const { isDebug, dx, dy } = debugUi.drag;
+  const position = { x: ev.clientX - dx, y: ev.clientY - dy };
+  if (isDebug) debugUi.debugWindowAt = position;
+  else debugUi.errorListAt = position;
+  pintar();
+}
 
 // ——— Edit: undo, copy, cut, paste, delete and select all ———
 //
@@ -629,6 +939,13 @@ canal.onmessage = ({ data }) => {
   if (!listo) return;
   // Una ventana que acaba de abrirse pide el VI; la que lo tiene lo manda.
   if (data.pide) return canal.postMessage({ g: grafo(), subVITexts });
+  if (data.debugState) {
+    debug = data.debugState;
+    return pintar();
+  }
+  if (data.debugEvent) return applyDebugEvent(data.debugEvent, true);
+  if (data.workerMessage) return lanzado && trabajador.postMessage(data.workerMessage);
+  if (data.showTool) return conDiagrama && (data.showTool === "debug-window" ? openDebugWindow() : openErrorList());
   // Lo que ya se tiene no es un paso nuevo: la respuesta a una ventana recién abierta, por ejemplo.
   if (data.valores) return mostrarValores(data.valores, data.series);
   if ("ejecutando" in data) return modoRun(data.ejecutando);
@@ -676,10 +993,11 @@ function pintar() {
   // A chart whose wire changed has lost its history (REPORT §4).
   const charts = GS.reconciledCharts(pan.charts, grafo(), resueltos);
   if (charts !== pan.charts) pan = { ...pan, charts };
-  const extra = { runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, dialogo: dialogoError, numeroVI: viInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + (pan.graphDialog ? CH.view(inv, pan.graphDialog) : "") };
+  const floating = floatingWindows();
+  const extra = { toolbar: debugToolbar(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, dialogo: dialogoError, numeroVI: viInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + (pan.graphDialog ? CH.view(inv, pan.graphDialog) : "") };
   if (conDiagrama) {
-    extra.lienzo = D.contenido(dia, ctx, resueltos);
-    extra.encima = dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia), medirMenu, ED.variantes(dia, ctx)) : "";
+    extra.lienzo = D.contenido({ ...dia, debug: DV.canvasView(debug, dia.g, ejecutando) }, ctx, resueltos) + DV.overlay(debug, dia.g, ctx, resueltos, { now: Date.now(), separator: separador, running: ejecutando, pausedAt: debug.run.paused, errorFocus });
+    extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx), DV.menuVariants(debug, dia.g, resueltos, dia.menu))) : "") + floating.popup;
     extra.editandoTexto = !!dia.edicion;
   } else {
     extra.lienzo = P.contenido(pan, ctx, resueltos);
@@ -703,7 +1021,7 @@ function pintar() {
 }
 
 /** The check marks of a menu opened from the page and not from the menu bar: the current page of VI Properties. */
-const marcasDelMenuBarra = (id) => new Set(id === VP.CATEGORIES_ID ? [`${VP.CATEGORIES_ID}.execution`] : []);
+const marcasDelMenuBarra = (id) => new Set(id === VP.CATEGORIES_ID ? [`${VP.CATEGORIES_ID}.execution`] : id === HIGHLIGHT_BUTTON_ID ? [`${HIGHLIGHT_BUTTON_ID}.${debug.highlight.speed}`] : []);
 
 function cambiar(nuevo) {
   if (nuevo === estado) return;
@@ -827,6 +1145,18 @@ const ancla = (el) => {
 
 addEventListener("mousedown", (ev) => {
   if (ev.button !== 0) return;
+  // Press and hold on Highlight Execution opens its speed menu (REPORT.md §1).
+  const bulb = ev.target.closest?.(`[data-id="${HIGHLIGHT_BUTTON_ID}"]`);
+  if (bulb && !bulb.classList.contains("desactivado")) debugUi.speedMenuTimer = setTimeout(() => openSpeedMenu(bulb), DS.SPEED_MENU_HOLD_MS);
+  if (conDiagrama) {
+    if (startFloatingDrag(ev)) return ev.preventDefault();
+    if (debugUi.menu && !ev.target.closest(".menu-contextual")) {
+      debugUi.menu = null;
+      pintar();
+    }
+    // The frame of Show Error stays until something is clicked on the diagram (unverified how LabVIEW clears it).
+    if (errorFocus && ev.target.closest(".lienzo")) errorFocus = null;
+  }
   // Un diálogo de error es modal: sólo responden sus botones.
   if (document.querySelector(".modal-error")) return;
   // VI Properties is modal too: its buttons answer to the click event.
@@ -966,6 +1296,7 @@ function pulsarPanel(ev) {
 }
 
 addEventListener("mousemove", (ev) => {
+  if (debugUi.drag) return moveFloatingDrag(ev);
   mostrarTip(ev);
   if (ev.target.closest?.(".lienzo")) punteroEnLienzo = punto(ev);
   if (conPanel) {
@@ -997,6 +1328,9 @@ addEventListener("mousemove", (ev) => {
 
 addEventListener("mouseup", (ev) => {
   if (ev.button !== 0) return;
+  clearTimeout(debugUi.speedMenuTimer);
+  if (debugUi.drag) debugUi.drag = null;
+  if (estado.menuBarra?.id === HIGHLIGHT_BUTTON_ID) return finishSpeedMenu(ev);
   if (pulsado) return soltarEnRun();
   if (conPanel && pan.accion) return cambiarPanel(P.soltar(pan, ctx, objetivoPanel(document.elementFromPoint(ev.clientX, ev.clientY)), punto(ev)));
   if (!conDiagrama || !dia.accion) return;
@@ -1004,6 +1338,11 @@ addEventListener("mouseup", (ev) => {
 });
 
 addEventListener("click", (ev) => {
+  if (debugUi.ignoreNextClick) {
+    debugUi.ignoreNextClick = false;
+    return;
+  }
+  if (conDiagrama && clickFloating(ev)) return;
   const boton = ev.target.closest(".modal-error .boton-dialogo:not([disabled])");
   if (boton) return responderDialogo(boton.dataset.boton);
   if (ev.target.closest(".modal-error")) return;
@@ -1036,10 +1375,10 @@ addEventListener("click", (ev) => {
     if (!esHueco(e)) {
       // A row greyed by the context (no terminal under the cursor) does nothing.
       if (fila.classList.contains("desactivado")) return;
-      const orden = ORDENES_CONTEXTUALES[ultimo(id)];
+      const orden = ORDENES_CONTEXTUALES[ultimo(id)] ?? DEBUG_CONTEXT_ORDERS[ultimo(id)];
       if (orden) {
         cambiarActual({ ...actual, menu: null });
-        return orden(actual.menu.nodo);
+        return orden(actual.menu.nodo, actual.menu);
       }
       return cambiarActual(ED.orden(actual, id, ctx));
     }
@@ -1050,6 +1389,8 @@ addEventListener("click", (ev) => {
   }
   const el = ev.target.closest("[data-id]");
   if (!el || inerte(el)) return;
+  const toolbarAction = el.dataset.id.startsWith(`${prefijo}.toolbar.`) && !esHueco(inv.resolver(el.dataset.id)) && !el.classList.contains("desactivado") && TOOLBAR_ACTIONS[ultimo(el.dataset.id)];
+  if (toolbarAction) return toolbarAction();
   // La flecha de Run, hecha: ejecuta el VI; rota, dice por qué no se puede.
   if (el.dataset.id === `${prefijo}.toolbar.run` && !esHueco(inv.resolver(el.dataset.id))) return ejecutarVI();
   if (el.dataset.id === `${prefijo}.toolbar.abort-execution`) return abortar();
@@ -1133,7 +1474,7 @@ addEventListener("keydown", (ev) => {
   }
   // File ▸ Save, Open y Exit, con los atajos de LabVIEW.
   if (ctrl && !ev.shiftKey && !ev.altKey) {
-    const orden = { s: "save", o: "open", q: "exit", i: "vi-properties" }[ev.key.toLowerCase()];
+    const orden = { s: "save", o: "open", q: "exit", i: "vi-properties", d: "debug-window", l: "error-list" }[ev.key.toLowerCase()];
     if (orden) {
       ev.preventDefault();
       return ORDENES_MENU[orden]();

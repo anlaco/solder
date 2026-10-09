@@ -13,7 +13,7 @@ import { CAT, INV, buildAdder } from "../helpers.mjs";
 test("VI Properties opens on Execution with the reentrancy of the VI and OK writes it into vi execution", () => {
   const { g } = buildAdder();
   let dialog = VP.open(g);
-  assert.deepEqual(dialog, { page: "execution", reentrancy: "non-reentrant" }, "a new VI is non-reentrant");
+  assert.deepEqual(dialog, { page: "execution", reentrancy: "non-reentrant", allowDebugging: true }, "a new VI is non-reentrant");
 
   dialog = VP.choose(dialog, "preallocated");
   const preallocated = VP.apply(g, dialog);
@@ -57,12 +57,13 @@ test("the dialog is drawn from the inventory with the unfinished settings greyed
   assert.ok(classOf("dialog.vi-properties.execution.preallocated-clone-reentrant-execution").includes("marcada"));
   assert.ok(!classOf("dialog.vi-properties.execution.non-reentrant-execution").includes("marcada"));
   // What is not done is greyed out.
-  for (const id of ["shared-clone-reentrant-execution", "allow-debugging", "inline-subvi-into-calling-vis", "priority", "preferred-execution-system", "enable-automatic-error-handling", "run-when-opened", "suspend-when-called", "clear-indicators-when-called", "auto-handle-menus-at-launch"]) {
+  for (const id of ["shared-clone-reentrant-execution", "inline-subvi-into-calling-vis", "priority", "preferred-execution-system", "enable-automatic-error-handling", "run-when-opened", "suspend-when-called", "clear-indicators-when-called", "auto-handle-menus-at-launch"]) {
     assert.ok(classOf(`dialog.vi-properties.execution.${id}`).includes("hueco"), id);
     assert.ok(esHueco(INV.entrada(`dialog.vi-properties.execution.${id}`)), id);
   }
   // The defaults of the capture: debugging and automatic error handling on, the rest off.
   assert.ok(classOf("dialog.vi-properties.execution.allow-debugging").includes("marcada"));
+  assert.ok(!classOf("dialog.vi-properties.execution.allow-debugging").includes("hueco"), "Allow debugging works since DT-047");
   assert.ok(classOf("dialog.vi-properties.execution.enable-automatic-error-handling").includes("marcada"));
   assert.ok(!classOf("dialog.vi-properties.execution.run-when-opened").includes("marcada"));
   assert.match(html, /Preallocated clone reentrant execution/);

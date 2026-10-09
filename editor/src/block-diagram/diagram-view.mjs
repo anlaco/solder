@@ -636,7 +636,7 @@ export function contenido(d0, ctx, resueltos) {
     const r = ruta(a, b, c.codos);
     const entero = elegidos.has(c.id);
     const tip = info.roto ? ` data-tip="${esc(info.roto)}"` : "";
-    cables += `<g class="cable${entero ? " seleccionado" : ""}${info.roto ? " roto" : ""}" data-cable="${esc(c.id)}"${tip}>${trazo(r, info.tipo, info.roto)}`;
+    cables += `<g class="cable${entero ? " seleccionado" : ""}${info.roto ? " roto" : ""}${d.debug?.litWires.has(c.id) ? " dep-encendido" : ""}" data-cable="${esc(c.id)}"${tip}>${trazo(r, info.tipo, info.roto)}`;
     for (let k = 0; k < r.length - 1; k++) {
       const [[x1, y1], [x2, y2]] = [r[k], r[k + 1]];
       if (x1 === x2 && y1 === y2) continue;
@@ -959,8 +959,11 @@ function nodo(n, d, ctx, resueltos, elegido) {
     .map((t) => `<div class="invertida" style="left:${px(t.x - k.x + (t.dir === "in" ? -1.8 : 1.8) - 1.8)};top:${px(t.y - k.y - 1.8)}"></div>`)
     .join("");
   const escribiendo = d.edicion?.nodo === n.id && !d.edicion.etiqueta;
-  return `<div class="nodo${elegido || escribiendo ? " seleccionado" : ""}${editable}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${cuerpo}${circulos}${zonas}${asas}</div>`;
+  return `<div class="nodo${elegido || escribiendo ? " seleccionado" : ""}${editable}${litByDebugger(d, n.id)}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${cuerpo}${circulos}${zonas}${asas}</div>`;
 }
+
+/** While Highlight Execution dims the diagram, the nodes that already ran in this iteration keep their colors (debugging/debug-view.mjs). */
+const litByDebugger = (d, id) => (d.debug?.litNodes.has(id) ? " dep-encendido" : "");
 
 /**
  * Una estructura: su marco, las bandas del marco que se agarran (el interior
@@ -1003,7 +1006,7 @@ function estructura(n, ctx, elegido, d) {
         return `<div class="asa asa-estructura" data-nodo="${esc(n.id)}" data-asa="${l}" style="left:${px(a.x)};top:${px(a.y)}"></div>`;
       }).join("")
     : "";
-  const clase = `${caso ? "estructura-case" : esFlat(n) ? "estructura-flat" : esApilada(n) ? "estructura-stacked" : esFor ? "estructura-for" : "estructura-while"}${elegido ? " seleccionado" : ""}`;
+  const clase = `${caso ? "estructura-case" : esFlat(n) ? "estructura-flat" : esApilada(n) ? "estructura-stacked" : esFor ? "estructura-for" : "estructura-while"}${elegido ? " seleccionado" : ""}${litByDebugger(d, n.id)}`;
   return `<div class="nodo estructura ${clase}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${tinte}${marco}${bandas}${conSelector(n) ? selectorDeMarcos(n, ctx, d) : ""}${asas}</div>`;
 }
 
@@ -1260,8 +1263,9 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
   // Algunos menús cambian de filas y de nombres según el estado (el Case: booleano o numérico, qué marco se ve).
   // Rows can also be greyed by context (`desactivados`, as Remove Dimension on a 1D array) or stand for a hole
   // that explains a limit of Solder (`redirigidos`: the row id to the inventory entry it explains).
-  const { ocultos = new Set(), rotulos = new Map(), desactivados = new Set(), redirigidos = new Map() } = variante;
-  const hijos = (padre) => inv.hijos(padre).filter((e) => !ocultos.has(e.id));
+  const { ocultos = new Set(), rotulos = new Map(), desactivados = new Set(), redirigidos = new Map(), mostrados = new Set() } = variante;
+  // Disable Breakpoint only exists in the menu of something that has a breakpoint (debugging/debug-view.mjs `menuVariants`).
+  const hijos = (padre) => inv.hijos(padre).filter((e) => !ocultos.has(e.id) && (ultimo(e.id) !== "disable-breakpoint" || mostrados.has(e.id)));
   const rotuloDe = (e) => rotulos.get(e.id) ?? e.etiqueta;
   const anchoAtajos = (padre) => Math.max(0, ...hijos(padre).map((e) => (e.atajo ? medir(e.atajo) : 0)));
   const anchoTextos = (padre) => Math.max(...hijos(padre).map((e) => medir(rotuloDe(e))));

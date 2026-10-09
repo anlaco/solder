@@ -67,7 +67,7 @@ test("a subVI node is drawn as a 32 by 32 icon and its menu is declared in the o
   const missing = callerWithAdder({}).ctx;
   assert.match(D.contenido({ ...ED.inicial(), g }, missing, Gr.tipos(g, missing.cat)), /stroke-dasharray="3 2"/);
 
-  const rows = INV.hijos("context.subvi").map((e) => `${e.separado ? "| " : ""}${e.etiqueta}`);
+  const rows = INV.hijos("context.subvi").filter((e) => !e.id.endsWith(".disable-breakpoint")).map((e) => `${e.separado ? "| " : ""}${e.etiqueta}`);
   assert.deepEqual(rows, [
     "Visible Items", "Help", "Examples", "Description and Tip...", "| Add Breakpoint", "| Create", "| Replace", "Replace with SubVI Contents...",
     "| Relink To SubVI", "SubVI Node Setup...", "Enable Database Access", "Call Setup...", "| Find All Instances", "Open Front Panel", "Show VI Hierarchy", "Explore...",
@@ -76,7 +76,7 @@ test("a subVI node is drawn as a 32 by 32 icon and its menu is declared in the o
   assert.deepEqual(INV.hijos("context.subvi.create").map((e) => `${e.separado ? "| " : ""}${e.etiqueta}`), ["Constant", "Control", "Indicator", "Scalar", "Channel Writer...", "| All Controls and Indicators", "All Constants"], "Scalar sits between Indicator and Channel Writer on an array terminal (create-paste/array-size-input-create-scalar-submenu.png)");
   // Open Front Panel is done; the rest says why not.
   assert.equal(INV.entrada("context.subvi.open-front-panel").estado, "built");
-  assert.deepEqual(INV.hijos("context.subvi").filter((e) => e.estado === "built").map((e) => e.etiqueta), ["Create", "Open Front Panel"]);
+  assert.deepEqual(INV.hijos("context.subvi").filter((e) => e.estado === "built").map((e) => e.etiqueta), ["Add Breakpoint", "Disable Breakpoint", "Create", "Open Front Panel"]);
   // The menu is drawn with its checkmark on View As Icon, as in the capture.
   const opened = ED.abrirMenu({ ...ED.inicial(), g }, "context.subvi", g.nodos[0].id, 10, 10);
   assert.ok(ED.marcados(opened).has("context.subvi.view-as-icon"));

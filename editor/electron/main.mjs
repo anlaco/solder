@@ -201,6 +201,11 @@ async function openPath(filePath, owner) {
   openWindows(entry);
 }
 
+async function openFirstFile(filePath) {
+  const { entry } = registry.open({ path: filePath, initialText: await readFile(filePath, "utf8") });
+  return openWindows(entry);
+}
+
 function openNewVI() {
   const { entry } = registry.open();
   return openWindows(entry);
@@ -323,12 +328,13 @@ function handleRequests() {
   });
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // The menu bar is LabVIEW's, painted in the page.
   Menu.setApplicationMenu(null);
   serve();
   handleRequests();
-  const first = openNewVI();
+  // SOLDER_ABRIR=<file.qvi>: starts with that VI open instead of a new one (for the comparisons of capturing-labview.md §5).
+  const first = process.env.SOLDER_ABRIR ? await openFirstFile(process.env.SOLDER_ABRIR) : openNewVI();
   app.on("before-quit", () => (quitting = true));
   if (process.env.SOLDER_CAPTURAS) capture(first.windows, process.env.SOLDER_CAPTURAS);
 });

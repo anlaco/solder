@@ -87,9 +87,10 @@ test("una constante crece con su texto", () => {
 test("el menú de una función pinta lo declarado en su orden", () => {
   const html = D.menuContextual(INV, { raiz: "context.function", x: 0, y: 0, abierto: "context.function.visible-items" });
   const pintados = idsPintados(html);
-  const esperado = [...INV.hijos("context.function"), ...INV.hijos("context.function.visible-items")].map((e) => e.id);
+  // Disable Breakpoint only appears in the menu of something that has a breakpoint.
+  const esperado = [...INV.hijos("context.function"), ...INV.hijos("context.function.visible-items")].map((e) => e.id).filter((id) => !id.endsWith(".disable-breakpoint"));
   assert.deepEqual([...pintados].sort(), [...esperado].sort());
-  assert.deepEqual(pintados.slice(0, INV.hijos("context.function").length), INV.hijos("context.function").map((e) => e.id));
+  assert.deepEqual(pintados.slice(0, INV.hijos("context.function").length - 1), INV.hijos("context.function").map((e) => e.id).filter((id) => !id.endsWith(".disable-breakpoint")));
   assert.equal((html.match(/separador-menu/g) ?? []).length, 5, "los separadores de numeric-menu-funcion.png");
   assert.match(html, /class="item-menu" data-id="context\.function\.visible-items\.terminals"/, "Terminals está hecho");
   assert.match(html, /class="item-menu hueco" data-id="context\.function\.visible-items\.label"/);

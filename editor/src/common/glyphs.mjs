@@ -534,6 +534,60 @@ BARRA["run-en-marcha"] = svg(
     linea(1.5, 6, 1.5, 11, 1) + linea(3.5, 6, 3.5, 11, 1) + linea(5.5, 2, 5.5, 5, 1) + linea(7.5, 2, 7.5, 5, 1) + linea(5.5, 12, 5.5, 15, 1) + linea(7.5, 12, 7.5, 15, 1),
 );
 
+// ——— The debugging buttons in their other states (labview-captures/debugging/REPORT.md §1, §2, §4 and §6) ———
+// The drawings are our own; what is measured is which state changes: the lit bulb with rays, the P of
+// Retain Wire Values filled yellow, the red bars of a Pause that became Continue, and the yellow squares of
+// the step buttons while the VI is stopped.
+
+const STEP_SQUARE_YELLOW = "#ffe94d";
+const STEP_SQUARE_EDGE = "#96960b";
+
+BARRA["highlight-execution-on"] = svg(
+  [0, 45, 90, 135, 180, 225, 270, 315]
+    .map((degrees) => {
+      const radians = (degrees * Math.PI) / 180;
+      return linea(f(8 + 6.4 * Math.cos(radians)), f(6.3 + 6.4 * Math.sin(radians)), f(8 + 7.6 * Math.cos(radians)), f(6.3 + 7.6 * Math.sin(radians)), 0.9, "#e08a1e");
+    })
+    .join("") +
+    `<circle cx="8" cy="6.3" r="4.4" fill="#f3d545" stroke="${TINTA}" stroke-width="1.2"/>` +
+    linea(5.6, 11.6, 10.4, 11.6) +
+    linea(6.2, 13.4, 9.8, 13.4) +
+    menuAlMantener,
+);
+BARRA["retain-wire-values-on"] = svg(
+  linea(1, 12, 15, 12, 1.6, "#e17d14") +
+    `<circle cx="5" cy="5" r="2.9" fill="#ffff00" stroke="${TINTA}" stroke-width="1.2"/>` +
+    texto(5, 5.3, "P", 4.2, TINTA, 700) +
+    linea(5, 7.9, 5, 12) +
+    caja(9, 2.5, 14.5, 7.5, "#fff") +
+    menuAlMantener,
+);
+BARRA["pause-continue"] = svg(lleno(4, 3, 6.8, 13, "#dd0000", 0.5) + lleno(9.5, 3, 12.3, 13, "#dd0000", 0.5));
+BARRA["step-into-enabled"] = svg(
+  caja(9.5, 8, 15, 14, STEP_SQUARE_YELLOW, 1.2, STEP_SQUARE_EDGE) +
+    `<polyline points="1.5,3 1.5,11 7,11" fill="none" stroke="${TINTA}" stroke-width="1.7"/>` +
+    flecha(9, 11, 1, 0, 4),
+);
+BARRA["step-over-enabled"] = svg(caja(5, 9, 11, 15, STEP_SQUARE_YELLOW, 1.2, STEP_SQUARE_EDGE) + arco(8, 9, 5.5, Math.PI, Math.PI * 2 - 0.35, 1.7));
+BARRA["step-out-enabled"] = svg(
+  caja(1, 8, 7, 14, STEP_SQUARE_YELLOW, 1.2, STEP_SQUARE_EDGE) +
+    `<polyline points="7,11 12.5,11 12.5,5" fill="none" stroke="${TINTA}" stroke-width="1.7"/>` +
+    flecha(12.5, 2.5, 0, -1, 4),
+);
+
+/** The Debug Window's own buttons (its toolbar, REPORT.md §3), drawn anew. */
+export const DEBUG_WINDOW_ICONS = {
+  "remove-selected": svg(linea(3, 3, 13, 13, 1.4, "#cc1111") + linea(13, 3, 3, 13, 1.4, "#cc1111")),
+  "enable-disable": svg(`<circle cx="5.5" cy="9" r="3.3" fill="#cc1111"/><circle cx="10.5" cy="6.5" r="3.3" fill="#e65555"/>`),
+  "project-environment-settings": svg(`<ellipse cx="8" cy="9" rx="3.2" ry="4.2" fill="#6a8f3a" stroke="${TINTA}" stroke-width="1"/>` + linea(5, 5, 3, 2.5) + linea(11, 5, 13, 2.5) + linea(4.8, 9, 2, 9) + linea(11.2, 9, 14, 9)),
+  help: svg(texto(8, 8.5, "?", 13, "#2a5db0", 700)),
+  "debug-options": svg(`<circle cx="7" cy="8" r="3.3" fill="none" stroke="${TINTA}" stroke-width="1.6"/>` + [0, 60, 120, 180, 240, 300].map((degrees) => { const r = (degrees * Math.PI) / 180; return linea(f(7 + 3.4 * Math.cos(r)), f(8 + 3.4 * Math.sin(r)), f(7 + 5.2 * Math.cos(r)), f(8 + 5.2 * Math.sin(r)), 1.6); }).join("") + poligono([[12, 7], [15.5, 7], [13.75, 9.4]], TINTA)),
+  "probe-options": svg(`<path d="M2 11 A6 6 0 0 1 14 11" fill="none" stroke="${TINTA}" stroke-width="1.4"/>` + linea(8, 11, 11.5, 6, 1.4) + poligono([[12, 11.5], [15.5, 11.5], [13.75, 14]], TINTA)),
+  probe: `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><rect x="2" y="2" width="12" height="12" fill="#ffff66" stroke="#555" stroke-width="1"/></svg>`,
+  breakpoint: `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6" fill="#cc0000"/></svg>`,
+  "error-mark": `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5" stroke="#cc1111" stroke-width="2.6" stroke-linecap="round"/></svg>`,
+};
+
 /** Enter Text: la marca que confirma lo que se escribe en el diagrama. */
 BARRA["enter-text"] = svg(`<polyline points="3,8.6 6.3,12.4 13.2,3.6" fill="none" stroke="${TINTA}" stroke-width="2.1" stroke-linejoin="miter"/>`);
 

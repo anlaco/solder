@@ -55,18 +55,25 @@ const esc = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").
 const px = (n) => `${Number(n.toFixed(2))}px`;
 
 /** The dialog for a VI: showing the Execution page, with the VI's reentrancy. */
-export const open = (g) => ({ page: "execution", reentrancy: g.vi?.execution?.reentrancy ?? "non-reentrant" });
+export const open = (g) => ({ page: "execution", reentrancy: g.vi?.execution?.reentrancy ?? "non-reentrant", allowDebugging: g.vi?.execution?.["allow-debugging"] !== false });
+
+/** The id of the Allow debugging checkbox, which writes `vi.execution["allow-debugging"]` (DT-047). */
+export const ALLOW_DEBUGGING_ID = `${EXECUTION}.allow-debugging`;
+
+/** Checks or unchecks Allow debugging. */
+export const toggleAllowDebugging = (dialog) => ({ ...dialog, allowDebugging: !dialog.allowDebugging });
 
 /** Chooses a reentrancy option. A greyed one (shared clones) is not available and changes nothing. */
 export function choose(dialog, reentrancy) {
   return reentrancy === "non-reentrant" || reentrancy === "preallocated" ? { ...dialog, reentrancy } : dialog;
 }
 
-/** The VI with what the dialog says. Non-reentrant is the default, so it is not stored. */
+/** The VI with what the dialog says. Non-reentrant and Allow debugging are the defaults, so they are not stored. */
 export function apply(g, dialog) {
   const { execution: previous, ...rest } = g.vi ?? {};
-  const { reentrancy: _old, ...others } = previous ?? {};
-  const execution = dialog.reentrancy === "non-reentrant" ? others : { ...others, reentrancy: dialog.reentrancy };
+  const { reentrancy: _old, "allow-debugging": _oldDebugging, ...others } = previous ?? {};
+  const withReentrancy = dialog.reentrancy === "non-reentrant" ? others : { ...others, reentrancy: dialog.reentrancy };
+  const execution = dialog.allowDebugging === false ? { ...withReentrancy, "allow-debugging": false } : withReentrancy;
   const vi = Object.keys(execution).length ? { ...rest, execution } : rest;
   return { ...g, vi: Object.keys(vi).length ? vi : undefined };
 }
@@ -113,6 +120,6 @@ export function view(inv, dialog) {
     `<div class="pv-etiqueta" style="left:${px(L.categoryLabel.x)};top:${px(L.categoryLabel.y)}">Category</div>` +
     `<div class="pv-combo categoria" data-id="${CATEGORIES_ID}" style="left:${px(box.x)};top:${px(box.y)};width:${px(box.width)};height:${px(box.height)}"><span class="pv-texto">Execution</span><span class="pv-flecha"></span></div>` +
     `<div class="pv-pagina" style="left:${px(L.page.x)};top:${px(L.page.y)};width:${px(L.page.width)};height:${px(L.page.height)}"></div>` +
-    CHECKBOXES.map((entry) => checkbox(inv, entry)).join("") + reentrancyGroup(inv, dialog) + COMBOS.map((entry) => comboBox(inv, entry)).join("") +
+    CHECKBOXES.map((entry) => checkbox(inv, entry.id === ALLOW_DEBUGGING_ID ? { ...entry, checked: dialog.allowDebugging !== false } : entry)).join("") + reentrancyGroup(inv, dialog) + COMBOS.map((entry) => comboBox(inv, entry)).join("") +
     `${buttons}</div></div>`;
 }

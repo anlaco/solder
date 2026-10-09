@@ -192,7 +192,9 @@ LabVIEW) or `optional`; an output cannot be `required`.
 
 VI Properties ▸ Execution. `{ "reentrancy": "preallocated" }` gives each call
 site its own copy of the VI; without it the VI is non-reentrant, as a new VI in
-LabVIEW (DT-045).
+LabVIEW (DT-045). `{ "allow-debugging": false }` is VI Properties ▸ Execution ▸ Allow
+debugging unchecked: the compiler emits no debug hooks (DT-047) and the editor greys
+the debugging buttons. It is only written when false, because checked is the default.
 
 ### 4.5c The `subvi` node
 

@@ -1402,3 +1402,49 @@ a. The compiler receives the hierarchy (a function that loads a `.qvi` by path)
 b. The editor's main process stops being "one VI, two windows" and keeps a set of
    open VIs, each with its own windows.
 c. The host keeps a queue per non-reentrant VI and the module instance between Runs.
+
+## DT-047
+
+**Debugging: how the compiled VI reports what it does and stops.**
+
+- **Status:** **Accepted on 2026-10-09** by the developer, after researching how LabVIEW does it.
+- **Complements:** [DT-039](#dt-039) (pure WebAssembly, no interpreter), [DT-040](#dt-040) (clumps, JSPI).
+
+### How LabVIEW does it
+
+1. **Allow Debugging** (VI Properties ▸ Execution, on by default) "causes extra code and data to be generated
+   for the VI" to set breakpoints and single-step; turning it off removes them, making the VI smaller and
+   slightly faster (LabVIEW Wiki, *Execution.Allow Debugging*).
+2. Because that code is always there, Highlight Execution can be turned on before, during a Run or at a
+   breakpoint.
+3. Highlight Execution slows the code down and runs parallel code sequentially in a single thread
+   (LabVIEW Wiki, *Execution highlighting*).
+4. LabVIEW 2026 Q3 (`labview-captures/debugging/REPORT.md`): one Debug Window holds probes and
+   breakpoints; Retain Wire Values lets a probe added later show the last value; four highlight speeds.
+
+### Decision
+
+1. **One compilation with debug hooks**, as Allow Debugging: after each node, the code reads a global
+   "debugging" flag and, only when it is set, calls the host with the node and the values of its outputs
+   (one import per value type). Unset, the hook costs a load and a branch per node. With Allow Debugging off
+   (`vi.execution["allow-debugging"]: false`) the compiler emits no hooks.
+2. **The host sets the flag** when Highlight Execution, a probe or a breakpoint is active, also in the
+   middle of a Run.
+3. **Stopping** (a breakpoint, Step Into/Over/Out, Pause) suspends the hook with JSPI until the user
+   continues, as Wait (ms) does; Highlight Execution delays each node by the measured speed.
+4. **With Highlight Execution the host runs one clump at a time**, as LabVIEW's single thread.
+5. **Retain Wire Values** keeps the last value of each wire in the host.
+6. No interpreter: the debugged program is the same compiled program.
+
+### Editor side (2026-10-09)
+
+Done in `editor/src/debugging/`; the rules are spec/05 §16. Decisions taken there:
+
+1. **"Before" a node.** The hook is after the node, LabVIEW stops before it. The run worker's controller counts the values that reach each node
+   from reporting nodes and stops in the report that makes a node ready; constants stop right after. Borders of structures do not report yet.
+2. **The Debug Window and the Error list are floating windows of the Block Diagram**, drawn in the page like the other dialogs, not
+   operating-system windows. The Front Panel asks the diagram to open them.
+3. **The state is shared by the two windows of a VI** over the BroadcastChannel (`debugState`, `debugEvent`, `workerMessage`); the worker
+   belongs to the window that launched the Run.
+4. **Probes and breakpoints are not saved** in the `.qvi`; `vi.execution["allow-debugging"]` is (only when false).
+5. **Highlight pace** = longest outgoing wire over a speed in px/s, with a floor per node; Fast and Very Fast are extrapolated (unverified).

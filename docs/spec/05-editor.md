@@ -834,3 +834,74 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/graphs/`, with `REPORT.md`); how 
 > **Unverified:** that hiding a scale leaves the plot where it is (here it does); the compact view of the terminal; the legend of
 > several plots (it always shows Plot 0); what the chart does with AutoScale X on and with a 2D array; the behaviour of the mouse over the
 > plot at run time (not determined in the report); the exact rule of autoscale (see `06-visual.md` §8.3).
+
+## 16. Debugging (2026-10-09, DT-047)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/debugging/`, with `REPORT.md`; the numbers of the captures are cited); how it
+looks is in [`06-visual.md`](06-visual.md) §14. What the report marks unverified is unverified here too. Code: `editor/src/debugging/`
+(`debug-controller.mjs` in the run worker, `debug-state.mjs`, `debug-view.mjs`, `debug-plan.mjs`, `error-list.mjs`), tested in
+`test/editor/debugging.test.mjs`, `test/editor/debug-controller.test.mjs` and `test/end-to-end/debugging-worker.test.mjs`.
+
+> **Rule 83 — The debugging buttons.** The diagram's toolbar has, after Pause, Highlight Execution, Retain Wire Values, Step Into,
+> Step Over and Step Out (`10b`); the panel's has Pause. Edit mode: all enabled but Step Out; Step Into and Step Over read "Start
+> Single Stepping" (13, 14). Running: Run reads "Running", Abort `Abort execution of "<VI>"` (75), Pause is black, the steps are
+> greyed. Stopped: Pause is red and reads "Continue", Step Into and Over read "Step over <node>", Step Out "Finish Iteration" inside a
+> loop (75, `74b`). A broken VI shows the broken Run arrow, "List Errors" (98), and greys Run Continuously, Abort and the steps (91c).
+> With VI Properties ▸ Execution ▸ Allow debugging off, Highlight Execution, Retain Wire Values, Pause and the steps are greyed and
+> their tooltip says why (unverified in LabVIEW). **Unverified:** what Pause does in edit mode (here, nothing), what Start Single
+> Stepping does (here: the VI starts and stops before its first node), "Step out of <VI>" at the top level (here also "Finish
+> Structure" in a Case or a sequence), the tooltips of the steps while the VI runs, and Step Into on a subVI node (greyed here:
+> the subVI is not stepped into yet).
+>
+> **Rule 84 — Highlight Execution.** A toggle (no pressed frame, `20`); pressing and holding it for 1.5 s opens a menu Slow, Medium
+> (default), Fast, Very Fast with a check on the current one; releasing over a speed picks it, releasing elsewhere closes the menu
+> and leaves the bulb on (22, 42). It can be turned on before or during a Run. While it is on the diagram is dimmed (60 % toward
+> white) for 0.6 s, each node returns to full color when it runs, a 5 px band grows along each of its wires and a value tag
+> appears at the source when the band arrives; when a node runs again everything dims anew; when the VI ends everything returns to
+> normal (30–35). Parallel clumps run one at a time. **Pace:** the worker holds the VI after each node for the length of the
+> longest wire that leaves it divided by the speed (500 and 1000 px/s for Slow and Medium, measured as estimates; 3200 and 5300
+> px/s for Fast and Very Fast, extrapolated from the iteration times: **unverified**), with a floor per node (120, 50, 15 and 5 ms:
+> unverified). LabVIEW's pace is not fixed per node: it grows with wire length and node count (REPORT §1).
+>
+> **Rule 85 — Probes.** Add Probe in a wire's menu puts a numbered probe on it and opens the Debug Window with the new row selected
+> (55). Probes and breakpoints share one numbering (71d). The label sits on the wire, with the live value tag beside it (55c); Show
+> Values on Wires turns the tags off. Custom Probe ▸ lists the five kinds and New Custom Probe...; the names carry the type of the wire (53); only
+> Generic Probe is done, which is the same probe, and the others are holes. Retain Wire Values keeps the last value of every wire
+> after the Run, so a probe added later shows it (50, 59); without it a probe keeps the value it showed and nothing else is kept
+> (unverified). **The value of a wire that starts at a border of a structure (a tunnel, a shift register, "i", "N") is not reported:
+> the compiler does not hook those nodes yet (DT-047); the probe shows no value.** Probes are not saved in the `.qvi`.
+>
+> **Rule 86 — Breakpoints.** A node's menu and a wire's menu offer Add Breakpoint; with one, "Remove Breakpoint" and "Disable (Enable)
+> Breakpoint" take its place (79). On a node it is a 3 px red frame outside the node, 2 px red and 1 px white when disabled (73, 80);
+> on a wire, a red disc of 19 px with the number (71). The VI stops **before** the node, drawn inverted with the marching frame
+> (74). The compiled VI only reports after a node, so the worker recovers "before": a node is ready when every wire from a reporting
+> node has delivered its value, and the stop happens in the report that made it ready. A node with no reporting inputs (a constant)
+> stops right after it; inputs that come through a border of a structure do not count. With parallel clumps another clump may run the
+> node before the stop (Highlight Execution serializes them, breakpoints do not). A breakpoint on a wire stops after the node it
+> starts at ("not distinctly observed in LabVIEW": **unverified**). Breakpoints on structures are holes. Breakpoints are
+> not saved and are listed in the Debug Window. Edit ▸ Remove Breakpoints from Hierarchy clears them (this VI only: subVIs are not debugged).
+>
+> **Rule 87 — Stopped.** The Run arrow stays "running", Pause is red (Continue) and Abort is enabled (74b). Continue goes on to the next
+> breakpoint; Step Over (and Step Into) runs the node and stops before the next one that is ready (76, 78); Step Out finishes the iteration of
+> the loop (or the structure) the node is in and stops at the next node outside it (REPORT §4: tooltip only; the behavior is
+> **unverified**). Pause stops before the next node that is ready. Abort frees a stopped VI.
+>
+> **Rule 88 — The Debug Window.** View ▸ Debug Window (Ctrl+D), Add Probe and the diagram open it: 682 × 338, toolbar (Remove Selected Probes and
+> Breakpoints, Enable/Disable greyed without a selected breakpoint, Project Environment Settings and Help as holes, Debug Options), the
+> list "Probes and Breakpoints | Value | Last Update" with the VI as a group, zebra rows and the selected row in blue, and the
+> Probe Display pane with its Probe Options (the Custom Probe list). Debug Options: Hide Probe Display, ✓Keep Window on Top, ✓Show Values
+> on Wires, Wrap Text (55–58). Last Update is `h:mm:ss,mmm` with the decimal separator of the system. Closing it asks "This operation will close all
+> probes in VIs that are open outside of projects. Do you wish to continue?" and, with Yes, removes the probes (63, 64); "Do not
+> ask again" is a hole. **Here it is a floating window drawn over the Block Diagram, like the dialogs, not an operating-system window;
+> from the Front Panel, Ctrl+D asks the diagram to open it.** It can be dragged by its title bar; Keep Window on Top is always so.
+>
+> **Rule 89 — The Error list.** View ▸ Error List (Ctrl+L) or the broken Run arrow open it: 661 × 412, "Items with errors" (the VI with
+> a red cross), "N errors and warnings", Show Warnings, the group "Block Diagram Errors" with one row per object ("Wait (ms): Contains
+> unwired or bad terminal"), Details, Close, Show Error (default) and Help (92). Show Error and a double click bring the diagram to the
+> front and frame the object with the marching frame, until something is clicked on the diagram (93, 95; how LabVIEW clears it is
+> unverified). Rows come from the required inputs nobody wired, the broken wires (with their reason), what the hierarchy cannot
+> load and what the compiler refuses. **Warnings are not computed** (the toolbar triangle and the Show Warnings items): the box is greyed. Run on a VI that
+> cannot run opens the Error list instead of a message box. Unlike LabVIEW's, the text of Details is our own.
+>
+> **Rule 90 — Allow debugging.** VI Properties ▸ Execution ▸ Allow debugging (on by default) writes `vi.execution["allow-debugging"]` (only when false). With it
+> off the compiler emits no debug hooks and Rule 83's buttons are greyed.

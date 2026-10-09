@@ -207,11 +207,14 @@ function elementoBarra(inv, e, sitio, extra) {
     return `<div class="${clases(inv, e.id, "caja-busqueda")}" ${id} ${estilo}><span class="selector">${G.SELECTOR}</span><span class="valor">${esc(rotulo(e))}</span><span class="lupa">${G.LUPA}</span></div>`;
   if (n === "save-version") return `<div class="${clases(inv, e.id, "texto-barra")}" ${id} ${estilo}>${esc(rotulo(e))}</div>`;
   if (G.BARRA[n]) {
-    const glifo = n === "run" && extra.ejecutando ? G.BARRA["run-en-marcha"] : n === "run" && extra.runRoto ? G.BARRA["run-roto"] : G.BARRA[n];
+    // The debugging buttons change glyph, enabled state and tooltip with the state of the VI (debugging/debug-state.mjs).
+    const state = extra.toolbar?.[n];
+    const glifo = G.BARRA[state?.glyph] ?? (n === "run" && extra.ejecutando ? G.BARRA["run-en-marcha"] : n === "run" && extra.runRoto ? G.BARRA["run-roto"] : G.BARRA[n]);
     const triangulo = G.CON_DESPLEGABLE.has(n) ? `<span class="triangulo">${G.TRIANGULO}</span>` : "";
     // Abort sólo se enciende mientras el VI corre (run/barra-run.png).
-    const apagado = n === "abort-execution" && !extra.ejecutando ? " desactivado" : "";
-    return `<div class="${clases(inv, e.id, `boton${triangulo ? " con-desplegable" : ""}${apagado}`)}" ${id} ${estilo}><span class="glifo">${glifo}</span>${triangulo}</div>`;
+    const apagado = (state ? !state.enabled : n === "abort-execution" && !extra.ejecutando) ? " desactivado" : "";
+    const tip = state?.tooltip ? ` data-tip="${esc(state.tooltip)}"` : "";
+    return `<div class="${clases(inv, e.id, `boton${triangulo ? " con-desplegable" : ""}${apagado}`)}" ${id}${tip} ${estilo}><span class="glifo">${glifo}</span>${triangulo}</div>`;
   }
   // Algo que el editor aún no sabe dibujar: su etiqueta, para que aparezca igual.
   return `<div class="${clases(inv, e.id, "texto-barra")}" ${id} ${estilo}>${esc(rotulo(e))}</div>`;
@@ -261,11 +264,12 @@ export function ventana(inv, nombre, estado, extra = {}) {
     <div class="borde-barra" style="top:${px(M.altoMenus + M.altoSurco + M.altoBarra)};height:${px(M.altoBordeBarra)}"></div>
     <div class="zona-iconos" style="width:${px(zona)};height:${px(M.altoMenus + M.altoSurco + M.altoBarra)}">${iconos.join("")}</div>
   </div>
-  <div class="lienzo lienzo-${nombre}" data-id="${pre}.workspace" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};right:${px(M.anchoCanalon)}">${lienzo}</div>
+  <div class="lienzo lienzo-${nombre}${extra.resaltando ? " resaltando" : ""}" data-id="${pre}.workspace" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};right:${px(M.anchoCanalon)}">${lienzo}</div>
   <div class="canalon" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};width:${px(M.anchoCanalon)}"></div>
   <div class="barra-estado" style="height:${px(M.altoEstado)}">${estadoHTML}</div>
   ${estado.paleta ? paleta(inv, estado.paleta) + subpaletas(inv, estado.paleta) : ""}
   ${extra.propiedades ?? ""}
+  ${extra.flotantes ?? ""}
   ${encima}
   ${estado.abierta ? explicacionFlotante(inv, estado.abierta) : ""}
   ${extra.dialogo ? dialogoError(extra.dialogo) : ""}
