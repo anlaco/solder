@@ -10,7 +10,7 @@ program that talks to the instruments, **Anvil** sequences and tests it, and
 **Crucible** simulates the bench so you can test without hardware.
 
 > **Alpha.** Solder is in an early, unstable stage: things change and files saved
-> today may need adjusting tomorrow. Version **0.1.0-alpha** — see
+> today may need adjusting tomorrow. Version **0.2.0-alpha** — see
 > [`CHANGELOG.md`](CHANGELOG.md).
 
 ## What works today

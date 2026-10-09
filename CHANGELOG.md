@@ -6,7 +6,7 @@ fixes things raises PATCH, and the `-alpha` label says the language and its file
 format are not stable yet; the maintainable version will carry `-beta` and stay a
 `0.x` (DT-048).
 
-## Unreleased (0.2.0-alpha)
+## 0.2.0-alpha — 2026-10-09
 
 ### Broken wires (DT-046)
 - Delete on the diagram, and deleting a control or indicator on the panel, leave

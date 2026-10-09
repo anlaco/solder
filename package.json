@@ -1,7 +1,7 @@
 {
   "name": "@solder/editor",
   "productName": "Solder",
-  "version": "0.1.0-alpha",
+  "version": "0.2.0-alpha",
   "private": true,
   "type": "module",
   "description": "Solder's editor: the windows of a VI, cloned from LabVIEW 2026 Q3, in Electron (DT-037).",
