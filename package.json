@@ -1,17 +1,59 @@
 {
   "name": "@solder/editor",
+  "productName": "Solder",
   "version": "0.1.0-alpha",
   "private": true,
   "type": "module",
   "description": "Solder's editor: the windows of a VI, cloned from LabVIEW 2026 Q3, in Electron (DT-037).",
+  "author": "anlaco",
+  "homepage": "https://github.com/anlaco/solder",
   "license": "AGPL-3.0-only",
   "main": "editor/electron/main.mjs",
   "scripts": {
     "app": "node scripts/start-editor.mjs",
-    "test": "node --experimental-wasm-jspi --test 'test/**/*.test.mjs'"
+    "test": "node --experimental-wasm-jspi --test 'test/**/*.test.mjs'",
+    "dist": "electron-builder --linux AppImage deb --win nsis --publish never"
   },
   "devDependencies": {
     "ajv": "^8.17.1",
-    "electron": "^40.10.6"
-  }
+    "electron": "^40.10.6",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "dev.anlaco.solder",
+    "productName": "Solder",
+    "artifactName": "Solder-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "package.json",
+      "editor/**/*",
+      "core/**/*",
+      "docs/schema/blocks.json",
+      "docs/schema/inventario-labview.json"
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Development",
+      "maintainer": "anlaco",
+      "synopsis": "A free visual programming language that clones LabVIEW",
+      "executableName": "solder",
+      "syncDesktopName": true
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "executableName": "solder"
+  },
+  "desktopName": "solder.desktop"
 }

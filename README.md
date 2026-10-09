@@ -32,6 +32,19 @@ program that talks to the instruments, **Anvil** sequences and tests it, and
 
 What comes next is in [`docs/design/labview-plan.md`](docs/design/labview-plan.md).
 
+## Install
+
+Download the installer for your system from the
+[latest release](https://github.com/anlaco/solder/releases):
+
+- **Windows:** `Solder-<version>-win-x64.exe`. It is not signed yet, so Windows
+  SmartScreen may warn: choose *More info ▸ Run anyway*.
+- **Linux (Debian, Ubuntu…):** `sudo apt install ./Solder-<version>-linux-amd64.deb`
+- **Linux (any):** the `.AppImage`: `chmod +x` it and run it.
+
+macOS builds are not available yet. To build the installers yourself:
+`npm run dist` (they go to `dist/`).
+
 ## Usage
 
 Requires Node 24.
