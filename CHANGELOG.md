@@ -6,6 +6,24 @@ fixes things raises PATCH, and the `-alpha` label says the language and its file
 format are not stable yet; the maintainable version will carry `-beta` and stay a
 `0.x` (DT-048).
 
+## 0.3.0-alpha — 2026-10-10
+
+The first fixes from writing three real programs with Solder (`examples/`),
+each checked against LabVIEW 2026 Q3.
+
+- Two calls of the same non-reentrant subVI that run at the same time no longer
+  mix their inputs: each call answers its own (bug #30).
+- A Case Structure takes a string selector: frames match the exact string, or
+  ignore upper and lower case with Case Insensitive Match (marked `A=a` on the
+  frame); `""` is the empty string and `"a".."c"` a range that stops before
+  `"c"`. Wiring a string turns the frames into `"True"` and `"False", Default`.
+- A Case Structure takes an enum selector: frames are named by the enum's items,
+  a Case with a frame for every item needs no Default, and Add Case for Every
+  Value adds the missing ones.
+- Errors 81 to 85 of Format Into String and Scan From String have a description,
+  and their source names the VIs of the call, as in
+  `Scan From String (arg 1) in Parse Reply.qvi->Instrument Protocol.qvi`.
+
 ## 0.2.1-alpha — 2026-10-09
 
 Fixes found by installing and using 0.2.0-alpha on Windows.
