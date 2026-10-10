@@ -160,6 +160,20 @@ of maintenance with fixes only (`0.N.x-beta`).
    measurement loop with a chart, a string protocol with Format/Scan and subVIs, a state machine with a
    Case and shift registers). Every failure or annoyance found becomes a fix; they are the test of
    whether the maintainable version is ready.
+   *Written on 2026-10-09/10 ([`real-programs-0.2.md`](real-programs-0.2.md), `examples/`): Temperature
+   Monitor works and matches LabVIEW; Instrument Protocol gives a wrong result (two calls of one
+   non-reentrant subVI mix their inputs); Oven Controller works with I32 states. 36 findings, eight of them
+   blockers (New VI, string selector, array constant type, Build Array, Unbundle, error cluster on the loop
+   condition, enum items, shift register menu). Next: the fixes, in the order of §3 of that report, for
+   0.3.0-alpha.*
+   **Rule decided on 2026-10-10:** nothing else is implemented until the examples in `examples/` behave
+   exactly the same in Solder and in LabVIEW. The examples are written as a LabVIEW user would (string
+   selector, enum states, Unbundle By Name, no workarounds), with deterministic inputs (no Random Number) so
+   their outputs can be compared value by value; LabVIEW's outputs are written down once as the reference and
+   a test runs each example against them. Order: (1) the three examples built in LabVIEW and their outputs
+   written down, (2) the subVI fault (#30), (3) only what the examples need, (4) the comparison tests green.
+   *(1) done on 2026-10-10: the three examples built in LabVIEW and their outputs written in
+   [`examples/README.md`](../../examples/README.md). Next: (2), the subVI fault.*
 4. **Loose ends that mislead**, left half done in stage 1: the borders of the structures report no
    values to probes and Highlight Execution (tunnels, shift registers, "i", "N"); the warning triangle
    and its list; anything step 3 finds that looks done but is not.
