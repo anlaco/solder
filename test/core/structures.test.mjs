@@ -648,3 +648,94 @@ test("una flat sequence guarda el ancho de sus marcos y se abre igual", async ()
   delete Object.values(sin.layout.diagram)[0]["frame-widths"];
   assert.deepEqual(leer(JSON.stringify(sin), CAT).nodos[0].config.marcos, [{}, {}]);
 });
+
+/** A Case on a string control `s`: each frame sends its own number to the indicator `r`. */
+function stringCase(frames) {
+  return construir((b) => {
+    b.bucle("c", "case-structure");
+    b.marcos("c", frames);
+    b.nodo("s", "str-control");
+    frames.forEach((_, k) => b.nodo(`k${k}`, "const", { value: k + 1 }, "c", k));
+    b.tunel("t", "c", "out");
+    b.nodo("r", "indicator");
+    b.cable("s.result", "c:sel.selector");
+    frames.forEach((_, k) => b.cable(`k${k}.result`, `t.x-${k}`));
+    b.cable("t.y", "r.value");
+  });
+}
+
+const frameFor = async (v, s) => (await correr(v, { s })).r;
+
+// spec/04 Rule 17d, measured in LabVIEW 2026 Q3 (labview-captures/reports/2026-10-10-string-case.md).
+test("a string case matches the exact string, case and spaces included", async () => {
+  const v = stringCase([{ valores: ["abc"] }, { default: true }]);
+  assert.deepEqual([await frameFor(v, "abc"), await frameFor(v, "ABC"), await frameFor(v, "abc "), await frameFor(v, "")], [1, 2, 2, 2]);
+});
+
+test("a string case with Case Insensitive Match ignores ASCII case but not spaces", async () => {
+  const v = stringCase([{ valores: ["abc"] }, { default: true }]);
+  v.g = Gr.fijarConfig(v.g, v.id.c, { caseInsensitive: true });
+  assert.deepEqual([await frameFor(v, "ABC"), await frameFor(v, "aBc"), await frameFor(v, "abc ")], [1, 1, 2]);
+});
+
+test("a string range includes its lower end and excludes its upper end", async () => {
+  const v = stringCase([{ valores: ["x"] }, { valores: [{ min: "a", max: "c" }] }, { default: true }]);
+  const frames = [];
+  for (const s of ["a", "b", "bzz", "c", "ca", "B", "x"]) frames.push(await frameFor(v, s));
+  assert.deepEqual(frames, [2, 2, 2, 3, 3, 3, 1]);
+});
+
+test("the empty string has its own frame", async () => {
+  const v = stringCase([{ valores: ["abc"] }, { valores: [""] }, { default: true }]);
+  assert.deepEqual([await frameFor(v, ""), await frameFor(v, "xyz")], [2, 3]);
+});
+
+test("a string case without Default, with a duplicate value or with a frame without value is broken", () => {
+  const motivos = (frames) => compilar(stringCase(frames).g, CAT).errores?.map((e) => e.motivo).join() ?? "";
+  assert.match(motivos([{ valores: ["abc"] }, { valores: ["x"] }]), /Default/);
+  assert.match(motivos([{ valores: ["zzz"] }, { valores: ["zzz"] }, { default: true }]), /dos marcos/);
+  assert.match(motivos([{ valores: ["abc"] }, {}, { default: true }]), /no selector value/);
+});
+
+test("Case Insensitive Match is saved in the .qvi and read back", () => {
+  const v = stringCase([{ valores: ["abc"] }, { default: true }]);
+  v.g = Gr.fijarConfig(v.g, v.id.c, { caseInsensitive: true });
+  const texto = aTexto(v.g, CAT);
+  const validate = new Ajv2020({ allErrors: true, strict: false }).compile(leerJson("docs/schema/qvi.schema.json"));
+  assert.ok(validate(JSON.parse(texto)), JSON.stringify(validate.errors));
+  assert.equal(JSON.parse(texto)["block-diagram"].structures[0]["case-insensitive"], true);
+  assert.equal(aTexto(leer(texto, CAT), CAT), texto, "saving what was opened gives the same text");
+});
+
+/** A Case on an enum constant (Init, Heat, Done) of value `item`: each frame sends its own number to `r`. */
+function enumCase(frames, item) {
+  return construir((b) => {
+    b.bucle("c", "case-structure");
+    b.marcos("c", frames);
+    b.nodo("e", "enum-const", { type: { enum: ["Init", "Heat", "Done"] }, value: item });
+    frames.forEach((_, k) => b.nodo(`k${k}`, "const", { value: k + 1 }, "c", k));
+    b.tunel("t", "c", "out");
+    b.nodo("r", "indicator");
+    b.cable("e.result", "c:sel.selector");
+    frames.forEach((_, k) => b.cable(`k${k}.result`, `t.x-${k}`));
+    b.cable("t.y", "r.value");
+  });
+}
+
+// spec/04 Rule 17e, measured in LabVIEW 2026 Q3 (labview-captures/reports/2026-10-10-enum-case.md).
+test("an enum case with a frame for every item runs without Default", async () => {
+  const frames = [{ valores: [0] }, { valores: [1] }, { valores: [2] }];
+  const results = [];
+  for (const item of [0, 1, 2]) results.push((await correr(enumCase(frames, item))).r);
+  assert.deepEqual(results, [1, 2, 3]);
+});
+
+test("an enum range includes both ends and counts as covering its items", async () => {
+  const frames = [{ valores: [0] }, { valores: [{ min: 1, max: 2 }] }];
+  assert.deepEqual([(await correr(enumCase(frames, 1))).r, (await correr(enumCase(frames, 2))).r], [2, 2]);
+});
+
+test("an enum case with an item without a frame and no Default is broken", () => {
+  const errors = compilar(enumCase([{ valores: [0] }, { valores: [1] }], 0).g, CAT).errores;
+  assert.match(errors.map((e) => e.motivo).join(), /Default/);
+});

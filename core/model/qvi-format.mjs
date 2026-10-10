@@ -101,6 +101,7 @@ export function escribir(g, cat) {
           name: n.name,
           kind: n.tipo,
           "condition-mode": modo && modo !== "stop-if-true" ? modo : undefined,
+          "case-insensitive": (caso && n.config?.caseInsensitive) || undefined,
           tunnels: tunnels.length ? tunnels : undefined,
           "shift-registers": registros.length ? registros : undefined,
           body: caso || secuencia ? undefined : ambito(n.id),
@@ -265,7 +266,8 @@ export function leer(datos, cat) {
         const anchos = e.kind === "flat-sequence" ? d["frame-widths"] : undefined;
         const marcos = (e.frames ?? []).map((f, k) => (caso ? limpio({ valores: f.match ?? [], default: f.default || undefined }) : anchos?.length === e.frames.length ? { ancho: anchos[k] } : {}));
         const activo = e.kind === "flat-sequence" ? {} : { activo: d["active-frame"] ?? 0 };
-        cambiar(r.id, (n) => ({ ...n, config: { ...n.config, marcos, ...activo } }));
+        const caseInsensitive = caso && e["case-insensitive"] ? { caseInsensitive: true } : {};
+        cambiar(r.id, (n) => ({ ...n, config: { ...n.config, marcos, ...activo, ...caseInsensitive } }));
       }
       const info = { id: r.id, miembros: new Map() };
       estructuras.set(e.name, info);

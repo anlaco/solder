@@ -358,6 +358,30 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   first free integer after the previous frame; on a boolean, empty), Delete
 >   This Case, Make This The Default Case / Remove Default, Show Case True/False
 >   and Use Default If Unwired, done; the rest, greyed out.
+> - **String and enum selectors** (measured in LabVIEW 2026 Q3:
+>   `labview-captures/reports/2026-10-10-string-case.md` and
+>   `labview-captures/reports/2026-10-10-enum-case.md`; tests in
+>   `test/editor/case-selector-kinds.test.mjs`). The kind is read from the wire into
+>   the selector. Wiring a string turns False and True into `"False", Default` and
+>   `"True"`; wiring an enum, into `"Init", Default` (item 0) and `"Heat"` (item 1).
+>   Labels: strings quoted (`"abc"`, `""`, range `"a".."c"`); enum items by quoted
+>   name, a range as `"Init".."Done"`, and two adjacent items as the list
+>   `"Init", "Heat"`. Editing the label: for a string, a bare word is that string,
+>   commas inside quotes belong to the string; for an enum, an item name or number
+>   (shown afterwards as the name). Add Case After/Before on a string Case adds a frame
+>   with no value (blank label; the core reports the VI broken); on an enum Case it takes
+>   the first item without a frame. Border menu: *Case Insensitive Match* (check item,
+>   string only, between Make This The Default Case and Remove and Rewire; on, it
+>   draws a small pink `A=a` at the bottom-left corner of the frame); Radix is
+>   hidden for both kinds. For an enum with an item without a frame, *Add Case for
+>   Every Value* (one frame per uncovered item, in item order, at the end) and
+>   *Remove Empty Cases* appear after Delete This Case; with every item covered both are absent.
+>
+> *Unverified or not done for these kinds:* Remove Empty Cases (shown greyed); the look of the `A=a`
+> marker (only described, drawn anew); escapes inside quoted strings; open-ended string ranges;
+> a name that is not an item (LabVIEW accepts it in red and breaks the VI; here it is
+> rejected and the frame stays as it was); the value a new enum frame gets (LabVIEW's is not
+> measured); the frames after changing the type of a wired selector; unwiring.
 >
 > *Unverified or not done:* what Add Case Before gives on the first frame, Delete
 > with a single frame, Make This Case True/False, Duplicate Case, Swap/Shift/

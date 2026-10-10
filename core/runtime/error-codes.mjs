@@ -23,6 +23,12 @@ export const CODIGOS = {
   56: ["The network operation took longer than the time allowed for it, either by the program or by the system."],
   63: ["The serial port filled its receive buffer before the data were read.", "The server refused the network connection."],
   66: ["The other end closed the network connection."],
+  // Format Into String and Scan From String (spec/04 Rule 21j).
+  81: ["A format specifier does not suit the type of the value it was given, for instance %d for a string."],
+  82: ["The format string holds a specifier that is not recognized."],
+  83: ["The function has more inputs or outputs than the format string has specifiers for."],
+  84: ["The format string has more specifiers than the function has inputs or outputs."],
+  85: ["The text could not be read with the format string: it does not hold the kind of data the format asks for at that point."],
 };
 
 const SEPARADOR = "=".repeat(26);

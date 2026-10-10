@@ -463,6 +463,12 @@
           "enum": ["stop-if-true", "continue-if-true"]
         },
 
+        "case-insensitive": {
+          "description": "case-structure with a string selector: Case Insensitive Match is on, so a frame matches regardless of ASCII case (spec/04 Rule 17d). Written only when true.",
+          "type": "boolean",
+          "const": true
+        },
+
         "shift-registers": {
           "type": "array",
           "items": {
@@ -511,7 +517,7 @@
             "additionalProperties": false,
             "properties": {
               "match": {
-                "description": "Valores del selector que activan este marco.",
+                "description": "Selector values that select this frame: a Boolean, an integer (an enum by its item number), a string, or a range {min, max}. An integer range includes both ends; a string range includes min and excludes max (spec/04 Rules 17b and 17d).",
                 "type": "array", "minItems": 1
               },
               "default": {
@@ -533,6 +539,10 @@
       },
 
       "allOf": [
+        {
+          "if": { "required": ["case-insensitive"] },
+          "then": { "properties": { "kind": { "const": "case-structure" } } }
+        },
         {
           "if": { "properties": { "kind": { "const": "case-structure" } }, "required": ["kind"] },
           "then": {

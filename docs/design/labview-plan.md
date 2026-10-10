@@ -42,7 +42,7 @@ LabVIEW** (DT-040): independent branches run at the same time, each indicator is
 painted when its data arrives, Abort stops at once and the panel switches to Run
 mode. Since 2026-10-01 also **with loops**: While and For are placed, stretched
 and wired in the diagram, and the compiler runs them (DT-041).
-546 tests green. **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane.
+567 tests green. **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane.
 
 | Piece | Status |
 |-------|--------|
@@ -178,6 +178,10 @@ of maintenance with fixes only (`0.N.x-beta`).
    before writing its inputs; DT-045 §2, measured with `Two Calls.vi`). Next: (3), only what the examples
    need; note that the Solder `Simulated Instrument.qvi` still has the workarounds (Random Number,
    Equal? + Select) and gives a random voltage where LabVIEW gives `5.0000`.*
+   *(3) in progress on 2026-10-10: the Case with a string selector (#16) and with an enum selector measured
+   and compiled (spec/04 Rules 17d, 17e), errors 81–85 described (#28), and the call chain in an error's
+   source (#39, Rule 21k). Also done in the editor (spec/05 Rule 40f). Still needed by the examples: the enum's
+   Edit Items… and an enum indicator (#32), Unbundle By Name (#23), New VI (#1), and the comparison tests (4).*
 4. **Loose ends that mislead**, left half done in stage 1: the borders of the structures report no
    values to probes and Highlight Execution (tunnels, shift registers, "i", "N"); the warning triangle
    and its list; anything step 3 finds that looks done but is not.

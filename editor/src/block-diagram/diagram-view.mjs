@@ -16,7 +16,7 @@ import * as FN from "./format-nodes.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { ARROWHEAD_COLOR_OF_TYPE, brokenWireMarks, endPoint } from "./broken-wire.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
-import { COLORES, aspecto, esArray, esCluster, esEntero, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
+import { COLORES, aspecto, esArray, esCluster, esEntero, esEnum, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
 import { GRAPH_KINDS, labelShown } from "../front-panel/graph-state.mjs";
 import { MAX_EDITOR_DIMENSIONS, cellAddress, dimensionsOfNode, firstShown, isDefined, readCell, visibleGrid } from "../common/array-grid.mjs";
 
@@ -272,12 +272,40 @@ export const activoDe = (n) => Math.min(n.config?.activo ?? 0, Math.max(0, marco
 export const esBooleano = (n) => marcosDe(n).some((m) => (m.valores ?? []).some((v) => typeof v === "boolean"));
 
 /**
- * Cómo se llama un marco: sus valores separados por coma —los rangos, «2..4»—
- * y «Default» al final si lo es («0, Default»); False y True en un booleano.
+ * What a Case selector carries, as far as its frames are concerned: `"string"`,
+ * an enum type (`{ enum: [...] }`) or `undefined` for a Boolean or a number. Read
+ * from the wire into the selector terminal, from `resolved` (the types of the
+ * graph, `Gr.tipos`).
  */
-export function etiquetaMarco(m) {
-  const valor = (v) => (typeof v === "boolean" ? (v ? "True" : "False") : typeof v === "number" ? String(v) : `${v.min ?? ""}..${v.max ?? ""}`);
-  const partes = (m.valores ?? []).map(valor);
+export function selectorKind(graph, caseNode, resolved) {
+  const selector = graph.nodos.find((n) => n.dentro === caseNode.id && n.tipo === "case-selector");
+  const wire = selector && graph.cables.find((c) => c.a.nodo === selector.id);
+  const type = wire && resolved?.cables.get(wire.id)?.tipo;
+  return type === "string" || esEnum(type) ? type : undefined;
+}
+
+const quoted = (text) => `"${text}"`;
+
+/** One value of a frame as its selector shows it: strings and enum items in quotes, enum items by name. */
+function labelOfValue(value, kind) {
+  const bound = (v) => (v === undefined || v === null ? "" : typeof v === "string" ? quoted(v) : esEnum(kind) && kind.enum[v] !== undefined ? quoted(kind.enum[v]) : String(v));
+  if (typeof value === "boolean") return value ? "True" : "False";
+  if (value && typeof value === "object") {
+    // LabVIEW shows two adjacent enum items as a list, not as a range (enum report, point 5).
+    if (esEnum(kind) && value.max - value.min === 1) return `${bound(value.min)}, ${bound(value.max)}`;
+    return `${bound(value.min)}..${bound(value.max)}`;
+  }
+  return bound(value);
+}
+
+/**
+ * How a frame is called: its values separated by commas (ranges, «2..4») and
+ * «Default» at the end if it is («0, Default»); False and True in a Boolean one.
+ * With a string or an enum selector (`kind`) the values are in quotes
+ * (`"abc"`, `"a".."c"`, `"Init", Default`).
+ */
+export function etiquetaMarco(m, kind) {
+  const partes = (m.valores ?? []).map((v) => labelOfValue(v, kind));
   if (m.default) partes.push("Default");
   return partes.join(", ");
 }
@@ -325,9 +353,9 @@ export function marcoEnX(n, x) {
  * Los nombres de los marcos en su selector y en su lista: en un Case, lo que
  * valen; en una Stacked, su número y cuántos hay, «1 [0..2]» (secuencia-8.png).
  */
-export function textosMarcos(n) {
+export function textosMarcos(n, kind) {
   const ms = marcosDe(n);
-  return esApilada(n) ? ms.map((_, k) => `${k} [0..${ms.length - 1}]`) : ms.map(etiquetaMarco);
+  return esApilada(n) ? ms.map((_, k) => `${k} [0..${ms.length - 1}]`) : ms.map((m) => etiquetaMarco(m, kind));
 }
 
 /** ¿Está el nodo en un marco de un Case o una Stacked que no es el que se ve? Entonces no se pinta ni se pulsa. */
@@ -359,10 +387,10 @@ const terminalVisible = (n, t, g) => {
  * más ancho de sus marcos (o el que se escribe) y centrado en el borde de arriba.
  * Devuelve lo que ocupa, dónde empieza (desde la esquina del Case) y el texto.
  */
-export function medidasSelector(n, ctx, edicion) {
+export function medidasSelector(n, ctx, edicion, kind) {
   const M = G.SELECTOR_MARCOS;
   const escribiendo = edicion?.marco && edicion.nodo === n.id;
-  const textos = textosMarcos(n).map((t, k) => (escribiendo && k === activoDe(n) ? edicion.texto : t));
+  const textos = textosMarcos(n, kind).map((t, k) => (escribiendo && k === activoDe(n) ? edicion.texto : t));
   const anchoTexto = (t) => ctx.medir(t);
   const texto = Math.ceil(Math.max(0, ...textos.map(anchoTexto))) + M.sobraTexto;
   const ancho = texto + 18;
@@ -701,7 +729,7 @@ export function contenido(d0, ctx, resueltos) {
   const estructuras = g.nodos
     .filter((n) => esEstructura(n, ctx))
     .sort((a, b) => profundidad(g, a) - profundidad(g, b))
-    .map((n) => estructura(n, ctx, elegidos.has(n.id), d))
+    .map((n) => estructura(n, ctx, elegidos.has(n.id), d, resueltos))
     .join("");
   const nodos = g.nodos.filter((n) => !esEstructura(n, ctx)).map((n) => nodo(n, d, ctx, resueltos, elegidos.has(n.id))).join("");
   const etiquetas = g.nodos
@@ -724,7 +752,7 @@ export function contenido(d0, ctx, resueltos) {
     const n = { id: "fantasma", tipo: accion.bloque, x: accion.x, y: accion.y, ...(isSubVI({ tipo: accion.bloque }) ? { config: accion.config } : {}) };
     fantasma = `<div class="fantasma">${nodo(n, { g, seleccion: [] }, ctx, null, false)}</div>`;
   }
-  const lista = d.lista ? listaMarcos(d, ctx) : "";
+  const lista = d.lista ? listaMarcos(d, ctx, resueltos) : "";
   const aviso = d.aviso ? `<div class="aviso" style="left:${px(d.aviso.x + 8)};top:${px(d.aviso.y + 8)}">${esc(d.aviso.texto)}</div>` : "";
   const pistas = sobre ? pistasTerminales(g.nodos.find((n) => n.id === sobre.nodo), d, ctx, resueltos) : "";
   // Las cuñas de coerción y las pistas de los terminales, encima de los nodos.
@@ -996,7 +1024,7 @@ const litByDebugger = (d, id) => (d.debug?.litNodes.has(id) ? " dep-encendido" :
  * no: un clic dentro es un clic en el fondo) y, seleccionada, el tinte azulado
  * y las ocho asas de estirar (structures/seleccion.png).
  */
-function estructura(n, ctx, elegido, d) {
+function estructura(n, ctx, elegido, d, resueltos) {
   const k = caja(n, ctx);
   const M = MEDIDAS_ESTRUCTURA;
   const caso = esCase(n);
@@ -1033,7 +1061,17 @@ function estructura(n, ctx, elegido, d) {
       }).join("")
     : "";
   const clase = `${caso ? "estructura-case" : esFlat(n) ? "estructura-flat" : esApilada(n) ? "estructura-stacked" : esFor ? "estructura-for" : "estructura-while"}${elegido ? " seleccionado" : ""}${litByDebugger(d, n.id)}`;
-  return `<div class="nodo estructura ${clase}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${tinte}${marco}${bandas}${conSelector(n) ? selectorDeMarcos(n, ctx, d) : ""}${asas}</div>`;
+  return `<div class="nodo estructura ${clase}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${tinte}${marco}${bandas}${conSelector(n) ? selectorDeMarcos(n, ctx, d, resueltos) : ""}${caso && n.config?.caseInsensitive ? marcaCaseInsensitive() : ""}${asas}</div>`;
+}
+
+/**
+ * The marker of a string Case that ignores upper and lower case: a small «A=a»
+ * in the pink of strings at the bottom-left corner of the frame. Drawn anew; the
+ * look is only described in labview-captures/reports/2026-10-10-string-case.md (Q2).
+ */
+function marcaCaseInsensitive() {
+  const pink = aspecto("string").color;
+  return `<svg class="marca-case-insensitive" width="19" height="11" style="position:absolute;left:1px;bottom:1px" xmlns="http://www.w3.org/2000/svg"><rect x="0.5" y="0.5" width="18" height="10" fill="#fff" stroke="${pink}"/><text x="2" y="8.5" font-size="8" font-family="Arial, sans-serif" fill="${pink}">A=a</text></svg>`;
 }
 
 /**
@@ -1042,9 +1080,9 @@ function estructura(n, ctx, elegido, d) {
  * zonas que se pulsan: la flecha anterior, la siguiente, el triángulo que abre la
  * lista y el texto, que con doble clic se edita.
  */
-function selectorDeMarcos(n, ctx, d) {
+function selectorDeMarcos(n, ctx, d, resueltos) {
   const M = G.SELECTOR_MARCOS;
-  const m = medidasSelector(n, ctx, d.edicion);
+  const m = medidasSelector(n, ctx, d.edicion, selectorKind(d.completo ?? d.g, n, resueltos));
   const xd = m.ancho - 9;
   const ed = d.edicion?.marco && d.edicion.nodo === n.id ? d.edicion : null;
   const t = esc(m.actual);
@@ -1060,11 +1098,11 @@ function selectorDeMarcos(n, ctx, d) {
 }
 
 /** La lista desplegable de marcos (structures/case-lista.png): un menú de filas con la marca en el que se ve. */
-function listaMarcos(d, ctx) {
+function listaMarcos(d, ctx, resueltos) {
   const n = d.g.nodos.find((k) => k.id === d.lista.nodo);
   if (!n) return "";
   const M = MEDIDAS_MENU;
-  const textos = textosMarcos(n);
+  const textos = textosMarcos(n, selectorKind(d.completo ?? d.g, n, resueltos));
   const ancho = M.texto + Math.max(0, ...textos.map((t) => ctx.medir(t))) + M.derecha;
   const filas = textos
     .map((t, k) => `<div class="item-menu item-marco${k === activoDe(n) ? " marcado" : ""}" data-nodo="${esc(n.id)}" data-marco="${k}" style="top:${px(M.arriba + k * M.fila)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(t)}</span></div>`)

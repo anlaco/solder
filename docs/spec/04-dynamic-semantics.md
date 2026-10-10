@@ -177,7 +177,7 @@ number of iterations.
 > that option, a frame that does not assign it is a compile error. *(Amended on
 > 2026-10-01: LabVIEW has that option.)*
 
-> **Rule 17b.** The selector is a boolean or an integer; a decimal is rounded
+> **Rule 17b.** The selector is a boolean, an integer, an enum or a string (Rule 17d); a decimal is rounded
 > to the nearest integer, to even on a tie (2.5 → 2). A numeric selector
 > needs a Default frame; a boolean one, its True and False frames. A value cannot
 > be in two frames. *(Verified in LabVIEW 2026 Q3 on 2026-10-01: a DBL at the selector is
@@ -185,6 +185,29 @@ number of iterations.
 
 *(Without this rule, the output value would depend on which frame ran, and might
 not exist. LabVIEW requires the same.)*
+
+> **Rule 17d — String selector.** A frame matches a string that is equal to one of
+> its values byte for byte: case and spaces count (`"abc"` does not take `"ABC"` or
+> `"abc "`). With **Case Insensitive Match** on, ASCII case is ignored and nothing
+> else (`"aBc"` matches `"abc"`, `"abc "` still does not). The empty string is a
+> value of its own, written `""`. A range `"a".."c"` takes the strings from `"a"`
+> **included** to `"c"` **excluded**, in byte order (`"bzz"` yes; `"c"`, `"ca"` and
+> `"B"` no), unlike an integer range, which includes both ends. A string selector
+> needs a Default frame; a frame with no value, or a value in two frames, breaks
+> the VI. Frames keep the order they were given. *(Measured in LabVIEW 2026 Q3 on
+> 2026-10-10, `labview-captures/reports/2026-10-10-string-case.md`; tests "a string
+> case …" in `test/core/structures.test.mjs`. Unverified: case folding of non-ASCII
+> letters, a range under Case Insensitive Match, open string ranges.)*
+
+> **Rule 17e — Enum selector.** Frames are named by the enum's items, quoted
+> (`"Init"`), and stored by item number. A frame for every item makes the Default
+> frame unnecessary; an item with no frame and no Default breaks the VI ("no case for
+> some selector values"). A range of items includes both ends (`"Heat".."Done"` takes
+> Heat and Done), as an integer range does. There is no Case Insensitive Match.
+> *(Measured in LabVIEW 2026 Q3 on 2026-10-10,
+> `labview-captures/reports/2026-10-10-enum-case.md`; tests "an enum case …" in
+> `test/core/structures.test.mjs`. Unverified: an enum with "Allow undefined values"
+> and an out-of-range item number typed as a frame value.)*
 
 ### 5.3b Flat and Stacked Sequence
 
@@ -432,7 +455,7 @@ Measured in LabVIEW 2026 Q3 by running each case (`labview-captures/format-scan/
 >   `%d`, `%s`) joined by one space. `initial string` goes first.
 > - **Errors** (the output string is then empty, `initial string` included): 81 a type mismatch, 82 an unknown
 >   specifier (`%c`), 83 fewer specifiers than rows, 84 more; rows count wired or not. The source is the function's
->   name with `(arg N)` when it is about an argument. Unverified: LabVIEW also appends ` in <VI name>`.
+>   name with `(arg N)` when it is about an argument, then where it ran (Rule 21k).
 > - **Scan:** numbers and `%s` skip leading whitespace; whitespace in the format matches any run of it; a width
 >   limits the characters read; `0x` is not a hexadecimal prefix. Each output has the type of its default; an
 >   integer output rounds to even and saturates (NaN gives the maximum). A failed conversion is error 85: the
@@ -443,6 +466,17 @@ Measured in LabVIEW 2026 Q3 by running each case (`labview-captures/format-scan/
 >   defaults (the common rule of `error in`).
 > - Not done: the time specifiers `%t` and `%T` (a run-time error says so), the Edit Format String dialog,
 >   and Format Value and Scan Value as nodes (their rules are in the engine).
+
+> **Rule 21k — Where an error was raised.** The source of an error that a function raises ends with
+> ` in ` and the VIs it ran in, the VI of the function first and each caller after it, joined by `->`:
+> `Scan From String (arg 1) in Parse Reply.vi->Instrument Protocol.vi` in LabVIEW. The chain is the one
+> of that call: a non-reentrant subVI called from two places names the caller of each call. Solder names
+> a VI by its file name, so the same error reads `… in Parse Reply.qvi->Instrument Protocol.qvi`; a VI
+> never saved is `Untitled N`. *(Measured in LabVIEW 2026 Q3 on 2026-10-10, Instrument Protocol with the
+> command `FOO`, `examples/README.md`; tests "the source of an error raised …" in
+> `test/core/subvis.test.mjs`. Done for Format Into String and Scan From String. Unverified: the form for an
+> error raised in the top-level VI, which Solder writes `… in Top.qvi`, and the other functions that raise
+> errors.)*
 
 ## 7. Blocking operations
 

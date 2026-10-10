@@ -83,6 +83,8 @@ export const CADENAS = {
   },
   /** Comparar cadenas: byte a byte; si una es el principio de la otra, la corta es la menor. */
   cmp: (a, b) => (a < b ? -1 : a > b ? 1 : 0),
+  /** The same, ignoring ASCII case (Case Insensitive Match; non-ASCII letters unverified). */
+  cmpCaseInsensitive: (a, b) => CADENAS.cmp(CADENAS.minus(a), CADENAS.minus(b)),
   dec: (x, w) => rellenar(aEntero64(x).toString(), w),
   hex: (x, w, bits) => rellenar(BigInt.asUintN(bits, aEntero64(x)).toString(16).toUpperCase(), w, "0"),
   oct: (x, w, bits) => rellenar(BigInt.asUintN(bits, aEntero64(x)).toString(8), w, "0"),
@@ -476,6 +478,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     },
     extra: () => extra,
     cmp: (a, b) => CADENAS.cmp(leerCad(a), leerCad(b)),
+    cmp_ci: (a, b) => CADENAS.cmpCaseInsensitive(leerCad(a), leerCad(b)),
     dec: (c, x, w, bits) => escribirCad(c, CADENAS.dec(x, w, bits)),
     hex: (c, x, w, bits) => escribirCad(c, CADENAS.hex(x, w, bits)),
     oct: (c, x, w, bits) => escribirCad(c, CADENAS.oct(x, w, bits)),
@@ -505,20 +508,39 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     else if (row.kind === "string") escribirCad(row.cell, codificar(value));
     else m.setBigInt64(record + 8, BigInt.asIntN(64, BigInt(value)), true);
   };
+  /**
+   * The VIs from the one at `chainIndex` up to the top level, as an error source names them:
+   * "Parse Reply.qvi->Instrument Protocol.qvi" (spec/04 Rule 21k). Each call wrote its caller's
+   * index into the callee's cell; an unnamed top-level VI ends the chain.
+   */
+  const callChainText = (chainIndex) => {
+    const names = [];
+    for (let index = chainIndex; ; ) {
+      const { name, callerCell } = compilado.callChain[index];
+      if (name) names.push(name);
+      if (callerCell === null) return names.join("->");
+      index = memoria().getInt32(callerCell, true);
+    }
+  };
+  /** The source of an error a function raises: the function, its argument if any, and where it ran. */
+  const functionSource = (functionName, chainIndex, arg) => {
+    const where = compilado.callChain ? callChainText(chainIndex) : "";
+    return `${functionName}${arg ? ` (arg ${arg})` : ""}${where ? ` in ${where}` : ""}`;
+  };
   /** The error cluster a format function leaves: the one that came in, or its own with the argument it is about. */
-  const formatError = (errorOut, errorIn, source, result) => {
+  const formatError = (errorOut, errorIn, source, chainIndex, result) => {
     const incoming = leerCluster(errorIn, compilado.disposicionError);
-    const own = result.error ? { status: true, code: result.error, source: `${leerCad(source)}${result.arg ? ` (arg ${result.arg})` : ""}` } : incoming;
+    const own = result.error ? { status: true, code: result.error, source: functionSource(leerCad(source), chainIndex, result.arg) } : incoming;
     ponerCluster(errorOut, compilado.disposicionError, own);
   };
   // With an error in, nothing is done: the error passes, the result is empty and each output gives its default (measured).
   const errorComesIn = (errorIn) => leerCluster(errorIn, compilado.disposicionError).status;
-  cad.formatear = (cell, format, initial, rows, count, errorIn, errorOut, source) => {
+  cad.formatear = (cell, format, initial, rows, count, errorIn, errorOut, source, chainIndex) => {
     const result = errorComesIn(errorIn) ? { text: "" } : formatIntoString(decodificar(leerCad(format)), decodificar(leerCad(initial)), readRows(rows, count), separador);
     escribirCad(cell, codificar(result.text));
-    formatError(errorOut, errorIn, source, result);
+    formatError(errorOut, errorIn, source, chainIndex, result);
   };
-  cad.escanear = (cell, input, format, location, rows, count, errorIn, errorOut, source) => {
+  cad.escanear = (cell, input, format, location, rows, count, errorIn, errorOut, source, chainIndex) => {
     const defaults = readRows(rows, count);
     const text = decodificar(leerCad(input));
     const result = errorComesIn(errorIn)
@@ -526,7 +548,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
       : scanFromString(text, decodificar(leerCad(format)), location >>> 0, defaults, separador);
     defaults.forEach((row, k) => writeRow(rows + k * FORMAT_ROW_BYTES, row, result.values[k]));
     escribirCad(cell, codificar(result.remaining));
-    formatError(errorOut, errorIn, source, result);
+    formatError(errorOut, errorIn, source, chainIndex, result);
     return codificar(text.slice(0, result.offset)).length;
   };
   for (const [nombre, f] of [["leer_dec", CADENAS.leerDec], ["leer_hex", CADENAS.leerHex], ["leer_oct", CADENAS.leerOct], ["leer_frac", CADENAS.leerFrac]])

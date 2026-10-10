@@ -315,6 +315,11 @@ as the default frame:
 A frame **MUST** declare `match` or `default`. An unreachable frame is declared
 dead code, and the schema rejects it.
 
+A value in `match` is a Boolean, an integer (an enum item by its number), a string, or a
+range `{ "min": …, "max": … }` of integers or of strings (spec/04 Rules 17b and 17d). A Case
+with a string selector and **Case Insensitive Match** on carries `"case-insensitive": true`
+on the structure; it is not written when off.
+
 `active-frame` —which frame the editor shows— is **presentation** and lives in
 `layout`, not in the structure. The same goes for `frame-widths`, the width of each frame of a
 `flat-sequence` (with its border, in the order of `frames`); without it, the editor splits

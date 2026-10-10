@@ -45,6 +45,9 @@ Each program had to go around something that a LabVIEW user would do without thi
 - **#16 Case Structure with a string selector.** Wiring a string leaves the frames `True`/`False`, without
   Default, and the Run arrow whole. LabVIEW (measured) turns them into `"True"` and `"False", Default` and
   widens the selector. Already listed as missing in M4; a command parser needs it.
+  *Core done on 2026-10-10:* string and enum selectors measured in LabVIEW and compiled (spec/04 Rules 17d
+  and 17e; an enum Case with a frame per item no longer asks for Default), and in the editor (spec/05 Rule 40f:
+  frames converted on wiring, quoted labels, Case Insensitive Match, Add Case for Every Value).
 - **#19 The array constant is born DBL and its element type cannot be changed.** Dropping a String Constant
   on it places a separate constant on top; Replace is greyed. Rule 40j leaves "born empty, takes the type of
   what is dropped in" unverified: to measure.
@@ -72,6 +75,7 @@ Each program had to go around something that a LabVIEW user would do without thi
   sources into one tunnel.
 - **#28 Error 85 (Scan From String) says "This error code has no description".** Scan From String produces
   it, so `core/runtime/error-codes.mjs` should describe it (LabVIEW's meaning, written anew).
+  *Fixed on 2026-10-10:* codes 81–85 of Format Into String and Scan From String are described.
 - **#29 `cli/solder.mjs run` crashes on a string indicator** (`formatear` calls `toPrecision` on a string).
 - **#7 The terminal of a control dropped near the top of the panel lands under the diagram's toolbar,** out of
   reach, and labels near the left edge are cut. Linked to #8: a dropped Waveform Chart is centered on the
@@ -107,6 +111,7 @@ each is to be checked against Solder before fixing:
   Solder.
 - **#39** The source of an error raised inside a subVI carries the call chain: `Scan From String (arg 1) in
   Parse Reply.vi->Instrument Protocol.vi`, also in the Simple Error Handler dialog.
+  *Done on 2026-10-10* for the format functions (spec/04 Rule 21k), with `.qvi` names.
 - **#40** An output tunnel with *Use Default If Unwired* is drawn filled with a white dot in the frames where
   it is unwired; compare with Solder's.
 - **#41** The Y autoscale of a constant 5 shows 4.4 to 5.6; of 20…60.5, 20 to 70; of 15…25, 14 to 26.

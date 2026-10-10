@@ -194,6 +194,9 @@ async function refrescarJerarquia() {
 /** Does this graph have a subVI node whose callee this window does not know yet? */
 const faltaSubVI = (g) => g.nodos.some((n) => SN.isSubVI(n) && !cat.findSubVI?.(n.config?.vi));
 
+/** The name an error source gives this VI: its file name once saved, "Untitled N" before (spec/04 Rule 21k). */
+const currentVIName = () => (Paths.isSavedKey(viKey) ? viKey.split(/[\\/]/).pop() : viInfo.name);
+
 /** Some VI was saved, here or elsewhere (preload `alGuardar`). */
 function alGuardarOtroVI({ id, key }) {
   if (id !== viInfo.id) {
@@ -403,7 +406,7 @@ async function ejecutarVI({ stepFirst = false } = {}) {
   const g = grafo();
   // A VI that cannot run opens the Error list, as the broken arrow does in LabVIEW (REPORT.md §5).
   if (errorRows().length) return openErrorList();
-  const c = compilar(g, cat);
+  const c = compilar(g, cat, { name: currentVIName() });
   if (c.errores) return window.solder?.avisar("The VI cannot run.", c.errores.map((e) => e.motivo).join("\n"));
   const debugging = allowsDebugging(g) ? { plan: (debugPlan = buildDebugPlan(g, c.debugNodes, ctx, inv)), config: DS.controllerConfig(debug, g), stepFirst } : null;
   if (!trabajador) {
@@ -1274,7 +1277,7 @@ addEventListener("mousedown", (ev) => {
   // no el evento dblclick, que se pierde si el primer clic repinta.
   if (ev.detail >= 2 && sobreDiagrama.tipo === "etiqueta") return cambiarDiagrama(ED.editarEtiqueta(dia, sobreDiagrama.id));
   // Un doble clic en el texto del selector de marcos de un Case escribe en él.
-  if (ev.detail >= 2 && sobreDiagrama.tipo === "marco" && sobreDiagrama.zona === "texto") return cambiarDiagrama(ED.editarMarco(dia, sobreDiagrama.nodo));
+  if (ev.detail >= 2 && sobreDiagrama.tipo === "marco" && sobreDiagrama.zona === "texto") return cambiarDiagrama(ED.editarMarco(dia, sobreDiagrama.nodo, ctx));
   // A double click on a subVI opens its Front Panel.
   if (ev.detail >= 2 && sobreDiagrama.tipo === "nodo" && SN.isSubVI(dia.g.nodos.find((n) => n.id === sobreDiagrama.id))) return abrirSubVI(sobreDiagrama.id);
   const id = ev.detail >= 2 && nodoDe(sobreDiagrama);

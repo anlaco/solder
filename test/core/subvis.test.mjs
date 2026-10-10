@@ -248,6 +248,46 @@ test("two parallel calls to a non-reentrant subVI that waits each get their own 
   assert.deepEqual(await run(caller, cat), { ra: 1, rb: 2 });
 });
 
+const ERROR_TYPE = { cluster: [{ name: "status", type: "boolean" }, { name: "code", type: "i32" }, { name: "source", type: "string" }] };
+
+/** Parse Reply: Scan From String `%f` of the input `reply`, with its value and its error out. */
+const parseReply = () =>
+  buildVI(CAT, (b) => {
+    b.node("reply", "str-control");
+    b.node("format", "str-const", { value: "%f" });
+    b.node("zero", "const", { value: 0 });
+    b.node("scan", "scan-from-string");
+    b.node("value", "indicator");
+    b.node("error", "cluster-indicator", { type: ERROR_TYPE, style: "error-out" });
+    b.wire("reply.result", "scan.input-string");
+    b.wire("format.result", "scan.format-string");
+    b.wire("zero.result", "scan.default-0");
+    b.wire("scan.output-0", "value.value");
+    b.wire("scan.error-out", "error.value");
+    b.connector(["reply"], ["value", "error"]);
+  });
+
+// spec/04 Rule 21k, measured in LabVIEW 2026 Q3 (examples/README.md, Instrument Protocol with FOO): the
+// source of an error raised inside a subVI names the function and then the VIs, callee first.
+test("the source of an error raised in a subVI names the call chain", async () => {
+  const cat = callerCatalog({ "examples/Parse Reply.qvi": parseReply() });
+  const caller = buildVI(cat, (b) => {
+    b.node("command", "str-const", { value: "FOO" });
+    b.node("parse", "subvi", { vi: "examples/Parse Reply.qvi" });
+    b.node("error", "cluster-indicator", { type: ERROR_TYPE, style: "error-out" });
+    b.wire("command.result", "parse.str-control_1");
+    b.wire("parse.cluster-indicator_1", "error.value");
+  });
+  const { error } = await run(caller, cat, {}, {}, compilar(caller.g, cat, { name: "Instrument Protocol.qvi" }));
+  assert.deepEqual(error, { status: true, code: 85, source: "Scan From String (arg 1) in Parse Reply.qvi->Instrument Protocol.qvi" });
+});
+
+test("the source of an error raised in the top-level VI names that VI", async () => {
+  const vi = parseReply();
+  const { error } = await run(vi, CAT, { reply: "FOO" }, {}, compilar(vi.g, CAT, { name: "Parse Reply.qvi" }));
+  assert.equal(error.source, "Scan From String (arg 1) in Parse Reply.qvi");
+});
+
 test("the hierarchy is loaded from relative paths and a recursive cycle is an error", () => {
   const leaf = add2();
   const cat = callerCatalog({ "add2.qvi": leaf });

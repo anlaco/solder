@@ -10382,6 +10382,12 @@
       "captura": "structures/case-menu-borde.png"
     },
     {
+      "id": "context.case-structure.add-case-for-every-value",
+      "etiqueta": "Add Case for Every Value",
+      "estado": "built",
+      "prueba": "test/editor/case-selector-kinds.test.mjs::un_case_de_enum_ofrece_añadir_un_marco_por_cada_valor"
+    },
+    {
       "id": "context.case-structure.remove-empty-cases",
       "etiqueta": "Remove Empty Cases",
       "estado": "todo",
@@ -10459,6 +10465,12 @@
       "labview": "Elige en qué base se escriben los valores de los marcos.",
       "necesita": "menus-contextuales",
       "captura": "structures/case-menu-borde-num.png"
+    },
+    {
+      "id": "context.case-structure.case-insensitive-match",
+      "etiqueta": "Case Insensitive Match",
+      "estado": "built",
+      "prueba": "test/editor/case-selector-kinds.test.mjs::un_case_de_cadena_tiene_case_insensitive_match"
     },
     {
       "id": "context.case-structure.remove-and-rewire",

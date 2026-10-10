@@ -145,7 +145,7 @@ test("simple error handler: sin error no saca dialogo y con error espera al usua
 // DT-043 §5: los códigos son los de LabVIEW; los textos, nuestros. La estructura se calca de labview-errors.md §6.
 test("los textos de los errores son nuestros y tienen la estructura de LabVIEW", async () => {
   const E = await import("../../core/runtime/error-codes.mjs");
-  for (const code of [1, 2, 7, 8, 42, 43, 56, 63, 66]) assert.ok(E.razones(code)?.length, `el código ${code} está en la tabla`);
+  for (const code of [1, 2, 7, 8, 42, 43, 56, 63, 66, 81, 82, 83, 84, 85]) assert.ok(E.razones(code)?.length, `el código ${code} está en la tabla`);
   assert.equal(E.razones(5000), null, "un código sin definir no tiene razones");
   assert.equal(E.hex(5000), "0x1388");
   assert.equal(E.cabecera(err(true, 7, "A in B")), "Error 7 occurred at A in B");

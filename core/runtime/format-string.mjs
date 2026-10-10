@@ -13,11 +13,11 @@ import { aEntero64, cientifica, fraccionaria, noFinito } from "./number-text.mjs
 
 /** LabVIEW's error codes for format strings (Help ▸ Explain Error). */
 export const FORMAT_ERRORS = {
-  typeMismatch: 81, // "Format specifier type mismatch."
-  unknownSpecifier: 82, // "Unknown format specifier."
-  tooFewSpecifiers: 83, // "Too few format specifiers."
-  tooManySpecifiers: 84, // "Too many format specifiers."
-  scanFailed: 85, // "Scan failed. The input string does not contain data in the expected format."
+  typeMismatch: 81, // a specifier does not fit the type of its argument
+  unknownSpecifier: 82, // a specifier is not one the engine knows
+  tooFewSpecifiers: 83, // more arguments than specifiers
+  tooManySpecifiers: 84, // more specifiers than arguments
+  scanFailed: 85, // the input does not hold what the format asks for
 };
 
 const DEFAULT_PRECISION = 6;

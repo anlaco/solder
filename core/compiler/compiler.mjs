@@ -22,7 +22,7 @@
 import { connectorPorts, ejecutable, orden, requerido, tipos } from "../model/graph.mjs";
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
-import { ERROR, NUMERICOS, dimensionsOf, esArray, esCluster, esEntero, esNumerico, flattenArrayValue, limites, representacion } from "../model/types.mjs";
+import { ERROR, NUMERICOS, dimensionsOf, esArray, esCluster, esEntero, esEnum, esNumerico, flattenArrayValue, limites, representacion } from "../model/types.mjs";
 import { codificar } from "./wasm-encoder.mjs";
 import { CELDAS, CIMA, EXPORTADAS, bloqueCadena, funcionesMemoria, i32 } from "./linear-memory.mjs";
 
@@ -65,9 +65,11 @@ const IMPORTACIONES = [
   { modulo: "cad", nombre: "buscar", params: Array(6).fill("i32"), results: ["i32"] },
   { modulo: "cad", nombre: "extra", params: [], results: ["i32"] },
   { modulo: "cad", nombre: "cmp", params: ["i32", "i32"], results: ["i32"] },
+  // The same comparison ignoring ASCII case, for a Case with Case Insensitive Match (spec/04 Rule 17d).
+  { modulo: "cad", nombre: "cmp_ci", params: ["i32", "i32"], results: ["i32"] },
   // Format Into String and Scan From String (spec/04 Rule 21j): the rows go through a buffer of
   // FORMAT_ROW_BYTES per row; the host writes the result and the error cluster.
-  { modulo: "cad", nombre: "formatear", params: Array(8).fill("i32"), results: [] },
+  { modulo: "cad", nombre: "formatear", params: Array(9).fill("i32"), results: [] },
   { modulo: "cad", nombre: "escanear", params: Array(10).fill("i32"), results: ["i32"] },
   // celda, número, width y los bits de su tipo (un hexadecimal negativo es su complemento a dos).
   ...["dec", "hex", "oct"].map((nombre) => ({ modulo: "cad", nombre, params: ["i32", "f64", "i32", "i32"], results: [] })),
@@ -465,7 +467,7 @@ function formatIntoString(e) {
   const code = rows.flatMap(({ index }, k) => writeRow(e.tIn(index), buffer + k * FORMAT_ROW_BYTES, e.entrada(index)));
   code.push(
     ins("i32.const", result), ...e.entrada(0), ...e.entrada(1), ins("i32.const", buffer), ins("i32.const", rows.length),
-    ...e.entrada(2), ins("i32.const", errorOut), ins("i32.const", e.cadena("Format Into String")), ins("call", idImport("formatear")),
+    ...e.entrada(2), ins("i32.const", errorOut), ins("i32.const", e.cadena("Format Into String")), ins("i32.const", e.chainIndex), ins("call", idImport("formatear")),
   );
   return [...code, ins("i32.const", result), ins("i32.const", errorOut)];
 }
@@ -483,7 +485,7 @@ function scanFromString(e) {
   });
   code.push(
     ins("i32.const", remaining), ...e.entrada(0), ...e.entrada(1), ...e.entrada(2), ins("i32.const", buffer), ins("i32.const", rows.length),
-    ...e.entrada(3), ins("i32.const", errorOut), ins("i32.const", e.cadena("Scan From String")), ins("i32.const", 0), ins("call", idImport("escanear")), ins("local.set", offset),
+    ...e.entrada(3), ins("i32.const", errorOut), ins("i32.const", e.cadena("Scan From String")), ins("i32.const", e.chainIndex), ins("call", idImport("escanear")), ins("local.set", offset),
   );
   return [...code, ins("i32.const", remaining), ins("local.get", offset), ins("i32.const", errorOut), ...rows.flatMap(({ index }, k) => readRow(e.tIn(index), buffer + k * FORMAT_ROW_BYTES))];
 }
@@ -1252,18 +1254,25 @@ function subVIInstance(callee, node, module, callerKey) {
   const slots = new Map();
   const ports = connectorPorts(callee);
   for (const port of [...ports.in, ...ports.out]) slots.set(port.name, { address: slotFor(port.type, module), type: port.type });
-  const compiled = compileVI(callee.g, callee.cat, module, slots, key);
+  const callerCell = module.bufer(4, 4);
+  const chainIndex = module.callChain.push({ name: viNameOf(callee.key), callerCell }) - 1;
+  const compiled = compileVI(callee.g, callee.cat, module, slots, key, chainIndex);
   if (compiled.errores) return { errores: compiled.errores.map((e) => ({ ...e, vi: callee.key })) };
   const { clumps } = compiled;
   const waits = clumps.length > 1 || clumps.some((k) => k.largo);
   const instance = {
-    key, slots,
+    key, slots, chainIndex, callerCell,
     direct: waits ? null : module.directFunctions.push(clumps[0] ?? { locales: [], cuerpo: [] }) - 1,
     plan: waits ? module.planes.push(clumps) - 1 : null,
   };
   module.instances.set(key, instance);
   return instance;
 }
+
+const TOP_LEVEL_CHAIN_INDEX = 0;
+
+/** The name of a VI as an error source gives it: its file name, without the folders of its key. */
+const viNameOf = (key) => key.split(/[\\/]/).pop();
 
 /** A slot of the data space for a value of type `t`: 8 bytes for a scalar, a cell for a string or an array, a buffer for a cluster. */
 function slotFor(t, module) {
@@ -1314,6 +1323,7 @@ function callSubVI(e, instance) {
   const { in: inputs, out: outputs } = e.cat.puertos(e.nodo);
   const waits = instance.direct === null;
   const code = waits ? [ins("i32.const", instance.plan), ins("call", idImport("entrar_subvi")), ins("drop")] : [];
+  code.push(ins("i32.const", instance.callerCell), ins("i32.const", e.chainIndex), ins("i32.store"));
   inputs.forEach((port, i) => {
     const slot = instance.slots.get(port.name);
     const value = e.cableada(i) ? e.entrada(i) : defaultValueCode(e, port.type, port.defaultValue);
@@ -1753,9 +1763,10 @@ function partir(g, ids, raiz, largo, cadenas = []) {
  * tiene. With a catalog from a hierarchy (`conSubVIs`), its subVIs are compiled
  * into the same module (DT-045).
  */
-export function compilar(g, cat) {
+export function compilar(g, cat, { name } = {}) {
   const module = newModule();
-  const vi = compileVI(g, cat, module, null, "");
+  module.callChain.push({ name: name ?? null, callerCell: null });
+  const vi = compileVI(g, cat, module, null, "", TOP_LEVEL_CHAIN_INDEX);
   if (vi.errores) return { errores: vi.errores };
   return assemble(module, vi);
 }
@@ -1776,6 +1787,9 @@ function newModule() {
     directFunctions: [], // the single clump of each synchronous subVI instance
     debugNodes: [], // DT-047: the nodes that report to the debugger, by index: { vi, nodo, outputs }
     instances: new Map(), // instance key → compiled subVI instance
+    // The VIs an error source names (spec/04 Rule 21k): by chain index, the VI's name and the cell
+    // where each call to it writes the chain index of its caller; the top-level VI has no cell.
+    callChain: [],
   };
   // El data space (DT-042): una celda por búfer; las constantes, aparte.
   module.bufer = (tam, al = 8) => {
@@ -1795,7 +1809,7 @@ function newModule() {
  * connector control and indicator to its slot in the data space, through which
  * the caller passes inputs and reads outputs (DT-045).
  */
-function compileVI(g, cat, module, asSubVI, instanceKey) {
+function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
   const resueltos = tipos(g, cat);
   if (!ejecutable(g, cat, resueltos)) {
     const errores = [...resueltos.cables.entries()].filter(([, c]) => c.roto).map(([id, c]) => ({ cable: id, motivo: c.roto }));
@@ -2058,7 +2072,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey) {
     }
     const emitir = n.tipo === "subvi" ? (e) => callSubVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subVIControl(e, asSubVI.get(n.name)) : BLOQUES[n.tipo];
     if (!emitir) return errores.push({ nodo: id, motivo: `El compilador aún no sabe emitir «${nombre}» (${n.tipo}).` });
-    const e = { nodo: n, cat, tIn, tOut, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante };
+    const e = { nodo: n, cat, tIn, tOut, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex };
     if (!asSubVI && PANEL_CONTROLS.includes(n.tipo))
       controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), ...datosDePanel(tOut(0)) });
     try {
@@ -2247,6 +2261,13 @@ function compileVI(g, cat, module, asSubVI, instanceKey) {
    * lo de ese marco, y cada túnel de salida toma lo que le llega en él, o el
    * valor por defecto con Use Default If Unwired.
    */
+  /** Whether the frames give every item of the enum `t` a frame; ranges include both ends (spec/04 Rule 17e). */
+  function coversEveryItem(t, frames) {
+    const covered = (item) =>
+      frames.some((frame) => (frame.valores ?? []).some((v) => (v && typeof v === "object" ? (v.min ?? -Infinity) <= item && item <= (v.max ?? Infinity) : v === item)));
+    return t.enum.every((_, item) => covered(item));
+  }
+
   function emitirCase(sid, k) {
     const s = porId.get(sid);
     const marcos = s.config?.marcos ?? [];
@@ -2259,7 +2280,9 @@ function compileVI(g, cat, module, asSubVI, instanceKey) {
       c.push(...x.entrada(0), ins("local.set", l));
       valor.set(`${id}.y`, { local: l, clump: k });
     }
+    // The selector: a Boolean or an integer as an i32, or a string by its handle.
     const sel = L("i32");
+    let stringSelector = false;
     // Lo que rompe la flecha de Run en LabVIEW: un selector numérico sin Default,
     // uno booleano sin sus dos marcos, o un valor en dos marcos.
     const nombre = s.label?.text ?? s.name;
@@ -2275,9 +2298,11 @@ function compileVI(g, cat, module, asSubVI, instanceKey) {
       const x = contexto(id, k);
       const t = x.tIn(0);
       if (t === "boolean" && !(vistos.has("true") && vistos.has("false")) && !marcos.some((m) => m.default)) errores.push({ nodo: sid, motivo: `«${nombre}» necesita un marco True y otro False.` });
-      if (t !== "boolean" && !marcos.some((m) => m.default)) errores.push({ nodo: sid, motivo: `«${nombre}» necesita un marco Default: hay valores del selector que no tienen marco.` });
+      if (t !== "boolean" && !marcos.some((m) => m.default) && !(esEnum(t) && coversEveryItem(t, marcos))) errores.push({ nodo: sid, motivo: `«${nombre}» necesita un marco Default: hay valores del selector que no tienen marco.` });
+      if (t === "string" && marcos.some((m) => !m.default && !m.valores?.length)) errores.push({ nodo: sid, motivo: `In «${nombre}», a frame has no selector value.` });
+      stringSelector = t === "string";
       c.push(...x.entrada(0));
-      if (t !== "boolean") c.push(...convertir(t, "i32"));
+      if (t !== "boolean" && !stringSelector) c.push(...convertir(t, "i32"));
       c.push(ins("local.set", sel));
     }
     const salidas = deAqui.filter((x) => porId.get(x).tipo === "case-tunnel-out").map((id) => {
@@ -2294,10 +2319,20 @@ function compileVI(g, cat, module, asSubVI, instanceKey) {
       }
     };
     const valorI32 = (v) => (v === true ? 1 : v === false ? 0 : Math.round(v));
+    // A string selector compares on the host: equal to a value, or min ≤ selector < max in a range.
+    const compareSelectorTo = (text) => [ins("local.get", sel), ins("i32.const", cadena(text)), ins("call", idImport(s.config?.caseInsensitive ? "cmp_ci" : "cmp"))];
+    const stringCondition = (v) => {
+      if (typeof v === "string") return [...compareSelectorTo(v), ins("i32.eqz")];
+      const bounds = [];
+      if (typeof v.min === "string") bounds.push([...compareSelectorTo(v.min), ins("i32.const", 0), ins("i32.ge_s")]);
+      if (typeof v.max === "string") bounds.push([...compareSelectorTo(v.max), ins("i32.const", 0), ins("i32.lt_s")]);
+      return bounds.length === 2 ? [...bounds.flat(), ins("i32.and")] : bounds.length ? bounds[0] : [ins("i32.const", 1)];
+    };
     const condicion = (valores) => {
       const r = [];
       valores.forEach((v, j) => {
-        if (v && typeof v === "object") {
+        if (stringSelector) r.push(...stringCondition(v));
+        else if (v && typeof v === "object") {
           const partes = [];
           if (v.min !== undefined && v.min !== null) partes.push([ins("local.get", sel), ins("i32.const", v.min), ins("i32.ge_s")]);
           if (v.max !== undefined && v.max !== null) partes.push([ins("local.get", sel), ins("i32.const", v.max), ins("i32.le_s")]);
@@ -2447,5 +2482,5 @@ function assemble(module, vi) {
     ],
   };
   const plan = (lista) => lista.map((k) => ({ deps: [...k.deps], largo: k.largo }));
-  return { bytes: codificar(modulo), modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), debugFlag: module.debugFlag, debugNodes: module.debugNodes };
+  return { bytes: codificar(modulo), modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain };
 }

@@ -43,7 +43,7 @@ const hierarchy = loadHierarchy(path.resolve(fichero), cat, { resolvePath, loadV
 for (const e of hierarchy.errors) console.error(`${e.vi ?? fichero}: ${e.motivo}`);
 if (hierarchy.errors.length) process.exit(1);
 const { g, cat: rootCatalog } = hierarchy.vis.get(hierarchy.root);
-const c = compilar(g, rootCatalog);
+const c = compilar(g, rootCatalog, { name: path.basename(fichero) });
 if (c.errores) {
   for (const e of c.errores) console.error(`${fichero}: ${e.motivo}`);
   process.exit(1);

@@ -27,7 +27,7 @@
 //              node or one of its terminals; `en`, the canvas point where it was opened
 //   aviso      why the last action could not be done (spec/05 rule 31)
 
-import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
+import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
 import * as FN from "./format-nodes.mjs";
 import { endPoint } from "./broken-wire.mjs";
 import * as CP from "../front-panel/connector-pane.mjs";
@@ -36,7 +36,7 @@ import * as Et from "../common/labels.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import * as TC from "./terminal-creation.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
-import { DBL, NUMERICOS, POR_ABREVIATURA, convertirValor, esArray, esEntero, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
+import { DBL, NUMERICOS, POR_ABREVIATURA, convertirValor, esArray, esEntero, esEnum, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import { MAX_EDITOR_DIMENSIONS, addDimensionPatch, dimensionsOfNode, firstShown, readCell, removeDimensionPatch, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
 
 /** El valor de una constante de error: el suyo, con lo que falte a cero. */
@@ -401,6 +401,9 @@ function estirarEstructura(accion, p, ctx) {
 
 const nodoPor = (g, id) => g.nodos.find((n) => n.id === id);
 
+/** What the selector of the Case `caseNode` carries: `"string"`, an enum type or `undefined` (see `selectorKind`). */
+const kindOf = (g, ctx, caseNode) => (ctx ? selectorKind(g, caseNode, Gr.tipos(g, ctx.cat)) : undefined);
+
 /** Muestra el marco `k` de un Case. Lo seleccionado en el que se deja de ver no sigue seleccionado. */
 export function mostrarMarco(d, caso, k) {
   const g = Gr.fijarConfig(d.g, caso, { activo: k });
@@ -423,9 +426,9 @@ function pulsarMarco(d, sobre, p) {
 }
 
 /** Doble clic en el texto del selector de marcos: se escribe en él, con todo seleccionado. */
-export const editarMarco = (d, id) => {
+export const editarMarco = (d, id, ctx) => {
   const s = nodoPor(d.g, id);
-  return s && esCase(s) ? { ...d, edicion: { nodo: id, marco: true, texto: etiquetaMarco(marcosDe(s)[activoDe(s)]), todo: true }, seleccion: [], accion: null, menu: null, lista: null } : d;
+  return s && esCase(s) ? { ...d, edicion: { nodo: id, marco: true, texto: etiquetaMarco(marcosDe(s)[activoDe(s)], kindOf(d.g, ctx, s)), todo: true }, seleccion: [], accion: null, menu: null, lista: null } : d;
 };
 
 /** Cada marco con su índice actual en `de`, para que `fijarMarcos` sepa a quién sigue cada uno. */
@@ -441,6 +444,18 @@ function valorNuevo(marcos, anterior) {
 }
 
 /**
+ * The values of a frame just added. A Boolean and a string Case give none (a
+ * string frame without a value breaks the VI, as in LabVIEW: string report, Q3);
+ * an enum Case gives the first item that no frame has, or none if all have one.
+ */
+function valuesOfNewFrame(caseNode, frames, previous, kind) {
+  if (kind === "string" || (!kind && esBooleano(caseNode))) return [];
+  const value = valorNuevo(frames, previous);
+  if (esEnum(kind)) return value < kind.enum.length ? [value] : [];
+  return [value];
+}
+
+/**
  * Add Case After y Before: un marco nuevo junto al que se ve, que pasa a verse.
  * En un Case numérico lleva el primer entero libre por encima del marco
  * anterior; en uno booleano, sin valores (case-lista-boolean).
@@ -450,7 +465,7 @@ export function anadirMarco(g, ctx, id, despues, x) {
   if (esSecuencia(s)) return anadirMarcoSecuencia(g, ctx, id, despues, x);
   const marcos = marcosDe(s);
   const pos = activoDe(s) + (despues ? 1 : 0);
-  const nuevo = esBooleano(s) ? { valores: [] } : { valores: [valorNuevo(marcos, marcos[pos - 1])] };
+  const nuevo = { valores: valuesOfNewFrame(s, marcos, marcos[pos - 1], kindOf(g, ctx, s)) };
   const lista = conOrigen(s);
   lista.splice(pos, 0, nuevo);
   return Gr.fijarConfig(Gr.fijarMarcos(g, ctx.cat, id, lista), id, { activo: pos });
@@ -555,8 +570,12 @@ function mostrarOtroMarco(g, id) {
  * Lo que se escribe en el selector de marcos: valores separados por comas, rangos
  * «2..4» (abiertos por un lado, «..4» o «2..») y «Default»; True y False en un
  * Case booleano. Devuelve el marco, o `null` si no se entiende.
+ * With a string or enum selector (`kind`) the text is read as in LabVIEW's selector
+ * of that kind: see `readStringFrame` and `readEnumFrame`.
  */
-export function leerMarco(texto) {
+export function leerMarco(texto, kind) {
+  if (kind === "string") return readFrameOfTokens(texto, parseStringBound);
+  if (esEnum(kind)) return readFrameOfTokens(texto, (token) => parseEnumBound(token, kind));
   const valores = [];
   let predeterminado = false;
   for (const parte of texto.split(",").map((t) => t.trim()).filter(Boolean)) {
@@ -571,33 +590,124 @@ export function leerMarco(texto) {
   return { valores, ...(predeterminado && { default: true }) };
 }
 
+/** Splits `text` at every `separator` that is outside double quotes. */
+function splitOutsideQuotes(text, separator) {
+  const parts = [];
+  let current = "";
+  let insideQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    if (text[i] === '"') insideQuotes = !insideQuotes;
+    if (!insideQuotes && text.startsWith(separator, i)) {
+      parts.push(current);
+      current = "";
+      i += separator.length - 1;
+    } else current += text[i];
+  }
+  parts.push(current);
+  return parts;
+}
+
+/**
+ * Reads «a, "b".."c", Default» into a frame: each comma-separated part is the
+ * word «Default», a value, or a range of two values (either end may be missing).
+ * `parseBound` turns the text of one value into its value, or `undefined` if it
+ * means nothing. Returns `null` if any part is not understood.
+ */
+function readFrameOfTokens(text, parseBound) {
+  const valores = [];
+  let predeterminado = false;
+  for (const part of splitOutsideQuotes(text, ",").map((t) => t.trim()).filter(Boolean)) {
+    if (/^default$/i.test(part)) {
+      predeterminado = true;
+      continue;
+    }
+    const ends = splitOutsideQuotes(part, "..").map((t) => t.trim());
+    if (ends.length > 2) return null;
+    const values = ends.map((end) => (end === "" ? null : parseBound(end)));
+    if (values.some((v) => v === undefined)) return null;
+    if (ends.length === 1) valores.push(values[0]);
+    else if (values[0] !== null || values[1] !== null) valores.push(...rangeValues(values[0], values[1]));
+    else return null;
+  }
+  return { valores, ...(predeterminado && { default: true }) };
+}
+
+/** A range of two enum items next to each other is two values, as LabVIEW shows it (enum report, point 5). */
+function rangeValues(min, max) {
+  if (typeof min === "number" && typeof max === "number" && max - min === 1) return [min, max];
+  return [{ ...(min !== null && { min }), ...(max !== null && { max }) }];
+}
+
+/** A string value: in quotes, or a bare word taken as that string (string report, Q3 and "Not verified"). */
+function parseStringBound(token) {
+  const quoted = /^"(.*)"$/s.exec(token);
+  if (quoted) return quoted[1];
+  return token.includes('"') ? undefined : token;
+}
+
+/** An enum value: the name of an item, in quotes or bare, or its number (enum report, point 5); anything else is not understood. */
+function parseEnumBound(token, kind) {
+  const name = /^"(.*)"$/s.exec(token)?.[1] ?? token;
+  const byName = kind.enum.indexOf(name);
+  if (byName >= 0) return byName;
+  return /^\d+$/.test(token) && Number(token) < kind.enum.length ? Number(token) : undefined;
+}
+
 /** Confirmar lo escrito en el selector: el marco que se ve toma esos valores; si es el Default, deja de serlo otro (case-edit5.png). */
 function escribirMarco(g, ctx, id, texto) {
   const s = nodoPor(g, id);
-  const nuevo = leerMarco(texto);
-  const booleano = esBooleano(s);
+  const kind = kindOf(g, ctx, s);
+  const nuevo = leerMarco(texto, kind);
+  const booleano = !kind && esBooleano(s);
   // Un número en un Case booleano, o True en uno numérico, no se entiende: queda como estaba.
-  if (!nuevo || nuevo.valores.some((v) => (typeof v === "boolean") !== booleano)) return g;
+  if (!nuevo || (!kind && nuevo.valores.some((v) => (typeof v === "boolean") !== booleano))) return g;
   const k = activoDe(s);
   return Gr.fijarMarcos(g, ctx.cat, id, conOrigen(s).map(({ default: _, ...m }, i) => (i === k ? nuevo : nuevo.default ? m : { ...m, ...(marcosDe(s)[i].default && { default: true }) })));
 }
 
 /**
- * Al cablear un número al selector de un Case booleano, sus marcos False y True
- * pasan a «0, Default» y «1» (structures/case-3.png, case-lista.png).
+ * Wiring something other than a Boolean to the selector of a Case that still has
+ * its False and True frames changes their values: a number gives «0, Default» and
+ * «1» (structures/case-3.png, case-lista.png); a string, `"False", Default` and
+ * `"True"`; an enum, the items 0 (Default) and 1 (string and enum reports).
  */
 function ajustarSelectores(g, ctx) {
-  const t = Gr.tipos(g, ctx.cat);
+  const types = Gr.tipos(g, ctx.cat);
   for (const s of g.nodos) {
     if (!esCase(s) || !esBooleano(s)) continue;
-    const sel = g.nodos.find((n) => n.dentro === s.id && n.tipo === "case-selector");
-    const c = sel && g.cables.find((k) => k.a.nodo === sel.id);
-    const tipo = c && t.cables.get(c.id)?.tipo;
-    if (typeof tipo !== "string" || !esNumerico(tipo)) continue;
-    const marcos = conOrigen(s).map(({ valores = [], ...m }) => ({ ...m, valores: valores.map((v) => Number(v)), ...(valores.includes(false) && { default: true }) }));
+    const selector = g.nodos.find((n) => n.dentro === s.id && n.tipo === "case-selector");
+    const wire = selector && g.cables.find((k) => k.a.nodo === selector.id);
+    const tipo = wire && types.cables.get(wire.id)?.tipo;
+    const asString = tipo === "string";
+    if (!asString && !esNumerico(tipo)) continue;
+    const convert = (value) => (asString ? (value === true ? "True" : value === false ? "False" : String(value)) : Number(value));
+    const marcos = conOrigen(s).map(({ valores = [], ...m }) => ({ ...m, valores: valores.map(convert), ...(valores.includes(false) && { default: true }) }));
     g = Gr.fijarMarcos(g, ctx.cat, s.id, marcos);
   }
   return g;
+}
+
+/**
+ * Case Insensitive Match (string selector only): toggles `config.caseInsensitive`,
+ * which the compiler reads. Off is stored as absence, as the file does.
+ */
+export function alternarCaseInsensitive(g, id) {
+  return Gr.fijarConfig(g, id, { caseInsensitive: nodoPor(g, id).config?.caseInsensitive ? undefined : true });
+}
+
+/** The items of the enum selector of `caseNode` that no frame covers, in item order (ranges include both ends). */
+export function uncoveredItems(caseNode, kind) {
+  const covers = (value, item) => (value && typeof value === "object" ? (value.min ?? -Infinity) <= item && item <= (value.max ?? Infinity) : value === item);
+  return kind.enum.map((_, item) => item).filter((item) => !marcosDe(caseNode).some((m) => (m.valores ?? []).some((v) => covers(v, item))));
+}
+
+/** Add Case for Every Value: one new frame for each uncovered item, in item order, after the last frame. */
+export function anadirMarcosParaCadaValor(g, ctx, id) {
+  const s = nodoPor(g, id);
+  const kind = kindOf(g, ctx, s);
+  if (!esEnum(kind)) return g;
+  const nuevos = uncoveredItems(s, kind).map((item) => ({ valores: [item] }));
+  return nuevos.length ? Gr.fijarMarcos(g, ctx.cat, id, [...conOrigen(s), ...nuevos]) : g;
 }
 
 /**
@@ -990,6 +1100,8 @@ export function orden(d, id, ctx) {
   // Los marcos de un Case (structures/case-menu-*.png).
   if (id.endsWith(".add-case-after") || id.endsWith(".add-case-before")) return cerrar(anadirMarco(d.g, ctx, nodo, id.endsWith("after")));
   if (id.endsWith(".delete-this-case")) return cerrar(quitarMarco(d.g, ctx, nodo));
+  if (id.endsWith(".add-case-for-every-value")) return cerrar(anadirMarcosParaCadaValor(d.g, ctx, nodo));
+  if (id.endsWith(".case-insensitive-match")) return cerrar(alternarCaseInsensitive(d.g, nodo));
   // Los marcos de una Flat o una Stacked Sequence (structures/secuencia-menu-*.png).
   if (id.endsWith(".add-frame-after") || id.endsWith(".add-frame-before")) return cerrar(reparar(anadirMarco(d.g, ctx, nodo, id.endsWith("after"), d.menu.en?.x), ctx));
   if (id.endsWith(".delete-this-frame")) return cerrar(reparar(quitarMarco(d.g, ctx, nodo, d.menu.en?.x), ctx));
@@ -1034,7 +1146,7 @@ function arrayVariants(n, root) {
  * says "Remove Default" if the frame in view is the Default. A selector terminal
  * has the Boolean or the Numeric Palette.
  */
-function nodeVariants(d) {
+function nodeVariants(d, ctx) {
   if (CP.hasConnectorMenu(d)) return CP.menuVariants(d);
   const n = d.menu && d.g.nodos.find((k) => k.id === d.menu.nodo);
   const r = d.menu?.raiz;
@@ -1042,11 +1154,20 @@ function nodeVariants(d) {
   if (n && esCase(n)) {
     const ms = marcosDe(n);
     const m = ms[activoDe(n)];
-    if (esBooleano(n)) {
+    if (!kindOf(d.g, ctx, n) && esBooleano(n)) {
       const otro = m?.valores?.includes(true) ? "False" : "True";
-      return { ocultos: fila("show-case", "swap-diagram-with-case", "shift-diagram-to-case", "rearrange-cases", "make-this-the-default-case", "remove-default", "radix"), rotulos: new Map([[`${r}.show-case-other`, `Show Case ${otro}`], [`${r}.make-this-case-other`, `Make This Case ${otro}`]]) };
+      return { ocultos: fila("show-case", "swap-diagram-with-case", "shift-diagram-to-case", "rearrange-cases", "make-this-the-default-case", "remove-default", "radix", "case-insensitive-match", "add-case-for-every-value"), rotulos: new Map([[`${r}.show-case-other`, `Show Case ${otro}`], [`${r}.make-this-case-other`, `Make This Case ${otro}`]]) };
     }
-    return { ocultos: fila("show-case-other", "make-this-case-other", m?.default ? "make-this-the-default-case" : "remove-default"), rotulos: new Map() };
+    const kind = kindOf(d.g, ctx, n);
+    const hidden = fila("show-case-other", "make-this-case-other", m?.default ? "make-this-the-default-case" : "remove-default");
+    // A string selector has Case Insensitive Match; an enum one has neither it nor Radix, and the two rows for the items without a frame (string and enum reports).
+    if (kind !== "string") hidden.add(`${r}.case-insensitive-match`);
+    if (kind) hidden.add(`${r}.radix`);
+    if (!esEnum(kind) || !uncoveredItems(n, kind).length) {
+      hidden.add(`${r}.add-case-for-every-value`);
+      if (esEnum(kind)) hidden.add(`${r}.remove-empty-cases`);
+    }
+    return { ocultos: hidden, rotulos: new Map() };
   }
   // Una Stacked de dos marcos: «Show Frame» y «Make This Frame» dicen el número del otro; con más, llevan un submenú (secuencia-menu-stacked.png).
   if (n && esApilada(n)) {
@@ -1110,7 +1231,7 @@ const mergeVariants = (a, b) => ({
 });
 
 /** What changes in the rows of the open menu: the node's own variants and those of Create ▸. `ctx` is needed for the terminal's type. */
-export const variantes = (d, ctx) => (isGraphMenu(d) ? graphMenuVariants(d) : mergeVariants(mergeVariants(nodeVariants(d), createVariants(d, ctx)), wireMenuVariants(d, ctx)));
+export const variantes = (d, ctx) => (isGraphMenu(d) ? graphMenuVariants(d) : mergeVariants(mergeVariants(nodeVariants(d, ctx), createVariants(d, ctx)), wireMenuVariants(d, ctx)));
 
 /** Qué filas del menú llevan la marca: Terminals si el nodo los enseña, el modo actual, Invert si lo está, la representación de un número. */
 export function marcados(d) {
@@ -1139,6 +1260,7 @@ export function marcados(d) {
     m.add(`${r}.visible-items.iteration-terminal`);
   }
   if (esCase(n) || esSecuencia(n)) m.add(`${r}.auto-grow`);
+  if (esCase(n) && n.config?.caseInsensitive) m.add(`${r}.case-insensitive-match`);
   if (n.tipo === "case-tunnel-out" && n.config?.["use-default"]) m.add(`${r}.use-default-if-unwired`);
   if (n.tipo === "tunnel-out") m.add(`${r}.tunnel-mode.${n.config?.indexado ? "indexing" : "last-value"}`);
   return m;
