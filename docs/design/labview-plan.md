@@ -34,7 +34,7 @@ When the developer says "keep going":
   §3. First what is needed to program (types, functions, structures); then what
   organizes programs (subVIs, projects, classes).
 
-## 2. Where we are (2026-10-08)
+## 2. Where we are (2026-10-10)
 
 **The full circuit works:** a VI is built, saved to `.qvi`, opened the same way,
 and Run compiles it to WebAssembly and executes it **by dataflow, like
@@ -42,7 +42,7 @@ LabVIEW** (DT-040): independent branches run at the same time, each indicator is
 painted when its data arrives, Abort stops at once and the panel switches to Run
 mode. Since 2026-10-01 also **with loops**: While and For are placed, stretched
 and wired in the diagram, and the compiler runs them (DT-041).
-500 tests green. **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, and the editor opens several VIs with their connector pane.
+546 tests green. **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane.
 
 | Piece | Status |
 |-------|--------|
@@ -173,7 +173,11 @@ of maintenance with fixes only (`0.N.x-beta`).
    a test runs each example against them. Order: (1) the three examples built in LabVIEW and their outputs
    written down, (2) the subVI fault (#30), (3) only what the examples need, (4) the comparison tests green.
    *(1) done on 2026-10-10: the three examples built in LabVIEW and their outputs written in
-   [`examples/README.md`](../../examples/README.md). Next: (2), the subVI fault.*
+   [`examples/README.md`](../../examples/README.md).*
+   *(2) done on 2026-10-10: the subVI fault #30 fixed (a call to a non-reentrant subVI takes its turn
+   before writing its inputs; DT-045 §2, measured with `Two Calls.vi`). Next: (3), only what the examples
+   need; note that the Solder `Simulated Instrument.qvi` still has the workarounds (Random Number,
+   Equal? + Select) and gives a random voltage where LabVIEW gives `5.0000`.*
 4. **Loose ends that mislead**, left half done in stage 1: the borders of the structures report no
    values to probes and Highlight Execution (tunnels, shift registers, "i", "N"); the warning triangle
    and its list; anything step 3 finds that looks done but is not.

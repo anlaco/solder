@@ -97,9 +97,14 @@ const IMPORTACIONES = [
   // Corre un subplan —los clumps de un cuerpo con varios nodos largos— y
   // espera a que acaben todos (suspende quien lo llama).
   { modulo: "tiempo", nombre: "correr_plan", params: ["i32"], results: ["i32"] },
-  // Calls a subVI that waits: runs its plan when the subVI is free, since a
-  // non-reentrant VI serves one call at a time (DT-045), and suspends the caller.
+  // A call to a subVI that waits (DT-045). A non-reentrant VI serves one call at a time, and the
+  // whole call is one turn: `entrar_subvi` suspends the caller until the subVI is free, then the
+  // caller writes its inputs, `correr_subvi` runs the plan, the caller reads its outputs, and
+  // `salir_subvi` hands the subVI to the next call. Writing the inputs before waiting let a second
+  // call overwrite the first one's (bug #30).
+  { modulo: "tiempo", nombre: "entrar_subvi", params: ["i32"], results: ["i32"] },
   { modulo: "tiempo", nombre: "correr_subvi", params: ["i32"], results: ["i32"] },
+  { modulo: "tiempo", nombre: "salir_subvi", params: ["i32"], results: [] },
   // Debugging (DT-047): the value of each output of a node that just ran, by its wasm type
   // (a string, array or cluster goes by address), and then the node itself, which may
   // suspend the clump (a breakpoint, a step, Highlight Execution's pace).
@@ -1301,11 +1306,14 @@ function defaultValueCode(e, t, value) {
  * A call to a subVI (DT-045): each input into its slot —an unwired one, with the
  * default value of the subVI's control—, the call, and each output read back. A
  * string, array or cluster output is copied into the caller's own buffer, since
- * the next call overwrites the slot.
+ * the next call overwrites the slot. A subVI that waits is entered before its
+ * inputs are written and left after its outputs are read, so that a parallel
+ * call to the same instance cannot touch its slots in between.
  */
 function callSubVI(e, instance) {
   const { in: inputs, out: outputs } = e.cat.puertos(e.nodo);
-  const code = [];
+  const waits = instance.direct === null;
+  const code = waits ? [ins("i32.const", instance.plan), ins("call", idImport("entrar_subvi")), ins("drop")] : [];
   inputs.forEach((port, i) => {
     const slot = instance.slots.get(port.name);
     const value = e.cableada(i) ? e.entrada(i) : defaultValueCode(e, port.type, port.defaultValue);
@@ -1322,6 +1330,7 @@ function callSubVI(e, instance) {
     const own = esCluster(port.type) ? e.bufer(disposicion(port.type).tam) : e.celda();
     code.push(...copiarA(port.type, loadFromSlot(port.type, slot), [ins("i32.const", own)], e.temporal), ins("i32.const", own));
   }
+  if (waits) code.push(ins("i32.const", instance.plan), ins("call", idImport("salir_subvi")));
   return code;
 }
 

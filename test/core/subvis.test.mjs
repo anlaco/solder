@@ -214,6 +214,40 @@ test("two parallel calls to a non-reentrant subVI that waits take turns; reentra
   assert.ok(overlapped < 250, `preallocated clones: ${overlapped} ms, expected about 150`);
 });
 
+/** echo: a subVI that waits, then returns its input `x` unchanged. */
+const echoAfterWait = () =>
+  buildVI(CAT, (b) => {
+    b.node("x", "control");
+    b.node("echo", "indicator");
+    b.node("ms", "const", { value: 50, type: "i32" });
+    b.node("wait", "wait-ms");
+    b.node("waited", "indicator", { type: "u32" });
+    b.wire("ms.result", "wait.ms");
+    b.wire("wait.result", "waited.value");
+    b.wire("x.result", "echo.value");
+    b.connector(["x"], ["echo"]);
+  });
+
+// Bug #30 (docs/design/real-programs-0.2.md): the second call wrote its input into the shared slot
+// while the first one was still waiting for its turn, so both answered the second input. LabVIEW
+// serializes the whole call, inputs included (measured in labview-captures/two-calls/).
+test("two parallel calls to a non-reentrant subVI that waits each get their own inputs", async () => {
+  const cat = callerCatalog({ "echo.qvi": echoAfterWait() });
+  const caller = buildVI(cat, (b) => {
+    b.node("one", "const", { value: 1 });
+    b.node("two", "const", { value: 2 });
+    b.node("a", "subvi", { vi: "echo.qvi" });
+    b.node("b", "subvi", { vi: "echo.qvi" });
+    b.node("ra", "indicator");
+    b.node("rb", "indicator");
+    b.wire("one.result", "a.control_1");
+    b.wire("two.result", "b.control_1");
+    b.wire("a.indicator_1", "ra.value");
+    b.wire("b.indicator_1", "rb.value");
+  });
+  assert.deepEqual(await run(caller, cat), { ra: 1, rb: 2 });
+});
+
 test("the hierarchy is loaded from relative paths and a recursive cycle is an error", () => {
   const leaf = add2();
   const cat = callerCatalog({ "add2.qvi": leaf });

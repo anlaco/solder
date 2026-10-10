@@ -1342,7 +1342,13 @@ c. The panel reads and writes an N-dimensional array as a typed view plus its
    compiled code. A statically linked subVI is loaded into memory with its caller.
 2. **A new VI is non-reentrant by default:** it has a single data space for its
    parameters, its temporary values and the state it keeps between calls, and
-   simultaneous calls are serialized ("callers take turns").
+   simultaneous calls are serialized ("callers take turns"). *Measured on
+   2026-10-10* (`Two Calls.vi`, two parallel calls of the non-reentrant
+   *Simulated Instrument* with different commands): each call answers its own
+   command, so the turn covers the whole call —inputs written, code run, outputs
+   read—, not only the run. Solder entered the turn after writing the inputs and
+   mixed them (bug #30); test "two parallel calls to a non-reentrant subVI that
+   waits each get their own inputs" in `test/core/subvis.test.mjs`.
 3. **That state survives between calls** —an uninitialized shift register keeps
    its value: the "functional global variable"— and also **between runs of the
    top-level VI, while the VI stays in memory**; it is lost when it is unloaded.

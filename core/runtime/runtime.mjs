@@ -590,15 +590,28 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     await planificar(compilado.planes[p], (i) => correrClump(`p${p}c${i}`, compilado.planes[p][i].largo), senal);
     return 0;
   });
-  // A subVI that waits (DT-045): a non-reentrant VI serves one call at a time,
-  // so each call waits for the one before on the same plan, as LabVIEW
-  // serializes simultaneous calls.
-  const busySubVIs = new Map(); // plan → promise of the call in progress
+  // A subVI that waits (DT-045): a non-reentrant VI serves one call at a time, as LabVIEW
+  // serializes simultaneous calls. A call enters (waiting while another one is inside), writes its
+  // inputs, runs, reads its outputs and leaves; leaving hands the subVI to the next waiting call.
+  const subVIWaiters = new Map(); // plan → resolvers of the calls waiting to enter; present while busy
+  const entrar_subvi = suspendible((p) => {
+    const waiters = subVIWaiters.get(p);
+    if (!waiters) {
+      subVIWaiters.set(p, []);
+      return 0;
+    }
+    return new Promise((enter) => waiters.push(enter)).then(() => {
+      if (senal?.aborted) throw abortado();
+      return 0;
+    });
+  });
+  const salir_subvi = (p) => {
+    const next = subVIWaiters.get(p)?.shift();
+    if (next) next();
+    else subVIWaiters.delete(p);
+  };
   const correr_subvi = suspendible(async (p) => {
-    const previous = busySubVIs.get(p) ?? Promise.resolve();
-    const call = previous.catch(() => {}).then(() => planificar(compilado.planes[p], (i) => correrClump(`p${p}c${i}`, compilado.planes[p][i].largo), senal));
-    busySubVIs.set(p, call);
-    await call;
+    await planificar(compilado.planes[p], (i) => correrClump(`p${p}c${i}`, compilado.planes[p][i].largo), senal);
     return 0;
   });
   // Manejo automático de errores (DT-043): el diálogo lo saca quien llama
@@ -653,7 +666,9 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     error_automatico,
     dialogo_error,
     correr_plan,
+    entrar_subvi,
     correr_subvi,
+    salir_subvi,
     esperar: suspendible(async (ms) => {
       await dormir(ms);
       return reloj();
