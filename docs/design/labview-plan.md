@@ -182,8 +182,25 @@ of maintenance with fixes only (`0.N.x-beta`).
    and compiled (spec/04 Rules 17d, 17e), errors 81–85 described (#28), and the call chain in an error's
    source (#39, Rule 21k). Also done in the editor (spec/05 Rule 40f). The enum's Edit Items… and the enum
    control and indicator (#32) were done on 2026-10-14 (DT-049, spec/05 Rule 40l: the items are the enum's
-   type, the dialog and the menus measured, the Case frames by item name). Still needed by the examples:
+   type, the dialog and the menus measured, the Case frames by item name); **its seam with the window
+is still open**, two defects found in review on 2026-10-14 (§3b step 3, next task). Still needed by the examples:
    Unbundle By Name (#23), New VI (#1), and the comparison tests (4).*
+   **Next, to start on 2026-10-15 — close the enum's seam with the window** (from the review of the
+   #32 commit, all four found by reading and running, none by the 581 tests):
+   (a) the Edit Items dialog took `pan.dialogo`, the field the Chart History dialog's keydown writes
+   into by mistake (`dialogo:` where it meant `graphDialog:`, there since before): typing a digit in
+   Chart History Length now makes the next paint call `EI.view` with that dialog and throw. The items
+   dialog gets a field of its own and the old typo is fixed.
+   (b) `Enter` and `Escape` are taken by the window before they reach `EI.type`, so the measured
+   Enter — commit the row and insert an empty one below — cannot be reached in the editor at all. The
+   keyboard and click routing of a dialog moves into its own pure module (`key(dialog, event)`
+   returning the intent) so the window shell has nothing left to get wrong; the Chart History dialog
+   follows.
+   (c) re-measure whether the dialog's Delete is greyed with a single row: the two reports of
+   2026-10-14 disagree (report 2, "Surprises"), and Rule 40l and DT-049 now say so instead of
+   picking one reading.
+   (d) a test that walks the window shell and not only the pure module: its absence is what let (a)
+   and (b) through with every test green, which is the shape of finding #32 itself.
 4. **Loose ends that mislead**, left half done in stage 1: the borders of the structures report no
    values to probes and Highlight Execution (tunnels, shift registers, "i", "N"); the warning triangle
    and its list; anything step 3 finds that looks done but is not.

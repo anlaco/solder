@@ -1545,8 +1545,10 @@ indicator.**
    greyed with their reason), Items|Values list with Values sequential and read-only, Insert / Delete
    / Move Up / Move Down, "Allow undefined values at run time" greyed, OK / Cancel / Help. Enter
    commits and inserts an empty row below; duplicates, empty names and any characters are accepted
-   verbatim; Delete is disabled with a single row. The dialog edits `config.type.enum` through a core
-   operation (DT-035 §6).
+   verbatim; Delete is disabled with a single row — the one claim the measurement does not settle:
+   the second report saw it enabled with a single row and reads it as focus-dependent, so it is to be
+   re-measured (spec/05 Rule 40l marks it unverified). The dialog edits `config.type.enum` through a
+   core operation (DT-035 §6).
 5. **Menus**: the enum constant gets its own node menu (this fixes #32's right-click bug) and the
    panel control and indicator theirs, with the measured rows and order; only what is done is
    enabled, the rest greyed saying why. Add Item After / Before (an empty item made current with an
