@@ -28,5 +28,9 @@ CLAUDE.md
 CLAUDE.local.md
 .claude/
 
+# ZCode: local assistant context and settings, not part of the project
+AGENTS.md
+.zcode/
+
 # Built installers (npm run dist)
 dist/
