@@ -1576,6 +1576,12 @@ b. Enum Case frames change from numbers to names in the `.qvi`. No real file car
    examples used I32 states and `0.3.0-alpha` is four days old) and the format is an unstable `0.x`
    (DT-048).
 c. The Edit Items dialog is drawn in the page, like the Debug Window (DT-047, editor side 2).
+   What a key or a click means for it is decided in its own module and in
+   `editor/src/window/modal-dialog.mjs`, which also took over the Chart History dialog: the window
+   shell only applies the intent it is given. It is that way since the review of 2026-10-14, which
+   found that the shell had taken Enter for OK — so the measured Enter could not be reached — and
+   that the dialog shared its state field with the chart one; `test/editor/modal-dialogs.test.mjs`
+   is the test of that seam, which no test used to cross.
 d. The inventory breaks `palette.controls.modern.ring-and-enum` into its five entries and `Enum`
    becomes `built` with its test; `palette.functions.programming.numeric.enum-constant` gets its
    real proof (its `built` was the false green of #32).

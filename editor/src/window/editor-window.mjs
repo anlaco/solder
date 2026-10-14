@@ -34,8 +34,7 @@ import * as Gr from "../../../core/model/graph.mjs";
 import * as H from "../block-diagram/undo-history.mjs";
 import { cargarInventario, esHueco, ultimo } from "../common/labview-inventory.mjs";
 import { addressFromText } from "../common/array-grid.mjs";
-import * as CH from "../front-panel/chart-history-dialog.mjs";
-import * as EI from "../block-diagram/edit-items-dialog.mjs";
+import * as MD from "./modal-dialog.mjs";
 import * as GM from "../front-panel/graph-menus.mjs";
 import * as GS from "../front-panel/graph-state.mjs";
 import * as P from "../front-panel/front-panel.mjs";
@@ -940,38 +939,37 @@ function runModeMenu(ev) {
   if (node && GS.isGraph(node)) cambiarPanel(ED.abrirMenu(pan, GM.runMenuRoot(node), node.id, ev.clientX, ev.clientY));
 }
 
-/** OK writes the length into the chart; Cancel leaves it as it was. */
-function closeHistoryDialog(aceptar) {
-  const dialogo = pan.graphDialog;
-  pan = { ...pan, graphDialog: null };
-  const g = aceptar ? CH.apply(pan.g, dialogo) : pan.g;
-  if (g !== pan.g) return cambiarPanel({ ...pan, g });
-  pintar();
+/** The modal dialog open over this window, if any: Edit Items... or Chart History Length... */
+const dialogoModal = () => MD.openDialog(conDiagrama ? dia : null, conPanel ? pan : null);
+
+/** Whichever modal dialog is open, drawn by its own module. */
+const dibujarDialogoModal = () => {
+  const abierto = dialogoModal();
+  return abierto ? abierto.mod.view(inv, abierto.dialog) : "";
+};
+
+/**
+ * What a key or a click on the open dialog meant (`modal-dialog.mjs` asked its module): the
+ * window only applies it. Accepting writes the dialog into the VI; a VI that does not change
+ * records no step of undo.
+ */
+function aplicarEnDialogo(intent, abierto) {
+  if (!intent) return;
+  const [actual, cambiarActual] = abierto.side === "diagram" ? [dia, cambiarDiagrama] : [pan, cambiarPanel];
+  if (intent.dialog) return cambiarActual({ ...actual, [abierto.field]: intent.dialog });
+  if (intent.cancel) return cambiarActual({ ...actual, [abierto.field]: null });
+  if (!intent.accept) return;
+  const g = MD.accepted(abierto, actual.g);
+  return cambiarActual({ ...actual, ...(g !== actual.g && { g }), [abierto.field]: null });
 }
 
-/** A click on the dialog: its buttons, and on what is not done, its explanation. */
-/** A click on the Edit Items dialog of an enum: its list and buttons edit the dialog; OK writes
- *  the items into the VI (renaming the frames of the Cases it feeds) and Cancel drops them. */
-function editItemsClick(ev) {
-  const delDiagrama = conDiagrama && dia.dialogo;
-  const [actual, cambiarActual] = delDiagrama ? [dia, cambiarDiagrama] : [pan, cambiarPanel];
-  const dialogo = delDiagrama ? dia.dialogo : pan.dialogo;
+/** A click on the open dialog: its parts, and on what is not done, its explanation. */
+function clicEnDialogo(ev, abierto) {
   const elemento = ev.target.closest("[data-id]");
-  // The veil, a disabled part or a greyed tab: the dialog stays as it is.
-  if (!elemento || !elemento.dataset.id) return;
-  const parte = elemento.dataset.id.slice(elemento.dataset.id.lastIndexOf(".") + 1);
-  if (parte === "ok") return cambiarActual({ ...actual, g: EI.apply(actual.g, dialogo), dialogo: null });
-  if (parte === "cancel") return cambiarActual({ ...actual, dialogo: null });
-  if (parte.startsWith("tab-") || parte === "help" || parte === "allow-undefined") return;
-  return cambiarActual({ ...actual, dialogo: EI.act(dialogo, elemento.dataset.id) });
-}
-
-function historyDialogClick(ev) {
-  const elemento = ev.target.closest("[data-id]");
-  if (!elemento) return;
-  if (elemento.dataset.id === `${CH.DIALOG_ID}.ok`) return closeHistoryDialog(true);
-  if (elemento.dataset.id === `${CH.DIALOG_ID}.cancel`) return closeHistoryDialog(false);
-  cambiar(E.clic(estado, inv, elemento.dataset.id, ancla(elemento)));
+  const intent = MD.clickIntent(abierto, elemento?.dataset.id);
+  // The veil and the parts without an id are not a click on anything.
+  if (intent?.explain) return cambiar(E.clic(estado, inv, elemento.dataset.id, ancla(elemento)));
+  return aplicarEnDialogo(intent, abierto);
 }
 
 // ——— SubVIs: placing one, opening its Front Panel ———
@@ -1071,7 +1069,7 @@ function pintar() {
   const charts = GS.reconciledCharts(pan.charts, grafo(), resueltos);
   if (charts !== pan.charts) pan = { ...pan, charts };
   const floating = floatingWindows();
-  const extra = { toolbar: debugToolbar(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, dialogo: dialogoError, numeroVI: viInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + (pan.graphDialog ? CH.view(inv, pan.graphDialog) : "") + ((conDiagrama && dia.dialogo) || (conPanel && pan.dialogo) ? EI.view(inv, (conDiagrama && dia.dialogo) ? dia.dialogo : pan.dialogo) : "") };
+  const extra = { toolbar: debugToolbar(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, dialogo: dialogoError, numeroVI: viInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
   if (conDiagrama) {
     extra.lienzo = D.contenido({ ...dia, debug: DV.canvasView(debug, dia.g, ejecutando) }, ctx, resueltos) + DV.overlay(debug, dia.g, ctx, resueltos, { now: Date.now(), separator: separador, running: ejecutando, pausedAt: debug.run.paused, errorFocus });
     extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx), DV.menuVariants(debug, dia.g, resueltos, dia.menu))) : "") + floating.popup;
@@ -1244,10 +1242,8 @@ addEventListener("mousedown", (ev) => {
   // Con un menú de la barra abierto, pulsar fuera de él y de los títulos lo cierra.
   if (estado.menuBarra && !ev.target.closest(".menu-contextual, .menu")) return cambiar({ ...estado, menuBarra: null });
   if (estado.menuBarra) return;
-  // The Edit Items dialog of an enum is modal too: its parts answer to the click event.
-  if ((conDiagrama && dia.dialogo) || (conPanel && pan.dialogo)) return ev.preventDefault();
-  // The chart history dialog is modal: its buttons answer to the click event.
-  if (pan.graphDialog) return;
+  // A modal dialog swallows the mousedown: its parts answer to the click event.
+  if (dialogoModal()) return ev.preventDefault();
   if (ejecutando && !pan.menu) return pulsarEnRun(ev);
   if (dia.menu) {
     if (ev.target.closest(".menu-contextual")) return;
@@ -1430,8 +1426,8 @@ addEventListener("click", (ev) => {
   if (ev.target.closest(".modal-error")) return;
   if (ev.target.closest(".explicacion")) return;
   if (propiedades && !ev.target.closest(".menu-contextual")) return clicPropiedades(ev);
-  if (pan.graphDialog) return historyDialogClick(ev);
-  if ((conDiagrama && dia.dialogo) || (conPanel && pan.dialogo)) return editItemsClick(ev);
+  const enDialogo = dialogoModal();
+  if (enDialogo) return clicEnDialogo(ev, enDialogo);
   // Una fila del menú de la barra: lo hecho se hace; un hueco, se explica.
   const filaBarra = estado.menuBarra && ev.target.closest(".item-menu");
   if (filaBarra) {
@@ -1484,7 +1480,7 @@ addEventListener("click", (ev) => {
 
 addEventListener("contextmenu", (ev) => {
   ev.preventDefault();
-  if (propiedades || pan.graphDialog || (conDiagrama && dia?.dialogo) || (conPanel && pan.dialogo)) return;
+  if (propiedades || dialogoModal()) return;
   // In Run mode LabVIEW gives another menu (the run-time one): captured only for the graphs.
   if (ejecutando) return runModeMenu(ev);
   // The connector pane and the icon have menus of their own.
@@ -1542,26 +1538,16 @@ addEventListener("keydown", (ev) => {
     if (ev.key === "Enter") cerrarPropiedades(true);
     return;
   }
-  // Chart History Length...: the digits go to its field; Enter accepts and Esc cancels.
-  if (conPanel && pan.graphDialog) {
+  // A modal dialog (Edit Items..., Chart History Length...): its own module says what the key
+  // means — in Edit Items, Enter while a row is being written commits it and opens an empty one
+  // below, which is what the window used to take for OK.
+  const conTeclaEnDialogo = dialogoModal();
+  if (conTeclaEnDialogo) {
     ev.preventDefault();
-    if (ev.key === "Escape") return closeHistoryDialog(false);
-    if (ev.key === "Enter") return closeHistoryDialog(true);
-    pan = { ...pan, dialogo: CH.type(pan.graphDialog, ev.key) };
-    return pintar();
-  }
-  // Edit Items… of an enum: the keys go to the row being edited; Enter accepts and Esc cancels.
-  if ((conDiagrama && dia.dialogo) || (conPanel && pan.dialogo)) {
-    ev.preventDefault();
-    if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
-    if (conDiagrama && dia.dialogo) {
-      if (ev.key === "Enter") return cambiarDiagrama({ ...dia, g: EI.apply(dia.g, dia.dialogo), dialogo: null });
-      if (ev.key === "Escape") return cambiarDiagrama({ ...dia, dialogo: null });
-      return cambiarDiagrama({ ...dia, dialogo: EI.type(dia.dialogo, ev.key) });
-    }
-    if (ev.key === "Enter") return cambiarPanel({ ...pan, g: EI.apply(pan.g, pan.dialogo), dialogo: null });
-    if (ev.key === "Escape") return cambiarPanel({ ...pan, dialogo: null });
-    return cambiarPanel({ ...pan, dialogo: EI.type(pan.dialogo, ev.key) });
+    // What is open over the dialog takes Escape first and the dialog stays, as in VI Properties
+    // above: otherwise closing the explanation of a greyed tab closed the whole dialog with it.
+    if (ev.key === "Escape" && (estado.abierta || estado.menuBarra)) return cambiar(E.escape(estado));
+    return aplicarEnDialogo(MD.keyIntent(conTeclaEnDialogo, ev), conTeclaEnDialogo);
   }
   // Ctrl+Intro confirma lo escrito en el source de un control de error (labview-captures/errores/35.png).
   if (conPanel && pan.edicion?.campo === "source" && ctrl && ev.key === "Enter") {

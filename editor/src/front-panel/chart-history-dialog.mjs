@@ -36,6 +36,23 @@ export function type(dialog, key) {
   return { ...dialog, texto: (dialog.todo ? "" : dialog.texto) + key, todo: false };
 }
 
+/**
+ * What a key means in the dialog, as an intent the window only applies: Enter accepts, Escape
+ * cancels and the rest goes to the field, which takes only digits.
+ */
+export function key(dialog, event) {
+  if (event.key === "Enter") return { accept: true };
+  if (event.key === "Escape") return { cancel: true };
+  return { dialog: type(dialog, event.key) };
+}
+
+/** What a click on the part `id` means: its two buttons, and on what is not done, its explanation. */
+export function click(dialog, id) {
+  if (id === `${DIALOG_ID}.ok`) return { accept: true };
+  if (id === `${DIALOG_ID}.cancel`) return { cancel: true };
+  return { explain: true };
+}
+
 /** The length the field says, or nothing if it is not a whole number of at least 1 (what LabVIEW does with it is unverified). */
 export function length(dialog) {
   const value = Number(dialog.texto);

@@ -42,9 +42,9 @@ test("the enum constant has its own menu with Edit Items, measured", () => {
   assert.ok(!INV.resolver("context.enum-constant.edit-items").labview, "Edit Items is done, not a hole");
   // The row opens the dialog on the node.
   const conDialogo = ED.orden(menu, "context.enum-constant.edit-items", CTX);
-  assert.equal(conDialogo.dialogo.nodo, id);
-  assert.deepEqual(conDialogo.dialogo.filas.map((f) => f.texto), ENUM.enum);
-  assert.equal(conDialogo.dialogo.titulo, "Enum Constant Properties");
+  assert.equal(conDialogo.itemsDialog.nodo, id);
+  assert.deepEqual(conDialogo.itemsDialog.filas.map((f) => f.texto), ENUM.enum);
+  assert.equal(conDialogo.itemsDialog.titulo, "Enum Constant Properties");
 });
 
 test("Edit Items edits the items of the enum and its Cases", () => {

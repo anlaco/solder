@@ -103,6 +103,34 @@ export function act(dialog, id) {
   return dialog;
 }
 
+/**
+ * What a key means in the dialog, as an intent the window only applies: while a row is being
+ * written it goes to that row — Enter commits it and opens an empty one below, Escape drops
+ * what was written and the dialog stays (measured) —, and with no row being written Enter is OK
+ * and Escape is Cancel, which are the window's default buttons (unverified in LabVIEW).
+ */
+export function key(dialog, event) {
+  if (event.ctrlKey || event.metaKey || event.altKey) return null;
+  if (dialog.edicion) return { dialog: type(dialog, event.key) };
+  if (event.key === "Enter") return { accept: true };
+  if (event.key === "Escape") return { cancel: true };
+  return null;
+}
+
+/**
+ * What a click on the part `id` means: OK writes the items, Cancel drops them, a greyed tab or
+ * Help explains why it is not done (DT-035), the enum's own greyed checkbox does nothing because
+ * LabVIEW greys it too, and the rest edits the list.
+ */
+export function click(dialog, id) {
+  const parte = id.slice(id.lastIndexOf(".") + 1);
+  if (parte === "ok") return { accept: true };
+  if (parte === "cancel") return { cancel: true };
+  if (parte === "allow-undefined") return null;
+  if (parte.startsWith("tab-") || parte === "help") return { explain: true };
+  return { dialog: act(dialog, id) };
+}
+
 /** When each button works: Delete needs a row it can leave, Move Up/Down a row on that side;
  * Disable Item never works on an enum (measured: greyed). */
 export function enabled(dialog, parte) {

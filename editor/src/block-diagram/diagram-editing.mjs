@@ -1097,7 +1097,7 @@ export function orden(d, id, ctx) {
   const cerrar = (g) => ({ ...d, g, menu: null });
   // Edit Items… opens the enum's Properties dialog on its Edit Items tab (DT-049); the
   // window draws it and keeps it modal.
-  if (id.endsWith(".edit-items")) return { ...d, menu: null, dialogo: EI.open(nodoPor(d.g, nodo)) };
+  if (id.endsWith(".edit-items")) return { ...d, menu: null, itemsDialog: EI.open(nodoPor(d.g, nodo)) };
   const ultimo = id.slice(id.lastIndexOf(".") + 1);
   if (id.endsWith(".visible-items.terminals")) return cerrar(Gr.alternarTerminales(d.g, nodo));
   if (id.endsWith(".view-as-icon")) return cerrar(Gr.alternarIcono(d.g, nodo));

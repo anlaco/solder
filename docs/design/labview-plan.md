@@ -42,7 +42,7 @@ LabVIEW** (DT-040): independent branches run at the same time, each indicator is
 painted when its data arrives, Abort stops at once and the panel switches to Run
 mode. Since 2026-10-01 also **with loops**: While and For are placed, stretched
 and wired in the diagram, and the compiler runs them (DT-041).
-581 tests green. **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name.
+587 tests green. **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name.
 
 | Piece | Status |
 |-------|--------|
@@ -182,28 +182,38 @@ of maintenance with fixes only (`0.N.x-beta`).
    and compiled (spec/04 Rules 17d, 17e), errors 81–85 described (#28), and the call chain in an error's
    source (#39, Rule 21k). Also done in the editor (spec/05 Rule 40f). The enum's Edit Items… and the enum
    control and indicator (#32) were done on 2026-10-14 (DT-049, spec/05 Rule 40l: the items are the enum's
-   type, the dialog and the menus measured, the Case frames by item name); **its seam with the window
-is still open**, two defects found in review on 2026-10-14 (§3b step 3, next task). Still needed by the examples:
+   type, the dialog and the menus measured, the Case frames by item name). Its **seam with the window**
+was reviewed the same day and closed on 2026-10-14: what a key or a click means for a dialog is decided
+in its own module (`editor/src/window/modal-dialog.mjs`, which also took over the Chart History dialog)
+and the shell only applies it, with `test/editor/modal-dialogs.test.mjs` crossing that seam. Still needed by the examples:
    Unbundle By Name (#23), New VI (#1), and the comparison tests (4).*
-   **Next, to start on 2026-10-15 — close the enum's seam with the window** (from the review of the
-   #32 commit, all four found by reading and running, none by the 581 tests):
-   (a) the Edit Items dialog took `pan.dialogo`, the field the Chart History dialog's keydown writes
-   into by mistake (`dialogo:` where it meant `graphDialog:`, there since before): typing a digit in
-   Chart History Length now makes the next paint call `EI.view` with that dialog and throw. The items
-   dialog gets a field of its own and the old typo is fixed.
-   (b) `Enter` and `Escape` are taken by the window before they reach `EI.type`, so the measured
-   Enter — commit the row and insert an empty one below — cannot be reached in the editor at all. The
-   keyboard and click routing of a dialog moves into its own pure module (`key(dialog, event)`
-   returning the intent) so the window shell has nothing left to get wrong; the Chart History dialog
-   follows.
-   (c) re-measure whether the dialog's Delete is greyed with a single row: the two reports of
-   2026-10-14 disagree (report 2, "Surprises"), and Rule 40l and DT-049 now say so instead of
-   picking one reading.
-   (d) a test that walks the window shell and not only the pure module: its absence is what let (a)
-   and (b) through with every test green, which is the shape of finding #32 itself.
+   **The enum's seam with the window, from the review of the #32 commit** (all four found by reading
+   and running, none by the 581 tests); (a), (b) and (d) done on 2026-10-14, (c) being measured:
+   *(a) done: the Edit Items dialog had taken `pan.dialogo`, the field the Chart History dialog's
+   keydown writes into by mistake (`dialogo:` where it meant `graphDialog:`, there since before), so
+   typing a digit in Chart History Length made the next paint call `EI.view` with that dialog and
+   throw. The items dialog now has `itemsDialog`, its own field, and the old typo is gone with the
+   routing that held it.*
+   *(b) done: `Enter` and `Escape` were taken by the window before they reached the dialog, so the
+   measured Enter — commit the row and insert an empty one below — could not be reached in the editor
+   at all. Each dialog now exports `key(dialog, event)` and `click(dialog, id)` returning an intent
+   (`dialog`, `accept`, `cancel`, `explain`), `editor/src/window/modal-dialog.mjs` says which dialog
+   is open, and the shell only applies what it is told; the Chart History dialog follows, and its
+   greyed parts explain themselves (DT-035).*
+   (c) **being measured** (brief sent on 2026-10-14): whether the dialog's Delete is greyed with a
+   single row, which the two reports of that day contradict (report 2, "Surprises"); Rule 40l and
+   DT-049 say so instead of picking one reading until the measurement comes back.
+   *(d) done: `test/editor/modal-dialogs.test.mjs` crosses the seam — the chart dialog is never
+   handed to the items module, Enter while writing a row is not OK, a greyed tab explains itself.
+   Its absence is what let (a) and (b) through with every test green, the shape of finding #32
+   itself.*
 4. **Loose ends that mislead**, left half done in stage 1: the borders of the structures report no
    values to probes and Highlight Execution (tunnels, shift registers, "i", "N"); the warning triangle
-   and its list; anything step 3 finds that looks done but is not.
+   and its list; anything step 3 finds that looks done but is not. Also: the explanation of a hole
+   opened over a modal dialog does not dismiss when something else in the dialog is clicked (it
+   swallows the mousedown before the click-outside rule); the same in VI Properties, so it is fixed
+   for all of them at once (seen 2026-10-14,
+   [`2026-10-14-editor-dialog-check.md`](../../labview-captures/reports/2026-10-14-editor-dialog-check.md)).
 5. **The `.qvi` format frozen as version 1**: written in spec/02 that from the maintainable version on every format change
    comes with an automatic migration (the file's `"solder": 1` field is for that), with a test that
    opens the example files of each version.
