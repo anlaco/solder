@@ -423,6 +423,71 @@ export function fijarMarcos(g, cat, caso, marcos) {
   };
 }
 
+/**
+ * Whether the value that comes out of `nodoId` can come from the node `id`: the
+ * node itself, or a border node that only passes a value through (tunnels, shift
+ * registers, Case output tunnels). The trace stops at anything that computes — a
+ * function, a subVI — so a rename never travels through it.
+ */
+function llegaDe(g, id, nodoId, vistos = new Set()) {
+  if (nodoId === id) return true;
+  if (vistos.has(nodoId)) return false;
+  vistos.add(nodoId);
+  const n = nodoDe(g, nodoId);
+  const vieneDe = (puerto) => {
+    const cable = g.cables.find((c) => c.a.nodo === nodoId && c.a.puerto === puerto);
+    return cable ? llegaDe(g, id, cable.de.nodo, vistos) : false;
+  };
+  // The wire into the other side of a plain tunnel.
+  if (n.tipo === "tunnel-in" || n.tipo === "tunnel-out") return vieneDe("x");
+  // A Case output tunnel: the value of the frame that ran, whichever it was.
+  if (n.tipo === "case-tunnel-out") return Array.from({ length: n.config?.marcos ?? 0 }, (_, i) => i).some((i) => vieneDe(`x-${i}`));
+  // A shift register: the first iteration carries the initial value, the rest what the
+  // pair received; the outer output of the right one may give either.
+  if (n.tipo === "shift-register-left") return vieneDe("init") || vieneDelPar(g, id, n.config?.par, "value", vistos);
+  if (n.tipo === "shift-register-right") return vieneDe("value") || vieneDelPar(g, id, n.config?.par, "init", vistos);
+  return false;
+}
+
+const vieneDelPar = (g, id, parId, puerto, vistos) => {
+  const cable = parId && g.cables.find((c) => c.a.nodo === parId && c.a.puerto === puerto);
+  return cable ? llegaDe(g, id, cable.de.nodo, vistos) : false;
+};
+
+/**
+ * Edits the items of an enum — its type (DT-049) — on the constant, control or
+ * indicator `id`: it keeps `{ enum: items }`. The value stays; it only falls back
+ * into range when it no longer names an item (measured in LabVIEW: a value out of
+ * range after deleting the last item shows item 0). `renombres` (old name → new
+ * name, from the rows the dialog saw being edited) is applied to the frames of the
+ * Case structures whose selector this enum feeds. A deleted item is not renamed:
+ * its frames keep the stale name, are drawn in red and break the Case, as in
+ * LabVIEW; the wire stays whole (measured).
+ */
+export function editarItemsEnum(g, id, items, renombres = {}) {
+  g = cambiarNodo(g, id, (n) => {
+    const value = n.config?.value === undefined || !items.length ? n.config?.value : Math.max(0, Math.min(n.config.value, items.length - 1));
+    return { ...n, config: { ...n.config, type: { enum: items }, ...(value !== undefined && { value }) } };
+  });
+  if (!Object.keys(renombres).length) return g;
+  const renombrado = (v) =>
+    typeof v === "string"
+      ? renombres[v] ?? v
+      : v && typeof v === "object"
+        ? { ...v, ...(v.min !== undefined && { min: renombres[v.min] ?? v.min }), ...(v.max !== undefined && { max: renombres[v.max] ?? v.max }) }
+        : v;
+  return {
+    ...g,
+    nodos: g.nodos.map((n) => {
+      if (n.tipo !== "case-structure") return n;
+      const selector = g.nodos.find((m) => m.dentro === n.id && m.tipo === "case-selector");
+      const cable = selector && g.cables.find((c) => c.a.nodo === selector.id);
+      if (!cable || !llegaDe(g, id, cable.de.nodo)) return n;
+      return { ...n, config: { ...n.config, marcos: (n.config?.marcos ?? []).map((m) => ({ ...m, ...(m.valores && { valores: m.valores.map(renombrado) }) })) } };
+    }),
+  };
+}
+
 /** Un túnel en el borde de una estructura: de entrada en el izquierdo, de salida en el derecho, a la altura `y`. */
 export function crearTunel(g, cat, estructura, dir, y) {
   const s = nodoDe(g, estructura);

@@ -379,9 +379,10 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >
 > *Unverified or not done for these kinds:* Remove Empty Cases (shown greyed); the look of the `A=a`
 > marker (only described, drawn anew); escapes inside quoted strings; open-ended string ranges;
-> a name that is not an item (LabVIEW accepts it in red and breaks the VI; here it is
-> rejected and the frame stays as it was); the value a new enum frame gets (LabVIEW's is not
-> measured); the frames after changing the type of a wired selector; unwiring.
+> the frames after changing the type of a wired selector; unwiring. A name that is not an item is
+> accepted, drawn in red, and breaks the Case with "Case Structure: Selector values have wrong
+> type", as LabVIEW does (measured; it was rejected here until DT-049); the value a new enum frame
+> gets is the first item without a frame, by name.
 >
 > *Unverified or not done:* what Add Case Before gives on the first frame, Delete
 > with a single frame, Make This Case True/False, Duplicate Case, Swap/Shift/
@@ -518,6 +519,45 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > - *Not done.* The concatenation lock of Build Array between a 2D and a 1D input (`buildarray-concat-2d-1d.png`);
 > Reshape Array, Transpose 2D Array and Sort and Shuffle 2D Array stay as placeholders (need `arrays-2d`);
 > Add Element Gap and Size to Widest Element.
+
+> **Rule 40l — The enum in the editor: items, Edit Items…, menus and panel.** The items of an
+> enum are its type (DT-049); measured in LabVIEW 2026 Q3
+> (`labview-captures/reports/2026-10-14-enum-edit-items.md` and `-2`, captures `enum-edit/`;
+> tests in `test/editor/enum-edit.test.mjs` and `test/core/enum-items.test.mjs`):
+>
+> - **The constant on the diagram** is born with one empty item, and its item-name editor opens
+>   right after the drop; what is typed renames the item (which also renames it in the frames of
+>   the Cases the enum feeds, Rule 17e). The box shows the current item's name and widens with
+>   it. A click on the constant when it is **not** selected opens the list of items, with the
+>   check mark on the current one; selected, the click only re-selects it (automatic tool,
+>   measured); typing and the arrow keys change nothing.
+> - **The right-click menu of the constant** (`context.enum-constant`) has the measured rows in
+>   their order; *Edit Items…* is done and the rest is greyed with its reason. Before this rule
+>   the right-click opened the Functions palette (finding #32).
+> - **Edit Items…** is one dialog for the constant, the control and the indicator: "Enum Constant
+>   Properties" (the panel objects' title is unverified), 500 × 500, five tabs — Appearance, Data
+>   Type, Display Format, Edit Items, Documentation; the other four are present and greyed —, an
+>   Items|Values list (Values sequential 0, 1, 2…, read-only), Insert / Delete / Move Up / Move
+>   Down, *Disable Item* always greyed on an enum, the checkbox *Allow undefined values at run
+>   time* greyed, and OK / Cancel / Help (Help greyed). Enter commits the row being edited and
+>   inserts an empty one below with the editor in it; clicking another row commits without
+>   inserting; duplicates, empty names and any characters are accepted verbatim; Delete is
+>   disabled with a single row. OK writes the items: renames reach the frames of the Cases the
+>   enum feeds (Rule 17e); the value stays, and only falls back into range when it names no item
+>   (measured: deleting the item under a middle value keeps the number; deleting the last item
+>   under the value clamps it to 0).
+> - **The panel.** Controls ▸ Modern ▸ Ring & Enum holds five entries in two rows (Text Ring,
+>   Menu Ring, Enum, Pict Ring, Text & Pict Ring); only **Enum** is done: a control 61 × 25 px
+>   (its box 49, next to the Numeric Control's 55) with the increment arrows on the left,
+>   showing the current item's name; the indicator is the same without arrows and with a grey
+>   box. The arrows move to the next or the previous item. Their right-click menus
+>   (`context.enum-control`, `context.enum-indicator`) have the measured rows; *Edit Items…* is
+>   done and the rest is greyed. Create ▸ Control / Indicator on an enum terminal makes these.
+> - *Unverified:* whether the panel arrows wrap around at the ends (here they stop); the title of
+>   the panel objects' dialog; the selected-row colour of the list; the exact px of the dialog
+>   (derived from a ≈1.62× capture). *Not done, measured:* Add Item After / Before (an empty item
+>   made current with an inline name editor), Remove Item (removes the current item; the last one
+>   can never be removed), Select Item… (a window with a filter; Enter commits).
 
 > **Rule 40i — The error cluster on the diagram and on the panel.** Captured in
 > LabVIEW 2026 Q3 (`labview-captures/errores/`, `docs/reference/labview-errors.md`),

@@ -30,6 +30,9 @@ function constantBlock(type) {
 
 function panelBlock(type, isControl) {
   const suffix = isControl ? "control" : "indicator";
+  // An enum counts as numeric (esNumerico), so Create ▸ on an enum terminal already
+  // makes the generic control/indicator with the enum type; the panel draws it as an
+  // enum (DT-049).
   if (esNumerico(type)) return { tipo: suffix, config: { type } };
   if (type === "boolean") return { tipo: `bool-${suffix}` };
   if (type === "string") return { tipo: `str-${suffix}` };

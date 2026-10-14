@@ -63,6 +63,10 @@ Each program had to go around something that a LabVIEW user would do without thi
 - **#32 The Enum Constant is offered as done but is born with no items,** has no right-click menu (a right
   click opens the Functions palette) and no *Edit Items…*. State machines on an enum, the most common
   LabVIEW pattern, cannot be written. It looks done and is not.
+  *Fixed on 2026-10-14:* the items are the enum's type and Edit Items… exists for the constant, the
+  control and the indicator, with the measured menus, the panel objects of Controls ▸ Ring & Enum and
+  Create ▸ on an enum terminal (DT-049, spec/05 Rule 40l; measured in
+  `labview-captures/reports/2026-10-14-enum-edit-items.md` and `-2`).
 - **#6 The menu of a shift register is all greyed,** wired or not. In LabVIEW (measured) Create is greyed
   while the shift register is unwired and, once wired, *Create ▸ Constant* puts the initial value outside the
   loop; Add Element, Remove All, Replace with Feedback Node and the palette are enabled too.

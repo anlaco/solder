@@ -72,7 +72,7 @@ test("wiring a string to a Boolean case makes the frames string values", () => {
 
 test("wiring an enum to a Boolean case makes the frames items 0 (Default) and 1", () => {
   const d = enumCase();
-  assert.deepEqual(frames(d), [{ valores: [0], default: true }, { valores: [1] }]);
+  assert.deepEqual(frames(d), [{ valores: ["Init"], default: true }, { valores: ["Heat"] }]);
   assert.deepEqual(labels(d), ['"Init", Default', '"Heat"']);
 });
 
@@ -84,10 +84,12 @@ test("the labels of a string frame are quoted, with ranges and the empty string"
 });
 
 test("the labels of an enum frame are the item names; adjacent items are a list", () => {
-  assert.equal(etiquetaMarco({ valores: [1] }, ENUM), '"Heat"');
-  assert.equal(etiquetaMarco({ valores: [{ min: 0, max: 2 }] }, ENUM), '"Init".."Done"');
-  assert.equal(etiquetaMarco({ valores: [{ min: 0, max: 1 }] }, ENUM), '"Init", "Heat"');
-  assert.equal(etiquetaMarco({ valores: [{ min: 1, max: 2 }], default: true }, ENUM), '"Heat", "Done", Default');
+  assert.equal(etiquetaMarco({ valores: ["Heat"] }, ENUM), '"Heat"');
+  assert.equal(etiquetaMarco({ valores: [{ min: "Init", max: "Done" }] }, ENUM), '"Init".."Done"');
+  assert.equal(etiquetaMarco({ valores: [{ min: "Init", max: "Heat" }] }, ENUM), '"Init", "Heat"');
+  assert.equal(etiquetaMarco({ valores: [{ min: "Heat", max: "Done" }], default: true }, ENUM), '"Heat", "Done", Default');
+  // A frame's enum values are item names (DT-049); a stale name still has its label.
+  assert.equal(etiquetaMarco({ valores: ["Cool"] }, ENUM), '"Cool"');
 });
 
 test("a string selector label is read with quotes, bare words and ranges", () => {
@@ -105,12 +107,14 @@ test("a string selector label is read with quotes, bare words and ranges", () =>
 });
 
 test("an enum selector label is read by item name or by item number", () => {
-  assert.deepEqual(ED.leerMarco('"Heat"', ENUM), { valores: [1] });
-  assert.deepEqual(ED.leerMarco("Heat", ENUM), { valores: [1] });
-  assert.deepEqual(ED.leerMarco("1", ENUM), { valores: [1] }, "an item number");
-  assert.deepEqual(ED.leerMarco('"Init".."Done"', ENUM), { valores: [{ min: 0, max: 2 }] });
-  assert.deepEqual(ED.leerMarco('"Init".."Heat"', ENUM), { valores: [0, 1] }, "adjacent items become a list");
-  assert.equal(ED.leerMarco("Cool", ENUM), null, "a name that is not an item is not understood");
+  assert.deepEqual(ED.leerMarco('"Heat"', ENUM), { valores: ["Heat"] });
+  assert.deepEqual(ED.leerMarco("Heat", ENUM), { valores: ["Heat"] });
+  assert.deepEqual(ED.leerMarco("1", ENUM), { valores: ["Heat"] }, "an item number resolves to its name");
+  assert.deepEqual(ED.leerMarco('"Init".."Done"', ENUM), { valores: [{ min: "Init", max: "Done" }] });
+  assert.deepEqual(ED.leerMarco('"Init".."Heat"', ENUM), { valores: ["Init", "Heat"] }, "adjacent items become a list");
+  // A name that is not an item is kept: LabVIEW accepts it, shows it in red and breaks the
+  // Case (DT-049); only an out-of-range number is not understood.
+  assert.deepEqual(ED.leerMarco("Cool", ENUM), { valores: ["Cool"] });
   assert.equal(ED.leerMarco("7", ENUM), null);
   const d = setFrame(enumCase(), "2");
   assert.equal(labels(d)[1], '"Done"', "the number is shown afterwards as the name");
@@ -123,7 +127,7 @@ test("a new frame in a string case has no value, and an enum one takes the first
   d = run(stringCase(), "add-case-before");
   assert.equal(frames(d).filter((m) => !m.valores.length).length, 1);
   const e = run(enumCase(), "add-case-after");
-  assert.deepEqual(frames(e).map((m) => m.valores), [[0], [1], [2]], "Done is the first item without a frame");
+  assert.deepEqual(frames(e).map((m) => m.valores), [["Init"], ["Heat"], ["Done"]], "Done is the first item without a frame");
 });
 
 test("a string case has Case Insensitive Match; an enum case does not", () => {
@@ -159,7 +163,7 @@ test("un case de enum ofrece añadir un marco por cada valor", () => {
   assert.ok(hiddenRows(d).has(row), "every item has a frame: the row is gone");
   assert.ok(hiddenRows(d).has("context.case-structure.remove-empty-cases"));
   // Items covered by a range or a list count as having a frame; the new frames come in item order.
-  d = { ...d, g: Gr.fijarMarcos(d.g, CAT, caseNode(d).id, [{ de: 1, valores: [1] }]) };
+  d = { ...d, g: Gr.fijarMarcos(d.g, CAT, caseNode(d).id, [{ de: 1, valores: ["Heat"] }]) };
   d = run(d, "add-case-for-every-value");
   assert.deepEqual(labels(d), ['"Heat"', '"Init"', '"Done"']);
   // A string case never offers it.

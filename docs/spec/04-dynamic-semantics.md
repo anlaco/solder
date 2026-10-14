@@ -200,14 +200,21 @@ not exist. LabVIEW requires the same.)*
 > letters, a range under Case Insensitive Match, open string ranges.)*
 
 > **Rule 17e — Enum selector.** Frames are named by the enum's items, quoted
-> (`"Init"`), and stored by item number. A frame for every item makes the Default
-> frame unnecessary; an item with no frame and no Default breaks the VI ("no case for
+> (`"Init"`), and stored by item **name** (DT-049: a number typed in the selector
+> resolves to that item's name). A frame for every item makes the Default frame
+> unnecessary; an item with no frame and no Default breaks the VI ("no case for
 > some selector values"). A range of items includes both ends (`"Heat".."Done"` takes
-> Heat and Done), as an integer range does. There is no Case Insensitive Match.
+> Heat and Done), as an integer range does. There is no Case Insensitive Match. A frame
+> whose name no longer names an item — the stale name left by deleting the item in Edit
+> Items — breaks the Case, not the wire, with "Case Structure: Selector values have wrong
+> type"; renaming an item in Edit Items renames it in the frames of the Cases the enum
+> feeds, through tunnels, shift registers and Case output tunnels.
 > *(Measured in LabVIEW 2026 Q3 on 2026-10-10,
-> `labview-captures/reports/2026-10-10-enum-case.md`; tests "an enum case …" in
-> `test/core/structures.test.mjs`. Unverified: an enum with "Allow undefined values"
-> and an out-of-range item number typed as a frame value.)*
+> `labview-captures/reports/2026-10-10-enum-case.md`, and on 2026-10-14,
+> `labview-captures/reports/2026-10-14-enum-edit-items.md` (question 7); tests "an enum
+> case …" in `test/core/structures.test.mjs` and the enum ones in
+> `test/core/enum-items.test.mjs`. Unverified: an enum with "Allow undefined values";
+> whether a rename travels through a function that computes (here it does not).)*
 
 ### 5.3b Flat and Stacked Sequence
 

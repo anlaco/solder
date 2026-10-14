@@ -517,7 +517,7 @@
             "additionalProperties": false,
             "properties": {
               "match": {
-                "description": "Selector values that select this frame: a Boolean, an integer (an enum by its item number), a string, or a range {min, max}. An integer range includes both ends; a string range includes min and excludes max (spec/04 Rules 17b and 17d).",
+                "description": "Selector values that select this frame: a Boolean, an integer, a string, an enum item by its name (DT-049; a name that no longer names an item stays, drawn in red, and breaks the Case), or a range {min, max}. An integer and an enum range include both ends; a string range includes min and excludes max (spec/04 Rules 17b, 17d and 17e).",
                 "type": "array", "minItems": 1
               },
               "default": {

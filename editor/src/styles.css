@@ -446,6 +446,9 @@ svg { display: block; overflow: visible; }
 .selector-de-marcos { position: absolute; width: 0; height: 0; pointer-events: none; }
 .selector-de-marcos .selector-marcos { position: absolute; left: 0; top: 0; display: block; overflow: visible; shape-rendering: crispEdges; pointer-events: none; }
 .selector-de-marcos .texto-selector { font-family: "Segoe UI", "Noto Sans", sans-serif; font-size: var(--fuente); fill: #000; shape-rendering: auto; }
+/* The label of a frame whose values no longer name items of the enum selector — a stale
+   name left by Edit Items — is red, as in LabVIEW (measured, DT-049). */
+.selector-de-marcos .texto-selector.texto-invalido { fill: #ff0000; }
 .marco-zona { position: absolute; pointer-events: auto; cursor: default; }
 .lista-marcos { z-index: 30; }
 .nodo.estructura .terminal-selector { display: block; }
@@ -588,6 +591,26 @@ svg { display: block; overflow: visible; }
 .pv-boton { border: 1px solid #adadad; background: #e1e1e1; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
 .pv-boton.defecto { border-color: #0078d7; }
 .pv-check.hueco .pv-texto, .pv-radio.hueco .pv-texto, .pv-combo.hueco .pv-texto, .pv-boton.hueco { font-style: italic; color: var(--texto-hueco); }
+/* A disabled button, as LabVIEW greys what does not work (DT-035 §4). */
+.pv-boton.desactivado { color: var(--texto-hueco); }
+
+/* Edit Items…, the tab of the enum's Properties dialog (DT-049, measured in
+   labview-captures/enum-edit/41-eidialog.png): the tabs, the Items|Values list and the
+   greyed checkbox. The positions are set by block-diagram/edit-items-dialog.mjs. */
+.ficha { display: flex; align-items: center; justify-content: center; white-space: nowrap; }
+.ficha.activa { background: #f0f0f0; border: 1px solid #d9d9d9; border-bottom: none; }
+.ficha.hueco { font-style: italic; color: var(--texto-hueco); }
+.ficha-lista-cabecera span { position: absolute; }
+.ficha-lista { overflow: hidden; background: #fff; border: 1px solid #828790; }
+.ficha-lista-fila { position: absolute; left: 0; width: 100%; display: flex; }
+.ficha-lista-fila.elegida { background: #cce8ff; }
+.ficha-lista-fila .celda { position: absolute; white-space: nowrap; }
+.ficha-lista-fila .celda.valor { color: #6d6d6d; }
+.ficha-lista-separador { position: absolute; top: 0; bottom: 0; width: 1px; background: #d9d9d9; }
+.ficha-casilla { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.ficha-casilla .cuadro { border: 1px solid #333; background: #fff; box-sizing: border-box; }
+/* The checkbox of an enum is greyed but present, as LabVIEW draws it (measured). */
+.ficha-casilla.desactivada { color: var(--texto-hueco); }
 
 /* Waveform Chart, Waveform Graph and XY Graph, from labview-captures/graphs/: the drawing is an svg the size of the frame (editor/src/front-panel/graph-view.mjs),
    with the legend above it, so it must not clip. The text is the one of the labels. */

@@ -27,7 +27,7 @@ import { BOOLEANOS, dibujoBooleano, estadoError } from "../common/glyphs.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { REPEATED_PASTE_STEP } from "../common/paste-memory.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
-import { convertirValor, elementoPorDefecto, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
+import { convertirValor, elementoPorDefecto, esEnum, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import { GRAPH_MEASURES, LABEL_PLACEMENT, graphSvg } from "./graph-view.mjs";
 import { isGraph, labelShown, wireTypeOf } from "./graph-state.mjs";
 import { cellAddress, dimensionsOfNode, firstShown, indexSetting, isDefined, readCell, valueFitsDimensions, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
@@ -119,8 +119,8 @@ export const MEDIDAS_CADENA_PANEL = { ancho: 100, alto: 24 };
  */
 export const estiloDe = (tipo, config) => (CONTROLES[tipo]?.booleano ? BOOLEANOS[config?.style] ?? BOOLEANOS["push-button"] : null);
 
-/** La etiqueta con que nace un control: la de su clase si es booleano, o la del bloque. */
-const etiquetaNueva = (tipo, config) => claseError(tipo, config)?.etiqueta ?? estiloDe(tipo, config)?.etiqueta ?? CONTROLES[tipo]?.etiqueta ?? "";
+/** La etiqueta con que nace un control: la de su clase si es booleano o un enum, o la del bloque. */
+const etiquetaNueva = (tipo, config) => claseError(tipo, config)?.etiqueta ?? estiloDe(tipo, config)?.etiqueta ?? (esEnum(config?.type) ? "Enum" : CONTROLES[tipo]?.etiqueta) ?? "";
 
 /**
  * Medidas de un control numérico, de numeric-panel.png: la casilla mide
@@ -129,6 +129,11 @@ const etiquetaNueva = (tipo, config) => claseError(tipo, config)?.etiqueta ?? es
  * casilla, y su pie queda a 2 px de ella.
  */
 export const MEDIDAS_PANEL = { casilla: 55, alto: 25, bisel: 4, incrementador: 16, solape: 4, separacion: 2 };
+/**
+ * The box of an enum, measured at 1:1 in labview-captures/enum-edit/21-enum-ctrl-zoom.png next to a
+ * Numeric Control (DT-049): 49 px wide — 61 in total with the arrows — where the numeric one is 55.
+ */
+export const CASILLA_ENUM = 49;
 
 /**
  * Entre el pie de la etiqueta y un control booleano van 4 px (siete filas de
@@ -166,7 +171,7 @@ export function cajaObjeto(tipo, x, y, config) {
   if (b) return { x, y, ancho: b.ancho, alto: b.alto, casilla: 0, separacion: SEPARACION_BOOLEANO };
   if (CONTROLES[tipo]?.cadena) return { x, y, ancho: MEDIDAS_CADENA_PANEL.ancho, alto: MEDIDAS_CADENA_PANEL.alto, casilla: 0 };
   const casilla = inicioCasilla(tipo);
-  return { x, y, ancho: casilla + M.casilla, alto: M.alto, casilla };
+  return { x, y, ancho: casilla + (esEnum(config?.type) ? CASILLA_ENUM : M.casilla), alto: M.alto, casilla };
 }
 
 export const caja = (n) => cajaObjeto(n.tipo, n.panel.x, n.panel.y, n.config);
@@ -197,7 +202,12 @@ const INCREMENTADOR = `<div class="incrementador"><svg viewBox="0 0 16 25" aria-
  */
 const esCadena = (n) => !!CONTROLES[n?.tipo]?.cadena;
 const tipoDe = (n) => n.config?.type ?? "number";
-const textoValor = (n, ctx, valores) => (esCadena(n) ? String(valores?.[n.id] ?? n.config?.value ?? "") : formatear(valores?.[n.id] ?? n.config?.value ?? 0, tipoDe(n), ctx.separador));
+const textoValor = (n, ctx, valores) => {
+  // An enum shows the name of its current item (DT-049); while running, the value that
+  // arrives is the item's number.
+  if (esEnum(tipoDe(n))) return (n.config?.type?.enum ?? [])[valores?.[n.id] ?? n.config?.value ?? 0] ?? "";
+  return esCadena(n) ? String(valores?.[n.id] ?? n.config?.value ?? "") : formatear(valores?.[n.id] ?? n.config?.value ?? 0, tipoDe(n), ctx.separador);
+};
 
 /** El valor de un booleano: el que le dejó el último Run, si es un indicador, o el suyo por defecto. */
 const encendido = (n, valores) => !!(valores?.[n.id] ?? n.config?.value);
@@ -395,7 +405,7 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
   }
   // Un clic en la casilla de un control escribe en ella, con el cursor al final.
   const n = p.g.nodos.find((m) => m.id === sobre.id);
-  if (sobre.tipo === "casilla" && (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control")) return editarValor(p, ctx, sobre.id, false);
+  if (sobre.tipo === "casilla" && (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control") && !esEnum(n?.config?.type)) return editarValor(p, ctx, sobre.id, false);
   if (sobre.tipo === "objeto" || sobre.tipo === "casilla") return { ...p, seleccion: elegir(sobre.id), accion: { tipo: "mover", x: pt.x, y: pt.y, nodo: sobre.id, movido: false, ...(duplicate ? { duplicar: true } : {}) } };
   if (sobre.tipo === "etiqueta") return { ...p, seleccion: elegir(idEtiqueta(sobre.id)), accion: { tipo: "etiqueta", nodo: sobre.id, x: pt.x, y: pt.y } };
   return { ...p, seleccion: shift ? p.seleccion : [], accion: { tipo: "rectangulo", x0: pt.x, y0: pt.y, x1: pt.x, y1: pt.y, base: shift ? p.seleccion : [] } };
@@ -498,6 +508,8 @@ export function menuDe(n) {
   if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return "context.panel-array";
   // A graph's menu, with its settings (labview-captures/graphs/10..45); the same root in Run mode is another one (graph-menus.mjs).
   if (isGraph(n)) return `context.${n.tipo}`;
+  // An enum control or indicator has its own menus, measured (DT-049).
+  if (esEnum(n.config?.type) && (n.tipo === "control" || n.tipo === "indicator")) return n.tipo === "control" ? "context.enum-control" : "context.enum-indicator";
   if (n.tipo === "bool-control") return "context.boolean-control";
   if (n.tipo === "bool-indicator") return "context.boolean-indicator";
   return null;
@@ -570,6 +582,10 @@ export function editarElemento(p, ctx, id, k, todo) {
 /** Una flecha del incrementador: el valor sube o baja 1. */
 function pasoValor(g, id, paso) {
   const n = g.nodos.find((m) => m.id === id);
+  // The arrows of an enum move to the next or the previous item (whether they wrap around at
+  // the ends is unverified; here they stop).
+  const items = n.config?.type?.enum;
+  if (items) return Gr.fijarValor(g, id, Math.max(0, Math.min(items.length - 1, (n.config?.value ?? 0) + paso)));
   return Gr.fijarValor(g, id, convertirValor((n.config?.value ?? 0) + paso, tipoDe(n)));
 }
 

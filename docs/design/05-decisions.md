@@ -25,6 +25,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [041](#dt-041) | Structures in the flat model: nodes `inside` their structure, tunnels and shift registers as border nodes, and their compilation onto clumps | Accepted · being implemented |
 | [042](#dt-042) | Strings, arrays and clusters as in LabVIEW: a data space of handles in linear memory, no collector, with copies decided at compile time | Accepted · being implemented |
 | [043](#dt-043) | The error cluster as in LabVIEW: type, error in/out passing, automatic handling and own texts | Accepted · being implemented |
+| [049](#dt-049) | The items of an enum are its type; one Edit Items… for constant, control and indicator | Accepted · being implemented |
 
 ## The 34 Red decisions
 
@@ -1510,3 +1511,79 @@ Done in `editor/src/debugging/`; the rules are spec/05 §16. Decisions taken the
 
 Rejected: dropping the wires that no longer fit when a VI is opened — simpler, but it loses information
 without telling and it is not what LabVIEW does.
+
+## DT-049
+
+**The items of an enum are its type; one Edit Items… for constant, control and
+indicator.**
+
+- **Status:** Accepted on 2026-10-14 by the developer: option 1 of the study presented (items in the
+  type), with B decided as "always like LabVIEW" and the dialog's five tabs present, the other four
+  greyed. **Implemented the same day** (spec/05 Rule 40l, spec/04 Rule 17e amended). Implements
+  finding #32 of [`real-programs-0.2.md`](real-programs-0.2.md) for `0.3.0-alpha`.
+- **Complements:** [DT-038](#dt-038) (the enum type and its conversions), [DT-035](#dt-035) (menus
+  and dialogs clone LabVIEW, gaps greyed with their reason).
+- **Measured:** [`labview-captures/reports/2026-10-14-enum-edit-items.md`](../../labview-captures/reports/2026-10-14-enum-edit-items.md)
+  (dialog, menus, panel look, item-edit behavior, Case after item edits, Ring & Enum subpalette) and
+  [`labview-captures/reports/2026-10-14-enum-edit-items-2.md`](../../labview-captures/reports/2026-10-14-enum-edit-items-2.md)
+  (value clamped into range, Add Item After/Before, Remove Item, Select Item…, the fresh constant's caret).
+
+### Decision
+
+1. **The items live in the type**: `config.type = { enum: [names] }` of the node — the `enum-const`
+   on the diagram and the panel `control`/`indicator` with an enum type. No separate `config.items`
+   (that is the ring's, whose values are data, not type). Two enums with different items are
+   different types. No schema change for the type itself.
+2. **The enum's value is the item index** (U16). Deleting an item does not clamp it (measured: value
+   2 with "Cool" deleted shows "Done"); when the value falls out of range — deleting the last item —
+   it clamps into range (measured: shows "Init", value 0). Create ▸ on an enum terminal copies the
+   terminal's items.
+3. **A fresh enum is born with one empty item**, value 0 (measured: one empty row; Solder used to
+   birth zero items).
+4. **Edit Items…**: one dialog for the three kinds, cloned from the measurement — 500 × 500, five
+   tabs (Appearance, Data Type, Display Format, Edit Items, Documentation; the other four present and
+   greyed with their reason), Items|Values list with Values sequential and read-only, Insert / Delete
+   / Move Up / Move Down, "Allow undefined values at run time" greyed, OK / Cancel / Help. Enter
+   commits and inserts an empty row below; duplicates, empty names and any characters are accepted
+   verbatim; Delete is disabled with a single row. The dialog edits `config.type.enum` through a core
+   operation (DT-035 §6).
+5. **Menus**: the enum constant gets its own node menu (this fixes #32's right-click bug) and the
+   panel control and indicator theirs, with the measured rows and order; only what is done is
+   enabled, the rest greyed saying why. Add Item After / Before (an empty item made current with an
+   inline name editor), Remove Item (removes the current item; the last one can never be removed)
+   and Select Item… (a filter window; Enter commits) are measured (second report) but stay greyed
+   until a program needs them.
+6. **The panel**: Controls ▸ Modern ▸ Ring & Enum breaks down into its five measured entries (Text
+   Ring, Menu Ring, Enum, Pict Ring, Text & Pict Ring); only **Enum** is built: 61 × 25 px showing
+   the item's name, arrows on the left (control), grey interior `#d2d2d2` without arrows (indicator);
+   terminal and wire blue `#0000ff`. The four Ring entries stay `todo`.
+7. **The Case, like LabVIEW**: the frames of an enum selector store the **item name** (the schema
+   for those frames takes strings). A rename in Edit Items propagates to the frames of the Cases fed
+   by that enum; a deletion leaves the stale name, drawn in red, and breaks the Case with
+   «Case Structure: Selector values have wrong type»; the wire stays whole (measured). A number typed
+   in the selector resolves to that item's name.
+8. **The ring does not change**: its dialog and menu differ (measured: Sequential values, Allow
+   undefined values enabled, Data Entry tab); `ring-const` keeps `config.items`.
+
+### Consequences
+
+a. The panel `control`/`indicator` with an enum type draw as enums (name and arrows; grey without
+   arrows), without new block types; Create ▸ Indicator on an enum wire — what *Oven Controller*
+   does — comes out right.
+b. Enum Case frames change from numbers to names in the `.qvi`. No real file carries them (the
+   examples used I32 states and `0.3.0-alpha` is four days old) and the format is an unstable `0.x`
+   (DT-048).
+c. The Edit Items dialog is drawn in the page, like the Debug Window (DT-047, editor side 2).
+d. The inventory breaks `palette.controls.modern.ring-and-enum` into its five entries and `Enum`
+   becomes `built` with its test; `palette.functions.programming.numeric.enum-constant` gets its
+   real proof (its `built` was the false green of #32).
+
+### Verification
+
+| What | Mechanism | Status |
+|------|-----------|--------|
+| The items are the type; a fresh enum is born with one empty item; the value stays and only clamps into range | `test/core/enum-items.test.mjs` | **Verified** (2026-10-14) |
+| Rename propagates to frames (through shift registers); a deletion leaves the stale name and breaks the Case with LabVIEW's reason; the wire stays whole | `test/core/enum-items.test.mjs`, "a frame whose item was deleted…" in `test/core/structures.test.mjs` | **Verified** (2026-10-14) |
+| An enum Case compiles its frames by name (a number resolves to the item's name) | `test/core/structures.test.mjs`, `test/editor/case-selector-kinds.test.mjs` | **Verified** (2026-10-14) |
+| The dialog, the menus and the panel look | `test/editor/enum-edit.test.mjs` | **Verified** (2026-10-14) |
+| A `.qvi` with items and enum frames by name round-trips | "a .qvi with enum items and enum frames by name round-trips" in `test/core/enum-items.test.mjs` | **Verified** (2026-10-14) |

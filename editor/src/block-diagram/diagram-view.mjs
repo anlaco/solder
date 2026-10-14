@@ -84,8 +84,10 @@ export const CONSTANTES = {
   "error-cluster-constant": { editable: true, error: true, texto: () => "" },
   // La constante de array (labview-captures/array/constante-array.png): el índice y una caja con sus elementos.
   "arr-const": { editable: true, array: true, texto: () => "" },
-  "enum-const": { texto: () => "", selector: true },
-  "ring-const": { texto: () => "", selector: true },
+  // An enum or a ring shows the name of its current item and widens with it (measured,
+  // enum report 2026-10-14, question 6; DT-049).
+  "enum-const": { texto: (n) => (n.config?.type?.enum ?? [])[n.config?.value ?? 0] ?? "", selector: true },
+  "ring-const": { texto: (n) => (n.config?.items ?? [])[n.config?.value ?? 0] ?? "", selector: true },
 };
 
 /** Medidas de una constante: «32» ocupa 27 × 27 px del vídeo y «43,3», 39 × 27. */
@@ -286,16 +288,29 @@ export function selectorKind(graph, caseNode, resolved) {
 
 const quoted = (text) => `"${text}"`;
 
-/** One value of a frame as its selector shows it: strings and enum items in quotes, enum items by name. */
+/**
+ * One value of a frame as its selector shows it: strings and enum items in quotes, enum
+ * items by name (a frame's enum values are the item names, DT-049).
+ */
 function labelOfValue(value, kind) {
-  const bound = (v) => (v === undefined || v === null ? "" : typeof v === "string" ? quoted(v) : esEnum(kind) && kind.enum[v] !== undefined ? quoted(kind.enum[v]) : String(v));
+  const bound = (v) => (v === undefined || v === null ? "" : typeof v === "string" ? quoted(v) : String(v));
   if (typeof value === "boolean") return value ? "True" : "False";
   if (value && typeof value === "object") {
     // LabVIEW shows two adjacent enum items as a list, not as a range (enum report, point 5).
-    if (esEnum(kind) && value.max - value.min === 1) return `${bound(value.min)}, ${bound(value.max)}`;
+    if (esEnum(kind) && kind.enum.indexOf(value.max) - kind.enum.indexOf(value.min) === 1) return `${bound(value.min)}, ${bound(value.max)}`;
     return `${bound(value.min)}..${bound(value.max)}`;
   }
   return bound(value);
+}
+
+/**
+ * Whether every value of a frame names an item of the enum selector. A name that is
+ * not an item — a stale one, left by deleting the item in Edit Items — is drawn in
+ * red and breaks the Case, as in LabVIEW (measured, DT-049).
+ */
+export function frameMatchesItems(m, kind) {
+  const isItem = (name) => kind.enum.includes(name);
+  return (m.valores ?? []).every((v) => (typeof v === "string" ? isItem(v) : v && typeof v === "object" ? (v.min === undefined || isItem(v.min)) && (v.max === undefined || isItem(v.max)) : false));
 }
 
 /**
@@ -752,7 +767,7 @@ export function contenido(d0, ctx, resueltos) {
     const n = { id: "fantasma", tipo: accion.bloque, x: accion.x, y: accion.y, ...(isSubVI({ tipo: accion.bloque }) ? { config: accion.config } : {}) };
     fantasma = `<div class="fantasma">${nodo(n, { g, seleccion: [] }, ctx, null, false)}</div>`;
   }
-  const lista = d.lista ? listaMarcos(d, ctx, resueltos) : "";
+  const lista = d.lista ? (d.lista.nodo && CONSTANTES[d.g.nodos.find((n) => n.id === d.lista.nodo)?.tipo]?.selector ? listaValores(d, ctx) : listaMarcos(d, ctx, resueltos)) : "";
   const aviso = d.aviso ? `<div class="aviso" style="left:${px(d.aviso.x + 8)};top:${px(d.aviso.y + 8)}">${esc(d.aviso.texto)}</div>` : "";
   const pistas = sobre ? pistasTerminales(g.nodos.find((n) => n.id === sobre.nodo), d, ctx, resueltos) : "";
   // Las cuñas de coerción y las pistas de los terminales, encima de los nodos.
@@ -1082,19 +1097,39 @@ function marcaCaseInsensitive() {
  */
 function selectorDeMarcos(n, ctx, d, resueltos) {
   const M = G.SELECTOR_MARCOS;
-  const m = medidasSelector(n, ctx, d.edicion, selectorKind(d.completo ?? d.g, n, resueltos));
+  const kind = selectorKind(d.completo ?? d.g, n, resueltos);
+  const m = medidasSelector(n, ctx, d.edicion, kind);
   const xd = m.ancho - 9;
   const ed = d.edicion?.marco && d.edicion.nodo === n.id ? d.edicion : null;
   const t = esc(m.actual);
+  // A frame whose values no longer name items (a stale name after Edit Items) is red (DT-049).
+  const invalido = !ed && esEnum(kind) && !frameMatchesItems(marcosDe(n)[activoDe(n)] ?? {}, kind) ? " texto-invalido" : "";
   const texto = ed
     ? ed.todo
       ? `<rect x="${M.textoX - 1}" y="3" width="${f2(m.anchoActual + 2)}" height="11" fill="#000"/><text x="${M.textoX}" y="${M.baseline}" class="texto-selector texto-blanco">${t}</text>`
       : `<text x="${M.textoX}" y="${M.baseline}" class="texto-selector">${t}</text><rect class="caret-selector" x="${f2(M.textoX + m.anchoActual)}" y="3" width="1" height="11" fill="#000"/>`
-    : `<text x="${M.textoX}" y="${M.baseline}" class="texto-selector">${t}</text>`;
+    : `<text x="${M.textoX}" y="${M.baseline}" class="texto-selector${invalido}">${t}</text>`;
   const zona = (z, x, ancho) => `<div class="marco-zona" data-nodo="${esc(n.id)}" data-zona="${z}" style="left:${px(x)};top:1px;width:${px(ancho)};height:15px"></div>`;
   const zonas = zona("anterior", 1, M.boton) + zona("texto", M.divisor + 1, xd - M.divisor - 11) + zona("lista", xd - 10, 10) + zona("siguiente", xd + 1, M.boton);
   const cuerpo = G.selectorMarcos(m.texto).replace("</svg>", `${texto}</svg>`);
   return `<div class="selector-de-marcos" style="left:${px(m.x)};top:0">${cuerpo}${zonas}</div>`;
+}
+
+/**
+ * The drop-down list of the items of an enum or ring constant, with the check mark on the
+ * one it shows: what a click on the constant opens (measured, enum report 2026-10-14,
+ * question 6; drawn like the Case's list of frames).
+ */
+function listaValores(d, ctx) {
+  const n = d.g.nodos.find((k) => k.id === d.lista.nodo);
+  if (!n) return "";
+  const M = MEDIDAS_MENU;
+  const items = n.tipo === "enum-const" ? n.config?.type?.enum ?? [] : n.config?.items ?? [];
+  const ancho = M.texto + Math.max(0, ...items.map((t) => ctx.medir(t))) + M.derecha;
+  const filas = items
+    .map((t, k) => `<div class="item-menu item-valor${k === (n.config?.value ?? 0) ? " marcado" : ""}" data-nodo="${esc(n.id)}" data-valor="${k}" style="top:${px(M.arriba + k * M.fila)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(t)}</span></div>`)
+    .join("");
+  return `<div class="menu-contextual lista-marcos" style="left:${px(d.lista.x)};top:${px(d.lista.y)};width:${px(ancho)};height:${px(M.arriba * 2 + items.length * M.fila)}">${filas}</div>`;
 }
 
 /** La lista desplegable de marcos (structures/case-lista.png): un menú de filas con la marca en el que se ve. */
@@ -1221,6 +1256,10 @@ export function menuDe(n, puerto, g) {
   if (n.tipo === "tunnel-in" && g?.nodos.find((k) => k.id === n.dentro)?.tipo === "case-structure") return "context.case-tunnel-input";
   if (n.tipo in MENU_ESTRUCTURA) return MENU_ESTRUCTURA[n.tipo];
   if (isSubVI(n)) return "context.subvi";
+  // An enum has its own menus, measured with the panel control, the indicator and the
+  // constant (DT-049); the diagram terminal of a panel enum uses the same rows.
+  if (esEnum(n.config?.type) && (n.tipo === "control" || n.tipo === "indicator")) return n.tipo === "control" ? "context.enum-control" : "context.enum-indicator";
+  if (n.tipo === "enum-const") return "context.enum-constant";
   if (n.tipo === "control") return "context.numeric-control";
   if (n.tipo === "bool-control") return "context.boolean-control-terminal";
   // El menú de la constante booleana no está capturado.

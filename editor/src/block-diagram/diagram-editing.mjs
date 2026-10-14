@@ -29,6 +29,7 @@
 
 import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
 import * as FN from "./format-nodes.mjs";
+import * as EI from "./edit-items-dialog.mjs";
 import { endPoint } from "./broken-wire.mjs";
 import * as CP from "../front-panel/connector-pane.mjs";
 import { graphCommand, graphMenuMarks, graphMenuVariants, isGraphMenu } from "../front-panel/graph-menus.mjs";
@@ -93,8 +94,10 @@ function colocar(d, ctx, p) {
   let { g, id } = Gr.crearNodo(d.g, ctx.cat, d.accion.bloque, Math.round(p.x - grab.x), Math.round(p.y - grab.y));
   if (d.accion.config) g = Gr.fijarConfig(g, id, d.accion.config);
   // Soltarlo dentro de un bucle lo mete en él (DT-041).
-  // Una constante de cadena recién soltada queda lista para escribir en ella (bd-string-constant-editando.png).
-  const escribir = CONSTANTES[d.accion.bloque]?.editable && CONSTANTES[d.accion.bloque].cadena ? { nodo: id, texto: "", todo: false, cadena: true, nuevo: true } : d.edicion;
+  // Una constante de cadena recién soltada queda lista para escribir en ella (bd-string-constant-editando.png);
+  // una de enum, con el editor en el nombre de su único ítem, que nace vacío (DT-049, medido).
+  const bloque = CONSTANTES[d.accion.bloque];
+  const escribir = bloque?.editable && bloque.cadena ? { nodo: id, texto: "", todo: false, cadena: true, nuevo: true } : d.accion.bloque === "enum-const" ? { nodo: id, texto: "", todo: false, item: true, nuevo: true } : d.edicion;
   return { ...d, g: alojar(g, ctx, [id]), seleccion: [id], accion: null, aviso: null, edicion: escribir };
 }
 
@@ -450,9 +453,11 @@ function valorNuevo(marcos, anterior) {
  */
 function valuesOfNewFrame(caseNode, frames, previous, kind) {
   if (kind === "string" || (!kind && esBooleano(caseNode))) return [];
-  const value = valorNuevo(frames, previous);
-  if (esEnum(kind)) return value < kind.enum.length ? [value] : [];
-  return [value];
+  if (esEnum(kind)) {
+    const first = uncoveredItems(caseNode, kind)[0];
+    return first !== undefined ? [kind.enum[first]] : [];
+  }
+  return [valorNuevo(frames, previous)];
 }
 
 /**
@@ -574,8 +579,8 @@ function mostrarOtroMarco(g, id) {
  * of that kind: see `readStringFrame` and `readEnumFrame`.
  */
 export function leerMarco(texto, kind) {
-  if (kind === "string") return readFrameOfTokens(texto, parseStringBound);
-  if (esEnum(kind)) return readFrameOfTokens(texto, (token) => parseEnumBound(token, kind));
+  if (kind === "string") return readFrameOfTokens(texto, parseStringBound, kind);
+  if (esEnum(kind)) return readFrameOfTokens(texto, (token) => parseEnumBound(token, kind), kind);
   const valores = [];
   let predeterminado = false;
   for (const parte of texto.split(",").map((t) => t.trim()).filter(Boolean)) {
@@ -613,7 +618,7 @@ function splitOutsideQuotes(text, separator) {
  * `parseBound` turns the text of one value into its value, or `undefined` if it
  * means nothing. Returns `null` if any part is not understood.
  */
-function readFrameOfTokens(text, parseBound) {
+function readFrameOfTokens(text, parseBound, kind) {
   const valores = [];
   let predeterminado = false;
   for (const part of splitOutsideQuotes(text, ",").map((t) => t.trim()).filter(Boolean)) {
@@ -626,15 +631,23 @@ function readFrameOfTokens(text, parseBound) {
     const values = ends.map((end) => (end === "" ? null : parseBound(end)));
     if (values.some((v) => v === undefined)) return null;
     if (ends.length === 1) valores.push(values[0]);
-    else if (values[0] !== null || values[1] !== null) valores.push(...rangeValues(values[0], values[1]));
+    else if (values[0] !== null || values[1] !== null) valores.push(...rangeValues(values[0], values[1], kind));
     else return null;
   }
   return { valores, ...(predeterminado && { default: true }) };
 }
 
-/** A range of two enum items next to each other is two values, as LabVIEW shows it (enum report, point 5). */
-function rangeValues(min, max) {
-  if (typeof min === "number" && typeof max === "number" && max - min === 1) return [min, max];
+/**
+ * A range of two values next to each other is two values, as LabVIEW shows it (enum report,
+ * point 5); with an enum selector the values are item names, so adjacency is by index.
+ */
+function rangeValues(min, max, kind) {
+  const adjacent = (a, b) => {
+    if (typeof a === "number" && typeof b === "number") return b - a === 1;
+    if (esEnum(kind) && typeof a === "string" && typeof b === "string") return kind.enum.indexOf(b) - kind.enum.indexOf(a) === 1;
+    return false;
+  };
+  if (adjacent(min, max)) return [min, max];
   return [{ ...(min !== null && { min }), ...(max !== null && { max }) }];
 }
 
@@ -645,12 +658,15 @@ function parseStringBound(token) {
   return token.includes('"') ? undefined : token;
 }
 
-/** An enum value: the name of an item, in quotes or bare, or its number (enum report, point 5); anything else is not understood. */
+/**
+ * An enum value, stored as the item's name (DT-049): a number resolves to the item at that
+ * index (enum report, point 5: `1` becomes `"Heat"`); anything else is a name, quoted or bare.
+ * A name that is not an item is kept — LabVIEW accepts it, shows it in red and breaks the
+ * Case (enum report 2026-10-10, point 6); only an out-of-range number is not understood.
+ */
 function parseEnumBound(token, kind) {
-  const name = /^"(.*)"$/s.exec(token)?.[1] ?? token;
-  const byName = kind.enum.indexOf(name);
-  if (byName >= 0) return byName;
-  return /^\d+$/.test(token) && Number(token) < kind.enum.length ? Number(token) : undefined;
+  if (/^\d+$/.test(token)) return Number(token) < kind.enum.length ? kind.enum[Number(token)] : undefined;
+  return /^"(.*)"$/s.exec(token)?.[1] ?? token;
 }
 
 /** Confirmar lo escrito en el selector: el marco que se ve toma esos valores; si es el Default, deja de serlo otro (case-edit5.png). */
@@ -680,8 +696,9 @@ function ajustarSelectores(g, ctx) {
     const tipo = wire && types.cables.get(wire.id)?.tipo;
     const asString = tipo === "string";
     if (!asString && !esNumerico(tipo)) continue;
-    const convert = (value) => (asString ? (value === true ? "True" : value === false ? "False" : String(value)) : Number(value));
-    const marcos = conOrigen(s).map(({ valores = [], ...m }) => ({ ...m, valores: valores.map(convert), ...(valores.includes(false) && { default: true }) }));
+    // An enum names its frames by item (DT-049): False and True become the items 0 and 1.
+    const convert = (value) => (asString ? (value === true ? "True" : value === false ? "False" : String(value)) : esEnum(tipo) ? tipo.enum[Number(value)] : Number(value));
+    const marcos = conOrigen(s).map(({ valores = [], ...m }) => ({ ...m, valores: valores.map(convert).filter((v) => v !== undefined), ...(valores.includes(false) && { default: true }) }));
     g = Gr.fijarMarcos(g, ctx.cat, s.id, marcos);
   }
   return g;
@@ -695,9 +712,22 @@ export function alternarCaseInsensitive(g, id) {
   return Gr.fijarConfig(g, id, { caseInsensitive: nodoPor(g, id).config?.caseInsensitive ? undefined : true });
 }
 
-/** The items of the enum selector of `caseNode` that no frame covers, in item order (ranges include both ends). */
+/**
+ * The items of the enum selector of `caseNode` that no frame covers, in item order (ranges
+ * include both ends). A frame's values are item names (DT-049); a name that is not an item —
+ * a stale one, after deleting the item — covers nothing.
+ */
 export function uncoveredItems(caseNode, kind) {
-  const covers = (value, item) => (value && typeof value === "object" ? (value.min ?? -Infinity) <= item && item <= (value.max ?? Infinity) : value === item);
+  const at = (name) => (name === undefined ? undefined : kind.enum.indexOf(name));
+  const covers = (value, item) => {
+    if (typeof value === "string") return at(value) === item;
+    if (value && typeof value === "object") {
+      const lo = value.min === undefined ? 0 : at(value.min);
+      const hi = value.max === undefined ? kind.enum.length - 1 : at(value.max);
+      return lo <= item && item <= hi;
+    }
+    return false;
+  };
   return kind.enum.map((_, item) => item).filter((item) => !marcosDe(caseNode).some((m) => (m.valores ?? []).some((v) => covers(v, item))));
 }
 
@@ -706,7 +736,7 @@ export function anadirMarcosParaCadaValor(g, ctx, id) {
   const s = nodoPor(g, id);
   const kind = kindOf(g, ctx, s);
   if (!esEnum(kind)) return g;
-  const nuevos = uncoveredItems(s, kind).map((item) => ({ valores: [item] }));
+  const nuevos = uncoveredItems(s, kind).map((item) => ({ valores: [kind.enum[item]] }));
   return nuevos.length ? Gr.fijarMarcos(g, ctx.cat, id, [...conOrigen(s), ...nuevos]) : g;
 }
 
@@ -721,7 +751,13 @@ export function anadirMarcosParaCadaValor(g, ctx, id) {
 export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
   if (d.menu) return { ...d, menu: null };
   // La lista de marcos de un Case se cierra al pulsar fuera de ella, y una de sus filas muestra ese marco.
-  if (d.lista) return sobre.tipo === "fila-marco" ? mostrarMarco({ ...d, lista: null }, sobre.nodo, sobre.k) : { ...d, lista: null };
+  // La de ítems de una constante de enum o de ring elige el que se ve (DT-049).
+  if (d.lista)
+    return sobre.tipo === "fila-marco"
+      ? mostrarMarco({ ...d, lista: null }, sobre.nodo, sobre.k)
+      : sobre.tipo === "fila-valor"
+        ? { ...d, g: Gr.fijarConfig(d.g, sobre.nodo, { value: sobre.k }), lista: null }
+        : { ...d, lista: null };
   // Pulsar fuera de la constante en la que se escribe confirma lo escrito, y
   // nada más: es lo que se ve en el vídeo.
   const enLoQueSeEscribe = d.edicion?.marco ? sobre.tipo === "marco" && sobre.zona === "texto" && sobre.nodo === d.edicion.nodo : sobre.id === d.edicion?.nodo && sobre.tipo === (d.edicion?.etiqueta ? "etiqueta" : "nodo");
@@ -746,9 +782,13 @@ export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
     return shift ? (ya ? d.seleccion.filter((s) => s !== id) : [...d.seleccion, id]) : ya ? d.seleccion : [id];
   };
   if (sobre.tipo === "nodo") {
+    // Una constante de enum o de ring que no está seleccionada abre con un clic su lista de
+    // ítems; seleccionada, el clic sólo la vuelve a elegir (medido, herramienta automática).
+    const pulsado = d.g.nodos.find((n) => n.id === sobre.id);
+    if (CONSTANTES[pulsado?.tipo]?.selector && !d.seleccion.includes(sobre.id)) return { ...d0, seleccion: elegir(sobre.id), lista: { nodo: sobre.id, x: p.x, y: p.y } };
     // Una constante booleana cambia con un clic, como en LabVIEW; si se arrastra, se mueve.
     // La constante de error, igual, con la celda de su status.
-    const tipoNodo = d.g.nodos.find((n) => n.id === sobre.id)?.tipo;
+    const tipoNodo = pulsado?.tipo;
     const alternar = tipoNodo === "bool-const" || (tipoNodo === "error-cluster-constant" && sobre.campo === "status") ? sobre.id : null;
     return { ...d0, seleccion: elegir(sobre.id), accion: { tipo: "mover", x: p.x, y: p.y, alternar, campo: sobre.campo, movido: false, ...(duplicate ? { duplicar: true } : {}) } };
   }
@@ -992,6 +1032,16 @@ export function confirmar(d, ctx) {
   if (!e) return d;
   if (e.etiqueta) return { ...d, g: Gr.fijarEtiqueta(d.g, e.nodo, e.texto), edicion: null };
   if (e.marco) return { ...d, g: escribirMarco(d.g, ctx, e.nodo, e.texto), edicion: null };
+  // The name of an item of an enum constant, written where the constant is (DT-049): a
+  // rename, which reaches the frames of the Cases the enum feeds.
+  if (e.item) {
+    const n = d.g.nodos.find((k) => k.id === e.nodo);
+    const items = [...(n.config?.type?.enum ?? [])];
+    const anterior = items[n.config?.value ?? 0];
+    if (anterior === undefined || anterior === e.texto) return { ...d, edicion: null };
+    items[n.config?.value] = e.texto;
+    return { ...d, g: Gr.editarItemsEnum(d.g, e.nodo, items, { [anterior]: e.texto }), edicion: null };
+  }
   const n = d.g.nodos.find((k) => k.id === e.nodo);
   // Un elemento de una constante de array: se lleva al tipo de sus elementos; lo que no vale lo deja como estaba.
   if (e.elem !== undefined) {
@@ -1045,6 +1095,9 @@ export function orden(d, id, ctx) {
   if (graphResult) return graphResult;
   const { nodo, puerto } = d.menu;
   const cerrar = (g) => ({ ...d, g, menu: null });
+  // Edit Items… opens the enum's Properties dialog on its Edit Items tab (DT-049); the
+  // window draws it and keeps it modal.
+  if (id.endsWith(".edit-items")) return { ...d, menu: null, dialogo: EI.open(nodoPor(d.g, nodo)) };
   const ultimo = id.slice(id.lastIndexOf(".") + 1);
   if (id.endsWith(".visible-items.terminals")) return cerrar(Gr.alternarTerminales(d.g, nodo));
   if (id.endsWith(".view-as-icon")) return cerrar(Gr.alternarIcono(d.g, nodo));

@@ -2261,10 +2261,23 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
    * lo de ese marco, y cada túnel de salida toma lo que le llega en él, o el
    * valor por defecto con Use Default If Unwired.
    */
-  /** Whether the frames give every item of the enum `t` a frame; ranges include both ends (spec/04 Rule 17e). */
+  /**
+   * Whether the frames give every item of the enum `t` a frame; ranges include both ends
+   * (spec/04 Rule 17e). A frame's values are item names (DT-049); a name that is not an
+   * item covers nothing.
+   */
   function coversEveryItem(t, frames) {
+    const at = (name) => (name === undefined ? undefined : t.enum.indexOf(name));
     const covered = (item) =>
-      frames.some((frame) => (frame.valores ?? []).some((v) => (v && typeof v === "object" ? (v.min ?? -Infinity) <= item && item <= (v.max ?? Infinity) : v === item)));
+      frames.some((frame) => (frame.valores ?? []).some((v) => {
+        if (typeof v === "string") return at(v) === item;
+        if (v && typeof v === "object") {
+          const lo = v.min === undefined ? 0 : at(v.min);
+          const hi = v.max === undefined ? t.enum.length - 1 : at(v.max);
+          return lo <= item && item <= hi;
+        }
+        return false;
+      }));
     return t.enum.every((_, item) => covered(item));
   }
 
@@ -2283,6 +2296,8 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     // The selector: a Boolean or an integer as an i32, or a string by its handle.
     const sel = L("i32");
     let stringSelector = false;
+    // An enum selector travels as its item index (U16) and names its frames by item (DT-049).
+    let enumSelector = null;
     // Lo que rompe la flecha de Run en LabVIEW: un selector numérico sin Default,
     // uno booleano sin sus dos marcos, o un valor en dos marcos.
     const nombre = s.label?.text ?? s.name;
@@ -2301,9 +2316,21 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       if (t !== "boolean" && !marcos.some((m) => m.default) && !(esEnum(t) && coversEveryItem(t, marcos))) errores.push({ nodo: sid, motivo: `«${nombre}» necesita un marco Default: hay valores del selector que no tienen marco.` });
       if (t === "string" && marcos.some((m) => !m.default && !m.valores?.length)) errores.push({ nodo: sid, motivo: `In «${nombre}», a frame has no selector value.` });
       stringSelector = t === "string";
+      enumSelector = esEnum(t) ? t : null;
       c.push(...x.entrada(0));
       if (t !== "boolean" && !stringSelector) c.push(...convertir(t, "i32"));
       c.push(ins("local.set", sel));
+    }
+    // A frame value that no longer names an item — a stale name left by deleting the item in
+    // Edit Items — breaks the Case, as in LabVIEW; the wire stays whole (measured, DT-049).
+    if (enumSelector) {
+      const esItem = (name) => enumSelector.enum.includes(name);
+      for (const m of marcos) {
+        for (const v of m.valores ?? []) {
+          const wrongType = typeof v === "string" ? !esItem(v) : v && typeof v === "object" ? (v.min !== undefined && !esItem(v.min)) || (v.max !== undefined && !esItem(v.max)) : true;
+          if (wrongType) errores.push({ nodo: sid, motivo: "Case Structure: Selector values have wrong type" });
+        }
+      }
     }
     const salidas = deAqui.filter((x) => porId.get(x).tipo === "case-tunnel-out").map((id) => {
       const x = contexto(id, k);
@@ -2328,18 +2355,41 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       if (typeof v.max === "string") bounds.push([...compareSelectorTo(v.max), ins("i32.const", 0), ins("i32.lt_s")]);
       return bounds.length === 2 ? [...bounds.flat(), ins("i32.and")] : bounds.length ? bounds[0] : [ins("i32.const", 1)];
     };
+    // An enum value is an item name: it selects by the item's index. A stale name (already
+    // reported above) selects nothing.
+    const enumIndex = (name) => (name === undefined ? null : enumSelector.enum.indexOf(name));
+    const enumCondition = (v) => {
+      if (typeof v === "string") {
+        const i = enumIndex(v);
+        return i >= 0 ? [ins("local.get", sel), ins("i32.const", i), ins("i32.eq")] : [];
+      }
+      if (v && typeof v === "object") {
+        const lo = v.min === undefined ? null : enumIndex(v.min);
+        const hi = v.max === undefined ? null : enumIndex(v.max);
+        const partes = [];
+        if (lo !== null && lo >= 0) partes.push([ins("local.get", sel), ins("i32.const", lo), ins("i32.ge_s")]);
+        if (hi !== null && hi >= 0) partes.push([ins("local.get", sel), ins("i32.const", hi), ins("i32.le_s")]);
+        return partes.length === 2 ? [...partes.flat(), ins("i32.and")] : partes.length ? partes[0] : [];
+      }
+      return [];
+    };
     const condicion = (valores) => {
-      const r = [];
-      valores.forEach((v, j) => {
-        if (stringSelector) r.push(...stringCondition(v));
-        else if (v && typeof v === "object") {
-          const partes = [];
-          if (v.min !== undefined && v.min !== null) partes.push([ins("local.get", sel), ins("i32.const", v.min), ins("i32.ge_s")]);
-          if (v.max !== undefined && v.max !== null) partes.push([ins("local.get", sel), ins("i32.const", v.max), ins("i32.le_s")]);
-          r.push(...partes.flat(), ...(partes.length === 2 ? [ins("i32.and")] : partes.length ? [] : [ins("i32.const", 1)]));
-        } else r.push(ins("local.get", sel), ins("i32.const", valorI32(v)), ins("i32.eq"));
-        if (j) r.push(ins("i32.or"));
-      });
+      // Each value leaves one boolean on the stack, joined with or; a value that matches
+      // nothing (a stale enum name) contributes none.
+      const trozos = valores
+        .map((v) => {
+          if (stringSelector) return stringCondition(v);
+          if (enumSelector) return enumCondition(v);
+          if (v && typeof v === "object") {
+            const partes = [];
+            if (v.min !== undefined && v.min !== null) partes.push([ins("local.get", sel), ins("i32.const", v.min), ins("i32.ge_s")]);
+            if (v.max !== undefined && v.max !== null) partes.push([ins("local.get", sel), ins("i32.const", v.max), ins("i32.le_s")]);
+            return [...partes.flat(), ...(partes.length === 2 ? [ins("i32.and")] : partes.length ? [] : [ins("i32.const", 1)])];
+          }
+          return [ins("local.get", sel), ins("i32.const", valorI32(v)), ins("i32.eq")];
+        })
+        .filter((trozo) => trozo.length);
+      const r = trozos.flatMap((trozo, j) => (j ? [...trozo, ins("i32.or")] : trozo));
       return r.length ? r : [ins("i32.const", 0)];
     };
     const conValores = marcos.map((m, i) => ({ m, i })).filter(({ m }) => m.valores?.length);

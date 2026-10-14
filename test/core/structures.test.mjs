@@ -722,20 +722,28 @@ function enumCase(frames, item) {
   });
 }
 
-// spec/04 Rule 17e, measured in LabVIEW 2026 Q3 (labview-captures/reports/2026-10-10-enum-case.md).
+// spec/04 Rule 17e, measured in LabVIEW 2026 Q3 (labview-captures/reports/2026-10-10-enum-case.md);
+// a frame names an item by its name (DT-049).
 test("an enum case with a frame for every item runs without Default", async () => {
-  const frames = [{ valores: [0] }, { valores: [1] }, { valores: [2] }];
+  const frames = [{ valores: ["Init"] }, { valores: ["Heat"] }, { valores: ["Done"] }];
   const results = [];
   for (const item of [0, 1, 2]) results.push((await correr(enumCase(frames, item))).r);
   assert.deepEqual(results, [1, 2, 3]);
 });
 
 test("an enum range includes both ends and counts as covering its items", async () => {
-  const frames = [{ valores: [0] }, { valores: [{ min: 1, max: 2 }] }];
+  const frames = [{ valores: ["Init"] }, { valores: [{ min: "Heat", max: "Done" }] }];
   assert.deepEqual([(await correr(enumCase(frames, 1))).r, (await correr(enumCase(frames, 2))).r], [2, 2]);
 });
 
 test("an enum case with an item without a frame and no Default is broken", () => {
-  const errors = compilar(enumCase([{ valores: [0] }, { valores: [1] }], 0).g, CAT).errores;
+  const errors = compilar(enumCase([{ valores: ["Init"] }, { valores: ["Heat"] }], 0).g, CAT).errores;
   assert.match(errors.map((e) => e.motivo).join(), /Default/);
+});
+
+// A stale name — the item deleted in Edit Items — breaks the Case, not the wire (measured,
+// DT-049 and labview-captures/reports/2026-10-14-enum-edit-items.md, question 7).
+test("a frame whose item was deleted breaks the Case with LabVIEW's reason", () => {
+  const errors = compilar(enumCase([{ valores: ["Init"], default: true }, { valores: ["Heat"] }, { valores: ["Cool"] }], 0).g, CAT).errores;
+  assert.ok(errors.some((e) => e.motivo === "Case Structure: Selector values have wrong type"));
 });
