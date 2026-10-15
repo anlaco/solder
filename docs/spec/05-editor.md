@@ -180,7 +180,13 @@ loose. See §5.4.)*
 
 - While pulling, the wire is a **black dotted** line that leaves the
   terminal horizontally up to the mouse's x and then goes vertically to it.
-- When released on a terminal, the vertical segment ends up almost attached to it: at 4 px.
+- A new wire turns **7 px after its source**, whichever end it was drawn from and however far the input is
+  (measured 2026-10-15, `labview-captures/reports/2026-10-15-wire-bends.md` §1, §2, §5; the "4 px from where it is
+  released" read from the video was wrong). A second wire from an output that already has one is a **branch** of it:
+  the two share that vertical and the junction dot sits on its elbow (§3). Tests in
+  `test/editor/diagram-editing.test.mjs`. **Unverified:** a wire finished on another wire puts the dot at the click
+  on a horizontal and on the elbow on the source's vertical (§4, one click each); Solder keeps the branch 12 px
+  before the input, as measured earlier, until this is measured again.
 - A **segment** is selected with a click, with marching ants only on it, and is
   dragged sideways: vertical ones horizontally and horizontal ones
   vertically. Dragging the first or the last, which are attached to a terminal,

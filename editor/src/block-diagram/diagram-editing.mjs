@@ -973,14 +973,22 @@ function indexedTunnelIfLoop(g, ctx, tunnelId, source) {
 /** Joins two terminals with a wire shaped like a new one; why it cannot be done goes in `aviso`. */
 function wireTerminals(d, ctx, desde, sobre, p) {
   let codos;
+  let junction = null;
   if (desde.dir !== sobre.dir) {
     const ext = extremos(d.g, ctx);
     const [de, a] = desde.dir === "out" ? [desde, sobre] : [sobre, desde];
-    codos = codosPorDefecto(ext.get(`${de.nodo}.${de.puerto}`), ext.get(`${a.nodo}.${a.puerto}`), sobre.dir === "out");
+    const source = ext.get(`${de.nodo}.${de.puerto}`);
+    codos = codosPorDefecto(source, ext.get(`${a.nodo}.${a.puerto}`));
+    // A second wire from an output that already has one is a branch of it: both share the vertical just after
+    // the source, and the dot sits on that elbow (2026-10-15-wire-bends.md §3).
+    const sourceIsWired = d.g.cables.some((c) => c.de.nodo === de.nodo && c.de.puerto === de.puerto);
+    if (sourceIsWired && codos.length === 1) junction = [codos[0], source.y];
   }
   const r = unir(d.g, ctx, desde, sobre, codos);
   if (r.motivo) return { ...d, accion: null, aviso: { texto: r.motivo, x: p.x, y: p.y } };
-  return { ...d, g: ajustarSelectores(r.g, ctx), accion: null, seleccion: [] };
+  const isNewWire = r.g.cables.length > d.g.cables.length;
+  const g = junction && isNewWire ? Gr.fijarUnion(r.g, r.id, junction) : r.g;
+  return { ...d, g: ajustarSelectores(g, ctx), accion: null, seleccion: [] };
 }
 
 /**

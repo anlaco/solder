@@ -462,8 +462,9 @@ test("un cable entre marcos de una flat sequence cruza el separador por un túne
   assert.ok(t, "hay un túnel");
   assert.equal(t[1], "1093");
   assert.equal(t[3], COLORES.flotante);
-  const y = D.extremos(g, CTX).get(`${a.id}.result`).y;
-  assert.equal(Number(t[2]), Math.floor(y) - 4, "centrado en el cable");
+  // The wire turns just after its source, so the segment that crosses the separator is at the input's height.
+  const y = D.extremos(g, CTX).get(`${b.id}.x`).y;
+  assert.equal(Number(t[2]), Math.floor(y) - 4, "centred on the wire where it crosses");
   // Un cable dentro de un marco no lo lleva.
   const c = crearNodo(g, CAT, "increment", 1000, 600);
   const g2 = conectar(Gr.meter(c.g, CAT, [c.id], id, 0), CAT, { nodo: a.id, puerto: "result", dir: "out" }, { nodo: c.id, puerto: "x", dir: "in" }).g;

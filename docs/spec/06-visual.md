@@ -156,7 +156,7 @@ Wires encode the data type through **three visual channels**:
 > use another orange, `#ff6633`—; 1.33 px for the scalar, 2 px for the 1D array and
 > 3 px for the 2D (see §4.3). The broken wire, dashed black with a red X in the middle and its reason
 > in the tip strip. Wires run at right angles: they leave horizontally, turn at
-> their elbows and enter horizontally; a new wire turns 4 px from the input
+> their elbows and enter horizontally; a new wire turns 7 px after its source
 > ([`05-editor.md`](05-editor.md) §5.4). **Compared with the video**
 > `labview-captures/block-diagram/numeric-cablear.mp4` (2026-09-30), not pixel by
 > pixel: the video is downscaled and the colors are those of the palette

@@ -143,6 +143,10 @@ frame 0 whatever frame was shown. *Fixed on 2026-10-15* (`diagram-editing.test.m
 6. **Several wires from one output** run on top of each other along one x (TM 13).
    *Measured on 2026-10-15* (§8): LabVIEW turns each wire near the source, on separate verticals 6 px apart. Solder
    turns a new wire near where it is dropped, which an older test asserts: to be measured again before changing.
+   *Fixed on 2026-10-15:* measured again (`2026-10-15-wire-bends.md`): a new wire turns 7 px after its source in either
+   direction, and a second wire from the same output is a branch on that vertical with its dot on the elbow, not a
+   separate vertical 6 px away (the first check's item 8 was wrong). Spec/05 §5.4 and spec/06 amended. Checked in the
+   running editor (`2026-10-15-solder-wire-bends.md`).
 7. **Palette icons** show their name only in the header strip, and subpalettes are clipped at the top of
    the screen (TM 14, IP 4–6).
 
@@ -170,5 +174,5 @@ reproduce. What is left:
 2. ~~B12 and B13~~: measured and done on 2026-10-15. B7's shift off a loop's border turned out to be LabVIEW's
    structure auto-grow, not a fixed shift: postponed until it is measured as such.
 3. ~~C5 Select Item… and B14's tips~~: done on 2026-10-15.
-4. ~~B15, the Spanish texts~~: done on 2026-10-15. C6 measured again and C7.
+4. ~~B15, the Spanish texts~~ and ~~C6~~: done on 2026-10-15. C7.
 5. E2 to E4, found on 2026-10-15.

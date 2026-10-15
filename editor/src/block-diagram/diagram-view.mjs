@@ -616,16 +616,18 @@ export function extremos(g, ctx, edicion) {
   return m;
 }
 
-/** Cuánto se separa el último codo de la entrada: 2 a 6 px del vídeo. */
-const ARRIMO = 4;
+/**
+ * How far right of its source a new wire turns: 7 px, whatever the distance to the input and whichever end the
+ * wire was drawn from (measured in LabVIEW 2026 Q3, labview-captures/reports/2026-10-15-wire-bends.md §1, §2, §5).
+ */
+export const SOURCE_STUB = 7;
 
 /**
- * Los codos que LabVIEW da a un cable nuevo: el tramo vertical casi pegado al
- * terminal donde se suelta, que es donde estaba el ratón. Si la entrada queda
- * por detrás de la salida, el cable rodea.
+ * The bends LabVIEW gives a new wire: one vertical just after the source. If the input lies behind the output,
+ * the wire goes around.
  */
-export function codosPorDefecto(a, b, sueltaEnLaSalida = false) {
-  if (b.x - a.x >= 2 * ARRIMO) return [sueltaEnLaSalida ? a.x + ARRIMO : b.x - ARRIMO];
+export function codosPorDefecto(a, b) {
+  if (b.x - a.x >= 2 * SOURCE_STUB) return [a.x + SOURCE_STUB];
   return [a.x + 8, f2((a.y + b.y) / 2), b.x - 8];
 }
 

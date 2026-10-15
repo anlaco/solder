@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
-import { MEDIDAS_COMPUESTO, caja, contenido, contexto, extremos, glifosPorBloque, ruta, terminales } from "../../editor/src/block-diagram/diagram-view.mjs";
+import { MEDIDAS_COMPUESTO, SOURCE_STUB, caja, contenido, contexto, extremos, glifosPorBloque, ruta, terminales } from "../../editor/src/block-diagram/diagram-view.mjs";
 import * as ED from "../../editor/src/block-diagram/diagram-editing.mjs";
 import * as Gr from "../../core/model/graph.mjs";
 import { tipos } from "../../core/model/graph.mjs";
@@ -64,15 +64,30 @@ test("en el lienzo se colocan mueven y cablean los bloques", () => {
   assert.equal([...t.cables.values()].filter((c) => c.coercion).length, 1, "el I32 entra con coerción");
 });
 
-// En el vídeo, el tramo vertical de un cable nuevo queda pegado a la entrada donde se suelta.
-test("un cable nuevo gira junto a la entrada donde se suelta", () => {
-  let d = poner(poner(ED.inicial(), "const", { x: 0, y: 0 }), "increment", { x: 200, y: 60 });
-  const [c, inc] = ids(d);
-  d = cablear(d, terminal(d, c, "result"), terminal(d, inc, "x"));
-  const ext = extremos(d.g, CTX);
-  const destino = ext.get(`${inc}.x`);
-  const [x] = d.g.cables[0].codos;
-  assert.ok(destino.x - x > 0 && destino.x - x <= 6, `el codo está a ${destino.x - x} px de la entrada`);
+// Measured in LabVIEW 2026 Q3 (labview-captures/reports/2026-10-15-wire-bends.md §1, §2, §5): the vertical of a new
+// wire sits 7 px right of its source, whichever end it was drawn from and however far the input is.
+test("a new wire turns 7 px after its source, whichever end it starts from", () => {
+  for (const [inputX, fromInput] of [[200, false], [200, true], [50, false]]) {
+    let d = poner(poner(ED.inicial(), "const", { x: 0, y: 0 }), "increment", { x: inputX, y: 60 });
+    const [c, inc] = ids(d);
+    const [output, input] = [terminal(d, c, "result"), terminal(d, inc, "x")];
+    d = fromInput ? cablear(d, input, output) : cablear(d, output, input);
+    const source = extremos(d.g, CTX).get(`${c}.result`);
+    assert.deepEqual(d.g.cables[0].codos, [source.x + SOURCE_STUB], `input at ${inputX}, drawn from the ${fromInput ? "input" : "output"}`);
+  }
+});
+
+// §3: a second wire from an output that already has one is a branch on the same vertical, with its dot on the elbow.
+test("a second wire from a wired output branches on the same vertical", () => {
+  let d = poner(poner(poner(ED.inicial(), "const", { x: 0, y: 60 }), "increment", { x: 200, y: 0 }), "increment", { x: 200, y: 120 });
+  const [c, upper, lower] = ids(d);
+  d = cablear(d, terminal(d, c, "result"), terminal(d, upper, "x"));
+  d = cablear(d, terminal(d, c, "result"), terminal(d, lower, "x"));
+  const source = extremos(d.g, CTX).get(`${c}.result`);
+  const [first, second] = d.g.cables;
+  assert.deepEqual(second.codos, first.codos, "both share the vertical");
+  assert.equal(first.union, undefined, "the first wire has no dot");
+  assert.deepEqual(second.union, [source.x + SOURCE_STUB, source.y]);
 });
 
 test("un cable también se hace con dos clics", () => {

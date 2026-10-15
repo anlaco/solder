@@ -219,6 +219,10 @@ dialog's Delete follows the rule measured on 2026-10-15: by the name, not the ro
    editor.*
    *B15 done on 2026-10-15: the explanations of greyed items, the inventory's 906 texts and the core's user-facing
    messages are in English ([`real-programs-0.3.md`](real-programs-0.3.md) §2 B15).*
+   *C6 done on 2026-10-15: a new wire turns 7 px after its source in either direction, and a second wire from a wired
+   output is a branch on that vertical with its dot on the elbow, measured again in LabVIEW
+   ([`2026-10-15-wire-bends.md`](../../labview-captures/reports/2026-10-15-wire-bends.md); spec/05 §5.4 amended) and
+   checked in the running editor.*
    *Unbundle By Name (#23) done on 2026-10-15 (DT-050, spec/04 Rule 21l, spec/05 Rule 78b): Functions ▸ Programming ▸
    Cluster, Class, & Variant captured and declared (only the cluster side planned; classes and Variant greyed), Unbundle By
    Name built — the rows store the element names and take their types from the wire, grow by the bottom handle, change by
