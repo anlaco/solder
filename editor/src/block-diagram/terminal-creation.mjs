@@ -9,7 +9,7 @@
 
 import { caja, esBorde, esEstructura, terminales, visibles } from "./diagram-view.mjs";
 import { ALTO_LINEA } from "../common/labels.mjs";
-import { MEDIDAS_PANEL, cajaObjeto, caja as panelBox } from "../front-panel/front-panel.mjs";
+import { CONTROLES, MEDIDAS_PANEL, cajaObjeto, caja as panelBox } from "../front-panel/front-panel.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { blockForTerminal, createOnTerminal } from "../../../core/model/create-on-terminal.mjs";
 
@@ -213,11 +213,15 @@ export const ALL_KINDS = {
   "all-constants": new Map([["in", "constant"]]),
 };
 
+/** How far below the wire a control or indicator made on it starts, and a constant (editor-gestures w1, w6). */
+const BELOW_WIRE = { panelObject: 1, constant: 11 };
+
 /**
- * Create ▸ Constant, Control or Indicator on a wire: the object is made of the
- * wire's type but left unwired (create-control-from-wire-menu-result.png), at
- * the point where the menu was opened (unverified). Returns `{ g, id }` or
- * `{ g, motivo }`.
+ * Create ▸ Constant, Control or Indicator on a wire (labview-captures/reports/2026-10-15-editor-gestures.md §1):
+ * the object is made of the wire's type, centred on the click and just below the wire. The
+ * indicator is wired to the wire's source, a branch; the control and the constant are left unwired.
+ * A control or indicator is named after the source's output, or by its default name ("Numeric 2")
+ * when the source has none, as a tunnel. Returns `{ g, id }` or `{ g, motivo }`.
  */
 export function createOnWire(g, ctx, { cable, kind, point, panelSize }) {
   const wire = g.cables.find((c) => c.id === cable);
@@ -227,13 +231,15 @@ export function createOnWire(g, ctx, { cable, kind, point, panelSize }) {
   if (!block) return { g, motivo: `There is no ${kind} for this type yet.` };
   const slot = kind === "constant" ? {} : nextPanelSlot(g, { tipo: block.tipo, config: block.config, isControl: kind === "control", panelSize });
   const source = nodeOf(g, wire.de.nodo);
-  const label = ctx.cat.puertos(source).out.find((p) => p.name === wire.de.puerto)?.label ?? wire.de.puerto;
-  // A constant or control does not fit the wire's input end and an indicator does not fit its output end: createOnTerminal leaves it unwired.
-  const terminal = { nodo: wire.de.nodo, puerto: wire.de.puerto, dir: kind === "indicator" ? "in" : "out" };
+  const sourceName = ctx.cat.puertos(source).out.find((p) => p.name === wire.de.puerto)?.label;
+  const label = sourceName || (CONTROLES[block.tipo]?.etiqueta ?? "Numeric");
+  // The wire's source output: an indicator fits it and is wired; a constant or a control does not and is left unwired.
+  const terminal = { nodo: wire.de.nodo, puerto: wire.de.puerto, dir: "out" };
   const created = createOnTerminal(g, ctx.cat, { terminal, type, kind, x: 0, y: 0, panelX: slot.x, panelY: slot.y, label, scope: { dentro: source.dentro, marco: source.marco } });
   if (created.motivo) return created;
   const size = caja(nodeOf(created.g, created.id), ctx);
-  return { g: moveTo(created.g, created.id, Math.round(point.x - size.ancho / 2), Math.round(point.y - size.alto / 2)), id: created.id };
+  const top = point.y + (kind === "constant" ? BELOW_WIRE.constant : BELOW_WIRE.panelObject);
+  return { g: moveTo(created.g, created.id, Math.round(point.x - size.ancho / 2), Math.round(top)), id: created.id };
 }
 
 /**

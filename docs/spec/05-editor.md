@@ -333,6 +333,21 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   at each border it crosses, at the height of the inner terminal; a tunnel that
 >   is no longer needed (its ends are now in the same scope) is removed and the
 >   wire is left direct. A wire within its own scope carries no tunnel.
+> - **Handles of an unselected structure** (measured 2026-10-15, `labview-captures/reports/2026-10-15-editor-gestures.md`
+>   §2, for the While; the same is applied to the For, the Case and the sequences). Hovering any point of the **border** shows
+>   its eight handles (6 × 6, `#0078d4`), the same as when it is selected; hovering the interior shows nothing. Dragging a
+>   handle resizes it without selecting it; dragging the border away from a handle moves it; a click inside does not select it,
+>   and a click on the border does (a rubber band only when it encloses it). Code: `structureShowsStretchHandles`
+>   (`diagram-view.mjs`; the handles are always drawn, hidden, so that hovering one finds them, as in Rule 22b); tests: "hovering
+>   the border of an unselected structure shows its eight handles…" and "dragging a handle of an unselected structure resizes it…"
+>   (`diagram-editing.test.mjs`).
+> - **A wire released on the border** (§3 of the same report; While and Case measured) makes a tunnel at the release height:
+>   from inside to the border, an output tunnel (`case-tunnel-out` on a Case) wired from the source; from outside, an input
+>   tunnel. Dragged from an input terminal it is the other way round. It never lands on another object of the border. A source
+>   nested deeper than the structure ends silently. Code: `dropWireOnStructureBorder` (`diagram-editing.mjs`); test: "a wire
+>   released on a structure's border makes a tunnel…".
+> - **The structure's menu** answers on the whole **6 px** band of the border (§4: 0 px tolerance either side) and only there;
+>   the handles lying on the band give the same menu.
 > - **Right-click menus** of the loop border, of "i", the condition, "N", the
 >   tunnels and the shift registers: Add Shift Register, Stop if True and Continue if
 >   True done; Tunnel Mode shows Last Value (the only mode) checked; the rest,
@@ -823,8 +838,12 @@ unverified is unverified here too.
 > the wire's menu (`context.wire`): Clean Up Wire, Create Wire Branch, Delete Wire Branch, | Visible Items ▸,
 > | Insert ▸, | Numeric Palette ▸, Create ▸, | Add Probe, Custom Probe ▸, Add Breakpoint, | Description and
 > Tip.... Create ▸ is Constant, Control, Indicator, Create SubVI from Selected Wires and Channel Writer...; the three
-> that work make the object of the wire's type, UNWIRED, centred on the point where the menu was opened (unverified:
-> LabVIEW's place). The rest of the menu is greyed with its reason. Tested in `test/editor/create-and-paste.test.mjs`.
+> that work make the object of the wire's type, centred on the click's x: the **Indicator is wired** to the wire's source
+> (a branch) and the Control and the Constant are left unwired; a control or indicator starts 1 px below the click and is
+> named after the source's output, or by its default name ("Numeric 2") when the source has none, as a tunnel; a constant
+> starts 11 px below and has no label (`labview-captures/reports/2026-10-15-editor-gestures.md` §1; the branch dot at the
+> click is not drawn yet). The rest of the menu is greyed with its reason. Tested in `test/editor/create-and-paste.test.mjs`
+> and `test/editor/terminal-creation.test.mjs`.
 
 > **Rule 74 — Copy, cut, paste, delete and select all.** On the diagram and on the panel, Ctrl+C, Ctrl+X, Ctrl+V,
 > Ctrl+A and the Edit menu (Delete has no shortcut but the key). Copy takes the selected nodes with everything inside

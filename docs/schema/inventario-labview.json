@@ -15550,7 +15550,7 @@
       "id": "context.wire",
       "etiqueta": "Wire",
       "estado": "built",
-      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire_and_its_Create_makes_unwired_objects"
+      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire;_its_Create_wires_only_the_indicator"
     },
     {
       "id": "context.wire.list-errors",
@@ -15608,28 +15608,28 @@
       "id": "context.wire.create",
       "etiqueta": "Create",
       "estado": "built",
-      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire_and_its_Create_makes_unwired_objects",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire;_its_Create_wires_only_the_indicator",
       "captura": "create-paste/create-control-from-wire-menu-result.png"
     },
     {
       "id": "context.wire.create.constant",
       "etiqueta": "Constant",
       "estado": "built",
-      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire_and_its_Create_makes_unwired_objects",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire;_its_Create_wires_only_the_indicator",
       "captura": "create-paste/create-control-from-wire-menu-result.png"
     },
     {
       "id": "context.wire.create.control",
       "etiqueta": "Control",
       "estado": "built",
-      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire_and_its_Create_makes_unwired_objects",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire;_its_Create_wires_only_the_indicator",
       "captura": "create-paste/create-control-from-wire-menu-result.png"
     },
     {
       "id": "context.wire.create.indicator",
       "etiqueta": "Indicator",
       "estado": "built",
-      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire_and_its_Create_makes_unwired_objects",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_wire_menu_is_the_one_of_a_wire;_its_Create_wires_only_the_indicator",
       "captura": "create-paste/create-control-from-wire-menu-result.png"
     },
     {

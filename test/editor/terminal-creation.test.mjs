@@ -121,16 +121,38 @@ test("All Constants makes a constant per input only", () => {
   assert.ok(again.motivo, "nothing left to create when every input is wired");
 });
 
-test("Create on a wire makes an unwired object of the wire's type", () => {
+test("Create on a wire: the indicator is wired as a branch, the control and the constant are not", () => {
+  // labview-captures/reports/2026-10-15-editor-gestures.md §1.
   let { g, id: add } = nodeAt("add", 300, 100);
   const constant = createForTerminal(g, CTX, { nodo: add, puerto: "a", kind: "constant" });
   const wire = constant.g.cables[0].id;
-  const r = createOnWire(constant.g, CTX, { cable: wire, kind: "control", point: { x: 100, y: 300 } });
-  assert.equal(r.g.cables.length, 1, "no new wire");
-  const control = r.g.nodos.find((n) => n.id === r.id);
-  assert.deepEqual([control.tipo, control.config.type], ["control", "number"]);
-  const size = box(r.g, r.id);
-  assert.deepEqual([size.x + size.ancho / 2, size.y + size.alto / 2], [100, 300], "centred on the click");
+  const click = { x: 100, y: 300 };
+  const centredBelow = (r, below) => {
+    const size = box(r.g, r.id);
+    // An odd width cannot centre on a whole pixel: half a pixel either way.
+    assert.ok(Math.abs(size.x + size.ancho / 2 - click.x) <= 0.5, `centred on the click: ${size.x + size.ancho / 2}`);
+    assert.equal(size.y, click.y + below);
+  };
+  const control = createOnWire(constant.g, CTX, { cable: wire, kind: "control", point: click });
+  assert.equal(control.g.cables.length, 1, "the control is left unwired");
+  const made = control.g.nodos.find((n) => n.id === control.id);
+  assert.deepEqual([made.tipo, made.config.type], ["control", "number"]);
+  centredBelow(control, 1);
+  const indicator = createOnWire(constant.g, CTX, { cable: wire, kind: "indicator", point: click });
+  const source = constant.g.cables[0].de;
+  assert.ok(indicator.g.cables.some((c) => c.de.nodo === source.nodo && c.de.puerto === source.puerto && c.a.nodo === indicator.id), "the indicator branches off the wire's source");
+  centredBelow(indicator, 1);
+  const another = createOnWire(constant.g, CTX, { cable: wire, kind: "constant", point: click });
+  assert.equal(another.g.cables.length, 1, "the constant is left unwired");
+  centredBelow(another, 11);
+});
+
+test("an object made on a wire from a source without a name takes its default name", () => {
+  let { g, id: add } = nodeAt("add", 300, 100);
+  const constant = createForTerminal(g, CTX, { nodo: add, puerto: "a", kind: "constant" });
+  const wire = constant.g.cables[0].id;
+  const indicator = createOnWire(constant.g, CTX, { cable: wire, kind: "indicator", point: { x: 100, y: 300 } });
+  assert.equal(indicator.g.nodos.find((n) => n.id === indicator.id).label.text, "Numeric", "a constant's output has no name: LabVIEW says Numeric, as from a tunnel");
 });
 
 test("an object created next to a node inside a loop belongs to the loop", () => {

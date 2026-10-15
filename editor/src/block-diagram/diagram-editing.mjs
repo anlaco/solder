@@ -28,7 +28,7 @@
 //              node or one of its terminals; `en`, the canvas point where it was opened
 //   aviso      why the last action could not be done (spec/05 rule 31)
 
-import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
+import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, borderFaceFor, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
 import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
 import * as EI from "./edit-items-dialog.mjs";
@@ -277,7 +277,42 @@ function afinarTuneles(g0, g1, ctx, de, a) {
     if (n.tipo === "tunnel-in") return { ...n, y: Math.round(alto(nA, a.puerto) - TAM_BORDE[n.tipo][1] / 2) };
     return n;
   });
-  return fijarBordes({ ...g1, nodos }, ctx.cat);
+  const placed = fijarBordes({ ...g1, nodos }, ctx.cat);
+  return fijarBordes(clearOtherBorderObjects(placed, nodos.filter((n) => !antes.has(n.id) && esBorde(n)).map((n) => n.id)), ctx.cat);
+}
+
+/** Free space left between a new tunnel and the border object it was moved off. */
+const BORDER_OBJECT_GAP = 2;
+
+/**
+ * A new tunnel that would sit on top of another object of the same border (a shift register, a
+ * tunnel) moves down just past it, or up when there is no room below (real-programs-0.3.md B5:
+ * it hid a shift register's terminal). Where LabVIEW puts it is unverified; it never overlaps.
+ */
+function clearOtherBorderObjects(g, newIds) {
+  let nodos = g.nodos;
+  for (const id of newIds) {
+    const tunnel = nodos.find((n) => n.id === id);
+    const [, height] = TAM_BORDE[tunnel.tipo];
+    const structure = nodos.find((n) => n.id === tunnel.dentro);
+    // Border objects of different widths sit flush with the same border, so the side is told by the centre.
+    const onRightSide = (n) => n.x + TAM_BORDE[n.tipo][0] / 2 > structure.x + (structure.tam?.ancho ?? 0) / 2;
+    const others = nodos.filter((n) => n.id !== id && n.dentro === tunnel.dentro && esBorde(n) && onRightSide(n) === onRightSide(tunnel));
+    const heightOf = (other) => TAM_BORDE[other.tipo][1];
+    const covers = (y, other) => y < other.y + heightOf(other) && other.y < y + height;
+    let y = tunnel.y;
+    for (const other of [...others].sort((first, second) => first.y - second.y)) {
+      if (covers(y, other)) y = other.y + heightOf(other) + BORDER_OBJECT_GAP;
+    }
+    if (structure?.tam && y > structure.y + structure.tam.alto - height) {
+      y = tunnel.y;
+      for (const other of [...others].sort((first, second) => second.y - first.y)) {
+        if (covers(y, other)) y = other.y - height - BORDER_OBJECT_GAP;
+      }
+    }
+    nodos = nodos.map((n) => (n.id === id ? { ...n, y } : n));
+  }
+  return { ...g, nodos };
 }
 
 /** Une dos terminales: un cable normal, o el que pasa por los túneles de los bordes que cruza. */
@@ -882,7 +917,55 @@ function terminar(d, ctx, sobre, p) {
   if (sobre.nodo === desde.nodo && sobre.puerto === desde.puerto && sobre.dir === desde.dir) {
     return d.accion.arrastrado ? { ...d, accion: null } : d; // soltar donde se pulsó: se sigue con clics
   }
-  return wireTerminals(d, ctx, desde, sobre, p);
+  // On a tunnel or a shift register, the face that fits the wire, whichever half was hit.
+  return wireTerminals(d, ctx, desde, borderFaceFor(d.g, ctx, sobre, desde.dir), p);
+}
+
+/**
+ * A wire released on the border band of a structure, away from any terminal, makes a tunnel there at
+ * the release height (measured in LabVIEW, reports/2026-10-15-editor-gestures.md §3). A wire from
+ * inside the structure gets an output tunnel; one from outside, an input tunnel. Dragged from an
+ * input terminal it is the other way round. Only the structure's own scope or the one around it can
+ * be wired (a source nested deeper would need a tunnel per border) and anything else ends silently,
+ * as a drop on the background does. The tunnel never lands on another object of the border.
+ */
+function dropWireOnStructureBorder(d, ctx, structureId, p) {
+  const { desde } = d.accion;
+  const ended = { ...d, accion: null };
+  const structure = d.g.nodos.find((n) => n.id === structureId);
+  if (!structure || !esEstructura(structure, ctx)) return ended;
+  const scope = Gr.ambitoDe(d.g, ctx.cat, desde.nodo, desde.puerto, desde.dir);
+  const sourceIsInside = scope === structureId;
+  if (!sourceIsInside && scope !== structure.dentro) return ended;
+  const tunnelDirection = sourceIsInside === (desde.dir === "out") ? "out" : "in";
+  const tunnelType = tunnelDirection === "in" ? "tunnel-in" : esCase(structure) ? "case-tunnel-out" : "tunnel-out";
+  const created = Gr.crearTunel(d.g, ctx.cat, structureId, tunnelDirection, Math.round(p.y - TAM_BORDE[tunnelType][1] / 2));
+  const tunnelId = created.id;
+  const tunnelEnd = (port, dir) => ({ nodo: tunnelId, puerto: port, dir });
+  let joined;
+  if (desde.dir === "out") {
+    // A source on the Case's own border (an input tunnel) belongs to no frame: the wire goes into the one in view.
+    const frame = Gr.marcoDe(created.g, ctx.cat, desde.nodo, desde.puerto, "out") ?? activoDe(structure);
+    const framePort = tunnelType === "case-tunnel-out" ? `x-${frame}` : "x";
+    joined = Gr.conectar(created.g, ctx.cat, desde, tunnelEnd(framePort, "in"));
+  } else {
+    joined = Gr.conectar(created.g, ctx.cat, tunnelEnd("y", "out"), desde);
+  }
+  if (joined.motivo) return { ...ended, aviso: { texto: joined.motivo, x: p.x, y: p.y } };
+  const withProperties = indexedTunnelIfLoop(joined.g, ctx, tunnelId, desde);
+  const placed = fijarBordes(withProperties, ctx.cat);
+  const cleared = fijarBordes(clearOtherBorderObjects(placed, [tunnelId]), ctx.cat);
+  return { ...ended, g: ajustarSelectores(cleared, ctx), seleccion: [] };
+}
+
+/** Like `conectarCruzando`: a For Loop's output tunnel is born indexed, and an input one when an array enters. */
+function indexedTunnelIfLoop(g, ctx, tunnelId, source) {
+  const tunnel = g.nodos.find((n) => n.id === tunnelId);
+  const structure = g.nodos.find((n) => n.id === tunnel.dentro);
+  if (structure.tipo !== "for-loop") return g;
+  const carriesArray = tunnel.tipo === "tunnel-in" && source.dir === "out" && esArray(Gr.tipos(g, ctx.cat).salidas.get(`${source.nodo}.${source.puerto}`));
+  if (tunnel.tipo !== "tunnel-out" && !carriesArray) return g;
+  return { ...g, nodos: g.nodos.map((n) => (n.id === tunnelId ? { ...n, config: { ...n.config, indexado: true } } : n)) };
 }
 
 /** Joins two terminals with a wire shaped like a new one; why it cannot be done goes in `aviso`. */
@@ -911,7 +994,7 @@ function rewireLooseEnd(d, ctx, sobre, p) {
   if (!wire) return { ...d, accion: null };
   const keptEnd = looseSide === "de" ? { ...wire.a, dir: "in" } : { ...wire.de, dir: "out" };
   const withoutWire = { ...d, g: { ...d.g, cables: d.g.cables.filter((candidate) => candidate.id !== wireId) } };
-  const result = wireTerminals(withoutWire, ctx, keptEnd, sobre, p);
+  const result = wireTerminals(withoutWire, ctx, keptEnd, borderFaceFor(withoutWire.g, ctx, sobre, keptEnd.dir), p);
   return result.aviso ? { ...d, accion: null, aviso: result.aviso } : result;
 }
 
@@ -937,6 +1020,17 @@ function unirACable(d, ctx, sobre, p) {
 }
 
 /** Soltar el botón. */
+/**
+ * What the mouse is on, from everything stacked under it (`targets`, topmost first, as the window
+ * resolves them): a terminal lying under a wire's hit zone wins over the wire, so a wire can end on
+ * it (real-programs-0.3.md B4; in LabVIEW the terminal takes the wire).
+ */
+export function preferTerminalUnderWire(targets) {
+  const [top] = targets;
+  if (top?.tipo !== "tramo") return top ?? null;
+  return targets.find((target) => target?.tipo === "terminal") ?? top;
+}
+
 export function soltar(d, ctx, sobre, p) {
   const { accion } = d;
   if (!accion) return d;
@@ -964,6 +1058,7 @@ export function soltar(d, ctx, sobre, p) {
       if (!accion.arrastrado) return d; // un clic en el terminal: el cable sigue al ratón
       if (sobre?.tipo === "terminal") return terminar(d, ctx, sobre, p);
       if (sobre?.tipo === "tramo") return unirACable(d, ctx, sobre, p);
+      if (sobre?.tipo === "nodo") return dropWireOnStructureBorder(d, ctx, sobre.id, p);
       return { ...d, accion: null };
     case "recablear":
       if (!accion.arrastrado) return d; // un clic en el extremo suelto: el cable sigue al ratón

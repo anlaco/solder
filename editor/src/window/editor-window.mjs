@@ -199,6 +199,14 @@ const faltaSubVI = (g) => g.nodos.some((n) => SN.isSubVI(n) && !cat.findSubVI?.(
 /** The name an error source gives this VI: its file name once saved, "Untitled N" before (spec/04 Rule 21k). */
 const currentVIName = () => (Paths.isSavedKey(viKey) ? viKey.split(/[\\/]/).pop() : viInfo.name);
 
+/**
+ * The page's own title follows the window's (which the main process sets, asterisk included):
+ * tools that find a window by its page, as the tests under Xvfb do, saw "Untitled 1" in every VI
+ * (real-programs-0.3.md B16).
+ */
+const showVINameInPageTitle = () => (document.title = `${currentVIName()} ${conPanel ? "Front Panel" : "Block Diagram"}`);
+showVINameInPageTitle();
+
 /** Some VI was saved, here or elsewhere (preload `alGuardar`). */
 function alGuardarOtroVI({ id, key }) {
   if (id !== viInfo.id) {
@@ -209,6 +217,7 @@ function alGuardarOtroVI({ id, key }) {
   if (key === viKey) return;
   const old = viKey;
   viKey = key;
+  showVINameInPageTitle();
   ponerGrafo(rebuildHierarchy(Paths.rebaseGraph(grafo(), old, key)));
   pintar();
 }
@@ -631,6 +640,8 @@ function openErrorList(selectedRowId) {
   debugUi.errorListAt ??= defaultWindowPosition(DV.ERROR_LIST.width, DV.ERROR_LIST.height, 30);
   const selected = errorRows().some((row) => row.id === selectedRowId) ? selectedRowId : (errorList.selected ?? errorRows()[0]?.id ?? null);
   errorList = { ...errorList, open: true, selected };
+  // The tip of what the mouse was resting on would stay over the window until the mouse moved (real-programs-0.3.md B14).
+  dia = ED.sobrevolar(dia, null);
   pintar();
 }
 
@@ -1161,6 +1172,9 @@ function punto(ev) {
  * Qué hay bajo el ratón en el diagrama, en el orden de spec/05 §3.2: terminal,
  * nodo, tramo de cable, fondo. Fuera del lienzo, nada.
  */
+/** What is under the mouse on the diagram at a point: as `objetivo`, but a terminal under a wire wins. */
+const objetivoEn = (x, y) => ED.preferTerminalUnderWire(document.elementsFromPoint(x, y).map(objetivo));
+
 function objetivo(el) {
   if (!el?.closest(".lienzo")) return null;
   const etiqueta = el.closest(".etiqueta");
@@ -1220,8 +1234,8 @@ function cableBajoElRaton(sobreElRaton) {
   return node && !D.esBorde(node) ? ED.wireAtTerminal(dia.g, sobreElRaton.nodo, sobreElRaton.puerto, sobreElRaton.dir) : undefined;
 }
 
-/** El nodo de lo que hay bajo el ratón, si es un nodo o uno de sus terminales. */
-const nodoDe = (o) => (o?.tipo === "terminal" || o?.tipo === "marco" ? o.nodo : o?.tipo === "nodo" ? o.id : null);
+/** The node of what is under the mouse, if it is a node, one of its terminals or one of its stretch handles (they lie on a structure's border band, which answers with its menu). */
+const nodoDe = (o) => (o?.tipo === "terminal" || o?.tipo === "marco" || o?.tipo === "asa" ? o.nodo : o?.tipo === "nodo" ? o.id : null);
 
 /** Un menú de la barra se abre justo bajo su título, alineado con él. */
 const anclaMenu = (el) => {
@@ -1295,7 +1309,7 @@ addEventListener("mousedown", (ev) => {
     return cambiarPanel(CP.selectCell(pan, CP.cellUnderPointer(panelConector.getBoundingClientRect(), ev)));
   }
   if (conPanel) return pulsarPanel(ev);
-  const sobreDiagrama = objetivo(ev.target);
+  const sobreDiagrama = objetivoEn(ev.clientX, ev.clientY);
   if (!sobreDiagrama) {
     // Fuera del lienzo: Enter Text, o cualquier otro sitio, confirma lo que se escribe.
     if (dia.edicion) return cambiarDiagrama(ED.confirmar(dia, ctx));
@@ -1409,7 +1423,7 @@ addEventListener("mousemove", (ev) => {
   let nuevo = dia;
   const item = ev.target.closest(".item-menu");
   if (nuevo.menu && item) nuevo = ED.sobreMenu(nuevo, item.dataset.id, ED.menuRowHasSubmenu(nuevo, ctx, inv, item.dataset.id));
-  if (!nuevo.menu) nuevo = ED.sobrevolar(nuevo, objetivo(ev.target));
+  if (!nuevo.menu) nuevo = ED.sobrevolar(nuevo, objetivoEn(ev.clientX, ev.clientY));
   if (nuevo.accion) nuevo = ED.moverA(nuevo, ctx, punto(ev));
   if (nuevo !== dia) {
     dia = nuevo;
@@ -1425,7 +1439,7 @@ addEventListener("mouseup", (ev) => {
   if (pulsado) return soltarEnRun();
   if (conPanel && pan.accion) return cambiarPanel(P.soltar(pan, ctx, objetivoPanel(document.elementFromPoint(ev.clientX, ev.clientY)), punto(ev)));
   if (!conDiagrama || !dia.accion) return;
-  cambiarDiagrama(ED.soltar(dia, ctx, objetivo(document.elementFromPoint(ev.clientX, ev.clientY)), punto(ev)));
+  cambiarDiagrama(ED.soltar(dia, ctx, objetivoEn(ev.clientX, ev.clientY), punto(ev)));
 });
 
 addEventListener("click", (ev) => {

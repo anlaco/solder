@@ -42,44 +42,84 @@ Things that are wrong whatever LabVIEW does:
 
 1. **A wire from one Case tunnel to another is drawn in every frame** (OC 2), though it exists in one; it
    hides which frames still lack it.
+   *Fixed on 2026-10-15:* only the frame that owns it shows it (`diagram-view.test.mjs`).
 2. **A Case output tunnel's inner and outer terminals overlap** (5 px apart): a wire dropped there makes a
    new tunnel or reports a cycle (OC 3, IP 9).
+   *Fixed on 2026-10-15:* the wire's direction picks the face, not the half hit (`borderFaceFor`).
 3. **Create ▸ Indicator on a wire** leaves the indicator unwired at the click point with an empty, invisible
    label (OC 4). On a node's terminal it works (IP 14).
+   *Fixed on 2026-10-15:* measured (`2026-10-15-editor-gestures.md` §1): the indicator is wired as a branch, named
+   after the source or "Numeric N"; the control and the constant stay unwired (spec/05 Rule 73).
 4. **A wire ending on a terminal that lies under another wire** dangles instead of connecting (OC 5).
+   *Fixed on 2026-10-15:* a terminal under a wire's hit zone takes the mouse.
 5. **A tunnel can be placed on top of a shift register's terminal** and stays there when its source moves
    (OC 6).
+   *Fixed on 2026-10-15:* a new tunnel moves just past the object it would cover (LabVIEW's place unverified).
 6. **A click on a menu falls through** to the enum constant behind it (OC 7: Edit ▸ Copy opened the
    constant's item list).
+   *Not reproduced on 2026-10-15* (`editor-fixes-check/`): the menu closed and nothing opened behind it.
 7. **New panel objects put their diagram terminal at the panel's coordinates**: under the toolbar, out of
    reach (TM 12), or on a loop's border (OC 9, IP 23).
+   *Measured on 2026-10-15* (`2026-10-15-editor-gestures.md` §7): LabVIEW also puts it at the panel's coordinates,
+   inside a loop if it falls there; only one that would straddle a loop's border is moved ~37 px left, clear of it.
+   That shift is what is left to do.
 8. **Representation ▸ DBL on an I32 constant did nothing** from the menu (TM 9); the model's test passes, so
    the fault is in the grid submenu's click.
+   *Not reproduced on 2026-10-15*: Representation ▸ DBL turned a new constant DBL.
 9. **A renamed indicator went back to "Numeric"** after its connector terminal was assigned (TM 2).
+   *Not reproduced on 2026-10-15*, with Enter or a click to commit; a fresh indicator from the palette was not tried.
 10. **Error List ▸ Show Error highlights nothing** (OC 14).
+   *Not reproduced on 2026-10-15*: it frames the wire, but the Error List stays on top of it and hides it.
 11. **A short constant cannot be moved by its body**: its terminal's hot zone covers half of it, all of it
     when short (`%f`, `5`); a constant still in edit mode cannot be dragged (IP 10).
+   *Fixed on 2026-10-15:* a constant wires by its right 6 px and is moved by the rest (LabVIEW's width unverified).
 12. **Create ▸ Constant lands on top of the node** (IP 11); LabVIEW put it to the left
-    (`editor-checks/REPORT.md` §6, h14).
+    (`editor-checks/REPORT.md` §6, h14). The cause: an empty string constant is placed touching the node and
+    grows to the right as it is typed into. Which way LabVIEW grows it is to be measured.
 13. **Edit Items: Enter right after typing closed the dialog** (OC 10), against the measured Enter (commit
-    the row, insert an empty one): to reproduce.
+    the row, insert an empty one). The keys went to the dialog without a row being edited: whether typing on a
+    selected row starts editing it in LabVIEW is to be measured.
 14. **Hover tips are slow and stay** after the pointer leaves or after Run (OC 12, IP 24).
+   *Partly fixed on 2026-10-15*: a tip stayed over the Error List opened by Run until the mouse moved; opening the
+   list now clears it (by reading, not checked in the window). Tips leaving with the pointer were not reproduced.
 15. **The explanations of greyed items are in Spanish** (OC 12–13), old findings #2 and #25.
 16. **The page title of a new VI stays "Untitled 1 …"** while the window's title is right (TM 3, IP 22):
     harmless to a user, but it breaks the tooling that finds windows by title.
+   *Fixed on 2026-10-15:* the page title follows the VI's name.
+
+*New, found while checking the fixes:* **S1.** A wire from a Case's input tunnel dropped on its border went into
+frame 0 whatever frame was shown. *Fixed on 2026-10-15* (`diagram-editing.test.mjs`).
 
 ### C. To measure in LabVIEW first (L)
 
 1. **Resizing a structure**: dragging a loop's corner or border moved it; only the selected loop's handle
    resized it, and a click inside does not select it (TM 11, OC 1). How LabVIEW shows the handles of an
    unselected structure is to be measured.
+   *Fixed on 2026-10-15:* measured (`2026-10-15-editor-gestures.md` §2): hovering the border of an unselected
+   structure shows its eight handles and dragging one resizes it (spec/05 Rule 40e).
 2. **A wire dropped on a structure's border** ends silently instead of making a tunnel (IP 8).
+   *Fixed on 2026-10-15:* measured (`2026-10-15-editor-gestures.md` §3): the drop makes a tunnel at the release
+   height (`dropWireOnStructureBorder`, spec/05 Rule 40e).
 3. **The right-click menu of a structure** opens only within about 2 px of its border (IP 7).
+   *Fixed on 2026-10-15:* measured (`2026-10-15-editor-gestures.md` §4): the whole 6 px band answers and only it.
+   The band was already 6 px in the DOM; what could take the right click away from it are the structure's
+   handles, which now lie hidden on the band, so a right click on a handle gives the structure's menu
+   (`nodoDe`). The cause of the 2 px was not reproduced in the running editor.
+   *Checked in the running editor on 2026-10-15* (`labview-captures/editor-fixes-check/`): 6 px on each side of a
+   While Loop.
 4. **Typing a value into a control in edit mode** changes its saved default; there is no Make Current Values
    Default (TM 6, IP). Spec/05 Rule 40m to be checked against LabVIEW.
+   *Measured on 2026-10-15* (`2026-10-15-editor-gestures.md` §5): LabVIEW does **not** keep a typed value as the
+   default; it reverts after save and reopen, and Edit ▸ Make Current Values Default / Reinitialize Values to
+   Default and the control's Data Operations ▸ set or restore it. Solder keeps current and default as one value:
+   to do as a change of its own (spec/05 Rule 40m is wrong and is to be amended with it).
 5. **Selecting an enum constant's item**: a selected constant does not open its list, and Select Item… is
    greyed (OC 7).
+   *Measured on 2026-10-15* (§6): the selected constant does not open its list in LabVIEW either (Solder is right);
+   Select Item… is enabled and opens a "Select Item" window with a filter field: to do.
 6. **Several wires from one output** run on top of each other along one x (TM 13).
+   *Measured on 2026-10-15* (§8): LabVIEW turns each wire near the source, on separate verticals 6 px apart. Solder
+   turns a new wire near where it is dropped, which an older test asserts: to be measured again before changing.
 7. **Palette icons** show their name only in the header strip, and subpalettes are clipped at the top of
    the screen (TM 14, IP 4–6).
 
@@ -91,6 +131,13 @@ own Save As and save dialogs (on a Spanish desktop their Cancel reads "Cancelar"
 
 ## 3. Proposed order
 
-1. B1–B5 (wiring that misleads or fails), B7, B12 and B11: they cost every user minutes.
-2. B6, B8–B10, B13, B14, B16; then B15 with the Spanish texts.
-3. C1–C7 measured in one LabVIEW stage, then done.
+Done on 2026-10-15: A1–A3, B1–B5, B11, B16, C1–C3 and S1, checked in the running editor; B6, B8, B9 and B10 did not
+reproduce. What is left:
+
+1. **C4, current value and default value**: a typed value is the current one; Edit ▸ Make Current Values Default,
+   Reinitialize Values to Default and Data Operations ▸ set and restore the default, which is what is saved. It
+   changes the model and spec/05 Rule 40m, so it is a change of its own.
+2. B12 and B13 measured in LabVIEW (which way a new constant grows as it is typed into; whether typing on a selected
+   Edit Items row starts editing it), then done; B7's shift off a loop's border.
+3. C5 Select Item… of the enum constant; B14's tips, checked in the window.
+4. B15, the Spanish texts; C6 measured again and C7.

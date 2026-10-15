@@ -384,19 +384,40 @@ export function oculto(g, n) {
   }
 }
 
-/** El grafo sólo con lo que se ve: sin los nodos de los marcos escondidos ni los cables que llegan a ellos. */
-export function visibles(g) {
-  const fuera = new Set(g.nodos.filter((n) => oculto(g, n)).map((n) => n.id));
-  if (!fuera.size) return g;
-  return { ...g, nodos: g.nodos.filter((n) => !fuera.has(n.id)), cables: g.cables.filter((c) => !fuera.has(c.de.nodo) && !fuera.has(c.a.nodo)) };
-}
-
 /** Un terminal del túnel de salida de un Case que no es el del marco que se ve no se pinta ni se pulsa. */
 const terminalVisible = (n, t, g) => {
   if (n.tipo !== "case-tunnel-out" || t.dir !== "in") return true;
   const caso = g.nodos.find((k) => k.id === n.dentro);
   return !caso || Number(t.puerto.slice(2)) === activoDe(caso);
 };
+
+/**
+ * The face of a border node (tunnel, shift register…) that a wire going `wireDirection` way can
+ * end on. A tunnel is 9 px wide and its two faces are its two halves, so where exactly the wire is
+ * dropped should not decide which one it takes: as in LabVIEW, the wire's direction does
+ * (real-programs-0.3.md B2). `terminal` is what was hit; anything that is not a border node, or
+ * that already faces the right way, is returned as it is.
+ */
+export function borderFaceFor(g, ctx, terminal, wireDirection) {
+  const n = g.nodos.find((candidate) => candidate.id === terminal.nodo);
+  if (!n || !esBorde(n) || terminal.dir !== wireDirection) return terminal;
+  const faces = terminales(n, ctx).filter((t) => t.dir !== wireDirection && terminalVisible(n, t, g));
+  return faces.length === 1 ? { nodo: n.id, puerto: faces[0].puerto, dir: faces[0].dir } : terminal;
+}
+
+/**
+ * The graph with only what shows: without the nodes of hidden frames, the wires that reach them,
+ * and the wires that end on the input of an output tunnel for a hidden frame. A wire from one
+ * tunnel straight to another joins two border nodes, which always show, yet it belongs to one frame.
+ */
+export function visibles(g) {
+  const fuera = new Set(g.nodos.filter((n) => oculto(g, n)).map((n) => n.id));
+  const nodoPorId = new Map(g.nodos.map((n) => [n.id, n]));
+  const llegaAMarcoOculto = (c) => !terminalVisible(nodoPorId.get(c.a.nodo) ?? {}, { dir: "in", puerto: c.a.puerto }, g);
+  const cables = g.cables.filter((c) => !fuera.has(c.de.nodo) && !fuera.has(c.a.nodo) && !llegaAMarcoOculto(c));
+  if (!fuera.size && cables.length === g.cables.length) return g;
+  return { ...g, nodos: g.nodos.filter((n) => !fuera.has(n.id)), cables };
+}
 
 /**
  * Las medidas del selector de marcos de un Case de ancho `ancho`: el del texto
@@ -490,6 +511,27 @@ export function caja(n, ctx, edicion) {
   return { x: n.x, y: n.y, ancho: (x1 - x0) / 1.5, alto: (y1 - y0) / 1.5, dx: x0 / 1.5, dy: y0 / 1.5 };
 }
 
+/** The least width of a terminal's hot zone, so that a small node's terminals can still be hit. */
+const MIN_TERMINAL_ZONE = 6;
+/**
+ * A constant boxes its value and is moved by it, so only its right edge wires: with half of it, a
+ * short constant (`5`, `%f`) could not be dragged at all (real-programs-0.3.md B11). LabVIEW's own
+ * width is unverified.
+ */
+const CONSTANT_OUTPUT_ZONE = MIN_TERMINAL_ZONE;
+
+/**
+ * How wide the hot zone of each terminal of `n` is. Each side takes somewhat more than a third of
+ * the node and the middle is the body, which is what is grabbed to move it; a border object is
+ * split between its two faces.
+ */
+function terminalZoneWidth(n, k, ctx, ins, outs) {
+  if (esBorde(n)) return k.ancho / (ins.length && outs.length ? 2 : 1);
+  if (esCompuesto(n, ctx)) return medidasCompuesto(n, ctx).izquierda * 0.7;
+  if (CONSTANTES[n.tipo]) return CONSTANT_OUTPUT_ZONE;
+  return Math.max(MIN_TERMINAL_ZONE, k.ancho * (ins.length ? 0.36 : 0.5));
+}
+
 /**
  * Los terminales de un nodo: las entradas repartidas por el borde izquierdo y
  * las salidas por el derecho, en el orden del catálogo, como el connector
@@ -503,10 +545,7 @@ export function terminales(n, ctx, edicion) {
   if (FN.isFormatNode(n, ctx.cat)) return FN.formatNodeTerminals(n, k, ctx.cat);
   if (UN.isUnbundleByName(n)) return UN.unbundleTerminals(n, k, ctx.cat);
   const { in: ins, out: outs } = ctx.cat.puertos(n);
-  // Cada lado se queda con algo más de un tercio del nodo; lo del medio es el
-  // cuerpo, que es lo que se agarra para moverlo. Una constante sólo tiene
-  // salida: su mitad derecha.
-  const anchoZona = esBorde(n) ? k.ancho / (ins.length && outs.length ? 2 : 1) : esCompuesto(n, ctx) ? medidasCompuesto(n, ctx).izquierda * 0.7 : ins.length ? Math.max(6, k.ancho * 0.36) : Math.max(6, k.ancho * 0.5);
+  const anchoZona = terminalZoneWidth(n, k, ctx, ins, outs);
   // Un terminal del panel recibe o da el dato por su flecha.
   const flecha = esDelPanel(n, ctx) ? medidasPanel(n).flecha : null;
   const reparte = (lista, dir) =>
@@ -958,6 +997,16 @@ function showsStretchHandles(n, d, elegido) {
   return d.sobre?.nodo === n.id && (elegido || !!d.sobre.asa);
 }
 
+/**
+ * Whether a structure shows its eight stretch handles: selected, or while the mouse is on its border
+ * (measured, reports/2026-10-15-editor-gestures.md §2). Only the border can be hovered, as the interior
+ * does not take the mouse, so hovering the structure is hovering its border. They stay while one is dragged.
+ */
+function structureShowsStretchHandles(structure, d, selected) {
+  if (d.accion?.tipo === "estirar") return d.accion.nodo === structure.id;
+  return selected || d.sobre?.nodo === structure.id;
+}
+
 function nodo(n, d, ctx, resueltos, elegido) {
   const k = caja(n, ctx, d.edicion);
   const c = CONSTANTES[n.tipo];
@@ -1090,12 +1139,12 @@ function estructura(n, ctx, elegido, d, resueltos) {
     // Un Case seleccionado sólo enseña sus asas: ni tinte ni contorno (structures/case-seleccion.png).
     if (elegido && !caso) tinte = `<div class="tinte-estructura" style="left:${px(dentro)};top:${px(dentro)};width:${px(ancho - 2 * dentro)};height:${px(alto - 2 * dentro)}"></div>`;
   }
-  const asas = elegido
-    ? ASAS.map((l) => {
-        const a = cajaAsa(l, k);
-        return `<div class="asa asa-estructura" data-nodo="${esc(n.id)}" data-asa="${l}" style="left:${px(a.x)};top:${px(a.y)}"></div>`;
-      }).join("")
-    : "";
+  // Hidden handles are still drawn to catch the mouse: dragging one resizes a structure that is not selected.
+  const handleClass = structureShowsStretchHandles(n, d, elegido) ? "asa asa-estructura" : "asa asa-estructura oculta";
+  const asas = ASAS.map((l) => {
+    const a = cajaAsa(l, k);
+    return `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="${l}" style="left:${px(a.x)};top:${px(a.y)}"></div>`;
+  }).join("");
   const clase = `${caso ? "estructura-case" : esFlat(n) ? "estructura-flat" : esApilada(n) ? "estructura-stacked" : esFor ? "estructura-for" : "estructura-while"}${elegido ? " seleccionado" : ""}${litByDebugger(d, n.id)}`;
   return `<div class="nodo estructura ${clase}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${tinte}${marco}${bandas}${conSelector(n) ? selectorDeMarcos(n, ctx, d, resueltos) : ""}${caso && n.config?.caseInsensitive ? marcaCaseInsensitive() : ""}${asas}</div>`;
 }

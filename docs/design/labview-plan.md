@@ -198,6 +198,10 @@ dialog's Delete follows the rule measured on 2026-10-15: by the name, not the ro
    differences, fixed the same day (the chart of a constant, Simple Error Handler's dialog for a defined code,
    the command line on strings), and 23 editor findings to fix next (16 faults, 7 to measure first), in the order of §3 of
    [`real-programs-0.3.md`](real-programs-0.3.md).*
+   *Editor findings, first pass on 2026-10-15: eleven fixed and checked in the running editor (wires between Case
+   tunnels, tunnel faces, Create ▸ Indicator on a wire, terminals under wires, tunnels over shift registers, short
+   constants, structure handles and borders, the page title), four did not reproduce; what is left is in §3 of
+   that report, the current-versus-default value of controls first.*
    *Unbundle By Name (#23) done on 2026-10-15 (DT-050, spec/04 Rule 21l, spec/05 Rule 78b): Functions ▸ Programming ▸
    Cluster, Class, & Variant captured and declared (only the cluster side planned; classes and Variant greyed), Unbundle By
    Name built — the rows store the element names and take their types from the wire, grow by the bottom handle, change by

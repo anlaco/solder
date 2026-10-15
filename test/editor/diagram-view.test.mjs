@@ -246,7 +246,7 @@ test("un while loop se dibuja con las medidas de LabVIEW", () => {
   assert.match(html, /#7f7f7f/);
   // El interior no recibe el ratón: sólo las cuatro bandas del marco, de 6 px.
   assert.equal((html.match(/class="banda-estructura/g) ?? []).length, 4);
-  assert.ok(!html.includes('data-asa="se"'), "sin seleccionar no hay asas");
+  assert.ok(!html.includes('class="asa asa-estructura"'), "sin seleccionar ni sobrevolar no se ven las asas");
   // «i» y la condición con su glifo; Continue if True cambia el de la condición.
   assert.match(html, /stroke="#0000ff" stroke-width="2"/);
   assert.match(html, /stroke="#007f00" stroke-width="1"/);
@@ -511,4 +511,32 @@ test("una stacked sequence se dibuja con su selector y sus variables locales", (
   g2 = conectar(g2, CAT, { nodo: w.id, puerto: "result", dir: "out" }, { nodo: x2.id, puerto: "x", dir: "in" }).g;
   g2 = Gr.fijarConfig(g2, solo.id, { activo: 0 });
   assert.match(D.contenido({ ...ED.inicial(), g: g2 }, CTX_MEDIDO, tipos(g2, CAT)), /M1,1h1v1h-1zM3,1h1v1h-1z/, "las celdas del tablero");
+});
+
+test("a wire from one Case tunnel straight to another shows only in its own frame", () => {
+  // real-programs-0.3.md B1: it was drawn in every frame, hiding which frames still lacked it.
+  let { g, id } = bucle("case-structure", 800, 400, 300, 250);
+  const entrada = Gr.crearTunel(g, CAT, id, "in", 480);
+  const salida = Gr.crearTunel(entrada.g, CAT, id, "out", 480);
+  g = ED.fijarBordes(salida.g, CAT);
+  const enMarco1 = conectar(g, CAT, { nodo: entrada.id, puerto: "y", dir: "out" }, { nodo: salida.id, puerto: "x-1", dir: "in" }).g;
+  const cablesVistos = (activo) => D.visibles(Gr.fijarConfig(enMarco1, id, { activo })).cables.filter((c) => c.de.nodo === entrada.id);
+  assert.equal(cablesVistos(1).length, 1, "the frame the wire belongs to shows it");
+  assert.equal(cablesVistos(0).length, 0, "the other frame does not");
+});
+
+test("the structures' stretch handles lie inside the 6 px band that answers the mouse", () => {
+  // reports/2026-10-15-editor-gestures.md §4: the menu answers on the whole 6 px band and nowhere else.
+  for (const kind of ["while-loop", "for-loop", "case-structure"]) {
+    const { g, id } = bucle(kind, 100, 100, 200, 150);
+    const html = D.contenido({ ...ED.inicial(), g }, CTX, tipos(g, CAT));
+    const bands = [...html.matchAll(/class="banda-estructura [^"]*" style="left:(-?[\d.]+)px;top:(-?[\d.]+)px;width:(-?[\d.]+)px;height:(-?[\d.]+)px"/g)].map((m) => m.slice(1).map(Number));
+    assert.equal(bands.length, 4, kind);
+    const [north, south, west, east] = bands;
+    assert.deepEqual([north[3], south[3], west[2], east[2]], [6, 6, 6, 6], `${kind}: the band is 6 px thick on the four sides`);
+    const handles = [...html.matchAll(/class="asa asa-estructura oculta" [^>]*style="left:(-?[\d.]+)px;top:(-?[\d.]+)px"/g)].map((m) => m.slice(1).map(Number));
+    assert.equal(handles.length, 8, kind);
+    const inBand = ([x, y]) => x < 6 || y < 6 || x + 6 > 194 || y + 6 > 144;
+    assert.ok(handles.every(inBand), `${kind}: a hidden handle never takes the interior`);
+  }
 });

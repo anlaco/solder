@@ -125,7 +125,7 @@ test("a type with no block yet says why in the diagram's notice", () => {
 
 // ——— The wire menu ———
 
-test("the wire menu is the one of a wire and its Create makes unwired objects", () => {
+test("the wire menu is the one of a wire; its Create wires only the indicator", () => {
   const { d, id } = withNode("add");
   const wired = chooseCreate(d, "context.function", id, "constant", "a");
   const confirmed = ED.confirmar(wired, CTX);
@@ -142,8 +142,9 @@ test("the wire menu is the one of a wire and its Create makes unwired objects", 
   assert.equal(control.edicion.etiqueta, true);
   const made = control.g.nodos.find((n) => n.tipo === "control");
   assert.deepEqual([made.config.type], ["number"]);
+  // The indicator branches off the wire (labview-captures/reports/2026-10-15-editor-gestures.md §1).
   const indicator = ED.orden(menu, `${ED.WIRE_MENU_ROOT}.create.indicator`, CTX);
-  assert.equal(indicator.g.cables.length, 1);
+  assert.equal(indicator.g.cables.length, 2);
   assert.ok(indicator.g.nodos.some((n) => n.tipo === "indicator"));
 });
 

@@ -435,6 +435,7 @@ svg { display: block; overflow: visible; }
     repeating-linear-gradient(180deg, #4386b9 0 1px, #bfdbf1 1px 5px, #4386b9 5px 8px) right / 1px 100% no-repeat;
 }
 .asa-estructura { width: 6px; height: 6px; background: #0078d4; box-shadow: 0 0 0 1px #fff; pointer-events: auto; z-index: auto; }
+.asa-estructura.oculta { background: transparent; box-shadow: none; }
 .asa-estructura[data-asa="nw"], .asa-estructura[data-asa="se"] { cursor: nwse-resize; }
 .asa-estructura[data-asa="ne"], .asa-estructura[data-asa="sw"] { cursor: nesw-resize; }
 .asa-estructura[data-asa="n"], .asa-estructura[data-asa="s"] { cursor: ns-resize; }

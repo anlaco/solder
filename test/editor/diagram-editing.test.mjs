@@ -1732,3 +1732,153 @@ test("a node inside a loop is deleted by clicking it or with a rubber band, and 
   const loopAfter = banded.g.nodos.find((n) => n.tipo === "while-loop");
   assert.deepEqual([loopAfter.x, loopAfter.y], [loopBefore.x, loopBefore.y], "the loop did not move");
 });
+
+test("a wire dropped on either half of a Case output tunnel takes the face that fits it", () => {
+  // real-programs-0.3.md B2: the two faces are the tunnel's two halves, 9 px in all, and the half hit decided.
+  const structure = Gr.crearEstructura(Gr.nuevo(), CAT, "case-structure", 100, 100, 300, 200);
+  const tunnel = Gr.crearTunel(ED.fijarBordes(structure.g, CAT), CAT, structure.id, "out", 180);
+  let d = { ...ED.inicial(), g: ED.fijarBordes(tunnel.g, CAT) };
+  d = poner(d, "const", { x: 200, y: 170 });
+  d = poner(d, "indicator", { x: 520, y: 170 });
+  const [constant, indicator] = ids(d).slice(-2);
+  assert.equal(d.g.nodos.find((n) => n.id === constant).dentro, structure.id);
+  const visibleFrameInput = `x-${D.activoDe(d.g.nodos.find((n) => n.id === structure.id))}`;
+  // From the constant inside, dropped on the tunnel's outer face: it ends on the visible frame's input.
+  d = cablear(d, terminal(d, constant, "result"), terminal(d, tunnel.id, "y"));
+  assert.ok(d.g.cables.some((c) => c.de.nodo === constant && c.a.nodo === tunnel.id && c.a.puerto === visibleFrameInput), JSON.stringify(d.g.cables));
+  // From the indicator outside, dropped on the tunnel's inner face: it leaves by the tunnel's output.
+  d = cablear(d, terminal(d, indicator, "value"), terminal(d, tunnel.id, visibleFrameInput));
+  assert.ok(d.g.cables.some((c) => c.de.nodo === tunnel.id && c.de.puerto === "y" && c.a.nodo === indicator), JSON.stringify(d.g.cables));
+  assert.equal(d.g.nodos.filter((n) => n.tipo === "case-tunnel-out").length, 1, "no second tunnel");
+});
+
+test("a terminal lying under a wire takes the mouse before the wire", () => {
+  // real-programs-0.3.md B4: a wire dropped there became a branch of the wire on top and dangled.
+  const wire = { tipo: "tramo", cable: "c1", k: 0 };
+  const input = { tipo: "terminal", nodo: "n2", puerto: "value", dir: "in" };
+  assert.deepEqual(ED.preferTerminalUnderWire([wire, { tipo: "nodo", id: "n2" }, input, { tipo: "fondo" }]), input);
+  assert.deepEqual(ED.preferTerminalUnderWire([wire, { tipo: "fondo" }]), wire, "a wire over nothing is still the wire");
+  assert.deepEqual(ED.preferTerminalUnderWire([{ tipo: "nodo", id: "n2" }, input]), { tipo: "nodo", id: "n2" }, "only a wire gives way");
+  assert.equal(ED.preferTerminalUnderWire([]), null);
+});
+
+test("a tunnel made by a wire does not land on top of a shift register", () => {
+  // real-programs-0.3.md B5: the tunnel hid the shift register's terminal and did not move when its source did.
+  const loop = Gr.crearEstructura(Gr.nuevo(), CAT, "while-loop", 100, 100, 300, 240);
+  const register = Gr.crearRegistro(ED.fijarBordes(loop.g, CAT), CAT, loop.id, 200);
+  let d = { ...ED.inicial(), g: ED.fijarBordes(register.g, CAT) };
+  const right = d.g.nodos.find((n) => n.id === register.derecho);
+  d = poner(d, "const", { x: 200, y: right.y });
+  d = poner(d, "indicator", { x: 520, y: right.y });
+  const [constant, indicator] = ids(d).slice(-2);
+  d = cablear(d, terminal(d, constant, "result"), terminal(d, indicator, "value"));
+  const tunnel = d.g.nodos.find((n) => n.tipo === "tunnel-out");
+  assert.ok(tunnel, "the wire leaves through a tunnel");
+  const [, tunnelHeight] = D.TAM_BORDE["tunnel-out"];
+  const [, registerHeight] = D.TAM_BORDE["shift-register-right"];
+  assert.ok(tunnel.y >= right.y + registerHeight || tunnel.y + tunnelHeight <= right.y, `tunnel at ${tunnel.y}, shift register at ${right.y}`);
+});
+
+test("a short constant is wired by its right edge and moved by the rest of it", () => {
+  // real-programs-0.3.md B11: the output took half the constant, all of a short one like `5`.
+  const d = poner(ED.inicial(), "const", { x: 100, y: 100 });
+  const constant = d.g.nodos[0];
+  const box = caja(constant, CTX);
+  const [output] = terminales(constant, CTX);
+  assert.ok(output.zona.ancho <= 6, `the output's zone is ${output.zona.ancho} px wide`);
+  assert.ok(box.ancho - output.zona.ancho >= box.ancho / 2, "most of the constant is body");
+});
+
+test("hovering the border of an unselected structure shows its eight handles, and the interior shows none", () => {
+  // reports/2026-10-15-editor-gestures.md §2.
+  let d = colocarBucle(ED.inicial(), "while-loop", { x: 100, y: 100 }, { x: 400, y: 300 });
+  const id = d.g.nodos.find((n) => n.tipo === "while-loop").id;
+  const visibleHandles = (state) => (contenido(state, CTX, tipos(state.g, CAT)).match(/class="asa asa-estructura"/g) ?? []).length;
+  const hiddenHandles = (state) => (contenido(state, CTX, tipos(state.g, CAT)).match(/class="asa asa-estructura oculta"/g) ?? []).length;
+  assert.equal(visibleHandles(d), 0);
+  assert.equal(hiddenHandles(d), 8, "they are there, unseen, to be dragged");
+  d = ED.sobrevolar(d, { tipo: "nodo", id });
+  assert.equal(visibleHandles(d), 8, "hovering the border");
+  d = ED.sobrevolar(d, null);
+  assert.equal(visibleHandles(d), 0, "the interior does not take the mouse, so nothing is hovered");
+  d = ED.sobrevolar(d, { tipo: "asa", nodo: id, lado: "se" });
+  assert.equal(visibleHandles(d), 8, "on a handle");
+});
+
+test("dragging a handle of an unselected structure resizes it without selecting it", () => {
+  let d = colocarBucle(ED.inicial(), "while-loop", { x: 100, y: 100 }, { x: 400, y: 300 });
+  const id = d.g.nodos.find((n) => n.tipo === "while-loop").id;
+  d = { ...d, seleccion: [] };
+  d = ED.pulsar(d, CTX, { tipo: "asa", nodo: id, lado: "se" }, { x: 398, y: 298 });
+  d = ED.moverA(d, CTX, { x: 448, y: 328 });
+  assert.equal(contenido(d, CTX, tipos(d.g, CAT)).match(/class="asa asa-estructura"/g)?.length, 8, "the handles stay while one is dragged");
+  d = ED.soltar(d, CTX, FONDO, { x: 448, y: 328 });
+  assert.deepEqual([nodoDe(d, id).tam.ancho, nodoDe(d, id).tam.alto], [350, 230]);
+  assert.deepEqual(d.seleccion, [], "stretching does not select");
+});
+
+test("a wire released on a structure's border makes a tunnel at the release height", () => {
+  // reports/2026-10-15-editor-gestures.md §3; real-programs-0.3.md C2. While and Case.
+  for (const kind of ["while-loop", "case-structure"]) {
+    let d = colocarBucle(ED.inicial(), kind, { x: 300, y: 100 }, { x: 600, y: 300 });
+    const structure = d.g.nodos.find((n) => n.tipo === kind);
+    // From inside to the right border: an output tunnel wired from the source.
+    d = poner(d, "const", { x: 400, y: 200 });
+    const inside = d.seleccion[0];
+    const [source, from] = terminal(d, inside, "result");
+    d = ED.pulsar(d, CTX, source, from);
+    d = ED.moverA(d, CTX, { x: 598, y: 220 });
+    d = ED.soltar(d, CTX, { tipo: "nodo", id: structure.id }, { x: 598, y: 220 });
+    const out = d.g.nodos.find((n) => n.tipo === (kind === "case-structure" ? "case-tunnel-out" : "tunnel-out"));
+    assert.ok(out, `${kind}: an output tunnel`);
+    assert.equal(out.dentro, structure.id);
+    assert.ok(Math.abs(out.y + 4.5 - 220) <= 2, `${kind}: at the release height, got ${out.y}`);
+    assert.equal(d.g.cables.filter((c) => c.de.nodo === inside && c.a.nodo === out.id).length, 1, "wired from the source");
+    // From outside onto the left border: an input tunnel.
+    d = poner(d, "const", { x: 150, y: 150 });
+    const outside = d.seleccion[0];
+    const [source2, from2] = terminal(d, outside, "result");
+    d = ED.pulsar(d, CTX, source2, from2);
+    d = ED.moverA(d, CTX, { x: 302, y: 150 });
+    d = ED.soltar(d, CTX, { tipo: "nodo", id: structure.id }, { x: 302, y: 150 });
+    const into = d.g.nodos.find((n) => n.tipo === "tunnel-in");
+    assert.ok(into, `${kind}: an input tunnel`);
+    assert.equal(d.g.cables.filter((c) => c.de.nodo === outside && c.a.nodo === into.id).length, 1);
+  }
+});
+
+test("a wire from a Case's input tunnel dropped on its border goes into the frame in view", () => {
+  // editor-fixes-check S1: it went into frame 0 whatever frame was shown.
+  let d = colocarBucle(ED.inicial(), "case-structure", { x: 300, y: 100 }, { x: 600, y: 300 });
+  const structure = d.g.nodos.find((n) => n.tipo === "case-structure");
+  d = poner(d, "const", { x: 150, y: 150 });
+  const outside = d.seleccion[0];
+  const [source, from] = terminal(d, outside, "result");
+  d = ED.pulsar(d, CTX, source, from);
+  d = ED.moverA(d, CTX, { x: 302, y: 150 });
+  d = ED.soltar(d, CTX, { tipo: "nodo", id: structure.id }, { x: 302, y: 150 });
+  const into = d.g.nodos.find((n) => n.tipo === "tunnel-in");
+  const [inner, at] = terminal(d, into.id, "y");
+  d = ED.pulsar(d, CTX, inner, at);
+  d = ED.moverA(d, CTX, { x: 598, y: 220 });
+  d = ED.soltar(d, CTX, { tipo: "nodo", id: structure.id }, { x: 598, y: 220 });
+  const out = d.g.nodos.find((n) => n.tipo === "case-tunnel-out");
+  const shown = D.activoDe(d.g.nodos.find((n) => n.id === structure.id));
+  assert.ok(d.g.cables.some((c) => c.de.nodo === into.id && c.a.nodo === out.id && c.a.puerto === `x-${shown}`), JSON.stringify(d.g.cables));
+});
+
+test("a wire dropped on a structure's border does not cover a tunnel already there", () => {
+  let d = colocarBucle(ED.inicial(), "while-loop", { x: 300, y: 100 }, { x: 600, y: 300 });
+  const structure = d.g.nodos.find((n) => n.tipo === "while-loop");
+  d = poner(d, "const", { x: 400, y: 200 });
+  const inside = d.seleccion[0];
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const [source, from] = terminal(d, inside, "result");
+    d = ED.pulsar(d, CTX, source, from);
+    d = ED.moverA(d, CTX, { x: 598, y: 220 });
+    d = ED.soltar(d, CTX, { tipo: "nodo", id: structure.id }, { x: 598, y: 220 });
+  }
+  const [first, second] = d.g.nodos.filter((n) => n.tipo === "tunnel-out").sort((a, b) => a.y - b.y);
+  assert.ok(second, "two tunnels");
+  assert.ok(second.y >= first.y + D.TAM_BORDE["tunnel-out"][1], "they do not overlap");
+});
