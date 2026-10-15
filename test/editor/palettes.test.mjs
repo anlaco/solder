@@ -495,3 +495,15 @@ test("cada función de array se pone en el diagrama con sus terminales", () => {
   assert.deepEqual(medida("rotate-1d-array"), [32, 18]);
   assert.deepEqual(G.TAMANOS["sort-2d-array"], [44, 32]);
 });
+
+// Every control or indicator the Controls palette offers is drawn in it, done or greyed: the Enum
+// was placed by an empty icon (real-programs-0.3.md §2 E3).
+test("every entry of Ring & Enum and every built control has its palette icon", () => {
+  const leaves = (id) => INV.hijos(id).flatMap((entry) => (INV.tieneContenido(entry.id) ? leaves(entry.id) : [entry]));
+  const placeable = leaves("palette.controls").filter((entry) => entry.bloque);
+  assert.ok(placeable.length >= 20);
+  for (const entry of placeable) assert.ok(G.CONTROLES[ultimo(entry.id)], `${entry.id}: no icon`);
+  const ringAndEnum = INV.hijos("palette.controls.modern.ring-and-enum");
+  assert.deepEqual(ringAndEnum.map((entry) => entry.etiqueta), ["Text Ring", "Menu Ring", "Enum", "Pict Ring", "Text & Pict Ring"]);
+  for (const entry of ringAndEnum) assert.ok(G.CONTROLES[ultimo(entry.id)], `${entry.id}: no icon`);
+});

@@ -2111,6 +2111,27 @@ function graphPaletteIcon(kind) {
 }
 Object.assign(CONTROLES, { "waveform-chart": graphPaletteIcon("waveform-chart"), "waveform-graph": graphPaletteIcon("waveform-graph"), "xy-graph": graphPaletteIcon("xy-graph") });
 
+// Controls ▸ Modern ▸ Ring & Enum, drawn anew after enum-edit/13-ringenum.png: the rings and the enum
+// have the Numeric Control's incrementer, the Menu Ring is a grey drop-down, and the picture rings show
+// a green square under a yellow circle.
+const RING_TEXT_SIZE = 8.5;
+const ringBox = (x0, y0, x1, y1, text, fill = "#fff") =>
+  caja(x0, y0, x1, y1, fill, 1.2, "#7a7a7a") + texto48((x0 + x1) / 2, (y0 + y1) / 2 + 0.3, text, RING_TEXT_SIZE, TINTA, 600);
+const ringPicture = (x0, y0, x1, y1) => {
+  const width = x1 - x0;
+  const height = y1 - y0;
+  return caja(x0, y0, x1, y1, "#fff", 1.2, "#7a7a7a") +
+    `<circle cx="${f(x0 + width * 0.62)}" cy="${f(y0 + height * 0.38)}" r="${f(height * 0.24)}" fill="#f0e000" stroke="${TINTA}" stroke-width="0.6"/>` +
+    caja(f(x0 + width * 0.18), f(y0 + height * 0.42), f(x0 + width * 0.5), f(y0 + height * 0.8), "#00b000", 0.6, TINTA);
+};
+Object.assign(CONTROLES, {
+  "text-ring": svg48(ampliar(1.3, incrementador(6, 16, 16) + ringBox(13, 17, 42, 31, "Ring"))),
+  "menu-ring": svg48(ampliar(1.3, ringBox(7, 17, 41, 31, "Ring", "#c8c8c8") + poligono([[34, 22.5], [39, 22.5], [36.5, 26]], "#6e6e6e"))),
+  enum: svg48(ampliar(1.3, incrementador(6, 16, 16) + ringBox(13, 17, 42, 31, "Enum"))),
+  "pict-ring": svg48(ampliar(1.3, incrementador(9, 14, 16) + ringPicture(16, 14, 37, 35))),
+  "text-and-pict-ring": svg48(ampliar(1.2, incrementador(7, 8, 16) + ringPicture(14, 7, 35, 28) + ringBox(14, 30, 35, 40, "Ring"))),
+});
+
 // The two folders of Controls ▸ Modern ▸ Graph ▸ Controls (02-palette-graph-subfolder-controls.png).
 Object.assign(CARPETAS_CONTROLES, {
   controls: svg(`<circle cx="8" cy="8" r="6" fill="#f0f0f0" stroke="${TINTA}" stroke-width="0.8"/><circle cx="8" cy="8" r="3.4" fill="none" stroke="#7a7a7a" stroke-width="0.6"/>${linea(8, 2, 8, 14, 0.6, "#7a7a7a")}${linea(2, 8, 14, 8, 0.6, "#7a7a7a")}`),

@@ -42,7 +42,7 @@ LabVIEW** (DT-040): independent branches run at the same time, each indicator is
 painted when its data arrives, Abort stops at once and the panel switches to Run
 mode. Since 2026-10-01 also **with loops**: While and For are placed, stretched
 and wired in the diagram, and the compiler runs them (DT-041).
-687 tests green. **The three examples give the same values as in LabVIEW** (2026-10-15). **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read. **VIs are saved as `.sdg`** (DT-051, 2026-10-15): every Solder extension starts with `sd` (`.sdt` reserved for a future textual language, `.sdproj`, `.sdlib`), and an old `.qvi` still opens. **New VI, Close and Close All** (spec/05 rules 101–103, 2026-10-15) work as measured, and Solder **starts on LabVIEW's Getting Started window** (DT-052), which comes back when the last VI closes.
+695 tests green. **The three examples give the same values as in LabVIEW** (2026-10-15). **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read. **VIs are saved as `.sdg`** (DT-051, 2026-10-15): every Solder extension starts with `sd` (`.sdt` reserved for a future textual language, `.sdproj`, `.sdlib`), and an old `.qvi` still opens. **New VI, Close and Close All** (spec/05 rules 101–103, 2026-10-15) work as measured, and Solder **starts on LabVIEW's Getting Started window** (DT-052), which comes back when the last VI closes.
 
 | Piece | Status |
 |-------|--------|
@@ -198,6 +198,10 @@ dialog's Delete follows the rule measured on 2026-10-15: by the name, not the ro
    differences, fixed the same day (the chart of a constant, Simple Error Handler's dialog for a defined code,
    the command line on strings), and 23 editor findings to fix next (16 faults, 7 to measure first), in the order of §3 of
    [`real-programs-0.3.md`](real-programs-0.3.md).*
+   *Those findings closed on 2026-10-15, the last ones E2–E4: numbers shown with LabVIEW's significant digits (13
+   on a constant, 6 on a control, measured in
+   [`2026-10-15-numeric-display.md`](../../labview-captures/reports/2026-10-15-numeric-display.md)), the Ring & Enum
+   icons drawn anew, and Ctrl+W, which did not reproduce; checked in the running editor.*
    *Editor findings, first pass on 2026-10-15: eleven fixed and checked in the running editor (wires between Case
    tunnels, tunnel faces, Create ▸ Indicator on a wire, terminals under wires, tunnels over shift registers, short
    constants, structure handles and borders, the page title), four did not reproduce; what is left is in §3 of

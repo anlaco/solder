@@ -18,7 +18,7 @@ import * as UN from "./unbundle-by-name.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { brokenWireMarks, endPoint } from "./broken-wire.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
-import { COLORES, aspecto, esArray, esCluster, esEntero, esEnum, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
+import { COLORES, CONSTANT_DIGITS, aspecto, esArray, esCluster, esEntero, esEnum, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
 import { GRAPH_KINDS, labelShown } from "../front-panel/graph-state.mjs";
 import { MAX_EDITOR_DIMENSIONS, cellAddress, dimensionsOfNode, firstShown, isDefined, readCell, visibleGrid } from "../common/array-grid.mjs";
 
@@ -71,8 +71,8 @@ const tipoConfig = (n, ctx) => n.config?.type ?? ctx.cat.bloque(n.tipo).config?.
  * escribe en ellas con doble clic.
  */
 export const CONSTANTES = {
-  "num-const": { editable: true, texto: (n, ctx) => formatear(n.config?.value ?? 0, tipoConfig(n, ctx), ctx.separador) },
-  const: { editable: true, texto: (n, ctx) => formatear(n.config?.value ?? 0, "number", ctx.separador) },
+  "num-const": { editable: true, texto: (n, ctx) => formatear(n.config?.value ?? 0, tipoConfig(n, ctx), ctx.separador, CONSTANT_DIGITS) },
+  const: { editable: true, texto: (n, ctx) => formatear(n.config?.value ?? 0, "number", ctx.separador, CONSTANT_DIGITS) },
   "positive-infinity": { texto: () => "+Inf" },
   "negative-infinity": { texto: () => "-Inf" },
   ...Object.fromEntries(Object.entries(CONSTANTES_MATEMATICAS).map(([n, k]) => [n, { texto: () => k.simbolo }])),
@@ -131,7 +131,7 @@ export const tipoElementoArray = (n) => n.config?.type?.array ?? "number";
 export const valoresArray = (n) => n.config?.value ?? [];
 /** How many elements the constant shows: the ones it was stretched to (one by default). */
 export const visiblesArray = (n) => visibleGrid(n.config).columns;
-const textoElemento = (v, t, sep) => (t === "string" ? String(v ?? "") : t === "boolean" ? (v ? "T" : "F") : formatear(v ?? 0, t, sep));
+const textoElemento = (v, t, sep) => (t === "string" ? String(v ?? "") : t === "boolean" ? (v ? "T" : "F") : formatear(v ?? 0, t, sep, CONSTANT_DIGITS));
 
 /** The address of the cell that sits at that row and column of the box. */
 function addressShown(n, rowInBox, columnInBox) {

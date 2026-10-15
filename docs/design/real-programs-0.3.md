@@ -166,8 +166,16 @@ own Save As and save dialogs (on a Spanish desktop their Cancel reads "Cancelar"
    *Fixed on 2026-10-15:* it opens on any part of a panel object (`2026-10-15-solder-b12-b13.md` §3).
 2. **A numeric constant typed 123456789 shows 123457000** (six significant digits). How LabVIEW shows it is to be
    measured.
+   *Fixed on 2026-10-15:* measured (`2026-10-15-numeric-display.md`): LabVIEW shows a DBL constant with 13 significant
+   digits (`123456789`) and a DBL control or indicator with 6 (`1.23457E+8`), both as C's `%g` with `E+8` / `E-5`.
+   Solder now does the same and keeps the value when the text shown is confirmed untouched (spec/05 §5.5).
 3. **The Enum icon of Controls ▸ Ring & Enum is drawn blank**, though it works.
+   *Fixed on 2026-10-15:* it had no icon at all; Enum and the four greyed rings are drawn anew after the capture, and a
+   test checks that every control the palette places has its icon.
 4. **Ctrl+W on the panel did not close the VI** in one check; to reproduce.
+   *Did not reproduce on 2026-10-15* (`2026-10-15-solder-ctrl-w.md`): in six cases Ctrl+W followed rule 102. With changes
+   the question is a native window, which a page capture does not show; most likely that hid it. A test now keeps the
+   shortcut.
 
 ## 3. Proposed order
 
@@ -179,4 +187,4 @@ reproduce. What is left:
    structure auto-grow, not a fixed shift: postponed until it is measured as such.
 3. ~~C5 Select Item… and B14's tips~~: done on 2026-10-15.
 4. ~~B15, the Spanish texts~~, ~~C6~~ and ~~C7~~: done on 2026-10-15.
-5. E2 to E4, found on 2026-10-15.
+5. ~~E2 to E4~~: done on 2026-10-15 (E4 did not reproduce).

@@ -39,7 +39,7 @@ import * as Et from "../common/labels.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import * as TC from "./terminal-creation.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
-import { DBL, NUMERICOS, POR_ABREVIATURA, convertirValor, esArray, esEntero, esEnum, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
+import { CONSTANT_DIGITS, DBL, NUMERICOS, POR_ABREVIATURA, convertirValor, esArray, esEntero, esEnum, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 import * as SI from "./select-item-dialog.mjs";
 import { MAX_EDITOR_DIMENSIONS, addDimensionPatch, dimensionsOfNode, firstShown, readCell, removeDimensionPatch, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
@@ -1120,7 +1120,7 @@ export function editar(d, ctx, id, campo) {
     const t = tipoElementoArray(n);
     const v = readCell(valoresArray(n), dimensions, address);
     if (t === "boolean") return { ...d, g: Gr.fijarConfig(d.g, id, { value: writeCell(valoresArray(n), dimensions, address, !v, t) }), seleccion: [id], accion: null, menu: null };
-    const texto = t === "string" ? String(v ?? "") : formatear(v ?? 0, t, ctx.separador);
+    const texto = t === "string" ? String(v ?? "") : formatear(v ?? 0, t, ctx.separador, CONSTANT_DIGITS);
     return { ...d, edicion: { nodo: id, elem: dimensions === 2 ? address : Number(address), texto, todo: true, ...(t === "string" ? { cadena: true } : {}) }, seleccion: [id], accion: null, menu: null };
   }
   if (!n || !CONSTANTES[n.tipo]?.editable) return d;

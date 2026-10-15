@@ -47,6 +47,24 @@ test("Boolean and string take the colours measured in LabVIEW", () => {
   assert.equal(aspecto({ array: "string" }).color, "#ff00ff", "an array keeps the colour of its element");
 });
 
+// labview-captures/reports/2026-10-15-numeric-display.md: C's %g, 13 digits on a constant, 6 on a control.
+test("a DBL shows LabVIEW's significant digits and switches to an exponent where LabVIEW does", async () => {
+  const { CONSTANT_DIGITS, formatear } = await import("../../core/model/types.mjs");
+  const constant = (value) => formatear(value, "number", ".", CONSTANT_DIGITS);
+  const shownByConstant = {
+    123456789: "123456789", 1000000: "1000000", 0.0001: "0.0001", 0.00001: "1E-5", 0.000012345: "1.2345E-5",
+    1e20: "1E+20", "-123456789": "-123456789", 3.14159265358979: "3.14159265359", 0.1234567890123456: "0.1234567890123",
+    123456789.123456789: "123456789.1235", 9999999999999: "9999999999999", 1e13: "1E+13", 12345678901234: "1.234567890123E+13",
+  };
+  for (const [value, text] of Object.entries(shownByConstant)) assert.equal(constant(Number(value)), text, value);
+  const shownByControl = {
+    123456789: "1.23457E+8", 1234567: "1.23457E+6", 123456: "123456", 1000000: "1E+6", 0.00001: "1E-5",
+    "-123456789": "-1.23457E+8", 3.14159265: "3.14159", 12.5: "12.5",
+  };
+  for (const [value, text] of Object.entries(shownByControl)) assert.equal(formatear(Number(value), "number"), text, value);
+  assert.equal(formatear(2000000000, "i32"), "2000000000", "an integer is shown in full");
+});
+
 test("una constante enseña su valor como LabVIEW y lee lo que se escribe", async () => {
   const { formatear, leerNumero } = await import("../../core/model/types.mjs");
   assert.equal(formatear(43.3, "number", ","), "43,3");

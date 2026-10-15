@@ -50,6 +50,14 @@ test("Ctrl+E goes to the other window of the VI, from either", () => {
   assert.equal(commandForCtrlKey("E"), "toggle-window");
 });
 
+// Spec/05 rules 101 and 102; Ctrl+W was once reported not to close the VI and did not reproduce
+// (labview-captures/reports/2026-10-15-solder-ctrl-w.md): the question it asks is a native window.
+test("Ctrl+N makes a new VI and Ctrl+W closes, in either case", () => {
+  assert.equal(commandForCtrlKey("w"), "close");
+  assert.equal(commandForCtrlKey("W"), "close");
+  assert.equal(commandForCtrlKey("n"), "new-vi");
+});
+
 test("Ctrl+T tiles the windows and the older shortcuts are still there", () => {
   assert.equal(commandForCtrlKey("t"), "tile-left-and-right");
   assert.deepEqual(

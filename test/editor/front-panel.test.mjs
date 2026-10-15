@@ -168,7 +168,7 @@ test("el valor de un control se escribe en su casilla y cambia con las flechas",
   assert.match(P.contenido(p, CTX), /<span class="valor"><span>2<\/span>/);
 
   p = P.pulsar(p, CTX, { tipo: "casilla", id }, { x: 0, y: 0 });
-  assert.deepEqual(p.edicion, { nodo: id, valor: true, texto: "2", todo: false });
+  assert.deepEqual(p.edicion, { nodo: id, valor: true, texto: "2", shown: "2", todo: false });
   assert.match(P.contenido(p, CTX), /editando-valor/, "el control se enmarca mientras se escribe");
   for (const t of ["5", ",", "5"]) p = P.teclear(p, t);
   p = P.teclear(p, "Enter");
@@ -185,6 +185,25 @@ test("el valor de un control se escribe en su casilla y cambia con las flechas",
   p = P.pulsar(p, CTX, { tipo: "casilla", id: ind }, { x: 400, y: 100 });
   assert.equal(p.edicion, null);
   assert.deepEqual(p.seleccion, [ind]);
+});
+
+// LabVIEW's default format shows 6 significant digits on the panel and 13 on the diagram
+// (labview-captures/reports/2026-10-15-numeric-display.md); a value only shown is not rounded.
+test("a DBL control shows 1.23457E+8 and keeps 123456789, the constant shows it in full", () => {
+  let p = ponerYConfirmar(P.inicial(), "control", { x: 100, y: 100 });
+  const id = p.g.nodos[0].id;
+  p = P.editarValor(p, CTX, id, true);
+  for (const key of "123456789") p = P.teclear(p, key);
+  p = P.teclear(p, "Enter");
+  assert.match(P.contenido(p, CTX), /<span class="valor"><span>1,23457E\+8<\/span>/);
+  p = P.confirmar(P.editarValor(p, CTX, id, true));
+  assert.equal(CV.currentValue(p.g.nodos[0]), 123456789, "confirming the text shown does not round the value");
+
+  const { g, id: constant } = Gr.crearNodo(Gr.nuevo(), CAT, "const", 100, 100);
+  const constantText = (value) => D.CONSTANTES.const.texto(Gr.fijarConfig(g, constant, { value }).nodos[0], CTX);
+  assert.equal(constantText(123456789), "123456789");
+  assert.equal(constantText(0.00001), "1E-5");
+  assert.equal(constantText(3.14159265358979), "3,14159265359");
 });
 
 // Un control con otra representación enseña y acepta valores de su tipo: en

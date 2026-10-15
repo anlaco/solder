@@ -197,20 +197,45 @@ export function convertirValor(valor, tipo) {
 }
 
 /**
- * Cómo enseña una constante su valor. La coma flotante, con seis cifras
- * significativas y sin ceros de más, como el formato por defecto de LabVIEW
- * («43,3», «0»). `separador` es el separador decimal del sistema: LabVIEW usa
- * el del idioma de Windows.
+ * The significant digits of LabVIEW's default display format ("Automatic formatting", trailing
+ * zeros hidden): 13 on a block diagram constant, 6 on a front panel control or indicator
+ * (labview-captures/reports/2026-10-15-numeric-display.md).
  */
-export function formatear(valor, tipo, separador = ".") {
+export const CONSTANT_DIGITS = 13;
+export const CONTROL_DIGITS = 6;
+/** Below 1E-4 LabVIEW switches to an exponent, as C's %g does. */
+const SMALLEST_EXPONENT_WITHOUT_E = -4;
+/** A SGL holds about 7 decimal digits; more would show its rounding noise. Unverified in LabVIEW. */
+const SINGLE_PRECISION_DIGITS = 6;
+
+/**
+ * How a numeric shows its value with LabVIEW's default format: integers in full, floating point
+ * like C's %g with `significantDigits` ("43.3", "123456789", "1.23457E+8", "1E-5"). `separador` is
+ * the system's decimal separator: LabVIEW uses the one of the Windows language.
+ */
+export function formatear(valor, tipo, separador = ".", significantDigits = CONTROL_DIGITS) {
   // An enum's value is the index of its item, and what LabVIEW shows is the item's name.
   if (tipo?.enum) return tipo.enum[valor] ?? String(valor);
   if (valor === Infinity) return "Inf";
   if (valor === -Infinity) return "-Inf";
   if (Number.isNaN(valor)) return "NaN";
   if (esEntero(tipo)) return String(Math.trunc(valor));
-  return String(Number(valor.toPrecision(6))).replace(".", separador);
+  const digits = tipo === "sgl" ? Math.min(significantDigits, SINGLE_PRECISION_DIGITS) : significantDigits;
+  return formatSignificant(valor, digits).replace(".", separador);
 }
+
+/** C's %g without trailing zeros, with LabVIEW's exponent: "E+13", "E-5", never padded. */
+function formatSignificant(value, digits) {
+  if (value === 0) return "0";
+  const [mantissa, exponentText] = value.toExponential(digits - 1).split("e");
+  const exponent = Number(exponentText);
+  if (exponent < SMALLEST_EXPONENT_WITHOUT_E || exponent >= digits) {
+    return `${withoutTrailingZeros(mantissa)}E${exponent < 0 ? "-" : "+"}${Math.abs(exponent)}`;
+  }
+  return withoutTrailingZeros(value.toFixed(digits - 1 - exponent));
+}
+
+const withoutTrailingZeros = (text) => (text.includes(".") ? text.replace(/\.?0+$/, "") : text);
 
 /**
  * Lee lo que se ha escrito en una constante numérica. Devuelve el valor y el

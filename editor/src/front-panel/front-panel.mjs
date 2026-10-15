@@ -542,7 +542,9 @@ export function editarValor(p, ctx, id, todo, campo) {
   const n = p.g.nodos.find((m) => m.id === id);
   // En un control de error se escribe en code (un número) o en source (varias líneas; Ctrl+Intro confirma).
   if (n && campo) return { ...p, edicion: { nodo: id, valor: true, campo, texto: String(valorError(n, p.valores)[campo]), todo, ...(campo === "source" ? { cadena: true } : {}) }, seleccion: [], accion: null };
-  return n ? { ...p, edicion: { nodo: id, valor: true, texto: textoValor(n, ctx, p.valores), todo, ...(esCadena(n) ? { cadena: true } : {}) }, seleccion: [], accion: null } : p;
+  // `shown` remembers the text the box showed, so that confirming it untouched keeps the value it rounds.
+  const shown = n && textoValor(n, ctx, p.valores);
+  return n ? { ...p, edicion: { nodo: id, valor: true, texto: shown, shown, todo, ...(esCadena(n) ? { cadena: true } : {}) }, seleccion: [], accion: null } : p;
 }
 
 /**
@@ -579,7 +581,7 @@ export function editarElemento(p, ctx, id, k, todo) {
   // Un booleano se alterna con el clic, como un interruptor.
   if (t === "boolean") return { ...p, g: CV.setCurrentValue(p.g, id, writeCell(valoresDeArray(n, p.valores), dimensions, k, !v, t)), seleccion: [], accion: null };
   const texto = t === "string" ? String(v ?? "") : formatear(v ?? 0, t, ctx.separador);
-  return { ...p, edicion: { nodo: id, valor: true, elem: k, texto, todo, ...(t === "string" ? { cadena: true } : {}) }, seleccion: [], accion: null };
+  return { ...p, edicion: { nodo: id, valor: true, elem: k, texto, shown: texto, todo, ...(t === "string" ? { cadena: true } : {}) }, seleccion: [], accion: null };
 }
 
 /** Una flecha del incrementador: el valor sube o baja 1. */
@@ -601,6 +603,8 @@ export function confirmar(p) {
   const e = p.edicion;
   if (!e) return p;
   if (!e.valor) return { ...p, g: Gr.fijarEtiqueta(p.g, e.nodo, e.texto), edicion: null };
+  // A control shows 6 significant digits: reading back the text it showed would round its value.
+  if (e.texto === e.shown) return { ...p, edicion: null };
   // Un elemento de un array: se lleva a su tipo; lo que no vale lo deja como estaba.
   if (e.elem !== undefined) {
     const n = p.g.nodos.find((m) => m.id === e.nodo);

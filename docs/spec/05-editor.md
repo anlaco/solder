@@ -205,6 +205,17 @@ integer constant turns it into DBL, as LabVIEW does. What is not a number
 changes nothing. Both comma and period are accepted, and it is shown with the
 system separator.
 
+How a number is shown (LabVIEW's default format, "Automatic formatting" with trailing zeros hidden,
+measured 2026-10-15, `labview-captures/reports/2026-10-15-numeric-display.md`): an integer in full; a
+floating-point value as C's `%g` with **13 significant digits on a block diagram constant** and **6 on a
+front panel control or indicator**, so the exponent appears when the decimal exponent reaches the digits or
+falls below −4, written `E+8` / `E-5` without padding. A DBL constant typed 123456789 shows `123456789`; a
+DBL control shows `1.23457E+8` and keeps 123456789 (confirming the text shown untouched does not round it).
+Tested in `test/core/types.test.mjs` and `test/editor/front-panel.test.mjs`. **Unverified:** SGL (Solder
+uses 6 digits), the array constant's elements (taken as a constant's 13), and the side an **unwired**
+constant grows to: on 2026-10-15 one grew to the right, unlike the wired one measured above. LabVIEW also cuts
+a control's text at its box with a small mark; Solder does not yet.
+
 A **string** constant is something else (rule 40h): Enter starts a new line and does not
 confirm; it is confirmed with *Enter Text* or with a click outside.
 
@@ -620,7 +631,8 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   (measured: deleting the item under a middle value keeps the number; deleting the last item
 >   under the value clamps it to 0).
 > - **The panel.** Controls ▸ Modern ▸ Ring & Enum holds five entries in two rows (Text Ring,
->   Menu Ring, Enum, Pict Ring, Text & Pict Ring); only **Enum** is done: a control 61 × 25 px
+>   Menu Ring, Enum, Pict Ring, Text & Pict Ring), each with an icon of its own drawn anew (the
+  rings greyed; `test/editor/palettes.test.mjs`); only **Enum** is done: a control 61 × 25 px
 >   (its box 49, next to the Numeric Control's 55) with the increment arrows on the left,
 >   showing the current item's name; the indicator is the same without arrows and with a grey
 >   box. The arrows move to the next or the previous item. Their right-click menus
