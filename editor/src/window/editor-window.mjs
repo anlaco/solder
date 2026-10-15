@@ -51,6 +51,7 @@ import * as V from "./window-view.mjs";
 import { buildHierarchy } from "./hierarchy-client.mjs";
 import { compilar } from "../../../core/compiler/compiler.mjs";
 import { pruneConnector } from "../../../core/model/connector.mjs";
+import { startValue } from "../../../core/model/control-values.mjs";
 
 const nombre = new URLSearchParams(location.search).get("ventana") ?? "front-panel";
 const prefijo = `window.${nombre}`;
@@ -312,7 +313,7 @@ function appendSeries(charts, series) {
   }, charts ?? {});
 }
 
-const valoresDeControles = (g) => Object.fromEntries(g.nodos.filter(RV.isControl).map((n) => [n.id, n.config?.value ?? (n.tipo === "str-control" ? "" : n.tipo === "cluster-control" ? P.ERROR_VACIO : n.tipo === "arr-control" ? [] : 0)]));
+const valoresDeControles = (g) => Object.fromEntries(g.nodos.filter(RV.isControl).map((n) => [n.id, startValue(n)]));
 /** The default value each control had when the Run started, by node id (run-values.mjs); `null` when no Run is in progress. */
 let defaultsBeforeRun = null;
 

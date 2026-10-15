@@ -9,9 +9,9 @@ inputs (no Random Number) so that the outputs can be compared value by value. Th
 built in the virtual machine on 2026-10-09/10 (`Desktop\solder'examples`); the outputs below were read
 from them and are the reference.
 
-> **Status (2026-10-10):** the `.sdg` files in these folders (`.qvi` before DT-051) are still the first Solder versions of
-> 2026-10-09, with workarounds and Random Number ([`real-programs-0.2.md`](../docs/design/real-programs-0.2.md)).
-> They are rewritten to match the descriptions below once Solder can (step 3 of the rule).
+> **Status (2026-10-15):** the three examples were rebuilt in the Solder editor without workarounds, as
+> described below ([`real-programs-0.3.md`](../docs/design/real-programs-0.3.md)), and
+> `test/end-to-end/examples.test.mjs` checks every value of the tables below against them.
 
 LabVIEW setting used for the reference: *Tools ▸ Options ▸ Front Panel ▸ Use localized decimal point* is
 **off**. With it on, as in a fresh install on a Spanish Windows, Format Into String writes `5,0000` and

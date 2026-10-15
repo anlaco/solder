@@ -614,7 +614,10 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   occurred at …" and "Possible reason(s):" in bold, the text, the detail of the
 >   source, "Search ni.com for error" (greyed out) and the buttons **Continue**, the factory default
 >   (Enter), and **Stop**; Stop aborts the VI. The Simple Error Handler one
->   (`102b-dialogo-x2.png`): no icon or bold, with **OK**; on an undefined code,
+>   has two forms: for a **defined code** it looks like the automatic one (icon, bold, the source
+>   with its call chain, the greyed link) but its only button is **Continue**, which closes it
+>   (`labview-captures/reports/2026-10-15-seh-85.md`, Instrument Protocol with `FOO`); for an
+>   **undefined code** (`102b-dialogo-x2.png`) it has no icon or bold, with **OK** and
 >   "Why not found?" (greyed out). Abort with a dialog open closes it. The text comes from
 >   `core/runtime/error-codes.mjs`: the codes are LabVIEW's and the texts, our own (DT-043 §5).
 > - **Unverified or not done:** the right-click menu of the error controls and

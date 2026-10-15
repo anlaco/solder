@@ -112,3 +112,8 @@ test("a nested array value flattens in row order and nests back", () => {
   assert.deepEqual(flattenArrayValue([7, 8], 1, 0), { sizes: [2], elements: [7, 8] });
   assert.deepEqual(nestArrayValue([], [0, 3]), []);
 });
+
+test("an enum is shown by the name of its item, as LabVIEW's panel shows it", async () => {
+  const { formatear } = await import("../../core/model/types.mjs");
+  assert.equal(formatear(4, { enum: ["Init", "Heat", "Hold", "Cool", "Done"] }), "Done");
+});

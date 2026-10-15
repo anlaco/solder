@@ -8,12 +8,6 @@
       "default": 60
     },
     {
-      "name": "indicator_1",
-      "role": "indicator",
-      "type": "number",
-      "default": 0
-    },
-    {
       "name": "bool-indicator_1",
       "role": "indicator",
       "type": "boolean",
@@ -39,15 +33,37 @@
       "name": "waveform-chart_1",
       "role": "indicator",
       "type": "number"
+    },
+    {
+      "name": "indicator_1",
+      "role": "indicator",
+      "type": {
+        "enum": [
+          "Init",
+          "Heat",
+          "Hold",
+          "Cool",
+          "Done"
+        ]
+      },
+      "default": 0
     }
   ],
   "block-diagram": {
     "nodes": [
       {
-        "name": "num-const_1",
-        "type": "num-const",
+        "name": "enum-const_1",
+        "type": "enum-const",
         "config": {
-          "type": "i32",
+          "type": {
+            "enum": [
+              "Init",
+              "Heat",
+              "Hold",
+              "Cool",
+              "Done"
+            ]
+          },
           "default": 0
         }
       },
@@ -59,17 +75,33 @@
         }
       },
       {
-        "name": "num-const_2",
+        "name": "num-const_1",
         "type": "num-const",
         "config": {
           "type": "i32",
           "default": 0
         }
+      },
+      {
+        "name": "control_1",
+        "type": "control"
+      },
+      {
+        "name": "bool-indicator_1",
+        "type": "bool-indicator"
+      },
+      {
+        "name": "bool-indicator_2",
+        "type": "bool-indicator"
+      },
+      {
+        "name": "bool-control_1",
+        "type": "bool-control"
       }
     ],
     "wires": [
       {
-        "from": "num-const_1.result",
+        "from": "enum-const_1.result",
         "to": "while-loop_1.shift-register-left_1"
       },
       {
@@ -77,14 +109,48 @@
         "to": "while-loop_1.shift-register-left_2"
       },
       {
-        "from": "num-const_2.result",
+        "from": "num-const_1.result",
         "to": "while-loop_1.shift-register-left_3"
+      },
+      {
+        "from": "control_1.result",
+        "to": "while-loop_1.tunnel-in_3"
+      },
+      {
+        "from": "while-loop_1.tunnel-out_1",
+        "to": "bool-indicator_1.value"
+      },
+      {
+        "from": "while-loop_1.tunnel-out_2",
+        "to": "bool-indicator_2.value"
+      },
+      {
+        "from": "bool-control_1.result",
+        "to": "while-loop_1.tunnel-in_5"
       }
     ],
     "structures": [
       {
         "name": "while-loop_1",
         "kind": "while-loop",
+        "tunnels": [
+          {
+            "name": "tunnel-in_3",
+            "dir": "in"
+          },
+          {
+            "name": "tunnel-out_1",
+            "dir": "out"
+          },
+          {
+            "name": "tunnel-out_2",
+            "dir": "out"
+          },
+          {
+            "name": "tunnel-in_5",
+            "dir": "in"
+          }
+        ],
         "shift-registers": [
           {
             "name": "shift-register-left_1"
@@ -99,70 +165,54 @@
         "body": {
           "nodes": [
             {
-              "name": "control_1",
-              "type": "control"
-            },
-            {
-              "name": "indicator_1",
-              "type": "indicator"
-            },
-            {
-              "name": "bool-indicator_1",
-              "type": "bool-indicator"
-            },
-            {
-              "name": "bool-indicator_2",
-              "type": "bool-indicator"
-            },
-            {
-              "name": "bool-control_1",
-              "type": "bool-control"
-            },
-            {
               "name": "waveform-chart_1",
               "type": "waveform-chart"
-            },
-            {
-              "name": "equal_1",
-              "type": "equal"
-            },
-            {
-              "name": "num-const_13",
-              "type": "num-const",
-              "config": {
-                "type": "i32",
-                "default": 4
-              }
-            },
-            {
-              "name": "or-op_1",
-              "type": "or-op"
             },
             {
               "name": "wait-ms_1",
               "type": "wait-ms"
             },
             {
-              "name": "num-const_14",
+              "name": "num-const_4",
               "type": "num-const",
               "config": {
                 "type": "i32",
                 "default": 100
               }
+            },
+            {
+              "name": "equal_1",
+              "type": "equal"
+            },
+            {
+              "name": "or-op_1",
+              "type": "or-op"
+            },
+            {
+              "name": "enum-const_10",
+              "type": "enum-const",
+              "config": {
+                "type": {
+                  "enum": [
+                    "Init",
+                    "Heat",
+                    "Hold",
+                    "Cool",
+                    "Done"
+                  ]
+                },
+                "default": 4
+              }
+            },
+            {
+              "name": "indicator_1",
+              "type": "indicator"
             }
           ],
           "wires": [
             {
               "from": "shift-register-left_1.left",
               "to": "case-structure_1.selector"
-            },
-            {
-              "from": "shift-register-left_2.left",
-              "to": "case-structure_1.tunnel-in_1"
-            },
-            {
-              "from": "control_1.result",
-              "to": "case-structure_1.tunnel-in_2"
             },
             {
               "from": "case-structure_1.case-tunnel-out_1",
@@ -174,42 +224,46 @@
             },
             {
               "from": "case-structure_1.case-tunnel-out_3",
-              "to": "bool-indicator_1.value"
-            },
-            {
-              "from": "case-structure_1.case-tunnel-out_4",
-              "to": "bool-indicator_2.value"
-            },
-            {
-              "from": "shift-register-left_3.left",
-              "to": "case-structure_1.tunnel-in_3"
-            },
-            {
-              "from": "case-structure_1.case-tunnel-out_5",
               "to": "shift-register-left_3.right"
             },
             {
-              "from": "case-structure_1.case-tunnel-out_2",
-              "to": "waveform-chart_1.value"
+              "from": "shift-register-left_2.left",
+              "to": "case-structure_1.tunnel-in_1"
             },
             {
-              "from": "case-structure_1.case-tunnel-out_1",
-              "to": "indicator_1.value"
+              "from": "shift-register-left_3.left",
+              "to": "case-structure_1.tunnel-in_2"
+            },
+            {
+              "from": "while-loop_1.tunnel-in_3",
+              "to": "case-structure_1.tunnel-in_4"
+            },
+            {
+              "from": "case-structure_1.case-tunnel-out_4",
+              "to": "while-loop_1.tunnel-out_1"
+            },
+            {
+              "from": "case-structure_1.case-tunnel-out_5",
+              "to": "while-loop_1.tunnel-out_2"
+            },
+            {
+              "from": "num-const_4.result",
+              "to": "wait-ms_1.ms"
+            },
+            {
+              "from": "enum-const_10.result",
+              "to": "equal_1.y"
             },
             {
               "from": "case-structure_1.case-tunnel-out_1",
               "to": "equal_1.x"
             },
             {
-              "from": "num-const_13.result",
-              "to": "equal_1.y"
-            },
-            {
               "from": "equal_1.result",
               "to": "or-op_1.x"
             },
             {
-              "from": "bool-control_1.result",
+              "from": "while-loop_1.tunnel-in_5",
               "to": "or-op_1.y"
             },
             {
@@ -217,8 +271,12 @@
               "to": "while-loop_1.condition"
             },
             {
-              "from": "num-const_14.result",
-              "to": "wait-ms_1.ms"
+              "from": "case-structure_1.case-tunnel-out_1",
+              "to": "indicator_1.value"
+            },
+            {
+              "from": "case-structure_1.case-tunnel-out_2",
+              "to": "waveform-chart_1.value"
             }
           ],
           "structures": [
@@ -226,14 +284,6 @@
               "name": "case-structure_1",
               "kind": "case-structure",
               "tunnels": [
-                {
-                  "name": "tunnel-in_1",
-                  "dir": "in"
-                },
-                {
-                  "name": "tunnel-in_2",
-                  "dir": "in"
-                },
                 {
                   "name": "case-tunnel-out_1",
                   "dir": "out"
@@ -244,8 +294,19 @@
                 },
                 {
                   "name": "case-tunnel-out_3",
-                  "dir": "out",
-                  "use-default": true
+                  "dir": "out"
+                },
+                {
+                  "name": "tunnel-in_1",
+                  "dir": "in"
+                },
+                {
+                  "name": "tunnel-in_2",
+                  "dir": "in"
+                },
+                {
+                  "name": "tunnel-in_4",
+                  "dir": "in"
                 },
                 {
                   "name": "case-tunnel-out_4",
@@ -253,39 +314,44 @@
                   "use-default": true
                 },
                 {
-                  "name": "tunnel-in_3",
-                  "dir": "in"
-                },
-                {
                   "name": "case-tunnel-out_5",
-                  "dir": "out"
+                  "dir": "out",
+                  "use-default": true
                 }
               ],
               "frames": [
                 {
                   "match": [
-                    0
+                    "Init"
                   ],
                   "default": true,
                   "body": {
                     "nodes": [
                       {
-                        "name": "num-const_11",
-                        "type": "num-const",
+                        "name": "enum-const_2",
+                        "type": "enum-const",
                         "config": {
-                          "type": "i32",
+                          "type": {
+                            "enum": [
+                              "Init",
+                              "Heat",
+                              "Hold",
+                              "Cool",
+                              "Done"
+                            ]
+                          },
                           "default": 1
                         }
                       },
                       {
-                        "name": "const_5",
+                        "name": "const_2",
                         "type": "const",
                         "config": {
                           "default": 20
                         }
                       },
                       {
-                        "name": "num-const_12",
+                        "name": "num-const_2",
                         "type": "num-const",
                         "config": {
                           "type": "i32",
@@ -295,23 +361,23 @@
                     ],
                     "wires": [
                       {
-                        "from": "num-const_11.result",
+                        "from": "enum-const_2.result",
                         "to": "case-structure_1.case-tunnel-out_1"
                       },
                       {
-                        "from": "const_5.result",
+                        "from": "const_2.result",
                         "to": "case-structure_1.case-tunnel-out_2"
                       },
                       {
-                        "from": "num-const_12.result",
-                        "to": "case-structure_1.case-tunnel-out_5"
+                        "from": "num-const_2.result",
+                        "to": "case-structure_1.case-tunnel-out_3"
                       }
                     ]
                   }
                 },
                 {
                   "match": [
-                    1
+                    "Heat"
                   ],
                   "body": {
                     "nodes": [
@@ -320,7 +386,7 @@
                         "type": "add"
                       },
                       {
-                        "name": "const_2",
+                        "name": "const_3",
                         "type": "const",
                         "config": {
                           "default": 1.5
@@ -335,18 +401,34 @@
                         "type": "select"
                       },
                       {
-                        "name": "num-const_3",
-                        "type": "num-const",
+                        "name": "enum-const_3",
+                        "type": "enum-const",
                         "config": {
-                          "type": "i32",
+                          "type": {
+                            "enum": [
+                              "Init",
+                              "Heat",
+                              "Hold",
+                              "Cool",
+                              "Done"
+                            ]
+                          },
                           "default": 2
                         }
                       },
                       {
-                        "name": "num-const_4",
-                        "type": "num-const",
+                        "name": "enum-const_4",
+                        "type": "enum-const",
                         "config": {
-                          "type": "i32",
+                          "type": {
+                            "enum": [
+                              "Init",
+                              "Heat",
+                              "Hold",
+                              "Cool",
+                              "Done"
+                            ]
+                          },
                           "default": 1
                         }
                       },
@@ -364,7 +446,7 @@
                         "to": "add_1.a"
                       },
                       {
-                        "from": "const_2.result",
+                        "from": "const_3.result",
                         "to": "add_1.b"
                       },
                       {
@@ -372,19 +454,19 @@
                         "to": "greater-or-equal_1.x"
                       },
                       {
-                        "from": "case-structure_1.tunnel-in_2",
-                        "to": "greater-or-equal_1.y"
+                        "from": "add_1.result",
+                        "to": "case-structure_1.case-tunnel-out_2"
                       },
                       {
                         "from": "greater-or-equal_1.result",
                         "to": "select_1.s"
                       },
                       {
-                        "from": "num-const_3.result",
+                        "from": "enum-const_3.result",
                         "to": "select_1.t"
                       },
                       {
-                        "from": "num-const_4.result",
+                        "from": "enum-const_4.result",
                         "to": "select_1.f"
                       },
                       {
@@ -392,23 +474,23 @@
                         "to": "case-structure_1.case-tunnel-out_1"
                       },
                       {
-                        "from": "add_1.result",
-                        "to": "case-structure_1.case-tunnel-out_2"
-                      },
-                      {
-                        "from": "bool-const_1.result",
+                        "from": "case-structure_1.tunnel-in_2",
                         "to": "case-structure_1.case-tunnel-out_3"
                       },
                       {
-                        "from": "case-structure_1.tunnel-in_3",
-                        "to": "case-structure_1.case-tunnel-out_5"
+                        "from": "case-structure_1.tunnel-in_4",
+                        "to": "greater-or-equal_1.y"
+                      },
+                      {
+                        "from": "bool-const_1.result",
+                        "to": "case-structure_1.case-tunnel-out_4"
                       }
                     ]
                   }
                 },
                 {
                   "match": [
-                    2
+                    "Hold"
                   ],
                   "body": {
                     "nodes": [
@@ -417,11 +499,7 @@
                         "type": "increment"
                       },
                       {
-                        "name": "greater-or-equal_2",
-                        "type": "greater-or-equal"
-                      },
-                      {
-                        "name": "num-const_8",
+                        "name": "num-const_3",
                         "type": "num-const",
                         "config": {
                           "type": "i32",
@@ -429,64 +507,84 @@
                         }
                       },
                       {
-                        "name": "select_3",
+                        "name": "greater-or-equal_2",
+                        "type": "greater-or-equal"
+                      },
+                      {
+                        "name": "select_2",
                         "type": "select"
                       },
                       {
-                        "name": "num-const_9",
-                        "type": "num-const",
+                        "name": "bool-const_2",
+                        "type": "bool-const",
                         "config": {
-                          "type": "i32",
+                          "default": true
+                        }
+                      },
+                      {
+                        "name": "enum-const_5",
+                        "type": "enum-const",
+                        "config": {
+                          "type": {
+                            "enum": [
+                              "Init",
+                              "Heat",
+                              "Hold",
+                              "Cool",
+                              "Done"
+                            ]
+                          },
                           "default": 3
                         }
                       },
                       {
-                        "name": "num-const_10",
-                        "type": "num-const",
+                        "name": "enum-const_6",
+                        "type": "enum-const",
                         "config": {
-                          "type": "i32",
+                          "type": {
+                            "enum": [
+                              "Init",
+                              "Heat",
+                              "Hold",
+                              "Cool",
+                              "Done"
+                            ]
+                          },
                           "default": 2
-                        }
-                      },
-                      {
-                        "name": "bool-const_3",
-                        "type": "bool-const",
-                        "config": {
-                          "default": true
                         }
                       }
                     ],
                     "wires": [
                       {
-                        "from": "case-structure_1.tunnel-in_3",
+                        "from": "case-structure_1.tunnel-in_2",
                         "to": "increment_1.x"
-                      },
-                      {
-                        "from": "increment_1.result",
-                        "to": "case-structure_1.case-tunnel-out_5"
                       },
                       {
                         "from": "increment_1.result",
                         "to": "greater-or-equal_2.x"
                       },
                       {
-                        "from": "num-const_8.result",
+                        "from": "increment_1.result",
+                        "to": "case-structure_1.case-tunnel-out_3"
+                      },
+                      {
+                        "from": "num-const_3.result",
                         "to": "greater-or-equal_2.y"
                       },
                       {
                         "from": "greater-or-equal_2.result",
-                        "to": "select_3.s"
+                        "to": "select_2.s"
                       },
                       {
-                        "from": "num-const_9.result",
-                        "to": "select_3.t"
+                        "from": "enum-const_5.result",
+                        "to": "select_2.t"
                       },
                       {
-                        "from": "num-const_10.result",
-                        "to": "select_3.f"
+                        "from": "enum-const_6.result",
+                        "to": "select_2.f"
                       },
                       {
-                        "from": "select_3.result",
+                        "from": "select_2.result",
                         "to": "case-structure_1.case-tunnel-out_1"
                       },
                       {
@@ -494,15 +592,15 @@
                         "to": "case-structure_1.case-tunnel-out_2"
                       },
                       {
-                        "from": "bool-const_3.result",
-                        "to": "case-structure_1.case-tunnel-out_3"
+                        "from": "bool-const_2.result",
+                        "to": "case-structure_1.case-tunnel-out_4"
                       }
                     ]
                   }
                 },
                 {
                   "match": [
-                    3
+                    "Cool"
                   ],
                   "body": {
                     "nodes": [
@@ -511,10 +609,17 @@
                         "type": "sub"
                       },
                       {
-                        "name": "const_3",
+                        "name": "const_4",
                         "type": "const",
                         "config": {
                           "default": 2
+                        }
+                      },
+                      {
+                        "name": "const_5",
+                        "type": "const",
+                        "config": {
+                          "default": 25
                         }
                       },
                       {
@@ -522,37 +627,46 @@
                         "type": "less-or-equal"
                       },
                       {
-                        "name": "const_4",
-                        "type": "const",
-                        "config": {
-                          "default": 25
-                        }
-                      },
-                      {
-                        "name": "select_2",
+                        "name": "select_3",
                         "type": "select"
                       },
                       {
-                        "name": "num-const_6",
-                        "type": "num-const",
+                        "name": "bool-const_3",
+                        "type": "bool-const",
                         "config": {
-                          "type": "i32",
+                          "default": true
+                        }
+                      },
+                      {
+                        "name": "enum-const_7",
+                        "type": "enum-const",
+                        "config": {
+                          "type": {
+                            "enum": [
+                              "Init",
+                              "Heat",
+                              "Hold",
+                              "Cool",
+                              "Done"
+                            ]
+                          },
                           "default": 4
                         }
                       },
                       {
-                        "name": "num-const_7",
-                        "type": "num-const",
+                        "name": "enum-const_8",
+                        "type": "enum-const",
                         "config": {
-                          "type": "i32",
+                          "type": {
+                            "enum": [
+                              "Init",
+                              "Heat",
+                              "Hold",
+                              "Cool",
+                              "Done"
+                            ]
+                          },
                           "default": 3
-                        }
-                      },
-                      {
-                        "name": "bool-const_2",
-                        "type": "bool-const",
-                        "config": {
-                          "default": true
                         }
                       }
                     ],
@@ -562,7 +676,7 @@
                         "to": "sub_1.a"
                       },
                       {
-                        "from": "const_3.result",
+                        "from": "const_4.result",
                         "to": "sub_1.b"
                       },
                       {
@@ -570,35 +684,35 @@
                         "to": "less-or-equal_1.x"
                       },
                       {
-                        "from": "const_4.result",
-                        "to": "less-or-equal_1.y"
-                      },
-                      {
-                        "from": "less-or-equal_1.result",
-                        "to": "select_2.s"
-                      },
-                      {
-                        "from": "num-const_6.result",
-                        "to": "select_2.t"
-                      },
-                      {
-                        "from": "num-const_7.result",
-                        "to": "select_2.f"
-                      },
-                      {
-                        "from": "select_2.result",
-                        "to": "case-structure_1.case-tunnel-out_1"
-                      },
-                      {
                         "from": "sub_1.result",
                         "to": "case-structure_1.case-tunnel-out_2"
                       },
                       {
-                        "from": "bool-const_2.result",
-                        "to": "case-structure_1.case-tunnel-out_4"
+                        "from": "const_5.result",
+                        "to": "less-or-equal_1.y"
                       },
                       {
-                        "from": "case-structure_1.tunnel-in_3",
+                        "from": "less-or-equal_1.result",
+                        "to": "select_3.s"
+                      },
+                      {
+                        "from": "enum-const_7.result",
+                        "to": "select_3.t"
+                      },
+                      {
+                        "from": "enum-const_8.result",
+                        "to": "select_3.f"
+                      },
+                      {
+                        "from": "select_3.result",
+                        "to": "case-structure_1.case-tunnel-out_1"
+                      },
+                      {
+                        "from": "case-structure_1.tunnel-in_2",
+                        "to": "case-structure_1.case-tunnel-out_3"
+                      },
+                      {
+                        "from": "bool-const_3.result",
                         "to": "case-structure_1.case-tunnel-out_5"
                       }
                     ]
@@ -606,22 +720,30 @@
                 },
                 {
                   "match": [
-                    4
+                    "Done"
                   ],
                   "body": {
                     "nodes": [
                       {
-                        "name": "num-const_5",
-                        "type": "num-const",
+                        "name": "enum-const_9",
+                        "type": "enum-const",
                         "config": {
-                          "type": "i32",
+                          "type": {
+                            "enum": [
+                              "Init",
+                              "Heat",
+                              "Hold",
+                              "Cool",
+                              "Done"
+                            ]
+                          },
                           "default": 4
                         }
                       }
                     ],
                     "wires": [
                       {
-                        "from": "num-const_5.result",
+                        "from": "enum-const_9.result",
                         "to": "case-structure_1.case-tunnel-out_1"
                       },
                       {
@@ -629,8 +751,8 @@
                         "to": "case-structure_1.case-tunnel-out_2"
                       },
                       {
-                        "from": "case-structure_1.tunnel-in_3",
-                        "to": "case-structure_1.case-tunnel-out_5"
+                        "from": "case-structure_1.tunnel-in_2",
+                        "to": "case-structure_1.case-tunnel-out_3"
                       }
                     ]
                   }
@@ -644,306 +766,323 @@
   },
   "layout": {
     "diagram": {
-      "num-const_1": {
-        "x": 76,
-        "y": 249
+      "enum-const_1": {
+        "x": 71,
+        "y": 179
       },
       "const_1": {
-        "x": 76,
-        "y": 329
+        "x": 86,
+        "y": 309
       },
-      "num-const_2": {
-        "x": 76,
-        "y": 409
+      "num-const_1": {
+        "x": 86,
+        "y": 399
+      },
+      "control_1": {
+        "x": 111,
+        "y": 41,
+        "label": {
+          "text": "Setpoint"
+        }
+      },
+      "bool-indicator_1": {
+        "x": 1227,
+        "y": 129,
+        "label": {
+          "text": "Heater"
+        }
+      },
+      "bool-indicator_2": {
+        "x": 1228,
+        "y": 229,
+        "label": {
+          "text": "Fan"
+        }
+      },
+      "bool-control_1": {
+        "x": 1233,
+        "y": 543,
+        "label": {
+          "text": "Stop"
+        }
       },
       "while-loop_1": {
         "x": 150,
-        "y": 13,
-        "w": 1470,
-        "h": 840
+        "y": 53,
+        "w": 950,
+        "h": 783
       },
       "while-loop_1.i": {
         "x": 160,
-        "y": 827
+        "y": 810
       },
       "while-loop_1.condition": {
-        "x": 1594,
-        "y": 827
+        "x": 1074,
+        "y": 810
+      },
+      "tunnel-in_3": {
+        "x": 150,
+        "y": 290
+      },
+      "tunnel-out_1": {
+        "x": 1091,
+        "y": 499
+      },
+      "tunnel-out_2": {
+        "x": 1091,
+        "y": 552
+      },
+      "tunnel-in_5": {
+        "x": 150,
+        "y": 747
       },
       "shift-register-left_1": {
         "x": 150,
         "y": 247
       },
       "shift-register-left_1.right": {
-        "x": 1604,
+        "x": 1084,
         "y": 247
       },
       "shift-register-left_2": {
         "x": 150,
-        "y": 327
+        "y": 347
       },
       "shift-register-left_2.right": {
-        "x": 1604,
-        "y": 327
+        "x": 1084,
+        "y": 347
       },
       "shift-register-left_3": {
         "x": 150,
-        "y": 407
+        "y": 427
       },
       "shift-register-left_3.right": {
-        "x": 1604,
-        "y": 407
-      },
-      "control_1": {
-        "x": 246,
-        "y": 179,
-        "label": {
-          "text": "Setpoint"
-        }
-      },
-      "indicator_1": {
-        "x": 1413,
-        "y": 184,
-        "label": {
-          "text": "State"
-        }
-      },
-      "bool-indicator_1": {
-        "x": 1416,
-        "y": 264,
-        "label": {
-          "text": "Heater"
-        }
-      },
-      "bool-indicator_2": {
-        "x": 1416,
-        "y": 334,
-        "label": {
-          "text": "Fan"
-        }
-      },
-      "bool-control_1": {
-        "x": 256,
-        "y": 748,
-        "label": {
-          "text": "stop"
-        }
+        "x": 1084,
+        "y": 427
       },
       "waveform-chart_1": {
-        "x": 1416,
-        "y": 104,
+        "x": 966,
+        "y": 389,
         "label": {
           "text": "Temperature"
         }
       },
-      "equal_1": {
-        "x": 1296,
-        "y": 649
+      "wait-ms_1": {
+        "x": 496,
+        "y": 729
       },
-      "num-const_13": {
-        "x": 1216,
-        "y": 679
+      "num-const_4": {
+        "x": 416,
+        "y": 769
+      },
+      "equal_1": {
+        "x": 696,
+        "y": 689
       },
       "or-op_1": {
-        "x": 1446,
-        "y": 709
+        "x": 846,
+        "y": 739
       },
-      "wait-ms_1": {
-        "x": 396,
-        "y": 809
+      "enum-const_10": {
+        "x": 587,
+        "y": 652
       },
-      "num-const_14": {
-        "x": 316,
-        "y": 809
+      "indicator_1": {
+        "x": 974,
+        "y": 210,
+        "label": {
+          "text": "State"
+        }
       },
       "case-structure_1": {
-        "x": 450,
-        "y": 93,
-        "w": 720,
-        "h": 660
+        "x": 300,
+        "y": 83,
+        "w": 600,
+        "h": 510,
+        "active-frame": 4
       },
       "case-structure_1.selector": {
-        "x": 450,
-        "y": 411
+        "x": 300,
+        "y": 326
+      },
+      "case-tunnel-out_1": {
+        "x": 891,
+        "y": 149
+      },
+      "case-tunnel-out_2": {
+        "x": 891,
+        "y": 284
+      },
+      "case-tunnel-out_3": {
+        "x": 891,
+        "y": 374
       },
       "tunnel-in_1": {
-        "x": 450,
+        "x": 300,
         "y": 350
       },
       "tunnel-in_2": {
-        "x": 450,
-        "y": 260
+        "x": 300,
+        "y": 374
       },
-      "case-tunnel-out_1": {
-        "x": 1161,
-        "y": 288
-      },
-      "case-tunnel-out_2": {
-        "x": 1161,
-        "y": 356
-      },
-      "case-tunnel-out_3": {
-        "x": 1161,
-        "y": 512
+      "tunnel-in_4": {
+        "x": 300,
+        "y": 290
       },
       "case-tunnel-out_4": {
-        "x": 1161,
-        "y": 572
-      },
-      "tunnel-in_3": {
-        "x": 450,
-        "y": 456
+        "x": 891,
+        "y": 499
       },
       "case-tunnel-out_5": {
-        "x": 1161,
-        "y": 456
+        "x": 891,
+        "y": 552
       },
-      "num-const_11": {
-        "x": 996,
-        "y": 284
-      },
-      "const_5": {
-        "x": 996,
-        "y": 354
-      },
-      "num-const_12": {
-        "x": 996,
-        "y": 454
-      },
-      "add_1": {
-        "x": 696,
-        "y": 349
+      "enum-const_2": {
+        "x": 679,
+        "y": 144
       },
       "const_2": {
-        "x": 596,
-        "y": 379
-      },
-      "greater-or-equal_1": {
-        "x": 816,
-        "y": 249
-      },
-      "select_1": {
-        "x": 956,
+        "x": 646,
         "y": 279
       },
-      "num-const_3": {
-        "x": 876,
-        "y": 249
+      "num-const_2": {
+        "x": 646,
+        "y": 369
       },
-      "num-const_4": {
-        "x": 876,
-        "y": 319
-      },
-      "bool-const_1": {
-        "x": 996,
-        "y": 509
-      },
-      "increment_1": {
-        "x": 696,
-        "y": 449
-      },
-      "greater-or-equal_2": {
-        "x": 816,
-        "y": 469
-      },
-      "num-const_8": {
-        "x": 736,
-        "y": 509
-      },
-      "select_3": {
-        "x": 956,
-        "y": 489
-      },
-      "num-const_9": {
-        "x": 876,
-        "y": 459
-      },
-      "num-const_10": {
-        "x": 876,
-        "y": 529
-      },
-      "bool-const_3": {
-        "x": 996,
-        "y": 599
-      },
-      "sub_1": {
-        "x": 696,
+      "add_1": {
+        "x": 426,
         "y": 349
       },
       "const_3": {
-        "x": 596,
+        "x": 366,
         "y": 389
       },
-      "less-or-equal_1": {
-        "x": 816,
-        "y": 249
-      },
-      "const_4": {
-        "x": 726,
+      "greater-or-equal_1": {
+        "x": 556,
         "y": 279
+      },
+      "select_1": {
+        "x": 696,
+        "y": 199
+      },
+      "enum-const_3": {
+        "x": 539,
+        "y": 144
+      },
+      "enum-const_4": {
+        "x": 539,
+        "y": 204
+      },
+      "bool-const_1": {
+        "x": 696,
+        "y": 496
+      },
+      "increment_1": {
+        "x": 426,
+        "y": 449
+      },
+      "num-const_3": {
+        "x": 476,
+        "y": 389
+      },
+      "greater-or-equal_2": {
+        "x": 576,
+        "y": 389
       },
       "select_2": {
-        "x": 956,
-        "y": 279
-      },
-      "num-const_6": {
-        "x": 876,
+        "x": 696,
         "y": 249
       },
-      "num-const_7": {
-        "x": 876,
-        "y": 319
-      },
       "bool-const_2": {
-        "x": 996,
-        "y": 569
+        "x": 696,
+        "y": 499
       },
-      "num-const_5": {
-        "x": 996,
-        "y": 284
+      "enum-const_5": {
+        "x": 539,
+        "y": 174
+      },
+      "enum-const_6": {
+        "x": 539,
+        "y": 234
+      },
+      "sub_1": {
+        "x": 426,
+        "y": 429
+      },
+      "const_4": {
+        "x": 366,
+        "y": 469
+      },
+      "const_5": {
+        "x": 496,
+        "y": 419
+      },
+      "less-or-equal_1": {
+        "x": 576,
+        "y": 389
+      },
+      "select_3": {
+        "x": 696,
+        "y": 249
+      },
+      "bool-const_3": {
+        "x": 696,
+        "y": 549
+      },
+      "enum-const_7": {
+        "x": 539,
+        "y": 174
+      },
+      "enum-const_8": {
+        "x": 539,
+        "y": 234
+      },
+      "enum-const_9": {
+        "x": 539,
+        "y": 174
       }
     },
     "panel": {
       "control_1": {
-        "x": 51,
+        "x": 111,
         "y": 41,
         "label": {
           "text": "Setpoint"
         }
       },
-      "indicator_1": {
-        "x": 63,
-        "y": 111,
-        "label": {
-          "text": "State"
-        }
-      },
       "bool-indicator_1": {
-        "x": 81,
-        "y": 184,
+        "x": 391,
+        "y": 44,
         "label": {
           "text": "Heater"
         }
       },
       "bool-indicator_2": {
-        "x": 81,
-        "y": 244,
+        "x": 541,
+        "y": 44,
         "label": {
           "text": "Fan"
         }
       },
       "bool-control_1": {
-        "x": 71,
-        "y": 313,
+        "x": 131,
+        "y": 443,
         "label": {
-          "text": "stop"
+          "text": "Stop"
         }
       },
       "waveform-chart_1": {
         "x": 436,
-        "y": 144,
+        "y": 284,
         "label": {
           "text": "Temperature"
+        }
+      },
+      "indicator_1": {
+        "x": 892,
+        "y": 21,
+        "label": {
+          "text": "State"
         }
       }
     },
@@ -965,152 +1104,151 @@
       },
       "case-structure_1.selector": {
         "bends": [
-          446
+          296
         ]
       },
       "add_1.b": {
         "bends": [
-          692
+          422
         ]
       },
       "greater-or-equal_1.x": {
         "bends": [
-          812
-        ]
-      },
-      "select_1.s": {
-        "bends": [
-          952
-        ]
-      },
-      "select_1.t": {
-        "bends": [
-          952
-        ]
-      },
-      "select_1.f": {
-        "bends": [
-          952
-        ]
-      },
-      "case-structure_1.case-tunnel-out_1": {
-        "bends": [
-          1157
+          552
         ]
       },
       "case-structure_1.case-tunnel-out_2": {
         "bends": [
-          1157
+          887
         ]
       },
-      "sub_1.a": {
+      "select_1.s": {
         "bends": [
           692
         ]
       },
-      "sub_1.b": {
+      "select_1.t": {
         "bends": [
           692
         ]
       },
-      "less-or-equal_1.x": {
+      "select_1.f": {
         "bends": [
-          812
+          692
         ]
       },
-      "less-or-equal_1.y": {
+      "case-structure_1.case-tunnel-out_1": {
         "bends": [
-          812
+          887
         ]
       },
-      "select_2.s": {
+      "increment_1.x": {
         "bends": [
-          952
-        ]
-      },
-      "select_2.t": {
-        "bends": [
-          952
-        ]
-      },
-      "select_2.f": {
-        "bends": [
-          952
+          422
         ]
       },
       "greater-or-equal_2.x": {
         "bends": [
-          812
-        ]
-      },
-      "greater-or-equal_2.y": {
-        "bends": [
-          812
-        ]
-      },
-      "select_3.s": {
-        "bends": [
-          952
-        ]
-      },
-      "select_3.t": {
-        "bends": [
-          952
-        ]
-      },
-      "select_3.f": {
-        "bends": [
-          952
+          572
         ]
       },
       "case-structure_1.case-tunnel-out_3": {
         "bends": [
-          1157
+          887
         ]
       },
-      "case-structure_1.case-tunnel-out_5": {
+      "greater-or-equal_2.y": {
         "bends": [
-          1157
+          572
         ]
       },
-      "waveform-chart_1.value": {
+      "select_2.s": {
         "bends": [
-          1412
+          692
         ]
       },
-      "indicator_1.value": {
+      "select_2.t": {
         "bends": [
-          1409
+          692
         ]
       },
-      "equal_1.x": {
+      "select_2.f": {
         "bends": [
-          1292
+          692
         ]
       },
-      "equal_1.y": {
+      "case-structure_1.case-tunnel-out_4": {
         "bends": [
-          1292
+          887
         ]
       },
-      "or-op_1.x": {
+      "sub_1.a": {
         "bends": [
-          1442
+          422
         ]
       },
-      "or-op_1.y": {
+      "sub_1.b": {
         "bends": [
-          1442
+          422
         ]
       },
-      "while-loop_1.condition": {
+      "less-or-equal_1.x": {
         "bends": [
-          1590
+          572
+        ]
+      },
+      "less-or-equal_1.y": {
+        "bends": [
+          572
+        ]
+      },
+      "select_3.s": {
+        "bends": [
+          692
+        ]
+      },
+      "select_3.t": {
+        "bends": [
+          692
+        ]
+      },
+      "select_3.f": {
+        "bends": [
+          692
         ]
       },
       "wait-ms_1.ms": {
         "bends": [
-          392
+          492
+        ]
+      },
+      "equal_1.y": {
+        "bends": [
+          692
+        ]
+      },
+      "equal_1.x": {
+        "bends": [
+          908,
+          158.5,
+          908,
+          423.75,
+          688
+        ]
+      },
+      "or-op_1.x": {
+        "bends": [
+          842
+        ]
+      },
+      "while-loop_1.condition": {
+        "bends": [
+          1070
+        ]
+      },
+      "indicator_1.value": {
+        "bends": [
+          970
         ]
       }
     }

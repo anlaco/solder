@@ -226,6 +226,19 @@ test("el cable de error es amarillo con trazos negros y borde oliva, la constant
   assert.doesNotMatch(V.dialogoError({ id: 3, pregunta: "dialogo-error", status: true, code: 7, source: "x" }), /Why not found/);
 });
 
+test("Simple Error Handler shows a defined code as LabVIEW does: the automatic dialog's look with Continue alone", async () => {
+  const V = await import("../../editor/src/window/window-view.mjs");
+  // labview-captures/reports/2026-10-15-seh-85.md: Instrument Protocol with FOO.
+  const source = "Scan From String (arg 1) in Parse Reply.sdg->Instrument Protocol.sdg";
+  const dialog = V.dialogoError({ id: 4, pregunta: "dialogo-error", status: true, code: 85, source });
+  assert.match(dialog, /dialogo-icono-error/);
+  assert.match(dialog, /<strong>Error 85 occurred at Scan From String \(arg 1\) in Parse Reply\.sdg-&gt;Instrument Protocol\.sdg<\/strong>/);
+  assert.match(dialog, /<strong>Possible reason\(s\):<\/strong>/);
+  assert.match(dialog, /Search ni\.com for error/);
+  assert.match(dialog, /data-boton="ok"[^>]*>Continue</, "Continue closes it as OK does");
+  assert.doesNotMatch(dialog, /Stop<|>OK<|Why not found/);
+});
+
 /** Un indicador de cluster de error con la etiqueta que usan estos tests. */
 function clusterIndicador() {
   return ["r", "cluster-indicator", { type: ERROR }];

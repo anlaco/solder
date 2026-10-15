@@ -203,6 +203,8 @@ export function convertirValor(valor, tipo) {
  * el del idioma de Windows.
  */
 export function formatear(valor, tipo, separador = ".") {
+  // An enum's value is the index of its item, and what LabVIEW shows is the item's name.
+  if (tipo?.enum) return tipo.enum[valor] ?? String(valor);
   if (valor === Infinity) return "Inf";
   if (valor === -Infinity) return "-Inf";
   if (Number.isNaN(valor)) return "NaN";

@@ -22,6 +22,7 @@
 //   menu       { raiz, nodo, x, y, abierto } the right-click menu of a boolean control
 //              (handled with the same functions as the diagram's: diagram-editing.mjs)
 
+import { NO_ERROR } from "../../../core/model/control-values.mjs";
 import * as Et from "../common/labels.mjs";
 import { BOOLEANOS, dibujoBooleano, estadoError } from "../common/glyphs.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
@@ -100,7 +101,7 @@ export const ERRORES = {
 };
 export const MEDIDAS_ERROR = { ancho: 155, alto: 121 };
 /** El valor de un cluster de error que no se ha tocado. */
-export const ERROR_VACIO = Object.freeze({ status: false, code: 0, source: "" });
+export const ERROR_VACIO = NO_ERROR;
 /** La clase de error de un control del panel, o nada si no lo es. */
 export const claseError = (tipo, config) => (tipo === "cluster-control" || tipo === "cluster-indicator" ? ERRORES[config?.style] : undefined);
 /** El valor de un control de error: el que le dejó el último Run, si es un indicador, o el suyo. */

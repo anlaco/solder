@@ -211,6 +211,12 @@ error code to clear* and the behavior with a warning at the input.
 - With no error (F,0,"") **no dialog appears**; `error?` = FALSE, `code out` = 0,
   `source out` = "", `error out` = (F,0,""), `message` = "**No Error**"
   (`104-simple-error-handler-sin-error.png`).
+- With a **defined** code (85, from `Scan From String` in Instrument Protocol, or a constant
+  (T,85,"prueba")) the dialog is different (2026-10-15, `labview-captures/errores/seh-85/`): no title,
+  the red ✘ icon, "**Error 85 occurred at …**" in bold with the whole source (the call chain wraps
+  onto a second line), "**Possible reason(s):**" in bold, the reason, no separators, the link
+  "Search ni.com for error" at the bottom left and a single button, **Continue** (default). Continue,
+  the window's X, Enter and Esc all close it and the VI goes on; `error out` keeps the error.
 - **Unverified**: the other values of `type of dialog` (default 1 =
   "OK msg"), General Error Handler (only its terminals were checked) and
   Find First Error.

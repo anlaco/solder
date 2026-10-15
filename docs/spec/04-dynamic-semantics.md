@@ -497,11 +497,11 @@ Measured in LabVIEW 2026 Q3 by running each case (`labview-captures/format-scan/
 > ` in ` and the VIs it ran in, the VI of the function first and each caller after it, joined by `->`:
 > `Scan From String (arg 1) in Parse Reply.vi->Instrument Protocol.vi` in LabVIEW. The chain is the one
 > of that call: a non-reentrant subVI called from two places names the caller of each call. Solder names
-> a VI by its file name, so the same error reads `… in Parse Reply.qvi->Instrument Protocol.qvi`; a VI
+> a VI by its file name, so the same error reads `… in Parse Reply.sdg->Instrument Protocol.sdg`; a VI
 > never saved is `Untitled N`. *(Measured in LabVIEW 2026 Q3 on 2026-10-10, Instrument Protocol with the
 > command `FOO`, `examples/README.md`; tests "the source of an error raised …" in
 > `test/core/subvis.test.mjs`. Done for Format Into String and Scan From String. Unverified: the form for an
-> error raised in the top-level VI, which Solder writes `… in Top.qvi`, and the other functions that raise
+> error raised in the top-level VI, which Solder writes `… in Top.sdg`, and the other functions that raise
 > errors.)*
 
 ## 7. Blocking operations

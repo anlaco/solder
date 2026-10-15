@@ -439,8 +439,10 @@ function explicacionFlotante(inv, abierta) {
  *   the red ✘ icon, the first line in bold, "Possible reason(s):" in bold, the text, the
  *   source detail, "Search ni.com for error" (greyed out: not yet) and the buttons Continue, the
  *   default one, and Stop.
- * - `dialogo-error` (Simple Error Handler, 102b-dialogo-x2.png): no icon and no bold, with the text
- *   run together and the OK button; for an undefined code, "Why not found?" (greyed out: not yet).
+ * - `dialogo-error` (Simple Error Handler): for a defined code it looks like the automatic one but has
+ *   only Continue (labview-captures/reports/2026-10-15-seh-85.md); for an undefined code there is no
+ *   icon and no bold, the text runs together, and the buttons are OK and "Why not found?" (greyed
+ *   out: not yet; 102b-dialogo-x2.png).
  * The text is written by core/runtime/error-codes.mjs.
  */
 export function dialogoError(d) {
@@ -451,9 +453,13 @@ export function dialogoError(d) {
   const barra = `<div class="dialogo-barra"><span class="dialogo-icono-app">${G.ICONO_APP}</span><span class="dialogo-cerrar" aria-hidden="true">✕</span></div>`;
   let cuerpo;
   let pie;
-  if (d.pregunta === "error-automatico") {
+  const automatic = d.pregunta === "error-automatico";
+  if (automatic || definido) {
     cuerpo = `<div class="dialogo-cabecera"><span class="dialogo-icono-error">${G.ICONO_ERROR}</span><strong>${esc(t.cabecera)}</strong></div><div class="dialogo-texto">${t.titulo ? `<p><strong>${esc(t.titulo)}</strong></p>` : ""}${razones}${detalle}</div>`;
-    pie = `<span class="dialogo-enlace hueco">Search ni.com for error</span><span class="dialogo-botones"><button class="boton-dialogo defecto" data-boton="continuar" autofocus>Continue</button><button class="boton-dialogo" data-boton="parar">Stop</button></span>`;
+    // Continue answers the automatic dialog's question; for Simple Error Handler it is its OK.
+    const continueButton = `<button class="boton-dialogo defecto" data-boton="${automatic ? "continuar" : "ok"}" autofocus>Continue</button>`;
+    const stopButton = automatic ? `<button class="boton-dialogo" data-boton="parar">Stop</button>` : "";
+    pie = `<span class="dialogo-enlace hueco">Search ni.com for error</span><span class="dialogo-botones">${continueButton}${stopButton}</span>`;
   } else {
     cuerpo = `<div class="dialogo-texto"><p>${esc(t.cabecera)}</p>${razones}${detalle}</div>`;
     pie = `<span class="dialogo-botones centrado"><button class="boton-dialogo defecto" data-boton="ok" autofocus>OK</button>${definido ? "" : `<button class="boton-dialogo hueco" disabled>Why not found?</button>`}</span>`;

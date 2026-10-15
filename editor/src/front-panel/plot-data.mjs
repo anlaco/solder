@@ -120,11 +120,19 @@ function niceStep(rough) {
 }
 
 /**
+ * A chart of a constant 5 autoscaled to 4.4..5.6 in LabVIEW (examples/README.md,
+ * Instrument Protocol): 5 ± 10 % is 4.5..5.5, which Loose Fit rounds out to whole
+ * steps of 0.2. Unverified for other values, and for a constant 0, which keeps the fallback.
+ */
+const FLAT_RANGE_MARGIN = 0.1;
+
+/**
  * The autoscaled range of `values`: with Loose Fit the ends move out to whole
  * steps (0..127 → 0..140, step 20; −1..1 → −1..1, step 0.5); without it the
- * range is the data's own (XY Graph: −1..1, step 0.2). With no data, or all the
- * same value, `fallback` is kept. The exact algorithm of LabVIEW is unverified;
- * these cases are the measured ones.
+ * range is the data's own (XY Graph: −1..1, step 0.2). With no data `fallback`
+ * is kept; when every value is the same the range is widened by a tenth of it
+ * each way (see `FLAT_RANGE_MARGIN`). The exact algorithm of LabVIEW is
+ * unverified; these cases are the measured ones.
  *
  * Given `axis` ({ length, minSpacing }: the axis in pixels and the least
  * distance between two labels) the step is the smallest of the 1-2-5 series
@@ -135,8 +143,11 @@ function niceStep(rough) {
 export function autoscale(values, looseFit, fallback, axis) {
   const finite = values.filter(Number.isFinite);
   if (!finite.length) return fallback;
-  const [low, high] = [Math.min(...finite), Math.max(...finite)];
-  if (low === high) return fallback;
+  let [low, high] = [Math.min(...finite), Math.max(...finite)];
+  if (low === high) {
+    if (low === 0) return fallback;
+    [low, high] = [low - Math.abs(low) * FLAT_RANGE_MARGIN, high + Math.abs(high) * FLAT_RANGE_MARGIN];
+  }
   const step = axis ? stepKeepingLabelsApart(low, high, looseFit, axis) : niceStep((high - low) / (looseFit ? LOOSE_DIVISIONS : TIGHT_DIVISIONS));
   if (!looseFit) return { min: low, max: high, step };
   return { min: Math.floor(low / step + 1e-9) * step, max: Math.ceil(high / step - 1e-9) * step, step };

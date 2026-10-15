@@ -58,3 +58,19 @@ test("autoscale keeps the labels apart on an axis of known length, as in every m
   assert.deepEqual(autoscale([-1, 1], false, fallback, y(248)), { min: -1, max: 1, step: 0.2 }, "89: Y of the XY Graph");
   assert.deepEqual(autoscale([-1, 1], false, fallback, x(248)), { min: -1, max: 1, step: 0.5 }, "89: X of the XY Graph, whose labels are wider");
 });
+
+test("a chart of one constant value autoscales around it, as LabVIEW's 4.4..5.6 for a constant 5", () => {
+  const fallback = { min: -10, max: 10, step: 5 };
+  const y = (length) => ({ length, minSpacing: AXIS_MIN_SPACING.y });
+  const scale = autoscale([5, 5, 5], true, fallback, y(166));
+  assert.deepEqual([scale.min.toFixed(1), scale.max.toFixed(1), scale.step], ["4.4", "5.6", 0.2]);
+  assert.deepEqual(autoscale([0, 0], true, fallback, y(166)), fallback, "a constant 0 is unverified and keeps the fallback");
+});
+
+test("the examples' charts autoscale as LabVIEW showed them", () => {
+  const fallback = { min: -10, max: 10, step: 5 };
+  const y = (length) => ({ length, minSpacing: AXIS_MIN_SPACING.y });
+  const temperatures = Array.from({ length: 100 }, (_, i) => 20 + 5 * Math.sin(i / 10));
+  assert.deepEqual(autoscale(temperatures, true, fallback, y(166)), { min: 14, max: 26, step: 2 }, "Temperature Monitor");
+  assert.deepEqual(autoscale([20, 60.5, 24.5], true, fallback, y(166)), { min: 20, max: 70, step: 10 }, "Oven Controller");
+});

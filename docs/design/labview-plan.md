@@ -42,7 +42,7 @@ LabVIEW** (DT-040): independent branches run at the same time, each indicator is
 painted when its data arrives, Abort stops at once and the panel switches to Run
 mode. Since 2026-10-01 also **with loops**: While and For are placed, stretched
 and wired in the diagram, and the compiler runs them (DT-041).
-646 tests green. **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read. **VIs are saved as `.sdg`** (DT-051, 2026-10-15): every Solder extension starts with `sd` (`.sdt` reserved for a future textual language, `.sdproj`, `.sdlib`), and an old `.qvi` still opens. **New VI, Close and Close All** (spec/05 rules 101–103, 2026-10-15) work as measured, and Solder **starts on LabVIEW's Getting Started window** (DT-052), which comes back when the last VI closes.
+655 tests green. **The three examples give the same values as in LabVIEW** (2026-10-15). **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read. **VIs are saved as `.sdg`** (DT-051, 2026-10-15): every Solder extension starts with `sd` (`.sdt` reserved for a future textual language, `.sdproj`, `.sdlib`), and an old `.qvi` still opens. **New VI, Close and Close All** (spec/05 rules 101–103, 2026-10-15) work as measured, and Solder **starts on LabVIEW's Getting Started window** (DT-052), which comes back when the last VI closes.
 
 | Piece | Status |
 |-------|--------|
@@ -186,14 +186,18 @@ of maintenance with fixes only (`0.N.x-beta`).
 was reviewed the same day and closed on 2026-10-14: what a key or a click means for a dialog is decided
 in its own module (`editor/src/window/modal-dialog.mjs`, which also took over the Chart History dialog)
 and the shell only applies it, with `test/editor/modal-dialogs.test.mjs` crossing that seam. The
-dialog's Delete follows the rule measured on 2026-10-15: by the name, not the row count. Still needed by the examples:
-   the comparison tests (4).*
+dialog's Delete follows the rule measured on 2026-10-15: by the name, not the row count. Nothing more is needed by the examples.*
    *New VI, Close and Close All (#1) done on 2026-10-15 (spec/05 rules 101–103, DT-052): measured in LabVIEW
    ([`2026-10-15-file-close.md`](../../labview-captures/reports/2026-10-15-file-close.md)); Close on the Block Diagram
    only hides it, Close All asks once about the VI created last with "Apply same action…", and the Untitled number never
    goes back. Closing the last VI shows the **Getting Started window**, cloned 1:1 with texts of its own
    ([`2026-10-15-getting-started.md`](../../labview-captures/reports/2026-10-15-getting-started.md)), on which Solder now
    starts; checked in the running editor (`labview-captures/solder-close-check/`).*
+   *(4) done on 2026-10-15: the three examples rebuilt in the editor without workarounds and
+   `test/end-to-end/examples.test.mjs` checking every value against LabVIEW's; the rebuild found three
+   differences, fixed the same day (the chart of a constant, Simple Error Handler's dialog for a defined code,
+   the command line on strings), and 23 editor findings to fix next (16 faults, 7 to measure first), in the order of §3 of
+   [`real-programs-0.3.md`](real-programs-0.3.md).*
    *Unbundle By Name (#23) done on 2026-10-15 (DT-050, spec/04 Rule 21l, spec/05 Rule 78b): Functions ▸ Programming ▸
    Cluster, Class, & Variant captured and declared (only the cluster side planned; classes and Variant greyed), Unbundle By
    Name built — the rows store the element names and take their types from the wire, grow by the bottom handle, change by

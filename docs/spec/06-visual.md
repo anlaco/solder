@@ -375,7 +375,9 @@ bitmaps (DT-035 §8). Implemented in `editor/src/front-panel/graph-view.mjs` and
   (Y of the XY Graph every 0,2 at 24,8 px and of the graph every 0,5 because 0,2 would be 16,6 px; X of the graph every 20 at 33 px
   and of the XY Graph every 0,5 because 0,2 would be 24,8 px: 80, 87, 89) and are bounded by them, not measured. LabVIEW's own rule
   is unverified. The XY Graph's Loose Fit is checked in its menu (45), as the graph's; the report's "tight" is the effect of the taller plot.
-  With no data or one value the scale keeps its defaults. The chart autoscales Y over the points it shows (unverified).
+  With no data the scale keeps its defaults; with every point the same value v ≠ 0 the range is v ± 10 % before Loose
+  Fit, so a chart of a constant 5 shows 4.4..5.6 in steps of 0.2, as LabVIEW did in Instrument Protocol (`examples/README.md`;
+  the rule is inferred from that one case, unverified for other values; a constant 0 keeps the defaults, unverified). The chart autoscales Y over the points it shows (unverified).
 
 ### 8.4 Plots
 

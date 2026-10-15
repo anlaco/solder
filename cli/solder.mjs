@@ -16,11 +16,21 @@ import { ejecutar } from "../core/runtime/runtime.mjs";
 import { cargarCatalogo } from "../core/model/graph.mjs";
 import { loadHierarchy } from "../core/model/hierarchy.mjs";
 import { leer } from "../core/model/qvi-format.mjs";
+import { startValue } from "../core/model/control-values.mjs";
 import { formatear } from "../core/model/types.mjs";
 import { wat } from "../core/compiler/wasm-encoder.mjs";
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const cat = cargarCatalogo(JSON.parse(readFileSync(path.join(AQUI, "../docs/schema/blocks.json"), "utf8")));
+
+/** An indicator's value as the panel would show it. */
+function shownValue(value, type) {
+  if (typeof value === "boolean") return value ? "TRUE" : "FALSE";
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) return `[${value.map((element) => shownValue(element, type?.array)).join(", ")}]`;
+  if (value && typeof value === "object") return `{ ${Object.entries(value).map(([field, element]) => `${field}: ${shownValue(element)}`).join(", ")} }`;
+  return formatear(value, type);
+}
 
 const [orden, fichero] = process.argv.slice(2);
 if (!["run", "wat", "check"].includes(orden) || !fichero) {
@@ -54,11 +64,11 @@ if (orden === "check") {
   process.stdout.write(wat(c.modulo));
 } else {
   const porId = new Map(g.nodos.map((n) => [n.id, n]));
-  const valores = Object.fromEntries(c.controles.map((k) => [k.nodo, porId.get(k.nodo).config?.value ?? 0]));
+  const valores = Object.fromEntries(c.controles.map((k) => [k.nodo, startValue(porId.get(k.nodo))]));
   const escritos = await ejecutar(c, valores);
   for (const i of c.indicadores) {
     const n = porId.get(i.nodo);
     const v = escritos[i.nodo];
-    console.log(`${n.label?.text ?? n.name} = ${typeof v === "boolean" ? (v ? "TRUE" : "FALSE") : formatear(v, i.tipo)}`);
+    console.log(`${n.label?.text ?? n.name} = ${shownValue(v, i.tipo)}`);
   }
 }

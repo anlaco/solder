@@ -45,14 +45,6 @@
         "config": {
           "expression": "20+5*sin(x/10)"
         }
-      },
-      {
-        "name": "add_1",
-        "type": "add"
-      },
-      {
-        "name": "random-number_1",
-        "type": "random-number"
       }
     ],
     "wires": [
@@ -62,14 +54,6 @@
       },
       {
         "from": "expression-node_1.result",
-        "to": "add_1.a"
-      },
-      {
-        "from": "random-number_1.result",
-        "to": "add_1.b"
-      },
-      {
-        "from": "add_1.result",
         "to": "indicator_1.value"
       }
     ]
@@ -77,42 +61,34 @@
   "layout": {
     "diagram": {
       "control_1": {
-        "x": 81,
+        "x": 161,
         "y": 91,
         "label": {
           "text": "Sample"
         }
       },
       "indicator_1": {
-        "x": 593,
+        "x": 373,
         "y": 91,
         "label": {
           "text": "Temperature"
         }
       },
       "expression-node_1": {
-        "x": 256,
+        "x": 241,
         "y": 106
-      },
-      "add_1": {
-        "x": 466,
-        "y": 119
-      },
-      "random-number_1": {
-        "x": 386,
-        "y": 189
       }
     },
     "panel": {
       "control_1": {
-        "x": 81,
+        "x": 161,
         "y": 91,
         "label": {
           "text": "Sample"
         }
       },
       "indicator_1": {
-        "x": 293,
+        "x": 373,
         "y": 91,
         "label": {
           "text": "Temperature"
@@ -122,22 +98,12 @@
     "wires": {
       "expression-node_1.x": {
         "bends": [
-          252
-        ]
-      },
-      "add_1.a": {
-        "bends": [
-          462
-        ]
-      },
-      "add_1.b": {
-        "bends": [
-          462
+          237
         ]
       },
       "indicator_1.value": {
         "bends": [
-          589
+          369
         ]
       }
     }
