@@ -72,7 +72,7 @@ export const FUNCIONES = {
 };
 
 /** Las de la ayuda que aún no se pueden usar, con el motivo. */
-const PENDIENTES = { sizeOfDim: "espera a los arrays" };
+const PENDIENTES = { sizeOfDim: "waits for arrays" };
 
 const CONSTANTES = { pi: Math.PI };
 
@@ -154,13 +154,13 @@ export function analizar(texto) {
   }
   function atomo() {
     const t = toks[i++];
-    if (!t) error("la expresión termina antes de tiempo");
+    if (!t) error("the expression ends too early");
     if (t.t === "num") return { n: t.v };
     if (t.t === "id") {
       if (op("(")) {
-        if (Object.hasOwn(PENDIENTES, t.v)) error(`la función «${t.v}» ${PENDIENTES[t.v]}`);
+        if (Object.hasOwn(PENDIENTES, t.v)) error(`the function "${t.v}" ${PENDIENTES[t.v]}`);
         const f = Object.hasOwn(FUNCIONES, t.v) && FUNCIONES[t.v];
-        if (!f) error(`la función «${t.v}» no existe`);
+        if (!f) error(`the function "${t.v}" does not exist`);
         i++;
         const args = [];
         if (!op(")")) {
@@ -170,29 +170,29 @@ export function analizar(texto) {
             args.push(oExclusivo());
           }
         }
-        if (!op(")")) error("falta un paréntesis de cierre");
+        if (!op(")")) error("a closing parenthesis is missing");
         i++;
-        if (args.length !== f.args) error(`«${t.v}» lleva ${f.args} argumento${f.args === 1 ? "" : "s"}`);
+        if (args.length !== f.args) error(`"${t.v}" takes ${f.args} argument${f.args === 1 ? "" : "s"}`);
         return { fn: t.v, args };
       }
       if (Object.hasOwn(CONSTANTES, t.v)) return { n: CONSTANTES[t.v] };
-      if (variable !== null && variable !== t.v) error(`sólo cabe una variable: «${variable}» y «${t.v}»`);
+      if (variable !== null && variable !== t.v) error(`only one variable is allowed: "${variable}" and "${t.v}"`);
       variable = t.v;
       return { var: t.v };
     }
     if (t.v === "(") {
       const a = oExclusivo();
-      if (!op(")")) error("falta un paréntesis de cierre");
+      if (!op(")")) error("a closing parenthesis is missing");
       i++;
       return a;
     }
-    return error(`no se esperaba «${t.v}»`);
+    return error(`unexpected "${t.v}"`);
   }
 
   try {
-    if (!texto.trim()) return { error: "la expresión está vacía" };
+    if (!texto.trim()) return { error: "the expression is empty" };
     const ast = oExclusivo();
-    if (i < toks.length) error(`no se esperaba «${toks[i].v ?? toks[i].t}»`);
+    if (i < toks.length) error(`unexpected "${toks[i].v ?? toks[i].t}"`);
     return { ast, variable, xor };
   } catch (e) {
     return { error: e.message };

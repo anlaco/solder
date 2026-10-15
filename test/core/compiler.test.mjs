@@ -139,7 +139,7 @@ test("compound arithmetic suma todas sus entradas con las invertidas negadas", a
 
 test("lo que no se puede compilar se explica", () => {
   const roto = vi([["f", "add"], ["r", "indicator"]], [["f.result", "r.value"]]);
-  assert.match(compilar(roto.g, CAT).errores[0].motivo, /le falta un cable en su entrada «x»/);
+  assert.match(compilar(roto.g, CAT).errores[0].motivo, /is missing a wire on its input "x"/);
   const dosD = vi([["a", "arr-const", { type: { array: { array: "number" } } }], ["s", "array-size"], ["r", "indicator"]], [["a.result", "s.array"], ["s.size", "r.value"]]);
   assert.ok(compilar(dosD.g, CAT).errores, "los arrays de 2 dimensiones, todavía no (M6)");
 });
@@ -343,7 +343,7 @@ test("un expression node calcula su fórmula", async () => {
   assert.match(compilar(xor.g, CAT).errores[0].motivo, /Integer type required/);
   // Una expresión que no vale es un error de compilación, con su motivo.
   const malo = vi([["k", "const", { value: 1 }], ["f", "expression-node", { expression: "x+y" }]], [["k.result", "f.x"]]);
-  assert.match(compilar(malo.g, CAT).errores[0].motivo, /sólo cabe una variable/);
+  assert.match(compilar(malo.g, CAT).errores[0].motivo, /only one variable is allowed/);
 });
 
 // bool-control lee un booleano del panel y bool-indicator lo escribe, por las

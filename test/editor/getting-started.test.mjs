@@ -99,7 +99,7 @@ test("Getting Started greyed items explain themselves through the inventory", ()
   }
   // Clicking one opens the explanation, as in the VI windows.
   const clicked = E.clic(start(), INV, `${PREFIX}.create-project`, { x: 60, y: 160 });
-  assert.match(draw(clicked), /class="explicacion" data-explicacion="window\.getting-started\.create-project"[\s\S]*En Solder: falta/);
+  assert.match(draw(clicked), /class="explicacion" data-explicacion="window\.getting-started\.create-project"[\s\S]*In Solder: Missing/);
 });
 
 test("File menu rows run the commands of the window", () => {

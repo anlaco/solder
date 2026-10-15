@@ -106,10 +106,10 @@ export function conversion(desde, hacia) {
   return null;
 }
 
-/** Cómo se nombra un tipo al explicar un cable roto: «DBL», «array de I32», «2D array de DBL». */
+/** How a type is named when explaining a broken wire: "DBL", "array of I32", "2D array of DBL". */
 export function nombre(t) {
   if (esEnum(t)) return "enum";
-  if (esArray(t)) return `${dimensionsOf(t) > 1 ? `${dimensionsOf(t)}D ` : ""}array de ${nombre(t.array)}`;
+  if (esArray(t)) return `${dimensionsOf(t) > 1 ? `${dimensionsOf(t)}D ` : ""}array of ${nombre(t.array)}`;
   if (typeof t === "string") return NUMERICOS[t]?.abrev ?? t;
   if (t && typeof t === "object" && "cluster" in t) return "cluster";
   return String(t);

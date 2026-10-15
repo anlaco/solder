@@ -259,7 +259,7 @@ test("un cable no cruza el borde de una estructura: conectar cruzando pone los t
   });
   const de = { nodo: v.id.k, puerto: "result", dir: "out" };
   const a = { nodo: v.id.dentro, puerto: "x", dir: "in" };
-  assert.match(Gr.conectar(v.g, CAT, de, a).motivo, /túnel/);
+  assert.match(Gr.conectar(v.g, CAT, de, a).motivo, /tunnel/);
   const r = Gr.conectarCruzando(v.g, CAT, de, a);
   assert.equal(r.ids.length, 3, "fuera → túnel de w → túnel de w2 → dentro");
   const tuneles = r.g.nodos.filter((n) => n.tipo === "tunnel-in");
@@ -607,7 +607,7 @@ test("un marco de una secuencia no pasa datos a uno anterior", () => {
     b.nodo("b", "increment", null, "s", 0);
   });
   const r = Gr.conectar(v.g, CAT, { nodo: v.id.a, puerto: "result", dir: "out" }, { nodo: v.id.b, puerto: "x", dir: "in" });
-  assert.match(r.motivo, /después/);
+  assert.match(r.motivo, /frames after it/);
 });
 
 test("una secuencia se guarda con sus marcos y se abre igual", async () => {
@@ -693,7 +693,7 @@ test("the empty string has its own frame", async () => {
 test("a string case without Default, with a duplicate value or with a frame without value is broken", () => {
   const motivos = (frames) => compilar(stringCase(frames).g, CAT).errores?.map((e) => e.motivo).join() ?? "";
   assert.match(motivos([{ valores: ["abc"] }, { valores: ["x"] }]), /Default/);
-  assert.match(motivos([{ valores: ["zzz"] }, { valores: ["zzz"] }, { default: true }]), /dos marcos/);
+  assert.match(motivos([{ valores: ["zzz"] }, { valores: ["zzz"] }, { default: true }]), /two frames/);
   assert.match(motivos([{ valores: ["abc"] }, {}, { default: true }]), /no selector value/);
 });
 

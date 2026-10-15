@@ -30,7 +30,7 @@ export function loadHierarchy(rootKey, baseCatalog, { resolvePath, loadVI }) {
   const load = (key, callerKey) => {
     if (vis.has(key)) return vis.get(key);
     if (loading.has(key)) {
-      fail(callerKey, `«${key}» calls itself through its callers: recursion needs shared-clone reentrancy, which is not supported yet (DT-045).`);
+      fail(callerKey, `"${key}" calls itself through its callers: recursion needs shared-clone reentrancy, which is not supported yet (DT-045).`);
       return null;
     }
     loading.add(key);
@@ -38,7 +38,7 @@ export function loadHierarchy(rootKey, baseCatalog, { resolvePath, loadVI }) {
     const g = loadVI(key, cat);
     if (!g) {
       loading.delete(key);
-      fail(callerKey ?? key, `The VI «${key}» cannot be found.`);
+      fail(callerKey ?? key, `The VI "${key}" cannot be found.`);
       return null;
     }
     // Subvi nodes whose ports nobody asked for while reading (no wires) are loaded too.

@@ -85,7 +85,7 @@ test("Controls Modern Graph opens the 4 x 4 grid with the three graphs built and
   }
   for (const hole of ["express-xy-graph", "intensity-chart", "mixed-signal-graph", "feather-plot", "3d-picture", "3d-graph"]) {
     assert.match(html, new RegExp(`class="icono-funcion hueco" data-id="${id}\\.${hole}"`), `${hole} is a hole`);
-    assert.match(INV.explicacion(INV.entrada(`${id}.${hole}`)).solder, /falta|Aún|aún/, `${hole} says what it needs`);
+    assert.match(INV.explicacion(INV.entrada(`${id}.${hole}`)).solder, /Missing/, `${hole} says what it needs`);
   }
   assert.match(html, new RegExp(`class="carpeta[^"]*" data-id="${id}\\.controls"`), "Controls is a folder");
   assert.equal(clic(abierta, INV, `${id}.waveform-chart`, AQUI, 1).abierta, null, "a built one is not explained: it is picked");

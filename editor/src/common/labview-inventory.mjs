@@ -1,23 +1,23 @@
-// El inventario de LabVIEW (DT-035): lo que muestra la interfaz de la
-// referencia y la situación de Solder respecto a cada cosa.
+// The LabVIEW inventory (DT-035): what the reference's interface shows and
+// where Solder stands on each thing.
 //
-// El editor toma de aquí el veredicto de cada elemento y no lo decide en su
-// propio código (spec/05-editor.md, regla 55). Módulo puro: sin DOM, para que
-// lo usen igual la ventana y los tests.
+// The editor takes each element's verdict from here instead of deciding it in
+// its own code (spec/05-editor.md, rule 55). A pure module, with no DOM, so the
+// window and the tests use it alike.
 
 export const VEREDICTOS = ["built", "todo", "elsewhere", "never"];
 
-const NOMBRES = { built: "hecho", todo: "todavía no", elsewhere: "de otra forma", never: "no se hará" };
+const VERDICT_NAMES = { built: "done", todo: "not yet", elsewhere: "done another way", never: "will not be done" };
 
-/** Todo lo que no es `built` es un hueco: se muestra, pero no actúa. */
+/** Everything that is not `built` is a hole: it is shown, but does nothing. */
 export const esHueco = (entrada) => entrada.estado !== "built";
 
-export const nombreVeredicto = (estado) => NOMBRES[estado];
+export const nombreVeredicto = (estado) => VERDICT_NAMES[estado];
 
 export const ultimo = (id) => id.slice(id.lastIndexOf(".") + 1);
 
-/** «Compilar un VI» → «compilar un VI», para encadenarlo tras «falta». */
-const minuscula = (t) => (t ? t[0].toLowerCase() + t.slice(1) : t);
+/** "Reading a VI" → "reading a VI", to follow "Missing:". */
+const lowerFirst = (text) => (text ? text[0].toLowerCase() + text.slice(1) : text);
 
 export function cargarInventario(datos) {
   const porId = new Map(datos.entradas.map((e) => [e.id, e]));
@@ -49,19 +49,19 @@ export function cargarInventario(datos) {
   /** Un contenedor se abre sólo si su contenido está declarado (regla 53b). */
   const tieneContenido = (id) => hijos(id).length > 0;
 
-  /** Lo que la explicación de un hueco debe decir (regla 54). */
+  /** What the explanation of a hole must say (rule 54). */
   function explicacion(e) {
     let solder;
     if (e.estado === "todo") {
-      const d = datos.desbloqueos[e.necesita];
-      solder = !d
-        ? `falta ${e.necesita}.`
-        : d.ref
-          ? `falta ${minuscula(d.desc)}. Dónde: ${d.ref}.`
-          : `falta ${minuscula(d.desc)}. Aún no está especificado.`;
+      const unlock = datos.desbloqueos[e.necesita];
+      solder = !unlock
+        ? `Missing: ${e.necesita}.`
+        : unlock.ref
+          ? `Missing: ${lowerFirst(unlock.desc)}. Where: ${unlock.ref}.`
+          : `Missing: ${lowerFirst(unlock.desc)}. Not specified yet.`;
     } else if (e.estado === "elsewhere") solder = e.solder ?? "";
     else if (e.estado === "never") solder = e.porque ?? "";
-    else solder = "Hecho.";
+    else solder = "Done.";
     return { labview: e.labview ?? null, solder };
   }
 

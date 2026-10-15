@@ -37,7 +37,7 @@ test("el cable lleva el color de su tipo y el grosor de su dimensión", () => {
   assert.deepEqual(aspecto({ array: "i32" }), { color: COLORES.entero, dimension: 1 });
   assert.equal(aspecto({ array: "number", dims: 2 }).dimension, 2);
   assert.equal(nombre("number"), "DBL");
-  assert.equal(nombre({ array: "u16" }), "array de U16");
+  assert.equal(nombre({ array: "u16" }), "array of U16");
 });
 
 // Measured at 1:1 on wires and on Unbundle By Name's names (reports/2026-10-15-unbundle-by-name.md Q1, Q7).
@@ -100,7 +100,7 @@ test("an array has an element type and a number of dimensions", () => {
   assert.equal(iguales({ array: "number" }, { array: "number", dims: 2 }), false);
   assert.equal(conversion({ array: "i32", dims: 2 }, { array: "number", dims: 2 }), "coercion");
   assert.equal(conversion({ array: "number" }, { array: "number", dims: 2 }), null, "dimensions never convert");
-  assert.equal(nombre({ array: "number", dims: 2 }), "2D array de DBL");
+  assert.equal(nombre({ array: "number", dims: 2 }), "2D array of DBL");
 });
 
 test("a nested array value flattens in row order and nests back", () => {

@@ -43,7 +43,7 @@ test("shared clone reentrancy cannot be chosen and its option is declared as not
   const shared = INV.entrada("dialog.vi-properties.execution.shared-clone-reentrant-execution");
   assert.equal(shared.estado, "todo");
   assert.equal(shared.necesita, "clones-compartidos");
-  assert.match(INV.explicacion(shared).solder, /clones compartidos/i);
+  assert.match(INV.explicacion(shared).solder, /shared clones/i);
   // A click on it explains why instead of choosing it (rule 53).
   const state = E.clic(E.inicial(), INV, shared.id, { x: 10, y: 10 });
   assert.equal(state.abierta.id, shared.id);

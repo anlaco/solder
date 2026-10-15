@@ -383,8 +383,8 @@ function mantisaYExponente(e) {
  */
 function expresion(e) {
   const r = analizar(e.nodo.config?.expression ?? "x");
-  if (r.error) throw new Error(`la expresión «${e.nodo.config?.expression}» no vale: ${r.error}`);
-  if (r.xor && !esEntero(e.tIn(0))) throw new Error("el o exclusivo «^» necesita un entero (Integer type required); la potencia es «**»");
+  if (r.error) throw new Error(`the expression "${e.nodo.config?.expression}" is not valid: ${r.error}`);
+  if (r.xor && !esEntero(e.tIn(0))) throw new Error("exclusive or \"^\" needs an integer (Integer type required); the power is \"**\"");
   const x = e.temporal("f64");
   const aEntero = [ins("f64.nearest"), ins("i64.trunc_sat_f64_s")];
   const emitirAst = (a) => {
@@ -717,7 +717,7 @@ const BLOQUES = {
   "build-array": (e) => {
     // Un elemento se añade; un array se concatena; arrays que se apilan dan una dimensión más (DT-044).
     if (dimensionsOf(e.tOut(0)) === 2) return buildArray2d(e);
-    if (dimensionsOf(e.tOut(0)) > 2) throw new Error("Build Array que da un array de más de 2 dimensiones: todavía no (DT-044).");
+    if (dimensionsOf(e.tOut(0)) > 2) throw new Error("Build Array giving an array of more than 2 dimensions: not yet (DT-044).");
     const t = e.tOut(0).array;
     const el = elemento(t);
     const n = e.cat.puertos(e.nodo).in.length;
@@ -833,7 +833,7 @@ const BLOQUES = {
   },
   "search-1d-array": (e) => {
     const t = e.tIn(1);
-    if (esCluster(t) || esArray(t)) throw new Error("Search 1D Array con clusters, todavía no (M6).");
+    if (esCluster(t) || esArray(t)) throw new Error("Search 1D Array on clusters: not yet (M6).");
     const el = elemento(t);
     const [h, n, o, i, r] = Array.from({ length: 5 }, () => e.temporal("i32"));
     const v = e.temporal(tipoWasm(t));
@@ -1053,7 +1053,7 @@ function instruccionComparar(t, op) {
 }
 
 function comparar(e, op) {
-  if (esCluster(e.tIn(0)) || esCluster(e.tIn(1))) throw new Error("Comparar clusters todavía no se sabe compilar (M6).");
+  if (esCluster(e.tIn(0)) || esCluster(e.tIn(1))) throw new Error("Comparing clusters cannot be compiled yet (M6).");
   // Las cadenas se comparan byte a byte, en el anfitrión: -1, 0 o 1.
   if (e.tIn(0) === "string") return [...e.entrada(0), ...e.entrada(1), ins("call", idImport("cmp")), k32(0), ins(`i32.${op}${op === "eq" || op === "ne" ? "" : "_s"}`)];
   return [...e.entrada(0), ...e.entrada(1), instruccionComparar(e.tIn(0), op)];
@@ -1182,7 +1182,7 @@ function buildArray2d(e) {
 /** Initialize Array with two dimensions: rows × columns copies of the element; a negative size counts as 0. */
 function initializeArrayNd(e) {
   const t = e.tOut(0);
-  if (dimensionsOf(t) > MAX_COMPILED_DIMENSIONS) throw new Error("Initialize Array de más de 2 dimensiones: todavía no (DT-044).");
+  if (dimensionsOf(t) > MAX_COMPILED_DIMENSIONS) throw new Error("Initialize Array of more than 2 dimensions: not yet (DT-044).");
   const element = elemento(t.array);
   const g = (local) => ins("local.get", local);
   const [value, rows, columns, target, count, k] = [e.temporal(tipoWasm(t.array)), e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.temporal("i32")];
@@ -1229,7 +1229,7 @@ function juntarFilas(t, rowsCell, cell, temporal) {
   const g = (local) => ins("local.get", local);
   const [rows, columns, rowCells, row, rowHandle, length, target, source] = Array.from({ length: 8 }, () => temporal("i32"));
   const defaultSource = element.ref && t.array === "string" ? NULL_HANDLE : null;
-  if (element.ref && defaultSource === null) throw new Error("Un bucle que junta filas de clusters en un array 2D: todavía no (DT-044).");
+  if (element.ref && defaultSource === null) throw new Error("A loop that gathers rows of clusters into a 2D array: not yet (DT-044).");
   const eachRow = (body) => [
     ins("i32.const", 0), ins("local.set", row), ins("block"), ins("loop"), g(row), g(rows), ins("i32.ge_s"), ins("br_if", 1),
     g(rowCells), g(row), ins("i32.const", 4), ins("i32.mul"), ins("i32.add"), ins("local.set", rowHandle),
@@ -1829,7 +1829,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     for (const n of g.nodos) {
       if (cat.bloque(n.tipo).panel) continue;
       for (const p of cat.puertos(n).in) {
-        if (requerido(g, n, p) && !llegan.has(`${n.id}.${p.name}`)) errores.push({ nodo: n.id, motivo: `A «${n.label?.text ?? n.name}» le falta un cable en su entrada «${p.label ?? p.name}».` });
+        if (requerido(g, n, p) && !llegan.has(`${n.id}.${p.name}`)) errores.push({ nodo: n.id, motivo: `"${n.label?.text ?? n.name}" is missing a wire on its input "${p.label ?? p.name}".` });
       }
     }
     return { errores };
@@ -1838,7 +1838,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
   const calls = new Map(); // subvi node id → compiled instance
   for (const n of g.nodos.filter((x) => x.tipo === "subvi")) {
     const callee = cat.findSubVI?.(n.config?.vi);
-    if (!callee) return { errores: [{ nodo: n.id, motivo: `The subVI «${n.config?.vi}» is not loaded.` }] };
+    if (!callee) return { errores: [{ nodo: n.id, motivo: `The subVI "${n.config?.vi}" is not loaded.` }] };
     const instance = subVIInstance(callee, n, module, instanceKey);
     if (instance.errores) return { errores: instance.errores };
     calls.set(n.id, instance);
@@ -2032,7 +2032,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     const convertirArray = (desde, hacia, origen) => {
       const [ed, eh] = [desde.array, hacia.array];
       const conv = convertir(ed, eh);
-      if (porReferencia(ed) || porReferencia(eh) || conv === null) throw new Error(`No se puede convertir un array de ${JSON.stringify(ed)} en uno de ${JSON.stringify(eh)}.`);
+      if (porReferencia(ed) || porReferencia(eh) || conv === null) throw new Error(`An array of ${JSON.stringify(ed)} cannot be converted into one of ${JSON.stringify(eh)}.`);
       const [elD, elH] = [elemento(ed), elemento(eh)];
       const celda = nuevaCelda();
       const [h, n, o, d, j] = Array.from({ length: 5 }, () => nuevoLocal("i32"));
@@ -2067,7 +2067,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
   function emitirNodo(id, k) {
     const { n, entradas, salidas, tIn, tOut, nuevoLocal, entrada, cableada, nombre } = contexto(id, k);
     const tiposNodo = [...entradas.map((_, i) => tIn(i)), ...salidas.map((_, j) => tOut(j))];
-    if (tiposNodo.some((t) => !escalar(t))) return errores.push({ nodo: id, motivo: `«${nombre}» lleva un tipo que el compilador aún no sabe emitir.` });
+    if (tiposNodo.some((t) => !escalar(t))) return errores.push({ nodo: id, motivo: `"${nombre}" carries a type the compiler cannot emit yet.` });
     // Un indicador sin cable no se escribe: conserva su valor, como en LabVIEW.
     if (["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator", "waveform-chart", "waveform-graph", "xy-graph"].includes(n.tipo)) {
       if (!llegaA.has(`${id}.value`)) return;
@@ -2083,7 +2083,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       return;
     }
     const emitir = n.tipo === "subvi" ? (e) => callSubVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subVIControl(e, asSubVI.get(n.name)) : BLOQUES[n.tipo];
-    if (!emitir) return errores.push({ nodo: id, motivo: `El compilador aún no sabe emitir «${nombre}» (${n.tipo}).` });
+    if (!emitir) return errores.push({ nodo: id, motivo: `The compiler cannot emit "${nombre}" (${n.tipo}) yet.` });
     const e = { nodo: n, cat, tIn, tOut, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex };
     if (!asSubVI && PANEL_CONTROLS.includes(n.tipo))
       controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), ...datosDePanel(tOut(0)) });
@@ -2317,16 +2317,16 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     for (const m of marcos) {
       for (const v of m.valores ?? []) {
         const clave = JSON.stringify(v);
-        if (vistos.has(clave)) errores.push({ nodo: sid, motivo: `En «${nombre}», el valor ${clave} está en dos marcos.` });
+        if (vistos.has(clave)) errores.push({ nodo: sid, motivo: `In "${nombre}", the value ${clave} is in two frames.` });
         vistos.add(clave);
       }
     }
     for (const id of deAqui.filter((x) => porId.get(x).tipo === "case-selector")) {
       const x = contexto(id, k);
       const t = x.tIn(0);
-      if (t === "boolean" && !(vistos.has("true") && vistos.has("false")) && !marcos.some((m) => m.default)) errores.push({ nodo: sid, motivo: `«${nombre}» necesita un marco True y otro False.` });
-      if (t !== "boolean" && !marcos.some((m) => m.default) && !(esEnum(t) && coversEveryItem(t, marcos))) errores.push({ nodo: sid, motivo: `«${nombre}» necesita un marco Default: hay valores del selector que no tienen marco.` });
-      if (t === "string" && marcos.some((m) => !m.default && !m.valores?.length)) errores.push({ nodo: sid, motivo: `In «${nombre}», a frame has no selector value.` });
+      if (t === "boolean" && !(vistos.has("true") && vistos.has("false")) && !marcos.some((m) => m.default)) errores.push({ nodo: sid, motivo: `"${nombre}" needs a True frame and a False frame.` });
+      if (t !== "boolean" && !marcos.some((m) => m.default) && !(esEnum(t) && coversEveryItem(t, marcos))) errores.push({ nodo: sid, motivo: `"${nombre}" needs a Default frame: some selector values have no frame.` });
+      if (t === "string" && marcos.some((m) => !m.default && !m.valores?.length)) errores.push({ nodo: sid, motivo: `In "${nombre}", a frame has no selector value.` });
       stringSelector = t === "string";
       enumSelector = esEnum(t) ? t : null;
       c.push(...x.entrada(0));

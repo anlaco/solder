@@ -143,7 +143,7 @@ const funcionesMath = Object.fromEntries(
 export const conJSPI = typeof WebAssembly.Suspending === "function" && typeof WebAssembly.promising === "function";
 
 /** El error con que acaba un VI abortado: no es un fallo del VI. */
-export const abortado = () => Object.assign(new Error("El VI se abortó."), { abortado: true });
+export const abortado = () => Object.assign(new Error("The VI was aborted."), { abortado: true });
 
 /** El reloj de milisegundos de LabVIEW: un U32 que da la vuelta, con el cero sin definir. */
 const reloj = () => Math.floor(performance.now()) >>> 0;
@@ -244,7 +244,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   const { bytes, controles, indicadores, clumps } = compilado;
   const { alEscribir, alSoltar, senal, separador = "." } = opciones;
   if (clumps.some((k) => k.largo) && !conJSPI)
-    throw new Error("Este VI espera (Wait…) y este motor de JavaScript no trae JSPI. En Node: node --experimental-wasm-jspi.");
+    throw new Error("This VI waits (Wait…) and this JavaScript engine has no JSPI. In Node: node --experimental-wasm-jspi.");
   const escritos = {};
   const leer = (i) => {
     const { nodo, tipo, mecanica } = controles[i];
@@ -723,7 +723,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     return turno;
   };
   if (clumps.some((k) => k.largo) || compilado.planes?.length) {
-    if (!conJSPI) throw new Error("Este VI espera (Wait…) y este motor de JavaScript no trae JSPI. En Node: node --experimental-wasm-jspi.");
+    if (!conJSPI) throw new Error("This VI waits (Wait…) and this JavaScript engine has no JSPI. In Node: node --experimental-wasm-jspi.");
   }
   try {
     await planificar(clumps, (i) => correrClump(`c${i}`, clumps[i].largo), senal);

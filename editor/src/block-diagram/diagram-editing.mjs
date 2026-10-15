@@ -1008,7 +1008,7 @@ function rewireLooseEnd(d, ctx, sobre, p) {
 function unirACable(d, ctx, sobre, p) {
   const { desde } = d.accion;
   if (desde.dir === "out") {
-    return { ...d, accion: null, aviso: { texto: "Ese cable ya tiene una fuente: un cable sólo puede salir de una salida.", x: p.x, y: p.y } };
+    return { ...d, accion: null, aviso: { texto: "That wire already has a source: a wire can only come out of one output.", x: p.x, y: p.y } };
   }
   const c = d.g.cables.find((k) => k.id === sobre.cable);
   if (Gr.esSuelto(c.de)) return { ...d, accion: null, aviso: { texto: "This wire has no source to branch from: wire its loose end first.", x: p.x, y: p.y } };

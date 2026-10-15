@@ -417,12 +417,12 @@ export function subpaletas(inv, estado) {
     .join("");
 }
 
-/** Lo que dice un hueco de sí mismo (regla 54). */
+/** What a hole says about itself (rule 54). */
 export function explicacion(inv, e) {
   const { labview, solder } = inv.explicacion(e);
   return `<div class="explicacion-cabeza"><strong>${esc(e.etiqueta)}</strong> <em>${esc(nombreVeredicto(e.estado))}</em></div>${
-    labview ? `<p>En ${esc(inv.referencia)}: ${esc(labview)}</p>` : ""
-  }<p>En Solder: ${esc(solder)}</p><code>${esc(e.id)}</code>`;
+    labview ? `<p>In ${esc(inv.referencia)}: ${esc(labview)}</p>` : ""
+  }<p>In Solder: ${esc(solder)}</p><code>${esc(e.id)}</code>`;
 }
 
 function explicacionFlotante(inv, abierta) {

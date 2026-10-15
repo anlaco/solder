@@ -112,7 +112,7 @@ const seccion = (id, contenido) => [id, ...uleb(contenido.length), ...contenido]
 
 function instruccion({ op, arg }) {
   const cod = OPS[op];
-  if (!cod) throw new Error(`instrucción WebAssembly desconocida: ${op}`);
+  if (!cod) throw new Error(`unknown WebAssembly instruction: ${op}`);
   if (op === "i32.const" || op === "i64.const") return [...cod, ...sleb(arg)];
   if (op === "f32.const") return [...cod, ...flotante(arg, 4)];
   if (op === "f64.const") return [...cod, ...flotante(arg, 8)];

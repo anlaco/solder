@@ -245,7 +245,7 @@ test("unir dos salidas no crea nada y dice por qué", () => {
   const [a, b] = ids(d);
   d = cablear(d, terminal(d, a, "result"), terminal(d, b, "result"));
   assert.equal(d.g.cables.length, 0);
-  assert.match(d.aviso.texto, /salidas/);
+  assert.match(d.aviso.texto, /outputs/);
   assert.equal(ED.escape(d).aviso, null, "Esc lo quita");
 });
 
@@ -434,7 +434,7 @@ test("un cable que acaba en otro cable sale de él como una rama", () => {
   d = ED.soltar(ED.pulsar(d, CTX, ts, ps), CTX, ts, ps);
   d = ED.pulsar(d, CTX, { tipo: "tramo", cable: padre.id, k: 0 }, { x: r[0][0] + 5, y: r[0][1] });
   assert.equal(d.g.cables.length, 2);
-  assert.match(d.aviso.texto, /ya tiene una fuente/);
+  assert.match(d.aviso.texto, /already has a source/);
 });
 
 function D_contenido(d) {
@@ -1233,7 +1233,7 @@ test("un nodo cae en el marco que tiene debajo y un cable no va a uno anterior",
   const [z] = d.seleccion;
   assert.equal(nodoDe(d, z).marco, 0);
   d = cablear(d, terminal(d, b, "result"), terminal(d, z, "x"));
-  assert.match(d.aviso.texto, /después/, "de un marco a uno anterior, no");
+  assert.match(d.aviso.texto, /frames after it/, "de un marco a uno anterior, no");
   d = { ...d, aviso: null, g: Gr.borrar(d.g, [z]) };
   // Arrastrar la constante del marco 0 al marco 2 la cambia de marco, y el cable, que iría hacia atrás, se rompe.
   d = arrastrar(d, a, { x: 905, y: 525 }, { x: 1148, y: 525 });
@@ -1557,7 +1557,7 @@ test("Add Dimension and Remove Dimension change an array between one and two dim
   html = D.menuContextual(INV, menu.menu, ED.marcados(menu), undefined, ED.variantes(menu));
   assert.match(html, /class="item-menu hueco" data-id="context.array-dimensions-limit"/);
   assert.ok(!/desactivado" data-id="context.array-constant.remove-dimension/.test(html));
-  assert.match(INV.explicacion(INV.resolver("context.array-dimensions-limit")).solder, /tres dimensiones/);
+  assert.match(INV.explicacion(INV.resolver("context.array-dimensions-limit")).solder, /three or more dimensions/);
   assert.equal(ED.orden(menu, "context.array-constant.add-dimension", CTX), menu, "the row does nothing in 2D");
 
   // Remove Dimension keeps the first row.

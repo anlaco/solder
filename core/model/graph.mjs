@@ -19,7 +19,7 @@ export function cargarCatalogo(datos) {
   const bloques = datos.blocks;
   function bloque(tipo) {
     const b = bloques[tipo];
-    if (!b) throw new Error(`el bloque «${tipo}» no está en el catálogo`);
+    if (!b) throw new Error(`the block "${tipo}" is not in the catalog`);
     return b;
   }
   /**
@@ -96,7 +96,7 @@ export function cargarCatalogo(datos) {
   }
   function puerto(nodo, nombrePuerto, dir) {
     const p = puertos(nodo)[dir].find((q) => q.name === nombrePuerto);
-    if (!p) throw new Error(`«${nodo.tipo}» no tiene el puerto de ${dir === "in" ? "entrada" : "salida"} «${nombrePuerto}»`);
+    if (!p) throw new Error(`"${nodo.tipo}" has no ${dir === "in" ? "input" : "output"} port "${nombrePuerto}"`);
     return p;
   }
   return { datos, bloque, puertos, puerto, tiene: (tipo) => tipo in bloques };
@@ -116,7 +116,7 @@ export function conSubVIs(cat, findSubVI) {
   };
   const puerto = (nodo, nombrePuerto, dir) => {
     const p = puertos(nodo)[dir].find((q) => q.name === nombrePuerto);
-    if (!p) throw new Error(`«${nodo.tipo}» no tiene el puerto de ${dir === "in" ? "entrada" : "salida"} «${nombrePuerto}»`);
+    if (!p) throw new Error(`"${nodo.tipo}" has no ${dir === "in" ? "input" : "output"} port "${nombrePuerto}"`);
     return p;
   };
   return { ...cat, puertos, puerto, findSubVI };
@@ -262,7 +262,7 @@ export function etiquetaLibre(g, base) {
  * dos.
  */
 export function crearEnPanel(g, cat, tipo, px, py, etiqueta, config) {
-  if (!cat.bloque(tipo).panel) throw new Error(`«${tipo}» no es un control ni un indicador`);
+  if (!cat.bloque(tipo).panel) throw new Error(`"${tipo}" is neither a control nor an indicator`);
   const r = crearNodo(g, cat, tipo, px, py);
   const texto = etiquetaLibre(g, etiqueta);
   // `config`: con la que lo pone el elemento de la paleta (el Stop Button es un
@@ -368,7 +368,7 @@ export function marcoDe(g, cat, nodo, puerto, dir) {
  */
 export function crearEstructura(g, cat, tipo, x, y, ancho, alto) {
   const b = cat.bloque(tipo);
-  if (!b.estructura) throw new Error(`«${tipo}» no es una estructura`);
+  if (!b.estructura) throw new Error(`"${tipo}" is not a structure`);
   let r = crearNodo(g, cat, tipo, x, y);
   const id = r.id;
   r = { g: cambiarNodo(r.g, id, (n) => ({ ...n, tam: { ancho, alto } })), id };
@@ -689,7 +689,7 @@ export const alternarTerminales = (g, id) =>
  */
 export function conectar(g, cat, t1, t2, codos) {
   if (t1.dir === t2.dir) {
-    const motivo = t1.dir === "out" ? "Los dos terminales son salidas: un cable va de una salida a una entrada." : "Los dos terminales son entradas: un cable necesita una salida que lo alimente.";
+    const motivo = t1.dir === "out" ? "Both terminals are outputs: a wire goes from an output to an input." : "Both terminals are inputs: a wire needs an output to feed it.";
     return { g, motivo };
   }
   const [de, a] = t1.dir === "out" ? [t1, t2] : [t2, t1];
@@ -697,12 +697,12 @@ export function conectar(g, cat, t1, t2, codos) {
   cat.puerto(nodoDe(g, a.nodo), a.puerto, "in");
   // DT-041: un cable no cruza el borde de una estructura; para eso están los túneles (conectarCruzando).
   if (ambitoDe(g, cat, de.nodo, de.puerto, "out") !== ambitoDe(g, cat, a.nodo, a.puerto, "in"))
-    return { g, motivo: "Los dos terminales están a distinto lado del borde de una estructura: el cable tiene que pasar por un túnel." };
+    return { g, motivo: "The two terminals are on different sides of a structure's border: the wire has to go through a tunnel." };
   const [m1, m2] = [marcoDe(g, cat, de.nodo, de.puerto, "out"), marcoDe(g, cat, a.nodo, a.puerto, "in")];
   // En una secuencia, un marco pasa datos a uno posterior; nunca a uno anterior.
   const secuencia = esSecuencia(nodoDe(g, ambitoDe(g, cat, de.nodo, de.puerto, "out")));
-  if (secuencia && m1 !== undefined && m2 !== undefined && m1 > m2) return { g, motivo: "Un marco de una secuencia sólo pasa datos a los que van después." };
-  if (!secuencia && m1 !== undefined && m2 !== undefined && m1 !== m2) return { g, motivo: "Los dos terminales están en marcos distintos del Case." };
+  if (secuencia && m1 !== undefined && m2 !== undefined && m1 > m2) return { g, motivo: "A sequence frame only passes data to the frames after it." };
+  if (!secuencia && m1 !== undefined && m2 !== undefined && m1 !== m2) return { g, motivo: "The two terminals are in different frames of the Case." };
   const ya = g.cables.find((c) => c.de.nodo === de.nodo && c.de.puerto === de.puerto && c.a.nodo === a.nodo && c.a.puerto === a.puerto);
   if (ya) return { g, id: ya.id };
   // Regla 32: la entrada ocupada se queda con el cable nuevo.
@@ -1066,12 +1066,12 @@ function resolverTipos(g, cat, pistas) {
     const hacia = entradas.get(`${c.a.nodo}.${c.a.puerto}`);
     let roto = null;
     let coercion = false;
-    if (enCiclo.has(c.de.nodo) && enCiclo.has(c.a.nodo)) roto = "Este cable cierra un ciclo: un nodo no puede depender de su propia salida.";
-    else if (desde === undefined || hacia === undefined) roto = "El tipo de uno de los extremos no se puede determinar.";
+    if (enCiclo.has(c.de.nodo) && enCiclo.has(c.a.nodo)) roto = "This wire closes a cycle: a node cannot depend on its own output.";
+    else if (desde === undefined || hacia === undefined) roto = "The type of one of the ends cannot be determined.";
     else if (puertoDestino(c)?.acepta && !graphAccepts(puertoDestino(c).acepta, desde)) roto = `This ${puertoDestino(c).acepta.replace("-", " ")} does not accept ${nombre(desde)}.`;
     else {
       const conv = conversion(desde, hacia);
-      if (!conv) roto = `Tipos incompatibles: el terminal espera ${nombre(hacia)} y el cable lleva ${nombre(desde)}.`;
+      if (!conv) roto = `Incompatible types: the terminal expects ${nombre(hacia)} and the wire carries ${nombre(desde)}.`;
       coercion = conv === "coercion";
     }
     cables.set(c.id, { tipo: desde, coercion, roto });

@@ -121,7 +121,7 @@ test("la explicación dice lo que su veredicto obliga", () => {
   const todo = PEQUENO.explicacion(PEQUENO.entrada("window.a"));
   assert.equal(todo.labview, "a");
   assert.match(todo.solder, /una pieza/);
-  assert.match(todo.solder, /no está especificado/);
+  assert.match(todo.solder, /Not specified yet/);
   assert.match(PEQUENO.explicacion(PEQUENO.entrada("window.a.menu.y")).solder, /DT-035/);
   assert.match(PEQUENO.explicacion(PEQUENO.entrada("window.a.menu.x.hondo")).solder, /otra/);
 });
@@ -161,5 +161,5 @@ test("the menus of the array constant and of the panel array declare Add and Rem
     assert.equal(entrada.estado, "todo");
     assert.equal(entrada.necesita, "arrays-2d");
   }
-  assert.match(INV.explicacion(INV.entrada("context.array-dimensions-limit")).solder, /tres dimensiones o más/);
+  assert.match(INV.explicacion(INV.entrada("context.array-dimensions-limit")).solder, /three or more dimensions/);
 });

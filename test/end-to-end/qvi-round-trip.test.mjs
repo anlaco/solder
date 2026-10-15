@@ -109,10 +109,10 @@ test("un vi vacío se guarda y se abre", () => {
 
 test("lo que no se sabe leer se rechaza con el motivo", () => {
   assert.throws(() => leer({ solder: 2, "block-diagram": {} }, CAT), ErrorQvi);
-  assert.throws(() => leer({ solder: 1, "block-diagram": { nodes: [{ name: "a", type: "no-existe" }] } }, CAT), /no está en el catálogo/);
-  assert.throws(() => leer({ solder: 1, "block-diagram": { structures: [{ name: "s", kind: "timed-loop" }] } }, CAT), /todavía no se sabe leer/);
+  assert.throws(() => leer({ solder: 1, "block-diagram": { nodes: [{ name: "a", type: "no-existe" }] } }, CAT), /is not in the catalog/);
+  assert.throws(() => leer({ solder: 1, "block-diagram": { structures: [{ name: "s", kind: "timed-loop" }] } }, CAT), /cannot be read yet/);
   const malCable = { solder: 1, "block-diagram": { nodes: [{ name: "s", type: "add" }], wires: [{ from: "s.result", to: "s.nada" }] } };
-  assert.throws(() => leer(malCable, CAT), /no tiene el puerto de entrada «nada»/);
+  assert.throws(() => leer(malCable, CAT), /has no input port "nada"/);
 });
 
 // Un control booleano guarda en el panel su clase (`style`), su acción
@@ -327,5 +327,5 @@ test("a hierarchy with a subVI is saved, validated and read back through its rel
   assert.deepEqual(loaded.vis.get("app/util/double.qvi").g.vi, sub.vi);
   // The Required input is left unwired: the caller cannot run.
   const { compilar } = await import("../../core/compiler/compiler.mjs");
-  assert.match(compilar(readTop.g, readTop.cat).errores.map((e) => e.motivo).join(), /le falta un cable/);
+  assert.match(compilar(readTop.g, readTop.cat).errores.map((e) => e.motivo).join(), /is missing a wire/);
 });

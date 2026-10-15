@@ -49,7 +49,7 @@ test("cada función de numeric se pone en el diagrama con sus terminales", () =>
 
 test("un puerto que no existe es un error", () => {
   const { g, ids } = con("add", "add");
-  assert.throws(() => conectar(g, CAT, sal(ids[0], "out"), ent(ids[1], "a")), /no tiene el puerto de salida «out»/);
+  assert.throws(() => conectar(g, CAT, sal(ids[0], "out"), ent(ids[1], "a")), /has no output port "out"/);
 });
 
 // Add con un I32 y un DBL: la suma es DBL y el I32 entra con punto de coerción.
@@ -88,14 +88,14 @@ test("un cable entre tipos incompatibles queda roto y explica por qué", () => {
   let { g, ids } = con("const", "add-array-elements");
   g = conectar(g, CAT, sal(ids[0]), ent(ids[1], "numeric-array")).g;
   const c = tipos(g, CAT).cables.get(g.cables[0].id);
-  assert.match(c.roto, /espera array de DBL y el cable lleva DBL/);
+  assert.match(c.roto, /expects array of DBL and the wire carries DBL/);
 });
 
 // spec/05 regla 31: lo que no puede ser un cable no se crea, y se dice por qué.
 test("dos salidas o dos entradas no se unen y se explica", () => {
   const { g, ids } = con("const", "const", "add");
-  assert.match(conectar(g, CAT, sal(ids[0]), sal(ids[1])).motivo, /dos terminales son salidas/);
-  assert.match(conectar(g, CAT, ent(ids[2], "a"), ent(ids[2], "b")).motivo, /dos terminales son entradas/);
+  assert.match(conectar(g, CAT, sal(ids[0]), sal(ids[1])).motivo, /Both terminals are outputs/);
+  assert.match(conectar(g, CAT, ent(ids[2], "a"), ent(ids[2], "b")).motivo, /Both terminals are inputs/);
 });
 
 // spec/05 regla 32: la entrada ocupada se queda con el cable nuevo.
@@ -118,7 +118,7 @@ test("un ciclo se devuelve con sus nodos y rompe sus cables", () => {
   const t = tipos(g, CAT);
   const rotos = g.cables.filter((k) => t.cables.get(k.id).roto);
   assert.equal(rotos.length, 2);
-  assert.match(t.cables.get(rotos[0].id).roto, /ciclo/);
+  assert.match(t.cables.get(rotos[0].id).roto, /cycle/);
 });
 
 // spec/05 regla 28: no quedan cables colgando.
@@ -250,7 +250,7 @@ test("las comparaciones toman el tipo común, comparan booleanos y no mezclan", 
   ({ g, ids } = con("bool-const", "const", "equal"));
   g = conectar(g, CAT, sal(ids[0]), ent(ids[2], "x")).g;
   g = conectar(g, CAT, sal(ids[1]), ent(ids[2], "y")).g;
-  assert.match([...tipos(g, CAT).cables.values()][1].roto, /incompatibles/);
+  assert.match([...tipos(g, CAT).cables.values()][1].roto, /Incompatible types/);
 
   ({ g, ids } = con("num-const", "num-const", "bool-const", "select"));
   g = fijarConfig(g, ids[0], { type: "u8", value: 200 });
@@ -280,7 +280,7 @@ test("las funciones lógicas operan con booleanos o bit a bit con enteros", () =
   g = conectar(g, CAT, sal(ids[1]), ent(ids[2], "y")).g;
   r = tipos(g, CAT);
   assert.equal(r.salidas.get(`${ids[2]}.result`), "boolean");
-  assert.match([...r.cables.values()][1].roto, /incompatibles/);
+  assert.match([...r.cables.values()][1].roto, /Incompatible types/);
 
   // Compound Arithmetic en AND con booleanos opera sobre booleanos.
   ({ g, ids } = con("bool-const", "compound-arithmetic"));
@@ -443,7 +443,7 @@ test("las comparaciones y Select toman cadenas y no las mezclan con números", (
   g = conectar(g, CAT, sal(ids[2]), ent(ids[1], "x")).g;
   assert.equal(tipos(g, CAT).entradas.get(`${ids[1]}.y`), "string", "con una cadena en x, y es una cadena");
   g = conectar(g, CAT, sal(ids[0]), ent(ids[1], "y")).g;
-  assert.match(tipos(g, CAT).cables.get(g.cables.at(-1).id).roto, /Tipos incompatibles/, "un número en una entrada de cadena rompe el cable");
+  assert.match(tipos(g, CAT).cables.get(g.cables.at(-1).id).roto, /Incompatible types/, "un número en una entrada de cadena rompe el cable");
   // Select con cadenas da una cadena.
   let s = con("str-const", "str-const", "select");
   let h = conectar(s.g, CAT, sal(s.ids[0]), ent(s.ids[2], "t")).g;

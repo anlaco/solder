@@ -94,6 +94,10 @@ Things that are wrong whatever LabVIEW does:
    500 ms and tip strips after 150 ms, and both go when the pointer leaves; a tip showing when Run is pressed or the
    Error list opens came back with the repaint, and now stays away until the pointer goes to something else.
 15. **The explanations of greyed items are in Spanish** (OC 12–13), old findings #2 and #25.
+    *Fixed on 2026-10-15:* the 906 Spanish texts of the inventory (`docs/schema/inventario-labview.json`: what LabVIEW
+    does, how Solder stands and what each hole is missing), the explanation's own wording ("In Solder: Missing: …",
+    the verdict names) and the user-facing messages of the core (broken wires, compile, file and run errors) are in
+    English. The developer notes of `blocks.json` and the inventory's `_comentario` stay in Spanish: nobody sees them.
 16. **The page title of a new VI stays "Untitled 1 …"** while the window's title is right (TM 3, IP 22):
     harmless to a user, but it breaks the tooling that finds windows by title.
    *Fixed on 2026-10-15:* the page title follows the VI's name.
@@ -166,5 +170,5 @@ reproduce. What is left:
 2. ~~B12 and B13~~: measured and done on 2026-10-15. B7's shift off a loop's border turned out to be LabVIEW's
    structure auto-grow, not a fixed shift: postponed until it is measured as such.
 3. ~~C5 Select Item… and B14's tips~~: done on 2026-10-15.
-4. B15, the Spanish texts; C6 measured again and C7.
+4. ~~B15, the Spanish texts~~: done on 2026-10-15. C6 measured again and C7.
 5. E2 to E4, found on 2026-10-15.

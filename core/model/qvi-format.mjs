@@ -206,7 +206,7 @@ export class ErrorQvi extends Error {}
  */
 export function leer(datos, cat) {
   const vi = typeof datos === "string" ? JSON.parse(datos) : datos;
-  if (vi.solder !== VERSION) throw new ErrorQvi(`versión del formato ${vi.solder}: este Solder lee la ${VERSION}`);
+  if (vi.solder !== VERSION) throw new ErrorQvi(`format version ${vi.solder}: this Solder reads version ${VERSION}`);
   const bd = vi["block-diagram"] ?? {};
   const lay = vi.layout ?? {};
   const fp = new Map((vi["front-panel"] ?? []).map((i) => [i.name, i]));
@@ -226,7 +226,7 @@ export function leer(datos, cat) {
 
   function leerAmbito(a, dentro, marco) {
     for (const nodo of a.nodes ?? []) {
-      if (!cat.tiene(nodo.type)) throw new ErrorQvi(`el bloque «${nodo.type}» de ${nodo.name} no está en el catálogo`);
+      if (!cat.tiene(nodo.type)) throw new ErrorQvi(`the block "${nodo.type}" of ${nodo.name} is not in the catalog`);
       const d = lay.diagram?.[nodo.name] ?? {};
       g = crearNodo(g, cat, nodo.type, d.x ?? 0, d.y ?? 0).g;
       const n = retocar((n) => {
@@ -255,7 +255,7 @@ export function leer(datos, cat) {
       porNombre.set(nodo.name, n);
     }
     for (const e of a.structures ?? []) {
-      if (!cat.tiene(e.kind) || !cat.bloque(e.kind).estructura) throw new ErrorQvi(`la estructura «${e.kind}» de ${e.name} todavía no se sabe leer`);
+      if (!cat.tiene(e.kind) || !cat.bloque(e.kind).estructura) throw new ErrorQvi(`the structure "${e.kind}" of ${e.name} cannot be read yet`);
       const d = lay.diagram?.[e.name] ?? {};
       const r = crearEstructura(g, cat, e.kind, d.x ?? 0, d.y ?? 0, d.w ?? 200, d.h ?? 150);
       g = r.g;
@@ -313,7 +313,7 @@ export function leer(datos, cat) {
     const e = estructuras.get(nombre);
     if (e) {
       const m = e.miembros.get(puerto);
-      if (m === undefined) throw new ErrorQvi(`«${ref}»: la estructura ${nombre} no tiene «${puerto}»`);
+      if (m === undefined) throw new ErrorQvi(`"${ref}": the structure ${nombre} has no "${puerto}"`);
       if (typeof m === "object") return dir === "in" ? { nodo: m.izq, puerto: "init" } : { nodo: m.der, puerto: "result" };
       const n = porId.get(m);
       const p = { "loop-iteration": "i", "loop-condition": "stop", "loop-count": "count", "case-selector": "selector" }[n.tipo];
@@ -325,7 +325,7 @@ export function leer(datos, cat) {
     const sr = registros.get(nombre);
     if (sr && (puerto === "left" || puerto === "right")) return puerto === "left" ? { nodo: sr.izq, puerto: "value" } : { nodo: sr.der, puerto: "value" };
     const n = porNombre.get(nombre);
-    if (!n) throw new ErrorQvi(`el wire va a «${nombre}», que no está en el diagrama`);
+    if (!n) throw new ErrorQvi(`the wire goes to "${nombre}", which is not in the diagram`);
     try {
       cat.puerto(n, puerto, dir);
     } catch (err) {
