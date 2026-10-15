@@ -539,12 +539,16 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   Type, Display Format, Edit Items, Documentation; the other four are present and greyed —, an
 >   Items|Values list (Values sequential 0, 1, 2…, read-only), Insert / Delete / Move Up / Move
 >   Down, *Disable Item* always greyed on an enum, the checkbox *Allow undefined values at run
->   time* greyed, and OK / Cancel / Help (Help greyed). Enter commits the row being edited and
+>   time* greyed, and OK / Cancel / Help (Help greyed). *Not done:* clicking the blank space of the
+>   list to choose no row, which in LabVIEW greys Delete (measured); here a row is always chosen.
+>   Enter commits the row being edited and
 >   inserts an empty one below with the editor in it, and Escape drops what was being written and
 >   leaves the dialog open; with no row being written Enter is OK and Escape is Cancel, which are
->   the window's default buttons. Clicking another row commits without inserting; duplicates, empty names and any characters are accepted verbatim; Delete is
->   disabled with a single row *(unverified: the two reports of 2026-10-14 disagree — the second
->   saw it enabled with one row and reads it as focus-dependent; to be re-measured)*. OK writes
+>   the window's default buttons. Clicking another row commits without inserting; duplicates, empty
+>   names and any characters are accepted verbatim. **Delete** goes by the name and not by the row
+>   count (measured 2026-10-15, `labview-captures/reports/2026-10-15-enum-delete.md`): it works
+>   whenever a row is chosen, except on a single row whose name is empty, and on the last row it
+>   **empties that row instead of removing it**, so an enum never has zero items. OK writes
 >   the items: renames reach the frames of the Cases the
 >   enum feeds (Rule 17e); the value stays, and only falls back into range when it names no item
 >   (measured: deleting the item under a middle value keeps the number; deleting the last item
@@ -556,9 +560,9 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   box. The arrows move to the next or the previous item. Their right-click menus
 >   (`context.enum-control`, `context.enum-indicator`) have the measured rows; *Edit Items…* is
 >   done and the rest is greyed. Create ▸ Control / Indicator on an enum terminal makes these.
-> - *Unverified:* whether the dialog's Delete is greyed with a single row (contradicted between
->   the two reports); whether Enter and Escape with no row being written are OK and Cancel in
->   LabVIEW too, or only the Windows default; whether the panel arrows wrap around at the ends (here they stop); the title of
+> - *Unverified:* whether emptying the last row's name reaches the frames of the Cases the enum
+>   feeds, as a rename does (here it does); whether Enter and Escape with no row being written are
+>   OK and Cancel in LabVIEW too, or only the Windows default; whether the panel arrows wrap around at the ends (here they stop); the title of
 >   the panel objects' dialog; the selected-row colour of the list; the exact px of the dialog
 >   (derived from a ≈1.62× capture). *Not done, measured:* Add Item After / Before (an empty item
 >   made current with an inline name editor), Remove Item (removes the current item; the last one

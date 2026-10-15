@@ -90,6 +90,10 @@ export function act(dialog, id) {
   if (parte === "insert") return editarFila(insertar(dialog, dialog.elegida + 1), dialog.elegida + 1);
   if (parte === "delete" && enabled(dialog, "delete")) {
     const base = commit(dialog);
+    // The last row is not removed: Delete empties its name and the item stays, so an enum never
+    // has zero items (measured 2026-10-15). Whether that empty name reaches the frames of the
+    // Cases the enum feeds, as a rename does, is unverified; `original` is kept so it does.
+    if (base.filas.length === 1) return { ...base, filas: [{ ...base.filas[0], texto: "" }], edicion: null };
     const filas = base.filas.filter((_, k) => k !== base.elegida);
     return { ...base, filas, elegida: Math.min(base.elegida, filas.length - 1), edicion: null };
   }
@@ -131,10 +135,15 @@ export function click(dialog, id) {
   return { dialog: act(dialog, id) };
 }
 
-/** When each button works: Delete needs a row it can leave, Move Up/Down a row on that side;
- * Disable Item never works on an enum (measured: greyed). */
+/**
+ * When each button works. Delete goes by the name, not by the row count: it is greyed only when
+ * the single row left has an empty name, and otherwise it empties that row (measured 2026-10-15,
+ * `reports/2026-10-15-enum-delete.md`; LabVIEW also greys it with nothing selected, which this
+ * dialog cannot be — a row is always the chosen one). Move Up/Down need a row on that side, and
+ * Disable Item never works on an enum (measured: greyed).
+ */
 export function enabled(dialog, parte) {
-  if (parte === "delete") return dialog.filas.length > 1;
+  if (parte === "delete") return !(dialog.filas.length === 1 && dialog.filas[0].texto === "");
   if (parte === "move-up") return dialog.elegida > 0;
   if (parte === "move-down") return dialog.elegida < dialog.filas.length - 1;
   if (parte === "disable-item") return false;

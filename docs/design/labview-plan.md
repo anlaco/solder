@@ -185,10 +185,11 @@ of maintenance with fixes only (`0.N.x-beta`).
    type, the dialog and the menus measured, the Case frames by item name). Its **seam with the window**
 was reviewed the same day and closed on 2026-10-14: what a key or a click means for a dialog is decided
 in its own module (`editor/src/window/modal-dialog.mjs`, which also took over the Chart History dialog)
-and the shell only applies it, with `test/editor/modal-dialogs.test.mjs` crossing that seam. Still needed by the examples:
+and the shell only applies it, with `test/editor/modal-dialogs.test.mjs` crossing that seam. The
+dialog's Delete follows the rule measured on 2026-10-15: by the name, not the row count. Still needed by the examples:
    Unbundle By Name (#23), New VI (#1), and the comparison tests (4).*
    **The enum's seam with the window, from the review of the #32 commit** (all four found by reading
-   and running, none by the 581 tests); (a), (b) and (d) done on 2026-10-14, (c) being measured:
+   and running, none by the 581 tests); (a), (b) and (d) done on 2026-10-14, (c) on 2026-10-15:
    *(a) done: the Edit Items dialog had taken `pan.dialogo`, the field the Chart History dialog's
    keydown writes into by mistake (`dialogo:` where it meant `graphDialog:`, there since before), so
    typing a digit in Chart History Length made the next paint call `EI.view` with that dialog and
@@ -200,9 +201,15 @@ and the shell only applies it, with `test/editor/modal-dialogs.test.mjs` crossin
    (`dialog`, `accept`, `cancel`, `explain`), `editor/src/window/modal-dialog.mjs` says which dialog
    is open, and the shell only applies what it is told; the Chart History dialog follows, and its
    greyed parts explain themselves (DT-035).*
-   (c) **being measured** (brief sent on 2026-10-14): whether the dialog's Delete is greyed with a
-   single row, which the two reports of that day contradict (report 2, "Surprises"); Rule 40l and
-   DT-049 say so instead of picking one reading until the measurement comes back.
+   *(c) done on 2026-10-15: the dialog's Delete was measured again
+   ([`2026-10-15-enum-delete.md`](../../labview-captures/reports/2026-10-15-enum-delete.md)) because
+   the two reports of 2026-10-14 contradicted each other, and both were half right: Delete goes by
+   the name and the selection, not by the row count, and on the last row it empties that row instead
+   of removing it, so an enum never has zero items. Solder's hard-coded "disabled with a single row"
+   was wrong and is gone; the eight colours were re-measured in the main session on the full-res
+   captures before changing anything. The first attempt, on the night of 2026-10-14, never reached
+   LabVIEW because the VM sat on a Windows update
+   ([`2026-10-14-enum-delete-not-measured.md`](../../labview-captures/reports/2026-10-14-enum-delete-not-measured.md)).*
    *(d) done: `test/editor/modal-dialogs.test.mjs` crosses the seam — the chart dialog is never
    handed to the items module, Enter while writing a row is not OK, a greyed tab explains itself.
    Its absence is what let (a) and (b) through with every test green, the shape of finding #32

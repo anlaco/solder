@@ -80,8 +80,16 @@ test("Edit Items edits the items of the enum and its Cases", () => {
   for (const character of "Warm") moviendo = EI.type(moviendo, character);
   moviendo = EI.act(moviendo, "dialog.enum-edit-items.move-up");
   assert.deepEqual(moviendo.filas.map((f) => f.texto), ["Warm", "Start", "Done"], "the typed name moves with its row");
-  const soloUno = EI.act(EI.type(EI.open({ ...conItems.nodos.find((k) => k.id === id), config: { type: { enum: ["Init"] }, value: 0 } }), "Escape"), "dialog.enum-edit-items.delete");
-  assert.equal(soloUno.filas.length, 1, "Delete disabled with a single row");
+  // Delete with a single row goes by the name, not by the row count (measured 2026-10-15): with a
+  // name it empties the row instead of removing it — an enum never has zero items — and with the
+  // name already empty it is greyed and does nothing.
+  const unaFila = EI.open({ ...conItems.nodos.find((k) => k.id === id), config: { type: { enum: ["Init"] }, value: 0 } });
+  assert.ok(EI.enabled(unaFila, "delete"), "with a name, Delete works");
+  const vaciada = EI.act(unaFila, "dialog.enum-edit-items.delete");
+  assert.deepEqual(vaciada.filas.map((f) => f.texto), [""], "the row is emptied, not removed");
+  assert.ok(!EI.enabled(vaciada, "delete"), "and then it is greyed");
+  assert.deepEqual(EI.act(vaciada, "dialog.enum-edit-items.delete").filas.map((f) => f.texto), [""], "clicking it changes nothing");
+  assert.match(EI.view(INV, vaciada), /pv-boton desactivado[^>]*data-id=""[^>]*>Delete</, "and it is drawn greyed, with no id to click");
 
   // Deleting "Heat" leaves its frame with the stale name, in red, and breaks the Case with
   // LabVIEW's reason (measured); the wire stays whole.
