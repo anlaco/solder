@@ -11,8 +11,10 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, dialog, ipcMain, Menu, protocol, screen } from "electron";
 import { OLD_VI_EXTENSION, VI_EXTENSION, isVIFile, pathKey, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey } from "../src/common/vi-paths.mjs";
+import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
 import { newVIBounds, otherWindowKind, tiledBounds } from "./window-layout.mjs";
+import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from "../src/getting-started/start-state.mjs";
 import { WINDOW_KINDS, createRegistry, isDirty, recordChange, recordSave, viName, windowTitle } from "./vi-registry.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -165,6 +167,7 @@ function openWindows(entry) {
   Promise.all(Object.values(open.windows).map(loaded)).then(() => {
     open.windows["block-diagram"].show();
     panel.show();
+    gettingStarted?.hide();
   });
   // Closing the panel closes the VI, asking first if it has unsaved changes.
   panel.on("close", (event) => {
@@ -176,7 +179,10 @@ function openWindows(entry) {
     registry.close(entry.id);
     openVIs.delete(entry.id);
     for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.destroy();
-    if (!openVIs.size) app.quit();
+    if (openVIs.size) return;
+    // LabVIEW does not quit when its last VI closes: the Getting Started window comes back (DT-052).
+    if (quitting || process.env.SOLDER_CAPTURAS) app.quit();
+    else showGettingStarted();
   });
   // Closing the diagram only hides it, as in LabVIEW; showing it again is
   // Window ▸ Show Block Diagram, which has not been captured yet.
@@ -242,11 +248,13 @@ async function openPath(filePath, owner) {
     return;
   }
   const { entry } = registry.open({ path: filePath, initialText: text });
+  rememberRecentFile(filePath);
   openWindows(entry);
 }
 
 async function openFirstFile(filePath) {
   const { entry } = registry.open({ path: filePath, initialText: await readFile(filePath, "utf8") });
+  rememberRecentFile(filePath);
   return openWindows(entry);
 }
 
@@ -255,19 +263,15 @@ function openNewVI() {
   return openWindows(entry);
 }
 
-/** Asks what LabVIEW asks before losing changes: save, don't save or don't go on. Returns whether to go on. */
+/** The VI has unsaved changes: LabVIEW's Close dialog (Save, Don't Save, Cancel). Returns whether to go on. */
 async function canDiscard(open, owner) {
   if (!isDirty(open.entry)) return true;
-  const { response } = await dialog.showMessageBox(owner, {
-    type: "question",
-    message: `Save changes to «${viName(open.entry)}» before closing?`,
-    buttons: ["Save", "Don't Save", "Cancel"],
-    defaultId: 0,
-    cancelId: 2,
-  });
-  if (response === 2) return false;
-  if (response === 1) return true;
-  return writeVI(open, owner, open.entry.current, false);
+  const { title, message, detail } = closeDialogText(viName(open.entry));
+  const { response } = await dialog.showMessageBox(owner, { type: "question", title, message, detail, buttons: CLOSE_BUTTONS, defaultId: 0, cancelId: CLOSE_BUTTONS.length - 1 });
+  const answer = CLOSE_BUTTON_ANSWERS[response] ?? CLOSE_ANSWERS.cancel;
+  if (answer === CLOSE_ANSWERS.cancel) return false;
+  if (answer === CLOSE_ANSWERS.dontSave) return true;
+  return (await writeVI(open, owner, open.entry.current, false)) !== null;
 }
 
 /** Closes a VI and its windows, after asking about unsaved changes unless `force`. Returns whether it closed. */
@@ -276,6 +280,27 @@ async function closeVI(open, { force = false } = {}) {
   open.closing = true;
   for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.close();
   return true;
+}
+
+/**
+ * File ▸ Close All: one question for the VI created last, which can answer for
+ * the rest, and then every VI leaves, those without changes too.
+ */
+async function closeAllVIs(owner) {
+  const ask = async (open, remaining) => {
+    const { title, message, detail, checkboxLabel } = closeAllDialogText(viName(open.entry), remaining);
+    // The box can only be checked when there are others to apply the answer to; while checked LabVIEW says "Save - All".
+    const buttons = checkboxLabel ? CLOSE_ALL_BUTTONS : CLOSE_BUTTONS;
+    const { response, checkboxChecked } = await dialog.showMessageBox(owner, {
+      type: "question", title, message, detail, buttons, defaultId: 0, cancelId: buttons.length - 1,
+      ...(checkboxLabel && { checkboxLabel, checkboxChecked: true }),
+    });
+    return { answer: CLOSE_BUTTON_ANSWERS[response] ?? CLOSE_ANSWERS.cancel, applyToRemaining: !!checkboxLabel && checkboxChecked };
+  };
+  const save = async (open) => (await writeVI(open, open.windows["front-panel"], open.entry.current, false)) !== null;
+  const order = closeAllOrder(openVIs.values(), (open) => Number(open.entry.id));
+  if (!(await confirmCloseAll(order, { isDirty: (open) => isDirty(open.entry), ask, save }))) return;
+  for (const open of order) await closeVI(open, { force: true });
 }
 
 /**
@@ -295,10 +320,72 @@ async function writeVI(open, owner, text, saveAs) {
   const rebased = rebaseText(text, keyOf(entry), pathKey(target));
   await writeFile(target, rebased);
   recordSave(entry, target, rebased);
+  rememberRecentFile(target);
   setTitles(open);
   // The callers of this VI that are open must see its new connector.
   for (const other of BrowserWindow.getAllWindows()) other.webContents.send("vi:saved", { id: entry.id, key: pathKey(target) });
   return rebased;
+}
+
+// ——— The Getting Started window (DT-052) ———
+//
+// LabVIEW starts with it, hides it behind the first VI and shows it again when
+// the last VI closes; closing it with no VI open quits. It remembers the recent
+// files and moves its carousel on one page each time it is shown
+// (labview-captures/reports/2026-10-15-getting-started.md).
+
+/** Its client area, measured on a 1920 × 1080 screen: 837 × 506 under the menu bar, which the page draws itself (20 px). */
+const GETTING_STARTED_MENU_BAR_HEIGHT = 20;
+const GETTING_STARTED_SIZE = { width: 837, height: 506 + GETTING_STARTED_MENU_BAR_HEIGHT };
+let gettingStarted = null;
+let startState = emptyStartState();
+const startStateFile = () => path.join(app.getPath("userData"), "getting-started.json");
+
+async function loadStartState() {
+  startState = parseStartState(await readTextOrNull(startStateFile()));
+}
+
+function changeStartState(newState) {
+  startState = newState;
+  writeFile(startStateFile(), JSON.stringify(startState)).catch(() => {});
+  if (gettingStarted && !gettingStarted.isDestroyed()) gettingStarted.webContents.send("start:state", startState);
+}
+
+const rememberRecentFile = (filePath) => changeStartState(rememberFile(startState, filePath));
+
+function createGettingStarted() {
+  const window = new BrowserWindow({
+    ...GETTING_STARTED_SIZE,
+    useContentSize: true,
+    center: true,
+    title: "Solder",
+    backgroundColor: "#ffffff",
+    icon: APP_ICON,
+    show: false,
+    webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(HERE, "preload.cjs") },
+  });
+  window.on("page-title-updated", (event) => event.preventDefault());
+  // With no VI open, closing it quits; with VIs open it only hides (unverified in LabVIEW).
+  window.on("close", (event) => {
+    if (quitting || !openVIs.size) return;
+    event.preventDefault();
+    window.hide();
+  });
+  window.on("closed", () => {
+    gettingStarted = null;
+    if (!openVIs.size) app.quit();
+  });
+  window.loadURL("solder://editor/getting-started.html");
+  return window;
+}
+
+/** Shows the Getting Started window, on the next carousel page. */
+function showGettingStarted() {
+  gettingStarted ??= createGettingStarted();
+  changeStartState(nextCarouselPage(startState));
+  const window = gettingStarted;
+  if (window.webContents.isLoading()) window.once("ready-to-show", () => showWindow(window));
+  else showWindow(window);
 }
 
 /** What a page learns about its VI when it starts. */
@@ -364,6 +451,20 @@ function handleRequests() {
   ipcMain.on("vi:avisar", (event, message, detail) => {
     dialog.showMessageBox(ownerOf(event), { type: "warning", message, detail });
   });
+  // The Getting Started window: what it remembers, a recent file clicked, and View ▸ Getting Started Window....
+  ipcMain.handle("start:init", () => ({ ...startState, version: app.getVersion() }));
+  ipcMain.handle("start:open-recent", (event, filePath) => openPath(filePath, ownerOf(event)));
+  ipcMain.on("start:show", () => showGettingStarted());
+  // File ▸ New VI (Ctrl+N): a blank VI, numbered after every Untitled before it.
+  ipcMain.on("vi:new", () => openNewVI());
+  // File ▸ Close (Ctrl+W): on the Front Panel the whole VI leaves memory; on the Block Diagram only that window hides.
+  ipcMain.on("vi:close-window", (event) => {
+    const open = openOf(event);
+    if (open.windows["block-diagram"].webContents.id === event.sender.id) return open.windows["block-diagram"].hide();
+    closeVI(open);
+  });
+  // File ▸ Close All.
+  ipcMain.on("vi:close-all", (event) => closeAllVIs(ownerOf(event)));
   // A VI that could not be read closes without asking: there is nothing to save.
   ipcMain.on("vi:close", (event) => closeVI(openOf(event), { force: true }));
   // File ▸ Exit: asks about each VI with unsaved changes, then quits (REPORT.md §3).
@@ -394,10 +495,16 @@ app.whenReady().then(async () => {
   serve();
   handleRequests();
   // SOLDER_ABRIR=<file.sdg>: starts with that VI open instead of a new one (for the comparisons of capturing-labview.md §5).
-  const fileToOpen = process.env.SOLDER_ABRIR ?? viFileInArguments(process.argv);
-  const first = fileToOpen ? await openFirstFile(path.resolve(fileToOpen)) : openNewVI();
+  await loadStartState();
   app.on("before-quit", () => (quitting = true));
-  if (process.env.SOLDER_CAPTURAS) capture(first.windows, process.env.SOLDER_CAPTURAS);
+  // LabVIEW starts on its Getting Started window; started with a VI file it opens only that VI (REPORT.md §3).
+  // The captures for the comparisons start on a new VI.
+  const fileToOpen = process.env.SOLDER_ABRIR ?? viFileInArguments(process.argv);
+  if (fileToOpen) {
+    const first = await openFirstFile(path.resolve(fileToOpen));
+    if (process.env.SOLDER_CAPTURAS) capture(first.windows, process.env.SOLDER_CAPTURAS);
+  } else if (process.env.SOLDER_CAPTURAS) capture(openNewVI().windows, process.env.SOLDER_CAPTURAS);
+  else showGettingStarted();
 });
 
 app.on("window-all-closed", () => app.quit());

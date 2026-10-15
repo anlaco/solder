@@ -28,6 +28,12 @@ contextBridge.exposeInMainWorld("solder", {
   avisar: (mensaje, detalle) => ipcRenderer.send("vi:avisar", mensaje, detalle),
   /** Closes the windows of this VI without asking (it could not be read). */
   cerrar: () => ipcRenderer.send("vi:close"),
+  /** File ▸ New VI: a blank VI in its own windows. */
+  nuevoVI: () => ipcRenderer.send("vi:new"),
+  /** File ▸ Close: the whole VI from its Front Panel, only the window from its Block Diagram. */
+  cerrarVentana: () => ipcRenderer.send("vi:close-window"),
+  /** File ▸ Close All. */
+  cerrarTodos: () => ipcRenderer.send("vi:close-all"),
   /** File ▸ Exit. */
   salir: () => ipcRenderer.send("vi:salir"),
   /** Ctrl+E: brings forward the other window of this VI (Front Panel or Block Diagram). */
@@ -40,6 +46,17 @@ contextBridge.exposeInMainWorld("solder", {
     leer: () => ipcRenderer.invoke("clipboard:read"),
     /** Something was copied or cut in some window: `callback(text)`. */
     alCambiar: (callback) => ipcRenderer.on("clipboard:changed", (_event, texto) => callback(texto)),
+  },
+  /** The Getting Started window (DT-052). */
+  inicio: {
+    /** What it remembers and Solder's version: `{ recentFiles, carouselPage, version }`. */
+    iniciar: () => ipcRenderer.invoke("start:init"),
+    /** Opens a file of the recent list. */
+    abrirReciente: (ruta) => ipcRenderer.invoke("start:open-recent", ruta),
+    /** View ▸ Getting Started Window...: shows it, from any VI. */
+    mostrar: () => ipcRenderer.send("start:show"),
+    /** The recent files or the carousel page changed: `callback(state)`. */
+    alCambiar: (callback) => ipcRenderer.on("start:state", (_event, state) => callback(state)),
   },
   /** Some VI was saved, at this absolute path: `callback({ id, key })`. The callers of a saved subVI must see its new connector. */
   alGuardar: (callback) => ipcRenderer.on("vi:saved", (_event, saved) => callback(saved)),

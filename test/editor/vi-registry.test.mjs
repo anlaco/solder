@@ -56,3 +56,10 @@ test("closing a VI leaves the others open", () => {
   registry.close(b.id);
   assert.equal(registry.open({ path: "/vis/add2.qvi" }).alreadyOpen, false);
 });
+
+test("an Untitled number is never given again, even after its VI closes", () => {
+  const registry = createRegistry();
+  const first = registry.open().entry;
+  registry.close(first.id);
+  assert.equal(viName(registry.open().entry), "Untitled 2");
+});

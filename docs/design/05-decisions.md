@@ -1699,3 +1699,43 @@ shared-mime-info.
 | Every example is a `.sdg` and every subVI it calls exists | "every example is a .sdg…" in `test/editor/vi-paths.test.mjs`; `cli/solder.mjs check` on each | **Verified** (2026-10-15) |
 | A `.sdg` caller runs a `.qvi` subVI; a missing subVI is reported | `cli/solder.mjs check` on a copy of Temperature Monitor (2026-10-15) | **Verified** by hand, no test |
 | The Windows installer associates `.sdg` and `.qvi` and the uninstaller removes both | the next installer test in the VM | **Pending** |
+
+## DT-052
+
+**Solder has LabVIEW's Getting Started window: it starts on it, and it comes back when the last VI closes.**
+
+- **Status:** Accepted on 2026-10-15. Closing the last VI with File ▸ Close or Close All had to do
+  something, and LabVIEW shows its Getting Started window; asked between quitting, opening a blank VI
+  and cloning that window, the developer chose to clone it. Measured the same day
+  (`labview-captures/reports/2026-10-15-file-close.md`, `2026-10-15-getting-started.md`).
+
+### Decision
+
+1. **Start.** Without a file, Solder starts on the Getting Started window, as LabVIEW does. Started with a
+   VI file (a double click in the file manager, `SOLDER_ABRIR`), it opens only that VI. The captures for
+   the comparisons (`SOLDER_CAPTURAS`) still start on a new VI.
+2. **Lifecycle.** Opening or creating a VI hides it; closing the last VI shows it again, on the next
+   carousel page; closing it with no VI open quits Solder without a question. Closing it while VIs are open
+   only hides it (**unverified** in LabVIEW). View ▸ Getting Started Window... shows it from any VI.
+3. **Layout, 1:1.** Its menu bar (File, Operate, Tools, Help), the three panels (Create Project, Open
+   Existing with its recent list and filter, the carousel with its pager and collapse button) and the two
+   captions, at the measured places and colours. What Solder does not do is greyed with its reason
+   (DT-035): Create Project and the templates (no projects yet), Operate, Tools and most of Help.
+4. **Texts and images of its own.** The product name is Solder with its version, the logo is Solder's
+   icon, and the eight carousel pages and the captions are written anew about Solder (CLAUDE.md rule 3);
+   their links, which go to NI's web in LabVIEW, are greyed until Solder has pages to send them to.
+5. **What it remembers** lives in `getting-started.json` in the user's data folder: the recent files
+   (each VI opened or saved goes to the top, at most 30) and the carousel page.
+   `editor/src/getting-started/start-state.mjs` has the rules, pure and shared by the main process and the
+   page.
+
+### Verification
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Recent list order and limit, the filter, the carousel wrapping | `test/editor/start-state.test.mjs` | **Verified** (2026-10-15) |
+| Start, hide, come back on the last close, quit on its X; the carousel moving on | the editor under Xvfb, driven by the labview-driver agent (`labview-captures/solder-close-check/`, 2026-10-15) | **Verified** by hand, no test |
+
+**Known differences:** the dialogs are the system's, so on a Spanish desktop their Cancel reads "Cancelar"
+(the Exit dialog too); the first show on a new user-data folder is page 2, since the page moves on before
+each show.

@@ -1357,7 +1357,9 @@ const MENU_COMPARISON = {
 /** Filas que en LabVIEW abren un submenú aunque su contenido no esté declarado. Es disposición. */
 const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "select-item", "type-palette", "cluster-type-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
   // The graphs (labview-captures/graphs/): rows whose submenus are not declared yet.
-  "marker-spacing", "style", "property-node", "invoke-node", "run-time-shortcut-menu", "enabled-state", "update-mode", "export", "x-scale", "y-scale", "common-plots", "color", "line-style", "line-width", "bar-plots", "fill-base-line", "interpolation", "point-style"];
+  "marker-spacing", "style", "property-node", "invoke-node", "run-time-shortcut-menu", "enabled-state", "update-mode", "export", "x-scale", "y-scale", "common-plots", "color", "line-style", "line-width", "bar-plots", "fill-base-line", "interpolation", "point-style",
+  // The Getting Started window's menus (labview-captures/getting-started/).
+  "instrumentation", "real-time-module", "merge", "security", "source-control", "vi-analyzer", "import", "shared-variable", "control-and-simulation", "hobbyist", "recent-projects", "recent-files"];
 
 /**
  * El submenú Representation no es una lista: es una rejilla de iconos de 4

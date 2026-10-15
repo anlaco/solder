@@ -340,6 +340,10 @@
     "decoraciones": {
       "desc": "Las decoraciones del diagrama: marcos, rótulos y flechas para ordenarlo"
     },
+    "paginas-web": {
+      "desc": "Web pages that Solder can send the user to: its documentation, downloads and support. There are none yet",
+      "ref": "design/05-decisions.md DT-052"
+    },
     "auto-grow": {
       "desc": "Auto Grow: una estructura que crece sola al acercarle un objeto"
     },
@@ -773,9 +777,8 @@
     {
       "id": "window.front-panel.menu.file.new-vi",
       "etiqueta": "New VI",
-      "estado": "todo",
-      "labview": "Crea un VI nuevo en blanco, con su panel y su diagrama.",
-      "necesita": "varios-vis",
+      "estado": "built",
+      "prueba": "test/editor/window-layout.test.mjs::Ctrl+N_is_New_VI_and_Ctrl+W_is_Close,_as_in_LabVIEW's_File_menu",
       "atajo": "Ctrl+N",
       "captura": "front-panel/menu-file.png"
     },
@@ -798,18 +801,16 @@
     {
       "id": "window.front-panel.menu.file.close",
       "etiqueta": "Close",
-      "estado": "todo",
-      "labview": "Cierra el VI; si tiene cambios sin guardar, pregunta antes.",
-      "necesita": "varios-vis",
+      "estado": "built",
+      "prueba": "test/editor/close-flow.test.mjs::the_Close_dialog_has_LabVIEW's_title,_texts_and_buttons,_without_«(Close)»_in_the_title",
       "atajo": "Ctrl+W",
       "captura": "front-panel/menu-file.png"
     },
     {
       "id": "window.front-panel.menu.file.close-all",
       "etiqueta": "Close All",
-      "estado": "todo",
-      "labview": "Cierra todos los VIs abiertos.",
-      "necesita": "varios-vis",
+      "estado": "built",
+      "prueba": "test/editor/close-flow.test.mjs::Don't_Save_-_All_answers_once_for_every_VI_with_changes_and_skips_the_ones_without",
       "captura": "front-panel/menu-file.png"
     },
     {
@@ -1391,9 +1392,8 @@
     {
       "id": "window.block-diagram.menu.file.new-vi",
       "etiqueta": "New VI",
-      "estado": "todo",
-      "labview": "Crea un VI nuevo en blanco, con su panel y su diagrama.",
-      "necesita": "varios-vis",
+      "estado": "built",
+      "prueba": "test/editor/window-layout.test.mjs::Ctrl+N_is_New_VI_and_Ctrl+W_is_Close,_as_in_LabVIEW's_File_menu",
       "atajo": "Ctrl+N",
       "captura": "block-diagram/menu-file.png"
     },
@@ -1416,18 +1416,16 @@
     {
       "id": "window.block-diagram.menu.file.close",
       "etiqueta": "Close",
-      "estado": "todo",
-      "labview": "Cierra el VI; si tiene cambios sin guardar, pregunta antes.",
-      "necesita": "varios-vis",
+      "estado": "built",
+      "prueba": "test/editor/close-flow.test.mjs::the_Close_dialog_has_LabVIEW's_title,_texts_and_buttons,_without_«(Close)»_in_the_title",
       "atajo": "Ctrl+W",
       "captura": "block-diagram/menu-file.png"
     },
     {
       "id": "window.block-diagram.menu.file.close-all",
       "etiqueta": "Close All",
-      "estado": "todo",
-      "labview": "Cierra todos los VIs abiertos.",
-      "necesita": "varios-vis",
+      "estado": "built",
+      "prueba": "test/editor/close-flow.test.mjs::Don't_Save_-_All_answers_once_for_every_VI_with_changes_and_skips_the_ones_without",
       "captura": "block-diagram/menu-file.png"
     },
     {
@@ -1998,9 +1996,8 @@
     {
       "id": "window.block-diagram.menu.view.getting-started-window",
       "etiqueta": "Getting Started Window...",
-      "estado": "todo",
-      "labview": "Opens the start window of the application.",
-      "necesita": "editor-escritorio",
+      "estado": "built",
+      "prueba": "test/editor/getting-started.test.mjs::View_Getting_Started_Window_is_a_command_of_the_VI_windows",
       "captura": "debugging/65-view-menu.png"
     },
     {
@@ -16095,6 +16092,468 @@
       "labview": "La pestaña de la descripción del objeto.",
       "necesita": "propiedades",
       "captura": "enum-edit/41-eidialog.png"
+    },
+    {
+      "id": "window.getting-started",
+      "etiqueta": "Getting Started",
+      "estado": "built",
+      "prueba": "test/editor/getting-started.test.mjs::Getting_Started_greyed_items_explain_themselves_through_the_inventory",
+      "captura": "getting-started/window.png"
+    },
+    {
+      "id": "window.getting-started.create-project",
+      "etiqueta": "Create Project",
+      "estado": "todo",
+      "labview": "Opens the Create Project dialog to start a new project from a template.",
+      "necesita": "formato-sdproj",
+      "captura": "getting-started/window.png"
+    },
+    {
+      "id": "window.getting-started.recent-project-templates.blank-project",
+      "etiqueta": "Blank Project",
+      "estado": "todo",
+      "labview": "Creates an empty project.",
+      "necesita": "formato-sdproj",
+      "captura": "getting-started/window.png"
+    },
+    {
+      "id": "window.getting-started.carousel-link",
+      "etiqueta": "Read more",
+      "estado": "todo",
+      "labview": "The link at the end of each carousel page opens a web page about its subject.",
+      "necesita": "paginas-web",
+      "captura": "getting-started/window.png"
+    },
+    {
+      "id": "window.getting-started.caption-link",
+      "etiqueta": "Caption link",
+      "estado": "todo",
+      "labview": "The headings of the two captions at the bottom open web pages: where to find drivers and add-ons, and the community and support.",
+      "necesita": "paginas-web",
+      "captura": "getting-started/window.png"
+    },
+    {
+      "id": "window.getting-started.menu.file",
+      "etiqueta": "File",
+      "estado": "built",
+      "prueba": "test/editor/getting-started.test.mjs::File_menu_rows_run_the_commands_of_the_window",
+      "captura": "getting-started/menu_File.png"
+    },
+    {
+      "id": "window.getting-started.menu.file.new-vi",
+      "etiqueta": "New VI",
+      "estado": "built",
+      "prueba": "test/editor/getting-started.test.mjs::File_menu_rows_run_the_commands_of_the_window",
+      "atajo": "Ctrl+N",
+      "captura": "getting-started/menu_File.png"
+    },
+    {
+      "id": "window.getting-started.menu.file.new",
+      "etiqueta": "New...",
+      "estado": "todo",
+      "labview": "Opens the dialog to create a VI, a project or another file from a template.",
+      "necesita": "varios-vis",
+      "captura": "getting-started/menu_File.png"
+    },
+    {
+      "id": "window.getting-started.menu.file.open",
+      "etiqueta": "Open...",
+      "estado": "built",
+      "prueba": "test/editor/getting-started.test.mjs::File_menu_rows_run_the_commands_of_the_window",
+      "atajo": "Ctrl+O",
+      "captura": "getting-started/menu_File.png"
+    },
+    {
+      "id": "window.getting-started.menu.file.create-project",
+      "etiqueta": "Create Project...",
+      "estado": "todo",
+      "labview": "Opens the Create Project dialog.",
+      "necesita": "formato-sdproj",
+      "captura": "getting-started/menu_File.png",
+      "separado": true
+    },
+    {
+      "id": "window.getting-started.menu.file.open-project",
+      "etiqueta": "Open Project...",
+      "estado": "todo",
+      "labview": "Opens a project.",
+      "necesita": "formato-sdproj",
+      "captura": "getting-started/menu_File.png"
+    },
+    {
+      "id": "window.getting-started.menu.file.recent-projects",
+      "etiqueta": "Recent Projects",
+      "estado": "todo",
+      "labview": "The projects opened lately. With none, the row is disabled.",
+      "necesita": "recientes",
+      "captura": "getting-started/menu_File.png",
+      "separado": true
+    },
+    {
+      "id": "window.getting-started.menu.file.recent-files",
+      "etiqueta": "Recent Files",
+      "estado": "built",
+      "prueba": "test/editor/getting-started.test.mjs::Recent_Files_lists_the_recent_files_by_name_and_opens_them",
+      "captura": "getting-started/menu_File.png"
+    },
+    {
+      "id": "window.getting-started.menu.file.exit",
+      "etiqueta": "Exit",
+      "estado": "built",
+      "prueba": "test/editor/getting-started.test.mjs::File_menu_rows_run_the_commands_of_the_window",
+      "atajo": "Ctrl+Q",
+      "captura": "getting-started/menu_File.png",
+      "separado": true
+    },
+    {
+      "id": "window.getting-started.menu.operate",
+      "etiqueta": "Operate",
+      "estado": "todo",
+      "labview": "Operations on the running application.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Operate.png"
+    },
+    {
+      "id": "window.getting-started.menu.operate.connect-to-remote-panel",
+      "etiqueta": "Connect to Remote Panel...",
+      "estado": "todo",
+      "labview": "Shows the front panel of a VI that runs on another computer.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Operate.png"
+    },
+    {
+      "id": "window.getting-started.menu.operate.debug-application-or-shared-library",
+      "etiqueta": "Debug Application or Shared Library...",
+      "estado": "todo",
+      "labview": "Attaches the debugger to a built application or shared library.",
+      "necesita": "construir-distribuible",
+      "captura": "getting-started/menu_Operate.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools",
+      "etiqueta": "Tools",
+      "estado": "todo",
+      "labview": "The tools of the environment, from instrument configuration to the options.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.measurement-automation-explorer",
+      "etiqueta": "Measurement & Automation Explorer...",
+      "estado": "todo",
+      "labview": "Opens the program that configures the instruments and data acquisition devices.",
+      "necesita": "drivers-de-adquisicion",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.instrumentation",
+      "etiqueta": "Instrumentation",
+      "estado": "todo",
+      "labview": "A submenu of instrument tools.",
+      "necesita": "drivers-de-adquisicion",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.real-time-module",
+      "etiqueta": "Real-Time Module",
+      "estado": "todo",
+      "labview": "A submenu of tools for real-time targets.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png",
+      "separado": true
+    },
+    {
+      "id": "window.getting-started.menu.tools.merge",
+      "etiqueta": "Merge",
+      "estado": "todo",
+      "labview": "A submenu to compare and merge two versions of a VI.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png",
+      "separado": true
+    },
+    {
+      "id": "window.getting-started.menu.tools.security",
+      "etiqueta": "Security",
+      "estado": "todo",
+      "labview": "A submenu to protect and give access to a VI.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.user-name",
+      "etiqueta": "User Name...",
+      "estado": "todo",
+      "labview": "Sets the name that is stored with the changes made to a VI.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.source-control",
+      "etiqueta": "Source Control",
+      "estado": "todo",
+      "labview": "A submenu to work with a source control system.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png",
+      "separado": true
+    },
+    {
+      "id": "window.getting-started.menu.tools.vi-analyzer",
+      "etiqueta": "VI Analyzer",
+      "estado": "todo",
+      "labview": "A submenu to check VIs against a set of style rules.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.llb-manager",
+      "etiqueta": "LLB Manager...",
+      "estado": "todo",
+      "labview": "Opens the window that manages the contents of VI libraries.",
+      "necesita": "librerias",
+      "captura": "getting-started/menu_Tools.png",
+      "separado": true
+    },
+    {
+      "id": "window.getting-started.menu.tools.import",
+      "etiqueta": "Import",
+      "estado": "todo",
+      "labview": "A submenu to import data and files.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.shared-variable",
+      "etiqueta": "Shared Variable",
+      "estado": "todo",
+      "labview": "A submenu to manage shared variables.",
+      "necesita": "variables-y-feedback",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.distributed-system-manager",
+      "etiqueta": "Distributed System Manager",
+      "estado": "todo",
+      "labview": "Opens the program that monitors the shared variables of a network.",
+      "necesita": "variables-y-feedback",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.create-data-link",
+      "etiqueta": "Create Data Link...",
+      "estado": "todo",
+      "labview": "Creates a file that points to a data source.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png",
+      "separado": true
+    },
+    {
+      "id": "window.getting-started.menu.tools.find-vis-on-disk",
+      "etiqueta": "Find VIs on Disk...",
+      "estado": "todo",
+      "labview": "Searches the disk for VIs.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.prepare-example-vis-for-ni-example-finder",
+      "etiqueta": "Prepare Example VIs for NI Example Finder...",
+      "estado": "todo",
+      "labview": "Prepares a folder of VIs to be found in the example finder.",
+      "necesita": "ejemplos",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.remote-panel-connection-manager",
+      "etiqueta": "Remote Panel Connection Manager...",
+      "estado": "todo",
+      "labview": "Manages the connections of remote panels.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.web-publishing-tool",
+      "etiqueta": "Web Publishing Tool...",
+      "estado": "todo",
+      "labview": "Publishes the front panel of a VI as a web page.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.control-and-simulation",
+      "etiqueta": "Control and Simulation",
+      "estado": "todo",
+      "labview": "A submenu of tools to simulate and control dynamic systems.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.find-solder-add-ons",
+      "etiqueta": "Find Solder Add-ons...",
+      "estado": "todo",
+      "labview": "Opens the catalog of add-ons.",
+      "necesita": "paginas-web",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.hobbyist",
+      "etiqueta": "Hobbyist",
+      "estado": "todo",
+      "labview": "A submenu of tools for hobby projects.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.utf-8-migration-tool",
+      "etiqueta": "UTF-8 Migration Tool...",
+      "estado": "todo",
+      "labview": "Migrates the text of VIs to UTF-8. Disabled in the capture.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.tools.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "A submenu of advanced tools.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png",
+      "separado": true
+    },
+    {
+      "id": "window.getting-started.menu.tools.options",
+      "etiqueta": "Options...",
+      "estado": "todo",
+      "labview": "Opens the dialog with the options of the environment.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Tools.png"
+    },
+    {
+      "id": "window.getting-started.menu.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "The help of the environment.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Help.png"
+    },
+    {
+      "id": "window.getting-started.menu.help.show-context-help",
+      "etiqueta": "Show Context Help",
+      "estado": "todo",
+      "labview": "Shows the window that describes what is under the cursor.",
+      "necesita": "ayuda-contextual",
+      "atajo": "Ctrl+H",
+      "captura": "getting-started/menu_Help.png"
+    },
+    {
+      "id": "window.getting-started.menu.help.lock-context-help",
+      "etiqueta": "Lock Context Help",
+      "estado": "todo",
+      "labview": "Keeps the context help on the object it shows. Disabled while that window is closed.",
+      "necesita": "ayuda-contextual",
+      "atajo": "Ctrl+Shift+L",
+      "captura": "getting-started/menu_Help.png"
+    },
+    {
+      "id": "window.getting-started.menu.help.solder-help",
+      "etiqueta": "Solder Help...",
+      "estado": "todo",
+      "labview": "Opens the help of the environment.",
+      "necesita": "paginas-web",
+      "atajo": "Ctrl+?",
+      "captura": "getting-started/menu_Help.png",
+      "separado": true
+    },
+    {
+      "id": "window.getting-started.menu.help.explain-error",
+      "etiqueta": "Explain Error...",
+      "estado": "todo",
+      "labview": "Explains an error code.",
+      "necesita": "dialogos-de-usuario",
+      "captura": "getting-started/menu_Help.png"
+    },
+    {
+      "id": "window.getting-started.menu.help.find-examples",
+      "etiqueta": "Find Examples...",
+      "estado": "todo",
+      "labview": "Opens the example finder.",
+      "necesita": "ejemplos",
+      "captura": "getting-started/menu_Help.png",
+      "separado": true
+    },
+    {
+      "id": "window.getting-started.menu.help.find-instrument-drivers",
+      "etiqueta": "Find Instrument Drivers...",
+      "estado": "todo",
+      "labview": "Searches for instrument drivers.",
+      "necesita": "drivers-de-adquisicion",
+      "captura": "getting-started/menu_Help.png"
+    },
+    {
+      "id": "window.getting-started.menu.help.web-resources",
+      "etiqueta": "Web Resources...",
+      "estado": "todo",
+      "labview": "Opens the web resources of the environment.",
+      "necesita": "paginas-web",
+      "captura": "getting-started/menu_Help.png"
+    },
+    {
+      "id": "window.getting-started.menu.help.hobbyist",
+      "etiqueta": "Hobbyist",
+      "estado": "todo",
+      "labview": "A submenu of help for hobby projects.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Help.png",
+      "separado": true
+    },
+    {
+      "id": "window.getting-started.menu.help.activate-solder-components",
+      "etiqueta": "Activate Solder Components...",
+      "estado": "todo",
+      "labview": "Activates the components of the environment with a license.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Help.png",
+      "separado": true
+    },
+    {
+      "id": "window.getting-started.menu.help.activate-add-ons",
+      "etiqueta": "Activate Add-ons...",
+      "estado": "todo",
+      "labview": "Activates the add-ons with a license.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Help.png"
+    },
+    {
+      "id": "window.getting-started.menu.help.check-for-updates",
+      "etiqueta": "Check for Updates",
+      "estado": "todo",
+      "labview": "Looks for a newer version.",
+      "necesita": "paginas-web",
+      "captura": "getting-started/menu_Help.png"
+    },
+    {
+      "id": "window.getting-started.menu.help.customer-experience-improvement-program",
+      "etiqueta": "Customer Experience Improvement Program...",
+      "estado": "todo",
+      "labview": "Opens the options of the program that sends usage data.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Help.png"
+    },
+    {
+      "id": "window.getting-started.menu.help.patents",
+      "etiqueta": "Patents...",
+      "estado": "todo",
+      "labview": "Lists the patents that cover the product.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Help.png",
+      "separado": true
+    },
+    {
+      "id": "window.getting-started.menu.help.about-solder",
+      "etiqueta": "About Solder...",
+      "estado": "todo",
+      "labview": "Shows the version and the credits.",
+      "necesita": "editor-escritorio",
+      "captura": "getting-started/menu_Help.png"
     }
   ]
 }

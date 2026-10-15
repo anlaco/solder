@@ -59,3 +59,8 @@ test("Ctrl+T tiles the windows and the older shortcuts are still there", () => {
   assert.equal(commandForCtrlKey("j"), undefined);
   assert.ok(Object.keys(CTRL_SHORTCUT_COMMANDS).includes("e"));
 });
+
+test("Ctrl+N is New VI and Ctrl+W is Close, as in LabVIEW's File menu", () => {
+  assert.equal(commandForCtrlKey("n"), "new-vi");
+  assert.equal(commandForCtrlKey("W"), "close");
+});

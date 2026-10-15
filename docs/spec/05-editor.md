@@ -1137,3 +1137,27 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/editor-checks/REPORT.md`; the cap
 > **unverified**). On the For Loop's **count** and on the **iteration** terminal the rows work like those of a node's terminal
 > (the object made of the terminal's type, wired when it fits; the constant of the count goes outside the loop, where its wire
 > comes from); their labels and places are **unverified**. Tested in `test/editor/loop-terminals-create.test.mjs`.
+
+## 19. New VI, Close and Close All (2026-10-15)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-15-file-close.md`).
+
+> **Rule 101 — File ▸ New VI (Ctrl+N).** It opens a blank VI in its own pair of windows, placed as rule 99 says, from either
+> window of any VI. Its name is **Untitled N**, and N never goes back: closing Untitled 1 and pressing Ctrl+N gives Untitled 2,
+> and every way of making a VI shares one counter. Tested in `test/editor/vi-registry.test.mjs` and
+> `test/editor/window-layout.test.mjs`.
+
+> **Rule 102 — File ▸ Close (Ctrl+W).** On the **Front Panel** the whole VI leaves memory, both windows. A VI without unsaved
+> changes (a new one never touched included) closes at once; one with changes asks first: "Save changes before closing?" (no
+> "(Close)" in this title), "<VI> has unsaved changes. <VI> is about to leave memory. Its unsaved changes will be lost.",
+> **Save** (the default), **Don't Save** and **Cancel**, which closes nothing. On the **Block Diagram** Close only hides that
+> window, without a question, and the VI stays with its Front Panel (Ctrl+E brings the diagram back). **Unverified:** Close on the
+> Block Diagram of a VI with changes; Esc and the dialog's X (taken here as Cancel). Tested in `test/editor/close-flow.test.mjs`.
+
+> **Rule 103 — File ▸ Close All** (no shortcut). One dialog, "Save changes? (Close All)", about the VI **created last** among
+> those with changes (not the one in front), with the texts of rule 102 and a box **"Apply same action to the remaining N affected
+> items"**, checked; its buttons are **Save - All** (the default), **Don't Save - All** and **Cancel**. Checked, the answer is
+> applied to all; unchecked, each VI gets its own dialog, the last one without the box. The VIs without changes are not asked
+> about but close too. Cancel, or a cancelled Save As, closes nothing. The "List unsaved changes..." link and LabVIEW's list of
+> affected items are not there (the dialog is the system's), and its buttons do not turn into Save / Don't Save when the box is
+> unchecked. Tested in `test/editor/close-flow.test.mjs`.
