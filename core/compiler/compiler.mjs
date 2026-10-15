@@ -143,6 +143,20 @@ let zonaCero = 0;
  * campos en orden, los escalares dentro, alineados a su tamaño; una cadena, como
  * la celda de su handle; un cluster dentro de otro, en línea. `tam` va alineado a 8.
  */
+/**
+ * Reads the given fields of the cluster at the node's input, without copying
+ * (DT-042): a string or a cluster by its address, a scalar by its value.
+ */
+function readClusterFields(e, fields) {
+  const cluster = e.temporal("i32");
+  const reads = [...e.entrada(0), ins("local.set", cluster)];
+  for (const field of fields) {
+    if (porReferencia(field.tipo)) reads.push(ins("local.get", cluster), ins("i32.const", field.off), ins("i32.add"));
+    else reads.push(ins("local.get", cluster), ins(`${tipoWasm(field.tipo)}.load`, field.off));
+  }
+  return reads;
+}
+
 export function disposicion(t) {
   let off = 0;
   const campos = [];
@@ -618,14 +632,12 @@ const BLOQUES = {
     });
     return [...r, ins("i32.const", b)];
   },
-  unbundle: (e) => {
-    const x = e.temporal("i32");
-    const r = [...e.entrada(0), ins("local.set", x)];
-    for (const c of disposicion(e.tIn(0)).campos) {
-      if (porReferencia(c.tipo)) r.push(ins("local.get", x), ins("i32.const", c.off), ins("i32.add"));
-      else r.push(ins("local.get", x), ins(`${tipoWasm(c.tipo)}.load`, c.off));
-    }
-    return r;
+  unbundle: (e) => readClusterFields(e, disposicion(e.tIn(0)).campos),
+  // Unbundle By Name: the same reads, only the named rows and in their order (DT-050).
+  "unbundle-by-name": (e) => {
+    const fields = disposicion(e.tIn(0)).campos;
+    const rows = (e.nodo.config?.items ?? []).filter((field) => field !== null);
+    return readClusterFields(e, rows.map((field) => fields.find((c) => c.nombre === field)));
   },
   // El cluster de error (DT-043).
   "error-cluster-constant": (e) => [ins("i32.const", e.clusterConstante(ERROR, e.nodo.config?.value ?? {}))],

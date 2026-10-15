@@ -2029,6 +2029,34 @@ Object.assign(SUBPALETAS, {
 });
 
 
+// ——— Functions ▸ Programming ▸ Cluster, Class, & Variant ———
+//
+// Sizes of the four bundle and unbundle nodes measured at 1:1 in labview-captures/cluster/d1.png (the body, without
+// the terminal stubs). The others are holes not yet dropped in LabVIEW and take the unmeasured 32 × 32. The drawings
+// are our own (DT-035 §8): a yellow box with a short label.
+// [id, width, height, label, size]
+for (const [id, w, h, r, t] of [
+  ["unbundle-by-name", 30, 17, "→.n", 10],
+  ["bundle-by-name", 30, 17, ".n→", 10],
+  ["unbundle", 32, 17, "→∷", 11],
+  ["bundle", 32, 17, "∷→", 11],
+  ["cluster-constant", 32, 32, "{ }", 12],
+  ["build-cluster-array", 32, 32, "[{ }]", 10],
+  ["index-and-bundle-cluster-array", 32, 32, "[{i}]", 10],
+  ["call-parent-class-method", 32, 32, "↑m", 12],
+  ["to-more-specific-class", 32, 32, "↓C", 12],
+  ["to-more-generic-class", 32, 32, "↑C", 12],
+  ["preserve-run-time-class", 32, 32, "=C", 12],
+  ["lv-object-constant", 32, 32, "Obj", 10],
+  ["get-lv-class-default-value", 32, 32, "C⇐", 11],
+  ["get-lv-class-path", 32, 32, "C:/", 11],
+  ["get-lv-class-default-value-by-name", 32, 32, "C⇐n", 9],
+  ["get-lv-class-name", 32, 32, "C→n", 10],
+]) nodoCadena(id, w, h, r, t);
+
+// The Variant folder: a box with the two handles of the variant terminal, drawn anew.
+SUBPALETAS.variant = svg(caja(3.5, 4, 12.5, 12, PRIM, 0.9, BORDE) + lleno(1.5, 6.5, 3.5, 9.5, BORDE) + lleno(12.5, 6.5, 14.5, 9.5, BORDE) + linea(3.5, 4, 6, 2, 0.9) + linea(6, 2, 10, 2, 0.9));
+
 /**
  * El dibujo del terminal de un array en el diagrama (labview-captures/array/array-control-terminal-diagrama.png y
  * array-indicador-terminal.png): tres celdas de índice i, j y k a la izquierda y la caja de los elementos arriba a

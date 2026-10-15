@@ -364,6 +364,25 @@ constant its value is a list of rows; a ragged value is padded with the element'
 
 **Measured in LabVIEW 2026 Q3:** a 2D wire is 3 px —the type's color, white, the type's color—; a 1D one, 2 px; a scalar, 1 px.
 
+### 6.3d Clusters by name (DT-050, 2026-10-15)
+
+> **Rule 21l — Unbundle By Name.** Measured in LabVIEW 2026 Q3 with an Error Cluster Constant
+> (`labview-captures/reports/2026-10-15-unbundle-by-name.md`), tested in `test/core/unbundle-by-name.test.mjs`:
+>
+> - A fresh node has one row with no name and no output. Wiring a cluster names it after the first
+>   element (`status` for the error cluster); each output takes the type of the element its row names.
+> - Growing the node names each new row after the one above it; past the last element, the last is
+>   repeated (`status, code, source, source, source`). A row's output gives that element's value: with
+>   TRUE, 42 and `abc` the rows give exactly those.
+> - Select Item changes the element a row shows; its wire stays and takes the new type. Remove Element
+>   takes the row and its wire (measured on the last row; on another row, the rows below move up with
+>   their wires: unverified).
+> - With the cluster unwired the rows keep their names, the outputs have no type and the VI cannot run.
+>   Only a cluster can be wired in: anything else is a broken wire (the reason LabVIEW gives: unverified).
+> - Unverified: growing beyond five rows, shrinking by dragging, Add Element, and what LabVIEW does
+>   when the source cluster changes and a row's name no longer exists (here, that output has no type
+>   and its wire breaks).
+
 ### 6.4 String functions
 
 Measured in LabVIEW 2026 Q3 by building each function with one control per input and one

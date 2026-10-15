@@ -57,6 +57,8 @@ Each program had to go around something that a LabVIEW user would do without thi
   be measured.
 - **#23 Functions ▸ Cluster, Class & Variant is entirely "not yet":** without Unbundle By Name the status of
   an error cluster cannot be read.
+  *Fixed on 2026-10-15:* the subpalette is captured and declared, and Unbundle By Name is built (DT-050, spec/04
+  Rule 21l, spec/05 Rule 78b); Bundle, Unbundle and Bundle By Name stay greyed.
 - **#24 An error cluster wired to the condition of a While Loop is a broken wire.** LabVIEW (measured)
   accepts it: the Run arrow stays whole, the terminal takes the error-cluster colors and the loop stops when
   status is TRUE. This is the usual way to end an acquisition loop on error.
@@ -111,6 +113,8 @@ each is to be checked against Solder before fixing:
 - **#35 confirmed:** the menu of a Boolean tunnel says *Boolean Palette*; Solder says *Numeric Palette*.
 - **#37** At 1:1 the scalar Boolean wire is green and dotted (one pixel on, one off) and the string wire is
   pink and patterned; Solder draws both solid and spec/06 §4.2 says Boolean is "Solid".
+  *Measured on 2026-10-15* (spec/06 §4.2): Boolean `#007F00`, dotted 1 on / 1 off, 1 px; string `#FF00FF`, dotted 3 on / 1 off,
+  2 px. The colours are Solder's since that day; the patterns are still to be drawn.
 - **#38** A Waveform Chart keeps its history between runs (a second run continues the X axis). Not checked in
   Solder.
 - **#39** The source of an error raised inside a subVI carries the call chain: `Scan From String (arg 1) in

@@ -267,6 +267,9 @@
     "unbundle": { "cat": "cluster", "desc": "Descompone un cluster. Un puerto de salida por campo",
                   "in": [{ "name": "value", "type": { "var": "C" } }], "out": "dynamic:cluster-fields",
                   "dynamic-ports": true, "type-from": "config" },
+    "unbundle-by-name": { "cat": "cluster", "desc": "Unbundle By Name: one output per row, each the cluster element whose name the row shows; the type comes from the cluster wired in, looked up by name (DT-050). A row with no name yet has no output; an unwired node keeps its names and cannot run (labview-captures/reports/2026-10-15-unbundle-by-name.md)",
+                  "in": [{ "name": "cluster", "label": "cluster of named", "type": { "clusterOf": "C" } }], "out": "dynamic:named-fields",
+                  "dynamic-ports": true, "config": { "items": { "type": "fieldNames", "value": [null] } } },
 
     "error-cluster-constant": { "cat": "error", "desc": "Constante de error: status, code y source (DT-043)", "in": [], "out": [{ "name": "result", "label": "", "type": "error" }],
                   "config": { "default": { "type": "error", "value": { "status": false, "code": 0, "source": "" } } } },

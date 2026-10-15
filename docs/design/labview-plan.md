@@ -34,7 +34,7 @@ When the developer says "keep going":
   §3. First what is needed to program (types, functions, structures); then what
   organizes programs (subVIs, projects, classes).
 
-## 2. Where we are (2026-10-10)
+## 2. Where we are (2026-10-15)
 
 **The full circuit works:** a VI is built, saved to `.qvi`, opened the same way,
 and Run compiles it to WebAssembly and executes it **by dataflow, like
@@ -42,7 +42,7 @@ LabVIEW** (DT-040): independent branches run at the same time, each indicator is
 painted when its data arrives, Abort stops at once and the panel switches to Run
 mode. Since 2026-10-01 also **with loops**: While and For are placed, stretched
 and wired in the diagram, and the compiler runs them (DT-041).
-587 tests green. **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name.
+587 tests green. **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read.
 
 | Piece | Status |
 |-------|--------|
@@ -187,7 +187,13 @@ was reviewed the same day and closed on 2026-10-14: what a key or a click means 
 in its own module (`editor/src/window/modal-dialog.mjs`, which also took over the Chart History dialog)
 and the shell only applies it, with `test/editor/modal-dialogs.test.mjs` crossing that seam. The
 dialog's Delete follows the rule measured on 2026-10-15: by the name, not the row count. Still needed by the examples:
-   Unbundle By Name (#23), New VI (#1), and the comparison tests (4).*
+   New VI (#1) and the comparison tests (4).*
+   *Unbundle By Name (#23) done on 2026-10-15 (DT-050, spec/04 Rule 21l, spec/05 Rule 78b): Functions ▸ Programming ▸
+   Cluster, Class, & Variant captured and declared (only the cluster side planned; classes and Variant greyed), Unbundle By
+   Name built — the rows store the element names and take their types from the wire, grow by the bottom handle, change by
+   the click list or Select Item ▸, and lose a row with Remove Element — measured in LabVIEW
+   ([`2026-10-15-unbundle-by-name.md`](../../labview-captures/reports/2026-10-15-unbundle-by-name.md)) and checked in the
+   running editor at LabVIEW's 55 × 17 and 58 × 49. Bundle, Unbundle and Bundle By Name stay greyed until a program needs them.*
    **The enum's seam with the window, from the review of the #32 commit** (all four found by reading
    and running, none by the 581 tests); (a), (b) and (d) done on 2026-10-14, (c) on 2026-10-15:
    *(a) done: the Edit Items dialog had taken `pan.dialogo`, the field the Chart History dialog's

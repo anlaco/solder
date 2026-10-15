@@ -268,6 +268,8 @@ svg { display: block; overflow: visible; }
 .glifo-formato { position: absolute; inset: 0; pointer-events: none; }
 .glifo-formato svg { width: 100%; height: 100%; overflow: visible; }
 .glifo-formato .caja-tipo text { font: bold 6.5px Arial, "Liberation Sans", sans-serif; text-anchor: middle; dominant-baseline: central; }
+.fila-nombre { position: absolute; pointer-events: auto; cursor: default; }
+.glifo-formato .nombre-fila { font: var(--fuente) "Segoe UI", "Noto Sans", sans-serif; dominant-baseline: central; }
 .glifo-formato .porciento { font: bold 10px Arial, "Liberation Sans", sans-serif; text-anchor: middle; }
 .constante {
   position: absolute; inset: 0; background: #fff; border: 2px solid;

@@ -111,6 +111,13 @@
     "Flat Sequence Structure (en la paleta), Add Frame After/Before, Delete This Frame y",
     "Replace con la otra secuencia; la Stacked sólo sale de Replace (no está en la paleta).",
     "",
+    "FUNCTIONS ▸ PROGRAMMING ▸ CLUSTER, CLASS, & VARIANT (2026-10-15): captured in LabVIEW 2026 Q3",
+    "Community, in the VM, at 1:1, in labview-captures/cluster/ (report",
+    "labview-captures/reports/2026-10-15-cluster-palette.md): the subpalette (s4.png, pal_s.png: 5",
+    "columns, 19 elements and the thumbtack; names.png, the names shown on hover), the Variant folder opened (v1.png),",
+    "the four bundle and unbundle nodes dropped (d1.png) and their context help (ch1–ch4). Only the",
+    "cluster side is planned; classes and variants are declared and wait for their own pieces.",
+    "",
     "`necesita` nombra la pieza más concreta que se puede nombrar hoy. Que exista",
     "el editor (R1) se da por supuesto, salvo en lo que no espera nada más.",
     "",
@@ -429,6 +436,16 @@
     "ring": {
       "desc": "Los anillos (Text, Menu, Pict y Text & Pict Ring): pares de valor y etiqueta con valores libres y Allow undefined values",
       "ref": "labview-captures/reports/2026-10-14-enum-edit-items.md, pregunta 9"
+    },
+    "clases-de-labview": {
+      "desc": "LabVIEW classes: a .lvclass with private data, methods, inheritance and dynamic dispatch, and the functions that convert and query objects of a class"
+    },
+    "unbundle-add-element": {
+      "desc": "Add Element in the menu of a row of Unbundle By Name: not measured in LabVIEW yet (only stretching the node and Remove Element were)",
+      "ref": "labview-captures/reports/2026-10-15-unbundle-by-name.md, section 3"
+    },
+    "tipo-variant": {
+      "desc": "The variant type: a value that carries any LabVIEW type with it, with its attributes, and the functions that convert to and from it"
     }
   },
   "entradas": [
@@ -2924,10 +2941,169 @@
     {
       "id": "palette.functions.programming.cluster-class-and-variant",
       "etiqueta": "Cluster, Class, & Variant",
-      "estado": "todo",
-      "labview": "Clusters, clases de LabVIEW y variantes: crearlos, manipularlos y convertir datos a y desde variant.",
-      "necesita": "bloques",
+      "estado": "built",
+      "prueba": "test/editor/window-state.test.mjs::the cluster, class & variant folder opens its subpalette",
       "captura": "paletas/functions-programming.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.unbundle-by-name",
+      "etiqueta": "Unbundle By Name",
+      "estado": "built",
+      "prueba": "test/editor/unbundle-by-name.test.mjs::Unbundle_By_Name_is_placed_from_the_palette_with_its_terminals",
+      "captura": "cluster/s4.png",
+      "bloque": "unbundle-by-name"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.bundle-by-name",
+      "etiqueta": "Bundle By Name",
+      "estado": "todo",
+      "labview": "Replaces the elements of a cluster picked by their names and returns the cluster with the new values.",
+      "necesita": "tipo-cluster",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.unbundle",
+      "etiqueta": "Unbundle",
+      "estado": "todo",
+      "labview": "Splits a cluster into all of its elements, in the cluster's order.",
+      "necesita": "tipo-cluster",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.bundle",
+      "etiqueta": "Bundle",
+      "estado": "todo",
+      "labview": "Builds a cluster from its elements in order, or replaces them in the cluster wired on top.",
+      "necesita": "tipo-cluster",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.cluster-constant",
+      "etiqueta": "Cluster Constant",
+      "estado": "todo",
+      "labview": "A constant cluster on the diagram, a frame into which constants are dropped as its elements.",
+      "necesita": "tipo-cluster",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.build-cluster-array",
+      "etiqueta": "Build Cluster Array",
+      "estado": "todo",
+      "labview": "Wraps each input in a cluster of one element and builds an array of those clusters.",
+      "necesita": "tipo-cluster",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.index-and-bundle-cluster-array",
+      "etiqueta": "Index & Bundle Cluster Array",
+      "estado": "todo",
+      "labview": "Takes the arrays wired to it and builds an array of clusters, the i-th cluster with the i-th element of each array.",
+      "necesita": "tipo-cluster",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.cluster-to-array",
+      "etiqueta": "Cluster To Array",
+      "estado": "todo",
+      "labview": "Converts a cluster whose elements are all of the same type into a one-dimensional array.",
+      "necesita": "bloques",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.array-to-cluster",
+      "etiqueta": "Array To Cluster",
+      "estado": "todo",
+      "labview": "Converts a one-dimensional array into a cluster of its elements; a double click opens the dialog for the cluster size.",
+      "necesita": "bloques",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.call-parent-class-method",
+      "etiqueta": "Call Parent Class Method",
+      "estado": "todo",
+      "labview": "Inside a method that overrides another, calls the version of the parent class.",
+      "necesita": "clases-de-labview",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.to-more-specific-class",
+      "etiqueta": "To More Specific Class",
+      "estado": "todo",
+      "labview": "Treats an object as one of a descendant class, and errors if it is not one.",
+      "necesita": "clases-de-labview",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.to-more-generic-class",
+      "etiqueta": "To More Generic Class",
+      "estado": "todo",
+      "labview": "Treats an object as one of an ancestor class.",
+      "necesita": "clases-de-labview",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.preserve-run-time-class",
+      "etiqueta": "Preserve Run-Time Class",
+      "estado": "todo",
+      "labview": "Makes the output of a subVI keep the class that came in at run time.",
+      "necesita": "clases-de-labview",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.lv-object-constant",
+      "etiqueta": "LV Object Constant",
+      "estado": "todo",
+      "labview": "A constant of LabVIEW Object, the ancestor of every class.",
+      "necesita": "clases-de-labview",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.get-lv-class-default-value",
+      "etiqueta": "Get LV Class Default Value",
+      "estado": "todo",
+      "labview": "Loads a class from its path and returns its default object.",
+      "necesita": "clases-de-labview",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.get-lv-class-path",
+      "etiqueta": "Get LV Class Path",
+      "estado": "todo",
+      "labview": "Returns the path of the file of an object's class.",
+      "necesita": "clases-de-labview",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.get-lv-class-default-value-by-name",
+      "etiqueta": "Get LV Class Default Value By Name",
+      "estado": "todo",
+      "labview": "Returns the default object of a class already in memory, found by its name.",
+      "necesita": "clases-de-labview",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.get-lv-class-name",
+      "etiqueta": "Get LV Class Name",
+      "estado": "todo",
+      "labview": "Returns the qualified name of an object's class.",
+      "necesita": "clases-de-labview",
+      "captura": "cluster/s4.png"
+    },
+    {
+      "id": "palette.functions.programming.cluster-class-and-variant.variant",
+      "etiqueta": "Variant",
+      "estado": "todo",
+      "labview": "Folder of the variant functions: converting data to and from variant and reading and writing its attributes. Captured: 9 functions, their names not read yet.",
+      "necesita": "tipo-variant",
+      "captura": "cluster/v1.png"
     },
     {
       "id": "palette.functions.programming.numeric",
@@ -6910,6 +7086,390 @@
       "labview": "Abre el diálogo de propiedades del nodo.",
       "necesita": "propiedades",
       "captura": "format-scan/32b-scan-menu-param.png",
+      "separado": true
+    },
+    {
+      "id": "context.unbundle-by-name-row.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/unbundle-by-name.test.mjs::the_menus_of_Unbundle_By_Name_have_LabVIEW's_rows_in_their_order",
+      "captura": "cluster/w14c.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Muestra u oculta la etiqueta del nodo.",
+      "necesita": "etiquetas",
+      "captura": "cluster/w14c.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Abre la ayuda de la función.",
+      "necesita": "ayuda-contextual",
+      "captura": "cluster/w14c.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Busca ejemplos que usan la función. En la captura sale desactivado.",
+      "necesita": "ejemplos",
+      "captura": "cluster/w14c.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edita la descripción y el tip strip del objeto.",
+      "necesita": "descripciones",
+      "captura": "cluster/w14c.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "cluster/w14c.png",
+      "separado": true
+    },
+    {
+      "id": "context.unbundle-by-name-row.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "cluster/w14c.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.select-item",
+      "etiqueta": "Select Item",
+      "estado": "built",
+      "prueba": "test/editor/unbundle-by-name.test.mjs::the_menus_of_Unbundle_By_Name_have_LabVIEW's_rows_in_their_order",
+      "captura": "cluster/w14c.png",
+      "separado": true
+    },
+    {
+      "id": "context.unbundle-by-name-row.add-element",
+      "etiqueta": "Add Element",
+      "estado": "todo",
+      "labview": "Adds a row to the node at the row that was clicked. Not tried in LabVIEW yet: only the stretching and Remove Element were measured.",
+      "necesita": "unbundle-add-element",
+      "captura": "cluster/w14c.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.remove-element",
+      "etiqueta": "Remove Element",
+      "estado": "built",
+      "prueba": "test/editor/unbundle-by-name.test.mjs::the_menus_of_Unbundle_By_Name_have_LabVIEW's_rows_in_their_order",
+      "captura": "cluster/w14c.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.cluster-class-and-variant-palette",
+      "etiqueta": "Cluster, Class, & Variant Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de clusters, clases y variants.",
+      "necesita": "menus-contextuales",
+      "captura": "cluster/w14c.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.type-palette",
+      "etiqueta": "Type Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the palette of the type of the element of the row; its name follows the type (Boolean Palette, Numeric Palette, String Palette).",
+      "necesita": "menus-contextuales",
+      "captura": "cluster/w14c.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/unbundle-by-name.test.mjs::Create_on_the_output_of_a_row_makes_an_indicator_of_the_type_of_its_element",
+      "captura": "cluster/w14c.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.create.scalar",
+      "etiqueta": "Scalar",
+      "estado": "todo",
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.unbundle-by-name-row.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Cambia la función por otra de la paleta.",
+      "necesita": "menus-contextuales",
+      "captura": "cluster/w14c.png",
+      "separado": true
+    },
+    {
+      "id": "context.unbundle-by-name-row.hide-full-names",
+      "etiqueta": "Hide Full Names",
+      "estado": "todo",
+      "labview": "Shows the names of the rows shortened; not toggled in LabVIEW yet, so what it shortens is unknown.",
+      "necesita": "menus-contextuales",
+      "captura": "cluster/w14c.png"
+    },
+    {
+      "id": "context.unbundle-by-name-row.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Quita el nodo y une los cables que entraban con los que salían.",
+      "necesita": "menus-contextuales",
+      "captura": "cluster/w14c.png",
+      "separado": true
+    },
+    {
+      "id": "context.unbundle-by-name-row.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Abre el diálogo de propiedades del nodo.",
+      "necesita": "propiedades",
+      "captura": "cluster/w14c.png",
+      "separado": true
+    },
+    {
+      "id": "context.unbundle-by-name.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/unbundle-by-name.test.mjs::the_menus_of_Unbundle_By_Name_have_LabVIEW's_rows_in_their_order",
+      "captura": "cluster/w16c.png"
+    },
+    {
+      "id": "context.unbundle-by-name.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Muestra u oculta la etiqueta del nodo.",
+      "necesita": "etiquetas",
+      "captura": "cluster/w16c.png"
+    },
+    {
+      "id": "context.unbundle-by-name.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Abre la ayuda de la función.",
+      "necesita": "ayuda-contextual",
+      "captura": "cluster/w16c.png"
+    },
+    {
+      "id": "context.unbundle-by-name.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Busca ejemplos que usan la función. En la captura sale desactivado.",
+      "necesita": "ejemplos",
+      "captura": "cluster/w16c.png"
+    },
+    {
+      "id": "context.unbundle-by-name.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edita la descripción y el tip strip del objeto.",
+      "necesita": "descripciones",
+      "captura": "cluster/w16c.png"
+    },
+    {
+      "id": "context.unbundle-by-name.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "cluster/w16c.png",
+      "separado": true
+    },
+    {
+      "id": "context.unbundle-by-name.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "cluster/w16c.png"
+    },
+    {
+      "id": "context.unbundle-by-name.cluster-type-palette",
+      "etiqueta": "Cluster Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, a palette named after the cluster wired in (Dialog & User Interface Palette for the error cluster). Which palette it is for another cluster was not measured.",
+      "necesita": "menus-contextuales",
+      "captura": "cluster/w16c.png",
+      "separado": true
+    },
+    {
+      "id": "context.unbundle-by-name.cluster-class-and-variant-palette",
+      "etiqueta": "Cluster, Class, & Variant Palette",
+      "estado": "todo",
+      "labview": "Abre, como submenú, la paleta de clusters, clases y variants.",
+      "necesita": "menus-contextuales",
+      "captura": "cluster/w16c.png"
+    },
+    {
+      "id": "context.unbundle-by-name.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/unbundle-by-name.test.mjs::Create_on_the_output_of_a_row_makes_an_indicator_of_the_type_of_its_element",
+      "captura": "cluster/w16c.png"
+    },
+    {
+      "id": "context.unbundle-by-name.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.unbundle-by-name.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.unbundle-by-name.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.unbundle-by-name.create.scalar",
+      "etiqueta": "Scalar",
+      "estado": "todo",
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.unbundle-by-name.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.unbundle-by-name.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.unbundle-by-name.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
+    },
+    {
+      "id": "context.unbundle-by-name.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.unbundle-by-name.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
+    },
+    {
+      "id": "context.unbundle-by-name.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Cambia la función por otra de la paleta.",
+      "necesita": "menus-contextuales",
+      "captura": "cluster/w16c.png",
+      "separado": true
+    },
+    {
+      "id": "context.unbundle-by-name.hide-full-names",
+      "etiqueta": "Hide Full Names",
+      "estado": "todo",
+      "labview": "Shows the names of the rows shortened; not toggled in LabVIEW yet, so what it shortens is unknown.",
+      "necesita": "menus-contextuales",
+      "captura": "cluster/w16c.png"
+    },
+    {
+      "id": "context.unbundle-by-name.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Quita el nodo y une los cables que entraban con los que salían.",
+      "necesita": "menus-contextuales",
+      "captura": "cluster/w16c.png",
+      "separado": true
+    },
+    {
+      "id": "context.unbundle-by-name.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Abre el diálogo de propiedades del nodo.",
+      "necesita": "propiedades",
+      "captura": "cluster/w16c.png",
       "separado": true
     },
     {

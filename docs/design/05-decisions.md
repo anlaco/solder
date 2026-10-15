@@ -1597,3 +1597,52 @@ d. The inventory breaks `palette.controls.modern.ring-and-enum` into its five en
 | An enum Case compiles its frames by name (a number resolves to the item's name) | `test/core/structures.test.mjs`, `test/editor/case-selector-kinds.test.mjs` | **Verified** (2026-10-14) |
 | The dialog, the menus and the panel look | `test/editor/enum-edit.test.mjs` | **Verified** (2026-10-14) |
 | A `.qvi` with items and enum frames by name round-trips | "a .qvi with enum items and enum frames by name round-trips" in `test/core/enum-items.test.mjs` | **Verified** (2026-10-14) |
+
+## DT-050
+
+**Unbundle By Name stores the names of its rows; their types come from the wire.**
+
+- **Status:** Accepted on 2026-10-15 by the developer ("the most similar approach to LabVIEW").
+  Implements the core of finding #23 of [`real-programs-0.2.md`](real-programs-0.2.md) for
+  `0.3.0-alpha`: reading `status` from an error cluster, which *Instrument Protocol* needs.
+- **Complements:** [DT-042](#dt-042) (clusters in memory), [DT-043](#dt-043) (the error cluster),
+  [DT-044](#dt-044) (a node that adapts to what is wired, as Index Array does).
+- **Measured:** [`labview-captures/reports/2026-10-15-cluster-palette.md`](../../labview-captures/reports/2026-10-15-cluster-palette.md)
+  (the subpalette, the four nodes unwired, their context help) and
+  [`labview-captures/reports/2026-10-15-unbundle-by-name.md`](../../labview-captures/reports/2026-10-15-unbundle-by-name.md)
+  (wired to an error cluster: rows, growth, menus, unwiring, run).
+
+### Decision
+
+1. **The `.qvi` keeps only the names**: `config.items` of an `unbundle-by-name` node is the name each
+   row shows, top to bottom, `null` for a row not named yet. No cluster type is written: the file
+   stores only the diagram (rule 4 of CLAUDE.md), and a stored type could go stale when the source
+   cluster changes.
+2. **The types come from the wire**, as in LabVIEW: the input binds only a cluster, and each output is
+   the element of that name in it. Unwired, the names stay (measured) and the outputs have no type, so
+   the VI cannot run (measured: the Run arrow breaks).
+3. **Naming follows LabVIEW**: when a cluster is wired, or the node grows, a row with no name takes the
+   element after the row above it, and past the last element the last again (measured). Rows that
+   already have a name keep it.
+4. **Outputs are named by row** (`element-0`, `element-1`…), so a wire stays on its row when Select
+   Item changes the element. Remove Element renumbers the wires of the rows below.
+5. **Bundle, Unbundle and Bundle By Name** are not changed by this decision: the plain two still carry
+   `config.type`, and they get their own decision when the palette entries are built.
+
+### Consequences
+
+a. `blocks.json` gains `unbundle-by-name` with the port types `clusterOf` and `fieldOf`; `qvi.schema.json`
+   gains `config.items` (also documenting the ring's).
+b. The editor draws the rows, their click list, the row and body menus and the growth (spec/05), from the
+   same measurement.
+
+### Verification
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| A fresh node has one unnamed row and no output; wiring names it after the first element | `test/core/unbundle-by-name.test.mjs` | **Verified** (2026-10-15) |
+| Growth names rows after the one above and repeats the last element | `test/core/unbundle-by-name.test.mjs` | **Verified** (2026-10-15) |
+| Each row gives its element when run (TRUE, 42, `abc`), also after Select Item | `test/core/unbundle-by-name.test.mjs` | **Verified** (2026-10-15) |
+| Unwired, the names stay and the VI cannot run; a non-cluster breaks the wire | `test/core/unbundle-by-name.test.mjs` | **Verified** (2026-10-15) |
+| Remove Element renumbers the rows below | `test/core/unbundle-by-name.test.mjs` | Tested here; in LabVIEW only the last row was measured |
+| A `.qvi` with `config.items` validates and round-trips | `test/core/unbundle-by-name.test.mjs` | **Verified** (2026-10-15) |

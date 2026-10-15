@@ -116,6 +116,9 @@ const REJILLAS = {
   "palette.functions.programming.array": { columnas: 5, celdas: { unsorted: [6, 2] } },
   // Dialog & User Interface, de labview-captures/errores/59-paleta-dialog-ui.png: 4 columnas y 23 elementos.
   "palette.functions.programming.dialog-and-user-interface": { columnas: 4, celdas: {} },
+  // Cluster, Class, & Variant, from labview-captures/cluster/pal_s.png: 5 columns; rows 1 and 3 end with a free cell,
+  // and the last row holds only the Variant folder, in its fifth column.
+  "palette.functions.programming.cluster-class-and-variant": { columnas: 5, celdas: { "cluster-constant": [1, 0], "lv-object-constant": [3, 0], variant: [4, 4] } },
   // Data Containers (Array, Matrix & Cluster), de errores/300-controls-data-containers.png: 2 columnas y 8 elementos.
   "palette.controls.modern.data-containers": { columnas: 2, celdas: {} },
   // Graph, from labview-captures/graphs/01-palette-graph-grid.png: 4 × 4; the last row has the folder Controls, a free cell, 3D Picture and 3D Graph.

@@ -26,6 +26,7 @@ import { buildDebugPlan } from "../debugging/debug-plan.mjs";
 import * as D from "../block-diagram/diagram-view.mjs";
 import * as DC from "../block-diagram/diagram-clipboard.mjs";
 import * as ED from "../block-diagram/diagram-editing.mjs";
+import * as UN from "../block-diagram/unbundle-by-name.mjs";
 import * as EM from "./edit-menu.mjs";
 import * as Et from "../common/labels.mjs";
 import * as E from "./window-state.mjs";
@@ -1072,12 +1073,12 @@ function pintar() {
   const extra = { toolbar: debugToolbar(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, dialogo: dialogoError, numeroVI: viInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
   if (conDiagrama) {
     extra.lienzo = D.contenido({ ...dia, debug: DV.canvasView(debug, dia.g, ejecutando) }, ctx, resueltos) + DV.overlay(debug, dia.g, ctx, resueltos, { now: Date.now(), separator: separador, running: ejecutando, pausedAt: debug.run.paused, errorFocus });
-    extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx), DV.menuVariants(debug, dia.g, resueltos, dia.menu))) : "") + floating.popup;
+    extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia, ctx), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx), DV.menuVariants(debug, dia.g, resueltos, dia.menu))) : "") + floating.popup;
     extra.editandoTexto = !!dia.edicion;
   } else {
     extra.lienzo = P.contenido(pan, ctx, resueltos);
     extra.conectorGlifo = CP.paneGlyph(pan.g, cat, pan.conector?.celda ?? null);
-    extra.encima = pan.menu ? D.menuContextual(inv, pan.menu, ED.marcados(pan), medirMenu, ED.variantes(pan, ctx)) : "";
+    extra.encima = pan.menu ? D.menuContextual(inv, pan.menu, ED.marcados(pan, ctx), medirMenu, ED.variantes(pan, ctx)) : "";
     extra.editandoTexto = !!pan.edicion;
   }
   // El menú de la barra que está abierto, bajo su título.
@@ -1162,6 +1163,9 @@ function objetivo(el) {
   if (filaValor) return { tipo: "fila-valor", nodo: filaValor.dataset.nodo, k: Number(filaValor.dataset.valor) };
   const fila = el.closest(".item-marco");
   if (fila) return { tipo: "fila-marco", nodo: fila.dataset.nodo, k: Number(fila.dataset.marco) };
+  // The names in the list of an Unbundle By Name.
+  const filaElemento = el.closest(".item-elemento");
+  if (filaElemento) return { tipo: "fila-elemento", nodo: filaElemento.dataset.nodo, k: Number(filaElemento.dataset.elemento) };
   const zona = el.closest(".marco-zona");
   if (zona) return { tipo: "marco", nodo: zona.dataset.nodo, zona: zona.dataset.zona };
   const looseEnd = el.closest(".extremo-suelto");
@@ -1170,7 +1174,7 @@ function objetivo(el) {
   if (t) return { tipo: "terminal", nodo: t.dataset.nodo, puerto: t.dataset.puerto, dir: t.dataset.dir };
   const n = el.closest(".nodo");
   // Un nodo con celdas (la constante de error) dice sobre cuál se pulsó.
-  if (n && !n.closest(".fantasma")) return { tipo: "nodo", id: n.dataset.nodo, ...(el.closest(".celda-error") ? { campo: el.closest(".celda-error").dataset.campo } : {}), ...(el.closest(".celda-array, .celda-grid") ? { campo: addressFromText(el.closest(".celda-array, .celda-grid").dataset.campo) } : {}) };
+  if (n && !n.closest(".fantasma")) return { tipo: "nodo", id: n.dataset.nodo, ...(el.closest(".celda-error") ? { campo: el.closest(".celda-error").dataset.campo } : {}), ...(el.closest(".fila-nombre") ? { fila: Number(el.closest(".fila-nombre").dataset.fila) } : {}), ...(el.closest(".celda-array, .celda-grid") ? { campo: addressFromText(el.closest(".celda-array, .celda-grid").dataset.campo) } : {}) };
   const c = el.closest(".tramo-zona");
   if (c) return { tipo: "tramo", cable: c.dataset.cable, k: Number(c.dataset.tramo) };
   return { tipo: "fondo" };
@@ -1395,7 +1399,7 @@ addEventListener("mousemove", (ev) => {
   }
   let nuevo = dia;
   const item = ev.target.closest(".item-menu");
-  if (nuevo.menu && item) nuevo = ED.sobreMenu(nuevo, item.dataset.id, inv.tieneContenido(item.dataset.id));
+  if (nuevo.menu && item) nuevo = ED.sobreMenu(nuevo, item.dataset.id, ED.menuRowHasSubmenu(nuevo, ctx, inv, item.dataset.id));
   if (!nuevo.menu) nuevo = ED.sobrevolar(nuevo, objetivo(ev.target));
   if (nuevo.accion) nuevo = ED.moverA(nuevo, ctx, punto(ev));
   if (nuevo !== dia) {
@@ -1449,8 +1453,8 @@ addEventListener("click", (ev) => {
     const id = fila.dataset.id;
     // The menu belongs to the diagram or the panel: both are handled with the same functions (diagram-editing.mjs).
     const [actual, cambiarActual] = conDiagrama ? [dia, cambiarDiagrama] : [pan, cambiarPanel];
-    if (inv.tieneContenido(id)) return cambiarActual(ED.sobreMenu(actual, id, true));
-    const e = inv.resolver(id);
+    if (ED.menuRowHasSubmenu(actual, ctx, inv, id)) return cambiarActual(ED.sobreMenu(actual, id, true));
+    const e = ED.menuRowEntry(actual, ctx, inv, id);
     if (!esHueco(e)) {
       // A row greyed by the context (no terminal under the cursor) does nothing.
       if (fila.classList.contains("desactivado")) return;
@@ -1514,7 +1518,8 @@ addEventListener("contextmenu", (ev) => {
   }
   const id = nodoDe(o);
   const n = id && dia.g.nodos.find((k) => k.id === id);
-  const puerto = o?.tipo === "terminal" ? o.puerto : null;
+  // A name row of an Unbundle By Name has the menu of its output terminal.
+  const puerto = o?.tipo === "terminal" ? o.puerto : o?.fila !== undefined ? UN.portOfRow(o.fila) : null;
   const raiz = n && D.menuDe(n, puerto, dia.g);
   if (raiz) {
     estado = { ...estado, paleta: null, abierta: null };

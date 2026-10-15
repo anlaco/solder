@@ -705,6 +705,7 @@ would have required naming a test that did not exist.)*
 | 40j One-dimensional arrays | Tests in `front-panel.test.mjs` (array control and indicator), `diagram-editing.test.mjs` (array constant, menu of the indexed tunnels), `window-state.test.mjs` (the Array subpalette), `palettes.test.mjs` (its functions) and `qvi-round-trip.test.mjs` | **Verified** for what was measured; the gesture of stretching the panel array and the array's menu, unverified (see the rule) |
 | 40k Arrays with two dimensions | Tests in `array-grid.test.mjs` (cells, Add and Remove Dimension), `diagram-editing.test.mjs` (menu, constant, stretching, wire, Index Array, Initialize Array), `front-panel.test.mjs` (panel array), `qvi-round-trip.test.mjs` (pairs saved) and `labview-inventory.test.mjs` (the menus) | **Verified** for the measurements; the stretching gestures, the indicator's menu and Initialize Array's second size, unverified (see the rule) |
 | 78 Format Into String and Scan From String | Tests in `format-nodes.test.mjs` (size, terminals, stretching, type boxes, menus, Add and Remove Parameter) and `palettes.test.mjs` | **Verified** for the size, the stretching and the menus; the terminals' exact heights, unverified (see the rule) |
+| 78b Unbundle By Name | Tests in `unbundle-by-name.test.mjs` (palette, size and look, terminals, handle and undo, list of names, both menus, Select Item, Remove Element, Create) | **Verified** for what the two reports measured; what is unverified, in the rule |
 | 72–76 Create ▸, the clipboard and the Edit menu | Tests in `terminal-creation.test.mjs` (placement), `create-and-paste.test.mjs` (menus, copy, cut, paste, duplicate) and `edit-menu.test.mjs` (rows and what is greyed) | **Verified** for what was measured; what is unverified, in the rules |
 | 31 the rejection explains the reason | Test: each cause of `can_connect` produces its message | **Verified** for two outputs, two inputs, incompatible types and cycle (`palettes.test.mjs`); the scope one no longer comes out in the editor: a wire between scopes creates the tunnel (rule 40e); the rejection remains in `Gr.conectar` |
 | 32 replace on fan-in | Test "a wire to an occupied input replaces the previous one" | **Verified** |
@@ -878,6 +879,45 @@ unverified is unverified here too.
 > added row takes the type of the row above it (`16-node-stretched.png`, I8 rows after an I8 one); the mark of
 > the default of each row and the icon on the top are our own drawings (diagonal and `!` marks of the original are
 > not reproduced); there is no Context Help window yet, so the terminal texts are only the tips.
+
+> **Rule 78b — Unbundle By Name.** Placed from Functions ▸ Programming ▸ Cluster, Class, & Variant (the first icon), centred
+> on the click. Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-15-cluster-palette.md`, stage 1, and
+> `2026-10-15-unbundle-by-name.md`, stage 2; core: DT-050 and Rule 21l). **Look:** fresh and unwired it is 30 × 17 px, a yellow
+> (`#FFFFCC`) arrow cell on the left with a black right-pointing arrow, a plain white part and a `#4C4C3D` outline, with only the
+> input terminal (`cluster of named`) on the left edge. Wired, the arrow cell is 16 px (1 px of outline and 15 px of yellow) followed by a
+> 1 px black divider and the names; rows are 16 px apart with a 1 px black line between them, so the height is 16 × rows + 1; the
+> width follows the longest name (55 px with `status` and `code`, 58 px once `source` is among them: the width is the cell, the
+> divider, the width of the widest name measured in the window's font, and 5 px of room). Each name is written in the colour of the type
+> of its element, taken from the colours of the types (Boolean green, I32 blue, string pink); measured `#007F00`,
+> `#0000FF` and `#FF00FF`, while Solder's type colours give `#008000` and `#FF33CC` for the first and the last (a difference of the whole
+> editor, not of this node). One output terminal per named row sits
+> on the right edge, centred on its row, with the name as its tip. **Growth:** the node shows a 6 × 6 px handle at the middle
+> of the bottom edge, its top 3 px above it; dragging it changes the number of rows in steps of 16 px (`resizeUnbundleRows`: a new
+> row takes the element after the one above, and past the last element repeats it); one drag is one step of undo. LabVIEW shows the handle while the
+> mouse is over the node; Solder, like its other stretchable nodes, only on the selected node (a difference of the whole editor). **Click on a name
+> row** (normal tool) drops a list of the names of the elements of the wired cluster, in the cluster's order, with a check mark on the
+> one the row shows (83 × 61 px for three names, background `#F0F0F0`, border `#A0A0A0`); choosing one is *Select Item*. Unwired, there is
+> no list. **Menus:** a name row and its output terminal have `context.unbundle-by-name-row`: Visible Items ▸, Help, Examples, Description
+> and Tip..., Add Breakpoint, Select Item ▸ (the names, a check on the current one), Add Element, Remove Element, Cluster, Class, &
+> Variant Palette ▸, `<type> Palette` ▸ (Boolean, Numeric or String Palette after the type of the row), Create ▸, Replace ▸, Hide Full
+> Names, Remove and Rewire, Properties. The arrow cell (and the input terminal) has `context.unbundle-by-name`: the same without Select
+> Item, Add and Remove Element and the type palette, and with the palette of the wired cluster (*Dialog & User Interface Palette* for the
+> error cluster) before Cluster, Class, & Variant Palette. Done: Select Item, Remove Element (the row goes with its wire; the last one
+> cannot be removed and is greyed), Create ▸ (the generic one, rule 72, on the row's output terminal), Add Breakpoint; the rest are holes
+> that say what they wait for. Tests: `test/editor/unbundle-by-name.test.mjs` and `test/core/unbundle-by-name.test.mjs`.
+>
+> **Measured again in the main session** (`w4`, `w6`–`w9`, `w11`): 55 px wide with one and two rows (`status`, `code`), 58 once
+> `source` is a row; the stage 2 table's 58 for two rows was wrong. In the running editor (2026-10-15,
+> `labview-captures/reports/2026-10-15-unbundle-by-name-editor.md`) the node came out 57 and 60 with 7 px of room, so the room is
+> now 5 px; the tests use the editor font's widths of `status` and `source` measured there. Re-measured after that change: 55 × 17 and
+> 58 × 49, and Select Item ▸ from the menu changes the row (`editor-fix-*`). **Unverified:** the click list is 88 × 61 with Solder's menu
+> border `#979797` (LabVIEW: 83 × 61, `#A0A0A0`, a difference of the editor's menus); that the input terminal sits at the middle of the node's height
+> (it is the one row's middle in every measured case); the colour of a name with no type (drawn in black); the arrow's exact shape (our
+> own drawing); what the click does on a row once the node is selected; Add Element; Remove Element on a row that is not the last;
+> the submenus Visible Items, Replace and the palettes; Hide Full Names; that the body menu's palette row is the palette of the wired
+> cluster (it is the only one measured, the error cluster's), and what the other types' type palettes are called (only Boolean and
+> String were read; Numeric and Array are by analogy); growing past five rows; shrinking the node (here it deletes the wires of the
+> rows that go away).
 
 ## 15. Waveform Chart, Waveform Graph and XY Graph (2026-10-09)
 

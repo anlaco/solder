@@ -382,6 +382,10 @@
               "description": "How many inputs or rows a node with a variable number of them has (Compound Arithmetic, Build Array, Format Into String, Scan From String…).",
               "type": "integer", "minimum": 1
             },
+            "items": {
+              "description": "For unbundle-by-name: the element name each row shows, top to bottom; null for a row not named yet (DT-050). For ring-const: its labels.",
+              "type": "array", "items": { "type": ["string", "null"] }
+            },
             "rowTypes": {
               "description": "For format-into-string and scan-from-string: the type each row keeps when it is not wired (a stretched row copies the one above it, as in LabVIEW).",
               "type": "array", "items": { "$ref": "#/$defs/dataType" }

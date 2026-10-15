@@ -34,6 +34,11 @@ export function cargarCatalogo(datos) {
         const campos = nodo.config?.type?.cluster ?? [];
         return campos.map((f, i) => ({ name: `campo-${i}`, label: f.name, type: f.type, dir }));
       }
+      // Unbundle By Name: one output per named row; a row not named yet has no terminal (DT-050).
+      if (b[dir] === "dynamic:named-fields") {
+        const rows = nodo.config?.items ?? b.config.items.value;
+        return rows.flatMap((field, row) => (field === null ? [] : [{ name: `element-${row}`, label: field, type: { fieldOf: "C", field }, dir }]));
+      }
       // El túnel de salida de un Case: una entrada por marco, de ese marco (DT-041).
       if (b[dir] === "dynamic:case-frames") {
         const n = nodo.config?.marcos ?? b.config.marcos.value;
@@ -703,7 +708,75 @@ export function conectar(g, cat, t1, t2, codos) {
   const cable = { id, de: { nodo: de.nodo, puerto: de.puerto }, a: { nodo: a.nodo, puerto: a.puerto } };
   if (codos) cable.codos = codos;
   const conCable = { ...g, cables: [...cables, cable], siguiente: g.siguiente + 1 };
-  return { g: ajustarIndices(conCable, cat, a), id };
+  return { g: nameUnbundleRows(ajustarIndices(conCable, cat, a), cat, a), id };
+}
+
+/**
+ * Unbundle By Name gives each row that has no name yet the element after the
+ * row above it (the first row, the first element; past the last element, the
+ * last again), as LabVIEW does when a cluster is wired or the node grows
+ * (labview-captures/reports/2026-10-15-unbundle-by-name.md, Q1 and Q2). Rows
+ * that already have a name keep it (DT-050).
+ */
+function nameUnbundleRows(g, cat, destino) {
+  const node = nodoDe(g, destino.nodo);
+  if (node.tipo !== "unbundle-by-name") return g;
+  const fields = unbundleInput(g, cat, node.id)?.cluster.map((f) => f.name);
+  if (!fields?.length) return g;
+  const rows = node.config?.items ?? cat.bloque(node.tipo).config.items.value;
+  if (!rows.includes(null)) return g;
+  const named = [];
+  for (const field of rows) {
+    const previous = named.length ? fields.indexOf(named[named.length - 1]) : -1;
+    named.push(field ?? fields[Math.min(previous + 1, fields.length - 1)]);
+  }
+  return cambiarNodo(g, node.id, (n) => ({ ...n, config: { ...n.config, items: named } }));
+}
+
+/** The cluster wired into an Unbundle By Name, or undefined when nothing is wired. */
+function unbundleInput(g, cat, nodeId) {
+  const wire = g.cables.find((c) => c.a.nodo === nodeId && c.a.puerto === "cluster" && conectado(c));
+  const type = wire && tipos(g, cat).salidas.get(`${wire.de.nodo}.${wire.de.puerto}`);
+  return esCluster(type) ? type : undefined;
+}
+
+/**
+ * Grows or shrinks an Unbundle By Name to `count` rows, as dragging its bottom
+ * handle does: new rows are named after the row above them (measured), and the
+ * wires of the rows that go away are deleted (shrinking is unverified in LabVIEW).
+ */
+export function resizeUnbundleRows(g, cat, nodeId, count) {
+  const node = nodoDe(g, nodeId);
+  const rows = node.config?.items ?? cat.bloque(node.tipo).config.items.value;
+  const items = count > rows.length ? [...rows, ...Array(count - rows.length).fill(null)] : rows.slice(0, Math.max(1, count));
+  const resized = cambiarNodo(g, nodeId, (n) => ({ ...n, config: { ...n.config, items } }));
+  const kept = new Set(cat.puertos(nodoDe(resized, nodeId)).out.map((p) => p.name));
+  const pruned = { ...resized, cables: resized.cables.filter((c) => c.de.nodo !== nodeId || kept.has(c.de.puerto)) };
+  return nameUnbundleRows(pruned, cat, { nodo: nodeId });
+}
+
+/** Select Item: the row shows another element; its wire stays and takes the new type (measured). */
+export function selectUnbundleItem(g, nodeId, row, field) {
+  return cambiarNodo(g, nodeId, (n) => ({ ...n, config: { ...n.config, items: n.config.items.map((f, k) => (k === row ? field : f)) } }));
+}
+
+/**
+ * Remove Element: the row goes with its wire, and the rows below move up with
+ * theirs (measured on the last row; on another row, unverified). The last row
+ * left is never removed.
+ */
+export function removeUnbundleRow(g, cat, nodeId, row) {
+  const node = nodoDe(g, nodeId);
+  const rows = node.config?.items ?? cat.bloque(node.tipo).config.items.value;
+  if (rows.length <= 1) return g;
+  const port = (k) => `element-${k}`;
+  const cables = g.cables
+    .filter((c) => !(c.de.nodo === nodeId && c.de.puerto === port(row)))
+    .map((c) => {
+      const k = c.de.nodo === nodeId ? Number(c.de.puerto.slice("element-".length)) : -1;
+      return k > row ? { ...c, de: { ...c.de, puerto: port(k - 1) } } : c;
+    });
+  return cambiarNodo({ ...g, cables }, nodeId, (n) => ({ ...n, config: { ...n.config, items: rows.filter((_, k) => k !== row) } }));
 }
 
 /**
@@ -770,6 +843,9 @@ function sustituir(t, vars) {
     // Las funciones de carácter (Decimal Digit?…): una cadena o un número; sin nada cableado, una cadena.
     if ("texto" in t) return vars[t.texto] ?? "string";
     if ("var" in t) return vars[t.var];
+    if ("clusterOf" in t) return vars[t.clusterOf];
+    // An element looked up by name in the cluster wired in; none of that name, no type (DT-050).
+    if ("fieldOf" in t) return vars[t.fieldOf]?.cluster.find((f) => f.name === t.field)?.type;
     if ("array" in t) {
       const e = sustituir(t.array, vars);
       return e === undefined ? undefined : arrayOf(e);
@@ -873,6 +949,8 @@ function ligar(declarado, llega, vars) {
     if (vars[declarado.texto] === undefined) vars[declarado.texto] = llega;
   } else if ("var" in declarado) {
     if (vars[declarado.var] === undefined) vars[declarado.var] = llega;
+  } else if ("clusterOf" in declarado) {
+    if (esCluster(llega) && vars[declarado.clusterOf] === undefined) vars[declarado.clusterOf] = llega;
   } else if ("array" in declarado && esArray(llega)) {
     // A port declared with `dims: "any"` takes an array of any dimensions and its
     // variable the rest (DT-044); any other array port, only one dimension.

@@ -80,7 +80,7 @@ test("una categoría con contenido se abre y se cierra", () => {
 
 test("una categoría sin contenido explica lo que falta", () => {
   assert.equal(clic(conPaleta(), INV, "palette.functions.measurement-io", AQUI).abierta.id, "palette.functions.measurement-io");
-  assert.equal(clic(conPaleta(), INV, "palette.functions.programming.cluster-class-and-variant", AQUI).abierta.id, "palette.functions.programming.cluster-class-and-variant");
+  assert.equal(clic(conPaleta(), INV, "palette.functions.programming.file-io", AQUI).abierta.id, "palette.functions.programming.file-io");
 });
 
 // Regla 53b en una rejilla: la carpeta con contenido abre su subpaleta al lado,
@@ -408,4 +408,25 @@ test("la carpeta array abre su subpaleta", () => {
   for (const hecho of ["array-size", "sort-1d-array", "array-constant", "build-array"]) assert.match(html, new RegExp(`class="icono-funcion" data-id="${id}\\.${hecho}"`), `${hecho} está hecho`);
   for (const hueco of ["reshape-array", "sort-2d-array"]) assert.match(html, new RegExp(`class="icono-funcion hueco" data-id="${id}\\.${hueco}"`), `${hueco} es un hueco`);
   for (const carpeta of ["matrix", "unsorted", "sorted-array"]) assert.match(html, new RegExp(`hueco[^>]*data-id="${id}\\.${carpeta}"`), `${carpeta} es un hueco`);
+});
+
+// Functions ▸ Programming ▸ Cluster, Class, & Variant, from labview-captures/cluster/pal_s.png and names.png: 5 columns,
+// the four bundle nodes By Name first, and only the cluster side planned; classes and variants are holes.
+test("the cluster, class & variant folder opens its subpalette", () => {
+  const id = "palette.functions.programming.cluster-class-and-variant";
+  const opened = clic(conPaleta(), INV, id, AQUI);
+  assert.deepEqual(opened.paleta.cascada, [{ id, x: 10, y: 20 }]);
+  const { columnas, sitios } = celdasSubpaleta(INV, id);
+  assert.equal(columnas, 5);
+  const visible = sitios.filter((s) => s.e.etiqueta !== "Thumbtack");
+  assert.deepEqual(visible.map((s) => [s.fila, s.columna, s.e.etiqueta]), [
+    [0, 0, "Unbundle By Name"], [0, 1, "Bundle By Name"], [0, 2, "Unbundle"], [0, 3, "Bundle"],
+    [1, 0, "Cluster Constant"], [1, 1, "Build Cluster Array"], [1, 2, "Index & Bundle Cluster Array"], [1, 3, "Cluster To Array"], [1, 4, "Array To Cluster"],
+    [2, 0, "Call Parent Class Method"], [2, 1, "To More Specific Class"], [2, 2, "To More Generic Class"], [2, 3, "Preserve Run-Time Class"],
+    [3, 0, "LV Object Constant"], [3, 1, "Get LV Class Default Value"], [3, 2, "Get LV Class Path"], [3, 3, "Get LV Class Default Value By Name"], [3, 4, "Get LV Class Name"],
+    [4, 4, "Variant"],
+  ]);
+  const html = subpaletas(INV, opened.paleta);
+  for (const hole of ["call-parent-class-method", "get-lv-class-name", "cluster-constant"]) assert.match(html, new RegExp(`class="icono-funcion hueco" data-id="${id}\\.${hole}"`), `${hole} is a hole`);
+  assert.match(html, new RegExp(`hueco[^>]*data-id="${id}\\.variant"`), "the Variant folder is a hole");
 });

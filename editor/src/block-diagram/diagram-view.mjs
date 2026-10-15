@@ -12,6 +12,7 @@ import * as G from "../common/glyphs.mjs";
 import { esHueco, ultimo } from "../common/labview-inventory.mjs";
 import { PANE_SIZE } from "../../../core/model/connector.mjs";
 import { isSubVI, portsWithAnchors } from "./subvi-nodes.mjs";
+import * as UN from "./unbundle-by-name.mjs";
 import * as FN from "./format-nodes.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { ARROWHEAD_COLOR_OF_TYPE, brokenWireMarks, endPoint } from "./broken-wire.mjs";
@@ -455,6 +456,7 @@ export function caja(n, ctx, edicion) {
   }
   if (isSubVI(n)) return { x: n.x, y: n.y, ancho: PANE_SIZE, alto: PANE_SIZE };
   if (FN.isFormatNode(n, ctx.cat)) return { x: n.x, y: n.y, ...FN.formatNodeSize(n, ctx.cat) };
+  if (UN.isUnbundleByName(n)) return { x: n.x, y: n.y, ...UN.unbundleSize(n, ctx.cat, ctx.medir) };
   if (esExpresion(n)) {
     const M = MEDIDAS_EXPRESION;
     return { x: n.x, y: n.y, ancho: 2 * M.lado + Math.max(M.minimoTexto, anchoTexto(textoExpresion(n, edicion)) + M.relleno), alto: M.alto };
@@ -499,6 +501,7 @@ export function terminales(n, ctx, edicion) {
   const k = caja(n, ctx, edicion);
   if (isSubVI(n)) return terminalesSubVI(n, k, ctx);
   if (FN.isFormatNode(n, ctx.cat)) return FN.formatNodeTerminals(n, k, ctx.cat);
+  if (UN.isUnbundleByName(n)) return UN.unbundleTerminals(n, k, ctx.cat);
   const { in: ins, out: outs } = ctx.cat.puertos(n);
   // Cada lado se queda con algo más de un tercio del nodo; lo del medio es el
   // cuerpo, que es lo que se agarra para moverlo. Una constante sólo tiene
@@ -767,7 +770,7 @@ export function contenido(d0, ctx, resueltos) {
     const n = { id: "fantasma", tipo: accion.bloque, x: accion.x, y: accion.y, ...(isSubVI({ tipo: accion.bloque }) ? { config: accion.config } : {}) };
     fantasma = `<div class="fantasma">${nodo(n, { g, seleccion: [] }, ctx, null, false)}</div>`;
   }
-  const lista = d.lista ? (d.lista.nodo && CONSTANTES[d.g.nodos.find((n) => n.id === d.lista.nodo)?.tipo]?.selector ? listaValores(d, ctx) : listaMarcos(d, ctx, resueltos)) : "";
+  const lista = d.lista ? listaAbierta(d, ctx, resueltos) : "";
   const aviso = d.aviso ? `<div class="aviso" style="left:${px(d.aviso.x + 8)};top:${px(d.aviso.y + 8)}">${esc(d.aviso.texto)}</div>` : "";
   const pistas = sobre ? pistasTerminales(g.nodos.find((n) => n.id === sobre.nodo), d, ctx, resueltos) : "";
   // Las cuñas de coerción y las pistas de los terminales, encima de los nodos.
@@ -985,6 +988,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
     cuerpo = `<div class="glifo-subvi">${ctx.cat.findSubVI?.(n.config?.vi) ? G.iconoVI() : G.ICONO_VI_FALTA}</div>`;
   } else if (FN.isFormatNode(n, ctx.cat)) {
     cuerpo = `<div class="glifo-formato">${FN.formatNodeBody(n, k, ctx.cat, resueltos)}</div>`;
+  } else if (UN.isUnbundleByName(n)) {
+    cuerpo = `<div class="glifo-formato">${UN.unbundleBody(n, k, ctx.cat, resueltos)}</div>${UN.nameRowZones(n, k, ctx.cat)}`;
   } else if (esExpresion(n)) {
     cuerpo = expresion(n, k, ctx, resueltos, d.edicion);
   } else if (esCompuesto(n, ctx)) {
@@ -1015,6 +1020,11 @@ function nodo(n, d, ctx, resueltos, elegido) {
   if (elegido && FN.isFormatNode(n, ctx.cat)) {
     const handle = FN.formatNodeHandle(k);
     asas = `<div class="asa" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(handle.x)};top:${px(handle.y)}"></div>`;
+  }
+  // Unbundle By Name is stretched downwards by a handle of 6 x 6 px to add rows (cluster palette, stage 2, Q2).
+  if (elegido && UN.isUnbundleByName(n)) {
+    const handle = UN.unbundleHandle(k);
+    asas = `<div class="asa" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(handle.x)};top:${px(handle.y)};width:${px(UN.HANDLE_SIZE)};height:${px(UN.HANDLE_SIZE)}"></div>`;
   }
   if (elegido && esCompuesto(n, ctx)) {
     const M = medidasCompuesto(n, ctx);
@@ -1130,6 +1140,31 @@ function listaValores(d, ctx) {
     .map((t, k) => `<div class="item-menu item-valor${k === (n.config?.value ?? 0) ? " marcado" : ""}" data-nodo="${esc(n.id)}" data-valor="${k}" style="top:${px(M.arriba + k * M.fila)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(t)}</span></div>`)
     .join("");
   return `<div class="menu-contextual lista-marcos" style="left:${px(d.lista.x)};top:${px(d.lista.y)};width:${px(ancho)};height:${px(M.arriba * 2 + items.length * M.fila)}">${filas}</div>`;
+}
+
+/** The drop-down list that is open: the names of an Unbundle By Name, the items of an enum or ring constant, or the frames of a Case. */
+function listaAbierta(d, ctx, resueltos) {
+  const tipo = d.g.nodos.find((n) => n.id === d.lista.nodo)?.tipo;
+  if (tipo === UN.BLOCK) return listaElementos(d, ctx);
+  return CONSTANTES[tipo]?.selector ? listaValores(d, ctx) : listaMarcos(d, ctx, resueltos);
+}
+
+/**
+ * The drop-down list of the names of the elements of the cluster wired into an Unbundle By Name, in
+ * the order of the cluster, with the check mark on the one the row shows (cluster palette, stage 2,
+ * Q3: 83 x 61 px for three names in LabVIEW; here it has the measures of the other lists).
+ */
+function listaElementos(d, ctx) {
+  const n = d.g.nodos.find((k) => k.id === d.lista.nodo);
+  if (!n) return "";
+  const M = MEDIDAS_MENU;
+  const nombres = UN.clusterElementNames(d.g, ctx.cat, n.id);
+  const actual = n.config?.items?.[d.lista.fila];
+  const ancho = M.texto + Math.max(0, ...nombres.map((t) => ctx.medir(t))) + M.derecha;
+  const filas = nombres
+    .map((t, k) => `<div class="item-menu item-elemento${t === actual ? " marcado" : ""}" data-nodo="${esc(n.id)}" data-elemento="${k}" style="top:${px(M.arriba + k * M.fila)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(t)}</span></div>`)
+    .join("");
+  return `<div class="menu-contextual lista-marcos" style="left:${px(d.lista.x)};top:${px(d.lista.y)};width:${px(ancho)};height:${px(M.arriba * 2 + nombres.length * M.fila)}">${filas}</div>`;
 }
 
 /** La lista desplegable de marcos (structures/case-lista.png): un menú de filas con la marca en el que se ve. */
@@ -1273,6 +1308,7 @@ export function menuDe(n, puerto, g) {
   if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return null;
   // The right-click menu of the terminal of a graph was not captured.
   if (GRAPH_KINDS.includes(n.tipo)) return null;
+  if (UN.isUnbundleByName(n)) return UN.rowHasName(n, UN.rowOfPort(puerto)) ? UN.ROW_MENU : UN.BODY_MENU;
   if (n.tipo === "format-into-string") return "context.format-into-string";
   if (n.tipo === "scan-from-string") return puerto && /^(default|output)-\d+$/.test(puerto) ? "context.scan-from-string-parameter" : "context.scan-from-string";
   if (n.tipo === "compound-arithmetic") return puerto?.startsWith("value-") ? "context.compound-arithmetic-input" : "context.compound-arithmetic";
@@ -1308,7 +1344,7 @@ const MENU_COMPARISON = {
 };
 
 /** Filas que en LabVIEW abren un submenú aunque su contenido no esté declarado. Es disposición. */
-const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
+const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "select-item", "type-palette", "cluster-type-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
   // The graphs (labview-captures/graphs/): rows whose submenus are not declared yet.
   "marker-spacing", "style", "property-node", "invoke-node", "run-time-shortcut-menu", "enabled-state", "update-mode", "export", "x-scale", "y-scale", "common-plots", "color", "line-style", "line-width", "bar-plots", "fill-base-line", "interpolation", "point-style"];
 
@@ -1366,9 +1402,10 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
   // Algunos menús cambian de filas y de nombres según el estado (el Case: booleano o numérico, qué marco se ve).
   // Rows can also be greyed by context (`desactivados`, as Remove Dimension on a 1D array) or stand for a hole
   // that explains a limit of Solder (`redirigidos`: the row id to the inventory entry it explains).
-  const { ocultos = new Set(), rotulos = new Map(), desactivados = new Set(), redirigidos = new Map(), mostrados = new Set() } = variante;
+  // `submenus`: the rows of a submenu that the diagram decides, as the names of the cluster in Unbundle By Name's Select Item.
+  const { ocultos = new Set(), rotulos = new Map(), desactivados = new Set(), redirigidos = new Map(), mostrados = new Set(), submenus = new Map() } = variante;
   // Disable Breakpoint only exists in the menu of something that has a breakpoint (debugging/debug-view.mjs `menuVariants`).
-  const hijos = (padre) => inv.hijos(padre).filter((e) => !ocultos.has(e.id) && (ultimo(e.id) !== "disable-breakpoint" || mostrados.has(e.id)));
+  const hijos = (padre) => (submenus.get(padre) ?? inv.hijos(padre)).filter((e) => !ocultos.has(e.id) && (ultimo(e.id) !== "disable-breakpoint" || mostrados.has(e.id)));
   const rotuloDe = (e) => rotulos.get(e.id) ?? e.etiqueta;
   const anchoAtajos = (padre) => Math.max(0, ...hijos(padre).map((e) => (e.atajo ? medir(e.atajo) : 0)));
   const anchoTextos = (padre) => Math.max(...hijos(padre).map((e) => medir(rotuloDe(e))));
@@ -1401,14 +1438,14 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
         filas += `<div class="separador-menu" style="top:${px(top + M.separador / 2 - 0.5)}"></div>`;
         top += M.separador;
       }
-      const conSub = inv.tieneContenido(e.id) || CON_SUBMENU.includes(ultimo(e.id));
+      const conSub = inv.tieneContenido(e.id) || submenus.has(e.id) || CON_SUBMENU.includes(ultimo(e.id));
       const abierto = menu.abierto === e.id;
       const hueco = esHueco(e) || redirigidos.has(e.id);
       const clases = `item-menu${hueco ? " hueco" : ""}${desactivados.has(e.id) ? " desactivado" : ""}${abierto ? " activo" : ""}${marcados.has(e.id) ? " marcado" : ""}`;
       const flecha = conSub ? `<span class="flecha-menu" style="right:${px(M.flecha)}">${G.FLECHA_CATEGORIA}</span>` : "";
       const atajo = e.atajo ? `<span class="atajo-menu" style="left:${px(M.texto + anchoTextos(padre) + M.antesAtajo)}">${esc(e.atajo)}</span>` : "";
       filas += `<div class="${clases}" data-id="${esc(redirigidos.get(e.id) ?? e.id)}" style="top:${px(top)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(rotuloDe(e))}</span>${atajo}${flecha}</div>`;
-      if (abierto && inv.tieneContenido(e.id)) sub = lista(e.id, x + ancho - M.solape, y + top - M.arriba);
+      if (abierto && (inv.tieneContenido(e.id) || submenus.has(e.id))) sub = lista(e.id, x + ancho - M.solape, y + top - M.arriba);
       top += M.fila;
     }
     return `<div class="menu-contextual" data-menu="${esc(padre)}" style="left:${px(x)};top:${px(y)};width:${px(ancho)};height:${px(top + M.arriba)}">${filas}</div>${sub}`;

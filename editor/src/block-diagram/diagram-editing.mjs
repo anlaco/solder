@@ -19,6 +19,7 @@
 //     { tipo: "estirar", nodo, lado, x0, y0, g0 }      resizing a node by its handle
 //     { tipo: "etiqueta", nodo, x, y }                 dragging a label on its own
 //   lista      { nodo, x, y } the drop-down list of a Case's frames, open at the click point
+//              (`fila` too in the list of names of an Unbundle By Name: the row it will change)
 //   sobre      the node, and terminal, under the mouse: it shows its tips
 //   edicion    { nodo, texto, todo } while typing into a constant,
 //              { nodo, etiqueta: true, texto, todo } into a node's label, or
@@ -29,6 +30,7 @@
 
 import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
 import * as FN from "./format-nodes.mjs";
+import * as UN from "./unbundle-by-name.mjs";
 import * as EI from "./edit-items-dialog.mjs";
 import { endPoint } from "./broken-wire.mjs";
 import * as CP from "../front-panel/connector-pane.mjs";
@@ -50,7 +52,11 @@ const UMBRAL = 3;
 /** Un bloque cogido de la paleta cuelga del cursor por esta esquina. */
 const AGARRE = { x: 4, y: 4 };
 /** The point of a block that hangs from the cursor: Format Into String and Scan From String, their centre (format-scan/31-scan-placed.png). */
-const grabPoint = (block, ctx) => (FN.isFormatNode({ tipo: block }, ctx.cat) ? FN.formatNodeGrabPoint(block, ctx.cat) : AGARRE);
+const grabPoint = (block, ctx) => {
+  if (FN.isFormatNode({ tipo: block }, ctx.cat)) return FN.formatNodeGrabPoint(block, ctx.cat);
+  // Unbundle By Name hangs by its centre too (cluster palette, stage 1: dropped at the click, centred).
+  return block === UN.BLOCK ? UN.grabPoint(ctx.cat, ctx.medir) : AGARRE;
+};
 
 const lejos = (a, p) => Math.abs(p.x - a.x) > UMBRAL || Math.abs(p.y - a.y) > UMBRAL;
 const cableDe = (id) => id.split("#")[0];
@@ -757,7 +763,9 @@ export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
       ? mostrarMarco({ ...d, lista: null }, sobre.nodo, sobre.k)
       : sobre.tipo === "fila-valor"
         ? { ...d, g: Gr.fijarConfig(d.g, sobre.nodo, { value: sobre.k }), lista: null }
-        : { ...d, lista: null };
+        : sobre.tipo === "fila-elemento"
+          ? { ...d, g: chooseUnbundleName(d, ctx, sobre.k), lista: null }
+          : { ...d, lista: null };
   // Pulsar fuera de la constante en la que se escribe confirma lo escrito, y
   // nada más: es lo que se ve en el vídeo.
   const enLoQueSeEscribe = d.edicion?.marco ? sobre.tipo === "marco" && sobre.zona === "texto" && sobre.nodo === d.edicion.nodo : sobre.id === d.edicion?.nodo && sobre.tipo === (d.edicion?.etiqueta ? "etiqueta" : "nodo");
@@ -785,6 +793,8 @@ export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
     // Una constante de enum o de ring que no está seleccionada abre con un clic su lista de
     // ítems; seleccionada, el clic sólo la vuelve a elegir (medido, herramienta automática).
     const pulsado = d.g.nodos.find((n) => n.id === sobre.id);
+    // A click on a name row of an Unbundle By Name drops the list of the names of the cluster wired in; unwired, there is none.
+    if (UN.isUnbundleByName(pulsado) && sobre.fila !== undefined && UN.clusterElementNames(d.g, ctx.cat, pulsado.id).length) return { ...d0, seleccion: elegir(sobre.id), lista: { nodo: sobre.id, x: p.x, y: p.y, fila: sobre.fila } };
     if (CONSTANTES[pulsado?.tipo]?.selector && !d.seleccion.includes(sobre.id)) return { ...d0, seleccion: elegir(sobre.id), lista: { nodo: sobre.id, x: p.x, y: p.y } };
     // Una constante booleana cambia con un clic, como en LabVIEW; si se arrastra, se mueve.
     // La constante de error, igual, con la celda de su status.
@@ -848,6 +858,7 @@ export function moverA(d, ctx, p) {
       if (arr?.tipo === "arr-const") return { ...d, g: Gr.fijarConfig(accion.g0, accion.nodo, stretchedArrayConstant(arr, ctx, accion, p)) };
       if (arr?.tipo === "initialize-array") return { ...d, g: stretchedInitializeArray(accion, p, ctx) };
       if (esEstructura(accion.g0.nodos.find((k) => k.id === accion.nodo), ctx)) return { ...d, g: estirarEstructura(accion, p, ctx) };
+      if (UN.isUnbundleByName(arr)) return { ...d, g: UN.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / UN.ROW_STEP)) };
       if (arr && FN.isFormatNode(arr, ctx.cat)) return { ...d, g: FN.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / FN.FORMAT_ROW_STEP)) };
       // Cada celda que se estira es una entrada más; por arriba, las nuevas
       // entran encima y las que había conservan sus cables.
@@ -1099,6 +1110,8 @@ export function orden(d, id, ctx) {
   // window draws it and keeps it modal.
   if (id.endsWith(".edit-items")) return { ...d, menu: null, itemsDialog: EI.open(nodoPor(d.g, nodo)) };
   const ultimo = id.slice(id.lastIndexOf(".") + 1);
+  const unbundleResult = unbundleCommand(d, id, ctx);
+  if (unbundleResult) return unbundleResult;
   if (id.endsWith(".visible-items.terminals")) return cerrar(Gr.alternarTerminales(d.g, nodo));
   if (id.endsWith(".view-as-icon")) return cerrar(Gr.alternarIcono(d.g, nodo));
   if (id.endsWith(".invert")) return cerrar(Gr.alternarInvertida(d.g, nodo, puerto ?? "result"));
@@ -1175,6 +1188,24 @@ export function orden(d, id, ctx) {
   return d;
 }
 
+// ——— Unbundle By Name ———
+
+/** Choosing a name in the drop-down list of a row: the row shows that element and its wire stays (Select Item, measured). */
+function chooseUnbundleName(d, ctx, choice) {
+  const name = UN.clusterElementNames(d.g, ctx.cat, d.lista.nodo)[choice];
+  return name === undefined ? d.g : Gr.selectUnbundleItem(d.g, d.lista.nodo, d.lista.fila, name);
+}
+
+/** The commands of the menus of an Unbundle By Name (Select Item ▸ a name, Remove Element), or nothing if `id` is not one of them. */
+function unbundleCommand(d, id, ctx) {
+  if (d.menu.raiz !== UN.ROW_MENU) return null;
+  const row = UN.rowOfPort(d.menu.puerto);
+  const choice = /\.select-item\.(\d+)$/.exec(id)?.[1];
+  if (choice !== undefined) return { ...d, g: Gr.selectUnbundleItem(d.g, d.menu.nodo, row, UN.clusterElementNames(d.g, ctx.cat, d.menu.nodo)[Number(choice)]), menu: null };
+  if (id.endsWith(".remove-element")) return { ...d, g: Gr.removeUnbundleRow(d.g, ctx.cat, d.menu.nodo, row), menu: null };
+  return null;
+}
+
 /** El terminal de condición de un While, o el nodo mismo si ya lo es. */
 const condicionDe = (g, id) => {
   const n = g.nodos.find((k) => k.id === id);
@@ -1233,11 +1264,56 @@ function nodeVariants(d, ctx) {
   if (n && ["arr-const", "arr-control", "arr-indicator"].includes(n.tipo)) return arrayVariants(n, r);
   // Remove Parameter on the only row of Scan From String does nothing: there is always one.
   if (n?.tipo === "scan-from-string" && (n.config?.inputs ?? 1) <= 1) return { desactivados: new Set([`${r}.remove-parameter`]) };
+  if (UN.isUnbundleByName(n)) return unbundleVariants(d, ctx, n);
   if (n?.tipo === "case-selector") {
     const caso = d.g.nodos.find((k) => k.id === n.dentro);
     return { ocultos: fila(caso && esBooleano(caso) ? "numeric-palette" : "boolean-palette"), rotulos: new Map() };
   }
   return {};
+}
+
+/**
+ * The rows of the menus of an Unbundle By Name that depend on its state. A row's menu names its type's
+ * palette and lists the names of the wired cluster in Select Item; Remove Element is greyed on the last
+ * row; Select Item is greyed when no cluster is wired. The body menu names the palette of the wired
+ * cluster, and has no such row for a cluster that was not measured.
+ */
+function unbundleVariants(d, ctx, node) {
+  const root = d.menu.raiz;
+  const cluster = UN.wiredCluster(d.g, ctx.cat, node.id);
+  if (root === UN.BODY_MENU) {
+    const label = UN.bodyPaletteLabel(cluster);
+    return label ? { rotulos: new Map([[`${root}.cluster-type-palette`, label]]) } : { ocultos: new Set([`${root}.cluster-type-palette`]) };
+  }
+  const row = UN.rowOfPort(d.menu.puerto);
+  const names = UN.clusterElementNames(d.g, ctx.cat, node.id);
+  const paletteLabel = UN.typePaletteLabel(UN.elementTypeOfRow(d.g, ctx.cat, node.id, row));
+  const variants = {
+    desactivados: new Set(UN.rowCount(node, ctx.cat) <= 1 ? [`${root}.remove-element`] : []),
+    ocultos: new Set(paletteLabel ? [] : [`${root}.type-palette`]),
+    rotulos: new Map(paletteLabel ? [[`${root}.type-palette`, paletteLabel]] : []),
+  };
+  if (!names.length) variants.desactivados.add(`${root}.select-item`);
+  else variants.submenus = new Map([[`${root}.select-item`, names.map((name, k) => ({ id: `${root}.select-item.${k}`, etiqueta: name, estado: "built" }))]]);
+  return variants;
+}
+
+/** Whether the row `id` of the open menu opens a submenu: one declared in the inventory, or one the diagram fills in (Select Item). */
+export const menuRowHasSubmenu = (d, ctx, inv, id) => inv.tieneContenido(id) || !!variantes(d, ctx).submenus?.has(id);
+
+/**
+ * The entry of a row of the open menu: the inventory's, or for a row the diagram fills in (the names
+ * of Select Item ▸) the one it was generated with. Those rows are not in the inventory, so looking
+ * them up there alone finds nothing.
+ */
+export function menuRowEntry(d, ctx, inv, id) {
+  const declared = inv.resolver(id);
+  if (declared) return declared;
+  for (const rows of variantes(d, ctx).submenus?.values() ?? []) {
+    const generated = rows.find((row) => row.id === id);
+    if (generated) return generated;
+  }
+  return undefined;
 }
 
 /** The Create rows that need a terminal under the pointer: LabVIEW greys them on the body of a node (subvi/subvi-node-menu-create.png). */
@@ -1287,7 +1363,7 @@ const mergeVariants = (a, b) => ({
 export const variantes = (d, ctx) => (isGraphMenu(d) ? graphMenuVariants(d) : mergeVariants(mergeVariants(nodeVariants(d, ctx), createVariants(d, ctx)), wireMenuVariants(d, ctx)));
 
 /** Qué filas del menú llevan la marca: Terminals si el nodo los enseña, el modo actual, Invert si lo está, la representación de un número. */
-export function marcados(d) {
+export function marcados(d, ctx) {
   if (CP.hasConnectorMenu(d)) return CP.menuMarks(d);
   if (isGraphMenu(d)) return graphMenuMarks(d);
   const n = d.menu && d.g.nodos.find((k) => k.id === d.menu.nodo);
@@ -1315,6 +1391,11 @@ export function marcados(d) {
   if (esCase(n) || esSecuencia(n)) m.add(`${r}.auto-grow`);
   if (esCase(n) && n.config?.caseInsensitive) m.add(`${r}.case-insensitive-match`);
   if (n.tipo === "case-tunnel-out" && n.config?.["use-default"]) m.add(`${r}.use-default-if-unwired`);
+  // The name the row shows is checked in Select Item (stage 2, Q4); the index of a name is its place in the cluster.
+  if (r === UN.ROW_MENU && ctx) {
+    const index = UN.clusterElementNames(d.g, ctx.cat, n.id).indexOf(n.config.items[UN.rowOfPort(d.menu.puerto)]);
+    if (index >= 0) m.add(`${r}.select-item.${index}`);
+  }
   if (n.tipo === "tunnel-out") m.add(`${r}.tunnel-mode.${n.config?.indexado ? "indexing" : "last-value"}`);
   return m;
 }
