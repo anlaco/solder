@@ -1097,6 +1097,19 @@ function dentro(el, max) {
 }
 
 
+/** Keeps the open palette and its subpalettes in the window as LabVIEW keeps them on the screen (window-view.mjs). */
+function placePalettes(room) {
+  if (!estado.paleta) return;
+  const move = (el, { x, y }) => Object.assign(el.style, { left: `${x}px`, top: `${y}px` });
+  const sizeOf = (el) => ({ width: el.offsetWidth, height: el.offsetHeight });
+  const palette = document.querySelector(".paleta:not(.subpaleta)");
+  if (palette) move(palette, V.placePalette(estado.paleta, sizeOf(palette), room));
+  estado.paleta.cascada.forEach((anchor, i) => {
+    const sub = document.querySelector(`.subpaleta[data-nivel="${i + 1}"]`);
+    if (sub) move(sub, V.placeSubpalette(anchor, anchor.x - V.MEDIDAS_SUBPALETA.anclaX, sizeOf(sub), room));
+  });
+}
+
 function pintar() {
   ctx.panelSize = tamanoDelLienzo();
   const resueltos = Gr.tipos(grafo(), cat);
@@ -1127,7 +1140,8 @@ function pintar() {
   ventana.classList.toggle("colocando", pan.accion?.tipo === "colocar" && !!pan.accion.arrastrado);
   // The right-click menus place themselves inside the window (diagram-view.mjs `placeMenu`); the rest is pushed back in here.
   const tam = windowSize();
-  for (const el of document.querySelectorAll(".paleta, .explicacion, .lista-marcos")) dentro(el, tam);
+  placePalettes(tam);
+  for (const el of document.querySelectorAll(".explicacion, .lista-marcos")) dentro(el, tam);
   if (tip.visible) ponerTip();
 }
 

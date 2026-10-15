@@ -354,6 +354,52 @@ function rejilla(inv, categoria, abierta) {
 /** Dónde abre su subpaleta una carpeta cuya esquina, sin abrir, está en `r`. */
 export const anclaSubpaleta = (r) => ({ x: r.left + MEDIDAS_SUBPALETA.anclaX, y: r.top + MEDIDAS_SUBPALETA.anclaY });
 
+/**
+ * How LabVIEW keeps a palette on the screen (labview-captures/reports/2026-10-15-palette-edges.md). Solder's screen is the
+ * VI window's page, since its palettes live in the page.
+ */
+export const PALETTE_EDGES = {
+  /** A palette or subpalette never ends lower than this above the bottom of the room (B1, B2: 1025 for 1040). */
+  bottomMargin: 15,
+  /** The palette's top sits this far above the click (B1). */
+  aboveClick: 2,
+  /** A palette flipped above the click ends this far below it (B1). */
+  flippedBelowClick: 41,
+  /**
+   * The furthest a palette is pushed up to fit before it flips above the click instead: 71 px still pushes and 86 px
+   * flips (B1). Unverified between the two.
+   */
+  maxPushUp: 78,
+  /** A palette that does not fit right of the click ends this far left of it (B3). */
+  leftOfClick: 2,
+};
+
+/** Where the palette opened by a click at `click` goes, given its size and the room it has. */
+export function placePalette(click, size, room) {
+  const E = PALETTE_EDGES;
+  const x = click.x + size.width <= room.width ? click.x : click.x - E.leftOfClick - size.width;
+  const top = click.y - E.aboveClick;
+  const lowest = room.height - E.bottomMargin;
+  let y = top;
+  if (top + size.height > lowest) {
+    const pushedUp = lowest - size.height;
+    y = top - pushedUp <= E.maxPushUp ? pushedUp : click.y + E.flippedBelowClick - size.height;
+  }
+  return { x: Math.max(0, x), y: Math.max(0, y) };
+}
+
+/**
+ * Where a subpalette goes, opened from a folder whose left edge is `folderLeft`, `anchor` being where it opens when
+ * it fits: pushed up when it would end too low (B2), and left of its folder when it would leave the room on the right
+ * (B3: its right edge about 16 px left of the mouse on the folder, so at the folder's left edge within a few px).
+ */
+export function placeSubpalette(anchor, folderLeft, size, room) {
+  const x = anchor.x + size.width <= room.width ? anchor.x : folderLeft - size.width;
+  const lowest = room.height - PALETTE_EDGES.bottomMargin;
+  const y = anchor.y + size.height <= lowest ? anchor.y : lowest - size.height;
+  return { x: Math.max(0, x), y: Math.max(0, y) };
+}
+
 /** Dónde cae cada elemento de una subpaleta: fila y columna de su celda. */
 export function celdasSubpaleta(inv, id) {
   const { columnas, celdas } = REJILLAS[id] ?? REJILLA_POR_DEFECTO;

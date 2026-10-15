@@ -304,6 +304,16 @@ starting with a basic palette and adding hover + pin later.*
 > another folder of the same palette closes what hung from it; a click outside or
 > Esc closes everything. The subpalettes chain in a cascade. The pin is still
 > pending.
+>
+> **At the edges** (measured 2026-10-15, `labview-captures/reports/2026-10-15-palette-edges.md`): no tooltip
+> appears on a palette icon; in a subpalette the hovered icon's name is written under the title, and the main
+> palette's grid shows none. The palette opens with its top 2 px above the click; if it would end lower than 15 px
+> above the bottom it is pushed up, and if that push is more than about 78 px it flips above the click and ends
+> 41 px below it (the threshold lies between 71 and 86 px, unverified). Near the right edge it ends 2 px left of the
+> click. A subpalette that would end too low is pushed up to the same limit, and one that would leave the room on the
+> right opens left of its folder. LabVIEW draws them over the desktop; Solder's palettes live in the VI window's
+> page, so the window is their screen (`placePalette`, `placeSubpalette` in `editor/src/window/window-view.mjs`,
+> tests in `test/editor/window-view.test.mjs`).
 
 ---
 

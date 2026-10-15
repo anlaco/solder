@@ -149,6 +149,10 @@ frame 0 whatever frame was shown. *Fixed on 2026-10-15* (`diagram-editing.test.m
    running editor (`2026-10-15-solder-wire-bends.md`).
 7. **Palette icons** show their name only in the header strip, and subpalettes are clipped at the top of
    the screen (TM 14, IP 4–6).
+   *Fixed on 2026-10-15:* measured (`2026-10-15-palette-edges.md`): LabVIEW shows no tooltip either, only the name under
+   the subpalette's title, which Solder already did. The palette and its subpalettes now keep inside the window by
+   LabVIEW's rules: pushed up or flipped above the click near the bottom, left of the click and of the folder near
+   the right edge (spec/06 §6.3).
 
 ### D. Known and postponed
 
@@ -174,5 +178,5 @@ reproduce. What is left:
 2. ~~B12 and B13~~: measured and done on 2026-10-15. B7's shift off a loop's border turned out to be LabVIEW's
    structure auto-grow, not a fixed shift: postponed until it is measured as such.
 3. ~~C5 Select Item… and B14's tips~~: done on 2026-10-15.
-4. ~~B15, the Spanish texts~~ and ~~C6~~: done on 2026-10-15. C7.
+4. ~~B15, the Spanish texts~~, ~~C6~~ and ~~C7~~: done on 2026-10-15.
 5. E2 to E4, found on 2026-10-15.

@@ -223,6 +223,10 @@ dialog's Delete follows the rule measured on 2026-10-15: by the name, not the ro
    output is a branch on that vertical with its dot on the elbow, measured again in LabVIEW
    ([`2026-10-15-wire-bends.md`](../../labview-captures/reports/2026-10-15-wire-bends.md); spec/05 §5.4 amended) and
    checked in the running editor.*
+   *C7 done on 2026-10-15: LabVIEW shows no tooltip on palette icons (Solder was right), and the palette and its
+   subpalettes now keep inside the window by LabVIEW's rules, pushed up or flipped near the bottom and opened to the
+   left near the right edge ([`2026-10-15-palette-edges.md`](../../labview-captures/reports/2026-10-15-palette-edges.md);
+   spec/06 §6.3), checked in the running editor.*
    *Unbundle By Name (#23) done on 2026-10-15 (DT-050, spec/04 Rule 21l, spec/05 Rule 78b): Functions ▸ Programming ▸
    Cluster, Class, & Variant captured and declared (only the cluster side planned; classes and Variant greyed), Unbundle By
    Name built — the rows store the element names and take their types from the wire, grow by the bottom handle, change by

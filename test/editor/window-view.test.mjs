@@ -6,7 +6,7 @@ import { test } from "node:test";
 
 import { inicial, paletaNueva } from "../../editor/src/window/window-state.mjs";
 import { ultimo } from "../../editor/src/common/labview-inventory.mjs";
-import { MEDIDAS, anchoZonaIconos, anclaSubpaleta, celdasSubpaleta, disposicionBarra, idsPintados, paleta, subpaletas, tamanoSubpaleta, ventana } from "../../editor/src/window/window-view.mjs";
+import { MEDIDAS, anchoZonaIconos, anclaSubpaleta, celdasSubpaleta, placePalette, placeSubpalette, disposicionBarra, idsPintados, paleta, subpaletas, tamanoSubpaleta, ventana } from "../../editor/src/window/window-view.mjs";
 import { INV } from "../helpers.mjs";
 
 const VENTANAS = ["front-panel", "block-diagram"];
@@ -159,4 +159,27 @@ test("en modo run la barra enciende abort y esconde las herramientas de editar",
   for (const n of ["text-settings", "align-objects", "distribute-objects", "resize-objects", "reorder"]) assert.match(boton(corriendo, n)[2], /visibility:hidden/, n);
   for (const n of ["run", "run-continuously", "pause"]) assert.doesNotMatch(boton(corriendo, n)[2], /hidden/, n);
   assert.match(corriendo, /class="ventana ventana-front-panel ejecutando"/);
+});
+
+// labview-captures/reports/2026-10-15-palette-edges.md, measured on a 1040 px work area with the 212 × 549 Functions palette.
+const SCREEN = { width: 1920, height: 1040 };
+const FUNCTIONS_PALETTE = { width: 212, height: 549 };
+
+test("the palette opens at the click, is pushed up a little and flips above it near the bottom", () => {
+  assert.deepEqual(placePalette({ x: 900, y: 400 }, FUNCTIONS_PALETTE, SCREEN), { x: 900, y: 398 }, "it fits: top 2 px above the click");
+  assert.deepEqual(placePalette({ x: 900, y: 540 }, FUNCTIONS_PALETTE, SCREEN), { x: 900, y: 476 }, "pushed up to end 15 px above the bottom");
+  assert.deepEqual(placePalette({ x: 900, y: 700 }, FUNCTIONS_PALETTE, SCREEN), { x: 900, y: 192 }, "flipped: it ends 41 px below the click");
+  assert.deepEqual(placePalette({ x: 500, y: 80 }, FUNCTIONS_PALETTE, SCREEN), { x: 500, y: 78 }, "no shift near the top");
+});
+
+test("near the right edge the palette ends 2 px left of the click and its subpalette opens left of its folder", () => {
+  assert.deepEqual(placePalette({ x: 1880, y: 300 }, FUNCTIONS_PALETTE, SCREEN), { x: 1666, y: 298 });
+  const numeric = { width: 302, height: 386 };
+  assert.deepEqual(placeSubpalette({ x: 1865, y: 374 }, 1822, numeric, SCREEN), { x: 1520, y: 374 });
+});
+
+test("a subpalette that would end too low is pushed up", () => {
+  const constants = { width: 254, height: 242 };
+  assert.deepEqual(placeSubpalette({ x: 984, y: 873 }, 941, constants, SCREEN), { x: 984, y: 783 }, "it ends 15 px above the bottom");
+  assert.deepEqual(placeSubpalette({ x: 695, y: 569 }, 652, { width: 302, height: 386 }, SCREEN), { x: 695, y: 569 }, "unmoved when it fits");
 });
