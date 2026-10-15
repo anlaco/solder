@@ -23,11 +23,6 @@ const CROSS_ARM = 3.4;
 /** Arrowhead: 5 px along the wire, 9 px across it (REPORT §5: a solid triangle of 25 px). */
 export const HEAD_LENGTH = 5;
 export const HEAD_WIDTH = 9;
-/**
- * Types whose arrowhead is not the colour of their wire: the head of a String measured the pure #FF00FF
- * (REPORT §5) while its wire is #FF33CC. Every other type keeps the colour of its wire.
- */
-export const ARROWHEAD_COLOR_OF_TYPE = { string: "#ff00ff" };
 /** The colour of an end with nothing on it (REPORT §5: black when that end is loose). */
 export const LOOSE_END_COLOR = "#000000";
 /** Space between the upstream arrowhead and the cross; the other side touches it (REPORT §5: gap 2 px on one side, 0 on the other). */

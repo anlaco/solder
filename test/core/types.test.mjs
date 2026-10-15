@@ -40,6 +40,13 @@ test("el cable lleva el color de su tipo y el grosor de su dimensión", () => {
   assert.equal(nombre({ array: "u16" }), "array de U16");
 });
 
+// Measured at 1:1 on wires and on Unbundle By Name's names (reports/2026-10-15-unbundle-by-name.md Q1, Q7).
+test("Boolean and string take the colours measured in LabVIEW", () => {
+  assert.equal(aspecto("boolean").color, "#007f00");
+  assert.equal(aspecto("string").color, "#ff00ff");
+  assert.equal(aspecto({ array: "string" }).color, "#ff00ff", "an array keeps the colour of its element");
+});
+
 test("una constante enseña su valor como LabVIEW y lee lo que se escribe", async () => {
   const { formatear, leerNumero } = await import("../../core/model/types.mjs");
   assert.equal(formatear(43.3, "number", ","), "43,3");

@@ -651,7 +651,7 @@ function floatingWindows() {
   let popup = "";
   if (debug.debugWindow.open) {
     windows += DV.debugWindow(inv, debug, grafo(), { viName: viInfo.name, separator: separador, position: debugUi.debugWindowAt ?? defaultWindowPosition(DV.DEBUG_WINDOW.width, DV.DEBUG_WINDOW.height) });
-    if (debugUi.menu) popup += D.menuContextual(inv, debugUi.menu, DV.debugWindowMenuMarks(debug), medirMenu, DV.debugWindowMenuVariants(debug));
+    if (debugUi.menu) popup += D.menuContextual(inv, debugUi.menu, DV.debugWindowMenuMarks(debug), medirMenu, DV.debugWindowMenuVariants(debug), windowSize());
     if (debugUi.askingToCloseProbes) windows += DV.closeProbesDialog(inv);
   }
   if (errorList.open) {
@@ -1056,6 +1056,9 @@ const nivelDe = (el) => Number(el.closest(".paleta")?.dataset.nivel ?? 0);
 /** ¿Es una carpeta de una rejilla, con su subpaleta declarada? */
 const abreSubpaleta = (el) => el.classList.contains("carpeta") && inv.tieneContenido(el.dataset.id);
 
+/** The size of this window's page, the room a menu has to open in. */
+const windowSize = () => ({ width: innerWidth, height: innerHeight });
+
 function dentro(el, max) {
   const r = el.getBoundingClientRect();
   if (r.right > max.width) el.style.left = `${Math.max(0, max.width - r.width - 2)}px`;
@@ -1073,26 +1076,27 @@ function pintar() {
   const extra = { toolbar: debugToolbar(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, dialogo: dialogoError, numeroVI: viInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
   if (conDiagrama) {
     extra.lienzo = D.contenido({ ...dia, debug: DV.canvasView(debug, dia.g, ejecutando) }, ctx, resueltos) + DV.overlay(debug, dia.g, ctx, resueltos, { now: Date.now(), separator: separador, running: ejecutando, pausedAt: debug.run.paused, errorFocus });
-    extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia, ctx), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx), DV.menuVariants(debug, dia.g, resueltos, dia.menu))) : "") + floating.popup;
+    extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia, ctx), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx), DV.menuVariants(debug, dia.g, resueltos, dia.menu)), windowSize()) : "") + floating.popup;
     extra.editandoTexto = !!dia.edicion;
   } else {
     extra.lienzo = P.contenido(pan, ctx, resueltos);
     extra.conectorGlifo = CP.paneGlyph(pan.g, cat, pan.conector?.celda ?? null);
-    extra.encima = pan.menu ? D.menuContextual(inv, pan.menu, ED.marcados(pan, ctx), medirMenu, ED.variantes(pan, ctx)) : "";
+    extra.encima = pan.menu ? D.menuContextual(inv, pan.menu, ED.marcados(pan, ctx), medirMenu, ED.variantes(pan, ctx), windowSize()) : "";
     extra.editandoTexto = !!pan.edicion;
   }
   // El menú de la barra que está abierto, bajo su título.
   if (estado.menuBarra) {
     const variantes = estado.menuBarra.id === EM.editMenuId(nombre) ? variantesDelMenuEdit() : {};
-    extra.encima = (extra.encima ?? "") + D.menuContextual(inv, { raiz: estado.menuBarra.id, x: estado.menuBarra.x, y: estado.menuBarra.y }, marcasDelMenuBarra(estado.menuBarra.id), medirMenu, variantes);
+    extra.encima = (extra.encima ?? "") + D.menuContextual(inv, { raiz: estado.menuBarra.id, x: estado.menuBarra.x, y: estado.menuBarra.y }, marcasDelMenuBarra(estado.menuBarra.id), medirMenu, variantes, windowSize());
   }
   document.body.innerHTML = V.ventana(inv, nombre, estado, extra);
   const ventana = document.querySelector(".ventana");
   ventana.classList.toggle("cableando", dia.accion?.tipo === "cablear");
   // Mientras se arrastra un control desde la paleta, el lienzo lleva un borde punteado.
   ventana.classList.toggle("colocando", pan.accion?.tipo === "colocar" && !!pan.accion.arrastrado);
-  const tam = { width: innerWidth, height: innerHeight };
-  for (const el of document.querySelectorAll(".paleta, .explicacion, .menu-contextual")) dentro(el, tam);
+  // The right-click menus place themselves inside the window (diagram-view.mjs `placeMenu`); the rest is pushed back in here.
+  const tam = windowSize();
+  for (const el of document.querySelectorAll(".paleta, .explicacion, .lista-marcos")) dentro(el, tam);
   if (tip.visible) ponerTip();
 }
 

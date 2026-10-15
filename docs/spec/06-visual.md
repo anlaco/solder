@@ -135,10 +135,17 @@ Wires encode the data type through **three visual channels**:
 
 | Type     | Color    | Thickness | Pattern  |
 |----------|----------|-----------|----------|
-| Numeric (DBL) | Orange | Thin (1px) | Solid |
-| Boolean  | Green    | Thin (1px) | Solid |
-| String   | Pink     | Thin (1px) | Characteristic pattern (striped/segmented) |
-| Integer  | Blue     | Thin (1px) | Solid |
+| Numeric (DBL) | Orange `#FF7F00` | Thin (1px) | Solid |
+| Boolean  | Green `#007F00` | Thin (1px) | Dotted, 1 px on / 1 px off |
+| String   | Pink `#FF00FF` | 2 px | Dotted, 3 px on / 1 px off |
+| Integer  | Blue `#0000FF` | Thin (1px) | Solid |
+
+> **Boolean and string, measured at 1:1** (2026-10-15, `labview-captures/reports/2026-10-15-unbundle-by-name.md` Q1 and Q7,
+> `cluster/w4.png`, `w12.png`, `w28.png`): the wires, and the names of an Unbundle By Name, are `#007F00` and `#FF00FF`; no
+> `#008000` or `#FF33CC` pixel appears in those captures. `COLORES` in `core/model/types.mjs` uses them since that day (before,
+> `#008000` and `#FF33CC`, never measured), so every Boolean and string wire, terminal, constant border and type label follows;
+> the head of a broken String wire (§15), measured `#FF00FF`, is no longer an exception. Test: `test/core/types.test.mjs`. The
+> patterns (finding #37 of `docs/design/real-programs-0.2.md`) are measured but **not drawn yet**: Solder draws both solid, 1.33 px.
 
 *Arrays, clusters and composite types will be defined when implemented in Phase 2.*
 
@@ -585,15 +592,41 @@ Measured at 1:1 in LabVIEW 2026 Q3 (`labview-captures/broken-wires/REPORT.md` §
   sink: both point downstream; loose source: the first one is black and points back to the loose end, the second one is the sink's colour
   and points downstream. A String's head is the pure `#FF00FF` (measured), not the `#FF33CC` of its wire. **Unverified:** the heads of the
   other types beyond I32, DBL and String (the type colour is used), the two-source layout (Solder cannot make that wire), the loose
-  sink branch with both heads toward the end, and how the rule goes on a path of several bends.
+  sink branch with both heads toward the end, and how the rule goes on a path of several bends. (Since 2026-10-15 the String wire
+  itself is `#FF00FF` too, §4.2.)
 - **Broken by types:** the same marks, only the heads carry the two types.
 - **Not drawn:** the highlight of the wire while hovered (thicker, light-blue edge, `57`) and the marching ants of a clicked broken wire (`21`);
   the selected segment uses the normal selection.
+
+## 16. Right-click menus and drop-down lists (2026-10-15)
+
+Measured at 1:1 in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-15-unbundle-by-name.md` Q3–Q5, `cluster/w13.png`, `w14.png`,
+`w16.png`; `labview-captures/reports/2026-10-15-editor-wide.md` Q2–Q3). Code: `MEDIDAS_MENU`, `placeMenu` and `placeSubmenu` in
+`editor/src/block-diagram/diagram-view.mjs`, `.menu-contextual` and `.separador-menu` in `editor/src/styles.css`.
+
+- **Box:** background `#F0F0F0`, 1 px border `#A0A0A0` (was `#979797`, read from a video at 150 %). Separators: a 1 px `#A0A0A0`
+  line over a 1 px white one, from 4 px inside the left outer edge to 5 px inside the right one (was 1 px `#BDBDBD`).
+- **Insets:** the text starts 22 px from the outer left edge, in menus and lists alike; a check mark 9 px. In a right-click menu 30 px
+  are left between the longest text and the last pixel of the right border, with the submenu arrow ending 12 px from it (Unbundle By
+  Name's row menu, 218 px wide). A drop-down list (the names of an Unbundle By Name, the items of an enum or ring, the frames of a
+  Case) has no arrow column: 25 px after its longest text (83 × 61 for `status`, `code`, `source`; Solder drew 88). Tests:
+  `test/editor/unbundle-by-name.test.mjs` (the list), `test/editor/styles.test.mjs` (border and separators).
+- **Placement:** a menu opens at the click. One that does not fit below is moved up until its bottom border is 2 px above the edge
+  (it does not open upward, and its top does not depend on where the click was); one that does not fit on the right opens to the
+  left of the click, its right border 2 px before it. A submenu opens on the right of its menu, overlapping it by 5 px, level with its
+  row; on the left, with the same overlap, when it does not fit; moved up when it does not fit below, a grid of icons (Numeric
+  Palette ▸) keeping 6 px. Tests: "a menu that does not fit below moves up…" and "an open submenu follows its menu…"
+  (`test/editor/diagram-view.test.mjs`).
+- **Difference kept:** LabVIEW's menus leave the VI window and stop only at the screen's work area (above the taskbar); Solder's are
+  drawn inside the window, which stands for the screen. **Not done** (measured): the menu's top is 2 px above the click; the shadow is
+  ~5 px (`#8E8E8E` … `#FCFCFC`), Solder's a CSS blur. **Unverified:** where a drop-down list goes near an edge (Solder pushes it back
+  inside the window); the vertical inset of the rows at 1:1 (Solder's text sits about 2 px lower, with another font).
 
 ## History
 
 | Date       | Change |
 |------------|--------|
+| 2026-10-15 | §4.2: Boolean `#007F00` and string `#FF00FF`, measured at 1:1 (were `#008000` and `#FF33CC`); their wire patterns recorded. §16: menus and drop-down lists, border, separators, insets and placement at the edges. |
 | 2026-10-09 | §15: broken wires with a loose end (DT-046), from `labview-captures/broken-wires/`. §5.1 updated. |
 | 2026-10-09 | §14: debugging (Highlight Execution, probes, breakpoints, Debug Window, Error list), from `labview-captures/debugging/`. |
 | 2026-10-09 | §8: Waveform Chart, Waveform Graph and XY Graph, measured in `labview-captures/graphs/` (replaces the first sketch). |

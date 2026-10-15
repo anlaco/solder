@@ -23,3 +23,11 @@ test("un hueco no se confunde con un desactivado por contexto", () => {
   assert.ok(color(".desactivado"), "falta el aspecto de lo desactivado por contexto");
   assert.notEqual(color(".hueco"), color(".desactivado"));
 });
+
+// Measured at 1:1 on LabVIEW's menus and lists (cluster/w13.png, w14.png): a #a0a0a0 border and
+// separators of a #a0a0a0 line over a white one.
+test("menus and drop-down lists have LabVIEW's border and separators", () => {
+  const body = (selector) => reglas.find((r) => r.selectores.includes(selector))?.cuerpo ?? "";
+  assert.match(body(".menu-contextual"), /border:\s*1px solid #a0a0a0/);
+  assert.match(body(".separador-menu"), /height:\s*2px;\s*background:\s*#a0a0a0;\s*border-bottom:\s*1px solid #fff/);
+});

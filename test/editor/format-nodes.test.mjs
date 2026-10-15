@@ -77,8 +77,7 @@ test("Scan From String is placed at 32 by 37 with its terminals where LabVIEW ha
 test("stretching Format Into String by its bottom handle adds rows of 8 px, and shrinking only removes unwired ones", () => {
   let d = place(ED.inicial(), "format-into-string", { x: 400, y: 300 });
   const id = d.g.nodos[0].id;
-  assert.match(D.contenido({ ...d, seleccion: [id] }, CTX, Gr.tipos(d.g, CAT)), /data-asa="abajo"/, "the handle shows when it is selected");
-  assert.doesNotMatch(D.contenido({ ...d, seleccion: [] }, CTX, Gr.tipos(d.g, CAT)), /data-asa/);
+  assert.match(D.contenido({ ...d, seleccion: [id], sobre: { nodo: id } }, CTX, Gr.tipos(d.g, CAT)), /class="asa" [^>]*data-asa="abajo"/, "the handle shows when the selected node is hovered");
   d = stretch(d, id, 3 * STEP);
   assert.equal(rows(d, id), 4);
   assert.deepEqual([caja(nodeOf(d, id), CTX).ancho, caja(nodeOf(d, id), CTX).alto], [32, 29 + 3 * STEP], "taller by 8 px a row, as wide as before");
@@ -116,10 +115,10 @@ test("the type box of each row follows what is wired", () => {
   const boxes = (state) => [...D.contenido(state, CTX, Gr.tipos(state.g, CAT)).matchAll(/<g class="caja-tipo">.*?fill="(#[0-9a-f]+)">([^<]+)<\/text>/gi)].map((m) => [m[2], m[1].toLowerCase()]);
   assert.deepEqual(boxes(d), [["DBL", "#ff7f00"], ["DBL", "#ff7f00"]], "an unwired row is DBL");
   d = wire(d, id, "input-0", "in", { block: "str-const", port: "result" });
-  assert.deepEqual(boxes(d)[0], ["abc", "#ff33cc"], "a string row is pink");
+  assert.deepEqual(boxes(d)[0], ["abc", "#ff00ff"], "a string row is pink");
   d = wire(d, id, "input-1", "in", { block: "bool-const", port: "result" });
   assert.deepEqual(boxes(d)[1][0], "TF");
-  assert.equal(boxes(d)[1][1], "#008000", "a Boolean row is green");
+  assert.equal(boxes(d)[1][1], "#007f00", "a Boolean row is green");
   const scan = place(ED.inicial(), "scan-from-string", { x: 400, y: 300 });
   assert.deepEqual(boxes(scan), [["DBL", "#ff7f00"]], "Scan From String shows its output types");
   const wired = wire(scan, scan.g.nodos[0].id, "default-0", "in", { block: "num-const", port: "result" });
@@ -214,4 +213,25 @@ test("a stretched or added row copies the type of the row above, and keeps it un
   assert.deepEqual(types().slice(1), ["i8", "i8"], "the stretched rows keep their type without a wire");
   g = F.removedRow(g, node, CAT, 0);
   assert.deepEqual(g.nodos.find((n) => n.id === node).config.rowTypes, ["i8", "i8"]);
+});
+
+// When the handles of a stretchable node show (reports/2026-10-15-editor-wide.md Q1): a selected node while the mouse is
+// over it; any node while the mouse is on a handle; nothing on a selected node with the mouse away, or on the body of an
+// unselected one. The same rule holds for every stretchable node, Compound Arithmetic among them.
+test("the stretch handles show while the mouse is over a selected node or on a handle", () => {
+  for (const block of ["format-into-string", "compound-arithmetic"]) {
+    const placed = place(ED.inicial(), block, { x: 400, y: 300 });
+    const id = placed.g.nodos[0].id;
+    const visible = (d) => /class="asa" /.test(D.contenido(d, CTX, Gr.tipos(d.g, CAT)));
+    const selected = { ...placed, seleccion: [id] };
+    const unselected = { ...placed, seleccion: [] };
+    assert.equal(visible(ED.sobrevolar(selected, FONDO)), false, `${block}: selected, mouse away`);
+    assert.equal(visible(ED.sobrevolar(selected, { tipo: "nodo", id })), true, `${block}: selected and hovered`);
+    assert.equal(visible(ED.sobrevolar(selected, { tipo: "terminal", nodo: id, puerto: "result", dir: "out" })), true, `${block}: on a terminal of the selected node`);
+    assert.equal(visible(ED.sobrevolar(unselected, { tipo: "nodo", id })), false, `${block}: the body of an unselected node`);
+    assert.match(D.contenido(unselected, CTX, Gr.tipos(placed.g, CAT)), /class="asa oculta"/, `${block}: unseen, the handles are there to be found`);
+    assert.equal(visible(ED.sobrevolar(unselected, { tipo: "asa", nodo: id, lado: "abajo" })), true, `${block}: on a handle of an unselected node`);
+    const dragging = ED.pulsar(unselected, CTX, { tipo: "asa", nodo: id, lado: "abajo" }, { x: 100, y: 100 });
+    assert.equal(visible(ED.sobrevolar(dragging, FONDO)), true, `${block}: while its handle is dragged`);
+  }
 });

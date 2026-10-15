@@ -305,10 +305,10 @@ svg { display: block; overflow: visible; }
   background: #fff; border: 1px solid #b4b4b4; border-radius: 3px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
   padding: 4px 6px; font-size: 12px;
 }
-/* Menú de clic derecho, de numeric-menu-funcion.png: el de Windows. */
+/* Right-click menu, from numeric-menu-funcion.png: the Windows one. Border and separators measured at 1:1 (cluster/w13.png, w14.png). */
 .menu-contextual {
   position: absolute; z-index: 25; background: #f0f0f0;
-  border: 1px solid #979797; box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.35);
+  border: 1px solid #a0a0a0; box-shadow: 2px 2px 3px rgba(0, 0, 0, 0.35);
 }
 .item-menu { position: absolute; left: 2px; right: 2px; white-space: nowrap; }
 .item-menu .texto-menu { position: absolute; top: 50%; transform: translateY(-50%); }
@@ -321,8 +321,9 @@ svg { display: block; overflow: visible; }
 /* El menú de la barra abierto: su título, resaltado en azul. */
 .menu.abierto { background: #0078d7; color: #fff; box-shadow: none; }
 .item-menu .flecha-menu svg { width: 4px; height: 7.2px; }
-.item-menu.marcado::before { content: "✓"; position: absolute; left: 6px; top: 50%; transform: translateY(-50%); }
-.separador-menu { position: absolute; left: 5px; right: 5px; height: 1px; background: #bdbdbd; }
+.item-menu.marcado::before { content: "✓"; position: absolute; left: 5px; top: 50%; transform: translateY(-50%); }
+/* A grey line over a white one, from 4 px inside the left outer edge to 5 px inside the right one. */
+.separador-menu { position: absolute; left: 3px; right: 4px; height: 2px; background: #a0a0a0; border-bottom: 1px solid #fff; }
 /* La rejilla de Representation: iconos de 32 px, la actual con un marco azul de 3 px que sobresale uno. */
 .menu-contextual.rejilla { background: #f8f8f8; }
 .item-menu.celda-rep { right: auto; width: 32px; height: 32px; }
@@ -351,6 +352,7 @@ svg { display: block; overflow: visible; }
 .compuesto text { font-size: 9.5px; text-anchor: middle; dominant-baseline: central; fill: #505040; font-family: Arial, "Liberation Sans", sans-serif; }
 /* Las asas de un nodo que se estira: cuadritos azules arriba y abajo. */
 .asa { position: absolute; width: 4px; height: 4px; background: #1a7fd6; cursor: ns-resize; z-index: 2; }
+.asa.oculta { background: transparent; }
 /* Invert: un circulito en el terminal invertido. */
 .invertida { position: absolute; width: 3.6px; height: 3.6px; border-radius: 50%; background: #fff; border: 1px solid #000; box-sizing: border-box; pointer-events: none; }
 /* En una subpaleta, el nombre de lo que está bajo el ratón, centrado bajo el título. */

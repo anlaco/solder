@@ -41,6 +41,19 @@ in the code and in `GTK_ISSUES.md` (from the Red stage, outside this repository)
 > **Rule 22.** A click on an element selects it and deselects the
 > others. A click on the empty background clears the selection.
 
+> **Rule 22b — Stretch handles** (measured 2026-10-15, `labview-captures/reports/2026-10-15-editor-wide.md` Q1). A node that
+> can be stretched (Build Array, Compound Arithmetic, Format Into String, Scan From String, Initialize Array, Unbundle By Name,
+> an array constant) shows its handles while the mouse is over it **and it is selected**, or, selected or not, while the mouse
+> is on one of its handles; they are always there, unseen, so that hovering one finds them. A selected node with the mouse
+> elsewhere shows only its selection, and the body of an unselected one shows its terminals but no handles. They stay while one is
+> dragged. Before that day Solder showed them on every selected node and only there. Code: `showsStretchHandles`
+> (`diagram-view.mjs`) and `sobrevolar` (`diagram-editing.mjs`), which keeps a handle's node hovered; test: "the stretch handles
+> show while the mouse is over a selected node or on a handle" (`test/editor/format-nodes.test.mjs`). **Not done** (measured): the
+> handles' size follows the node (6 × 6 px, 3 × 3 on Compound Arithmetic, 2 × 2 on Build Array) with a white 1 px halo, in
+> `#0078D4`; Format Into String also has a top handle; the selection is a 1 px dashed ring (`#4386B9` / `#BFDBF1`) 1 px outside
+> the node. **Unverified:** the cursor over a handle; whether Build Array's and Compound Arithmetic's tiny handles show on their own
+> when hovered unselected (not triggered in LabVIEW); a bottom handle hovered alone on Format Into String (inconsistent).
+
 > **Rule 23.** The selection **MUST** be able to contain several elements, and all
 > the operations that act on the selection —move, delete— **MUST**
 > act on all of them at once.
@@ -889,12 +902,11 @@ unverified is unverified here too.
 > width follows the longest name (55 px with `status` and `code`, 58 px once `source` is among them: the width is the cell, the
 > divider, the width of the widest name measured in the window's font, and 5 px of room). Each name is written in the colour of the type
 > of its element, taken from the colours of the types (Boolean green, I32 blue, string pink); measured `#007F00`,
-> `#0000FF` and `#FF00FF`, while Solder's type colours give `#008000` and `#FF33CC` for the first and the last (a difference of the whole
-> editor, not of this node). One output terminal per named row sits
+> `#0000FF` and `#FF00FF`, the type colours since 2026-10-15 (spec/06 §4.2). One output terminal per named row sits
 > on the right edge, centred on its row, with the name as its tip. **Growth:** the node shows a 6 × 6 px handle at the middle
 > of the bottom edge, its top 3 px above it; dragging it changes the number of rows in steps of 16 px (`resizeUnbundleRows`: a new
-> row takes the element after the one above, and past the last element repeats it); one drag is one step of undo. LabVIEW shows the handle while the
-> mouse is over the node; Solder, like its other stretchable nodes, only on the selected node (a difference of the whole editor). **Click on a name
+> row takes the element after the one above, and past the last element repeats it); one drag is one step of undo. The handle shows as for every
+> stretchable node (Rule 22b). **Click on a name
 > row** (normal tool) drops a list of the names of the elements of the wired cluster, in the cluster's order, with a check mark on the
 > one the row shows (83 × 61 px for three names, background `#F0F0F0`, border `#A0A0A0`); choosing one is *Select Item*. Unwired, there is
 > no list. **Menus:** a name row and its output terminal have `context.unbundle-by-name-row`: Visible Items ▸, Help, Examples, Description
@@ -910,8 +922,7 @@ unverified is unverified here too.
 > `source` is a row; the stage 2 table's 58 for two rows was wrong. In the running editor (2026-10-15,
 > `labview-captures/reports/2026-10-15-unbundle-by-name-editor.md`) the node came out 57 and 60 with 7 px of room, so the room is
 > now 5 px; the tests use the editor font's widths of `status` and `source` measured there. Re-measured after that change: 55 × 17 and
-> 58 × 49, and Select Item ▸ from the menu changes the row (`editor-fix-*`). **Unverified:** the click list is 88 × 61 with Solder's menu
-> border `#979797` (LabVIEW: 83 × 61, `#A0A0A0`, a difference of the editor's menus); that the input terminal sits at the middle of the node's height
+> 58 × 49, and Select Item ▸ from the menu changes the row (`editor-fix-*`). Since 2026-10-15 the click list has LabVIEW's 83 × 61 and border (spec/06 §16). **Unverified:** that the input terminal sits at the middle of the node's height
 > (it is the one row's middle in every measured case); the colour of a name with no type (drawn in black); the arrow's exact shape (our
 > own drawing); what the click does on a row once the node is selected; Add Element; Remove Element on a row that is not the last;
 > the submenus Visible Items, Replace and the palettes; Hide Full Names; that the body menu's palette row is the palette of the wired

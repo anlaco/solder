@@ -946,7 +946,7 @@ test("al cablear un número al selector los marcos pasan a 0 Default y 1", () =>
   assert.match(html, /class="coercion"/);
   assert.match(html, /<svg class="terminal-selector"[^>]*><rect[^>]*stroke="#0000ff"/, "el selector, azul como un entero");
   // Sin nada cableado es booleano y verde.
-  assert.match(D_contenido(case1()), /<svg class="terminal-selector"[^>]*><rect[^>]*stroke="#008000"/);
+  assert.match(D_contenido(case1()), /<svg class="terminal-selector"[^>]*><rect[^>]*stroke="#007f00"/);
 });
 
 // case-edit1..5.png: se escribe en el texto del selector; «2..4», «7, 9» y «Default».
@@ -1366,7 +1366,7 @@ test("una constante de cadena se escribe con varias líneas y mide lo que en Lab
   assert.deepEqual(medida().map(Math.round), [22, 34], "con dos líneas: 15 de alto por línea más 4");
   const html = contenido(d, CTX, tipos(d.g, CAT));
   assert.match(html, /class="constante cadena editando"/);
-  assert.match(html, /border-color:#ff33cc/, "el borde es rosa");
+  assert.match(html, /border-color:#ff00ff/, "the border is pink");
   d = ED.confirmar(d, CTX);
   assert.equal(nodoPorTipo(d, "str-const").config.value, "ab\ncd");
   assert.equal(d.edicion, null);

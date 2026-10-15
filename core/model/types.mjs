@@ -133,13 +133,15 @@ export function aspecto(t) {
  * LabVIEW 2026 Q3 on wires, constants and connector cells
  * (labview-captures/array-2d/wire-2d-dbl.png, subvi/connector-assigned-zoom8x.png);
  * the #fb7c00 read before from compressed videos was off. I32 is pure blue.
- * The palette icons use another orange (#ff6633), which is their own.
+ * The palette icons use another orange (#ff6633), which is their own. Boolean
+ * #007f00 and string #ff00ff are measured at 1:1 on wires and on the names of an
+ * Unbundle By Name (labview-captures/reports/2026-10-15-unbundle-by-name.md Q1, Q7).
  */
 export const COLORES = {
   flotante: "#ff7f00",
   entero: "#0000ff",
-  booleano: "#008000",
-  cadena: "#ff33cc",
+  booleano: "#007f00",
+  cadena: "#ff00ff",
   otro: "#7f3f00",
   /** El borde de un cable de error y de su terminal y su constante: #7f7f00, medido en LabVIEW 2026 Q3. */
   error: "#7f7f00",

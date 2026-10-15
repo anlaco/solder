@@ -978,15 +978,21 @@ export function soltar(d, ctx, sobre, p) {
 }
 
 /**
- * The mouse moves over something: if it is a node, or one of its terminals, the
- * diagram shows its tips (diagram-view.mjs). Returns the same state when
+ * The mouse moves over something: if it is a node, or one of its terminals or
+ * stretch handles, the diagram shows its tips and its handles (diagram-view.mjs). Returns the same state when
  * nothing changes, to avoid repainting.
  */
 export function sobrevolar(d, sobre) {
   const nuevo =
-    sobre?.tipo === "terminal" ? { nodo: sobre.nodo, puerto: sobre.puerto } : sobre?.tipo === "nodo" && d.edicion?.nodo !== sobre.id ? { nodo: sobre.id } : null;
+    sobre?.tipo === "terminal"
+      ? { nodo: sobre.nodo, puerto: sobre.puerto }
+      : sobre?.tipo === "nodo" && d.edicion?.nodo !== sobre.id
+        ? { nodo: sobre.id }
+        : sobre?.tipo === "asa"
+          ? { nodo: sobre.nodo, asa: sobre.lado } // over a handle the node is still hovered, and its handles show even unselected
+          : null;
   const viejo = d.sobre;
-  if (nuevo?.nodo === viejo?.nodo && nuevo?.puerto === viejo?.puerto) return d;
+  if (nuevo?.nodo === viejo?.nodo && nuevo?.puerto === viejo?.puerto && nuevo?.asa === viejo?.asa) return d;
   return { ...d, sobre: nuevo };
 }
 

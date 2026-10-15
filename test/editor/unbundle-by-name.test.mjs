@@ -131,11 +131,11 @@ test("the node has one output terminal per named row, centred on it, and the inp
   assert.equal(html(d).match(/class="fila-nombre"/g).length, 3, "a strip to click per row");
 });
 
-test("the handle is 6 by 6 at the middle of the bottom edge with its top 3 px above it, on the selected node", () => {
+test("the handle is 6 by 6 at the middle of the bottom edge with its top 3 px above it, and shows when the selected node is hovered", () => {
   const { d, unbundle } = wired(1);
   assert.deepEqual(UN.unbundleHandle({ ancho: 55, alto: 17 }), { x: 24.5, y: 14 });
-  assert.match(html({ ...d, seleccion: [unbundle] }), /class="asa" data-nodo="[^"]+" data-asa="abajo" style="left:24\.5px;top:14px;width:6px;height:6px"/);
-  assert.doesNotMatch(html({ ...d, seleccion: [] }), /data-asa="abajo"/, "no handle when it is not selected");
+  assert.match(html({ ...d, seleccion: [unbundle], sobre: { nodo: unbundle } }), /class="asa" data-nodo="[^"]+" data-asa="abajo" style="left:24\.5px;top:14px;width:6px;height:6px"/);
+  assert.match(html({ ...d, seleccion: [] }), /class="asa oculta"[^>]*data-asa="abajo"/, "unseen until hovered");
 });
 
 test("dragging the handle changes the rows in steps of 16 px, and one Undo takes the whole stretch back", () => {
@@ -162,9 +162,9 @@ test("a click on a name row drops the list of the names of the cluster, with a c
   assert.deepEqual([...popup.matchAll(/class="texto-menu"[^>]*>(\w+)</g)].map((m) => m[1]), ["status", "code", "source"], "in the order of the cluster");
   const height = Number(/lista-marcos" style="[^"]*height:([\d.]+)px/.exec(popup)[1]);
   assert.equal(Math.round(height), 61, "three names are 61 px tall");
-  // As wide as the other lists: their room around the longest name (LabVIEW's is 83 x 61, cluster/w13.png).
+  // 22 px before the longest name and 25 after it, as in LabVIEW's 83 x 61 (cluster/w13.png).
   const width = Number(/lista-marcos" style="[^"]*width:([\d.]+)px/.exec(popup)[1]);
-  assert.equal(width, Number((D.MEDIDAS_MENU.texto + Math.max(...["status", "code", "source"].map(CTX.medir)) + D.MEDIDAS_MENU.derecha).toFixed(2)));
+  assert.equal(width, Number((D.MEDIDAS_MENU.texto + Math.max(...["status", "code", "source"].map(CTX.medir)) + 29).toFixed(2)));
   // Choosing a name changes only that row, and closes the list.
   const chosen = ED.pulsar(onRow, CTX, { tipo: "fila-elemento", nodo: unbundle, k: 2 }, { x: 410, y: 340 });
   assert.deepEqual(items(chosen, unbundle), ["status", "source"]);

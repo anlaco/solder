@@ -106,6 +106,30 @@ test("un menú se ajusta a su texto más largo", () => {
   assert.ok(Math.abs(constante - 334 / 1.5) <= 10, `el de la constante mide ${constante}; en el vídeo, 223`);
 });
 
+// A menu near the edges of the window, as LabVIEW's near the edges of the screen (reports/2026-10-15-editor-wide.md Q2).
+test("a menu that does not fit below moves up, one that does not fit on the right opens to the left of the click", () => {
+  const SIZE = { width: 165, height: 296 };
+  const SCREEN = { width: 1920, height: 1032 };
+  assert.deepEqual(D.placeMenu({ x: 1600, y: 480 }, SIZE, SCREEN), { x: 1600, y: 480 }, "where it fits, at the click");
+  assert.deepEqual(D.placeMenu({ x: 900, y: 980 }, SIZE, SCREEN), { x: 900, y: 734 }, "its bottom 2 px above the edge, wherever the click was");
+  assert.deepEqual(D.placeMenu({ x: 900, y: 800 }, SIZE, SCREEN), { x: 900, y: 734 });
+  assert.deepEqual(D.placeMenu({ x: 1800, y: 480 }, SIZE, SCREEN), { x: 1633, y: 480 }, "its right edge 2 px left of the click");
+  assert.deepEqual(D.placeMenu({ x: 10, y: 10 }, { width: 100, height: 2000 }, SCREEN), { x: 10, y: 0 }, "taller than the window: from its top");
+  // Submenus: Create ▸ (188 x 127) and the Numeric Palette ▸ grid (302 x 364) of the measured menus.
+  assert.deepEqual(D.placeSubmenu({ x: 1200, y: 885, width: 165 }, { width: 188, height: 127 }, SCREEN), { x: 1360, y: 885 }, "on the right, 5 px over the menu");
+  assert.deepEqual(D.placeSubmenu({ x: 1633, y: 629, width: 165 }, { width: 188, height: 127 }, SCREEN), { x: 1450, y: 629 }, "on the left at the right edge");
+  assert.deepEqual(D.placeSubmenu({ x: 1200, y: 872, width: 165 }, { width: 302, height: 364 }, SCREEN, true), { x: 1360, y: 662 }, "a grid keeps 6 px at the bottom");
+});
+
+test("an open submenu follows its menu when the menu moves up", () => {
+  const menu = { raiz: "context.function", x: 0, y: 0, abierto: "context.function.visible-items" };
+  const tops = (html) => [...html.matchAll(/class="menu-contextual" data-menu="[^"]+" style="left:([\d.]+)px;top:([\d.]+)px/g)].map((m) => Number(m[2]));
+  const [rootFree, subFree] = tops(D.menuContextual(INV, menu));
+  const [rootMoved, subMoved] = tops(D.menuContextual(INV, { ...menu, y: 590 }, new Set(), undefined, {}, { width: 800, height: 600 }));
+  assert.ok(rootMoved < 590, "the menu moved up");
+  assert.equal(Number((subMoved - rootMoved).toFixed(2)), Number((subFree - rootFree).toFixed(2)), "the submenu stays beside its row");
+});
+
 // numeric-terminales-icono.png y numeric-terminales.png (medidas a 1:1 en
 // boolean-terminales-icono.png: 38 × 38, y boolean-terminal-compacto.png:
 // 32 × 16): con View As Icon, el

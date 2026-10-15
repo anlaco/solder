@@ -12,10 +12,10 @@ import * as G from "../common/glyphs.mjs";
 import { esHueco, ultimo } from "../common/labview-inventory.mjs";
 import { PANE_SIZE } from "../../../core/model/connector.mjs";
 import { isSubVI, portsWithAnchors } from "./subvi-nodes.mjs";
-import * as UN from "./unbundle-by-name.mjs";
 import * as FN from "./format-nodes.mjs";
+import * as UN from "./unbundle-by-name.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
-import { ARROWHEAD_COLOR_OF_TYPE, brokenWireMarks, endPoint } from "./broken-wire.mjs";
+import { brokenWireMarks, endPoint } from "./broken-wire.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
 import { COLORES, aspecto, esArray, esCluster, esEntero, esEnum, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
 import { GRAPH_KINDS, labelShown } from "../front-panel/graph-state.mjs";
@@ -669,8 +669,7 @@ function looseEndZones(wire, source, sink, reason) {
 /** The colour of the type at one end of a wire, or null when that end is loose (nothing is wired there). */
 const endColor = (end, typesByTerminal) => {
   if (Gr.esSuelto(end)) return null;
-  const type = typesByTerminal.get(`${end.nodo}.${end.puerto}`) ?? "number";
-  return ARROWHEAD_COLOR_OF_TYPE[type] ?? aspecto(type).color;
+  return aspecto(typesByTerminal.get(`${end.nodo}.${end.puerto}`) ?? "number").color;
 };
 
 /** El tipo que lleva el cable que llega a una entrada, o el de la entrada si no llega ninguno. */
@@ -937,8 +936,8 @@ function constanteArray(n, k, ctx, edicion) {
  * The handles to stretch an array constant: one on the right edge of the box of elements and, with two
  * dimensions, one on the bottom edge and one in the corner (each shows more columns, rows, or both).
  */
-function asasArray(n, k, ctx, edicion) {
-  const handle = (side, left, top) => `<div class="asa" data-nodo="${esc(n.id)}" data-asa="${side}" style="left:${px(left - 3)};top:${px(top - 3)}"></div>`;
+function asasArray(n, k, ctx, edicion, handleClass) {
+  const handle = (side, left, top) => `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="${side}" style="left:${px(left - 3)};top:${px(top - 3)}"></div>`;
   if (dimensionsOfNode(n.config) < MAX_EDITOR_DIMENSIONS) return handle("derecha", k.ancho, k.alto / 2);
   const box = box2D(n, ctx, edicion);
   const boxLeft = MEDIDAS_ARRAY_2D.indice;
@@ -947,6 +946,17 @@ function asasArray(n, k, ctx, edicion) {
 
 /** Whether a wire reaches that input of the node. */
 const indexCableado = (g, n, puerto) => g.cables.some((cable) => cable.a.nodo === n.id && cable.a.puerto === puerto);
+
+/**
+ * Whether a node that can be stretched shows its handles (reports/2026-10-15-editor-wide.md Q1): a selected
+ * node while the mouse is over it, any node while the mouse is on one of its handles (they are there, unseen,
+ * until then), and the node whose handle is being dragged. A selected node with the mouse elsewhere shows only
+ * its selection.
+ */
+function showsStretchHandles(n, d, elegido) {
+  if (d.accion?.tipo === "estirar") return d.accion.nodo === n.id;
+  return d.sobre?.nodo === n.id && (elegido || !!d.sobre.asa);
+}
 
 function nodo(n, d, ctx, resueltos, elegido) {
   const k = caja(n, ctx, d.edicion);
@@ -1011,25 +1021,26 @@ function nodo(n, d, ctx, resueltos, elegido) {
     )
     .join("");
   const editable = c?.editable ? " editable" : "";
-  // Las asas para estirar un nodo de entradas variables, si está seleccionado.
+  // Hidden handles are still drawn to catch the mouse: hovering one is what shows them on a node that is not selected.
+  const handleClass = showsStretchHandles(n, d, elegido) ? "asa" : "asa oculta";
   let asas = "";
-  if (elegido && c?.array) asas = asasArray(n, k, ctx, d.edicion);
+  if (c?.array) asas = asasArray(n, k, ctx, d.edicion, handleClass);
   // Initialize Array is stretched downwards to add a dimension size (array-2d/initializearray-contexthelp.png).
-  if (elegido && n.tipo === "initialize-array") asas = `<div class="asa" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(k.ancho / 2 - 3)};top:${px(k.alto - 3)}"></div>`;
+  if (n.tipo === "initialize-array") asas = `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(k.ancho / 2 - 3)};top:${px(k.alto - 3)}"></div>`;
   // Format Into String and Scan From String are stretched downwards to add rows (format-scan/16-node-stretched.png).
-  if (elegido && FN.isFormatNode(n, ctx.cat)) {
+  if (FN.isFormatNode(n, ctx.cat)) {
     const handle = FN.formatNodeHandle(k);
-    asas = `<div class="asa" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(handle.x)};top:${px(handle.y)}"></div>`;
+    asas = `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(handle.x)};top:${px(handle.y)}"></div>`;
   }
   // Unbundle By Name is stretched downwards by a handle of 6 x 6 px to add rows (cluster palette, stage 2, Q2).
-  if (elegido && UN.isUnbundleByName(n)) {
+  if (UN.isUnbundleByName(n)) {
     const handle = UN.unbundleHandle(k);
-    asas = `<div class="asa" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(handle.x)};top:${px(handle.y)};width:${px(UN.HANDLE_SIZE)};height:${px(UN.HANDLE_SIZE)}"></div>`;
+    asas = `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(handle.x)};top:${px(handle.y)};width:${px(UN.HANDLE_SIZE)};height:${px(UN.HANDLE_SIZE)}"></div>`;
   }
-  if (elegido && esCompuesto(n, ctx)) {
+  if (esCompuesto(n, ctx)) {
     const M = medidasCompuesto(n, ctx);
     const x = M.izquierda - M.asa / 2;
-    asas = `<div class="asa" data-nodo="${esc(n.id)}" data-asa="arriba" style="left:${px(x)};top:${px(0.7)}"></div><div class="asa" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(x)};top:${px(k.alto - M.asa - 0.7)}"></div>`;
+    asas = `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="arriba" style="left:${px(x)};top:${px(0.7)}"></div><div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(x)};top:${px(k.alto - M.asa - 0.7)}"></div>`;
   }
   // Invert: un circulito en el terminal invertido.
   const invertidas = new Set(n.config?.inverted ?? []);
@@ -1135,7 +1146,7 @@ function listaValores(d, ctx) {
   if (!n) return "";
   const M = MEDIDAS_MENU;
   const items = n.tipo === "enum-const" ? n.config?.type?.enum ?? [] : n.config?.items ?? [];
-  const ancho = M.texto + Math.max(0, ...items.map((t) => ctx.medir(t))) + M.derecha;
+  const ancho = listWidth(items, ctx);
   const filas = items
     .map((t, k) => `<div class="item-menu item-valor${k === (n.config?.value ?? 0) ? " marcado" : ""}" data-nodo="${esc(n.id)}" data-valor="${k}" style="top:${px(M.arriba + k * M.fila)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(t)}</span></div>`)
     .join("");
@@ -1152,7 +1163,7 @@ function listaAbierta(d, ctx, resueltos) {
 /**
  * The drop-down list of the names of the elements of the cluster wired into an Unbundle By Name, in
  * the order of the cluster, with the check mark on the one the row shows (cluster palette, stage 2,
- * Q3: 83 x 61 px for three names in LabVIEW; here it has the measures of the other lists).
+ * Q3: 83 x 61 px for three names, background #f0f0f0, border #a0a0a0 like the other lists).
  */
 function listaElementos(d, ctx) {
   const n = d.g.nodos.find((k) => k.id === d.lista.nodo);
@@ -1160,7 +1171,7 @@ function listaElementos(d, ctx) {
   const M = MEDIDAS_MENU;
   const nombres = UN.clusterElementNames(d.g, ctx.cat, n.id);
   const actual = n.config?.items?.[d.lista.fila];
-  const ancho = M.texto + Math.max(0, ...nombres.map((t) => ctx.medir(t))) + M.derecha;
+  const ancho = listWidth(nombres, ctx);
   const filas = nombres
     .map((t, k) => `<div class="item-menu item-elemento${t === actual ? " marcado" : ""}" data-nodo="${esc(n.id)}" data-elemento="${k}" style="top:${px(M.arriba + k * M.fila)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(t)}</span></div>`)
     .join("");
@@ -1173,7 +1184,7 @@ function listaMarcos(d, ctx, resueltos) {
   if (!n) return "";
   const M = MEDIDAS_MENU;
   const textos = textosMarcos(n, selectorKind(d.completo ?? d.g, n, resueltos));
-  const ancho = M.texto + Math.max(0, ...textos.map((t) => ctx.medir(t))) + M.derecha;
+  const ancho = listWidth(textos, ctx);
   const filas = textos
     .map((t, k) => `<div class="item-menu item-marco${k === activoDe(n) ? " marcado" : ""}" data-nodo="${esc(n.id)}" data-marco="${k}" style="top:${px(M.arriba + k * M.fila)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(t)}</span></div>`)
     .join("");
@@ -1379,13 +1390,63 @@ const REJILLAS_MENU = {
 };
 
 /**
- * Medidas de un menú de clic derecho, de numeric-menu-funcion.png y
- * numeric-menu-constante.png: filas de 28,5 px del vídeo, separadores que
- * añaden 13, la flecha de los submenús a 21 del borde derecho. El ancho se
- * ajusta al texto más largo: 32 px del vídeo a su izquierda y 46 a su derecha,
- * en los dos menús (246 px el de Add, 334 el de la constante).
+ * The measures of a right-click menu. Rows and separators come from numeric-menu-funcion.png and
+ * numeric-menu-constante.png (a video at 150 %: rows of 28.5 px, separators that add 13). The insets
+ * were measured again at 1:1 (cluster/w14.png, Unbundle By Name's row menu, 218 px wide): the text
+ * starts 22 px from the outer edge, 30 px are left between the longest text and the last pixel of
+ * the right border, and a submenu arrow ends 12 px from it; a submenu overlaps its menu by 5 px
+ * (reports/2026-10-15-editor-wide.md Q2). `texto`, `derecha` and `flecha` count
+ * from the row, which starts 3 px inside the outer edge (the border and the row's own inset).
  */
-export const MEDIDAS_MENU = { fila: 19.3, separador: 8.8, arriba: 1.7, texto: 21.6, derecha: 31, flecha: 14, solape: 4, antesAtajo: 12, trasAtajo: 18 };
+export const MEDIDAS_MENU = { fila: 19.3, separador: 8.8, arriba: 1.7, texto: 18.6, derecha: 34, flecha: 9, solape: 5, antesAtajo: 12, trasAtajo: 18 };
+
+/**
+ * A drop-down list (an Unbundle By Name's names, an enum's items, a Case's frames) has no column for
+ * submenu arrows: 25 px between the longest text and its right border (cluster/w13.png, 83 x 61 for
+ * status, code and source).
+ */
+const LIST_RIGHT_INSET = 29;
+
+/** The width of a drop-down list that holds these texts. */
+const listWidth = (texts, ctx) => MEDIDAS_MENU.texto + Math.max(0, ...texts.map((text) => ctx.medir(text))) + LIST_RIGHT_INSET;
+
+/** Without the size of the window, a menu opens where it was asked for. */
+const NO_LIMITS = { width: Infinity, height: Infinity };
+
+/**
+ * Room LabVIEW leaves between a menu that was moved and the edge it would have crossed
+ * (reports/2026-10-15-editor-wide.md Q2): 2 px at the bottom of the screen and between a menu flipped
+ * to the left and the click; a grid of icons, as Numeric Palette ▸, keeps 6 px at the bottom.
+ */
+const MENU_EDGE_GAP = 2;
+const GRID_EDGE_GAP = 6;
+
+/** The top of a box of `height` that starts at `top`, moved up to end `gap` px above `limit` when it does not fit, never above 0. */
+const shiftedUp = (top, height, limit, gap) => (top + height > limit ? Math.max(0, limit - height - gap) : top);
+
+/**
+ * Where a right-click menu of `size` opens for a click at `click`, inside a window of `limits`, as LabVIEW
+ * does at the edges of the screen (reports/2026-10-15-editor-wide.md Q2): one that does not fit below is
+ * moved up until its bottom is 2 px above the edge (it does not open upward from the click), and one that
+ * does not fit on the right opens to the left of the click, its right edge 2 px before it. LabVIEW's menus
+ * can leave the VI window and only stop at the screen; Solder's are drawn in the window, which stands for
+ * the screen.
+ */
+export function placeMenu(click, size, limits) {
+  const x = click.x + size.width > limits.width ? Math.max(0, click.x - size.width - MENU_EDGE_GAP) : click.x;
+  return { x, y: shiftedUp(click.y, size.height, limits.height, MENU_EDGE_GAP) };
+}
+
+/**
+ * Where a submenu of `size` opens beside the menu `parent` (its `x`, `width`, and the `y` of the row that
+ * opens it): on the right, overlapping the menu by `solape`, or on the left with the same overlap when it does
+ * not fit; moved up like a menu when it does not fit below (reports/2026-10-15-editor-wide.md Q2).
+ */
+export function placeSubmenu(parent, size, limits, grid = false) {
+  const right = parent.x + parent.width - MEDIDAS_MENU.solape;
+  const x = right + size.width > limits.width ? Math.max(0, parent.x - size.width + MEDIDAS_MENU.solape) : right;
+  return { x, y: shiftedUp(parent.y, size.height, limits.height, grid ? GRID_EDGE_GAP : MENU_EDGE_GAP) };
+}
 
 /** El ancho de un texto de menú, a falta de medirlo en pantalla (la ventana pasa el suyo). */
 const anchoMenuAproximado = (t) => [...t].reduce((s, c) => s + (/[A-Z]/.test(c) ? 7.3 : /[il.,' ]/.test(c) ? 3.1 : 6.1), 0);
@@ -1393,9 +1454,10 @@ const anchoMenuAproximado = (t) => [...t].reduce((s, c) => s + (/[A-Z]/.test(c) 
 /**
  * Un menú de clic derecho y, si hay uno abierto, su submenú. `menu`:
  * `{ raiz, x, y, abierto }`, en coordenadas de la ventana; `marcados`, los
- * ids que llevan la marca de activado.
+ * ids que llevan la marca de activado. `limites`, the size of the window: a menu that does not fit
+ * is moved to stay inside it (`placeMenu`, `placeSubmenu`).
  */
-export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMenuAproximado, variante = {}) {
+export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMenuAproximado, variante = {}, limites = NO_LIMITS) {
   const M = MEDIDAS_MENU;
   // Los menús de la barra llevan sus atajos en una segunda columna, como en
   // front-panel/menu-file.png: tras el texto más largo, y a 18 px del borde.
@@ -1427,6 +1489,9 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
       .join("");
     return `<div class="menu-contextual rejilla" data-menu="${esc(padre)}" style="left:${px(x)};top:${px(y)};width:${px(R.ancho)};height:${px(R.alto)}">${celdas}</div>`;
   };
+  // The size of a menu, known before it is drawn so that it can be placed inside the window.
+  const altoDe = (padre) => hijos(padre).reduce((alto, e) => alto + (e.separado ? M.separador : 0) + M.fila, 2 * M.arriba);
+  const tamanoDe = (padre) => (ultimo(padre) in REJILLAS_MENU ? { width: REJILLAS_MENU[ultimo(padre)].medidas.ancho, height: REJILLAS_MENU[ultimo(padre)].medidas.alto } : { width: anchoDe(padre), height: altoDe(padre) });
   const lista = (padre, x, y) => {
     if (ultimo(padre) in REJILLAS_MENU) return rejilla(padre, x, y);
     const ancho = anchoDe(padre);
@@ -1445,10 +1510,14 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
       const flecha = conSub ? `<span class="flecha-menu" style="right:${px(M.flecha)}">${G.FLECHA_CATEGORIA}</span>` : "";
       const atajo = e.atajo ? `<span class="atajo-menu" style="left:${px(M.texto + anchoTextos(padre) + M.antesAtajo)}">${esc(e.atajo)}</span>` : "";
       filas += `<div class="${clases}" data-id="${esc(redirigidos.get(e.id) ?? e.id)}" style="top:${px(top)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(rotuloDe(e))}</span>${atajo}${flecha}</div>`;
-      if (abierto && (inv.tieneContenido(e.id) || submenus.has(e.id))) sub = lista(e.id, x + ancho - M.solape, y + top - M.arriba);
+      if (abierto && (inv.tieneContenido(e.id) || submenus.has(e.id))) {
+        const place = placeSubmenu({ x, y: y + top - M.arriba, width: ancho }, tamanoDe(e.id), limites, ultimo(e.id) in REJILLAS_MENU);
+        sub = lista(e.id, place.x, place.y);
+      }
       top += M.fila;
     }
     return `<div class="menu-contextual" data-menu="${esc(padre)}" style="left:${px(x)};top:${px(y)};width:${px(ancho)};height:${px(top + M.arriba)}">${filas}</div>${sub}`;
   };
-  return lista(menu.raiz, menu.x, menu.y);
+  const place = placeMenu({ x: menu.x, y: menu.y }, tamanoDe(menu.raiz), limites);
+  return lista(menu.raiz, place.x, place.y);
 }
