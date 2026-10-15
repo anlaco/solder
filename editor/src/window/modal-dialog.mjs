@@ -1,4 +1,4 @@
-// The modal dialogs of the VI window — Edit Items… of an enum and Chart History Length… —:
+// The modal dialogs of the VI window — Edit Items… and Select Item… of an enum, and Chart History Length… —:
 // which one is open and what a key or a click means for it.
 //
 // It exists because of the review of the enum commit (#32, 2026-10-14): the routing used to live
@@ -8,10 +8,12 @@
 //
 // Each dialog's module answers with one intent: `{ dialog }` a new state for it, `{ accept }`
 // write it into the VI and close, `{ cancel }` close it as it was, `{ explain }` say why the part
-// is not done (DT-035), or `null` for a key or a part the dialog ignores.
+// is not done (DT-035), or `null` for a key or a part the dialog ignores. `{ dialog, accept }` changes the
+// dialog and then accepts it (a double click that picks a row).
 
 import * as CH from "../front-panel/chart-history-dialog.mjs";
 import * as EI from "../block-diagram/edit-items-dialog.mjs";
+import * as SI from "../block-diagram/select-item-dialog.mjs";
 
 /**
  * The dialogs, by the field their state lives in and the side of the VI they belong to. The
@@ -22,6 +24,8 @@ export const DIALOGS = [
   { field: "itemsDialog", side: "diagram", mod: EI },
   { field: "itemsDialog", side: "panel", mod: EI },
   { field: "graphDialog", side: "panel", mod: CH },
+  { field: "selectItemDialog", side: "diagram", mod: SI },
+  { field: "selectItemDialog", side: "panel", mod: SI },
 ];
 
 /**

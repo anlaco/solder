@@ -413,10 +413,6 @@
       "desc": "Los ítems de un enum editados en la propia constante: Add Item After/Before y Remove Item (medidos; el diálogo Edit Items ya existe)",
       "ref": "labview-captures/reports/2026-10-14-enum-edit-items-2.md"
     },
-    "select-item": {
-      "desc": "La ventana Select Item…, con su filtro y la elección con Intro (medida)",
-      "ref": "labview-captures/reports/2026-10-14-enum-edit-items-2.md"
-    },
     "items-desactivados": {
       "desc": "Ítems de enum o ring desactivados, que el selector no ofrece",
       "ref": "labview-captures/reports/2026-10-14-enum-edit-items.md"
@@ -8904,9 +8900,8 @@
     {
       "id": "context.enum-constant.select-item",
       "etiqueta": "Select Item...",
-      "estado": "todo",
-      "labview": "Una ventana con la lista de ítems y un filtro; Intro elige (medido).",
-      "necesita": "select-item",
+      "estado": "built",
+      "prueba": "test/editor/select-item.test.mjs::Select_Item_opens_with_an_empty_filter_and_no_row_highlighted,_from_the_constant,_the_control_and_the_indicator",
       "captura": "enum-edit/34-const-menu.png"
     },
     {
@@ -9090,9 +9085,8 @@
     {
       "id": "context.enum-control.select-item",
       "etiqueta": "Select Item...",
-      "estado": "todo",
-      "labview": "Una ventana con la lista de ítems y un filtro; Intro elige (medido).",
-      "necesita": "select-item",
+      "estado": "built",
+      "prueba": "test/editor/select-item.test.mjs::Select_Item_opens_with_an_empty_filter_and_no_row_highlighted,_from_the_constant,_the_control_and_the_indicator",
       "captura": "enum-edit/30-ctrl-menu.png",
       "separado": true
     },
@@ -9316,9 +9310,8 @@
     {
       "id": "context.enum-indicator.select-item",
       "etiqueta": "Select Item...",
-      "estado": "todo",
-      "labview": "Una ventana con la lista de ítems y un filtro; Intro elige (medido).",
-      "necesita": "select-item",
+      "estado": "built",
+      "prueba": "test/editor/select-item.test.mjs::Select_Item_opens_with_an_empty_filter_and_no_row_highlighted,_from_the_constant,_the_control_and_the_indicator",
       "captura": "enum-edit/32-ind-menu.png",
       "separado": true
     },

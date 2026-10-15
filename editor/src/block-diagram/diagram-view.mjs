@@ -1569,7 +1569,8 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
         filas += `<div class="separador-menu" style="top:${px(top + M.separador / 2 - 0.5)}"></div>`;
         top += M.separador;
       }
-      const conSub = inv.tieneContenido(e.id) || submenus.has(e.id) || CON_SUBMENU.includes(ultimo(e.id));
+      // A row that opens a window ends in "..." and has no arrow, though it shares its name with a submenu (the enum's Select Item... and Unbundle By Name's Select Item ▸).
+      const conSub = inv.tieneContenido(e.id) || submenus.has(e.id) || (CON_SUBMENU.includes(ultimo(e.id)) && !e.etiqueta.endsWith("..."));
       const abierto = menu.abierto === e.id;
       const hueco = esHueco(e) || redirigidos.has(e.id);
       const clases = `item-menu${hueco ? " hueco" : ""}${desactivados.has(e.id) ? " desactivado" : ""}${abierto ? " activo" : ""}${marcados.has(e.id) ? " marcado" : ""}`;

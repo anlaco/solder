@@ -41,6 +41,7 @@ import * as TC from "./terminal-creation.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { DBL, NUMERICOS, POR_ABREVIATURA, convertirValor, esArray, esEntero, esEnum, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
+import * as SI from "./select-item-dialog.mjs";
 import { MAX_EDITOR_DIMENSIONS, addDimensionPatch, dimensionsOfNode, firstShown, readCell, removeDimensionPatch, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
 
 /** El valor de una constante de error: el suyo, con lo que falte a cero. */
@@ -1229,6 +1230,8 @@ export function orden(d, id, ctx) {
   // Edit Items… opens the enum's Properties dialog on its Edit Items tab (DT-049); the
   // window draws it and keeps it modal.
   if (id.endsWith(".edit-items")) return { ...d, menu: null, itemsDialog: EI.open(nodoPor(d.g, nodo)) };
+  // Select Item… of an enum opens its window of items with a filter (select-item-dialog.mjs).
+  if (/^context\.enum-(constant|control|indicator)\.select-item$/.test(id)) return { ...d, menu: null, selectItemDialog: SI.open(nodoPor(d.g, nodo)) };
   const ultimo = id.slice(id.lastIndexOf(".") + 1);
   const unbundleResult = unbundleCommand(d, id, ctx);
   if (unbundleResult) return unbundleResult;

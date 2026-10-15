@@ -627,6 +627,17 @@ svg { display: block; overflow: visible; }
 .pv-dialogo.dialogo-historial { font-size: var(--fuente); }
 .pv-campo { box-sizing: border-box; border: 1px solid #abadb3; background: #fff; display: flex; align-items: center; padding: 0 3px; }
 .pv-campo .caret { display: inline-block; }
+/* Select Item… of an enum, from labview-captures/select-item/a1.png (select-item-dialog.mjs sets the positions):
+   the field keeps the focus border, and the highlight hugs the item's text instead of the whole row. */
+.pv-dialogo.dialogo-seleccion-item { font-size: var(--fuente); border-color: #b7b7b7; }
+.dialogo-seleccion-item .pv-titulo { background: #f3f3f3; }
+.seleccion-item-filtro { border-color: #0078d4; background: #fafafa; }
+.seleccion-item-lista { box-sizing: border-box; overflow: hidden; background: #fff; border: 1px solid #828790; }
+.seleccion-item-fila { position: absolute; left: 0; display: flex; align-items: center; white-space: nowrap; }
+.seleccion-item-fila.resaltada .seleccion-item-texto { background: #0078d4; color: #fff; }
+.seleccion-item-fila.gris { color: var(--texto-hueco); }
+.seleccion-item-texto { display: inline-flex; align-items: center; height: 100%; }
+.seleccion-item-scroll { position: absolute; top: 0; right: 1px; bottom: 0; background: #f0f0f0; }
 
 /* ——— Debugging (labview-captures/debugging/REPORT.md; markup in src/debugging/debug-view.mjs) ——— */
 

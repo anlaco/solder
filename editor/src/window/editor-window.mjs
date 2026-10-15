@@ -327,6 +327,7 @@ const valoresDeControles = (g) => Object.fromEntries(g.nodos.filter(RV.isControl
 /** Las dos ventanas entran en modo Run o salen de él. */
 function modoRun(si) {
   ejecutando = si;
+  if (si) descartarTip();
   if (!si) {
     // The controls keep what was operated; the indicators keep what they show, as their current value
     // (run-values.mjs). Each window does it with the same values, so nothing is shared; it is one step to undo.
@@ -643,6 +644,7 @@ function openErrorList(selectedRowId) {
   errorList = { ...errorList, open: true, selected };
   // The tip of what the mouse was resting on would stay over the window until the mouse moved (real-programs-0.3.md B14).
   dia = ED.sobrevolar(dia, null);
+  descartarTip();
   pintar();
 }
 
@@ -986,10 +988,10 @@ const dibujarDialogoModal = () => {
 function aplicarEnDialogo(intent, abierto) {
   if (!intent) return;
   const [actual, cambiarActual] = abierto.side === "diagram" ? [dia, cambiarDiagrama] : [pan, cambiarPanel];
-  if (intent.dialog) return cambiarActual({ ...actual, [abierto.field]: intent.dialog });
+  if (intent.dialog && !intent.accept) return cambiarActual({ ...actual, [abierto.field]: intent.dialog });
   if (intent.cancel) return cambiarActual({ ...actual, [abierto.field]: null });
   if (!intent.accept) return;
-  const g = MD.accepted(abierto, actual.g);
+  const g = MD.accepted(intent.dialog ? { ...abierto, dialog: intent.dialog } : abierto, actual.g);
   return cambiarActual({ ...actual, ...(g !== actual.g && { g }), [abierto.field]: null });
 }
 
@@ -1581,7 +1583,7 @@ addEventListener("keydown", (ev) => {
     if (ev.key === "Enter") cerrarPropiedades(true);
     return;
   }
-  // A modal dialog (Edit Items..., Chart History Length...): its own module says what the key
+  // A modal dialog (Edit Items..., Select Item..., Chart History Length...): its own module says what the key
   // means — in Edit Items, Enter while a row is being written commits it and opens an empty one
   // below, which is what the window used to take for OK.
   const conTeclaEnDialogo = dialogoModal();
@@ -1745,7 +1747,7 @@ addEventListener("mouseleave", ocultarEmergente);
 // El tip strip de LabVIEW: el nombre de un terminal, de una función de la
 // paleta o, en un cable roto, por qué lo está. Sale enseguida, debajo del
 // ratón, y sobrevive a los repintados mientras el ratón siga en lo mismo.
-const tip = { clave: null, texto: "", x: 0, y: 0, visible: false, temporizador: null };
+const tip = { clave: null, texto: "", x: 0, y: 0, visible: false, temporizador: null, descartada: null };
 
 function ponerTip() {
   const el = document.createElement("div");
@@ -1763,14 +1765,26 @@ function ocultarTip() {
   Object.assign(tip, { clave: null, visible: false });
 }
 
+/**
+ * Run and the Error list take away the tip the mouse was resting on, and it stays away until the
+ * mouse goes to something else: the repaint makes Chromium send a mouse move at the same place,
+ * which showed it again (real-programs-0.3.md B14).
+ */
+function descartarTip() {
+  const dismissed = tip.clave;
+  ocultarTip();
+  tip.descartada = dismissed;
+}
+
 function mostrarTip(ev) {
   const el = ev.target.closest?.("[data-tip]");
   const e = el?.dataset.id && inv.resolver(el.dataset.id);
   const ocupado = ["colocar", "mover", "tramo", "rectangulo", "etiqueta"].includes((dia.accion ?? pan.accion)?.tipo);
   if (!el || (e && esHueco(e)) || ocupado || dia.menu) return ocultarTip();
   const clave = `${el.dataset.nodo ?? ""}.${el.dataset.puerto ?? el.dataset.cable ?? el.dataset.id ?? ""}`;
-  if (clave === tip.clave) return;
+  if (clave === tip.clave || clave === tip.descartada) return;
   ocultarTip();
+  tip.descartada = null;
   Object.assign(tip, { clave, texto: el.dataset.tip, x: ev.clientX - 3, y: ev.clientY + 24 });
   tip.temporizador = setTimeout(() => {
     tip.visible = true;

@@ -90,6 +90,9 @@ Things that are wrong whatever LabVIEW does:
 14. **Hover tips are slow and stay** after the pointer leaves or after Run (OC 12, IP 24).
    *Partly fixed on 2026-10-15*: a tip stayed over the Error List opened by Run until the mouse moved; opening the
    list now clears it (by reading, not checked in the window). Tips leaving with the pointer were not reproduced.
+   *Done on 2026-10-15*, checked in the running editor (`2026-10-15-solder-select-item.md` §5): explanations come after
+   500 ms and tip strips after 150 ms, and both go when the pointer leaves; a tip showing when Run is pressed or the
+   Error list opens came back with the repaint, and now stays away until the pointer goes to something else.
 15. **The explanations of greyed items are in Spanish** (OC 12–13), old findings #2 and #25.
 16. **The page title of a new VI stays "Untitled 1 …"** while the window's title is right (TM 3, IP 22):
     harmless to a user, but it breaks the tooling that finds windows by title.
@@ -130,6 +133,9 @@ frame 0 whatever frame was shown. *Fixed on 2026-10-15* (`diagram-editing.test.m
    greyed (OC 7).
    *Measured on 2026-10-15* (§6): the selected constant does not open its list in LabVIEW either (Solder is right);
    Select Item… is enabled and opens a "Select Item" window with a filter field: to do.
+   *Done on 2026-10-15* (`2026-10-15-select-item.md`): the Select Item window of the enum constant, control and
+   indicator, 1:1 — the filter (contains, any case), the arrows that wrap, Enter and the double click, the greyed row
+   with no match —, checked in the running editor (`2026-10-15-solder-select-item.md`).
 6. **Several wires from one output** run on top of each other along one x (TM 13).
    *Measured on 2026-10-15* (§8): LabVIEW turns each wire near the source, on separate verticals 6 px apart. Solder
    turns a new wire near where it is dropped, which an older test asserts: to be measured again before changing.
@@ -153,12 +159,12 @@ own Save As and save dialogs (on a Spanish desktop their Cancel reads "Cancelar"
 
 ## 3. Proposed order
 
-Done on 2026-10-15: A1–A3, B1–B5, B11–B13, B16, C1–C4 and S1, checked in the running editor; B6, B8, B9 and B10 did not
+Done on 2026-10-15: A1–A3, B1–B5, B11–B14, B16, C1–C5 and S1, checked in the running editor; B6, B8, B9 and B10 did not
 reproduce. What is left:
 
 1. ~~C4, current value and default value~~: done on 2026-10-15 (DT-053).
 2. ~~B12 and B13~~: measured and done on 2026-10-15. B7's shift off a loop's border turned out to be LabVIEW's
    structure auto-grow, not a fixed shift: postponed until it is measured as such.
-3. C5 Select Item… of the enum constant; B14's tips, checked in the window.
+3. ~~C5 Select Item… and B14's tips~~: done on 2026-10-15.
 4. B15, the Spanish texts; C6 measured again and C7.
 5. E2 to E4, found on 2026-10-15.

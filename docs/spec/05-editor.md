@@ -577,8 +577,20 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   check mark on the current one; selected, the click only re-selects it (automatic tool,
 >   measured); typing and the arrow keys change nothing.
 > - **The right-click menu of the constant** (`context.enum-constant`) has the measured rows in
->   their order; *Edit Items…* is done and the rest is greyed with its reason. Before this rule
+>   their order; *Edit Items…* and *Select Item…* are done and the rest is greyed with its reason. Before this rule
 >   the right-click opened the Functions palette (finding #32).
+> - **Select Item…** (constant, control and indicator; measured 2026-10-15,
+>   `labview-captures/reports/2026-10-15-select-item.md`; tests in `test/editor/select-item.test.mjs`)
+>   opens a 304 × 215 window "Select Item" with a filter field over the list of items and no OK or
+>   Cancel. It opens with the field empty and **no row highlighted**, not even the current item.
+>   Typing filters the items that contain the text anywhere, ignoring case, and highlights the
+>   first; with no match one greyed row stays (the item highlighted last, or the first) and Enter
+>   picks it. Up and Down move the highlight and wrap; a click highlights, a double click or Enter
+>   picks and closes; Escape and the X close with no change, and a click outside does not. Picking
+>   is one step to undo: on the constant it changes the value and marks the VI modified, on a
+>   control or indicator only its current value (DT-053). *Differences:* the window is centred on
+>   the VI window, not on the screen; the undo label is "Undo"; Enter with nothing highlighted
+>   closes it with no change (unverified in LabVIEW).
 > - **Edit Items…** is one dialog for the constant, the control and the indicator: "Enum Constant
 >   Properties" (the panel objects' title is unverified), 500 × 500, five tabs — Appearance, Data
 >   Type, Display Format, Edit Items, Documentation; the other four are present and greyed —, an
@@ -614,7 +626,7 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   the panel objects' dialog; the selected-row colour of the list; the exact px of the dialog
 >   (derived from a ≈1.62× capture). *Not done, measured:* Add Item After / Before (an empty item
 >   made current with an inline name editor), Remove Item (removes the current item; the last one
->   can never be removed), Select Item… (a window with a filter; Enter commits).
+>   can never be removed).
 
 > **Rule 40i — The error cluster on the diagram and on the panel.** Captured in
 > LabVIEW 2026 Q3 (`labview-captures/errores/`, `docs/reference/labview-errors.md`),
