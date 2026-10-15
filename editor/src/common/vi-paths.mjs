@@ -1,6 +1,6 @@
 // Where the subVIs of a VI are, as paths (DT-045, spec/05 §12).
 //
-// A `subvi` node stores the path of the `.qvi` it calls relative to the file of
+// A `subvi` node stores the path of the VI file it calls relative to the file of
 // its caller. A caller that has never been saved has no folder to be relative
 // to, so it stores the absolute path and converts it when it is first saved.
 // Pure and independent of the system: it works on strings, with `/` as the
@@ -8,6 +8,27 @@
 // the page and the main process share it.
 
 const WINDOWS_DRIVE = /^[A-Za-z]:\//;
+
+/**
+ * The extension a VI is written with (DT-051), and the one Solder wrote before it, which still
+ * opens: a caller names its subVIs with the extension they had, so an old file keeps it when it is
+ * saved again in place.
+ */
+export const VI_EXTENSION = ".sdg";
+export const OLD_VI_EXTENSION = ".qvi";
+const VI_EXTENSIONS = [VI_EXTENSION, OLD_VI_EXTENSION];
+
+/** Whether a path names a VI file, with either extension and in any case. */
+export const isVIFile = (path) => VI_EXTENSIONS.some((extension) => path.toLowerCase().endsWith(extension));
+
+/** A VI's name without its extension, as the error chain and the debugger show it. */
+export const withoutVIExtension = (name) => VI_EXTENSIONS.reduce((rest, extension) => (rest.toLowerCase().endsWith(extension) ? rest.slice(0, -extension.length) : rest), name);
+
+/** Where Save As writes the path the user chose: as it is if it already names a VI file, with `.sdg` added if not. */
+export const savePathFor = (chosen) => (isVIFile(chosen) ? chosen : `${chosen}${VI_EXTENSION}`);
+
+/** What Save As proposes: the same name with `.sdg`, so an old `.qvi` is offered under the new extension. */
+export const saveAsProposal = (currentPath, name) => (currentPath ? `${withoutVIExtension(currentPath)}${VI_EXTENSION}` : `${withoutVIExtension(name)}${VI_EXTENSION}`);
 
 const withSlashes = (path) => path.replaceAll("\\", "/");
 

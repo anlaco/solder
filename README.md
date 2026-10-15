@@ -18,7 +18,7 @@ program that talks to the instruments, **Anvil** sequences and tests it, and
 - The editor: Front Panel and Block Diagram, the Functions and Controls
   palettes cloned from LabVIEW (what is missing shows greyed out and says why),
   wiring, undo, Create ▸ Constant/Control/Indicator, copy and paste, several
-  VIs open at once, saving and opening `.qvi` files.
+  VIs open at once, saving and opening `.sdg` files.
 - Types: 8- to 64-bit integers and floating point, booleans, strings, arrays
   of one and two dimensions, clusters and the error cluster.
 - Functions: Numeric, Boolean, Comparison, String (with Format Into String and
@@ -68,7 +68,7 @@ module as text and `check` says whether it can run.
 
 | Folder | What it is |
 |--------|------------|
-| `core/model/` | The program model: graph, data types, constants and the `.qvi` file format |
+| `core/model/` | The program model: graph, data types, constants and the `.sdg` file format |
 | `core/compiler/` | Diagram to WebAssembly: compiler, wasm encoder, linear memory, expression parser |
 | `core/runtime/` | Running a compiled VI by dataflow, and the error codes |
 | `cli/` | The command-line entry point (`run`, `wat`, `check`) |

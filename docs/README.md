@@ -2,14 +2,14 @@
 
 A free visual programming language that clones LabVIEW 2026 Q3: you place
 blocks on a canvas, wire them together, and the program is the resulting graph.
-Each program is saved in a `.qvi` file and compiled to WebAssembly.
+Each program is saved in a `.sdg` file and compiled to WebAssembly.
 
 ## How to read this
 
 | Folder | What it holds | Status |
 |--------|---------------|--------|
 | [`spec/`](spec/) | **What the language is and how it behaves**: binding on the implementation | **Normative** |
-| [`schema/`](schema/) | JSON schemas and data tables: the block catalog, the `.qvi` format and the LabVIEW inventory | **Normative and executable** |
+| [`schema/`](schema/) | JSON schemas and data tables: the block catalog, the `.sdg` format and the LabVIEW inventory | **Normative and executable** |
 | [`design/`](design/) | **How it is implemented**: the technical decisions and the work plan | Non-normative |
 | [`reference/`](reference/) | What is consulted, not obeyed: how LabVIEW is captured, what was measured on it, and the project's history | Informative |
 | [`ideas/`](ideas/) | Parked ideas, with no commitment to build them | Informative |
@@ -43,7 +43,7 @@ specification is corrected.
 | Doc | Contents |
 |-----|----------|
 | [`spec/01-glossary.md`](spec/01-glossary.md) | Vocabulary and scope |
-| [`spec/02-syntax.md`](spec/02-syntax.md) | The `.qvi` format (JSON); its schema is [`schema/qvi.schema.json`](schema/qvi.schema.json) |
+| [`spec/02-syntax.md`](spec/02-syntax.md) | The `.sdg` format (JSON); its schema is [`schema/qvi.schema.json`](schema/qvi.schema.json) |
 | [`spec/03-static-semantics.md`](spec/03-static-semantics.md) | Types, ports, connection rules and cycles |
 | [`spec/04-dynamic-semantics.md`](spec/04-dynamic-semantics.md) | Execution, structures and edge cases, measured in LabVIEW; catalog in [`schema/blocks.json`](schema/blocks.json) |
 | [`spec/05-editor.md`](spec/05-editor.md) | Editor interaction: selection, wires, palettes, menus, keyboard |

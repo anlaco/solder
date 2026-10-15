@@ -396,7 +396,7 @@ is magenta in `74-diagram-chart-cluster-two-scalars.png`.
 
 The three blocks (`waveform-chart`, `waveform-graph`, `xy-graph`) are panel indicators whose type is the wire's (`docs/schema/blocks.json`).
 When the VI runs the runtime writes their value like any indicator; the chart's history lives in the window (`pan.charts`), not in the VI
-or in the `.qvi`; a Run does not clear it and a change in the type of its wire does. The run worker sends the chart every write, in order,
+or in the `.sdg`; a Run does not clear it and a change in the type of its wire does. The run worker sends the chart every write, in order,
 and the other indicators only the last one of each pause (`run-worker.mjs`).
 
 ---

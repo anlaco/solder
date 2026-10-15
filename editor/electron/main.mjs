@@ -10,7 +10,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, dialog, ipcMain, Menu, protocol, screen } from "electron";
-import { pathKey, readHierarchyTexts, rebaseText, untitledKey } from "../src/common/vi-paths.mjs";
+import { OLD_VI_EXTENSION, VI_EXTENSION, isVIFile, pathKey, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey } from "../src/common/vi-paths.mjs";
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
 import { newVIBounds, otherWindowKind, tiledBounds } from "./window-layout.mjs";
 import { WINDOW_KINDS, createRegistry, isDirty, recordChange, recordSave, viName, windowTitle } from "./vi-registry.mjs";
@@ -134,7 +134,8 @@ const registry = createRegistry();
 const openVIs = new Map();
 /** Web contents id → the open VI whose window it is. */
 const viOfContents = new Map();
-const FILTERS = [{ name: "Solder VI", extensions: ["qvi"] }];
+// Both extensions open (DT-051); the dialogs list the new one first.
+const FILTERS = [{ name: "Solder VI", extensions: [VI_EXTENSION, OLD_VI_EXTENSION].map((extension) => extension.slice(1)) }];
 let quitting = false;
 /** What was last copied in any VI, as the text its window sent. */
 let sharedClipboard = null;
@@ -287,9 +288,9 @@ async function writeVI(open, owner, text, saveAs) {
   const { entry } = open;
   let target = entry.path;
   if (!target || saveAs) {
-    const result = await dialog.showSaveDialog(owner, { title: "Save As", defaultPath: target ?? `${viName(entry)}.qvi`, filters: FILTERS });
+    const result = await dialog.showSaveDialog(owner, { title: "Save As", defaultPath: saveAsProposal(target, viName(entry)), filters: FILTERS });
     if (result.canceled || !result.filePath) return null;
-    target = result.filePath.endsWith(".qvi") ? result.filePath : `${result.filePath}.qvi`;
+    target = savePathFor(result.filePath);
   }
   const rebased = rebaseText(text, keyOf(entry), pathKey(target));
   await writeFile(target, rebased);
@@ -377,13 +378,13 @@ function handleRequests() {
   ipcMain.on("vi:tile", (event) => tileWindows(openOf(event)));
 }
 
-/** The `.qvi` named on the command line: a double click on a file in the system's file manager starts Solder with it. */
-const qviInArguments = (argv) => argv.slice(1).find((argument) => argument.toLowerCase().endsWith(".qvi") && !argument.startsWith("-"));
+/** The VI file named on the command line: a double click on a file in the system's file manager starts Solder with it. */
+const viFileInArguments = (argv) => argv.slice(1).find((argument) => isVIFile(argument) && !argument.startsWith("-"));
 
-// One Solder at a time: opening a `.qvi` while it runs opens it in the running one.
+// One Solder at a time: opening a VI file while it runs opens it in the running one.
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on("second-instance", (_event, argv) => {
-  const file = qviInArguments(argv);
+  const file = viFileInArguments(argv);
   if (file) openPath(path.resolve(file));
 });
 
@@ -392,8 +393,8 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
   serve();
   handleRequests();
-  // SOLDER_ABRIR=<file.qvi>: starts with that VI open instead of a new one (for the comparisons of capturing-labview.md §5).
-  const fileToOpen = process.env.SOLDER_ABRIR ?? qviInArguments(process.argv);
+  // SOLDER_ABRIR=<file.sdg>: starts with that VI open instead of a new one (for the comparisons of capturing-labview.md §5).
+  const fileToOpen = process.env.SOLDER_ABRIR ?? viFileInArguments(process.argv);
   const first = fileToOpen ? await openFirstFile(path.resolve(fileToOpen)) : openNewVI();
   app.on("before-quit", () => (quitting = true));
   if (process.env.SOLDER_CAPTURAS) capture(first.windows, process.env.SOLDER_CAPTURAS);

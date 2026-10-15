@@ -95,7 +95,7 @@
               "name": "subvi_1",
               "type": "subvi",
               "config": {
-                "vi": "Read Sensor.qvi"
+                "vi": "Read Sensor.sdg"
               }
             },
             {

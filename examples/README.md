@@ -9,7 +9,7 @@ inputs (no Random Number) so that the outputs can be compared value by value. Th
 built in the virtual machine on 2026-10-09/10 (`Desktop\solder'examples`); the outputs below were read
 from them and are the reference.
 
-> **Status (2026-10-10):** the `.qvi` files in these folders are still the first Solder versions of
+> **Status (2026-10-10):** the `.sdg` files in these folders (`.qvi` before DT-051) are still the first Solder versions of
 > 2026-10-09, with workarounds and Random Number ([`real-programs-0.2.md`](../docs/design/real-programs-0.2.md)).
 > They are rewritten to match the descriptions below once Solder can (step 3 of the rule).
 

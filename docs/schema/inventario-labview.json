@@ -135,8 +135,8 @@
       "desc": "Leer y escribir un .qvi conforme a su esquema (crate tk-format)",
       "ref": "spec/02-syntax.md; reference/history/00-provisional-plan.md §7, fase R0"
     },
-    "formato-qproj": {
-      "desc": "Formato del fichero de proyecto .qproj, su esquema y su lectura y escritura. Sin él no hay proyecto que mostrar",
+    "formato-sdproj": {
+      "desc": "The format of the project file, .sdproj (.qproj before DT-051): its schema, reading and writing. Without it there is no project to show",
       "ref": "spec/02-syntax.md §8: pendiente del modelo de dependencias"
     },
     "modelo-de-dependencias": {
@@ -232,7 +232,7 @@
       "ref": "reference/history/00-provisional-plan.md §7: tras R7, la Fase 4 de hardware"
     },
     "librerias": {
-      "desc": "Librerías .qlib: su formato, dónde se instalan y cómo aparecen en las paletas",
+      "desc": "Libraries, .sdlib (.qlib before DT-051): their format, where they are installed and how they appear in the palettes",
       "ref": "spec/02-syntax.md §8: pendiente del modelo de dependencias"
     },
     "personalizar-paletas": {
@@ -454,7 +454,7 @@
       "etiqueta": "Project Explorer",
       "estado": "todo",
       "labview": "Organiza un proyecto: sus VIs y demás ficheros, los destinos donde se ejecutan, sus dependencias y cómo se construye.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -526,7 +526,7 @@
       "etiqueta": "Standard",
       "estado": "todo",
       "labview": "Barra estándar: nuevo, abrir, guardar y portapapeles.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -550,7 +550,7 @@
       "etiqueta": "Save All (this Project)",
       "estado": "todo",
       "labview": "Guarda todos los documentos abiertos del proyecto, y el propio proyecto.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -558,7 +558,7 @@
       "etiqueta": "Cut",
       "estado": "todo",
       "labview": "Corta la selección al portapapeles.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png",
       "separado": true
     },
@@ -567,7 +567,7 @@
       "etiqueta": "Copy",
       "estado": "todo",
       "labview": "Copia la selección al portapapeles.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -575,7 +575,7 @@
       "etiqueta": "Paste",
       "estado": "todo",
       "labview": "Pega el contenido del portapapeles en el documento activo.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -583,7 +583,7 @@
       "etiqueta": "Remove From Project",
       "estado": "todo",
       "labview": "Quita la selección del proyecto sin pasarla por el portapapeles. No borra los ficheros del disco.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -591,7 +591,7 @@
       "etiqueta": "Project",
       "estado": "todo",
       "labview": "Barra del proyecto: abrirlo, guardarlo, filtrar su vista, sus propiedades y sus conflictos.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -599,7 +599,7 @@
       "etiqueta": "Open Project",
       "estado": "todo",
       "labview": "Abre un proyecto existente.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -607,7 +607,7 @@
       "etiqueta": "Save Project",
       "estado": "todo",
       "labview": "Guarda el proyecto.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -615,7 +615,7 @@
       "etiqueta": "Filter Project View",
       "estado": "todo",
       "labview": "Elige qué tipos de nodo muestra el árbol del proyecto.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png",
       "separado": true
     },
@@ -624,7 +624,7 @@
       "etiqueta": "Project Properties",
       "estado": "todo",
       "labview": "Abre el diálogo de propiedades del proyecto.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -632,7 +632,7 @@
       "etiqueta": "Resolve Conflicts",
       "estado": "todo",
       "labview": "Abre el diálogo para resolver los conflictos del proyecto: elementos con el mismo nombre cualificado que apuntan a ficheros distintos.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -713,7 +713,7 @@
       "etiqueta": "Items",
       "estado": "todo",
       "labview": "Página con el árbol lógico del proyecto: destinos, carpetas y elementos, tal como se organizan en el proyecto.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -721,7 +721,7 @@
       "etiqueta": "Project: <nombre>",
       "estado": "todo",
       "labview": "Raíz del árbol: el proyecto.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -729,7 +729,7 @@
       "etiqueta": "My Computer",
       "estado": "todo",
       "labview": "El ordenador local como destino: lo que cuelga de él se ejecuta aquí.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -753,7 +753,7 @@
       "etiqueta": "Files",
       "estado": "todo",
       "labview": "Página con los ficheros del proyecto tal como están en el disco.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -858,7 +858,7 @@
       "etiqueta": "Create Project...",
       "estado": "todo",
       "labview": "Crea un proyecto nuevo.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "front-panel/menu-file.png",
       "separado": true
     },
@@ -867,7 +867,7 @@
       "etiqueta": "Open Project...",
       "estado": "todo",
       "labview": "Abre un proyecto.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "front-panel/menu-file.png"
     },
     {
@@ -875,7 +875,7 @@
       "etiqueta": "Save Project",
       "estado": "todo",
       "labview": "Guarda el proyecto al que pertenece el VI.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "front-panel/menu-file.png"
     },
     {
@@ -883,7 +883,7 @@
       "etiqueta": "Close Project",
       "estado": "todo",
       "labview": "Cierra el proyecto al que pertenece el VI.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "front-panel/menu-file.png"
     },
     {
@@ -1363,7 +1363,7 @@
       "etiqueta": "Application Instance",
       "estado": "todo",
       "labview": "Muestra en qué proyecto y destino (application instance) está abierto el VI, y permite cambiarlo desde su menú.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "front-panel/vi-nuevo.png",
       "muestra": "Untitled Project 1/My Computer"
     },
@@ -1476,7 +1476,7 @@
       "etiqueta": "Create Project...",
       "estado": "todo",
       "labview": "Crea un proyecto nuevo.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "block-diagram/menu-file.png",
       "separado": true
     },
@@ -1485,7 +1485,7 @@
       "etiqueta": "Open Project...",
       "estado": "todo",
       "labview": "Abre un proyecto.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "block-diagram/menu-file.png"
     },
     {
@@ -1493,7 +1493,7 @@
       "etiqueta": "Save Project",
       "estado": "todo",
       "labview": "Guarda el proyecto al que pertenece el VI.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "block-diagram/menu-file.png"
     },
     {
@@ -1501,7 +1501,7 @@
       "etiqueta": "Close Project",
       "estado": "todo",
       "labview": "Cierra el proyecto al que pertenece el VI.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "block-diagram/menu-file.png"
     },
     {
@@ -2232,7 +2232,7 @@
       "etiqueta": "Application Instance",
       "estado": "todo",
       "labview": "Muestra en qué proyecto y destino (application instance) está abierto el VI, y permite cambiarlo desde su menú.",
-      "necesita": "formato-qproj",
+      "necesita": "formato-sdproj",
       "captura": "block-diagram/vi-nuevo.png",
       "muestra": "Untitled Project 1/My Computer"
     },

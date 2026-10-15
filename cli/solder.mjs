@@ -1,9 +1,9 @@
 #!/usr/bin/env -S node --experimental-wasm-jspi
 // Solder's command line, with no user interface (provisional plan §3):
 //
-//   cli/solder.mjs run   file.qvi   runs the VI and prints its indicators
-//   cli/solder.mjs wat   file.qvi   prints the WebAssembly module as text
-//   cli/solder.mjs check file.qvi   says whether it can run and, if not, why
+//   cli/solder.mjs run   file.sdg   runs the VI and prints its indicators
+//   cli/solder.mjs wat   file.sdg   prints the WebAssembly module as text
+//   cli/solder.mjs check file.sdg   says whether it can run and, if not, why
 //
 // Controls take their default value from the panel. When calling node by hand,
 // VIs that wait need `--experimental-wasm-jspi` (DT-040).
@@ -24,7 +24,7 @@ const cat = cargarCatalogo(JSON.parse(readFileSync(path.join(AQUI, "../docs/sche
 
 const [orden, fichero] = process.argv.slice(2);
 if (!["run", "wat", "check"].includes(orden) || !fichero) {
-  console.error("usage: solder.mjs run|wat|check file.qvi");
+  console.error("usage: solder.mjs run|wat|check file.sdg (or an old .qvi)");
   process.exit(2);
 }
 

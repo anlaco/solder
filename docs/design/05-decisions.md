@@ -1646,3 +1646,56 @@ b. The editor draws the rows, their click list, the row and body menus and the g
 | Unwired, the names stay and the VI cannot run; a non-cluster breaks the wire | `test/core/unbundle-by-name.test.mjs` | **Verified** (2026-10-15) |
 | Remove Element renumbers the rows below | `test/core/unbundle-by-name.test.mjs` | Tested here; in LabVIEW only the last row was measured |
 | A `.qvi` with `config.items` validates and round-trips | `test/core/unbundle-by-name.test.mjs` | **Verified** (2026-10-15) |
+
+## DT-051
+
+**The file extensions share the root `sd`: `.sdg` for a diagram, `.sdt` reserved for the textual
+language, `.sdproj` for a project and `.sdlib` for a library.**
+
+- **Status:** Accepted on 2026-10-15; the developer asked for the change, left the choice of the pair to
+  the main session ("decide tú") and fixed the root for the others: the project is `.sdproj`, "lo
+  común es sd". **Implemented the same day** for the VI (editor, CLI, installer, examples); the
+  project and library formats do not exist yet, so for them only the name is decided.
+- **Why change:** `.qvi` reads as LabVIEW's `.vi`; Solder clones LabVIEW's interface (DT-035) but is
+  its own language, and its files should not be mistaken for NI's.
+- **Why a pair:** a textual Solder language is planned far in the future, once the graphical one is
+  stable. The two extensions share a root and differ by one letter, as `.js`/`.jsx` or `.md`/`.mdx`
+  do: `g` for graphical, `t` for text. `.sdt` is reserved now so the graphical one never has to move
+  again.
+
+### Decision
+
+1. **`.sdg`** (Solder Graphical) replaces `.qvi` for a VI: the diagram, its panel and its connector, as
+   the `.qvi` stores them today (the content and `qvi.schema.json` do not change with the name).
+2. **`.sdt`** (Solder Text) is reserved for the future textual language. Nothing reads or writes it yet.
+3. **`.sdproj`** replaces `.qproj` for a project and **`.sdlib`** replaces `.qlib` for a library: every
+   Solder extension starts with `sd`. Neither is in shared-mime-info.
+4. **Old files still open**: a `.qvi` opens as before. **Saved in place (Ctrl+S) it keeps its name**,
+   because its callers name it with that extension and renaming it would break them; Save As offers
+   the same name with `.sdg`. A `.sdg` caller can call a `.qvi` subVI and the other way round. The
+   installer associates both extensions and its uninstaller removes both.
+5. **Only the extension changes**: the content, `qvi.schema.json` and the reader
+   `core/model/qvi-format.mjs` keep their names; renaming those is a cleanup of its own.
+
+### Alternatives studied (2026-10-15)
+
+| Pair | Against it |
+|------|------------|
+| `.sdv` / `.sdc` (visual / code) | `.sdc` is Synopsys Design Constraints, the live standard of timing constraints in chip and FPGA tools (Quartus, Efinity, Synplify), next to Solder's own field; shared-mime-info already maps `*.sdc` to StarOffice Calc |
+| `.sdr`, `.sold`, `.solder` alone | No room for the textual twin |
+| `.sld`, `.sol` | `.sld` is OGC's Styled Layer Descriptor; `.sol` is Solidity |
+| `.sdp` for the project | shared-mime-info maps it to the Session Description Protocol and StarOffice Impress |
+| `.sdgproj` for the project | Free, but breaks the common `sd` root the developer chose |
+
+`.sdg` (Golden Software Strater projects, StarOffice galleries) and `.sdt` (SmartDraw 6 templates, the
+audio of old Electronic Arts games) collide only with obsolete or niche formats, and neither is in
+shared-mime-info.
+
+### Verification
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Save As writes `.sdg` unless a VI extension is chosen; both extensions name a VI file; the debugger and the error chain drop either | "Save As writes .sdg…" and "both extensions name a VI file…" in `test/editor/vi-paths.test.mjs` | **Verified** (2026-10-15) |
+| Every example is a `.sdg` and every subVI it calls exists | "every example is a .sdg…" in `test/editor/vi-paths.test.mjs`; `cli/solder.mjs check` on each | **Verified** (2026-10-15) |
+| A `.sdg` caller runs a `.qvi` subVI; a missing subVI is reported | `cli/solder.mjs check` on a copy of Temperature Monitor (2026-10-15) | **Verified** by hand, no test |
+| The Windows installer associates `.sdg` and `.qvi` and the uninstaller removes both | the next installer test in the VM | **Pending** |

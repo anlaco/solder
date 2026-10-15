@@ -253,7 +253,7 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > Boolean) is a green terminal with "TF" on the diagram, and its value travels as
 > an `i32` 0/1 through the panel imports, like the numeric one. What kind of
 > control it is (`style`: Push Button, Round LED, Stop Button…) and its **mechanical
-> action** (`mechanical-action`) are saved in the `.qvi`'s `front-panel`: the
+> action** (`mechanical-action`) are saved in the `.sdg`'s `front-panel`: the
 > second is semantic, because it says when the value changes. LabVIEW makes the
 > LEDs indicators and everything else controls; the factory action is
 > Switch When Pressed except on OK, Cancel and Stop, which are Latch When Released
@@ -509,7 +509,7 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > with Change to Control (**unverified**).
 > - *Presentation settings.* `config.visibles` is how many elements the box shows: a number in 1D (unchanged) and
 > `[rows, columns]` in 2D; `config.indice`, the first position shown: a number in 1D and `[row, column]` in 2D. They
-> are saved in the `.qvi` (`visible-elements` and `index` of a panel item, `visibles` and `indice` of a diagram constant) and
+> are saved in the `.sdg` (`visible-elements` and `index` of a panel item, `visibles` and `indice` of a diagram constant) and
 > come back equal. A cell is addressed by its position in 1D and by `"row,column"` in 2D.
 > - *Cells.* A tile the value defines (inside its rows and its widest row) is solid in the type's color with a white cell and
 > black text; one outside the value is pale (`#ffcc99` for DBL) with a grey default. Typing into a tile defines it, and
@@ -952,7 +952,7 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/graphs/`, with `REPORT.md`); how 
 > and is cleared by Data Operations ▸ Clear Chart (75) and when the type of its wire changes (71). Its length is 1024 by default
 > (Chart History Length..., `50-chart-history-length-dialog.png`: "Number of data points in chart history buffer", OK, Cancel, Help;
 > here a whole number of at least 1; what LabVIEW does with another value is unverified). The history belongs to the window, not to the VI:
-> it is not saved in the `.qvi`. The run worker sends the chart **every** write, in order, and the other indicators only the last
+> it is not saved in the `.sdg`. The run worker sends the chart **every** write, in order, and the other indicators only the last
 > one of each pause. A Waveform Graph or an XY Graph keeps the last value it received (Clear Graph empties it).
 >
 > **Rule 81 — The menus.** Right-click on a graph in edit mode opens its menu (`10`–`23`, `30`–`35`, `40`–`45`); the rows and their
@@ -1010,7 +1010,7 @@ looks is in [`06-visual.md`](06-visual.md) §14. What the report marks unverifie
 > Generic Probe is done, which is the same probe, and the others are holes. Retain Wire Values keeps the last value of every wire
 > after the Run, so a probe added later shows it (50, 59); without it a probe keeps the value it showed and nothing else is kept
 > (unverified). **The value of a wire that starts at a border of a structure (a tunnel, a shift register, "i", "N") is not reported:
-> the compiler does not hook those nodes yet (DT-047); the probe shows no value.** Probes are not saved in the `.qvi`.
+> the compiler does not hook those nodes yet (DT-047); the probe shows no value.** Probes are not saved in the `.sdg`.
 >
 > **Rule 86 — Breakpoints.** A node's menu and a wire's menu offer Add Breakpoint; with one, "Remove Breakpoint" and "Disable (Enable)
 > Breakpoint" take its place (79). On a node it is a 3 px red frame outside the node, 2 px red and 1 px white when disabled (73, 80);
@@ -1103,7 +1103,7 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/editor-checks/REPORT.md`; the cap
 > so both windows end up on one graph (the other change is lost, as there is nothing to merge it with). Before this, two copies
 > that crossed on their way swapped for good and Save wrote a different VI depending on the window it was pressed in. Undo and a
 > hierarchy rebuild that changes the graph (Run) are copies like any other. Tested in `test/editor/graph-sync.test.mjs`.
-> **Not reproduced:** the `.qvi` of the Windows tester, whose diagram showed an out-and-back wire after dragging the Stop
+> **Not reproduced:** the `.sdg` of the Windows tester, whose diagram showed an out-and-back wire after dragging the Stop
 > terminal into a While Loop, could not be obtained from the editor with pure drags (15 912 drops and 16 000 random drags
 > in a fuzz, and the same steps in the real window under Xvfb); the cause of that drag is unknown (see the report of this change).
 > A wire out of a structure and back into it is a broken wire (STRUCTURE_CYCLE_REASON), as in LabVIEW (`§1f`).

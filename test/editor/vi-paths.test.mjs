@@ -3,12 +3,14 @@
 // file. Pure string work shared by the page and the main process.
 
 import assert from "node:assert/strict";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
 import { test } from "node:test";
 
 import * as Paths from "../../editor/src/common/vi-paths.mjs";
 import * as Q from "../../core/model/qvi-format.mjs";
 import * as SN from "../../editor/src/block-diagram/subvi-nodes.mjs";
-import { CAT } from "../helpers.mjs";
+import { CAT, RAIZ } from "../helpers.mjs";
 
 test("a path is resolved and written relative to a folder, on either kind of system", () => {
   assert.equal(Paths.resolveRelative("/home/ana/vis/main.qvi", "lib/add2.qvi"), "/home/ana/vis/lib/add2.qvi");
@@ -80,4 +82,32 @@ test("Open Front Panel names the absolute file of the subVI that a node stores r
   assert.ok(SN.isSubVI(g.nodos[0]));
   assert.equal(Paths.resolveRelative("/home/ana/vis/main.qvi", g.nodos[0].config.vi), "/home/ana/vis/lib/add2.qvi");
   assert.equal(Paths.resolveRelative(Paths.untitledKey(1), "/opt/add2.qvi"), "/opt/add2.qvi", "an untitled caller stores it absolute");
+});
+
+// DT-051: a VI is written as `.sdg`; the old `.qvi` still opens and, saved in place, keeps its name.
+test("Save As writes .sdg unless the chosen path already names a VI file, of either extension", () => {
+  assert.equal(Paths.savePathFor("/vis/main"), "/vis/main.sdg");
+  assert.equal(Paths.savePathFor("/vis/main.sdg"), "/vis/main.sdg");
+  assert.equal(Paths.savePathFor("/vis/old.qvi"), "/vis/old.qvi", "an old name chosen on purpose is kept");
+  assert.equal(Paths.savePathFor("/vis/MAIN.SDG"), "/vis/MAIN.SDG", "in any case");
+  assert.equal(Paths.saveAsProposal("/vis/old.qvi", "old.qvi"), "/vis/old.sdg", "an old file is offered under the new extension");
+  assert.equal(Paths.saveAsProposal(null, "Untitled 1"), "Untitled 1.sdg");
+});
+
+test("both extensions name a VI file, and the debugger and the error chain drop either", () => {
+  assert.deepEqual(["a.sdg", "a.qvi", "A.QVI", "a.sdt", "a.sdproj", "a.vi"].map(Paths.isVIFile), [true, true, true, false, false, false]);
+  assert.deepEqual(["Parse Reply.sdg", "Parse Reply.qvi", "Parse Reply"].map(Paths.withoutVIExtension), ["Parse Reply", "Parse Reply", "Parse Reply"]);
+});
+
+test("every example is a .sdg and every subVI it names is there", () => {
+  const folder = path.join(RAIZ, "examples");
+  const files = readdirSync(folder, { recursive: true }).filter((name) => /\.(sdg|qvi)$/.test(name));
+  assert.ok(files.length >= 6, "the three examples and their subVIs");
+  for (const name of files) {
+    assert.ok(name.endsWith(".sdg"), `${name} has the new extension`);
+    const file = path.join(folder, name);
+    for (const stored of Paths.subVIPathsInFile(JSON.parse(readFileSync(file, "utf8")))) {
+      assert.ok(existsSync(path.join(path.dirname(file), stored)), `${name} calls ${stored}, which exists`);
+    }
+  }
 });

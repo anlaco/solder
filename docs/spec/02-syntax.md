@@ -1,7 +1,8 @@
 # 02 — Syntax of the file format
 
 > Status: **DRAFT** — pending review
-> Normative. It defines the shape of `.qvi` files.
+> Normative. It defines the shape of `.sdg` files (written `.qvi` before DT-051; the
+> content is the same, and the schema and the reader keep the name `qvi`).
 > Requires the vocabulary of [`01-glossary.md`](01-glossary.md).
 
 ## 1. The schema is the specification
@@ -10,7 +11,7 @@ The formal and **authoritative** definition of the syntax is
 [`../schema/qvi.schema.json`](../schema/qvi.schema.json), a JSON Schema
 (draft 2020-12).
 
-> **A file that does not validate against that schema is not a conforming `.qvi`.**
+> **A file that does not validate against that schema is not a conforming `.sdg`.**
 
 This document **explains** the schema and justifies its decisions. When text and
 schema disagree, **the schema rules**: it is the one that gets executed.
@@ -39,7 +40,7 @@ applies it live—, but it does not know the block registry.
 
 ## 2. The three layers
 
-Every `.qvi` contains three kinds of information, and the format **separates
+Every `.sdg` contains three kinds of information, and the format **separates
 them physically**:
 
 | Layer | Where it lives | Does it affect the compiled program? |
@@ -142,7 +143,7 @@ open, so declaring one is always an author's mistake.)*
 The full model will be in `design/03-seguridad.md` *(not yet written)*.
 
 > **Open question.** Fixing an IP inside the program file makes the
-> VI stop working when the test bench changes, and makes a colleague's `.qvi`
+> VI stop working when the test bench changes, and makes a colleague's `.sdg`
 > useless. A level of indirection is needed —profiles, per-subnet wildcards, or
 > project-level permissions— or everyone will put `["*"]` on the
 > first day. **Unresolved; it is the work of `design/03-seguridad.md`.**
@@ -209,7 +210,7 @@ the debugging buttons. It is only written when false, because checked is the def
 
 ### 4.5c The `subvi` node
 
-`config.vi` is the path of the called `.qvi`, relative to the file of the
+`config.vi` is the path of the called `.sdg`, relative to the file of the
 caller; the ports of the node are the terminals of its connector, named after
 its panel elements.
 
@@ -221,7 +222,7 @@ special cases.
 
 ### 4.7 `layout` *(optional)*
 
-Pure presentation (§2). Its absence is valid: a `.qvi` without `layout` is a
+Pure presentation (§2). Its absence is valid: a `.sdg` without `layout` is a
 correct program that the editor will arrange as best it can.
 
 - `diagram` and `panel`: by node name, its place (`x`, `y`), its label
@@ -340,7 +341,7 @@ the width equally.
 | `type: 'array` without saying of what | `{"array": "number"}`, recursive | The compiler needs the element type to emit WasmGC |
 | Cluster shape in a separate `fields` | Inside the `type` itself | A single mechanism for all composite types |
 | No tunnels | Explicit `tunnels` | Closes a real hole: today a loop cannot read anything from outside |
-| Generated code section in the file | Does not exist | The `.qvi` is only the source. See `../reference/history/whitelist.md` DT-005 |
+| Generated code section in the file | Does not exist | The `.sdg` is only the source. See `../reference/history/whitelist.md` DT-005 |
 | `.qprim`, three-level libraries | Out of scope | They were fiction. See `01-glossary.md` §2.3 |
 
 ## 7. Verification
@@ -369,7 +370,7 @@ cases are rejected, against `jsonschema` 0.49.
 | Issue | Where it is resolved |
 |----------|-------------------|
 | Closed catalog of block types (a node's `type`) | `schema/blocks.json`, defined in `04-dynamic-semantics.md` |
-| Format of `.qlib` and `.qproj` | This document, when `03` fixes the dependency model |
+| Format of `.sdlib` and `.sdproj` | This document, when `03` fixes the dependency model |
 | Indirection of capabilities (§4.3) | `design/03-seguridad.md` |
 | How the `default` values of array and cluster are represented | `03-static-semantics.md` |
 | Auto-indexing of tunnels (§5.1.1) | Deliberately open; the `mode` field is reserved |

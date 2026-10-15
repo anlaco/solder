@@ -65,9 +65,16 @@
     "icon": "build/icon.png",
     "fileAssociations": [
       {
-        "ext": "qvi",
+        "ext": "sdg",
         "name": "Solder VI",
         "description": "Solder VI",
+        "icon": "build/icon",
+        "role": "Editor"
+      },
+      {
+        "ext": "qvi",
+        "name": "Solder VI (old extension)",
+        "description": "Solder VI (old extension)",
         "icon": "build/icon",
         "role": "Editor"
       }

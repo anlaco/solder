@@ -67,7 +67,7 @@
         "name": "subvi_1",
         "type": "subvi",
         "config": {
-          "vi": "Simulated Instrument.qvi"
+          "vi": "Simulated Instrument.sdg"
         }
       },
       {
@@ -127,14 +127,14 @@
               "name": "subvi_2",
               "type": "subvi",
               "config": {
-                "vi": "Simulated Instrument.qvi"
+                "vi": "Simulated Instrument.sdg"
               }
             },
             {
               "name": "subvi_3",
               "type": "subvi",
               "config": {
-                "vi": "Parse Reply.qvi"
+                "vi": "Parse Reply.sdg"
               }
             },
             {
