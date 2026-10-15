@@ -22,7 +22,7 @@
 //   menu       { raiz, nodo, x, y, abierto } the right-click menu of a boolean control
 //              (handled with the same functions as the diagram's: diagram-editing.mjs)
 
-import { NO_ERROR } from "../../../core/model/control-values.mjs";
+import * as CV from "../../../core/model/control-values.mjs";
 import * as Et from "../common/labels.mjs";
 import { BOOLEANOS, dibujoBooleano, estadoError } from "../common/glyphs.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
@@ -83,11 +83,13 @@ export function pasoCeldas2D(t) {
   const [ancho, alto] = medidaElemento(t);
   return [ancho - MEDIDAS_ARRAY_PANEL_2D.restaPasoAncho, alto + MEDIDAS_ARRAY_PANEL_2D.sumaPasoAlto];
 }
+// What a panel object holds now (DT-053); the last Run's value of an indicator is apart, in `valores`.
+const valorActual = CV.currentValue;
 const esArrayPanel = (n) => !!CONTROLES[n?.tipo]?.array;
 /** Los valores de un array del panel: los que le dejó el último Run, si es un indicador (y encajan en sus dimensiones), o los suyos. */
 export function valoresDeArray(n, valores) {
   const delRun = valores?.[n.id];
-  return delRun && valueFitsDimensions(delRun, dimensionsOfNode(n.config)) ? delRun : n.config?.value ?? [];
+  return delRun && valueFitsDimensions(delRun, dimensionsOfNode(n.config)) ? delRun : valorActual(n) ?? [];
 }
 
 /**
@@ -101,11 +103,11 @@ export const ERRORES = {
 };
 export const MEDIDAS_ERROR = { ancho: 155, alto: 121 };
 /** El valor de un cluster de error que no se ha tocado. */
-export const ERROR_VACIO = NO_ERROR;
+export const ERROR_VACIO = CV.NO_ERROR;
 /** La clase de error de un control del panel, o nada si no lo es. */
 export const claseError = (tipo, config) => (tipo === "cluster-control" || tipo === "cluster-indicator" ? ERRORES[config?.style] : undefined);
 /** El valor de un control de error: el que le dejó el último Run, si es un indicador, o el suyo. */
-export const valorError = (n, valores) => ({ ...ERROR_VACIO, ...(valores?.[n.id] ?? n.config?.value) });
+export const valorError = (n, valores) => ({ ...ERROR_VACIO, ...(valores?.[n.id] ?? valorActual(n)) });
 
 /**
  * La casilla de un control de cadena, medida a 1:1 en labview-captures/string/panel-string-editando.png:
@@ -206,12 +208,12 @@ const tipoDe = (n) => n.config?.type ?? "number";
 const textoValor = (n, ctx, valores) => {
   // An enum shows the name of its current item (DT-049); while running, the value that
   // arrives is the item's number.
-  if (esEnum(tipoDe(n))) return (n.config?.type?.enum ?? [])[valores?.[n.id] ?? n.config?.value ?? 0] ?? "";
-  return esCadena(n) ? String(valores?.[n.id] ?? n.config?.value ?? "") : formatear(valores?.[n.id] ?? n.config?.value ?? 0, tipoDe(n), ctx.separador);
+  if (esEnum(tipoDe(n))) return (n.config?.type?.enum ?? [])[valores?.[n.id] ?? valorActual(n) ?? 0] ?? "";
+  return esCadena(n) ? String(valores?.[n.id] ?? valorActual(n) ?? "") : formatear(valores?.[n.id] ?? valorActual(n) ?? 0, tipoDe(n), ctx.separador);
 };
 
 /** El valor de un booleano: el que le dejó el último Run, si es un indicador, o el suyo por defecto. */
-const encendido = (n, valores) => !!(valores?.[n.id] ?? n.config?.value);
+const encendido = (n, valores) => !!(valores?.[n.id] ?? valorActual(n));
 
 /**
  * Un control o indicador de error: gris con relieve, con sus tres campos. Cada campo lleva
@@ -389,7 +391,7 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
   if (sobre.tipo === "campo") {
     const nodo = p.g.nodos.find((m) => m.id === sobre.id);
     if (!claseError(nodo?.tipo, nodo?.config)?.control) return pulsar(p, ctx, { tipo: "objeto", id: sobre.id }, pt, shift);
-    if (sobre.campo === "status") return { ...p, g: Gr.fijarValor(p.g, nodo.id, { ...valorError(nodo, p.valores), status: !valorError(nodo, p.valores).status }) };
+    if (sobre.campo === "status") return { ...p, g: CV.setCurrentValue(p.g, nodo.id, { ...valorError(nodo, p.valores), status: !valorError(nodo, p.valores).status }) };
     return editarValor(p, ctx, sobre.id, false, sobre.campo);
   }
   // Las flechas del incrementador suman o restan 1 por clic, como en LabVIEW; en un array, mueven el índice.
@@ -501,7 +503,7 @@ export function soltar(p, ctx, sobre, pt) {
 }
 
 /** El valor de un control booleano pasa de TRUE a FALSE y al revés. */
-const alternar = (g, n) => Gr.fijarValor(g, n.id, !n.config?.value);
+const alternar = (g, n) => CV.setCurrentValue(g, n.id, !valorActual(n));
 
 /** El menú de clic derecho de un objeto del panel, en el inventario; los numéricos aún no están capturados. */
 export function menuDe(n) {
@@ -575,7 +577,7 @@ export function editarElemento(p, ctx, id, k, todo) {
   const dimensions = dimensionsOfNode(n.config);
   const v = readCell(valoresDeArray(n, p.valores), dimensions, k);
   // Un booleano se alterna con el clic, como un interruptor.
-  if (t === "boolean") return { ...p, g: Gr.fijarValor(p.g, id, writeCell(valoresDeArray(n, p.valores), dimensions, k, !v, t)), seleccion: [], accion: null };
+  if (t === "boolean") return { ...p, g: CV.setCurrentValue(p.g, id, writeCell(valoresDeArray(n, p.valores), dimensions, k, !v, t)), seleccion: [], accion: null };
   const texto = t === "string" ? String(v ?? "") : formatear(v ?? 0, t, ctx.separador);
   return { ...p, edicion: { nodo: id, valor: true, elem: k, texto, todo, ...(t === "string" ? { cadena: true } : {}) }, seleccion: [], accion: null };
 }
@@ -586,8 +588,8 @@ function pasoValor(g, id, paso) {
   // The arrows of an enum move to the next or the previous item (whether they wrap around at
   // the ends is unverified; here they stop).
   const items = n.config?.type?.enum;
-  if (items) return Gr.fijarValor(g, id, Math.max(0, Math.min(items.length - 1, (n.config?.value ?? 0) + paso)));
-  return Gr.fijarValor(g, id, convertirValor((n.config?.value ?? 0) + paso, tipoDe(n)));
+  if (items) return CV.setCurrentValue(g, id, Math.max(0, Math.min(items.length - 1, (valorActual(n) ?? 0) + paso)));
+  return CV.setCurrentValue(g, id, convertirValor((valorActual(n) ?? 0) + paso, tipoDe(n)));
 }
 
 /**
@@ -606,7 +608,7 @@ export function confirmar(p) {
     const v = leerElemento(e.texto, t);
     if (v === undefined) return { ...p, edicion: null };
     const { [e.nodo]: _, ...valores } = p.valores ?? {};
-    return { ...p, g: Gr.fijarValor(p.g, e.nodo, writeCell(valoresDeArray(n, p.valores), dimensionsOfNode(n.config), e.elem, v, t)), valores, edicion: null };
+    return { ...p, g: CV.setCurrentValue(p.g, e.nodo, writeCell(valoresDeArray(n, p.valores), dimensionsOfNode(n.config), e.elem, v, t)), valores, edicion: null };
   }
   // Un campo de un control de error: code se lleva a I32 y source se guarda tal cual.
   if (e.campo) {
@@ -614,19 +616,19 @@ export function confirmar(p) {
     const valor = e.campo === "code" ? (() => { const l = leerNumero(e.texto, "i32"); return l && convertirValor(l.valor, "i32"); })() : e.texto;
     if (valor === null || valor === undefined) return { ...p, edicion: null };
     const { [e.nodo]: _, ...valores } = p.valores ?? {};
-    return { ...p, g: Gr.fijarValor(p.g, e.nodo, { ...valorError(n, p.valores), [e.campo]: valor }), valores, edicion: null };
+    return { ...p, g: CV.setCurrentValue(p.g, e.nodo, { ...valorError(n, p.valores), [e.campo]: valor }), valores, edicion: null };
   }
   // Una cadena se guarda tal cual, con sus saltos de línea.
   if (e.cadena) {
     const { [e.nodo]: _, ...valores } = p.valores ?? {};
-    return { ...p, g: Gr.fijarValor(p.g, e.nodo, e.texto), valores, edicion: null };
+    return { ...p, g: CV.setCurrentValue(p.g, e.nodo, e.texto), valores, edicion: null };
   }
   const leido = leerNumero(e.texto, "number");
   if (!leido) return { ...p, edicion: null };
   // El tipo de un control no cambia al escribirle: el valor se lleva a su representación.
   const n = p.g.nodos.find((m) => m.id === e.nodo);
   const { [e.nodo]: _, ...valores } = p.valores ?? {};
-  return { ...p, g: Gr.fijarValor(p.g, e.nodo, convertirValor(leido.valor, tipoDe(n))), valores, edicion: null };
+  return { ...p, g: CV.setCurrentValue(p.g, e.nodo, convertirValor(leido.valor, tipoDe(n))), valores, edicion: null };
 }
 
 // ——— Teclado ———

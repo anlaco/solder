@@ -1739,3 +1739,58 @@ shared-mime-info.
 **Known differences:** the dialogs are the system's, so on a Spanish desktop their Cancel reads "Cancelar"
 (the Exit dialog too); the first show on a new user-data folder is page 2, since the page moves on before
 each show.
+
+## DT-053
+
+**A front-panel object has a current value and a default value; only the default is saved.**
+
+- **Status:** Accepted on 2026-10-15, after measuring what the proposal left open. Item C4 of
+  `docs/design/real-programs-0.3.md` §3. In LabVIEW 2026 Q3 a value typed into a control in edit mode is only
+  its current value, an undoable "Data Change", gone after save and reopen; Solder kept a single value per
+  control, so typing changed what the file saves (spec/05 Rule 40m). Measured in
+  `labview-captures/reports/2026-10-15-editor-gestures.md` §5 and `2026-10-15-default-values.md` (stages 1 and 2).
+
+### Decision
+
+1. **Two values in the model.** A panel object's `config.value` stays its **default**: what the `.sdg` saves as
+   `default`, what the modified mark compares, and what a VI opened from a file starts with. Its **current
+   value** lives in `node.currentValue`, outside `config`, so `qvi-format.mjs` never writes it; absent means
+   "the same as the default". The `.sdg` format does not change. Measured: a typed value is not saved; a value
+   made default is.
+2. **Pure operations in `core/model/control-values.mjs`:** `setCurrentValue`, `makeCurrentValuesDefault(graph,
+   ids)` (each current value becomes the default and is dropped) and `reinitializeToDefault(graph, ids)`
+   (drops it); `startValue` is the current value, or the default. Representation, Edit Items and Add/Remove
+   Dimension carry the current value along with the default.
+3. **Editing.** Operating a panel object in edit mode changes only its current value: one undo step, without
+   the modified mark (measured: "Undo Data Change", no asterisk). Constants on the diagram keep one value.
+4. **The commands, as measured.** Edit ▸ Make Current Values Default and Reinitialize Values to Default act on
+   every panel object; on the panel, with a selection, they read Make Selected Values Default and Reinitialize
+   Selected Values to Default and act only on it. Both are always enabled. Data Operations ▸ Reinitialize to
+   Default Value and Make Current Value Default act on the object right-clicked, control or indicator. Each is
+   one undo step; Make … Default marks the VI modified (it changes the file) and Reinitialize does not.
+5. **Run.** The Run starts from the current values, and the controls keep what was operated during it
+   (measured: 8 typed while running still shows after the Run); a Latch that was read is FALSE again. When
+   the Run ends, what the indicators show becomes their current value, since Make Current Values Default makes
+   it their default (measured); the Run's changes are one undo step (**unverified**). The graph is no longer
+   put back at the end of a Run, and Save needs no special case: `graphAsSaved` and `defaultsBeforeRun` go.
+6. **Greyed, with their reason (DT-035):** Cut Data (greyed in LabVIEW too, in edit mode), Copy Data and Paste
+   Data until Solder has a data clipboard ("copiar-datos"; LabVIEW's is its own, no text arrives elsewhere). The
+   charts' and graphs' Make Current Value Default and Reinitialize to Default stay to do: their data is history,
+   not a value.
+
+### Consequences
+
+- spec/05 Rule 40m is rewritten: operating a control, in edit mode or while running, changes its current value;
+  only Make … Default changes what the file saves.
+- The examples keep their saved defaults (`test/end-to-end/examples.test.mjs`); a file opened has no current
+  values.
+- The undo label is "Undo" for every step in Solder; LabVIEW's names ("Data Change") are not cloned yet.
+
+### Verification
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| A typed value is not saved; the commands set and restore the default, for all or some objects | `test/core/control-values.test.mjs` | **Verified** (2026-10-15) |
+| Data Operations and the Edit menu rows, labels and scope | `test/editor/default-values.test.mjs`, `test/editor/edit-menu.test.mjs` | **Verified** (2026-10-15) |
+| A Run keeps the operated values and gives the indicators theirs | `test/editor/run-values.test.mjs` | **Verified** (2026-10-15) |
+| The menus in the running editor | the editor under Xvfb (`labview-captures/reports/2026-10-15-solder-default-values.md`) | **Verified** by hand, no test (2026-10-15) |

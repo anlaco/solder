@@ -1,27 +1,36 @@
-// What a Run does to the values of the controls.
+// What a Run does to the values of the front panel (DT-053).
 //
-// While the VI runs, operating a control changes its current value in the graph
-// the two windows share, but a Run does not change the VI: what is saved, and
-// what is compared with the file to show the modified mark, is the default each
-// control had when the Run started, and the graph goes back to it when the Run
-// ends (labview-captures/windows-install-0.2.1/). LabVIEW keeps the current value
-// apart from the default; Solder keeps only the default until Make Current
-// Value Default exists (docs/spec/05-editor.md, Rule 40m).
+// The Run starts from the current value of each control, and operating a control
+// while it runs changes that current value, never the default the file saves, so
+// the VI is not marked modified. When the Run ends the controls keep what was
+// operated, and what each indicator shows becomes its current value: Make Current
+// Values Default then makes it the indicator's default, as in LabVIEW
+// (labview-captures/reports/2026-10-15-default-values.md, stage 2).
 
-import * as Gr from "../../../core/model/graph.mjs";
+import * as CV from "../../../core/model/control-values.mjs";
 
-const CONTROL_TYPES = new Set(["control", "bool-control", "str-control", "cluster-control", "arr-control"]);
+export const isControl = CV.isControl;
 
-/** Is this node a control of the front panel? */
-export const isControl = (node) => CONTROL_TYPES.has(node.tipo);
+const INDICATOR_TYPES = new Set(["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator"]);
+
+/** Is this node an indicator of the front panel that holds a value (a chart or a graph holds a history instead)? */
+export const isIndicator = (node) => INDICATOR_TYPES.has(node.tipo);
 
 /** Two control values are the same: an error cluster is an object and is compared by what it carries. */
 export const sameValue = (a, b) => a === b || (typeof a === "object" && typeof b === "object" && JSON.stringify(a) === JSON.stringify(b));
 
-/** The value each control of `graph` holds, by node id, exactly as stored (`undefined` when it has none). */
-export const controlValues = (graph) => Object.fromEntries(graph.nodos.filter(isControl).map((node) => [node.id, node.config?.value]));
+const isTrueLatch = (node) => node.tipo === "bool-control" && String(node.config?.mechanical ?? "").startsWith("latch") && CV.currentValue(node) === true;
 
-/** `graph` with each control at the value given for it; whatever already has it, or is not a control, is left as it is. */
-export function withControlValues(graph, values) {
-  return graph.nodos.filter(isControl).reduce((all, node) => (sameValue(node.config?.value, values[node.id]) ? all : Gr.fijarValor(all, node.id, values[node.id])), graph);
+/**
+ * The graph and the indicator values shown when a Run ends: each indicator in
+ * `shownValues` takes what it shows as its current value and leaves `shownValues`.
+ * A Latch still TRUE goes back to FALSE, as before (whether LabVIEW keeps a Latch
+ * that was never read is unverified).
+ */
+export function afterRun(graph, shownValues = {}) {
+  const takesShownValue = (node) => isIndicator(node) && node.id in shownValues && !sameValue(CV.currentValue(node), shownValues[node.id]);
+  const withIndicators = graph.nodos.filter(takesShownValue).reduce((all, node) => CV.setCurrentValue(all, node.id, shownValues[node.id]), graph);
+  const finished = withIndicators.nodos.filter(isTrueLatch).reduce((all, node) => CV.setCurrentValue(all, node.id, false), withIndicators);
+  const remaining = Object.fromEntries(Object.entries(shownValues).filter(([id]) => !graph.nodos.some((node) => node.id === id && isIndicator(node))));
+  return { graph: finished, shownValues: remaining };
 }

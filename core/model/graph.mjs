@@ -471,8 +471,10 @@ const vieneDelPar = (g, id, parId, puerto, vistos) => {
  */
 export function editarItemsEnum(g, id, items, renombres = {}) {
   g = cambiarNodo(g, id, (n) => {
-    const value = n.config?.value === undefined || !items.length ? n.config?.value : Math.max(0, Math.min(n.config.value, items.length - 1));
-    return { ...n, config: { ...n.config, type: { enum: items }, ...(value !== undefined && { value }) } };
+    const intoRange = (index) => (index === undefined || !items.length ? index : Math.max(0, Math.min(index, items.length - 1)));
+    const value = intoRange(n.config?.value);
+    const currentValue = intoRange(n.currentValue);
+    return { ...n, config: { ...n.config, type: { enum: items }, ...(value !== undefined && { value }) }, ...(currentValue !== undefined && { currentValue }) };
   });
   if (!Object.keys(renombres).length) return g;
   const renombrado = (v) =>
@@ -585,11 +587,11 @@ export const fijarValor = (g, id, value, type) =>
   cambiarNodo(g, id, (n) => ({ ...n, config: { ...n.config, value, ...(type !== undefined ? { type } : {}) } }));
 
 /**
- * Representation: cambia el tipo numérico de una constante, un control o un
- * indicador y lleva su valor a ese tipo. La constante DBL de la paleta es la
- * numérica general con la representación puesta, así que al cambiarla pasa a
- * serlo. Los cables se conservan: lo que ya no encaje, se romperá o llevará un
- * punto de coerción al resolver los tipos.
+ * Representation: changes the numeric type of a constant, a control or an
+ * indicator and converts its values (the default and the current one) to it.
+ * The palette's DBL constant is the general numeric one with the representation
+ * set, so changing it makes it one. Wires are kept: whatever no longer fits
+ * breaks or gets a coercion dot when the types are resolved.
  */
 export const fijarRepresentacion = (g, id, tipo) =>
   cambiarNodo(g, id, (n) => {
@@ -598,6 +600,7 @@ export const fijarRepresentacion = (g, id, tipo) =>
       ...n,
       tipo: n.tipo === "const" ? "num-const" : n.tipo,
       config: { ...n.config, type: tipo, value: convertirValor(n.config?.value ?? 0, tipo) },
+      ...(n.currentValue !== undefined && { currentValue: convertirValor(n.currentValue, tipo) }),
     };
   });
 

@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { menuContextual } from "../../editor/src/block-diagram/diagram-view.mjs";
-import { DIAGRAM_EDIT_COMMANDS, EDIT_COMMANDS, editMenuId, editMenuVariants } from "../../editor/src/window/edit-menu.mjs";
+import { DIAGRAM_EDIT_COMMANDS, EDIT_COMMANDS, PANEL_EDIT_COMMANDS, editMenuId, editMenuVariants } from "../../editor/src/window/edit-menu.mjs";
 import { esHueco, ultimo } from "../../editor/src/common/labview-inventory.mjs";
 import * as E from "../../editor/src/window/window-state.mjs";
 import { INV } from "../helpers.mjs";
@@ -35,7 +35,7 @@ test("the Edit menu has LabVIEW's rows in order on the diagram and on the panel"
   ]);
   for (const windowName of ["block-diagram", "front-panel"]) {
     const built = INV.hijos(editMenuId(windowName)).filter((e) => !esHueco(e)).map((e) => ultimo(e.id));
-    const expected = windowName === "block-diagram" ? [...EDIT_COMMANDS, ...DIAGRAM_EDIT_COMMANDS] : EDIT_COMMANDS;
+    const expected = [...EDIT_COMMANDS, ...(windowName === "block-diagram" ? DIAGRAM_EDIT_COMMANDS : PANEL_EDIT_COMMANDS)];
     assert.deepEqual(built.sort(), [...expected].sort(), `${windowName}: what is done is what the window can run`);
     // The menu opens under its title, as File does.
     const opened = E.abrirMenuBarra(E.inicial(), INV, editMenuId(windowName), { x: 10, y: 20 });
@@ -78,4 +78,22 @@ test("Cut Copy and Delete are greyed with nothing selected and Paste with nothin
   assert.doesNotMatch(html, /<div class="[^"]*\bdesactivado\b[^"]*" data-id="window\.block-diagram\.menu\.edit\.select-all"/);
   assert.match(html, /Clean Up Diagram/);
   assert.doesNotMatch(html, /Clean Up Selection/);
+});
+
+// Measured in labview-captures/reports/2026-10-15-default-values.md (DT-053).
+test("the default value rows are always enabled and on the panel are named for the selection", () => {
+  const row = (windowName, name) => `${editMenuId(windowName)}.${name}`;
+  const empty = { canUndo: false, canRedo: false, canCopy: false, hasSelection: false, clipboardFilled: false };
+  const panelRows = ["make-selected-values-default", "reinitialize-selected-values-to-default"];
+  const diagramRows = ["make-current-values-default", "reinitialize-values-to-default"];
+  for (const state of [empty, { ...empty, canCopy: true, hasSelection: true }]) {
+    const panelGreyed = editMenuVariants("front-panel", state).desactivados;
+    const diagramGreyed = editMenuVariants("block-diagram", state).desactivados;
+    for (const name of panelRows) assert.ok(!panelGreyed.has(row("front-panel", name)), name);
+    for (const name of diagramRows) assert.ok(!diagramGreyed.has(row("block-diagram", name)), name);
+  }
+  const { rotulos } = editMenuVariants("front-panel", empty);
+  assert.equal(rotulos.get(row("front-panel", "make-selected-values-default")), "Make Current Values Default");
+  assert.equal(rotulos.get(row("front-panel", "reinitialize-selected-values-to-default")), "Reinitialize Values to Default");
+  assert.equal(editMenuVariants("front-panel", { ...empty, hasSelection: true }).rotulos.size, 0, "with a selection they keep the Selected names");
 });

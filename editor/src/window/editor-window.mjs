@@ -51,7 +51,7 @@ import * as V from "./window-view.mjs";
 import { buildHierarchy } from "./hierarchy-client.mjs";
 import { compilar } from "../../../core/compiler/compiler.mjs";
 import { pruneConnector } from "../../../core/model/connector.mjs";
-import { startValue } from "../../../core/model/control-values.mjs";
+import * as CV from "../../../core/model/control-values.mjs";
 
 const nombre = new URLSearchParams(location.search).get("ventana") ?? "front-panel";
 const prefijo = `window.${nombre}`;
@@ -232,7 +232,7 @@ addEventListener("blur", () => confirmarEscritura());
 // (electron/main.mjs), which receives every change to know if anything is unsaved.
 
 /** The VI has changed: the main process compares it with what was saved. */
-const avisar = (g) => window.solder?.cambio(Q.aTexto(graphAsSaved(g), cat));
+const avisar = (g) => window.solder?.cambio(Q.aTexto(g, cat));
 
 /** What is being typed is confirmed before saving, as with Enter Text. */
 function confirmarEscritura() {
@@ -244,7 +244,7 @@ function confirmarEscritura() {
 async function guardarVI(como) {
   if (!window.solder) return;
   confirmarEscritura();
-  await window.solder.guardar(Q.aTexto(graphAsSaved(grafo()), cat), como);
+  await window.solder.guardar(Q.aTexto(grafo(), cat), como);
 }
 
 /** A VI just opened or created: it starts with no history and nothing selected. */
@@ -322,21 +322,18 @@ function appendSeries(charts, series) {
   }, charts ?? {});
 }
 
-const valoresDeControles = (g) => Object.fromEntries(g.nodos.filter(RV.isControl).map((n) => [n.id, startValue(n)]));
-/** The default value each control had when the Run started, by node id (run-values.mjs); `null` when no Run is in progress. */
-let defaultsBeforeRun = null;
-
-/** The graph as the file keeps it: the controls at their defaults even in the middle of a Run. */
-const graphAsSaved = (g) => (defaultsBeforeRun ? RV.withControlValues(g, defaultsBeforeRun) : g);
+const valoresDeControles = (g) => Object.fromEntries(g.nodos.filter(RV.isControl).map((n) => [n.id, CV.startValue(n)]));
 
 /** Las dos ventanas entran en modo Run o salen de él. */
 function modoRun(si) {
   ejecutando = si;
-  if (si) defaultsBeforeRun = RV.controlValues(grafo());
-  else if (defaultsBeforeRun) {
-    // The controls return to their defaults; a Latch that was never read as TRUE does too.
-    ponerGrafo(RV.withControlValues(grafo(), defaultsBeforeRun));
-    defaultsBeforeRun = null;
+  if (!si) {
+    // The controls keep what was operated; the indicators keep what they show, as their current value
+    // (run-values.mjs). Each window does it with the same values, so nothing is shared; it is one step to undo.
+    const after = RV.afterRun(grafo(), pan.valores);
+    pan = { ...pan, valores: after.shownValues };
+    ponerGrafo(after.graph);
+    historial = H.registrar(historial, after.graph);
   }
   debug = si ? DS.startRun(debug, grafo(), Date.now()) : DS.endRun(debug, grafo());
   vistos = si ? valoresDeControles(grafo()) : {};
@@ -363,8 +360,8 @@ function mandarControles(g) {
 /** Un Latch leído vuelve a FALSE en las dos ventanas, sin que cuente como edición. */
 function soltarLatch(nodo) {
   vistos[nodo] = false;
-  if (conDiagrama) dia = { ...dia, g: Gr.fijarValor(dia.g, nodo, false) };
-  else pan = { ...pan, g: Gr.fijarValor(pan.g, nodo, false) };
+  if (conDiagrama) dia = { ...dia, g: CV.setCurrentValue(dia.g, nodo, false) };
+  else pan = { ...pan, g: CV.setCurrentValue(pan.g, nodo, false) };
   pintar();
 }
 
@@ -467,6 +464,10 @@ const ORDENES_MENU = {
   paste: () => pegar(),
   delete: () => borrarLoSeleccionado(),
   "remove-broken-wires-from-selection": () => quitarCablesRotos(),
+  "make-current-values-default": () => changeDefaults(CV.makeCurrentValuesDefault),
+  "reinitialize-values-to-default": () => changeDefaults(CV.reinitializeToDefault),
+  "make-selected-values-default": () => changeDefaults(CV.makeCurrentValuesDefault),
+  "reinitialize-selected-values-to-default": () => changeDefaults(CV.reinitializeToDefault),
   "select-all": () => seleccionarTodo(),
   "remove-breakpoints-from-hierarchy": () => removeAllBreakpoints(),
   // View menu of the diagram:
@@ -880,6 +881,18 @@ function quitarCablesRotos() {
   cambiarDiagrama(ED.removeBrokenWires(dia, ctx));
 }
 const seleccionarTodo = () => ejecutando || (conDiagrama ? cambiarDiagrama(ED.selectAll(dia)) : cambiarPanel(PC.selectAll(pan)));
+
+/**
+ * Make Current (or Selected) Values Default and Reinitialize (Selected) Values to Default (DT-053): on the
+ * panel with something selected, only the selected objects; otherwise every one.
+ */
+function changeDefaults(operation) {
+  if (ejecutando) return;
+  confirmarEscritura();
+  const ids = conPanel && pan.seleccion.length ? PC.selectedObjects(pan) : undefined;
+  if (conDiagrama) cambiarDiagrama({ ...dia, g: operation(dia.g, ids) });
+  else cambiarPanel({ ...pan, g: operation(pan.g, ids) });
+}
 
 function deshacerPaso() {
   if (!ejecutando && !(conDiagrama ? dia.accion : pan.accion)) volver(H.deshacer(historial));
@@ -1355,7 +1368,7 @@ function pulsarEnRun(ev) {
   // Un control de error se acciona como parado: el status alterna y code y source se escriben.
   if (sobre.tipo === "campo" && n?.tipo === "cluster-control") return cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), false));
   if (sobre.tipo !== "objeto" || n?.tipo !== "bool-control") return;
-  pulsado = { id: n.id, antes: !!n.config?.value };
+  pulsado = { id: n.id, antes: !!CV.currentValue(n) };
   accionar(n, "pulsar");
 }
 
@@ -1369,12 +1382,12 @@ function soltarEnRun() {
 function accionar(n, cuando, antes) {
   const accion = n.config?.mechanical ?? P.estiloDe(n.tipo, n.config)?.mecanica ?? "switch-when-pressed";
   const [modo, , momento] = accion.split("-"); // switch|latch, when|until, pressed|released
-  const v = !!n.config?.value;
+  const v = !!CV.currentValue(n);
   let nuevo = v;
   if (momento === "pressed" && cuando === "pulsar") nuevo = modo === "latch" ? true : !v;
   else if (accion.includes("when-released") && cuando === "soltar") nuevo = modo === "latch" ? true : !v;
   else if (accion.includes("until-released")) nuevo = cuando === "pulsar" ? !v : antes;
-  if (nuevo !== v) cambiarPanel({ ...pan, g: Gr.fijarValor(pan.g, n.id, nuevo) });
+  if (nuevo !== v) cambiarPanel({ ...pan, g: CV.setCurrentValue(pan.g, n.id, nuevo) });
 }
 
 /** What can be clicked on a panel object to give it a cell of the connector pane. */

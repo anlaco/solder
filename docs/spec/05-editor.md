@@ -279,21 +279,36 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > actions, greyed out. Ctrl+M (Run mode without running) and the right-click menu in
 > Run mode, not done.
 
-> **Rule 40m — An object exists when it is dropped, and a Run does not change the VI.**
+> **Rule 40m — An object exists when it is dropped; typing a value or running does not change the saved VI.**
 > A control or indicator dropped on the panel (and a string constant dropped on
 > the diagram) is in the VI at once, with its terminal in the diagram, in both
 > windows and with the modified mark; the label (or text) that opens in edit mode
 > only changes it, as LabVIEW does. Save, Save As, Exit, Run and switching
 > windows first commit whatever is being typed (tests in
-> `test/editor/front-panel.test.mjs`). Operating a control while the VI runs
-> changes its *current* value, not the value the file saves: the VI is not marked
-> modified, saving writes the value each control had when the Run started, and the
-> controls go back to it when the Run ends; a Latch that was read is FALSE again
-> in both windows (Rule 20e). Tests in `test/editor/run-values.test.mjs`. Not
-> done: LabVIEW keeps the current value of a control after the Run, apart from
-> its default, which changes only with Edit ▸ Make Current Values Default;
-> Solder has no such command yet, so in edit mode operating a control (Rule 40c)
-> still changes the value the file saves. Unverified in LabVIEW 2026 Q3.
+> `test/editor/front-panel.test.mjs`).
+>
+> **Current value and default value (DT-053).** Each panel object has a *default*
+> value, the one the file saves, and a *current* value. Operating a control, in
+> edit mode (Rule 40c) or while the VI runs, changes only its current value: it is
+> one step to undo (LabVIEW calls it "Data Change") and does not mark the VI
+> modified; after save and reopen the object shows its default again. The Run
+> starts from the current values, and when it ends the controls keep what was
+> operated and each indicator keeps what it shows as its current value; a Latch
+> that was read is FALSE again in both windows (Rule 20e). Only these change the
+> default, each as one step to undo that marks the VI modified: Edit ▸ Make Current
+> Values Default (every object) and, on the panel with a selection, Make Selected
+> Values Default (the selection); Data Operations ▸ Make Current Value Default (the
+> object right-clicked, control or indicator). Edit ▸ Reinitialize Values to Default
+> (on the panel with a selection, Reinitialize Selected Values to Default) and Data
+> Operations ▸ Reinitialize to Default Value put the current value back to the
+> default, without the modified mark. The Edit rows are always enabled; the
+> Operate menu has neither. Data Operations ▸ Cut Data is greyed in edit mode, and
+> Copy Data and Paste Data are not done (LabVIEW's data clipboard is its own).
+> Measured in `labview-captures/reports/2026-10-15-default-values.md`; tests in
+> `test/core/control-values.test.mjs`, `test/editor/default-values.test.mjs`,
+> `test/editor/edit-menu.test.mjs` and `test/editor/run-values.test.mjs`. Not
+> verified: whether a Run's changes are one step to undo, and whether a Latch that
+> was never read stays TRUE after the Run (Solder sets it FALSE).
 
 > **Rule 40e — While Loop and For Loop on the diagram.** Captured in LabVIEW 2026
 > Q3 (`labview-captures/structures/`), at 1:1, and done with the measurements below

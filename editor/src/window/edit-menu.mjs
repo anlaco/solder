@@ -8,8 +8,14 @@
 /** The commands of the menu that do something, by the last segment of their id. */
 export const EDIT_COMMANDS = ["undo", "redo", "cut", "copy", "paste", "delete", "select-all", "remove-breakpoints-from-hierarchy"];
 
-/** The commands only the Block Diagram's Edit menu runs: on the panel Remove Broken Wires is not done (DT-046 measured the diagram). */
-export const DIAGRAM_EDIT_COMMANDS = ["remove-broken-wires-from-selection"];
+/**
+ * The commands only the Block Diagram's Edit menu runs: on the panel Remove Broken Wires is not done (DT-046
+ * measured the diagram). Its default-value rows act on every panel object (DT-053).
+ */
+export const DIAGRAM_EDIT_COMMANDS = ["remove-broken-wires-from-selection", "make-current-values-default", "reinitialize-values-to-default"];
+
+/** The commands only the Front Panel's Edit menu runs: its default-value rows act on the selection, or on every object (DT-053). */
+export const PANEL_EDIT_COMMANDS = ["make-selected-values-default", "reinitialize-selected-values-to-default"];
 
 /** The id of the Edit menu of a window ("front-panel" or "block-diagram"). */
 export const editMenuId = (windowName) => `window.${windowName}.menu.edit`;
@@ -20,7 +26,9 @@ export const editMenuId = (windowName) => `window.${windowName}.menu.edit`;
  * works on a selected wire); Paste with an empty clipboard (unverified: the
  * captures were taken with something copied). On the diagram, the rows that act
  * "from Selection" say "Remove Broken Wires" and "Clean Up Diagram" with nothing
- * selected.
+ * selected; on the panel, the "Selected Values" rows say "Make Current Values
+ * Default" and "Reinitialize Values to Default" (measured, DT-053). Those two are
+ * always enabled.
  *   canUndo, canRedo      the history has a step to go to
  *   canCopy               a node or a panel object is selected
  *   hasSelection          anything at all is selected
@@ -41,6 +49,10 @@ export function editMenuVariants(windowName, { canUndo, canRedo, canCopy, hasSel
   if (windowName === "block-diagram" && !hasSelection) {
     rotulos.set(row("remove-broken-wires-from-selection"), "Remove Broken Wires");
     rotulos.set(row("clean-up-selection"), "Clean Up Diagram");
+  }
+  if (windowName === "front-panel" && !hasSelection) {
+    rotulos.set(row("make-selected-values-default"), "Make Current Values Default");
+    rotulos.set(row("reinitialize-selected-values-to-default"), "Reinitialize Values to Default");
   }
   return { desactivados, rotulos };
 }

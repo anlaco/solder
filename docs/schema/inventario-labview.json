@@ -370,7 +370,7 @@
       "desc": "Find and Replace, and its list of search results"
     },
     "valores-por-defecto": {
-      "desc": "Make Current Values Default and Reinitialize Values to Default: the value a control starts with, stored in the .qvi"
+      "desc": "Make Current Value Default and Reinitialize to Default of a chart or a graph: the data it shows when the VI opens (controls and indicators have them, DT-053)"
     },
     "crear-subvi": {
       "desc": "Create SubVI: the selected nodes or wires become a new VI, replaced by a call to it"
@@ -1023,18 +1023,16 @@
     {
       "id": "window.front-panel.menu.edit.make-selected-values-default",
       "etiqueta": "Make Selected Values Default",
-      "estado": "todo",
-      "labview": "Makes the current value of the selected controls the value they start with.",
-      "necesita": "valores-por-defecto",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::the_default_value_rows_are_always_enabled_and_on_the_panel_are_named_for_the_selection",
       "captura": "create-paste/edit-menu-panel-with-control-selected.png",
       "separado": true
     },
     {
       "id": "window.front-panel.menu.edit.reinitialize-selected-values-to-default",
       "etiqueta": "Reinitialize Selected Values to Default",
-      "estado": "todo",
-      "labview": "Puts the selected controls back to the value they start with.",
-      "necesita": "valores-por-defecto",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::the_default_value_rows_are_always_enabled_and_on_the_panel_are_named_for_the_selection",
       "captura": "create-paste/edit-menu-panel-with-control-selected.png"
     },
     {
@@ -1638,18 +1636,16 @@
     {
       "id": "window.block-diagram.menu.edit.make-current-values-default",
       "etiqueta": "Make Current Values Default",
-      "estado": "todo",
-      "labview": "Makes the current values of the controls the values they start with.",
-      "necesita": "valores-por-defecto",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::the_default_value_rows_are_always_enabled_and_on_the_panel_are_named_for_the_selection",
       "captura": "create-paste/edit-menu-diagram-with-selection.png",
       "separado": true
     },
     {
       "id": "window.block-diagram.menu.edit.reinitialize-values-to-default",
       "etiqueta": "Reinitialize Values to Default",
-      "estado": "todo",
-      "labview": "Puts every control back to the value it starts with.",
-      "necesita": "valores-por-defecto",
+      "estado": "built",
+      "prueba": "test/editor/edit-menu.test.mjs::the_default_value_rows_are_always_enabled_and_on_the_panel_are_named_for_the_selection",
       "captura": "create-paste/edit-menu-diagram-with-selection.png"
     },
     {
@@ -9007,10 +9003,48 @@
     {
       "id": "context.enum-control.data-operations",
       "etiqueta": "Data Operations",
-      "estado": "todo",
-      "labview": "Cortar, copiar y pegar datos, y guardar el valor actual como el valor por defecto.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
       "captura": "enum-edit/30-ctrl-menu.png"
+    },
+    {
+      "id": "context.enum-control.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.enum-control.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.enum-control.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the data of the object to the clipboard; greyed out in LabVIEW in edit mode (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.enum-control.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to a clipboard of LabVIEW's own (no text arrives in another program, measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.enum-control.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes the data copied with Copy Data; greyed out until then (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png"
     },
     {
       "id": "context.enum-control.advanced",
@@ -9187,10 +9221,48 @@
     {
       "id": "context.enum-indicator.data-operations",
       "etiqueta": "Data Operations",
-      "estado": "todo",
-      "labview": "Cortar, copiar y pegar datos.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
       "captura": "enum-edit/32-ind-menu.png"
+    },
+    {
+      "id": "context.enum-indicator.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/s2_32_s.png"
+    },
+    {
+      "id": "context.enum-indicator.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/s2_32_s.png"
+    },
+    {
+      "id": "context.enum-indicator.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the data of the object to the clipboard; greyed out in LabVIEW in edit mode (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/s2_32_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.enum-indicator.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to a clipboard of LabVIEW's own (no text arrives in another program, measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/s2_32_s.png"
+    },
+    {
+      "id": "context.enum-indicator.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes the data copied with Copy Data; greyed out until then (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/s2_32_s.png"
     },
     {
       "id": "context.enum-indicator.advanced",
@@ -9399,10 +9471,48 @@
     {
       "id": "context.numeric-control.data-operations",
       "etiqueta": "Data Operations",
-      "estado": "todo",
-      "labview": "Cortar, copiar y pegar datos, y guardar el valor actual como el valor por defecto.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
       "captura": "block-diagram/numeric-menu-control.png"
+    },
+    {
+      "id": "context.numeric-control.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.numeric-control.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.numeric-control.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the data of the object to the clipboard; greyed out in LabVIEW in edit mode (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-control.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to a clipboard of LabVIEW's own (no text arrives in another program, measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.numeric-control.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes the data copied with Copy Data; greyed out until then (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png"
     },
     {
       "id": "context.numeric-control.advanced",
@@ -9648,10 +9758,48 @@
     {
       "id": "context.numeric-indicator.data-operations",
       "etiqueta": "Data Operations",
-      "estado": "todo",
-      "labview": "Cortar, copiar y pegar datos, y guardar el valor actual como el valor por defecto.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
       "captura": "block-diagram/numeric-menu-indicador.png"
+    },
+    {
+      "id": "context.numeric-indicator.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/s2_32_s.png"
+    },
+    {
+      "id": "context.numeric-indicator.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/s2_32_s.png"
+    },
+    {
+      "id": "context.numeric-indicator.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the data of the object to the clipboard; greyed out in LabVIEW in edit mode (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/s2_32_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-indicator.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to a clipboard of LabVIEW's own (no text arrives in another program, measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/s2_32_s.png"
+    },
+    {
+      "id": "context.numeric-indicator.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes the data copied with Copy Data; greyed out until then (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/s2_32_s.png"
     },
     {
       "id": "context.numeric-indicator.advanced",
@@ -9882,10 +10030,48 @@
     {
       "id": "context.boolean-control.data-operations",
       "etiqueta": "Data Operations",
-      "estado": "todo",
-      "labview": "Cortar, copiar y pegar datos, y guardar el valor actual como el valor por defecto.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
       "captura": "front-panel/boolean-menu-control.png"
+    },
+    {
+      "id": "context.boolean-control.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.boolean-control.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.boolean-control.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the data of the object to the clipboard; greyed out in LabVIEW in edit mode (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.boolean-control.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to a clipboard of LabVIEW's own (no text arrives in another program, measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.boolean-control.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes the data copied with Copy Data; greyed out until then (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png"
     },
     {
       "id": "context.boolean-control.advanced",
@@ -10067,10 +10253,48 @@
     {
       "id": "context.boolean-control-terminal.data-operations",
       "etiqueta": "Data Operations",
-      "estado": "todo",
-      "labview": "Cortar, copiar y pegar datos, y guardar el valor actual como el valor por defecto.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
       "captura": "block-diagram/boolean-menu-control.png"
+    },
+    {
+      "id": "context.boolean-control-terminal.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.boolean-control-terminal.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.boolean-control-terminal.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the data of the object to the clipboard; greyed out in LabVIEW in edit mode (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.boolean-control-terminal.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to a clipboard of LabVIEW's own (no text arrives in another program, measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.boolean-control-terminal.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes the data copied with Copy Data; greyed out until then (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png"
     },
     {
       "id": "context.boolean-control-terminal.mechanical-action",
@@ -10154,9 +10378,8 @@
     {
       "id": "context.boolean-indicator",
       "etiqueta": "Boolean Indicator",
-      "estado": "todo",
-      "labview": "El menú de clic derecho de un indicador booleano en el panel: como el de un control, con Change to Control y sin acción mecánica.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
       "captura": "front-panel/boolean-menu-indicator.png"
     },
     {
@@ -10229,10 +10452,48 @@
     {
       "id": "context.boolean-indicator.data-operations",
       "etiqueta": "Data Operations",
-      "estado": "todo",
-      "labview": "Cortar, copiar y pegar datos, y guardar el valor actual como el valor por defecto.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
       "captura": "front-panel/boolean-menu-indicator.png"
+    },
+    {
+      "id": "context.boolean-indicator.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/s2_32_s.png"
+    },
+    {
+      "id": "context.boolean-indicator.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/s2_32_s.png"
+    },
+    {
+      "id": "context.boolean-indicator.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the data of the object to the clipboard; greyed out in LabVIEW in edit mode (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/s2_32_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.boolean-indicator.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to a clipboard of LabVIEW's own (no text arrives in another program, measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/s2_32_s.png"
+    },
+    {
+      "id": "context.boolean-indicator.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes the data copied with Copy Data; greyed out until then (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/s2_32_s.png"
     },
     {
       "id": "context.boolean-indicator.advanced",
@@ -12459,10 +12720,48 @@
     {
       "id": "context.panel-array.data-operations",
       "etiqueta": "Data Operations",
-      "estado": "todo",
-      "labview": "Cortar, copiar y pegar datos, y guardar el valor actual como el valor por defecto.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
       "captura": "array-2d/panel-array-menu-index.png"
+    },
+    {
+      "id": "context.panel-array.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.panel-array.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/default-values.test.mjs::Data_Operations_makes_the_current_value_the_default_or_puts_it_back",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.panel-array.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the data of the object to the clipboard; greyed out in LabVIEW in edit mode (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to a clipboard of LabVIEW's own (no text arrives in another program, measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.panel-array.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes the data copied with Copy Data; greyed out until then (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png"
     },
     {
       "id": "context.panel-array.advanced",

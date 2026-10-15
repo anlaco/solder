@@ -40,6 +40,7 @@ import * as Gr from "../../../core/model/graph.mjs";
 import * as TC from "./terminal-creation.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { DBL, NUMERICOS, POR_ABREVIATURA, convertirValor, esArray, esEntero, esEnum, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
+import * as CV from "../../../core/model/control-values.mjs";
 import { MAX_EDITOR_DIMENSIONS, addDimensionPatch, dimensionsOfNode, firstShown, readCell, removeDimensionPatch, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
 
 /** El valor de una constante de error: el suyo, con lo que falte a cero. */
@@ -1223,6 +1224,9 @@ export function orden(d, id, ctx) {
   if (id.includes(".change-mode.")) return cerrar(Gr.fijarConfig(d.g, nodo, { mode: ultimo }));
   if (id.includes(".representation.") && POR_ABREVIATURA[ultimo]) return cerrar(Gr.fijarRepresentacion(d.g, nodo, POR_ABREVIATURA[ultimo]));
   if (id.includes(".mechanical-action.")) return cerrar(Gr.fijarConfig(d.g, nodo, { mechanical: ultimo }));
+  // Data Operations of a panel object or its terminal (DT-053): its current value becomes its default, or the other way round.
+  if (id.endsWith(".data-operations.make-current-value-default")) return cerrar(CV.makeCurrentValuesDefault(d.g, [nodo]));
+  if (id.endsWith(".data-operations.reinitialize-to-default-value")) return cerrar(CV.reinitializeToDefault(d.g, [nodo]));
   // In Range and Coerce: cada extremo se incluye o no; de fábrica, el inferior sí y el superior no.
   const extremo = /\.include-(upper|lower)-limit$/.exec(id)?.[1];
   if (extremo) {
@@ -1246,8 +1250,12 @@ export function orden(d, id, ctx) {
   // Add Dimension and Remove Dimension of an array constant, control or indicator (array-2d/constant-2d-menu-index.png).
   if (id.endsWith(".add-dimension") || id.endsWith(".remove-dimension")) {
     const n = d.g.nodos.find((k) => k.id === nodo);
-    const patch = (id.endsWith(".add-dimension") ? addDimensionPatch : removeDimensionPatch)(n.config);
-    return patch ? cerrar(Gr.fijarConfig(d.g, nodo, patch)) : d;
+    const dimensionPatch = id.endsWith(".add-dimension") ? addDimensionPatch : removeDimensionPatch;
+    const patch = dimensionPatch(n.config);
+    if (!patch) return d;
+    const withPatch = Gr.fijarConfig(d.g, nodo, patch);
+    // A control's current value (DT-053) takes the same new shape as its default.
+    return cerrar(CV.hasCurrentValue(n) ? CV.setCurrentValue(withPatch, nodo, dimensionPatch({ ...n.config, value: n.currentValue }).value) : withPatch);
   }
   const createdKind = /\.create\.(constant|control|indicator)$/.exec(id)?.[1];
   const createdAll = /\.create\.(all-controls-and-indicators|all-constants)$/.exec(id)?.[1];

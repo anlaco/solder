@@ -113,6 +113,11 @@ frame 0 whatever frame was shown. *Fixed on 2026-10-15* (`diagram-editing.test.m
    default; it reverts after save and reopen, and Edit ▸ Make Current Values Default / Reinitialize Values to
    Default and the control's Data Operations ▸ set or restore it. Solder keeps current and default as one value:
    to do as a change of its own (spec/05 Rule 40m is wrong and is to be amended with it).
+   *Done on 2026-10-15* (DT-053, spec/05 Rule 40m amended): each panel object keeps a current value apart from the
+   default the file saves; the Edit rows (named for the selection on the panel) and Data Operations ▸ set and restore
+   it, a Run keeps what was operated and what the indicators show. Measured further in LabVIEW
+   (`2026-10-15-default-values.md`) and checked in the running editor (`2026-10-15-solder-default-values.md`).
+   Copy Data and Paste Data stay greyed until there is a data clipboard.
 5. **Selecting an enum constant's item**: a selected constant does not open its list, and Select Item… is
    greyed (OC 7).
    *Measured on 2026-10-15* (§6): the selected constant does not open its list in LabVIEW either (Solder is right);
@@ -131,12 +136,10 @@ own Save As and save dialogs (on a Spanish desktop their Cancel reads "Cancelar"
 
 ## 3. Proposed order
 
-Done on 2026-10-15: A1–A3, B1–B5, B11, B16, C1–C3 and S1, checked in the running editor; B6, B8, B9 and B10 did not
+Done on 2026-10-15: A1–A3, B1–B5, B11, B16, C1–C4 and S1, checked in the running editor; B6, B8, B9 and B10 did not
 reproduce. What is left:
 
-1. **C4, current value and default value**: a typed value is the current one; Edit ▸ Make Current Values Default,
-   Reinitialize Values to Default and Data Operations ▸ set and restore the default, which is what is saved. It
-   changes the model and spec/05 Rule 40m, so it is a change of its own.
+1. ~~C4, current value and default value~~: done on 2026-10-15 (DT-053).
 2. B12 and B13 measured in LabVIEW (which way a new constant grows as it is typed into; whether typing on a selected
    Edit Items row starts editing it), then done; B7's shift off a loop's border.
 3. C5 Select Item… of the enum constant; B14's tips, checked in the window.

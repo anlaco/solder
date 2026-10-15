@@ -10,6 +10,7 @@
 import * as Et from "../common/labels.mjs";
 import * as G from "../common/glyphs.mjs";
 import { esHueco, ultimo } from "../common/labview-inventory.mjs";
+import * as CV from "../../../core/model/control-values.mjs";
 import { PANE_SIZE } from "../../../core/model/connector.mjs";
 import { isSubVI, portsWithAnchors } from "./subvi-nodes.mjs";
 import * as FN from "./format-nodes.mjs";
@@ -1038,7 +1039,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
       : esError(tipo)
       ? (n.vista?.compacto ? G.terminalPanelCompacto(control, COLORES.error, "") : G.terminalPanelIcono(control, COLORES.error, "", G.dibujoError(control), "cluster"))
       : tipo === "boolean"
-      ? G.terminalBooleano(n.config?.style, control, aspecto(tipo).color, !!n.vista?.compacto, !!n.config?.value)
+      ? G.terminalBooleano(n.config?.style, control, aspecto(tipo).color, !!n.vista?.compacto, !!CV.currentValue(n))
       : tipo === "string"
         ? (n.vista?.compacto ? G.terminalPanelCompacto(control, aspecto(tipo).color, "abc") : G.terminalPanelIcono(control, aspecto(tipo).color, "abc", G.dibujoCadena(control)))
         : (n.vista?.compacto ? G.terminalPanelCompacto : G.terminalPanelIcono)(control, aspecto(tipo).color, nombre(tipo));

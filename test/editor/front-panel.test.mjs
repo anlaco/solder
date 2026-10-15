@@ -5,6 +5,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import * as CV from "../../core/model/control-values.mjs";
+
 import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
 import * as ED from "../../editor/src/block-diagram/diagram-editing.mjs";
 import * as Et from "../../editor/src/common/labels.mjs";
@@ -162,7 +164,7 @@ test("el valor de un control se escribe en su casilla y cambia con las flechas",
   let p = ponerYConfirmar(P.inicial(), "control", { x: 100, y: 100 });
   const id = p.g.nodos[0].id;
   for (const paso of [1, 1, 1, -1]) p = P.pulsar(p, CTX, { tipo: "paso", id, paso }, { x: 0, y: 0 });
-  assert.equal(p.g.nodos[0].config.value, 2);
+  assert.equal(CV.currentValue(p.g.nodos[0]), 2);
   assert.match(P.contenido(p, CTX), /<span class="valor"><span>2<\/span>/);
 
   p = P.pulsar(p, CTX, { tipo: "casilla", id }, { x: 0, y: 0 });
@@ -171,11 +173,11 @@ test("el valor de un control se escribe en su casilla y cambia con las flechas",
   for (const t of ["5", ",", "5"]) p = P.teclear(p, t);
   p = P.teclear(p, "Enter");
   assert.equal(p.edicion, null);
-  assert.equal(p.g.nodos[0].config.value, 25.5);
+  assert.equal(CV.currentValue(p.g.nodos[0]), 25.5);
 
   p = P.editarValor(p, CTX, id, true);
   p = P.confirmar(P.teclear(p, "x"));
-  assert.equal(p.g.nodos[0].config.value, 25.5, "lo que no es un número no cambia el valor");
+  assert.equal(CV.currentValue(p.g.nodos[0]), 25.5, "lo que no es un número no cambia el valor");
 
   // En un indicador no se escribe: su casilla sólo lo selecciona.
   p = ponerYConfirmar(p, "indicator", { x: 400, y: 100 });
@@ -194,15 +196,15 @@ test("un control entero redondea y satura lo que se le escribe", () => {
   p = P.editarValor(p, CTX, id, true);
   for (const t of ["3", ",", "7"]) p = P.teclear(p, t);
   p = P.confirmar(P.teclear(p, "Enter"));
-  assert.equal(p.g.nodos[0].config.value, 4);
+  assert.equal(CV.currentValue(p.g.nodos[0]), 4);
   assert.equal(p.g.nodos[0].config.type, "u8", "el tipo no cambia");
   assert.match(P.contenido(p, CTX), /<span class="valor"><span>4<\/span>/);
   p = P.editarValor(p, CTX, id, true);
   for (const t of ["3", "0", "0"]) p = P.teclear(p, t);
   p = P.confirmar(P.teclear(p, "Enter"));
-  assert.equal(p.g.nodos[0].config.value, 255, "satura en el rango de U8");
+  assert.equal(CV.currentValue(p.g.nodos[0]), 255, "satura en el rango de U8");
   p = P.pulsar(p, CTX, { tipo: "paso", id, paso: 1 }, { x: 0, y: 0 });
-  assert.equal(p.g.nodos[0].config.value, 255, "y la flecha no pasa de ahí");
+  assert.equal(CV.currentValue(p.g.nodos[0]), 255, "y la flecha no pasa de ahí");
 });
 
 // paletas/controls-boolean.png y front-panel/boolean-todos-apagados.png: cada
@@ -219,7 +221,7 @@ test("los controles booleanos de la paleta se ponen en el panel con su terminal 
     const estilo = e.id.slice(e.id.lastIndexOf(".") + 1);
     assert.equal(n.tipo, e.bloque);
     assert.equal(n.config.style, estilo);
-    assert.equal(n.config.value, false, "nace apagado");
+    assert.equal(CV.currentValue(n), false, "nace apagado");
     assert.ok(p.edicion.texto.startsWith(G.BOOLEANOS[estilo].etiqueta), "la etiqueta de su clase");
     assert.equal(!!G.BOOLEANOS[estilo].indicador, e.bloque === "bool-indicator", "LabVIEW pone los LED como indicadores");
     if (e.bloque === "bool-control") assert.equal(n.config.mechanical, G.BOOLEANOS[estilo].mecanica, "la acción mecánica que se leyó en LabVIEW");
@@ -283,16 +285,16 @@ test("un clic en un control booleano cambia su valor y arrastrarlo no", () => {
   };
   assert.match(P.contenido(p, CTX), /data-estilo="horizontal-toggle-switch"/);
   p = clic(p, interruptor);
-  assert.equal(p.g.nodos[0].config.value, true, "un clic lo enciende");
+  assert.equal(CV.currentValue(p.g.nodos[0]), true, "un clic lo enciende");
   assert.notEqual(G.dibujoBooleano("horizontal-toggle-switch", true), G.dibujoBooleano("horizontal-toggle-switch", false), "y se ve distinto");
   p = clic(p, p.g.nodos[0]);
-  assert.equal(p.g.nodos[0].config.value, false, "otro lo apaga");
+  assert.equal(CV.currentValue(p.g.nodos[0]), false, "otro lo apaga");
   const antes = P.caja(p.g.nodos[0]);
   p = clic(p, p.g.nodos[0], { x: 200, y: 260 });
-  assert.equal(p.g.nodos[0].config.value, false, "arrastrar no lo cambia");
+  assert.equal(CV.currentValue(p.g.nodos[0]), false, "arrastrar no lo cambia");
   assert.notEqual(P.caja(p.g.nodos[0]).y, antes.y, "lo mueve");
   p = clic(p, led);
-  assert.equal(p.g.nodos[1].config.value, false, "un indicador no se pulsa");
+  assert.equal(CV.currentValue(p.g.nodos[1]), false, "un indicador no se pulsa");
   assert.deepEqual(p.seleccion, [led.id], "pero se selecciona");
   // Run deja su valor en el LED, que lo enseña encendido.
   const apagado = P.contenido(p, CTX);
@@ -388,12 +390,12 @@ test("un control y un indicador de cadena se ponen en el panel con su terminal e
   assert.equal(p.edicion.texto, "hola\nx", "Intro es un salto de línea");
   assert.ok(P.contenido(p, CTX).includes(`class="caret"`), "mientras se escribe, el cursor");
   p = P.confirmar(p);
-  assert.equal(p.g.nodos[0].config.value, "hola\nx", "se guarda tal cual, con su salto de línea");
+  assert.equal(CV.currentValue(p.g.nodos[0]), "hola\nx", "se guarda tal cual, con su salto de línea");
   assert.equal(p.edicion, null);
   // Un doble clic selecciona todo y lo escrito lo sustituye.
   p = P.editarValor(p, CTX, control.id, true);
   p = P.confirmar(P.teclear(p, "z"));
-  assert.equal(p.g.nodos[0].config.value, "z");
+  assert.equal(CV.currentValue(p.g.nodos[0]), "z");
   // El indicador enseña lo que le llega del VI en ejecución, no su valor.
   const conValor = { ...p, valores: { [indicador.id]: "resultado" } };
   assert.match(P.contenido(conValor, CTX), />resultado</);
@@ -426,7 +428,7 @@ test("los controles Error In y Error Out se ponen en el panel con su terminal en
   assert.match(html, /#12e012/);
   assert.doesNotMatch(html, /#e8101c/);
   const rojo = P.pulsar(p, CTX, { tipo: "campo", id: control.id, campo: "status" }, { x: 120, y: 130 });
-  assert.deepEqual(rojo.g.nodos[0].config.value, { status: true, code: 0, source: "" }, "un clic en el status lo alterna");
+  assert.deepEqual(CV.currentValue(rojo.g.nodos[0]), { status: true, code: 0, source: "" }, "un clic en el status lo alterna");
   assert.match(P.contenido(rojo, CTX), /#e8101c/);
   // Los terminales del diagrama: el cable de error pasa por ellos y el tipo es el cluster de error.
   const resueltos = Gr.tipos(p.g, CAT);
@@ -441,17 +443,17 @@ test("los controles Error In y Error Out se ponen en el panel con su terminal en
   assert.equal(q.edicion.campo, "code");
   for (const t of ["5", "0", "0", "0", "Enter"]) q = P.teclear(q, t);
   assert.equal(q.edicion, null, "Intro confirma el code");
-  assert.equal(q.g.nodos[0].config.value.code, 5000);
+  assert.equal(CV.currentValue(q.g.nodos[0]).code, 5000);
   q = P.pulsar(q, CTX, { tipo: "campo", id: control.id, campo: "source" }, { x: 120, y: 175 });
   assert.equal(q.edicion.cadena, true);
   for (const t of ["p", "r", "Enter", "x"]) q = P.teclear(q, t);
   assert.equal(q.edicion.texto, "pr\nx", "en source Intro baja de línea");
   q = P.confirmar(q);
-  assert.deepEqual(q.g.nodos[0].config.value, { status: false, code: 5000, source: "pr\nx" });
+  assert.deepEqual(CV.currentValue(q.g.nodos[0]), { status: false, code: 5000, source: "pr\nx" });
   // Un code fuera de rango se satura en I32, y lo que no es un número lo deja como estaba.
   let r = P.pulsar(q, CTX, { tipo: "campo", id: control.id, campo: "code" }, { x: 160, y: 125 });
   for (const t of ["9", "9", "9", "9", "9", "9", "9", "9", "9", "9", "9", "9"]) r = P.teclear(r, t);
-  assert.equal(P.confirmar({ ...r, edicion: { ...r.edicion, todo: false } }).g.nodos[0].config.value.code, 2147483647);
+  assert.equal(CV.currentValue(P.confirmar({ ...r, edicion: { ...r.edicion, todo: false } }).g.nodos[0]).code, 2147483647);
   // En el indicador un clic no escribe, y enseña lo que le llega del VI.
   assert.equal(P.pulsar(p, CTX, { tipo: "campo", id: indicador.id, campo: "code" }, { x: 460, y: 125 }).edicion, null);
   const conValor = { ...p, valores: { [indicador.id]: { status: true, code: 7, source: "algo" } } };
@@ -490,7 +492,7 @@ test("un control y un indicador de array se ponen en el panel con su terminal en
   assert.equal(p.edicion.elem, 2);
   for (const t of ["7", ",", "5"]) p = P.teclear(p, t);
   p = P.teclear(p, "Enter");
-  assert.deepEqual(p.g.nodos[0].config.value, [0, 0, 7.5]);
+  assert.deepEqual(CV.currentValue(p.g.nodos[0]), [0, 0, 7.5]);
   // El índice se mueve con sus flechas, sin pasar de 0, y los elementos que se ven empiezan en él.
   p = P.pulsar(p, CTX, { tipo: "paso", id: control.id, paso: 1 }, { x: 160, y: 110 });
   p = P.pulsar(p, CTX, { tipo: "paso", id: control.id, paso: 1 }, { x: 160, y: 110 });
@@ -512,10 +514,10 @@ test("un control y un indicador de array se ponen en el panel con su terminal en
   assert.equal(P.caja(q.g.nodos[0]).ancho, 41 + 100 + 6);
   q = P.pulsar(q, CTX, { tipo: "elem", id: q.g.nodos[0].id, k: 0 }, { x: 200, y: 112 });
   q = P.confirmar(P.teclear(q, "b"));
-  assert.deepEqual(q.g.nodos[0].config.value, ["ab"]);
+  assert.deepEqual(CV.currentValue(q.g.nodos[0]), ["ab"]);
   let b = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "boolean" }, value: [] });
   b = P.pulsar(b, CTX, { tipo: "elem", id: b.g.nodos[0].id, k: 0 }, { x: 200, y: 112 });
-  assert.deepEqual(b.g.nodos[0].config.value, [true], "un booleano se alterna con el clic");
+  assert.deepEqual(CV.currentValue(b.g.nodos[0]), [true], "un booleano se alterna con el clic");
 });
 
 // array-2d/panel-array-menu-index.png, panel-array-2d-control-empty.png and panel-array-2d-stretched.png.
@@ -531,7 +533,7 @@ test("Add Dimension and Remove Dimension on a panel array turn it into a 2D one 
   assert.match(D.menuContextual(INV, abierto.menu, ED.marcados(abierto), undefined, ED.variantes(abierto)), /item-menu desactivado" data-id="context.panel-array.remove-dimension"/);
   p = ED.orden(abierto, "context.panel-array.add-dimension", CTX);
   const control = p.g.nodos[0];
-  assert.deepEqual([control.config.type, control.config.value], [{ array: "number", dims: 2 }, [[1, 2, 3]]]);
+  assert.deepEqual([control.config.type, CV.currentValue(control)], [{ array: "number", dims: 2 }, [[1, 2, 3]]]);
 
   // Two index fields 28 px apart in a 41 px column; the box is 65 × columns + 7 wide and 26 × rows + 5 tall.
   const k = P.caja(control);
@@ -573,12 +575,12 @@ test("Add Dimension and Remove Dimension on a panel array turn it into a 2D one 
   assert.equal(p.edicion.elem, "1,2");
   for (const t of ["7", ",", "5"]) p = P.teclear(p, t);
   p = P.teclear(p, "Enter");
-  assert.deepEqual(p.g.nodos[0].config.value, [[1, 2, 3], [0, 0, 7.5]]);
+  assert.deepEqual(CV.currentValue(p.g.nodos[0]), [[1, 2, 3], [0, 0, 7.5]]);
   assert.match(P.contenido(p, CTX), /data-k="1,2"[^>]*>.*?7,5/s);
 
   // Remove Dimension keeps the first row and the 1D format.
   p = ED.orden(ED.abrirMenu(p, "context.panel-array", id, 0, 0), "context.panel-array.remove-dimension", CTX);
-  assert.deepEqual([p.g.nodos[0].config.type, p.g.nodos[0].config.value, p.g.nodos[0].config.visibles], [{ array: "number" }, [1, 2, 3], 3]);
+  assert.deepEqual([p.g.nodos[0].config.type, CV.currentValue(p.g.nodos[0]), p.g.nodos[0].config.visibles], [{ array: "number" }, [1, 2, 3], 3]);
   // At two dimensions Add Dimension explains the limit instead.
   p = ED.orden(ED.abrirMenu(p, "context.panel-array", id, 0, 0), "context.panel-array.add-dimension", CTX);
   abierto = ED.abrirMenu(p, "context.panel-array", id, 0, 0);

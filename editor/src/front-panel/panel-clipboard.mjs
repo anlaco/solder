@@ -14,7 +14,8 @@ import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 
 const LABEL_SUFFIX = "#etiqueta";
-const selectedObjects = (p) => p.seleccion.filter((id) => !id.endsWith(LABEL_SUFFIX) && p.g.nodos.some((n) => n.id === id && n.panel));
+/** The panel objects selected, without their labels. */
+export const selectedObjects = (p) => p.seleccion.filter((id) => !id.endsWith(LABEL_SUFFIX) && p.g.nodos.some((n) => n.id === id && n.panel));
 
 /** Is there something Copy, Cut and Delete can act on? */
 export const hasSelection = (p) => selectedObjects(p).length > 0;

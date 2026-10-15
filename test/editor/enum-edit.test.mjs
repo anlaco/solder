@@ -5,6 +5,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import * as CV from "../../core/model/control-values.mjs";
+
 import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
 import * as ED from "../../editor/src/block-diagram/diagram-editing.mjs";
 import * as EI from "../../editor/src/block-diagram/edit-items-dialog.mjs";
@@ -125,7 +127,7 @@ test("an enum control and indicator on the panel show the item name and their me
   p = P.pulsar(p, CTX, { tipo: "paso", id: control.id, paso: 1 }, { x: 0, y: 0 });
   p = P.pulsar(p, CTX, { tipo: "paso", id: control.id, paso: 1 }, { x: 0, y: 0 });
   p = P.pulsar(p, CTX, { tipo: "paso", id: control.id, paso: 1 }, { x: 0, y: 0 });
-  assert.equal(p.g.nodos.find((k) => k.id === control.id).config.value, 2);
+  assert.equal(CV.currentValue(p.g.nodos.find((k) => k.id === control.id)), 2);
   assert.match(P.contenido(p, CTX), />Done</);
 });
 
@@ -140,7 +142,7 @@ test("the enum constant's selector shows the item and a click opens its list", (
   assert.ok(conLista.lista, "the list opens");
   assert.match(D.contenido(conLista, CTX, Gr.tipos(conLista.g, CAT)), /item-valor marcado[^>]*data-valor="0"/);
   const elegido = ED.pulsar(conLista, CTX, { tipo: "fila-valor", nodo: id, k: 2 }, { x: 0, y: 0 });
-  assert.equal(elegido.g.nodos.find((k) => k.id === id).config.value, 2);
+  assert.equal(CV.currentValue(elegido.g.nodos.find((k) => k.id === id)), 2);
   assert.equal(D.CONSTANTES["enum-const"].texto(elegido.g.nodos.find((k) => k.id === id), CTX), "Done");
 });
 
@@ -176,7 +178,7 @@ test("the Enum of Controls Ring & Enum is placed on the panel and born with one 
   const p = P.confirmar(P.pulsar(P.moverA(P.coger(P.inicial(), entrada.bloque, entrada.config), CTX, { x: 100, y: 100 }), CTX, FONDO, { x: 100, y: 100 }));
   const [control] = p.g.nodos;
   assert.deepEqual(control.config.type, { enum: [""] }, "a fresh enum is born with one empty item (measured)");
-  assert.equal(control.config.value, 0);
+  assert.equal(CV.currentValue(control), 0);
   // Its terminal on the diagram is an enum: what Create ▸ Indicator on an enum wire gets.
   assert.deepEqual(Gr.tipos(p.g, CAT).salidas.get(`${control.id}.result`), { enum: [""] });
 });
