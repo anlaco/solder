@@ -47,7 +47,7 @@ export const open = (node) => {
   const items = node.config?.type?.enum ?? [];
   const current = items[node.config?.value ?? 0];
   const elegida = Math.max(0, items.indexOf(current));
-  return { nodo: node.id, titulo: title(node), filas: items.map((name) => ({ texto: name, original: name })), elegida: Math.min(elegida, items.length - 1), edicion: null };
+  return { nodo: node.id, titulo: title(node), filas: items.map((name) => ({ texto: name, original: name })), elegida: Math.min(elegida, items.length - 1), edicion: null, listFocused: false };
 };
 
 /** The title of the window: measured for the constant; the panel ones are unverified. */
@@ -69,7 +69,7 @@ export function type(dialog, key) {
 }
 
 const conFila = (dialog, fila, cambios) => ({ ...dialog, filas: dialog.filas.map((f, k) => (k === fila ? { ...f, ...cambios } : f)) });
-const editarFila = (dialog, fila) => ({ ...dialog, elegida: fila, edicion: { fila, texto: dialog.filas[fila].texto, todo: true } });
+const editarFila = (dialog, fila) => ({ ...dialog, elegida: fila, edicion: { fila, texto: dialog.filas[fila].texto, todo: true }, listFocused: true });
 const commit = (dialog) => (dialog.edicion ? conFila(dialog, dialog.edicion.fila, { texto: dialog.edicion.texto }) : dialog);
 
 /** An empty row where `k` is: what Insert does, and what Enter does below the row being edited. */
@@ -79,14 +79,17 @@ function insertar(dialog, k) {
 }
 
 /**
- * A click on a part of the dialog (`id`, from `data-id`): a row commits what was being
- * written and opens its editor with the name selected (measured: clicking another row
- * commits without adding one); the buttons edit the list; OK and Cancel close it.
+ * A click on a part of the dialog (`id`, from `data-id`; `clicks`, 2 for a double click).
+ * A row commits what was being written (measured: clicking another row commits without
+ * adding one); a single click only selects it and a double click opens its editor with the
+ * name selected (measured, `reports/2026-10-15-editor-b12-b13-b7.md` §2). The buttons edit
+ * the list.
  */
-export function act(dialog, id) {
+export function act(dialog, id, clicks = 1) {
   const parte = id.slice(id.lastIndexOf(".") + 1);
   const fila = /^row-(\d+)$/.exec(parte)?.[1];
-  if (fila !== undefined) return editarFila(commit(dialog), Number(fila));
+  if (fila !== undefined && clicks >= 2) return editarFila(commit(dialog), Number(fila));
+  if (fila !== undefined) return { ...commit(dialog), elegida: Number(fila), edicion: null, listFocused: true };
   if (parte === "insert") return editarFila(insertar(dialog, dialog.elegida + 1), dialog.elegida + 1);
   if (parte === "delete" && enabled(dialog, "delete")) {
     const base = commit(dialog);
@@ -110,29 +113,33 @@ export function act(dialog, id) {
 /**
  * What a key means in the dialog, as an intent the window only applies: while a row is being
  * written it goes to that row — Enter commits it and opens an empty one below, Escape drops
- * what was written and the dialog stays (measured) —, and with no row being written Enter is OK
- * and Escape is Cancel, which are the window's default buttons (unverified in LabVIEW).
+ * what was written and the dialog stays (measured). With a row selected by a click and none
+ * being written, Enter opens an empty row below it and the other keys do nothing (measured,
+ * `reports/2026-10-15-editor-b12-b13-b7.md` §2). Otherwise Enter is OK and Escape is Cancel,
+ * which are the window's default buttons (unverified in LabVIEW).
  */
 export function key(dialog, event) {
   if (event.ctrlKey || event.metaKey || event.altKey) return null;
   if (dialog.edicion) return { dialog: type(dialog, event.key) };
+  if (dialog.listFocused && event.key === "Enter") return { dialog: editarFila(insertar(dialog, dialog.elegida + 1), dialog.elegida + 1) };
+  if (dialog.listFocused && event.key !== "Escape") return { dialog };
   if (event.key === "Enter") return { accept: true };
   if (event.key === "Escape") return { cancel: true };
   return null;
 }
 
 /**
- * What a click on the part `id` means: OK writes the items, Cancel drops them, a greyed tab or
+ * What a click (or, with `clicks` 2, a double click) on the part `id` means: OK writes the items, Cancel drops them, a greyed tab or
  * Help explains why it is not done (DT-035), the enum's own greyed checkbox does nothing because
  * LabVIEW greys it too, and the rest edits the list.
  */
-export function click(dialog, id) {
+export function click(dialog, id, clicks = 1) {
   const parte = id.slice(id.lastIndexOf(".") + 1);
   if (parte === "ok") return { accept: true };
   if (parte === "cancel") return { cancel: true };
   if (parte === "allow-undefined") return null;
   if (parte.startsWith("tab-") || parte === "help") return { explain: true };
-  return { dialog: act(dialog, id) };
+  return { dialog: act(dialog, id, clicks) };
 }
 
 /**

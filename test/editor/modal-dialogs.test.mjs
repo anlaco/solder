@@ -15,7 +15,7 @@ const ENUM_NODE = { id: "n1", tipo: "enum-const", config: { type: { enum: ["Init
 const vi = (node) => ({ nodos: [node], cables: [] });
 /** The items dialog open on the diagram, with the name of row 0 being written. */
 const escribiendo = (texto) => {
-  let dialog = EI.act(EI.open(ENUM_NODE), `${EI.DIALOG_ID}.row-0`);
+  let dialog = EI.act(EI.open(ENUM_NODE), `${EI.DIALOG_ID}.row-0`, 2);
   for (const character of texto) dialog = EI.type(dialog, character);
   return dialog;
 };

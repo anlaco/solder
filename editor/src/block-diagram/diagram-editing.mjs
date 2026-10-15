@@ -1141,6 +1141,24 @@ export function teclear(d, tecla) {
  * no es un número deja la constante como estaba.
  */
 export function confirmar(d, ctx) {
+  const committed = commitTyping(d, ctx);
+  return keepRightEdge(d, committed, ctx);
+}
+
+/**
+ * A constant keeps its right edge, where its wire leaves, when what was typed into it
+ * changes its width: it grows or shrinks on its left (measured, B12 of real-programs-0.3.md).
+ */
+function keepRightEdge(before, after, ctx) {
+  const id = before.edicion?.nodo;
+  const node = id && before.g.nodos.find((k) => k.id === id);
+  const changed = node && after.g.nodos.find((k) => k.id === id);
+  if (!node || !changed || changed === node || !CONSTANTES[node.tipo] || before.edicion.elem !== undefined || before.edicion.campo || before.edicion.etiqueta) return after;
+  const growth = caja(changed, ctx).ancho - caja(node, ctx).ancho;
+  return growth ? { ...after, g: Gr.mover(after.g, [id], -growth, 0) } : after;
+}
+
+function commitTyping(d, ctx) {
   const e = d.edicion;
   if (!e) return d;
   if (e.etiqueta) return { ...d, g: Gr.fijarEtiqueta(d.g, e.nodo, e.texto), edicion: null };

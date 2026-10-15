@@ -190,7 +190,9 @@ loose. See §5.4.)*
 ### 5.5 Typing into a constant
 
 Double-click on a numeric constant: the text comes out selected and what is typed
-replaces it; the box grows with the text. Enter, a click outside or the
+replaces it; the box grows with the text, to the left: its right edge and its wire stay
+(measured 2026-10-15, `labview-captures/reports/2026-10-15-editor-b12-b13-b7.md` §1; test in
+`test/editor/create-and-paste.test.mjs`). Enter, a click outside or the
 *Enter Text* button —which only appears in the toolbar while typing, to the left
 of Run— confirm it; `Esc` leaves it as it was. A number with decimals in an
 integer constant turns it into DBL, as LabVIEW does. What is not a number
@@ -586,8 +588,11 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   list to choose no row, which in LabVIEW greys Delete (measured); here a row is always chosen.
 >   Enter commits the row being edited and
 >   inserts an empty one below with the editor in it, and Escape drops what was being written and
->   leaves the dialog open; with no row being written Enter is OK and Escape is Cancel, which are
->   the window's default buttons. Clicking another row commits without inserting; duplicates, empty
+>   leaves the dialog open. A single click on a row only selects it; typing then does nothing and
+>   Enter inserts an empty row below it with the editor in it; a double click edits the row
+>   (measured 2026-10-15, `labview-captures/reports/2026-10-15-editor-b12-b13-b7.md` §2). Before
+>   any row is clicked, Enter is OK and Escape is Cancel, the window's default buttons
+>   (unverified). Clicking another row commits without inserting; duplicates, empty
 >   names and any characters are accepted verbatim. **Delete** goes by the name and not by the row
 >   count (measured 2026-10-15, `labview-captures/reports/2026-10-15-enum-delete.md`): it works
 >   whenever a row is chosen, except on a single row whose name is empty, and on the last row it

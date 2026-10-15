@@ -63,6 +63,10 @@ Things that are wrong whatever LabVIEW does:
    *Measured on 2026-10-15* (`2026-10-15-editor-gestures.md` §7): LabVIEW also puts it at the panel's coordinates,
    inside a loop if it falls there; only one that would straddle a loop's border is moved ~37 px left, clear of it.
    That shift is what is left to do.
+   *Measured again on 2026-10-15* (`2026-10-15-editor-b12-b13-b7.md` §3): a terminal fully inside a loop stays there
+   unmoved, but on a border LabVIEW shifts it inside, outside or to the far side, pushes it off other terminals, and a
+   terminal or label poking through the left border makes the loop grow and moves what lies left of it. No rule came
+   out of nine cases: left as it is until it is measured as LabVIEW's structure auto-grow, a subject of its own.
 8. **Representation ▸ DBL on an I32 constant did nothing** from the menu (TM 9); the model's test passes, so
    the fault is in the grid submenu's click.
    *Not reproduced on 2026-10-15*: Representation ▸ DBL turned a new constant DBL.
@@ -76,9 +80,13 @@ Things that are wrong whatever LabVIEW does:
 12. **Create ▸ Constant lands on top of the node** (IP 11); LabVIEW put it to the left
     (`editor-checks/REPORT.md` §6, h14). The cause: an empty string constant is placed touching the node and
     grows to the right as it is typed into. Which way LabVIEW grows it is to be measured.
+   *Done on 2026-10-15* (`2026-10-15-editor-b12-b13-b7.md` §1): LabVIEW grows a constant to the left, keeping its
+   right edge and its wire, and so does Solder now, while typing and after.
 13. **Edit Items: Enter right after typing closed the dialog** (OC 10), against the measured Enter (commit
     the row, insert an empty one). The keys went to the dialog without a row being edited: whether typing on a
     selected row starts editing it in LabVIEW is to be measured.
+   *Done on 2026-10-15* (§2): a single click only selects a row and typing then does nothing; Enter opens an empty
+   row below it and the dialog stays; a double click edits the row.
 14. **Hover tips are slow and stay** after the pointer leaves or after Run (OC 12, IP 24).
    *Partly fixed on 2026-10-15*: a tip stayed over the Error List opened by Run until the mouse moved; opening the
    list now clears it (by reading, not checked in the window). Tips leaving with the pointer were not reproduced.
@@ -134,13 +142,23 @@ The right-click menus of the panel (TM 6, OC 13), Create on a shift register (TM
 own Save As and save dialogs (on a Spanish desktop their Cancel reads "Cancelar"), and the default label
 `stop` of the Stop button, which is LabVIEW's.
 
+### E. Found while checking B12 and B13 (2026-10-15)
+
+1. **The right-click menu of a panel enum control opened only on its frame**, not on its box or arrows.
+   *Fixed on 2026-10-15:* it opens on any part of a panel object (`2026-10-15-solder-b12-b13.md` §3).
+2. **A numeric constant typed 123456789 shows 123457000** (six significant digits). How LabVIEW shows it is to be
+   measured.
+3. **The Enum icon of Controls ▸ Ring & Enum is drawn blank**, though it works.
+4. **Ctrl+W on the panel did not close the VI** in one check; to reproduce.
+
 ## 3. Proposed order
 
-Done on 2026-10-15: A1–A3, B1–B5, B11, B16, C1–C4 and S1, checked in the running editor; B6, B8, B9 and B10 did not
+Done on 2026-10-15: A1–A3, B1–B5, B11–B13, B16, C1–C4 and S1, checked in the running editor; B6, B8, B9 and B10 did not
 reproduce. What is left:
 
 1. ~~C4, current value and default value~~: done on 2026-10-15 (DT-053).
-2. B12 and B13 measured in LabVIEW (which way a new constant grows as it is typed into; whether typing on a selected
-   Edit Items row starts editing it), then done; B7's shift off a loop's border.
+2. ~~B12 and B13~~: measured and done on 2026-10-15. B7's shift off a loop's border turned out to be LabVIEW's
+   structure auto-grow, not a fixed shift: postponed until it is measured as such.
 3. C5 Select Item… of the enum constant; B14's tips, checked in the window.
 4. B15, the Spanish texts; C6 measured again and C7.
+5. E2 to E4, found on 2026-10-15.

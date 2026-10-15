@@ -500,16 +500,30 @@ export function caja(n, ctx, edicion) {
   if (c?.error) return { x: n.x, y: n.y, ancho: MEDIDAS_CONSTANTE_ERROR.ancho, alto: MEDIDAS_CONSTANTE_ERROR.alto };
   if (c?.cadena) {
     const M = MEDIDAS_CADENA;
-    const lineas = textoConstante(n, ctx, edicion).split("\n");
-    return { x: n.x, y: n.y, ancho: Math.max(M.minimo, Math.max(...lineas.map(anchoTexto)) + M.horizontal), alto: lineas.length * M.linea + M.vertical };
+    const size = (text) => {
+      const lineas = text.split("\n");
+      return { ancho: Math.max(M.minimo, Math.max(...lineas.map(anchoTexto)) + M.horizontal), alto: lineas.length * M.linea + M.vertical };
+    };
+    return constantBox(n, ctx, edicion, size);
   }
   if (c) {
     const M = MEDIDAS_CONSTANTE;
-    const ancho = Math.max(M.minimo, anchoTexto(textoConstante(n, ctx, edicion)) + M.relleno) + (c.selector ? 9 : 0);
-    return { x: n.x, y: n.y, ancho, alto: M.alto };
+    return constantBox(n, ctx, edicion, (text) => ({ ancho: Math.max(M.minimo, anchoTexto(text) + M.relleno) + (c.selector ? 9 : 0), alto: M.alto }));
   }
   const [x0, y0, x1, y1] = G.CAJAS[glifoDe(n, ctx)] ?? [8, 8, 41, 41];
   return { x: n.x, y: n.y, ancho: (x1 - x0) / 1.5, alto: (y1 - y0) / 1.5, dx: x0 / 1.5, dy: y0 / 1.5 };
+}
+
+/**
+ * The box of a constant that shows one text, `size(text)` wide and tall. While it is being
+ * typed into it grows to the left: its right edge, where its wire leaves, stays where the
+ * stored text puts it (measured on a wired constant, `reports/2026-10-15-editor-b12-b13-b7.md`
+ * §1; that it grows so while typing, and on an unwired constant, is unverified).
+ */
+function constantBox(n, ctx, edicion, size) {
+  const shown = size(textoConstante(n, ctx, edicion));
+  const growth = edicion?.nodo === n.id ? shown.ancho - size(textoConstante(n, ctx)).ancho : 0;
+  return { x: n.x - growth, y: n.y, ...shown };
 }
 
 /** The least width of a terminal's hot zone, so that a small node's terminals can still be hit. */

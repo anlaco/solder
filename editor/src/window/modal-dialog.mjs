@@ -41,8 +41,8 @@ export function openDialog(diagram, panel) {
 /** What a key means for the open dialog; `null` when no dialog is open or it ignores the key. */
 export const keyIntent = (open, event) => (open ? open.mod.key(open.dialog, event) : null);
 
-/** What a click on the part `id` means for the open dialog; `null` when it ignores it. */
-export const clickIntent = (open, id) => (open && id ? open.mod.click(open.dialog, id) : null);
+/** What a click on the part `id` means for the open dialog (`clicks`: 2 for a double click); `null` when it ignores it. */
+export const clickIntent = (open, id, clicks = 1) => (open && id ? open.mod.click(open.dialog, id, clicks) : null);
 
 /** The VI that accepting the open dialog gives, from the graph `g` it was opened on. */
 export const accepted = (open, g) => open.mod.apply(g, open.dialog);

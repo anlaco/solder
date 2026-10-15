@@ -996,7 +996,7 @@ function aplicarEnDialogo(intent, abierto) {
 /** A click on the open dialog: its parts, and on what is not done, its explanation. */
 function clicEnDialogo(ev, abierto) {
   const elemento = ev.target.closest("[data-id]");
-  const intent = MD.clickIntent(abierto, elemento?.dataset.id);
+  const intent = MD.clickIntent(abierto, elemento?.dataset.id, ev.detail);
   // The veil and the parts without an id are not a click on anything.
   if (intent?.explain) return cambiar(E.clic(estado, inv, elemento.dataset.id, ancla(elemento)));
   return aplicarEnDialogo(intent, abierto);
@@ -1217,6 +1217,9 @@ function objetivo(el) {
 }
 
 /** Qué hay bajo el ratón en el panel: una etiqueta, un objeto o el fondo. Fuera del lienzo, nada. */
+/** What `objetivoPanel` calls the parts of a panel object, where its right-click menu opens. */
+const PANEL_OBJECT_TARGETS = new Set(["objeto", "casilla", "paso", "elem", "campo", "asa-array"]);
+
 function objetivoPanel(el) {
   if (!el?.closest(".lienzo")) return null;
   const etiqueta = el.closest(".etiqueta");
@@ -1527,13 +1530,12 @@ addEventListener("contextmenu", (ev) => {
   const iconoVI = ev.target.closest(".icono-vi");
   if (iconoVI) return menuDelIcono(ev, iconoVI);
   if (!ev.target.closest(".lienzo")) return;
-  // En el panel, la paleta sale sobre el fondo y, sobre un control booleano,
-  // su menú. El de los numéricos aún no está capturado: sobre ellos, el clic
-  // derecho no hace nada.
+  // On the panel the palette comes up over the background and an object's menu over any part of it
+  // (its box, arrows, elements or fields too). Plain numerics have no captured menu yet: nothing opens.
   if (conPanel) {
     if (pan.edicion) cambiarPanel(P.confirmar(pan));
     const sobrePanel = objetivoPanel(ev.target);
-    if (sobrePanel?.tipo === "objeto") {
+    if (PANEL_OBJECT_TARGETS.has(sobrePanel?.tipo)) {
       const raizPanel = sobrePanel.parte ? PART_MENUS[sobrePanel.parte] : P.menuDe(pan.g.nodos.find((k) => k.id === sobrePanel.id));
       if (raizPanel) {
         estado = { ...estado, paleta: null, abierta: null };

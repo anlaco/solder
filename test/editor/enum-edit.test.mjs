@@ -60,7 +60,7 @@ test("Edit Items edits the items of the enum and its Cases", () => {
 
   // The dialog: typing renames the selected row; Enter commits and inserts an empty row
   // below (measured); OK writes the items and renames the frames of the Cases it feeds.
-  let dialogo = EI.act(EI.open(g.nodos.find((k) => k.id === id)), "dialog.enum-edit-items.row-0");
+  let dialogo = EI.act(EI.open(g.nodos.find((k) => k.id === id)), "dialog.enum-edit-items.row-0", 2);
   dialogo = EI.type(EI.type(EI.type(dialogo, "S"), "t"), "a");
   dialogo = EI.type(dialogo, "r");
   dialogo = EI.type(dialogo, "t");
@@ -78,7 +78,7 @@ test("Edit Items edits the items of the enum and its Cases", () => {
   for (const character of "Soak") dialogo = EI.type(dialogo, character);
   assert.deepEqual(EI.apply(conItems, dialogo).nodos.find((k) => k.id === id).config.type.enum, ["Start", "Mid", "Soak", "Heat", "Done"], "Enter keeps the name just typed");
   // Move Up carries the row being written, with what it already has.
-  let moviendo = EI.act(EI.open(conItems.nodos.find((k) => k.id === id)), "dialog.enum-edit-items.row-1");
+  let moviendo = EI.act(EI.open(conItems.nodos.find((k) => k.id === id)), "dialog.enum-edit-items.row-1", 2);
   for (const character of "Warm") moviendo = EI.type(moviendo, character);
   moviendo = EI.act(moviendo, "dialog.enum-edit-items.move-up");
   assert.deepEqual(moviendo.filas.map((f) => f.texto), ["Warm", "Start", "Done"], "the typed name moves with its row");
@@ -181,4 +181,19 @@ test("the Enum of Controls Ring & Enum is placed on the panel and born with one 
   assert.equal(CV.currentValue(control), 0);
   // Its terminal on the diagram is an enum: what Create ▸ Indicator on an enum wire gets.
   assert.deepEqual(Gr.tipos(p.g, CAT).salidas.get(`${control.id}.result`), { enum: [""] });
+});
+
+// Measured in labview-captures/reports/2026-10-15-editor-b12-b13-b7.md §2 (finding B13).
+test("Edit Items: a single click selects a row, typing then does nothing and Enter opens an empty row below", () => {
+  const node = { id: "e", tipo: "enum-const", config: { type: { enum: ["a", "b"] }, value: 0 } };
+  const key = (dialog, name) => EI.key(dialog, { key: name });
+  const selected = EI.act(EI.open(node), `${EI.DIALOG_ID}.row-1`);
+  assert.equal(selected.edicion, null, "a single click does not open the row's editor");
+  const typed = ["z", "z"].reduce((dialog, character) => key(dialog, character).dialog, selected);
+  assert.deepEqual(typed.filas.map((row) => row.texto), ["a", "b"], "typing on a selected row changes nothing");
+  const entered = key(typed, "Enter").dialog;
+  assert.deepEqual(entered.filas.map((row) => row.texto), ["a", "b", ""]);
+  assert.equal(entered.edicion.fila, 2, "the new row is being written");
+  assert.equal(EI.act(EI.open(node), `${EI.DIALOG_ID}.row-1`, 2).edicion.fila, 1, "a double click edits the row");
+  assert.deepEqual(key(EI.open(node), "Enter"), { accept: true }, "with no row clicked, Enter is still OK");
 });

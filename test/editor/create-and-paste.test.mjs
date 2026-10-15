@@ -329,3 +329,22 @@ test("pasting a diagram fragment on the panel takes only its controls and indica
   const pasted = PC.pasteAt(P.inicial(), CTX, fragment, { x: 300, y: 200 }, null);
   assert.deepEqual(pasted.p.g.nodos.map((n) => n.tipo), ["indicator"]);
 });
+
+// Measured in labview-captures/reports/2026-10-15-editor-b12-b13-b7.md §1 (finding B12).
+test("a constant made by Create grows to the left as it is typed into, keeping its right edge and its wire", () => {
+  for (const [block, port, constantType, text] of [["concatenate-strings", "string-0", "str-const", "hello world text"], ["add", "a", "num-const", "123456789"]]) {
+    const { d, id } = withNode(block);
+    const made = chooseCreate(d, "context.function", id, "constant", port);
+    const constant = made.g.nodos.find((n) => n.tipo === constantType);
+    const rightEdge = (state) => {
+      const k = caja(state.g.nodos.find((n) => n.id === constant.id), CTX, state.edicion);
+      return k.x + k.ancho;
+    };
+    let typing = made;
+    for (const character of text) typing = ED.teclear(typing, character);
+    assert.equal(rightEdge(typing), rightEdge(made), `${block}: while typing`);
+    const committed = ED.confirmar(typing, CTX);
+    assert.equal(rightEdge(committed), rightEdge(made), `${block}: after committing`);
+    assert.ok(box(committed.g, constant.id).ancho > box(made.g, constant.id).ancho, `${block}: it grew`);
+  }
+});
