@@ -9,9 +9,10 @@ Solder is part of anlaco's family of test tools: with **Solder** you write the
 program that talks to the instruments, **Anvil** sequences and tests it, and
 **Crucible** simulates the bench so you can test without hardware.
 
-> **Alpha.** Solder is in an early, unstable stage: things change and files saved
-> today may need adjusting tomorrow. Version **0.3.0-alpha** — see
-> [`CHANGELOG.md`](CHANGELOG.md).
+> **Beta.** Solder does not do all of LabVIEW yet, but what it does is meant to
+> be reliable, and the files it saves keep opening in later versions: the `.sdg`
+> format is frozen, and any change to it comes with an automatic migration.
+> Version **0.4.0-beta** — see [`CHANGELOG.md`](CHANGELOG.md).
 
 ## What works today
 

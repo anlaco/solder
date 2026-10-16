@@ -1800,8 +1800,8 @@ each show.
 
 **The beta is released when Solder can do LabVIEW Core 1, except what needs hardware.**
 
-- **Status:** Accepted on 2026-10-16 by the developer. It adds a release criterion to the "Road to a
-  maintainable version" in `docs/design/labview-plan.md`.
+- **Status:** Accepted on 2026-10-16 by the developer; **moved after the beta the same day** (DT-055): Core 1
+  is the first goal after `0.4.0-beta`, not a condition for it.
 
 ### Decision
 
@@ -1826,3 +1826,29 @@ each show.
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
 | Each Core 1 lesson (without hardware) can be done in Solder | one example per lesson, run in the end-to-end tests | **Unverified**: the examples do not exist yet |
+
+## DT-055
+
+**The beta is released now, with steps 1–5 of the road; Core 1 comes after it.**
+
+- **Status:** Accepted on 2026-10-16 by the developer ("I want a beta this weekend").
+
+### Decision
+
+1. **`0.4.0-beta` is released the weekend of 2026-10-17**, when step 5 (the `.sdg` format frozen as version 1) is
+   done, instead of in 2027. It is the maintainable version of DT-048: it keeps the files it saves.
+2. **LabVIEW Core 1 without hardware (DT-054) is no longer a condition for the beta**: it is the first goal after
+   it, in `0.x-beta` releases that add features.
+3. **The month of maintenance** that the road gives the beta (`0.4.x-beta`, fixes only) starts with the release.
+
+### Consequences
+
+- From `0.4.0-beta` on, every change to the `.sdg` format raises its version and comes with an automatic migration
+  (spec/02 §4.1), since users now keep files.
+- The plan's step 6 becomes the first item after the beta.
+
+### Verification
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Files of every released version open | `test/end-to-end/format-versions.test.mjs` | **Verified** when step 5 lands |

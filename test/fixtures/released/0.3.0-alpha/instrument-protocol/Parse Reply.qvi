@@ -1,0 +1,245 @@
+{
+  "solder": 1,
+  "connector": {
+    "pattern": "4-2-2-4",
+    "inputs": [
+      {
+        "name": "str-control_1",
+        "cell": 0
+      },
+      {
+        "name": "cluster-control_1",
+        "cell": 3
+      }
+    ],
+    "outputs": [
+      {
+        "name": "indicator_1",
+        "cell": 8
+      },
+      {
+        "name": "cluster-indicator_1",
+        "cell": 11
+      }
+    ]
+  },
+  "front-panel": [
+    {
+      "name": "str-control_1",
+      "role": "control",
+      "type": "string",
+      "default": "SOLDER,SIM-1"
+    },
+    {
+      "name": "indicator_1",
+      "role": "indicator",
+      "type": "number",
+      "default": 0
+    },
+    {
+      "name": "cluster-control_1",
+      "role": "control",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "default": {
+        "status": false,
+        "code": 0,
+        "source": ""
+      },
+      "style": "error-in"
+    },
+    {
+      "name": "cluster-indicator_1",
+      "role": "indicator",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "default": {
+        "status": false,
+        "code": 0,
+        "source": ""
+      },
+      "style": "error-out"
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      {
+        "name": "str-control_1",
+        "type": "str-control"
+      },
+      {
+        "name": "indicator_1",
+        "type": "indicator"
+      },
+      {
+        "name": "cluster-control_1",
+        "type": "cluster-control"
+      },
+      {
+        "name": "cluster-indicator_1",
+        "type": "cluster-indicator"
+      },
+      {
+        "name": "scan-from-string_1",
+        "type": "scan-from-string",
+        "config": {
+          "inputs": 1
+        }
+      },
+      {
+        "name": "str-const_1",
+        "type": "str-const",
+        "config": {
+          "default": "%f"
+        }
+      }
+    ],
+    "wires": [
+      {
+        "from": "str-control_1.result",
+        "to": "scan-from-string_1.input-string"
+      },
+      {
+        "from": "str-const_1.result",
+        "to": "scan-from-string_1.format-string"
+      },
+      {
+        "from": "cluster-control_1.result",
+        "to": "scan-from-string_1.error-in"
+      },
+      {
+        "from": "scan-from-string_1.output-0",
+        "to": "indicator_1.value"
+      },
+      {
+        "from": "scan-from-string_1.error-out",
+        "to": "cluster-indicator_1.value"
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "str-control_1": {
+        "x": 70,
+        "y": 91,
+        "label": {
+          "text": "Reply"
+        }
+      },
+      "indicator_1": {
+        "x": 693,
+        "y": 91,
+        "label": {
+          "text": "Value"
+        }
+      },
+      "cluster-control_1": {
+        "x": 53,
+        "y": 223,
+        "label": {
+          "text": "error in (no error)"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 693,
+        "y": 223,
+        "label": {
+          "text": "error out"
+        }
+      },
+      "scan-from-string_1": {
+        "x": 384,
+        "y": 154
+      },
+      "str-const_1": {
+        "x": 276,
+        "y": 129
+      }
+    },
+    "panel": {
+      "str-control_1": {
+        "x": 70,
+        "y": 91,
+        "label": {
+          "text": "Reply"
+        }
+      },
+      "indicator_1": {
+        "x": 393,
+        "y": 91,
+        "label": {
+          "text": "Value"
+        }
+      },
+      "cluster-control_1": {
+        "x": 53,
+        "y": 223,
+        "label": {
+          "text": "error in (no error)"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 373,
+        "y": 223,
+        "label": {
+          "text": "error out"
+        }
+      }
+    },
+    "wires": {
+      "scan-from-string_1.input-string": {
+        "bends": [
+          380
+        ]
+      },
+      "scan-from-string_1.format-string": {
+        "bends": [
+          396
+        ]
+      },
+      "scan-from-string_1.error-in": {
+        "bends": [
+          380
+        ]
+      },
+      "indicator_1.value": {
+        "bends": [
+          689
+        ]
+      },
+      "cluster-indicator_1.value": {
+        "bends": [
+          689
+        ]
+      }
+    }
+  }
+}

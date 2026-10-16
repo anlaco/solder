@@ -1,0 +1,461 @@
+{
+  "solder": 1,
+  "connector": {
+    "pattern": "4-2-2-4",
+    "inputs": [
+      {
+        "name": "str-control_1",
+        "cell": 1
+      }
+    ],
+    "outputs": [
+      {
+        "name": "str-indicator_1",
+        "cell": 9
+      }
+    ]
+  },
+  "front-panel": [
+    {
+      "name": "str-control_1",
+      "role": "control",
+      "type": "string",
+      "default": "FOO"
+    },
+    {
+      "name": "str-indicator_1",
+      "role": "indicator",
+      "type": "string",
+      "default": ""
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      {
+        "name": "str-control_1",
+        "type": "str-control"
+      },
+      {
+        "name": "str-indicator_1",
+        "type": "str-indicator"
+      },
+      {
+        "name": "str-const_1",
+        "type": "str-const",
+        "config": {
+          "default": "*IDN?"
+        }
+      },
+      {
+        "name": "str-const_2",
+        "type": "str-const",
+        "config": {
+          "default": "MEAS:VOLT?"
+        }
+      },
+      {
+        "name": "equal_1",
+        "type": "equal"
+      },
+      {
+        "name": "equal_2",
+        "type": "equal"
+      },
+      {
+        "name": "select_1",
+        "type": "select"
+      },
+      {
+        "name": "select_2",
+        "type": "select"
+      },
+      {
+        "name": "num-const_1",
+        "type": "num-const",
+        "config": {
+          "type": "i32",
+          "default": 0
+        }
+      },
+      {
+        "name": "num-const_2",
+        "type": "num-const",
+        "config": {
+          "type": "i32",
+          "default": 1
+        }
+      },
+      {
+        "name": "num-const_3",
+        "type": "num-const",
+        "config": {
+          "type": "i32",
+          "default": -1
+        }
+      }
+    ],
+    "wires": [
+      {
+        "from": "str-control_1.result",
+        "to": "equal_1.x"
+      },
+      {
+        "from": "str-control_1.result",
+        "to": "equal_2.x"
+      },
+      {
+        "from": "str-const_1.result",
+        "to": "equal_1.y"
+      },
+      {
+        "from": "str-const_2.result",
+        "to": "equal_2.y"
+      },
+      {
+        "from": "equal_1.result",
+        "to": "select_1.s"
+      },
+      {
+        "from": "num-const_1.result",
+        "to": "select_1.t"
+      },
+      {
+        "from": "select_2.result",
+        "to": "select_1.f"
+      },
+      {
+        "from": "equal_2.result",
+        "to": "select_2.s"
+      },
+      {
+        "from": "num-const_2.result",
+        "to": "select_2.t"
+      },
+      {
+        "from": "num-const_3.result",
+        "to": "select_2.f"
+      },
+      {
+        "from": "select_1.result",
+        "to": "case-structure_1.selector"
+      },
+      {
+        "from": "case-structure_1.case-tunnel-out_1",
+        "to": "str-indicator_1.value"
+      }
+    ],
+    "structures": [
+      {
+        "name": "case-structure_1",
+        "kind": "case-structure",
+        "tunnels": [
+          {
+            "name": "case-tunnel-out_1",
+            "dir": "out"
+          }
+        ],
+        "frames": [
+          {
+            "match": [
+              2
+            ],
+            "default": true,
+            "body": {
+              "nodes": [
+                {
+                  "name": "str-const_5",
+                  "type": "str-const",
+                  "config": {
+                    "default": "ERR unknown command"
+                  }
+                }
+              ],
+              "wires": [
+                {
+                  "from": "str-const_5.result",
+                  "to": "case-structure_1.case-tunnel-out_1"
+                }
+              ]
+            }
+          },
+          {
+            "match": [
+              0
+            ],
+            "body": {
+              "nodes": [
+                {
+                  "name": "str-const_4",
+                  "type": "str-const",
+                  "config": {
+                    "default": "SOLDER,SIM-1,0,0.2"
+                  }
+                }
+              ],
+              "wires": [
+                {
+                  "from": "str-const_4.result",
+                  "to": "case-structure_1.case-tunnel-out_1"
+                }
+              ]
+            }
+          },
+          {
+            "match": [
+              1
+            ],
+            "body": {
+              "nodes": [
+                {
+                  "name": "format-into-string_1",
+                  "type": "format-into-string",
+                  "config": {
+                    "inputs": 1
+                  }
+                },
+                {
+                  "name": "str-const_3",
+                  "type": "str-const",
+                  "config": {
+                    "default": "%.4f"
+                  }
+                },
+                {
+                  "name": "random-number_1",
+                  "type": "random-number"
+                },
+                {
+                  "name": "add_1",
+                  "type": "add"
+                },
+                {
+                  "name": "const_1",
+                  "type": "const",
+                  "config": {
+                    "default": 5
+                  }
+                }
+              ],
+              "wires": [
+                {
+                  "from": "str-const_3.result",
+                  "to": "format-into-string_1.format-string"
+                },
+                {
+                  "from": "random-number_1.result",
+                  "to": "add_1.b"
+                },
+                {
+                  "from": "const_1.result",
+                  "to": "add_1.a"
+                },
+                {
+                  "from": "add_1.result",
+                  "to": "format-into-string_1.input-0"
+                },
+                {
+                  "from": "format-into-string_1.resulting-string",
+                  "to": "case-structure_1.case-tunnel-out_1"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "str-control_1": {
+        "x": 70,
+        "y": 91,
+        "label": {
+          "text": "Command"
+        }
+      },
+      "str-indicator_1": {
+        "x": 992,
+        "y": 91,
+        "label": {
+          "text": "Reply"
+        }
+      },
+      "str-const_1": {
+        "x": 56,
+        "y": 259
+      },
+      "str-const_2": {
+        "x": 56,
+        "y": 309
+      },
+      "equal_1": {
+        "x": 226,
+        "y": 129
+      },
+      "equal_2": {
+        "x": 226,
+        "y": 249
+      },
+      "select_1": {
+        "x": 406,
+        "y": 179
+      },
+      "select_2": {
+        "x": 336,
+        "y": 279
+      },
+      "num-const_1": {
+        "x": 336,
+        "y": 149
+      },
+      "num-const_2": {
+        "x": 266,
+        "y": 294
+      },
+      "num-const_3": {
+        "x": 266,
+        "y": 334
+      },
+      "case-structure_1": {
+        "x": 450,
+        "y": 43,
+        "w": 450,
+        "h": 310
+      },
+      "case-structure_1.selector": {
+        "x": 450,
+        "y": 186
+      },
+      "case-tunnel-out_1": {
+        "x": 891,
+        "y": 189
+      },
+      "str-const_5": {
+        "x": 646,
+        "y": 189
+      },
+      "str-const_4": {
+        "x": 646,
+        "y": 189
+      },
+      "format-into-string_1": {
+        "x": 724,
+        "y": 188
+      },
+      "str-const_3": {
+        "x": 636,
+        "y": 164
+      },
+      "random-number_1": {
+        "x": 556,
+        "y": 249
+      },
+      "add_1": {
+        "x": 636,
+        "y": 239
+      },
+      "const_1": {
+        "x": 556,
+        "y": 209
+      }
+    },
+    "panel": {
+      "str-control_1": {
+        "x": 70,
+        "y": 91,
+        "label": {
+          "text": "Command"
+        }
+      },
+      "str-indicator_1": {
+        "x": 370,
+        "y": 91,
+        "label": {
+          "text": "Reply"
+        }
+      }
+    },
+    "wires": {
+      "equal_1.x": {
+        "bends": [
+          222
+        ]
+      },
+      "equal_2.x": {
+        "bends": [
+          222
+        ]
+      },
+      "equal_1.y": {
+        "bends": [
+          222
+        ]
+      },
+      "equal_2.y": {
+        "bends": [
+          222
+        ]
+      },
+      "select_1.s": {
+        "bends": [
+          402
+        ]
+      },
+      "select_1.t": {
+        "bends": [
+          402
+        ]
+      },
+      "select_1.f": {
+        "bends": [
+          402
+        ]
+      },
+      "select_2.s": {
+        "bends": [
+          332
+        ]
+      },
+      "select_2.t": {
+        "bends": [
+          332
+        ]
+      },
+      "select_2.f": {
+        "bends": [
+          332
+        ]
+      },
+      "case-structure_1.selector": {
+        "bends": [
+          446
+        ]
+      },
+      "format-into-string_1.format-string": {
+        "bends": [
+          736
+        ]
+      },
+      "add_1.b": {
+        "bends": [
+          632
+        ]
+      },
+      "add_1.a": {
+        "bends": [
+          632
+        ]
+      },
+      "format-into-string_1.input-0": {
+        "bends": [
+          720
+        ]
+      },
+      "case-structure_1.case-tunnel-out_1": {
+        "bends": [
+          887
+        ]
+      }
+    }
+  }
+}

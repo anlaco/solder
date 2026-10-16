@@ -121,6 +121,14 @@ entities: they are the two faces of one. That is why `layout` needs to separate 
 Format version. Its value is `1`. A reader **MUST** reject a value greater than the
 one it knows, instead of trying to read it halfway.
 
+**The format is frozen as version 1 from `0.4.0-beta` on** (DT-055). Any later change to it
+raises this number and comes with an **automatic migration** from the version before
+(`MIGRATIONS` in `core/model/qvi-format.mjs`): a reader brings an older file up to its own
+version, one migration after another, so every file a released Solder saved still opens.
+The VIs saved by each release are kept in `test/fixtures/released/<version>/`, and
+`test/end-to-end/format-versions.test.mjs` opens and compiles all of them; a release adds its
+folder. The `.qvi` extension of the alphas still opens (DT-051).
+
 ### 4.2 `meta` *(optional)*
 
 `title`, `description`, `author`, `tags`. Informative: it does not affect compilation.

@@ -1,0 +1,222 @@
+{
+  "solder": 1,
+  "connector": {
+    "pattern": "4-2-2-4",
+    "inputs": [
+      {
+        "name": "str-control_1",
+        "cell": 0
+      },
+      {
+        "name": "cluster-control_1",
+        "cell": 3
+      }
+    ],
+    "outputs": [
+      {
+        "name": "indicator_1",
+        "cell": 8
+      },
+      {
+        "name": "cluster-indicator_1",
+        "cell": 11
+      }
+    ]
+  },
+  "front-panel": [
+    {
+      "name": "str-control_1",
+      "role": "control",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "indicator_1",
+      "role": "indicator",
+      "type": "number",
+      "default": 0
+    },
+    {
+      "name": "cluster-control_1",
+      "role": "control",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "style": "error-in"
+    },
+    {
+      "name": "cluster-indicator_1",
+      "role": "indicator",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "style": "error-out"
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      {
+        "name": "str-control_1",
+        "type": "str-control"
+      },
+      {
+        "name": "indicator_1",
+        "type": "indicator"
+      },
+      {
+        "name": "scan-from-string_1",
+        "type": "scan-from-string",
+        "config": {
+          "inputs": 1
+        }
+      },
+      {
+        "name": "str-const_1",
+        "type": "str-const",
+        "config": {
+          "default": "%f"
+        }
+      },
+      {
+        "name": "cluster-control_1",
+        "type": "cluster-control"
+      },
+      {
+        "name": "cluster-indicator_1",
+        "type": "cluster-indicator"
+      }
+    ],
+    "wires": [
+      {
+        "from": "str-control_1.result",
+        "to": "scan-from-string_1.input-string"
+      },
+      {
+        "from": "scan-from-string_1.output-0",
+        "to": "indicator_1.value"
+      },
+      {
+        "from": "str-const_1.result",
+        "to": "scan-from-string_1.format-string"
+      },
+      {
+        "from": "cluster-control_1.result",
+        "to": "scan-from-string_1.error-in"
+      },
+      {
+        "from": "scan-from-string_1.error-out",
+        "to": "cluster-indicator_1.value"
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "str-control_1": {
+        "x": 100,
+        "y": 91,
+        "label": {
+          "text": "Reply"
+        }
+      },
+      "indicator_1": {
+        "x": 373,
+        "y": 91,
+        "label": {
+          "text": "Value"
+        }
+      },
+      "scan-from-string_1": {
+        "x": 504,
+        "y": 294
+      },
+      "str-const_1": {
+        "x": 489,
+        "y": 285
+      },
+      "cluster-control_1": {
+        "x": 450,
+        "y": 298,
+        "label": {
+          "text": "error in"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 552,
+        "y": 298,
+        "label": {
+          "text": "error out"
+        }
+      }
+    },
+    "panel": {
+      "str-control_1": {
+        "x": 100,
+        "y": 91,
+        "label": {
+          "text": "Reply"
+        }
+      },
+      "indicator_1": {
+        "x": 373,
+        "y": 91,
+        "label": {
+          "text": "Value"
+        }
+      },
+      "cluster-control_1": {
+        "x": 2,
+        "y": 147,
+        "label": {
+          "text": "error in"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 537,
+        "y": 21,
+        "label": {
+          "text": "error out"
+        }
+      }
+    },
+    "wires": {
+      "scan-from-string_1.input-string": {
+        "bends": [
+          500
+        ]
+      },
+      "indicator_1.value": {
+        "bends": [
+          544,
+          218.25,
+          365
+        ]
+      }
+    }
+  }
+}

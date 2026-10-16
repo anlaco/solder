@@ -1,0 +1,507 @@
+{
+  "solder": 1,
+  "front-panel": [
+    {
+      "name": "control_1",
+      "role": "control",
+      "type": "number",
+      "default": 100
+    },
+    {
+      "name": "control_2",
+      "role": "control",
+      "type": "number",
+      "default": 24
+    },
+    {
+      "name": "control_3",
+      "role": "control",
+      "type": "number",
+      "default": 100
+    },
+    {
+      "name": "indicator_1",
+      "role": "indicator",
+      "type": "number",
+      "default": 0
+    },
+    {
+      "name": "bool-control_1",
+      "role": "control",
+      "type": "boolean",
+      "default": false,
+      "style": "stop-button",
+      "mechanical-action": "latch-when-released"
+    },
+    {
+      "name": "bool-indicator_1",
+      "role": "indicator",
+      "type": "boolean",
+      "default": false,
+      "style": "round-led"
+    },
+    {
+      "name": "waveform-chart_1",
+      "role": "indicator",
+      "type": "number"
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      {
+        "name": "control_1",
+        "type": "control"
+      },
+      {
+        "name": "control_2",
+        "type": "control"
+      },
+      {
+        "name": "control_3",
+        "type": "control"
+      },
+      {
+        "name": "bool-control_1",
+        "type": "bool-control"
+      },
+      {
+        "name": "const_1",
+        "type": "const",
+        "config": {
+          "default": 0
+        }
+      }
+    ],
+    "wires": [
+      {
+        "from": "control_2.result",
+        "to": "while-loop_1.tunnel-in_1"
+      },
+      {
+        "from": "control_3.result",
+        "to": "while-loop_1.tunnel-in_2"
+      },
+      {
+        "from": "bool-control_1.result",
+        "to": "while-loop_1.tunnel-in_3"
+      },
+      {
+        "from": "control_1.result",
+        "to": "while-loop_1.tunnel-in_4"
+      },
+      {
+        "from": "const_1.result",
+        "to": "while-loop_1.shift-register-left_1"
+      }
+    ],
+    "structures": [
+      {
+        "name": "while-loop_1",
+        "kind": "while-loop",
+        "tunnels": [
+          {
+            "name": "tunnel-in_1",
+            "dir": "in"
+          },
+          {
+            "name": "tunnel-in_2",
+            "dir": "in"
+          },
+          {
+            "name": "tunnel-in_3",
+            "dir": "in"
+          },
+          {
+            "name": "tunnel-in_4",
+            "dir": "in"
+          }
+        ],
+        "shift-registers": [
+          {
+            "name": "shift-register-left_1"
+          }
+        ],
+        "body": {
+          "nodes": [
+            {
+              "name": "indicator_1",
+              "type": "indicator"
+            },
+            {
+              "name": "bool-indicator_1",
+              "type": "bool-indicator"
+            },
+            {
+              "name": "waveform-chart_1",
+              "type": "waveform-chart"
+            },
+            {
+              "name": "add_1",
+              "type": "add"
+            },
+            {
+              "name": "increment_1",
+              "type": "increment"
+            },
+            {
+              "name": "div_1",
+              "type": "div"
+            },
+            {
+              "name": "subvi_1",
+              "type": "subvi",
+              "config": {
+                "vi": "Read Sensor.sdg"
+              }
+            },
+            {
+              "name": "greater_1",
+              "type": "greater"
+            },
+            {
+              "name": "greater-or-equal_1",
+              "type": "greater-or-equal"
+            },
+            {
+              "name": "or-op_1",
+              "type": "or-op"
+            },
+            {
+              "name": "wait-until-next-ms-multiple_1",
+              "type": "wait-until-next-ms-multiple"
+            }
+          ],
+          "wires": [
+            {
+              "from": "while-loop_1.i",
+              "to": "subvi_1.control_1"
+            },
+            {
+              "from": "while-loop_1.i",
+              "to": "increment_1.x"
+            },
+            {
+              "from": "subvi_1.indicator_1",
+              "to": "greater_1.x"
+            },
+            {
+              "from": "subvi_1.indicator_1",
+              "to": "add_1.b"
+            },
+            {
+              "from": "subvi_1.indicator_1",
+              "to": "waveform-chart_1.value"
+            },
+            {
+              "from": "shift-register-left_1.left",
+              "to": "add_1.a"
+            },
+            {
+              "from": "add_1.result",
+              "to": "shift-register-left_1.right"
+            },
+            {
+              "from": "add_1.result",
+              "to": "div_1.a"
+            },
+            {
+              "from": "increment_1.result",
+              "to": "div_1.b"
+            },
+            {
+              "from": "increment_1.result",
+              "to": "greater-or-equal_1.x"
+            },
+            {
+              "from": "greater-or-equal_1.result",
+              "to": "or-op_1.y"
+            },
+            {
+              "from": "or-op_1.result",
+              "to": "while-loop_1.condition"
+            },
+            {
+              "from": "div_1.result",
+              "to": "indicator_1.value"
+            },
+            {
+              "from": "greater_1.result",
+              "to": "bool-indicator_1.value"
+            },
+            {
+              "from": "while-loop_1.tunnel-in_1",
+              "to": "greater_1.y"
+            },
+            {
+              "from": "while-loop_1.tunnel-in_2",
+              "to": "greater-or-equal_1.y"
+            },
+            {
+              "from": "while-loop_1.tunnel-in_3",
+              "to": "or-op_1.x"
+            },
+            {
+              "from": "while-loop_1.tunnel-in_4",
+              "to": "wait-until-next-ms-multiple_1.multiple"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "control_1": {
+        "x": 111,
+        "y": 91,
+        "label": {
+          "text": "Period (ms)"
+        }
+      },
+      "control_2": {
+        "x": 111,
+        "y": 191,
+        "label": {
+          "text": "High limit"
+        }
+      },
+      "control_3": {
+        "x": 111,
+        "y": 291,
+        "label": {
+          "text": "Samples"
+        }
+      },
+      "bool-control_1": {
+        "x": 131,
+        "y": 393,
+        "label": {
+          "text": "Stop"
+        }
+      },
+      "const_1": {
+        "x": 246,
+        "y": 509
+      },
+      "while-loop_1": {
+        "x": 330,
+        "y": 33,
+        "w": 713,
+        "h": 563
+      },
+      "while-loop_1.i": {
+        "x": 340,
+        "y": 570
+      },
+      "while-loop_1.condition": {
+        "x": 1017,
+        "y": 570
+      },
+      "tunnel-in_1": {
+        "x": 330,
+        "y": 190
+      },
+      "tunnel-in_2": {
+        "x": 330,
+        "y": 310
+      },
+      "tunnel-in_3": {
+        "x": 330,
+        "y": 369
+      },
+      "tunnel-in_4": {
+        "x": 330,
+        "y": 111
+      },
+      "shift-register-left_1": {
+        "x": 330,
+        "y": 507
+      },
+      "shift-register-left_1.right": {
+        "x": 1027,
+        "y": 507
+      },
+      "indicator_1": {
+        "x": 901,
+        "y": 455,
+        "label": {
+          "text": "Average"
+        }
+      },
+      "bool-indicator_1": {
+        "x": 881,
+        "y": 144,
+        "label": {
+          "text": "Alarm"
+        }
+      },
+      "waveform-chart_1": {
+        "x": 804,
+        "y": 234,
+        "label": {
+          "text": "Temperature"
+        }
+      },
+      "add_1": {
+        "x": 646,
+        "y": 349
+      },
+      "increment_1": {
+        "x": 446,
+        "y": 449
+      },
+      "div_1": {
+        "x": 796,
+        "y": 399
+      },
+      "subvi_1": {
+        "x": 476,
+        "y": 249
+      },
+      "greater_1": {
+        "x": 646,
+        "y": 179
+      },
+      "greater-or-equal_1": {
+        "x": 796,
+        "y": 299
+      },
+      "or-op_1": {
+        "x": 916,
+        "y": 369
+      },
+      "wait-until-next-ms-multiple_1": {
+        "x": 876,
+        "y": 99
+      }
+    },
+    "panel": {
+      "control_1": {
+        "x": 111,
+        "y": 91,
+        "label": {
+          "text": "Period (ms)"
+        }
+      },
+      "control_2": {
+        "x": 111,
+        "y": 191,
+        "label": {
+          "text": "High limit"
+        }
+      },
+      "control_3": {
+        "x": 111,
+        "y": 291,
+        "label": {
+          "text": "Samples"
+        }
+      },
+      "indicator_1": {
+        "x": 673,
+        "y": 391,
+        "label": {
+          "text": "Average"
+        }
+      },
+      "bool-control_1": {
+        "x": 131,
+        "y": 393,
+        "label": {
+          "text": "Stop"
+        }
+      },
+      "bool-indicator_1": {
+        "x": 691,
+        "y": 94,
+        "label": {
+          "text": "Alarm"
+        }
+      },
+      "waveform-chart_1": {
+        "x": 236,
+        "y": 84,
+        "label": {
+          "text": "Temperature"
+        }
+      }
+    },
+    "wires": {
+      "subvi_1.control_1": {
+        "bends": [
+          472
+        ]
+      },
+      "increment_1.x": {
+        "bends": [
+          442
+        ]
+      },
+      "greater_1.x": {
+        "bends": [
+          642
+        ]
+      },
+      "add_1.b": {
+        "bends": [
+          642
+        ]
+      },
+      "waveform-chart_1.value": {
+        "bends": [
+          800
+        ]
+      },
+      "add_1.a": {
+        "bends": [
+          642
+        ]
+      },
+      "shift-register-left_1.right": {
+        "bends": [
+          1023
+        ]
+      },
+      "div_1.a": {
+        "bends": [
+          792
+        ]
+      },
+      "div_1.b": {
+        "bends": [
+          792
+        ]
+      },
+      "greater-or-equal_1.x": {
+        "bends": [
+          792
+        ]
+      },
+      "or-op_1.y": {
+        "bends": [
+          912
+        ]
+      },
+      "while-loop_1.condition": {
+        "bends": [
+          1013
+        ]
+      },
+      "indicator_1.value": {
+        "bends": [
+          897
+        ]
+      },
+      "bool-indicator_1.value": {
+        "bends": [
+          877
+        ]
+      },
+      "while-loop_1.shift-register-left_1": {
+        "bends": [
+          326
+        ]
+      }
+    }
+  }
+}

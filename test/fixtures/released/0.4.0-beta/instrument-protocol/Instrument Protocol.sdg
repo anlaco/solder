@@ -1,0 +1,402 @@
+{
+  "solder": 1,
+  "front-panel": [
+    {
+      "name": "str-control_1",
+      "role": "control",
+      "type": "string",
+      "default": "MEAS:VOLT?"
+    },
+    {
+      "name": "str-indicator_1",
+      "role": "indicator",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "bool-control_1",
+      "role": "control",
+      "type": "boolean",
+      "default": false,
+      "style": "stop-button",
+      "mechanical-action": "latch-when-released"
+    },
+    {
+      "name": "waveform-chart_1",
+      "role": "indicator",
+      "type": "number"
+    },
+    {
+      "name": "cluster-indicator_1",
+      "role": "indicator",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "style": "error-out"
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      {
+        "name": "str-indicator_1",
+        "type": "str-indicator"
+      },
+      {
+        "name": "subvi_2",
+        "type": "subvi",
+        "config": {
+          "vi": "Simulated Instrument.sdg"
+        }
+      },
+      {
+        "name": "str-const_1",
+        "type": "str-const",
+        "config": {
+          "default": "*IDN?"
+        }
+      },
+      {
+        "name": "simple-error-handler_1",
+        "type": "simple-error-handler"
+      },
+      {
+        "name": "cluster-indicator_1",
+        "type": "cluster-indicator"
+      }
+    ],
+    "wires": [
+      {
+        "from": "str-const_1.result",
+        "to": "subvi_2.str-control_1"
+      },
+      {
+        "from": "while-loop_1.shift-register-left_1",
+        "to": "simple-error-handler_1.error-in"
+      },
+      {
+        "from": "simple-error-handler_1.error-out",
+        "to": "cluster-indicator_1.value"
+      },
+      {
+        "from": "subvi_2.str-indicator_1",
+        "to": "str-indicator_1.value"
+      }
+    ],
+    "structures": [
+      {
+        "name": "while-loop_1",
+        "kind": "while-loop",
+        "shift-registers": [
+          {
+            "name": "shift-register-left_1"
+          }
+        ],
+        "body": {
+          "nodes": [
+            {
+              "name": "str-control_1",
+              "type": "str-control"
+            },
+            {
+              "name": "bool-control_1",
+              "type": "bool-control"
+            },
+            {
+              "name": "waveform-chart_1",
+              "type": "waveform-chart"
+            },
+            {
+              "name": "subvi_1",
+              "type": "subvi",
+              "config": {
+                "vi": "Simulated Instrument.sdg"
+              }
+            },
+            {
+              "name": "subvi_3",
+              "type": "subvi",
+              "config": {
+                "vi": "Parse Reply.sdg"
+              }
+            },
+            {
+              "name": "unbundle-by-name_1",
+              "type": "unbundle-by-name",
+              "config": {
+                "items": [
+                  "status"
+                ]
+              }
+            },
+            {
+              "name": "or-op_1",
+              "type": "or-op"
+            },
+            {
+              "name": "wait-ms_1",
+              "type": "wait-ms"
+            },
+            {
+              "name": "num-const_1",
+              "type": "num-const",
+              "config": {
+                "type": "u32",
+                "default": 100
+              }
+            }
+          ],
+          "wires": [
+            {
+              "from": "str-control_1.result",
+              "to": "subvi_1.str-control_1"
+            },
+            {
+              "from": "subvi_1.str-indicator_1",
+              "to": "subvi_3.str-control_1"
+            },
+            {
+              "from": "subvi_3.indicator_1",
+              "to": "waveform-chart_1.value"
+            },
+            {
+              "from": "subvi_3.cluster-indicator_1",
+              "to": "shift-register-left_1.right"
+            },
+            {
+              "from": "shift-register-left_1.left",
+              "to": "subvi_3.cluster-control_1"
+            },
+            {
+              "from": "subvi_3.cluster-indicator_1",
+              "to": "unbundle-by-name_1.cluster"
+            },
+            {
+              "from": "unbundle-by-name_1.element-0",
+              "to": "or-op_1.x"
+            },
+            {
+              "from": "bool-control_1.result",
+              "to": "or-op_1.y"
+            },
+            {
+              "from": "or-op_1.result",
+              "to": "while-loop_1.condition"
+            },
+            {
+              "from": "num-const_1.result",
+              "to": "wait-ms_1.ms"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "str-indicator_1": {
+        "x": 350,
+        "y": 241,
+        "label": {
+          "text": "Identification"
+        }
+      },
+      "subvi_2": {
+        "x": 266,
+        "y": 249
+      },
+      "str-const_1": {
+        "x": 195,
+        "y": 252
+      },
+      "simple-error-handler_1": {
+        "x": 956,
+        "y": 279
+      },
+      "cluster-indicator_1": {
+        "x": 1004,
+        "y": 282,
+        "label": {
+          "text": "error out"
+        }
+      },
+      "while-loop_1": {
+        "x": 430,
+        "y": 53,
+        "w": 450,
+        "h": 500
+      },
+      "while-loop_1.i": {
+        "x": 440,
+        "y": 527
+      },
+      "while-loop_1.condition": {
+        "x": 854,
+        "y": 527
+      },
+      "shift-register-left_1": {
+        "x": 430,
+        "y": 297
+      },
+      "shift-register-left_1.right": {
+        "x": 864,
+        "y": 297
+      },
+      "str-control_1": {
+        "x": 470,
+        "y": 141,
+        "label": {
+          "text": "Command"
+        }
+      },
+      "bool-control_1": {
+        "x": 778,
+        "y": 423,
+        "label": {
+          "text": "Stop"
+        }
+      },
+      "waveform-chart_1": {
+        "x": 813,
+        "y": 112,
+        "label": {
+          "text": "Voltage"
+        }
+      },
+      "subvi_1": {
+        "x": 576,
+        "y": 199
+      },
+      "subvi_3": {
+        "x": 696,
+        "y": 249
+      },
+      "unbundle-by-name_1": {
+        "x": 635,
+        "y": 364
+      },
+      "or-op_1": {
+        "x": 736,
+        "y": 379
+      },
+      "wait-ms_1": {
+        "x": 556,
+        "y": 449
+      },
+      "num-const_1": {
+        "x": 527,
+        "y": 456
+      }
+    },
+    "panel": {
+      "str-control_1": {
+        "x": 50,
+        "y": 41,
+        "label": {
+          "text": "Command"
+        }
+      },
+      "str-indicator_1": {
+        "x": 50,
+        "y": 191,
+        "label": {
+          "text": "Identification"
+        }
+      },
+      "bool-control_1": {
+        "x": 131,
+        "y": 293,
+        "label": {
+          "text": "Stop"
+        }
+      },
+      "waveform-chart_1": {
+        "x": 336,
+        "y": 64,
+        "label": {
+          "text": "Voltage"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 691,
+        "y": 21,
+        "label": {
+          "text": "error out"
+        }
+      }
+    },
+    "wires": {
+      "subvi_1.str-control_1": {
+        "bends": [
+          572
+        ]
+      },
+      "subvi_3.str-control_1": {
+        "bends": [
+          692
+        ]
+      },
+      "waveform-chart_1.value": {
+        "bends": [
+          809
+        ]
+      },
+      "shift-register-left_1.right": {
+        "bends": [
+          860
+        ]
+      },
+      "subvi_3.cluster-control_1": {
+        "bends": [
+          692
+        ]
+      },
+      "unbundle-by-name_1.cluster": {
+        "bends": [
+          736,
+          324.75,
+          627
+        ]
+      },
+      "or-op_1.x": {
+        "bends": [
+          732
+        ]
+      },
+      "or-op_1.y": {
+        "bends": [
+          824,
+          416.75,
+          728
+        ]
+      },
+      "while-loop_1.condition": {
+        "bends": [
+          850
+        ]
+      },
+      "simple-error-handler_1.error-in": {
+        "bends": [
+          952
+        ]
+      },
+      "str-indicator_1.value": {
+        "bends": [
+          346
+        ]
+      }
+    }
+  }
+}

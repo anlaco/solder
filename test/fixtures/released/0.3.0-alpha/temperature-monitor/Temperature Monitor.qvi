@@ -1,0 +1,401 @@
+{
+  "solder": 1,
+  "front-panel": [
+    {
+      "name": "waveform-chart_1",
+      "role": "indicator",
+      "type": "number"
+    },
+    {
+      "name": "control_1",
+      "role": "control",
+      "type": "number",
+      "default": 100
+    },
+    {
+      "name": "control_2",
+      "role": "control",
+      "type": "number",
+      "default": 24
+    },
+    {
+      "name": "bool-indicator_1",
+      "role": "indicator",
+      "type": "boolean",
+      "default": false,
+      "style": "round-led"
+    },
+    {
+      "name": "indicator_1",
+      "role": "indicator",
+      "type": "number",
+      "default": 0
+    },
+    {
+      "name": "bool-control_1",
+      "role": "control",
+      "type": "boolean",
+      "default": false,
+      "style": "stop-button",
+      "mechanical-action": "latch-when-released"
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      {
+        "name": "const_1",
+        "type": "const",
+        "config": {
+          "default": 0
+        }
+      }
+    ],
+    "wires": [
+      {
+        "from": "const_1.result",
+        "to": "while-loop_1.shift-register-left_1"
+      }
+    ],
+    "structures": [
+      {
+        "name": "while-loop_1",
+        "kind": "while-loop",
+        "shift-registers": [
+          {
+            "name": "shift-register-left_1"
+          }
+        ],
+        "body": {
+          "nodes": [
+            {
+              "name": "waveform-chart_1",
+              "type": "waveform-chart"
+            },
+            {
+              "name": "control_1",
+              "type": "control"
+            },
+            {
+              "name": "control_2",
+              "type": "control"
+            },
+            {
+              "name": "bool-indicator_1",
+              "type": "bool-indicator"
+            },
+            {
+              "name": "indicator_1",
+              "type": "indicator"
+            },
+            {
+              "name": "bool-control_1",
+              "type": "bool-control"
+            },
+            {
+              "name": "subvi_1",
+              "type": "subvi",
+              "config": {
+                "vi": "Read Sensor.qvi"
+              }
+            },
+            {
+              "name": "wait-until-next-ms-multiple_1",
+              "type": "wait-until-next-ms-multiple"
+            },
+            {
+              "name": "greater_1",
+              "type": "greater"
+            },
+            {
+              "name": "add_1",
+              "type": "add"
+            },
+            {
+              "name": "div_1",
+              "type": "div"
+            },
+            {
+              "name": "increment_1",
+              "type": "increment"
+            }
+          ],
+          "wires": [
+            {
+              "from": "control_1.result",
+              "to": "wait-until-next-ms-multiple_1.multiple"
+            },
+            {
+              "from": "while-loop_1.i",
+              "to": "subvi_1.control_1"
+            },
+            {
+              "from": "subvi_1.indicator_1",
+              "to": "waveform-chart_1.value"
+            },
+            {
+              "from": "subvi_1.indicator_1",
+              "to": "greater_1.x"
+            },
+            {
+              "from": "control_2.result",
+              "to": "greater_1.y"
+            },
+            {
+              "from": "greater_1.result",
+              "to": "bool-indicator_1.value"
+            },
+            {
+              "from": "shift-register-left_1.left",
+              "to": "add_1.a"
+            },
+            {
+              "from": "subvi_1.indicator_1",
+              "to": "add_1.b"
+            },
+            {
+              "from": "add_1.result",
+              "to": "shift-register-left_1.right"
+            },
+            {
+              "from": "add_1.result",
+              "to": "div_1.a"
+            },
+            {
+              "from": "while-loop_1.i",
+              "to": "increment_1.x"
+            },
+            {
+              "from": "increment_1.result",
+              "to": "div_1.b"
+            },
+            {
+              "from": "div_1.result",
+              "to": "indicator_1.value"
+            },
+            {
+              "from": "bool-control_1.result",
+              "to": "while-loop_1.condition"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "const_1": {
+        "x": 96,
+        "y": 389
+      },
+      "while-loop_1": {
+        "x": 160,
+        "y": 78,
+        "w": 800,
+        "h": 495
+      },
+      "while-loop_1.i": {
+        "x": 170,
+        "y": 547
+      },
+      "while-loop_1.condition": {
+        "x": 934,
+        "y": 547
+      },
+      "shift-register-left_1": {
+        "x": 160,
+        "y": 387
+      },
+      "shift-register-left_1.right": {
+        "x": 944,
+        "y": 387
+      },
+      "waveform-chart_1": {
+        "x": 801,
+        "y": 142,
+        "label": {
+          "text": "Temperature"
+        }
+      },
+      "control_1": {
+        "x": 201,
+        "y": 191,
+        "label": {
+          "text": "Period (ms)"
+        }
+      },
+      "control_2": {
+        "x": 201,
+        "y": 251,
+        "label": {
+          "text": "High limit"
+        }
+      },
+      "bool-indicator_1": {
+        "x": 801,
+        "y": 264,
+        "label": {
+          "text": "Alarm"
+        }
+      },
+      "indicator_1": {
+        "x": 801,
+        "y": 381,
+        "label": {
+          "text": "Average"
+        }
+      },
+      "bool-control_1": {
+        "x": 221,
+        "y": 453,
+        "label": {
+          "text": "stop"
+        }
+      },
+      "subvi_1": {
+        "x": 446,
+        "y": 249
+      },
+      "wait-until-next-ms-multiple_1": {
+        "x": 326,
+        "y": 149
+      },
+      "greater_1": {
+        "x": 636,
+        "y": 269
+      },
+      "add_1": {
+        "x": 596,
+        "y": 389
+      },
+      "div_1": {
+        "x": 716,
+        "y": 399
+      },
+      "increment_1": {
+        "x": 556,
+        "y": 489
+      }
+    },
+    "panel": {
+      "waveform-chart_1": {
+        "x": 336,
+        "y": 84,
+        "label": {
+          "text": "Temperature"
+        }
+      },
+      "control_1": {
+        "x": 51,
+        "y": 41,
+        "label": {
+          "text": "Period (ms)"
+        }
+      },
+      "control_2": {
+        "x": 51,
+        "y": 101,
+        "label": {
+          "text": "High limit"
+        }
+      },
+      "bool-indicator_1": {
+        "x": 81,
+        "y": 174,
+        "label": {
+          "text": "Alarm"
+        }
+      },
+      "indicator_1": {
+        "x": 63,
+        "y": 231,
+        "label": {
+          "text": "Average"
+        }
+      },
+      "bool-control_1": {
+        "x": 71,
+        "y": 303,
+        "label": {
+          "text": "stop"
+        }
+      }
+    },
+    "wires": {
+      "wait-until-next-ms-multiple_1.multiple": {
+        "bends": [
+          322
+        ]
+      },
+      "subvi_1.control_1": {
+        "bends": [
+          442
+        ]
+      },
+      "waveform-chart_1.value": {
+        "bends": [
+          797
+        ]
+      },
+      "greater_1.x": {
+        "bends": [
+          632
+        ]
+      },
+      "greater_1.y": {
+        "bends": [
+          632
+        ]
+      },
+      "bool-indicator_1.value": {
+        "bends": [
+          797
+        ]
+      },
+      "add_1.a": {
+        "bends": [
+          592
+        ]
+      },
+      "add_1.b": {
+        "bends": [
+          592
+        ]
+      },
+      "shift-register-left_1.right": {
+        "bends": [
+          940
+        ]
+      },
+      "div_1.a": {
+        "bends": [
+          712
+        ]
+      },
+      "increment_1.x": {
+        "bends": [
+          552
+        ]
+      },
+      "div_1.b": {
+        "bends": [
+          712
+        ]
+      },
+      "indicator_1.value": {
+        "bends": [
+          797
+        ]
+      },
+      "while-loop_1.condition": {
+        "bends": [
+          930
+        ]
+      },
+      "while-loop_1.shift-register-left_1": {
+        "bends": [
+          156
+        ]
+      }
+    }
+  }
+}

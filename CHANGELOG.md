@@ -1,10 +1,54 @@
 # Changelog
 
 Solder follows [semantic versioning](https://semver.org) while in development:
-`0.MINOR.PATCH-alpha`. A release that adds features raises MINOR, one that only
-fixes things raises PATCH, and the `-alpha` label says the language and its file
-format are not stable yet; the maintainable version will carry `-beta` and stay a
-`0.x` (DT-048).
+`0.MINOR.PATCH-alpha`, and from 0.4.0 on `0.MINOR.PATCH-beta`. A release that adds
+features raises MINOR, one that only fixes things raises PATCH. The `-alpha` label
+said the file format was not stable yet; `-beta` marks the maintainable version,
+whose files keep opening, and stays a `0.x` (DT-048, DT-055).
+
+## 0.4.0-beta — 2026-10-17
+
+The first beta: the maintainable version (DT-048, DT-055). The `.sdg` format is
+frozen as version 1, and every later change to it will come with an automatic
+migration, so the files you save now keep opening. The next month brings only
+fixes (`0.4.x-beta`).
+
+### Files
+
+- VIs are saved as `.sdg`; a `.qvi` saved by an alpha still opens. A file of a
+  newer format version is refused instead of read halfway.
+
+### Programs as in LabVIEW
+
+- The three examples in `examples/` give, value by value, what the same VIs
+  give in LabVIEW 2026 Q3, and a test checks them.
+- Enums are editable: Edit Items… and Select Item… on the constant, the control
+  and the indicator, and a Case on an enum names its frames by item.
+- Unbundle By Name reads the elements of a cluster, such as the status of an
+  error cluster.
+- A control keeps its current value apart from the default the file saves: Make
+  Current Values Default and Reinitialize Values to Default set and restore it.
+- Numbers show LabVIEW's significant digits.
+
+### The editor
+
+- File ▸ New VI, Close and Close All work as in LabVIEW, and Solder starts on its
+  Getting Started window.
+- A constant grows to the left while it is typed into; a new wire turns 7 px
+  after its source; palettes stay inside the window.
+- The explanations of greyed items and the error messages are in English, and
+  the explanation over a dialog closes on a click elsewhere in it.
+
+### Debugging
+
+- Tunnels, shift registers, a loop's i and N show their values to probes and to
+  Highlight Execution; the tag of an array wire shows its element count (#4).
+- Single stepping stops where LabVIEW does: before a structure runs, at the end
+  of each iteration, after a Case's frame, at the end of each Flat Sequence frame
+  and at the end of the diagram, with LabVIEW's tooltips; it no longer stops at
+  constants or panel terminals.
+- The Error list shows warnings with Show Warnings (constants nothing reads,
+  unwired panel terminals), and the List Warnings triangle opens it.
 
 ## 0.3.0-alpha — 2026-10-10
 

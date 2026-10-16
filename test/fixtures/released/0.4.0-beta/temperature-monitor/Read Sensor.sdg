@@ -1,0 +1,111 @@
+{
+  "solder": 1,
+  "connector": {
+    "pattern": "4-2-2-4",
+    "inputs": [
+      {
+        "name": "control_1",
+        "cell": 1
+      }
+    ],
+    "outputs": [
+      {
+        "name": "indicator_1",
+        "cell": 9
+      }
+    ]
+  },
+  "front-panel": [
+    {
+      "name": "control_1",
+      "role": "control",
+      "type": "number",
+      "default": 0
+    },
+    {
+      "name": "indicator_1",
+      "role": "indicator",
+      "type": "number",
+      "default": 0
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      {
+        "name": "control_1",
+        "type": "control"
+      },
+      {
+        "name": "indicator_1",
+        "type": "indicator"
+      },
+      {
+        "name": "expression-node_1",
+        "type": "expression-node",
+        "config": {
+          "expression": "20+5*sin(x/10)"
+        }
+      }
+    ],
+    "wires": [
+      {
+        "from": "control_1.result",
+        "to": "expression-node_1.x"
+      },
+      {
+        "from": "expression-node_1.result",
+        "to": "indicator_1.value"
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "control_1": {
+        "x": 161,
+        "y": 91,
+        "label": {
+          "text": "Sample"
+        }
+      },
+      "indicator_1": {
+        "x": 373,
+        "y": 91,
+        "label": {
+          "text": "Temperature"
+        }
+      },
+      "expression-node_1": {
+        "x": 241,
+        "y": 106
+      }
+    },
+    "panel": {
+      "control_1": {
+        "x": 161,
+        "y": 91,
+        "label": {
+          "text": "Sample"
+        }
+      },
+      "indicator_1": {
+        "x": 373,
+        "y": 91,
+        "label": {
+          "text": "Temperature"
+        }
+      }
+    },
+    "wires": {
+      "expression-node_1.x": {
+        "bends": [
+          237
+        ]
+      },
+      "indicator_1.value": {
+        "bends": [
+          369
+        ]
+      }
+    }
+  }
+}

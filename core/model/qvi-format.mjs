@@ -21,6 +21,20 @@ import { ambitoDe, crearEstructura, crearNodo, esSuelto, marcoDe, nuevo } from "
 
 export const VERSION = 1;
 
+/**
+ * The format is frozen from 0.4.0-beta on (DT-055, spec/02 §4.1): a change to it raises VERSION and adds here the
+ * function that turns a file of the version before into one of the new version, so every file a released Solder
+ * saved still opens. `MIGRATIONS[n - 1]` migrates version n to n + 1; there are none yet.
+ */
+export const MIGRATIONS = [];
+
+/** A file of an older version brought up to `version`, one migration after another. */
+export function migrar(vi, migrations = MIGRATIONS, version = VERSION) {
+  let migrated = vi;
+  while (migrated.solder < version) migrated = { ...migrations[migrated.solder - 1](migrated) };
+  return migrated;
+}
+
 /** El `default` del fichero es el `value` del grafo; el resto de la configuración se llama igual. */
 const aFichero = (config) => {
   if (!config) return undefined;
@@ -205,8 +219,10 @@ export class ErrorQvi extends Error {}
  * reconstruyen planas, con `dentro` (DT-041).
  */
 export function leer(datos, cat) {
-  const vi = typeof datos === "string" ? JSON.parse(datos) : datos;
-  if (vi.solder !== VERSION) throw new ErrorQvi(`format version ${vi.solder}: this Solder reads version ${VERSION}`);
+  const read = typeof datos === "string" ? JSON.parse(datos) : datos;
+  // A newer file is refused rather than read halfway; an older one is migrated first.
+  if (!Number.isInteger(read.solder) || read.solder < 1 || read.solder > VERSION) throw new ErrorQvi(`format version ${read.solder}: this Solder reads versions 1 to ${VERSION}`);
+  const vi = migrar(read);
   const bd = vi["block-diagram"] ?? {};
   const lay = vi.layout ?? {};
   const fp = new Map((vi["front-panel"] ?? []).map((i) => [i.name, i]));

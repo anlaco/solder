@@ -42,7 +42,7 @@ LabVIEW** (DT-040): independent branches run at the same time, each indicator is
 painted when its data arrives, Abort stops at once and the panel switches to Run
 mode. Since 2026-10-01 also **with loops**: While and For are placed, stretched
 and wired in the diagram, and the compiler runs them (DT-041).
-705 tests green. **The three examples give the same values as in LabVIEW** (2026-10-15). **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read. **VIs are saved as `.sdg`** (DT-051, 2026-10-15): every Solder extension starts with `sd` (`.sdt` reserved for a future textual language, `.sdproj`, `.sdlib`), and an old `.qvi` still opens. **New VI, Close and Close All** (spec/05 rules 101–103, 2026-10-15) work as measured, and Solder **starts on LabVIEW's Getting Started window** (DT-052), which comes back when the last VI closes.
+708 tests green. **The three examples give the same values as in LabVIEW** (2026-10-15). **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read. **VIs are saved as `.sdg`** (DT-051, 2026-10-15): every Solder extension starts with `sd` (`.sdt` reserved for a future textual language, `.sdproj`, `.sdlib`), and an old `.qvi` still opens. **New VI, Close and Close All** (spec/05 rules 101–103, 2026-10-15) work as measured, and Solder **starts on LabVIEW's Getting Started window** (DT-052), which comes back when the last VI closes.
 
 | Piece | Status |
 |-------|--------|
@@ -138,8 +138,8 @@ programs goes **before the rest of the modules**, in this order:
 
 The goal is a version that does what it does reliably and keeps the files it saves, not a complete
 LabVIEW: **maintainable does not mean complete**. It stays a `0.x` version, not a 1.0 (decided
-2026-10-09). New modules wait; these six steps go first, in order. When they are done, the
-**maintainable version** is released as the first `0.N.0-beta`, in **2027**, followed by one month
+2026-10-09). New modules wait; these five steps go first, in order. When they are done, the
+**maintainable version** is released as the first `0.N.0-beta` (`0.4.0-beta`, DT-055), followed by one month
 of maintenance with fixes only (`0.N.x-beta`).
 
 1. **Broken wires** (DT-046, to be proposed) — `0.2.0-alpha`. A wire may keep one loose end, drawn
@@ -286,17 +286,21 @@ dialog's Delete follows the rule measured on 2026-10-15: by the name, not the ro
    unread constants and unwired panel terminals, the List Warnings triangle opens the list, and single stepping stops at the
    structures and at the end of the diagram; checked in the running editor
    ([`2026-10-16-solder-frame-stops.md`](../../labview-captures/reports/2026-10-16-solder-frame-stops.md)). **Step 4 is done.***
-5. **The `.qvi` format frozen as version 1**: written in spec/02 that from the maintainable version on every format change
+5. **The `.sdg` format frozen as version 1**: written in spec/02 that from the maintainable version on every format change
    comes with an automatic migration (the file's `"solder": 1` field is for that), with a test that
    opens the example files of each version.
+   *Done on 2026-10-16 (spec/02 §4.1, DT-055): `MIGRATIONS` and `migrar` in `core/model/qvi-format.mjs`, a newer
+   version refused, and `test/end-to-end/format-versions.test.mjs` opening and compiling the examples as 0.3.0-alpha
+   (`.qvi`) and 0.4.0-beta (`.sdg`) saved them, kept in `test/fixtures/released/`.*
 
-6. **LabVIEW Core 1 without hardware** (DT-054, decided 2026-10-16): every lesson of NI's Core 1 course
-   can be done in Solder, except lessons 2 and 15 and the DAQ and instrument parts of 4, 7 and 8. The
-   outline is in `labview-captures/core-courses/README.md`; first, list which lessons Solder misses.
+Then (DT-055, decided 2026-10-16): the maintainable **`0.4.0-beta` the weekend of 2026-10-17**, when steps 1–5
+are done, and the month of maintenance (`0.4.x-beta`, fixes only).
 
-Then: the maintainable `0.N.0-beta` in 2027, when steps 1–6 are done, and the month of maintenance.
+**After the beta, first:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
+lesson of NI's Core 1 course can be done in Solder, except lessons 2 and 15 and the DAQ and instrument parts of 4,
+7 and 8. The outline is in `labview-captures/core-courses/README.md`; first, list which lessons Solder misses.
 
-**Postponed behind these six:** *inplaceness* (DT-042 §5), which changes memory
+**Postponed behind these five:** *inplaceness* (DT-042 §5), which changes memory
 and speed but not results; it will be done when a real program
 runs slowly.
 

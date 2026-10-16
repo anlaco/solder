@@ -1,0 +1,436 @@
+{
+  "solder": 1,
+  "front-panel": [
+    {
+      "name": "str-indicator_1",
+      "role": "indicator",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "str-control_1",
+      "role": "control",
+      "type": "string",
+      "default": "MEAS:VOLT?"
+    },
+    {
+      "name": "waveform-chart_1",
+      "role": "indicator",
+      "type": "number"
+    },
+    {
+      "name": "bool-control_1",
+      "role": "control",
+      "type": "boolean",
+      "default": false,
+      "style": "stop-button",
+      "mechanical-action": "latch-when-released"
+    },
+    {
+      "name": "cluster-indicator_1",
+      "role": "indicator",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "default": {
+        "status": false,
+        "code": 0,
+        "source": ""
+      },
+      "style": "error-out"
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      {
+        "name": "str-indicator_1",
+        "type": "str-indicator"
+      },
+      {
+        "name": "cluster-indicator_1",
+        "type": "cluster-indicator"
+      },
+      {
+        "name": "subvi_1",
+        "type": "subvi",
+        "config": {
+          "vi": "Simulated Instrument.qvi"
+        }
+      },
+      {
+        "name": "str-const_1",
+        "type": "str-const",
+        "config": {
+          "default": "*IDN?"
+        }
+      },
+      {
+        "name": "simple-error-handler_1",
+        "type": "simple-error-handler"
+      }
+    ],
+    "wires": [
+      {
+        "from": "str-const_1.result",
+        "to": "subvi_1.str-control_1"
+      },
+      {
+        "from": "subvi_1.str-indicator_1",
+        "to": "str-indicator_1.value"
+      },
+      {
+        "from": "simple-error-handler_1.error-out",
+        "to": "cluster-indicator_1.value"
+      },
+      {
+        "from": "while-loop_1.shift-register-left_1",
+        "to": "simple-error-handler_1.error-in"
+      }
+    ],
+    "structures": [
+      {
+        "name": "while-loop_1",
+        "kind": "while-loop",
+        "shift-registers": [
+          {
+            "name": "shift-register-left_1"
+          }
+        ],
+        "body": {
+          "nodes": [
+            {
+              "name": "str-control_1",
+              "type": "str-control"
+            },
+            {
+              "name": "waveform-chart_1",
+              "type": "waveform-chart"
+            },
+            {
+              "name": "bool-control_1",
+              "type": "bool-control"
+            },
+            {
+              "name": "subvi_2",
+              "type": "subvi",
+              "config": {
+                "vi": "Simulated Instrument.qvi"
+              }
+            },
+            {
+              "name": "subvi_3",
+              "type": "subvi",
+              "config": {
+                "vi": "Parse Reply.qvi"
+              }
+            },
+            {
+              "name": "wait-ms_1",
+              "type": "wait-ms"
+            },
+            {
+              "name": "num-const_1",
+              "type": "num-const",
+              "config": {
+                "type": "i32",
+                "default": 200
+              }
+            },
+            {
+              "name": "simple-error-handler_2",
+              "type": "simple-error-handler"
+            },
+            {
+              "name": "or-op_1",
+              "type": "or-op"
+            },
+            {
+              "name": "num-const_2",
+              "type": "num-const",
+              "config": {
+                "type": "i32",
+                "default": 0
+              }
+            }
+          ],
+          "wires": [
+            {
+              "from": "str-control_1.result",
+              "to": "subvi_2.str-control_1"
+            },
+            {
+              "from": "subvi_2.str-indicator_1",
+              "to": "subvi_3.str-control_1"
+            },
+            {
+              "from": "subvi_3.indicator_1",
+              "to": "waveform-chart_1.value"
+            },
+            {
+              "from": "num-const_1.result",
+              "to": "wait-ms_1.ms"
+            },
+            {
+              "from": "subvi_3.cluster-indicator_1",
+              "to": "shift-register-left_1.right"
+            },
+            {
+              "from": "shift-register-left_1.left",
+              "to": "subvi_3.cluster-control_1"
+            },
+            {
+              "from": "subvi_3.cluster-indicator_1",
+              "to": "simple-error-handler_2.error-in"
+            },
+            {
+              "from": "num-const_2.result",
+              "to": "simple-error-handler_2.dialog-type"
+            },
+            {
+              "from": "simple-error-handler_2.is-error",
+              "to": "or-op_1.x"
+            },
+            {
+              "from": "bool-control_1.result",
+              "to": "or-op_1.y"
+            },
+            {
+              "from": "or-op_1.result",
+              "to": "while-loop_1.condition"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "str-indicator_1": {
+        "x": 415,
+        "y": 24,
+        "label": {
+          "text": "Identification"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 933,
+        "y": 568,
+        "label": {
+          "text": "error out"
+        }
+      },
+      "subvi_1": {
+        "x": 296,
+        "y": 44
+      },
+      "str-const_1": {
+        "x": 216,
+        "y": 52
+      },
+      "simple-error-handler_1": {
+        "x": 986,
+        "y": 469
+      },
+      "while-loop_1": {
+        "x": 40,
+        "y": 93,
+        "w": 840,
+        "h": 450
+      },
+      "while-loop_1.i": {
+        "x": 50,
+        "y": 517
+      },
+      "while-loop_1.condition": {
+        "x": 854,
+        "y": 517
+      },
+      "shift-register-left_1": {
+        "x": 40,
+        "y": 297
+      },
+      "shift-register-left_1.right": {
+        "x": 864,
+        "y": 297
+      },
+      "str-control_1": {
+        "x": 70,
+        "y": 111,
+        "label": {
+          "text": "Command"
+        }
+      },
+      "waveform-chart_1": {
+        "x": 694,
+        "y": 184,
+        "label": {
+          "text": "Voltage"
+        }
+      },
+      "bool-control_1": {
+        "x": 101,
+        "y": 203,
+        "label": {
+          "text": "stop"
+        }
+      },
+      "subvi_2": {
+        "x": 326,
+        "y": 219
+      },
+      "subvi_3": {
+        "x": 476,
+        "y": 239
+      },
+      "wait-ms_1": {
+        "x": 216,
+        "y": 429
+      },
+      "num-const_1": {
+        "x": 136,
+        "y": 429
+      },
+      "simple-error-handler_2": {
+        "x": 696,
+        "y": 379
+      },
+      "or-op_1": {
+        "x": 796,
+        "y": 449
+      },
+      "num-const_2": {
+        "x": 616,
+        "y": 399
+      }
+    },
+    "panel": {
+      "str-indicator_1": {
+        "x": 70,
+        "y": 41,
+        "label": {
+          "text": "Identification"
+        }
+      },
+      "str-control_1": {
+        "x": 70,
+        "y": 111,
+        "label": {
+          "text": "Command"
+        }
+      },
+      "waveform-chart_1": {
+        "x": 436,
+        "y": 94,
+        "label": {
+          "text": "Voltage"
+        }
+      },
+      "bool-control_1": {
+        "x": 101,
+        "y": 203,
+        "label": {
+          "text": "stop"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 63,
+        "y": 293,
+        "label": {
+          "text": "error out"
+        }
+      }
+    },
+    "wires": {
+      "subvi_1.str-control_1": {
+        "bends": [
+          292
+        ]
+      },
+      "str-indicator_1.value": {
+        "bends": [
+          411
+        ]
+      },
+      "subvi_2.str-control_1": {
+        "bends": [
+          322
+        ]
+      },
+      "subvi_3.str-control_1": {
+        "bends": [
+          472
+        ]
+      },
+      "waveform-chart_1.value": {
+        "bends": [
+          690
+        ]
+      },
+      "wait-ms_1.ms": {
+        "bends": [
+          212
+        ]
+      },
+      "cluster-indicator_1.value": {
+        "bends": [
+          1026,
+          539.45,
+          925
+        ]
+      },
+      "shift-register-left_1.right": {
+        "bends": [
+          860
+        ]
+      },
+      "subvi_3.cluster-control_1": {
+        "bends": [
+          472
+        ]
+      },
+      "simple-error-handler_1.error-in": {
+        "bends": [
+          982
+        ]
+      },
+      "simple-error-handler_2.error-in": {
+        "bends": [
+          692
+        ]
+      },
+      "simple-error-handler_2.dialog-type": {
+        "bends": [
+          692
+        ]
+      },
+      "or-op_1.x": {
+        "bends": [
+          792
+        ]
+      },
+      "or-op_1.y": {
+        "bends": [
+          792
+        ]
+      },
+      "while-loop_1.condition": {
+        "bends": [
+          850
+        ]
+      }
+    }
+  }
+}
