@@ -42,15 +42,17 @@ export function buildDebugPlan(graph, debugNodes, context, inventory) {
   // A border element of a structure feeds nodes but never waits for its own inputs: the debugger does not stop before it.
   const borders = new Set(topLevel.filter((entry) => entry.border).map((entry) => entry.nodo));
   const terminals = D.extremos(graph, context);
-  const plan = { successors: {}, inputCounts: {}, containers: {}, parents: {}, loops: [], wireLengths: {}, names: {}, wires: {}, constants: [] };
+  const plan = { successors: {}, inputCounts: {}, containers: {}, parents: {}, loops: [], wireLengths: {}, names: {}, wires: {}, quiet: [] };
   for (const node of graph.nodos) {
     if (D.esEstructura(node, context)) {
       plan.parents[node.id] = node.dentro ?? null;
       if (LOOP_KINDS.includes(node.tipo)) plan.loops.push(node.id);
     }
     if (hooked.has(node.id)) {
-      // Single stepping does not stop at a constant (labview-captures/reports/2026-10-16-border-probes.md §4).
-      if (D.CONSTANTES[node.tipo]) plan.constants.push(node.id);
+      // Single stepping does not stop at a constant or a panel terminal (border-probes §4, warnings-frame-stops §B).
+      const block = context.cat?.bloque(node.tipo);
+      // The Boolean and text constants are "input" blocks of the catalog, outside CONSTANTES (they draw their own way).
+      if (D.CONSTANTES[node.tipo] || block?.cat === "input" || block?.panel) plan.quiet.push(node.id);
       plan.containers[node.id] = node.dentro ?? null;
       plan.names[node.id] = nodeDisplayName(node, inventory);
     }

@@ -286,7 +286,7 @@ test("the Error list lists the errors of a VI and Show Error frames the object",
   assert.match(html, /width:661px;height:412px/, "the window measures 661 by 412 (92)");
   for (const text of ["Error list", "Items with errors", "Untitled 2", "1 errors and warnings", "Show Warnings", "Block Diagram Errors", "Array Size: Contains unwired or bad terminal", "Details", "Close", "Show Error", "Help"]) assert.ok(html.includes(text), text);
   assert.ok(html.includes(EL.UNWIRED_DETAILS), "the details of the selected row");
-  assert.match(html, /el-casilla hueco/, "Show Warnings is greyed: warnings are not computed");
+  assert.doesNotMatch(html, /el-casilla hueco/, "Show Warnings works");
   // A broken wire is listed with its reason, and Show Error frames the object 1 px outside.
   const brokenWire = Gr.conectar(broken.g, CAT, { nodo: built.ids.x, puerto: "result", dir: "out" }, { nodo: broken.id, puerto: "array", dir: "in" }).g;
   const wireRows = EL.collect({ graph: brokenWire, catalog: CAT, resolved: Gr.tipos(brokenWire, CAT), compileErrors: [], inventory: INV });
@@ -294,7 +294,43 @@ test("the Error list lists the errors of a VI and Show Error frames the object",
   const frame = DV.overlay(DS.initial(), broken.g, CONTEXT, Gr.tipos(broken.g, CAT), { now: 0, errorFocus: { node: broken.id } });
   assert.match(frame, new RegExp(`class="dep-marquesina" data-error-focus="${broken.id}"`));
   assert.ok(!esHueco(INV.resolver("window.error-list.show-error")));
-  assert.equal(INV.entrada("window.error-list.show-warnings").estado, "todo");
+  assert.equal(INV.entrada("window.error-list.show-warnings").estado, "built");
+});
+
+// labview-captures/reports/2026-10-16-warnings-frame-stops.md §A.
+test("the warnings of a VI are listed with Show Warnings and light the triangle", () => {
+  let g = Gr.nuevo();
+  const place = (block, config) => {
+    const created = Gr.crearNodo(g, CAT, block, 0, 0);
+    g = config ? Gr.fijarConfig(created.g, created.id, config) : created.g;
+    return created.id;
+  };
+  const unused = place("const", { value: 1 });
+  const used = place("const", { value: 2 });
+  const negate = place("negate");
+  g = Gr.conectar(g, CAT, { nodo: used, puerto: "result", dir: "out" }, { nodo: negate, puerto: "x", dir: "in" }).g;
+  const panel = Gr.crearEnPanel(g, CAT, "control", 10, 10, "Numeric");
+  g = panel.g;
+  const warnings = EL.collectWarnings({ graph: g, catalog: CAT });
+  const label = g.nodos.find((node) => node.id === panel.id).label.text;
+  assert.deepEqual(warnings.map((row) => row.text), ["Diagram Constant: unwired block diagram constant", `Front Panel Terminal '${label}': unwired front panel terminal`]);
+  assert.deepEqual(warnings[0].target, { node: unused }, "the constant nothing reads, not the one wired");
+  assert.ok(warnings.every((row) => row.warning));
+
+  const errors = EL.collect({ graph: g, catalog: CAT, resolved: Gr.tipos(g, CAT), compileErrors: [], inventory: INV });
+  const rows = [...errors, ...warnings];
+  assert.equal(EL.visibleRows(rows, false).length, errors.length, "hidden without Show Warnings");
+  assert.equal(EL.showsWarningButton(rows, false), false);
+  assert.equal(EL.showsWarningButton(rows, true), true);
+  const html = DV.errorListWindow(INV, { rows, state: { ...EL.initial(), showWarnings: true }, viName: "Untitled 3", position: { x: 0, y: 0 } });
+  assert.ok(html.includes("Block Diagram Warnings") && html.includes(`${EL.visibleRows(rows, true).length} errors and warnings`), "one group, counted with the errors");
+  assert.match(html, /el-casilla marcada/);
+  assert.doesNotMatch(html, /el-x"><svg/, "a VI with warnings only has no red X");
+
+  const toolbar = (conAvisos) => ventana(INV, "block-diagram", E.inicial(), { conAvisos });
+  assert.match(toolbar(true), /data-id="window\.block-diagram\.toolbar\.list-warnings" style="left:[\d.]+px;width:[\d.]+px"/, "the triangle shows left of Run");
+  assert.match(toolbar(false), /data-id="window\.block-diagram\.toolbar\.list-warnings" style="[^"]*visibility:hidden/);
+  assert.equal(INV.entrada("window.front-panel.toolbar.list-warnings").etiqueta, "List Warnings");
 });
 
 test("View opens the Debug Window and the Error list", () => {
@@ -327,7 +363,7 @@ test("Highlight Execution dims the diagram and lights what ran with its wires an
   const overlay = DV.overlay(state, g, CONTEXT, resolved, { now: 1100 });
   assert.match(overlay, /class="dep-banda"[^>]*stroke:#a3a3d6;stroke-width:5/, "a 5 px band in the numeric color");
   assert.match(overlay, /animation-duration:270ms;animation-delay:-100ms/, "a repaint goes on from where the band was");
-  assert.match(overlay, /class="dep-etiqueta dep-aparece"[^>]*height:17px[^>]*animation-delay:170ms[^>]*>2</, "the 17 px tag appears when the band arrives");
+  assert.match(overlay, /class="dep-etiqueta dep-aparece"[^>]*height:17px[^>]*animation-delay:0ms[^>]*>2</, "the 17 px tag of a constant shows as its band starts (border-probes §1)");
   assert.match(ventana(INV, "block-diagram", E.inicial(), { resaltando: true }), /class="lienzo lienzo-block-diagram resaltando"/);
   // A node that runs again starts a new iteration: everything dims and the tags go.
   const again = DS.applyDebugEvent(state, { ran: id.two, pace: 270, values: [] }, g, 2000);
@@ -359,4 +395,38 @@ test("Remove Breakpoints from Hierarchy takes away every breakpoint of the VI", 
   assert.deepEqual(cleared.items.map((item) => item.kind), ["probe"], "probes stay");
   assert.ok(EDIT_COMMANDS.includes("remove-breakpoints-from-hierarchy"));
   assert.ok(!esHueco(INV.resolver("window.block-diagram.menu.edit.remove-breakpoints-from-hierarchy")));
+});
+
+// spec/05 Rule 90b (labview-captures/reports/2026-10-16-border-probes.md §1).
+test("a constant's tag shows as its band starts, and N's tag stays on its terminal through the iterations", () => {
+  const { g, id, resolved } = chain();
+  let state = { ...DS.initial(), highlight: { on: true, speed: "medium" } };
+  state = DS.startRun(state, g, 0);
+  state = DS.applyDebugEvent(state, { ran: id.two, pace: 400, values: [{ node: id.two, port: "result", value: 2, at: 0 }] }, g, 0);
+  state = DS.applyDebugEvent(state, { ran: id.add, pace: 400, values: [{ node: id.add, port: "result", value: 5, at: 0 }] }, g, 0);
+  const html = DV.overlay(state, g, CONTEXT, resolved, { now: 0, running: true });
+  assert.match(html, /animation-delay:0ms">2</, "the constant, at once");
+  assert.match(html, /animation-delay:400ms">5</, "the Add, when its band arrives");
+
+  let loop = Gr.crearEstructura(Gr.nuevo(), CAT, "for-loop", 0, 0, 200, 150).g;
+  const count = loop.nodos.find((node) => node.tipo === "loop-count").id;
+  const i = loop.nodos.find((node) => node.tipo === "loop-iteration").id;
+  let looping = DS.startRun({ ...DS.initial(), highlight: { on: true, speed: "medium" } }, loop, 0);
+  looping = DS.applyDebugEvent(looping, { ran: count, pace: 0, values: [{ node: count, port: "count", value: 4, at: 0 }] }, loop, 0);
+  looping = DS.applyDebugEvent(looping, { ran: i, pace: 0, values: [{ node: i, port: "i", value: 0, at: 0 }] }, loop, 0);
+  looping = DS.applyDebugEvent(looping, { ran: i, pace: 0, values: [{ node: i, port: "i", value: 1, at: 0 }] }, loop, 0);
+  assert.match(DV.overlay(looping, loop, CONTEXT, Gr.tipos(loop, CAT), { now: 0, running: true }), /class="dep-etiqueta"[^>]*>4</, "N, in the second iteration too");
+});
+
+// labview-captures/reports/2026-10-16-warnings-frame-stops.md §B.
+test("the step buttons name what they do at the stops on a structure and at the end of the diagram", () => {
+  const at = (stop, nodeName, extra = {}) => DS.toolbarState(phaseInfo("paused", { stop, nodeName, viName: "Frame Stops.vi", ...extra }));
+  const tips = (state) => ["step-into", "step-over", "step-out"].map((key) => state[key].tooltip);
+  assert.deepEqual(tips(at({ kind: "frame", phase: "start" }, "For Loop")), ["Step into For Loop", "Step over For Loop", "Finish Block Diagram"]);
+  assert.deepEqual(tips(at({ kind: "frame", phase: "iteration" }, "For Loop")), ["Step to next iteration", "Step to next iteration", "Finish For Loop"]);
+  assert.deepEqual(tips(at({ kind: "frame", phase: "end" }, "Case Structure")), ["Finish Case Structure", "Finish Case Structure", "Finish Case Structure"]);
+  assert.deepEqual(tips(at({ kind: "frame", phase: "frame-end" }, "Flat Sequence Structure")), ["Step to next frame", "Step to next frame", "Finish Flat Sequence Structure"]);
+  const end = at({ kind: "diagram" }, "");
+  assert.deepEqual(tips(end), Array(3).fill('Finish VI "Frame Stops.vi"'));
+  assert.deepEqual([end["step-into"].enabled, end["step-over"].enabled, end["step-out"].enabled], [false, false, true], "only Step Out at the end");
 });

@@ -1113,8 +1113,18 @@ looks is in [`06-visual.md`](06-visual.md) §14. What the report marks unverifie
 > unwired or bad terminal"), Details, Close, Show Error (default) and Help (92). Show Error and a double click bring the diagram to the
 > front and frame the object with the marching frame, until something is clicked on the diagram (93, 95; how LabVIEW clears it is
 > unverified). Rows come from the required inputs nobody wired, the broken wires (with their reason), what the hierarchy cannot
-> load and what the compiler refuses. **Warnings are not computed** (the toolbar triangle and the Show Warnings items): the box is greyed. Run on a VI that
-> cannot run opens the Error list instead of a message box. Unlike LabVIEW's, the text of Details is our own.
+> load and what the compiler refuses. Run on a VI that cannot run opens the Error list instead of a message box. Unlike LabVIEW's, the
+> text of Details is our own.
+>
+> **Rule 89b — Warnings** (2026-10-16, `labview-captures/reports/2026-10-16-warnings-frame-stops.md` §A). With **Show Warnings**
+> checked the list adds, after the errors, one group "Block Diagram Warnings" (also for panel terminals) with a row per constant that
+> nothing reads ("Diagram Constant: unwired block diagram constant") and per panel terminal with no wire ("Front Panel Terminal
+> '<label>': unwired front panel terminal"); the count label counts them; a VI with warnings only has no red cross. Warnings never break
+> the VI. Show Warnings is one setting for the whole session, shared by every VI and starting unchecked (the main process keeps it).
+> While it is on and the VI has warnings, both toolbars show the yellow triangle **List Warnings** left of Run, which opens the Error
+> list. Tested in `test/editor/debugging.test.mjs`. **Unverified:** the Boolean, enum, ring, array and error cluster constants warn like
+> the numeric and string ones; the named constants of the palettes (pi, Tab…) and hidden objects give no warning here; Tools ▸ Options
+> ▸ Environment ▸ "Show warnings in Error List dialog by default" is not cloned.
 >
 > **Rule 90 — Allow debugging.** VI Properties ▸ Execution ▸ Allow debugging (on by default) writes `vi.execution["allow-debugging"]` (only when false). With it
 > off the compiler emits no debug hooks and Rule 83's buttons are greyed.
@@ -1130,7 +1140,21 @@ looks is in [`06-visual.md`](06-visual.md) §14. What the report marks unverifie
 > on N, LabVIEW's single-step stops at the structure frames themselves (the loop before it starts and at the end of each
 > iteration, the Case before and after its frame, the whole diagram at the end; Solder stops "at" the last node instead, also
 > once more at each indicator when the VI ends), and constants tagged at the start of the Run. Checked in the running editor
-> (`labview-captures/reports/2026-10-16-solder-border-probes.md`).
+> (`labview-captures/reports/2026-10-16-solder-border-probes.md`). *Done since:* the tag on N (once, it stays through the iterations),
+> constants tagged as their band starts, and the stops of Rule 90c.
+>
+> **Rule 90c — Single stepping stops at the structures** (2026-10-16, `warnings-frame-stops.md` §B). Besides before each node (never at
+> a constant, a panel terminal or a border), single stepping stops at: a structure before it runs (its inside tinted #f5f5fc under the
+> marching frame; Step Into and Step Over both go to the first node inside, "Step into / Step over <structure>", Step Out "Finish Block
+> Diagram"); the end of each iteration of a loop (its border blinks 1 ↔ 3 px every 0.7 s; "Step to next iteration", Step Out "Finish
+> For Loop", which finishes the whole loop); a Case after its frame (all three "Finish Case Structure"); a Flat Sequence at the end of
+> each frame (that frame's border blinks; "Step to next frame", Step Out "Finish Flat Sequence Structure"; after the last frame all three
+> say so) and between frames (the whole structure's border blinks); and the end of the diagram (a 2 px line blinks at the inner edge of
+> the canvas; only Step Out, all three `Finish VI "<name>"`). Tested in `test/editor/debug-controller.test.mjs` and
+> `test/editor/debugging.test.mjs`; checked in the running editor (`labview-captures/reports/2026-10-16-solder-frame-stops.md`).
+> **Unverified:** the While Loop and the Stacked Sequence (the Stacked has no frame stops yet), a
+> structure inside another (Step Out from its start finishes the outer one here), the greyed second frame of a Flat Sequence at its
+> start (not drawn).
 
 ## 17. Broken wires with a loose end (DT-046, 2026-10-09)
 

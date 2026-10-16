@@ -3,13 +3,28 @@
 //
 // Pure: `collect` turns what the editor already knows (the broken wires `Gr.tipos`
 // finds, the required inputs nobody wired, what the hierarchy and the compiler
-// refuse) into rows; `view` in debug-view.mjs draws them. Warnings are not computed
-// yet: the Show Warnings box is there and adds nothing.
+// refuse) into rows; `view` in debug-view.mjs draws them. `collectWarnings` finds what
+// LabVIEW warns about without breaking the VI (labview-captures/reports/2026-10-16-warnings-frame-stops.md §A),
+// shown only with Show Warnings, a setting of the session shared by every VI.
 
 import * as Gr from "../../../core/model/graph.mjs";
 import { nodeDisplayName } from "./debug-plan.mjs";
 
 export const GROUP_TITLE = "Block Diagram Errors";
+/** Every warning goes in one group, those of panel terminals too (measured: there is no Front Panel group). */
+export const WARNING_GROUP_TITLE = "Block Diagram Warnings";
+
+/**
+ * The constants a user places and sets, which warn when nothing reads them. Measured on numeric and string
+ * constants; the Boolean, enum, ring, array and error cluster constants are assumed to behave alike
+ * (unverified), and the named constants of the palettes (pi, Tab…) are left out until measured.
+ */
+const USER_CONSTANTS = new Set(["const", "num-const", "str-const", "bool-const", "enum-const", "ring-const", "arr-const", "error-cluster-constant"]);
+/** What the Details box says of each warning (own words). */
+export const WARNING_DETAILS = {
+  constant: "Nothing reads this constant on the block diagram. Wire it to an input or delete it.",
+  terminal: "The terminal of this front panel control or indicator is not wired on the block diagram.",
+};
 
 /** What the Details box says of an unwired input (own words: the capture only fixes what it means). */
 export const UNWIRED_DETAILS = "A required input of this function is not wired, or is wired in a way it cannot accept. Open the Context Help window to see which connections the function needs.";
@@ -55,13 +70,35 @@ export function collect({ graph, catalog, resolved, hierarchyErrors = [], compil
   return rows;
 }
 
-/** "2 errors and warnings", as the label above the list (warnings, when computed, are added by the caller). */
+/**
+ * The warnings of a VI, as rows like the errors' with `warning: true`: a constant nothing reads and a panel
+ * terminal with no wire. They never break the VI: Run works.
+ */
+export function collectWarnings({ graph, catalog }) {
+  const touched = new Set(graph.cables.flatMap((wire) => [wire.de.nodo, wire.a.nodo]));
+  const reads = new Set(graph.cables.map((wire) => wire.de.nodo));
+  const rows = [];
+  for (const node of graph.nodos) {
+    if (USER_CONSTANTS.has(node.tipo) && !reads.has(node.id)) {
+      rows.push({ id: `warning.${node.id}`, text: "Diagram Constant: unwired block diagram constant", details: WARNING_DETAILS.constant, target: { node: node.id }, warning: true });
+    } else if (catalog.bloque(node.tipo).panel && !touched.has(node.id)) {
+      const label = node.label?.text ?? node.name;
+      rows.push({ id: `warning.${node.id}`, text: `Front Panel Terminal '${label}': unwired front panel terminal`, details: WARNING_DETAILS.terminal, target: { node: node.id }, warning: true });
+    }
+  }
+  return rows;
+}
+
+/** "3 errors and warnings", as the label above the list: it counts the rows shown, warnings included. */
 export const countLabel = (rows) => `${rows.length} errors and warnings`;
 
 export const initial = () => ({ open: false, showWarnings: false, selected: null });
 
-/** Rows the list shows: the warnings do not exist yet, so Show Warnings changes nothing. */
-export const visibleRows = (rows) => rows;
+/** The rows the list shows: the errors, and the warnings after them only with Show Warnings. */
+export const visibleRows = (rows, showWarnings = false) => [...rows.filter((row) => !row.warning), ...(showWarnings ? rows.filter((row) => row.warning) : [])];
+
+/** Whether the toolbars show the List Warnings triangle: Show Warnings is on and the VI has some. */
+export const showsWarningButton = (rows, showWarnings) => showWarnings && rows.some((row) => row.warning);
 
 export function selectRow(state, rowId) {
   return { ...state, selected: rowId };

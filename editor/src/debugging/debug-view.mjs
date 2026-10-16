@@ -110,9 +110,19 @@ export function overlay(state, graph, context, resolved, options) {
     const reported = state.run.values[key];
     if (showValues && reported && !taggedSources.has(key)) {
       taggedSources.add(key);
-      const delay = Math.max(0, progress.pace - progress.elapsed);
+      // A constant shows its value as its band starts; anything else, when the band arrives (border-probes §1).
+      const isConstant = !!D.CONSTANTES[graph.nodos.find((node) => node.id === wire.de.nodo)?.tipo];
+      const delay = isConstant ? 0 : Math.max(0, progress.pace - progress.elapsed);
       tags += tag(State.formatTag(reported.value, separator), path[0][0], path[0][1] - TAG.height / 2, `;animation-delay:${delay}ms`).replace('class="dep-etiqueta"', 'class="dep-etiqueta dep-aparece"');
     }
+  }
+
+  // A For Loop's N has no wire inside: its tag sits on its own terminal and stays through the iterations
+  // (border-probes §1), so it goes by the value reported, not by what the iteration has lit.
+  for (const node of running && state.highlight.on && showValues ? graph.nodos : []) {
+    const reported = node.tipo === "loop-count" && state.run.values[`${node.id}.count`];
+    const terminal = reported && terminals.get(`${node.id}.count`);
+    if (terminal) tags += tag(State.formatTag(reported.value, separator), terminal.x, terminal.y - TAG.height / 2);
   }
 
   for (const item of state.items) {
@@ -138,8 +148,11 @@ export function overlay(state, graph, context, resolved, options) {
     }
   }
 
+  // A stop on a structure's frame or at the end of the diagram (warnings-frame-stops §B).
+  if (pausedAt?.kind === "diagram") marks += `<div class="dep-fin-diagrama" data-detenido="diagram"></div>`;
+  else if (pausedAt?.kind === "frame") marks += structureStop(graph.nodos.find((candidate) => candidate.id === pausedAt.node), pausedAt, context);
   // The node the VI stopped at: inverse video and the marching frame (§4, 74).
-  if (pausedAt) {
+  else if (pausedAt) {
     const node = graph.nodos.find((candidate) => candidate.id === pausedAt.node);
     if (node) marks += frame(D.caja(node, context), "dep-detenido", 0, `data-detenido="${pausedAt.node}"`);
     const wire = pausedAt.wire && graph.cables.find((candidate) => candidate.id === pausedAt.wire);
@@ -158,6 +171,40 @@ export function overlay(state, graph, context, resolved, options) {
   const svg = bands || marks.includes("<polyline") ? `<svg class="cables dep-capa">${bands}${marks.match(/<polyline[^>]*\/>/g)?.join("") ?? ""}</svg>` : "";
   const boxes = marks.replace(/<polyline[^>]*\/>/g, "");
   return `${svg}${boxes}${tags}`;
+}
+
+/** A Flat Sequence's frame `index`, inside the film border. */
+function flatFrameBox(sequence, index) {
+  const S = G.MEDIDAS_SECUENCIA;
+  return { x: sequence.x + D.izquierdasMarcos(sequence)[index], y: sequence.y + S.banda, ancho: D.anchosMarcos(sequence)[index], alto: sequence.tam.alto - 2 * S.banda };
+}
+
+/** Thicker borders, drawn inward, that blink at a stop where a structure's iteration or frame ends (§B). */
+export const FRAME_STOP = { loopBorder: 3, caseBorder: 2, sequenceBorder: 3 };
+
+/**
+ * How the stop on a structure's frame looks (§B): before it runs, its inside tinted #f5f5fc under the marching
+ * frame; at the end of an iteration or a frame, a thick black border that blinks; a Flat Sequence going to its next
+ * frame, the same border round the whole structure. Measured on For Loop, Case and Flat Sequence; the While Loop is
+ * assumed to look like the For Loop (unverified).
+ */
+function structureStop(structure, stop, context) {
+  if (!structure) return "";
+  const box = D.caja(structure, context);
+  const attributes = `data-detenido="${esc(structure.id)}" data-fase="${esc(stop.phase)}"`;
+  const blinking = (target, width) => `<div class="dep-fin-marco" ${attributes} style="left:${px(target.x)};top:${px(target.y)};width:${px(target.ancho)};height:${px(target.alto)};border-width:${px(width)}"></div>`;
+  switch (stop.phase) {
+    case "start":
+      return frame(box, "dep-inicio-marco", 0, attributes) + frame(box, "dep-marquesina", 1);
+    case "iteration":
+      return blinking(box, FRAME_STOP.loopBorder);
+    case "end":
+      return blinking(box, FRAME_STOP.caseBorder);
+    case "between":
+      return blinking(box, FRAME_STOP.sequenceBorder);
+    default:
+      return blinking(stop.frameIndex !== undefined ? flatFrameBox(structure, stop.frameIndex) : box, FRAME_STOP.sequenceBorder);
+  }
 }
 
 /** A box `outset` px outside the box of a node. */
@@ -338,13 +385,22 @@ export const ERROR_LIST = { width: 661, height: 412, title: 32, margin: 11, inne
 export function errorListWindow(inv, model) {
   const { rows, state, viName, position, showWarnings = state.showWarnings } = model;
   const W = ERROR_LIST;
-  const shown = ErrorList.visibleRows(rows);
+  const shown = ErrorList.visibleRows(rows, showWarnings);
   const selected = shown.find((row) => row.id === state.selected);
-  const viRow = rows.length ? `<div class="el-fila vi elegida" style="top:2px"><span class="el-x">${G.DEBUG_WINDOW_ICONS["error-mark"]}</span><span>${esc(viName)}</span></div>` : "";
-  const items = shown
-    .map((row, k) => `<div class="el-fila${row.id === state.selected ? " elegida" : ""}" data-fila="${esc(row.id)}" style="top:${px(W.row + k * W.row + 2)};padding-left:24px">${esc(row.text)}</div>`)
-    .join("");
-  const group = shown.length ? `<div class="el-fila grupo" style="top:2px"><span class="el-punto">●</span>${ErrorList.GROUP_TITLE}</div>` : "";
+  const hasErrors = shown.some((row) => !row.warning);
+  // A VI with warnings only is listed without the red X (REPORT.md §5, warnings-frame-stops §A1).
+  const mark = hasErrors ? `<span class="el-x">${G.DEBUG_WINDOW_ICONS["error-mark"]}</span>` : `<span class="el-x"></span>`;
+  const viRow = shown.length ? `<div class="el-fila vi elegida" style="top:2px">${mark}<span>${esc(viName)}</span></div>` : "";
+  // The errors' group, then the warnings' group, each a bulleted title over its indented rows.
+  let line = 0;
+  const groupOf = (title, members) => {
+    if (!members.length) return "";
+    const top = (k) => px(k * W.row + 2);
+    let html = `<div class="el-fila grupo" style="top:${top(line++)}"><span class="el-punto">●</span>${title}</div>`;
+    for (const row of members) html += `<div class="el-fila${row.id === state.selected ? " elegida" : ""}" data-fila="${esc(row.id)}" style="top:${top(line++)};padding-left:24px">${esc(row.text)}</div>`;
+    return html;
+  };
+  const listed = groupOf(ErrorList.GROUP_TITLE, shown.filter((row) => !row.warning)) + groupOf(ErrorList.WARNING_GROUP_TITLE, shown.filter((row) => row.warning));
   const button = (key, label, left, extra = "") => `<div class="el-boton${holeClass(inv, `${ERROR_LIST_ID}.${key}`)}${extra}" data-id="${ERROR_LIST_ID}.${key}" style="left:${px(left)};top:${px(W.buttons.top)};width:${px(W.buttons.width)};height:${px(W.buttons.height)}">${label}</div>`;
   return `<div class="error-list" data-id="${ERROR_LIST_ID}" style="left:${px(position.x)};top:${px(position.y)};width:${px(W.width)};height:${px(W.height)}">` +
     `<div class="dw-titulo" style="height:${px(W.title)}"><span class="dw-icono-app">${G.ICONO_APP}</span><span class="dw-titulo-texto">Error list</span><span class="dw-cerrar" data-id="${ERROR_LIST_ID}.close-x">✕</span></div>` +
@@ -352,7 +408,7 @@ export function errorListWindow(inv, model) {
     `<div class="el-caja" data-id="${ERROR_LIST_ID}.items-with-errors" style="left:${px(W.margin)};top:${px(W.viList.top)};width:${px(W.innerWidth)};height:${px(W.viList.height)}">${viRow}</div>` +
     `<div class="el-etiqueta" style="left:${px(W.margin + 2)};top:${px(W.countTop)}">${esc(ErrorList.countLabel(shown))}</div>` +
     `<label class="el-casilla${holeClass(inv, `${ERROR_LIST_ID}.show-warnings`)}${showWarnings ? " marcada" : ""}" data-id="${ERROR_LIST_ID}.show-warnings" style="right:${px(W.margin + 2)};top:${px(W.countTop - 1)}">Show Warnings<span class="pv-casilla"></span></label>` +
-    `<div class="el-caja" data-id="${ERROR_LIST_ID}.errors" style="left:${px(W.margin)};top:${px(W.list.top)};width:${px(W.innerWidth)};height:${px(W.list.height)}">${group}${items}</div>` +
+    `<div class="el-caja" data-id="${ERROR_LIST_ID}.errors" style="left:${px(W.margin)};top:${px(W.list.top)};width:${px(W.innerWidth)};height:${px(W.list.height)}">${listed}</div>` +
     `<div class="el-etiqueta" style="left:${px(W.margin + 2)};top:${px(W.detailsLabelTop)}">Details</div>` +
     `<div class="el-detalles" data-id="${ERROR_LIST_ID}.details" style="left:${px(W.margin)};top:${px(W.details.top)};width:${px(W.innerWidth)};height:${px(W.details.height)}">${esc(selected?.details ?? "")}</div>` +
     button("close", "Close", W.buttons.close) + button("show-error", "Show Error", W.buttons.showError, " defecto") + button("help", "Help", W.buttons.help) + `</div>`;

@@ -46,11 +46,12 @@ const ALLOW_DEBUGGING_OFF = "Allow debugging is off (VI Properties ▸ Execution
  * glyph (REPORT.md §6, with the tooltips of 11-17 and 75). Unverified: the tooltips of the step
  * buttons while the VI runs, "Step out of <VI>" at the top level, and those of a subVI node.
  *
- * `info`: { phase, broken, allowDebugging, highlight, retain, viName, nodeName, nodeIsSubVI, container }
- * where `container` is "loop", "structure" or null for the node the VI is stopped at.
+ * `info`: { phase, broken, allowDebugging, highlight, retain, viName, nodeName, nodeIsSubVI, container, stop, parentName }
+ * where `container` is "loop", "structure" or null for the node the VI is stopped at, `stop` is the
+ * `{ kind, phase }` of the stop and `parentName` the name of the structure holding it, if any.
  */
 export function toolbarState(info) {
-  const { phase, broken, allowDebugging, highlight, retain, viName, nodeName, nodeIsSubVI, container } = info;
+  const { phase, broken, allowDebugging, highlight, retain, viName, nodeName, nodeIsSubVI, container, stop, parentName } = info;
   const unavailable = (label) => ({ enabled: false, tooltip: `${label}: ${ALLOW_DEBUGGING_OFF}` });
   const paused = phase === "paused";
   const stepping = (label) => (allowDebugging ? { enabled: !broken && phase !== "running", tooltip: label } : unavailable(label));
@@ -64,6 +65,9 @@ export function toolbarState(info) {
   const overLabel = paused ? `Step over ${nodeName}` : "Start Single Stepping";
   const stepOutLabel = container === "loop" ? "Finish Iteration" : container ? "Finish Structure" : `Step out of ${viName}`;
 
+  const atStructure = paused && stop && (stop.kind === "frame" || stop.kind === "diagram") ? structureStopLabels({ stop, nodeName, parentName, viName }) : null;
+  const stepButton = (label, glyph, enabled = true) => ({ enabled: allowDebugging && enabled, tooltip: label, glyph });
+
   return {
     run: { enabled: true, tooltip: phase === "running" || paused ? "Running" : broken ? "List Errors" : "Run", glyph: phase !== "edit" ? "run-en-marcha" : broken ? "run-roto" : "run" },
     "abort-execution": { enabled: phase !== "edit", tooltip: phase === "edit" ? "Abort Execution" : `Abort execution of "${viName}"` },
@@ -72,12 +76,37 @@ export function toolbarState(info) {
       : { ...unavailable("Pause"), glyph: "pause" },
     "highlight-execution": highlightButton,
     "retain-wire-values": retainButton,
-    "step-into": paused
+    "step-into": atStructure
+      ? stepButton(atStructure.into, "step-into-enabled", atStructure.steps)
+      : paused
       ? { enabled: allowDebugging && !nodeIsSubVI, tooltip: nodeIsSubVI ? `Step into ${nodeName}: the subVI is not stepped into yet` : overLabel, glyph: "step-into-enabled" }
       : stepping("Start Single Stepping"),
-    "step-over": paused ? { enabled: allowDebugging, tooltip: overLabel, glyph: "step-over-enabled" } : stepping("Start Single Stepping"),
-    "step-out": paused ? { enabled: allowDebugging, tooltip: stepOutLabel, glyph: "step-out-enabled" } : { enabled: false, tooltip: allowDebugging ? "Step Out" : `Step Out: ${ALLOW_DEBUGGING_OFF}` },
+    "step-over": atStructure ? stepButton(atStructure.over, "step-over-enabled", atStructure.steps) : paused ? { enabled: allowDebugging, tooltip: overLabel, glyph: "step-over-enabled" } : stepping("Start Single Stepping"),
+    "step-out": atStructure ? stepButton(atStructure.out, "step-out-enabled") : paused ? { enabled: allowDebugging, tooltip: stepOutLabel, glyph: "step-out-enabled" } : { enabled: false, tooltip: allowDebugging ? "Step Out" : `Step Out: ${ALLOW_DEBUGGING_OFF}` },
   };
+}
+
+/**
+ * The tooltips of the three steps at a stop on a structure's frame or at the end of the diagram, as measured
+ * (labview-captures/reports/2026-10-16-warnings-frame-stops.md §B). `steps`: whether Step Into and Step Over
+ * are enabled — at the end of the diagram only Step Out is. Out of a top-level structure's start is "Finish Block
+ * Diagram"; inside another structure it is assumed to finish that one (unverified).
+ */
+export function structureStopLabels({ stop, nodeName, parentName, viName }) {
+  const finish = (name) => `Finish ${name}`;
+  const finishParent = finish(parentName ?? "Block Diagram");
+  if (stop.kind === "diagram") return { into: finish(`VI "${viName}"`), over: finish(`VI "${viName}"`), out: finish(`VI "${viName}"`), steps: false };
+  switch (stop.phase) {
+    case "iteration":
+      return { into: "Step to next iteration", over: "Step to next iteration", out: finish(nodeName), steps: true };
+    case "frame-end":
+      return { into: "Step to next frame", over: "Step to next frame", out: finish(nodeName), steps: true };
+    case "end":
+    case "last-frame-end":
+      return { into: finish(nodeName), over: finish(nodeName), out: finish(nodeName), steps: true };
+    default:
+      return { into: `Step into ${nodeName}`, over: `Step over ${nodeName}`, out: finishParent, steps: true };
+  }
 }
 
 // ——— Probes and breakpoints ———

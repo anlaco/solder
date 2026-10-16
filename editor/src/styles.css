@@ -660,6 +660,13 @@ svg { display: block; overflow: visible; }
 .dep-detenido { position: absolute; box-sizing: border-box; background: #fff; mix-blend-mode: difference; pointer-events: none; z-index: 4; }
 .dep-marquesina { position: absolute; box-sizing: border-box; border: 1px dashed #4386b9; pointer-events: none; z-index: 4; animation: dep-marcha 0.6s linear infinite; }
 .dep-detenido::after { content: ""; position: absolute; inset: 0; border: 1px dashed #4386b9; }
+/* Single-step stops on a structure (labview-captures/reports/2026-10-16-warnings-frame-stops.md §B): its inside tinted
+   #f5f5fc before it runs; a thick border that blinks every 0.7 s where an iteration or a frame ends; a 2 px line
+   at the inner edge of the canvas at the end of the diagram. */
+.dep-inicio-marco { position: absolute; box-sizing: border-box; background: #f5f5fc; mix-blend-mode: multiply; pointer-events: none; z-index: 4; }
+.dep-fin-marco { position: absolute; box-sizing: border-box; border: 0 solid #000; pointer-events: none; z-index: 4; animation: dep-parpadeo 0.7s steps(1) infinite; }
+.dep-fin-diagrama { position: absolute; inset: 0; border: 2px solid #000; pointer-events: none; z-index: 4; animation: dep-parpadeo 0.7s steps(1) infinite; }
+@keyframes dep-parpadeo { 50% { visibility: hidden; } }
 .dep-detenido-cable { fill: none; stroke: #ffff00; stroke-width: 3; stroke-dasharray: 4 4; animation: dep-marcha 0.6s linear infinite; }
 @keyframes dep-marcha { to { stroke-dashoffset: -8px; border-color: #bfdbf1; } }
 

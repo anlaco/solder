@@ -22,7 +22,7 @@ import * as CP from "../front-panel/connector-pane.mjs";
 import * as DS from "../debugging/debug-state.mjs";
 import * as DV from "../debugging/debug-view.mjs";
 import * as EL from "../debugging/error-list.mjs";
-import { buildDebugPlan } from "../debugging/debug-plan.mjs";
+import { buildDebugPlan, nodeDisplayName } from "../debugging/debug-plan.mjs";
 import * as D from "../block-diagram/diagram-view.mjs";
 import * as DC from "../block-diagram/diagram-clipboard.mjs";
 import * as ED from "../block-diagram/diagram-editing.mjs";
@@ -540,8 +540,13 @@ function debugToolbar() {
     nodeName: paused?.name ?? "",
     nodeIsSubVI: !!node && SN.isSubVI(node),
     container: container ? (container.tipo === "while-loop" || container.tipo === "for-loop" ? "loop" : "structure") : null,
+    stop: paused ? { kind: paused.kind, phase: paused.phase } : null,
+    parentName: container ? nodeDisplayName(container, inv) : null,
   });
 }
+
+/** The toolbar's buttons that change with the VI: the debugging ones and the List Warnings triangle (Rule 89b). */
+const toolbarButtons = () => ({ ...debugToolbar(), "list-warnings": { enabled: true, tooltip: "List Warnings" } });
 
 /** Highlight Execution button: toggles; held, it opens the menu of speeds (REPORT.md §1). */
 const clickHighlight = () => allowsDebugging(grafo()) && setDebug(DS.toggleHighlight(debug));
@@ -571,6 +576,8 @@ const TOOLBAR_ACTIONS = {
   "step-into": () => clickStep("into"),
   "step-over": () => clickStep("over"),
   "step-out": () => clickStep("out"),
+  // The triangle opens the Error list, as Ctrl+L does, with the warnings shown (warnings-frame-stops §A2).
+  "list-warnings": () => openErrorList(),
 };
 
 /** The speed menu hangs from the Highlight Execution button; its rows are the inventory's. */
@@ -625,22 +632,34 @@ function openDebugWindow() {
   setDebug(DS.openDebugWindow(debug));
 }
 
-/** The rows of the Error list for the VI now (cached by graph: compiling on each repaint would be wasteful). */
-let errorRowsCache = { graph: null, hierarchy: null, rows: [] };
+/** The errors of the VI now (cached by graph: compiling on each repaint would be wasteful). Only these stop Run. */
+let errorRowsCache = { graph: null, hierarchy: null, rows: [], warnings: [] };
 function errorRows() {
   const g = grafo();
   if (errorRowsCache.graph === g && errorRowsCache.hierarchy === hierarchyErrors) return errorRowsCache.rows;
   const compiled = compilar(g, cat);
   const rows = EL.collect({ graph: g, catalog: cat, resolved: Gr.tipos(g, cat), hierarchyErrors, compileErrors: compiled.errores ?? [], inventory: inv });
-  errorRowsCache = { graph: g, hierarchy: hierarchyErrors, rows };
+  errorRowsCache = { graph: g, hierarchy: hierarchyErrors, rows, warnings: EL.collectWarnings({ graph: g, catalog: cat }) };
   return rows;
+}
+
+/** Everything the Error list may show: the errors and, after them, the warnings. */
+const listRows = () => [...errorRows(), ...errorRowsCache.warnings];
+/** The rows the Error list shows now, with or without the warnings. */
+const shownRows = () => EL.visibleRows(listRows(), errorList.showWarnings);
+
+/** Show Warnings is one setting for the whole session (measured): the main process keeps it for every VI. */
+function receiveShowWarnings(showWarnings) {
+  if (errorList.showWarnings === !!showWarnings) return;
+  errorList = { ...errorList, showWarnings: !!showWarnings };
+  pintar();
 }
 
 /** View ▸ Error List; from a wire's menu (List Errors) the list opens with that wire's error selected. */
 function openErrorList(selectedRowId) {
   if (!conDiagrama) return canal.postMessage({ showTool: "error-list" });
   debugUi.errorListAt ??= defaultWindowPosition(DV.ERROR_LIST.width, DV.ERROR_LIST.height, 30);
-  const selected = errorRows().some((row) => row.id === selectedRowId) ? selectedRowId : (errorList.selected ?? errorRows()[0]?.id ?? null);
+  const selected = shownRows().some((row) => row.id === selectedRowId) ? selectedRowId : (errorList.selected ?? shownRows()[0]?.id ?? null);
   errorList = { ...errorList, open: true, selected };
   // The tip of what the mouse was resting on would stay over the window until the mouse moved (real-programs-0.3.md B14).
   dia = ED.sobrevolar(dia, null);
@@ -650,7 +669,7 @@ function openErrorList(selectedRowId) {
 
 /** Show Error and a double click on a row: the diagram comes to the front and the object gets its marching frame. */
 function showError(rowId) {
-  const row = errorRows().find((candidate) => candidate.id === (rowId ?? errorList.selected));
+  const row = shownRows().find((candidate) => candidate.id === (rowId ?? errorList.selected));
   if (!row?.target) return;
   errorFocus = row.target;
   window.focus();
@@ -674,7 +693,7 @@ function floatingWindows() {
     if (debugUi.askingToCloseProbes) windows += DV.closeProbesDialog(inv);
   }
   if (errorList.open) {
-    windows += DV.errorListWindow(inv, { rows: errorRows(), state: errorList, viName: viInfo.name, position: debugUi.errorListAt ?? defaultWindowPosition(DV.ERROR_LIST.width, DV.ERROR_LIST.height, 30) });
+    windows += DV.errorListWindow(inv, { rows: listRows(), state: errorList, viName: viInfo.name, position: debugUi.errorListAt ?? defaultWindowPosition(DV.ERROR_LIST.width, DV.ERROR_LIST.height, 30) });
   }
   return { windows, popup };
 }
@@ -758,6 +777,10 @@ function clickErrorList(id) {
     errorList = { ...errorList, open: false };
     pintar();
   } else if (id === `${EW}.show-error`) showError();
+  else if (id === `${EW}.show-warnings`) {
+    window.solder?.listaDeErrores.fijarMostrarAvisos(!errorList.showWarnings);
+    receiveShowWarnings(!errorList.showWarnings);
+  }
   else if (esHueco(inv.resolver(id))) cambiar(E.clic(estado, inv, id, { x: 40, y: 40 }));
   return true;
 }
@@ -1129,7 +1152,7 @@ function pintar() {
   const charts = GS.reconciledCharts(pan.charts, grafo(), resueltos);
   if (charts !== pan.charts) pan = { ...pan, charts };
   const floating = floatingWindows();
-  const extra = { toolbar: debugToolbar(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, dialogo: dialogoError, numeroVI: viInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
+  const extra = { toolbar: toolbarButtons(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, conAvisos: !ejecutando && EL.showsWarningButton(listRows(), errorList.showWarnings), dialogo: dialogoError, numeroVI: viInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
   if (conDiagrama) {
     extra.lienzo = D.contenido({ ...dia, debug: DV.canvasView(debug, dia.g, ejecutando) }, ctx, resueltos) + DV.overlay(debug, dia.g, ctx, resueltos, { now: Date.now(), separator: separador, running: ejecutando, pausedAt: debug.run.paused, errorFocus });
     extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia, ctx), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx), DV.menuVariants(debug, dia.g, resueltos, dia.menu)), windowSize()) : "") + floating.popup;
@@ -1820,6 +1843,8 @@ function mostrarTip(ev) {
 
 // Everything above is declared: now the VI is loaded and the window starts to talk to the other one.
 window.solder?.portapapeles.alCambiar(recibirPortapapeles);
+window.solder?.listaDeErrores.alCambiar(receiveShowWarnings);
+receiveShowWarnings(await window.solder?.listaDeErrores.mostrarAvisos());
 recibirPortapapeles(await window.solder?.portapapeles.leer());
 if (viInfo.text) await cargarTexto(viInfo.text);
 pintar();

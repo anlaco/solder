@@ -47,6 +47,13 @@ contextBridge.exposeInMainWorld("solder", {
     /** Something was copied or cut in some window: `callback(text)`. */
     alCambiar: (callback) => ipcRenderer.on("clipboard:changed", (_event, texto) => callback(texto)),
   },
+  /** The Error list's Show Warnings: one setting for the session, shared by every VI. */
+  listaDeErrores: {
+    mostrarAvisos: () => ipcRenderer.invoke("error-list:show-warnings"),
+    fijarMostrarAvisos: (on) => ipcRenderer.send("error-list:set-show-warnings", on),
+    /** Some window changed it: `callback(on)`. */
+    alCambiar: (callback) => ipcRenderer.on("error-list:show-warnings-changed", (_event, on) => callback(on)),
+  },
   /** The Getting Started window (DT-052). */
   inicio: {
     /** What it remembers and Solder's version: `{ recentFiles, carouselPage, version }`. */

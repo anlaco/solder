@@ -137,7 +137,7 @@ const A_LA_DERECHA = ["save-version", "search", "nigel", "show-context-help-wind
  */
 const AL_EDITAR = ["text-settings", "align-objects", "distribute-objects", "resize-objects", "reorder", "clean-up-diagram"];
 /** Elementos de la barra que sólo aparecen mientras se escribe, a la izquierda de Run. */
-const AL_ESCRIBIR = ["enter-text"];
+const AL_ESCRIBIR = ["enter-text", "list-warnings"];
 /** De la paleta: lo que va en su barra de título o en su pie. */
 const EN_TITULO = ["thumbtack", "search"];
 const EN_PIE = ["double-arrows", "change-visible-palettes"];
@@ -198,7 +198,10 @@ export function disposicionBarra(inv, ventana) {
 
 function elementoBarra(inv, e, sitio, extra) {
   const n = ultimo(e.id);
-  if (sitio.alEscribir && !extra.editandoTexto) sitio = { ...sitio, oculto: true };
+  // The same slot left of Run holds Enter Text while text is typed and, otherwise, the List Warnings triangle while
+  // Show Warnings is on and the VI has warnings (warnings-frame-stops §A2; which wins when both apply is unverified).
+  const shown = n === "list-warnings" ? extra.conAvisos && !extra.editandoTexto : extra.editandoTexto;
+  if (sitio.alEscribir && !shown) sitio = { ...sitio, oculto: true };
   if (extra.ejecutando && AL_EDITAR.includes(n)) sitio = { ...sitio, oculto: true };
   const pos = sitio.left !== undefined ? `left:${px(sitio.left)}` : `right:${px(sitio.right)}`;
   const ancho = sitio.ancho !== null ? `;width:${px(sitio.ancho)}` : "";

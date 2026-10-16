@@ -23,7 +23,8 @@
 //                                          "error-automatico" (Continue or Stop) or "dialogo-error" (OK)
 //   { debug: { ran: nodo, pace, values: [{ node, port, value, at }] } }   a node ran: the values of its outputs and,
 //                                          with Highlight Execution, how long the worker holds the VI to show it (ms)
-//   { debug: { paused: { node, kind, wire?, container, name } } }   the VI stopped (kind: "before", "at" or "wire")
+//   { debug: { paused: { node, kind, phase?, wire?, container, name } } }   the VI stopped (kind: "before", "at", "wire",
+//                                          "frame" of a structure with its phase, or "diagram" at the end)
 //   { debug: { resumed: true } }           the VI goes on
 //   { fin: true, error?, abortado? }       the VI has finished
 //
@@ -147,6 +148,7 @@ onmessage = async ({ data }) => {
     await ejecutar(data.compilado, valores, opciones);
     debugController?.flush();
     vaciar();
+    await debugController?.finishDiagram();
     postMessage({ fin: true });
   } catch (e) {
     vaciar();

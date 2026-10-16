@@ -141,6 +141,8 @@ const FILTERS = [{ name: "Solder VI", extensions: [VI_EXTENSION, OLD_VI_EXTENSIO
 let quitting = false;
 /** What was last copied in any VI, as the text its window sent. */
 let sharedClipboard = null;
+/** The Error list's Show Warnings, for the whole session; it starts off, as LabVIEW's Options default (measured). */
+let showWarnings = false;
 
 const keyOf = (entry) => (entry.path ? pathKey(entry.path) : untitledKey(entry.id));
 
@@ -444,6 +446,11 @@ function handleRequests() {
   ipcMain.on("clipboard:write", (_event, text) => {
     sharedClipboard = text;
     for (const window of BrowserWindow.getAllWindows()) window.webContents.send("clipboard:changed", text);
+  });
+  ipcMain.handle("error-list:show-warnings", () => showWarnings);
+  ipcMain.on("error-list:set-show-warnings", (_event, on) => {
+    showWarnings = !!on;
+    for (const window of BrowserWindow.getAllWindows()) window.webContents.send("error-list:show-warnings-changed", showWarnings);
   });
   ipcMain.on("vi:error", (event, message) => {
     dialog.showMessageBox(ownerOf(event), { type: "error", message: "The VI cannot be opened.", detail: message });

@@ -1991,10 +1991,10 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
    * The debug hook after node `id` (DT-047): only while the host has set the
    * debug flag, the value of each output and then the node, which may suspend.
    */
-  function debugHook(id, outputs, { border = false } = {}) {
+  function debugHook(id, outputs, { border = false, frame = null, frameIndex = null } = {}) {
     if (!allowDebugging) return [];
     const entry = { vi: instanceKey, nodo: id, outputs: outputs.map(({ port, type }) => ({ port, tipo: type, ...datosDePanel(type) })) };
-    const index = module.debugNodes.push(border ? { ...entry, border: true } : entry) - 1;
+    const index = module.debugNodes.push({ ...entry, ...(border && { border: true }), ...(frame && { frame }), ...(frameIndex !== null && { frameIndex }) }) - 1;
     const values = outputs.flatMap(({ type, local }, j) => [ins("i32.const", index), ins("i32.const", j), ins("local.get", local), ins("call", idImport(`valor_${tipoWasm(type)}`))]);
     return [ins("i32.const", module.debugFlag), ins("i32.load"), ins("if"), ...values, ins("i32.const", index), ins("call", idImport("nodo")), ins("drop"), ins("end")];
   }
@@ -2006,6 +2006,14 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
   function borderHook(id, port, local, k) {
     return debugHook(id, [{ port, type: contexto(id, k).tOut(0), local }], { border: true });
   }
+
+  /**
+   * The debug hook of a structure's frame, where single stepping stops (labview-captures/reports/
+   * 2026-10-16-warnings-frame-stops.md §B): `phase` is "start" (before a structure runs), "iteration" (the end of
+   * a loop's iteration), "end" (a Case's frame finished), "between" (a Flat Sequence going to its next frame),
+   * "frame-end" and "last-frame-end" (a Flat Sequence's frame finished).
+   */
+  const frameHook = (sid, phase, frameIndex = null) => debugHook(sid, [], { frame: phase, frameIndex });
 
   // Las salidas que alguien lee desde otro clump necesitan una global.
   const cruzan = new Set(g.cables.filter((c) => clumpDe(c.de.nodo) !== clumpDe(c.a.nodo)).map((c) => `${c.de.nodo}.${c.de.puerto}`));
@@ -2194,6 +2202,8 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       const cableada = llegaA.has(`${id}.count`);
       c.push(...(cableada ? contexto(id, k).entrada(0) : indexados.length ? [ins("local.get", indexados[0].m)] : [ins("i32.const", 0)]), ins("local.set", n));
       for (const x of indexados) c.push(ins("local.get", x.m), ins("local.get", n), ins("local.get", x.m), ins("local.get", n), ins("i32.lt_s"), ins("select"), ins("local.set", n));
+      // N shows the count it was given on its own terminal, once (measured); it has no wire inside to carry it.
+      if (cableada) c.push(...debugHook(id, [{ port: "count", type: "i32", local: n }], { border: true }));
     }
     const i = L("i32");
     for (const id of de("loop-iteration")) valor.set(`${id}.i`, { local: i, clump: k });
@@ -2215,7 +2225,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
         c.push(ins("i32.const", 0), ins("local.set", t.indexado.n), ins("i32.const", t.indexado.celda), ins("i32.const", 0), ins("i32.const", el.tam), ins("i32.const", el.ref ? 1 : 0), llamarMemoria("nuevo_array"), ins("drop"));
       } else c.push(...constante(contexto(t.id, k).tOut(0), 0), ins("local.set", t.l));
     }
-    c.push(ins("block"));
+    c.push(...frameHook(sid, "start"), ins("block"));
     if (n !== null) c.push(ins("local.get", n), ins("i32.const", 0), ins("i32.le_s"), ins("br_if", 0));
     c.push(ins("loop"));
     // El elemento de cada túnel indexado en esta vuelta (fuera del array, el valor por defecto).
@@ -2257,6 +2267,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       if (r.celda !== null) c.push(...copiarValor(r.t, [ins("local.get", r.nuevo)], r.celda, L));
       else c.push(ins("local.get", r.nuevo), ins("local.set", r.ahora));
     }
+    c.push(...frameHook(sid, "iteration"));
     // i + 1, sin pasar de 2^31 − 1: LabVIEW lo deja ahí.
     c.push(ins("local.get", i), ins("local.get", i), ins("i32.const", 0x7fffffff), ins("i32.ne"), ins("i32.add"), ins("local.set", i));
     c.push(
@@ -2364,6 +2375,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     }
     // Its input tunnels show their values once the selector has arrived, as the frame starts (measured).
     for (const id of deAqui.filter((x) => porId.get(x).tipo === "tunnel-in")) c.push(...borderHook(id, "y", valor.get(`${id}.y`).local, k));
+    c.push(...frameHook(sid, "start"));
     const salidas = deAqui.filter((x) => porId.get(x).tipo === "case-tunnel-out").map((id) => {
       const x = contexto(id, k);
       const l = L(tipoWasm(x.tOut(0)));
@@ -2436,6 +2448,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     }
     if (porDefecto >= 0) marco(porDefecto);
     for (const { i } of conValores) if (i !== porDefecto) c.push(ins("end"));
+    c.push(...frameHook(sid, "end"));
     for (const t of salidas) {
       dejar(k, t.id, "y", t.l, tipoWasm(t.x.tOut(0)));
       c.push(...borderHook(t.id, "y", t.l, k));
@@ -2472,6 +2485,8 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
   function emitirMarcoFlat(seq, m, k) {
     const deAqui = ids.filter((id) => porId.get(id).dentro === seq);
     const c = k.cuerpo;
+    const lastFrame = m === porId.get(seq).config.marcos.length - 1;
+    c.push(...frameHook(seq, m === 0 ? "start" : "between"));
     for (const id of deAqui.filter((x) => porId.get(x).tipo === "tunnel-in" && marcoEnFlat(porId.get(x), seq) === m)) {
       const x = contexto(id, k);
       const vt = tipoWasm(x.tOut(0));
@@ -2480,6 +2495,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       valor.set(`${id}.y`, { local: l, clump: k });
     }
     emitirCuerpo(deAqui.filter((id) => porId.get(id).marco === m), seq, k);
+    c.push(...frameHook(seq, lastFrame ? "last-frame-end" : "frame-end", m));
     for (const id of deAqui.filter((x) => porId.get(x).tipo === "tunnel-out" && marcoEnFlat(porId.get(x), seq) === m)) {
       const x = contexto(id, k);
       const vt = tipoWasm(x.tOut(0));

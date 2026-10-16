@@ -65,6 +65,7 @@ function loopVI() {
   }
   put("n", "const", { value: 3 });
   put("ten", "const", { value: 10 });
+  put("unused", "bool-const", { value: true });
   put("zero", "const", { value: 0 });
   put("add", "add", null, true);
   put("acc", "add", null, true);
@@ -97,7 +98,8 @@ function start({ configure = {}, sleepLog = null, vi = chainVI } = {}) {
     sleep: async (ms) => sleepLog?.push(ms),
   });
   controller.configure({ active: true, ...configure });
-  const run = ejecutar(compiled, {}, { depurador: controller.hooks });
+  // As the run worker does: the diagram's last stop comes after the VI has run.
+  const run = ejecutar(compiled, {}, { depurador: controller.hooks }).then(() => controller.finishDiagram());
   return { controller, events, run, id, plan, compiled };
 }
 
@@ -171,7 +173,7 @@ test("Step Over runs the node and stops before the next one; Continue goes to th
   assert.ok(events.some((event) => event.ran === id.add));
   controller.resume("over");
   await tick();
-  assert.equal(pausedNode(events).node, id.sum);
+  assert.equal(pausedNode(events).kind, "diagram", "an indicator is not a stop: the end of the diagram is next");
   controller.resume("continue");
   await run;
 });
@@ -210,7 +212,8 @@ test("the borders of a loop report their values each iteration, and the outputs 
   const { events, run, id, compiled } = start({ vi: loopVI, configure: { highlight: { on: true, speed: "very-fast" } } });
   await run;
   const borders = compiled.debugNodes.filter((entry) => entry.border).map((entry) => entry.nodo);
-  assert.deepEqual(new Set(borders), new Set([id.tunnelIn, id.left, id.i, id.tunnelOut, id.right]));
+  assert.deepEqual(new Set(borders), new Set([id.count, id.tunnelIn, id.left, id.i, id.tunnelOut, id.right]));
+  assert.deepEqual(reported(events, id.count, "count"), [3], "N, once, before the first iteration");
   assert.deepEqual(reported(events, id.tunnelIn, "y"), [10, 10, 10]);
   assert.deepEqual(reported(events, id.i, "i"), [0, 1, 2]);
   assert.deepEqual(reported(events, id.left, "value"), [0, 10, 21]);
@@ -240,5 +243,46 @@ test("single stepping through a loop stops before its nodes, never at a border",
   const stops = events.filter((event) => event.paused).map((event) => event.paused.node);
   assert.equal(stops.filter((node) => node === id.add).length, 3, "before the Add of each iteration");
   assert.ok(stops.every((node) => !borders.has(node)), JSON.stringify(stops));
-  assert.ok(![id.n, id.ten, id.zero].some((constant) => stops.includes(constant)), "nor at a constant");
+  assert.ok(![id.n, id.ten, id.zero, id.unused].some((constant) => stops.includes(constant)), "nor at a constant, Boolean ones too");
+});
+
+// labview-captures/reports/2026-10-16-warnings-frame-stops.md §B: the frames of the structures are stops too.
+
+/** Steps with `mode` until the VI ends, and gives each stop as "kind:phase" (frames) or "kind:name" (nodes). */
+async function stepThrough(vi, modes = () => "over", configure = {}) {
+  const { controller, events, run, id } = start({ vi, configure });
+  controller.requestPause();
+  let finished = false;
+  run.then(() => (finished = true));
+  for (let step = 0; step < 60 && !finished; step++) {
+    await tick();
+    if (controller.isPaused()) controller.resume(modes(pausedNode(events)));
+  }
+  await run;
+  const names = Object.fromEntries(Object.entries(id).map(([name, node]) => [node, name]));
+  return events.filter((event) => event.paused).map(({ paused }) => (paused.kind === "frame" ? `frame:${paused.phase}` : paused.kind === "diagram" ? "diagram" : `${paused.kind}:${names[paused.node]}`));
+}
+
+test("single stepping stops at the loop before it runs, at the end of each iteration and at the end of the diagram", async () => {
+  const stops = await stepThrough(loopVI);
+  const iteration = ["before:add", "before:acc", "frame:iteration"];
+  assert.deepEqual(stops, ["frame:start", ...iteration, ...iteration, ...iteration, "diagram"]);
+});
+
+test("Step Out at the end of an iteration finishes the loop", async () => {
+  let outDone = false;
+  const stops = await stepThrough(loopVI, (paused) => {
+    if (paused.kind === "frame" && paused.phase === "iteration" && !outDone) return (outDone = true), "out";
+    return "over";
+  });
+  assert.deepEqual(stops, ["frame:start", "before:add", "before:acc", "frame:iteration", "diagram"]);
+});
+
+test("Step Out at the end of an iteration finishes the loop with Highlight Execution on too", async () => {
+  let outDone = false;
+  const stops = await stepThrough(loopVI, (paused) => {
+    if (paused.kind === "frame" && paused.phase === "iteration" && !outDone) return (outDone = true), "out";
+    return "over";
+  }, { highlight: { on: true, speed: "very-fast" } });
+  assert.deepEqual(stops, ["frame:start", "before:add", "before:acc", "frame:iteration", "diagram"]);
 });

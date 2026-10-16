@@ -167,9 +167,6 @@
       "desc": "the probes other than the generic one: the one that toggles highlighting, the conditional one, the history one, the one made with a control and custom ones",
       "ref": "labview-captures/debugging/REPORT.md §3: untried"
     },
-    "advertencias": {
-      "desc": "computing a VI's warnings (unused or hidden objects, unwired panel terminals) for the error list"
-    },
     "sondas": {
       "desc": "saving and reading the last value that passed through each wire"
     },
@@ -1235,6 +1232,13 @@
       "captura": "front-panel/numeric-panel.png"
     },
     {
+      "id": "window.front-panel.toolbar.list-warnings",
+      "etiqueta": "List Warnings",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_warnings_of_a_VI_are_listed_with_Show_Warnings_and_light_the_triangle",
+      "captura": "warnings/t1_s.png"
+    },
+    {
       "id": "window.front-panel.toolbar.run",
       "etiqueta": "Run",
       "estado": "built",
@@ -2040,6 +2044,13 @@
       "captura": "block-diagram/numeric-editar-constante.png"
     },
     {
+      "id": "window.block-diagram.toolbar.list-warnings",
+      "etiqueta": "List Warnings",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::the_warnings_of_a_VI_are_listed_with_Show_Warnings_and_light_the_triangle",
+      "captura": "warnings/t1_s.png"
+    },
+    {
       "id": "window.block-diagram.toolbar.run",
       "etiqueta": "Run",
       "estado": "built",
@@ -2419,10 +2430,9 @@
     {
       "id": "window.error-list.show-warnings",
       "etiqueta": "Show Warnings",
-      "estado": "todo",
-      "labview": "Adds the warnings of each VI to the list: unused objects, hidden objects and unwired panel terminals. Solder does not compute warnings yet.",
-      "necesita": "advertencias",
-      "captura": "debugging/96-show-warnings-on.png"
+      "estado": "built",
+      "captura": "debugging/96-show-warnings-on.png",
+      "prueba": "test/editor/debugging.test.mjs::the_warnings_of_a_VI_are_listed_with_Show_Warnings_and_light_the_triangle"
     },
     {
       "id": "window.error-list.errors",

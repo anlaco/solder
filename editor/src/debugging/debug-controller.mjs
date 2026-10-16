@@ -12,7 +12,10 @@
 // no reported inputs (a constant) cannot be caught before, so it stops right after it.
 // The borders of the structures (tunnels, shift registers, the loop's "i") report too:
 // their values reach the nodes they feed, but the VI never stops before or at one of
-// them, since they are not nodes.
+// them, since they are not nodes; nor at a constant or a panel terminal. Single stepping
+// also stops at the frames of the structures (before one runs, at the end of a loop's
+// iteration, of a Case's frame, of a Flat Sequence's frame) and once more at the end of
+// the diagram (labview-captures/reports/2026-10-16-warnings-frame-stops.md §B).
 
 /** The speeds of Highlight Execution, in the order of its menu (REPORT.md §1). */
 export const SPEEDS = ["slow", "medium", "fast", "very-fast"];
@@ -43,7 +46,7 @@ export function paceFor(speed, longestWirePixels = 0) {
 }
 
 /** What the page tells the controller about the diagram of the VI that runs. */
-export const EMPTY_PLAN = { successors: {}, inputCounts: {}, containers: {}, loops: [], parents: {}, wireLengths: {}, wires: {}, constants: [] };
+export const EMPTY_PLAN = { successors: {}, inputCounts: {}, containers: {}, loops: [], parents: {}, wireLengths: {}, wires: {}, quiet: [] };
 
 /**
  * @param {object} options
@@ -55,7 +58,10 @@ export const EMPTY_PLAN = { successors: {}, inputCounts: {}, containers: {}, loo
  */
 export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sleep = (ms) => new Promise((done) => setTimeout(done, ms)), now = Date.now }) {
   let config = { active: false, highlight: { on: false, speed: DEFAULT_SPEED }, retain: false, nodeBreakpoints: {}, wireBreakpoints: [] };
-  /** `null` runs free; "any" stops at the next node that is about to run; `{ outOf }` finishes a structure first. */
+  /**
+   * `null` runs free; "any" stops at the next node that is about to run or frame; `{ outOf }` finishes a
+   * structure first (`outOf: null`, the whole block diagram: it stops only at its end).
+   */
   let stepMode = null;
   let paused = null;
   let pendingValues = [];
@@ -63,7 +69,7 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
   let readyQueue = [];
   let initialDimPending = true;
   const loopSet = new Set(plan.loops);
-  const constantSet = new Set(plan.constants ?? []);
+  const quietSet = new Set(plan.quiet ?? []);
   const nodeNames = plan.names ?? {};
   let seenSinceStepOut = new Set();
   let flushTimer = null;
@@ -84,7 +90,7 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
     paused = { ...where, release: null, gate: null };
     paused.gate = new Promise((go) => (paused.release = go));
     stepMode = null;
-    send({ debug: { paused: { node: where.node, kind: where.kind, wire: where.wire, container: plan.containers[where.node] ?? null, name: nodeNames[where.node] ?? null } } });
+    send({ debug: { paused: { node: where.node, kind: where.kind, ...(where.phase && { phase: where.phase }), ...(where.frameIndex !== undefined && { frameIndex: where.frameIndex }), wire: where.wire, container: plan.containers[where.node] ?? null, name: nodeNames[where.node] ?? null } } });
     refreshActive();
     return paused.gate;
   }
@@ -109,15 +115,18 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
   const hasEnabledBreakpoint = (node) => config.nodeBreakpoints[node] === true;
 
   function stepModeStopsBefore(candidate) {
+    if (quietSet.has(candidate)) return false;
     if (stepMode === "any") return true;
-    if (stepMode?.outOf === undefined) return false;
+    if (stepMode?.outOf === undefined || stepMode.outOf === null) return false;
     const outside = !isInside(candidate, stepMode.outOf);
-    return outside || (loopSet.has(stepMode.outOf) && seenSinceStepOut.has(candidate));
+    // From a node inside a loop, Step Out finishes the iteration; from the end of an iteration, the whole loop.
+    return outside || (loopSet.has(stepMode.outOf) && !stepMode.whole && seenSinceStepOut.has(candidate));
   }
 
   /**
-   * Where the VI has to stop after the report of `node`, if anywhere. Stepping never stops at a border
-   * (`border`: a tunnel, a shift register, "i") or at a constant; a breakpoint on a constant still does.
+   * Where the VI has to stop after the report of `node`, if anywhere. Stepping stops before a node, or at one
+   * that has no inputs to wait for (it cannot be caught before), but never at a border (`border`: a tunnel, a
+   * shift register, "i"), a constant or a panel terminal; a breakpoint on a constant still does.
    */
   function whereToStop(node, border) {
     const wire = config.wireBreakpoints.find((entry) => entry.enabled && entry.from === node);
@@ -128,7 +137,7 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
     if (stepMode !== null) {
       const candidate = readyQueue.find(stepModeStopsBefore);
       if (candidate) return { kind: "before", node: candidate };
-      if (stepMode === "any" && readyQueue.length === 0 && !border && !constantSet.has(node)) return { kind: "at", node };
+      if (stepMode === "any" && !(plan.inputCounts[node] > 0) && !border && !quietSet.has(node)) return { kind: "at", node };
     }
     return null;
   }
@@ -168,6 +177,28 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
     while (paused) await paused.gate;
   }
 
+  /**
+   * What Step Out finishes from a stop: the structure whose iteration or frame just ended; from a structure's
+   * start, the one holding it; from a node, its structure. `null` is the whole block diagram.
+   */
+  function structureToFinish(stop) {
+    if (stop.kind === "frame" && stop.phase !== "start" && stop.phase !== "between") return { outOf: stop.node, whole: true };
+    return { outOf: plan.containers[stop.node] ?? null };
+  }
+
+  /** Whether stepping stops at a frame of the structure `node`. */
+  function stepModeStopsAtFrame(node) {
+    if (stepMode === "any") return true;
+    if (stepMode?.outOf === undefined || stepMode.outOf === null) return false;
+    return node !== stepMode.outOf && !isInside(node, stepMode.outOf);
+  }
+
+  async function afterFrame(node, phase, frameIndex) {
+    while (paused) await paused.gate;
+    if (stepModeStopsAtFrame(node)) await pauseAt({ kind: "frame", node, phase, ...(frameIndex !== undefined && { frameIndex }) });
+    while (paused) await paused.gate;
+  }
+
   const hooks = {
     activar: null,
     alConectar() {
@@ -183,6 +214,7 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
     alNodo(index) {
       const info = debugNodes[index];
       if (info.vi !== "") return paused ? paused.gate : undefined;
+      if (info.frame) return afterFrame(info.nodo, info.frame, info.frameIndex);
       return afterNode(info.nodo, info.border === true);
     },
     unoACadaVez: () => config.highlight.on,
@@ -210,10 +242,10 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
     resume(mode = "continue") {
       if (!paused) return;
       const node = paused.node;
-      if (mode === "over" || mode === "into") stepMode = "any";
+      if (paused.kind === "diagram") stepMode = null;
+      else if (mode === "over" || mode === "into") stepMode = "any";
       else if (mode === "out") {
-        const container = plan.containers[node];
-        stepMode = container ? { outOf: container } : null;
+        stepMode = structureToFinish(paused);
         seenSinceStepOut = new Set();
       } else stepMode = null;
       const finished = paused;
@@ -226,6 +258,12 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
     },
     /** The Run ended: what was gathered goes to the page. */
     flush,
+    /** The VI's diagram finished: while stepping, it stops once more at its end, until it is told to go on. */
+    async finishDiagram() {
+      if (stepMode === null) return;
+      await pauseAt({ kind: "diagram", node: null });
+      while (paused) await paused.gate;
+    },
     /** Abort: nothing may stay held. */
     release() {
       stepMode = null;

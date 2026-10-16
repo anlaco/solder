@@ -588,6 +588,9 @@ export const DEBUG_WINDOW_ICONS = {
   "error-mark": `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5" stroke="#cc1111" stroke-width="2.6" stroke-linecap="round"/></svg>`,
 };
 
+/** List Warnings: a yellow triangle with a black "!", 14 px wide (REPORT.md §5: body #f3cc0a, edge #b69405). Drawn anew. */
+BARRA["list-warnings"] = svg(`<path d="M8 2.2 L14.6 13.6 H1.4 Z" fill="#f3cc0a" stroke="#b69405" stroke-width="1" stroke-linejoin="round"/>` + `<rect x="7.25" y="5.6" width="1.5" height="4.6" fill="#000"/><rect x="7.25" y="11.1" width="1.5" height="1.5" fill="#000"/>`);
+
 /** Enter Text: la marca que confirma lo que se escribe en el diagrama. */
 BARRA["enter-text"] = svg(`<polyline points="3,8.6 6.3,12.4 13.2,3.6" fill="none" stroke="${TINTA}" stroke-width="2.1" stroke-linejoin="miter"/>`);
 
