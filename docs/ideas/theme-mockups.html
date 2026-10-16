@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solder themes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&family=Space+Grotesk:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --page: #eceef2; --ink: #1d2128; --muted: #5d6573; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.5 Inter, system-ui, sans-serif; }
+  main { max-width: 1320px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
+  p.lead { margin: 0 0 20px; color: var(--muted); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 600px), 1fr)); gap: 20px; }
+  .card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05); }
+  .head { padding: 12px 16px; display: flex; gap: 10px; align-items: baseline; }
+  .head b { font-size: 15px; font-weight: 600; }
+  .head span { color: var(--muted); font-size: 13px; }
+  .window { margin: 0 16px 16px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(0,0,0,.12); }
+  .toolbar { height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-size: 12px; }
+  .toolbar .btn { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 4px; }
+  .toolbar .title { margin-left: auto; opacity: .8; }
+  svg { display: block; width: 100%; height: auto; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; padding: 0 16px 14px; font-size: 12px; color: var(--muted); }
+  .legend i { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 5px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Solder themes</h1>
+  <p class="lead">The same block diagram in each theme: a For Loop that accumulates i × 0.5 in a shift register, compares the sum with 20 and shows a status string. The loop's i wire is in Highlight Execution, with its value tag. Nodes stay neutral; colour lives in the wires and terminals, by data type, as in LabVIEW.</p>
+  <div class="grid" id="grid"></div>
+</main>
+<script>
+const THEMES = [
+  {
+    name: "Old School", note: "the current one, cloned from LabVIEW 2026 Q3",
+    font: "Segoe UI, 'Noto Sans', sans-serif", mono: "Segoe UI, sans-serif",
+    toolbar: "#f0f0f0", toolbarInk: "#222", toolbarLine: "#d0d0d0", run: "#222",
+    canvas: "#ffffff", grid: null,
+    node: "#ffffcc", nodeStroke: "#4c4c3d", nodeInk: "#000", radius: 0,
+    constFill: "#ffffff", termFill: "#ffffff",
+    loop: "#8a8a8a", loopWidth: 5, loopFill: "none", loopRadius: 0, loopTermFill: "#ffffff",
+    wires: { dbl: "#ff7f00", i32: "#0000ff", bool: "#008a00", str: "#ff00ff" },
+    wireWidth: { dbl: 1.4, i32: 1.4, bool: 1.6, str: 1.6 }, glow: 0,
+    band: "#a3a3d6", bandWidth: 5,
+    tag: "#ccffff", tagStroke: "#333333", tagInk: "#000", tagRadius: 0,
+    accent: "#0078d4",
+  },
+  {
+    name: "Workbench", note: "chosen as the Solder theme (DT-056): light, a breadboard dot grid, orange solder accent, LabVIEW's type colours",
+    font: "Inter, sans-serif", mono: "'JetBrains Mono', monospace",
+    toolbar: "#ffffff", toolbarInk: "#2b2f36", toolbarLine: "#e3e6ec", run: "#ff7a1a",
+    canvas: "#fafaf8", grid: { kind: "dots", color: "#d9dbd6", step: 14 },
+    node: "#ffffff", nodeStroke: "#2b2f36", nodeInk: "#2b2f36", radius: 4,
+    constFill: "#ffffff", termFill: "#ffffff",
+    loop: "#2b2f36", loopWidth: 2, loopFill: "rgba(43,47,54,.025)", loopRadius: 6, loopTermFill: "#ffffff",
+    wires: { dbl: "#ff7f00", i32: "#0000ff", bool: "#008a00", str: "#ff00ff" },
+    wireWidth: { dbl: 2, i32: 2, bool: 2, str: 2 }, glow: 0,
+    band: "#fdba74", bandWidth: 6,
+    tag: "#2b2f36", tagStroke: "#2b2f36", tagInk: "#ffffff", tagRadius: 4,
+    accent: "#ff7a1a",
+  },
+  {
+    name: "Neon (light)", note: "clean at rest; wires and Highlight Execution glow when the VI runs",
+    font: "'Space Grotesk', Inter, sans-serif", mono: "'JetBrains Mono', monospace",
+    toolbar: "#ffffff", toolbarInk: "#14161c", toolbarLine: "#e6e8ef", run: "#00b8ff",
+    canvas: "#f6f7fb", grid: { kind: "lines", color: "#eceef5", step: 20 },
+    node: "#ffffff", nodeStroke: "#c9cfdb", nodeInk: "#14161c", radius: 6,
+    constFill: "#ffffff", termFill: "#ffffff",
+    loop: "#14161c", loopWidth: 1.5, loopFill: "none", loopRadius: 8, loopTermFill: "#ffffff",
+    wires: { dbl: "#ff6a00", i32: "#0077ff", bool: "#00c853", str: "#ff2bd6" },
+    wireWidth: { dbl: 2, i32: 2, bool: 2, str: 2 }, glow: 2.2,
+    band: "#00e5ff", bandWidth: 6,
+    tag: "#14161c", tagStroke: "#00e5ff", tagInk: "#00e5ff", tagRadius: 10,
+    accent: "#00b8ff",
+  },
+  {
+    name: "Oscilloscope", note: "dark, for the future dark mode; traces like a scope screen",
+    font: "'IBM Plex Sans', Inter, sans-serif", mono: "'JetBrains Mono', monospace",
+    toolbar: "#0f141a", toolbarInk: "#c9d6e2", toolbarLine: "#1e2a35", run: "#39ff88",
+    canvas: "#0b0f14", grid: { kind: "lines", color: "#122217", step: 24 },
+    node: "#121a22", nodeStroke: "#3a4b5c", nodeInk: "#d5e2ee", radius: 4,
+    constFill: "#0f151c", termFill: "#0f151c",
+    loop: "#5b6f82", loopWidth: 1.5, loopFill: "rgba(255,255,255,.015)", loopRadius: 4, loopTermFill: "#121a22",
+    wires: { dbl: "#ffb020", i32: "#3da5ff", bool: "#39ff88", str: "#ff4fd8" },
+    wireWidth: { dbl: 2, i32: 2, bool: 2, str: 2 }, glow: 3,
+    band: "#39ff88", bandWidth: 6,
+    tag: "#000000", tagStroke: "#39ff88", tagInk: "#39ff88", tagRadius: 3,
+    accent: "#39ff88",
+  },
+  {
+    name: "Blueprint", note: "dark blue technical drawing; outlined nodes, monospace labels",
+    font: "'JetBrains Mono', monospace", mono: "'JetBrains Mono', monospace",
+    toolbar: "#0a2340", toolbarInk: "#cfe6ff", toolbarLine: "#163a63", run: "#ffd166",
+    canvas: "#0d2a4a", grid: { kind: "lines", color: "#183f69", step: 20 },
+    node: "#0d2a4a", nodeStroke: "#e6f2ff", nodeInk: "#e6f2ff", radius: 2,
+    constFill: "#0d2a4a", termFill: "#0d2a4a",
+    loop: "#e6f2ff", loopWidth: 1.2, loopFill: "none", loopRadius: 0, loopTermFill: "#0d2a4a", dashedLoop: true,
+    wires: { dbl: "#ffc46b", i32: "#8fd3ff", bool: "#9cffb0", str: "#ff9fe0" },
+    wireWidth: { dbl: 1.6, i32: 1.6, bool: 1.6, str: 1.6 }, glow: 0,
+    band: "#ffd166", bandWidth: 5,
+    tag: "#e6f2ff", tagStroke: "#e6f2ff", tagInk: "#0d2a4a", tagRadius: 0,
+    accent: "#ffd166",
+  },
+  {
+    name: "Synthwave", note: "dark purple, full neon; the boldest of the set",
+    font: "'Space Grotesk', Inter, sans-serif", mono: "'JetBrains Mono', monospace",
+    toolbar: "#150c2b", toolbarInk: "#e9ddff", toolbarLine: "#2c1b52", run: "#ff3fb5",
+    canvas: "#1a1033", grid: { kind: "lines", color: "#2a1a52", step: 22 },
+    node: "#24164a", nodeStroke: "#7b68c8", nodeInk: "#f1e9ff", radius: 6,
+    constFill: "#1f1340", termFill: "#1f1340",
+    loop: "#ff3fb5", loopWidth: 1.5, loopFill: "rgba(255,63,181,.04)", loopRadius: 8, loopTermFill: "#24164a",
+    wires: { dbl: "#ff9e2c", i32: "#29d8ff", bool: "#7dff6a", str: "#ff3fb5" },
+    wireWidth: { dbl: 2, i32: 2, bool: 2, str: 2 }, glow: 3.2,
+    band: "#29d8ff", bandWidth: 6,
+    tag: "#0e0820", tagStroke: "#ff3fb5", tagInk: "#ffd6f0", tagRadius: 10,
+    accent: "#ff3fb5",
+  },
+];
+
+const W = 600, H = 250;
+
+function diagram(t, id) {
+  const glow = t.glow ? `filter="url(#glow-${id})"` : "";
+  const wire = (type, d, extra = "") =>
+    `<path d="${d}" fill="none" stroke="${t.wires[type]}" stroke-width="${t.wireWidth[type]}" ${type === "bool" && t.name === "Old School" ? 'stroke-dasharray="2 2"' : ""} ${glow} ${extra}/>`;
+  const box = (x, y, w, h, fill, stroke, r = t.radius, sw = 1.2) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+  const text = (x, y, s, size = 11, color = t.nodeInk, family = t.font, anchor = "middle", weight = 500) =>
+    `<text x="${x}" y="${y}" font-family="${family}" font-size="${size}" font-weight="${weight}" fill="${color}" text-anchor="${anchor}" dominant-baseline="central">${s}</text>`;
+  const constant = (x, y, w, type, value) => box(x, y, w, 18, t.constFill, t.wires[type], Math.min(t.radius, 3), 1.4) + text(x + w / 2, y + 9, value, 11, t.nodeInk, t.mono, "middle", 400);
+  const terminal = (x, y, type, label) => box(x, y, 34, 20, t.termFill, t.wires[type], Math.min(t.radius, 3), 1.6) + text(x + 17, y + 10, label, 10, t.wires[type], t.mono, "middle", 500);
+  const fn = (x, y, glyph) => box(x, y, 30, 30, t.node, t.nodeStroke, t.radius, 1.3) + text(x + 15, y + 15, glyph, 16, t.nodeInk, t.font, "middle", 500);
+
+  let grid = "";
+  if (t.grid?.kind === "dots") grid = `<pattern id="g-${id}" width="${t.grid.step}" height="${t.grid.step}" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="${t.grid.color}"/></pattern>`;
+  if (t.grid?.kind === "lines") grid = `<pattern id="g-${id}" width="${t.grid.step}" height="${t.grid.step}" patternUnits="userSpaceOnUse"><path d="M ${t.grid.step} 0 L 0 0 0 ${t.grid.step}" fill="none" stroke="${t.grid.color}" stroke-width="1"/></pattern>`;
+
+  const loop = { x: 92, y: 26, w: 318, h: 196 };
+  const loopFrame = t.name === "Old School"
+    ? `<rect x="${loop.x}" y="${loop.y}" width="${loop.w}" height="${loop.h}" fill="none" stroke="#9a9a9a" stroke-width="5"/><rect x="${loop.x}" y="${loop.y}" width="${loop.w}" height="${loop.h}" fill="none" stroke="#5e5e5e" stroke-width="1"/>`
+    : `<rect x="${loop.x}" y="${loop.y}" width="${loop.w}" height="${loop.h}" rx="${t.loopRadius}" fill="${t.loopFill}" stroke="${t.loop}" stroke-width="${t.loopWidth}" ${t.dashedLoop ? 'stroke-dasharray="6 4"' : ""}/>`;
+  const loopTerm = (x, y, s) => box(x, y, 18, 18, t.loopTermFill, t.wires.i32, Math.min(t.radius, 3), 1.4) + text(x + 9, y + 9, s, 11, t.wires.i32, t.font, "middle", 600);
+  const shiftRegister = (x, y) => box(x, y, 10, 22, t.loopTermFill, t.wires.dbl, 1, 1.4) + `<path d="M ${x + 2} ${y + 11} l 3 -4 l 3 4" fill="none" stroke="${t.wires.dbl}" stroke-width="1.2"/>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${t.name} block diagram">
+  <defs>${grid}${t.glow ? `<filter id="glow-${id}" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="${t.glow}" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>` : ""}</defs>
+  <rect width="${W}" height="${H}" fill="${t.canvas}"/>
+  ${grid ? `<rect width="${W}" height="${H}" fill="url(#g-${id})"/>` : ""}
+  ${loopFrame}
+  ${wire("i32", "M 52 40 H 101")}
+  ${wire("dbl", "M 52 92 H 87")}
+  <path d="M 117 203 H 160 V 133 H 214" fill="none" stroke="${t.band}" stroke-width="${t.bandWidth}" stroke-linecap="round" opacity=".9" ${glow}/>
+  ${wire("i32", "M 117 203 H 160 V 133 H 214")}
+  ${wire("dbl", "M 178 151 H 214")}
+  ${wire("dbl", "M 102 92 H 270 V 100 H 286")}
+  ${wire("dbl", "M 244 142 H 262 V 118 H 286")}
+  ${wire("dbl", "M 316 109 H 360 V 92 H 405")}
+  ${wire("dbl", "M 415 92 H 478")}
+  ${wire("dbl", "M 444 92 V 152 H 478")}
+  ${wire("i32", "M 454 178 H 466 V 166 H 478")}
+  ${wire("bool", "M 508 159 H 530")}
+  ${wire("str", "M 486 214 H 530")}
+  ${constant(20, 31, 32, "i32", "10")}
+  ${constant(28, 83, 24, "dbl", "0")}
+  ${constant(142, 142, 36, "dbl", "0.5")}
+  ${constant(426, 169, 28, "i32", "20")}
+  ${constant(430, 205, 56, "str", "Ready")}
+  ${loopTerm(101, 31, "N")}
+  ${loopTerm(101, 194, "i")}
+  ${shiftRegister(87, 81)}
+  ${shiftRegister(405, 81)}
+  ${fn(214, 124, "×")}
+  ${fn(286, 94, "+")}
+  ${box(478, 144, 30, 30, t.node, t.nodeStroke, t.radius, 1.3)}<path d="M 486 151 L 500 159 L 486 167" fill="none" stroke="${t.nodeInk}" stroke-width="1.8" stroke-linejoin="round"/>
+  ${terminal(478, 82, "dbl", "DBL")}
+  ${terminal(530, 149, "bool", "TF")}
+  ${terminal(530, 204, "str", "abc")}
+  ${text(495, 72, "Sum", 11, t.nodeInk, t.font, "middle", 400)}
+  ${text(547, 139, "Done", 11, t.nodeInk, t.font, "middle", 400)}
+  ${text(547, 236, "Status", 11, t.nodeInk, t.font, "middle", 400)}
+  <rect x="190" y="${t.tagRadius > 6 ? 189 : 190}" width="22" height="17" rx="${t.tagRadius > 6 ? 8.5 : t.tagRadius}" fill="${t.tag}" stroke="${t.tagStroke}" stroke-width="1"/>
+  ${text(201, 198.5, "3", 11, t.tagInk, t.mono, "middle", 500)}
+</svg>`;
+}
+
+const runIcon = (color) => `<svg width="18" height="18" viewBox="0 0 18 18"><path d="M3 2 L15 9 L3 16 Z" fill="none" stroke="${color}" stroke-width="1.6" stroke-linejoin="round"/></svg>`;
+const bulbIcon = (color) => `<svg width="18" height="18" viewBox="0 0 18 18"><path d="M9 2 a5 5 0 0 1 3 9 v2 h-6 v-2 a5 5 0 0 1 3 -9 Z M7 15 h4" fill="none" stroke="${color}" stroke-width="1.4"/></svg>`;
+
+document.getElementById("grid").innerHTML = THEMES.map((t, i) => `
+  <section class="card">
+    <div class="head"><b>${t.name}</b><span>${t.note}</span></div>
+    <div class="window">
+      <div class="toolbar" style="background:${t.toolbar};color:${t.toolbarInk};border-bottom:1px solid ${t.toolbarLine};font-family:${t.font}">
+        <span class="btn">${runIcon(t.run)}</span><span class="btn">${bulbIcon(t.toolbarInk)}</span>
+        <span class="title">Untitled 1 Block Diagram</span>
+      </div>
+      ${diagram(t, i)}
+    </div>
+    <div class="legend">${Object.entries({ DBL: "dbl", I32: "i32", Boolean: "bool", String: "str" }).map(([n, k]) => `<span><i style="background:${t.wires[k]}"></i>${n}</span>`).join("")}</div>
+  </section>`).join("");
+</script>
+</body>
+</html>

@@ -1852,3 +1852,52 @@ each show.
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
 | Files of every released version open | `test/end-to-end/format-versions.test.mjs` | **Verified** when step 5 lands |
+
+## DT-056
+
+**Two themes: Old School (the LabVIEW clone, for development) and Solder (the default of the releases).**
+
+- **Status:** Accepted on 2026-10-16 by the developer. It amends DT-035: the behavior stays a one-to-one clone of
+  LabVIEW, but the look of a release has an identity of its own. Mockups: `docs/ideas/theme-mockups.html`.
+- **Why:** an editor that looks like LabVIEW at a glance is too close to NI's trade dress, even with no NI bitmap,
+  and does not say "Solder".
+
+### Decision
+
+1. **A theme changes only the look:** colors, typography and the window chrome (toolbar, menus, dialogs). Names,
+   order, shortcuts, geometry (sizes, positions, margins) and behavior are the same in every theme, so what was
+   measured in LabVIEW stays valid and the geometry tests are not duplicated.
+2. **Old School** is the current look, cloned from LabVIEW 2026 Q3 pixel by pixel; the measurements and the tests of
+   colors are checked against it. `npm run app` starts in it. It is never called "LabVIEW" in the editor.
+3. **Solder** is the default of the releases: the **Workbench** style of the mockups — a light canvas with a
+   breadboard dot grid, white nodes with a thin graphite border and slightly rounded corners, an orange "solder"
+   accent for the selection, Inter for the interface and JetBrains Mono for values.
+4. **Nodes stay neutral and the wires and terminals carry the color of their type**, as in LabVIEW. **The type colors
+   are LabVIEW's standard ones in every theme** (DBL orange, integers blue, Boolean green, string pink…): they are
+   meaning, not decoration.
+5. **Light only for now**, with the tokens ready for a dark variant.
+6. **The theme is chosen** in Tools ▸ Options; the releases start in Solder.
+7. **The Front Panel.** In Old School its controls are LabVIEW's, as now. In Solder they are plain HTML with a minimal
+   CSS, and a panel style (a CSS sheet) gives them their look: **Plain** (no style: the template users start from),
+   **Solder** (the default) and others shipped later. The position and size of each object belong to the VI (the
+   `.sdg` keeps them); a style changes everything else. The classes and attributes of the panel's HTML (such as
+   `.sd-control`, `.sd-indicator`, `.sd-numeric`, `data-label`) are a public API, frozen like the file format once
+   published. Where a panel's style is chosen (per VI, a shared `.css` referenced from VI Properties, or for the
+   whole application) is **still open**: referencing it from the `.sdg` is a format change, version 2 with its
+   migration (DT-055).
+8. **The first step is to centralize the colors** into theme tokens with no visible change: Old School must stay
+   identical, and the tests say so. Today there are about 95 distinct colors in `editor/src/styles.css` and more than
+   1000 color literals in the glyphs and views.
+
+### Kept for later themes
+
+The other mockups were liked and are kept to be implemented later: **Neon (light)** (wires and Highlight Execution
+glow while the VI runs), **Oscilloscope** (dark, scope traces), **Blueprint** (dark blue technical drawing) and
+**Synthwave** (dark purple, full neon). The three dark ones wait for the dark variant.
+
+### Verification
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Old School looks the same after the colors become tokens | the existing tests of colors and drawing | **Unverified**: not done yet |
+| A theme changes no geometry | a test that draws a VI in both themes and compares positions and sizes | **Unverified**: not written yet |

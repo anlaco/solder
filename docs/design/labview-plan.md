@@ -8,8 +8,11 @@
 
 When the developer says "keep going":
 
-1. Read this document: §2 (where we are) and §3b (what is next). Continue with
-   **the first unchecked item of the second stage in §3b** (a usable language);
+1. Read this document: §2 (where we are) and §3b (what is next). Since 0.4.0-beta
+   (2026-10-16), continue with **"After the beta, first: the themes"** at the end of
+   the road in §3b (DT-056): its first step is to turn the colors of
+   `editor/src/styles.css` and of the glyphs and views into theme tokens with no
+   visible change, then the Solder theme (`docs/ideas/theme-mockups.html`, Workbench).
    §4 gives the detail of each module.
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
@@ -34,7 +37,7 @@ When the developer says "keep going":
   §3. First what is needed to program (types, functions, structures); then what
   organizes programs (subVIs, projects, classes).
 
-## 2. Where we are (2026-10-16)
+## 2. Where we are (2026-10-16, 0.4.0-beta)
 
 **The full circuit works:** a VI is built, saved to `.qvi`, opened the same way,
 and Run compiles it to WebAssembly and executes it **by dataflow, like
@@ -296,7 +299,12 @@ dialog's Delete follows the rule measured on 2026-10-15: by the name, not the ro
 Then (DT-055, decided 2026-10-16): the maintainable **`0.4.0-beta` the weekend of 2026-10-17**, when steps 1–5
 are done, and the month of maintenance (`0.4.x-beta`, fixes only).
 
-**After the beta, first:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
+**After the beta, first: the themes** (DT-056, decided 2026-10-16): Old School (the LabVIEW clone, for development)
+and Solder (the Workbench style, the default of the releases), with LabVIEW's type colors in both. First the colors
+become theme tokens with no visible change; then the Solder theme; then the Front Panel as plain HTML with panel
+styles (Plain, Solder), once it is decided where a panel's style lives.
+
+**Then:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
 lesson of NI's Core 1 course can be done in Solder, except lessons 2 and 15 and the DAQ and instrument parts of 4,
 7 and 8. The outline is in `labview-captures/core-courses/README.md`; first, list which lessons Solder misses.
 
