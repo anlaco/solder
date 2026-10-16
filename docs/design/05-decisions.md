@@ -1448,7 +1448,8 @@ c. The host keeps a queue per non-reentrant VI and the module instance between R
 Done in `editor/src/debugging/`; the rules are spec/05 §16. Decisions taken there:
 
 1. **"Before" a node.** The hook is after the node, LabVIEW stops before it. The run worker's controller counts the values that reach each node
-   from reporting nodes and stops in the report that makes a node ready; constants stop right after. Borders of structures do not report yet.
+   from reporting nodes and stops in the report that makes a node ready; constants stop right after. Borders of structures report too
+   since 2026-10-16 (spec/05 Rule 90b): as a source of values, counted once per source, but never a place to stop.
 2. **The Debug Window and the Error list are floating windows of the Block Diagram**, drawn in the page like the other dialogs, not
    operating-system windows. The Front Panel asks the diagram to open them.
 3. **The state is shared by the two windows of a VI** over the BroadcastChannel (`debugState`, `debugEvent`, `workerMessage`); the worker

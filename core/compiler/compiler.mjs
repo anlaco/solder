@@ -1991,12 +1991,22 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
    * The debug hook after node `id` (DT-047): only while the host has set the
    * debug flag, the value of each output and then the node, which may suspend.
    */
-  function debugHook(id, outputs) {
+  function debugHook(id, outputs, { border = false } = {}) {
     if (!allowDebugging) return [];
-    const index = module.debugNodes.push({ vi: instanceKey, nodo: id, outputs: outputs.map(({ port, type }) => ({ port, tipo: type, ...datosDePanel(type) })) }) - 1;
+    const entry = { vi: instanceKey, nodo: id, outputs: outputs.map(({ port, type }) => ({ port, tipo: type, ...datosDePanel(type) })) };
+    const index = module.debugNodes.push(border ? { ...entry, border: true } : entry) - 1;
     const values = outputs.flatMap(({ type, local }, j) => [ins("i32.const", index), ins("i32.const", j), ins("local.get", local), ins("call", idImport(`valor_${tipoWasm(type)}`))]);
     return [ins("i32.const", module.debugFlag), ins("i32.load"), ins("if"), ...values, ins("i32.const", index), ins("call", idImport("nodo")), ins("drop"), ins("end")];
   }
+  /**
+   * The debug hook of a border element of a structure —a tunnel, a shift register, the
+   * loop's "i"— whose one output `port` is in `local`: it shows its value on the wire that
+   * leaves it, but the debugger never stops before it, since it is not a node.
+   */
+  function borderHook(id, port, local, k) {
+    return debugHook(id, [{ port, type: contexto(id, k).tOut(0), local }], { border: true });
+  }
+
   // Las salidas que alguien lee desde otro clump necesitan una global.
   const cruzan = new Set(g.cables.filter((c) => clumpDe(c.de.nodo) !== clumpDe(c.a.nodo)).map((c) => `${c.de.nodo}.${c.de.puerto}`));
 
@@ -2218,6 +2228,10 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       c.push(...constante(x.t, 0), ins("local.set", x.l), ins("local.get", i), ins("local.get", x.m), ins("i32.lt_s"),
         ins("if"), ...cargarElemento(x.t, [ins("local.get", x.d), ins("local.get", i), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add")]), ins("local.set", x.l), ins("end"));
     }
+    // Each iteration the values enter again by the border, as Highlight Execution shows them.
+    for (const id of de("tunnel-in")) c.push(...borderHook(id, "y", valor.get(`${id}.y`).local, k));
+    for (const r of registros) c.push(...borderHook(r.izq, "value", r.ahora, k));
+    for (const id of de("loop-iteration")) c.push(...borderHook(id, "i", i, k));
     emitirCuerpo(deAqui.filter((id) => !BORDE.has(porId.get(id).tipo)), sid, k);
     for (const t of salidas) {
       if (!t.indexado) {
@@ -2260,9 +2274,13 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
         c.push(...juntarFilas(contexto(t.id, k).tOut(0), t.indexado.celda, celda, L), ins("i32.const", celda), ins("local.set", t.l));
       } else if (t.indexado) c.push(ins("i32.const", t.indexado.celda), ins("local.set", t.l));
       dejar(k, t.id, "y", t.l, tipoWasm(contexto(t.id, k).tOut(0)));
+      c.push(...borderHook(t.id, "y", t.l, k));
     }
     for (const r of registros) if (r.guardado !== null) c.push(ins("i32.const", r.guardado), ins("local.get", r.ahora), ins(`${r.vt}.store`));
-    for (const r of registros) dejar(k, r.der, "result", r.ahora, r.vt);
+    for (const r of registros) {
+      dejar(k, r.der, "result", r.ahora, r.vt);
+      c.push(...borderHook(r.der, "result", r.ahora, k));
+    }
     void s;
   }
 
@@ -2344,6 +2362,8 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
         }
       }
     }
+    // Its input tunnels show their values once the selector has arrived, as the frame starts (measured).
+    for (const id of deAqui.filter((x) => porId.get(x).tipo === "tunnel-in")) c.push(...borderHook(id, "y", valor.get(`${id}.y`).local, k));
     const salidas = deAqui.filter((x) => porId.get(x).tipo === "case-tunnel-out").map((id) => {
       const x = contexto(id, k);
       const l = L(tipoWasm(x.tOut(0)));
@@ -2416,7 +2436,10 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     }
     if (porDefecto >= 0) marco(porDefecto);
     for (const { i } of conValores) if (i !== porDefecto) c.push(ins("end"));
-    for (const t of salidas) dejar(k, t.id, "y", t.l, tipoWasm(t.x.tOut(0)));
+    for (const t of salidas) {
+      dejar(k, t.id, "y", t.l, tipoWasm(t.x.tOut(0)));
+      c.push(...borderHook(t.id, "y", t.l, k));
+    }
   }
 
   /**
@@ -2453,7 +2476,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       const x = contexto(id, k);
       const vt = tipoWasm(x.tOut(0));
       const l = k.locales.push(vt) - 1;
-      c.push(...x.entrada(0), ins("local.set", l));
+      c.push(...x.entrada(0), ins("local.set", l), ...borderHook(id, "y", l, k));
       valor.set(`${id}.y`, { local: l, clump: k });
     }
     emitirCuerpo(deAqui.filter((id) => porId.get(id).marco === m), seq, k);
@@ -2463,6 +2486,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       const l = k.locales.push(vt) - 1;
       c.push(...x.entrada(0), ins("local.set", l));
       dejar(k, id, "y", l, vt);
+      c.push(...borderHook(id, "y", l, k));
     }
   }
 
@@ -2480,7 +2504,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     for (const id of deAqui.filter((x) => porId.get(x).tipo === "tunnel-in")) {
       const x = contexto(id, k);
       const l = k.locales.push(tipoWasm(x.tOut(0))) - 1;
-      c.push(...x.entrada(0), ins("local.set", l));
+      c.push(...x.entrada(0), ins("local.set", l), ...borderHook(id, "y", l, k));
       valor.set(`${id}.y`, { local: l, clump: k });
     }
     (s.config?.marcos ?? []).forEach((_, m) => emitirCuerpo(deAqui.filter((id) => porId.get(id).marco === m), sid, k));
@@ -2490,6 +2514,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       const l = k.locales.push(vt) - 1;
       c.push(...x.entrada(0), ins("local.set", l));
       dejar(k, id, "y", l, vt);
+      c.push(...borderHook(id, "y", l, k));
     }
   }
 

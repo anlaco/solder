@@ -1118,6 +1118,19 @@ looks is in [`06-visual.md`](06-visual.md) §14. What the report marks unverifie
 >
 > **Rule 90 — Allow debugging.** VI Properties ▸ Execution ▸ Allow debugging (on by default) writes `vi.execution["allow-debugging"]` (only when false). With it
 > off the compiler emits no debug hooks and Rule 83's buttons are greyed.
+>
+> **Rule 90b — The borders of the structures** (2026-10-16, `labview-captures/reports/2026-10-16-border-probes.md`). A loop's input
+> tunnels, the left terminals of its shift registers and its "i" show their values on the wires they feed at the start of every
+> iteration (i 0, 1, 2…; the register its running value); its output tunnels and the right terminals of its shift registers show
+> theirs once, when the loop ends, and nothing during the iterations. A Case's input tunnels show theirs once the selector has
+> arrived, its output tunnels when its frame ends; a sequence's, as its frames read and write them. Probes on these wires show
+> the last value (inside a loop, the last iteration's). The tag of an array wire reads "#" and its element count ("#4"); the
+> Debug Window lists the values. Single stepping never stops at a tunnel, a shift register, "i", N or a constant. Tested in
+> `test/editor/debug-controller.test.mjs` (borders) and `test/editor/debugging.test.mjs` (the "#4" tag). **Not done yet:** the tag
+> on N, LabVIEW's single-step stops at the structure frames themselves (the loop before it starts and at the end of each
+> iteration, the Case before and after its frame, the whole diagram at the end; Solder stops "at" the last node instead, also
+> once more at each indicator when the VI ends), and constants tagged at the start of the Run. Checked in the running editor
+> (`labview-captures/reports/2026-10-16-solder-border-probes.md`).
 
 ## 17. Broken wires with a loose end (DT-046, 2026-10-09)
 

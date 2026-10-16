@@ -10,8 +10,9 @@
 // feeds, and a node whose reported inputs have all arrived is "ready", about to fire.
 // A breakpoint on a node holds the VI at the report that made it ready; a node with
 // no reported inputs (a constant) cannot be caught before, so it stops right after it.
-// The borders of the structures (tunnels, shift registers, loop terminals) are not
-// hooked yet, so they never count as inputs.
+// The borders of the structures (tunnels, shift registers, the loop's "i") report too:
+// their values reach the nodes they feed, but the VI never stops before or at one of
+// them, since they are not nodes.
 
 /** The speeds of Highlight Execution, in the order of its menu (REPORT.md §1). */
 export const SPEEDS = ["slow", "medium", "fast", "very-fast"];
@@ -42,7 +43,7 @@ export function paceFor(speed, longestWirePixels = 0) {
 }
 
 /** What the page tells the controller about the diagram of the VI that runs. */
-export const EMPTY_PLAN = { successors: {}, inputCounts: {}, containers: {}, loops: [], parents: {}, wireLengths: {}, wires: {} };
+export const EMPTY_PLAN = { successors: {}, inputCounts: {}, containers: {}, loops: [], parents: {}, wireLengths: {}, wires: {}, constants: [] };
 
 /**
  * @param {object} options
@@ -62,6 +63,7 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
   let readyQueue = [];
   let initialDimPending = true;
   const loopSet = new Set(plan.loops);
+  const constantSet = new Set(plan.constants ?? []);
   const nodeNames = plan.names ?? {};
   let seenSinceStepOut = new Set();
   let flushTimer = null;
@@ -90,12 +92,13 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
   /** The nodes the report of `node` made ready: all of their reported inputs have now arrived. */
   function markArrivals(node) {
     readyQueue = readyQueue.filter((queued) => queued !== node);
-    arrivals[node] = 0;
+    delete arrivals[node];
     const newlyReady = [];
     for (const successor of plan.successors[node] ?? []) {
-      arrivals[successor] = (arrivals[successor] ?? 0) + 1;
-      if (arrivals[successor] >= (plan.inputCounts[successor] ?? 1)) {
-        arrivals[successor] = 0;
+      // By source: a value that arrives again (a tunnel, each iteration) does not stand in for a missing one.
+      const arrived = (arrivals[successor] ??= new Set()).add(node);
+      if (arrived.size >= (plan.inputCounts[successor] ?? 1)) {
+        delete arrivals[successor];
         if (!readyQueue.includes(successor)) readyQueue.push(successor);
         newlyReady.push(successor);
       }
@@ -112,8 +115,11 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
     return outside || (loopSet.has(stepMode.outOf) && seenSinceStepOut.has(candidate));
   }
 
-  /** Where the VI has to stop after the report of `node`, if anywhere. */
-  function whereToStop(node) {
+  /**
+   * Where the VI has to stop after the report of `node`, if anywhere. Stepping never stops at a border
+   * (`border`: a tunnel, a shift register, "i") or at a constant; a breakpoint on a constant still does.
+   */
+  function whereToStop(node, border) {
     const wire = config.wireBreakpoints.find((entry) => entry.enabled && entry.from === node);
     if (wire) return { kind: "wire", node, wire: wire.wire };
     const breakpointReady = readyQueue.find(hasEnabledBreakpoint);
@@ -122,7 +128,7 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
     if (stepMode !== null) {
       const candidate = readyQueue.find(stepModeStopsBefore);
       if (candidate) return { kind: "before", node: candidate };
-      if (stepMode === "any" && readyQueue.length === 0) return { kind: "at", node };
+      if (stepMode === "any" && readyQueue.length === 0 && !border && !constantSet.has(node)) return { kind: "at", node };
     }
     return null;
   }
@@ -145,7 +151,7 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
     flushTimer ??= setTimeout(flush, VALUE_BATCH_MS);
   };
 
-  async function afterNode(node) {
+  async function afterNode(node, border = false) {
     // Another clump already stopped the VI: nothing goes on until it is released.
     while (paused) await paused.gate;
     const pace = config.highlight.on ? paceFor(config.highlight.speed, plan.wireLengths[node] ?? 0) : 0;
@@ -157,7 +163,7 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
       initialDimPending = false;
       await sleep(pace);
     }
-    const stop = (markArrivals(node), whereToStop(node));
+    const stop = (markArrivals(node), whereToStop(node, border));
     if (stop) await pauseAt(stop);
     while (paused) await paused.gate;
   }
@@ -177,7 +183,7 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
     alNodo(index) {
       const info = debugNodes[index];
       if (info.vi !== "") return paused ? paused.gate : undefined;
-      return afterNode(info.nodo);
+      return afterNode(info.nodo, info.border === true);
     },
     unoACadaVez: () => config.highlight.on,
   };

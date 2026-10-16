@@ -35,9 +35,57 @@ function chainVI() {
   return { g, id };
 }
 
-/** Runs `chainVI` with a controller; `events` collects what the page would receive. */
-function start({ configure = {}, sleepLog = null } = {}) {
-  const { g, id } = chainVI();
+/**
+ * A For Loop of N = 3 with every border that reports: 10 enters by a tunnel, add = i + 10,
+ * a shift register from 0 accumulates acc = register + add, add leaves by a tunnel to "last"
+ * and the register's right terminal to "sum". So add is 10, 11, 12; last 12; sum 33.
+ */
+function loopVI() {
+  let g = Gr.nuevo();
+  const id = {};
+  const put = (name, block, config, inside) => {
+    const created = Gr.crearNodo(g, CAT, block, 0, 0);
+    g = config ? Gr.fijarConfig(created.g, created.id, config) : created.g;
+    id[name] = created.id;
+    if (inside) g = Gr.meter(g, CAT, [created.id], id.loop);
+  };
+  const loop = Gr.crearEstructura(g, CAT, "for-loop", 0, 0, 200, 150);
+  g = loop.g;
+  id.loop = loop.id;
+  const terminal = (kind) => g.nodos.find((node) => node.dentro === id.loop && node.tipo === kind).id;
+  id.i = terminal("loop-iteration");
+  id.count = terminal("loop-count");
+  const register = Gr.crearRegistro(g, CAT, id.loop, 0);
+  g = register.g;
+  [id.left, id.right] = [register.izquierdo, register.derecho];
+  for (const [name, direction] of [["tunnelIn", "in"], ["tunnelOut", "out"]]) {
+    const tunnel = Gr.crearTunel(g, CAT, id.loop, direction, 0);
+    g = tunnel.g;
+    id[name] = tunnel.id;
+  }
+  put("n", "const", { value: 3 });
+  put("ten", "const", { value: 10 });
+  put("zero", "const", { value: 0 });
+  put("add", "add", null, true);
+  put("acc", "add", null, true);
+  put("last", "indicator");
+  put("sum", "indicator");
+  const wires = [
+    ["n", "result", "count", "count"], ["ten", "result", "tunnelIn", "x"], ["zero", "result", "left", "init"],
+    ["tunnelIn", "y", "add", "a"], ["i", "i", "add", "b"], ["left", "value", "acc", "a"], ["add", "result", "acc", "b"],
+    ["acc", "result", "right", "value"], ["add", "result", "tunnelOut", "x"], ["tunnelOut", "y", "last", "value"], ["right", "result", "sum", "value"],
+  ];
+  for (const [from, fromPort, to, toPort] of wires) {
+    const wired = Gr.conectar(g, CAT, { nodo: id[from], puerto: fromPort, dir: "out" }, { nodo: id[to], puerto: toPort, dir: "in" });
+    assert.ok(!wired.motivo, `${from}.${fromPort} -> ${to}.${toPort}: ${wired.motivo}`);
+    g = wired.g;
+  }
+  return { g, id };
+}
+
+/** Runs `vi` (`chainVI` by default) with a controller; `events` collects what the page would receive. */
+function start({ configure = {}, sleepLog = null, vi = chainVI } = {}) {
+  const { g, id } = vi();
   const compiled = compilar(g, CAT);
   assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
   const plan = buildDebugPlan(g, compiled.debugNodes, CONTEXT, INV);
@@ -150,4 +198,47 @@ test("a disabled breakpoint does not stop, and Abort frees a held VI", async () 
   assert.ok(second.controller.isPaused());
   second.controller.release();
   await second.run;
+});
+
+// The borders of the structures (plan §3b step 4): tunnels, shift registers and "i" report
+// their values each iteration, and the outputs once the loop ends; they are never a stop.
+
+/** The values reported for `port` of `node`, in order, from Highlight Execution's events (one per `ran`). */
+const reported = (events, node, port) => events.flatMap((event) => event.values ?? []).filter((entry) => entry.node === node && entry.port === port).map((entry) => entry.value);
+
+test("the borders of a loop report their values each iteration, and the outputs when it ends", async () => {
+  const { events, run, id, compiled } = start({ vi: loopVI, configure: { highlight: { on: true, speed: "very-fast" } } });
+  await run;
+  const borders = compiled.debugNodes.filter((entry) => entry.border).map((entry) => entry.nodo);
+  assert.deepEqual(new Set(borders), new Set([id.tunnelIn, id.left, id.i, id.tunnelOut, id.right]));
+  assert.deepEqual(reported(events, id.tunnelIn, "y"), [10, 10, 10]);
+  assert.deepEqual(reported(events, id.i, "i"), [0, 1, 2]);
+  assert.deepEqual(reported(events, id.left, "value"), [0, 10, 21]);
+  assert.deepEqual(reported(events, id.tunnelOut, "y"), [12]);
+  assert.deepEqual(reported(events, id.right, "result"), [33]);
+});
+
+test("the plan never waits for a border, and counts a tunnel that reports each iteration once", async () => {
+  const { plan, id, run } = start({ vi: loopVI });
+  await run;
+  assert.equal(plan.inputCounts[id.add], 2, "the tunnel and i");
+  assert.equal(plan.inputCounts[id.tunnelOut], undefined, "a border is not a node the debugger stops before");
+  assert.ok(plan.successors[id.tunnelIn].includes(id.add));
+});
+
+test("single stepping through a loop stops before its nodes, never at a border", async () => {
+  const { controller, events, run, id } = start({ vi: loopVI });
+  controller.requestPause();
+  const borders = new Set([id.tunnelIn, id.left, id.i, id.tunnelOut, id.right]);
+  let finished = false;
+  run.then(() => (finished = true));
+  for (let step = 0; step < 40 && !finished; step++) {
+    await tick();
+    if (controller.isPaused()) controller.resume("over");
+  }
+  await run;
+  const stops = events.filter((event) => event.paused).map((event) => event.paused.node);
+  assert.equal(stops.filter((node) => node === id.add).length, 3, "before the Add of each iteration");
+  assert.ok(stops.every((node) => !borders.has(node)), JSON.stringify(stops));
+  assert.ok(![id.n, id.ten, id.zero].some((constant) => stops.includes(constant)), "nor at a constant");
 });

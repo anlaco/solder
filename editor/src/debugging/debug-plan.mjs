@@ -37,15 +37,20 @@ export function wireLength(graph, wire, terminals) {
  * @param {object} [inventory]  to name the nodes
  */
 export function buildDebugPlan(graph, debugNodes, context, inventory) {
-  const hooked = new Set(debugNodes.filter((entry) => entry.vi === "").map((entry) => entry.nodo));
+  const topLevel = debugNodes.filter((entry) => entry.vi === "");
+  const hooked = new Set(topLevel.map((entry) => entry.nodo));
+  // A border element of a structure feeds nodes but never waits for its own inputs: the debugger does not stop before it.
+  const borders = new Set(topLevel.filter((entry) => entry.border).map((entry) => entry.nodo));
   const terminals = D.extremos(graph, context);
-  const plan = { successors: {}, inputCounts: {}, containers: {}, parents: {}, loops: [], wireLengths: {}, names: {}, wires: {} };
+  const plan = { successors: {}, inputCounts: {}, containers: {}, parents: {}, loops: [], wireLengths: {}, names: {}, wires: {}, constants: [] };
   for (const node of graph.nodos) {
     if (D.esEstructura(node, context)) {
       plan.parents[node.id] = node.dentro ?? null;
       if (LOOP_KINDS.includes(node.tipo)) plan.loops.push(node.id);
     }
     if (hooked.has(node.id)) {
+      // Single stepping does not stop at a constant (labview-captures/reports/2026-10-16-border-probes.md §4).
+      if (D.CONSTANTES[node.tipo]) plan.constants.push(node.id);
       plan.containers[node.id] = node.dentro ?? null;
       plan.names[node.id] = nodeDisplayName(node, inventory);
     }
@@ -55,8 +60,11 @@ export function buildDebugPlan(graph, debugNodes, context, inventory) {
     if (!hooked.has(wire.de.nodo)) continue;
     const length = wireLength(graph, wire, terminals);
     plan.wireLengths[wire.de.nodo] = Math.max(plan.wireLengths[wire.de.nodo] ?? 0, length);
-    if (!hooked.has(wire.a.nodo)) continue;
-    (plan.successors[wire.de.nodo] ??= []).push(wire.a.nodo);
+    if (!hooked.has(wire.a.nodo) || borders.has(wire.a.nodo)) continue;
+    // Inputs are counted by source: a tunnel that reports every iteration, or two wires from one output, arrive once.
+    const successors = (plan.successors[wire.de.nodo] ??= []);
+    if (successors.includes(wire.a.nodo)) continue;
+    successors.push(wire.a.nodo);
     plan.inputCounts[wire.a.nodo] = (plan.inputCounts[wire.a.nodo] ?? 0) + 1;
   }
   return plan;

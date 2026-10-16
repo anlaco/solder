@@ -111,7 +111,7 @@ export function overlay(state, graph, context, resolved, options) {
     if (showValues && reported && !taggedSources.has(key)) {
       taggedSources.add(key);
       const delay = Math.max(0, progress.pace - progress.elapsed);
-      tags += tag(State.formatValue(reported.value, separator), path[0][0], path[0][1] - TAG.height / 2, `;animation-delay:${delay}ms`).replace('class="dep-etiqueta"', 'class="dep-etiqueta dep-aparece"');
+      tags += tag(State.formatTag(reported.value, separator), path[0][0], path[0][1] - TAG.height / 2, `;animation-delay:${delay}ms`).replace('class="dep-etiqueta"', 'class="dep-etiqueta dep-aparece"');
     }
   }
 
@@ -125,7 +125,7 @@ export function overlay(state, graph, context, resolved, options) {
       const top = centre.y - PROBE_LABEL.height / 2;
       marks += `<div class="dep-sonda" data-sonda="${item.number}" style="left:${px(left)};top:${px(top)};width:${px(PROBE_LABEL.width)};height:${px(PROBE_LABEL.height)}">${item.number}</div>`;
       const reported = State.wireValue(state, graph, item.wire);
-      if (showValues && reported) tags += tag(State.formatValue(reported.value, separator), left + PROBE_LABEL.width, top);
+      if (showValues && reported) tags += tag(State.formatTag(reported.value, separator), left + PROBE_LABEL.width, top);
     } else if (item.kind === "breakpoint" && wire) {
       const path = pathOf(wire);
       if (!path) continue;

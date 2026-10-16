@@ -231,6 +231,9 @@ test("the Debug Window lists the probes and breakpoints of the VI with their val
   assert.match(html, /desactivado" data-id="window\.debug-window\.toolbar\.enable-disable"/, "Enable/Disable is greyed with a probe selected");
   assert.equal(DS.formatValue(true), "T");
   assert.equal(DS.formatValue(1.5, ","), "1,5");
+  assert.equal(DS.formatTag([0, 1, 2, 3]), "#4", "a tag on an array wire shows its count");
+  assert.equal(DS.formatValue([0, 1]), "[0, 1]", "the Debug Window lists the values");
+  assert.equal(DS.formatTag(1.5, ","), "1,5");
   state = DS.removeItems(state, [2]);
   assert.deepEqual(state.items.map((item) => item.number), [1]);
   state = DS.selectItem(state, 1);

@@ -225,6 +225,13 @@ export function formatValue(value, separator = ".") {
   return String(value ?? "");
 }
 
+/**
+ * The text of a value tag on a wire (Highlight Execution and the probe's label): an array shows its
+ * element count as "#4", while the Debug Window lists its values
+ * (labview-captures/reports/2026-10-16-border-probes.md §1, §2).
+ */
+export const formatTag = (value, separator = ".") => (Array.isArray(value) ? `#${value.length}` : formatValue(value, separator));
+
 /** The "Last Update" column: local time as h:mm:ss,mmm with the decimal separator of the system (REPORT.md §3). */
 export function formatClock(milliseconds, separator = ".") {
   const time = new Date(milliseconds);
