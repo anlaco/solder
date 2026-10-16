@@ -138,7 +138,7 @@ programs goes **before the rest of the modules**, in this order:
 
 The goal is a version that does what it does reliably and keeps the files it saves, not a complete
 LabVIEW: **maintainable does not mean complete**. It stays a `0.x` version, not a 1.0 (decided
-2026-10-09). New modules wait; these five steps go first, in order. When they are done, the
+2026-10-09). New modules wait; these six steps go first, in order. When they are done, the
 **maintainable version** is released as the first `0.N.0-beta`, in **2027**, followed by one month
 of maintenance with fixes only (`0.N.x-beta`).
 
@@ -274,7 +274,11 @@ dialog's Delete follows the rule measured on 2026-10-15: by the name, not the ro
    comes with an automatic migration (the file's `"solder": 1` field is for that), with a test that
    opens the example files of each version.
 
-Then: the maintainable `0.N.0-beta` in 2027, when steps 1–5 are done, and the month of maintenance.
+6. **LabVIEW Core 1 without hardware** (DT-054, decided 2026-10-16): every lesson of NI's Core 1 course
+   can be done in Solder, except lessons 2 and 15 and the DAQ and instrument parts of 4, 7 and 8. The
+   outline is in `labview-captures/core-courses/README.md`; first, list which lessons Solder misses.
+
+Then: the maintainable `0.N.0-beta` in 2027, when steps 1–6 are done, and the month of maintenance.
 
 **Postponed behind these six:** *inplaceness* (DT-042 §5), which changes memory
 and speed but not results; it will be done when a real program

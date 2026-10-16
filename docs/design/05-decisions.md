@@ -1794,3 +1794,34 @@ each show.
 | Data Operations and the Edit menu rows, labels and scope | `test/editor/default-values.test.mjs`, `test/editor/edit-menu.test.mjs` | **Verified** (2026-10-15) |
 | A Run keeps the operated values and gives the indicators theirs | `test/editor/run-values.test.mjs` | **Verified** (2026-10-15) |
 | The menus in the running editor | the editor under Xvfb (`labview-captures/reports/2026-10-15-solder-default-values.md`) | **Verified** by hand, no test (2026-10-15) |
+
+## DT-054
+
+**The beta is released when Solder can do LabVIEW Core 1, except what needs hardware.**
+
+- **Status:** Accepted on 2026-10-16 by the developer. It adds a release criterion to the "Road to a
+  maintainable version" in `docs/design/labview-plan.md`.
+
+### Decision
+
+1. **NI's LabVIEW Core 1 course is the yardstick for the beta.** Every lesson must be possible in Solder:
+   the student can build, run and debug what the lesson asks for, with the same windows, menus and
+   behavior as LabVIEW (DT-035).
+2. **What needs hardware is left out:** lesson 2 (First Measurement, NI DAQ device), lesson 15 (First
+   Measurement, non-NI instrument) and the DAQ and instrument parts of lessons 4, 7 and 8. Their
+   acquire-analyze-visualize exercises are done with simulated data (for example a generated signal) instead.
+3. **The guide is the public outline only.** Lesson and topic names come from NI's course overview pages,
+   kept locally in `labview-captures/core-courses/README.md`. The course manuals are paid NI material and are
+   not used; each exercise is written anew (rule 3) and measured in LabVIEW before it is cloned (rule 2).
+
+### Consequences
+
+- Core 1 lessons that Solder does not cover yet become work for the beta, for example LabVIEW projects
+  (lesson 3), file I/O and paths (lesson 9) and type definitions (lesson 13); the gap is listed in the plan.
+- Core 2 and Core 3 are a later guide, not a beta requirement.
+
+### Verification
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Each Core 1 lesson (without hardware) can be done in Solder | one example per lesson, run in the end-to-end tests | **Unverified**: the examples do not exist yet |
