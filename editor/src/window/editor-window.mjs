@@ -995,6 +995,18 @@ function aplicarEnDialogo(intent, abierto) {
   return cambiarActual({ ...actual, ...(g !== actual.g && { g }), [abierto.field]: null });
 }
 
+/**
+ * A click on a modal dialog closes the explanation open over it before `manejar` answers the click.
+ * The repaint comes last: repainting first would take the clicked part out of the page, and the next
+ * explanation would be anchored at the window's corner.
+ */
+function conExplicacionCerrada(manejar) {
+  const antes = estado;
+  estado = E.clicEnDialogoModal(estado, { enExplicacion: false });
+  manejar();
+  if (estado !== antes) pintar();
+}
+
 /** A click on the open dialog: its parts, and on what is not done, its explanation. */
 function clicEnDialogo(ev, abierto) {
   const elemento = ev.target.closest("[data-id]");
@@ -1294,7 +1306,7 @@ addEventListener("mousedown", (ev) => {
     // The frame of Show Error stays until something is clicked on the diagram (unverified how LabVIEW clears it).
     if (errorFocus && ev.target.closest(".lienzo")) errorFocus = null;
   }
-  // Un diálogo de error es modal: sólo responden sus botones.
+  // An error dialog is modal: only its buttons answer.
   if (document.querySelector(".modal-error")) return;
   // VI Properties is modal too: its buttons answer to the click event.
   if (propiedades && !estado.menuBarra) return;
@@ -1484,9 +1496,9 @@ addEventListener("click", (ev) => {
   if (boton) return responderDialogo(boton.dataset.boton);
   if (ev.target.closest(".modal-error")) return;
   if (ev.target.closest(".explicacion")) return;
-  if (propiedades && !ev.target.closest(".menu-contextual")) return clicPropiedades(ev);
+  if (propiedades && !ev.target.closest(".menu-contextual")) return conExplicacionCerrada(() => clicPropiedades(ev));
   const enDialogo = dialogoModal();
-  if (enDialogo) return clicEnDialogo(ev, enDialogo);
+  if (enDialogo) return conExplicacionCerrada(() => clicEnDialogo(ev, enDialogo));
   // Una fila del menú de la barra: lo hecho se hace; un hueco, se explica.
   const filaBarra = estado.menuBarra && ev.target.closest(".item-menu");
   if (filaBarra) {

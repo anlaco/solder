@@ -34,7 +34,7 @@ When the developer says "keep going":
   §3. First what is needed to program (types, functions, structures); then what
   organizes programs (subVIs, projects, classes).
 
-## 2. Where we are (2026-10-15)
+## 2. Where we are (2026-10-16)
 
 **The full circuit works:** a VI is built, saved to `.qvi`, opened the same way,
 and Run compiles it to WebAssembly and executes it **by dataflow, like
@@ -42,7 +42,7 @@ LabVIEW** (DT-040): independent branches run at the same time, each indicator is
 painted when its data arrives, Abort stops at once and the panel switches to Run
 mode. Since 2026-10-01 also **with loops**: While and For are placed, stretched
 and wired in the diagram, and the compiler runs them (DT-041).
-695 tests green. **The three examples give the same values as in LabVIEW** (2026-10-15). **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read. **VIs are saved as `.sdg`** (DT-051, 2026-10-15): every Solder extension starts with `sd` (`.sdt` reserved for a future textual language, `.sdproj`, `.sdlib`), and an old `.qvi` still opens. **New VI, Close and Close All** (spec/05 rules 101–103, 2026-10-15) work as measured, and Solder **starts on LabVIEW's Getting Started window** (DT-052), which comes back when the last VI closes.
+696 tests green. **The three examples give the same values as in LabVIEW** (2026-10-15). **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read. **VIs are saved as `.sdg`** (DT-051, 2026-10-15): every Solder extension starts with `sd` (`.sdt` reserved for a future textual language, `.sdproj`, `.sdlib`), and an old `.qvi` still opens. **New VI, Close and Close All** (spec/05 rules 101–103, 2026-10-15) work as measured, and Solder **starts on LabVIEW's Getting Started window** (DT-052), which comes back when the last VI closes.
 
 | Piece | Status |
 |-------|--------|
@@ -270,6 +270,10 @@ dialog's Delete follows the rule measured on 2026-10-15: by the name, not the ro
    swallows the mousedown before the click-outside rule); the same in VI Properties, so it is fixed
    for all of them at once (seen 2026-10-14,
    [`2026-10-14-editor-dialog-check.md`](../../labview-captures/reports/2026-10-14-editor-dialog-check.md)).
+   *The explanation over a modal dialog done on 2026-10-16: a click anywhere else in Edit Items, Select Item, Chart
+   History or VI Properties closes it, and a click on another greyed part opens that one in its place
+   (`clicEnDialogoModal`, `test/editor/window-state.test.mjs`); checked in the running editor
+   ([`2026-10-16-solder-dialog-tip.md`](../../labview-captures/reports/2026-10-16-solder-dialog-tip.md)).*
 5. **The `.qvi` format frozen as version 1**: written in spec/02 that from the maintainable version on every format change
    comes with an automatic migration (the file's `"solder": 1` field is for that), with a test that
    opens the example files of each version.

@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { abrirSubpaleta, cerrarSubpaletas, clic, clicDerecho, clicFuera, escape, inicial, paletaNueva, tecla } from "../../editor/src/window/window-state.mjs";
+import { abrirSubpaleta, cerrarSubpaletas, clic, clicDerecho, clicEnDialogoModal, clicFuera, escape, inicial, paletaNueva, tecla } from "../../editor/src/window/window-state.mjs";
 import { cargarInventario, esHueco } from "../../editor/src/common/labview-inventory.mjs";
 import { celdasSubpaleta, idsPintados, paleta, subpaletas } from "../../editor/src/window/window-view.mjs";
 import { ultimo } from "../../editor/src/common/labview-inventory.mjs";
@@ -112,6 +112,17 @@ test("un clic fuera cierra la paleta y la explicación", () => {
   assert.ok(dentro.paleta, "un clic dentro de la paleta la deja abierta");
   assert.equal(dentro.abierta, null);
   assert.deepEqual(clicFuera(abierto, { enPaleta: false, enExplicacion: false }), inicial());
+});
+
+test("a click inside a modal dialog closes the explanation open over it, but not one on the explanation", () => {
+  const menuBarra = { id: "dialog.vi-properties.categories" };
+  const abierto = { ...inicial(), abierta: { id: "window.block-diagram.toolbar.run-continuously", ...AQUI }, menuBarra };
+  const fuera = clicEnDialogoModal(abierto, { enExplicacion: false });
+  assert.equal(fuera.abierta, null);
+  assert.equal(fuera.menuBarra, menuBarra, "a menu the dialog opened follows its own rule");
+  assert.equal(clicEnDialogoModal(abierto, { enExplicacion: true }), abierto);
+  const sinExplicacion = inicial();
+  assert.equal(clicEnDialogoModal(sinExplicacion, { enExplicacion: false }), sinExplicacion, "nothing to close, nothing to repaint");
 });
 
 // Regla 53 con el teclado. El inventario del proyecto aún no declara atajos,
