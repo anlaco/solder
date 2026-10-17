@@ -12,6 +12,13 @@ const PAPER = "var(--paper)";
 const NODE_FILL = "var(--node-fill)"; // the yellow of the primitives
 const NODE_BORDER = "var(--node-border)";
 const TERMINAL_FILL = "var(--structure-terminal-fill)";
+const TIME_NODE_FILL = "var(--time-node-fill)";
+const TIME_NODE_BORDER = "var(--time-node-border)";
+const RUN_ARROW_FILL = "var(--run-arrow-fill)";
+const WHILE_FRAME = "var(--while-frame)";
+const STRUCTURE_LINE = "var(--structure-line)"; // the thin lines of the For and Case frames
+// SVG presentation attributes do not take var(), so the radius goes in a style. A theme may round the corners of a node, never change the space it takes. In glyph units (viewBox pixels).
+const NODE_CORNER_RADIUS = "var(--node-corner-radius)";
 const TUNNEL_BORDER = "var(--tunnel-border)";
 const TERMINAL_DIRECTION_ARROW = "var(--terminal-direction-arrow)";
 const CONNECTOR_SELECTED_CELL = "var(--connector-selected-cell)";
@@ -23,8 +30,10 @@ const svg = (cuerpo, caja = "0 0 16 16") =>
 const linea = (x0, y0, x1, y1, grosor = 1.2, color = INK) =>
   `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="${color}" stroke-width="${grosor}"/>`;
 
+const isNodeBody = (relleno) => relleno === NODE_FILL || relleno === TIME_NODE_FILL;
+
 const caja = (x0, y0, x1, y1, relleno = "none", grosor = 1.2, color = INK) =>
-  `<rect x="${x0}" y="${y0}" width="${f(x1 - x0)}" height="${f(y1 - y0)}" fill="${relleno}" stroke="${color}" stroke-width="${grosor}"/>`;
+  `<rect x="${x0}" y="${y0}" width="${f(x1 - x0)}" height="${f(y1 - y0)}"${isNodeBody(relleno) ? ` style="rx:${NODE_CORNER_RADIUS}"` : ""} fill="${relleno}" stroke="${color}" stroke-width="${grosor}"/>`;
 
 const lleno = (x0, y0, x1, y1, color, radio = 0) =>
   `<rect x="${x0}" y="${y0}" width="${f(x1 - x0)}" height="${f(y1 - y0)}" rx="${radio}" fill="${color}"/>`;
@@ -77,7 +86,7 @@ const menuAlMantener = poligono([[16, 16], [12.5, 16], [16, 12.5]], INK);
 
 const flechaRun = poligono(
   [[2, 5.5], [8.5, 5.5], [8.5, 2], [15, 8], [8.5, 14], [8.5, 10.5], [2, 10.5]],
-  PAPER,
+  RUN_ARROW_FILL,
   INK,
   1.4,
 );
@@ -970,8 +979,6 @@ Object.assign(CAJAS, { "comparison-express-vi": [4.5, 4.5, 43.5, 43.5], "assert-
 // relleno #ffffcc con borde #4c4c3d. Los dibujos de dentro son propios: un
 // reloj, un reloj de pulsera y un metrónomo.
 
-const TIME_NODE_FILL = "var(--time-node-fill)";
-const TIME_NODE_BORDER = "var(--time-node-border)";
 const TIEMPO = [0, 0, 48, 48];
 const cajaTiempo = (dentro) => svg48(caja(0.75, 0.75, 47.25, 47.25, TIME_NODE_FILL, 1.5, TIME_NODE_BORDER) + dentro);
 const esfera = (cx, cy, r) =>
@@ -1423,7 +1430,6 @@ export const PATRONES_CONECTOR = Object.fromEntries(CONNECTOR_PATTERNS.map((patt
 const fijo = (ancho, alto, cuerpo, clase = "") =>
   `<svg${clase ? ` class="${clase}"` : ""} viewBox="0 0 ${ancho} ${alto}" width="${ancho}" height="${alto}" aria-hidden="true" focusable="false">${cuerpo}</svg>`;
 
-const GRIS_BUCLE = "#7f7f7f";
 
 /**
  * El marco de un While Loop de `w` × `h` px: 6 px de gris #7f7f7f con las
@@ -1435,8 +1441,8 @@ export function marcoWhile(w, h) {
   const dentro = `M6,6 H${w - 6} V${h - 6} H6 Z`;
   // Entre el marco y la marca de estirar hay 2 px en blanco, y en el pie una muesca de 3 px.
   const cortes = `M${w - 6},${h - 11} h6 v2 h-6 Z M${w - 4},${h - 1} h3 v1 h-3 Z`;
-  const marca = `<polygon points="${w - 9.5},${h - 9} ${w + 1},${h - 9} ${w + 1},${h + 1} ${w},${h + 1} ${w},${h - 6} ${w - 6.5},${h - 6}" fill="${GRIS_BUCLE}"/>`;
-  return fijo(w, h, `<path d="${fuera} ${dentro} ${cortes}" fill="${GRIS_BUCLE}" fill-rule="evenodd"/>${marca}`, "marco-bucle");
+  const marca = `<polygon points="${w - 9.5},${h - 9} ${w + 1},${h - 9} ${w + 1},${h + 1} ${w},${h + 1} ${w},${h - 6} ${w - 6.5},${h - 6}" fill="${WHILE_FRAME}"/>`;
+  return fijo(w, h, `<path d="${fuera} ${dentro} ${cortes}" fill="${WHILE_FRAME}" fill-rule="evenodd"/>${marca}`, "marco-bucle");
 }
 
 /**
@@ -1446,9 +1452,9 @@ export function marcoWhile(w, h) {
  */
 export function marcoFor(w, h) {
   const [W, H] = [w - 4, h - 4];
-  const hoja = (k) => `<rect x="${2 * k + 0.5}" y="${2 * k + 0.5}" width="${W - 1}" height="${H - 1}" fill="${PAPER}" stroke="#000" stroke-width="1"/>`;
-  const delantera = `<path d="M0.5,0.5 H${W - 0.5} V${H - 7.5} L${W - 7.5},${H - 0.5} H0.5 Z" fill="${PAPER}" stroke="#000" stroke-width="1"/>`;
-  const doblez = `<path d="M${W - 8.5},${H - 8.5} H${W - 0.5} L${W - 8.5},${H - 0.5} Z" fill="${PAPER}" stroke="#000" stroke-width="1"/>`;
+  const hoja = (k) => `<rect x="${2 * k + 0.5}" y="${2 * k + 0.5}" width="${W - 1}" height="${H - 1}" fill="${PAPER}" stroke="${STRUCTURE_LINE}" stroke-width="1"/>`;
+  const delantera = `<path d="M0.5,0.5 H${W - 0.5} V${H - 7.5} L${W - 7.5},${H - 0.5} H0.5 Z" fill="${PAPER}" stroke="${STRUCTURE_LINE}" stroke-width="1"/>`;
+  const doblez = `<path d="M${W - 8.5},${H - 8.5} H${W - 0.5} L${W - 8.5},${H - 0.5} Z" fill="${PAPER}" stroke="${STRUCTURE_LINE}" stroke-width="1"/>`;
   return fijo(w, h, `${hoja(2)}${hoja(1)}${delantera}${doblez}`, "marco-bucle");
 }
 
@@ -1519,9 +1525,9 @@ const TRAMA_CASE = [[0, 3], [1, 2], [0, 2], [1, 3]];
  */
 export function marcoCase(w, h) {
   const baldosa = TRAMA_CASE.flatMap((xs, y) => xs.map((x) => `M${x},${y}h1v1h-1z`)).join("");
-  const trama = `<pattern id="trama-case" patternUnits="userSpaceOnUse" x="1" y="1" width="4" height="4"><path d="${baldosa}" fill="#000"/></pattern>`;
+  const trama = `<pattern id="trama-case" patternUnits="userSpaceOnUse" x="1" y="1" width="4" height="4"><path d="${baldosa}" fill="${STRUCTURE_LINE}"/></pattern>`;
   const banda = `M1,1 H${w - 1} V${h - 1} H1 Z M6,6 V${h - 6} H${w - 6} V6 Z`;
-  return fijo(w, h, `<defs>${trama}</defs><path d="${banda}" fill="url(#trama-case)" fill-rule="evenodd"/><rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" fill="none" stroke="#000" stroke-width="1"/>`, "marco-bucle");
+  return fijo(w, h, `<defs>${trama}</defs><path d="${banda}" fill="url(#trama-case)" fill-rule="evenodd"/><rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" fill="none" stroke="${STRUCTURE_LINE}" stroke-width="1"/>`, "marco-bucle");
 }
 
 /** Medidas del selector de marcos: alto, ancho de cada botón y de lo que sobra por los lados del texto. */
@@ -1594,7 +1600,7 @@ export const MEDIDAS_SECUENCIA = {
   paso: 12, // entre un agujero y el siguiente
   primerAgujero: 9, // el primero, desde la esquina: la rejilla de agujeros empieza 3 px antes y se recorta
 };
-const GRIS_PELICULA = "#e2e2e2";
+const GRIS_PELICULA = "var(--sequence-film)"; // the frame of a Flat Sequence
 
 /** La x de cada marco de una secuencia, desde su esquina, con los `anchos` de sus marcos. */
 export function izquierdasSecuencia(anchos) {
@@ -1633,12 +1639,12 @@ export function marcoSecuencia(w, h, anchos) {
   let agujeros = "";
   for (let x = M.primerAgujero - M.paso; x < w; x += M.paso) {
     for (const y of [2, h - 8]) {
-      agujeros += `<rect x="${x + 0.5}" y="${y + 0.5}" width="5" height="5" fill="${PAPER}" stroke="#000" stroke-width="1"/>`;
+      agujeros += `<rect x="${x + 0.5}" y="${y + 0.5}" width="5" height="5" fill="${PAPER}" stroke="${STRUCTURE_LINE}" stroke-width="1"/>`;
     }
   }
   const recorte = `<clipPath id="recorte-pelicula-${w}x${h}"><rect x="1" y="0" width="${w - 2}" height="${h}"/></clipPath>`;
-  const marcos = anchos.map((a, k) => `<rect x="${xs[k] + 0.5}" y="${M.banda + 0.5}" width="${a - 1}" height="${alto - 1}" fill="none" stroke="#000" stroke-width="1"/>`).join("");
-  return fijo(w, h, `<defs>${recorte}</defs>${gris}<path d="${lineas}" fill="#000"/><g clip-path="url(#recorte-pelicula-${w}x${h})">${agujeros}</g>${marcos}`, "marco-bucle");
+  const marcos = anchos.map((a, k) => `<rect x="${xs[k] + 0.5}" y="${M.banda + 0.5}" width="${a - 1}" height="${alto - 1}" fill="none" stroke="${STRUCTURE_LINE}" stroke-width="1"/>`).join("");
+  return fijo(w, h, `<defs>${recorte}</defs>${gris}<path d="${lineas}" fill="${STRUCTURE_LINE}"/><g clip-path="url(#recorte-pelicula-${w}x${h})">${agujeros}</g>${marcos}`, "marco-bucle");
 }
 
 /**
@@ -1682,7 +1688,7 @@ Object.assign(FUNCIONES, {
     ),
   "while-loop":
     svg48(
-      `<rect x="9" y="9" width="30" height="30" rx="3" fill="none" stroke="${GRIS_BUCLE}" stroke-width="5"/>` +
+      `<rect x="9" y="9" width="30" height="30" rx="3" fill="none" stroke="#7f7f7f" stroke-width="5"/>` +
         cajaAzul(13, 27, 9, marcaI(12, 26.5)) +
         `<rect x="27" y="27" width="9" height="9" fill="${TERMINAL_FILL}" stroke="#d22" stroke-width="1.5"/><circle cx="31.5" cy="31.5" r="2.2" fill="#f22"/>`,
     ),

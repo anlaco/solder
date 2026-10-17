@@ -14,6 +14,7 @@ import { OLD_VI_EXTENSION, VI_EXTENSION, isVIFile, pathKey, readHierarchyTexts, 
 import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
 import { newVIBounds, otherWindowKind, tiledBounds } from "./window-layout.mjs";
+import { CHOSEN_THEME_ROUTE, THEMES, chosenThemeName } from "./theme.mjs";
 import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from "../src/getting-started/start-state.mjs";
 import { WINDOW_KINDS, createRegistry, isDirty, recordChange, recordSave, viName, windowTitle } from "./vi-registry.mjs";
 
@@ -38,6 +39,9 @@ const MEDIA_TYPES = {
   ".svg": "image/svg+xml",
 };
 
+const THEME = THEMES[chosenThemeName(process.env.SOLDER_THEME, app.isPackaged)];
+const THEMES_DIRECTORY = path.join(EDITOR, "src", "themes");
+
 protocol.registerSchemesAsPrivileged([
   { scheme: "solder", privileges: { standard: true, secure: true, supportFetchAPI: true } },
 ]);
@@ -45,6 +49,7 @@ protocol.registerSchemesAsPrivileged([
 function serve() {
   protocol.handle("solder", async (request) => {
     const route = decodeURIComponent(new URL(request.url).pathname);
+    if (route === CHOSEN_THEME_ROUTE) return chosenThemeStylesheet();
     const root = route.startsWith("/core/") ? path.dirname(CORE) : EDITOR;
     const file = OUTSIDE[route] ?? path.normalize(path.join(root, route === "/" ? "index.html" : route));
     if (!Object.values(OUTSIDE).includes(file) && !file.startsWith(EDITOR + path.sep) && !file.startsWith(CORE + path.sep)) {
@@ -57,6 +62,12 @@ function serve() {
       return new Response("not found", { status: 404 });
     }
   });
+}
+
+/** The sheet of the chosen theme, served after old-school.css; Old School has none and gets an empty one. */
+async function chosenThemeStylesheet() {
+  const css = THEME.stylesheet ? await readFile(path.join(THEMES_DIRECTORY, THEME.stylesheet)) : "";
+  return new Response(css, { headers: { "content-type": MEDIA_TYPES[".css"] } });
 }
 
 // SOLDER_TAMANO=<width>x<height>: the size of the client area of the windows, to compare with the captures.
@@ -77,8 +88,7 @@ function createWindow(entry, kind, bounds) {
     minHeight: 360,
     useContentSize: !!CAPTURE_CLIENT_SIZE,
     title: windowTitle(entry, kind),
-    // The main process cannot read the theme: this must match --chrome-background of themes/old-school.css.
-    backgroundColor: "#f0f0f0",
+    backgroundColor: THEME.windowBackground.color,
     icon: APP_ICON,
     show: false,
     webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(HERE, "preload.cjs") },
@@ -362,8 +372,7 @@ function createGettingStarted() {
     useContentSize: true,
     center: true,
     title: "Solder",
-    // Must match --getting-started-background of themes/old-school.css (the main process cannot read CSS).
-    backgroundColor: "#ffffff",
+    backgroundColor: THEME.gettingStartedBackground.color,
     icon: APP_ICON,
     show: false,
     webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(HERE, "preload.cjs") },

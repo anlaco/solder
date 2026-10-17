@@ -1867,16 +1867,22 @@ each show.
 1. **A theme changes only the look:** colors, typography and the window chrome (toolbar, menus, dialogs). Names,
    order, shortcuts, geometry (sizes, positions, margins) and behavior are the same in every theme, so what was
    measured in LabVIEW stays valid and the geometry tests are not duplicated.
+   *Amended on 2026-10-17:* a theme may change the **shape** of a node (rounded corners, another outline, a circle
+   for a triangle), but never the **space it takes**: each node keeps its bounding box and its terminals where they
+   are, and that is not negotiable. Wires keep their path; their stroke width is look.
 2. **Old School** is the current look, cloned from LabVIEW 2026 Q3 pixel by pixel; the measurements and the tests of
    colors are checked against it. `npm run app` starts in it. It is never called "LabVIEW" in the editor.
 3. **Solder** is the default of the releases: the **Workbench** style of the mockups — a light canvas with a
    breadboard dot grid, white nodes with a thin graphite border and slightly rounded corners, an orange "solder"
-   accent for the selection, Inter for the interface and JetBrains Mono for values.
+   accent for the selection. *Amended on 2026-10-17:* it keeps the fonts of Old School (Inter and JetBrains Mono
+   of the mockups are not shipped).
 4. **Nodes stay neutral and the wires and terminals carry the color of their type**, as in LabVIEW. **The type colors
    are LabVIEW's standard ones in every theme** (DBL orange, integers blue, Boolean green, string pink…): they are
    meaning, not decoration.
 5. **Light only for now**, with the tokens ready for a dark variant.
-6. **The theme is chosen** in Tools ▸ Options; the releases start in Solder.
+6. **The theme is chosen** by the environment variable `SOLDER_THEME` (`old-school` or `solder`), with no option
+   in the interface for now (amended on 2026-10-17; Tools ▸ Options comes later). Without it, development
+   (`npm run app`) starts in Old School and a packaged release in Solder.
 7. **The Front Panel.** In Old School its controls are LabVIEW's, as now. In Solder they are plain HTML with a minimal
    CSS, and a panel style (a CSS sheet) gives them their look: **Plain** (no style: the template users start from),
    **Solder** (the default) and others shipped later. The position and size of each object belong to the VI (the

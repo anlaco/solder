@@ -244,7 +244,8 @@ test("un while loop se dibuja con las medidas de LabVIEW", () => {
   assert.match(html, /class="nodo estructura estructura-while"/);
   assert.match(html, /<svg class="marco-bucle" viewBox="0 0 200 200" width="200" height="200"/);
   assert.match(html, /M5,0 H196 V1 H197 V2 H199 V5 H200/, "la esquina redondeada, fila a fila");
-  assert.match(html, /#7f7f7f/);
+  assert.match(html, /fill="var\(--while-frame\)"/);
+  assert.equal(oldSchoolToken("--while-frame"), "#7f7f7f");
   // El interior no recibe el ratón: sólo las cuatro bandas del marco, de 6 px.
   assert.equal((html.match(/class="banda-estructura/g) ?? []).length, 4);
   assert.ok(!html.includes('class="asa asa-estructura"'), "sin seleccionar ni sobrevolar no se ven las asas");
@@ -271,8 +272,9 @@ test("un for loop se dibuja en tres hojas con su cuenta", () => {
   assert.equal(hijoDe(g, id, "loop-condition"), undefined, "el For no tiene condición");
   const html = D.contenido({ ...ED.inicial(), g }, CTX, tipos(g, CAT));
   assert.match(html, /class="nodo estructura estructura-for"/);
-  assert.equal((html.match(/<rect x="[0-9.]+" y="[0-9.]+" width="295" height="195" fill="var\(--paper\)" stroke="#000"/g) ?? []).length, 2, "dos hojas detrás");
+  assert.equal((html.match(/<rect x="[0-9.]+" y="[0-9.]+" width="295" height="195" fill="var\(--paper\)" stroke="var\(--structure-line\)"/g) ?? []).length, 2, "dos hojas detrás");
   assert.equal(oldSchoolToken("--paper"), "#fff");
+  assert.equal(oldSchoolToken("--structure-line"), "#000");
   assert.match(html, /M0\.5,0\.5 H295\.5 V188\.5 L288\.5,195\.5 H0\.5 Z/, "la delantera, con el doblez");
   assert.equal(D.menuDe(g.nodos.find((n) => n.id === id)), "context.for-loop");
 });
@@ -420,9 +422,10 @@ test("una flat sequence se dibuja con las medidas de LabVIEW", () => {
   const html = D.contenido({ ...ED.inicial(), g }, CTX, tipos(g, CAT));
   assert.match(html, /class="nodo estructura estructura-flat"/);
   assert.match(html, /<svg class="marco-bucle" viewBox="0 0 250 200" width="250" height="200"/);
-  assert.match(html, /<path d="M0,1h250v198h-250zM5,9h240v182h-240z" fill="#e2e2e2" fill-rule="evenodd"\/>/, "gris con el marco recortado");
+  assert.match(html, /<path d="M0,1h250v198h-250zM5,9h240v182h-240z" fill="var\(--sequence-film\)" fill-rule="evenodd"\/>/, "gris con el marco recortado");
+  assert.equal(oldSchoolToken("--sequence-film"), "#e2e2e2");
   assert.match(html, /M0,0h250v1h-250zM0,199h250v1h-250z/, "las líneas de arriba y de abajo");
-  assert.match(html, /<rect x="5\.5" y="9\.5" width="239" height="181" fill="none" stroke="#000"/, "el marco, de 240 × 182 con su borde");
+  assert.match(html, /<rect x="5\.5" y="9\.5" width="239" height="181" fill="none" stroke="var\(--structure-line\)"/, "el marco, de 240 × 182 con su borde");
   // Los agujeros: el primero entero a 9 px de la esquina y el último, a 237 (1087 - 850); en las dos bandas.
   const agujeros = [...html.matchAll(/<rect x="(-?[\d.]+)" y="([\d.]+)" width="5" height="5" fill="var\(--paper\)"/g)].map((m) => [Number(m[1]), Number(m[2])]);
   assert.deepEqual(agujeros.slice(0, 2), [[-2.5, 2.5], [-2.5, 192.5]], "uno recortado a la izquierda, por arriba y por abajo");

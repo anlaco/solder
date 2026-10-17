@@ -91,7 +91,7 @@ svg { display: block; overflow: visible; }
 
 /* Lienzos */
 .lienzo { position: absolute; left: 0; }
-.lienzo-block-diagram { background: var(--diagram-background); }
+.lienzo-block-diagram { background: var(--diagram-background); background-image: var(--diagram-background-image); background-size: var(--diagram-background-size); }
 /* La rejilla del panel: cada 12 px, desde el borde mismo del lienzo. */
 .lienzo-front-panel {
   background-color: var(--panel-background);
@@ -644,7 +644,7 @@ svg { display: block; overflow: visible; }
 .dep-capa { pointer-events: none; }
 .dep-banda { fill: none; stroke-linecap: butt; stroke-linejoin: miter; animation-name: dep-crece; animation-timing-function: linear; animation-fill-mode: forwards; }
 @keyframes dep-crece { from { stroke-dashoffset: var(--dep-length); } to { stroke-dashoffset: 0; } }
-.dep-etiqueta { position: absolute; box-sizing: border-box; padding: 0 3px; background: var(--debug-label-background); border: 1px solid var(--debug-label-border); font-size: var(--fuente); line-height: 15px; text-align: center; white-space: nowrap; pointer-events: none; z-index: 5; }
+.dep-etiqueta { position: absolute; box-sizing: border-box; padding: 0 3px; background: var(--debug-label-background); border: 1px solid var(--debug-label-border); color: var(--debug-label-text); font-size: var(--fuente); line-height: 15px; text-align: center; white-space: nowrap; pointer-events: none; z-index: 5; }
 .dep-etiqueta.dep-aparece { visibility: hidden; animation: dep-aparece 0s linear forwards; }
 @keyframes dep-aparece { to { visibility: visible; } }
 .dep-sonda { position: absolute; box-sizing: border-box; background: var(--probe-background); border: 1px solid var(--probe-border); border-radius: 3px; text-align: center; font-size: var(--fuente); line-height: 15px; pointer-events: none; z-index: 5; }

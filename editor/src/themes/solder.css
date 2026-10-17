@@ -1,0 +1,208 @@
+/* The Solder theme: the Workbench style of docs/ideas/theme-mockups.html (DT-056).
+ * Light and flat: white surfaces, #e3e6ec lines, graphite #2b2f36 ink and an orange "solder" accent. A canvas
+ * with a breadboard dot grid, white nodes with a thin graphite border and slightly rounded corners.
+ * It only redefines tokens of old-school.css. It never touches the type colors, the red of the breakpoints and
+ * errors, or the Old School front panel controls, and a theme changes the shape of a node, never its size. */
+
+/* Ink and paper: Line art and surfaces of the glyphs and views. */
+:root {
+  --ink: #2b2f36;
+}
+
+/* Window chrome: Flat white bars separated by hairlines instead of LabVIEW's grooves. */
+:root {
+  --text: #2b2f36;
+  --groove-line-1: #e3e6ec;
+  --groove-line-2: #e3e6ec;
+  --groove-line-3: #ffffff;
+  --groove-line-4: #ffffff;
+  --groove-line-5: #ffffff;
+  --toolbar-edge-1: #e3e6ec;
+  --toolbar-edge-2: #e3e6ec;
+  --toolbar-edge-3: #ffffff;
+  --icon-zone-separator: #e3e6ec;
+  --toolbar-hover-outline: #ff7a1a;
+  --toolbar-search-selector-border: #e3e6ec;
+  --chrome-highlight: #e3e6ec;
+  --disabled-text: #b4b9c3;
+  --placeholder-corner-light: #e3e6ec;
+  --placeholder-corner-dark: #9aa0ab;
+  --chrome-background: #ffffff;
+  --status-instance-border: #2b2f36;
+  --toolbar-box-border: #c9ced8;
+  --run-arrow-fill: #ff7a1a;
+  --placeholder-text: #7d8491;
+}
+
+/* Menus: White flat pop-ups with an orange highlight. */
+:root {
+  --menu-background: #ffffff;
+  --menu-border: #e3e6ec;
+  --menu-shadow: rgba(43, 47, 54, 0.18);
+  --menu-highlight-background: #ff7a1a;
+  --menu-highlight-text: #1d1f24;
+  --menu-separator-dark: #e3e6ec;
+  --menu-separator-light: #ffffff;
+  --menu-grid-background: #fafaf8;
+  --menu-current-frame: #ff7a1a;
+}
+
+/* Palettes: White panels, hairline borders, an orange frame on the item under the pointer. */
+:root {
+  --palette-background: #ffffff;
+  --palette-border: #e3e6ec;
+  --window-shadow-edge: #e3e6ec;
+  --palette-inner-bevel: #e3e6ec;
+  --palette-title-bevel: #e3e6ec;
+  --palette-search-background: #fafaf8;
+  --palette-separator-1: #e3e6ec;
+  --palette-separator-2: #e3e6ec;
+  --palette-separator-3: #ffffff;
+  --palette-expanded-background: #fafaf8;
+  --palette-row-bevel-light: #ffffff;
+  --palette-row-bevel-shade: #e3e6ec;
+  --folder-tab: #2b2f36;
+  --folder-spine-top: #2b2f36;
+  --folder-spine-bottom: #8a909c;
+  --folder-box-background: #ffffff;
+  --folder-box-border: #2b2f36;
+  --folder-box-inner-border: #c9ced8;
+  --palette-frame: #ff7a1a;
+  --palette-frame-halo-outer: #ffe3cc;
+  --palette-frame-halo-inner: #ffb676;
+}
+
+/* Pop-ups: Explanations, tip strips and warning boxes. */
+:root {
+  --window-shadow: rgba(43, 47, 54, 0.3);
+  --popup-border: #e3e6ec;
+  --popup-secondary-text: #6b7280;
+  --popup-code-text: #7d8491;
+  --popup-shadow: rgba(43, 47, 54, 0.14);
+  --tip-background: #fff4e8;
+  --tip-border: #2b2f36;
+}
+
+/* Dialogs: Flat white windows, hairline borders, orange for the default and the selection. */
+:root {
+  --modal-backdrop: rgba(43, 47, 54, 0.14);
+  --dialog-background: #ffffff;
+  --error-dialog-border: #c9ced8;
+  --dialog-shadow: rgba(43, 47, 54, 0.3);
+  --dialog-titlebar-background: #ffffff;
+  --dialog-close-text: #2b2f36;
+  --dialog-secondary-text: #6b7280;
+  --link-text: #c2570a;
+  --dialog-disabled-text: #a3a8b3;
+  --button-background: #ffffff;
+  --button-border: #c9ced8;
+  --button-default-border: #ff7a1a;
+  --button-focus-outline: #ff7a1a;
+  --dialog-border: #c9ced8;
+  --dialog-page-border: #e3e6ec;
+  --dialog-page-background: #ffffff;
+  --dialog-group-border: #e3e6ec;
+  --checkbox-border: #2b2f36;
+  --checkbox-background: #ffffff;
+  --checkbox-checked: #ff7a1a;
+  --checkbox-checked-inset: #1d1f24;
+  --combo-border: #c9ced8;
+  --combo-background: #ffffff;
+  --dialog-button-background: #f4f5f8;
+  --list-background: #ffffff;
+  --list-border: #c9ced8;
+  --list-selected-row: #ffe3cc;
+  --list-value-text: #6b7280;
+  --field-border: #c9ced8;
+  --field-background: #ffffff;
+  --select-item-dialog-border: #c9ced8;
+  --window-titlebar-background: #ffffff;
+  --focus-border: #ff7a1a;
+  --select-item-filter-background: #fafaf8;
+  --list-selection-background: #ff7a1a;
+  --list-selection-text: #1d1f24;
+  --edit-items-checked: #ff7a1a;
+  --button-border-light: #e3e6ec;
+  --edit-items-button-default-border: #ff7a1a;
+}
+
+/* Canvases: A light canvas with a breadboard dot grid; the panel is a flat light grey. */
+:root {
+  --diagram-background: #fafaf8;
+  --diagram-background-image: radial-gradient(circle at 7px 7px, #d9dbd6 1px, transparent 1.4px);
+  --diagram-background-size: 14px 14px;
+  --panel-background: #eceef2;
+  --panel-grid-line: #e0e3e9;
+}
+
+/* Diagram wires and editing: The selection is orange. */
+:root {
+  --wire-selection: #ff7a1a;
+  --selection-ants: #ff7a1a;
+  --text-selected-background: #2b2f36;
+  --placement-outline: #2b2f36;
+  --editing-outline: #2b2f36;
+}
+
+/* Nodes: White with a graphite border. */
+:root {
+  --constant-background: #ffffff;
+  --expression-background: #ffffff;
+  --expression-border: #2b2f36;
+  --node-fill: #ffffff;
+  --expression-cell-border: #2b2f36;
+  --compound-node-border: #2b2f36;
+  --compound-divider: #2b2f36;
+  --compound-node-text: #2b2f36;
+  --node-handle: #ff7a1a;
+  --node-border: #2b2f36;
+  --time-node-fill: #ffffff;
+  --time-node-border: #2b2f36;
+  --format-node-border: #2b2f36;
+  --structure-terminal-fill: #ffffff;
+  --tunnel-border: #2b2f36;
+  --terminal-direction-arrow: #2b2f36;
+  --connector-selected-cell: #ff7a1a;
+  --node-corner-radius: 3px;
+}
+
+/* Structures: A graphite frame (the same space as in Old School) and a faint fill. */
+:root {
+  --structure-tint: rgba(43, 47, 54, 0.025);
+  --structure-selection-dash: #ff7a1a;
+  --structure-selection-gap: #ffe3cc;
+  --structure-handle: #ff7a1a;
+  --structure-placement-border: #2b2f36;
+  --while-frame: #2b2f36;
+  --sequence-film: #c9ced8;
+  --structure-line: #2b2f36;
+}
+
+/* Debugging: The Highlight Execution band is light orange, the value tags are graphite. */
+:root {
+  --debug-label-background: #2b2f36;
+  --debug-label-border: #2b2f36;
+  --debug-label-text: #ffffff;
+  --debug-stopped-frame: #ff7a1a;
+  --debug-stopped-frame-alt: #ffe3cc;
+  --debug-band-number: #fdba74;
+  --debug-band-boolean: #fdba74;
+  --debug-toolbar-hover-background: #fff1e3;
+  --debug-end-frame: #2b2f36;
+}
+
+/* Getting Started: White, with the orange accent for the links. */
+:root {
+  --getting-started-text: #2b2f36;
+  --getting-started-link-text: #c2570a;
+  --getting-started-menubar-border: #e3e6ec;
+  --getting-started-panel-border: #e3e6ec;
+  --getting-started-strip-background: #fafaf8;
+  --getting-started-button-top: #ffffff;
+  --getting-started-button-bottom: #ffffff;
+  --getting-started-button-border: #c9ced8;
+  --getting-started-button-hover-top: #fff1e3;
+  --getting-started-button-hover-bottom: #fff1e3;
+  --getting-started-list-border: #e3e6ec;
+  --getting-started-hover-background: #fff1e3;
+}

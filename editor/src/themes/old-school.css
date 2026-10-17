@@ -33,6 +33,7 @@
   --chrome-background: #f0f0f0; /* The window frame: menu bar, toolbar, status bar, gutters. */
   --status-instance-border: #2a2a2a;
   --toolbar-box-border: #7a7a7a;
+  --run-arrow-fill: #fff; /* The Run arrow of the toolbar. */
   --placeholder-text: #696969; /* Greyed placeholders (DT-035: what is not done yet looks the same, greyed). */
 }
 
@@ -134,6 +135,8 @@
   --diagram-background: #fff;
   --panel-background: #e2e2e2;
   --panel-grid-line: #dadada;
+  --diagram-background-size: auto; /* The tile size of that pattern. */
+  --diagram-background-image: none; /* A pattern over the diagram background (a theme's dot grid). */
 }
 
 /* Diagram wires and editing: Wires being edited, selection outlines, placement outlines. */
@@ -180,6 +183,7 @@
   --tunnel-border: #4c4c3d;
   --terminal-direction-arrow: #4c4c3d;
   --connector-selected-cell: #0078d7;
+  --node-corner-radius: 0; /* Rounded corners of the node boxes, in glyph units (a shape, never a size). */
 }
 
 /* Structures: Loop, Case and Sequence frames. */
@@ -193,6 +197,9 @@
   --structure-placement-background: #fff;
   --invalid-frame-label: #ff0000;
   --canvas-text-inverse: #fff;
+  --while-frame: #7f7f7f; /* The 6 px frame of a While Loop (a theme changes its color, never its thickness). */
+  --sequence-film: #e2e2e2; /* The film of a Flat Sequence frame. */
+  --structure-line: #000; /* The thin lines of the For and Case frames. */
 }
 
 /* Front panel: Old School front panel controls drawn in CSS (a theme with its own controls replaces them). */
@@ -242,6 +249,7 @@
 :root {
   --debug-label-background: #ccffff;
   --debug-label-border: #333333;
+  --debug-label-text: currentcolor; /* The text of a value tag: the one it inherits. */
   --probe-background: #ffff66;
   --probe-border: #000;
   --breakpoint-color: #cc0000;
