@@ -1918,5 +1918,41 @@ glow while the VI runs), **Oscilloscope** (dark, scope traces), **Blueprint** (d
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| Old School looks the same after the colors become tokens | the existing tests of colors and drawing | **Unverified**: not done yet |
+| Old School looks the same after the colors become tokens | `test/editor/theme-tokens.test.mjs`, the color tests through `oldSchoolToken`, and a pixel diff of the editor before and after (`labview-captures/reports/2026-10-17-theme-tokens.md`) | Verified 2026-10-17 |
 | A theme changes no geometry | a test that draws a VI in both themes and compares positions and sizes | **Unverified**: not written yet |
+
+## DT-057
+
+**Development happens on `main`; each published beta is maintained on its own release branch, which takes only
+fixes cherry-picked from `main`.**
+
+- **Status:** Accepted on 2026-10-17 by the developer, once 0.4.0-beta was published. Chosen over keeping `main` for
+  fixes and every feature on a long-lived branch (Git Flow without `develop`): features that last weeks (the HTML
+  Front Panel, Core 1) would drift from `main`, every fix would have to be merged into each open branch, and
+  conflicts between features would show up late.
+- **Why:** the beta is the maintainable version (DT-055): whoever uses it must get fixes without half-finished
+  features. This is the model of Electron and of trunk-based development with release branches.
+
+### Decision
+
+1. **`main` is the development line.** The plan's steps are done there. A feature that takes more than one session
+   goes on a short branch `feature/<short-name>` cut from `main` and merged back as soon as it works and the tests
+   are green; a small one goes on `main` directly. `main` stays green after every commit.
+2. **Each published beta has a release branch** `release/0.<MINOR>`, cut from its tag (`release/0.4` from
+   `v0.4.0-beta`). It receives fixes only, never features, and is **never merged back** into `main`.
+3. **A fix is made on `main` first**, with a test that fails without it, and then copied to the release branch with
+   `git cherry-pick -x`. Fixing on the release branch first is not done: a fix forgotten on its way back to `main`
+   comes back as a regression in the next version. Only when the code no longer exists on `main` is the fix made on
+   the release branch alone, and the commit says why.
+4. **Fix releases come from the release branch:** raise PATCH there (`0.4.1-beta`), tag `v0.4.1-beta` on that
+   branch, build and publish.
+5. **A new MINOR is cut from `main`:** `release/0.5` from the commit that becomes `v0.5.0-beta`. Only the latest beta
+   is supported: when 0.5 is published, `release/0.4` gets nothing more.
+6. **What is a fix:** something that is broken or behaves differently from LabVIEW in what the beta already does.
+   Something the beta does not do yet is a feature. When in doubt, it is a feature: it waits for the next MINOR.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| A release branch holds only fixes from `main` | every commit on it after its tag carries `cherry picked from` (`-x`) or says why it exists only there; checked with `git log` before each fix release | **Unverified**: process, no automatic check |

@@ -18,7 +18,10 @@ When the developer says "keep going":
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
    `win11 encender`, `tools/vm_control.py foto|clic|arrastrar|tecla|texto`.
    What has not been seen or tried in LabVIEW is not written from memory.
-3. When closing a step: tests green (`npm test`), mark it here with
+3. Since 0.4.0-beta was published (2026-10-17), this plan is done on `main` (long steps on
+   a short `feature/<name>` branch merged back when green), and the beta is maintained on
+   `release/0.4` with fixes cherry-picked from `main` (DT-057).
+   When closing a step: tests green (`npm test`), mark it here with
    the date and update §2. Commit only when asked, without co-authorship.
 4. If the step needs a decision that is not written down, propose it and ask
    before going on: decisions are not made halfway through.
