@@ -18,6 +18,7 @@ import { CHOSEN_THEME_ROUTE, THEMES, chosenThemeName } from "./theme.mjs";
 import { CHOSEN_PANEL_STYLE_ROUTE, PANEL_STYLES, chosenPanelStyleName } from "../src/front-panel/panel-style.mjs";
 import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from "../src/getting-started/start-state.mjs";
 import { WINDOW_KINDS, createRegistry, isDirty, recordChange, recordSave, viName, windowTitle } from "./vi-registry.mjs";
+import { readWindowStyle, watchWindowStyle } from "./window-style.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EDITOR = path.resolve(HERE, "..");
@@ -174,6 +175,13 @@ function setTitles(open) {
   }
 }
 
+/** Sends the VI's window style to its windows whenever its `.css` changes on disk (DT-058 §2). */
+function watchStyleOf(open) {
+  open.stopWatchingStyle = watchWindowStyle(open.entry.path, (text) => {
+    for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.webContents.send("vi:window-style", text);
+  });
+}
+
 /** Opens the windows of a VI the registry has just created. */
 function openWindows(entry) {
   const bounds = boundsForNewVI(openVIs.size);
@@ -185,6 +193,7 @@ function openWindows(entry) {
     open.windows[kind] = window;
     viOfContents.set(window.webContents.id, open);
   }
+  watchStyleOf(open);
   const panel = open.windows["front-panel"];
   // Both are shown once loaded, the Front Panel last so that it is in front.
   const loaded = (window) => new Promise((resolve) => window.once("ready-to-show", resolve));
@@ -200,6 +209,7 @@ function openWindows(entry) {
     closeVI(open);
   });
   panel.on("closed", () => {
+    open.stopWatchingStyle();
     registry.close(entry.id);
     openVIs.delete(entry.id);
     for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.destroy();
@@ -343,12 +353,23 @@ async function writeVI(open, owner, text, saveAs) {
   }
   const rebased = rebaseText(text, keyOf(entry), pathKey(target));
   await writeFile(target, rebased);
+  const moved = target !== entry.path;
   recordSave(entry, target, rebased);
+  // Saved somewhere else, the VI takes the style that is next to its new file.
+  if (moved) await restyle(open);
   rememberRecentFile(target);
   setTitles(open);
   // The callers of this VI that are open must see its new connector.
   for (const other of BrowserWindow.getAllWindows()) other.webContents.send("vi:saved", { id: entry.id, key: pathKey(target) });
   return rebased;
+}
+
+/** Points the window style at the VI's current file and sends what is there. */
+async function restyle(open) {
+  open.stopWatchingStyle();
+  watchStyleOf(open);
+  const text = await readWindowStyle(open.entry.path);
+  for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.webContents.send("vi:window-style", text);
 }
 
 // ——— The Getting Started window (DT-052) ———
@@ -427,7 +448,10 @@ function handleRequests() {
   const openOf = (event) => viOfContents.get(event.sender.id);
   const ownerOf = (event) => BrowserWindow.fromWebContents(event.sender);
 
-  ipcMain.handle("vi:init", (event) => describe(openOf(event).entry));
+  ipcMain.handle("vi:init", async (event) => {
+    const { entry } = openOf(event);
+    return { ...describe(entry), windowStyle: await readWindowStyle(entry.path) };
+  });
   ipcMain.on("vi:cambio", (event, text) => {
     const open = openOf(event);
     recordChange(open.entry, text);

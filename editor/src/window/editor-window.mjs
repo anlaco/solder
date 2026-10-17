@@ -49,6 +49,7 @@ import * as Sync from "./graph-sync.mjs";
 import * as VP from "./vi-properties.mjs";
 import * as V from "./window-view.mjs";
 import { panelStyleFromQuery } from "../front-panel/panel-style.mjs";
+import { applyWindowStyle } from "../front-panel/window-stylesheet.mjs";
 import { buildHierarchy } from "./hierarchy-client.mjs";
 import { compilar } from "../../../core/compiler/compiler.mjs";
 import { pruneConnector } from "../../../core/model/connector.mjs";
@@ -66,6 +67,8 @@ const [inv, baseCatalog] = await Promise.all([
 ]);
 /** The VI these windows show, as the main process knows it (without it, as in a plain browser, a new VI). */
 const viInfo = (await window.solder?.iniciar()) ?? { id: "0", text: null, key: Paths.untitledKey(0), name: "Untitled 1", untitledNumber: 1 };
+applyWindowStyle(document, viInfo.windowStyle);
+window.solder?.alCambiarEstiloVentana((text) => applyWindowStyle(document, text));
 /** The catalog of this VI: the blocks, and for each subVI node the connector of the VI it calls. */
 let cat = baseCatalog;
 const glifos = D.glifosPorBloque(inv);

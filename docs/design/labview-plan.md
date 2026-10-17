@@ -366,6 +366,12 @@ styles (Plain, Solder), once it is decided where a panel's style lives.
    `PANEL_STYLES` (`SOLDER_PANEL_STYLE=solder|solder-night`); Old School is still identical pixel by pixel.
    Captures of the three examples: [`2026-10-17-panel-solder.md`](../../labview-captures/reports/2026-10-17-panel-solder.md).
    Next: the window's companion `.css` (window > project > editor).*
+   *The window's companion `.css` done on 2026-10-17 (DT-058 §9): `<VI name>.css` next to the `.sdg` styles that
+   VI's panel over the editor's style, is read again whenever it changes on disk, and follows the VI on Save As;
+   checked in the editor ([`2026-10-17-window-style.md`](../../labview-captures/reports/2026-10-17-window-style.md)).
+   The project level waits for `.sdproj`. **The window style is provisional and gets no more time** (DT-058,
+   priority): the styles used are Old School for development and Solder for the releases. The branch is ready to
+   merge into `main` as 0.5.0-beta when the developer decides.*
 
 **Then:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
 lesson of NI's Core 1 course can be done in Solder, except lessons 2 and 15 and the DAQ and instrument parts of 4,

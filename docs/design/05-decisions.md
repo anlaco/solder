@@ -1964,6 +1964,10 @@ in that order, through companion `.css` files.**
 
 - **Status:** Accepted on 2026-10-17 by the developer. It settles the open point of DT-056 §7. Mockup with the pattern
   the styles follow: `docs/ideas/panel-style-mockups.html`.
+- **Priority (2026-10-17, the developer):** the styles that matter are the editor's: **Old School for development
+  and Solder for the releases**. The window style (§1–2) is kept as it is, but it is **provisional**: it is an
+  exception that will probably change once LabVIEW's own way of styling panels has been looked at, and no more time
+  goes into it, nor into the project level, until then.
 - **Why:** the person who programs sees the panels in the style they like, the program they ship can have a look of
   its own, and one window can still differ. Plain keeps every control usable in every style, even before a style
   draws it.
@@ -2032,6 +2036,11 @@ in that order, through companion `.css` files.**
    - **Plain covers every control that exists** from its first step (numeric and enum, string, the Booleans, error
      in and out, arrays and the three graphs). *Amended on 2026-10-17 (§5):* it is the only drawing, so there is
      nothing to fall back on.
+   - **The window's style** is read by the main process from `<VI name>.css` next to the VI's file
+     (`editor/electron/window-style.mjs`, `companionStylesheetPath` in `vi-paths.mjs`) and put by the page in a
+     `<style>` after every other sheet (`front-panel/window-stylesheet.mjs`), so with the same specificity it wins.
+     The folder is watched: creating, changing or deleting the file shows at once, and Save As to another folder
+     takes the style found there. An unsaved VI has none.
    - The style reaches the window as a parameter of its URL; `plain.css` is always loaded, with the chosen style's
      sheet after it, and every rule of a panel style lives under `.sd-panel`, so it never touches the editor.
    - *Added on 2026-10-17 (§5):* **the markup carries every part a style may draw, ornament included.** What is only
@@ -2056,7 +2065,8 @@ in that order, through companion `.css` files.**
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| A window's style wins over the project's, and that over the editor's | a test of the function that resolves a VI's stylesheets | **Unverified**: not written yet |
+| A window's style wins over the editor's, and follows its file on disk | `test/editor/window-style.test.mjs` (the companion path, reading, watching creation, change and deletion, the `<style>` kept last) and the editor under Xvfb: written, edited and deleted while open, Save As to another folder, two VIs each with its own (`labview-captures/reports/2026-10-17-window-style.md`) | Verified 2026-10-17 |
+| The project's style sits between the window's and the editor's | a test of the order of the sheets, when projects exist | **Unverified**: projects are not done |
 | A control a style does not draw shows as Plain | `test/editor/panel-styles.test.mjs`: every kind an HTML panel draws has rules in `plain.css`, and every rule lives under `.sd-panel` | Verified 2026-10-17 |
 | A style changes neither sizes nor terminals | `test/editor/panel-styles.test.mjs`: every object of an HTML panel has its Old School box, and keeps the editor's hooks | Verified 2026-10-17 |
 | Old School over Plain looks exactly like the drawing it replaces | `scripts/panel-pixels/compare.sh`: a pixel diff of a fixture with every kind and state, the commit before as BEFORE; then the real editor under Xvfb (`labview-captures/reports/2026-10-17-panel-old-school-numeric.md`) | Verified 2026-10-17 for every kind, the last check after the old drawing was deleted (`2026-10-17-panel-old-school-final.md`) |
