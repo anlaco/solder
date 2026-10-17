@@ -39,6 +39,15 @@ fixes (`0.4.x-beta`).
 - The explanations of greyed items and the error messages are in English, and
   the explanation over a dialog closes on a click elsewhere in it.
 
+### Themes
+
+- Solder has a look of its own: the Solder theme, with white nodes, graphite
+  lines, a dotted canvas and an orange accent. Wires and terminals keep
+  LabVIEW's type colors, and every node takes the same space as before.
+- The Old School theme keeps the LabVIEW 2026 Q3 look, pixel by pixel. Start
+  Solder with `SOLDER_THEME=old-school` to use it (`SOLDER_THEME=solder` for the
+  other); there is no option in the interface yet.
+
 ### Debugging
 
 - Tunnels, shift registers, a loop's i and N show their values to probes and to
