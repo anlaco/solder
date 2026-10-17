@@ -25,7 +25,7 @@ const RELEASE_PANEL_STYLE = "solder";
  * old-school.css. Old School moves there kind by kind, each proven by a pixel diff (DT-058 §9); the kinds not yet
  * here keep the old drawing of front-panel.mjs. When every kind is here, the old drawing and this set are deleted.
  */
-export const OLD_SCHOOL_KINDS_OVER_PLAIN = new Set(["numeric", "enum", "string", "boolean", "error-cluster"]);
+export const OLD_SCHOOL_KINDS_OVER_PLAIN = new Set(["numeric", "enum", "string", "boolean", "error-cluster", "array"]);
 
 /** The name of the panel style to show; an unknown name is reported and the default is used. */
 export function chosenPanelStyleName(environmentValue, isPackaged, warn = console.warn) {

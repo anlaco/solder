@@ -136,6 +136,30 @@ const SCENES = {
       300,
       110,
     ),
+  // Elements past the end of the value (greyed), more dimensions and element types.
+  "array-wide": () =>
+    placeAll(
+      [
+        ["arr-control", { type: { array: "number" }, value: [1], visibles: 3 }],
+        ["arr-indicator", { type: { array: "boolean" }, value: [false], visibles: 3 }],
+        ["arr-control", { type: { array: "number", dims: 2 }, value: [[1]], visibles: [2, 2] }],
+        ["arr-indicator", { type: { array: "string", dims: 2 }, value: [["a", "b"]], visibles: [2, 2] }],
+        ["arr-control", { type: { array: "boolean", dims: 2 }, value: [[true]], visibles: [2, 2] }],
+        ["arr-indicator", { type: { array: "i32", dims: 2 }, value: [[1, 2], [3, 4]], visibles: [2, 2] }],
+      ],
+      2,
+      400,
+      150,
+    ),
+  // Typing into an element, with the caret and with all of it selected.
+  "array-typing": () => {
+    const p = placeAll([["arr-control", { type: { array: "number" }, value: [1, 2] }]], 1);
+    return P.editarElemento({ ...p, seleccion: [] }, CONTEXT, nodeIds(p)[0], 1, false);
+  },
+  "array-typing-all": () => {
+    const p = placeAll([["arr-control", { type: { array: "string", dims: 2 }, value: [["ab", "c"]] }]], 1);
+    return P.editarElemento({ ...p, seleccion: [] }, CONTEXT, nodeIds(p)[0], "0,1", true);
+  },
   graph: () => placeAll([["waveform-chart", undefined], ["waveform-graph", undefined], ["xy-graph", undefined]], 3, 440, 300),
 };
 

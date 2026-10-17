@@ -41,8 +41,8 @@
 .sd-panel :is(.sd-numeric, .sd-enum) .sd-incrementer + .sd-field { left: 12px; }
 .sd-panel .sd-indicator:is(.sd-numeric, .sd-enum, .sd-string) .sd-field { background: var(--numeric-indicator-background); }
 .sd-panel :is(.sd-numeric, .sd-enum, .sd-string) .sd-value { flex: initial; min-width: auto; overflow: visible; }
-/* The old drawing showed no caret in a field: an inline element with no content. */
-.sd-panel :is(.sd-numeric, .sd-enum, .sd-string) .caret { display: inline; vertical-align: baseline; }
+/* The old drawing showed no caret in a field, nor in an array's element: an inline element with no content. */
+.sd-panel :is(.sd-numeric, .sd-enum, .sd-string, .sd-array) .caret { display: inline; vertical-align: baseline; }
 
 /* A string's field fills its box and keeps the lines of its text. */
 .sd-panel .sd-string .sd-field { width: 100%; white-space: pre; line-height: 15px; }
@@ -131,3 +131,38 @@
   background: var(--error-scrollbar-background); border-left: 1px solid var(--error-scrollbar-border);
 }
 .sd-panel .sd-control.sd-error-cluster .sd-scrollbar { background: var(--error-scrollbar-control-background); }
+
+/* ——— Array ——— */
+
+/* The index: an incrementer and a blue number in a white box with a hairline, the incrementer centered in it. */
+.sd-panel .sd-array .sd-index {
+  align-items: center; background: var(--panel-array-index-background); border: 1px solid var(--panel-array-index-border);
+}
+.sd-panel .sd-array .sd-index .sd-incrementer { position: relative; left: 0; top: auto; width: 16px; height: 25px; flex: none; }
+.sd-panel .sd-array .sd-index .sd-field {
+  flex: 1; height: 100%; min-width: auto; overflow: visible; padding: 0 0 0 3px; border: 0; border-radius: 0;
+  white-space: normal; font-variant-numeric: normal; color: var(--panel-array-index-text);
+  background: var(--panel-array-index-background); cursor: default;
+}
+.sd-panel .sd-array .sd-value { flex: initial; min-width: auto; overflow: visible; }
+
+/* The box of the elements, sunk into a 1 px bevel. */
+.sd-panel .sd-array .sd-elements {
+  border-radius: 0; background: var(--panel-array-box-background); border: 1px solid;
+  border-color: var(--panel-array-box-bevel-dark) var(--panel-array-box-bevel-light) var(--panel-array-box-bevel-light) var(--panel-array-box-bevel-dark);
+}
+.sd-panel .sd-array .sd-element { display: block; }
+
+/* Each element is a field with a dark hairline, a Boolean one included (it shows T or F); a numeric element of a
+   control has the incrementer drawn on its left, 4 px under its field. Past the end, the elements are greyed. */
+.sd-panel .sd-array .sd-element :is(.sd-field, .sd-element-boolean) {
+  position: absolute; top: 0; bottom: 0; left: 0; right: 0; box-sizing: border-box; display: flex; align-items: center;
+  justify-content: normal; justify-items: normal; min-width: auto; overflow: visible; padding: 0 3px; border-radius: 0;
+  background: var(--panel-array-index-background); border: 1px solid var(--panel-array-cell-border); color: inherit;
+  font-variant-numeric: normal; white-space: pre; cursor: text;
+}
+.sd-panel .sd-array .sd-element .sd-incrementer + .sd-field { left: 12px; }
+.sd-panel .sd-array .sd-element .sd-element-string { line-height: 15px; }
+.sd-panel .sd-array .sd-element-boolean[aria-checked="true"] { background: var(--panel-array-index-background); color: inherit; }
+.sd-panel .sd-indicator.sd-array .sd-element :is(.sd-field, .sd-element-boolean) { background: var(--numeric-indicator-background); cursor: default; }
+.sd-panel .sd-array .sd-element.sd-empty :is(.sd-field, .sd-element-boolean) { background: var(--panel-array-empty-background); color: var(--panel-array-empty-text); }

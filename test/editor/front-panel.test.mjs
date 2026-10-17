@@ -497,8 +497,8 @@ test("un control y un indicador de array se ponen en el panel con su terminal en
   const k = P.caja(control);
   assert.deepEqual([k.ancho, k.alto], [41 + 67 + 6, 36]);
   let html = P.contenido(p, CTX);
-  assert.equal((html.match(/class="elem-array/g) ?? []).length, 2);
-  assert.equal((html.match(/class="arr-indice"/g) ?? []).length, 2);
+  assert.equal((html.match(/class="sd-element[ "]/g) ?? []).length, 2);
+  assert.equal((html.match(/class="sd-index"/g) ?? []).length, 2);
   // El terminal del diagrama es el de un array de DBL: borde naranja y el dibujo de los índices.
   const bd = D.contenido({ ...ED.inicial(), g: p.g }, CTX, Gr.tipos(p.g, CAT));
   assert.equal((bd.match(/class="glifo-terminal-panel"/g) ?? []).length, 2);
@@ -526,7 +526,7 @@ test("un control y un indicador de array se ponen en el panel con su terminal en
   p = P.moverA(p, CTX, { x: 260 + 2 * 67, y: 112 });
   p = P.soltar(p, CTX, FONDO, { x: 394, y: 112 });
   assert.equal(p.g.nodos[0].config.visibles, 3);
-  assert.equal((P.contenido(p, CTX).match(/class="elem-array/g) ?? []).length, 4, "tres en el control y uno en el indicador");
+  assert.equal((P.contenido(p, CTX).match(/class="sd-element[ "]/g) ?? []).length, 4, "tres en el control y uno en el indicador");
   assert.equal(P.caja(p.g.nodos[0]).ancho, 41 + 3 * 67 + 6);
   // Un array de cadenas y uno de booleanos.
   let q = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "string" }, value: ["a"] });
@@ -558,10 +558,10 @@ test("Add Dimension and Remove Dimension on a panel array turn it into a 2D one 
   const k = P.caja(control);
   assert.deepEqual([k.ancho, k.alto], [41 + 65 + 7, 54], "the index column is taller than one row of elements");
   let html = P.contenido(p, CTX);
-  assert.equal((html.match(/class="arr-indice"/g) ?? []).length, 2);
-  assert.match(html, /data-eje="fila" style="top:0px;width:41px/);
-  assert.match(html, /data-eje="columna" style="top:28px;width:41px/);
-  assert.match(html, /class="objeto-panel array control dos-dimensiones/);
+  assert.equal((html.match(/class="sd-index"/g) ?? []).length, 2);
+  assert.match(html, /data-eje="fila" style="left:0px;top:0px;width:41px/);
+  assert.match(html, /data-eje="columna" style="left:0px;top:28px;width:41px/);
+  assert.match(html, /class="objeto-panel sd-control sd-array sd-two-dimensions/);
 
   // Both axes stretch from the corner handle: 3 columns and 4 rows.
   p = { ...p, seleccion: [id] };
@@ -573,8 +573,8 @@ test("Add Dimension and Remove Dimension on a panel array turn it into a 2D one 
   const grande = P.caja(p.g.nodos[0]);
   assert.deepEqual([grande.ancho, grande.alto], [41 + 3 * 65 + 7, 3 + 4 * 26 + 5], "stretched cells repeat every 65 px across and 26 px down");
   html = P.contenido(p, CTX);
-  assert.equal((html.match(/class="elem-array/g) ?? []).length, 12);
-  assert.equal((html.match(/class="elem-array"/g) ?? []).length, 3, "the three defined elements; the rest are shown greyed");
+  assert.equal((html.match(/class="sd-element[ "]/g) ?? []).length, 12);
+  assert.equal((html.match(/class="sd-element"/g) ?? []).length, 3, "the three defined elements; the rest are shown greyed");
 
   // The arrows move each index on its own axis and never go below 0.
   const paso = (eje, valor) => { p = P.pulsar(p, CTX, { tipo: "paso", id, paso: valor, eje }, { x: 160, y: 110 }); };
@@ -610,10 +610,10 @@ test("a 2D indicator shows the rows the run left and ignores a value with other 
   let p = ponerYConfirmar(P.inicial(), "arr-indicator", { x: 150, y: 100 }, { type: { array: "i32", dims: 2 }, value: [] });
   const id = p.g.nodos[0].id;
   p = { ...p, g: Gr.fijarConfig(p.g, id, { visibles: [2, 2] }) };
-  const mostrado = (valores) => [...P.contenido({ ...p, valores }, CTX).matchAll(/<span class="valor"><span>([^<]*)<\/span>/g)].map((m) => m[1]);
+  const mostrado = (valores) => [...P.contenido({ ...p, valores }, CTX).matchAll(/<span class="sd-value"><span>([^<]*)<\/span>/g)].map((m) => m[1]);
   assert.deepEqual(mostrado({ [id]: [[1, 2], [3, 4]] }), ["1", "2", "3", "4"]);
   assert.deepEqual(mostrado({ [id]: [1, 2, 3] }), ["0", "0", "0", "0"], "a 1D value left before Add Dimension is not shown");
-  assert.equal((P.contenido({ ...p, valores: { [id]: [[1]] } }, CTX).match(/class="elem-array indicador"/g) ?? []).length, 1, "only the cell the run defined is solid");
+  assert.equal((P.contenido({ ...p, valores: { [id]: [[1]] } }, CTX).match(/class="sd-element"/g) ?? []).length, 1, "only the cell the run defined is solid");
 });
 
 // A tester on Windows saved a VI whose control was still being named: the file had no front panel.

@@ -348,6 +348,10 @@ styles (Plain, Solder), once it is decided where a panel's style lives.
    hidden in Plain; the status and the arrows are SVG files of the style. Zero changed pixels in the fixture and the
    real editor ([`2026-10-17-panel-old-school-error.md`](../../labview-captures/reports/2026-10-17-panel-old-school-error.md)).
    Next: arrays, then graphs.*
+   *Arrays moved on 2026-10-17 (1D and 2D, every element type, greyed elements, typing, handles): zero changed
+   pixels in the fixture and the real editor
+   ([`2026-10-17-panel-old-school-array.md`](../../labview-captures/reports/2026-10-17-panel-old-school-array.md)).
+   Next: the three graphs, then the old drawing and `OLD_SCHOOL_KINDS_OVER_PLAIN` deleted.*
 
 **Then:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
 lesson of NI's Core 1 course can be done in Solder, except lessons 2 and 15 and the DAQ and instrument parts of 4,
