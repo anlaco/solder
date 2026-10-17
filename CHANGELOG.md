@@ -6,6 +6,15 @@ features raises MINOR, one that only fixes things raises PATCH. The `-alpha` lab
 said the file format was not stable yet; `-beta` marks the maintainable version,
 whose files keep opening, and stays a `0.x` (DT-048, DT-055).
 
+## 0.4.1-beta — 2026-10-17
+
+### Fixes
+
+- A numeric or string control on the Front Panel can be moved again: a press
+  within 4 px of its edge drags it, as in LabVIEW, and a press deeper in the
+  value box still types in it. Before, the whole control typed and could not be
+  dragged.
+
 ## 0.4.0-beta — 2026-10-17
 
 The first beta: the maintainable version (DT-048, DT-055). The `.sdg` format is

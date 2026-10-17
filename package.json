@@ -1,7 +1,7 @@
 {
   "name": "@solder/editor",
   "productName": "Solder",
-  "version": "0.4.0-beta",
+  "version": "0.4.1-beta",
   "private": true,
   "type": "module",
   "description": "Solder: a free visual programming language that clones LabVIEW.",
