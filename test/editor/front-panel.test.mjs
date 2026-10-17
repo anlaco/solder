@@ -187,6 +187,29 @@ test("el valor de un control se escribe en su casilla y cambia con las flechas",
   assert.deepEqual(p.seleccion, [ind]);
 });
 
+// The outer 4 px of a numeric or string control move it; only inside that band does a press type in
+// the value box (labview-captures/reports/2026-10-17-panel-move-zones.md).
+test("a press near the edge of a control's value box moves the control instead of typing", () => {
+  for (const block of ["control", "str-control"]) {
+    let p = ponerYConfirmar(P.inicial(), block, { x: 100, y: 100 });
+    const node = p.g.nodos[0];
+    const box = P.caja(node);
+    const middleY = box.y + Math.floor(box.alto / 2);
+    const pressAt = (point) => P.pulsar(p, CTX, { tipo: "casilla", id: node.id }, point);
+
+    for (const point of [{ x: box.x + box.ancho - 1, y: middleY }, { x: box.x + box.ancho - 4, y: middleY }, { x: box.x + 30, y: box.y }, { x: box.x + 30, y: box.y + box.alto - 4 }]) {
+      const pressed = pressAt(point);
+      assert.equal(pressed.edicion, null, `${block}: no typing at ${point.x},${point.y}`);
+      assert.equal(pressed.accion?.tipo, "mover", `${block}: the press at ${point.x},${point.y} moves`);
+    }
+    if (block === "str-control") assert.equal(pressAt({ x: box.x + 3, y: middleY }).accion?.tipo, "mover", "the left edge of a string moves it");
+    assert.ok(pressAt({ x: box.x + box.ancho - 5, y: middleY }).edicion, `${block}: 5 px in, the press types`);
+
+    p = P.soltar(P.moverA(pressAt({ x: box.x + box.ancho - 2, y: middleY }), CTX, { x: box.x + box.ancho + 38, y: middleY }), CTX, { tipo: "objeto", id: node.id }, { x: box.x + box.ancho + 38, y: middleY });
+    assert.equal(p.g.nodos[0].panel.x, node.panel.x + 40, `${block}: dragged by its edge, it moves`);
+  }
+});
+
 // LabVIEW's default format shows 6 significant digits on the panel and 13 on the diagram
 // (labview-captures/reports/2026-10-15-numeric-display.md); a value only shown is not rounded.
 test("a DBL control shows 1.23457E+8 and keeps 123456789, the constant shows it in full", () => {

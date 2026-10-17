@@ -287,6 +287,19 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > `e2-stop.png`, `e4.png`). The editor actuates with a click without dragging and
 > selects; editing the button's text is not done yet.
 
+> **Rule 40c bis — the edge of a value box moves the control.** In edit mode, a press
+> 1–4 px inside the outer edge of a numeric control, numeric indicator or string
+> control moves it; deeper inside the value box, a press puts the caret there and a
+> drag selects text. On a numeric control the incrementer owns its whole left strip:
+> a press there steps the value and never moves. Dragging the owned label moves only
+> the label. A Push Button moves from a band about 5 px inside its visible edge and
+> toggles deeper in, even when dragged. Measured in LabVIEW 2026 Q3
+> (`labview-captures/reports/2026-10-17-panel-move-zones.md`). The editor does the
+> 4 px band on numeric and string controls (`test/editor/front-panel.test.mjs`, "a press
+> near the edge…"); the indicator's caret and the Push Button's band are not done
+> (Solder moves an indicator from anywhere and a Boolean on any drag). The cursor
+> shapes are unverified: the VM captures do not show the pointer.
+
 > **Rule 40d — Run mode.** While the VI runs, both windows are in Run
 > mode: the Run arrow is filled, Abort lights up, the editing
 > tools disappear (font, align, distribute, size, order) and the panel
