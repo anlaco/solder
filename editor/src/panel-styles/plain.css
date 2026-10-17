@@ -106,7 +106,8 @@
 .sd-panel .sd-switch[aria-checked="true"] .sd-switch-thumb { left: auto; right: 1px; }
 /* A vertical switch is on at the top, as LabVIEW's. */
 .sd-panel .sd-vertical .sd-switch-thumb { top: auto; bottom: 1px; left: 1px; right: 1px; width: auto; height: auto; aspect-ratio: 1; }
-.sd-panel .sd-vertical .sd-switch[aria-checked="true"] .sd-switch-thumb { top: 1px; bottom: auto; }
+/* Its thumb keeps both sides when on, or the horizontal switch's `left: auto` would shrink it to nothing. */
+.sd-panel .sd-vertical .sd-switch[aria-checked="true"] .sd-switch-thumb { top: 1px; bottom: auto; left: 1px; right: 1px; }
 
 .sd-panel .sd-led { display: grid; }
 .sd-panel .sd-led-lens { box-sizing: border-box; border: 1px solid var(--sd-line); border-radius: 50%; background: var(--sd-led-off); }

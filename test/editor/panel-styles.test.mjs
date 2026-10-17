@@ -138,7 +138,7 @@ test("an HTML panel shows the values and what is being typed, as Old School does
   const id = p.g.nodos[0].id;
   assert.match(P.contenido(p, PLAIN), /<span class="sd-value">2,5<\/span>/);
   p = P.editarValor(p, CTX, id, false);
-  assert.match(P.contenido(p, PLAIN), /class="objeto-panel sd-control sd-numeric editando-valor".*<span class="sd-value"><span>2,5<\/span><span class="caret"><\/span>/);
+  assert.match(P.contenido(p, PLAIN), /class="objeto-panel sd-control sd-numeric editando-valor sd-editing".*<span class="sd-value"><span>2,5<\/span><span class="caret"><\/span>/);
 });
 
 test("a Boolean says its state with ARIA and .sd-on, and keeps its exact style", () => {
@@ -173,9 +173,21 @@ test("every ornament part is hidden in Plain, and the markup has no other", () =
 /** The selectors of a rule's list, split at the commas that are not inside `:is(…)` and the like. */
 const selectorsOf = (list) => list.split(/,(?![^(]*\))/).map((selector) => selector.trim());
 
+/** A sheet may build on another shipped one with `@import`, as Solder Night does on Solder. */
+const IMPORT_STATEMENT = /@import\s+"([^"]+)";/g;
+
 test("every rule of every panel style lives under .sd-panel, so a panel style never touches the editor", () => {
   for (const sheet of readdirSync(PANEL_STYLES_DIRECTORY).filter((name) => name.endsWith(".css"))) {
-    const selectors = [...readSheet(sheet).matchAll(/([^{}]+)\{[^{}]*\}/g)].flatMap(([, list]) => selectorsOf(list));
+    const rules = readSheet(sheet).replace(IMPORT_STATEMENT, "");
+    const selectors = [...rules.matchAll(/([^{}]+)\{[^{}]*\}/g)].flatMap(([, list]) => selectorsOf(list));
     assert.deepEqual(selectors.filter((selector) => !selector.startsWith(".sd-panel")), [], sheet);
+  }
+});
+
+test("every panel style's sheet exists, and so does every shipped sheet it imports", () => {
+  const sheets = readdirSync(PANEL_STYLES_DIRECTORY);
+  for (const { stylesheet } of Object.values(PANEL_STYLES).filter(({ stylesheet }) => stylesheet)) {
+    assert.ok(sheets.includes(stylesheet), stylesheet);
+    for (const [, imported] of readSheet(stylesheet).matchAll(IMPORT_STATEMENT)) assert.ok(sheets.includes(imported), `${stylesheet} imports ${imported}`);
   }
 });

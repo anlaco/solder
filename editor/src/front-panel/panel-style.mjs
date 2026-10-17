@@ -12,9 +12,9 @@ export const CHOSEN_PANEL_STYLE_ROUTE = "/src/panel-styles/chosen.css";
 export const PANEL_STYLES = {
   "old-school": { stylesheet: "old-school.css" },
   plain: { stylesheet: null },
-  // Their sheets come in the next step of DT-058; until then they show as Plain.
-  solder: { stylesheet: null },
-  "solder-night": { stylesheet: null },
+  solder: { stylesheet: "solder.css" },
+  // Solder's rules with dark tokens: its sheet imports solder.css.
+  "solder-night": { stylesheet: "solder-night.css" },
 };
 
 const DEVELOPMENT_PANEL_STYLE = "old-school";

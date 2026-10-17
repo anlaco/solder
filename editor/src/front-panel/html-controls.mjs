@@ -49,7 +49,7 @@ function objectFrame(frame, inner) {
     `sd-${frame.kind}`,
     ...(frame.classes ?? []),
     ...(frame.selected ? ["seleccionado", "sd-selected"] : []),
-    ...(frame.editing ? ["editando-valor"] : []),
+    ...(frame.editing ? ["editando-valor", "sd-editing"] : []),
   ];
   return `<div class="${classes.join(" ")}" data-nodo="${escapeHtml(frame.id)}" data-label="${escapeHtml(frame.label ?? "")}"${frame.attributes ?? ""} style="${boxStyle(frame.box)}">${inner}</div>`;
 }

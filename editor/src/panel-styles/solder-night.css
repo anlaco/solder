@@ -1,0 +1,44 @@
+/* Solder Night: the dark variant of Solder (DT-058 §4), from the mockup's second set of tokens.
+ *
+ * It takes every rule of solder.css and redefines only its tokens, to show how a general template works: a style
+ * that only changes colors is a list of tokens. The dark limit of the editor's theme (DT-056 §5) does not apply to
+ * panel styles.
+ */
+
+@import "solder.css";
+
+.sd-panel {
+  --sd-panel: #121418;
+  --sd-panel-dots: rgba(255, 255, 255, 0.09);
+  --sd-ink: #e9ebef;
+  --sd-muted: #8b919c;
+  --sd-line: rgba(255, 255, 255, 0.09);
+  --sd-line-soft: rgba(255, 255, 255, 0.06);
+  --sd-surface: #1c1f25;
+  --sd-recess: #0c0e11;
+  --sd-card: #16191e;
+  --sd-ring: 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --sd-raise: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 0 1px rgba(0, 0, 0, 0.6), 0 2px 5px rgba(0, 0, 0, 0.45);
+  --sd-inset: inset 0 1px 3px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --sd-accent: #ff8a2a;
+  --sd-accent-ink: #160b02;
+  --sd-accent-soft: rgba(255, 138, 42, 0.18);
+  --sd-track: #2a2e36;
+  --sd-face-high: #474d57;
+  --sd-face-low: #1d2026;
+  --sd-face-shadow: rgba(0, 0, 0, 0.7);
+  --sd-led-off: #2b2f37;
+  --sd-glow: rgba(255, 138, 42, 0.85);
+  --sd-alarm: #f0565b;
+  --sd-alarm-ink: #ffffff;
+  --sd-alarm-glow: rgba(240, 86, 91, 0.8);
+  --sd-key-edge: rgba(0, 0, 0, 0.6);
+  --sd-empty: #14171b;
+  --sd-plot: #0c0e11;
+  --sd-grid-minor: rgba(255, 255, 255, 0.03);
+  --sd-grid-major: rgba(255, 255, 255, 0.07);
+  --sd-trace-0: #ff8a2a;
+  --sd-trace-1: #9aa3ad;
+  --sd-trace-2: #6ea4ff;
+  --sd-trace-3: #4cc2b2;
+}

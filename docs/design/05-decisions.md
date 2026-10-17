@@ -2003,6 +2003,21 @@ in that order, through companion `.css` files.**
    touched and flat on what is read, values as arcs or fills, numbers in monospace with tabular figures, hairline
    rings instead of borders, controls raised and indicators recessed (LabVIEW's white control and grey indicator,
    said with depth), and light as feedback.
+   *Amended on 2026-10-17, when the Solder and Solder Night sheets were written (`panel-styles/solder.css` and
+   `solder-night.css`), with the developer:*
+   - **The panel style paints the canvas too** (it is the `.sd-panel` itself): Solder a warm `#f6f5f1`, Solder Night
+     `#121418`, with the editor's 12 px grid as dots of the style's color, hidden in Run mode as the grid is.
+     Otherwise Solder Night would put dark controls on the theme's light grey.
+   - **Values in the interface font with tabular figures**, not monospace: the figures do not jump and still fit
+     LabVIEW's 55 px field ("98765,4" in a 12 px monospace touches its edge).
+   - **ISA-101 colors:** the normal state is neutral and only an alarm is red. "No error" is a grey light and an
+     error a glowing red one; a lit LED takes the orange accent and glows, as in the mockup.
+   - **A halo on the field being typed**, through a new public state class `.sd-editing` on the object
+     (DT-056 §7), next to the editor's own `editando-valor`; array elements already had it.
+   - **Solder Night is Solder's rules with other tokens:** its sheet `@import`s `solder.css` and redefines only
+     the tokens, so a style that only changes colors is a list of tokens. A user's style may import a shipped one
+     the same way.
+   - Not taken from the mockup, because the markup has no part for it: the area filled under a chart's plot.
 9. **How the HTML panel is built** (decided on 2026-10-17, before writing it):
    - **A style changes neither sizes nor the place of terminals.** Every object of an HTML style takes exactly the
      box it takes in Old School (`cajaObjeto` in `front-panel.mjs`), so labels, clicks, selection and the connector
@@ -2048,5 +2063,8 @@ in that order, through companion `.css` files.**
 | Old School's SVG files match the drawings of `glyphs.mjs` | `test/editor/panel-styles.test.mjs`: every file equals what `old-school-art.mjs` writes, and every file `old-school.css` takes exists | Verified 2026-10-17 |
 | The editor has one panel drawing | `test/editor/panel-styles.test.mjs`: every panel style, Old School included, draws the same markup (only the sheets differ) | Verified 2026-10-17 |
 | Every ornament part is hidden in Plain | `test/editor/panel-styles.test.mjs`: every class of `ORNAMENT_CLASSES` has a `display: none` rule in `plain.css`, and the markup hides no other part | Verified 2026-10-17 |
+| Solder and Solder Night are registered and every sheet a style imports exists | `test/editor/panel-styles.test.mjs`: every `stylesheet` of `PANEL_STYLES` and every `@import` in it is a file of `panel-styles/`; every rule lives under `.sd-panel` | Verified 2026-10-17 |
+| Solder and Solder Night dress every kind (numeric, enum, string, Booleans, error clusters, arrays, graphs) | the fixture of `scripts/panel-pixels/render.mjs` rendered in both styles, and the three examples in the real editor (`labview-captures/reports/2026-10-17-panel-solder.md`), seen by the developer | Seen 2026-10-17; no test fails if a kind loses its look |
+| Writing Solder's sheets left Old School unchanged | `scripts/panel-pixels/compare.sh` against b58c735: identical in every scene | Verified 2026-10-17 |
 | The `.sdg` does not change | the format tests (`test/end-to-end/format-versions.test.mjs`) stay green | Holds today; to recheck when styles are implemented |
 
