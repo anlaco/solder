@@ -1,0 +1,294 @@
+/* The Old School theme: the look of LabVIEW 2026 Q3, measured pixel by pixel (DT-056).
+ * Every color the editor draws and that a theme may change is a token here; styles.css, getting-started.css and the
+ * glyphs and views only ask for a token. A new theme is another file that gives the same names other values.
+ * Tokens say the role, not the color: two roles that share a value here are still two tokens, because another theme
+ * may split them. The type colors (core/model/types.mjs), the drawing inside the palette icons and the Old School
+ * front panel controls are not tokens: they are the same in every theme. */
+
+/* Ink and paper: Line art and surfaces of the glyphs and views: every drawing takes its lines from the ink and its boxes from the paper. */
+:root {
+  --ink: #141414; /* Line art and text of the glyphs and palette icons. */
+  --paper: #fff; /* The white of boxes, buttons and fields drawn in the glyphs. */
+}
+
+/* Window chrome: The frame around the canvases: menu bar, toolbar, status bar, scrollbar gutter. */
+:root {
+  --text: #000;
+  --groove-line-1: #e3e3e3;
+  --groove-line-2: #aeaeae;
+  --groove-line-3: #cecece;
+  --groove-line-4: #fdfdfd;
+  --groove-line-5: #f3f3f3;
+  --toolbar-edge-1: #aeaeae;
+  --toolbar-edge-2: #7c7c7c;
+  --toolbar-edge-3: #e2e2e2;
+  --icon-zone-separator: #808080;
+  --toolbar-hover-outline: #b9b9b9;
+  --toolbar-search-background: #fff;
+  --toolbar-search-selector-border: #c8c8c8;
+  --chrome-highlight: #fcfcfc;
+  --disabled-text: #a0a0a0;
+  --placeholder-corner-light: #c8c8c8;
+  --placeholder-corner-dark: #878787;
+  --chrome-background: #f0f0f0; /* The window frame: menu bar, toolbar, status bar, gutters. */
+  --status-instance-border: #2a2a2a;
+  --toolbar-box-border: #7a7a7a;
+  --placeholder-text: #696969; /* Greyed placeholders (DT-035: what is not done yet looks the same, greyed). */
+}
+
+/* Menus: Menu bar titles and the pop-up menus (right-click, drop-downs). */
+:root {
+  --menu-background: #f0f0f0;
+  --menu-border: #a0a0a0;
+  --menu-shadow: rgba(0, 0, 0, 0.35);
+  --menu-highlight-background: #0078d7;
+  --menu-highlight-text: #fff;
+  --menu-separator-dark: #a0a0a0;
+  --menu-separator-light: #fff;
+  --menu-grid-background: #f8f8f8;
+  --menu-current-frame: #0078d7;
+}
+
+/* Palettes: The Functions and Controls palettes and their sub-palettes. */
+:root {
+  --palette-background: #dddddd;
+  --palette-border: #a0a0a0;
+  --window-shadow-edge: #bebebe;
+  --palette-inner-bevel: #cccccc;
+  --palette-title-bevel: #bebebe;
+  --palette-search-background: #f8f8f8;
+  --palette-separator-1: #d4d4d4;
+  --palette-separator-2: #d3d3d3;
+  --palette-separator-3: #f1f1f1;
+  --palette-expanded-background: #f8f8f8;
+  --palette-row-bevel-light: #f3f3f3;
+  --palette-row-bevel-shade: #e2e2e2;
+  --folder-tab: #6e706f;
+  --folder-spine-top: #7b7e7d;
+  --folder-spine-bottom: #aeb0b0;
+  --folder-box-background: #fff;
+  --folder-box-border: #858786;
+  --folder-box-inner-border: #b6b7b7;
+  --palette-frame: #2a8ddd;
+  --palette-frame-halo-outer: #cee2f2;
+  --palette-frame-halo-inner: #7cb8e7;
+}
+
+/* Pop-ups: Explanations, tip strips and warning boxes. */
+:root {
+  --window-shadow: rgba(0, 0, 0, 0.66);
+  --popup-background: #fff;
+  --popup-border: #b4b4b4;
+  --popup-secondary-text: #6e6e6e;
+  --popup-code-text: #828282;
+  --popup-shadow: rgba(0, 0, 0, 0.18);
+  --tip-background: #ffffe1;
+  --tip-border: #000;
+}
+
+/* Dialogs: VI Properties, error dialogs, Select Item and the other modal windows. */
+:root {
+  --modal-backdrop: rgba(0, 0, 0, 0.12);
+  --dialog-background: #f0f0f0;
+  --error-dialog-border: #7a7a7a;
+  --dialog-shadow: rgba(0, 0, 0, 0.35);
+  --dialog-titlebar-background: #fff;
+  --dialog-close-text: #202020;
+  --dialog-secondary-text: #707070;
+  --link-text: #0645ad;
+  --dialog-disabled-text: #8a8a8a;
+  --button-background: #fdfdfd;
+  --button-border: #adadad;
+  --button-default-border: #0078d7;
+  --button-focus-outline: #000;
+  --dialog-border: #636363;
+  --dialog-page-border: #d9d9d9;
+  --dialog-page-background: #f0f0f0;
+  --dialog-group-border: #dcdcdc;
+  --checkbox-border: #333;
+  --checkbox-background: #fff;
+  --checkbox-checked: #0078d7;
+  --checkbox-checked-inset: #fff;
+  --combo-border: #7a7a7a;
+  --combo-background: #fff;
+  --dialog-button-background: #e1e1e1;
+  --list-background: #fff;
+  --list-border: #828790;
+  --list-selected-row: #cce8ff;
+  --list-value-text: #6d6d6d;
+  --field-border: #abadb3;
+  --field-background: #fff;
+  --select-item-dialog-border: #b7b7b7;
+  --window-titlebar-background: #f3f3f3;
+  --focus-border: #0078d4;
+  --select-item-filter-background: #fafafa;
+  --list-selection-background: #0078d4;
+  --list-selection-text: #fff;
+  --edit-items-checked: #0078d4;
+  --button-border-light: #d0d0d0;
+  --edit-items-button-default-border: #0078d4;
+}
+
+/* Canvases: The block diagram and front panel surfaces. */
+:root {
+  --diagram-background: #fff;
+  --panel-background: #e2e2e2;
+  --panel-grid-line: #dadada;
+}
+
+/* Diagram wires and editing: Wires being edited, selection outlines, placement outlines. */
+:root {
+  --wire-selection: #3c8fd8;
+  --broken-wire-line: #000;
+  --wire-dragging-line: #000;
+  --coercion-dot: #ff0000;
+  --selection-ants: #5a7fb8;
+  --text-selected-background: #000;
+  --text-selected-text: #fff;
+  --caret: #000;
+  --terminal-view-line: #000;
+  --placement-outline: #000;
+  --editing-outline: #000;
+  --placement-outline-control: #c0203a;
+}
+
+/* Nodes: Nodes drawn in CSS (constants, expressions, compound arithmetic). */
+:root {
+  --constant-background: #fff;
+  --expression-background: #fff;
+  --expression-border: #000;
+  --node-fill: #ffffcc; /* Primitive nodes (the yellow of LabVIEW's nodes). */
+  --expression-cell-border: #000;
+  --constant-representation-text: #0000ff;
+  --compound-node-border: #7a7a62;
+  --compound-divider: #000;
+  --compound-node-text: #505040;
+  --node-handle: #1a7fd6;
+  --invert-dot-fill: #fff;
+  --invert-dot-border: #000;
+  --array-cell-background: #fff;
+  --array-index-field-border: #7a7a7a;
+  --array-empty-cell-background: #e8e8f8;
+  --array-empty-cell-text: #8a8aa0;
+  --array-tint-mix-color: white;
+  --array-2d-empty-text: #9a9aa8;
+  --node-border: #2b2b22; /* Primitive nodes, the border of the body. */
+  --time-node-fill: #ffffcc;
+  --time-node-border: #4c4c3d;
+  --format-node-border: #4c4c3d;
+  --structure-terminal-fill: #ffffcc;
+  --tunnel-border: #4c4c3d;
+  --terminal-direction-arrow: #4c4c3d;
+  --connector-selected-cell: #0078d7;
+}
+
+/* Structures: Loop, Case and Sequence frames. */
+:root {
+  --structure-tint: #f5f5fc;
+  --structure-selection-dash: #4386b9;
+  --structure-selection-gap: #bfdbf1;
+  --structure-handle: #0078d4;
+  --structure-handle-halo: #fff;
+  --structure-placement-border: #666;
+  --structure-placement-background: #fff;
+  --invalid-frame-label: #ff0000;
+  --canvas-text-inverse: #fff;
+}
+
+/* Front panel: Old School front panel controls drawn in CSS (a theme with its own controls replaces them). */
+:root {
+  --numeric-field-border-top: #c2c2c2;
+  --numeric-field-border-right: #ececec;
+  --numeric-field-border-bottom: #f2f2f2;
+  --numeric-field-border-left: #cacaca;
+  --numeric-field-background: #fafafa;
+  --numeric-field-inset: #a8a8a8;
+  --numeric-indicator-background: #d1d1d1;
+  --canvas-text: #000;
+  --panel-array-index-background: #fff;
+  --panel-array-index-border: #b4b4b4;
+  --panel-array-index-text: #0000ff;
+  --panel-array-box-background: #a8a8a8;
+  --panel-array-box-bevel-dark: #7a7a7a;
+  --panel-array-box-bevel-light: #f2f2f2;
+  --panel-array-cell-border: #7a7a7a;
+  --panel-array-empty-background: #ececec;
+  --panel-array-empty-text: #9a9a9a;
+  --array-handle: #0078d7;
+  --array-handle-border: #fff;
+  --graph-text: #000;
+}
+
+/* Error cluster: The error cluster control, indicator and constant. */
+:root {
+  --error-constant-background: #fff;
+  --error-constant-border: #7f7f00;
+  --error-status-color: #007f00;
+  --error-code-color: #0000ff;
+  --error-source-color: #ff00ff;
+  --error-cluster-background: #a9a9a9;
+  --error-cluster-bevel-light: #d4d4d4;
+  --error-cluster-bevel-dark: #6e6e6e;
+  --error-field-background: #d6d6d6;
+  --error-field-control-background: #fff;
+  --error-code-prefix-background: #8a8a8a;
+  --error-code-prefix-text: #e8e8e8;
+  --error-scrollbar-background: #bdbdbd;
+  --error-scrollbar-border: #9a9a9a;
+  --error-scrollbar-control-background: #f2f2f2;
+}
+
+/* Debugging: Highlight Execution, probes, breakpoints, the Debug Window and the Error list. */
+:root {
+  --debug-label-background: #ccffff;
+  --debug-label-border: #333333;
+  --probe-background: #ffff66;
+  --probe-border: #000;
+  --breakpoint-color: #cc0000;
+  --breakpoint-text: #fff;
+  --breakpoint-off-background: #fff;
+  --breakpoint-inverse-outline: #fff;
+  --debug-inverse-video: #fff;
+  --debug-stopped-frame: #4386b9;
+  --debug-end-frame: #000;
+  --debug-stopped-wire: #ffff00;
+  --debug-stopped-frame-alt: #bfdbf1;
+  --debug-window-border: #828790;
+  --floating-window-shadow: rgba(0, 0, 0, 0.3);
+  --error-list-border: #b8b8b8;
+  --debug-inactive-title-text: #666;
+  --debug-toolbar-hover-background: #e5f1fb;
+  --debug-list-line: #a0a0a0;
+  --debug-header-background: #f8f8f8;
+  --debug-header-divider: #e0e0e0;
+  --debug-row-even: #fff;
+  --debug-row-odd: #eee;
+  --debug-value-text: #008000;
+  --debug-splitter: #787878;
+  --debug-viewer-background: #e2e2e2;
+  --debug-viewer-value-background: #b3b3b3;
+  --debug-viewer-value-border: #555;
+  --debug-band-number: #a3a3d6;
+  --debug-band-boolean: #a3bca3;
+}
+
+/* Getting Started: The Getting Started window. */
+:root {
+  --getting-started-background: #fff;
+  --getting-started-text: #161617;
+  --getting-started-menubar-border: #a0a0a0;
+  --getting-started-product-text: #505153;
+  --getting-started-channel-text: #818386;
+  --getting-started-panel-border: #aeb0b3;
+  --getting-started-strip-background: #f1f1f2;
+  --getting-started-button-top: #eceded;
+  --getting-started-button-bottom: #dcddde;
+  --getting-started-button-border: #a8abae;
+  --getting-started-button-hover-top: #f2f2f3;
+  --getting-started-button-hover-bottom: #e4e5e6;
+  --getting-started-list-border: #abadb0;
+  --getting-started-scrollbar-thumb: #6e6e6e;
+  --getting-started-hover-background: #f1f1f2;
+  --getting-started-link-text: #499146;
+  --getting-started-pin: #6b6b6b;
+}

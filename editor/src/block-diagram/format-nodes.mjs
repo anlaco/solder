@@ -18,8 +18,8 @@ import { DBL, aspecto, nombre } from "../../../core/model/types.mjs";
 export const FORMAT_NODE_WIDTH = 32;
 /** Each row added by stretching makes the node this much taller (16-node-stretched.png, 36-scan-created.png). */
 export const FORMAT_ROW_STEP = 8;
-const BORDER_COLOR = "#4C4C3D";
-const FILL_COLOR = "#FFFFCC";
+const BORDER_COLOR = "var(--format-node-border)";
+const FILL_COLOR = "var(--node-fill)";
 /** The top terminal (the format string) sits at the middle of the top edge (30-scan-context-help.png). */
 const FORMAT_STRING_X = FORMAT_NODE_WIDTH / 2;
 /** The clickable square of a terminal that sits on an edge, centred on it. */

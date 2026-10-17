@@ -4,6 +4,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { oldSchoolToken } from "./old-school-theme.mjs";
 
 import * as CP from "../../editor/src/front-panel/connector-pane.mjs";
 import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
@@ -115,9 +116,11 @@ test("the connector pane is drawn with a cell per terminal in the colour of its 
   const glyph = CP.paneGlyph(panel.g, CAT);
   const orange = "#ff7f00";
   assert.equal(glyph.split(orange).length - 1, 3, "two input cells filled, and the square inside the black cell of the output");
-  assert.match(glyph, /fill="#141414"/, "an output is a black cell");
+  assert.match(glyph, /fill="var\(--ink\)"/, "an output is a black cell");
+  assert.equal(oldSchoolToken("--ink"), "#141414");
   assert.equal(CP.paneGlyph(P.inicial(buildAdder().g).g, CAT).includes(orange), false, "with no terminals, no colour");
-  assert.match(CP.paneGlyph(panel.g, CAT, 6), /stroke="#0078d7"/, "the selected cell is marked");
+  assert.match(CP.paneGlyph(panel.g, CAT, 6), /stroke="var\(--connector-selected-cell\)"/, "the selected cell is marked");
+  assert.equal(oldSchoolToken("--connector-selected-cell"), "#0078d7");
   // Where a click falls: the pane is drawn at 32 × 32 and a click is scaled to it.
   assert.equal(CP.cellUnderPointer({ left: 100, top: 50, width: 32 }, { clientX: 104, clientY: 62 }), 1);
 });

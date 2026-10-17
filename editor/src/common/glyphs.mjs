@@ -7,16 +7,23 @@ import { cellRect } from "../../../core/model/connector.mjs";
 import { CONNECTOR_PATTERNS } from "../../../core/model/connector-patterns.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
 
-const TINTA = "#141414";
+const INK = "var(--ink)";
+const PAPER = "var(--paper)";
+const NODE_FILL = "var(--node-fill)"; // the yellow of the primitives
+const NODE_BORDER = "var(--node-border)";
+const TERMINAL_FILL = "var(--structure-terminal-fill)";
+const TUNNEL_BORDER = "var(--tunnel-border)";
+const TERMINAL_DIRECTION_ARROW = "var(--terminal-direction-arrow)";
+const CONNECTOR_SELECTED_CELL = "var(--connector-selected-cell)";
 const f = (n) => Number(n.toFixed(2));
 
 const svg = (cuerpo, caja = "0 0 16 16") =>
   `<svg viewBox="${caja}" aria-hidden="true" focusable="false">${cuerpo}</svg>`;
 
-const linea = (x0, y0, x1, y1, grosor = 1.2, color = TINTA) =>
+const linea = (x0, y0, x1, y1, grosor = 1.2, color = INK) =>
   `<line x1="${x0}" y1="${y0}" x2="${x1}" y2="${y1}" stroke="${color}" stroke-width="${grosor}"/>`;
 
-const caja = (x0, y0, x1, y1, relleno = "none", grosor = 1.2, color = TINTA) =>
+const caja = (x0, y0, x1, y1, relleno = "none", grosor = 1.2, color = INK) =>
   `<rect x="${x0}" y="${y0}" width="${f(x1 - x0)}" height="${f(y1 - y0)}" fill="${relleno}" stroke="${color}" stroke-width="${grosor}"/>`;
 
 const lleno = (x0, y0, x1, y1, color, radio = 0) =>
@@ -25,7 +32,7 @@ const lleno = (x0, y0, x1, y1, color, radio = 0) =>
 const poligono = (puntos, relleno, trazo = "none", grosor = 1.2) =>
   `<polygon points="${puntos.map(([x, y]) => `${f(x)},${f(y)}`).join(" ")}" fill="${relleno}" stroke="${trazo}" stroke-width="${grosor}" stroke-linejoin="round"/>`;
 
-const texto = (x, y, t, tam, color = TINTA, peso = 400) =>
+const texto = (x, y, t, tam, color = INK, peso = 400) =>
   `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${tam}" font-weight="${peso}" fill="${color}">${t}</text>`;
 
 /** Punta de flecha rellena en (x, y), apuntando hacia (dx, dy). */
@@ -39,7 +46,7 @@ function flecha(x, y, dx, dy, largo) {
       [bx - uy * largo * 0.45, by + ux * largo * 0.45],
       [bx + uy * largo * 0.45, by - ux * largo * 0.45],
     ],
-    TINTA,
+    INK,
   );
 }
 
@@ -51,7 +58,7 @@ function arco(cx, cy, r, desde, hasta, grosor) {
   const grande = Math.abs(hasta - desde) > Math.PI ? 1 : 0;
   const s = barrido ? 1 : -1;
   return (
-    `<path d="M${f(x0)} ${f(y0)} A${r} ${r} 0 ${grande} ${barrido} ${f(x1)} ${f(y1)}" fill="none" stroke="${TINTA}" stroke-width="${grosor}"/>` +
+    `<path d="M${f(x0)} ${f(y0)} A${r} ${r} 0 ${grande} ${barrido} ${f(x1)} ${f(y1)}" fill="none" stroke="${INK}" stroke-width="${grosor}"/>` +
     flecha(x1, y1, -Math.sin(hasta) * s, Math.cos(hasta) * s, r * 0.55)
   );
 }
@@ -66,16 +73,16 @@ function destello(cx, cy, r, color) {
 }
 
 /** El triangulito que LabVIEW pone abajo a la derecha de los botones con menú al mantener pulsado. */
-const menuAlMantener = poligono([[16, 16], [12.5, 16], [16, 12.5]], TINTA);
+const menuAlMantener = poligono([[16, 16], [12.5, 16], [16, 12.5]], INK);
 
 const flechaRun = poligono(
   [[2, 5.5], [8.5, 5.5], [8.5, 2], [15, 8], [8.5, 14], [8.5, 10.5], [2, 10.5]],
-  "#fff",
-  TINTA,
+  PAPER,
+  INK,
   1.4,
 );
 
-const cajaPaso = (x0, y0, x1, y1) => caja(x0, y0, x1, y1, "#fff", 1.4);
+const cajaPaso = (x0, y0, x1, y1) => caja(x0, y0, x1, y1, PAPER, 1.4);
 
 /** Glifos de la barra de un VI, por el último segmento de su id. */
 export const BARRA = {
@@ -90,31 +97,31 @@ export const BARRA = {
   // apagado (clase `desactivado`).
   "abort-execution": svg(
     `<defs><linearGradient id="rojo-abort" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e08585"/><stop offset="0.5" stop-color="#b33636"/><stop offset="1" stop-color="#912a29"/></linearGradient></defs>` +
-      `<circle cx="8" cy="8" r="7" fill="#fff" stroke="${TINTA}" stroke-width="1"/><circle cx="8" cy="8" r="5.5" fill="url(#rojo-abort)"/>`,
+      `<circle cx="8" cy="8" r="7" fill="${PAPER}" stroke="${INK}" stroke-width="1"/><circle cx="8" cy="8" r="5.5" fill="url(#rojo-abort)"/>`,
   ),
-  pause: svg(lleno(4, 3, 6.8, 13, TINTA, 0.5) + lleno(9.5, 3, 12.3, 13, TINTA, 0.5)),
+  pause: svg(lleno(4, 3, 6.8, 13, INK, 0.5) + lleno(9.5, 3, 12.3, 13, INK, 0.5)),
   "highlight-execution": svg(
-    `<circle cx="8" cy="6.3" r="4.6" fill="#fff4aa" stroke="${TINTA}" stroke-width="1.2"/>` +
+    `<circle cx="8" cy="6.3" r="4.6" fill="#fff4aa" stroke="${INK}" stroke-width="1.2"/>` +
       linea(5.6, 11.6, 10.4, 11.6) +
       linea(6.2, 13.4, 9.8, 13.4) +
       menuAlMantener,
   ),
   "retain-wire-values": svg(
     linea(1, 12, 15, 12, 1.6, "#e17d14") +
-      `<circle cx="5" cy="5" r="2.6" fill="none" stroke="${TINTA}" stroke-width="1.2"/>` +
+      `<circle cx="5" cy="5" r="2.6" fill="none" stroke="${INK}" stroke-width="1.2"/>` +
       linea(5, 7.6, 5, 12) +
       caja(9, 2.5, 14.5, 7.5) +
       menuAlMantener,
   ),
   "step-into": svg(
     cajaPaso(9.5, 8, 15, 14) +
-      `<polyline points="1.5,3 1.5,11 7,11" fill="none" stroke="${TINTA}" stroke-width="1.7"/>` +
+      `<polyline points="1.5,3 1.5,11 7,11" fill="none" stroke="${INK}" stroke-width="1.7"/>` +
       flecha(9, 11, 1, 0, 4),
   ),
   "step-over": svg(cajaPaso(5, 9, 11, 15) + arco(8, 9, 5.5, Math.PI, Math.PI * 2 - 0.35, 1.7)),
   "step-out": svg(
     cajaPaso(1, 8, 7, 14) +
-      `<polyline points="7,11 12.5,11 12.5,5" fill="none" stroke="${TINTA}" stroke-width="1.7"/>` +
+      `<polyline points="7,11 12.5,11 12.5,5" fill="none" stroke="${INK}" stroke-width="1.7"/>` +
       flecha(12.5, 2.5, 0, -1, 4),
   ),
   "align-objects": svg(
@@ -138,13 +145,13 @@ export const BARRA = {
   reorder: svg(caja(6, 1.5, 14.5, 10, "#aabee1") + caja(1.5, 6, 10, 14.5, "#faeca0")),
   "clean-up-diagram": svg(
     linea(13.5, 1.5, 8, 8.5, 1.6, "#966432") +
-      poligono([[6.5, 7.5], [10, 10], [7.5, 14.5], [2, 12.5]], "#ebbe3c", TINTA) +
+      poligono([[6.5, 7.5], [10, 10], [7.5, 14.5], [2, 12.5]], "#ebbe3c", INK) +
       destello(13, 11.5, 2.4, "#78aae6"),
   ),
   // El asistente de IA: glifo propio, porque el de Nigel es la marca de NI.
   nigel: svg(destello(7, 8.5, 6, "#3c826e") + destello(13, 3.5, 2.6, "#3c826e")),
   "show-context-help-window": svg(
-    `<text x="8" y="8.6" text-anchor="middle" dominant-baseline="central" font-size="17" font-weight="700" fill="#ffde28" stroke="${TINTA}" stroke-width="1.3" paint-order="stroke">?</text>`,
+    `<text x="8" y="8.6" text-anchor="middle" dominant-baseline="central" font-size="17" font-weight="700" fill="#ffde28" stroke="${INK}" stroke-width="1.3" paint-order="stroke">?</text>`,
   ),
 };
 
@@ -152,18 +159,18 @@ export const BARRA = {
 export const CON_DESPLEGABLE = new Set(["align-objects", "distribute-objects", "resize-objects", "reorder"]);
 
 export const LUPA = svg(
-  `<circle cx="6.5" cy="6.5" r="4.3" fill="none" stroke="${TINTA}" stroke-width="1.4"/>` + linea(9.6, 9.6, 14.5, 14.5, 2.2),
+  `<circle cx="6.5" cy="6.5" r="4.3" fill="none" stroke="${INK}" stroke-width="1.4"/>` + linea(9.6, 9.6, 14.5, 14.5, 2.2),
 );
 
 /** La lupa de la búsqueda de la paleta, más gruesa: 24 × 24 px a 150 %. */
 export const LUPA_PALETA = svg(
-  `<circle cx="6.3" cy="5.8" r="4.7" fill="none" stroke="${TINTA}" stroke-width="1.9"/>` + linea(9.7, 9.5, 14.6, 14.6, 2.6),
+  `<circle cx="6.3" cy="5.8" r="4.7" fill="none" stroke="${INK}" stroke-width="1.9"/>` + linea(9.7, 9.5, 14.6, 14.6, 2.6),
 );
 
-export const TRIANGULO = svg(poligono([[0, 0], [6, 0], [3, 3.6]], TINTA), "0 0 6 3.6");
-export const SELECTOR = svg(poligono([[0, 0], [3.4, 2.5], [0, 5]], TINTA), "0 0 3.4 5");
+export const TRIANGULO = svg(poligono([[0, 0], [6, 0], [3, 3.6]], INK), "0 0 6 3.6");
+export const SELECTOR = svg(poligono([[0, 0], [3.4, 2.5], [0, 5]], INK), "0 0 3.4 5");
 /** La flecha de una categoría de la paleta: 10 × 18 px a 150 % (302–310 px). */
-export const FLECHA_CATEGORIA = svg(poligono([[0.4, 0.4], [6.4, 6], [0.4, 11.6]], TINTA, "none", 0), "0 0 6.67 12");
+export const FLECHA_CATEGORIA = svg(poligono([[0.4, 0.4], [6.4, 6], [0.4, 11.6]], INK, "none", 0), "0 0 6.67 12");
 
 /** Las flechas dobles del pie de la paleta: dos galones de 10 × 6 px a 150 %. */
 export function flechasDobles(haciaArriba) {
@@ -184,10 +191,10 @@ export function flechasDobles(haciaArriba) {
  * it was not captured, so it is drawn with a blue frame of our own.
  */
 export function conectorPane(terminals = [], selectedCell = null) {
-  let c = lleno(0, 0, 32, 32, "#fff");
+  let c = lleno(0, 0, 32, 32, PAPER);
   for (const { cell, dir, color } of terminals) {
     const { x, y, width, height } = cellRect(cell);
-    c += dir === "in" ? lleno(x, y, x + width, y + height, color) : lleno(x, y, x + width, y + height, TINTA) + lleno(x + 2, y + 2, x + width - 2, y + height - 2, color);
+    c += dir === "in" ? lleno(x, y, x + width, y + height, color) : lleno(x, y, x + width, y + height, INK) + lleno(x + 2, y + 2, x + width - 2, y + height - 2, color);
   }
   c += caja(0.5, 0.5, 31.5, 31.5, "none", 1);
   for (let i = 1; i < 4; i++) c += linea(i * 8, 0, i * 8, 32, 1);
@@ -196,7 +203,7 @@ export function conectorPane(terminals = [], selectedCell = null) {
   });
   if (selectedCell !== null) {
     const { x, y, width, height } = cellRect(selectedCell);
-    c += caja(x + 1, y + 1, x + width - 1, y + height - 1, "none", 1.5, "#0078d7");
+    c += caja(x + 1, y + 1, x + width - 1, y + height - 1, "none", 1.5, CONNECTOR_SELECTED_CELL);
   }
   return svg(c, "0 0 32 32");
 }
@@ -216,20 +223,20 @@ export function iconoVI(numero) {
     puntos.push(`${f(6 + t * 20)},${f(11 - Math.sin(t * Math.PI * 3) * 3.6)}`);
   }
   return svg(
-    lleno(0, 0, 32, 32, "#fff") +
+    lleno(0, 0, 32, 32, PAPER) +
       caja(0.5, 0.5, 31.5, 31.5, "none", 1) +
       lleno(4, 4, 28, 18, "#1e2d3c", 1) +
       `<polyline points="${puntos.join(" ")}" fill="none" stroke="#6edc78" stroke-width="1.3"/>` +
-      (numero === undefined ? "" : `<text x="28" y="29" text-anchor="end" font-size="10" fill="${TINTA}">${numero}</text>`),
+      (numero === undefined ? "" : `<text x="28" y="29" text-anchor="end" font-size="10" fill="${INK}">${numero}</text>`),
     "0 0 32 32",
   );
 }
 
 /** The icon of a subVI whose file cannot be found: the same frame, dashed and with a question mark. */
 export const ICONO_VI_FALTA = svg(
-  lleno(0, 0, 32, 32, "#fff") +
-    `<rect x="0.5" y="0.5" width="31" height="31" fill="none" stroke="${TINTA}" stroke-width="1" stroke-dasharray="3 2"/>` +
-    `<text x="16" y="17" text-anchor="middle" dominant-baseline="central" font-size="20" fill="${TINTA}">?</text>`,
+  lleno(0, 0, 32, 32, PAPER) +
+    `<rect x="0.5" y="0.5" width="31" height="31" fill="none" stroke="${INK}" stroke-width="1" stroke-dasharray="3 2"/>` +
+    `<text x="16" y="17" text-anchor="middle" dominant-baseline="central" font-size="20" fill="${INK}">?</text>`,
   "0 0 32 32",
 );
 
@@ -263,23 +270,23 @@ export const SUBPALETAS = {
   numeric: svg(
     caja(1, 1, 15, 6.5, "none", 1, "#2850be") +
       texto(8, 3.9, "123", 5.2, "#2850be") +
-      poligono([[5, 8], [14, 11.5], [5, 15]], "#faeca0", TINTA) +
+      poligono([[5, 8], [14, 11.5], [5, 15]], "#faeca0", INK) +
       texto(8, 11.6, "+", 5),
   ),
   boolean: svg(
-    lleno(1, 1, 7.5, 7.5, "#28963c") + texto(4.25, 4.35, "T", 5.5, "#fff") +
+    lleno(1, 1, 7.5, 7.5, "#28963c") + texto(4.25, 4.35, "T", 5.5, PAPER) +
       caja(8.5, 8.5, 15, 15, "none", 1, "#28963c") + texto(11.75, 11.85, "F", 5.5, "#28963c"),
   ),
   string: svg(
     caja(1, 2, 15, 8.5, "none", 1.3, "#dc46c8") + texto(8, 5.35, "abc", 5.5, "#b428a0") + texto(8, 12.5, "a A", 5),
   ),
   comparison: svg(
-    poligono([[3, 1], [13, 4.25], [3, 7.5]], "#faeca0", TINTA) +
-      poligono([[3, 8.5], [13, 11.75], [3, 15]], "#faeca0", TINTA) +
+    poligono([[3, 1], [13, 4.25], [3, 7.5]], "#faeca0", INK) +
+      poligono([[3, 8.5], [13, 11.75], [3, 15]], "#faeca0", INK) +
       texto(6.5, 4.4, "&gt;", 4.5) + texto(6.5, 11.9, "=", 4.5),
   ),
   waveform: (() => {
-    let c = `<rect x="0.5" y="2" width="15" height="12" rx="1" fill="#f5f5f5" stroke="${TINTA}" stroke-width="0.8"/>`;
+    let c = `<rect x="0.5" y="2" width="15" height="12" rx="1" fill="#f5f5f5" stroke="${INK}" stroke-width="0.8"/>`;
     [[0, "#d22828"], [2, "#28963c"], [4, "#2850be"]].forEach(([fase, color]) => {
       const puntos = [];
       for (let i = 0; i <= 24; i++) {
@@ -294,20 +301,20 @@ export const SUBPALETAS = {
     texto(3, 8, "{", 11) + texto(13, 8, "}", 11) +
       [[6.2, 5.5], [9.8, 5.5], [6.2, 10.5], [9.8, 10.5]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.3" fill="#2850be"/>`).join(""),
   ),
-  "file-io": svg(lleno(1.5, 1.5, 14.5, 14.5, "#2846aa", 1) + lleno(4.5, 1.5, 11.5, 6, "#c8cdd7") + lleno(3.5, 8.5, 12.5, 14.5, "#fff")),
+  "file-io": svg(lleno(1.5, 1.5, 14.5, 14.5, "#2846aa", 1) + lleno(4.5, 1.5, 11.5, 6, "#c8cdd7") + lleno(3.5, 8.5, 12.5, 14.5, PAPER)),
   timing: svg(
-    `<circle cx="8" cy="8.6" r="6.5" fill="#fff" stroke="${TINTA}" stroke-width="1.4"/>` +
-      linea(8, 8.6, 8, 4, 1.2) + linea(8, 8.6, 11, 10, 1.2) + lleno(7, 0.5, 9, 2, TINTA),
+    `<circle cx="8" cy="8.6" r="6.5" fill="${PAPER}" stroke="${INK}" stroke-width="1.4"/>` +
+      linea(8, 8.6, 8, 4, 1.2) + linea(8, 8.6, 11, 10, 1.2) + lleno(7, 0.5, 9, 2, INK),
   ),
   "dialog-and-user-interface": svg(
-    caja(1, 1.5, 15, 14, "#fff") + lleno(1, 1.5, 15, 4, "#2850be") + caja(8.5, 9.5, 13.5, 12.5) + texto(11, 11, "OK", 3),
+    caja(1, 1.5, 15, 14, PAPER) + lleno(1, 1.5, 15, 4, "#2850be") + caja(8.5, 9.5, 13.5, 12.5) + texto(11, 11, "OK", 3),
   ),
   synchronization: svg(
     lleno(4.5, 0.5, 11.5, 15.5, "#3c3c3c", 2) +
       [[3.2, "#dc3228"], [8, "#f0be1e"], [12.8, "#3caa46"]].map(([y, c]) => `<circle cx="8" cy="${y}" r="1.9" fill="${c}"/>`).join(""),
   ),
   "graphics-and-sound": svg(
-    `<circle cx="5" cy="12.5" r="2.2" fill="${TINTA}"/><circle cx="12" cy="11" r="2.2" fill="${TINTA}"/>` +
+    `<circle cx="5" cy="12.5" r="2.2" fill="${INK}"/><circle cx="12" cy="11" r="2.2" fill="${INK}"/>` +
       linea(7, 12.5, 7, 3, 1.3) + linea(14, 11, 14, 1.5, 1.3) + linea(7, 3, 14, 1.5, 2),
   ),
   "application-control": (() => {
@@ -320,7 +327,7 @@ export const SUBPALETAS = {
     return svg(poligono(puntos, "none", "#5a5a5a", 1.3) + `<circle cx="8" cy="8" r="2.2" fill="#5a5a5a"/>`);
   })(),
   "report-generation": svg(
-    poligono([[2.5, 0.5], [10.5, 0.5], [13.5, 3.5], [13.5, 15.5], [2.5, 15.5]], "#fff", TINTA) +
+    poligono([[2.5, 0.5], [10.5, 0.5], [13.5, 3.5], [13.5, 15.5], [2.5, 15.5]], PAPER, INK) +
       [5, 7.5, 10, 12.5].map((y) => linea(4.5, y, 11.5, y, 0.8, "#6e6e6e")).join(""),
   ),
 };
@@ -328,46 +335,44 @@ export const SUBPALETAS = {
 // Subpaletas de Numeric.
 Object.assign(SUBPALETAS, {
   conversion: svg(
-    poligono([[1.5, 2], [12.5, 2], [14.5, 4.5], [12.5, 7], [1.5, 7]], "#ffffcc", TINTA, 0.9) +
-      texto(7.8, 4.6, "I32", 4.4, TINTA, 700) +
-      poligono([[3.5, 9], [13, 9], [15, 11.5], [13, 14], [3.5, 14]], "#ffffcc", TINTA, 0.9) +
-      texto(9.2, 11.6, "DBL", 4.4, TINTA, 700),
+    poligono([[1.5, 2], [12.5, 2], [14.5, 4.5], [12.5, 7], [1.5, 7]], NODE_FILL, INK, 0.9) +
+      texto(7.8, 4.6, "I32", 4.4, INK, 700) +
+      poligono([[3.5, 9], [13, 9], [15, 11.5], [13, 14], [3.5, 14]], NODE_FILL, INK, 0.9) +
+      texto(9.2, 11.6, "DBL", 4.4, INK, 700),
   ),
   "data-manipulation": svg(
-    caja(1.5, 4.5, 14.5, 11.5, "#fff", 0.9) +
+    caja(1.5, 4.5, 14.5, 11.5, PAPER, 0.9) +
       linea(8, 4.5, 8, 11.5, 0.9) +
       texto(4.8, 8.1, "16", 3.6) + texto(11.2, 8.1, "16", 3.6) +
-      `<polyline points="4,3.5 4,2 12,2 12,3.5" fill="none" stroke="${TINTA}" stroke-width="0.7"/>` +
-      `<polyline points="4,12.5 4,14 12,14 12,12.5" fill="none" stroke="${TINTA}" stroke-width="0.7"/>`,
+      `<polyline points="4,3.5 4,2 12,2 12,3.5" fill="none" stroke="${INK}" stroke-width="0.7"/>` +
+      `<polyline points="4,12.5 4,14 12,14 12,12.5" fill="none" stroke="${INK}" stroke-width="0.7"/>`,
   ),
-  complex: svg(caja(2.5, 3, 13.5, 13, "#ffffcc", 1) + texto(8, 8.1, "x+iy", 3.8)),
+  complex: svg(caja(2.5, 3, 13.5, 13, NODE_FILL, 1) + texto(8, 8.1, "x+iy", 3.8)),
   scaling: svg(
-    caja(1, 2, 15, 14, "#fff", 0.9) + linea(1, 8, 15, 8, 0.9) + texto(8, 5.1, "mx+b", 4.2) +
-      `<path d="M2.5 11 q1.2 -2 2.4 0 t2.4 0" fill="none" stroke="${TINTA}" stroke-width="0.7"/>` +
+    caja(1, 2, 15, 14, PAPER, 0.9) + linea(1, 8, 15, 8, 0.9) + texto(8, 5.1, "mx+b", 4.2) +
+      `<path d="M2.5 11 q1.2 -2 2.4 0 t2.4 0" fill="none" stroke="${INK}" stroke-width="0.7"/>` +
       flecha(9.3, 11, 1, 0, 1.6) +
-      `<path d="M10.5 12.5 l1 -3 l1 3 l1 -3 l1 3" fill="none" stroke="${TINTA}" stroke-width="0.7"/>`,
+      `<path d="M10.5 12.5 l1 -3 l1 3 l1 -3 l1 3" fill="none" stroke="${INK}" stroke-width="0.7"/>`,
   ),
   "fixed-point": svg(
     caja(2, 2.5, 14, 13.5, "#faeca0", 0.9, "#6e6e6e") +
       texto(8, 6.3, "FXP", 4.6, "#2850be", 700) +
-      caja(3.5, 9.5, 12.5, 12, "#fff", 0.6) + lleno(7.4, 10.2, 8.6, 11.3, TINTA),
+      caja(3.5, 9.5, 12.5, 12, PAPER, 0.6) + lleno(7.4, 10.2, 8.6, 11.3, INK),
   ),
   "math-and-scientific-constants": svg(
-    caja(1.5, 1.5, 8, 8, "#faeca0", 1.2) + texto(4.75, 4.9, "π", 5, TINTA, 700) +
-      caja(8, 8, 14.5, 14.5, "#faeca0", 1.2) + texto(11.25, 11.1, "e", 5, TINTA, 700),
+    caja(1.5, 1.5, 8, 8, "#faeca0", 1.2) + texto(4.75, 4.9, "π", 5, INK, 700) +
+      caja(8, 8, 14.5, 14.5, "#faeca0", 1.2) + texto(11.25, 11.1, "e", 5, INK, 700),
   ),
 });
 
 // Funciones de las paletas. Cada glifo ocupa la caja de un icono, 32 × 32 px
 // CSS, pero se dibuja en una rejilla de 48 × 48: la de los píxeles de la
 // captura a 150 %, para copiar sus coordenadas tal cual.
-const PRIM = "#ffffcc"; // el amarillo de las primitivas
-const BORDE = "#2b2b22";
 const AZUL = "#0000ff"; // las constantes enteras
 const NARANJA = "#ff6633"; // las de coma flotante
 const svg48 = (cuerpo) => svg(cuerpo, "0 0 48 48");
 /** Texto de un icono. El negrito de LabVIEW es más grueso que el de las fuentes: se engruesa con un trazo. */
-const texto48 = (x, y, t, tam, color = TINTA, peso = 700) =>
+const texto48 = (x, y, t, tam, color = INK, peso = 700) =>
   `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-family="Arial, 'Liberation Sans', sans-serif" font-size="${tam}" font-weight="${peso}" fill="${color}"${
     peso >= 700 ? ` stroke="${color}" stroke-width="0.8"` : ""
   }>${t}</text>`;
@@ -376,7 +381,7 @@ const texto48 = (x, y, t, tam, color = TINTA, peso = 700) =>
 function triangulo(x0, y0, x1, y1, simbolo) {
   const ym = (y0 + y1) / 2;
   return svg48(
-    poligono([[x0, y0], [x1, ym], [x0, y1]], PRIM, BORDE, 1.5) +
+    poligono([[x0, y0], [x1, ym], [x0, y1]], NODE_FILL, NODE_BORDER, 1.5) +
       linea(x0 + 1.6, y0 + 2.6, x0 + 1.6, y1 - 2.6, 1.3, "#85856c") +
       simbolo,
   );
@@ -385,7 +390,7 @@ const prim = (simbolo) => triangulo(8.75, 8.75, 40, 40.25, simbolo);
 const sim = (t, tam = 12, x = 18.5) => texto48(x, 24.8, t, tam);
 
 /** Una constante: caja con el borde del color de su tipo. */
-const constante = (x0, y0, x1, y1, color, relleno, t, colorTexto = TINTA, tam = 13.5) =>
+const constante = (x0, y0, x1, y1, color, relleno, t, colorTexto = INK, tam = 13.5) =>
   svg48(caja(x0, y0, x1, y1, relleno, 3, color) + texto48((x0 + x1) / 2, (y0 + y1) / 2 + 0.3, t, tam, colorTexto, 500));
 
 /** Un dado visto en perspectiva: cara frontal, techo y lateral. */
@@ -395,7 +400,7 @@ function dado(x, y, l, relleno, trazo, puntos) {
     poligono([[x, y], [x + d, y - d], [x + l + d, y - d], [x + l, y]], relleno, trazo, 1.2) +
     poligono([[x + l, y], [x + l + d, y - d], [x + l + d, y + l - d], [x + l, y + l]], relleno, trazo, 1.2) +
     poligono([[x, y], [x + l, y], [x + l, y + l], [x, y + l]], relleno, trazo, 1.2) +
-    puntos.map(([px, py]) => `<circle cx="${f(x + px * l)}" cy="${f(y + py * l)}" r="${f(l * 0.1)}" fill="${TINTA}"/>`).join("")
+    puntos.map(([px, py]) => `<circle cx="${f(x + px * l)}" cy="${f(y + py * l)}" r="${f(l * 0.1)}" fill="${INK}"/>`).join("")
   );
 }
 
@@ -405,64 +410,64 @@ export const FUNCIONES = {
   multiply: prim(linea(15, 21.25, 21.5, 27.75, 2.4) + linea(21.5, 21.25, 15, 27.75, 2.4)),
   divide: prim(
     linea(14, 24.5, 22.5, 24.5, 1.5) +
-      `<circle cx="18.25" cy="20.5" r="1.3" fill="${TINTA}"/><circle cx="18.25" cy="28.5" r="1.3" fill="${TINTA}"/>`,
+      `<circle cx="18.25" cy="20.5" r="1.3" fill="${INK}"/><circle cx="18.25" cy="28.5" r="1.3" fill="${INK}"/>`,
   ),
   "quotient-and-remainder": svg48(
-    caja(7.75, 6.75, 39.25, 39.25, PRIM, 1.5, BORDE) + texto48(13.5, 23.5, "÷", 15) + texto48(33, 14.5, "R", 11) + texto48(30, 32.5, "IQ", 11),
+    caja(7.75, 6.75, 39.25, 39.25, NODE_FILL, 1.5, NODE_BORDER) + texto48(13.5, 23.5, "÷", 15) + texto48(33, 14.5, "R", 11) + texto48(30, 32.5, "IQ", 11),
   ),
   increment: prim(sim("+1", 12.5, 18)),
   decrement: prim(sim("−1", 12.5, 18)),
   "add-array-elements": triangulo(5.75, 5.75, 41.5, 43.25, texto48(16.5, 25.3, "Σ", 24)),
   "multiply-array-elements": triangulo(5.75, 5.75, 41.5, 43.25, texto48(16.5, 25.3, "Π", 24)),
   "compound-arithmetic": svg48(
-    caja(2.75, -0.25, 42.25, 47.25, PRIM, 1.5, BORDE) +
-      linea(24, -0.25, 24, 47.25, 1.2, BORDE) +
-      [11.5, 23.5, 35.5].map((y) => linea(2.75, y, 24, y, 1.2, BORDE)).join("") +
-      texto48(33, 5.5, "+", 10, TINTA, 400) + texto48(33, 17, "×", 10, TINTA, 400) +
-      texto48(33, 29.5, "^", 10, TINTA, 400) + texto48(33, 39.5, "v", 9, TINTA, 400) +
-      [[0.5, 5], [0.5, 39], [46, 24.5]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.9" fill="${PRIM}" stroke="${BORDE}" stroke-width="1"/>`).join(""),
+    caja(2.75, -0.25, 42.25, 47.25, NODE_FILL, 1.5, NODE_BORDER) +
+      linea(24, -0.25, 24, 47.25, 1.2, NODE_BORDER) +
+      [11.5, 23.5, 35.5].map((y) => linea(2.75, y, 24, y, 1.2, NODE_BORDER)).join("") +
+      texto48(33, 5.5, "+", 10, INK, 400) + texto48(33, 17, "×", 10, INK, 400) +
+      texto48(33, 29.5, "^", 10, INK, 400) + texto48(33, 39.5, "v", 9, INK, 400) +
+      [[0.5, 5], [0.5, 39], [46, 24.5]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.9" fill="${NODE_FILL}" stroke="${NODE_BORDER}" stroke-width="1"/>`).join(""),
   ),
-  "absolute-value": prim(lleno(13.5, 18, 16, 31, TINTA) + lleno(19, 18, 21.5, 31, TINTA)),
+  "absolute-value": prim(lleno(13.5, 18, 16, 31, INK) + lleno(19, 18, 21.5, 31, INK)),
   "round-to-nearest": prim(
-    `<polyline points="16.5,18 13.5,18 13.5,31 16.5,31" fill="none" stroke="${TINTA}" stroke-width="2.4"/>` +
-      `<polyline points="20.5,18 23.5,18 23.5,31 20.5,31" fill="none" stroke="${TINTA}" stroke-width="2.4"/>`,
+    `<polyline points="16.5,18 13.5,18 13.5,31 16.5,31" fill="none" stroke="${INK}" stroke-width="2.4"/>` +
+      `<polyline points="20.5,18 23.5,18 23.5,31 20.5,31" fill="none" stroke="${INK}" stroke-width="2.4"/>`,
   ),
   "round-toward-negative-infinity": prim(
-    `<polyline points="13.5,18 13.5,31 16.5,31" fill="none" stroke="${TINTA}" stroke-width="2.4"/>` +
-      `<polyline points="23.5,18 23.5,31 20.5,31" fill="none" stroke="${TINTA}" stroke-width="2.4"/>`,
+    `<polyline points="13.5,18 13.5,31 16.5,31" fill="none" stroke="${INK}" stroke-width="2.4"/>` +
+      `<polyline points="23.5,18 23.5,31 20.5,31" fill="none" stroke="${INK}" stroke-width="2.4"/>`,
   ),
   "round-toward-positive-infinity": prim(
-    `<polyline points="16.5,18 13.5,18 13.5,31" fill="none" stroke="${TINTA}" stroke-width="2.4"/>` +
-      `<polyline points="20.5,18 23.5,18 23.5,31" fill="none" stroke="${TINTA}" stroke-width="2.4"/>`,
+    `<polyline points="16.5,18 13.5,18 13.5,31" fill="none" stroke="${INK}" stroke-width="2.4"/>` +
+      `<polyline points="20.5,18 23.5,18 23.5,31" fill="none" stroke="${INK}" stroke-width="2.4"/>`,
   ),
-  "scale-by-power-of-2": prim(texto48(18.5, 26, "x2", 10) + texto48(26.5, 19.5, "n", 7, TINTA, 400)),
-  "square-root": prim(`<polyline points="12,26 14,25 16.5,31 19.5,18 25,18" fill="none" stroke="${TINTA}" stroke-width="2"/>`),
+  "scale-by-power-of-2": prim(texto48(18.5, 26, "x2", 10) + texto48(26.5, 19.5, "n", 7, INK, 400)),
+  "square-root": prim(`<polyline points="12,26 14,25 16.5,31 19.5,18 25,18" fill="none" stroke="${INK}" stroke-width="2"/>`),
   square: prim(texto48(16.5, 26.5, "x", 12) + texto48(23.5, 19, "2", 8.5)),
-  negate: prim(texto48(19.5, 25, "(-x)", 10.5, TINTA, 400)),
+  negate: prim(texto48(19.5, 25, "(-x)", 10.5, INK, 400)),
   reciprocal: prim(texto48(14.5, 19.5, "1", 9) + linea(12.5, 31, 22.5, 17, 1.5) + texto48(20.5, 29.5, "x", 11)),
   sign: prim(texto48(16, 17.5, "1", 9) + texto48(22, 25.5, "0", 11) + texto48(14.5, 32, "-1", 9)),
-  "numeric-constant": constante(5.5, 13.5, 40.5, 32.5, AZUL, "#fff", "123"),
+  "numeric-constant": constante(5.5, 13.5, 40.5, 32.5, AZUL, PAPER, "123"),
   "enum-constant": svg48(
-    caja(0.5, 13.5, 46.5, 32.5, "#fff", 3, AZUL) +
+    caja(0.5, 13.5, 46.5, 32.5, PAPER, 3, AZUL) +
       poligono([[5, 23], [8, 20.5], [8, 25.5]], AZUL) + poligono([[11.5, 23], [8.5, 20.5], [8.5, 25.5]], AZUL) +
       texto48(28.5, 23.3, "Enum", 10.5, AZUL),
   ),
-  "ring-constant": constante(6.5, 13.5, 40.5, 32.5, AZUL, "#fff", "Ring", TINTA, 12),
+  "ring-constant": constante(6.5, 13.5, 40.5, 32.5, AZUL, PAPER, "Ring", INK, 12),
   "random-number-0-1": svg48(
-    dado(22, 12, 13, PRIM, BORDE, [[0.25, 0.3], [0.75, 0.7]]) + dado(12.5, 22, 14, PRIM, BORDE, [[0.25, 0.25], [0.5, 0.5], [0.75, 0.75]]),
+    dado(22, 12, 13, NODE_FILL, NODE_BORDER, [[0.25, 0.3], [0.75, 0.7]]) + dado(12.5, 22, 14, NODE_FILL, NODE_BORDER, [[0.25, 0.25], [0.5, 0.5], [0.75, 0.75]]),
   ),
   "random-number-range": svg48(
-    caja(0, -0.25, 47.5, 47, "#fff", 2, "#2a2a2a") +
+    caja(0, -0.25, 47.5, 47, PAPER, 2, "#2a2a2a") +
       dado(9, 13, 18, "#444", "#2a2a2a", []) +
       [[14, 20], [21, 26], [30, 16], [33, 26]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.4" fill="#808080"/>`).join("") +
       linea(27, 36.5, 27, 44, 1.2, "#2a2a2a") + linea(44, 36.5, 44, 44, 1.2, "#2a2a2a") +
       linea(29.5, 40.3, 41.5, 40.3, 1.2, "#2a2a2a") + flecha(29, 40.3, -1, 0, 3) + flecha(42, 40.3, 1, 0, 3),
   ),
-  "dbl-numeric-constant": constante(5.5, 13.5, 40.5, 32.5, NARANJA, "#fff", "1.23"),
-  "positive-infinity": constante(8.5, 12.5, 38.5, 33.5, NARANJA, PRIM, "+∞", NARANJA, 14),
-  "negative-infinity": constante(8.5, 12.5, 38.5, 33.5, NARANJA, PRIM, "-∞", NARANJA, 14),
-  "machine-epsilon": constante(11.5, 12.5, 37.5, 35.5, NARANJA, PRIM, "ε", NARANJA, 14),
-  "not-a-number-constant": constante(5.5, 13.5, 40.5, 32.5, NARANJA, "#fff", "NaN", TINTA, 12.5),
+  "dbl-numeric-constant": constante(5.5, 13.5, 40.5, 32.5, NARANJA, PAPER, "1.23"),
+  "positive-infinity": constante(8.5, 12.5, 38.5, 33.5, NARANJA, NODE_FILL, "+∞", NARANJA, 14),
+  "negative-infinity": constante(8.5, 12.5, 38.5, 33.5, NARANJA, NODE_FILL, "-∞", NARANJA, 14),
+  "machine-epsilon": constante(11.5, 12.5, 37.5, 35.5, NARANJA, NODE_FILL, "ε", NARANJA, 14),
+  "not-a-number-constant": constante(5.5, 13.5, 40.5, 32.5, NARANJA, PAPER, "NaN", INK, 12.5),
   "range-limits-for-type": svg48(
     caja(0, 0, 47.5, 22.5, "#ffcc99", 1.5, "#2b221a") +
       linea(8, 3, 8, 12, 1.4) + flecha(8, 13.5, 0, 1, 4.5) + linea(38.5, 3, 38.5, 12, 1.4) + flecha(38.5, 13.5, 0, 1, 4.5) +
@@ -470,8 +475,8 @@ export const FUNCIONES = {
       [5, 11, 17, 23, 29, 35, 41].map((x) => linea(x, 17.5, x, 19.5, 1, "#80664c")).join(""),
   ),
   "expression-node": svg48(
-    caja(0, 15.75, 47.5, 31, PRIM, 1.5, BORDE) + linea(5, 15.75, 5, 31, 1.2, BORDE) + linea(42.5, 15.75, 42.5, 31, 1.2, BORDE) +
-      texto48(23.75, 23.6, "EXPR", 11, BORDE, 500),
+    caja(0, 15.75, 47.5, 31, NODE_FILL, 1.5, NODE_BORDER) + linea(5, 15.75, 5, 31, 1.2, NODE_BORDER) + linea(42.5, 15.75, 42.5, 31, 1.2, NODE_BORDER) +
+      texto48(23.75, 23.6, "EXPR", 11, NODE_BORDER, 500),
   ),
 };
 
@@ -521,8 +526,8 @@ export const CAJAS = {
  * gris oscuro, separados por una grieta, como en numeric-editar-constante.png.
  */
 BARRA["run-roto"] = svg(
-  poligono([[1.5, 5.5], [6.5, 5.5], [8.2, 8.3], [6.5, 10.5], [1.5, 10.5]], "#5a5a5a", TINTA, 1.1) +
-    poligono([[9, 2.2], [15, 8], [9, 13.8], [9.6, 10.6], [7.8, 8.3], [9.6, 5.8]], "#5a5a5a", TINTA, 1.1),
+  poligono([[1.5, 5.5], [6.5, 5.5], [8.2, 8.3], [6.5, 10.5], [1.5, 10.5]], "#5a5a5a", INK, 1.1) +
+    poligono([[9, 2.2], [15, 8], [9, 13.8], [9.6, 10.6], [7.8, 8.3], [9.6, 5.8]], "#5a5a5a", INK, 1.1),
 );
 
 /**
@@ -530,7 +535,7 @@ BARRA["run-roto"] = svg(
  * medida a 1:1 en labview-captures/run/barra-run.png. El dibujo es propio.
  */
 BARRA["run-en-marcha"] = svg(
-  poligono([[5, 6], [9, 6], [9, 2], [15.5, 8.5], [9, 15], [9, 11], [5, 11]], TINTA, TINTA, 1) +
+  poligono([[5, 6], [9, 6], [9, 2], [15.5, 8.5], [9, 15], [9, 11], [5, 11]], INK, INK, 1) +
     linea(1.5, 6, 1.5, 11, 1) + linea(3.5, 6, 3.5, 11, 1) + linea(5.5, 2, 5.5, 5, 1) + linea(7.5, 2, 7.5, 5, 1) + linea(5.5, 12, 5.5, 15, 1) + linea(7.5, 12, 7.5, 15, 1),
 );
 
@@ -549,29 +554,29 @@ BARRA["highlight-execution-on"] = svg(
       return linea(f(8 + 6.4 * Math.cos(radians)), f(6.3 + 6.4 * Math.sin(radians)), f(8 + 7.6 * Math.cos(radians)), f(6.3 + 7.6 * Math.sin(radians)), 0.9, "#e08a1e");
     })
     .join("") +
-    `<circle cx="8" cy="6.3" r="4.4" fill="#f3d545" stroke="${TINTA}" stroke-width="1.2"/>` +
+    `<circle cx="8" cy="6.3" r="4.4" fill="#f3d545" stroke="${INK}" stroke-width="1.2"/>` +
     linea(5.6, 11.6, 10.4, 11.6) +
     linea(6.2, 13.4, 9.8, 13.4) +
     menuAlMantener,
 );
 BARRA["retain-wire-values-on"] = svg(
   linea(1, 12, 15, 12, 1.6, "#e17d14") +
-    `<circle cx="5" cy="5" r="2.9" fill="#ffff00" stroke="${TINTA}" stroke-width="1.2"/>` +
-    texto(5, 5.3, "P", 4.2, TINTA, 700) +
+    `<circle cx="5" cy="5" r="2.9" fill="#ffff00" stroke="${INK}" stroke-width="1.2"/>` +
+    texto(5, 5.3, "P", 4.2, INK, 700) +
     linea(5, 7.9, 5, 12) +
-    caja(9, 2.5, 14.5, 7.5, "#fff") +
+    caja(9, 2.5, 14.5, 7.5, PAPER) +
     menuAlMantener,
 );
 BARRA["pause-continue"] = svg(lleno(4, 3, 6.8, 13, "#dd0000", 0.5) + lleno(9.5, 3, 12.3, 13, "#dd0000", 0.5));
 BARRA["step-into-enabled"] = svg(
   caja(9.5, 8, 15, 14, STEP_SQUARE_YELLOW, 1.2, STEP_SQUARE_EDGE) +
-    `<polyline points="1.5,3 1.5,11 7,11" fill="none" stroke="${TINTA}" stroke-width="1.7"/>` +
+    `<polyline points="1.5,3 1.5,11 7,11" fill="none" stroke="${INK}" stroke-width="1.7"/>` +
     flecha(9, 11, 1, 0, 4),
 );
 BARRA["step-over-enabled"] = svg(caja(5, 9, 11, 15, STEP_SQUARE_YELLOW, 1.2, STEP_SQUARE_EDGE) + arco(8, 9, 5.5, Math.PI, Math.PI * 2 - 0.35, 1.7));
 BARRA["step-out-enabled"] = svg(
   caja(1, 8, 7, 14, STEP_SQUARE_YELLOW, 1.2, STEP_SQUARE_EDGE) +
-    `<polyline points="7,11 12.5,11 12.5,5" fill="none" stroke="${TINTA}" stroke-width="1.7"/>` +
+    `<polyline points="7,11 12.5,11 12.5,5" fill="none" stroke="${INK}" stroke-width="1.7"/>` +
     flecha(12.5, 2.5, 0, -1, 4),
 );
 
@@ -579,11 +584,11 @@ BARRA["step-out-enabled"] = svg(
 export const DEBUG_WINDOW_ICONS = {
   "remove-selected": svg(linea(3, 3, 13, 13, 1.4, "#cc1111") + linea(13, 3, 3, 13, 1.4, "#cc1111")),
   "enable-disable": svg(`<circle cx="5.5" cy="9" r="3.3" fill="#cc1111"/><circle cx="10.5" cy="6.5" r="3.3" fill="#e65555"/>`),
-  "project-environment-settings": svg(`<ellipse cx="8" cy="9" rx="3.2" ry="4.2" fill="#6a8f3a" stroke="${TINTA}" stroke-width="1"/>` + linea(5, 5, 3, 2.5) + linea(11, 5, 13, 2.5) + linea(4.8, 9, 2, 9) + linea(11.2, 9, 14, 9)),
+  "project-environment-settings": svg(`<ellipse cx="8" cy="9" rx="3.2" ry="4.2" fill="#6a8f3a" stroke="${INK}" stroke-width="1"/>` + linea(5, 5, 3, 2.5) + linea(11, 5, 13, 2.5) + linea(4.8, 9, 2, 9) + linea(11.2, 9, 14, 9)),
   help: svg(texto(8, 8.5, "?", 13, "#2a5db0", 700)),
-  "debug-options": svg(`<circle cx="7" cy="8" r="3.3" fill="none" stroke="${TINTA}" stroke-width="1.6"/>` + [0, 60, 120, 180, 240, 300].map((degrees) => { const r = (degrees * Math.PI) / 180; return linea(f(7 + 3.4 * Math.cos(r)), f(8 + 3.4 * Math.sin(r)), f(7 + 5.2 * Math.cos(r)), f(8 + 5.2 * Math.sin(r)), 1.6); }).join("") + poligono([[12, 7], [15.5, 7], [13.75, 9.4]], TINTA)),
-  "probe-options": svg(`<path d="M2 11 A6 6 0 0 1 14 11" fill="none" stroke="${TINTA}" stroke-width="1.4"/>` + linea(8, 11, 11.5, 6, 1.4) + poligono([[12, 11.5], [15.5, 11.5], [13.75, 14]], TINTA)),
-  probe: `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><rect x="2" y="2" width="12" height="12" fill="#ffff66" stroke="#555" stroke-width="1"/></svg>`,
+  "debug-options": svg(`<circle cx="7" cy="8" r="3.3" fill="none" stroke="${INK}" stroke-width="1.6"/>` + [0, 60, 120, 180, 240, 300].map((degrees) => { const r = (degrees * Math.PI) / 180; return linea(f(7 + 3.4 * Math.cos(r)), f(8 + 3.4 * Math.sin(r)), f(7 + 5.2 * Math.cos(r)), f(8 + 5.2 * Math.sin(r)), 1.6); }).join("") + poligono([[12, 7], [15.5, 7], [13.75, 9.4]], INK)),
+  "probe-options": svg(`<path d="M2 11 A6 6 0 0 1 14 11" fill="none" stroke="${INK}" stroke-width="1.4"/>` + linea(8, 11, 11.5, 6, 1.4) + poligono([[12, 11.5], [15.5, 11.5], [13.75, 14]], INK)),
+  probe: `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><rect x="2" y="2" width="12" height="12" fill="var(--probe-background)" stroke="#555" stroke-width="1"/></svg>`,
   breakpoint: `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="8" r="6" fill="#cc0000"/></svg>`,
   "error-mark": `<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5" stroke="#cc1111" stroke-width="2.6" stroke-linecap="round"/></svg>`,
 };
@@ -592,7 +597,7 @@ export const DEBUG_WINDOW_ICONS = {
 BARRA["list-warnings"] = svg(`<path d="M8 2.2 L14.6 13.6 H1.4 Z" fill="#f3cc0a" stroke="#b69405" stroke-width="1" stroke-linejoin="round"/>` + `<rect x="7.25" y="5.6" width="1.5" height="4.6" fill="#000"/><rect x="7.25" y="11.1" width="1.5" height="1.5" fill="#000"/>`);
 
 /** Enter Text: la marca que confirma lo que se escribe en el diagrama. */
-BARRA["enter-text"] = svg(`<polyline points="3,8.6 6.3,12.4 13.2,3.6" fill="none" stroke="${TINTA}" stroke-width="2.1" stroke-linejoin="miter"/>`);
+BARRA["enter-text"] = svg(`<polyline points="3,8.6 6.3,12.4 13.2,3.6" fill="none" stroke="${INK}" stroke-width="2.1" stroke-linejoin="miter"/>`);
 
 const cursor = (cuerpo, lado = 24) =>
   `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${lado}" height="${lado}" viewBox="0 0 ${lado} ${lado}" shape-rendering="crispEdges">${cuerpo}</svg>`)}`;
@@ -614,7 +619,7 @@ export const CURSORES = {
   bobina: {
     url: cursor(
       `<g transform="rotate(-45 12 12)">` +
-        `<rect x="6" y="7" width="13" height="10" fill="#fff" stroke="#000" stroke-width="1"/>` +
+        `<rect x="6" y="7" width="13" height="10" fill="${PAPER}" stroke="#000" stroke-width="1"/>` +
         [7, 9, 11, 13, 15, 17].map((x) => [8, 10, 12, 14, 16].map((y) => ((x + y) % 4 === 3 ? `<rect x="${x}" y="${y}" width="1" height="1" fill="#000"/>` : "")).join("")).join("") +
         `<rect x="4" y="5" width="2" height="14" fill="#000"/><rect x="19" y="5" width="2" height="14" fill="#000"/>` +
         `</g><path d="M6 17 L1.5 22.5" stroke="#000" stroke-width="1.5"/>`,
@@ -634,9 +639,9 @@ function termometro(x, y0, y1, ancho, nivel, color = "#d22828") {
   const alto = y1 - y0 - r;
   const hasta = y0 + alto * (1 - nivel);
   return (
-    `<rect x="${f(x - ancho / 2)}" y="${y0}" width="${ancho}" height="${f(alto + r)}" rx="${f(ancho / 2)}" fill="#fff" stroke="${TINTA}" stroke-width="0.8"/>` +
+    `<rect x="${f(x - ancho / 2)}" y="${y0}" width="${ancho}" height="${f(alto + r)}" rx="${f(ancho / 2)}" fill="${PAPER}" stroke="${INK}" stroke-width="0.8"/>` +
     lleno(x - ancho / 2 + 0.8, hasta, x + ancho / 2 - 0.8, y1 - r, color) +
-    `<circle cx="${x}" cy="${f(y1 - r)}" r="${f(r)}" fill="${color}" stroke="${TINTA}" stroke-width="0.8"/>`
+    `<circle cx="${x}" cy="${f(y1 - r)}" r="${f(r)}" fill="${color}" stroke="${INK}" stroke-width="0.8"/>`
   );
 }
 
@@ -645,7 +650,7 @@ function escalaVertical(x, y0, y1, numeros, tam = 6) {
   let s = linea(x, y0, x, y1, 0.8);
   numeros.forEach((t, i) => {
     const y = y1 - ((y1 - y0) * i) / (numeros.length - 1);
-    s += linea(x, y, x + 2, y, 0.8) + texto48(x - 4, y, t, tam, TINTA, 400);
+    s += linea(x, y, x + 2, y, 0.8) + texto48(x - 4, y, t, tam, INK, 400);
   });
   return s;
 }
@@ -657,8 +662,8 @@ const incrementador = (x, y, alto) =>
   poligono([[x + 3, y + alto * 0.82], [x + 1.4, y + alto * 0.62], [x + 4.6, y + alto * 0.62]], "#6e6e6e");
 
 /** La casilla hundida de un control o indicador, con su texto. */
-const casilla = (x0, y0, x1, y1, t, fondo = "#fff", tam = 9) =>
-  caja(x0, y0, x1, y1, fondo, 1.2, "#7a7a7a") + texto48(x0 + 2 + (t.length * tam) / 4.2, (y0 + y1) / 2 + 0.3, t, tam, TINTA, 400);
+const casilla = (x0, y0, x1, y1, t, fondo = PAPER, tam = 9) =>
+  caja(x0, y0, x1, y1, fondo, 1.2, "#7a7a7a") + texto48(x0 + 2 + (t.length * tam) / 4.2, (y0 + y1) / 2 + 0.3, t, tam, INK, 400);
 
 /** Un carril con relleno azul: el de un deslizador o una barra. */
 function carril(x0, y0, x1, y1, nivel, vertical) {
@@ -672,7 +677,7 @@ function carril(x0, y0, x1, y1, nivel, vertical) {
 function escalaCircular(cx, cy, r, desde, hasta, marcas = 7) {
   const [x0, y0] = [cx + r * Math.cos(desde), cy + r * Math.sin(desde)];
   const [x1, y1] = [cx + r * Math.cos(hasta), cy + r * Math.sin(hasta)];
-  let s = `<path d="M${f(x0)} ${f(y0)} A${r} ${r} 0 ${hasta - desde > Math.PI ? 1 : 0} 1 ${f(x1)} ${f(y1)}" fill="none" stroke="${TINTA}" stroke-width="0.8"/>`;
+  let s = `<path d="M${f(x0)} ${f(y0)} A${r} ${r} 0 ${hasta - desde > Math.PI ? 1 : 0} 1 ${f(x1)} ${f(y1)}" fill="none" stroke="${INK}" stroke-width="0.8"/>`;
   for (let i = 0; i < marcas; i++) {
     const a = desde + ((hasta - desde) * i) / (marcas - 1);
     s += linea(cx + r * Math.cos(a), cy + r * Math.sin(a), cx + (r + 2.5) * Math.cos(a), cy + (r + 2.5) * Math.sin(a), 0.8);
@@ -680,35 +685,35 @@ function escalaCircular(cx, cy, r, desde, hasta, marcas = 7) {
   return s;
 }
 
-const aguja = (cx, cy, largo, a, color = TINTA) => linea(cx, cy, cx + largo * Math.cos(a), cy + largo * Math.sin(a), 1.4, color);
+const aguja = (cx, cy, largo, a, color = INK) => linea(cx, cy, cx + largo * Math.cos(a), cy + largo * Math.sin(a), 1.4, color);
 
 const flechitasEnum = (x, y, alto) =>
-  poligono([[x + 1, y + 0.5], [x, y + alto * 0.4], [x + 2, y + alto * 0.4]], TINTA) +
-  poligono([[x + 1, y + alto - 0.5], [x, y + alto * 0.6], [x + 2, y + alto * 0.6]], TINTA);
+  poligono([[x + 1, y + 0.5], [x, y + alto * 0.4], [x + 2, y + alto * 0.4]], INK) +
+  poligono([[x + 1, y + alto - 0.5], [x, y + alto * 0.6], [x + 2, y + alto * 0.6]], INK);
 
 /** Carpetas de Controls ▸ Modern, en la rejilla de 16 × 16 de las subpaletas. */
 export const CARPETAS_CONTROLES = {
   numeric: svg(
-    `<rect x="1.5" y="1" width="3" height="11" rx="1.5" fill="#fff" stroke="${TINTA}" stroke-width="0.6"/>` +
-      lleno(2.3, 5, 3.7, 12, "#d22828") + `<circle cx="3" cy="13" r="2.2" fill="#d22828" stroke="${TINTA}" stroke-width="0.6"/>` +
-      caja(6.5, 8.5, 15, 14, "#fff", 0.7, "#7a7a7a") + texto(10.8, 11.35, "1.23", 3.6),
+    `<rect x="1.5" y="1" width="3" height="11" rx="1.5" fill="${PAPER}" stroke="${INK}" stroke-width="0.6"/>` +
+      lleno(2.3, 5, 3.7, 12, "#d22828") + `<circle cx="3" cy="13" r="2.2" fill="#d22828" stroke="${INK}" stroke-width="0.6"/>` +
+      caja(6.5, 8.5, 15, 14, PAPER, 0.7, "#7a7a7a") + texto(10.8, 11.35, "1.23", 3.6),
   ),
   boolean: svg(
     `<rect x="1.5" y="2" width="5" height="12" rx="2.5" fill="#dcdcdc" stroke="#7a7a7a" stroke-width="0.7"/>` +
       `<circle cx="4" cy="5.5" r="2" fill="#9a9a9a"/>` +
       `<circle cx="11.5" cy="10" r="3.6" fill="#3cc83c" stroke="#1e6e1e" stroke-width="0.7"/>`,
   ),
-  "string-and-path": svg(caja(1.5, 1.5, 14.5, 7, "#fff", 0.8) + texto(8, 4.35, "abc", 4.2) + caja(1.5, 9, 14.5, 14.5, "#fff", 0.8) + texto(8, 11.85, "Path", 4)),
+  "string-and-path": svg(caja(1.5, 1.5, 14.5, 7, PAPER, 0.8) + texto(8, 4.35, "abc", 4.2) + caja(1.5, 9, 14.5, 14.5, PAPER, 0.8) + texto(8, 11.85, "Path", 4)),
   "data-containers": svg(
-    caja(1, 1, 9, 7.5, "#fff", 0.7) + texto(3, 2.8, "1", 2.8) + texto(7, 2.8, "2", 2.8) + texto(3, 5.8, "3", 2.8) + texto(7, 5.8, "4", 2.8) +
-      caja(10, 1, 15, 7.5, "#fff", 0.7) +
-      caja(1, 9, 7, 15, "#fff", 0.7) + texto(4, 12, "x", 3.5) +
-      caja(8.5, 9, 15, 15, "#fff", 0.7) + lleno(9.5, 10, 12, 12.5, "#2850be") + lleno(12.5, 12.5, 14.5, 14.5, "#dc3c32"),
+    caja(1, 1, 9, 7.5, PAPER, 0.7) + texto(3, 2.8, "1", 2.8) + texto(7, 2.8, "2", 2.8) + texto(3, 5.8, "3", 2.8) + texto(7, 5.8, "4", 2.8) +
+      caja(10, 1, 15, 7.5, PAPER, 0.7) +
+      caja(1, 9, 7, 15, PAPER, 0.7) + texto(4, 12, "x", 3.5) +
+      caja(8.5, 9, 15, 15, PAPER, 0.7) + lleno(9.5, 10, 12, 12.5, "#2850be") + lleno(12.5, 12.5, 14.5, 14.5, "#dc3c32"),
   ),
   "list-table-and-tree": svg(
-    caja(1, 1, 7.5, 6, "#fff", 0.7) + linea(2, 2.7, 6.5, 2.7, 0.6) + linea(2, 4.4, 6.5, 4.4, 0.6) +
+    caja(1, 1, 7.5, 6, PAPER, 0.7) + linea(2, 2.7, 6.5, 2.7, 0.6) + linea(2, 4.4, 6.5, 4.4, 0.6) +
       linea(6, 9, 6, 14, 0.7) + linea(6, 11, 9, 11, 0.7) + linea(6, 14, 9, 14, 0.7) + linea(2, 7.5, 2, 9, 0.7) +
-      caja(1, 7.5, 4, 9, "#fff", 0.6) + caja(9, 10, 13, 12, "#fff", 0.6) + caja(9, 13, 13, 15, "#fff", 0.6),
+      caja(1, 7.5, 4, 9, PAPER, 0.6) + caja(9, 10, 13, 12, PAPER, 0.6) + caja(9, 13, 13, 15, PAPER, 0.6),
   ),
   graph: svg(
     lleno(1.5, 1, 14.5, 15, "#1e1e1e") +
@@ -716,31 +721,31 @@ export const CARPETAS_CONTROLES = {
       linea(3, 13, 13.5, 13, 0.5, "#dcdcdc") + linea(3, 3, 3, 13, 0.5, "#dcdcdc"),
   ),
   "ring-and-enum": svg(
-    caja(1, 1.5, 15, 6.5, "#fff", 0.7) + texto(6, 4.1, "Ring", 3.4) + poligono([[11.5, 3.3], [14, 3.3], [12.75, 5]], TINTA) +
-      caja(1, 9, 15, 14, "#fff", 0.7) + texto(9.5, 11.6, "Enum", 3.4) + flechitasEnum(2, 9.5, 4),
+    caja(1, 1.5, 15, 6.5, PAPER, 0.7) + texto(6, 4.1, "Ring", 3.4) + poligono([[11.5, 3.3], [14, 3.3], [12.75, 5]], INK) +
+      caja(1, 9, 15, 14, PAPER, 0.7) + texto(9.5, 11.6, "Enum", 3.4) + flechitasEnum(2, 9.5, 4),
   ),
   layout: svg(
-    poligono([[1, 3], [6, 3], [7.5, 4.8], [15, 4.8], [15, 14], [1, 14]], "#f0f0f0", TINTA, 0.8) +
-      caja(6, 8, 12, 12.5, "#fff", 0.7) + flecha(9, 11, 0, 1, 3),
+    poligono([[1, 3], [6, 3], [7.5, 4.8], [15, 4.8], [15, 14], [1, 14]], "#f0f0f0", INK, 0.8) +
+      caja(6, 8, 12, 12.5, PAPER, 0.7) + flecha(9, 11, 0, 1, 3),
   ),
   io: svg(
-    caja(1.5, 1.5, 9, 7, "#fff", 0.8) + linea(3, 8.5, 7.5, 8.5, 1) +
-      caja(4, 9.5, 14.5, 14.5, "#fff", 0.8) + `<polyline points="5.5,13 7,13 7,11 9.5,11 9.5,13 11,13 11,11 13,11" fill="none" stroke="#2850be" stroke-width="0.8"/>`,
+    caja(1.5, 1.5, 9, 7, PAPER, 0.8) + linea(3, 8.5, 7.5, 8.5, 1) +
+      caja(4, 9.5, 14.5, 14.5, PAPER, 0.8) + `<polyline points="5.5,13 7,13 7,11 9.5,11 9.5,13 11,13 11,11 13,11" fill="none" stroke="#2850be" stroke-width="0.8"/>`,
   ),
   "variant-and-class": svg(
-    poligono([[4, 6], [8, 4], [13, 6], [13, 12.5], [9, 14.5], [4, 12.5]], "#dcdcdc", TINTA, 0.8) + linea(9, 8, 9, 14.5, 0.8) + linea(4, 6, 9, 8, 0.8) + linea(13, 6, 9, 8, 0.8) +
-      caja(2, 1.5, 5, 3.5, "#fff", 0.6) + linea(3.5, 3.5, 3.5, 5.5, 0.6),
+    poligono([[4, 6], [8, 4], [13, 6], [13, 12.5], [9, 14.5], [4, 12.5]], "#dcdcdc", INK, 0.8) + linea(9, 8, 9, 14.5, 0.8) + linea(4, 6, 9, 8, 0.8) + linea(13, 6, 9, 8, 0.8) +
+      caja(2, 1.5, 5, 3.5, PAPER, 0.6) + linea(3.5, 3.5, 3.5, 5.5, 0.6),
   ),
   decorations: svg(
-    `<circle cx="4.5" cy="4.5" r="3.2" fill="#f0f0f0" stroke="${TINTA}" stroke-width="0.8"/>` +
-      poligono([[11.5, 1.5], [15, 7.5], [8, 7.5]], "#f0f0f0", TINTA, 0.8) +
+    `<circle cx="4.5" cy="4.5" r="3.2" fill="#f0f0f0" stroke="${INK}" stroke-width="0.8"/>` +
+      poligono([[11.5, 1.5], [15, 7.5], [8, 7.5]], "#f0f0f0", INK, 0.8) +
       caja(1.5, 9.5, 7, 15, "#f0f0f0", 0.8) + caja(9, 9.5, 14.5, 15, "#f0f0f0", 0.8),
   ),
-  refnum: svg(poligono([[3, 1], [10.5, 1], [13, 3.5], [13, 15], [3, 15]], "#fff", TINTA, 0.8) + texto(8, 8.8, "#", 6, TINTA, 700)),
+  refnum: svg(poligono([[3, 1], [10.5, 1], [13, 3.5], [13, 15], [3, 15]], PAPER, INK, 0.8) + texto(8, 8.8, "#", 6, INK, 700)),
 };
 
 const escalaHorizontal = () =>
-  linea(8, 29, 40, 29, 0.8) + [["0", 8], ["5", 24], ["10", 40]].map(([t, x]) => linea(x, 27, x, 29, 0.8) + texto48(x, 34, t, 6, TINTA, 400)).join("");
+  linea(8, 29, 40, 29, 0.8) + [["0", 8], ["5", 24], ["10", 40]].map(([t, x]) => linea(x, 27, x, 29, 0.8) + texto48(x, 34, t, 6, INK, 400)).join("");
 
 /** Amplía un dibujo de 48 × 48 desde su centro: los controles de LabVIEW llenan su celda. */
 const ampliar = (k, cuerpo) => `<g transform="translate(24 24) scale(${k}) translate(-24 -24)">${cuerpo}</g>`;
@@ -749,8 +754,8 @@ const ampliar = (k, cuerpo) => `<g transform="translate(24 24) scale(${k}) trans
 export const CONTROLES = {
   "numeric-control": svg48(ampliar(1.3, incrementador(6, 16, 16) + casilla(13, 17, 42, 31, "1.23"))),
   "numeric-indicator": svg48(ampliar(1.3, casilla(9, 17, 38, 31, "1.23", "#e4e4e4"))),
-  "time-stamp-control": svg48(ampliar(1.1, incrementador(4, 14, 20) + caja(11, 14, 44, 34, "#fff", 1.2, "#7a7a7a") + texto48(27.5, 20, "12:00", 7, TINTA, 400) + texto48(27.5, 28.5, "11/07", 7, TINTA, 400))),
-  "time-stamp-indicator": svg48(ampliar(1.15, caja(7, 14, 40, 34, "#e4e4e4", 1.2, "#7a7a7a") + texto48(23.5, 20, "12:00", 7, TINTA, 400) + texto48(23.5, 28.5, "11/07", 7, TINTA, 400))),
+  "time-stamp-control": svg48(ampliar(1.1, incrementador(4, 14, 20) + caja(11, 14, 44, 34, PAPER, 1.2, "#7a7a7a") + texto48(27.5, 20, "12:00", 7, INK, 400) + texto48(27.5, 28.5, "11/07", 7, INK, 400))),
+  "time-stamp-indicator": svg48(ampliar(1.15, caja(7, 14, 40, 34, "#e4e4e4", 1.2, "#7a7a7a") + texto48(23.5, 20, "12:00", 7, INK, 400) + texto48(23.5, 28.5, "11/07", 7, INK, 400))),
   "vertical-fill-slide": svg48(ampliar(1.2, escalaVertical(15, 9, 38, ["0", "5", "10"]) + carril(22, 8, 28, 39, 0.55, true))),
   "vertical-pointer-slide": svg48(ampliar(1.2, escalaVertical(15, 9, 38, ["0", "5", "10"]) + carril(22, 8, 28, 39, 0.55, true) + poligono([[19, 22], [31, 22], [34, 24.5], [31, 27], [19, 27]], "#f0f0f0", "#6e6e6e", 0.9),)),
   "vertical-progress-bar": svg48(ampliar(1.2, carril(20, 8, 28, 40, 0.5, true))),
@@ -777,7 +782,7 @@ export const CONTROLES = {
     caja(19, 4, 29, 44, "#e8e8e8", 1, "#7a7a7a") + caja(19, 4, 29, 12, "#dcdcdc", 1, "#7a7a7a") + caja(19, 36, 29, 44, "#dcdcdc", 1, "#7a7a7a") +
       poligono([[24, 6], [21.5, 10], [26.5, 10]], "#6e6e6e") + poligono([[24, 42], [21.5, 38], [26.5, 38]], "#6e6e6e") + caja(20, 19, 28, 27, "#cfcfcf", 0.8, "#7a7a7a"),
   ),
-  "framed-color-box": svg48(ampliar(1.2, `<rect x="9" y="9" width="30" height="30" rx="2" fill="#5a4a3a" stroke="${TINTA}" stroke-width="1"/>` +
+  "framed-color-box": svg48(ampliar(1.2, `<rect x="9" y="9" width="30" height="30" rx="2" fill="#5a4a3a" stroke="${INK}" stroke-width="1"/>` +
       [[18, 18, "#dc3c32"], [29, 18, "#f0be1e"], [18, 29, "#3cb43c"], [29, 29, AZUL_CONTROL]].map(([x, y, c]) => `<circle cx="${x}" cy="${y}" r="4" fill="${c}"/>`).join(""),)),
 };
 
@@ -800,17 +805,17 @@ const textoTerminal = (x, y, t, tam, color) =>
  */
 export function terminalPanelIcono(control, color, tipo, dibujo) {
   const borde = control
-    ? `<rect x="1" y="1" width="36" height="36" fill="#fff" stroke="${color}" stroke-width="2"/>`
-    : `<rect x="0.5" y="0.5" width="37" height="37" fill="#fff" stroke="${color}" stroke-width="1"/>`;
+    ? `<rect x="1" y="1" width="36" height="36" fill="${PAPER}" stroke="${color}" stroke-width="2"/>`
+    : `<rect x="0.5" y="0.5" width="37" height="37" fill="${PAPER}" stroke="${color}" stroke-width="1"/>`;
   const interior = `<rect x="3.5" y="3.5" width="31" height="31" fill="#e2e2e2" stroke="${color}" stroke-width="1"/>`;
   // `dibujo`: el del control, si no es un numérico (los booleanos).
-  const dentro = `<g transform="translate(1 1)">${dibujo ?? (control ? incrementador(6, 9, 13) + casilla(12.5, 11, 29, 20, "1.23", "#fff", 6.5) : casilla(9, 11, 27.5, 20, "1.23", "#fff", 6.5))}</g>`;
+  const dentro = `<g transform="translate(1 1)">${dibujo ?? (control ? incrementador(6, 9, 13) + casilla(12.5, 11, 29, 20, "1.23", PAPER, 6.5) : casilla(9, 11, 27.5, 20, "1.23", PAPER, 6.5))}</g>`;
   const flechita = control
-    ? `<path d="M32.5 15.5 V23.5 L36.5 19.5 Z" fill="#fff" stroke="#000" stroke-width="1"/>`
-    : `<path d="M2.5 15.5 V23.5 L6.5 19.5 Z" fill="#fff" stroke="#000" stroke-width="1"/>`;
+    ? `<path d="M32.5 15.5 V23.5 L36.5 19.5 Z" fill="${PAPER}" stroke="#000" stroke-width="1"/>`
+    : `<path d="M2.5 15.5 V23.5 L6.5 19.5 Z" fill="${PAPER}" stroke="#000" stroke-width="1"/>`;
   // Un cluster no lleva su tipo escrito: lleva su dibujo en la pestaña (tres trazos del color del borde).
   const rotulo = tipo === "cluster" ? `<rect x="13.5" y="31.5" width="11" height="1" fill="${color}"/><rect x="13.5" y="33.5" width="11" height="1" fill="${color}"/><rect x="13.5" y="35.5" width="11" height="1" fill="${color}"/>` : textoTerminal(19, 33.3, tipo, 9.5, color);
-  const etiqueta = `<rect x="11.5" y="29.5" width="15" height="8" fill="#fff"/><polyline points="11.5,37 11.5,29.5 26.5,29.5 26.5,37" fill="none" stroke="${color}" stroke-width="1"/>` + rotulo;
+  const etiqueta = `<rect x="11.5" y="29.5" width="15" height="8" fill="${PAPER}"/><polyline points="11.5,37 11.5,29.5 26.5,29.5 26.5,37" fill="none" stroke="${color}" stroke-width="1"/>` + rotulo;
   return svg(borde + interior + dentro + flechita + etiqueta, "0 0 38 38");
 }
 
@@ -824,14 +829,14 @@ export function terminalPanelIcono(control, color, tipo, dibujo) {
  */
 export function terminalPanelCompacto(control, color, tipo) {
   const borde = control
-    ? `<rect x="1" y="1" width="30" height="14" fill="#fff" stroke="${color}" stroke-width="2"/>`
-    : `<rect x="0.5" y="0.5" width="31" height="15" fill="#fff" stroke="${color}" stroke-width="1"/>`;
+    ? `<rect x="1" y="1" width="30" height="14" fill="${PAPER}" stroke="${color}" stroke-width="2"/>`
+    : `<rect x="0.5" y="0.5" width="31" height="15" fill="${PAPER}" stroke="${color}" stroke-width="1"/>`;
   const caja = control
-    ? `<rect x="3.5" y="3.5" width="19" height="9" fill="#fff" stroke="${color}" stroke-width="1"/>`
-    : `<rect x="9.5" y="3.5" width="19" height="9" fill="#fff" stroke="${color}" stroke-width="1"/>`;
+    ? `<rect x="3.5" y="3.5" width="19" height="9" fill="${PAPER}" stroke="${color}" stroke-width="1"/>`
+    : `<rect x="9.5" y="3.5" width="19" height="9" fill="${PAPER}" stroke="${color}" stroke-width="1"/>`;
   const bloque = control
-    ? `<rect x="22.5" y="2.5" width="9" height="11" fill="#b2d8b2" stroke="#4ca54c" stroke-width="1"/>` + poligono([[28, 5], [28, 11], [30.5, 8]], "#4c4c3d")
-    : `<rect x="0.5" y="2.5" width="9" height="11" fill="#b2d8b2" stroke="#4ca54c" stroke-width="1"/>` + poligono([[4, 5], [4, 11], [6.5, 8]], "#4c4c3d");
+    ? `<rect x="22.5" y="2.5" width="9" height="11" fill="#b2d8b2" stroke="#4ca54c" stroke-width="1"/>` + poligono([[28, 5], [28, 11], [30.5, 8]], TERMINAL_DIRECTION_ARROW)
+    : `<rect x="0.5" y="2.5" width="9" height="11" fill="#b2d8b2" stroke="#4ca54c" stroke-width="1"/>` + poligono([[4, 5], [4, 11], [6.5, 8]], TERMINAL_DIRECTION_ARROW);
   return svg(borde + caja + bloque + textoTerminal(16.5, 8.2, tipo, 8.4, color), "0 0 32 16");
 }
 
@@ -846,7 +851,7 @@ const VERDE = "#007f00"; // el de las constantes booleanas
 /** Una puerta con el frente redondeado, como And: `x0`–`x1` de ancho, `y0`–`y1` de alto. */
 const puertaY = (x0, y0, x1, y1) => {
   const r = (y1 - y0) / 2;
-  return `<path d="M${x0} ${y0}H${f(x1 - r * 0.8)}A${f(r * 0.8)} ${r} 0 0 1 ${f(x1 - r * 0.8)} ${y1}H${x0}Z" fill="${PRIM}" stroke="${BORDE}" stroke-width="1.5"/>`;
+  return `<path d="M${x0} ${y0}H${f(x1 - r * 0.8)}A${f(r * 0.8)} ${r} 0 0 1 ${f(x1 - r * 0.8)} ${y1}H${x0}Z" fill="${NODE_FILL}" stroke="${NODE_BORDER}" stroke-width="1.5"/>`;
 };
 
 /** Una puerta con la espalda curva y el frente en punta, como Or; `doble` añade la curva de Xor. */
@@ -854,33 +859,33 @@ const puertaO = (x0, y0, x1, y1, doble = false) => {
   const ym = (y0 + y1) / 2;
   const hueco = doble ? 4 : 0;
   const a = x0 + hueco;
-  let s = `<path d="M${a} ${y0}Q${f(a + 5)} ${ym} ${a} ${y1}Q${f(x1 - 9)} ${y1} ${x1} ${ym}Q${f(x1 - 9)} ${y0} ${a} ${y0}Z" fill="${PRIM}" stroke="${BORDE}" stroke-width="1.5"/>`;
-  if (doble) s += `<path d="M${x0} ${y0}Q${x0 + 5} ${ym} ${x0} ${y1}" fill="none" stroke="${BORDE}" stroke-width="1.5"/>`;
+  let s = `<path d="M${a} ${y0}Q${f(a + 5)} ${ym} ${a} ${y1}Q${f(x1 - 9)} ${y1} ${x1} ${ym}Q${f(x1 - 9)} ${y0} ${a} ${y0}Z" fill="${NODE_FILL}" stroke="${NODE_BORDER}" stroke-width="1.5"/>`;
+  if (doble) s += `<path d="M${x0} ${y0}Q${x0 + 5} ${ym} ${x0} ${y1}" fill="none" stroke="${NODE_BORDER}" stroke-width="1.5"/>`;
   return s;
 };
 
 /** El circulito de una negación, centrado en (x, y). */
-const burbuja = (x, y) => `<circle cx="${x}" cy="${y}" r="2.4" fill="${PRIM}" stroke="${BORDE}" stroke-width="1.3"/>`;
+const burbuja = (x, y) => `<circle cx="${x}" cy="${y}" r="2.4" fill="${NODE_FILL}" stroke="${NODE_BORDER}" stroke-width="1.3"/>`;
 
 /** Una caja plana de conversión, con su rótulo. */
-const conversionBooleana = (t) => svg48(poligono([[4.5, 16], [42, 16], [44, 20], [44, 28.5], [42, 32.5], [4.5, 32.5], [6.5, 24.25]], PRIM, BORDE, 1.3) + texto48(25, 24.6, t, 10.5));
+const conversionBooleana = (t) => svg48(poligono([[4.5, 16], [42, 16], [44, 20], [44, 28.5], [42, 32.5], [4.5, 32.5], [6.5, 24.25]], NODE_FILL, NODE_BORDER, 1.3) + texto48(25, 24.6, t, 10.5));
 
 /** La constante booleana: TRUE, una T blanca sobre verde; FALSE, una F verde sobre blanco. */
 const constanteBooleana = (letra) =>
   svg48(
-    caja(13.5, 14.5, 34.5, 33.5, "#fff", 3, VERDE) +
+    caja(13.5, 14.5, 34.5, 33.5, PAPER, 3, VERDE) +
       (letra === "T" ? lleno(17.5, 18.5, 30.5, 29.5, VERDE) + texto48(24, 24.3, letra, 10.5, "#fff") : texto48(24, 24.3, letra, 10.5, VERDE)),
   );
 
 Object.assign(FUNCIONES, {
-  and: svg48(puertaY(6, 12, 42, 36) + texto48(21, 24.3, "∧", 15, TINTA, 700)),
-  or: svg48(puertaO(7.5, 12, 40.5, 36) + texto48(21, 24.3, "∨", 15, TINTA, 700)),
-  "exclusive-or": svg48(puertaO(5, 12, 42.5, 36, true) + texto48(23, 24.3, "⊻", 14, TINTA, 700)),
-  not: svg48(burbuja(10, 24) + poligono([[12.5, 12], [39.5, 24], [12.5, 37]], PRIM, BORDE, 1.5) + texto48(22, 24.3, "¬", 14, TINTA, 700)),
-  "not-and": svg48(puertaY(5, 11.5, 38, 36.5) + burbuja(40.5, 24) + texto48(19, 24.3, "∧", 15, TINTA, 700)),
-  "not-or": svg48(puertaO(5, 12, 37.5, 36) + burbuja(40, 24) + texto48(18.5, 24.3, "∨", 15, TINTA, 700)),
-  "not-exclusive-or": svg48(puertaO(5, 12, 37.5, 36, true) + burbuja(40, 24) + texto48(20.5, 24.3, "⊻", 14, TINTA, 700)),
-  implies: svg48(poligono([[8, 13], [32, 13], [39.5, 24.25], [32, 35.5], [8, 35.5]], PRIM, BORDE, 1.5) + texto48(21.5, 24.5, "⇒", 15, TINTA, 700)),
+  and: svg48(puertaY(6, 12, 42, 36) + texto48(21, 24.3, "∧", 15, INK, 700)),
+  or: svg48(puertaO(7.5, 12, 40.5, 36) + texto48(21, 24.3, "∨", 15, INK, 700)),
+  "exclusive-or": svg48(puertaO(5, 12, 42.5, 36, true) + texto48(23, 24.3, "⊻", 14, INK, 700)),
+  not: svg48(burbuja(10, 24) + poligono([[12.5, 12], [39.5, 24], [12.5, 37]], NODE_FILL, NODE_BORDER, 1.5) + texto48(22, 24.3, "¬", 14, INK, 700)),
+  "not-and": svg48(puertaY(5, 11.5, 38, 36.5) + burbuja(40.5, 24) + texto48(19, 24.3, "∧", 15, INK, 700)),
+  "not-or": svg48(puertaO(5, 12, 37.5, 36) + burbuja(40, 24) + texto48(18.5, 24.3, "∨", 15, INK, 700)),
+  "not-exclusive-or": svg48(puertaO(5, 12, 37.5, 36, true) + burbuja(40, 24) + texto48(20.5, 24.3, "⊻", 14, INK, 700)),
+  implies: svg48(poligono([[8, 13], [32, 13], [39.5, 24.25], [32, 35.5], [8, 35.5]], NODE_FILL, NODE_BORDER, 1.5) + texto48(21.5, 24.5, "⇒", 15, INK, 700)),
   "and-array-elements": triangulo(5.25, 4.5, 42.75, 43.5, texto48(16, 25, "∀", 21)),
   "or-array-elements": triangulo(5.25, 4.5, 42.75, 43.5, texto48(16, 25, "∃", 21)),
   "number-to-boolean-array": conversionBooleana("#[···]"),
@@ -933,10 +938,10 @@ for (const [bloque, [signo, conCero]] of Object.entries(COMPARACIONES)) {
 Object.assign(FUNCIONES, {
   select: triangulo(3.75, 3.75, 40.5, 45, texto48(14, 24.5, "?", 13) + texto48(26, 14.5, "T", 8) + texto48(26, 34.5, "F", 8)),
   "max-and-min": svg48(
-    caja(1.5, 1.5, 46.5, 46.5, PRIM, 1.5, BORDE) + linea(1.5, 24, 46.5, 24, 1.2, BORDE) + texto48(24, 13, "max", 11, TINTA, 500) + texto48(24, 35, "min", 11, TINTA, 500),
+    caja(1.5, 1.5, 46.5, 46.5, NODE_FILL, 1.5, NODE_BORDER) + linea(1.5, 24, 46.5, 24, 1.2, NODE_BORDER) + texto48(24, 13, "max", 11, INK, 500) + texto48(24, 35, "min", 11, INK, 500),
   ),
   "in-range-and-coerce": svg48(
-    caja(1.5, 7.5, 46.5, 40.5, PRIM, 1.5, BORDE) + texto48(15, 24, "[x]", 12, TINTA, 500) + texto48(36, 24.5, "?", 14),
+    caja(1.5, 7.5, 46.5, 40.5, NODE_FILL, 1.5, NODE_BORDER) + texto48(15, 24, "[x]", 12, INK, 500) + texto48(36, 24.5, "?", 14),
   ),
   "not-a-number-path-refnum": comparacion(texto48(19, 24.6, "NaN", 8)),
 });
@@ -952,8 +957,8 @@ for (const [id, rotulo] of Object.entries({
   CAJAS[id] = COMPARACION;
 }
 Object.assign(FUNCIONES, {
-  "comparison-express-vi": svg48(caja(4.5, 4.5, 43.5, 43.5, "#fff", 1.5, BORDE) + texto48(24, 18, "?", 14) + texto48(24, 33, "=&gt;&lt;", 9.5)),
-  "assert-type": svg48(caja(4.5, 4.5, 43.5, 43.5, "#fff", 1.5, BORDE) + texto48(24, 24, "X≡Y", 11)),
+  "comparison-express-vi": svg48(caja(4.5, 4.5, 43.5, 43.5, PAPER, 1.5, NODE_BORDER) + texto48(24, 18, "?", 14) + texto48(24, 33, "=&gt;&lt;", 9.5)),
+  "assert-type": svg48(caja(4.5, 4.5, 43.5, 43.5, PAPER, 1.5, NODE_BORDER) + texto48(24, 24, "X≡Y", 11)),
   "is-value-changed": comparacion(texto48(19, 24.6, "Δ?", 11)),
 });
 Object.assign(CAJAS, { "comparison-express-vi": [4.5, 4.5, 43.5, 43.5], "assert-type": [4.5, 4.5, 43.5, 43.5], "is-value-changed": COMPARACION });
@@ -965,18 +970,18 @@ Object.assign(CAJAS, { "comparison-express-vi": [4.5, 4.5, 43.5, 43.5], "assert-
 // relleno #ffffcc con borde #4c4c3d. Los dibujos de dentro son propios: un
 // reloj, un reloj de pulsera y un metrónomo.
 
-const AMARILLO_TIEMPO = "#ffffcc";
-const BORDE_TIEMPO = "#4c4c3d";
+const TIME_NODE_FILL = "var(--time-node-fill)";
+const TIME_NODE_BORDER = "var(--time-node-border)";
 const TIEMPO = [0, 0, 48, 48];
-const cajaTiempo = (dentro) => svg48(caja(0.75, 0.75, 47.25, 47.25, AMARILLO_TIEMPO, 1.5, BORDE_TIEMPO) + dentro);
+const cajaTiempo = (dentro) => svg48(caja(0.75, 0.75, 47.25, 47.25, TIME_NODE_FILL, 1.5, TIME_NODE_BORDER) + dentro);
 const esfera = (cx, cy, r) =>
-  `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#fff" stroke="${TINTA}" stroke-width="2"/>` + linea(cx, cy, cx, cy - r * 0.7, 2) + linea(cx, cy, cx + r * 0.5, cy + r * 0.2, 2);
+  `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${PAPER}" stroke="${INK}" stroke-width="2"/>` + linea(cx, cy, cx, cy - r * 0.7, 2) + linea(cx, cy, cx + r * 0.5, cy + r * 0.2, 2);
 
 Object.assign(FUNCIONES, {
   "tick-count-ms": cajaTiempo(esfera(24, 24, 15)),
   "wait-ms": cajaTiempo(lleno(18, 5, 30, 43, "#555", 2) + esfera(24, 24, 10)),
   "wait-until-next-ms-multiple": cajaTiempo(
-    poligono([[14, 41], [34, 41], [28.5, 7], [19.5, 7]], "#fff", TINTA, 2) + linea(24, 36, 31, 12, 2) + lleno(27.5, 17, 33.5, 21, TINTA),
+    poligono([[14, 41], [34, 41], [28.5, 7], [19.5, 7]], PAPER, INK, 2) + linea(24, 36, 31, 12, 2) + lleno(27.5, 17, 33.5, 21, INK),
   ),
 });
 // Lo que pide time stamps, cadenas, clusters, subVIs, VIs maleables o Express
@@ -1081,7 +1086,7 @@ Object.assign(FUNCIONES, {
 //
 // Cajas cuadradas con un rótulo corto: el dibujo de NI no se copia.
 
-const cajaDatos = (rotulo, tam = 9) => svg48(caja(8, 8, 40, 40, PRIM, 1.5, BORDE) + texto48(24, 24.4, rotulo, tam, TINTA, 700));
+const cajaDatos = (rotulo, tam = 9) => svg48(caja(8, 8, 40, 40, NODE_FILL, 1.5, NODE_BORDER) + texto48(24, 24.4, rotulo, tam, INK, 700));
 Object.assign(FUNCIONES, {
   "split-number": cajaDatos("hi|lo", 8.5),
   "join-numbers": cajaDatos("hi.lo", 8.5),
@@ -1105,7 +1110,7 @@ for (const b of ["split-number", "join-numbers", "swap-bytes", "swap-words", "ro
 
 for (const [bloque, { simbolo }] of Object.entries(CONSTANTES_MATEMATICAS)) {
   const mitad = simbolo.length <= 2 ? 11 : simbolo.length <= 4 ? 15 : 19;
-  FUNCIONES[bloque] = constante(24 - mitad, 14, 24 + mitad, 34, NARANJA, "#fff", simbolo, NARANJA, simbolo.length <= 2 ? 14 : 11);
+  FUNCIONES[bloque] = constante(24 - mitad, 14, 24 + mitad, 34, NARANJA, PAPER, simbolo, NARANJA, simbolo.length <= 2 ? 14 : 11);
   CAJAS[bloque] = [24 - mitad - 1, 13, 24 + mitad + 1, 35];
 }
 
@@ -1313,7 +1318,7 @@ const boton = (w, rotulo, color, e) =>
 const radios = () =>
   `<rect x="1" y="1" width="98" height="98" fill="#b4b4b4" stroke="#e8e8e8" stroke-width="2"/>` +
   [[16, true, "Radio Selection 1"], [51, false, "Radio Selection 2"]]
-    .map(([y, on, t]) => `<text x="5" y="${y}" font-family="Arial,'Liberation Sans',sans-serif" font-size="11" fill="#000">${t}</text><circle cx="11" cy="${y + 15}" r="5" fill="${on ? "#0a64c8" : "#fff"}" stroke="#333" stroke-width="0.8"/>${on ? `<circle cx="11" cy="${y + 15}" r="2" fill="#fff"/>` : ""}<text x="20" y="${y + 15.5}" dominant-baseline="central" font-family="Arial,'Liberation Sans',sans-serif" font-size="11" fill="#000">OFF/ON</text>`)
+    .map(([y, on, t]) => `<text x="5" y="${y}" font-family="Arial,'Liberation Sans',sans-serif" font-size="11" fill="#000">${t}</text><circle cx="11" cy="${y + 15}" r="5" fill="${on ? "#0a64c8" : "#fff"}" stroke="#333" stroke-width="0.8"/>${on ? `<circle cx="11" cy="${y + 15}" r="2" fill="${PAPER}"/>` : ""}<text x="20" y="${y + 15.5}" dominant-baseline="central" font-family="Arial,'Liberation Sans',sans-serif" font-size="11" fill="#000">OFF/ON</text>`)
     .join("");
 
 /**
@@ -1402,7 +1407,7 @@ const patternCellBox = ({ left, top, right, bottom }) =>
 
 /** The thumbnail of a connector pattern: the white frame and the lines of its cells. */
 export const patternThumbnail = (pattern) =>
-  svg(`<rect x="0.5" y="0.5" width="31" height="31" fill="#fff"/>${pattern.cells.map(patternCellBox).join("")}`, "0 0 32 32");
+  svg(`<rect x="0.5" y="0.5" width="31" height="31" fill="${PAPER}"/>${pattern.cells.map(patternCellBox).join("")}`, "0 0 32 32");
 
 /** The thumbnails of the 36 patterns, by pattern id (`pattern-01` … `pattern-36`). */
 export const PATRONES_CONECTOR = Object.fromEntries(CONNECTOR_PATTERNS.map((pattern) => [pattern.id, patternThumbnail(pattern)]));
@@ -1419,7 +1424,6 @@ const fijo = (ancho, alto, cuerpo, clase = "") =>
   `<svg${clase ? ` class="${clase}"` : ""} viewBox="0 0 ${ancho} ${alto}" width="${ancho}" height="${alto}" aria-hidden="true" focusable="false">${cuerpo}</svg>`;
 
 const GRIS_BUCLE = "#7f7f7f";
-const AMARILLO_TERMINAL = "#ffffcc";
 
 /**
  * El marco de un While Loop de `w` × `h` px: 6 px de gris #7f7f7f con las
@@ -1442,13 +1446,13 @@ export function marcoWhile(w, h) {
  */
 export function marcoFor(w, h) {
   const [W, H] = [w - 4, h - 4];
-  const hoja = (k) => `<rect x="${2 * k + 0.5}" y="${2 * k + 0.5}" width="${W - 1}" height="${H - 1}" fill="#fff" stroke="#000" stroke-width="1"/>`;
-  const delantera = `<path d="M0.5,0.5 H${W - 0.5} V${H - 7.5} L${W - 7.5},${H - 0.5} H0.5 Z" fill="#fff" stroke="#000" stroke-width="1"/>`;
-  const doblez = `<path d="M${W - 8.5},${H - 8.5} H${W - 0.5} L${W - 8.5},${H - 0.5} Z" fill="#fff" stroke="#000" stroke-width="1"/>`;
+  const hoja = (k) => `<rect x="${2 * k + 0.5}" y="${2 * k + 0.5}" width="${W - 1}" height="${H - 1}" fill="${PAPER}" stroke="#000" stroke-width="1"/>`;
+  const delantera = `<path d="M0.5,0.5 H${W - 0.5} V${H - 7.5} L${W - 7.5},${H - 0.5} H0.5 Z" fill="${PAPER}" stroke="#000" stroke-width="1"/>`;
+  const doblez = `<path d="M${W - 8.5},${H - 8.5} H${W - 0.5} L${W - 8.5},${H - 0.5} Z" fill="${PAPER}" stroke="#000" stroke-width="1"/>`;
   return fijo(w, h, `${hoja(2)}${hoja(1)}${delantera}${doblez}`, "marco-bucle");
 }
 
-const marcoCaja = (color, grosor, relleno = AMARILLO_TERMINAL) =>
+const marcoCaja = (color, grosor, relleno = TERMINAL_FILL) =>
   `<rect x="${grosor / 2}" y="${grosor / 2}" width="${16 - grosor}" height="${16 - grosor}" fill="${relleno}" stroke="${color}" stroke-width="${grosor}"/>`;
 
 /** El terminal de iteración: 16 × 16, borde azul de 2 px y una «i» de 2 px de trazo. */
@@ -1490,12 +1494,12 @@ export const tunel = (color, modo = "lleno", indexado = false) =>
     9,
     9,
     indexado
-      ? // Un túnel indexado (labview-captures/array/tunel-for-indexado.png, a 1:1): fondo #ffffcc y un corchete
-        // del color del tipo, de 5 × 5 px, con serifas de 2 px.
-        `<rect x="0.5" y="0.5" width="8" height="8" fill="#ffffcc" stroke="#4c4c3d" stroke-width="1"/>` +
+      ? // An indexed tunnel (labview-captures/array/tunel-for-indexado.png, at 1:1): a yellow fill and a bracket
+        // in the color of the type, 5 × 5 px, with 2 px serifs.
+        `<rect x="0.5" y="0.5" width="8" height="8" fill="${TERMINAL_FILL}" stroke="${TUNNEL_BORDER}" stroke-width="1"/>` +
           [[3, 2, 1, 5], [3, 2, 2, 1], [3, 6, 2, 1], [7, 2, 1, 5], [6, 2, 2, 1], [6, 6, 2, 1]].map(([x, y, w, h]) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${color}"/>`).join("")
-      : `<rect x="0.5" y="0.5" width="8" height="8" fill="${color}" stroke="#4c4c3d" stroke-width="1"/>` +
-      (modo === "hueco" ? `<rect x="2" y="2" width="5" height="5" fill="#fff"/>` : modo === "defecto" ? `<rect x="3" y="3" width="3" height="3" fill="#fff"/><rect x="4" y="4" width="1" height="1" fill="${color}"/>` : ""),
+      : `<rect x="0.5" y="0.5" width="8" height="8" fill="${color}" stroke="${TUNNEL_BORDER}" stroke-width="1"/>` +
+      (modo === "hueco" ? `<rect x="2" y="2" width="5" height="5" fill="${PAPER}"/>` : modo === "defecto" ? `<rect x="3" y="3" width="3" height="3" fill="${PAPER}"/><rect x="4" y="4" width="1" height="1" fill="${color}"/>` : ""),
     "tunel",
   );
 
@@ -1546,7 +1550,7 @@ export function selectorMarcos(texto) {
   // El desplegable: un triángulo de 7 de ancho y 4 de alto.
   for (let i = 0; i < 4; i++) flechas += px(xd - 9 + i, 6 + i, 7 - 2 * i);
   const lineas = `<path d="M0,0h${W}v1h-${W}zM0,16h${W}v1h-${W}zM0,1h1v15h-1zM${W - 1},1h1v15h-1zM${M.divisor},1h1v15h-1zM${xd},1h1v15h-1z" fill="#000"/>`;
-  return `<svg class="selector-marcos" viewBox="0 0 ${W} ${M.alto}" width="${W}" height="${M.alto}" aria-hidden="true" focusable="false"><rect x="0" y="0" width="${W}" height="${M.alto}" fill="#fff"/>${lineas}<path d="${flechas}" fill="#000"/></svg>`;
+  return `<svg class="selector-marcos" viewBox="0 0 ${W} ${M.alto}" width="${W}" height="${M.alto}" aria-hidden="true" focusable="false"><rect x="0" y="0" width="${W}" height="${M.alto}" fill="${PAPER}"/>${lineas}<path d="${flechas}" fill="#000"/></svg>`;
 }
 
 /** Los píxeles de la «?» del terminal selector, en su caja de 8 × 12 (medidos). */
@@ -1557,7 +1561,7 @@ export const terminalSelector = (color) =>
   fijo(
     8,
     12,
-    `<rect x="0.5" y="0.5" width="7" height="11" fill="${AMARILLO_TERMINAL}" stroke="${color}" stroke-width="1"/><path d="${PIXELES_INTERROGANTE.map(([x, y]) => `M${x},${y}h1v1h-1z`).join("")}" fill="${color}"/>`,
+    `<rect x="0.5" y="0.5" width="7" height="11" fill="${TERMINAL_FILL}" stroke="${color}" stroke-width="1"/><path d="${PIXELES_INTERROGANTE.map(([x, y]) => `M${x},${y}h1v1h-1z`).join("")}" fill="${color}"/>`,
     "terminal-selector",
   );
 
@@ -1570,7 +1574,7 @@ export const registro = (lado, color = "#000") =>
   fijo(
     16,
     12,
-    `<rect x="1" y="1" width="14" height="10" fill="${AMARILLO_TERMINAL}" stroke="${color}" stroke-width="2"/>` +
+    `<rect x="1" y="1" width="14" height="10" fill="${TERMINAL_FILL}" stroke="${color}" stroke-width="2"/>` +
       (lado === "left" ? `<polygon points="2.5,4 13.5,4 8,9.5" fill="${color}"/>` : `<polygon points="2.5,8 13.5,8 8,2.5" fill="${color}"/>`),
     "registro",
   );
@@ -1629,7 +1633,7 @@ export function marcoSecuencia(w, h, anchos) {
   let agujeros = "";
   for (let x = M.primerAgujero - M.paso; x < w; x += M.paso) {
     for (const y of [2, h - 8]) {
-      agujeros += `<rect x="${x + 0.5}" y="${y + 0.5}" width="5" height="5" fill="#fff" stroke="#000" stroke-width="1"/>`;
+      agujeros += `<rect x="${x + 0.5}" y="${y + 0.5}" width="5" height="5" fill="${PAPER}" stroke="#000" stroke-width="1"/>`;
     }
   }
   const recorte = `<clipPath id="recorte-pelicula-${w}x${h}"><rect x="1" y="0" width="${w - 2}" height="${h}"/></clipPath>`;
@@ -1651,7 +1655,7 @@ export function variableLocal(estado, color, borde) {
   const cola = [[5, 7], [5, 7], [5, 7]];
   const hacia = (estado === "escribe") === (borde === "arriba") ? "arriba" : "abajo";
   const filasFlecha = hacia === "arriba" ? [...cabeza, ...cola] : [...cola, ...[...cabeza].reverse()];
-  let cuerpo = `<rect x="0.5" y="0.5" width="12" height="12" fill="${AMARILLO_TERMINAL}" stroke="${c}" stroke-width="1"/>`;
+  let cuerpo = `<rect x="0.5" y="0.5" width="12" height="12" fill="${TERMINAL_FILL}" stroke="${c}" stroke-width="1"/>`;
   if (estado === "escribe" || estado === "lee") {
     cuerpo += `<path d="${filasFlecha.map(([x0, x1], i) => `M${x0},${3 + i}h${x1 - x0 + 1}v1h-${x1 - x0 + 1}z`).join("")}" fill="${c}"/>`;
   } else if (estado === "no") {
@@ -1664,15 +1668,15 @@ export function variableLocal(estado, color, borde) {
 
 // Los iconos de la subpaleta Structures (paletas capturadas en structures/paleta.png),
 // en la rejilla de 48 × 48. Los que no están hechos se pintan igual, en gris.
-const cajaAzul = (x, y, l, glifo = "") => `<rect x="${x}" y="${y}" width="${l}" height="${l}" fill="${AMARILLO_TERMINAL}" stroke="#0000ff" stroke-width="2"/>${glifo}`;
+const cajaAzul = (x, y, l, glifo = "") => `<rect x="${x}" y="${y}" width="${l}" height="${l}" fill="${TERMINAL_FILL}" stroke="#0000ff" stroke-width="2"/>${glifo}`;
 const marcaI = (x, y) => lleno(x + 3.2, y + 1.6, x + 4.8, y + 2.4, "#0000ff") + lleno(x + 3.2, y + 3.2, x + 4.8, y + 6.8, "#0000ff");
-const pestana = (x, y) => caja(x, y, x + 12, y + 5, "#fff", 1.2, "#555") + poligono([[x + 2.5, y + 2.5], [x + 5, y + 1], [x + 5, y + 4]], "#555") + poligono([[x + 9.5, y + 2.5], [x + 7, y + 1], [x + 7, y + 4]], "#555");
+const pestana = (x, y) => caja(x, y, x + 12, y + 5, PAPER, 1.2, "#555") + poligono([[x + 2.5, y + 2.5], [x + 5, y + 1], [x + 5, y + 4]], "#555") + poligono([[x + 9.5, y + 2.5], [x + 7, y + 1], [x + 7, y + 4]], "#555");
 const hoja = (relleno) => caja(5.5, 12.5, 42.5, 42.5, relleno, 1.6, "#333") + pestana(18, 9.5);
 
 Object.assign(FUNCIONES, {
   "for-loop":
     svg48(
-      caja(11, 11, 41, 41, "#fff", 1.4, "#000") + caja(9, 9, 39, 39, "#fff", 1.4, "#000") + caja(7, 7, 37, 37, "#fff", 1.4, "#000") +
+      caja(11, 11, 41, 41, PAPER, 1.4, "#000") + caja(9, 9, 39, 39, PAPER, 1.4, "#000") + caja(7, 7, 37, 37, PAPER, 1.4, "#000") +
         cajaAzul(7, 7, 10, `<rect x="9.5" y="9.5" width="1.2" height="5" fill="#0000ff"/><rect x="13.5" y="9.5" width="1.2" height="5" fill="#0000ff"/>${linea(10, 10, 14.5, 14, 1.2, "#0000ff")}`) +
         cajaAzul(12, 26, 9, marcaI(11, 25.5)),
     ),
@@ -1680,46 +1684,46 @@ Object.assign(FUNCIONES, {
     svg48(
       `<rect x="9" y="9" width="30" height="30" rx="3" fill="none" stroke="${GRIS_BUCLE}" stroke-width="5"/>` +
         cajaAzul(13, 27, 9, marcaI(12, 26.5)) +
-        `<rect x="27" y="27" width="9" height="9" fill="${AMARILLO_TERMINAL}" stroke="#d22" stroke-width="1.5"/><circle cx="31.5" cy="31.5" r="2.2" fill="#f22"/>`,
+        `<rect x="27" y="27" width="9" height="9" fill="${TERMINAL_FILL}" stroke="#d22" stroke-width="1.5"/><circle cx="31.5" cy="31.5" r="2.2" fill="#f22"/>`,
     ),
   "case-structure":
     svg48(
-      `<rect x="6" y="6" width="36" height="36" fill="#fff" stroke="#000" stroke-width="3" stroke-dasharray="1.5 1.5"/>` +
-        `<rect x="7.5" y="17" width="9" height="11" fill="${AMARILLO_TERMINAL}" stroke="#007f00" stroke-width="1.4"/>` + texto48(12, 22.7, "?", 9, "#007f00") +
+      `<rect x="6" y="6" width="36" height="36" fill="${PAPER}" stroke="#000" stroke-width="3" stroke-dasharray="1.5 1.5"/>` +
+        `<rect x="7.5" y="17" width="9" height="11" fill="${TERMINAL_FILL}" stroke="#007f00" stroke-width="1.4"/>` + texto48(12, 22.7, "?", 9, "#007f00") +
         pestana(18, 4),
     ),
   "event-structure":
     svg48(
       `<rect x="6" y="6" width="36" height="36" fill="#f0e8a8" stroke="#999" stroke-width="1.4"/>` +
-        caja(15, 15, 37, 37, "#fff", 1.4, "#000") + texto48(26, 27, "e", 16, "#c800c8", 400) +
+        caja(15, 15, 37, 37, PAPER, 1.4, "#000") + texto48(26, 27, "e", 16, "#c800c8", 400) +
         cajaAzul(6.5, 6.5, 9, lleno(9, 9.5, 13, 10.5, "#0000ff") + lleno(9, 12.5, 13, 13.5, "#0000ff")) + pestana(18, 5),
     ),
   "in-place-element-structure":
     svg48(
-      caja(9, 9, 39, 39, "#ffffcc", 1.8, "#222") + lleno(2, 22, 46, 26, "#3c64c8") +
-        caja(15, 15, 33, 33, "#ffffcc", 1.8, "#222") + lleno(9, 21, 15, 27, "#3c64c8") + lleno(33, 21, 39, 27, "#3c64c8"),
+      caja(9, 9, 39, 39, NODE_FILL, 1.8, "#222") + lleno(2, 22, 46, 26, "#3c64c8") +
+        caja(15, 15, 33, 33, NODE_FILL, 1.8, "#222") + lleno(9, 21, 15, 27, "#3c64c8") + lleno(33, 21, 39, 27, "#3c64c8"),
     ),
   "flat-sequence-structure":
     svg48(
-      lleno(5, 5, 43, 43, "#444") + lleno(9, 11, 23, 37, "#fff") + lleno(25, 11, 39, 37, "#fff") +
+      lleno(5, 5, 43, 43, "#444") + lleno(9, 11, 23, 37, PAPER) + lleno(25, 11, 39, 37, PAPER) +
         [8, 15, 22, 29, 36].map((x) => lleno(x, 6.5, x + 3, 9, "#bbb") + lleno(x, 39, x + 3, 41.5, "#bbb")).join(""),
     ),
   "formula-node":
     svg48(
-      lleno(5, 5, 43, 43, "#555") + lleno(10, 12, 38, 38, "#fff") + texto48(24, 25, "y=f(x)", 8.5, TINTA, 400) +
-        lleno(5, 15, 12, 23, "#fff") + texto48(8.5, 19.2, "x", 7, TINTA, 400) + lleno(36, 25, 43, 33, "#fff") + texto48(39.5, 29.2, "y", 7, TINTA, 400),
+      lleno(5, 5, 43, 43, "#555") + lleno(10, 12, 38, 38, PAPER) + texto48(24, 25, "y=f(x)", 8.5, INK, 400) +
+        lleno(5, 15, 12, 23, PAPER) + texto48(8.5, 19.2, "x", 7, INK, 400) + lleno(36, 25, 43, 33, PAPER) + texto48(39.5, 29.2, "y", 7, INK, 400),
     ),
-  "diagram-disable-structure": svg48(hoja("#fff")),
-  "conditional-disable-structure": svg48(hoja("#ffffcc")),
+  "diagram-disable-structure": svg48(hoja(PAPER)),
+  "conditional-disable-structure": svg48(hoja(NODE_FILL)),
   "type-specialization-structure":
     svg48(
-      caja(5.5, 12.5, 42.5, 42.5, "#fff", 1.4, "#888") + pestana(18, 9.5) +
+      caja(5.5, 12.5, 42.5, 42.5, PAPER, 1.4, "#888") + pestana(18, 9.5) +
         lleno(12, 20, 21, 29, "#e600e6") + lleno(26, 17, 35, 26, "#009600") + lleno(28, 28, 37, 37, "#0000ff") + lleno(12, 31, 21, 40, "#8c8c00"),
     ),
   "shared-variable":
     svg48(
-      caja(6, 6, 42, 42, "#fff", 2.6, "#000") + caja(18, 10, 30, 38, "#fff", 1.4, "#000") +
-        poligono([[34, 14], [40, 20], [34, 26]], "#000") + texto48(12, 33, "?!", 7, TINTA, 700) + texto48(36, 34, "?!", 7, TINTA, 700),
+      caja(6, 6, 42, 42, PAPER, 2.6, "#000") + caja(18, 10, 30, 38, PAPER, 1.4, "#000") +
+        poligono([[34, 14], [40, 20], [34, 26]], "#000") + texto48(12, 33, "?!", 7, INK, 700) + texto48(36, 34, "?!", 7, INK, 700),
     ),
   "local-variable":
     svg48(caja(6, 18, 42, 34, "#f0f0f0", 1.6, "#222") + poligono([[10, 21], [18, 26], [10, 31]], "#000") + poligono([[22, 31], [22, 25], [27, 21], [32, 25], [32, 31]], "#000")),
@@ -1729,14 +1733,14 @@ Object.assign(FUNCIONES, {
         `<circle cx="30" cy="26" r="6" fill="#555"/>` + linea(24, 26, 36, 26, 1, "#fff") + linea(30, 20, 30, 32, 1, "#fff"),
     ),
   "feedback-node":
-    svg48(caja(6, 17, 42, 31, "#ffffcc", 2.2, "#000") + linea(14, 24, 36, 24, 3, "#000") + poligono([[10, 24], [19, 19], [19, 29]], "#000")),
+    svg48(caja(6, 17, 42, 31, NODE_FILL, 2.2, "#000") + linea(14, 24, 36, 24, 3, "#000") + poligono([[10, 24], [19, 19], [19, 29]], "#000")),
 });
 // Las carpetas de Structures: una ventanita y, en su pestaña, el nombre en forma de dibujo.
 Object.assign(SUBPALETAS, {
   "timed-structures": svg(
-    caja(1.5, 3.5, 14.5, 14.5, "#fff", 1, "#555") + caja(3.5, 6.5, 12.5, 12.5, "#cde0f5", 0.8, "#3c78c8") + lleno(5, 8, 11, 9.4, "#3c78c8") + lleno(5, 10, 8, 11.2, "#3c78c8"),
+    caja(1.5, 3.5, 14.5, 14.5, PAPER, 1, "#555") + caja(3.5, 6.5, 12.5, 12.5, "#cde0f5", 0.8, "#3c78c8") + lleno(5, 8, 11, 9.4, "#3c78c8") + lleno(5, 10, 8, 11.2, "#3c78c8"),
   ),
-  decorations: svg(caja(1.5, 3.5, 14.5, 14.5, "#fff", 1, "#555") + lleno(3, 5, 7, 9, "#9a9a9a") + linea(9, 5, 13, 9, 0.9) + lleno(3, 10, 7, 14, "#fff") + caja(3, 10, 7, 14, "none", 0.8) + `<circle cx="11" cy="12" r="2" fill="#bbb"/>`),
+  decorations: svg(caja(1.5, 3.5, 14.5, 14.5, PAPER, 1, "#555") + lleno(3, 5, 7, 9, "#9a9a9a") + linea(9, 5, 13, 9, 0.9) + lleno(3, 10, 7, 14, PAPER) + caja(3, 10, 7, 14, "none", 0.8) + `<circle cx="11" cy="12" r="2" fill="#bbb"/>`),
 });
 
 // ——— Functions ▸ Programming ▸ String (M3) ———
@@ -1758,7 +1762,7 @@ export const TAMANOS = {};
 /** Una función de cadena: caja amarilla de `w` × `h` px con un rótulo. */
 function nodoCadena(id, w, h, rotulo, tam = 10) {
   const [W, H] = [w * 1.5, h * 1.5];
-  FUNCIONES[id] = svg(caja(0.75, 0.75, W - 0.75, H - 0.75, PRIM, 1.5, BORDE) + texto48(W / 2, H / 2 + 0.3, rotulo, tam, TINTA, 700), `0 0 ${f(W)} ${f(H)}`);
+  FUNCIONES[id] = svg(caja(0.75, 0.75, W - 0.75, H - 0.75, NODE_FILL, 1.5, NODE_BORDER) + texto48(W / 2, H / 2 + 0.3, rotulo, tam, INK, 700), `0 0 ${f(W)} ${f(H)}`);
   CAJAS[id] = [0, 0, W, H];
   TAMANOS[id] = [w, h];
 }
@@ -1800,13 +1804,13 @@ for (const [id, w, h, r, t] of [
 
 // Concatenate Strings is drawn as a column of cells (diagram-view.mjs: `compuesto`); its glyph is for the palette.
 FUNCIONES["concatenate-strings"] = svg(
-  caja(1.5, 7.5, 46.5, 40.5, PRIM, 1.5, BORDE) + linea(24, 7.5, 24, 40.5, 1.2, BORDE) + linea(1.5, 24, 24, 24, 1.2, BORDE) + texto48(36, 24.3, "abc", 10, TINTA, 700),
+  caja(1.5, 7.5, 46.5, 40.5, NODE_FILL, 1.5, NODE_BORDER) + linea(24, 7.5, 24, 40.5, 1.2, NODE_BORDER) + linea(1.5, 24, 24, 24, 1.2, NODE_BORDER) + texto48(36, 24.3, "abc", 10, INK, 700),
   "0 0 48 48",
 );
 CAJAS["concatenate-strings"] = [1.5, 7.5, 46.5, 40.5];
 
 // Las constantes de cadena: una caja con el borde rosa y su texto; las fijas, con un signo.
-const cadenaConstante = (t, tam = 11) => svg48(caja(10, 14, 38, 34, "#fff", 3, ROSA) + texto48(24, 24.3, t, tam, TINTA, 500));
+const cadenaConstante = (t, tam = 11) => svg48(caja(10, 14, 38, 34, PAPER, 3, ROSA) + texto48(24, 24.3, t, tam, INK, 500));
 Object.assign(FUNCIONES, {
   "string-constant": cadenaConstante("abc"),
   "empty-string-constant": cadenaConstante("“”", 14),
@@ -1824,37 +1828,37 @@ export const SIGNOS_CADENA = { "empty-string-constant": "", "space-constant": "�
 // Las carpetas de String.
 Object.assign(SUBPALETAS, {
   "number-string-conversion": svg(
-    caja(2, 1.5, 9, 6, "#fff", 0.9, "#2850be") + texto(5.5, 3.8, "0.0", 3.6, "#2850be") +
-      linea(5.5, 6, 5.5, 10, 0.9) + poligono([[5.5, 11.2], [4, 9], [7, 9]], TINTA) +
-      caja(7, 11, 14.5, 15, "#fff", 0.9, ROSA) + texto(10.75, 13.1, "0.0", 3.4, ROSA),
+    caja(2, 1.5, 9, 6, PAPER, 0.9, "#2850be") + texto(5.5, 3.8, "0.0", 3.6, "#2850be") +
+      linea(5.5, 6, 5.5, 10, 0.9) + poligono([[5.5, 11.2], [4, 9], [7, 9]], INK) +
+      caja(7, 11, 14.5, 15, PAPER, 0.9, ROSA) + texto(10.75, 13.1, "0.0", 3.4, ROSA),
   ),
   "additional-string-functions": svg(
-    caja(2.5, 1.5, 12.5, 6, PRIM, 0.9, BORDE) + texto(7.5, 3.8, "abc", 3.6) +
-      caja(4, 6.5, 14, 11, PRIM, 0.9, BORDE) + texto(9, 8.8, "a→b", 3.4) +
-      caja(5.5, 11.5, 15.5, 15.5, PRIM, 0.9, BORDE) + texto(10.5, 13.6, "[ ]", 3.4),
+    caja(2.5, 1.5, 12.5, 6, NODE_FILL, 0.9, NODE_BORDER) + texto(7.5, 3.8, "abc", 3.6) +
+      caja(4, 6.5, 14, 11, NODE_FILL, 0.9, NODE_BORDER) + texto(9, 8.8, "a→b", 3.4) +
+      caja(5.5, 11.5, 15.5, 15.5, NODE_FILL, 0.9, NODE_BORDER) + texto(10.5, 13.6, "[ ]", 3.4),
   ),
   "path-array-string-conversion": svg(
-    caja(1.5, 1.5, 8.5, 6, PRIM, 0.9, BORDE) + texto(5, 3.8, "abc", 3.4) +
-      caja(7, 9, 15, 14.5, PRIM, 0.9, BORDE) + texto(11, 11.8, "[ ]", 3.6) + poligono([[4, 7], [6, 9.5], [2.5, 9.5]], TINTA),
+    caja(1.5, 1.5, 8.5, 6, NODE_FILL, 0.9, NODE_BORDER) + texto(5, 3.8, "abc", 3.4) +
+      caja(7, 9, 15, 14.5, NODE_FILL, 0.9, NODE_BORDER) + texto(11, 11.8, "[ ]", 3.6) + poligono([[4, 7], [6, 9.5], [2.5, 9.5]], INK),
   ),
   "flatten-unflatten-string": svg(
-    poligono([[3, 3.5], [8, 1.5], [12.5, 3.5], [12.5, 8], [8, 10], [3, 8]], "#e6c84a", TINTA, 0.8) + linea(8, 5.5, 8, 10, 0.8) +
-      poligono([[4, 12], [13, 12], [11.5, 14.5], [2.5, 14.5]], PRIM, BORDE, 0.8),
+    poligono([[3, 3.5], [8, 1.5], [12.5, 3.5], [12.5, 8], [8, 10], [3, 8]], "#e6c84a", INK, 0.8) + linea(8, 5.5, 8, 10, 0.8) +
+      poligono([[4, 12], [13, 12], [11.5, 14.5], [2.5, 14.5]], NODE_FILL, NODE_BORDER, 0.8),
   ),
 });
 
 // Controls ▸ Modern ▸ String & Path.
-const cajaTexto = (x0, y0, x1, y1, t, fondo) => caja(x0, y0, x1, y1, fondo, 1.2, "#7a7a7a") + texto48(x0 + 3 + (t.length * 9) / 4.2, (y0 + y1) / 2 + 0.3, t, 9, TINTA, 400);
+const cajaTexto = (x0, y0, x1, y1, t, fondo) => caja(x0, y0, x1, y1, fondo, 1.2, "#7a7a7a") + texto48(x0 + 3 + (t.length * 9) / 4.2, (y0 + y1) / 2 + 0.3, t, 9, INK, 400);
 Object.assign(CONTROLES, {
-  "string-control": svg48(ampliar(1.3, cajaTexto(5, 18, 43, 30, "abc", "#fff"))),
+  "string-control": svg48(ampliar(1.3, cajaTexto(5, 18, 43, 30, "abc", PAPER))),
   "string-indicator": svg48(ampliar(1.3, cajaTexto(5, 18, 43, 30, "abc", "#d6d6d6"))),
-  "combo-box": svg48(ampliar(1.3, cajaTexto(5, 18, 43, 30, "abc", "#fff") + caja(34, 18.5, 43, 29.5, "#e4e4e4", 1, "#7a7a7a") + poligono([[36, 22], [41, 22], [38.5, 26.5]], "#6e6e6e"))),
-  "file-path-control": svg48(ampliar(1.3, caja(5, 18, 43, 30, "#fff", 1.2, "#7a7a7a") + lleno(5.6, 18.6, 15, 29.4, "#4cd2ff") + texto48(29, 24.3, "Path", 8, TINTA, 400))),
-  "file-path-indicator": svg48(ampliar(1.3, caja(5, 18, 43, 30, "#d6d6d6", 1.2, "#7a7a7a") + lleno(5.6, 18.6, 15, 29.4, "#4cd2ff") + texto48(29, 24.3, "Path", 8, TINTA, 400))),
+  "combo-box": svg48(ampliar(1.3, cajaTexto(5, 18, 43, 30, "abc", PAPER) + caja(34, 18.5, 43, 29.5, "#e4e4e4", 1, "#7a7a7a") + poligono([[36, 22], [41, 22], [38.5, 26.5]], "#6e6e6e"))),
+  "file-path-control": svg48(ampliar(1.3, caja(5, 18, 43, 30, PAPER, 1.2, "#7a7a7a") + lleno(5.6, 18.6, 15, 29.4, "#4cd2ff") + texto48(29, 24.3, "Path", 8, INK, 400))),
+  "file-path-indicator": svg48(ampliar(1.3, caja(5, 18, 43, 30, "#d6d6d6", 1.2, "#7a7a7a") + lleno(5.6, 18.6, 15, 29.4, "#4cd2ff") + texto48(29, 24.3, "Path", 8, INK, 400))),
 });
 
 /** El dibujo del control de cadena dentro de su terminal en el diagrama (vista de icono). */
-export const dibujoCadena = (control) => (control ? cajaTexto(3.5, 11, 27.5, 21, "abc", "#fff") : cajaTexto(3.5, 11, 27.5, 21, "abc", "#d6d6d6"));
+export const dibujoCadena = (control) => (control ? cajaTexto(3.5, 11, 27.5, 21, "abc", PAPER) : cajaTexto(3.5, 11, 27.5, 21, "abc", "#d6d6d6"));
 
 
 // ——— Errores y Dialog & User Interface (M6, DT-043) ———
@@ -1894,44 +1898,44 @@ for (const [id, r, t] of [
 
 // Merge Errors is, like Concatenate Strings, a column of cells that stretches (diagram-view.mjs: `compuesto`).
 FUNCIONES["merge-errors"] = svg(
-  caja(1.5, 7.5, 46.5, 40.5, PRIM, 1.5, BORDE) + linea(24, 7.5, 24, 40.5, 1.2, BORDE) + linea(1.5, 24, 24, 24, 1.2, BORDE) + texto48(36, 24.3, "✕+✕", 10, TINTA, 700),
+  caja(1.5, 7.5, 46.5, 40.5, NODE_FILL, 1.5, NODE_BORDER) + linea(24, 7.5, 24, 40.5, 1.2, NODE_BORDER) + linea(1.5, 24, 24, 24, 1.2, NODE_BORDER) + texto48(36, 24.3, "✕+✕", 10, INK, 700),
   "0 0 48 48",
 );
 CAJAS["merge-errors"] = [1.5, 7.5, 46.5, 40.5];
 
 // La constante de error en la paleta: el marco oliva con sus tres celdas (202.png).
-const celdaError = (y, alto, color, texto_, relleno = "#fff") => caja(14.5, y, 33.5, y + alto, relleno, 2, color) + (texto_ ? texto48(24, y + alto / 2 + 0.3, texto_, 9, color, 700) : "");
+const celdaError = (y, alto, color, texto_, relleno = PAPER) => caja(14.5, y, 33.5, y + alto, relleno, 2, color) + (texto_ ? texto48(24, y + alto / 2 + 0.3, texto_, 9, color, 700) : "");
 FUNCIONES["error-cluster-constant"] = svg48(
-  caja(11.5, 5.5, 36.5, 42.5, "#fff", 1, "#7f7f00") + celdaError(8, 9, "#007f00", "F") + celdaError(17, 12, "#0000ff", "0") + celdaError(29, 12, "#ff00ff", ""),
+  caja(11.5, 5.5, 36.5, 42.5, PAPER, 1, "#7f7f00") + celdaError(8, 9, "#007f00", "F") + celdaError(17, 12, "#0000ff", "0") + celdaError(29, 12, "#ff00ff", ""),
 );
 CAJAS["error-cluster-constant"] = [11, 5, 37, 43];
 
 // Las carpetas de la paleta: las cinco que no se abren todavía.
 Object.assign(SUBPALETAS, {
-  "multiple-errors": svg(caja(2, 3.5, 14, 14.5, "#fff", 0.9) + texto(8, 9.3, "?!", 5.4, TINTA, 700) + linea(2, 3.5, 5, 1.5, 0.9) + linea(5, 1.5, 9, 1.5, 0.9)),
-  events: svg(caja(2, 3.5, 14, 14.5, "#fff", 0.9) + texto(8, 9.3, "e", 7, "#2850be", 700) + linea(2, 3.5, 5, 1.5, 0.9) + linea(5, 1.5, 9, 1.5, 0.9)),
-  menu: svg(caja(1.5, 3.5, 14.5, 14.5, "#fff", 0.9) + texto(8, 9, "menu", 4.4) + linea(1.5, 3.5, 4.5, 1.5, 0.9) + linea(4.5, 1.5, 9, 1.5, 0.9)),
-  cursor: svg(caja(1.5, 3.5, 14.5, 14.5, "#fff", 0.9) + poligono([[5, 5.5], [5, 12], [7.4, 10], [9.4, 13.4], [10.7, 12.7], [8.8, 9.4], [11.5, 9.3]], TINTA) + linea(1.5, 3.5, 4.5, 1.5, 0.9) + linea(4.5, 1.5, 9, 1.5, 0.9)),
-  help: svg(caja(1.5, 3.5, 14.5, 14.5, "#fff", 0.9) + texto(8, 9.2, "?", 8, "#2850be", 700) + linea(1.5, 3.5, 4.5, 1.5, 0.9) + linea(4.5, 1.5, 9, 1.5, 0.9)),
+  "multiple-errors": svg(caja(2, 3.5, 14, 14.5, PAPER, 0.9) + texto(8, 9.3, "?!", 5.4, INK, 700) + linea(2, 3.5, 5, 1.5, 0.9) + linea(5, 1.5, 9, 1.5, 0.9)),
+  events: svg(caja(2, 3.5, 14, 14.5, PAPER, 0.9) + texto(8, 9.3, "e", 7, "#2850be", 700) + linea(2, 3.5, 5, 1.5, 0.9) + linea(5, 1.5, 9, 1.5, 0.9)),
+  menu: svg(caja(1.5, 3.5, 14.5, 14.5, PAPER, 0.9) + texto(8, 9, "menu", 4.4) + linea(1.5, 3.5, 4.5, 1.5, 0.9) + linea(4.5, 1.5, 9, 1.5, 0.9)),
+  cursor: svg(caja(1.5, 3.5, 14.5, 14.5, PAPER, 0.9) + poligono([[5, 5.5], [5, 12], [7.4, 10], [9.4, 13.4], [10.7, 12.7], [8.8, 9.4], [11.5, 9.3]], INK) + linea(1.5, 3.5, 4.5, 1.5, 0.9) + linea(4.5, 1.5, 9, 1.5, 0.9)),
+  help: svg(caja(1.5, 3.5, 14.5, 14.5, PAPER, 0.9) + texto(8, 9.2, "?", 8, "#2850be", 700) + linea(1.5, 3.5, 4.5, 1.5, 0.9) + linea(4.5, 1.5, 9, 1.5, 0.9)),
 });
 
 // Controls ▸ Modern ▸ Data Containers (labview-captures/errores/300-controls-data-containers.png).
 const GRIS_ERROR = "#a8a8a8";
 const controlError = (entra) =>
   caja(7, 9, 41, 39, GRIS_ERROR, 1.4, "#6a6a6a") + lleno(10.5, 12, 17, 19, "#cfcfcf") + texto48(13.7, 15.7, entra ? "✔" : "✔", 7, "#12a012", 700) +
-  caja(20, 12, 38, 19, entra ? "#fff" : "#d6d6d6", 1, "#7a7a7a") + caja(10, 23, 38, 36, entra ? "#fff" : "#d6d6d6", 1, "#7a7a7a");
-const celdaMatriz = (x, y, t) => texto48(x, y, t, 5.5, TINTA, 400);
+  caja(20, 12, 38, 19, entra ? PAPER : "#d6d6d6", 1, "#7a7a7a") + caja(10, 23, 38, 36, entra ? PAPER : "#d6d6d6", 1, "#7a7a7a");
+const celdaMatriz = (x, y, t) => texto48(x, y, t, 5.5, INK, 400);
 const matriz = (t, color) =>
-  caja(9, 7, 39, 41, "#fff", 1.2, "#6a6a6a") + [14, 21, 28].map((y) => [15, 24, 33].map((x) => celdaMatriz(x, y, "x")).join("")).join("") + texto48(24, 36, t, 6, color, 700);
+  caja(9, 7, 39, 41, PAPER, 1.2, "#6a6a6a") + [14, 21, 28].map((y) => [15, 24, 33].map((x) => celdaMatriz(x, y, "x")).join("")).join("") + texto48(24, 36, t, 6, color, 700);
 Object.assign(CONTROLES, {
   "error-in": svg48(ampliar(1.15, controlError(true))),
   "error-out": svg48(ampliar(1.15, controlError(false))),
-  array: svg48(ampliar(1.15, caja(8, 14, 40, 34, "#fff", 1.2, "#6a6a6a") + linea(20, 14, 20, 34, 1) + linea(8, 24, 20, 24, 1) + celdaMatriz(14, 19, "0") + celdaMatriz(14, 29, "1") + caja(23, 18, 37, 30, "#fff", 1, "#7a7a7a"))),
+  array: svg48(ampliar(1.15, caja(8, 14, 40, 34, PAPER, 1.2, "#6a6a6a") + linea(20, 14, 20, 34, 1) + linea(8, 24, 20, 24, 1) + celdaMatriz(14, 19, "0") + celdaMatriz(14, 29, "1") + caja(23, 18, 37, 30, PAPER, 1, "#7a7a7a"))),
   cluster: svg48(ampliar(1.15, caja(7, 9, 41, 39, GRIS_ERROR, 1.4, "#6a6a6a") + lleno(11, 14, 28, 20, "#ff77d5") + lleno(11, 24, 33, 30, "#ff6633") + lleno(11, 33, 20, 37, "#00a000") + lleno(26, 33, 37, 37, "#2850be"))),
   "real-matrix": svg48(ampliar(1.15, matriz("DBL", "#ff6633"))),
   "complex-matrix": svg48(ampliar(1.15, matriz("CDB", "#ff6633"))),
   set: svg48(ampliar(1.15, `<circle cx="19" cy="24" r="10" fill="none" stroke="#6a6a6a" stroke-width="1.4"/><circle cx="29" cy="24" r="10" fill="none" stroke="#6a6a6a" stroke-width="1.4"/>`)),
-  map: svg48(ampliar(1.15, caja(7, 13, 21, 35, "#fff", 1.2, "#6a6a6a") + caja(27, 13, 41, 35, "#fff", 1.2, "#6a6a6a") + linea(21, 24, 27, 24, 1.4) + poligono([[27, 24], [24, 21.5], [24, 26.5]], TINTA))),
+  map: svg48(ampliar(1.15, caja(7, 13, 21, 35, PAPER, 1.2, "#6a6a6a") + caja(27, 13, 41, 35, PAPER, 1.2, "#6a6a6a") + linea(21, 24, 27, 24, 1.4) + poligono([[27, 24], [24, 21.5], [24, 26.5]], INK))),
 });
 
 /** El icono de la ventana de un diálogo, en pequeño (como el del programa en la barra de título). */
@@ -1991,10 +1995,10 @@ nodoCadena("initialize-array-2d", 32, 35, "[n×m]", 10);
 
 /** What an index of Index Array takes out of a 2D array: with none wired the whole grid, with one a 1D row or column, with both a single element. */
 const salidaIndexArray2D = (cableados) => {
-  const celda = (x, y) => lleno(x, y, x + 5, y + 5, BORDE);
+  const celda = (x, y) => lleno(x, y, x + 5, y + 5, NODE_BORDER);
   if (cableados === 0) return celda(30, 18) + celda(37, 18) + celda(30, 25) + celda(37, 25);
   if (cableados === 1) return celda(28, 21.5) + celda(34, 21.5) + celda(40, 21.5);
-  return lleno(33, 20.5, 41, 28.5, BORDE);
+  return lleno(33, 20.5, 41, 28.5, NODE_BORDER);
 };
 
 /**
@@ -2003,10 +2007,10 @@ const salidaIndexArray2D = (cableados) => {
  * one measured in labview-captures/array-2d/indexarray-2d-node-icon.png.
  */
 export function indexArray2DGlyph(rowWired, columnWired) {
-  const entrada = (y, cableada, ancho, alto) => caja(5, y - alto / 2, 5 + ancho, y + alto / 2, cableada ? BORDE : PRIM, 1, BORDE);
+  const entrada = (y, cableada, ancho, alto) => caja(5, y - alto / 2, 5 + ancho, y + alto / 2, cableada ? NODE_BORDER : NODE_FILL, 1, NODE_BORDER);
   return svg(
-    caja(0.75, 0.75, 47.25, 51.75, PRIM, 1.5, BORDE) +
-      caja(5, 9, 15, 19.5, PRIM, 1, BORDE) + linea(10, 9, 10, 19.5, 1, BORDE) + linea(5, 14.25, 15, 14.25, 1, BORDE) +
+    caja(0.75, 0.75, 47.25, 51.75, NODE_FILL, 1.5, NODE_BORDER) +
+      caja(5, 9, 15, 19.5, NODE_FILL, 1, NODE_BORDER) + linea(10, 9, 10, 19.5, 1, NODE_BORDER) + linea(5, 14.25, 15, 14.25, 1, NODE_BORDER) +
       entrada(33.75, rowWired, 10, 5) + entrada(45.75, columnWired, 5, 7) +
       salidaIndexArray2D(Number(rowWired) + Number(columnWired)),
     "0 0 48 52.5",
@@ -2014,21 +2018,21 @@ export function indexArray2DGlyph(rowWired, columnWired) {
 }
 
 // Build Array se estira como Compound Arithmetic: una caja de 32 × 9 con una celda por entrada.
-FUNCIONES["build-array"] = svg48(caja(0.75, 0.75, 47.25, 13.25, PRIM, 1.5, BORDE) + caja(5, 4, 12, 10, "#fff", 1, BORDE) + caja(36, 4, 43, 10, "#fff", 1, BORDE) + texto48(24, 7.3, "…", 8));
+FUNCIONES["build-array"] = svg48(caja(0.75, 0.75, 47.25, 13.25, NODE_FILL, 1.5, NODE_BORDER) + caja(5, 4, 12, 10, PAPER, 1, NODE_BORDER) + caja(36, 4, 43, 10, PAPER, 1, NODE_BORDER) + texto48(24, 7.3, "…", 8));
 CAJAS["build-array"] = [0, 0, 48, 14];
 TAMANOS["build-array"] = [32, 9];
 
 // La constante de array en la paleta: un índice y la caja de su elemento.
 FUNCIONES["array-constant"] = svg48(
-  caja(6, 12, 18, 22, "#fff", 1, BORDE) + texto48(12, 17.3, "0", 6) + caja(21, 12, 40, 36, "#fff", 2, "#4c4c4c") + caja(24, 15, 37, 33, "#fff", 1, "#4c4c4c"),
+  caja(6, 12, 18, 22, PAPER, 1, NODE_BORDER) + texto48(12, 17.3, "0", 6) + caja(21, 12, 40, 36, PAPER, 2, "#4c4c4c") + caja(24, 15, 37, 33, PAPER, 1, "#4c4c4c"),
 );
 CAJAS["array-constant"] = [5, 11, 41, 37];
 
 // Las carpetas de Array.
 Object.assign(SUBPALETAS, {
-  unsorted: svg(caja(3.5, 4, 12.5, 14.5, "#fff", 0.9) + texto(8, 9.5, "⋮", 6) + linea(3.5, 4, 6, 2, 0.9) + linea(6, 2, 10, 2, 0.9)),
-  "sorted-array": svg(caja(3.5, 4, 12.5, 14.5, "#fff", 0.9) + texto(8, 9.5, "↗", 6) + linea(3.5, 4, 6, 2, 0.9) + linea(6, 2, 10, 2, 0.9)),
-  matrix: svg(caja(2.5, 3.5, 13.5, 14.5, "#fff", 0.9) + texto(8, 9, "[xx]", 3.6) + linea(2.5, 3.5, 5, 1.5, 0.9) + linea(5, 1.5, 9, 1.5, 0.9)),
+  unsorted: svg(caja(3.5, 4, 12.5, 14.5, PAPER, 0.9) + texto(8, 9.5, "⋮", 6) + linea(3.5, 4, 6, 2, 0.9) + linea(6, 2, 10, 2, 0.9)),
+  "sorted-array": svg(caja(3.5, 4, 12.5, 14.5, PAPER, 0.9) + texto(8, 9.5, "↗", 6) + linea(3.5, 4, 6, 2, 0.9) + linea(6, 2, 10, 2, 0.9)),
+  matrix: svg(caja(2.5, 3.5, 13.5, 14.5, PAPER, 0.9) + texto(8, 9, "[xx]", 3.6) + linea(2.5, 3.5, 5, 1.5, 0.9) + linea(5, 1.5, 9, 1.5, 0.9)),
 });
 
 
@@ -2058,7 +2062,7 @@ for (const [id, w, h, r, t] of [
 ]) nodoCadena(id, w, h, r, t);
 
 // The Variant folder: a box with the two handles of the variant terminal, drawn anew.
-SUBPALETAS.variant = svg(caja(3.5, 4, 12.5, 12, PRIM, 0.9, BORDE) + lleno(1.5, 6.5, 3.5, 9.5, BORDE) + lleno(12.5, 6.5, 14.5, 9.5, BORDE) + linea(3.5, 4, 6, 2, 0.9) + linea(6, 2, 10, 2, 0.9));
+SUBPALETAS.variant = svg(caja(3.5, 4, 12.5, 12, NODE_FILL, 0.9, NODE_BORDER) + lleno(1.5, 6.5, 3.5, 9.5, NODE_BORDER) + lleno(12.5, 6.5, 14.5, 9.5, NODE_BORDER) + linea(3.5, 4, 6, 2, 0.9) + linea(6, 2, 10, 2, 0.9));
 
 /**
  * El dibujo del terminal de un array en el diagrama (labview-captures/array/array-control-terminal-diagrama.png y
@@ -2118,14 +2122,14 @@ Object.assign(CONTROLES, { "waveform-chart": graphPaletteIcon("waveform-chart"),
 // have the Numeric Control's incrementer, the Menu Ring is a grey drop-down, and the picture rings show
 // a green square under a yellow circle.
 const RING_TEXT_SIZE = 8.5;
-const ringBox = (x0, y0, x1, y1, text, fill = "#fff") =>
-  caja(x0, y0, x1, y1, fill, 1.2, "#7a7a7a") + texto48((x0 + x1) / 2, (y0 + y1) / 2 + 0.3, text, RING_TEXT_SIZE, TINTA, 600);
+const ringBox = (x0, y0, x1, y1, text, fill = PAPER) =>
+  caja(x0, y0, x1, y1, fill, 1.2, "#7a7a7a") + texto48((x0 + x1) / 2, (y0 + y1) / 2 + 0.3, text, RING_TEXT_SIZE, INK, 600);
 const ringPicture = (x0, y0, x1, y1) => {
   const width = x1 - x0;
   const height = y1 - y0;
-  return caja(x0, y0, x1, y1, "#fff", 1.2, "#7a7a7a") +
-    `<circle cx="${f(x0 + width * 0.62)}" cy="${f(y0 + height * 0.38)}" r="${f(height * 0.24)}" fill="#f0e000" stroke="${TINTA}" stroke-width="0.6"/>` +
-    caja(f(x0 + width * 0.18), f(y0 + height * 0.42), f(x0 + width * 0.5), f(y0 + height * 0.8), "#00b000", 0.6, TINTA);
+  return caja(x0, y0, x1, y1, PAPER, 1.2, "#7a7a7a") +
+    `<circle cx="${f(x0 + width * 0.62)}" cy="${f(y0 + height * 0.38)}" r="${f(height * 0.24)}" fill="#f0e000" stroke="${INK}" stroke-width="0.6"/>` +
+    caja(f(x0 + width * 0.18), f(y0 + height * 0.42), f(x0 + width * 0.5), f(y0 + height * 0.8), "#00b000", 0.6, INK);
 };
 Object.assign(CONTROLES, {
   "text-ring": svg48(ampliar(1.3, incrementador(6, 16, 16) + ringBox(13, 17, 42, 31, "Ring"))),
@@ -2137,6 +2141,6 @@ Object.assign(CONTROLES, {
 
 // The two folders of Controls ▸ Modern ▸ Graph ▸ Controls (02-palette-graph-subfolder-controls.png).
 Object.assign(CARPETAS_CONTROLES, {
-  controls: svg(`<circle cx="8" cy="8" r="6" fill="#f0f0f0" stroke="${TINTA}" stroke-width="0.8"/><circle cx="8" cy="8" r="3.4" fill="none" stroke="#7a7a7a" stroke-width="0.6"/>${linea(8, 2, 8, 14, 0.6, "#7a7a7a")}${linea(2, 8, 14, 8, 0.6, "#7a7a7a")}`),
-  datatypes: svg(`${caja(2, 2.5, 14, 13.5, "#fff", 0.8)}${linea(2, 6, 14, 6, 0.6)}${linea(6.5, 2.5, 6.5, 13.5, 0.6)}`),
+  controls: svg(`<circle cx="8" cy="8" r="6" fill="#f0f0f0" stroke="${INK}" stroke-width="0.8"/><circle cx="8" cy="8" r="3.4" fill="none" stroke="#7a7a7a" stroke-width="0.6"/>${linea(8, 2, 8, 14, 0.6, "#7a7a7a")}${linea(2, 8, 14, 8, 0.6, "#7a7a7a")}`),
+  datatypes: svg(`${caja(2, 2.5, 14, 13.5, PAPER, 0.8)}${linea(2, 6, 14, 6, 0.6)}${linea(6.5, 2.5, 6.5, 13.5, 0.6)}`),
 });

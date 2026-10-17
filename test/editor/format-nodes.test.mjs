@@ -11,6 +11,7 @@ import * as ED from "../../editor/src/block-diagram/diagram-editing.mjs";
 import * as Gr from "../../core/model/graph.mjs";
 import { DBL } from "../../core/model/types.mjs";
 import { CAT, INV } from "../helpers.mjs";
+import { oldSchoolToken } from "./old-school-theme.mjs";
 
 const CTX = contexto(CAT, glifosPorBloque(INV), ",");
 const FONDO = { tipo: "fondo" };
@@ -57,6 +58,15 @@ test("Format Into String is placed at 32 by 29 with its terminals where LabVIEW 
   assert.equal(terminales(nodeOf(d), CTX).find((t) => t.puerto === "format-string").lado, "top");
   // The tips are the names of the context help (format-scan/02-qd.png).
   assert.deepEqual(terminales(nodeOf(d), CTX).map((t) => t.etiqueta), ["format string", "initial string", "error in (no error)", "input 1", "resulting string", "error out"]);
+});
+
+// The yellow and the dark border were measured in LabVIEW (format-scan/03z.png); the drawing asks for the tokens of the theme.
+test("a Format Into String body takes the node fill and border from the theme", () => {
+  const d = place(ED.inicial(), "format-into-string", { x: 400, y: 300 });
+  const drawing = D.contenido(d, CTX, Gr.tipos(d.g, CAT));
+  assert.match(drawing, /fill="var\(--node-fill\)" stroke="var\(--format-node-border\)"/);
+  assert.equal(oldSchoolToken("--node-fill"), "#ffffcc");
+  assert.equal(oldSchoolToken("--format-node-border"), "#4c4c3d");
 });
 
 test("Scan From String is placed at 32 by 37 with its terminals where LabVIEW has them", () => {

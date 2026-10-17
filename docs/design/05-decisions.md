@@ -1888,6 +1888,19 @@ each show.
 8. **The first step is to centralize the colors** into theme tokens with no visible change: Old School must stay
    identical, and the tests say so. Today there are about 95 distinct colors in `editor/src/styles.css` and more than
    1000 color literals in the glyphs and views.
+9. **How the tokens are made** (decided 2026-10-17):
+   - They are CSS custom properties on `:root` in `editor/src/themes/old-school.css`, loaded before the other sheets;
+     a later theme redefines the same names. `styles.css` and `getting-started.css` keep no color of their own.
+   - Names are in English and say the role, not the color (`--node-fill`, `--menu-border`, never `--yellow`). Two
+     roles that share a value in Old School are still two tokens, because another theme may split them.
+   - The glyphs and views take a token only for what a theme changes, as the Workbench mockup shows: ink, paper,
+     the fill and border of nodes, chrome, canvas, selection, menus, dialogs, value tags and the Highlight Execution
+     band. The drawing inside a palette icon (a die, a thermometer, an LED) stays a literal: it is illustration.
+   - The type colors stay in `core/model/types.mjs` and are the same in every theme (point 4). So do the Old School
+     Front Panel controls, which point 7 replaces in Solder rather than recolors, and the data-URL cursors, which
+     cannot read CSS.
+   - "No visible change" is shown by a test (no color literal outside the theme, no token used and not defined) and
+     by a pixel-by-pixel comparison of the editor before and after.
 
 ### Kept for later themes
 

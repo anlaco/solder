@@ -12,6 +12,7 @@ import * as Gr from "../../core/model/graph.mjs";
 import { tipos } from "../../core/model/graph.mjs";
 import * as H from "../../editor/src/block-diagram/undo-history.mjs";
 import { CAT, INV } from "../helpers.mjs";
+import { oldSchoolToken } from "./old-school-theme.mjs";
 
 const CTX = contexto(CAT, glifosPorBloque(INV), ",");
 const FONDO = { tipo: "fondo" };
@@ -998,7 +999,8 @@ test("escribir en el selector de marcos cambia los valores del marco", () => {
   assert.equal(ED.leerMarco("1.5"), null);
   // El texto que se escribe se pinta con su selección, o con su cursor, en el selector.
   const escribiendo = ED.editarMarco(d, c);
-  assert.match(D_contenido(escribiendo), /<rect x="11" y="3"[^>]*fill="#000"\/><text[^>]*texto-blanco/);
+  assert.match(D_contenido(escribiendo), /<rect x="11" y="3"[^>]*fill="var\(--text-selected-background\)"\/><text[^>]*texto-blanco/);
+  assert.equal(oldSchoolToken("--text-selected-background"), "#000");
   assert.match(D_contenido(ED.teclear(escribiendo, "5")), /class="caret-selector"/);
   // Un Case booleano no acepta números en su selector.
   let b = case1();
@@ -1121,10 +1123,11 @@ test("use default if unwired cambia el túnel de salida del case", () => {
   assert.equal(cajaDe(d, t.id).x, 800 + 300 - 9, "pegado al lado derecho");
   assert.ok(d.g.cables.some((e) => e.a.nodo === t.id && e.a.puerto === "x-1"), "por la entrada del marco que se ve");
   const tunel = (d) => D_contenido(d).match(/<svg class="tunel"[^>]*>.*?<\/svg>/g).at(-1);
-  assert.match(tunel(d), /<rect x="2" y="2" width="5" height="5" fill="#fff"\/>/, "hueco: el otro marco no lo cablea");
+  assert.match(tunel(d), /<rect x="2" y="2" width="5" height="5" fill="var\(--paper\)"\/>/, "hueco: el otro marco no lo cablea");
   d = ED.orden(ED.abrirMenu(d, "context.case-tunnel-output", t.id, 0, 0), "context.case-tunnel-output.use-default-if-unwired", CTX);
   assert.equal(nodoDe(d, t.id).config["use-default"], true);
-  assert.match(tunel(d), /<rect x="3" y="3" width="3" height="3" fill="#fff"\/><rect x="4" y="4" width="1" height="1"/, "con punto");
+  assert.equal(oldSchoolToken("--paper"), "#fff");
+  assert.match(tunel(d), /<rect x="3" y="3" width="3" height="3" fill="var\(--paper\)"\/><rect x="4" y="4" width="1" height="1"/, "con punto");
   assert.ok(ED.marcados(ED.abrirMenu(d, "context.case-tunnel-output", t.id, 0, 0)).has("context.case-tunnel-output.use-default-if-unwired"));
   // Cableado en los dos marcos, sale relleno.
   d = ED.orden(ED.abrirMenu(d, "context.case-tunnel-output", t.id, 0, 0), "context.case-tunnel-output.use-default-if-unwired", CTX);
@@ -1132,7 +1135,7 @@ test("use default if unwired cambia el túnel de salida del case", () => {
   d = poner(d, "const", { x: 900, y: 500 });
   d = cablear(d, terminal(d, d.seleccion[0], "result"), terminal(d, t.id, "x-0"));
   assert.ok(d.g.cables.some((e) => e.a.nodo === t.id && e.a.puerto === "x-0"));
-  assert.ok(!/<rect x="2" y="2" width="5" height="5" fill="#fff"\/>|<rect x="3" y="3"/.test(tunel(d)), "relleno");
+  assert.ok(!/<rect x="2" y="2" width="5" height="5" fill="var\(--paper\)"\/>|<rect x="3" y="3"/.test(tunel(d)), "relleno");
   // Un cable no une dos marcos.
   const otra = poner(ED.mostrarMarco(d, c, 1), "increment", { x: 960, y: 560 });
   assert.ok(otra.g.nodos.length > d.g.nodos.length);
@@ -1474,7 +1477,7 @@ test("el menú de un túnel de un bucle cambia el indexado", () => {
   const to = g.nodos.find((n) => n.tipo === "tunnel-out");
   assert.ok(ti.config.indexado && to.config.indexado, "en un For nacen indexados");
   const html = (n) => contenido({ ...ED.inicial(), g }, CTX, tipos(g, CAT));
-  assert.match(html(), /class="glifo-borde"[^>]*>.*?#ffffcc/s, "el túnel indexado, con su fondo amarillo y su corchete");
+  assert.match(html(), /class="glifo-borde"[^>]*>.*?var\(--structure-terminal-fill\)/s, "el túnel indexado, con su fondo amarillo y su corchete");
   let d = { ...ED.inicial(), g };
   // Entrada: Disable Indexing, y vuelve Enable Indexing.
   d = ED.abrirMenu(d, D.menuDe(ti), ti.id, 0, 0);
@@ -1684,8 +1687,9 @@ test("Index Array with a 2D array wired is 32 × 35 and has two indices", () => 
   const [ninguno, uno, ambos] = [salida([]), salida(["index"]), salida(["index", "index-1"])];
   assert.notEqual(ninguno, uno);
   assert.notEqual(uno, ambos);
-  assert.equal((ninguno.match(/<rect[^>]*fill="#2b2b22"/g) ?? []).length, 4, "no index wired: a 2D grid of four cells");
-  assert.equal((ambos.match(/<rect[^>]*fill="#2b2b22"/g) ?? []).length, 3, "both wired: the two filled index icons and one square");
+  assert.equal((ninguno.match(/<rect[^>]*fill="var\(--node-border\)"/g) ?? []).length, 4, "no index wired: a 2D grid of four cells");
+  assert.equal((ambos.match(/<rect[^>]*fill="var\(--node-border\)"/g) ?? []).length, 3, "both wired: the two filled index icons and one square");
+  assert.equal(oldSchoolToken("--node-border"), "#2b2b22");
 });
 
 // array-2d/initializearray-contexthelp.png: Initialize Array is stretched downwards for each dimension size.

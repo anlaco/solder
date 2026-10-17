@@ -77,6 +77,7 @@ function createWindow(entry, kind, bounds) {
     minHeight: 360,
     useContentSize: !!CAPTURE_CLIENT_SIZE,
     title: windowTitle(entry, kind),
+    // The main process cannot read the theme: this must match --chrome-background of themes/old-school.css.
     backgroundColor: "#f0f0f0",
     icon: APP_ICON,
     show: false,
@@ -361,6 +362,7 @@ function createGettingStarted() {
     useContentSize: true,
     center: true,
     title: "Solder",
+    // Must match --getting-started-background of themes/old-school.css (the main process cannot read CSS).
     backgroundColor: "#ffffff",
     icon: APP_ICON,
     show: false,

@@ -30,8 +30,8 @@ const DIVIDER_WIDTH = 1;
  * Calibrated in the running editor, whose font gives status 33 px and source 36 px, on LabVIEW's 55 and 58.
  */
 const NAME_PADDING = { left: 3, right: 2 };
-const BORDER_COLOR = "#4C4C3D";
-const ARROW_CELL_COLOR = "#FFFFCC";
+const BORDER_COLOR = "var(--format-node-border)";
+const ARROW_CELL_COLOR = "var(--node-fill)";
 const DIVIDER_COLOR = "#000000";
 /**
  * The colour of a name whose element has no type (the cluster is not wired, or the name is no longer
@@ -143,7 +143,7 @@ export function unbundleBody(node, box, cat, resolved) {
   const divider = named ? `<line x1="${ARROW_CELL_WIDTH - 0.5}" y1="1" x2="${ARROW_CELL_WIDTH - 0.5}" y2="${f2(box.alto - 1)}"/>` : "";
   return (
     `<svg class="formato" viewBox="0 0 ${f2(box.ancho)} ${f2(box.alto)}">` +
-    `<rect x="0.5" y="0.5" width="${f2(box.ancho - 1)}" height="${f2(box.alto - 1)}" fill="#fff" stroke="${BORDER_COLOR}" stroke-width="1"/>` +
+    `<rect x="0.5" y="0.5" width="${f2(box.ancho - 1)}" height="${f2(box.alto - 1)}" fill="var(--paper)" stroke="${BORDER_COLOR}" stroke-width="1"/>` +
     `<rect x="1" y="1" width="${ARROW_CELL_WIDTH - 1}" height="${f2(box.alto - 2)}" fill="${ARROW_CELL_COLOR}"/>` +
     `${arrow(box.alto)}` +
     `<g stroke="${DIVIDER_COLOR}" stroke-width="1">${divider}${lines}</g>${texts}</svg>`

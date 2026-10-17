@@ -5,6 +5,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { oldSchoolToken } from "./old-school-theme.mjs";
 
 import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
 import * as DS from "../../editor/src/debugging/debug-state.mjs";
@@ -361,7 +362,9 @@ test("Highlight Execution dims the diagram and lights what ran with its wires an
   assert.match(html, new RegExp(`class="cable dep-encendido" data-cable="${wires.a}"`));
   assert.match(html, new RegExp(`class="nodo" data-nodo="${id.add}"`), "what has not run stays dim");
   const overlay = DV.overlay(state, g, CONTEXT, resolved, { now: 1100 });
-  assert.match(overlay, /class="dep-banda"[^>]*stroke:#a3a3d6;stroke-width:5/, "a 5 px band in the numeric color");
+  assert.match(overlay, /class="dep-banda"[^>]*stroke:var\(--debug-band-number\);stroke-width:5/, "a 5 px band in the numeric color");
+  assert.equal(oldSchoolToken("--debug-band-number"), "#a3a3d6");
+  assert.equal(oldSchoolToken("--debug-band-boolean"), "#a3bca3");
   assert.match(overlay, /animation-duration:270ms;animation-delay:-100ms/, "a repaint goes on from where the band was");
   assert.match(overlay, /class="dep-etiqueta dep-aparece"[^>]*height:17px[^>]*animation-delay:0ms[^>]*>2</, "the 17 px tag of a constant shows as its band starts (border-probes §1)");
   assert.match(ventana(INV, "block-diagram", E.inicial(), { resaltando: true }), /class="lienzo lienzo-block-diagram resaltando"/);

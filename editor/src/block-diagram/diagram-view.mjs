@@ -1173,7 +1173,7 @@ function estructura(n, ctx, elegido, d, resueltos) {
  */
 function marcaCaseInsensitive() {
   const pink = aspecto("string").color;
-  return `<svg class="marca-case-insensitive" width="19" height="11" style="position:absolute;left:1px;bottom:1px" xmlns="http://www.w3.org/2000/svg"><rect x="0.5" y="0.5" width="18" height="10" fill="#fff" stroke="${pink}"/><text x="2" y="8.5" font-size="8" font-family="Arial, sans-serif" fill="${pink}">A=a</text></svg>`;
+  return `<svg class="marca-case-insensitive" width="19" height="11" style="position:absolute;left:1px;bottom:1px" xmlns="http://www.w3.org/2000/svg"><rect x="0.5" y="0.5" width="18" height="10" fill="var(--paper)" stroke="${pink}"/><text x="2" y="8.5" font-size="8" font-family="Arial, sans-serif" fill="${pink}">A=a</text></svg>`;
 }
 
 /**
@@ -1193,8 +1193,8 @@ function selectorDeMarcos(n, ctx, d, resueltos) {
   const invalido = !ed && esEnum(kind) && !frameMatchesItems(marcosDe(n)[activoDe(n)] ?? {}, kind) ? " texto-invalido" : "";
   const texto = ed
     ? ed.todo
-      ? `<rect x="${M.textoX - 1}" y="3" width="${f2(m.anchoActual + 2)}" height="11" fill="#000"/><text x="${M.textoX}" y="${M.baseline}" class="texto-selector texto-blanco">${t}</text>`
-      : `<text x="${M.textoX}" y="${M.baseline}" class="texto-selector">${t}</text><rect class="caret-selector" x="${f2(M.textoX + m.anchoActual)}" y="3" width="1" height="11" fill="#000"/>`
+      ? `<rect x="${M.textoX - 1}" y="3" width="${f2(m.anchoActual + 2)}" height="11" fill="var(--text-selected-background)"/><text x="${M.textoX}" y="${M.baseline}" class="texto-selector texto-blanco">${t}</text>`
+      : `<text x="${M.textoX}" y="${M.baseline}" class="texto-selector">${t}</text><rect class="caret-selector" x="${f2(M.textoX + m.anchoActual)}" y="3" width="1" height="11" fill="var(--caret)"/>`
     : `<text x="${M.textoX}" y="${M.baseline}" class="texto-selector${invalido}">${t}</text>`;
   const zona = (z, x, ancho) => `<div class="marco-zona" data-nodo="${esc(n.id)}" data-zona="${z}" style="left:${px(x)};top:1px;width:${px(ancho)};height:15px"></div>`;
   const zonas = zona("anterior", 1, M.boton) + zona("texto", M.divisor + 1, xd - M.divisor - 11) + zona("lista", xd - 10, 10) + zona("siguiente", xd + 1, M.boton);

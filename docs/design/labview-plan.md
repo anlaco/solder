@@ -10,9 +10,8 @@ When the developer says "keep going":
 
 1. Read this document: §2 (where we are) and §3b (what is next). Since 0.4.0-beta
    (2026-10-16), continue with **"After the beta, first: the themes"** at the end of
-   the road in §3b (DT-056): its first step is to turn the colors of
-   `editor/src/styles.css` and of the glyphs and views into theme tokens with no
-   visible change, then the Solder theme (`docs/ideas/theme-mockups.html`, Workbench).
+   the road in §3b (DT-056): the colors are theme tokens since 2026-10-17; next is
+   the Solder theme (`docs/ideas/theme-mockups.html`, Workbench).
    §4 gives the detail of each module.
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
@@ -37,7 +36,7 @@ When the developer says "keep going":
   §3. First what is needed to program (types, functions, structures); then what
   organizes programs (subVIs, projects, classes).
 
-## 2. Where we are (2026-10-16, 0.4.0-beta)
+## 2. Where we are (2026-10-17, 0.4.0-beta)
 
 **The full circuit works:** a VI is built, saved to `.qvi`, opened the same way,
 and Run compiles it to WebAssembly and executes it **by dataflow, like
@@ -45,7 +44,7 @@ LabVIEW** (DT-040): independent branches run at the same time, each indicator is
 painted when its data arrives, Abort stops at once and the panel switches to Run
 mode. Since 2026-10-01 also **with loops**: While and For are placed, stretched
 and wired in the diagram, and the compiler runs them (DT-041).
-708 tests green. **The three examples give the same values as in LabVIEW** (2026-10-15). **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read. **VIs are saved as `.sdg`** (DT-051, 2026-10-15): every Solder extension starts with `sd` (`.sdt` reserved for a future textual language, `.sdproj`, `.sdlib`), and an old `.qvi` still opens. **New VI, Close and Close All** (spec/05 rules 101–103, 2026-10-15) work as measured, and Solder **starts on LabVIEW's Getting Started window** (DT-052), which comes back when the last VI closes.
+714 tests green. **The three examples give the same values as in LabVIEW** (2026-10-15). **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read. **VIs are saved as `.sdg`** (DT-051, 2026-10-15): every Solder extension starts with `sd` (`.sdt` reserved for a future textual language, `.sdproj`, `.sdlib`), and an old `.qvi` still opens. **New VI, Close and Close All** (spec/05 rules 101–103, 2026-10-15) work as measured, and Solder **starts on LabVIEW's Getting Started window** (DT-052), which comes back when the last VI closes. **The colors are theme tokens** (DT-056, 2026-10-17): the current look is the Old School theme, unchanged pixel by pixel.
 
 | Piece | Status |
 |-------|--------|
@@ -303,6 +302,12 @@ are done, and the month of maintenance (`0.4.x-beta`, fixes only).
 and Solder (the Workbench style, the default of the releases), with LabVIEW's type colors in both. First the colors
 become theme tokens with no visible change; then the Solder theme; then the Front Panel as plain HTML with panel
 styles (Plain, Solder), once it is decided where a panel's style lives.
+   *The tokens done on 2026-10-17 (DT-056 §9): 232 role tokens in `editor/src/themes/old-school.css`, loaded first;
+   `styles.css` and `getting-started.css` keep no color, and the glyphs and views ask for a token for ink, paper,
+   nodes, chrome, menus, dialogs, value tags and the Highlight Execution band. `test/editor/theme-tokens.test.mjs`
+   fails on a color outside the theme or a token nobody defines, and the editor is identical pixel by pixel before
+   and after ([`2026-10-17-theme-tokens.md`](../../labview-captures/reports/2026-10-17-theme-tokens.md)). Next: the
+   Solder theme.*
 
 **Then:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
 lesson of NI's Core 1 course can be done in Solder, except lessons 2 and 15 and the DAQ and instrument parts of 4,

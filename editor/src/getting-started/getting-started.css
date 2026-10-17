@@ -2,50 +2,50 @@
  * Colours: text #161617, panel border #aeb0b3, list border #abadb0, strip #f1f1f2.
  * --escala shrinks the sizes when Segoe UI is missing and Noto Sans stands in (see getting-started.mjs). */
 
-body.getting-started { background: #fff; --escala: 1; color: #161617; }
-.gs-window { position: absolute; inset: 0; background: #fff; }
-.gs-menubar { border-bottom: 1px solid #a0a0a0; z-index: 30; }
+body.getting-started { background: var(--getting-started-background); --escala: 1; color: var(--getting-started-text); }
+.gs-window { position: absolute; inset: 0; background: var(--getting-started-background); }
+.gs-menubar { border-bottom: 1px solid var(--getting-started-menubar-border); z-index: 30; }
 .gs-client { position: absolute; left: 0; right: 0; top: var(--menu-bar); bottom: 0; overflow: hidden; }
 
 .gs-header { position: absolute; left: 21px; top: 22px; height: 60px; display: flex; align-items: center; white-space: nowrap; }
 .gs-header img { display: block; margin-right: 10px; }
-.gs-product { font-size: calc(30px * var(--escala)); font-weight: 300; color: #505153; letter-spacing: 0.2px; }
-.gs-channel { font-size: calc(22px * var(--escala)); font-weight: 300; color: #818386; margin-left: 12px; position: relative; top: 3px; }
+.gs-product { font-size: calc(30px * var(--escala)); font-weight: 300; color: var(--getting-started-product-text); letter-spacing: 0.2px; }
+.gs-channel { font-size: calc(22px * var(--escala)); font-weight: 300; color: var(--getting-started-channel-text); margin-left: 12px; position: relative; top: 3px; }
 
 .gs-panels, .gs-captions { position: absolute; left: var(--panels-left); right: var(--carousel-width); display: flex; gap: var(--panels-gap); }
 .gs-panels { top: var(--panels-top); height: var(--panels-height); }
 .gs-left, .gs-caption:nth-child(1) { flex: 1 1 250px; min-width: 0; }
 .gs-middle, .gs-caption:nth-child(2) { flex: 1 1 256px; min-width: 0; }
 
-.gs-panel { border: 1px solid #aeb0b3; display: flex; flex-direction: column; background: #f1f1f2; }
-.gs-strip { height: 61px; flex: none; background: #f1f1f2; padding-top: 10px; display: flex; justify-content: center; }
-.gs-body { flex: 1; min-height: 0; display: flex; background: #fff; }
+.gs-panel { border: 1px solid var(--getting-started-panel-border); display: flex; flex-direction: column; background: var(--getting-started-strip-background); }
+.gs-strip { height: 61px; flex: none; background: var(--getting-started-strip-background); padding-top: 10px; display: flex; justify-content: center; }
+.gs-body { flex: 1; min-height: 0; display: flex; background: var(--getting-started-background); }
 .gs-list-area { flex: 1; min-width: 0; min-height: 0; overflow: hidden; position: relative; display: flex; flex-direction: column; padding-top: 1px; }
-.gs-track { width: 16px; flex: none; background: #f1f1f2; }
+.gs-track { width: 16px; flex: none; background: var(--getting-started-strip-background); }
 
 .gs-button {
-  width: 176px; height: 40px; font: inherit; font-size: calc(15px * var(--escala)); color: #161617; cursor: default;
-  background: linear-gradient(#eceded, #dcddde); border: 1px solid #a8abae; padding: 0;
+  width: 176px; height: 40px; font: inherit; font-size: calc(15px * var(--escala)); color: var(--getting-started-text); cursor: default;
+  background: linear-gradient(var(--getting-started-button-top), var(--getting-started-button-bottom)); border: 1px solid var(--getting-started-button-border); padding: 0;
 }
-.gs-button:hover { background: linear-gradient(#f2f2f3, #e4e5e6); }
+.gs-button:hover { background: linear-gradient(var(--getting-started-button-hover-top), var(--getting-started-button-hover-bottom)); }
 
 .gs-templates-header {
-  height: 25px; border: 1px solid #abadb0; border-right: 0; line-height: 23px; padding-left: 3px; font-size: calc(14px * var(--escala));
-  background: #fff; margin-right: 0;
+  height: 25px; border: 1px solid var(--getting-started-list-border); border-right: 0; line-height: 23px; padding-left: 3px; font-size: calc(14px * var(--escala));
+  background: var(--getting-started-background); margin-right: 0;
 }
 .gs-template { height: 24px; line-height: 24px; padding-left: 35px; font-size: calc(14px * var(--escala)); margin-top: 2px; }
 
 .gs-combo-anchor { position: relative; margin: 1px 5px 3px 4px; flex: none; z-index: 5; }
 .gs-combo {
-  width: 207px; max-width: 100%; height: 20px; border: 1px solid #7a7a7a; background: #fff; display: flex; align-items: center;
+  width: 207px; max-width: 100%; height: 20px; border: 1px solid var(--combo-border); background: var(--combo-background); display: flex; align-items: center;
   justify-content: space-between; padding: 0 6px 0 7px; font-size: calc(14px * var(--escala));
 }
 .gs-filter-list { z-index: 40; }
 .gs-recent-list { flex: 1; min-height: 0; overflow-y: auto; margin-right: 0; }
-.gs-recent-list::-webkit-scrollbar { width: 16px; background: #f1f1f2; }
-.gs-recent-list::-webkit-scrollbar-thumb { background: #6e6e6e; border: 6.5px solid #f1f1f2; border-radius: 0; }
+.gs-recent-list::-webkit-scrollbar { width: 16px; background: var(--getting-started-strip-background); }
+.gs-recent-list::-webkit-scrollbar-thumb { background: var(--getting-started-scrollbar-thumb); border: 6.5px solid var(--getting-started-strip-background); border-radius: 0; }
 .gs-recent { position: relative; height: var(--row, 24px); line-height: 24px; height: 24px; padding-left: 22px; font-size: calc(14px * var(--escala)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gs-recent:hover { background: #f1f1f2; }
+.gs-recent:hover { background: var(--getting-started-hover-background); }
 .gs-recent svg { display: none; position: absolute; left: 7px; top: 5px; }
 .gs-recent:hover svg { display: block; }
 
@@ -62,10 +62,10 @@ body.getting-started { background: #fff; --escala: 1; color: #161617; }
 .gs-collapse { position: absolute; right: 18px; top: 99px; }
 .gs-carousel-heading { position: absolute; left: 21px; top: 138px; margin: 0; font-size: calc(18px * var(--escala)); font-weight: 400; line-height: 24px; white-space: nowrap; }
 .gs-carousel-body { position: absolute; left: 20px; top: 196px; width: 250px; height: 100px; margin: 0; font-size: calc(13px * var(--escala)); line-height: 16px; overflow: hidden; }
-.gs-link { color: #499146; }
+.gs-link { color: var(--getting-started-link-text); }
 .gs-carousel .gs-link { position: absolute; left: 20px; top: 301px; font-size: calc(13px * var(--escala)); }
 /* A greyed link or button keeps its place and takes the grey of every placeholder (rule 57); the row of its explanation is in the inventory. */
-.gs-link.hueco { color: var(--texto-hueco); font-style: italic; }
-.gs-caption h3.gs-link { color: #161617; }
-.gs-caption h3.gs-link.hueco { color: var(--texto-hueco); }
-.gs-button.hueco { color: var(--texto-hueco); }
+.gs-link.hueco { color: var(--placeholder-text); font-style: italic; }
+.gs-caption h3.gs-link { color: var(--getting-started-text); }
+.gs-caption h3.gs-link.hueco { color: var(--placeholder-text); }
+.gs-button.hueco { color: var(--placeholder-text); }

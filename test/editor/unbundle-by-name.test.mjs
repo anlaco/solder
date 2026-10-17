@@ -15,6 +15,7 @@ import * as Gr from "../../core/model/graph.mjs";
 import { COLORES } from "../../core/model/types.mjs";
 import { esHueco } from "../../editor/src/common/labview-inventory.mjs";
 import { CAT, INV } from "../helpers.mjs";
+import { oldSchoolToken } from "./old-school-theme.mjs";
 
 /**
  * The width of a text in the font of LabVIEW, as far as these tests need it: the narrow letters of
@@ -82,8 +83,10 @@ test("Unbundle By Name is placed from the palette with its terminals", () => {
 test("a fresh node draws a yellow arrow cell and a plain white part with no names", () => {
   const { d } = freshDiagram();
   const drawing = html(d);
-  assert.match(drawing, /fill="#FFFFCC"/);
-  assert.match(drawing, /stroke="#4C4C3D"/);
+  assert.match(drawing, /fill="var\(--node-fill\)"/);
+  assert.match(drawing, /stroke="var\(--format-node-border\)"/);
+  assert.equal(oldSchoolToken("--node-fill"), "#ffffcc");
+  assert.equal(oldSchoolToken("--format-node-border"), "#4c4c3d");
   assert.doesNotMatch(drawing, /nombre-fila/, "no names");
   assert.doesNotMatch(drawing, /fila-nombre/, "no row to click");
 });
@@ -113,7 +116,7 @@ test("each name is written in the colour of the type of its element, and black w
 test("a wired node has a 16 px arrow cell, a black divider and a black line between rows", () => {
   const { d } = wired(3);
   const drawing = html(d);
-  assert.match(drawing, /<rect x="1" y="1" width="15" height="47" fill="#FFFFCC"\/>/, "1 px of outline and 15 px of yellow");
+  assert.match(drawing, /<rect x="1" y="1" width="15" height="47" fill="var\(--node-fill\)"\/>/, "1 px of outline and 15 px of yellow");
   const lines = [...drawing.matchAll(/<line x1="([\d.]+)" y1="([\d.]+)" x2="([\d.]+)" y2="([\d.]+)"\/>/g)].map((m) => m.slice(1).map(Number));
   assert.deepEqual(lines[0], [15.5, 1, 15.5, 48], "the divider between the arrow cell and the names");
   assert.deepEqual(lines.slice(1).map(([, y]) => y), [ROW_STEP + 0.5, 2 * ROW_STEP + 0.5], "one line between each pair of rows, 16 px apart");

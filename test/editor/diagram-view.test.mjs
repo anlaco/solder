@@ -13,6 +13,7 @@ import * as Gr from "../../core/model/graph.mjs";
 import { conectar, crearNodo, nuevo, tipos } from "../../core/model/graph.mjs";
 import { idsPintados } from "../../editor/src/window/window-view.mjs";
 import { CAT, INV } from "../helpers.mjs";
+import { oldSchoolToken } from "./old-school-theme.mjs";
 
 const CTX = D.contexto(CAT, D.glifosPorBloque(INV), ",");
 
@@ -270,7 +271,8 @@ test("un for loop se dibuja en tres hojas con su cuenta", () => {
   assert.equal(hijoDe(g, id, "loop-condition"), undefined, "el For no tiene condición");
   const html = D.contenido({ ...ED.inicial(), g }, CTX, tipos(g, CAT));
   assert.match(html, /class="nodo estructura estructura-for"/);
-  assert.equal((html.match(/<rect x="[0-9.]+" y="[0-9.]+" width="295" height="195" fill="#fff" stroke="#000"/g) ?? []).length, 2, "dos hojas detrás");
+  assert.equal((html.match(/<rect x="[0-9.]+" y="[0-9.]+" width="295" height="195" fill="var\(--paper\)" stroke="#000"/g) ?? []).length, 2, "dos hojas detrás");
+  assert.equal(oldSchoolToken("--paper"), "#fff");
   assert.match(html, /M0\.5,0\.5 H295\.5 V188\.5 L288\.5,195\.5 H0\.5 Z/, "la delantera, con el doblez");
   assert.equal(D.menuDe(g.nodos.find((n) => n.id === id)), "context.for-loop");
 });
@@ -297,7 +299,8 @@ test("los túneles y los shift registers se dibujan en el borde con el color de 
   g = ED.fijarBordes(salida.g, CAT);
   assert.deepEqual(rect(g, salida.id).slice(0, 1), [991], "el de salida, a 9 px del lado derecho");
   const html = D.contenido({ ...ED.inicial(), g }, CTX, tipos(g, CAT));
-  assert.ok(html.includes(`width="9" height="9"`) && html.includes(`fill="${COLORES.entero}" stroke="#4c4c3d"`), "el túnel lleva el color del I32");
+  assert.ok(html.includes(`width="9" height="9"`) && html.includes(`fill="${COLORES.entero}" stroke="var(--tunnel-border)"`), "el túnel lleva el color del I32");
+  assert.equal(oldSchoolToken("--tunnel-border"), "#4c4c3d");
   assert.match(html, /points="2\.5,4 13\.5,4 8,9\.5"/, "la flecha ▼ del shift register de la izquierda");
   assert.match(html, /points="2\.5,8 13\.5,8 8,2\.5"/, "la flecha ▲ del de la derecha");
   // Un túnel tiene un puerto a cada lado del borde: entra por la izquierda y sale por la derecha.
@@ -376,7 +379,8 @@ test("el selector de marcos de un case mide lo que en LabVIEW", () => {
 test("el terminal selector y los túneles de un case llevan el color de su tipo", () => {
   let { g, id } = bucle("case-structure", 800, 400, 300, 250);
   let html = D.contenido({ ...ED.inicial(), g }, CTX_MEDIDO, tipos(g, CAT));
-  const terminal = /<svg class="terminal-selector" viewBox="0 0 8 12" width="8" height="12"[^>]*><rect x="0\.5" y="0\.5" width="7" height="11" fill="#ffffcc" stroke="(#[0-9a-f]+)"/;
+  const terminal = /<svg class="terminal-selector" viewBox="0 0 8 12" width="8" height="12"[^>]*><rect x="0\.5" y="0\.5" width="7" height="11" fill="var\(--structure-terminal-fill\)" stroke="(#[0-9a-f]+)"/;
+  assert.equal(oldSchoolToken("--structure-terminal-fill"), "#ffffcc");
   assert.equal(html.match(terminal)[1], COLORES.booleano);
   // Los píxeles de la «?».
   assert.match(html, /M3,2h1v1h-1zM4,2h1v1h-1zM2,3h1v1h-1zM5,3h1v1h-1zM5,4h1v1h-1zM4,5h1v1h-1zM3,6h1v1h-1zM3,7h1v1h-1zM3,9h1v1h-1z/);
@@ -394,9 +398,9 @@ test("el terminal selector y los túneles de un case llevan el color de su tipo"
   assert.deepEqual(ts.filter((p) => p.dir === "in").map((p) => [p.puerto, p.y]), [["x-0", 520.5], ["x-1", 520.5]]);
   // Hueco: anillo del color y 5 × 5 blancos; con Use Default, relleno con un cuadrito de 3 × 3 y un punto.
   const sinCablear = D.contenido({ ...ED.inicial(), g }, CTX_MEDIDO, tipos(g, CAT));
-  assert.match(sinCablear, /class="tunel"[^>]*><rect[^>]*stroke="#4c4c3d"[^>]*\/><rect x="2" y="2" width="5" height="5" fill="#fff"\/>/);
+  assert.match(sinCablear, /class="tunel"[^>]*><rect[^>]*stroke="var\(--tunnel-border\)"[^>]*\/><rect x="2" y="2" width="5" height="5" fill="var\(--paper\)"\/>/);
   g = Gr.fijarConfig(g, t.id, { "use-default": true });
-  assert.match(D.contenido({ ...ED.inicial(), g }, CTX_MEDIDO, tipos(g, CAT)), /<rect x="3" y="3" width="3" height="3" fill="#fff"\/><rect x="4" y="4" width="1" height="1" fill="#[0-9a-f]+"\/>/);
+  assert.match(D.contenido({ ...ED.inicial(), g }, CTX_MEDIDO, tipos(g, CAT)), /<rect x="3" y="3" width="3" height="3" fill="var\(--paper\)"\/><rect x="4" y="4" width="1" height="1" fill="#[0-9a-f]+"\/>/);
 });
 
 // ——— Flat y Stacked Sequence (M4): secuencia-2.png, secuencia-3.png, secuencia-8.png y secuencia-15.png a 1:1 ———
@@ -420,7 +424,7 @@ test("una flat sequence se dibuja con las medidas de LabVIEW", () => {
   assert.match(html, /M0,0h250v1h-250zM0,199h250v1h-250z/, "las líneas de arriba y de abajo");
   assert.match(html, /<rect x="5\.5" y="9\.5" width="239" height="181" fill="none" stroke="#000"/, "el marco, de 240 × 182 con su borde");
   // Los agujeros: el primero entero a 9 px de la esquina y el último, a 237 (1087 - 850); en las dos bandas.
-  const agujeros = [...html.matchAll(/<rect x="(-?[\d.]+)" y="([\d.]+)" width="5" height="5" fill="#fff"/g)].map((m) => [Number(m[1]), Number(m[2])]);
+  const agujeros = [...html.matchAll(/<rect x="(-?[\d.]+)" y="([\d.]+)" width="5" height="5" fill="var\(--paper\)"/g)].map((m) => [Number(m[1]), Number(m[2])]);
   assert.deepEqual(agujeros.slice(0, 2), [[-2.5, 2.5], [-2.5, 192.5]], "uno recortado a la izquierda, por arriba y por abajo");
   assert.ok(agujeros.some(([x, y]) => x === 9.5 && y === 2.5) && agujeros.some(([x, y]) => x === 237.5 && y === 192.5));
   assert.equal(agujeros.length, 44, "22 posiciones en cada banda, las de los extremos recortadas");
@@ -458,7 +462,7 @@ test("un cable entre marcos de una flat sequence cruza el separador por un túne
   g = conectar(g, CAT, { nodo: a.id, puerto: "result", dir: "out" }, { nodo: b.id, puerto: "x", dir: "in" }).g;
   const html = D.contenido({ ...ED.inicial(), g }, CTX, tipos(g, CAT));
   // El separador va de 1095 a 1099: su centro es 1097 y el túnel, de 9, empieza en 1093.
-  const t = html.match(/<div class="tunel-secuencia" style="left:(\d+)px;top:(\d+)px"><svg class="tunel" viewBox="0 0 9 9"[^>]*><rect x="0\.5" y="0\.5" width="8" height="8" fill="(#[0-9a-f]+)" stroke="#4c4c3d"/);
+  const t = html.match(/<div class="tunel-secuencia" style="left:(\d+)px;top:(\d+)px"><svg class="tunel" viewBox="0 0 9 9"[^>]*><rect x="0\.5" y="0\.5" width="8" height="8" fill="(#[0-9a-f]+)" stroke="var\(--tunnel-border\)"/);
   assert.ok(t, "hay un túnel");
   assert.equal(t[1], "1093");
   assert.equal(t[3], COLORES.flotante);
@@ -497,7 +501,7 @@ test("una stacked sequence se dibuja con su selector y sus variables locales", (
   h = html(0);
   const caja = /<div class="variable-local-secuencia" style="left:(\d+)px;top:(\d+)px"><svg class="variable-local" viewBox="0 0 13 13" width="13" height="13"/;
   assert.equal(h.match(caja)[2], String(450 + 200 - 9 - 13), "pegada al borde de abajo, con su base en la línea (640)");
-  assert.match(h, /<rect x="0\.5" y="0\.5" width="12" height="12" fill="#ffffcc" stroke="#[0-9a-f]+"/);
+  assert.match(h, /<rect x="0\.5" y="0\.5" width="12" height="12" fill="var\(--structure-terminal-fill\)" stroke="#[0-9a-f]+"/);
   const escribe = h.match(/<path d="(M[^"]*)" fill="#[0-9a-f]+"\/><\/svg><\/div>/)[1];
   assert.equal(escribe, "M5,3h3v1h-3zM5,4h3v1h-3zM5,5h3v1h-3zM3,6h7v1h-7zM4,7h5v1h-5zM5,8h3v1h-3zM6,9h1v1h-1z", "abajo, la flecha de escribir apunta al borde: hacia abajo");
   h = html(1);

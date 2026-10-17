@@ -33,11 +33,11 @@ const esc = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").
 const greyClass = (inv, id) => (esHueco(inv.resolver(id) ?? { estado: "todo" }) ? " hueco" : "");
 
 const CHEVRON = (direction) =>
-  `<svg viewBox="0 0 8 12" width="8" height="12" aria-hidden="true"><path d="${direction === "left" ? "M6.5 1 1.5 6l5 5" : "M1.5 1l5 5-5 5"}" fill="none" stroke="#161617" stroke-width="1.3"/></svg>`;
+  `<svg viewBox="0 0 8 12" width="8" height="12" aria-hidden="true"><path d="${direction === "left" ? "M6.5 1 1.5 6l5 5" : "M1.5 1l5 5-5 5"}" fill="none" stroke="var(--getting-started-text)" stroke-width="1.3"/></svg>`;
 const DOUBLE_CHEVRON = (direction) =>
-  `<svg viewBox="0 0 14 12" width="14" height="12" aria-hidden="true"><path d="${direction === "left" ? "M6.5 1 1.5 6l5 5M12.5 1l-5 5 5 5" : "M1.5 1l5 5-5 5M7.5 1l5 5-5 5"}" fill="none" stroke="#161617" stroke-width="1.3"/></svg>`;
-const PIN = `<svg viewBox="0 0 10 14" width="10" height="14" aria-hidden="true"><path d="M3 1h4v1l-1 .5V6l2 2v1H2V8l2-2V2.5L3 2z M5 9v4" fill="#6b6b6b" stroke="#6b6b6b" stroke-width="1"/></svg>`;
-const COMBO_CARET = `<svg viewBox="0 0 12 8" width="12" height="8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="#161617" stroke-width="1.3"/></svg>`;
+  `<svg viewBox="0 0 14 12" width="14" height="12" aria-hidden="true"><path d="${direction === "left" ? "M6.5 1 1.5 6l5 5M12.5 1l-5 5 5 5" : "M1.5 1l5 5-5 5M7.5 1l5 5-5 5"}" fill="none" stroke="var(--getting-started-text)" stroke-width="1.3"/></svg>`;
+const PIN = `<svg viewBox="0 0 10 14" width="10" height="14" aria-hidden="true"><path d="M3 1h4v1l-1 .5V6l2 2v1H2V8l2-2V2.5L3 2z M5 9v4" fill="var(--getting-started-pin)" stroke="var(--getting-started-pin)" stroke-width="1"/></svg>`;
+const COMBO_CARET = `<svg viewBox="0 0 12 8" width="12" height="8" aria-hidden="true"><path d="M1 1.5l5 5 5-5" fill="none" stroke="var(--getting-started-text)" stroke-width="1.3"/></svg>`;
 
 /** The title bar's own contents are the window's; the page draws the menu bar from the inventory. */
 function menuBar(inv, state) {

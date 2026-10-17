@@ -29,7 +29,7 @@ export const NODE_BREAKPOINT_FRAME = 3;
 /** The band that grows along a wire (§1): 5 px thick. */
 export const BAND_THICKNESS = 5;
 /** The band colors of a type family (§1): numeric and Boolean were measured; the others are the same tone in the type's color (unverified). */
-export const BAND_COLORS = { number: "#a3a3d6", boolean: "#a3bca3" };
+export const BAND_COLORS = { number: "var(--debug-band-number)", boolean: "var(--debug-band-boolean)" };
 
 /** The nodes and wires that keep their colors while the rest is dimmed, from the state of the Run. */
 export function canvasView(state, graph, running) {
