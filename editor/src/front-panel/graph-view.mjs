@@ -5,9 +5,12 @@
 // lines and text, not NI's bitmaps. What was not measured says "unverified".
 //
 // Pure: it returns the SVG of an object from its settings and its data
-// (graph-state.mjs); the panel puts it in a box (front-panel.mjs).
+// (graph-state.mjs); the panel puts it in a box (front-panel.mjs). The SVG has
+// classes, not colors: a panel style colors it (DT-058). LabVIEW's frame, the
+// bevel of the plot area and of the legend's swatch are ornament parts, hidden
+// in Plain; Old School colors them as measured (panel-styles/old-school.css).
 
-import { plotColor, ticks } from "./plot-data.mjs";
+import { ticks } from "./plot-data.mjs";
 import { displayedGraph, isShown } from "./graph-state.mjs";
 
 /**
@@ -30,19 +33,12 @@ export const LABEL_PLACEMENT = { indent: 8, gap: 3 };
 
 /** How far the grid and the ticks go (REPORT §2: the graph 8 subdivisions on X and 5 on Y, 4 minor lines; the XY 5 and 5, from 03). */
 const GRID_SUBDIVISIONS = { "waveform-graph": { x: 8, y: 5 }, "xy-graph": { x: 5, y: 5 } };
-const GRID_COLORS = { "waveform-graph": { minor: "#003300", major: "#006600" }, "xy-graph": { minor: "#4c4c00", major: "#999900" } };
 
-const FRAME_FILL = "#bfbfbf";
-/** The columns of the bevel on the left of a frame and of the dark bar on its right, 13 px each (03, row 200 of the chart). */
-const LEFT_BEVEL = ["#bbbbbb", "#cccccc", "#d0d0d0", "#d1d1d1", "#d3d3d3", "#d3d3d3", "#d3d3d3", "#d3d3d3", "#d2d2d2", "#d0d0d0", "#cecece", "#cacaca", "#c5c5c5"];
-const RIGHT_BAR = ["#bababa", "#b4b4b4", "#aeaeae", "#aaaaaa", "#a6a6a6", "#a2a2a2", "#9d9d9d", "#999999", "#939393", "#8b8b8b", "#828282", "#707070", "#404040"];
-const TOP_EDGE = ["#d0d0d0", "#d2d2d2"];
-const TOP_EDGE_OVER_BAR = ["#cccccc", "#9a9a9a"];
-const BOTTOM_EDGE = ["#a5a5a5", "#858585"];
-
-const PLOT_BACKGROUND = "#000000";
-const PLOT_BORDER_DARK = "#595959";
-const PLOT_BORDER_LIGHT = "#d9d9d9";
+/**
+ * The frame's bevel: 13 columns on the left and a dark bar of 13 on the right, 2 rows at the top and at the bottom
+ * (03, row 200 of the chart); their colors are the style's.
+ */
+const FRAME = { sideColumns: 13, edgeRows: 2 };
 
 /** The ticks: 5 px long, starting 7 px before the plot on Y and 3 px under it on X (03, chart: columns 183–187 and rows 285–289). */
 const TICK = { length: 5, yBeforePlot: 7, xBelowPlot: 2 };
@@ -60,7 +56,9 @@ const textWidth = (text) => [...text].reduce((sum, character) => sum + (CHARACTE
 
 const esc = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const num = (n) => Number(n.toFixed(2));
-const rect = (x, y, width, height, fill) => `<rect x="${num(x)}" y="${num(y)}" width="${num(width)}" height="${num(height)}" fill="${fill}"/>`;
+const rect = (className, x, y, width, height) => `<rect class="${className}" x="${num(x)}" y="${num(y)}" width="${num(width)}" height="${num(height)}"/>`;
+/** A group of shapes; `ornament` ones are hidden in Plain (html-controls.mjs, ORNAMENT_CLASSES). */
+const group = (className, body, ornament = false) => `<g class="${className}"${ornament ? ` aria-hidden="true"` : ""}>${body}</g>`;
 
 /** Half-down rounding: the grid lines of 03 fall where `Math.round` would put them one pixel off on a .5. */
 const roundHalfDown = (n) => Math.ceil(n - 0.5);
@@ -70,31 +68,44 @@ export function tickLabel(value, separator) {
   return String(Number(value.toPrecision(12))).replace(".", separator);
 }
 
-// ——— The frame ———
+// ——— The frame (ornament) ———
 
-/** The grey frame with its bevel on the left and its dark bar on the right (also the legend's). */
-export function bevelFrame(width, height) {
-  const barStart = width - RIGHT_BAR.length;
-  let body = rect(0, 0, width, height, FRAME_FILL);
-  LEFT_BEVEL.forEach((color, column) => (body += rect(column, 0, 1, height, color)));
-  RIGHT_BAR.forEach((color, column) => (body += rect(barStart + column, 0, 1, height, color)));
-  TOP_EDGE.forEach((color, row) => (body += rect(LEFT_BEVEL.length, row, barStart - LEFT_BEVEL.length, 1, color)));
-  TOP_EDGE_OVER_BAR.forEach((color, row) => (body += rect(barStart, row, RIGHT_BAR.length, 1, color)));
-  BOTTOM_EDGE.forEach((color, row) => (body += rect(0, height - BOTTOM_EDGE.length + row, width, 1, color)));
-  return body;
+/**
+ * LabVIEW's grey frame of a graph or a legend, one shape per row and column of its bevel, in the order they were
+ * measured to overlap: the fill, the left columns, the right bar, the top rows and the bottom rows over all.
+ */
+function frameOrnament(width, height) {
+  const { sideColumns, edgeRows } = FRAME;
+  const barStart = width - sideColumns;
+  const indices = (count) => Array.from({ length: count }, (_, index) => index);
+  const pieces = [
+    rect("sd-frame-fill", 0, 0, width, height),
+    group("sd-frame-left", indices(sideColumns).map((column) => rect("sd-frame-line", column, 0, 1, height)).join("")),
+    group("sd-frame-right", indices(sideColumns).map((column) => rect("sd-frame-line", barStart + column, 0, 1, height)).join("")),
+    group("sd-frame-top", indices(edgeRows).map((row) => rect("sd-frame-line", sideColumns, row, barStart - sideColumns, 1)).join("")),
+    group("sd-frame-top-over-bar", indices(edgeRows).map((row) => rect("sd-frame-line", barStart, row, sideColumns, 1)).join("")),
+    group("sd-frame-bottom", indices(edgeRows).map((row) => rect("sd-frame-line", 0, height - edgeRows + row, width, 1)).join("")),
+  ];
+  return group("sd-frame", pieces.join(""), true);
 }
 
+/** The legend: a box with the plot's name and its swatch; the swatch's bevel is ornament. */
 function legend(measures) {
   const { width, height, gap, textX, textBaseline, swatch } = LEGEND;
-  const origin = `translate(${measures.width - width} ${-(height + gap)})`;
   const zigzag = [[1, 11], [8, 2], [14, 10], [20, 3], [26, 9]].map(([x, y]) => `${x},${y}`).join(" ");
-  const swatchBox =
-    rect(0, 0, swatch.width, swatch.height, PLOT_BORDER_DARK) + rect(1, 1, swatch.width - 2, swatch.height - 2, PLOT_BACKGROUND) +
-    rect(swatch.width - 1, 1, 1, swatch.height - 1, PLOT_BORDER_LIGHT) + rect(1, swatch.height - 1, swatch.width - 1, 1, PLOT_BORDER_LIGHT) +
-    `<polyline points="${zigzag}" fill="none" stroke="${plotColor(0)}" stroke-width="1" transform="translate(1 1)"/>`;
-  return `<g class="grafico-leyenda" data-parte="legend" transform="${origin}">${bevelFrame(width, height)}` +
-    `<text class="grafico-texto" x="${textX}" y="${textBaseline}">Plot 0</text>` +
-    `<g class="grafico-muestra" data-parte="plot-swatch" transform="translate(${swatch.x} ${swatch.y})">${swatchBox}</g></g>`;
+  const swatchFrame = group(
+    "sd-swatch-frame",
+    rect("sd-swatch-dark", 0, 0, swatch.width, swatch.height) + rect("sd-swatch-inner", 1, 1, swatch.width - 2, swatch.height - 2) +
+      rect("sd-swatch-light", swatch.width - 1, 1, 1, swatch.height - 1) + rect("sd-swatch-light", 1, swatch.height - 1, swatch.width - 1, 1),
+    true,
+  );
+  return `<g class="sd-legend" data-parte="legend" transform="translate(${measures.width - width} ${-(height + gap)})">` +
+    frameOrnament(width, height) +
+    `<rect class="sd-legend-box" x="0.5" y="0.5" width="${width - 1}" height="${height - 1}"/>` +
+    `<text class="sd-legend-text" x="${textX}" y="${textBaseline}">Plot 0</text>` +
+    `<g class="sd-swatch" data-parte="plot-swatch" transform="translate(${swatch.x} ${swatch.y})">${swatchFrame}` +
+    `<rect class="sd-swatch-box" x="0.5" y="0.5" width="${swatch.width - 1}" height="${swatch.height - 1}"/>` +
+    `<polyline class="sd-trace" data-plot="0" points="${zigzag}" transform="translate(1 1)"/></g></g>`;
 }
 
 // ——— The plot area ———
@@ -102,10 +113,15 @@ function legend(measures) {
 /** The pixel of `value` along an axis of `length` pixels (the first and last values fall on the first and last pixel, as the ticks do in 03). */
 const along = (value, scale, length) => roundHalfDown(((value - scale.min) / (scale.max - scale.min)) * (length - 1));
 
-function plotBox(plot) {
-  return rect(plot.x - 1, plot.y - 1, plot.width + 1, 1, PLOT_BORDER_DARK) + rect(plot.x - 1, plot.y - 1, 1, plot.height + 1, PLOT_BORDER_DARK) +
-    rect(plot.x - 1, plot.y + plot.height, plot.width + 1, 1, PLOT_BORDER_LIGHT) + rect(plot.x + plot.width, plot.y - 1, 1, plot.height + 2, PLOT_BORDER_LIGHT) +
-    rect(plot.x, plot.y, plot.width, plot.height, PLOT_BACKGROUND);
+/** The plot area, with its 1 px bevel as ornament: dark above and on the left, light below and on the right. */
+function plotArea(plot) {
+  const bevel = group(
+    "sd-plot-frame",
+    group("sd-plot-frame-dark", rect("sd-plot-frame-line", plot.x - 1, plot.y - 1, plot.width + 1, 1) + rect("sd-plot-frame-line", plot.x - 1, plot.y - 1, 1, plot.height + 1)) +
+      group("sd-plot-frame-light", rect("sd-plot-frame-line", plot.x - 1, plot.y + plot.height, plot.width + 1, 1) + rect("sd-plot-frame-line", plot.x + plot.width, plot.y - 1, 1, plot.height + 2)),
+    true,
+  );
+  return bevel + rect("sd-plot", plot.x, plot.y, plot.width, plot.height);
 }
 
 /** The positions, in pixels along an axis, of the grid lines: `subdivisions` per step, not at the ends (they are black in 03). */
@@ -118,108 +134,8 @@ function gridPositions(scale, length, subdivisions) {
   return positions;
 }
 
-function grid(kind, scaleX, scaleY, plot) {
-  const subdivisions = GRID_SUBDIVISIONS[kind];
-  if (!subdivisions) return "";
-  const colors = GRID_COLORS[kind];
-  const columns = gridPositions(scaleX, plot.width, subdivisions.x);
-  const rows = gridPositions(scaleY, plot.height, subdivisions.y);
-  const lines = (class_, color) => {
-    const vertical = columns[class_].map((position) => `M${plot.x + position + 0.5} ${plot.y}v${plot.height}`);
-    const horizontal = rows[class_].map((position) => `M${plot.x} ${plot.y + plot.height - 1 - position + 0.5}h${plot.width}`);
-    return vertical.length + horizontal.length ? `<path d="${[...vertical, ...horizontal].join("")}" stroke="${color}" stroke-width="1" fill="none"/>` : "";
-  };
-  return lines("minor", colors.minor) + lines("major", colors.major);
-}
-
-const COORDINATE_LIMIT = 100000;
-const clamp = (n) => Math.max(-COORDINATE_LIMIT, Math.min(COORDINATE_LIMIT, n));
-
-/** One plot as a 1 px polyline, with no antialiasing and no point style (REPORT §5); a point that is not a number breaks the line. */
-function plotPath(points, scaleX, scaleY, plot) {
-  let path = "";
-  let drawing = false;
-  for (const { x, y } of points) {
-    if (!Number.isFinite(x) || !Number.isFinite(y)) {
-      drawing = false;
-      continue;
-    }
-    const pixelX = clamp(((x - scaleX.min) / (scaleX.max - scaleX.min)) * (plot.width - 1) + 0.5);
-    const pixelY = clamp(plot.height - 1 - ((y - scaleY.min) / (scaleY.max - scaleY.min)) * (plot.height - 1) + 0.5);
-    path += `${drawing ? "L" : "M"}${num(pixelX)} ${num(pixelY)}`;
-    drawing = true;
-  }
-  return path;
-}
-
-/** The plots, clipped to the plot area by a nested svg. */
-function plotsLayer(plots, scaleX, scaleY, plot) {
-  const paths = plots
-    .map((points, index) => ({ path: plotPath(points, scaleX, scaleY, plot), color: plotColor(index) }))
-    .filter(({ path }) => path)
-    .map(({ path, color }) => `<path d="${path}" fill="none" stroke="${color}" stroke-width="1" stroke-linejoin="miter"/>`)
-    .join("");
-  return `<svg class="grafico-trazos" x="${plot.x}" y="${plot.y}" width="${plot.width}" height="${plot.height}">${paths}</svg>`;
-}
-
-// ——— The scales ———
-
-/** Where the tick labels of the Y axis go: their text and the row of their tick. */
-const yTicks = (scale, plot, separator) => ticks(scale).map((value) => ({ text: tickLabel(value, separator), row: plot.y + plot.height - 1 - along(value, scale, plot.height) }));
-/** Where the tick labels of the X axis go: their text and the column of their tick. */
-const xTicks = (scale, plot, separator) => ticks(scale).map((value) => ({ text: tickLabel(value, separator), column: plot.x + along(value, scale, plot.width) }));
-const widestLabel = (labels) => Math.max(0, ...labels.map(({ text }) => textWidth(text)));
-
-function scaleY(scale, plot, separator) {
-  const labels = yTicks(scale, plot, separator);
-  const marks = labels.map(({ row }) => rect(plot.x - TICK.yBeforePlot, row, TICK.length, 1, "#000000")).join("");
-  const texts = labels.map(({ text, row }) => `<text class="grafico-texto marca-y" x="${plot.x - LABELS.yGap}" y="${row + LABELS.yBaselineBelowTick}" text-anchor="end">${esc(text)}</text>`).join("");
-  return { marks, texts, widest: widestLabel(labels) };
-}
-
-function scaleX(scale, plot, separator) {
-  const labels = xTicks(scale, plot, separator);
-  const marks = labels.map(({ column }) => rect(column, plot.y + plot.height + TICK.xBelowPlot, 1, TICK.length, "#000000")).join("");
-  const texts = labels.map(({ text, column }) => `<text class="grafico-texto marca-x" x="${column + 0.5}" y="${plot.y + plot.height + LABELS.xBaselineBelow}" text-anchor="middle">${esc(text)}</text>`).join("");
-  return marks + texts;
-}
-
-/**
- * The SVG of an object, from its node, the type its wire carries (nothing, if it is not wired or the wire is broken),
- * the last value written to it and the histories of the charts. `separator` is the decimal separator of the system.
- */
-export function graphSvg(node, { type, value, charts, separator }) {
-  const measures = GRAPH_MEASURES[node.tipo];
-  const { plot } = measures;
-  const { plots, scaleX: xScale, scaleY: yScale } = displayedGraph(node, type, value, charts, plot);
-
-  let body = bevelFrame(measures.width, measures.height) + plotBox(plot) + grid(node.tipo, xScale, yScale, plot) + plotsLayer(plots, xScale, yScale, plot);
-  let yLabelsWidth = 0;
-  if (isShown(node, "y-scale")) {
-    const y = scaleY(yScale, plot, separator);
-    body += y.marks + y.texts;
-    yLabelsWidth = y.widest;
-  }
-  if (isShown(node, "x-scale")) body += scaleX(xScale, plot, separator);
-  if (isShown(node, "x-scale-label") && isShown(node, "x-scale")) {
-    body += `<text class="grafico-texto nombre-x" x="${plot.x + plot.width / 2}" y="${plot.y + plot.height + NAMES.xBaselineBelow}" text-anchor="middle">${X_AXIS_NAME}</text>`;
-  }
-  if (isShown(node, "y-scale-label") && isShown(node, "y-scale")) {
-    const baseline = plot.x - NAMES.yGapToLabels - yLabelsWidth + 0.5;
-    body += `<text class="grafico-texto nombre-y" transform="translate(${baseline} ${plot.y + plot.height / 2}) rotate(-90)" text-anchor="middle">${Y_AXIS_NAME}</text>`;
-  }
-  if (isShown(node, "plot-legend")) body += legend(measures);
-  return `<svg class="grafico-dibujo" width="${measures.width}" height="${measures.height}" viewBox="0 0 ${measures.width} ${measures.height}" shape-rendering="crispEdges" aria-hidden="true">${body}</svg>`;
-}
-
-// ——— The HTML panel styles (DT-058) ———
-//
-// The same object in the same box, with the same scales, grid and plots, but with classes instead of colors, so a
-// panel style (plain.css and the sheets over it) gives it its look. The frame and the bevel are Old School's; here
-// the plot area stands alone.
-
-/** The grid of an HTML graph: one path per class of line, `sd-grid-minor` and `sd-grid-major`. */
-function plainGrid(kind, xScale, yScale, plot) {
+/** The grid: one path per weight of line, `sd-grid-minor` and `sd-grid-major`. */
+function grid(kind, xScale, yScale, plot) {
   const subdivisions = GRID_SUBDIVISIONS[kind];
   if (!subdivisions) return "";
   const columns = gridPositions(xScale, plot.width, subdivisions.x);
@@ -233,46 +149,74 @@ function plainGrid(kind, xScale, yScale, plot) {
     .join("");
 }
 
-/** The plots of an HTML graph, clipped to the plot area; `data-plot` tells a style which plot each one is. */
-function plainPlots(plots, xScale, yScale, plot) {
-  const paths = plots
-    .map((points, index) => ({ path: plotPath(points, xScale, yScale, plot), index }))
-    .filter(({ path }) => path)
-    .map(({ path, index }) => `<path class="sd-trace" data-plot="${index}" d="${path}"/>`)
-    .join("");
+const COORDINATE_LIMIT = 100000;
+const clamp = (n) => Math.max(-COORDINATE_LIMIT, Math.min(COORDINATE_LIMIT, n));
+
+/** One plot as a 1 px polyline, with no antialiasing and no point style (REPORT §5); a point that is not a number breaks the line. */
+function plotPath(points, xScale, yScale, plot) {
+  let path = "";
+  let drawing = false;
+  for (const { x, y } of points) {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      drawing = false;
+      continue;
+    }
+    const pixelX = clamp(((x - xScale.min) / (xScale.max - xScale.min)) * (plot.width - 1) + 0.5);
+    const pixelY = clamp(plot.height - 1 - ((y - yScale.min) / (yScale.max - yScale.min)) * (plot.height - 1) + 0.5);
+    path += `${drawing ? "L" : "M"}${num(pixelX)} ${num(pixelY)}`;
+    drawing = true;
+  }
+  return path;
+}
+
+/**
+ * The plots, clipped to the plot area by a nested svg. Each one is a path, even an empty one, so the n-th path is the
+ * n-th plot and a style can color them in turn (`:nth-child`); `data-plot` says which plot it is.
+ */
+function plotsLayer(plots, xScale, yScale, plot) {
+  const paths = plots.map((points, index) => `<path class="sd-trace" data-plot="${index}" d="${plotPath(points, xScale, yScale, plot)}"/>`).join("");
   return `<svg class="sd-traces" x="${plot.x}" y="${plot.y}" width="${plot.width}" height="${plot.height}">${paths}</svg>`;
 }
 
-/** The legend of an HTML graph, where Old School puts it: a box with the plot's name and its swatch. */
-function plainLegend(measures) {
-  const { width, height, gap, textX, textBaseline, swatch } = LEGEND;
-  const zigzag = [[1, 11], [8, 2], [14, 10], [20, 3], [26, 9]].map(([x, y]) => `${x},${y}`).join(" ");
-  return `<g class="sd-legend" data-parte="legend" transform="translate(${measures.width - width} ${-(height + gap)})">` +
-    `<rect class="sd-legend-box" x="0.5" y="0.5" width="${width - 1}" height="${height - 1}"/>` +
-    `<text class="sd-legend-text" x="${textX}" y="${textBaseline}">Plot 0</text>` +
-    `<g class="sd-swatch" data-parte="plot-swatch" transform="translate(${swatch.x} ${swatch.y})">` +
-    `<rect class="sd-swatch-box" x="0.5" y="0.5" width="${swatch.width - 1}" height="${swatch.height - 1}"/>` +
-    `<polyline class="sd-trace" data-plot="0" points="${zigzag}" transform="translate(1 1)"/></g></g>`;
+// ——— The scales ———
+
+/** Where the tick labels of the Y axis go: their text and the row of their tick. */
+const yTicks = (scale, plot, separator) => ticks(scale).map((value) => ({ text: tickLabel(value, separator), row: plot.y + plot.height - 1 - along(value, scale, plot.height) }));
+/** Where the tick labels of the X axis go: their text and the column of their tick. */
+const xTicks = (scale, plot, separator) => ticks(scale).map((value) => ({ text: tickLabel(value, separator), column: plot.x + along(value, scale, plot.width) }));
+const widestLabel = (labels) => Math.max(0, ...labels.map(({ text }) => textWidth(text)));
+
+function scaleY(scale, plot, separator) {
+  const labels = yTicks(scale, plot, separator);
+  const marks = labels.map(({ row }) => rect("sd-tick", plot.x - TICK.yBeforePlot, row, TICK.length, 1)).join("");
+  const texts = labels.map(({ text, row }) => `<text class="sd-tick-text sd-tick-y" x="${plot.x - LABELS.yGap}" y="${row + LABELS.yBaselineBelowTick}" text-anchor="end">${esc(text)}</text>`).join("");
+  return { body: marks + texts, widest: widestLabel(labels) };
 }
 
-/** The SVG of a graph in an HTML panel style, from the same inputs as `graphSvg`. */
-export function plainGraphSvg(node, { type, value, charts, separator }) {
+function scaleX(scale, plot, separator) {
+  const labels = xTicks(scale, plot, separator);
+  const marks = labels.map(({ column }) => rect("sd-tick", column, plot.y + plot.height + TICK.xBelowPlot, 1, TICK.length)).join("");
+  const texts = labels.map(({ text, column }) => `<text class="sd-tick-text sd-tick-x" x="${column + 0.5}" y="${plot.y + plot.height + LABELS.xBaselineBelow}" text-anchor="middle">${esc(text)}</text>`).join("");
+  return marks + texts;
+}
+
+/**
+ * The SVG of an object, from its node, the type its wire carries (nothing, if it is not wired or the wire is broken),
+ * the last value written to it and the histories of the charts. `separator` is the decimal separator of the system.
+ */
+export function graphSvg(node, { type, value, charts, separator }) {
   const measures = GRAPH_MEASURES[node.tipo];
   const { plot } = measures;
   const { plots, scaleX: xScale, scaleY: yScale } = displayedGraph(node, type, value, charts, plot);
-  let body = `<rect class="sd-plot" x="${plot.x}" y="${plot.y}" width="${plot.width}" height="${plot.height}"/>` + plainGrid(node.tipo, xScale, yScale, plot) + plainPlots(plots, xScale, yScale, plot);
+
+  let body = frameOrnament(measures.width, measures.height) + plotArea(plot) + grid(node.tipo, xScale, yScale, plot) + plotsLayer(plots, xScale, yScale, plot);
   let yLabelsWidth = 0;
   if (isShown(node, "y-scale")) {
-    const labels = yTicks(yScale, plot, separator);
-    body += labels.map(({ row }) => `<rect class="sd-tick" x="${plot.x - TICK.yBeforePlot}" y="${row}" width="${TICK.length}" height="1"/>`).join("");
-    body += labels.map(({ text, row }) => `<text class="sd-tick-text sd-tick-y" x="${plot.x - LABELS.yGap}" y="${row + LABELS.yBaselineBelowTick}" text-anchor="end">${esc(text)}</text>`).join("");
-    yLabelsWidth = widestLabel(labels);
+    const y = scaleY(yScale, plot, separator);
+    body += y.body;
+    yLabelsWidth = y.widest;
   }
-  if (isShown(node, "x-scale")) {
-    const labels = xTicks(xScale, plot, separator);
-    body += labels.map(({ column }) => `<rect class="sd-tick" x="${column}" y="${plot.y + plot.height + TICK.xBelowPlot}" width="1" height="${TICK.length}"/>`).join("");
-    body += labels.map(({ text, column }) => `<text class="sd-tick-text sd-tick-x" x="${column + 0.5}" y="${plot.y + plot.height + LABELS.xBaselineBelow}" text-anchor="middle">${esc(text)}</text>`).join("");
-  }
+  if (isShown(node, "x-scale")) body += scaleX(xScale, plot, separator);
   if (isShown(node, "x-scale-label") && isShown(node, "x-scale")) {
     body += `<text class="sd-axis-name sd-axis-x" x="${plot.x + plot.width / 2}" y="${plot.y + plot.height + NAMES.xBaselineBelow}" text-anchor="middle">${X_AXIS_NAME}</text>`;
   }
@@ -280,6 +224,6 @@ export function plainGraphSvg(node, { type, value, charts, separator }) {
     const baseline = plot.x - NAMES.yGapToLabels - yLabelsWidth + 0.5;
     body += `<text class="sd-axis-name sd-axis-y" transform="translate(${baseline} ${plot.y + plot.height / 2}) rotate(-90)" text-anchor="middle">${Y_AXIS_NAME}</text>`;
   }
-  if (isShown(node, "plot-legend")) body += plainLegend(measures);
+  if (isShown(node, "plot-legend")) body += legend(measures);
   return `<svg class="sd-graph-art" width="${measures.width}" height="${measures.height}" viewBox="0 0 ${measures.width} ${measures.height}" aria-hidden="true">${body}</svg>`;
 }

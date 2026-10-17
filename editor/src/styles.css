@@ -358,34 +358,12 @@ svg { display: block; overflow: visible; }
   border: 0.667px solid var(--palette-frame); box-shadow: 0 0 0 0.667px var(--palette-frame-halo-outer), inset 0 0 0 0.667px var(--palette-frame-halo-inner);
 }
 
-/* El panel: controles e indicadores numéricos, de front-panel/numeric-panel.png
-   y del vídeo numeric-colocar-etiquetas.mp4. La casilla es blanca en un control
-   y gris en un indicador, hundida con un bisel. */
+/* The Front Panel: its objects are drawn by the panel styles (panel-styles/, DT-058); here, only what the editor adds
+   to them: their place, being typed into and being selected. */
 .lienzo-front-panel { overflow: hidden; cursor: var(--cursor-cruz, crosshair); }
 .objeto-panel { position: absolute; cursor: default; }
-.objeto-panel .incrementador { position: absolute; left: 0; top: 0; width: 16px; height: 100%; }
-.incrementador svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-/* Cada mitad del incrementador es una flecha que se pulsa. */
-.flecha-inc { position: absolute; left: 0; width: 13px; height: 50%; }
-.flecha-inc[data-paso="1"] { top: 0; }
-.flecha-inc[data-paso="-1"] { bottom: 0; }
-/* Mientras se escribe el valor de un control: cursor de texto y un marco negro alrededor. */
-.casilla { cursor: text; }
-.casilla.indicador { cursor: default; }
-/* Un control booleano es un dibujo de dos estados; el clic lo recibe el objeto, no el dibujo. */
-.objeto-panel.booleano svg { display: block; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
-.objeto-panel.booleano text { font-family: Arial, "Liberation Sans", sans-serif; }
+/* While a control's value is typed: a black frame around it. */
 .objeto-panel.editando-valor { outline: 1px solid var(--editing-outline); outline-offset: 1px; }
-.casilla {
-  position: absolute; top: 0; bottom: 0; box-sizing: border-box;
-  border: 4px solid; border-color: var(--numeric-field-border-top) var(--numeric-field-border-right) var(--numeric-field-border-bottom) var(--numeric-field-border-left);
-  background: var(--numeric-field-background); box-shadow: inset 1px 1px 0 var(--numeric-field-inset);
-  display: flex; align-items: center; padding-left: 2px;
-  font-size: var(--fuente); line-height: 1; white-space: nowrap; overflow: hidden;
-}
-.casilla.indicador { background: var(--numeric-indicator-background); }
-/* La casilla de un control de cadena: texto a la izquierda, con las líneas que tenga. */
-.casilla.cadena { white-space: pre; line-height: 15px; }
 .objeto-panel.seleccionado::before, .etiqueta.seleccionada::before {
   content: ""; position: absolute; inset: -2.5px; pointer-events: none;
   background:
@@ -474,32 +452,6 @@ svg { display: block; overflow: visible; }
 .celda-source { background: var(--error-constant-background); border: 3px solid var(--error-source-color); color: var(--canvas-text); align-items: flex-start; justify-content: flex-start; padding: 1px; }
 .constante-error .caret { display: inline-block; vertical-align: -2px; }
 
-.error-cluster {
-  box-sizing: border-box; background: var(--error-cluster-background); border: 2px solid; border-color: var(--error-cluster-bevel-light) var(--error-cluster-bevel-dark) var(--error-cluster-bevel-dark) var(--error-cluster-bevel-light);
-  font-size: var(--fuente); line-height: 14px; overflow: hidden;
-}
-.error-cluster .ec-rotulo { position: absolute; color: var(--canvas-text); white-space: nowrap; pointer-events: none; }
-.error-cluster .ec-estado { position: absolute; width: 20px; height: 19px; }
-.error-cluster .ec-estado svg { display: block; width: 100%; height: 100%; pointer-events: none; }
-.error-cluster.control .ec-estado { cursor: pointer; }
-.error-cluster .ec-code {
-  position: absolute; width: 97px; height: 23px; box-sizing: border-box; display: flex; align-items: center;
-  border: 2px solid; border-color: var(--error-cluster-bevel-dark) var(--error-cluster-bevel-light) var(--error-cluster-bevel-light) var(--error-cluster-bevel-dark); background: var(--error-field-background); overflow: hidden;
-}
-.error-cluster.control .ec-code { background: var(--error-field-control-background); cursor: text; }
-.error-cluster .ec-code .prefijo { display: inline-block; width: 8px; height: 100%; background: var(--error-code-prefix-background); color: var(--error-code-prefix-text); font-size: 10px; line-height: 19px; text-align: center; pointer-events: none; }
-.error-cluster .ec-code .ec-flechas { position: absolute; left: 9px; top: 2px; width: 8px; height: 15px; pointer-events: none; }
-.error-cluster .ec-code .valor { padding-left: 3px; white-space: pre; }
-.error-cluster.control .ec-code .valor { padding-left: 11px; }
-.error-cluster .ec-source {
-  position: absolute; width: 145px; height: 48px; box-sizing: border-box; border: 2px solid; border-color: var(--error-cluster-bevel-dark) var(--error-cluster-bevel-light) var(--error-cluster-bevel-light) var(--error-cluster-bevel-dark);
-  background: var(--error-field-background); overflow: hidden;
-}
-.error-cluster.control .ec-source { background: var(--error-field-control-background); cursor: text; }
-.error-cluster .ec-source .valor { display: block; white-space: pre-wrap; word-break: break-all; padding: 0 2px; line-height: 14px; }
-.error-cluster .ec-source .ec-barra { position: absolute; right: 0; top: 0; bottom: 0; width: 18px; background: var(--error-scrollbar-background); border-left: 1px solid var(--error-scrollbar-border); }
-.error-cluster.control .ec-source .ec-barra { background: var(--error-scrollbar-control-background); }
-.error-cluster .caret { display: inline-block; vertical-align: -2px; }
 
 /* Los diálogos de error (DT-043), de labview-captures/errores/44b-dialogo-x3.png y 102b-dialogo-x2.png:
    modales sobre la ventana, sin título, con el icono del programa y la ✕ en su barra. */
@@ -549,21 +501,7 @@ svg { display: block; overflow: visible; }
 .celda-grid.definida .contenido-celda { color: var(--canvas-text); }
 .celda-grid.editando { cursor: text; }
 
-/* Un array del panel: el índice y la caja de sus elementos (array/panel-array-1a1.png). */
-.objeto-panel.array { background: none; }
-.objeto-panel.array .arr-indice { position: absolute; left: 0; top: 0; box-sizing: border-box; display: flex; align-items: center; background: var(--panel-array-index-background); border: 1px solid var(--panel-array-index-border); }
-.objeto-panel.array .arr-indice .incrementador { position: relative; left: 0; width: 16px; height: 25px; flex: none; }
-.objeto-panel.array .arr-campo { flex: 1; height: 100%; display: flex; align-items: center; padding-left: 3px; box-sizing: border-box; color: var(--panel-array-index-text); background: var(--panel-array-index-background); }
-.objeto-panel.array .arr-caja { position: absolute; box-sizing: border-box; display: flex; background: var(--panel-array-box-background); border: 1px solid; border-color: var(--panel-array-box-bevel-dark) var(--panel-array-box-bevel-light) var(--panel-array-box-bevel-light) var(--panel-array-box-bevel-dark); }
-.objeto-panel.array .elem-array { position: relative; flex: none; box-sizing: border-box; }
-.objeto-panel.array .elem-array .incrementador { position: absolute; left: 0; top: 0; width: 16px; height: 25px; }
-.objeto-panel.array .casilla-elem { position: absolute; top: 0; bottom: 0; box-sizing: border-box; display: flex; align-items: center; padding: 0 3px; background: var(--panel-array-index-background); border: 1px solid var(--panel-array-cell-border); cursor: text; white-space: pre; }
-.objeto-panel.array .elem-array.indicador .casilla-elem { background: var(--numeric-indicator-background); cursor: default; }
-.objeto-panel.array .elem-array.vacio .casilla-elem { background: var(--panel-array-empty-background); color: var(--panel-array-empty-text); }
-.objeto-panel.array .casilla-elem.cadena { line-height: 15px; }
-/* A panel array with two dimensions (array-2d/panel-array-2d-stretched.png): the cells are placed one by one. */
-.objeto-panel.array.dos-dimensiones .arr-caja { display: block; }
-.objeto-panel.array.dos-dimensiones .elem-array { position: absolute; }
+/* The handles that stretch a selected panel array. */
 .asa-array { position: absolute; width: 7px; height: 7px; background: var(--array-handle); border: 1px solid var(--array-handle-border); box-sizing: border-box; cursor: ew-resize; }
 
 /* A subVI node: the icon of the VI it calls, 32 × 32 with a black border (labview-captures/subvi/subvi-placed-on-diagram.png). */
@@ -613,12 +551,6 @@ svg { display: block; overflow: visible; }
 /* The checkbox of an enum is greyed but present, as LabVIEW draws it (measured). */
 .ficha-casilla.desactivada { color: var(--placeholder-text); }
 
-/* Waveform Chart, Waveform Graph and XY Graph, from labview-captures/graphs/: the drawing is an svg the size of the frame (editor/src/front-panel/graph-view.mjs),
-   with the legend above it, so it must not clip. The text is the one of the labels. */
-.objeto-panel.grafico svg.grafico-dibujo { position: absolute; left: 0; top: 0; display: block; overflow: visible; }
-/* The plots are clipped to the plot area: every svg of the editor is visible by default. */
-.objeto-panel.grafico svg.grafico-trazos { overflow: hidden; }
-.grafico-texto { font-family: "Segoe UI", "Noto Sans", sans-serif; font-size: var(--fuente); fill: var(--graph-text); shape-rendering: auto; }
 /* Chart History Length..., from labview-captures/graphs/50-chart-history-length-dialog.png. */
 .pv-dialogo.dialogo-historial { font-size: var(--fuente); }
 .pv-campo { box-sizing: border-box; border: 1px solid var(--field-border); background: var(--field-background); display: flex; align-items: center; padding: 0 3px; }

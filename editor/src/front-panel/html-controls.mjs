@@ -1,5 +1,5 @@
-// The Front Panel's controls as plain HTML (DT-058): the markup every HTML panel style (Plain, Solder, Solder Night)
-// draws, and panel-styles/plain.css, the mother template, makes usable.
+// The Front Panel's controls as plain HTML (DT-058): the only drawing of the panel, which every panel style (Old
+// School, Plain, Solder, Solder Night) dresses with its sheet over panel-styles/plain.css, the mother template.
 //
 // Only markup: what each object holds and how it is edited is decided in front-panel.mjs, which calls these
 // builders with the object's box (the same as in Old School: a style changes neither sizes nor terminals) and
@@ -19,7 +19,7 @@
 export const PLAIN_KINDS = ["numeric", "enum", "string", "boolean", "error-cluster", "array", "waveform-chart", "waveform-graph", "xy-graph"];
 
 /** The parts that are only ornament in Plain: hidden by plain.css, shown by the style that draws them (a test checks it). */
-export const ORNAMENT_CLASSES = ["sd-art", "sd-radix", "sd-code-arrows", "sd-scrollbar"];
+export const ORNAMENT_CLASSES = ["sd-art", "sd-radix", "sd-code-arrows", "sd-scrollbar", "sd-frame", "sd-plot-frame", "sd-swatch-frame"];
 
 /** An illustration a style may paint over the whole object, such as Old School's drawing of a Boolean. */
 const ART = `<span class="sd-art" aria-hidden="true"></span>`;
@@ -136,5 +136,5 @@ export function arrayHtml(frame, { indices, elementsBox, elementsHtml, handles }
   return objectFrame({ ...frame, kind: "array", classes: indices.length === 2 ? ["sd-two-dimensions"] : [] }, indexHtml + elements + handles);
 }
 
-/** A graph: the SVG its style draws (graph-view.mjs), in the box of its frame. */
+/** A graph: its SVG (graph-view.mjs), in the box of its frame. */
 export const graphHtml = (frame, { kind, svg }) => objectFrame({ ...frame, kind, isControl: false, attributes: ` data-grafico="${escapeHtml(kind)}"` }, svg);

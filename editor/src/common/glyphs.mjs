@@ -1359,12 +1359,6 @@ export const BOOLEANOS = {
   "radio-buttons": { ancho: 100, alto: 100, indicador: false, etiqueta: "Radio Buttons", dibujo: () => radios() },
 };
 
-/** El dibujo de un control booleano en su caja, listo para ponerlo en el panel. */
-export const dibujoBooleano = (estilo, encendido) => {
-  const b = BOOLEANOS[estilo] ?? BOOLEANOS["push-button"];
-  return `<svg viewBox="0 0 ${b.ancho} ${b.alto}" aria-hidden="true" focusable="false">${b.dibujo(!!encendido)}</svg>`;
-};
-
 /**
  * El mismo dibujo, pequeño, dentro del terminal del diagrama (38 × 38): como en
  * boolean-terminales-icono.png, el ancho de 28 px de un Push Button o un OK
@@ -1901,8 +1895,6 @@ export const errorStatusDrawing = (status) =>
   (status
     ? `<path d="M5.5 4.5 L14.5 14 M14.5 4.5 L5.5 14" stroke="#000" stroke-width="3.6" stroke-linecap="round"/><path d="M5.5 4.5 L14.5 14 M14.5 4.5 L5.5 14" stroke="#e8101c" stroke-width="2.2" stroke-linecap="round"/>`
     : `<path d="M4.5 9.5 L8 13.5 L15.5 4.5" fill="none" stroke="#000" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M4.5 9.5 L8 13.5 L15.5 4.5" fill="none" stroke="#12e012" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`);
-
-export const estadoError = (status) => svg(errorStatusDrawing(status), `0 0 ${ERROR_STATUS_SIZE.width} ${ERROR_STATUS_SIZE.height}`);
 
 /** The two arrows drawn on the code of an error in control, 8 × 14. Only drawn: they do not step. */
 export const ERROR_CODE_ARROWS = {

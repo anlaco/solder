@@ -20,13 +20,6 @@ export const PANEL_STYLES = {
 const DEVELOPMENT_PANEL_STYLE = "old-school";
 const RELEASE_PANEL_STYLE = "solder";
 
-/**
- * The kinds of object (html-controls.mjs, PLAIN_KINDS) that Old School already draws as Plain's markup with
- * old-school.css. Old School moves there kind by kind, each proven by a pixel diff (DT-058 §9); the kinds not yet
- * here keep the old drawing of front-panel.mjs. When every kind is here, the old drawing and this set are deleted.
- */
-export const OLD_SCHOOL_KINDS_OVER_PLAIN = new Set(["numeric", "enum", "string", "boolean", "error-cluster", "array"]);
-
 /** The name of the panel style to show; an unknown name is reported and the default is used. */
 export function chosenPanelStyleName(environmentValue, isPackaged, warn = console.warn) {
   const defaultName = isPackaged ? RELEASE_PANEL_STYLE : DEVELOPMENT_PANEL_STYLE;
@@ -39,5 +32,3 @@ export function chosenPanelStyleName(environmentValue, isPackaged, warn = consol
 /** The style a window reads from its URL (`panelStyle`); an unknown or missing one is Old School. */
 export const panelStyleFromQuery = (value) => (Object.hasOwn(PANEL_STYLES, value ?? "") ? value : DEVELOPMENT_PANEL_STYLE);
 
-/** Whether an object of `kind` is drawn as Plain's markup in the style `name`: always, except Old School's kinds not yet migrated. */
-export const drawsHtml = (name = DEVELOPMENT_PANEL_STYLE, kind) => name !== DEVELOPMENT_PANEL_STYLE || OLD_SCHOOL_KINDS_OVER_PLAIN.has(kind);

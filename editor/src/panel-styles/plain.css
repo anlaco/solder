@@ -45,6 +45,9 @@
 .sd-panel .sd-radix { display: none; }
 .sd-panel .sd-code-arrows { display: none; }
 .sd-panel .sd-scrollbar { display: none; }
+.sd-panel .sd-frame { display: none; }
+.sd-panel .sd-plot-frame { display: none; }
+.sd-panel .sd-swatch-frame { display: none; }
 
 .sd-panel .sd-control,
 .sd-panel .sd-indicator { box-sizing: border-box; font: var(--sd-font-size) / 1 var(--sd-font); color: var(--sd-ink); }
@@ -153,9 +156,12 @@
 .sd-panel .sd-grid-minor { stroke: var(--sd-grid-minor); fill: none; }
 .sd-panel .sd-grid-major { stroke: var(--sd-grid-major); fill: none; }
 .sd-panel .sd-trace { fill: none; stroke: var(--sd-trace-0); stroke-width: 1.5; stroke-linejoin: round; }
-.sd-panel .sd-trace[data-plot="1"] { stroke: var(--sd-trace-1); }
-.sd-panel .sd-trace[data-plot="2"] { stroke: var(--sd-trace-2); }
-.sd-panel .sd-trace[data-plot="3"] { stroke: var(--sd-trace-3); }
+/* The plots take the four colors in turn: the n-th path of .sd-traces is the n-th plot (graph-view.mjs). */
+.sd-panel .sd-traces .sd-trace:nth-child(4n + 2) { stroke: var(--sd-trace-1); }
+.sd-panel .sd-traces .sd-trace:nth-child(4n + 3) { stroke: var(--sd-trace-2); }
+.sd-panel .sd-traces .sd-trace:nth-child(4n + 4) { stroke: var(--sd-trace-3); }
+/* The plots are clipped to the plot area. */
+.sd-panel svg.sd-traces { overflow: hidden; }
 .sd-panel .sd-tick { fill: var(--sd-muted); }
 .sd-panel .sd-tick-text,
 .sd-panel .sd-axis-name,

@@ -1,7 +1,6 @@
-// The panel styles (DT-058): SOLDER_PANEL_STYLE chooses one, and every style dresses the plain HTML of
-// html-controls.mjs with a sheet over plain.css, the mother template; Old School too, kind by kind while it moves off
-// its old drawing. A style changes neither sizes nor terminals, keeps the editor's hooks, and every kind of control
-// has Plain rules.
+// The panel styles (DT-058): SOLDER_PANEL_STYLE chooses one, and every style, Old School included, dresses the plain
+// HTML of html-controls.mjs with a sheet over plain.css, the mother template. A style changes neither sizes nor
+// terminals, keeps the editor's hooks, and every kind of control has Plain rules.
 
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
@@ -13,7 +12,7 @@ import * as P from "../../editor/src/front-panel/front-panel.mjs";
 import * as V from "../../editor/src/window/window-view.mjs";
 import { ORNAMENT_CLASSES, PLAIN_KINDS } from "../../editor/src/front-panel/html-controls.mjs";
 import { OLD_SCHOOL_ART_DIRECTORY, oldSchoolArt, themeTokensOf } from "../../editor/src/panel-styles/old-school-art.mjs";
-import { OLD_SCHOOL_KINDS_OVER_PLAIN, PANEL_STYLES, chosenPanelStyleName, drawsHtml, panelStyleFromQuery } from "../../editor/src/front-panel/panel-style.mjs";
+import { PANEL_STYLES, chosenPanelStyleName, panelStyleFromQuery } from "../../editor/src/front-panel/panel-style.mjs";
 import { CAT, INV } from "../helpers.mjs";
 
 const PANEL_STYLES_DIRECTORY = new URL("../../editor/src/panel-styles/", import.meta.url);
@@ -79,23 +78,17 @@ test("a window reads its style from its URL", () => {
   assert.equal(panelStyleFromQuery("toString"), "old-school", "only the styles themselves are names");
 });
 
-test("every style draws Plain's markup; Old School only for the kinds already moved to it", () => {
-  for (const name of ["plain", "solder", "solder-night"]) assert.ok(PLAIN_KINDS.every((kind) => drawsHtml(name, kind)), name);
-  assert.deepEqual(PLAIN_KINDS.filter((kind) => drawsHtml("old-school", kind)), [...OLD_SCHOOL_KINDS_OVER_PLAIN]);
-  assert.deepEqual(PLAIN_KINDS.filter((kind) => drawsHtml(undefined, kind)), [...OLD_SCHOOL_KINDS_OVER_PLAIN], "no style is Old School");
+test("the editor has one panel drawing: every style, Old School included, draws the same markup", () => {
+  const p = everyKindPanel();
+  const drawn = Object.keys(PANEL_STYLES).map((panelStyle) => P.contenido(p, { ...CTX, panelStyle }));
+  for (const html of drawn) assert.equal(html, P.contenido(p, CTX));
+  assert.equal(htmlRoots(drawn[0]).length, EVERY_KIND.length, "every object has Plain's root, with its box and label");
 });
 
 test("every panel style, Old School included, makes the Front Panel's canvas an .sd-panel", () => {
   const canvas = (panelStyle) => V.ventana(INV, "front-panel", { paleta: null }, { panelStyle }).match(/<div class="(lienzo [^"]*)"/)[1];
   for (const name of Object.keys(PANEL_STYLES)) assert.equal(canvas(name), `lienzo lienzo-front-panel sd-panel sd-style-${name}`);
   assert.equal(canvas(undefined), "lienzo lienzo-front-panel", "a canvas with no panel style, as the diagram's");
-});
-
-test("Old School draws its migrated kinds as Plain's markup and the others as before", () => {
-  const roots = [...P.contenido(everyKindPanel(), CTX).matchAll(/<div class="(objeto-panel[^"]*)"/g)].map(([, classes]) => classes.split(" "));
-  const drawnAsPlain = new Set(roots.flatMap((classes) => classes.filter((name) => PLAIN_KINDS.includes(name.slice(3))).map((name) => name.slice(3))));
-  assert.deepEqual([...drawnAsPlain].sort(), [...OLD_SCHOOL_KINDS_OVER_PLAIN].sort());
-  assert.equal(roots.length, EVERY_KIND.length, "the other kinds keep the old drawing, with no public class");
 });
 
 test("Old School's SVG files are what old-school-art.mjs writes from glyphs.mjs (run scripts/old-school-art.mjs)", () => {
@@ -156,7 +149,7 @@ test("a Boolean says its state with ARIA and .sd-on, and keeps its exact style",
   assert.match(html("radio-buttons", false), /role="radiogroup"/);
 });
 
-test("a graph in an HTML style is drawn with classes, not colors", () => {
+test("a graph is drawn with classes, not colors", () => {
   const html = P.contenido(place(P.inicial(), "waveform-graph", { x: 300, y: 300 }), PLAIN);
   assert.match(html, /<rect class="sd-plot"/);
   assert.match(html, /class="sd-legend" data-parte="legend"/);
@@ -173,7 +166,7 @@ test("plain.css has rules for every kind an HTML panel draws (a control a style 
 
 test("every ornament part is hidden in Plain, and the markup has no other", () => {
   for (const name of ORNAMENT_CLASSES) assert.match(PLAIN_CSS, new RegExp(`\\.sd-panel \\.${name} \\{ display: none; \\}`), `.${name}`);
-  const hiddenParts = [...P.contenido(everyKindPanel(), PLAIN).matchAll(/<span class="([\w-]+)" aria-hidden="true">/g)].map(([, name]) => name);
+  const hiddenParts = [...P.contenido(everyKindPanel(), PLAIN).matchAll(/<(?:span|g) class="([\w-]+)" aria-hidden="true">/g)].map(([, name]) => name);
   assert.deepEqual([...new Set(hiddenParts)].filter((name) => !ORNAMENT_CLASSES.includes(name)), [], "an aria-hidden part that is not declared as ornament");
 });
 

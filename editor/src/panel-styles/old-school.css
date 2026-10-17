@@ -1,11 +1,9 @@
 /* Old School: LabVIEW 2026 Q3's controls, as a panel style over Plain (DT-058 §5).
  *
  * It is loaded after plain.css and dresses the same markup (html-controls.mjs) with LabVIEW's look, pixel for pixel
- * the same as the drawing it replaces: scripts/panel-pixels/compare.sh proves it for each kind. Its colors are the
- * editor theme's tokens that the old drawing used, so it looks the same under every editor theme; what CSS does not
- * draw comes as SVG files from old-school/, written from glyphs.mjs by scripts/old-school-art.mjs.
- *
- * The kinds not listed in OLD_SCHOOL_KINDS_OVER_PLAIN (panel-style.mjs) are still drawn by front-panel.mjs.
+ * the same as the drawing it replaced (scripts/panel-pixels/compare.sh, against commit b58c735). Its colors are the
+ * editor theme's tokens that drawing used, and the graphs' colors as measured; what CSS does not draw comes as SVG
+ * files from old-school/, written from glyphs.mjs by scripts/old-school-art.mjs.
  */
 
 /* ——— Common parts ——— */
@@ -166,3 +164,69 @@
 .sd-panel .sd-array .sd-element-boolean[aria-checked="true"] { background: var(--panel-array-index-background); color: inherit; }
 .sd-panel .sd-indicator.sd-array .sd-element :is(.sd-field, .sd-element-boolean) { background: var(--numeric-indicator-background); cursor: default; }
 .sd-panel .sd-array .sd-element.sd-empty :is(.sd-field, .sd-element-boolean) { background: var(--panel-array-empty-background); color: var(--panel-array-empty-text); }
+
+/* ——— Waveform Chart, Waveform Graph and XY Graph ——— */
+
+/* Measured in labview-captures/graphs/03-three-fresh-panel.png, pixel by pixel: a grey frame with a 13-column bevel
+   on the left and a dark bar on the right, a black plot area in a 1 px bevel, a green grid on the graph and a
+   yellow one on the XY, and the plots white and red in turn (74, 82; after Plot 1 unverified). Shapes are drawn with crisp edges, text is not. */
+.sd-panel .sd-graph-art { position: absolute; left: 0; top: 0; shape-rendering: crispEdges; }
+.sd-panel .sd-graph-art text {
+  font-family: "Segoe UI", "Noto Sans", sans-serif; font-size: var(--fuente); font-variant-numeric: normal;
+  fill: var(--graph-text); shape-rendering: auto;
+}
+.sd-panel .sd-frame,
+.sd-panel .sd-plot-frame,
+.sd-panel .sd-swatch-frame { display: inline; }
+.sd-panel .sd-legend-box,
+.sd-panel .sd-swatch-box { display: none; }
+
+.sd-panel .sd-frame-fill { fill: #bfbfbf; }
+.sd-panel .sd-frame-left .sd-frame-line:nth-child(1) { fill: #bbbbbb; }
+.sd-panel .sd-frame-left .sd-frame-line:nth-child(2) { fill: #cccccc; }
+.sd-panel .sd-frame-left .sd-frame-line:nth-child(3) { fill: #d0d0d0; }
+.sd-panel .sd-frame-left .sd-frame-line:nth-child(4) { fill: #d1d1d1; }
+.sd-panel .sd-frame-left .sd-frame-line:nth-child(5) { fill: #d3d3d3; }
+.sd-panel .sd-frame-left .sd-frame-line:nth-child(6) { fill: #d3d3d3; }
+.sd-panel .sd-frame-left .sd-frame-line:nth-child(7) { fill: #d3d3d3; }
+.sd-panel .sd-frame-left .sd-frame-line:nth-child(8) { fill: #d3d3d3; }
+.sd-panel .sd-frame-left .sd-frame-line:nth-child(9) { fill: #d2d2d2; }
+.sd-panel .sd-frame-left .sd-frame-line:nth-child(10) { fill: #d0d0d0; }
+.sd-panel .sd-frame-left .sd-frame-line:nth-child(11) { fill: #cecece; }
+.sd-panel .sd-frame-left .sd-frame-line:nth-child(12) { fill: #cacaca; }
+.sd-panel .sd-frame-left .sd-frame-line:nth-child(13) { fill: #c5c5c5; }
+.sd-panel .sd-frame-right .sd-frame-line:nth-child(1) { fill: #bababa; }
+.sd-panel .sd-frame-right .sd-frame-line:nth-child(2) { fill: #b4b4b4; }
+.sd-panel .sd-frame-right .sd-frame-line:nth-child(3) { fill: #aeaeae; }
+.sd-panel .sd-frame-right .sd-frame-line:nth-child(4) { fill: #aaaaaa; }
+.sd-panel .sd-frame-right .sd-frame-line:nth-child(5) { fill: #a6a6a6; }
+.sd-panel .sd-frame-right .sd-frame-line:nth-child(6) { fill: #a2a2a2; }
+.sd-panel .sd-frame-right .sd-frame-line:nth-child(7) { fill: #9d9d9d; }
+.sd-panel .sd-frame-right .sd-frame-line:nth-child(8) { fill: #999999; }
+.sd-panel .sd-frame-right .sd-frame-line:nth-child(9) { fill: #939393; }
+.sd-panel .sd-frame-right .sd-frame-line:nth-child(10) { fill: #8b8b8b; }
+.sd-panel .sd-frame-right .sd-frame-line:nth-child(11) { fill: #828282; }
+.sd-panel .sd-frame-right .sd-frame-line:nth-child(12) { fill: #707070; }
+.sd-panel .sd-frame-right .sd-frame-line:nth-child(13) { fill: #404040; }
+.sd-panel .sd-frame-top .sd-frame-line:nth-child(1) { fill: #d0d0d0; }
+.sd-panel .sd-frame-top .sd-frame-line:nth-child(2) { fill: #d2d2d2; }
+.sd-panel .sd-frame-top-over-bar .sd-frame-line:nth-child(1) { fill: #cccccc; }
+.sd-panel .sd-frame-top-over-bar .sd-frame-line:nth-child(2) { fill: #9a9a9a; }
+.sd-panel .sd-frame-bottom .sd-frame-line:nth-child(1) { fill: #a5a5a5; }
+.sd-panel .sd-frame-bottom .sd-frame-line:nth-child(2) { fill: #858585; }
+
+.sd-panel .sd-plot-frame-dark,
+.sd-panel .sd-swatch-dark { fill: #595959; }
+.sd-panel .sd-plot-frame-light,
+.sd-panel .sd-swatch-light { fill: #d9d9d9; }
+.sd-panel .sd-graph-art .sd-plot,
+.sd-panel .sd-swatch-inner { fill: #000000; stroke: none; }
+
+.sd-panel .sd-waveform-graph .sd-grid-minor { stroke: #003300; }
+.sd-panel .sd-waveform-graph .sd-grid-major { stroke: #006600; }
+.sd-panel .sd-xy-graph .sd-grid-minor { stroke: #4c4c00; }
+.sd-panel .sd-xy-graph .sd-grid-major { stroke: #999900; }
+.sd-panel .sd-graph-art .sd-tick { fill: #000000; }
+
+.sd-panel .sd-graph-art .sd-trace { stroke: #ffffff; stroke-width: 1; stroke-linejoin: miter; }
+.sd-panel .sd-graph-art .sd-traces .sd-trace:nth-child(2n) { stroke: #ff4242; }

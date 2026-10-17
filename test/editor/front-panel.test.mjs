@@ -305,7 +305,7 @@ test("un clic en un control booleano cambia su valor y arrastrarlo no", () => {
   assert.match(P.contenido(p, CTX), /data-style="horizontal-toggle-switch"/);
   p = clic(p, interruptor);
   assert.equal(CV.currentValue(p.g.nodos[0]), true, "un clic lo enciende");
-  assert.notEqual(G.dibujoBooleano("horizontal-toggle-switch", true), G.dibujoBooleano("horizontal-toggle-switch", false), "y se ve distinto");
+  assert.match(P.contenido(p, CTX), /sd-boolean-switch sd-on[^"]*" [^>]*data-style="horizontal-toggle-switch"/, "and it shows on");
   p = clic(p, p.g.nodos[0]);
   assert.equal(CV.currentValue(p.g.nodos[0]), false, "otro lo apaga");
   const antes = P.caja(p.g.nodos[0]);
@@ -370,7 +370,7 @@ test("los controles booleanos miden lo que en LabVIEW y su etiqueta queda a 4 px
   for (const [estilo, medida] of Object.entries(cajas)) {
     const b = G.BOOLEANOS[estilo];
     assert.deepEqual([b.ancho, b.alto], medida, estilo);
-    for (const e of [false, true]) assert.match(G.dibujoBooleano(estilo, e), /^<svg viewBox="0 0 \d+ \d+"/);
+    assert.notEqual(b.dibujo(false), b.dibujo(true), `${estilo}: on and off look different`);
   }
   const k = P.cajaObjeto("bool-control", 100, 100, { style: "push-button" });
   assert.equal(k.separacion, 4);

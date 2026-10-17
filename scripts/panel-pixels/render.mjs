@@ -37,6 +37,7 @@ export const WINDOW_SIZE = { width: 1400, height: 900 };
 const COLUMN_STEP = 170;
 const ROW_STEP = 130;
 const FIRST_POINT = { x: 40, y: 60 };
+const GRAPHS_FIRST_POINT = { x: 200, y: 260 };
 
 const errorConfig = (name) => INV.entrada(`palette.controls.modern.data-containers.${name}`).config;
 
@@ -47,14 +48,17 @@ function place(p, block, point, config) {
   return P.confirmar(P.pulsar(p, CONTEXT, { tipo: "fondo" }, point));
 }
 
-/** Place each `[block, config]` on a grid of `columns`, left to right and top to bottom. */
-function placeAll(items, columns, columnStep = COLUMN_STEP, rowStep = ROW_STEP) {
+/** Place each `[block, config]` on a grid of `columns`, left to right and top to bottom, from `first`. */
+function placeAll(items, columns, columnStep = COLUMN_STEP, rowStep = ROW_STEP, first = FIRST_POINT) {
   return items.reduce(
     (p, [block, config], index) =>
-      place(p, block, { x: FIRST_POINT.x + (index % columns) * columnStep, y: FIRST_POINT.y + Math.floor(index / columns) * rowStep }, config),
+      place(p, block, { x: first.x + (index % columns) * columnStep, y: first.y + Math.floor(index / columns) * rowStep }, config),
     P.inicial(),
   );
 }
+
+/** The three graphs side by side, low enough for their legends and labels to show. */
+const placeGraphs = () => placeAll([["waveform-chart", undefined], ["waveform-graph", undefined], ["xy-graph", undefined]], 3, 450, 0, GRAPHS_FIRST_POINT);
 
 const nodeIds = (p) => p.g.nodos.map(({ id }) => id);
 const booleanBlock = (style) => (G.BOOLEANOS[style].indicador ? "bool-indicator" : "bool-control");
@@ -160,12 +164,39 @@ const SCENES = {
     const p = placeAll([["arr-control", { type: { array: "string", dims: 2 }, value: [["ab", "c"]] }]], 1);
     return P.editarElemento({ ...p, seleccion: [] }, CONTEXT, nodeIds(p)[0], "0,1", true);
   },
-  graph: () => placeAll([["waveform-chart", undefined], ["waveform-graph", undefined], ["xy-graph", undefined]], 3, 440, 300),
+  graph: placeGraphs,
+  // The three graphs with data: two plots on the graph and the XY (white and red), a history on the chart.
+  "graph-data": () => {
+    let p = placeGraphs();
+    const [chart, graph, xy] = nodeIds(p);
+    const wave = (phase) => Array.from({ length: 40 }, (_, i) => Math.sin(i / 4 + phase) * 3);
+    const types = {
+      [chart]: "number",
+      [graph]: { array: "number", dims: 2 },
+      [xy]: { array: { cluster: [{ name: "x", type: { array: "number" } }, { name: "y", type: { array: "number" } }] } },
+    };
+    for (const id of [chart, graph, xy]) p = { ...p, g: wired(p.g, id) };
+    const circle = (radius) => ({ x: wave(Math.PI / 2).map((v) => v * radius), y: wave(0).map((v) => v * radius) });
+    const valores = { [graph]: [wave(0), wave(1)], [xy]: [circle(1), circle(0.5)] };
+    const charts = GS.appendedToChart({}, chart, wave(2), "number", 1024);
+    return { ...p, valores, charts, wireTypes: types };
+  },
 };
+
+/** The graph wired from a constant, so the window knows it receives data (its type is set by the scene). */
+function wired(g, graphId) {
+  const made = Gr.crearNodo(g, CAT, "const", 20, 20);
+  return Gr.conectar(made.g, CAT, { nodo: made.id, puerto: "result", dir: "out" }, { nodo: graphId, puerto: "value", dir: "in" }).g;
+}
 
 /** The Front Panel window of a scene, as editor-window.mjs paints it. */
 function windowHtml(p) {
   const resolvedTypes = Gr.tipos(p.g, CAT);
+  // A scene can say what type reaches each graph, without building the diagram that makes it.
+  for (const [graphId, type] of Object.entries(p.wireTypes ?? {})) {
+    const wire = p.g.cables.find((candidate) => candidate.a.nodo === graphId && candidate.a.puerto === "value");
+    resolvedTypes.cables.set(wire.id, { tipo: type });
+  }
   const charts = GS.reconciledCharts(p.charts, p.g, resolvedTypes);
   const canvas = P.contenido({ ...p, charts }, { ...CONTEXT, panelSize: WINDOW_SIZE }, resolvedTypes);
   return V.ventana(INV, "front-panel", { paleta: null }, { lienzo: canvas, panelStyle });
