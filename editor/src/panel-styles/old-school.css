@@ -25,21 +25,109 @@
 .sd-panel .sd-step-down { bottom: 0; }
 .sd-panel .sd-step::before { content: none; }
 
-/* ——— Numeric and enum ——— */
+/* ——— Numeric, enum and string ——— */
 
 /* The field is sunk into a 4 px bevel, white on a control and grey on an indicator; it starts 4 px inside the
    incrementer. An enum's box is 49 px wide but its field is a numeric's 55, as the old drawing had it (unverified
    against LabVIEW). */
-.sd-panel :is(.sd-numeric, .sd-enum) { display: block; }
-.sd-panel :is(.sd-numeric, .sd-enum) .sd-field {
-  position: absolute; top: 0; bottom: 0; left: 0; width: 55px; min-width: auto; justify-content: normal;
+.sd-panel :is(.sd-numeric, .sd-enum, .sd-string) { display: block; }
+.sd-panel :is(.sd-numeric, .sd-enum, .sd-string) .sd-field {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 55px; min-width: auto; justify-content: normal; align-items: center;
   padding: 0 0 0 2px; border: 4px solid; border-radius: 0;
   border-color: var(--numeric-field-border-top) var(--numeric-field-border-right) var(--numeric-field-border-bottom) var(--numeric-field-border-left);
   background: var(--numeric-field-background); box-shadow: inset 1px 1px 0 var(--numeric-field-inset);
   font-size: var(--fuente); line-height: 1; font-variant-numeric: normal;
 }
 .sd-panel :is(.sd-numeric, .sd-enum) .sd-incrementer + .sd-field { left: 12px; }
-.sd-panel .sd-indicator:is(.sd-numeric, .sd-enum) .sd-field { background: var(--numeric-indicator-background); }
-.sd-panel :is(.sd-numeric, .sd-enum) .sd-value { flex: initial; min-width: auto; overflow: visible; }
-/* The old drawing showed no caret in a numeric field: an inline element with no content. */
-.sd-panel :is(.sd-numeric, .sd-enum) .caret { display: inline; vertical-align: baseline; }
+.sd-panel .sd-indicator:is(.sd-numeric, .sd-enum, .sd-string) .sd-field { background: var(--numeric-indicator-background); }
+.sd-panel :is(.sd-numeric, .sd-enum, .sd-string) .sd-value { flex: initial; min-width: auto; overflow: visible; }
+/* The old drawing showed no caret in a field: an inline element with no content. */
+.sd-panel :is(.sd-numeric, .sd-enum, .sd-string) .caret { display: inline; vertical-align: baseline; }
+
+/* A string's field fills its box and keeps the lines of its text. */
+.sd-panel .sd-string .sd-field { width: 100%; white-space: pre; line-height: 15px; }
+
+/* ——— Booleans ——— */
+
+/* LabVIEW's drawing of each style and state, from old-school/, over the whole object and the 12 px around it
+   that its shadows spill into (BOOLEAN_ART_MARGIN); Plain's button, switch, light or choice is not shown. */
+/* The drawing goes under the selection's marching ants, as the old unpositioned SVG did: it sits at z-index -1
+   inside the object, which isolation makes a stacking context of its own. */
+.sd-panel .sd-boolean { display: block; isolation: isolate; }
+.sd-panel .sd-boolean > :not(.sd-art) { display: none; }
+.sd-panel .sd-boolean .sd-art { position: absolute; inset: -12px; z-index: -1; display: block; background: 0 0 no-repeat; pointer-events: none; }
+.sd-panel .sd-boolean[data-style="push-button"] .sd-art { background-image: url("old-school/boolean-push-button-off.svg"); }
+.sd-panel .sd-boolean.sd-on[data-style="push-button"] .sd-art { background-image: url("old-school/boolean-push-button-on.svg"); }
+.sd-panel .sd-boolean[data-style="rocker"] .sd-art { background-image: url("old-school/boolean-rocker-off.svg"); }
+.sd-panel .sd-boolean.sd-on[data-style="rocker"] .sd-art { background-image: url("old-school/boolean-rocker-on.svg"); }
+.sd-panel .sd-boolean[data-style="vert-rocker"] .sd-art { background-image: url("old-school/boolean-vert-rocker-off.svg"); }
+.sd-panel .sd-boolean.sd-on[data-style="vert-rocker"] .sd-art { background-image: url("old-school/boolean-vert-rocker-on.svg"); }
+.sd-panel .sd-boolean[data-style="round-led"] .sd-art { background-image: url("old-school/boolean-round-led-off.svg"); }
+.sd-panel .sd-boolean.sd-on[data-style="round-led"] .sd-art { background-image: url("old-school/boolean-round-led-on.svg"); }
+.sd-panel .sd-boolean[data-style="horizontal-toggle-switch"] .sd-art { background-image: url("old-school/boolean-horizontal-toggle-switch-off.svg"); }
+.sd-panel .sd-boolean.sd-on[data-style="horizontal-toggle-switch"] .sd-art { background-image: url("old-school/boolean-horizontal-toggle-switch-on.svg"); }
+.sd-panel .sd-boolean[data-style="vertical-toggle-switch"] .sd-art { background-image: url("old-school/boolean-vertical-toggle-switch-off.svg"); }
+.sd-panel .sd-boolean.sd-on[data-style="vertical-toggle-switch"] .sd-art { background-image: url("old-school/boolean-vertical-toggle-switch-on.svg"); }
+.sd-panel .sd-boolean[data-style="square-led"] .sd-art { background-image: url("old-school/boolean-square-led-off.svg"); }
+.sd-panel .sd-boolean.sd-on[data-style="square-led"] .sd-art { background-image: url("old-school/boolean-square-led-on.svg"); }
+.sd-panel .sd-boolean[data-style="slide-switch"] .sd-art { background-image: url("old-school/boolean-slide-switch-off.svg"); }
+.sd-panel .sd-boolean.sd-on[data-style="slide-switch"] .sd-art { background-image: url("old-school/boolean-slide-switch-on.svg"); }
+.sd-panel .sd-boolean[data-style="vertical-slide-switch"] .sd-art { background-image: url("old-school/boolean-vertical-slide-switch-off.svg"); }
+.sd-panel .sd-boolean.sd-on[data-style="vertical-slide-switch"] .sd-art { background-image: url("old-school/boolean-vertical-slide-switch-on.svg"); }
+.sd-panel .sd-boolean[data-style="ok-button"] .sd-art { background-image: url("old-school/boolean-ok-button-off.svg"); }
+.sd-panel .sd-boolean.sd-on[data-style="ok-button"] .sd-art { background-image: url("old-school/boolean-ok-button-on.svg"); }
+.sd-panel .sd-boolean[data-style="cancel-button"] .sd-art { background-image: url("old-school/boolean-cancel-button-off.svg"); }
+.sd-panel .sd-boolean.sd-on[data-style="cancel-button"] .sd-art { background-image: url("old-school/boolean-cancel-button-on.svg"); }
+.sd-panel .sd-boolean[data-style="stop-button"] .sd-art { background-image: url("old-school/boolean-stop-button-off.svg"); }
+.sd-panel .sd-boolean.sd-on[data-style="stop-button"] .sd-art { background-image: url("old-school/boolean-stop-button-on.svg"); }
+.sd-panel .sd-boolean[data-style="radio-buttons"] .sd-art { background-image: url("old-school/boolean-radio-buttons-off.svg"); }
+.sd-panel .sd-boolean.sd-on[data-style="radio-buttons"] .sd-art { background-image: url("old-school/boolean-radio-buttons-on.svg"); }
+
+/* ——— Error in and error out ——— */
+
+/* A grey cluster in a 2 px bevel; each caption and field sits where LabVIEW puts it (errores/301-panel-error-out-1a1.png). */
+.sd-panel .sd-error-cluster {
+  display: block; padding: 0; overflow: hidden; border-radius: 0; line-height: 14px; font-size: var(--fuente);
+  background: var(--error-cluster-background); border: 2px solid;
+  border-color: var(--error-cluster-bevel-light) var(--error-cluster-bevel-dark) var(--error-cluster-bevel-dark) var(--error-cluster-bevel-light);
+}
+.sd-panel .sd-error-cluster .sd-caption { position: absolute; color: var(--canvas-text); font-size: inherit; white-space: nowrap; pointer-events: none; }
+.sd-panel .sd-error-status .sd-caption { left: 4px; top: 2px; }
+.sd-panel .sd-error-code .sd-caption { left: 52px; top: 0; }
+.sd-panel .sd-error-source .sd-caption { left: 6px; top: 52px; }
+
+/* The status: a check or a cross on a raised button, which a control's click toggles. */
+.sd-panel .sd-error-cluster .sd-error-light {
+  position: absolute; left: 11px; top: 20px; width: 20px; height: 19px; border: 0; border-radius: 0;
+  background: url("old-school/error-status-ok.svg") 0 0 no-repeat;
+}
+.sd-panel .sd-error-cluster.sd-on .sd-error-light { background-image: url("old-school/error-status-error.svg"); }
+.sd-panel .sd-control.sd-error-cluster .sd-error-light { cursor: pointer; }
+
+/* The code and the source, sunk into a 2 px bevel, white on a control and grey on an indicator. */
+.sd-panel .sd-error-cluster .sd-field {
+  position: absolute; box-sizing: border-box; min-width: auto; padding: 0; border-radius: 0; overflow: hidden;
+  border: 2px solid; border-color: var(--error-cluster-bevel-dark) var(--error-cluster-bevel-light) var(--error-cluster-bevel-light) var(--error-cluster-bevel-dark);
+  background: var(--error-field-background); font-variant-numeric: normal; white-space: normal; line-height: inherit;
+}
+.sd-panel .sd-control.sd-error-cluster .sd-field { background: var(--error-field-control-background); }
+.sd-panel .sd-error-cluster .sd-value { flex: initial; min-width: auto; overflow: visible; }
+.sd-panel .sd-error-code .sd-field { left: 52px; top: 20px; width: 97px; height: 23px; display: flex; align-items: center; }
+.sd-panel .sd-error-code .sd-value { padding-left: 3px; white-space: pre; }
+.sd-panel .sd-control .sd-error-code .sd-value { padding-left: 11px; }
+/* The code is shown in decimal ("d"), and a control's has two arrows that are only drawn. */
+.sd-panel .sd-error-cluster .sd-radix {
+  display: inline-block; width: 8px; height: 100%; flex: none; background: var(--error-code-prefix-background);
+  color: var(--error-code-prefix-text); font-size: 10px; line-height: 19px; text-align: center; pointer-events: none;
+}
+.sd-panel .sd-error-cluster .sd-code-arrows {
+  position: absolute; left: 9px; top: 2px; display: block; width: 8px; height: 15px; pointer-events: none;
+  background: url("old-school/error-code-arrows.svg") 0 0 no-repeat;
+}
+.sd-panel .sd-error-source .sd-field { left: 5px; top: 66px; width: 145px; height: 48px; display: block; padding: 0; }
+.sd-panel .sd-error-source .sd-value { display: block; white-space: pre-wrap; word-break: break-all; padding: 0 2px; line-height: 14px; }
+.sd-panel .sd-error-cluster .sd-scrollbar {
+  position: absolute; right: 0; top: 0; bottom: 0; display: block; width: 18px;
+  background: var(--error-scrollbar-background); border-left: 1px solid var(--error-scrollbar-border);
+}
+.sd-panel .sd-control.sd-error-cluster .sd-scrollbar { background: var(--error-scrollbar-control-background); }

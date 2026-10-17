@@ -1892,15 +1892,24 @@ export const dibujoError = (control) =>
   `<rect x="9" y="12" width="12" height="3" fill="#ff6633" stroke="#000" stroke-width="0.8"/>` +
   `<rect x="5" y="19" width="4" height="4" fill="#00a000" stroke="#000" stroke-width="0.8"/><rect x="13" y="18.5" width="10" height="3" fill="#0000ff" stroke="#000" stroke-width="0.8"/>`;
 
+/** The size of the status button of an error cluster on the panel. */
+export const ERROR_STATUS_SIZE = { width: 20, height: 19 };
+
 /** El pulsador del status de un error: ✔ verde con FALSE y ✘ rojo con TRUE (36-error-in-5000.png). */
-export const estadoError = (status) =>
-  svg(
-    `<rect x="0.5" y="0.5" width="19" height="18" fill="#cfcfcf" stroke="#7c7c7c"/><rect x="1.5" y="1.5" width="17" height="16" fill="#d9d9d9" stroke="#f4f4f4"/>` +
-      (status
-        ? `<path d="M5.5 4.5 L14.5 14 M14.5 4.5 L5.5 14" stroke="#000" stroke-width="3.6" stroke-linecap="round"/><path d="M5.5 4.5 L14.5 14 M14.5 4.5 L5.5 14" stroke="#e8101c" stroke-width="2.2" stroke-linecap="round"/>`
-        : `<path d="M4.5 9.5 L8 13.5 L15.5 4.5" fill="none" stroke="#000" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M4.5 9.5 L8 13.5 L15.5 4.5" fill="none" stroke="#12e012" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`),
-    "0 0 20 19",
-  );
+export const errorStatusDrawing = (status) =>
+  `<rect x="0.5" y="0.5" width="19" height="18" fill="#cfcfcf" stroke="#7c7c7c"/><rect x="1.5" y="1.5" width="17" height="16" fill="#d9d9d9" stroke="#f4f4f4"/>` +
+  (status
+    ? `<path d="M5.5 4.5 L14.5 14 M14.5 4.5 L5.5 14" stroke="#000" stroke-width="3.6" stroke-linecap="round"/><path d="M5.5 4.5 L14.5 14 M14.5 4.5 L5.5 14" stroke="#e8101c" stroke-width="2.2" stroke-linecap="round"/>`
+    : `<path d="M4.5 9.5 L8 13.5 L15.5 4.5" fill="none" stroke="#000" stroke-width="3.6" stroke-linejoin="round" stroke-linecap="round"/><path d="M4.5 9.5 L8 13.5 L15.5 4.5" fill="none" stroke="#12e012" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`);
+
+export const estadoError = (status) => svg(errorStatusDrawing(status), `0 0 ${ERROR_STATUS_SIZE.width} ${ERROR_STATUS_SIZE.height}`);
+
+/** The two arrows drawn on the code of an error in control, 8 × 14. Only drawn: they do not step. */
+export const ERROR_CODE_ARROWS = {
+  width: 8,
+  height: 14,
+  drawing: `<polygon points="4,1 7,5.5 1,5.5" fill="#6e6e6e"/><polygon points="4,13 7,8.5 1,8.5" fill="#6e6e6e"/>`,
+};
 
 // Los iconos de Dialog & User Interface: lo medido son los terminales (docs/reference/labview-errors.md §5);
 // el dibujo es una caja amarilla con un rótulo, como las funciones de cadena, y los huecos, en gris por el CSS.

@@ -11,8 +11,8 @@ import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
 import * as G from "../../editor/src/common/glyphs.mjs";
 import * as P from "../../editor/src/front-panel/front-panel.mjs";
 import * as V from "../../editor/src/window/window-view.mjs";
-import { PLAIN_KINDS } from "../../editor/src/front-panel/html-controls.mjs";
-import { OLD_SCHOOL_ART_DIRECTORY, oldSchoolArt } from "../../editor/src/panel-styles/old-school-art.mjs";
+import { ORNAMENT_CLASSES, PLAIN_KINDS } from "../../editor/src/front-panel/html-controls.mjs";
+import { OLD_SCHOOL_ART_DIRECTORY, oldSchoolArt, themeTokensOf } from "../../editor/src/panel-styles/old-school-art.mjs";
 import { OLD_SCHOOL_KINDS_OVER_PLAIN, PANEL_STYLES, chosenPanelStyleName, drawsHtml, panelStyleFromQuery } from "../../editor/src/front-panel/panel-style.mjs";
 import { CAT, INV } from "../helpers.mjs";
 
@@ -100,11 +100,11 @@ test("Old School draws its migrated kinds as Plain's markup and the others as be
 
 test("Old School's SVG files are what old-school-art.mjs writes from glyphs.mjs (run scripts/old-school-art.mjs)", () => {
   const directory = new URL(`${OLD_SCHOOL_ART_DIRECTORY}/`, PANEL_STYLES_DIRECTORY);
-  const art = oldSchoolArt();
+  const art = oldSchoolArt(themeTokensOf(readFileSync(new URL("../themes/old-school.css", PANEL_STYLES_DIRECTORY), "utf8")));
   assert.deepEqual(readdirSync(directory).sort(), art.map(({ name }) => name).sort(), "no file missing and none left over");
   for (const { name, content } of art) assert.equal(readFileSync(new URL(name, directory), "utf8"), content, name);
   const referenced = [...readSheet("old-school.css").matchAll(/url\("old-school\/([^"]+)"\)/g)].map(([, name]) => name);
-  for (const name of referenced) assert.ok(art.some((file) => file.name === name), `old-school.css takes ${name}, which the generator does not write`);
+  assert.deepEqual([...new Set(referenced)].sort(), art.map(({ name }) => name).sort(), "old-school.css takes every file the generator writes, and only those");
 });
 
 test("every object of an HTML panel keeps its Old School box and carries its kind and its label", () => {
@@ -169,6 +169,12 @@ test("plain.css has rules for every kind an HTML panel draws (a control a style 
   for (const kind of PLAIN_KINDS) assert.match(PLAIN_CSS, new RegExp(`\\.sd-${kind}\\b`), `no Plain rules for .sd-${kind}`);
   const kindsDrawn = new Set(htmlRoots(P.contenido(everyKindPanel(), PLAIN)).flatMap(({ classes }) => classes.filter((name) => PLAIN_KINDS.includes(name.slice(3)))));
   assert.deepEqual([...kindsDrawn].sort(), PLAIN_KINDS.map((kind) => `sd-${kind}`).sort(), "every kind in PLAIN_KINDS is drawn, and nothing else");
+});
+
+test("every ornament part is hidden in Plain, and the markup has no other", () => {
+  for (const name of ORNAMENT_CLASSES) assert.match(PLAIN_CSS, new RegExp(`\\.sd-panel \\.${name} \\{ display: none; \\}`), `.${name}`);
+  const hiddenParts = [...P.contenido(everyKindPanel(), PLAIN).matchAll(/<span class="([\w-]+)" aria-hidden="true">/g)].map(([, name]) => name);
+  assert.deepEqual([...new Set(hiddenParts)].filter((name) => !ORNAMENT_CLASSES.includes(name)), [], "an aria-hidden part that is not declared as ornament");
 });
 
 /** The selectors of a rule's list, split at the commas that are not inside `:is(…)` and the like. */

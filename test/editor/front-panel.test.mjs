@@ -256,8 +256,8 @@ test("los controles booleanos de la paleta se ponen en el panel con su terminal 
 
   // Cada uno se dibuja en el panel con su clase y, en el diagrama, es un terminal verde con «TF».
   const html = P.contenido(p, CTX);
-  assert.equal((html.match(/class="objeto-panel booleano/g) ?? []).length, 10);
-  assert.match(html, /data-estilo="stop-button"/);
+  assert.equal((html.match(/class="objeto-panel sd-(?:control|indicator) sd-boolean /g) ?? []).length, 10);
+  assert.match(html, /data-style="stop-button"/);
   const ts = D.extremos(p.g, CTX);
   for (const n of p.g.nodos) {
     assert.equal(ts.get(`${n.id}.${n.tipo === "bool-control" ? "result" : "value"}`).dir, n.tipo === "bool-control" ? "out" : "in");
@@ -302,7 +302,7 @@ test("un clic en un control booleano cambia su valor y arrastrarlo no", () => {
     if (destino) p = P.moverA(p, CTX, destino);
     return P.soltar(p, CTX, { tipo: "fondo" }, destino ?? pt);
   };
-  assert.match(P.contenido(p, CTX), /data-estilo="horizontal-toggle-switch"/);
+  assert.match(P.contenido(p, CTX), /data-style="horizontal-toggle-switch"/);
   p = clic(p, interruptor);
   assert.equal(CV.currentValue(p.g.nodos[0]), true, "un clic lo enciende");
   assert.notEqual(G.dibujoBooleano("horizontal-toggle-switch", true), G.dibujoBooleano("horizontal-toggle-switch", false), "y se ve distinto");
@@ -392,9 +392,9 @@ test("un control y un indicador de cadena se ponen en el panel con su terminal e
   const k = P.caja(control);
   assert.deepEqual([k.ancho, k.alto], [100, 24], "la casilla de una cadena mide 100 × 24 px");
   const html = P.contenido(p, CTX);
-  assert.equal((html.match(/class="casilla cadena"/g) ?? []).length, 1, "el control, la casilla blanca");
-  assert.equal((html.match(/class="casilla indicador cadena"/g) ?? []).length, 1, "el indicador, la gris");
-  assert.doesNotMatch(html, /incrementador/);
+  assert.equal((html.match(/class="objeto-panel sd-control sd-string"/g) ?? []).length, 1, "the control (a white field in Old School)");
+  assert.equal((html.match(/class="objeto-panel sd-indicator sd-string"/g) ?? []).length, 1, "the indicator (a grey one)");
+  assert.doesNotMatch(html, /sd-incrementer/);
   // Los terminales del diagrama, de color rosa y con «abc».
   const bd = D.contenido({ ...ED.inicial(), g: p.g }, CTX, Gr.tipos(p.g, CAT));
   assert.equal((bd.match(/class="glifo-terminal-panel"/g) ?? []).length, 2);
@@ -439,16 +439,16 @@ test("los controles Error In y Error Out se ponen en el panel con su terminal en
   const k = P.caja(control);
   assert.deepEqual([k.ancho, k.alto], [155, 121]);
   const html = P.contenido(p, CTX);
-  assert.equal((html.match(/class="objeto-panel error-cluster control"/g) ?? []).length, 1);
-  assert.equal((html.match(/class="objeto-panel error-cluster indicador"/g) ?? []).length, 1);
+  assert.equal((html.match(/class="objeto-panel sd-control sd-error-cluster"/g) ?? []).length, 1);
+  assert.equal((html.match(/class="objeto-panel sd-indicator sd-error-cluster"/g) ?? []).length, 1);
   assert.match(html, />status</);
   assert.match(html, />source</);
-  // Status FALSE es ✔ verde y TRUE, ✘ rojo.
-  assert.match(html, /#12e012/);
-  assert.doesNotMatch(html, /#e8101c/);
+  // Status FALSE says no error (a green check in Old School: old-school/error-status-ok.svg) and TRUE an error (a red cross).
+  assert.equal((html.match(/aria-label="No error"/g) ?? []).length, 2);
+  assert.doesNotMatch(html, /aria-label="Error"/);
   const rojo = P.pulsar(p, CTX, { tipo: "campo", id: control.id, campo: "status" }, { x: 120, y: 130 });
   assert.deepEqual(CV.currentValue(rojo.g.nodos[0]), { status: true, code: 0, source: "" }, "un clic en el status lo alterna");
-  assert.match(P.contenido(rojo, CTX), /#e8101c/);
+  assert.match(P.contenido(rojo, CTX), /class="objeto-panel sd-control sd-error-cluster sd-on".*aria-label="Error"/);
   // Los terminales del diagrama: el cable de error pasa por ellos y el tipo es el cluster de error.
   const resueltos = Gr.tipos(p.g, CAT);
   assert.ok(esError(resueltos.salidas.get(`${control.id}.result`)));

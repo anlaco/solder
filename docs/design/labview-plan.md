@@ -340,6 +340,14 @@ styles (Plain, Solder), once it is decided where a panel's style lives.
    moved. Zero changed pixels in `scripts/panel-pixels/compare.sh` and in the real editor
    ([`2026-10-17-panel-old-school-numeric.md`](../../labview-captures/reports/2026-10-17-panel-old-school-numeric.md)).
    Next: string, then the Booleans.*
+   *String and the Booleans moved on 2026-10-17: each Boolean style and state is an SVG of `panel-styles/old-school/`
+   on the ornament part `.sd-art`, hidden in Plain. Zero changed pixels in the fixture and in the real editor
+   ([`2026-10-17-panel-old-school-boolean.md`](../../labview-captures/reports/2026-10-17-panel-old-school-boolean.md)).
+   Next: error in and out, then arrays, then graphs.*
+   *Error in and out moved on 2026-10-17: the radix, the code's arrows and the source's scrollbar are ornament parts
+   hidden in Plain; the status and the arrows are SVG files of the style. Zero changed pixels in the fixture and the
+   real editor ([`2026-10-17-panel-old-school-error.md`](../../labview-captures/reports/2026-10-17-panel-old-school-error.md)).
+   Next: arrays, then graphs.*
 
 **Then:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
 lesson of NI's Core 1 course can be done in Solder, except lessons 2 and 15 and the DAQ and instrument parts of 4,

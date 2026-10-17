@@ -10,11 +10,19 @@
 //   - the editor's own hooks, which no style should touch: `.objeto-panel` and the data attributes the editor
 //     reads to know what was clicked (`data-nodo`, `data-casilla`, `data-paso`, `data-eje`, `data-k`,
 //     `data-campo`, `data-parte`, `data-asa-array`).
+// Some parts are only ornament in Plain (ORNAMENT_CLASSES): plain.css hides them and a style that wants them shows
+// them (DT-058 §9), as Old School does to put LabVIEW's illustrations there.
 // The elements carry ARIA roles (button, switch, radio) instead of native buttons and inputs, which would take the
 // keyboard focus away from the editor; typing is drawn by the editor as in Old School.
 
 /** Every kind of object an HTML panel draws: each one has rules in plain.css (DT-058 §3, a test checks it). */
 export const PLAIN_KINDS = ["numeric", "enum", "string", "boolean", "error-cluster", "array", "waveform-chart", "waveform-graph", "xy-graph"];
+
+/** The parts that are only ornament in Plain: hidden by plain.css, shown by the style that draws them (a test checks it). */
+export const ORNAMENT_CLASSES = ["sd-art", "sd-radix", "sd-code-arrows", "sd-scrollbar"];
+
+/** An illustration a style may paint over the whole object, such as Old School's drawing of a Boolean. */
+const ART = `<span class="sd-art" aria-hidden="true"></span>`;
 
 /** The Boolean styles by how Plain draws them: something pressed, something flipped, a light or a choice. */
 const BUTTON_STYLES = new Set(["push-button", "rocker", "vert-rocker", "ok-button", "cancel-button", "stop-button"]);
@@ -81,7 +89,7 @@ function booleanInner(style, on) {
 export function booleanHtml(frame, { style, on }) {
   const shape = BUTTON_STYLES.has(style) ? "sd-boolean-button" : SWITCH_STYLES.has(style) ? "sd-boolean-switch" : LED_STYLES.has(style) ? "sd-boolean-led" : "sd-boolean-radio";
   const classes = [shape, ...(VERTICAL_STYLES.has(style) ? ["sd-vertical"] : []), ...(on ? ["sd-on"] : [])];
-  return objectFrame({ ...frame, kind: "boolean", classes, attributes: ` data-style="${escapeHtml(style)}"` }, booleanInner(style, on));
+  return objectFrame({ ...frame, kind: "boolean", classes, attributes: ` data-style="${escapeHtml(style)}"` }, ART + booleanInner(style, on));
 }
 
 /**
@@ -90,11 +98,15 @@ export function booleanHtml(frame, { style, on }) {
  */
 export function errorClusterHtml(frame, { status, fieldHtml }) {
   const part = (name, caption, inner) => `<span class="sd-error-part sd-error-${name}"><span class="sd-caption">${caption}</span>${inner}</span>`;
+  // Ornament: the radix the code is shown in, the arrows of a control's code and the source's scrollbar, as LabVIEW draws them.
+  const radix = `<span class="sd-radix" aria-hidden="true">d</span>`;
+  const codeArrows = frame.isControl ? `<span class="sd-code-arrows" aria-hidden="true"></span>` : "";
+  const scrollbar = `<span class="sd-scrollbar" aria-hidden="true"></span>`;
   return objectFrame(
     { ...frame, kind: "error-cluster", classes: status ? ["sd-on"] : [] },
     part("status", "status", `<span class="sd-error-light" data-campo="status" role="img" aria-label="${status ? "Error" : "No error"}"></span>`) +
-      part("code", "code", `<span class="sd-field" data-campo="code"><span class="sd-value">${fieldHtml("code")}</span></span>`) +
-      part("source", "source", `<span class="sd-field" data-campo="source"><span class="sd-value">${fieldHtml("source")}</span></span>`),
+      part("code", "code", `<span class="sd-field" data-campo="code">${radix}${codeArrows}<span class="sd-value">${fieldHtml("code")}</span></span>`) +
+      part("source", "source", `<span class="sd-field" data-campo="source"><span class="sd-value">${fieldHtml("source")}</span>${scrollbar}</span>`),
   );
 }
 

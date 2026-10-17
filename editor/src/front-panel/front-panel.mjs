@@ -24,7 +24,7 @@
 
 import * as CV from "../../../core/model/control-values.mjs";
 import * as Et from "../common/labels.mjs";
-import { BOOLEANOS, INCREMENTER, dibujoBooleano, estadoError } from "../common/glyphs.mjs";
+import { BOOLEANOS, ERROR_CODE_ARROWS, INCREMENTER, dibujoBooleano, estadoError } from "../common/glyphs.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { REPEATED_PASTE_STEP } from "../common/paste-memory.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
@@ -228,7 +228,7 @@ function objetoError(n, elegido, edicion, valores) {
   const v = valorError(n, valores);
   const e = edicion?.valor && edicion.nodo === n.id ? edicion : null;
   const texto = (campo, x) => (e?.campo !== campo ? `<span>${esc(x)}</span>` : e.todo ? `<span class="texto-elegido">${esc(e.texto)}</span>` : `<span>${esc(e.texto)}</span><span class="caret"></span>`);
-  const flechas = control ? `<span class="ec-flechas"><svg viewBox="0 0 8 14" aria-hidden="true"><polygon points="4,1 7,5.5 1,5.5" fill="#6e6e6e"/><polygon points="4,13 7,8.5 1,8.5" fill="#6e6e6e"/></svg></span>` : "";
+  const flechas = control ? `<span class="ec-flechas"><svg viewBox="0 0 ${ERROR_CODE_ARROWS.width} ${ERROR_CODE_ARROWS.height}" aria-hidden="true">${ERROR_CODE_ARROWS.drawing}</svg></span>` : "";
   return `<div class="objeto-panel error-cluster ${control ? "control" : "indicador"}${elegido ? " seleccionado" : ""}${e ? " editando-valor" : ""}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">` +
     `<span class="ec-rotulo" style="left:4px;top:2px">status</span><span class="ec-rotulo" style="left:52px;top:0">code</span>` +
     `<div class="ec-campo ec-estado" data-campo="status" style="left:11px;top:20px">${estadoError(v.status)}</div>` +

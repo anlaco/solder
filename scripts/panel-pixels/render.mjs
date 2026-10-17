@@ -88,6 +88,14 @@ const SCENES = {
     const p = placeAll([["control", { value: 2.5 }]], 1);
     return P.editarValor({ ...p, seleccion: [] }, CONTEXT, nodeIds(p)[0], true);
   },
+  "string-typing": () => {
+    const p = placeAll([["str-control", { value: "two\nlines" }]], 1);
+    return P.editarValor({ ...p, seleccion: [] }, CONTEXT, nodeIds(p)[0], false);
+  },
+  "string-typing-all": () => {
+    const p = placeAll([["str-control", { value: "text" }]], 1);
+    return P.editarValor({ ...p, seleccion: [] }, CONTEXT, nodeIds(p)[0], true);
+  },
   string: () => placeAll([["str-control", undefined], ["str-indicator", undefined], ["str-control", { value: "two\nlines" }], ["str-indicator", { value: "text" }]], 4),
   "boolean-off": () => placeAll(Object.keys(G.BOOLEANOS).map((style) => [booleanBlock(style), { style, value: false }]), 5),
   "boolean-on": () => placeAll(Object.keys(G.BOOLEANOS).map((style) => [booleanBlock(style), { style, value: true }]), 5),
@@ -103,6 +111,15 @@ const SCENES = {
       220,
       180,
     ),
+  // Typing into the code and into the source of an error in.
+  "error-typing-code": () => {
+    const p = placeAll([["cluster-control", { ...errorConfig("error-in"), value: { status: false, code: 12, source: "" } }]], 1);
+    return P.editarValor({ ...p, seleccion: [] }, CONTEXT, nodeIds(p)[0], false, "code");
+  },
+  "error-typing-source": () => {
+    const p = placeAll([["cluster-control", { ...errorConfig("error-in"), value: { status: true, code: 1, source: "Main.sdg" } }]], 1);
+    return P.editarValor({ ...p, seleccion: [] }, CONTEXT, nodeIds(p)[0], true, "source");
+  },
   array: () =>
     placeAll(
       [

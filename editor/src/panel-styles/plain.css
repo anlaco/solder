@@ -40,6 +40,12 @@
 
 /* ——— Common parts ——— */
 
+/* Ornament is for the styles that want it (html-controls.mjs, ORNAMENT_CLASSES). */
+.sd-panel .sd-art { display: none; }
+.sd-panel .sd-radix { display: none; }
+.sd-panel .sd-code-arrows { display: none; }
+.sd-panel .sd-scrollbar { display: none; }
+
 .sd-panel .sd-control,
 .sd-panel .sd-indicator { box-sizing: border-box; font: var(--sd-font-size) / 1 var(--sd-font); color: var(--sd-ink); }
 .sd-panel .sd-label { font-family: var(--sd-font); color: var(--sd-ink); }
