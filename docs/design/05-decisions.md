@@ -1888,9 +1888,8 @@ each show.
    **Solder** (the default) and others shipped later. The position and size of each object belong to the VI (the
    `.sdg` keeps them); a style changes everything else. The classes and attributes of the panel's HTML (such as
    `.sd-control`, `.sd-indicator`, `.sd-numeric`, `data-label`) are a public API, frozen like the file format once
-   published. Where a panel's style is chosen (per VI, a shared `.css` referenced from VI Properties, or for the
-   whole application) is **still open**: referencing it from the `.sdg` is a format change, version 2 with its
-   migration (DT-055).
+   published. Where a panel's style is chosen was decided on 2026-10-17 in DT-058: window > project > editor, with
+   companion `.css` files, so the `.sdg` format does not change.
 8. **The first step is to centralize the colors** into theme tokens with no visible change: Old School must stay
    identical, and the tests say so. Today there are about 95 distinct colors in `editor/src/styles.css` and more than
    1000 color literals in the glyphs and views.
@@ -1956,3 +1955,52 @@ fixes cherry-picked from `main`.**
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
 | A release branch holds only fixes from `main` | every commit on it after its tag carries `cherry picked from` (`-x`) or says why it exists only there; checked with `git log` before each fix release | **Unverified**: process, no automatic check |
+
+## DT-058
+
+**Panel styles: Plain is the mother template, and a panel's style comes from its window, its project or the editor,
+in that order, through companion `.css` files.**
+
+- **Status:** Accepted on 2026-10-17 by the developer. It settles the open point of DT-056 §7. Mockup with the pattern
+  the styles follow: `docs/ideas/panel-style-mockups.html`.
+- **Why:** the person who programs sees the panels in the style they like, the program they ship can have a look of
+  its own, and one window can still differ. Plain keeps every control usable in every style, even before a style
+  draws it.
+
+### Decision
+
+1. **Who chooses, by priority: window > project > editor.**
+   - **Editor:** the programmer's own preference, kept in their settings and never in a VI. It is the default for
+     every panel they open.
+   - **Project:** an alternative style for a whole project. A built executable uses the project's style if there is
+     one, otherwise the editor's.
+   - **Window:** one VI can carry its own style, which wins over the other two.
+2. **The stylesheet goes with its file, as in Angular:** it has the same name next to it. `Oven Controller.sdg` +
+   `Oven Controller.css` styles that window; `My Project.sdproj` + `My Project.css` styles the project. Nothing is
+   referenced from inside the `.sdg`, so **its format does not change** (no version 2, DT-055). The `.css` is edited
+   with any editor and versioned with the VI.
+3. **Plain is the mother template.** Every control has a Plain version: plain HTML with the public classes
+   (DT-056 §7) and a minimal CSS that makes it usable. A style is loaded on top of `plain.css` and only redefines
+   what it wants; **a control a style does not draw shows as Plain**. A new control works in every style from the day
+   it exists.
+4. **Styles shipped:** **Plain**, **Solder** (the default of the releases) and **Solder Night** (dark, to show how a
+   general template works). The dark limit of DT-056 §5 is for the editor's theme, not for panel styles.
+5. **Old School is also a panel style:** LabVIEW's controls, drawn as now. It is the default in development, so the
+   clone can still be compared with LabVIEW; Plain, Solder and Solder Night are the HTML styles.
+6. **Until Tools ▸ Options exists**, the editor's style is chosen with the environment variable
+   `SOLDER_PANEL_STYLE` (`old-school`, `plain`, `solder`, `solder-night`), like `SOLDER_THEME` (DT-056 §6).
+7. **First the editor and window levels.** The project level waits for projects (`.sdproj`) and the executable for
+   the application builder; this decision already fixes how they will take part.
+8. **The look follows the pattern of the mockup**: a quiet base with color only for meaning, depth on what is
+   touched and flat on what is read, values as arcs or fills, numbers in monospace with tabular figures, hairline
+   rings instead of borders, controls raised and indicators recessed (LabVIEW's white control and grey indicator,
+   said with depth), and light as feedback.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| A window's style wins over the project's, and that over the editor's | a test of the function that resolves a VI's stylesheets | **Unverified**: not written yet |
+| A control a style does not draw shows as Plain | a test that every control kind has Plain rules in `plain.css` | **Unverified**: not written yet |
+| The `.sdg` does not change | the format tests (`test/end-to-end/format-versions.test.mjs`) stay green | Holds today; to recheck when styles are implemented |
+

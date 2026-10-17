@@ -317,6 +317,10 @@ styles (Plain, Solder), once it is decided where a panel's style lives.
    Old School, a packaged release in Solder). Nodes keep their space; only primitive boxes get rounded corners, and
    wire widths stay (they say the dimension). Old School is still identical pixel by pixel. Open for review: the
    thick While Loop frame, the Case hatching, and the Old School controls on the Solder panel until step 3.*
+   *Panel styles decided on 2026-10-17 (DT-058), on the branch `feature/html-front-panel`: Plain as the mother
+   template, Old School, Solder and Solder Night as styles; window > project > editor through companion `.css` files;
+   `SOLDER_PANEL_STYLE` until Tools ▸ Options. Next: the Plain HTML of each panel control and `plain.css`, then the
+   Solder and Solder Night sheets from `docs/ideas/panel-style-mockups.html`, then the window's companion `.css`.*
 
 **Then:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
 lesson of NI's Core 1 course can be done in Solder, except lessons 2 and 15 and the DAQ and instrument parts of 4,
