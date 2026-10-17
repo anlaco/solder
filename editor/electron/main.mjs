@@ -15,6 +15,7 @@ import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, 
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
 import { newVIBounds, otherWindowKind, tiledBounds } from "./window-layout.mjs";
 import { CHOSEN_THEME_ROUTE, THEMES, chosenThemeName } from "./theme.mjs";
+import { CHOSEN_PANEL_STYLE_ROUTE, PANEL_STYLES, chosenPanelStyleName } from "../src/front-panel/panel-style.mjs";
 import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from "../src/getting-started/start-state.mjs";
 import { WINDOW_KINDS, createRegistry, isDirty, recordChange, recordSave, viName, windowTitle } from "./vi-registry.mjs";
 
@@ -41,6 +42,8 @@ const MEDIA_TYPES = {
 
 const THEME = THEMES[chosenThemeName(process.env.SOLDER_THEME, app.isPackaged)];
 const THEMES_DIRECTORY = path.join(EDITOR, "src", "themes");
+const PANEL_STYLE_NAME = chosenPanelStyleName(process.env.SOLDER_PANEL_STYLE, app.isPackaged);
+const PANEL_STYLES_DIRECTORY = path.join(EDITOR, "src", "panel-styles");
 
 protocol.registerSchemesAsPrivileged([
   { scheme: "solder", privileges: { standard: true, secure: true, supportFetchAPI: true } },
@@ -50,6 +53,7 @@ function serve() {
   protocol.handle("solder", async (request) => {
     const route = decodeURIComponent(new URL(request.url).pathname);
     if (route === CHOSEN_THEME_ROUTE) return chosenThemeStylesheet();
+    if (route === CHOSEN_PANEL_STYLE_ROUTE) return chosenPanelStylesheet();
     const root = route.startsWith("/core/") ? path.dirname(CORE) : EDITOR;
     const file = OUTSIDE[route] ?? path.normalize(path.join(root, route === "/" ? "index.html" : route));
     if (!Object.values(OUTSIDE).includes(file) && !file.startsWith(EDITOR + path.sep) && !file.startsWith(CORE + path.sep)) {
@@ -67,6 +71,13 @@ function serve() {
 /** The sheet of the chosen theme, served after old-school.css; Old School has none and gets an empty one. */
 async function chosenThemeStylesheet() {
   const css = THEME.stylesheet ? await readFile(path.join(THEMES_DIRECTORY, THEME.stylesheet)) : "";
+  return new Response(css, { headers: { "content-type": MEDIA_TYPES[".css"] } });
+}
+
+/** The sheet of the chosen panel style, served after plain.css; a style with no sheet of its own shows as Plain. */
+async function chosenPanelStylesheet() {
+  const { stylesheet } = PANEL_STYLES[PANEL_STYLE_NAME];
+  const css = stylesheet ? await readFile(path.join(PANEL_STYLES_DIRECTORY, stylesheet)) : "";
   return new Response(css, { headers: { "content-type": MEDIA_TYPES[".css"] } });
 }
 
@@ -94,7 +105,7 @@ function createWindow(entry, kind, bounds) {
     webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(HERE, "preload.cjs") },
   });
   window.on("page-title-updated", (event) => event.preventDefault());
-  window.loadURL(`solder://editor/index.html?ventana=${kind}&vi=${entry.id}`);
+  window.loadURL(`solder://editor/index.html?ventana=${kind}&vi=${entry.id}&panelStyle=${PANEL_STYLE_NAME}`);
   return window;
 }
 

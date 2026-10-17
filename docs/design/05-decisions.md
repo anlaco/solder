@@ -1883,7 +1883,8 @@ each show.
 6. **The theme is chosen** by the environment variable `SOLDER_THEME` (`old-school` or `solder`), with no option
    in the interface for now (amended on 2026-10-17; Tools ▸ Options comes later). Without it, development
    (`npm run app`) starts in Old School and a packaged release in Solder.
-7. **The Front Panel.** In Old School its controls are LabVIEW's, as now. In Solder they are plain HTML with a minimal
+7. **The Front Panel.** In Old School its controls are LabVIEW's, as now (*amended on 2026-10-17 by DT-058 §5:* drawn
+   as the same plain HTML, with a panel style that gives them LabVIEW's look). In Solder they are plain HTML with a minimal
    CSS, and a panel style (a CSS sheet) gives them their look: **Plain** (no style: the template users start from),
    **Solder** (the default) and others shipped later. The position and size of each object belong to the VI (the
    `.sdg` keeps them); a style changes everything else. The classes and attributes of the panel's HTML (such as
@@ -1985,8 +1986,15 @@ in that order, through companion `.css` files.**
    it exists.
 4. **Styles shipped:** **Plain**, **Solder** (the default of the releases) and **Solder Night** (dark, to show how a
    general template works). The dark limit of DT-056 §5 is for the editor's theme, not for panel styles.
-5. **Old School is also a panel style:** LabVIEW's controls, drawn as now. It is the default in development, so the
-   clone can still be compared with LabVIEW; Plain, Solder and Solder Night are the HTML styles.
+5. **Old School is also a panel style:** LabVIEW's controls, as now. It is the default in development, so the
+   clone can still be compared with LabVIEW.
+   *Amended on 2026-10-17:* Old School is **a CSS sheet over Plain like the others** (`panel-styles/old-school.css`),
+   not a drawing of its own. The editor draws every panel one way only, the Plain HTML; Old School's sheet gives it
+   LabVIEW's look, pixel for pixel the same as the drawing it replaces. Where that look is an illustration CSS does
+   not draw (the gradients of a Boolean, the incrementer's capsule, the check of an error's status), the sheet takes
+   it as SVG images that go with the style, as any user's style may. **Why:** two drawings drift apart and every new
+   control would have to be made twice; and if Old School, the hardest look, is reachable from Plain's markup, that
+   markup is complete for any style.
 6. **Until Tools ▸ Options exists**, the editor's style is chosen with the environment variable
    `SOLDER_PANEL_STYLE` (`old-school`, `plain`, `solder`, `solder-night`), like `SOLDER_THEME` (DT-056 §6).
 7. **First the editor and window levels.** The project level waits for projects (`.sdproj`) and the executable for
@@ -1995,12 +2003,50 @@ in that order, through companion `.css` files.**
    touched and flat on what is read, values as arcs or fills, numbers in monospace with tabular figures, hairline
    rings instead of borders, controls raised and indicators recessed (LabVIEW's white control and grey indicator,
    said with depth), and light as feedback.
+9. **How the HTML panel is built** (decided on 2026-10-17, before writing it):
+   - **A style changes neither sizes nor the place of terminals.** Every object of an HTML style takes exactly the
+     box it takes in Old School (`cajaObjeto` in `front-panel.mjs`), so labels, clicks, selection and the connector
+     pane are the same in every style; the style draws inside that box. The larger boxes of the mockup are only
+     illustration.
+   - **Typing stays in the editor's model.** The text and the caret of a field are drawn by `front-panel.mjs` as in
+     Old School, so editing, Enter, Esc and undo behave the same in every style. The HTML carries ARIA roles
+     (`button`, `switch`, `radio`) but no native `button`, `input` or `select`, which would take the keyboard
+     focus away from the editor.
+   - **The label stays a separate object** that moves and is edited as in LabVIEW. It gets the class `.sd-label`, and
+     the object carries its text in `data-label`.
+   - **Plain covers every control that exists** from its first step (numeric and enum, string, the Booleans, error
+     in and out, arrays and the three graphs). *Amended on 2026-10-17 (§5):* it is the only drawing, so there is
+     nothing to fall back on.
+   - The style reaches the window as a parameter of its URL; `plain.css` is always loaded, with the chosen style's
+     sheet after it, and every rule of a panel style lives under `.sd-panel`, so it never touches the editor.
+   - *Added on 2026-10-17 (§5):* **the markup carries every part a style may draw, ornament included.** What is only
+     ornament in Plain (the bevel of a field, the body of an incrementer, the shine of an LED, the radix of a
+     numeric, the scrollbar of a string or of an error's source, the pieces of a graph's frame) is an element with
+     its own class and `aria-hidden`, hidden by `plain.css` and shown by the style that wants it. Those classes are
+     part of the public API (DT-056 §7). The geometry of every part comes from the box measured in LabVIEW, so a
+     style places it with CSS, not with markup of its own.
+   - *Added on 2026-10-17 (§5):* **Old School's illustrations are SVG files of the style**, in
+     `editor/src/panel-styles/old-school/`, which `old-school.css` takes as background images. They are generated by
+     a script from the drawings of `glyphs.mjs`, which the palette and the diagram's terminals still use, and a test
+     fails when a file differs from what the script writes, so the two never drift. Each one is adopted only if it
+     gives the same pixels as the inline SVG it replaces; one that does not is drawn inline in the markup instead,
+     with its colors in the sheet, and the reason is written next to it.
+   - *Added on 2026-10-17 (§5):* **Old School is migrated control by control.** Each kind moves to Plain's markup
+     with its Old School look in `old-school.css` only when a pixel diff against the old drawing shows zero changed
+     pixels in every state of a fixture VI (each kind as control and indicator, on and off, empty, selected, being
+     typed into, with data). Until the last kind moves, the old drawing stays for the kinds not yet migrated; then
+     the old drawing and the switch between drawings are deleted.
 
 ### How it is verified
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
 | A window's style wins over the project's, and that over the editor's | a test of the function that resolves a VI's stylesheets | **Unverified**: not written yet |
-| A control a style does not draw shows as Plain | a test that every control kind has Plain rules in `plain.css` | **Unverified**: not written yet |
+| A control a style does not draw shows as Plain | `test/editor/panel-styles.test.mjs`: every kind an HTML panel draws has rules in `plain.css`, and every rule lives under `.sd-panel` | Verified 2026-10-17 |
+| A style changes neither sizes nor terminals | `test/editor/panel-styles.test.mjs`: every object of an HTML panel has its Old School box, and keeps the editor's hooks | Verified 2026-10-17 |
+| Old School over Plain looks exactly like the drawing it replaces | `scripts/panel-pixels/compare.sh`: a pixel diff of a fixture with every kind and state, the commit before as BEFORE; then the real editor under Xvfb (`labview-captures/reports/2026-10-17-panel-old-school-numeric.md`) | Verified 2026-10-17 for numeric and enum; the other kinds still on the old drawing |
+| Old School's SVG files match the drawings of `glyphs.mjs` | `test/editor/panel-styles.test.mjs`: every file equals what `old-school-art.mjs` writes, and every file `old-school.css` takes exists | Verified 2026-10-17 |
+| The editor has one panel drawing | a test that every panel style, Old School included, draws the same markup (only the sheets differ) | **Unverified**: holds once the old drawing is deleted |
+| Every ornament part is hidden in Plain | `test/editor/panel-styles.test.mjs`: every ornament class of the markup has a `display: none` rule in `plain.css` | **Unverified**: not written yet |
 | The `.sdg` does not change | the format tests (`test/end-to-end/format-versions.test.mjs`) stay green | Holds today; to recheck when styles are implemented |
 

@@ -32,8 +32,15 @@ const propertiesSetByViews = sourceFiles()
   .filter((url) => url.pathname.endsWith(".mjs"))
   .flatMap((url) => [...readFileSync(url, "utf8").matchAll(/[;"`\s(](--[\w-]+)(?::|["']\s*,)/g)].map(([, name]) => name));
 
+// A panel style (DT-058) is not an editor theme: it declares its own --sd-* tokens on .sd-panel.
+const PANEL_STYLES = new URL("panel-styles/", EDITOR_SOURCE);
+const panelStyleTokens = readdirSync(PANEL_STYLES)
+  .filter((name) => name.endsWith(".css"))
+  .flatMap((name) => [...withoutComments(readFileSync(new URL(name, PANEL_STYLES), "utf8")).matchAll(/(--sd-[\w-]+)\s*:/g)].map(([, token]) => token));
+
 const definedTokens = new Set([
   ...OLD_SCHOOL_TOKENS.keys(),
+  ...panelStyleTokens,
   ...STYLESHEETS_WITHOUT_COLORS.flatMap((path) => [...rootCustomProperties(read(path)).keys()]),
   ...propertiesSetByViews,
 ]);

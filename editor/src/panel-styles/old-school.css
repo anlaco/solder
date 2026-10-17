@@ -1,0 +1,45 @@
+/* Old School: LabVIEW 2026 Q3's controls, as a panel style over Plain (DT-058 §5).
+ *
+ * It is loaded after plain.css and dresses the same markup (html-controls.mjs) with LabVIEW's look, pixel for pixel
+ * the same as the drawing it replaces: scripts/panel-pixels/compare.sh proves it for each kind. Its colors are the
+ * editor theme's tokens that the old drawing used, so it looks the same under every editor theme; what CSS does not
+ * draw comes as SVG files from old-school/, written from glyphs.mjs by scripts/old-school-art.mjs.
+ *
+ * The kinds not listed in OLD_SCHOOL_KINDS_OVER_PLAIN (panel-style.mjs) are still drawn by front-panel.mjs.
+ */
+
+/* ——— Common parts ——— */
+
+/* The objects take the editor's font and ink, and the labels the canvas's, as LabVIEW's do. */
+.sd-panel .sd-control,
+.sd-panel .sd-indicator { font: inherit; color: inherit; }
+.sd-panel .sd-label { font-family: inherit; color: var(--canvas-text); }
+
+/* The incrementer: a grey capsule with two arrows, 16 px wide; each half of it steps. */
+.sd-panel .sd-incrementer {
+  position: absolute; left: 0; top: 0; display: block; width: 16px; height: 100%;
+  background: url("old-school/incrementer.svg") 0 0 / 100% 100% no-repeat;
+}
+.sd-panel .sd-step { position: absolute; left: 0; display: block; width: 13px; height: 50%; }
+.sd-panel .sd-step-up { top: 0; }
+.sd-panel .sd-step-down { bottom: 0; }
+.sd-panel .sd-step::before { content: none; }
+
+/* ——— Numeric and enum ——— */
+
+/* The field is sunk into a 4 px bevel, white on a control and grey on an indicator; it starts 4 px inside the
+   incrementer. An enum's box is 49 px wide but its field is a numeric's 55, as the old drawing had it (unverified
+   against LabVIEW). */
+.sd-panel :is(.sd-numeric, .sd-enum) { display: block; }
+.sd-panel :is(.sd-numeric, .sd-enum) .sd-field {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 55px; min-width: auto; justify-content: normal;
+  padding: 0 0 0 2px; border: 4px solid; border-radius: 0;
+  border-color: var(--numeric-field-border-top) var(--numeric-field-border-right) var(--numeric-field-border-bottom) var(--numeric-field-border-left);
+  background: var(--numeric-field-background); box-shadow: inset 1px 1px 0 var(--numeric-field-inset);
+  font-size: var(--fuente); line-height: 1; font-variant-numeric: normal;
+}
+.sd-panel :is(.sd-numeric, .sd-enum) .sd-incrementer + .sd-field { left: 12px; }
+.sd-panel .sd-indicator:is(.sd-numeric, .sd-enum) .sd-field { background: var(--numeric-indicator-background); }
+.sd-panel :is(.sd-numeric, .sd-enum) .sd-value { flex: initial; min-width: auto; overflow: visible; }
+/* The old drawing showed no caret in a numeric field: an inline element with no content. */
+.sd-panel :is(.sd-numeric, .sd-enum) .caret { display: inline; vertical-align: baseline; }

@@ -122,7 +122,7 @@ test("an enum control and indicator on the panel show the item name and their me
   assert.equal(P.cajaObjeto("control", 0, 0, config).ancho, 61);
   const html = P.contenido(p, CTX);
   assert.match(html, />Init</, "the current item's name is what shows");
-  assert.match(html, /class="casilla indicador"/, "the indicator's box is grey");
+  assert.match(html, /class="objeto-panel sd-indicator sd-enum"[^>]*><span class="sd-field"/, "the indicator is a field without arrows (grey in Old School)");
   // The arrows move to the next item and stop at the last one (whether LabVIEW wraps is unverified).
   p = P.pulsar(p, CTX, { tipo: "paso", id: control.id, paso: 1 }, { x: 0, y: 0 });
   p = P.pulsar(p, CTX, { tipo: "paso", id: control.id, paso: 1 }, { x: 0, y: 0 });

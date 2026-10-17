@@ -1329,6 +1329,16 @@ const radios = () =>
     .join("");
 
 /**
+ * The incrementer of a numeric control on the panel: two arrows in a grey capsule, 16 × 25 px
+ * (front-panel/numeric-panel.png). The Old School panel style takes it as an SVG file (DT-058 §9).
+ */
+export const INCREMENTER = {
+  width: 16,
+  height: 25,
+  drawing: `<rect x="1" y="2" width="11" height="21" rx="5.5" fill="#dedede" stroke="#9c9c9c" stroke-width="1"/><polygon points="6.5,5 3.8,10 9.2,10" fill="#7a7a7a"/><polygon points="6.5,20 3.8,15 9.2,15" fill="#7a7a7a"/>`,
+};
+
+/**
  * Los controles booleanos de la paleta, por el último segmento de su id (que es
  * el `style` del control): `dibujo(encendido)` da el SVG interior, en una caja
  * de `ancho` × `alto` px.

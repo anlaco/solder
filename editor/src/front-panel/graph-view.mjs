@@ -164,15 +164,21 @@ function plotsLayer(plots, scaleX, scaleY, plot) {
 
 // ——— The scales ———
 
+/** Where the tick labels of the Y axis go: their text and the row of their tick. */
+const yTicks = (scale, plot, separator) => ticks(scale).map((value) => ({ text: tickLabel(value, separator), row: plot.y + plot.height - 1 - along(value, scale, plot.height) }));
+/** Where the tick labels of the X axis go: their text and the column of their tick. */
+const xTicks = (scale, plot, separator) => ticks(scale).map((value) => ({ text: tickLabel(value, separator), column: plot.x + along(value, scale, plot.width) }));
+const widestLabel = (labels) => Math.max(0, ...labels.map(({ text }) => textWidth(text)));
+
 function scaleY(scale, plot, separator) {
-  const labels = ticks(scale).map((value) => ({ text: tickLabel(value, separator), row: plot.y + plot.height - 1 - along(value, scale, plot.height) }));
+  const labels = yTicks(scale, plot, separator);
   const marks = labels.map(({ row }) => rect(plot.x - TICK.yBeforePlot, row, TICK.length, 1, "#000000")).join("");
   const texts = labels.map(({ text, row }) => `<text class="grafico-texto marca-y" x="${plot.x - LABELS.yGap}" y="${row + LABELS.yBaselineBelowTick}" text-anchor="end">${esc(text)}</text>`).join("");
-  return { marks, texts, widest: Math.max(0, ...labels.map(({ text }) => textWidth(text))) };
+  return { marks, texts, widest: widestLabel(labels) };
 }
 
 function scaleX(scale, plot, separator) {
-  const labels = ticks(scale).map((value) => ({ text: tickLabel(value, separator), column: plot.x + along(value, scale, plot.width) }));
+  const labels = xTicks(scale, plot, separator);
   const marks = labels.map(({ column }) => rect(column, plot.y + plot.height + TICK.xBelowPlot, 1, TICK.length, "#000000")).join("");
   const texts = labels.map(({ text, column }) => `<text class="grafico-texto marca-x" x="${column + 0.5}" y="${plot.y + plot.height + LABELS.xBaselineBelow}" text-anchor="middle">${esc(text)}</text>`).join("");
   return marks + texts;
@@ -204,4 +210,76 @@ export function graphSvg(node, { type, value, charts, separator }) {
   }
   if (isShown(node, "plot-legend")) body += legend(measures);
   return `<svg class="grafico-dibujo" width="${measures.width}" height="${measures.height}" viewBox="0 0 ${measures.width} ${measures.height}" shape-rendering="crispEdges" aria-hidden="true">${body}</svg>`;
+}
+
+// ——— The HTML panel styles (DT-058) ———
+//
+// The same object in the same box, with the same scales, grid and plots, but with classes instead of colors, so a
+// panel style (plain.css and the sheets over it) gives it its look. The frame and the bevel are Old School's; here
+// the plot area stands alone.
+
+/** The grid of an HTML graph: one path per class of line, `sd-grid-minor` and `sd-grid-major`. */
+function plainGrid(kind, xScale, yScale, plot) {
+  const subdivisions = GRID_SUBDIVISIONS[kind];
+  if (!subdivisions) return "";
+  const columns = gridPositions(xScale, plot.width, subdivisions.x);
+  const rows = gridPositions(yScale, plot.height, subdivisions.y);
+  return ["minor", "major"]
+    .map((weight) => {
+      const vertical = columns[weight].map((position) => `M${plot.x + position + 0.5} ${plot.y}v${plot.height}`);
+      const horizontal = rows[weight].map((position) => `M${plot.x} ${plot.y + plot.height - 1 - position + 0.5}h${plot.width}`);
+      return vertical.length + horizontal.length ? `<path class="sd-grid-line sd-grid-${weight}" d="${[...vertical, ...horizontal].join("")}"/>` : "";
+    })
+    .join("");
+}
+
+/** The plots of an HTML graph, clipped to the plot area; `data-plot` tells a style which plot each one is. */
+function plainPlots(plots, xScale, yScale, plot) {
+  const paths = plots
+    .map((points, index) => ({ path: plotPath(points, xScale, yScale, plot), index }))
+    .filter(({ path }) => path)
+    .map(({ path, index }) => `<path class="sd-trace" data-plot="${index}" d="${path}"/>`)
+    .join("");
+  return `<svg class="sd-traces" x="${plot.x}" y="${plot.y}" width="${plot.width}" height="${plot.height}">${paths}</svg>`;
+}
+
+/** The legend of an HTML graph, where Old School puts it: a box with the plot's name and its swatch. */
+function plainLegend(measures) {
+  const { width, height, gap, textX, textBaseline, swatch } = LEGEND;
+  const zigzag = [[1, 11], [8, 2], [14, 10], [20, 3], [26, 9]].map(([x, y]) => `${x},${y}`).join(" ");
+  return `<g class="sd-legend" data-parte="legend" transform="translate(${measures.width - width} ${-(height + gap)})">` +
+    `<rect class="sd-legend-box" x="0.5" y="0.5" width="${width - 1}" height="${height - 1}"/>` +
+    `<text class="sd-legend-text" x="${textX}" y="${textBaseline}">Plot 0</text>` +
+    `<g class="sd-swatch" data-parte="plot-swatch" transform="translate(${swatch.x} ${swatch.y})">` +
+    `<rect class="sd-swatch-box" x="0.5" y="0.5" width="${swatch.width - 1}" height="${swatch.height - 1}"/>` +
+    `<polyline class="sd-trace" data-plot="0" points="${zigzag}" transform="translate(1 1)"/></g></g>`;
+}
+
+/** The SVG of a graph in an HTML panel style, from the same inputs as `graphSvg`. */
+export function plainGraphSvg(node, { type, value, charts, separator }) {
+  const measures = GRAPH_MEASURES[node.tipo];
+  const { plot } = measures;
+  const { plots, scaleX: xScale, scaleY: yScale } = displayedGraph(node, type, value, charts, plot);
+  let body = `<rect class="sd-plot" x="${plot.x}" y="${plot.y}" width="${plot.width}" height="${plot.height}"/>` + plainGrid(node.tipo, xScale, yScale, plot) + plainPlots(plots, xScale, yScale, plot);
+  let yLabelsWidth = 0;
+  if (isShown(node, "y-scale")) {
+    const labels = yTicks(yScale, plot, separator);
+    body += labels.map(({ row }) => `<rect class="sd-tick" x="${plot.x - TICK.yBeforePlot}" y="${row}" width="${TICK.length}" height="1"/>`).join("");
+    body += labels.map(({ text, row }) => `<text class="sd-tick-text sd-tick-y" x="${plot.x - LABELS.yGap}" y="${row + LABELS.yBaselineBelowTick}" text-anchor="end">${esc(text)}</text>`).join("");
+    yLabelsWidth = widestLabel(labels);
+  }
+  if (isShown(node, "x-scale")) {
+    const labels = xTicks(xScale, plot, separator);
+    body += labels.map(({ column }) => `<rect class="sd-tick" x="${column}" y="${plot.y + plot.height + TICK.xBelowPlot}" width="1" height="${TICK.length}"/>`).join("");
+    body += labels.map(({ text, column }) => `<text class="sd-tick-text sd-tick-x" x="${column + 0.5}" y="${plot.y + plot.height + LABELS.xBaselineBelow}" text-anchor="middle">${esc(text)}</text>`).join("");
+  }
+  if (isShown(node, "x-scale-label") && isShown(node, "x-scale")) {
+    body += `<text class="sd-axis-name sd-axis-x" x="${plot.x + plot.width / 2}" y="${plot.y + plot.height + NAMES.xBaselineBelow}" text-anchor="middle">${X_AXIS_NAME}</text>`;
+  }
+  if (isShown(node, "y-scale-label") && isShown(node, "y-scale")) {
+    const baseline = plot.x - NAMES.yGapToLabels - yLabelsWidth + 0.5;
+    body += `<text class="sd-axis-name sd-axis-y" transform="translate(${baseline} ${plot.y + plot.height / 2}) rotate(-90)" text-anchor="middle">${Y_AXIS_NAME}</text>`;
+  }
+  if (isShown(node, "plot-legend")) body += plainLegend(measures);
+  return `<svg class="sd-graph-art" width="${measures.width}" height="${measures.height}" viewBox="0 0 ${measures.width} ${measures.height}" aria-hidden="true">${body}</svg>`;
 }

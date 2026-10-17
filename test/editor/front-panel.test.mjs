@@ -41,8 +41,8 @@ test("un control y un indicador numéricos se ponen en el panel con su terminal 
 
   const html = P.contenido(p, CTX);
   assert.equal((html.match(/class="objeto-panel/g) ?? []).length, 2);
-  assert.match(html, /class="incrementador"/, "el control lleva incrementador");
-  assert.equal((html.match(/class="casilla indicador"/g) ?? []).length, 1, "el indicador, la casilla gris");
+  assert.match(html, /class="objeto-panel sd-control sd-numeric"[^>]*><span class="sd-incrementer">/, "the control has an incrementer");
+  assert.match(html, /class="objeto-panel sd-indicator sd-numeric"[^>]*><span class="sd-field"/, "the indicator only its field (grey in Old School)");
   assert.match(html, />Numeric 2</);
 
   // En el diagrama: el terminal del control da el dato y el del indicador lo recibe.
@@ -165,7 +165,7 @@ test("el valor de un control se escribe en su casilla y cambia con las flechas",
   const id = p.g.nodos[0].id;
   for (const paso of [1, 1, 1, -1]) p = P.pulsar(p, CTX, { tipo: "paso", id, paso }, { x: 0, y: 0 });
   assert.equal(CV.currentValue(p.g.nodos[0]), 2);
-  assert.match(P.contenido(p, CTX), /<span class="valor"><span>2<\/span>/);
+  assert.match(P.contenido(p, CTX), /<span class="sd-value">2<\/span>/);
 
   p = P.pulsar(p, CTX, { tipo: "casilla", id }, { x: 0, y: 0 });
   assert.deepEqual(p.edicion, { nodo: id, valor: true, texto: "2", shown: "2", todo: false });
@@ -195,7 +195,7 @@ test("a DBL control shows 1.23457E+8 and keeps 123456789, the constant shows it 
   p = P.editarValor(p, CTX, id, true);
   for (const key of "123456789") p = P.teclear(p, key);
   p = P.teclear(p, "Enter");
-  assert.match(P.contenido(p, CTX), /<span class="valor"><span>1,23457E\+8<\/span>/);
+  assert.match(P.contenido(p, CTX), /<span class="sd-value">1,23457E\+8<\/span>/);
   p = P.confirmar(P.editarValor(p, CTX, id, true));
   assert.equal(CV.currentValue(p.g.nodos[0]), 123456789, "confirming the text shown does not round the value");
 
@@ -217,7 +217,7 @@ test("un control entero redondea y satura lo que se le escribe", () => {
   p = P.confirmar(P.teclear(p, "Enter"));
   assert.equal(CV.currentValue(p.g.nodos[0]), 4);
   assert.equal(p.g.nodos[0].config.type, "u8", "el tipo no cambia");
-  assert.match(P.contenido(p, CTX), /<span class="valor"><span>4<\/span>/);
+  assert.match(P.contenido(p, CTX), /<span class="sd-value">4<\/span>/);
   p = P.editarValor(p, CTX, id, true);
   for (const t of ["3", "0", "0"]) p = P.teclear(p, t);
   p = P.confirmar(P.teclear(p, "Enter"));

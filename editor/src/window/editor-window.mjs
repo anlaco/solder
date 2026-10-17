@@ -48,12 +48,15 @@ import * as RV from "./run-values.mjs";
 import * as Sync from "./graph-sync.mjs";
 import * as VP from "./vi-properties.mjs";
 import * as V from "./window-view.mjs";
+import { panelStyleFromQuery } from "../front-panel/panel-style.mjs";
 import { buildHierarchy } from "./hierarchy-client.mjs";
 import { compilar } from "../../../core/compiler/compiler.mjs";
 import { pruneConnector } from "../../../core/model/connector.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 
 const nombre = new URLSearchParams(location.search).get("ventana") ?? "front-panel";
+/** The style the Front Panel is drawn in (DT-058), chosen by the main process. */
+const panelStyle = panelStyleFromQuery(new URLSearchParams(location.search).get("panelStyle"));
 const prefijo = `window.${nombre}`;
 document.title = V.TITULOS[nombre];
 
@@ -1147,6 +1150,7 @@ function placePalettes(room) {
 
 function pintar() {
   ctx.panelSize = tamanoDelLienzo();
+  ctx.panelStyle = panelStyle;
   const resueltos = Gr.tipos(grafo(), cat);
   // A chart whose wire changed has lost its history (REPORT §4).
   const charts = GS.reconciledCharts(pan.charts, grafo(), resueltos);
@@ -1159,6 +1163,7 @@ function pintar() {
     extra.editandoTexto = !!dia.edicion;
   } else {
     extra.lienzo = P.contenido(pan, ctx, resueltos);
+    extra.panelStyle = panelStyle;
     extra.conectorGlifo = CP.paneGlyph(pan.g, cat, pan.conector?.celda ?? null);
     extra.encima = pan.menu ? D.menuContextual(inv, pan.menu, ED.marcados(pan, ctx), medirMenu, ED.variantes(pan, ctx), windowSize()) : "";
     extra.editandoTexto = !!pan.edicion;
@@ -1271,23 +1276,25 @@ function objetivo(el) {
 /** What `objetivoPanel` calls the parts of a panel object, where its right-click menu opens. */
 const PANEL_OBJECT_TARGETS = new Set(["objeto", "casilla", "paso", "elem", "campo", "asa-array"]);
 
+// The parts of a panel object are found by their data attributes, which every panel style keeps (DT-058).
 function objetivoPanel(el) {
   if (!el?.closest(".lienzo")) return null;
+  const objectOf = (part) => part.closest(".objeto-panel").dataset.nodo;
   const etiqueta = el.closest(".etiqueta");
   if (etiqueta) return { tipo: "etiqueta", id: etiqueta.dataset.etiqueta };
-  const campo = el.closest(".ec-campo");
-  if (campo) return { tipo: "campo", id: campo.closest(".objeto-panel").dataset.nodo, campo: campo.dataset.campo };
-  const asaArray = el.closest(".asa-array");
-  if (asaArray) return { tipo: "asa-array", id: asaArray.closest(".objeto-panel").dataset.nodo, lado: asaArray.dataset.lado };
-  const elem = el.closest(".elem-array");
-  if (elem) return { tipo: "elem", id: elem.closest(".objeto-panel").dataset.nodo, k: addressFromText(elem.dataset.k) };
-  const flecha = el.closest(".flecha-inc");
-  if (flecha) return { tipo: "paso", id: flecha.closest(".objeto-panel").dataset.nodo, paso: Number(flecha.dataset.paso), eje: flecha.closest(".arr-indice")?.dataset.eje };
-  const casilla = el.closest(".casilla");
+  const campo = el.closest("[data-campo]");
+  if (campo) return { tipo: "campo", id: objectOf(campo), campo: campo.dataset.campo };
+  const asaArray = el.closest("[data-asa-array]");
+  if (asaArray) return { tipo: "asa-array", id: objectOf(asaArray), lado: asaArray.dataset.lado };
+  const elem = el.closest("[data-k]");
+  if (elem) return { tipo: "elem", id: objectOf(elem), k: addressFromText(elem.dataset.k) };
+  const flecha = el.closest("[data-paso]");
+  if (flecha) return { tipo: "paso", id: objectOf(flecha), paso: Number(flecha.dataset.paso), eje: flecha.closest("[data-eje]")?.dataset.eje };
+  const casilla = el.closest("[data-casilla]");
   if (casilla) return { tipo: "casilla", id: casilla.dataset.casilla };
   // The legend of a graph and the swatch of a plot are parts of it, with menus of their own.
   const parte = el.closest("[data-parte]");
-  if (parte) return { tipo: "objeto", id: parte.closest(".objeto-panel").dataset.nodo, parte: parte.dataset.parte };
+  if (parte) return { tipo: "objeto", id: objectOf(parte), parte: parte.dataset.parte };
   const o = el.closest(".objeto-panel");
   if (o) return { tipo: "objeto", id: o.dataset.nodo };
   return { tipo: "fondo" };
