@@ -179,6 +179,19 @@ export function cajaObjeto(tipo, x, y, config) {
 
 export const caja = (n) => cajaObjeto(n.tipo, n.panel.x, n.panel.y, n.config);
 
+/** How deep inside a numeric or string control's edge a press moves it instead of typing (2026-10-17-panel-move-zones.md). */
+const MOVE_BAND_PX = 4;
+
+/** Whether the point lies within MOVE_BAND_PX of the inside of the box's edge. */
+function isInMoveBand(box, point) {
+  const fromLeft = point.x - box.x;
+  const fromTop = point.y - box.y;
+  const fromRight = box.x + box.ancho - 1 - point.x;
+  const fromBottom = box.y + box.alto - 1 - point.y;
+  const inside = Math.min(fromLeft, fromTop, fromRight, fromBottom) >= 0;
+  return inside && Math.min(fromLeft, fromTop, fromRight, fromBottom) < MOVE_BAND_PX;
+}
+
 /** Una etiqueta que nunca se ha movido va encima de la casilla, alineada con ella. */
 const etiquetaPorDefecto = (k, tam) => [k.casilla, -(tam.alto + (k.separacion ?? MEDIDAS_PANEL.separacion))];
 
@@ -406,9 +419,9 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
     const [pasoAncho, pasoAlto] = dimensionsOfNode(nodo.config) === 2 ? pasoCeldas2D(tipoElemento(nodo)) : [medidaElemento(tipoElemento(nodo))[0], 0];
     return { ...p, accion: { tipo: "estirar-array", nodo: sobre.id, lado: sobre.lado ?? "derecha", x0: pt.x, y0: pt.y, visibles0: visibleGrid(nodo.config), pasoAncho, pasoAlto } };
   }
-  // Un clic en la casilla de un control escribe en ella, con el cursor al final.
+  // A click in a control's value box types in it, with the caret at the end; its outer band moves it.
   const n = p.g.nodos.find((m) => m.id === sobre.id);
-  if (sobre.tipo === "casilla" && (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control") && !esEnum(n?.config?.type)) return editarValor(p, ctx, sobre.id, false);
+  if (sobre.tipo === "casilla" && (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control") && !esEnum(n?.config?.type) && !isInMoveBand(caja(n), pt)) return editarValor(p, ctx, sobre.id, false);
   if (sobre.tipo === "objeto" || sobre.tipo === "casilla") return { ...p, seleccion: elegir(sobre.id), accion: { tipo: "mover", x: pt.x, y: pt.y, nodo: sobre.id, movido: false, ...(duplicate ? { duplicar: true } : {}) } };
   if (sobre.tipo === "etiqueta") return { ...p, seleccion: elegir(idEtiqueta(sobre.id)), accion: { tipo: "etiqueta", nodo: sobre.id, x: pt.x, y: pt.y } };
   return { ...p, seleccion: shift ? p.seleccion : [], accion: { tipo: "rectangulo", x0: pt.x, y0: pt.y, x1: pt.x, y1: pt.y, base: shift ? p.seleccion : [] } };
