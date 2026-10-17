@@ -17,9 +17,6 @@ export const DEFAULT_SCALES = {
   "waveform-graph": { x: { min: 0, max: 100, step: 20 }, y: { min: -10, max: 10, step: 5 } },
   "xy-graph": { x: { min: 0, max: 10, step: 1 }, y: { min: 0, max: 10, step: 1 } },
 };
-/** Plot 0 is white and Plot 1 red (74, 82); the rest unverified (here they repeat). */
-export const PLOT_COLORS = ["#ffffff", "#ff4242"];
-export const plotColor = (index) => PLOT_COLORS[index % PLOT_COLORS.length];
 
 // ——— Waveform Chart ———
 

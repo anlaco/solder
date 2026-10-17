@@ -1883,14 +1883,14 @@ each show.
 6. **The theme is chosen** by the environment variable `SOLDER_THEME` (`old-school` or `solder`), with no option
    in the interface for now (amended on 2026-10-17; Tools ▸ Options comes later). Without it, development
    (`npm run app`) starts in Old School and a packaged release in Solder.
-7. **The Front Panel.** In Old School its controls are LabVIEW's, as now. In Solder they are plain HTML with a minimal
+7. **The Front Panel.** In Old School its controls are LabVIEW's, as now (*amended on 2026-10-17 by DT-058 §5:* drawn
+   as the same plain HTML, with a panel style that gives them LabVIEW's look). In Solder they are plain HTML with a minimal
    CSS, and a panel style (a CSS sheet) gives them their look: **Plain** (no style: the template users start from),
    **Solder** (the default) and others shipped later. The position and size of each object belong to the VI (the
    `.sdg` keeps them); a style changes everything else. The classes and attributes of the panel's HTML (such as
    `.sd-control`, `.sd-indicator`, `.sd-numeric`, `data-label`) are a public API, frozen like the file format once
-   published. Where a panel's style is chosen (per VI, a shared `.css` referenced from VI Properties, or for the
-   whole application) is **still open**: referencing it from the `.sdg` is a format change, version 2 with its
-   migration (DT-055).
+   published. Where a panel's style is chosen was decided on 2026-10-17 in DT-058: window > project > editor, with
+   companion `.css` files, so the `.sdg` format does not change.
 8. **The first step is to centralize the colors** into theme tokens with no visible change: Old School must stay
    identical, and the tests say so. Today there are about 95 distinct colors in `editor/src/styles.css` and more than
    1000 color literals in the glyphs and views.
@@ -1956,3 +1956,125 @@ fixes cherry-picked from `main`.**
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
 | A release branch holds only fixes from `main` | every commit on it after its tag carries `cherry picked from` (`-x`) or says why it exists only there; checked with `git log` before each fix release | **Unverified**: process, no automatic check |
+
+## DT-058
+
+**Panel styles: Plain is the mother template, and a panel's style comes from its window, its project or the editor,
+in that order, through companion `.css` files.**
+
+- **Status:** Accepted on 2026-10-17 by the developer. It settles the open point of DT-056 §7. Mockup with the pattern
+  the styles follow: `docs/ideas/panel-style-mockups.html`.
+- **Priority (2026-10-17, the developer):** the styles that matter are the editor's: **Old School for development
+  and Solder for the releases**. The window style (§1–2) is kept as it is, but it is **provisional**: it is an
+  exception that will probably change once LabVIEW's own way of styling panels has been looked at, and no more time
+  goes into it, nor into the project level, until then.
+- **Why:** the person who programs sees the panels in the style they like, the program they ship can have a look of
+  its own, and one window can still differ. Plain keeps every control usable in every style, even before a style
+  draws it.
+
+### Decision
+
+1. **Who chooses, by priority: window > project > editor.**
+   - **Editor:** the programmer's own preference, kept in their settings and never in a VI. It is the default for
+     every panel they open.
+   - **Project:** an alternative style for a whole project. A built executable uses the project's style if there is
+     one, otherwise the editor's.
+   - **Window:** one VI can carry its own style, which wins over the other two.
+2. **The stylesheet goes with its file, as in Angular:** it has the same name next to it. `Oven Controller.sdg` +
+   `Oven Controller.css` styles that window; `My Project.sdproj` + `My Project.css` styles the project. Nothing is
+   referenced from inside the `.sdg`, so **its format does not change** (no version 2, DT-055). The `.css` is edited
+   with any editor and versioned with the VI.
+3. **Plain is the mother template.** Every control has a Plain version: plain HTML with the public classes
+   (DT-056 §7) and a minimal CSS that makes it usable. A style is loaded on top of `plain.css` and only redefines
+   what it wants; **a control a style does not draw shows as Plain**. A new control works in every style from the day
+   it exists.
+4. **Styles shipped:** **Plain**, **Solder** (the default of the releases) and **Solder Night** (dark, to show how a
+   general template works). The dark limit of DT-056 §5 is for the editor's theme, not for panel styles.
+5. **Old School is also a panel style:** LabVIEW's controls, as now. It is the default in development, so the
+   clone can still be compared with LabVIEW.
+   *Amended on 2026-10-17:* Old School is **a CSS sheet over Plain like the others** (`panel-styles/old-school.css`),
+   not a drawing of its own. The editor draws every panel one way only, the Plain HTML; Old School's sheet gives it
+   LabVIEW's look, pixel for pixel the same as the drawing it replaces. Where that look is an illustration CSS does
+   not draw (the gradients of a Boolean, the incrementer's capsule, the check of an error's status), the sheet takes
+   it as SVG images that go with the style, as any user's style may. **Why:** two drawings drift apart and every new
+   control would have to be made twice; and if Old School, the hardest look, is reachable from Plain's markup, that
+   markup is complete for any style.
+6. **Until Tools ▸ Options exists**, the editor's style is chosen with the environment variable
+   `SOLDER_PANEL_STYLE` (`old-school`, `plain`, `solder`, `solder-night`), like `SOLDER_THEME` (DT-056 §6).
+7. **First the editor and window levels.** The project level waits for projects (`.sdproj`) and the executable for
+   the application builder; this decision already fixes how they will take part.
+8. **The look follows the pattern of the mockup**: a quiet base with color only for meaning, depth on what is
+   touched and flat on what is read, values as arcs or fills, numbers in monospace with tabular figures, hairline
+   rings instead of borders, controls raised and indicators recessed (LabVIEW's white control and grey indicator,
+   said with depth), and light as feedback.
+   *Amended on 2026-10-17, when the Solder and Solder Night sheets were written (`panel-styles/solder.css` and
+   `solder-night.css`), with the developer:*
+   - **The panel style paints the canvas too** (it is the `.sd-panel` itself): Solder a warm `#f6f5f1`, Solder Night
+     `#121418`, with the editor's 12 px grid as dots of the style's color, hidden in Run mode as the grid is.
+     Otherwise Solder Night would put dark controls on the theme's light grey.
+   - **Values in the interface font with tabular figures**, not monospace: the figures do not jump and still fit
+     LabVIEW's 55 px field ("98765,4" in a 12 px monospace touches its edge).
+   - **ISA-101 colors:** the normal state is neutral and only an alarm is red. "No error" is a grey light and an
+     error a glowing red one; a lit LED takes the orange accent and glows, as in the mockup.
+   - **A halo on the field being typed**, through a new public state class `.sd-editing` on the object
+     (DT-056 §7), next to the editor's own `editando-valor`; array elements already had it.
+   - **Solder Night is Solder's rules with other tokens:** its sheet `@import`s `solder.css` and redefines only
+     the tokens, so a style that only changes colors is a list of tokens. A user's style may import a shipped one
+     the same way.
+   - Not taken from the mockup, because the markup has no part for it: the area filled under a chart's plot.
+9. **How the HTML panel is built** (decided on 2026-10-17, before writing it):
+   - **A style changes neither sizes nor the place of terminals.** Every object of an HTML style takes exactly the
+     box it takes in Old School (`cajaObjeto` in `front-panel.mjs`), so labels, clicks, selection and the connector
+     pane are the same in every style; the style draws inside that box. The larger boxes of the mockup are only
+     illustration.
+   - **Typing stays in the editor's model.** The text and the caret of a field are drawn by `front-panel.mjs` as in
+     Old School, so editing, Enter, Esc and undo behave the same in every style. The HTML carries ARIA roles
+     (`button`, `switch`, `radio`) but no native `button`, `input` or `select`, which would take the keyboard
+     focus away from the editor.
+   - **The label stays a separate object** that moves and is edited as in LabVIEW. It gets the class `.sd-label`, and
+     the object carries its text in `data-label`.
+   - **Plain covers every control that exists** from its first step (numeric and enum, string, the Booleans, error
+     in and out, arrays and the three graphs). *Amended on 2026-10-17 (§5):* it is the only drawing, so there is
+     nothing to fall back on.
+   - **The window's style** is read by the main process from `<VI name>.css` next to the VI's file
+     (`editor/electron/window-style.mjs`, `companionStylesheetPath` in `vi-paths.mjs`) and put by the page in a
+     `<style>` after every other sheet (`front-panel/window-stylesheet.mjs`), so with the same specificity it wins.
+     The folder is watched: creating, changing or deleting the file shows at once, and Save As to another folder
+     takes the style found there. An unsaved VI has none.
+   - The style reaches the window as a parameter of its URL; `plain.css` is always loaded, with the chosen style's
+     sheet after it, and every rule of a panel style lives under `.sd-panel`, so it never touches the editor.
+   - *Added on 2026-10-17 (§5):* **the markup carries every part a style may draw, ornament included.** What is only
+     ornament in Plain (the bevel of a field, the body of an incrementer, the shine of an LED, the radix of a
+     numeric, the scrollbar of a string or of an error's source, the pieces of a graph's frame) is an element with
+     its own class and `aria-hidden`, hidden by `plain.css` and shown by the style that wants it. Those classes are
+     part of the public API (DT-056 §7). The geometry of every part comes from the box measured in LabVIEW, so a
+     style places it with CSS, not with markup of its own.
+   - *Added on 2026-10-17 (§5):* **Old School's illustrations are SVG files of the style**, in
+     `editor/src/panel-styles/old-school/`, which `old-school.css` takes as background images. They are generated by
+     a script from the drawings of `glyphs.mjs`, which the palette and the diagram's terminals still use, and a test
+     fails when a file differs from what the script writes, so the two never drift. Each one is adopted only if it
+     gives the same pixels as the inline SVG it replaces; one that does not is drawn inline in the markup instead,
+     with its colors in the sheet, and the reason is written next to it.
+   - *Added on 2026-10-17 (§5):* **Old School is migrated control by control.** Each kind moves to Plain's markup
+     with its Old School look in `old-school.css` only when a pixel diff against the old drawing shows zero changed
+     pixels in every state of a fixture VI (each kind as control and indicator, on and off, empty, selected, being
+     typed into, with data). Until the last kind moves, the old drawing stays for the kinds not yet migrated; then
+     the old drawing and the switch between drawings are deleted.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| A window's style wins over the editor's, and follows its file on disk | `test/editor/window-style.test.mjs` (the companion path, reading, watching creation, change and deletion, the `<style>` kept last) and the editor under Xvfb: written, edited and deleted while open, Save As to another folder, two VIs each with its own (`labview-captures/reports/2026-10-17-window-style.md`) | Verified 2026-10-17 |
+| The project's style sits between the window's and the editor's | a test of the order of the sheets, when projects exist | **Unverified**: projects are not done |
+| A control a style does not draw shows as Plain | `test/editor/panel-styles.test.mjs`: every kind an HTML panel draws has rules in `plain.css`, and every rule lives under `.sd-panel` | Verified 2026-10-17 |
+| A style changes neither sizes nor terminals | `test/editor/panel-styles.test.mjs`: every object of an HTML panel has its Old School box, and keeps the editor's hooks | Verified 2026-10-17 |
+| Old School over Plain looks exactly like the drawing it replaces | `scripts/panel-pixels/compare.sh`: a pixel diff of a fixture with every kind and state, the commit before as BEFORE; then the real editor under Xvfb (`labview-captures/reports/2026-10-17-panel-old-school-numeric.md`) | Verified 2026-10-17 for every kind, the last check after the old drawing was deleted (`2026-10-17-panel-old-school-final.md`) |
+| Old School's SVG files match the drawings of `glyphs.mjs` | `test/editor/panel-styles.test.mjs`: every file equals what `old-school-art.mjs` writes, and every file `old-school.css` takes exists | Verified 2026-10-17 |
+| The editor has one panel drawing | `test/editor/panel-styles.test.mjs`: every panel style, Old School included, draws the same markup (only the sheets differ) | Verified 2026-10-17 |
+| Every ornament part is hidden in Plain | `test/editor/panel-styles.test.mjs`: every class of `ORNAMENT_CLASSES` has a `display: none` rule in `plain.css`, and the markup hides no other part | Verified 2026-10-17 |
+| Solder and Solder Night are registered and every sheet a style imports exists | `test/editor/panel-styles.test.mjs`: every `stylesheet` of `PANEL_STYLES` and every `@import` in it is a file of `panel-styles/`; every rule lives under `.sd-panel` | Verified 2026-10-17 |
+| Solder and Solder Night dress every kind (numeric, enum, string, Booleans, error clusters, arrays, graphs) | the fixture of `scripts/panel-pixels/render.mjs` rendered in both styles, and the three examples in the real editor (`labview-captures/reports/2026-10-17-panel-solder.md`), seen by the developer | Seen 2026-10-17; no test fails if a kind loses its look |
+| Writing Solder's sheets left Old School unchanged | `scripts/panel-pixels/compare.sh` against b58c735: identical in every scene | Verified 2026-10-17 |
+| The `.sdg` does not change | the format tests (`test/end-to-end/format-versions.test.mjs`) stay green | Holds today; to recheck when styles are implemented |
+

@@ -1,0 +1,172 @@
+/* Plain: the mother template of the panel styles (DT-058 §3).
+ *
+ * Every HTML panel loads this sheet, and the chosen style is loaded on top of it and redefines only what it wants:
+ * most often the --sd-* tokens below, sometimes the drawing of a kind. A control a style does not draw shows as here.
+ * The markup is html-controls.mjs; its classes and attributes are a public API (DT-056 §7).
+ *
+ * Every rule lives under .sd-panel, so a panel style never touches the editor. Each object keeps the box it has in
+ * Old School (front-panel.mjs) and is drawn inside it: a style changes neither sizes nor terminals (DT-058 §9).
+ * Plain is deliberately quiet: native-looking fields and buttons, hairline borders, color only for meaning.
+ */
+
+.sd-panel {
+  --sd-font: system-ui, "Segoe UI", "Noto Sans", sans-serif;
+  --sd-font-size: 12px;
+  --sd-ink: #1f2328;
+  --sd-muted: #656d76;
+  --sd-line: #8c959f;
+  --sd-line-soft: #d0d7de;
+  --sd-surface: #ffffff;
+  --sd-recess: #eaeef2;
+  --sd-button: #f3f4f6;
+  --sd-button-pressed: #d0d7de;
+  --sd-accent: #0969da;
+  --sd-accent-ink: #ffffff;
+  --sd-thumb: #ffffff;
+  --sd-led-off: #b4bcc4;
+  --sd-led-on: #1a7f37;
+  --sd-ok: #1a7f37;
+  --sd-alarm: #cf222e;
+  --sd-empty: #f6f8fa;
+  --sd-plot: #ffffff;
+  --sd-grid-minor: #eaeef2;
+  --sd-grid-major: #d0d7de;
+  --sd-trace-0: #0969da;
+  --sd-trace-1: #cf222e;
+  --sd-trace-2: #1a7f37;
+  --sd-trace-3: #9a6700;
+  --sd-radius: 3px;
+}
+
+/* ——— Common parts ——— */
+
+/* Ornament is for the styles that want it (html-controls.mjs, ORNAMENT_CLASSES). */
+.sd-panel .sd-art { display: none; }
+.sd-panel .sd-radix { display: none; }
+.sd-panel .sd-code-arrows { display: none; }
+.sd-panel .sd-scrollbar { display: none; }
+.sd-panel .sd-frame { display: none; }
+.sd-panel .sd-plot-frame { display: none; }
+.sd-panel .sd-swatch-frame { display: none; }
+
+.sd-panel .sd-control,
+.sd-panel .sd-indicator { box-sizing: border-box; font: var(--sd-font-size) / 1 var(--sd-font); color: var(--sd-ink); }
+.sd-panel .sd-label { font-family: var(--sd-font); color: var(--sd-ink); }
+.sd-panel .sd-field {
+  box-sizing: border-box; display: flex; align-items: center; min-width: 0; overflow: hidden; padding: 0 3px;
+  border: 1px solid var(--sd-line); border-radius: var(--sd-radius); background: var(--sd-surface);
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+.sd-panel .sd-indicator .sd-field { background: var(--sd-recess); border-color: var(--sd-line-soft); }
+.sd-panel .sd-control .sd-field { cursor: text; }
+.sd-panel .sd-value { flex: 1; min-width: 0; overflow: hidden; }
+.sd-panel .caret { display: inline-block; vertical-align: -2px; }
+
+/* The incrementer: two arrows stacked on the left of a field. */
+.sd-panel .sd-incrementer { box-sizing: border-box; display: flex; flex-direction: column; flex: none; width: 12px; }
+.sd-panel .sd-step { flex: 1; display: grid; place-items: center; cursor: default; }
+.sd-panel .sd-step::before { content: ""; border: 3.5px solid transparent; }
+.sd-panel .sd-step-up::before { border-bottom: 4px solid var(--sd-muted); border-top-width: 0; }
+.sd-panel .sd-step-down::before { border-top: 4px solid var(--sd-muted); border-bottom-width: 0; }
+.sd-panel .sd-decorative { pointer-events: none; }
+.sd-panel .sd-step:hover::before { border-bottom-color: var(--sd-accent); border-top-color: var(--sd-accent); }
+.sd-panel .sd-step-up:hover::before { border-top-color: transparent; }
+.sd-panel .sd-step-down:hover::before { border-bottom-color: transparent; }
+
+/* ——— Numeric and enum ——— */
+
+.sd-panel .sd-numeric,
+.sd-panel .sd-enum { display: flex; }
+.sd-panel .sd-numeric .sd-field,
+.sd-panel .sd-enum .sd-field { flex: 1; justify-content: flex-start; }
+
+/* ——— String ——— */
+
+.sd-panel .sd-string { display: flex; }
+.sd-panel .sd-string .sd-field { flex: 1; align-items: flex-start; padding-top: 4px; white-space: pre; line-height: 15px; }
+
+/* ——— Boolean ——— */
+
+.sd-panel .sd-boolean { display: flex; align-items: stretch; justify-content: stretch; }
+.sd-panel .sd-boolean > * { flex: 1; }
+
+.sd-panel .sd-button {
+  box-sizing: border-box; display: grid; place-items: center; border: 1px solid var(--sd-line); border-radius: var(--sd-radius);
+  background: var(--sd-button); font-weight: 600; cursor: default;
+}
+.sd-panel .sd-button[aria-pressed="true"] { background: var(--sd-button-pressed); box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.2); }
+.sd-panel .sd-boolean[data-style="stop-button"] .sd-button { color: var(--sd-alarm); }
+
+.sd-panel .sd-switch { box-sizing: border-box; position: relative; border: 1px solid var(--sd-line); border-radius: 999px; background: var(--sd-recess); cursor: default; }
+.sd-panel .sd-switch[aria-checked="true"] { background: var(--sd-accent); border-color: var(--sd-accent); }
+.sd-panel .sd-switch-thumb {
+  position: absolute; top: 1px; bottom: 1px; left: 1px; aspect-ratio: 1; border-radius: 50%;
+  background: var(--sd-thumb); box-shadow: 0 0 0 1px var(--sd-line-soft);
+}
+.sd-panel .sd-switch[aria-checked="true"] .sd-switch-thumb { left: auto; right: 1px; }
+/* A vertical switch is on at the top, as LabVIEW's. */
+.sd-panel .sd-vertical .sd-switch-thumb { top: auto; bottom: 1px; left: 1px; right: 1px; width: auto; height: auto; aspect-ratio: 1; }
+/* Its thumb keeps both sides when on, or the horizontal switch's `left: auto` would shrink it to nothing. */
+.sd-panel .sd-vertical .sd-switch[aria-checked="true"] .sd-switch-thumb { top: 1px; bottom: auto; left: 1px; right: 1px; }
+
+.sd-panel .sd-led { display: grid; }
+.sd-panel .sd-led-lens { box-sizing: border-box; border: 1px solid var(--sd-line); border-radius: 50%; background: var(--sd-led-off); }
+.sd-panel .sd-boolean[data-style="square-led"] .sd-led-lens { border-radius: 1px; }
+.sd-panel .sd-on .sd-led-lens { background: var(--sd-led-on); }
+
+.sd-panel .sd-radio-group { box-sizing: border-box; display: flex; flex-direction: column; gap: 10px; padding: 6px; border: 1px solid var(--sd-line-soft); border-radius: var(--sd-radius); background: var(--sd-recess); }
+.sd-panel .sd-radio { display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 11px; cursor: default; }
+.sd-panel .sd-radio-mark { box-sizing: border-box; width: 11px; height: 11px; border: 1px solid var(--sd-line); border-radius: 50%; background: var(--sd-surface); }
+.sd-panel .sd-radio[aria-checked="true"] .sd-radio-mark { border: 3.5px solid var(--sd-accent); }
+
+/* ——— Error in and error out ——— */
+
+.sd-panel .sd-error-cluster {
+  display: grid; grid-template-columns: 36px 1fr; grid-template-rows: auto 22px auto 1fr; gap: 3px 6px; padding: 4px 5px 5px;
+  border: 1px solid var(--sd-line-soft); border-radius: var(--sd-radius); background: var(--sd-recess);
+}
+.sd-panel .sd-error-part { display: contents; }
+.sd-panel .sd-caption { color: var(--sd-muted); font-size: 11px; }
+.sd-panel .sd-error-status .sd-caption { grid-area: 1 / 1; }
+.sd-panel .sd-error-light { grid-area: 2 / 1; box-sizing: border-box; border: 1px solid var(--sd-line); border-radius: 50%; width: 20px; height: 20px; align-self: center; background: var(--sd-ok); }
+.sd-panel .sd-error-cluster.sd-on .sd-error-light { background: var(--sd-alarm); }
+.sd-panel .sd-control .sd-error-light { cursor: default; }
+.sd-panel .sd-error-code .sd-caption { grid-area: 1 / 2; }
+.sd-panel .sd-error-code .sd-field { grid-area: 2 / 2; }
+.sd-panel .sd-error-source .sd-caption { grid-area: 3 / 1 / 3 / 3; }
+.sd-panel .sd-error-source .sd-field { grid-area: 4 / 1 / 4 / 3; align-items: flex-start; padding-top: 3px; white-space: pre; line-height: 15px; }
+
+/* ——— Array ——— */
+
+.sd-panel .sd-array .sd-index { position: absolute; box-sizing: border-box; display: flex; }
+.sd-panel .sd-array .sd-index .sd-field { flex: 1; background: var(--sd-surface); border-color: var(--sd-line-soft); }
+.sd-panel .sd-array .sd-elements { position: absolute; box-sizing: border-box; border: 1px solid var(--sd-line-soft); border-radius: var(--sd-radius); background: var(--sd-recess); }
+.sd-panel .sd-array .sd-element { position: absolute; box-sizing: border-box; display: flex; }
+.sd-panel .sd-array .sd-element .sd-field { flex: 1; }
+.sd-panel .sd-array .sd-element.sd-empty .sd-field { background: var(--sd-empty); color: var(--sd-muted); }
+.sd-panel .sd-array .sd-element-string { white-space: pre; line-height: 15px; }
+.sd-panel .sd-array .sd-element-boolean { flex: 1; display: grid; place-items: center; border: 1px solid var(--sd-line); border-radius: var(--sd-radius); background: var(--sd-button); }
+.sd-panel .sd-array .sd-element-boolean[aria-checked="true"] { background: var(--sd-led-on); color: var(--sd-accent-ink); }
+
+/* ——— Waveform Chart, Waveform Graph and XY Graph ——— */
+
+.sd-panel .sd-waveform-chart svg,
+.sd-panel .sd-waveform-graph svg,
+.sd-panel .sd-xy-graph svg { display: block; overflow: visible; }
+.sd-panel .sd-plot { fill: var(--sd-plot); stroke: var(--sd-line); stroke-width: 1; }
+.sd-panel .sd-grid-minor { stroke: var(--sd-grid-minor); fill: none; }
+.sd-panel .sd-grid-major { stroke: var(--sd-grid-major); fill: none; }
+.sd-panel .sd-trace { fill: none; stroke: var(--sd-trace-0); stroke-width: 1.5; stroke-linejoin: round; }
+/* The plots take the four colors in turn: the n-th path of .sd-traces is the n-th plot (graph-view.mjs). */
+.sd-panel .sd-traces .sd-trace:nth-child(4n + 2) { stroke: var(--sd-trace-1); }
+.sd-panel .sd-traces .sd-trace:nth-child(4n + 3) { stroke: var(--sd-trace-2); }
+.sd-panel .sd-traces .sd-trace:nth-child(4n + 4) { stroke: var(--sd-trace-3); }
+/* The plots are clipped to the plot area. */
+.sd-panel svg.sd-traces { overflow: hidden; }
+.sd-panel .sd-tick { fill: var(--sd-muted); }
+.sd-panel .sd-tick-text,
+.sd-panel .sd-axis-name,
+.sd-panel .sd-legend-text { fill: var(--sd-ink); font: 11px var(--sd-font); font-variant-numeric: tabular-nums; }
+.sd-panel .sd-tick-text { fill: var(--sd-muted); }
+.sd-panel .sd-legend-box { fill: var(--sd-surface); stroke: var(--sd-line-soft); }
+.sd-panel .sd-swatch-box { fill: var(--sd-plot); stroke: var(--sd-line-soft); }

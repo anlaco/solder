@@ -24,12 +24,13 @@
 
 import * as CV from "../../../core/model/control-values.mjs";
 import * as Et from "../common/labels.mjs";
-import { BOOLEANOS, dibujoBooleano, estadoError } from "../common/glyphs.mjs";
+import { BOOLEANOS } from "../common/glyphs.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { REPEATED_PASTE_STEP } from "../common/paste-memory.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { convertirValor, elementoPorDefecto, esEnum, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import { GRAPH_MEASURES, LABEL_PLACEMENT, graphSvg } from "./graph-view.mjs";
+import * as HC from "./html-controls.mjs";
 import { isGraph, labelShown, wireTypeOf } from "./graph-state.mjs";
 import { cellAddress, dimensionsOfNode, firstShown, indexSetting, isDefined, readCell, valueFitsDimensions, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
 
@@ -194,12 +195,6 @@ const px = (n) => `${Number(n.toFixed(2))}px`;
 const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 /**
- * El incrementador: dos flechas en una cápsula gris, a lo alto del objeto. Cada
- * mitad es una flecha que se pulsa (`data-paso`).
- */
-const INCREMENTADOR = `<div class="incrementador"><svg viewBox="0 0 16 25" aria-hidden="true"><rect x="1" y="2" width="11" height="21" rx="5.5" fill="#dedede" stroke="#9c9c9c" stroke-width="1"/><polygon points="6.5,5 3.8,10 9.2,10" fill="#7a7a7a"/><polygon points="6.5,20 3.8,15 9.2,15" fill="#7a7a7a"/></svg><div class="flecha-inc" data-paso="1"></div><div class="flecha-inc" data-paso="-1"></div></div>`;
-
-/**
  * El valor de un control o indicador, como lo enseña su casilla: el que le dejó
  * el último Run, si lo hay, o el suyo por defecto.
  */
@@ -215,30 +210,6 @@ const textoValor = (n, ctx, valores) => {
 /** El valor de un booleano: el que le dejó el último Run, si es un indicador, o el suyo por defecto. */
 const encendido = (n, valores) => !!(valores?.[n.id] ?? valorActual(n));
 
-/**
- * Un control o indicador de error: gris con relieve, con sus tres campos. Cada campo lleva
- * `data-campo` para que un clic en el status lo alterne y uno en code o en source escriba en él
- * (sólo en el control). Mientras se escribe, el campo enseña lo escrito.
- */
-function objetoError(n, elegido, edicion, valores) {
-  const k = caja(n);
-  const control = claseError(n.tipo, n.config).control;
-  const v = valorError(n, valores);
-  const e = edicion?.valor && edicion.nodo === n.id ? edicion : null;
-  const texto = (campo, x) => (e?.campo !== campo ? `<span>${esc(x)}</span>` : e.todo ? `<span class="texto-elegido">${esc(e.texto)}</span>` : `<span>${esc(e.texto)}</span><span class="caret"></span>`);
-  const flechas = control ? `<span class="ec-flechas"><svg viewBox="0 0 8 14" aria-hidden="true"><polygon points="4,1 7,5.5 1,5.5" fill="#6e6e6e"/><polygon points="4,13 7,8.5 1,8.5" fill="#6e6e6e"/></svg></span>` : "";
-  return `<div class="objeto-panel error-cluster ${control ? "control" : "indicador"}${elegido ? " seleccionado" : ""}${e ? " editando-valor" : ""}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">` +
-    `<span class="ec-rotulo" style="left:4px;top:2px">status</span><span class="ec-rotulo" style="left:52px;top:0">code</span>` +
-    `<div class="ec-campo ec-estado" data-campo="status" style="left:11px;top:20px">${estadoError(v.status)}</div>` +
-    `<div class="ec-campo ec-code" data-campo="code" style="left:52px;top:20px"><span class="prefijo">d</span>${flechas}<span class="valor">${texto("code", String(v.code))}</span></div>` +
-    `<span class="ec-rotulo" style="left:6px;top:52px">source</span>` +
-    `<div class="ec-campo ec-source" data-campo="source" style="left:5px;top:66px"><span class="valor">${texto("source", v.source)}</span><span class="ec-barra"></span></div>` +
-    `</div>`;
-}
-
-/** El incrementador de un elemento numérico: sólo el dibujo (no se pulsa: los pasos son los del índice). */
-const INCREMENTADOR_DECORADO = INCREMENTADOR.replace(/<div class="flecha-inc"[^>]*><\/div>/g, "");
-
 /** The text of an element of an array of the panel: what is being typed into it, or its value. */
 function elementText(lista, address, dimensions, type, ctx, editing) {
   if (editing) return editing.todo ? `<span class="texto-elegido">${esc(editing.texto)}</span>` : `<span>${esc(editing.texto)}</span><span class="caret"></span>`;
@@ -246,86 +217,98 @@ function elementText(lista, address, dimensions, type, ctx, editing) {
   return `<span>${esc(type === "string" ? String(value ?? "") : type === "boolean" ? (value ? "T" : "F") : formatear(value ?? elementoPorDefecto(type), type, ctx.separador))}</span>`;
 }
 
-/**
- * Un array del panel: el índice con su incrementador a la izquierda y, a su derecha, la caja con los elementos que se
- * ven a partir del índice. Los que pasan del final se enseñan en gris, con su valor por defecto. Cada elemento lleva
- * `data-k` (su posición en el array, o "fila,columna" en uno de dos dimensiones) para que un clic escriba en él (sólo en un control).
- */
-function objetoArray(n, ctx, elegido, edicion, valores) {
-  const k = caja(n);
+/** The handles that stretch a selected array: on the right and, with two dimensions, below and at the corner. */
+function arrayHandles(k, dimensions, elementsHeight) {
   const A = MEDIDAS_ARRAY_PANEL;
-  const t = tipoElemento(n);
-  const control = CONTROLES[n.tipo].control;
-  const lista = valoresDeArray(n, valores);
+  const handle = (side, left, top) => `<div class="asa-array" data-asa-array="1" data-lado="${side}" style="left:${px(left - 3)};top:${px(top - 3)}"></div>`;
+  return dimensions === 2
+    ? handle("derecha", k.ancho, A.bajaCaja + elementsHeight / 2) + handle("abajo", A.indice + (k.ancho - A.indice) / 2, A.bajaCaja + elementsHeight) + handle("esquina", k.ancho, A.bajaCaja + elementsHeight)
+    : handle("derecha", k.ancho - 1, A.bajaCaja + elementsHeight / 2);
+}
+
+// Every object is drawn as the plain HTML of html-controls.mjs, which each panel style dresses with its sheet
+// (DT-058), Old School included; what each one holds and what is being typed into it come from here.
+
+const isControlNode = (n) => n.tipo === "control" || n.tipo.endsWith("-control");
+
+/** The escaped text of a field: what is being typed into it, with the caret or the selection, or `text`. */
+const typedOrText = (editing, text) => {
+  if (!editing) return esc(text);
+  return editing.todo ? `<span class="texto-elegido">${esc(editing.texto)}</span>` : `<span>${esc(editing.texto)}</span><span class="caret"></span>`;
+};
+
+/**
+ * A panel array: its index (one per dimension) and the elements shown from it; those past the end are greyed, with
+ * their default value. Each element carries `data-k` (its place, or "row,column" with two dimensions), so a click on
+ * it types into it (only on a control).
+ */
+function arrayObject(n, ctx, frame, editing, valores) {
+  const [A, B] = [MEDIDAS_ARRAY_PANEL, MEDIDAS_ARRAY_PANEL_2D];
+  const elementType = tipoElemento(n);
+  const values = valoresDeArray(n, valores);
   const dimensions = dimensionsOfNode(n.config);
-  const [ew, eh] = medidaElemento(t);
+  const [elementWidth, elementHeight] = medidaElemento(elementType);
+  const pitch = dimensions === 2 ? pasoCeldas2D(elementType) : [elementWidth, elementHeight];
   const first = firstShown(n.config);
   const { rows, columns } = visibleGrid(n.config);
-  const e = edicion?.valor && edicion.nodo === n.id && edicion.elem !== undefined ? edicion : null;
-  const pitch = dimensions === 2 ? pasoCeldas2D(t) : [ew, eh];
-  const celdas = Array.from({ length: rows * columns }, (_, i) => {
+  const elementsHeight = dimensions === 2 ? frame.box.alto - A.bajaCaja : elementHeight + 2 * A.biselY;
+  const origin = dimensions === 2 ? { x: B.margenIzquierdo - B.bordeCaja, y: B.margenArriba - B.bordeCaja } : { x: A.biselX, y: A.biselY };
+  const elementsHtml = Array.from({ length: rows * columns }, (_, i) => {
     const [row, column] = [Math.floor(i / columns), i % columns];
     const address = cellAddress(dimensions, first.row + row, first.column + column);
-    const hay = dimensions === 2 ? isDefined(lista, 2, address) : address < lista.length;
-    const editando = e?.elem === address;
-    const inc = t !== "string" && t !== "boolean" && control ? INCREMENTADOR_DECORADO : "";
-    const ini = inc ? MEDIDAS_PANEL.incrementador - MEDIDAS_PANEL.solape : 0;
-    const B = MEDIDAS_ARRAY_PANEL_2D;
-    const place = dimensions === 2 ? `position:absolute;left:${px(B.margenIzquierdo - B.bordeCaja + column * pitch[0])};top:${px(B.margenArriba - B.bordeCaja + row * pitch[1])};` : "";
-    return `<div class="elem-array${hay ? "" : " vacio"}${control ? "" : " indicador"}${editando ? " editando-valor" : ""}" data-k="${address}" style="${place}width:${px(ew)};height:${px(eh)}">${inc}<div class="casilla-elem${t === "string" ? " cadena" : ""}" style="left:${px(ini)};right:0"><span class="valor">${elementText(lista, address, dimensions, t, ctx, editando ? e : null)}</span></div></div>`;
+    const cellEditing = editing?.elem === address ? editing : null;
+    return HC.arrayElementHtml({
+      address,
+      place: { x: origin.x + column * pitch[0], y: origin.y + row * pitch[1], width: elementWidth, height: elementHeight },
+      defined: dimensions === 2 ? isDefined(values, 2, address) : address < values.length,
+      editing: !!cellEditing,
+      elementType,
+      valueHtml: elementText(values, address, dimensions, elementType, ctx, cellEditing),
+      on: elementType === "boolean" && !!readCell(values, dimensions, address),
+      isControl: frame.isControl,
+    });
   }).join("");
-  const indexField = (axis, top, position) => `<div class="arr-indice" data-eje="${axis}" style="top:${px(top)};width:${px(A.indice)};height:${px(A.altoIndice)}">${INCREMENTADOR}<div class="arr-campo"><span>${position}</span></div></div>`;
+  const indexBox = (top) => ({ x: 0, y: top, width: A.indice, height: A.altoIndice });
   const indices = dimensions === 2
-    ? indexField("fila", 0, first.row) + indexField("columna", MEDIDAS_ARRAY_PANEL_2D.pasoIndices, first.column)
-    : indexField("columna", 0, first.column);
-  const cajaAlto = dimensions === 2 ? k.alto - A.bajaCaja : eh + 2 * A.biselY;
-  const cajaEstilo = dimensions === 2 ? "" : `padding:${A.biselY}px ${A.biselX}px`;
-  const asa = (lado, left, top) => `<div class="asa-array" data-asa-array="1" data-lado="${lado}" style="left:${px(left - 3)};top:${px(top - 3)}"></div>`;
-  const asas = !elegido ? ""
-    : dimensions === 2
-      ? asa("derecha", k.ancho, A.bajaCaja + cajaAlto / 2) + asa("abajo", A.indice + (k.ancho - A.indice) / 2, A.bajaCaja + cajaAlto) + asa("esquina", k.ancho, A.bajaCaja + cajaAlto)
-      : asa("derecha", k.ancho - 1, A.bajaCaja + cajaAlto / 2);
-  return `<div class="objeto-panel array ${control ? "control" : "indicador"}${dimensions === 2 ? " dos-dimensiones" : ""}${elegido ? " seleccionado" : ""}${e ? " editando-valor" : ""}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">` +
-    `${indices}<div class="arr-caja" style="left:${px(A.indice)};top:${px(A.bajaCaja)};width:${px(k.ancho - A.indice)};height:${px(cajaAlto)};${cajaEstilo}">${celdas}</div>${asas}</div>`;
+    ? [{ axis: "fila", box: indexBox(0), position: first.row }, { axis: "columna", box: indexBox(B.pasoIndices), position: first.column }]
+    : [{ axis: "columna", box: indexBox(0), position: first.column }];
+  const elementsBox = { x: A.indice, y: A.bajaCaja, width: frame.box.ancho - A.indice, height: elementsHeight };
+  return HC.arrayHtml(frame, { indices, elementsBox, elementsHtml, handles: frame.selected ? arrayHandles(frame.box, dimensions, elementsHeight) : "" });
 }
 
-/** A graph: its drawing in a box the size of its frame; the legend and the plot swatch are parts of it (`data-parte`) with menus of their own. */
-function graphObject(n, ctx, elegido, p, resueltos) {
-  const k = caja(n);
-  const type = resueltos ? wireTypeOf(p.g, resueltos, n.id) : undefined;
-  const drawing = graphSvg(n, { type, value: p.valores?.[n.id], charts: p.charts, separator: ctx.separador });
-  return `<div class="objeto-panel grafico${elegido ? " seleccionado" : ""}" data-nodo="${esc(n.id)}" data-grafico="${esc(n.tipo)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${drawing}</div>`;
-}
-
-function objeto(n, ctx, elegido, edicion, valores) {
-  if (esArrayPanel(n)) return objetoArray(n, ctx, elegido, edicion, valores);
-  if (claseError(n.tipo, n.config)) return objetoError(n, elegido, edicion, valores);
-  const k = caja(n);
-  const c = CONTROLES[n.tipo];
-  // Un booleano es un dibujo de dos estados, sin casilla.
-  if (c?.booleano) {
-    const estilo = n.config?.style ?? "push-button";
-    return `<div class="objeto-panel booleano${elegido ? " seleccionado" : ""}" data-nodo="${esc(n.id)}" data-estilo="${esc(estilo)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${dibujoBooleano(estilo, encendido(n, valores))}</div>`;
+/** One object of the panel; a graph's legend and plot swatch are parts of it (`data-parte`) with menus of their own. */
+function panelObject(n, ctx, selected, p, resolvedTypes) {
+  const editing = p.edicion?.valor && p.edicion.nodo === n.id ? p.edicion : null;
+  const frame = { id: n.id, box: caja(n), label: n.label?.text ?? "", selected, editing: !!editing, isControl: isControlNode(n) };
+  const control = CONTROLES[n.tipo];
+  if (isGraph(n)) {
+    const type = resolvedTypes ? wireTypeOf(p.g, resolvedTypes, n.id) : undefined;
+    return HC.graphHtml(frame, { kind: n.tipo, svg: graphSvg(n, { type, value: p.valores?.[n.id], charts: p.charts, separator: ctx.separador }) });
   }
-  const e = edicion?.valor && edicion.nodo === n.id ? edicion : null;
-  // Mientras se escribe en ella, la casilla enseña lo escrito, con el cursor al final o todo seleccionado.
-  const valor = e ? (e.todo ? `<span class="texto-elegido">${esc(e.texto)}</span>` : `<span>${esc(e.texto)}</span><span class="caret"></span>`) : `<span>${esc(textoValor(n, ctx, valores))}</span>`;
-  const ancho = c?.cadena ? k.ancho : MEDIDAS_PANEL.casilla;
-  const casilla = `<div class="casilla${c?.incrementador || n.tipo === "str-control" ? "" : " indicador"}${c?.cadena ? " cadena" : ""}" data-casilla="${esc(n.id)}" style="left:${px(k.casilla)};width:${px(ancho)}"><span class="valor">${valor}</span></div>`;
-  return `<div class="objeto-panel${elegido ? " seleccionado" : ""}${e ? " editando-valor" : ""}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${c?.incrementador ? INCREMENTADOR : ""}${casilla}</div>`;
+  if (esArrayPanel(n)) return arrayObject(n, ctx, frame, editing, p.valores);
+  if (claseError(n.tipo, n.config)) {
+    const value = valorError(n, p.valores);
+    return HC.errorClusterHtml(frame, { status: !!value.status, fieldHtml: (field) => typedOrText(editing?.campo === field ? editing : null, value[field]) });
+  }
+  if (control?.booleano) return HC.booleanHtml(frame, { style: n.config?.style ?? "push-button", on: encendido(n, p.valores) });
+  const valueHtml = typedOrText(editing, textoValor(n, ctx, p.valores));
+  if (control?.cadena) return HC.stringHtml(frame, { valueHtml });
+  return HC.numericHtml(frame, { valueHtml, withIncrementer: !!control?.incrementador, isEnum: esEnum(tipoDe(n)) });
 }
 
 /**
- * Todo lo que el panel pinta dentro del lienzo. `resueltos`: los tipos del diagrama (`Gr.tipos`), que las gráficas
- * necesitan para saber qué reciben; si no se dan y hay una gráfica, se calculan.
+ * Everything the panel draws inside the canvas, as the plain HTML every panel style dresses (DT-058). `resueltos`:
+ * the diagram's types (`Gr.tipos`), which graphs need to know what they receive; if they are not given and there is
+ * a graph, they are computed.
  */
 export function contenido(p, ctx, resueltos) {
   const elegidos = new Set(p.seleccion);
   const tipos = resueltos ?? (objetos(p.g).some(isGraph) ? Gr.tipos(p.g, ctx.cat) : undefined);
   let html = "";
   for (const n of objetos(p.g)) {
-    html += isGraph(n) ? graphObject(n, ctx, elegidos.has(n.id), p, tipos) : objeto(n, ctx, elegidos.has(n.id), p.edicion, p.valores);
-    if (labelShown(n)) html += Et.pintar(n, cajaEtiqueta(n, ctx.medir, p.edicion), { edicion: p.edicion, elegida: elegidos.has(idEtiqueta(n.id)) });
+    const selected = elegidos.has(n.id);
+    html += panelObject(n, ctx, selected, p, tipos);
+    if (labelShown(n)) html += Et.pintar(n, cajaEtiqueta(n, ctx.medir, p.edicion), { edicion: p.edicion, elegida: elegidos.has(idEtiqueta(n.id)), publicClass: "sd-label" });
   }
   const { accion } = p;
   if (accion?.tipo === "colocar" && accion.x !== undefined) {

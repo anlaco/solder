@@ -48,7 +48,7 @@ LabVIEW** (DT-040): independent branches run at the same time, each indicator is
 painted when its data arrives, Abort stops at once and the panel switches to Run
 mode. Since 2026-10-01 also **with loops**: While and For are placed, stretched
 and wired in the diagram, and the compiler runs them (DT-041).
-718 tests green. **The three examples give the same values as in LabVIEW** (2026-10-15). **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read. **VIs are saved as `.sdg`** (DT-051, 2026-10-15): every Solder extension starts with `sd` (`.sdt` reserved for a future textual language, `.sdproj`, `.sdlib`), and an old `.qvi` still opens. **New VI, Close and Close All** (spec/05 rules 101–103, 2026-10-15) work as measured, and Solder **starts on LabVIEW's Getting Started window** (DT-052), which comes back when the last VI closes. **The colors are theme tokens** (DT-056, 2026-10-17): the current look is the Old School theme, unchanged pixel by pixel, and `SOLDER_THEME=solder` shows a first Solder theme.
+718 tests green. **The three examples give the same values as in LabVIEW** (2026-10-15). **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read. **VIs are saved as `.sdg`** (DT-051, 2026-10-15): every Solder extension starts with `sd` (`.sdt` reserved for a future textual language, `.sdproj`, `.sdlib`), and an old `.qvi` still opens. **New VI, Close and Close All** (spec/05 rules 101–103, 2026-10-15) work as measured, and Solder **starts on LabVIEW's Getting Started window** (DT-052), which comes back when the last VI closes. **The colors are theme tokens** (DT-056, 2026-10-17): the current look is the Old School theme, unchanged pixel by pixel, and `SOLDER_THEME=solder` shows a first Solder theme. **The Front Panel has panel styles** (DT-058, 2026-10-17, on `feature/html-front-panel`): every control is drawn once, as plain HTML, and each style is a CSS sheet over `plain.css`, the mother template; Old School is one of them, identical pixel by pixel to the old drawing, and `SOLDER_PANEL_STYLE=plain`, `solder` or `solder-night` shows the other styles.
 
 | Piece | Status |
 |-------|--------|
@@ -317,6 +317,61 @@ styles (Plain, Solder), once it is decided where a panel's style lives.
    Old School, a packaged release in Solder). Nodes keep their space; only primitive boxes get rounded corners, and
    wire widths stay (they say the dimension). Old School is still identical pixel by pixel. Open for review: the
    thick While Loop frame, the Case hatching, and the Old School controls on the Solder panel until step 3.*
+   *Panel styles decided on 2026-10-17 (DT-058), on the branch `feature/html-front-panel`: Plain as the mother
+   template, Old School, Solder and Solder Night as styles; window > project > editor through companion `.css` files;
+   `SOLDER_PANEL_STYLE` until Tools ▸ Options. Next: the Plain HTML of each panel control and `plain.css`, then the
+   Solder and Solder Night sheets from `docs/ideas/panel-style-mockups.html`, then the window's companion `.css`.*
+   *Plain done on 2026-10-17 (DT-058 §9): `SOLDER_PANEL_STYLE=plain npm run app` draws every panel control —
+   numeric and enum, string, the twelve Booleans, error in and out, 1D and 2D arrays and the three graphs — as the
+   plain HTML of `editor/src/front-panel/html-controls.mjs`, in the same boxes as Old School, with
+   `editor/src/panel-styles/plain.css` as the mother template under `.sd-panel`. The style is chosen in
+   `editor/src/front-panel/panel-style.mjs`; Old School is untouched. `test/editor/panel-styles.test.mjs` checks the
+   boxes, the hooks, the public classes and that every kind has Plain rules.*
+   *One drawing only, decided on 2026-10-17 (DT-058 §5 and §9 amended): Old School becomes a panel style,
+   `editor/src/panel-styles/old-school.css` over Plain's markup, and the old drawing is deleted. Next: a fixture VI
+   with every kind and state and its BEFORE capture; then, kind by kind (numeric and enum, string, the Booleans, error
+   in and out, arrays, graphs), the ornament parts in `html-controls.mjs`, hidden in `plain.css`, and the Old School
+   look in `old-school.css`, each proven by a pixel diff with zero changed pixels; then the old drawing and
+   `drawsHtml` deleted. After that, the Solder and Solder Night sheets from the mockup, then the window's companion
+   `.css`.*
+   *Numeric and enum moved on 2026-10-17: Old School draws them as Plain's markup with
+   `editor/src/panel-styles/old-school.css` (incrementer from `panel-styles/old-school/incrementer.svg`, written from
+   `glyphs.mjs` by `scripts/old-school-art.mjs`); `OLD_SCHOOL_KINDS_OVER_PLAIN` in `panel-style.mjs` lists the kinds
+   moved. Zero changed pixels in `scripts/panel-pixels/compare.sh` and in the real editor
+   ([`2026-10-17-panel-old-school-numeric.md`](../../labview-captures/reports/2026-10-17-panel-old-school-numeric.md)).
+   Next: string, then the Booleans.*
+   *String and the Booleans moved on 2026-10-17: each Boolean style and state is an SVG of `panel-styles/old-school/`
+   on the ornament part `.sd-art`, hidden in Plain. Zero changed pixels in the fixture and in the real editor
+   ([`2026-10-17-panel-old-school-boolean.md`](../../labview-captures/reports/2026-10-17-panel-old-school-boolean.md)).
+   Next: error in and out, then arrays, then graphs.*
+   *Error in and out moved on 2026-10-17: the radix, the code's arrows and the source's scrollbar are ornament parts
+   hidden in Plain; the status and the arrows are SVG files of the style. Zero changed pixels in the fixture and the
+   real editor ([`2026-10-17-panel-old-school-error.md`](../../labview-captures/reports/2026-10-17-panel-old-school-error.md)).
+   Next: arrays, then graphs.*
+   *Arrays moved on 2026-10-17 (1D and 2D, every element type, greyed elements, typing, handles): zero changed
+   pixels in the fixture and the real editor
+   ([`2026-10-17-panel-old-school-array.md`](../../labview-captures/reports/2026-10-17-panel-old-school-array.md)).
+   Next: the three graphs, then the old drawing and `OLD_SCHOOL_KINDS_OVER_PLAIN` deleted.*
+   *One drawing done on 2026-10-17: the graphs are one classed SVG (`graph-view.mjs`), with LabVIEW's frame and
+   bevels as ornament and their measured colors in `old-school.css`, and the old drawing is deleted. Every panel
+   style, Old School included, draws the same markup (a test says so); Old School is identical pixel by pixel to the
+   drawing it replaced, in the fixture and in the editor
+   ([`2026-10-17-panel-old-school-final.md`](../../labview-captures/reports/2026-10-17-panel-old-school-final.md)).
+   Next: the Solder and Solder Night sheets from the mockup, then the window's companion `.css`.*
+   *Solder and Solder Night done on 2026-10-17 (DT-058 §8 amended): `editor/src/panel-styles/solder.css` dresses
+   every kind with the mockup's pattern inside LabVIEW's boxes (raised controls with the incrementer inside the
+   field, recessed indicators, keys and switches with volume, glowing LEDs, ISA-101 neutral "no error", flat graphs
+   with the accent plot), and paints the canvas with a dot grid; `solder-night.css` imports it and redefines only
+   the tokens. A new public state class `.sd-editing` gives the field being typed a halo. Both are registered in
+   `PANEL_STYLES` (`SOLDER_PANEL_STYLE=solder|solder-night`); Old School is still identical pixel by pixel.
+   Captures of the three examples: [`2026-10-17-panel-solder.md`](../../labview-captures/reports/2026-10-17-panel-solder.md).
+   Next: the window's companion `.css` (window > project > editor).*
+   *The window's companion `.css` done on 2026-10-17 (DT-058 §9): `<VI name>.css` next to the `.sdg` styles that
+   VI's panel over the editor's style, is read again whenever it changes on disk, and follows the VI on Save As;
+   checked in the editor ([`2026-10-17-window-style.md`](../../labview-captures/reports/2026-10-17-window-style.md)).
+   The project level waits for `.sdproj`. **The window style is provisional and gets no more time** (DT-058,
+   priority): the styles used are Old School for development and Solder for the releases. The branch is ready to
+   merge into `main` as 0.5.0-beta when the developer decides.*
 
 **Then:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
 lesson of NI's Core 1 course can be done in Solder, except lessons 2 and 15 and the DAQ and instrument parts of 4,

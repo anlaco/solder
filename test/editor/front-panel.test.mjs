@@ -41,8 +41,8 @@ test("un control y un indicador numéricos se ponen en el panel con su terminal 
 
   const html = P.contenido(p, CTX);
   assert.equal((html.match(/class="objeto-panel/g) ?? []).length, 2);
-  assert.match(html, /class="incrementador"/, "el control lleva incrementador");
-  assert.equal((html.match(/class="casilla indicador"/g) ?? []).length, 1, "el indicador, la casilla gris");
+  assert.match(html, /class="objeto-panel sd-control sd-numeric"[^>]*><span class="sd-incrementer">/, "the control has an incrementer");
+  assert.match(html, /class="objeto-panel sd-indicator sd-numeric"[^>]*><span class="sd-field"/, "the indicator only its field (grey in Old School)");
   assert.match(html, />Numeric 2</);
 
   // En el diagrama: el terminal del control da el dato y el del indicador lo recibe.
@@ -165,7 +165,7 @@ test("el valor de un control se escribe en su casilla y cambia con las flechas",
   const id = p.g.nodos[0].id;
   for (const paso of [1, 1, 1, -1]) p = P.pulsar(p, CTX, { tipo: "paso", id, paso }, { x: 0, y: 0 });
   assert.equal(CV.currentValue(p.g.nodos[0]), 2);
-  assert.match(P.contenido(p, CTX), /<span class="valor"><span>2<\/span>/);
+  assert.match(P.contenido(p, CTX), /<span class="sd-value">2<\/span>/);
 
   p = P.pulsar(p, CTX, { tipo: "casilla", id }, { x: 0, y: 0 });
   assert.deepEqual(p.edicion, { nodo: id, valor: true, texto: "2", shown: "2", todo: false });
@@ -195,7 +195,7 @@ test("a DBL control shows 1.23457E+8 and keeps 123456789, the constant shows it 
   p = P.editarValor(p, CTX, id, true);
   for (const key of "123456789") p = P.teclear(p, key);
   p = P.teclear(p, "Enter");
-  assert.match(P.contenido(p, CTX), /<span class="valor"><span>1,23457E\+8<\/span>/);
+  assert.match(P.contenido(p, CTX), /<span class="sd-value">1,23457E\+8<\/span>/);
   p = P.confirmar(P.editarValor(p, CTX, id, true));
   assert.equal(CV.currentValue(p.g.nodos[0]), 123456789, "confirming the text shown does not round the value");
 
@@ -217,7 +217,7 @@ test("un control entero redondea y satura lo que se le escribe", () => {
   p = P.confirmar(P.teclear(p, "Enter"));
   assert.equal(CV.currentValue(p.g.nodos[0]), 4);
   assert.equal(p.g.nodos[0].config.type, "u8", "el tipo no cambia");
-  assert.match(P.contenido(p, CTX), /<span class="valor"><span>4<\/span>/);
+  assert.match(P.contenido(p, CTX), /<span class="sd-value">4<\/span>/);
   p = P.editarValor(p, CTX, id, true);
   for (const t of ["3", "0", "0"]) p = P.teclear(p, t);
   p = P.confirmar(P.teclear(p, "Enter"));
@@ -256,8 +256,8 @@ test("los controles booleanos de la paleta se ponen en el panel con su terminal 
 
   // Cada uno se dibuja en el panel con su clase y, en el diagrama, es un terminal verde con «TF».
   const html = P.contenido(p, CTX);
-  assert.equal((html.match(/class="objeto-panel booleano/g) ?? []).length, 10);
-  assert.match(html, /data-estilo="stop-button"/);
+  assert.equal((html.match(/class="objeto-panel sd-(?:control|indicator) sd-boolean /g) ?? []).length, 10);
+  assert.match(html, /data-style="stop-button"/);
   const ts = D.extremos(p.g, CTX);
   for (const n of p.g.nodos) {
     assert.equal(ts.get(`${n.id}.${n.tipo === "bool-control" ? "result" : "value"}`).dir, n.tipo === "bool-control" ? "out" : "in");
@@ -302,10 +302,10 @@ test("un clic en un control booleano cambia su valor y arrastrarlo no", () => {
     if (destino) p = P.moverA(p, CTX, destino);
     return P.soltar(p, CTX, { tipo: "fondo" }, destino ?? pt);
   };
-  assert.match(P.contenido(p, CTX), /data-estilo="horizontal-toggle-switch"/);
+  assert.match(P.contenido(p, CTX), /data-style="horizontal-toggle-switch"/);
   p = clic(p, interruptor);
   assert.equal(CV.currentValue(p.g.nodos[0]), true, "un clic lo enciende");
-  assert.notEqual(G.dibujoBooleano("horizontal-toggle-switch", true), G.dibujoBooleano("horizontal-toggle-switch", false), "y se ve distinto");
+  assert.match(P.contenido(p, CTX), /sd-boolean-switch sd-on[^"]*" [^>]*data-style="horizontal-toggle-switch"/, "and it shows on");
   p = clic(p, p.g.nodos[0]);
   assert.equal(CV.currentValue(p.g.nodos[0]), false, "otro lo apaga");
   const antes = P.caja(p.g.nodos[0]);
@@ -370,7 +370,7 @@ test("los controles booleanos miden lo que en LabVIEW y su etiqueta queda a 4 px
   for (const [estilo, medida] of Object.entries(cajas)) {
     const b = G.BOOLEANOS[estilo];
     assert.deepEqual([b.ancho, b.alto], medida, estilo);
-    for (const e of [false, true]) assert.match(G.dibujoBooleano(estilo, e), /^<svg viewBox="0 0 \d+ \d+"/);
+    assert.notEqual(b.dibujo(false), b.dibujo(true), `${estilo}: on and off look different`);
   }
   const k = P.cajaObjeto("bool-control", 100, 100, { style: "push-button" });
   assert.equal(k.separacion, 4);
@@ -392,9 +392,9 @@ test("un control y un indicador de cadena se ponen en el panel con su terminal e
   const k = P.caja(control);
   assert.deepEqual([k.ancho, k.alto], [100, 24], "la casilla de una cadena mide 100 × 24 px");
   const html = P.contenido(p, CTX);
-  assert.equal((html.match(/class="casilla cadena"/g) ?? []).length, 1, "el control, la casilla blanca");
-  assert.equal((html.match(/class="casilla indicador cadena"/g) ?? []).length, 1, "el indicador, la gris");
-  assert.doesNotMatch(html, /incrementador/);
+  assert.equal((html.match(/class="objeto-panel sd-control sd-string"/g) ?? []).length, 1, "the control (a white field in Old School)");
+  assert.equal((html.match(/class="objeto-panel sd-indicator sd-string"/g) ?? []).length, 1, "the indicator (a grey one)");
+  assert.doesNotMatch(html, /sd-incrementer/);
   // Los terminales del diagrama, de color rosa y con «abc».
   const bd = D.contenido({ ...ED.inicial(), g: p.g }, CTX, Gr.tipos(p.g, CAT));
   assert.equal((bd.match(/class="glifo-terminal-panel"/g) ?? []).length, 2);
@@ -439,16 +439,16 @@ test("los controles Error In y Error Out se ponen en el panel con su terminal en
   const k = P.caja(control);
   assert.deepEqual([k.ancho, k.alto], [155, 121]);
   const html = P.contenido(p, CTX);
-  assert.equal((html.match(/class="objeto-panel error-cluster control"/g) ?? []).length, 1);
-  assert.equal((html.match(/class="objeto-panel error-cluster indicador"/g) ?? []).length, 1);
+  assert.equal((html.match(/class="objeto-panel sd-control sd-error-cluster"/g) ?? []).length, 1);
+  assert.equal((html.match(/class="objeto-panel sd-indicator sd-error-cluster"/g) ?? []).length, 1);
   assert.match(html, />status</);
   assert.match(html, />source</);
-  // Status FALSE es ✔ verde y TRUE, ✘ rojo.
-  assert.match(html, /#12e012/);
-  assert.doesNotMatch(html, /#e8101c/);
+  // Status FALSE says no error (a green check in Old School: old-school/error-status-ok.svg) and TRUE an error (a red cross).
+  assert.equal((html.match(/aria-label="No error"/g) ?? []).length, 2);
+  assert.doesNotMatch(html, /aria-label="Error"/);
   const rojo = P.pulsar(p, CTX, { tipo: "campo", id: control.id, campo: "status" }, { x: 120, y: 130 });
   assert.deepEqual(CV.currentValue(rojo.g.nodos[0]), { status: true, code: 0, source: "" }, "un clic en el status lo alterna");
-  assert.match(P.contenido(rojo, CTX), /#e8101c/);
+  assert.match(P.contenido(rojo, CTX), /class="objeto-panel sd-control sd-error-cluster sd-on".*aria-label="Error"/);
   // Los terminales del diagrama: el cable de error pasa por ellos y el tipo es el cluster de error.
   const resueltos = Gr.tipos(p.g, CAT);
   assert.ok(esError(resueltos.salidas.get(`${control.id}.result`)));
@@ -497,8 +497,8 @@ test("un control y un indicador de array se ponen en el panel con su terminal en
   const k = P.caja(control);
   assert.deepEqual([k.ancho, k.alto], [41 + 67 + 6, 36]);
   let html = P.contenido(p, CTX);
-  assert.equal((html.match(/class="elem-array/g) ?? []).length, 2);
-  assert.equal((html.match(/class="arr-indice"/g) ?? []).length, 2);
+  assert.equal((html.match(/class="sd-element[ "]/g) ?? []).length, 2);
+  assert.equal((html.match(/class="sd-index"/g) ?? []).length, 2);
   // El terminal del diagrama es el de un array de DBL: borde naranja y el dibujo de los índices.
   const bd = D.contenido({ ...ED.inicial(), g: p.g }, CTX, Gr.tipos(p.g, CAT));
   assert.equal((bd.match(/class="glifo-terminal-panel"/g) ?? []).length, 2);
@@ -526,7 +526,7 @@ test("un control y un indicador de array se ponen en el panel con su terminal en
   p = P.moverA(p, CTX, { x: 260 + 2 * 67, y: 112 });
   p = P.soltar(p, CTX, FONDO, { x: 394, y: 112 });
   assert.equal(p.g.nodos[0].config.visibles, 3);
-  assert.equal((P.contenido(p, CTX).match(/class="elem-array/g) ?? []).length, 4, "tres en el control y uno en el indicador");
+  assert.equal((P.contenido(p, CTX).match(/class="sd-element[ "]/g) ?? []).length, 4, "tres en el control y uno en el indicador");
   assert.equal(P.caja(p.g.nodos[0]).ancho, 41 + 3 * 67 + 6);
   // Un array de cadenas y uno de booleanos.
   let q = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "string" }, value: ["a"] });
@@ -558,10 +558,10 @@ test("Add Dimension and Remove Dimension on a panel array turn it into a 2D one 
   const k = P.caja(control);
   assert.deepEqual([k.ancho, k.alto], [41 + 65 + 7, 54], "the index column is taller than one row of elements");
   let html = P.contenido(p, CTX);
-  assert.equal((html.match(/class="arr-indice"/g) ?? []).length, 2);
-  assert.match(html, /data-eje="fila" style="top:0px;width:41px/);
-  assert.match(html, /data-eje="columna" style="top:28px;width:41px/);
-  assert.match(html, /class="objeto-panel array control dos-dimensiones/);
+  assert.equal((html.match(/class="sd-index"/g) ?? []).length, 2);
+  assert.match(html, /data-eje="fila" style="left:0px;top:0px;width:41px/);
+  assert.match(html, /data-eje="columna" style="left:0px;top:28px;width:41px/);
+  assert.match(html, /class="objeto-panel sd-control sd-array sd-two-dimensions/);
 
   // Both axes stretch from the corner handle: 3 columns and 4 rows.
   p = { ...p, seleccion: [id] };
@@ -573,8 +573,8 @@ test("Add Dimension and Remove Dimension on a panel array turn it into a 2D one 
   const grande = P.caja(p.g.nodos[0]);
   assert.deepEqual([grande.ancho, grande.alto], [41 + 3 * 65 + 7, 3 + 4 * 26 + 5], "stretched cells repeat every 65 px across and 26 px down");
   html = P.contenido(p, CTX);
-  assert.equal((html.match(/class="elem-array/g) ?? []).length, 12);
-  assert.equal((html.match(/class="elem-array"/g) ?? []).length, 3, "the three defined elements; the rest are shown greyed");
+  assert.equal((html.match(/class="sd-element[ "]/g) ?? []).length, 12);
+  assert.equal((html.match(/class="sd-element"/g) ?? []).length, 3, "the three defined elements; the rest are shown greyed");
 
   // The arrows move each index on its own axis and never go below 0.
   const paso = (eje, valor) => { p = P.pulsar(p, CTX, { tipo: "paso", id, paso: valor, eje }, { x: 160, y: 110 }); };
@@ -610,10 +610,10 @@ test("a 2D indicator shows the rows the run left and ignores a value with other 
   let p = ponerYConfirmar(P.inicial(), "arr-indicator", { x: 150, y: 100 }, { type: { array: "i32", dims: 2 }, value: [] });
   const id = p.g.nodos[0].id;
   p = { ...p, g: Gr.fijarConfig(p.g, id, { visibles: [2, 2] }) };
-  const mostrado = (valores) => [...P.contenido({ ...p, valores }, CTX).matchAll(/<span class="valor"><span>([^<]*)<\/span>/g)].map((m) => m[1]);
+  const mostrado = (valores) => [...P.contenido({ ...p, valores }, CTX).matchAll(/<span class="sd-value"><span>([^<]*)<\/span>/g)].map((m) => m[1]);
   assert.deepEqual(mostrado({ [id]: [[1, 2], [3, 4]] }), ["1", "2", "3", "4"]);
   assert.deepEqual(mostrado({ [id]: [1, 2, 3] }), ["0", "0", "0", "0"], "a 1D value left before Add Dimension is not shown");
-  assert.equal((P.contenido({ ...p, valores: { [id]: [[1]] } }, CTX).match(/class="elem-array indicador"/g) ?? []).length, 1, "only the cell the run defined is solid");
+  assert.equal((P.contenido({ ...p, valores: { [id]: [[1]] } }, CTX).match(/class="sd-element"/g) ?? []).length, 1, "only the cell the run defined is solid");
 });
 
 // A tester on Windows saved a VI whose control was still being named: the file had no front panel.

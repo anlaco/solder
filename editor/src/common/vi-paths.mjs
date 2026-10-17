@@ -27,6 +27,9 @@ export const withoutVIExtension = (name) => VI_EXTENSIONS.reduce((rest, extensio
 /** Where Save As writes the path the user chose: as it is if it already names a VI file, with `.sdg` added if not. */
 export const savePathFor = (chosen) => (isVIFile(chosen) ? chosen : `${chosen}${VI_EXTENSION}`);
 
+/** The stylesheet that goes with a VI file (DT-058 §2): the same name with `.css`, next to it. */
+export const companionStylesheetPath = (viPath) => `${withoutVIExtension(viPath)}.css`;
+
 /** What Save As proposes: the same name with `.sdg`, so an old `.qvi` is offered under the new extension. */
 export const saveAsProposal = (currentPath, name) => (currentPath ? `${withoutVIExtension(currentPath)}${VI_EXTENSION}` : `${withoutVIExtension(name)}${VI_EXTENSION}`);
 

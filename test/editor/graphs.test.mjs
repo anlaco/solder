@@ -4,6 +4,7 @@
 // needed: everything is pure functions over the panel state.
 
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import Ajv2020 from "ajv/dist/2020.js";
@@ -60,7 +61,14 @@ function wiredGraph(block, constBlock, config) {
 
 const texts = (svg) => [...svg.matchAll(/<text [^>]*>([^<]*)<\/text>/g)].map((m) => m[1]);
 /** The tick labels of an axis, in order (`axis`: "x" or "y"). */
-const labels = (svg, axis) => [...svg.matchAll(new RegExp(`<text class="grafico-texto marca-${axis}"[^>]*>([^<]*)</text>`, "g"))].map((m) => m[1]);
+const labels = (svg, axis) => [...svg.matchAll(new RegExp(`<text class="sd-tick-text sd-tick-${axis}"[^>]*>([^<]*)</text>`, "g"))].map((m) => m[1]);
+
+/** The measured colors live in the Old School panel style (DT-058): the declarations of one of its rules. */
+const OLD_SCHOOL_CSS = readFileSync(new URL("../../editor/src/panel-styles/old-school.css", import.meta.url), "utf8");
+const oldSchoolRule = (selector) => {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return OLD_SCHOOL_CSS.match(new RegExp(`(?:^|\\n|,\\s*)\\.sd-panel ${escaped}(?:,[^{]*)?\\s*\\{([^}]*)\\}`))?.[1] ?? "";
+};
 
 // ——— The palette ———
 
@@ -115,7 +123,7 @@ test("a Waveform Chart, a Waveform Graph and an XY Graph are placed on the panel
   assert.deepEqual([chart.panel.x, chart.panel.y], [300 - 164, 200 - 109]);
 
   const html = P.contenido(p, CTX);
-  assert.equal((html.match(/class="objeto-panel grafico/g) ?? []).length, 3);
+  assert.equal((html.match(/class="objeto-panel sd-indicator sd-(?:waveform-chart|waveform-graph|xy-graph)"/g) ?? []).length, 3);
   assert.match(html, /data-grafico="xy-graph"[^>]*width:342px;height:300px/);
   assert.match(html, />XY Graph</, "its label above");
 
@@ -180,12 +188,15 @@ test("the graphs are drawn at the measured sizes with their axes, legend and gri
   const [svgChart, svgGraph, svgXY] = [chart, graph, xy].map((node) => draw(node));
 
   assert.deepEqual(["waveform-chart", "waveform-graph", "xy-graph"].map((t) => Object.values(GRAPH_MEASURES[t].plot)), [[72, 10, 232, 166], [72, 10, 232, 166], [70, 10, 248, 248]]);
-  assert.match(svgChart, /<svg class="grafico-dibujo" width="328" height="218"/);
-  assert.match(svgXY, /<svg class="grafico-dibujo" width="342" height="300"/);
+  assert.match(svgChart, /<svg class="sd-graph-art" width="328" height="218"/);
+  assert.match(svgXY, /<svg class="sd-graph-art" width="342" height="300"/);
   // The black plot area with its borders: dark on the top and left, light on the bottom and right.
-  assert.match(svgChart, /<rect x="72" y="10" width="232" height="166" fill="#000000"\/>/);
-  assert.match(svgChart, /<rect x="71" y="9" width="233" height="1" fill="#595959"\/>/);
-  assert.match(svgChart, /<rect x="71" y="176" width="233" height="1" fill="#d9d9d9"\/>/);
+  assert.match(svgChart, /<rect class="sd-plot" x="72" y="10" width="232" height="166"\/>/);
+  assert.match(svgChart, /<g class="sd-plot-frame-dark"><rect class="sd-plot-frame-line" x="71" y="9" width="233" height="1"\/>/);
+  assert.match(svgChart, /<g class="sd-plot-frame-light"><rect class="sd-plot-frame-line" x="71" y="176" width="233" height="1"\/>/);
+  assert.match(oldSchoolRule(".sd-graph-art .sd-plot"), /fill: #000000/);
+  assert.match(oldSchoolRule(".sd-plot-frame-dark"), /fill: #595959/);
+  assert.match(oldSchoolRule(".sd-plot-frame-light"), /fill: #d9d9d9/);
 
   // Names and tick labels of 03: the chart's X shows only both ends; the graph's, every 20; the XY Graph's, every unit.
   assert.deepEqual(labels(svgChart, "y"), ["-10", "-5", "0", "5", "10"]);
@@ -195,29 +206,34 @@ test("the graphs are drawn at the measured sizes with their axes, legend and gri
   assert.deepEqual(labels(svgXY, "y"), ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"]);
   for (const svg of [svgChart, svgGraph, svgXY]) assert.deepEqual(texts(svg).slice(-3), ["Time", "Amplitude", "Plot 0"], "named Time and Amplitude, with the legend (03)");
   // Y ticks are 5 px long 7 px before the plot, X ticks 3 px under it.
-  assert.match(svgChart, /<rect x="65" y="10" width="5" height="1" fill="#000000"\/>/);
-  assert.match(svgChart, /<rect x="72" y="178" width="1" height="5" fill="#000000"\/>/);
+  assert.match(svgChart, /<rect class="sd-tick" x="65" y="10" width="5" height="1"\/>/);
+  assert.match(svgChart, /<rect class="sd-tick" x="72" y="178" width="1" height="5"\/>/);
+  assert.match(oldSchoolRule(".sd-graph-art .sd-tick"), /fill: #000000/);
 
   // The grid: none on the chart; the graph's minor #003300 and major #006600; the XY Graph's #4c4c00 and #999900.
-  assert.doesNotMatch(svgChart, /#003300|#4c4c00/);
-  assert.match(svgGraph, /stroke="#003300"/);
-  assert.match(svgGraph, /stroke="#006600"/);
-  assert.match(svgXY, /stroke="#4c4c00"/);
-  assert.match(svgXY, /stroke="#999900"/);
+  assert.doesNotMatch(svgChart, /sd-grid-line/);
+  for (const svg of [svgGraph, svgXY]) assert.match(svg, /sd-grid-minor[\s\S]*sd-grid-major/);
+  assert.match(oldSchoolRule(".sd-waveform-graph .sd-grid-minor"), /stroke: #003300/);
+  assert.match(oldSchoolRule(".sd-waveform-graph .sd-grid-major"), /stroke: #006600/);
+  assert.match(oldSchoolRule(".sd-xy-graph .sd-grid-minor"), /stroke: #4c4c00/);
+  assert.match(oldSchoolRule(".sd-xy-graph .sd-grid-major"), /stroke: #999900/);
   // 8 subdivisions per step of 20 on X: 5 steps give 7 minor and 1 major lines each, 4 × 5 + … (7 · 5 + 4 major, no line at the ends).
-  const gridPath = (svg, color) => svg.match(new RegExp(`<path d="([^"]*)" stroke="${color}"`))[1];
-  assert.equal((gridPath(svgGraph, "#006600").match(/v166/g) ?? []).length, 4, "four major vertical lines inside the plot");
-  assert.equal((gridPath(svgGraph, "#003300").match(/v166/g) ?? []).length, 35, "seven minor lines in each of the five steps");
+  const gridPath = (svg, weight) => svg.match(new RegExp(`<path class="sd-grid-line sd-grid-${weight}" d="([^"]*)"`))[1];
+  assert.equal((gridPath(svgGraph, "major").match(/v166/g) ?? []).length, 4, "four major vertical lines inside the plot");
+  assert.equal((gridPath(svgGraph, "minor").match(/v166/g) ?? []).length, 35, "seven minor lines in each of the five steps");
   // The first minor line of the graph's X falls 6 px in, as in 03 (x = 892 over a plot that starts at 886).
-  assert.match(gridPath(svgGraph, "#003300"), /^M78\.5 10v166/);
+  assert.match(gridPath(svgGraph, "minor"), /^M78\.5 10v166/);
 
   // The legend: 100 × 22, right-aligned and 3 px above the frame, with "Plot 0" and its swatch of 28 × 18.
-  assert.match(svgChart, /class="grafico-leyenda" data-parte="legend" transform="translate\(228 -25\)"/);
+  assert.match(svgChart, /class="sd-legend" data-parte="legend" transform="translate\(228 -25\)"/);
   assert.match(svgChart, /data-parte="plot-swatch" transform="translate\(57 2\)"/);
-  assert.match(svgChart, /<rect x="0" y="0" width="28" height="18" fill="#595959"\/>/);
-  // The frame: its bevel on the left and its dark bar on the right.
-  assert.match(svgChart, /<rect x="0" y="0" width="1" height="218" fill="#bbbbbb"\/>/);
-  assert.match(svgChart, /<rect x="327" y="0" width="1" height="218" fill="#404040"\/>/);
+  assert.match(svgChart, /<rect class="sd-swatch-dark" x="0" y="0" width="28" height="18"\/>/);
+  assert.match(oldSchoolRule(".sd-swatch-dark"), /fill: #595959/);
+  // The frame: its bevel on the left and its dark bar on the right, 13 columns each.
+  assert.match(svgChart, /<g class="sd-frame-left"><rect class="sd-frame-line" x="0" y="0" width="1" height="218"\/>/);
+  assert.match(svgChart, /<rect class="sd-frame-line" x="327" y="0" width="1" height="218"\/><\/g><g class="sd-frame-top">/);
+  assert.match(oldSchoolRule(".sd-frame-left .sd-frame-line:nth-child(1)"), /fill: #bbbbbb/);
+  assert.match(oldSchoolRule(".sd-frame-right .sd-frame-line:nth-child(13)"), /fill: #404040/);
 });
 
 test("the tick labels use the decimal separator of the system and the shortest form", () => {
@@ -232,10 +248,12 @@ test("the tick labels use the decimal separator of the system and the shortest f
 test("a graph draws its plots as 1 px polylines in white and red, clipped to the plot area", () => {
   const { graph, xy } = threeGraphs();
   const wave = graphSvg(graph, { type: A("number"), value: [0, 1, 0, 1], separator: "," });
-  assert.match(wave, /<svg class="grafico-trazos" x="72" y="10" width="232" height="166"><path d="M0\.5 165\.5L[^"]*" fill="none" stroke="#ffffff" stroke-width="1"/);
-  assert.match(wave, /shape-rendering="crispEdges"/, "no antialiasing");
+  assert.match(wave, /<svg class="sd-traces" x="72" y="10" width="232" height="166"><path class="sd-trace" data-plot="0" d="M0\.5 165\.5L[^"]*"\/>/);
+  assert.match(oldSchoolRule(".sd-graph-art"), /shape-rendering: crispEdges/, "no antialiasing");
+  assert.match(oldSchoolRule(".sd-graph-art .sd-trace"), /stroke: #ffffff; stroke-width: 1;/);
   const rows = graphSvg(graph, { type: A("number", 2), value: [[0, 1], [1, 0]], separator: "," });
-  assert.match(rows, /stroke="#ffffff"[^>]*\/><path d="[^"]*" fill="none" stroke="#ff4242"/, "row 0 white, row 1 #ff4242 (82)");
+  assert.match(rows, /data-plot="0" d="[^"]+"\/><path class="sd-trace" data-plot="1" d="[^"]+"\/>/, "one path per row");
+  assert.match(oldSchoolRule(".sd-graph-art .sd-traces .sd-trace:nth-child(2n)"), /stroke: #ff4242/, "row 0 white, row 1 #ff4242 (82)");
   // 80: 128 points autoscale to 0..140 every 20 on X.
   const long = graphSvg(graph, { type: A("number"), value: Array.from({ length: 128 }, (_, i) => Math.sin(i / 20)), separator: "," });
   assert.deepEqual(labels(long, "x"), ["0", "20", "40", "60", "80", "100", "120", "140"]);
@@ -249,7 +267,7 @@ test("a graph draws its plots as 1 px polylines in white and red, clipped to the
   assert.deepEqual(labels(xySvg, "y"), ["-1", "-0,8", "-0,6", "-0,4", "-0,2", "0", "0,2", "0,4", "0,6", "0,8", "1"], "Y every 0,2");
   assert.deepEqual(labels(xySvg, "x"), ["-1", "-0,5", "0", "0,5", "1"], "X, whose labels are wider, every 0,5 (89)");
   // Outside the plot area nothing is drawn: a point far away stays inside the clipping svg.
-  assert.match(graphSvg(graph, { type: A("number"), value: [0, 1e300, 0], separator: "," }), /<svg class="grafico-trazos"/);
+  assert.match(graphSvg(graph, { type: A("number"), value: [0, 1e300, 0], separator: "," }), /<svg class="sd-traces"/);
 });
 
 // ——— What a chart keeps ———
@@ -261,7 +279,7 @@ test("a chart appends each write, keeps its history across Runs and is cleared b
   assert.equal(type, "number");
   let charts = GS.appendedToChart({}, graph.id, [0.1, 0.5, 0.3], type, 1024);
   const drawn = (c) => graphSvg(graph, { type, charts: c, separator: "," });
-  assert.match(drawn(charts), /<path d="M0\.5 [\d.]+L[\d. ]+L[\d. ]+" fill="none" stroke="#ffffff"/, "three points, one polyline");
+  assert.match(drawn(charts), /<path class="sd-trace" data-plot="0" d="M0\.5 [\d.]+L[\d. ]+L[\d. ]+"\/>/, "three points, one polyline");
   // A second Run goes on from where the first one left (71): the history is the window's, not the Run's.
   charts = GS.appendedToChart(charts, graph.id, [0.9], type, 1024);
   assert.equal(charts[graph.id].history.appended, 4);

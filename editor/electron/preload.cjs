@@ -6,7 +6,10 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("solder", {
-  /** The VI these windows belong to: `{ id, text, key, name, untitledNumber }`; `text` is null for a new VI. */
+  /**
+   * The VI these windows belong to: `{ id, text, key, name, untitledNumber, windowStyle }`; `text` is null for a new
+   * VI, and `windowStyle` is the text of the `.css` next to its file, or "" (DT-058 §2).
+   */
   iniciar: () => ipcRenderer.invoke("vi:init"),
   /** Saves the text of the VI; `como`, Save As. Returns `{ ruta, nombre, texto }` (the text as written), or nothing if cancelled. */
   guardar: (texto, como) => ipcRenderer.invoke("vi:guardar", texto, como),
@@ -65,6 +68,8 @@ contextBridge.exposeInMainWorld("solder", {
     /** The recent files or the carousel page changed: `callback(state)`. */
     alCambiar: (callback) => ipcRenderer.on("start:state", (_event, state) => callback(state)),
   },
+  /** This VI's window style changed on disk, or the VI was saved next to another one: `callback(text)`. */
+  alCambiarEstiloVentana: (callback) => ipcRenderer.on("vi:window-style", (_event, text) => callback(text)),
   /** Some VI was saved, at this absolute path: `callback({ id, key })`. The callers of a saved subVI must see its new connector. */
   alGuardar: (callback) => ipcRenderer.on("vi:saved", (_event, saved) => callback(saved)),
 });

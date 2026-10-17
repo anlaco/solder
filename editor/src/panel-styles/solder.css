@@ -1,0 +1,164 @@
+/* Solder: the default panel style of the releases (DT-058 §4 and §8), from docs/ideas/panel-style-mockups.html.
+ *
+ * It is loaded after plain.css and dresses the same markup (html-controls.mjs). The pattern of the mockup, inside the
+ * boxes measured in LabVIEW: a quiet warm base with color only for meaning (ISA-101: the normal state is neutral, red
+ * is an alarm), depth on what is touched and flat on what is read, hairline rings instead of borders, controls raised
+ * and indicators recessed, tabular figures, and light as feedback (a glowing LED, a halo on the field being typed).
+ *
+ * Every color is a token on .sd-panel, so a variant only redefines them: solder-night.css imports this sheet.
+ * The canvas is the .sd-panel itself: the style paints it, with the editor's 12 px grid as dots that Run mode hides.
+ */
+
+.sd-panel {
+  --sd-panel: #f6f5f1;
+  --sd-panel-dots: rgba(36, 39, 45, 0.16);
+  --sd-ink: #24272d;
+  --sd-muted: #737882;
+  --sd-line: rgba(36, 39, 45, 0.12);
+  --sd-line-soft: rgba(36, 39, 45, 0.08);
+  --sd-surface: #ffffff;
+  --sd-recess: #efeee9;
+  --sd-card: #fbfaf7;
+  --sd-ring: 0 0 0 1px rgba(36, 39, 45, 0.11);
+  --sd-raise: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(36, 39, 45, 0.1), 0 1px 2px rgba(36, 39, 45, 0.08), 0 2px 5px rgba(36, 39, 45, 0.06);
+  --sd-inset: inset 0 1px 2px rgba(36, 39, 45, 0.1), 0 0 0 1px rgba(36, 39, 45, 0.08);
+  --sd-accent: #ff7a1a;
+  --sd-accent-ink: #ffffff;
+  --sd-accent-soft: rgba(255, 122, 26, 0.16);
+  --sd-track: #e3e2dc;
+  --sd-face-high: #ffffff;
+  --sd-face-low: #dddbd4;
+  --sd-face-shadow: rgba(36, 39, 45, 0.22);
+  --sd-led-off: #d6d4cd;
+  --sd-glow: rgba(255, 122, 26, 0.6);
+  --sd-alarm: #e5484d;
+  --sd-alarm-ink: #ffffff;
+  --sd-alarm-glow: rgba(229, 72, 77, 0.55);
+  --sd-key-edge: rgba(0, 0, 0, 0.18);
+  --sd-empty: #f3f2ee;
+  --sd-plot: #ffffff;
+  --sd-grid-minor: rgba(36, 39, 45, 0.04);
+  --sd-grid-major: rgba(36, 39, 45, 0.09);
+  --sd-trace-0: #ff7a1a;
+  --sd-trace-1: #24272d;
+  --sd-trace-2: #3f7fd6;
+  --sd-trace-3: #2a9d8f;
+  --sd-radius: 5px;
+  --sd-big-radius: 8px;
+
+  background-color: var(--sd-panel);
+  /* A dot on every crossing of the editor's grid, which starts at the canvas's very edge. */
+  background-image: radial-gradient(circle, var(--sd-panel-dots) 1px, transparent 1.2px);
+  background-size: 12px 12px;
+  background-position: -5.5px -5.5px;
+}
+
+/* ——— Common parts ——— */
+
+.sd-panel .sd-label { color: var(--sd-muted); }
+.sd-panel .sd-value .caret { background: var(--sd-ink); }
+
+/* Every field is a hairline-ringed surface: raised on a control, recessed on an indicator. */
+.sd-panel .sd-field { border-color: transparent; border-radius: var(--sd-radius); padding: 0 4px; }
+.sd-panel .sd-control .sd-field { background: var(--sd-surface); box-shadow: var(--sd-raise); }
+.sd-panel .sd-indicator .sd-field { background: var(--sd-recess); border-color: transparent; box-shadow: var(--sd-inset); }
+
+/* The incrementer: two muted chevrons, lit by the accent under the pointer. */
+.sd-panel .sd-step { border-radius: 3px; }
+.sd-panel .sd-step::before {
+  width: 4px; height: 4px; border: 0;
+  border-top: 1.5px solid var(--sd-muted); border-left: 1.5px solid var(--sd-muted);
+}
+.sd-panel .sd-step-up::before { transform: translateY(1.5px) rotate(45deg); }
+.sd-panel .sd-step-down::before { transform: translateY(-1.5px) rotate(225deg); }
+.sd-panel .sd-step:hover { background: var(--sd-accent-soft); }
+.sd-panel .sd-step:hover::before { border-top-color: var(--sd-accent); border-left-color: var(--sd-accent); }
+.sd-panel .sd-decorative .sd-step::before { opacity: 0.6; }
+
+/* ——— Numeric, enum and string ——— */
+
+/* The whole object is the field, so a control's incrementer sits inside it, as in the mockup. */
+.sd-panel :is(.sd-numeric, .sd-enum, .sd-string) { border-radius: var(--sd-radius); }
+.sd-panel .sd-control:is(.sd-numeric, .sd-enum, .sd-string) { background: var(--sd-surface); box-shadow: var(--sd-raise); }
+.sd-panel .sd-indicator:is(.sd-numeric, .sd-enum, .sd-string) { background: var(--sd-recess); box-shadow: var(--sd-inset); }
+.sd-panel :is(.sd-numeric, .sd-enum, .sd-string) > .sd-field { background: transparent; box-shadow: none; }
+.sd-panel .sd-control:is(.sd-numeric, .sd-enum) > .sd-incrementer { padding: 2px 0 2px 2px; }
+.sd-panel .sd-control:is(.sd-numeric, .sd-enum) > .sd-incrementer + .sd-field { padding-left: 2px; }
+.sd-panel .sd-control.sd-editing:is(.sd-numeric, .sd-enum, .sd-string) { box-shadow: var(--sd-raise), 0 0 0 3px var(--sd-accent-soft); }
+
+/* ——— Booleans ——— */
+
+/* Buttons and rockers are raised keys; pressed, they sink and their text takes the accent. */
+.sd-panel .sd-button {
+  border: 0; border-radius: var(--sd-radius); background: var(--sd-surface); box-shadow: var(--sd-raise);
+  color: var(--sd-ink); letter-spacing: 0.04em;
+}
+/* The soft accent is translucent: it is laid over the recess, or the canvas's dots would show through. */
+.sd-panel .sd-button[aria-pressed="true"] {
+  background: linear-gradient(var(--sd-accent-soft), var(--sd-accent-soft)), var(--sd-recess); box-shadow: var(--sd-inset); color: var(--sd-accent);
+}
+/* STOP is the alarm key of the mockup: red, with an edge under it that it loses when pressed. */
+.sd-panel .sd-boolean[data-style="stop-button"] .sd-button {
+  background: var(--sd-alarm); color: var(--sd-alarm-ink); letter-spacing: 0.12em;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 0 1px var(--sd-key-edge), 0 2px 0 var(--sd-key-edge);
+}
+.sd-panel .sd-boolean[data-style="stop-button"] .sd-button[aria-pressed="true"] {
+  transform: translateY(1px); filter: saturate(0.75) brightness(0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 0 1px var(--sd-key-edge);
+}
+
+/* A switch is a recessed track that fills with the accent, and a ball that slides along it. */
+.sd-panel .sd-switch { border: 0; background: var(--sd-recess); box-shadow: var(--sd-inset); }
+.sd-panel .sd-switch[aria-checked="true"] { background: var(--sd-accent); }
+.sd-panel .sd-switch-thumb {
+  top: 2px; bottom: 2px; left: 2px;
+  background: radial-gradient(circle at 35% 30%, var(--sd-face-high), var(--sd-face-low));
+  box-shadow: 0 1px 3px var(--sd-face-shadow), 0 0 0 0.5px var(--sd-line);
+}
+.sd-panel .sd-switch[aria-checked="true"] .sd-switch-thumb { left: auto; right: 2px; }
+.sd-panel .sd-vertical .sd-switch-thumb { top: auto; bottom: 2px; left: 2px; right: 2px; }
+.sd-panel .sd-vertical .sd-switch[aria-checked="true"] .sd-switch-thumb { top: 2px; bottom: auto; left: 2px; right: 2px; }
+
+/* An LED is a grey lens with a shine; lit, it takes the accent and glows. A square LED is a flat lamp, with no shine. */
+.sd-panel .sd-led-lens { --sd-shine: radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.45), transparent 5px); border: 0; background: var(--sd-shine), var(--sd-led-off); box-shadow: var(--sd-inset); }
+.sd-panel .sd-on .sd-led-lens { background: var(--sd-shine), var(--sd-accent); box-shadow: 0 0 0 1px var(--sd-line), 0 0 7px var(--sd-glow); }
+.sd-panel .sd-boolean[data-style="square-led"] .sd-led-lens { --sd-shine: none; border-radius: 2px; }
+.sd-panel .sd-on[data-style="square-led"] .sd-led-lens { box-shadow: 0 0 0 1px var(--sd-line), 0 0 5px var(--sd-glow); }
+
+.sd-panel .sd-radio-group { border: 0; border-radius: var(--sd-big-radius); background: var(--sd-recess); box-shadow: var(--sd-inset); }
+.sd-panel .sd-radio { color: var(--sd-ink); }
+.sd-panel .sd-radio-mark { border: 0; background: var(--sd-surface); box-shadow: var(--sd-raise); }
+.sd-panel .sd-radio[aria-checked="true"] .sd-radio-mark { border: 3.5px solid var(--sd-accent); box-shadow: 0 0 0 1px var(--sd-line); }
+
+/* ——— Error in and error out ——— */
+
+/* A flat card, read rather than touched; its fields follow the rule of controls and indicators. */
+.sd-panel .sd-error-cluster { border-color: transparent; border-radius: var(--sd-big-radius); background: var(--sd-card); box-shadow: var(--sd-ring); }
+/* No error is the normal state and stays neutral; an error is an alarm, red and glowing. */
+.sd-panel .sd-error-light { border: 0; background: var(--sd-led-off); box-shadow: var(--sd-inset); }
+.sd-panel .sd-error-cluster.sd-on .sd-error-light { background: var(--sd-alarm); box-shadow: 0 0 0 1px var(--sd-line), 0 0 7px var(--sd-alarm-glow); }
+.sd-panel .sd-error-cluster.sd-editing { box-shadow: var(--sd-ring), 0 0 0 3px var(--sd-accent-soft); }
+
+/* ——— Array ——— */
+
+/* The index is a small raised field with its chevrons inside; the elements sit in a recessed tray. */
+.sd-panel .sd-array .sd-index { border-radius: var(--sd-radius); background: var(--sd-surface); box-shadow: var(--sd-raise); }
+.sd-panel .sd-array .sd-index .sd-incrementer { padding: 2px 0 2px 2px; }
+.sd-panel .sd-array .sd-index .sd-field { background: transparent; box-shadow: none; }
+.sd-panel .sd-array .sd-elements { border-color: transparent; border-radius: var(--sd-radius); background: var(--sd-recess); box-shadow: var(--sd-inset); }
+.sd-panel .sd-array .sd-element.sd-empty .sd-field { background: var(--sd-empty); box-shadow: var(--sd-ring); color: var(--sd-muted); }
+.sd-panel .sd-array .sd-element.sd-editing .sd-field { box-shadow: var(--sd-raise), 0 0 0 3px var(--sd-accent-soft); }
+.sd-panel .sd-array .sd-element-boolean { border: 0; border-radius: var(--sd-radius); background: var(--sd-surface); box-shadow: var(--sd-raise); color: var(--sd-muted); }
+.sd-panel .sd-array .sd-element-boolean[aria-checked="true"] { background: var(--sd-accent); color: var(--sd-accent-ink); }
+
+/* ——— Waveform Chart, Waveform Graph and XY Graph ——— */
+
+/* Flat, as everything that is read: a rounded plot area with a hairline, a faint grid, muted scales and a legend card.
+   The first plot takes the accent, the second the dashed graphite of the mockup's setpoint. */
+.sd-panel .sd-plot { fill: var(--sd-plot); stroke: var(--sd-line); rx: 6px; }
+.sd-panel .sd-tick { fill: var(--sd-muted); opacity: 0.55; }
+.sd-panel .sd-axis-name { fill: var(--sd-muted); }
+.sd-panel .sd-trace { stroke-width: 2; stroke-linecap: round; }
+.sd-panel .sd-traces .sd-trace:nth-child(4n + 2) { stroke-width: 1.5; stroke-dasharray: 5 4; }
+.sd-panel .sd-legend-box { fill: var(--sd-card); stroke: var(--sd-line); rx: 5px; }
+.sd-panel .sd-swatch-box { fill: var(--sd-plot); stroke: var(--sd-line); rx: 3px; }

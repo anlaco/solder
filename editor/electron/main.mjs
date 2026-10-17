@@ -15,8 +15,10 @@ import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, 
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
 import { newVIBounds, otherWindowKind, tiledBounds } from "./window-layout.mjs";
 import { CHOSEN_THEME_ROUTE, THEMES, chosenThemeName } from "./theme.mjs";
+import { CHOSEN_PANEL_STYLE_ROUTE, PANEL_STYLES, chosenPanelStyleName } from "../src/front-panel/panel-style.mjs";
 import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from "../src/getting-started/start-state.mjs";
 import { WINDOW_KINDS, createRegistry, isDirty, recordChange, recordSave, viName, windowTitle } from "./vi-registry.mjs";
+import { readWindowStyle, watchWindowStyle } from "./window-style.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EDITOR = path.resolve(HERE, "..");
@@ -41,6 +43,8 @@ const MEDIA_TYPES = {
 
 const THEME = THEMES[chosenThemeName(process.env.SOLDER_THEME, app.isPackaged)];
 const THEMES_DIRECTORY = path.join(EDITOR, "src", "themes");
+const PANEL_STYLE_NAME = chosenPanelStyleName(process.env.SOLDER_PANEL_STYLE, app.isPackaged);
+const PANEL_STYLES_DIRECTORY = path.join(EDITOR, "src", "panel-styles");
 
 protocol.registerSchemesAsPrivileged([
   { scheme: "solder", privileges: { standard: true, secure: true, supportFetchAPI: true } },
@@ -50,6 +54,7 @@ function serve() {
   protocol.handle("solder", async (request) => {
     const route = decodeURIComponent(new URL(request.url).pathname);
     if (route === CHOSEN_THEME_ROUTE) return chosenThemeStylesheet();
+    if (route === CHOSEN_PANEL_STYLE_ROUTE) return chosenPanelStylesheet();
     const root = route.startsWith("/core/") ? path.dirname(CORE) : EDITOR;
     const file = OUTSIDE[route] ?? path.normalize(path.join(root, route === "/" ? "index.html" : route));
     if (!Object.values(OUTSIDE).includes(file) && !file.startsWith(EDITOR + path.sep) && !file.startsWith(CORE + path.sep)) {
@@ -67,6 +72,13 @@ function serve() {
 /** The sheet of the chosen theme, served after old-school.css; Old School has none and gets an empty one. */
 async function chosenThemeStylesheet() {
   const css = THEME.stylesheet ? await readFile(path.join(THEMES_DIRECTORY, THEME.stylesheet)) : "";
+  return new Response(css, { headers: { "content-type": MEDIA_TYPES[".css"] } });
+}
+
+/** The sheet of the chosen panel style, served after plain.css; a style with no sheet of its own shows as Plain. */
+async function chosenPanelStylesheet() {
+  const { stylesheet } = PANEL_STYLES[PANEL_STYLE_NAME];
+  const css = stylesheet ? await readFile(path.join(PANEL_STYLES_DIRECTORY, stylesheet)) : "";
   return new Response(css, { headers: { "content-type": MEDIA_TYPES[".css"] } });
 }
 
@@ -94,7 +106,7 @@ function createWindow(entry, kind, bounds) {
     webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(HERE, "preload.cjs") },
   });
   window.on("page-title-updated", (event) => event.preventDefault());
-  window.loadURL(`solder://editor/index.html?ventana=${kind}&vi=${entry.id}`);
+  window.loadURL(`solder://editor/index.html?ventana=${kind}&vi=${entry.id}&panelStyle=${PANEL_STYLE_NAME}`);
   return window;
 }
 
@@ -163,6 +175,13 @@ function setTitles(open) {
   }
 }
 
+/** Sends the VI's window style to its windows whenever its `.css` changes on disk (DT-058 §2). */
+function watchStyleOf(open) {
+  open.stopWatchingStyle = watchWindowStyle(open.entry.path, (text) => {
+    for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.webContents.send("vi:window-style", text);
+  });
+}
+
 /** Opens the windows of a VI the registry has just created. */
 function openWindows(entry) {
   const bounds = boundsForNewVI(openVIs.size);
@@ -174,6 +193,7 @@ function openWindows(entry) {
     open.windows[kind] = window;
     viOfContents.set(window.webContents.id, open);
   }
+  watchStyleOf(open);
   const panel = open.windows["front-panel"];
   // Both are shown once loaded, the Front Panel last so that it is in front.
   const loaded = (window) => new Promise((resolve) => window.once("ready-to-show", resolve));
@@ -189,6 +209,7 @@ function openWindows(entry) {
     closeVI(open);
   });
   panel.on("closed", () => {
+    open.stopWatchingStyle();
     registry.close(entry.id);
     openVIs.delete(entry.id);
     for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.destroy();
@@ -332,12 +353,23 @@ async function writeVI(open, owner, text, saveAs) {
   }
   const rebased = rebaseText(text, keyOf(entry), pathKey(target));
   await writeFile(target, rebased);
+  const moved = target !== entry.path;
   recordSave(entry, target, rebased);
+  // Saved somewhere else, the VI takes the style that is next to its new file.
+  if (moved) await restyle(open);
   rememberRecentFile(target);
   setTitles(open);
   // The callers of this VI that are open must see its new connector.
   for (const other of BrowserWindow.getAllWindows()) other.webContents.send("vi:saved", { id: entry.id, key: pathKey(target) });
   return rebased;
+}
+
+/** Points the window style at the VI's current file and sends what is there. */
+async function restyle(open) {
+  open.stopWatchingStyle();
+  watchStyleOf(open);
+  const text = await readWindowStyle(open.entry.path);
+  for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.webContents.send("vi:window-style", text);
 }
 
 // ——— The Getting Started window (DT-052) ———
@@ -416,7 +448,10 @@ function handleRequests() {
   const openOf = (event) => viOfContents.get(event.sender.id);
   const ownerOf = (event) => BrowserWindow.fromWebContents(event.sender);
 
-  ipcMain.handle("vi:init", (event) => describe(openOf(event).entry));
+  ipcMain.handle("vi:init", async (event) => {
+    const { entry } = openOf(event);
+    return { ...describe(entry), windowStyle: await readWindowStyle(entry.path) };
+  });
   ipcMain.on("vi:cambio", (event, text) => {
     const open = openOf(event);
     recordChange(open.entry, text);

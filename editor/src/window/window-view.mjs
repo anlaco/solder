@@ -12,6 +12,9 @@ import * as G from "../common/glyphs.mjs";
 import { esHueco, nombreVeredicto, ultimo } from "../common/labview-inventory.mjs";
 import { CODIGOS, explicar } from "../../../core/runtime/error-codes.mjs";
 
+/** The classes that make a Front Panel's canvas the root of its panel style (DT-058), whichever it is. */
+const panelStyleClasses = (panelStyle) => (panelStyle ? ` sd-panel sd-style-${panelStyle}` : "");
+
 export const MEDIDAS = {
   altoMenus: 29 / 1.5, // filas 0–28 de la zona cliente
   altoSurco: 5 / 1.5, // filas 29–33
@@ -231,7 +234,8 @@ function elementoBarra(inv, e, sitio, extra) {
  * diagrama); `encima`, lo que va sobre todo (un menú de clic derecho);
  * `runRoto`, si el VI no se puede ejecutar; `ejecutando`, si corre (modo Run),
  * `editandoTexto`, `conectorGlifo`, the connector pane drawn with its assigned cells,
- * `numeroVI`, the number on the VI's icon, and `propiedades`, the VI Properties dialog.
+ * `numeroVI`, the number on the VI's icon, `propiedades`, the VI Properties dialog, and `panelStyle`, the style
+ * the Front Panel is drawn in.
  */
 export function ventana(inv, nombre, estado, extra = {}) {
   const { lienzo = "", encima = "" } = extra;
@@ -270,7 +274,7 @@ export function ventana(inv, nombre, estado, extra = {}) {
     <div class="borde-barra" style="top:${px(M.altoMenus + M.altoSurco + M.altoBarra)};height:${px(M.altoBordeBarra)}"></div>
     <div class="zona-iconos" style="width:${px(zona)};height:${px(M.altoMenus + M.altoSurco + M.altoBarra)}">${iconos.join("")}</div>
   </div>
-  <div class="lienzo lienzo-${nombre}${extra.resaltando ? " resaltando" : ""}" data-id="${pre}.workspace" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};right:${px(M.anchoCanalon)}">${lienzo}</div>
+  <div class="lienzo lienzo-${nombre}${extra.resaltando ? " resaltando" : ""}${panelStyleClasses(extra.panelStyle)}" data-id="${pre}.workspace" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};right:${px(M.anchoCanalon)}">${lienzo}</div>
   <div class="canalon" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};width:${px(M.anchoCanalon)}"></div>
   <div class="barra-estado" style="height:${px(M.altoEstado)}">${estadoHTML}</div>
   ${estado.paleta ? paleta(inv, estado.paleta) + subpaletas(inv, estado.paleta) : ""}
