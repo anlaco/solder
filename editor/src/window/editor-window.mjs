@@ -1621,7 +1621,7 @@ addEventListener("contextmenu", (ev) => {
     if (pan.edicion) cambiarPanel(P.confirmar(pan));
     const sobrePanel = objetivoPanel(ev.target);
     if (PANEL_OBJECT_TARGETS.has(sobrePanel?.tipo)) {
-      const raizPanel = sobrePanel.parte ? PART_MENUS[sobrePanel.parte] : P.menuDe(pan.g.nodos.find((k) => k.id === sobrePanel.id));
+      const raizPanel = sobrePanel.parte ? PART_MENUS[sobrePanel.parte] : P.menuDe(pan.g.nodos.find((k) => k.id === sobrePanel.id), sobrePanel.tipo === "elem");
       if (raizPanel) {
         estado = { ...estado, paleta: null, abierta: null };
         return cambiarPanel(ED.abrirMenu(pan, raizPanel, sobrePanel.id, ev.clientX, ev.clientY));
@@ -1643,7 +1643,7 @@ addEventListener("contextmenu", (ev) => {
   const n = id && dia.g.nodos.find((k) => k.id === id);
   // A name row of an Unbundle By Name has the menu of its output terminal.
   const puerto = o?.tipo === "terminal" ? o.puerto : o?.fila !== undefined ? UN.portOfRow(o.fila) : null;
-  const raiz = n && D.menuDe(n, puerto, dia.g);
+  const raiz = n && D.menuDe(n, puerto, dia.g, o?.campo !== undefined);
   if (raiz) {
     estado = { ...estado, paleta: null, abierta: null };
     return cambiarDiagrama(ED.abrirMenu(ED.confirmar(dia, ctx), raiz, id, ev.clientX, ev.clientY, puerto, punto(ev)));

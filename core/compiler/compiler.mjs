@@ -19,7 +19,7 @@
 // enters, like LabVIEW's coercion dot. Whatever the compiler cannot emit yet is
 // returned as an error, with its node; nothing is emitted halfway.
 
-import { connectorPorts, ejecutable, orden, requerido, tipos } from "../model/graph.mjs";
+import { connectorPorts, ejecutable, nodesWithUndefinedInput, orden, requerido, tipos, undefinedArrayNodes } from "../model/graph.mjs";
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
 import { ERROR, NUMERICOS, dimensionsOf, esArray, esCluster, esEntero, esEnum, esNumerico, flattenArrayValue, limites, representacion } from "../model/types.mjs";
@@ -1831,6 +1831,12 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       for (const p of cat.puertos(n).in) {
         if (requerido(g, n, p) && !llegan.has(`${n.id}.${p.name}`)) errores.push({ nodo: n.id, motivo: `"${n.label?.text ?? n.name}" is missing a wire on its input "${p.label ?? p.name}".` });
       }
+    }
+    // DT-060: an array with no element has no type to emit, nor has whatever receives it.
+    for (const n of undefinedArrayNodes(g)) errores.push({ nodo: n.id, motivo: `"${n.label?.text ?? n.name}" is an array with no element: its type is undefined.` });
+    for (const id of nodesWithUndefinedInput(g, resueltos)) {
+      const n = g.nodos.find((node) => node.id === id);
+      errores.push({ nodo: id, motivo: `"${n.label?.text ?? n.name}" receives an array with no element: its type is undefined.` });
     }
     return { errores };
   }

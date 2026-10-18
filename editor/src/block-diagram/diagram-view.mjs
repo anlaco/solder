@@ -18,8 +18,9 @@ import * as UN from "./unbundle-by-name.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { brokenWireMarks, endPoint } from "./broken-wire.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
-import { COLORES, CONSTANT_DIGITS, aspecto, esArray, esCluster, esEntero, esEnum, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
+import { COLORES, CONSTANT_DIGITS, aspecto, isUndefinedArray, esArray, esCluster, esEntero, esEnum, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
 import { GRAPH_KINDS, labelShown } from "../front-panel/graph-state.mjs";
+import { elementMenuRoot } from "../common/array-typing.mjs";
 import { MAX_EDITOR_DIMENSIONS, cellAddress, dimensionsOfNode, firstShown, isDefined, readCell, visibleGrid } from "../common/array-grid.mjs";
 
 const esNumericoNoEntero = (t) => typeof t === "string" && esNumerico(t) && !esEntero(t);
@@ -489,9 +490,12 @@ export function caja(n, ctx, edicion) {
     return { x: n.x, y: n.y, ancho: M.izquierda + M.derecha, alto: entradas * M.celda };
   }
   const c = CONSTANTES[n.tipo];
-  if (c?.array && dimensionsOfNode(n.config) === 2) {
+  if (c?.array && !isUndefinedArray(n.config?.type) && dimensionsOfNode(n.config) === 2) {
     const box = box2D(n, ctx, edicion);
     return { x: n.x, y: n.y, ancho: MEDIDAS_ARRAY_2D.indice + box.ancho, alto: Math.max(MEDIDAS_ARRAY_2D.altoIndice, box.alto) };
+  }
+  if (c?.array && isUndefinedArray(n.config?.type)) {
+    return { x: n.x, y: n.y, ancho: MEDIDAS_ARRAY_INDEFINIDA.indice + MEDIDAS_ARRAY_INDEFINIDA.caja, alto: MEDIDAS_ARRAY_INDEFINIDA.caja };
   }
   if (c?.array) {
     const A = MEDIDAS_ARRAY;
@@ -698,8 +702,17 @@ export function moverTramo(codos, a, b, k, delta) {
 
 const puntos = (r) => r.map(([x, y]) => `${f2(x)},${f2(y)}`).join(" ");
 
+/**
+ * The two pixel rows of an undefined array's wire: how far each is shifted from the wire's centre, and its dash
+ * offset. The second row is shifted half a pixel right and down, so an offset of 2 puts its dashes one pixel ahead.
+ */
+const UNDEFINED_ARRAY_ROWS = [[-0.5, 0], [0.5, 2]];
+
 /** Pinta un cable: su color es el de su tipo y su grosor, el de su dimensión. Uno roto se pinta aparte (broken-wire.mjs). */
 function trazo(r, tipo) {
+  // An array with no element yet: 2 px like any 1D wire, each pixel row dashed 2 on and 2 off in black, the second
+  // row one pixel ahead of the first (measured at 1:1 on labview-captures/array-typing/const-wire.png).
+  if (isUndefinedArray(tipo)) return UNDEFINED_ARRAY_ROWS.map(([shift, dashOffset]) => `<polyline points="${puntos(r)}" transform="translate(${shift} ${shift})" stroke="#000" stroke-width="1" stroke-dasharray="2 2" stroke-dashoffset="${dashOffset}" shape-rendering="crispEdges"/>`).join("");
   const { color, dimension, error } = aspecto(tipo);
   // Un cable de error mide 3 px: borde oliva y, en el centro, trazos de 2 px amarillos y negros (YYKK).
   if (error) return `<polyline points="${puntos(r)}" stroke="${color}" stroke-width="3"/><polyline points="${puntos(r)}" stroke="#ffff00" stroke-width="1" stroke-dasharray="2 2"/><polyline points="${puntos(r)}" stroke="#000" stroke-width="1" stroke-dasharray="2 2" stroke-dashoffset="-2"/>`;
@@ -969,8 +982,24 @@ function constanteArray2D(n, k, ctx, edicion) {
     `<div class="caja-array-2d" style="left:${px(M.indice)};width:${px(box.ancho)};height:${px(box.alto)}"><div class="interior-caja">${tiles}</div></div></div>`;
 }
 
+/**
+ * An array constant with no element yet (DT-060), measured in labview-captures/array-typing/const-empty-crop.png: the
+ * shell is 50 × 50 with a black double line (black, 1 px white, black) and a white interior, and the index box,
+ * about 32 × 21, is attached on its left, so the whole object is 82 × 50. The typed empty constant stays 52 × 25.
+ */
+export const MEDIDAS_ARRAY_INDEFINIDA = { indice: 32, altoIndice: 21, caja: 50 };
+
+function constanteArrayIndefinida(n, k) {
+  const A = MEDIDAS_ARRAY_INDEFINIDA;
+  const index = n.config?.indice ?? 0;
+  return `<div class="constante-array indefinida" style="width:${px(k.ancho)};height:${px(k.alto)}">` +
+    `<div class="indice-array" style="width:${px(A.indice)};height:${px(A.altoIndice)};border-color:#000"><span class="paso-indice">▴▾</span><span class="campo-indice">${index}</span></div>` +
+    `<div class="caja-array-indefinida" style="left:${px(A.indice)};width:${px(A.caja)};height:${px(A.caja)}"></div></div>`;
+}
+
 /** The array constant: the index on the left and, to its right, the box with the elements that show. */
 function constanteArray(n, k, ctx, edicion) {
+  if (isUndefinedArray(n.config?.type)) return constanteArrayIndefinida(n, k);
   if (dimensionsOfNode(n.config) === 2) return constanteArray2D(n, k, ctx, edicion);
   const A = MEDIDAS_ARRAY;
   const [t, valores, k0] = [tipoElementoArray(n), valoresArray(n), n.config?.indice ?? 0];
@@ -1050,6 +1079,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
     while (esArray(hoja)) hoja = hoja.array;
     const glifo = GRAPH_KINDS.includes(n.tipo)
       ? G.graphTerminal(n.tipo, n.tipo === "xy-graph" || esCluster(tipo), !!n.vista?.compacto)
+      : isUndefinedArray(tipo)
+      ? G.terminalArrayIndefinido(control)
       : esArray(tipo)
       ? G.terminalPanelIcono(control, aspecto(tipo).color, nombre(hoja), G.dibujoArray(control))
       : esError(tipo)
@@ -1090,7 +1121,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
   // Hidden handles are still drawn to catch the mouse: hovering one is what shows them on a node that is not selected.
   const handleClass = showsStretchHandles(n, d, elegido) ? "asa" : "asa oculta";
   let asas = "";
-  if (c?.array) asas = asasArray(n, k, ctx, d.edicion, handleClass);
+  if (c?.array && !isUndefinedArray(n.config?.type)) asas = asasArray(n, k, ctx, d.edicion, handleClass);
   // Initialize Array is stretched downwards to add a dimension size (array-2d/initializearray-contexthelp.png).
   if (n.tipo === "initialize-array") asas = `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(k.ancho / 2 - 3)};top:${px(k.alto - 3)}"></div>`;
   // Format Into String and Scan From String are stretched downwards to add rows (format-scan/16-node-stretched.png).
@@ -1363,7 +1394,7 @@ export function dentroDe(g0, ctx, r) {
 }
 
 /** El menú de clic derecho de cada clase de nodo, en el inventario. */
-export function menuDe(n, puerto, g) {
+export function menuDe(n, puerto, g, onElement = false) {
   // Un túnel de entrada de un Case tiene otro menú que el de un bucle (case-menu-tunel-entrada.png).
   if (n.tipo === "tunnel-in" && g?.nodos.find((k) => k.id === n.dentro)?.tipo === "case-structure") return "context.case-tunnel-input";
   if (n.tipo in MENU_ESTRUCTURA) return MENU_ESTRUCTURA[n.tipo];
@@ -1381,7 +1412,8 @@ export function menuDe(n, puerto, g) {
   if (n.tipo === "indicator") return "context.numeric-indicator";
   // The menu of the array constant (labview-captures/array-2d/constant-2d-menu-index.png and constant-2d-menu-shell.png).
   // The terminal of an array control or indicator has no menu captured yet.
-  if (n.tipo === "arr-const") return "context.array-constant";
+  // The element of a typed array constant has its own menu; the index and the margin of the shell keep the array's.
+  if (n.tipo === "arr-const") return (onElement && elementMenuRoot(n)) || "context.array-constant";
   if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return null;
   // The right-click menu of the terminal of a graph was not captured.
   if (GRAPH_KINDS.includes(n.tipo)) return null;
@@ -1535,6 +1567,8 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
   // `submenus`: the rows of a submenu that the diagram decides, as the names of the cluster in Unbundle By Name's Select Item.
   const { ocultos = new Set(), rotulos = new Map(), desactivados = new Set(), redirigidos = new Map(), mostrados = new Set(), submenus = new Map() } = variante;
   // Disable Breakpoint only exists in the menu of something that has a breakpoint (debugging/debug-view.mjs `menuVariants`).
+  const { separadores = new Map() } = variante;
+  const separadoEn = (e) => separadores.get(e.id) ?? !!e.separado;
   const hijos = (padre) => (submenus.get(padre) ?? inv.hijos(padre)).filter((e) => !ocultos.has(e.id) && (ultimo(e.id) !== "disable-breakpoint" || mostrados.has(e.id)));
   const rotuloDe = (e) => rotulos.get(e.id) ?? e.etiqueta;
   const anchoAtajos = (padre) => Math.max(0, ...hijos(padre).map((e) => (e.atajo ? medir(e.atajo) : 0)));
@@ -1558,7 +1592,7 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
     return `<div class="menu-contextual rejilla" data-menu="${esc(padre)}" style="left:${px(x)};top:${px(y)};width:${px(R.ancho)};height:${px(R.alto)}">${celdas}</div>`;
   };
   // The size of a menu, known before it is drawn so that it can be placed inside the window.
-  const altoDe = (padre) => hijos(padre).reduce((alto, e) => alto + (e.separado ? M.separador : 0) + M.fila, 2 * M.arriba);
+  const altoDe = (padre) => hijos(padre).reduce((alto, e) => alto + (separadoEn(e) ? M.separador : 0) + M.fila, 2 * M.arriba);
   const tamanoDe = (padre) => (ultimo(padre) in REJILLAS_MENU ? { width: REJILLAS_MENU[ultimo(padre)].medidas.ancho, height: REJILLAS_MENU[ultimo(padre)].medidas.alto } : { width: anchoDe(padre), height: altoDe(padre) });
   const lista = (padre, x, y) => {
     if (ultimo(padre) in REJILLAS_MENU) return rejilla(padre, x, y);
@@ -1567,7 +1601,7 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
     let filas = "";
     let sub = "";
     for (const e of hijos(padre)) {
-      if (e.separado) {
+      if (separadoEn(e)) {
         filas += `<div class="separador-menu" style="top:${px(top + M.separador / 2 - 0.5)}"></div>`;
         top += M.separador;
       }

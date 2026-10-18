@@ -172,12 +172,12 @@
     },
 
     "arrayType": {
-      "description": "An array of the given element type with `dims` dimensions (1 when left out), like LabVIEW's type descriptor (DT-044). The element MUST be known and is never an array.",
+      "description": "An array of the given element type with `dims` dimensions (1 when left out), like LabVIEW's type descriptor (DT-044). The element is never an array; it is \"void\" only in an array that has no element yet (DT-060).",
       "type": "object",
       "required": ["array"],
       "additionalProperties": false,
       "properties": {
-        "array": { "oneOf": [{ "$ref": "#/$defs/scalarType" }, { "$ref": "#/$defs/clusterType" }, { "$ref": "#/$defs/enumType" }] },
+        "array": { "oneOf": [{ "$ref": "#/$defs/scalarType" }, { "$ref": "#/$defs/clusterType" }, { "$ref": "#/$defs/enumType" }, { "const": "void", "description": "An array with no element yet: a new Array or Array Constant (DT-060)." }] },
         "dims": { "type": "integer", "minimum": 2 }
       }
     },

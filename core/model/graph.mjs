@@ -12,7 +12,7 @@
 // A pure module with no mutation: every operation returns a new diagram.
 
 import { connectorTerminals } from "./connector.mjs";
-import { DBL, ERROR, NUMERICOS, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, nombre, withoutOneDimension } from "./types.mjs";
+import { DBL, ERROR, NUMERICOS, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, carriesUndefinedArray, isUndefinedArray, nombre, withoutOneDimension } from "./types.mjs";
 
 /** El catálogo de bloques, `docs/schema/blocks.json`. */
 export function cargarCatalogo(datos) {
@@ -1138,8 +1138,30 @@ function cablesEnCicloDeEstructura(g, cat) {
  */
 export function ejecutable(g, cat, resueltos) {
   if ([...resueltos.cables.values()].some((c) => c.roto)) return false;
+  if (undefinedArrayNodes(g).length || nodesWithUndefinedInput(g, resueltos).size) return false;
   const llegan = new Set(g.cables.map((c) => `${c.a.nodo}.${c.a.puerto}`));
   return g.nodos.every((n) => cat.bloque(n.tipo).panel || cat.puertos(n).in.every((p) => !requerido(g, n, p) || llegan.has(`${n.id}.${p.name}`)));
+}
+
+/** The blocks whose own type is an array that can be born empty (DT-060). */
+const ARRAY_SHELL_BLOCKS = new Set(["arr-const", "arr-control", "arr-indicator"]);
+
+/** The arrays with no element yet: each breaks the VI until an element is dropped inside (DT-060). */
+export const undefinedArrayNodes = (g) => g.nodos.filter((n) => ARRAY_SHELL_BLOCKS.has(n.tipo) && isUndefinedArray(n.config?.type));
+
+/**
+ * The nodes that receive an undefined array through a wire that is not broken, such as Array Size,
+ * which takes any array: LabVIEW lists them with a bad terminal. An empty array wired to another one
+ * is not listed again: it already has its own error.
+ */
+export function nodesWithUndefinedInput(g, resueltos) {
+  const shells = new Set(undefinedArrayNodes(g).map((n) => n.id));
+  const nodes = new Set();
+  for (const c of g.cables) {
+    const wire = resueltos.cables.get(c.id);
+    if (wire && !wire.roto && carriesUndefinedArray(wire.tipo) && !shells.has(c.a.nodo)) nodes.add(c.a.nodo);
+  }
+  return nodes;
 }
 
 /**

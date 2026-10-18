@@ -163,3 +163,25 @@ test("the menus of the array constant and of the panel array declare Add and Rem
   }
   assert.match(INV.explicacion(INV.entrada("context.array-dimensions-limit")).solder, /three or more dimensions/);
 });
+
+// array-typing/menus-*.png: the menus of the element of an array (reports/2026-10-18-array-element-menus.md).
+test("the menus of the element of an array declare LabVIEW's rows, with Representation and Change to Indicator built", () => {
+  const filas = (raiz) => INV.hijos(raiz).map((e) => `${e.etiqueta}${e.separado ? " |" : ""}`);
+  assert.deepEqual(filas("context.panel-array-element"), [
+    "Visible Items", "Change to Indicator |", "Change to Element", "Make Type Def. |", "Description and Tip...", "Find", "Create |", "Replace",
+    "Data Operations", "Advanced", "Fit Control to Pane", "Scale Object with Pane", "Adapt To Source |", "Representation |", "Data Entry...", "Display Format...", "Properties |",
+  ]);
+  assert.deepEqual(filas("context.array-constant-element"), [
+    "Visible Items", "Change to Control", "Change to Indicator", "Change to Element", "Make Type Def. |", "Description and Tip... |", "Numeric Palette |",
+    "Array Palette", "Create", "Replace", "Data Operations", "Advanced", "Representation |", "Display Format...", "Properties |",
+  ]);
+  assert.deepEqual(filas("context.panel-array-element-boolean").slice(-3), ["Scale Object with Pane", "Mechanical Action |", "Properties |"]);
+  assert.equal(INV.entrada("context.panel-array-element-string.representation").estado, "todo");
+  for (const raiz of ["context.panel-array-element", "context.array-constant-element"]) {
+    assert.equal(INV.entrada(`${raiz}.representation`).estado, "built");
+    assert.equal(INV.entrada(`${raiz}.representation.i32`).estado, "built");
+    assert.ok(esHueco(INV.entrada(`${raiz}.replace`)));
+  }
+  for (const raiz of ["context.panel-array", "context.panel-array-element", "context.panel-array-element-string", "context.panel-array-element-boolean"]) assert.equal(INV.entrada(`${raiz}.change-to-indicator`).estado, "built");
+  assert.ok(esHueco(INV.entrada("context.array-constant-element.change-to-control")));
+});

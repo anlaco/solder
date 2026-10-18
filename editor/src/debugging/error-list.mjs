@@ -11,6 +11,8 @@ import * as Gr from "../../../core/model/graph.mjs";
 import { nodeDisplayName } from "./debug-plan.mjs";
 
 export const GROUP_TITLE = "Block Diagram Errors";
+/** The errors of panel objects, such as an empty Array, go in a group of their own (array-typing stage 1). */
+export const PANEL_GROUP_TITLE = "Front Panel Errors";
 /** Every warning goes in one group, those of panel terminals too (measured: there is no Front Panel group). */
 export const WARNING_GROUP_TITLE = "Block Diagram Warnings";
 
@@ -28,6 +30,11 @@ export const WARNING_DETAILS = {
 
 /** What the Details box says of an unwired input (own words: the capture only fixes what it means). */
 export const UNWIRED_DETAILS = "A required input of this function is not wired, or is wired in a way it cannot accept. Open the Context Help window to see which connections the function needs.";
+/** What the Details box says of an array with no element yet (own words; DT-060). */
+export const UNDEFINED_ARRAY_DETAILS = {
+  constant: "This array constant has no element, so its type is undefined. Drop a constant inside it to give it one.",
+  panel: "This array has no element, so its type is undefined. Drop a control or an indicator inside it to give it one.",
+};
 const BROKEN_WIRE_DETAILS = "This wire cannot carry its data from one terminal to the other. Delete it or wire the terminals again.";
 /**
  * What the Details box says of a wire with a loose end (own words; LabVIEW's measure what each case means,
@@ -45,7 +52,7 @@ const LOOSE_WIRE_DETAILS = {
 export function collect({ graph, catalog, resolved, hierarchyErrors = [], compileErrors = [], inventory }) {
   const rows = [];
   const nameOf = (nodeId) => nodeDisplayName(graph.nodos.find((node) => node.id === nodeId) ?? { tipo: "node" }, inventory);
-  const unwired = new Set();
+  const listedNodes = new Set();
 
   for (const message of hierarchyErrors) rows.push({ id: `hierarchy.${rows.length}`, text: message, details: message, target: null });
 
@@ -54,8 +61,21 @@ export function collect({ graph, catalog, resolved, hierarchyErrors = [], compil
     if (catalog.bloque(node.tipo).panel) continue;
     const missing = catalog.puertos(node).in.some((port) => Gr.requerido(graph, node, port) && !wired.has(`${node.id}.${port.name}`));
     if (!missing) continue;
-    unwired.add(node.id);
+    listedNodes.add(node.id);
     rows.push({ id: `node.${node.id}`, text: `${nameOf(node.id)}: Contains unwired or bad terminal`, details: UNWIRED_DETAILS, target: { node: node.id } });
+  }
+
+  for (const node of Gr.undefinedArrayNodes(graph)) {
+    listedNodes.add(node.id);
+    const onPanel = node.tipo !== "arr-const";
+    rows.push(onPanel
+      ? { id: `node.${node.id}`, text: `Array '${nameOf(node.id)}': Control contains no elements and is undefined`, details: UNDEFINED_ARRAY_DETAILS.panel, target: { node: node.id }, group: PANEL_GROUP_TITLE }
+      : { id: `node.${node.id}`, text: `${nameOf(node.id)}: Constant has undefined type`, details: UNDEFINED_ARRAY_DETAILS.constant, target: { node: node.id } });
+  }
+  for (const nodeId of Gr.nodesWithUndefinedInput(graph, resolved)) {
+    if (listedNodes.has(nodeId)) continue;
+    listedNodes.add(nodeId);
+    rows.push({ id: `node.${nodeId}`, text: `${nameOf(nodeId)}: Contains unwired or bad terminal`, details: UNWIRED_DETAILS, target: { node: nodeId } });
   }
 
   for (const wire of graph.cables) {
@@ -64,7 +84,8 @@ export function collect({ graph, catalog, resolved, hierarchyErrors = [], compil
   }
 
   for (const error of compileErrors) {
-    if (error.nodo && unwired.has(error.nodo)) continue;
+    // A node already listed, or a broken wire (listed above from the resolved types), is not listed twice.
+    if ((error.nodo && listedNodes.has(error.nodo)) || error.cable) continue;
     rows.push({ id: `compile.${rows.length}`, text: error.nodo ? `${nameOf(error.nodo)}: ${error.motivo}` : error.motivo, details: error.motivo, target: error.nodo ? { node: error.nodo } : null });
   }
   return rows;

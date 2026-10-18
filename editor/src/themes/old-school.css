@@ -221,6 +221,20 @@
   --panel-array-cell-border: #7a7a7a;
   --panel-array-empty-background: #ececec;
   --panel-array-empty-text: #9a9a9a;
+  /* The shell of an array with no element yet (labview-captures/array-typing/panel-empty.png): a 4 px bevel round
+     #a6a6a6, one shade per pixel from the outside in, dark on the top and left, light on the bottom and right. */
+  --panel-array-undefined-background: #a6a6a6;
+  --panel-array-undefined-bevel-dark-1: #d3d3d3;
+  --panel-array-undefined-bevel-dark-2: #c2c2c2;
+  --panel-array-undefined-bevel-dark-3: #b7b7b7;
+  --panel-array-undefined-bevel-dark-4: #b1b1b1;
+  --panel-array-undefined-bevel-light-1: #eaeaea;
+  --panel-array-undefined-bevel-light-2: #ededed;
+  --panel-array-undefined-bevel-light-3: #f2f2f2;
+  --panel-array-undefined-bevel-light-4: #eeeeee;
+  /* The constant of an array with no element yet: a black double line round white (array-typing/const-empty-crop.png). */
+  --array-undefined-line: #000;
+  --array-undefined-fill: #fff;
   --array-handle: #0078d7;
   --array-handle-border: #fff;
   --graph-text: #000;

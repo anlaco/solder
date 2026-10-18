@@ -400,7 +400,8 @@ export function errorListWindow(inv, model) {
     for (const row of members) html += `<div class="el-fila${row.id === state.selected ? " elegida" : ""}" data-fila="${esc(row.id)}" style="top:${top(line++)};padding-left:24px">${esc(row.text)}</div>`;
     return html;
   };
-  const listed = groupOf(ErrorList.GROUP_TITLE, shown.filter((row) => !row.warning)) + groupOf(ErrorList.WARNING_GROUP_TITLE, shown.filter((row) => row.warning));
+  // The order of the two error groups is unverified: the capture had only one at a time.
+  const listed = groupOf(ErrorList.GROUP_TITLE, shown.filter((row) => !row.warning && !row.group)) + groupOf(ErrorList.PANEL_GROUP_TITLE, shown.filter((row) => !row.warning && row.group === ErrorList.PANEL_GROUP_TITLE)) + groupOf(ErrorList.WARNING_GROUP_TITLE, shown.filter((row) => row.warning));
   const button = (key, label, left, extra = "") => `<div class="el-boton${holeClass(inv, `${ERROR_LIST_ID}.${key}`)}${extra}" data-id="${ERROR_LIST_ID}.${key}" style="left:${px(left)};top:${px(W.buttons.top)};width:${px(W.buttons.width)};height:${px(W.buttons.height)}">${label}</div>`;
   return `<div class="error-list" data-id="${ERROR_LIST_ID}" style="left:${px(position.x)};top:${px(position.y)};width:${px(W.width)};height:${px(W.height)}">` +
     `<div class="dw-titulo" style="height:${px(W.title)}"><span class="dw-icono-app">${G.ICONO_APP}</span><span class="dw-titulo-texto">Error list</span><span class="dw-cerrar" data-id="${ERROR_LIST_ID}.close-x">✕</span></div>` +

@@ -202,6 +202,11 @@ arrays without Concatenate Inputs) a multidimensional array appears instead.
 > **Rule 2b.** `array` and `cluster` **MUST NOT** appear without their parameter.
 > A bare `"type": "array"` is not a valid type.
 
+> **Rule 2c — The empty array (DT-060).** `{ "array": "void" }` is an array with no element yet: what the
+> palette's Array and Array Constant place, as in LabVIEW 2026 Q3. `"void"` is valid only as the element of
+> `arr-const`, `arr-control` and `arr-indicator`. A VI that has one is not runnable; nothing infers its type
+> from a wire. Tested in `test/core/array-typing.test.mjs`.
+
 *(Motivation: in Red it did not matter because the language is dynamic. For
 emitting WebAssembly it does matter — the compiler has to know whether it emits
 `(array (mut f64))` or `(array (mut i8))`. And unifying array and cluster under

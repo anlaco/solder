@@ -151,6 +151,17 @@
 }
 .sd-panel .sd-array .sd-element { display: block; }
 
+/* An array with no element yet: the shell is 80 × 80 with a 4 px bevel round its grey interior, and holds no cells. */
+.sd-panel .sd-array.sd-undefined .sd-elements {
+  /* A border has one colour per side, so the four shades of each side are inset shadows, the outermost on top. */
+  border: 0; background: var(--panel-array-undefined-background);
+  box-shadow:
+    inset 1px 1px 0 var(--panel-array-undefined-bevel-dark-1), inset -1px -1px 0 var(--panel-array-undefined-bevel-light-1),
+    inset 2px 2px 0 var(--panel-array-undefined-bevel-dark-2), inset -2px -2px 0 var(--panel-array-undefined-bevel-light-2),
+    inset 3px 3px 0 var(--panel-array-undefined-bevel-dark-3), inset -3px -3px 0 var(--panel-array-undefined-bevel-light-3),
+    inset 4px 4px 0 var(--panel-array-undefined-bevel-dark-4), inset -4px -4px 0 var(--panel-array-undefined-bevel-light-4);
+}
+
 /* Each element is a field with a dark hairline, a Boolean one included (it shows T or F); a numeric element of a
    control has the incrementer drawn on its left, 4 px under its field. Past the end, the elements are greyed. */
 .sd-panel .sd-array .sd-element :is(.sd-field, .sd-element-boolean) {

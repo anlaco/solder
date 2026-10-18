@@ -25,6 +25,8 @@
 import * as CV from "../../../core/model/control-values.mjs";
 import * as Et from "../common/labels.mjs";
 import { BOOLEANOS } from "../common/glyphs.mjs";
+import { isUndefinedArray } from "../../../core/model/types.mjs";
+import { elementMenuRoot, isEmptyArrayShell, panelArrayFromElement, typeEmptyArray } from "../common/array-typing.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { REPEATED_PASTE_STEP } from "../common/paste-memory.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
@@ -75,6 +77,12 @@ export const MEDIDAS_ARRAY_PANEL = { indice: 41, altoIndice: 26, bajaCaja: 3, bi
  */
 export const MEDIDAS_ARRAY_PANEL_2D = { pasoIndices: 28, margenIzquierdo: 3, margenDerecho: 4, margenArriba: 3, margenAbajo: 2, bordeCaja: 1, restaPasoAncho: 2, sumaPasoAlto: 1 };
 export const tipoElemento = (n) => n.config?.type?.array ?? "number";
+/**
+ * A panel array with no element yet (DT-060). Measured in labview-captures/array-typing/panel-empty-crop.png: the shell
+ * is 80 × 80 px (a 4 px bevel round a 72 × 72 interior) with the index box on its left, and it holds no cells.
+ */
+export const MEDIDAS_ARRAY_PANEL_VACIO = { casilla: 80 };
+export const esArrayPanelVacio = (n) => !!CONTROLES[n?.tipo]?.array && isUndefinedArray(n.config?.type);
 /** How many columns an array shows (its elements, for a 1D one). */
 export const visiblesPanel = (config) => visibleGrid(config).columns;
 /** Lo que mide cada elemento, según su tipo. */
@@ -158,6 +166,9 @@ const inicioCasilla = (tipo) => (CONTROLES[tipo]?.incrementador ? MEDIDAS_PANEL.
 export function cajaObjeto(tipo, x, y, config) {
   const M = MEDIDAS_PANEL;
   if (claseError(tipo, config)) return { x, y, ancho: MEDIDAS_ERROR.ancho, alto: MEDIDAS_ERROR.alto, casilla: 0 };
+  if (CONTROLES[tipo]?.array && isUndefinedArray(config?.type)) {
+    return { x, y, ancho: MEDIDAS_ARRAY_PANEL.indice + MEDIDAS_ARRAY_PANEL_VACIO.casilla, alto: MEDIDAS_ARRAY_PANEL_VACIO.casilla, casilla: MEDIDAS_ARRAY_PANEL.indice };
+  }
   if (CONTROLES[tipo]?.array && dimensionsOfNode(config) === 2) {
     const [A, B] = [MEDIDAS_ARRAY_PANEL, MEDIDAS_ARRAY_PANEL_2D];
     const [pasoAncho, pasoAlto] = pasoCeldas2D(config?.type?.array ?? "number");
@@ -276,12 +287,21 @@ const typedOrText = (editing, text) => {
   return editing.todo ? `<span class="texto-elegido">${esc(editing.texto)}</span>` : `<span>${esc(editing.texto)}</span><span class="caret"></span>`;
 };
 
+/** An array whose element is not defined yet: the index at 0 and the empty shell, with no cells and no handles. */
+function undefinedArrayObject(frame) {
+  const A = MEDIDAS_ARRAY_PANEL;
+  const indices = [{ axis: "columna", box: { x: 0, y: A.bajaCaja, width: A.indice, height: A.altoIndice }, position: 0 }];
+  const elementsBox = { x: A.indice, y: 0, width: MEDIDAS_ARRAY_PANEL_VACIO.casilla, height: MEDIDAS_ARRAY_PANEL_VACIO.casilla };
+  return HC.arrayHtml(frame, { indices, elementsBox, elementsHtml: "", handles: "", undefinedElement: true });
+}
+
 /**
  * A panel array: its index (one per dimension) and the elements shown from it; those past the end are greyed, with
  * their default value. Each element carries `data-k` (its place, or "row,column" with two dimensions), so a click on
  * it types into it (only on a control).
  */
 function arrayObject(n, ctx, frame, editing, valores) {
+  if (isUndefinedArray(n.config?.type)) return undefinedArrayObject(frame);
   const [A, B] = [MEDIDAS_ARRAY_PANEL, MEDIDAS_ARRAY_PANEL_2D];
   const elementType = tipoElemento(n);
   const values = valoresDeArray(n, valores);
@@ -367,6 +387,15 @@ export function contenido(p, ctx, resueltos) {
 
 // ——— Editar ———
 
+/** The id of the topmost empty Array whose shell (the box right of the index) holds the point, or undefined. */
+function emptyShellAt(g, pt) {
+  const holders = g.nodos.filter((n) => n.panel && isEmptyArrayShell(n) && CONTROLES[n.tipo]?.array).filter((n) => {
+    const box = caja(n);
+    return pt.x >= box.x + box.casilla && pt.x < box.x + box.ancho && pt.y >= box.y && pt.y < box.y + box.alto;
+  });
+  return holders.at(-1)?.id;
+}
+
 /** Un control cogido de la paleta cuelga del cursor por el centro de su casilla, como en el vídeo. */
 function esquina(bloque, pt, config) {
   const k = cajaObjeto(bloque, 0, 0, config);
@@ -386,6 +415,9 @@ export const coger = (p, bloque, config) => ({ ...p, accion: { tipo: "colocar", 
  */
 function colocar(p, ctx, pt) {
   const { bloque, config } = p.accion;
+  const shellId = emptyShellAt(p.g, pt);
+  const element = shellId && panelArrayFromElement(bloque, config);
+  if (element) return { ...p, g: typeEmptyArray(p.g, shellId, element.elementType, element.block), seleccion: [shellId], accion: null, edicion: null };
   const { x, y } = esquina(bloque, pt, config);
   const { g, id } = Gr.crearEnPanel(p.g, ctx.cat, bloque, x, y, etiquetaNueva(bloque, config), config);
   const n = g.nodos.find((m) => m.id === id);
@@ -421,10 +453,11 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
   // Un elemento de un array de control se escribe; la asa de la caja la estira.
   if (sobre.tipo === "elem") {
     const nodo = p.g.nodos.find((m) => m.id === sobre.id);
-    return CONTROLES[nodo?.tipo]?.control ? editarElemento(p, ctx, sobre.id, sobre.k, false) : pulsar(p, ctx, { tipo: "objeto", id: sobre.id }, pt, shift);
+    return CONTROLES[nodo?.tipo]?.control && !isUndefinedArray(nodo.config?.type) ? editarElemento(p, ctx, sobre.id, sobre.k, false) : pulsar(p, ctx, { tipo: "objeto", id: sobre.id }, pt, shift);
   }
   if (sobre.tipo === "asa-array") {
     const nodo = p.g.nodos.find((m) => m.id === sobre.id);
+    if (isUndefinedArray(nodo.config?.type)) return p;
     const [pasoAncho, pasoAlto] = dimensionsOfNode(nodo.config) === 2 ? pasoCeldas2D(tipoElemento(nodo)) : [medidaElemento(tipoElemento(nodo))[0], 0];
     return { ...p, accion: { tipo: "estirar-array", nodo: sobre.id, lado: sobre.lado ?? "derecha", x0: pt.x, y0: pt.y, visibles0: visibleGrid(nodo.config), pasoAncho, pasoAlto } };
   }
@@ -532,9 +565,10 @@ export function soltar(p, ctx, sobre, pt) {
 const alternar = (g, n) => CV.setCurrentValue(g, n.id, !valorActual(n));
 
 /** El menú de clic derecho de un objeto del panel, en el inventario; los numéricos aún no están capturados. */
-export function menuDe(n) {
-  // An array control (labview-captures/array-2d/panel-array-menu-index.png); the indicator's is not captured and is taken as the same.
-  if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return "context.panel-array";
+export function menuDe(n, onElement = false) {
+  // An array control (labview-captures/array-2d/panel-array-menu-index.png), the same for the indicator (measured, array-typing/). Its typed
+  // ELEMENT has a menu of its own; the index and the margin of the shell keep the array's.
+  if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return (onElement && elementMenuRoot(n)) || "context.panel-array";
   // A graph's menu, with its settings (labview-captures/graphs/10..45); the same root in Run mode is another one (graph-menus.mjs).
   if (isGraph(n)) return `context.${n.tipo}`;
   // An enum control or indicator has its own menus, measured (DT-049).
@@ -600,7 +634,7 @@ function pasoIndice(g, id, paso, eje = "columna") {
 /** Escribir en un elemento de un array: con un clic, el cursor al final; con doble clic, todo seleccionado. */
 export function editarElemento(p, ctx, id, k, todo) {
   const n = p.g.nodos.find((m) => m.id === id);
-  if (!n) return p;
+  if (!n || isUndefinedArray(n.config?.type)) return p;
   const t = tipoElemento(n);
   const dimensions = dimensionsOfNode(n.config);
   const v = readCell(valoresDeArray(n, p.valores), dimensions, k);

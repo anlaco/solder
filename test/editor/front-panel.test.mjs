@@ -14,6 +14,7 @@ import * as G from "../../editor/src/common/glyphs.mjs";
 import * as Gr from "../../core/model/graph.mjs";
 import { COLORES, esError } from "../../core/model/types.mjs";
 import * as P from "../../editor/src/front-panel/front-panel.mjs";
+import * as UH from "../../editor/src/block-diagram/undo-history.mjs";
 import { CAT, INV } from "../helpers.mjs";
 
 const CTX = D.contexto(CAT, D.glifosPorBloque(INV), ",");
@@ -721,4 +722,196 @@ test("a string constant dropped on the diagram exists before its text is typed",
   assert.equal(d.g.nodos.length, 1);
   assert.ok(d.edicion?.cadena);
   assert.ok(Et.graphAtRest(d));
+});
+
+// array-typing/panel-empty-crop.png and diag-empty-crop.png (DT-060): a fresh Array control is an 80 x 80 shell with
+// a 4 px bevel, the index box on its left and no cells; its terminal is 38 x 38 with a black frame and no type tag.
+test("a fresh Array control is an empty 80 x 80 shell with a black-framed terminal", () => {
+  let p = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 });
+  p = ponerYConfirmar(p, "arr-indicator", { x: 450, y: 100 });
+  const [control] = p.g.nodos;
+  assert.deepEqual(control.config.type, { array: "void" });
+  const k = P.caja(control);
+  assert.deepEqual([k.ancho, k.alto], [41 + 80, 80]);
+  const html = P.contenido(p, CTX);
+  assert.equal((html.match(/class="sd-element[ "]/g) ?? []).length, 0, "no cells to type into");
+  assert.equal((html.match(/class="sd-index"/g) ?? []).length, 2);
+  assert.equal((html.match(/sd-undefined/g) ?? []).length, 2);
+  assert.match(html, /<span class="sd-elements"[^>]*width:80px;height:80px/);
+  // No cells to type into, and no handles to stretch it.
+  assert.equal(P.pulsar({ ...p, seleccion: [control.id] }, CTX, { tipo: "elem", id: control.id, k: 0 }, { x: 200, y: 112 }).edicion ?? null, null);
+  assert.doesNotMatch(P.contenido({ ...p, seleccion: [control.id] }, CTX), /class="asa-array"/);
+  // Its terminal on the diagram: black frame (not a type color) and the generic array drawing, with no tag.
+  const bd = D.contenido({ ...ED.inicial(), g: p.g }, CTX, Gr.tipos(p.g, CAT));
+  assert.equal((bd.match(/class="glifo-terminal-panel"/g) ?? []).length, 2);
+  assert.match(bd, />123</);
+  assert.doesNotMatch(bd, new RegExp(COLORES.flotante));
+  assert.match(G.terminalArrayIndefinido(true), /viewBox="0 0 38 38"/);
+  assert.doesNotMatch(G.terminalArrayIndefinido(true), /<text[^>]*>(DBL|I32|abc)</);
+});
+
+// array-typing/ reports, stage 1 Q3-Q5 and stage 2 Q5e (DT-060): the element dropped into an empty shell types the array.
+const dropOnShell = (p, shellId, block, config) => {
+  const box = P.caja(p.g.nodos.find((n) => n.id === shellId));
+  const inside = { x: box.x + box.casilla + 40, y: box.y + 40 };
+  return P.pulsar(P.moverA(P.coger(p, block, config), CTX, inside), CTX, FONDO, inside);
+};
+const freshShell = (block = "arr-control") => {
+  const p = ponerYConfirmar(P.inicial(), block, { x: 150, y: 100 });
+  return [p, p.g.nodos[0].id];
+};
+
+test("an element dropped into an empty panel Array types it and decides control or indicator", () => {
+  const cases = [
+    ["control", undefined, "arr-control", "number"],
+    ["control", { type: "i32" }, "arr-control", "i32"],
+    ["indicator", undefined, "arr-indicator", "number"],
+    ["str-control", undefined, "arr-control", "string"],
+    ["str-indicator", undefined, "arr-indicator", "string"],
+    ["bool-control", undefined, "arr-control", "boolean"],
+    ["bool-indicator", undefined, "arr-indicator", "boolean"],
+    ["control", { type: { enum: ["a", "b"] } }, "arr-control", { enum: ["a", "b"] }],
+  ];
+  for (const [block, config, arrayBlock, elementType] of cases) {
+    const [p0, id] = freshShell();
+    const p = dropOnShell(p0, id, block, config);
+    assert.equal(p.g.nodos.length, 1, `${block}: no new panel object`);
+    const [array] = p.g.nodos;
+    assert.equal(array.id, id);
+    assert.equal(array.tipo, arrayBlock, block);
+    assert.deepEqual(array.config.type, { array: elementType });
+    assert.deepEqual(array.config.value, []);
+    assert.equal(array.label.text, "Array", "keeps its label");
+  }
+});
+
+test("flipping a typed-by-drop Array to an indicator keeps its wire", () => {
+  let [p, id] = freshShell();
+  const made = Gr.crearNodo(p.g, CAT, "array-size", 400, 100);
+  const wired = Gr.conectar(made.g, CAT, { nodo: id, puerto: "result", dir: "out" }, { nodo: made.id, puerto: "array", dir: "in" });
+  p = { ...p, g: wired.g ?? wired };
+  assert.equal(p.g.cables.length, 1);
+  const q = dropOnShell(p, id, "indicator");
+  assert.equal(q.g.nodos.find((n) => n.id === id).tipo, "arr-indicator");
+  assert.equal(q.g.cables.length, 1, "the wire stays");
+  assert.equal(q.g.cables[0].de.nodo, id);
+  assert.equal(q.g.cables[0].de.puerto, "value");
+  Gr.tipos(q.g, CAT); // resolving it does not throw
+});
+
+test("an Array, a graph or a cluster dropped on an empty shell, and any element on a typed one, are not nested", () => {
+  for (const block of ["arr-control", "waveform-chart", "cluster-control"]) {
+    const [p0, id] = freshShell();
+    const p = dropOnShell(p0, id, block);
+    assert.equal(p.g.nodos.length, 2, `${block} lands as a separate object`);
+    assert.deepEqual(p.g.nodos.find((n) => n.id === id).config.type, { array: "void" });
+  }
+  const [p0, id] = freshShell();
+  const typed = dropOnShell(p0, id, "control");
+  const again = dropOnShell(typed, id, "str-control");
+  assert.equal(again.g.nodos.length, 2, "a typed array does not take a second element");
+  assert.deepEqual(again.g.nodos.find((n) => n.id === id).config.type, { array: "number" });
+});
+
+test("dropping into a shell is one undo step", () => {
+  const [p0, id] = freshShell();
+  let history = UH.nuevo(p0.g);
+  const p = dropOnShell(p0, id, "str-control");
+  history = UH.registrar(history, p.g);
+  assert.equal(history.antes.length, 1);
+  assert.deepEqual(UH.deshacer(history).g.nodos[0].config.type, { array: "void" });
+});
+
+// array-typing/menus-*.png and reports/2026-10-18-array-element-menus.md: the element of a typed array has a menu of
+// its own; the index and the margin of the shell keep the array's, and an empty array has no element.
+const menuHtml = (opened) => D.menuContextual(INV, opened.menu, ED.marcados(opened), undefined, ED.variantes(opened));
+const rowsOf = (html) => [...html.matchAll(/data-id="([^"]+)"[^>]*><span class="texto-menu"[^>]*>([^<]*)</g)].map((m) => m[2]);
+const typedPanelArray = (block, config) => {
+  const p = ponerYConfirmar(P.inicial(), block, { x: 150, y: 100 }, config);
+  return [p, p.g.nodos[0].id];
+};
+
+test("the element of a typed panel array has its own menu and Representation retypes the whole array", () => {
+  let [p, id] = typedPanelArray("arr-control", { type: { array: "number" }, value: [1.4, 2.6, 3] });
+  // On the element: the element's menu (numeric, string or Boolean); elsewhere on the array: the array's.
+  assert.equal(P.menuDe(p.g.nodos[0], true), "context.panel-array-element");
+  assert.equal(P.menuDe(p.g.nodos[0], false), "context.panel-array");
+  assert.equal(P.menuDe({ ...p.g.nodos[0], config: { type: { array: "string" } } }, true), "context.panel-array-element-string");
+  assert.equal(P.menuDe({ ...p.g.nodos[0], config: { type: { array: "boolean" } } }, true), "context.panel-array-element-boolean");
+  assert.equal(P.menuDe({ ...p.g.nodos[0], config: { type: { array: "void" } } }, true), "context.panel-array", "an empty array has no element");
+
+  // The rows of the control's element, in the order of menus-numeric-control-element.png, and Representation ticked on DBL.
+  let opened = ED.abrirMenu(p, "context.panel-array-element", id, 0, 0);
+  let html = menuHtml(opened);
+  assert.deepEqual(rowsOf(html), [
+    "Visible Items", "Change to Indicator", "Change to Element", "Make Type Def.", "Description and Tip...", "Find", "Create", "Replace",
+    "Data Operations", "Advanced", "Fit Control to Pane", "Scale Object with Pane", "Representation", "Data Entry...", "Display Format...", "Properties",
+  ]);
+  assert.match(html, /class="item-menu hueco" data-id="context.panel-array-element.replace"/, "what is not built is a greyed hole");
+  assert.ok(ED.marcados(opened).has("context.panel-array-element.representation.dbl"));
+
+  // Representation: the whole array becomes I32, with its values rounded, and the terminal tag follows.
+  p = ED.orden(opened, "context.panel-array-element.representation.i32", CTX);
+  assert.deepEqual(p.g.nodos[0].config.type, { array: "i32" });
+  assert.deepEqual(CV.currentValue(p.g.nodos[0]) ?? p.g.nodos[0].config.value, [1, 3, 3]);
+  assert.match(D.contenido({ ...ED.inicial(), g: p.g }, CTX, Gr.tipos(p.g, CAT)), />I32</);
+  opened = ED.abrirMenu(p, "context.panel-array-element", id, 0, 0);
+  assert.ok(ED.marcados(opened).has("context.panel-array-element.representation.i32"));
+  assert.ok(!ED.marcados(opened).has("context.panel-array-element.representation.dbl"));
+
+  // A 2D array keeps its dimensions, and a typed value is converted per cell.
+  p = ED.orden(ED.abrirMenu(p, "context.panel-array", id, 0, 0), "context.panel-array.add-dimension", CTX);
+  p = ED.orden(ED.abrirMenu(p, "context.panel-array-element", id, 0, 0), "context.panel-array-element.representation.u8", CTX);
+  assert.deepEqual(p.g.nodos[0].config.type, { array: "u8", dims: 2 });
+
+  // One undo step.
+  const before = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "number" }, value: [1.4] });
+  const changed = ED.orden(ED.abrirMenu(before, "context.panel-array-element", before.g.nodos[0].id, 0, 0), "context.panel-array-element.representation.i32", CTX);
+  const history = UH.registrar(UH.nuevo(before.g), changed.g);
+  assert.equal(history.antes.length, 1);
+  assert.deepEqual(UH.deshacer(history).g.nodos[0].config.type, { array: "number" });
+});
+
+test("the indicator's element menu says Change to Control and has Adapt To Source instead of Data Entry; string and Boolean differ in their tails", () => {
+  const [p, id] = typedPanelArray("arr-indicator", { type: { array: "number" }, value: [] });
+  const html = menuHtml(ED.abrirMenu(p, "context.panel-array-element", id, 0, 0));
+  assert.deepEqual(rowsOf(html).filter((row) => /Control|Adapt|Data Entry|Representation|Display Format/.test(row)), ["Change to Control", "Fit Control to Pane", "Adapt To Source", "Representation", "Display Format..."]);
+  assert.equal((html.match(/class="separador-menu"/g) ?? []).length, 5, "Adapt To Source opens the group that Representation opens on a control");
+
+  const [ps, ids] = typedPanelArray("arr-control", { type: { array: "string" }, value: [] });
+  const stringMenu = ED.abrirMenu(ps, "context.panel-array-element-string", ids, 0, 0);
+  assert.deepEqual(rowsOf(menuHtml(stringMenu)).slice(-9), [
+    "Representation", "Normal Display", "'\\' Codes Display", "Password Display", "Hex Display", "Limit to Single Line", "Update Value while Typing", "Enable Wrapping", "Properties",
+  ]);
+  const ticked = ED.marcados(stringMenu);
+  assert.ok(ticked.has("context.panel-array-element-string.normal-display") && ticked.has("context.panel-array-element-string.enable-wrapping"));
+  assert.ok(!ticked.has("context.panel-array-element-string.hex-display"));
+
+  const [pb, idb] = typedPanelArray("arr-control", { type: { array: "boolean" }, value: [] });
+  assert.deepEqual(rowsOf(menuHtml(ED.abrirMenu(pb, "context.panel-array-element-boolean", idb, 0, 0))).slice(-3), ["Scale Object with Pane", "Mechanical Action", "Properties"]);
+});
+
+test("Change to Indicator on an array or on its element flips the whole array and keeps its wires", () => {
+  const [p0, id] = typedPanelArray("arr-control", { type: { array: "number" }, value: [1, 2] });
+  const made = Gr.crearNodo(p0.g, CAT, "array-size", 400, 100);
+  const wired = Gr.conectar(made.g, CAT, { nodo: id, puerto: "result", dir: "out" }, { nodo: made.id, puerto: "array", dir: "in" });
+  const p = { ...p0, g: wired.g ?? wired };
+  for (const root of ["context.panel-array", "context.panel-array-element"]) {
+    const flipped = ED.orden(ED.abrirMenu(p, root, id, 0, 0), `${root}.change-to-indicator`, CTX);
+    const array = flipped.g.nodos.find((n) => n.id === id);
+    assert.equal(array.tipo, "arr-indicator", root);
+    assert.deepEqual(array.config.type, { array: "number" });
+    assert.deepEqual(array.config.value, [1, 2]);
+    assert.equal(flipped.g.cables.length, 1, "the wire stays");
+    assert.equal(flipped.g.cables[0].de.puerto, "value");
+    Gr.tipos(flipped.g, CAT); // resolving it does not throw
+    // The indicator offers the way back, with the same row renamed.
+    const back = ED.abrirMenu(flipped, root, id, 0, 0);
+    assert.match(menuHtml(back), new RegExp(`data-id="${root}.change-to-indicator"[^>]*><span class="texto-menu"[^>]*>Change to Control<`));
+    assert.equal(ED.orden(back, `${root}.change-to-indicator`, CTX).g.nodos.find((n) => n.id === id).tipo, "arr-control");
+    // One undo step.
+    const history = UH.registrar(UH.nuevo(p.g), flipped.g);
+    assert.equal(history.antes.length, 1);
+    assert.equal(UH.deshacer(history).g.nodos.find((n) => n.id === id).tipo, "arr-control");
+  }
 });

@@ -128,12 +128,12 @@ export function arrayElementHtml({ address, place, defined, editing, elementType
  * An array: its index (one per dimension) and the box of the elements it shows. `indices`: `{ axis, box, position }`;
  * `elementsBox`, the box of the elements inside the object; `handles`, the editor's resize handles while it is selected.
  */
-export function arrayHtml(frame, { indices, elementsBox, elementsHtml, handles }) {
+export function arrayHtml(frame, { indices, elementsBox, elementsHtml, handles, undefinedElement = false }) {
   const indexHtml = indices
     .map(({ axis, box, position }) => `<span class="sd-index" data-eje="${axis}" style="left:${px(box.x)};top:${px(box.y)};width:${px(box.width)};height:${px(box.height)}">${incrementer(axis)}<span class="sd-field"><span class="sd-value">${position}</span></span></span>`)
     .join("");
   const elements = `<span class="sd-elements" style="left:${px(elementsBox.x)};top:${px(elementsBox.y)};width:${px(elementsBox.width)};height:${px(elementsBox.height)}">${elementsHtml}</span>`;
-  return objectFrame({ ...frame, kind: "array", classes: indices.length === 2 ? ["sd-two-dimensions"] : [] }, indexHtml + elements + handles);
+  return objectFrame({ ...frame, kind: "array", classes: [...(indices.length === 2 ? ["sd-two-dimensions"] : []), ...(undefinedElement ? ["sd-undefined"] : [])] }, indexHtml + elements + handles);
 }
 
 /** A graph: its SVG (graph-view.mjs), in the box of its frame. */

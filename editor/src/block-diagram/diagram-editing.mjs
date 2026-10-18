@@ -28,7 +28,7 @@
 //              node or one of its terminals; `en`, the canvas point where it was opened
 //   aviso      why the last action could not be done (spec/05 rule 31)
 
-import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, borderFaceFor, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
+import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ARRAY_INDEFINIDA, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, borderFaceFor, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
 import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
 import * as EI from "./edit-items-dialog.mjs";
@@ -39,7 +39,8 @@ import * as Et from "../common/labels.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import * as TC from "./terminal-creation.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
-import { CONSTANT_DIGITS, DBL, NUMERICOS, POR_ABREVIATURA, convertirValor, esArray, esEntero, esEnum, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
+import { constantElementType, constantForElement, emptyArrayAgain, flipArrayKind, isEmptyArrayShell, setArrayRepresentation, typeEmptyArray } from "../common/array-typing.mjs";
+import { CONSTANT_DIGITS, DBL, NUMERICOS, POR_ABREVIATURA, convertirValor, esArray, isUndefinedArray, esEntero, esEnum, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 import * as SI from "./select-item-dialog.mjs";
 import { MAX_EDITOR_DIMENSIONS, addDimensionPatch, dimensionsOfNode, firstShown, readCell, removeDimensionPatch, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
@@ -97,10 +98,61 @@ export function selectAll(d) {
  */
 export const coger = (d, bloque, config) => ({ ...d, accion: { tipo: "colocar", bloque, config }, aviso: null, menu: null });
 
+/** The id of the topmost empty Array Constant whose shell (the box right of the index) holds the point, or undefined. */
+function emptyShellAt(g, ctx, p, except = new Set()) {
+  const holders = g.nodos.filter((n) => n.tipo === "arr-const" && !except.has(n.id) && isEmptyArrayShell(n)).filter((n) => {
+    const k = caja(n, ctx);
+    return p.x >= k.x + MEDIDAS_ARRAY_INDEFINIDA.indice && p.x < k.x + k.ancho && p.y >= k.y && p.y < k.y + k.alto;
+  });
+  return holders.at(-1)?.id;
+}
+
+/** A loose constant dragged onto an empty Array Constant nests in it: the constant goes and the array takes its type (its wires, if any, go too: unverified). */
+function nestDraggedConstant(d, ctx, p) {
+  const [movedId, ...others] = d.seleccion;
+  const moved = d.g.nodos.find((n) => n.id === movedId);
+  const elementType = !others.length && constantElementType(moved);
+  const shellId = elementType && emptyShellAt(d.g, ctx, p, new Set([movedId]));
+  if (!shellId) return null;
+  return { ...d, g: typeEmptyArray(Gr.borrar(d.g, [movedId]), shellId, elementType), seleccion: [shellId], accion: null };
+}
+
+/** The typed Array Constant whose element is being dragged (the press landed on a cell, and nothing else is selected), or undefined. */
+function elementPulledFrom(d, accion) {
+  if (accion.campo === undefined || accion.duplicar || d.seleccion.length !== 1) return undefined;
+  const array = d.g.nodos.find((n) => n.id === d.seleccion[0]);
+  const elementType = array?.tipo === "arr-const" && !isUndefinedArray(array.config?.type) ? array.config.type.array : undefined;
+  return constantForElement(elementType) ? array : undefined;
+}
+
+/**
+ * Releasing a dragged element outside its constant leaves the constant empty again, its value lost and its wires
+ * kept, and puts a loose constant of the element's type where it was released; inside it, nothing changes
+ * (labview-captures/reports/2026-10-18-array-typing-stage2.md, Q5d). The loose constant takes the value of the element
+ * (unverified: LabVIEW's was not looked at).
+ */
+function pullElementOut(d, ctx, p) {
+  const array = elementPulledFrom(d, d.accion);
+  const box = caja(array, ctx);
+  const inside = p.x >= box.x && p.x < box.x + box.ancho && p.y >= box.y && p.y < box.y + box.alto;
+  if (inside) return { ...d, accion: null };
+  const value = readCell(valoresArray(array), dimensionsOfNode(array.config), d.accion.campo);
+  const { block, config } = constantForElement(array.config.type.array, value);
+  const grab = grabPoint(block, ctx);
+  const created = Gr.crearNodo(emptyArrayAgain(d.g, array.id), ctx.cat, block, Math.round(p.x - grab.x), Math.round(p.y - grab.y));
+  const looseId = created.id;
+  const loose = Gr.fijarConfig(created.g, looseId, config);
+  return { ...d, g: alojar(loose, ctx, [looseId]), seleccion: [looseId], accion: null };
+}
+
 function colocar(d, ctx, p) {
   const grab = grabPoint(d.accion.bloque, ctx);
   let { g, id } = Gr.crearNodo(d.g, ctx.cat, d.accion.bloque, Math.round(p.x - grab.x), Math.round(p.y - grab.y));
   if (d.accion.config) g = Gr.fijarConfig(g, id, d.accion.config);
+  // Dropped into an empty Array Constant, the constant types it instead of staying loose (DT-060).
+  const shellId = emptyShellAt(g, ctx, p, new Set([id]));
+  const elementType = shellId && constantElementType(g.nodos.find((n) => n.id === id));
+  if (elementType) return { ...d, g: typeEmptyArray(d.g, shellId, elementType), seleccion: [shellId], accion: null, aviso: null };
   // Soltarlo dentro de un bucle lo mete en él (DT-041).
   // Una constante de cadena recién soltada queda lista para escribir en ella (bd-string-constant-editando.png);
   // una de enum, con el editor en el nombre de su único ítem, que nace vacío (DT-049, medido).
@@ -860,6 +912,8 @@ export function moverA(d, ctx, p) {
     case "mover": {
       const [dx, dy] = [Math.round(p.x - accion.x), Math.round(p.y - accion.y)];
       if (!dx && !dy) return d;
+      // Grabbing an element of a typed array constant pulls the element out instead of moving the constant (stage 2, Q5d).
+      if (elementPulledFrom(d, accion)) return { ...d, accion: { ...accion, x: p.x, y: p.y, movido: true } };
       // Ctrl+drag: the first move leaves the originals where they are and carries copies (REPORT.md §B).
       const dragged = accion.duplicar && !accion.duplicado ? duplicateSelection(d, ctx) : d;
       // Regla 23: se mueve todo lo seleccionado. Mover sólo cambia la presentación (regla 25).
@@ -1057,8 +1111,9 @@ export function soltar(d, ctx, sobre, p) {
         if (n.tipo === "error-cluster-constant") return { ...d, g: Gr.fijarValor(d.g, n.id, { ...valorConstanteError(n), status: !valorConstanteError(n).status }), accion: null };
         return { ...d, g: Gr.fijarValor(d.g, n.id, !n.config?.value), accion: null };
       }
+      if (accion.movido && elementPulledFrom(d, accion)) return pullElementOut(d, ctx, p);
       // Lo soltado dentro o fuera de un bucle entra o sale de él.
-      if (accion.movido) return { ...d, g: alojar(d.g, ctx, d.seleccion.filter((id) => d.g.nodos.some((n) => n.id === id))), accion: null };
+      if (accion.movido) return nestDraggedConstant(d, ctx, p) ?? { ...d, g: alojar(d.g, ctx, d.seleccion.filter((id) => d.g.nodos.some((n) => n.id === id))), accion: null };
       return { ...d, accion: null };
     case "tramo":
     case "estirar":
@@ -1114,6 +1169,8 @@ export function editar(d, ctx, id, campo) {
   if (n?.tipo === "expression-node") return { ...d, edicion: { nodo: id, texto: n.config?.expression ?? "x", todo: true }, seleccion: [id], accion: null, menu: null };
   // The array constant: one of its elements is typed into (`campo` is its address, see array-grid.mjs); a boolean toggles.
   if (n?.tipo === "arr-const") {
+    // An array constant with no element has no cells to type into (DT-060).
+    if (isUndefinedArray(n.config?.type)) return d;
     const dimensions = dimensionsOfNode(n.config);
     const first = firstShown(n.config);
     const address = campo ?? (dimensions === 2 ? `${first.row},${first.column}` : first.column);
@@ -1251,7 +1308,13 @@ export function orden(d, id, ctx) {
   if (id.endsWith(".add-parameter")) return cerrar(FN.addedRow(d.g, nodo, ctx.cat, FN.rowOfPort(nodoPor(d.g, nodo), ctx.cat, puerto)));
   if (id.endsWith(".remove-parameter")) return cerrar(FN.removedRow(d.g, nodo, ctx.cat, FN.rowOfPort(nodoPor(d.g, nodo), ctx.cat, puerto)));
   if (id.includes(".change-mode.")) return cerrar(Gr.fijarConfig(d.g, nodo, { mode: ultimo }));
-  if (id.includes(".representation.") && POR_ABREVIATURA[ultimo]) return cerrar(Gr.fijarRepresentacion(d.g, nodo, POR_ABREVIATURA[ultimo]));
+  if (id.includes(".representation.") && POR_ABREVIATURA[ultimo]) {
+    // On the element of an array the representation is the whole array's (array-typing stage 2, Q5b).
+    const retype = isArrayNode(nodoPor(d.g, nodo)) ? setArrayRepresentation : Gr.fijarRepresentacion;
+    return cerrar(retype(d.g, nodo, POR_ABREVIATURA[ultimo]));
+  }
+  // LabVIEW flips the whole panel array from its own menu or from the one of its element.
+  if (/\.change-to-(indicator|control)$/.test(id) && PANEL_ARRAY_KINDS.includes(nodoPor(d.g, nodo)?.tipo)) return cerrar(flipArrayKind(d.g, nodo));
   if (id.includes(".mechanical-action.")) return cerrar(Gr.fijarConfig(d.g, nodo, { mechanical: ultimo }));
   // Data Operations of a panel object or its terminal (DT-053): its current value becomes its default, or the other way round.
   if (id.endsWith(".data-operations.make-current-value-default")) return cerrar(CV.makeCurrentValuesDefault(d.g, [nodo]));
@@ -1351,10 +1414,37 @@ const condicionDe = (g, id) => {
   return n?.tipo === "while-loop" ? g.nodos.find((k) => k.dentro === n.id && k.tipo === "loop-condition") : undefined;
 };
 
+const PANEL_ARRAY_KINDS = ["arr-control", "arr-indicator"];
+const NUMERIC_ELEMENT_ROOT = "context.panel-array-element";
+const isArrayNode = (node) => node?.tipo === "arr-const" || PANEL_ARRAY_KINDS.includes(node?.tipo);
+
+/**
+ * The rows of the menu of the ELEMENT of an array that depend on it being an indicator: it says Change to Control, and
+ * a numeric one has Adapt To Source instead of Data Entry... (reports/2026-10-18-array-element-menus.md §1-2).
+ */
+function elementVariants(n, root) {
+  const variants = { ocultos: new Set(), rotulos: new Map(), separadores: new Map() };
+  if (n.tipo === "arr-indicator") {
+    variants.rotulos.set(`${root}.change-to-indicator`, "Change to Control");
+    variants.ocultos.add(`${root}.data-entry`);
+    // Adapt To Source opens the group that Representation opens on a control.
+    if (root === NUMERIC_ELEMENT_ROOT) variants.separadores.set(`${root}.representation`, false);
+  } else {
+    variants.ocultos.add(`${root}.adapt-to-source`);
+  }
+  return variants;
+}
+
 /** The rows of the menu of an array that change with its dimensions (and, on the panel, with being an indicator). */
 function arrayVariants(n, root) {
+  if (root.startsWith("context.panel-array-element")) return elementVariants(n, root);
   const dimensions = dimensionsOfNode(n.config);
   const variants = { desactivados: new Set(), redirigidos: new Map(), rotulos: new Map() };
+  // An array constant with no element yet has no Numeric Palette nor Change to Element (measured, menus-array-constant-nonindex-click.png).
+  if (n.tipo === "arr-const" && isUndefinedArray(n.config?.type)) {
+    variants.ocultos = new Set([`${root}.numeric-palette`, `${root}.change-to-element`]);
+    variants.separadores = new Map([[`${root}.array-palette`, true]]);
+  }
   if (dimensions < 2) variants.desactivados.add(`${root}.remove-dimension`);
   if (dimensions >= MAX_EDITOR_DIMENSIONS) variants.redirigidos.set(`${root}.add-dimension`, "context.array-dimensions-limit");
   if (n.tipo === "arr-indicator") variants.rotulos.set(`${root}.change-to-indicator`, "Change to Control");
@@ -1514,6 +1604,10 @@ export function marcados(d, ctx) {
   if (n.config?.mechanical) m.add(`${r}.mechanical-action.${n.config.mechanical}`);
   const abrev = r.startsWith("context.numeric-") && NUMERICOS[n.config?.type ?? DBL]?.abrev;
   if (abrev) m.add(`${r}.representation.${abrev.toLowerCase()}`);
+  // The representation of an array's element is the array's own; the string element shows the defaults LabVIEW ticks.
+  const elementAbbreviation = r === NUMERIC_ELEMENT_ROOT || r === "context.array-constant-element" ? NUMERICOS[n.config?.type?.array]?.abrev : null;
+  if (elementAbbreviation) m.add(`${r}.representation.${elementAbbreviation.toLowerCase()}`);
+  if (r === `${NUMERIC_ELEMENT_ROOT}-string`) ["normal-display", "enable-wrapping"].forEach((row) => m.add(`${r}.${row}`));
   if ((n.config?.inverted ?? []).includes(d.menu.puerto ?? "result")) m.add(`${r}.invert`);
   if (n.tipo === "in-range-and-coerce") {
     if (n.config?.["include-upper-limit"]) m.add(`${r}.include-upper-limit`);

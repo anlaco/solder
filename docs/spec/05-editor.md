@@ -576,7 +576,37 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > color; a For lets it be born indexed; the input's menu says Enable or Disable Indexing (it only turns on
 > if what arrives is an array) and the output's, Tunnel Mode ▸ Last Value, Indexing, Concatenating and Conditional
 > (the last two, greyed out). **Unverified:** the gesture of stretching the panel array with the mouse (the handles moved
-> the object in the VM) and that it is born empty, with the type of the control dropped inside.
+> the object in the VM). How it is born and typed: Rule 40j bis.
+
+> **Rule 40j bis — An array is born empty and its element types it (DT-060).** Measured in LabVIEW 2026 Q3
+> (`labview-captures/reports/2026-10-18-array-typing-stage1.md` and `-stage2.md`).
+> - *Born empty.* The palette's Array (panel) and Array Constant (diagram) are `{ array: "void" }`. The panel shell is
+>   80 × 80 px with a 4 px bevel round `#a6a6a6`, the index on its left; its terminal is 38 × 38 with a black frame,
+>   the generic array drawing and no type tag. The constant is 82 × 50: a 50 × 50 shell with a black double line and a
+>   white interior, the index (about 32 × 21) on its left. The VI is broken: "Array 'Array': Control contains no
+>   elements and is undefined" under **Front Panel Errors**, and "Array Constant: Constant has undefined type".
+> - *No adaptation.* An empty array never takes a type from a wire: into a typed array the wire breaks ("array of
+>   void"); into Array Size, which takes any array, the wire is a 1 px dashed black line and Array Size has
+>   "Contains unwired or bad terminal".
+> - *The element types it.* A control or indicator dropped from the palette inside an empty panel shell becomes its
+>   element: a numeric gives its representation, a string, a Boolean, an enum its items; **a control element makes
+>   the array a control and an indicator element an indicator**, keeping its wires. On the diagram a Numeric Constant
+>   gives I32 (the DBL Numeric Constant, DBL), a String or Boolean constant its type; a loose constant dragged onto an
+>   empty array constant nests the same way. An Array, a chart or graph, a cluster, a terminal or a function is not
+>   nested: it lands on top, with no message. Each drop is one undo step.
+> - *The element has its own menu.* A right-click on a cell of a typed array opens the element's menu
+>   (`context.panel-array-element`, `-string`, `-boolean`; `context.array-constant-element`, numeric only); the index and
+>   the margin of the shell keep the array's, and an empty array has no element (its constant's menu then has no Numeric
+>   Palette nor Change to Element). **Representation** on a numeric element retypes the WHOLE array, keeping its
+>   dimensions and converting every value; **Change to Indicator / Control**, from the array's menu or the element's,
+>   flips the whole array keeping its wires. Dragging the element of a typed array constant out of the constant
+>   leaves it empty (value lost, wires kept to break) and puts a loose constant where it was released; on the panel the
+>   element cannot be dragged out nor cut. Each change is one undo step. Not built, greyed: Replace, Create, Data
+>   Operations and the rest of the rows (inventory).
+> - **Unverified:** the order of the Front Panel and Block Diagram groups in the Error list; the indicator's error
+>   text (taken as the control's); what happens to the wires of a loose constant dragged into a shell (here, deleted).
+> - Tested in `test/core/array-typing.test.mjs`, `test/editor/front-panel.test.mjs` and
+>   `test/editor/diagram-editing.test.mjs`.
 
 > **Rule 40k — Arrays with two dimensions in the editor.** Measured in LabVIEW 2026 Q3 at 1:1
 > (`labview-captures/array-2d/`); the semantics are DT-044 and Rule 21i. The editor handles one and two dimensions
@@ -819,6 +849,7 @@ would have required naming a test that did not exist.)*
 | 40h Strings on the diagram and on the panel | Tests in `palettes.test.mjs` (each String function with its terminals and measurements), `window-state.test.mjs` (the four palettes), `front-panel.test.mjs` (control and indicator), `diagram-editing.test.mjs` (multi-line constant, Concatenate Strings, a string VI made with the mouse that runs) and `qvi-round-trip.test.mjs` (save and open) | **Verified**; what is unverified, in the rule itself |
 | 40i The error cluster | Tests in `error-cluster.test.mjs` (the wire, the constant and its edits, the two dialogs, Simple Error Handler and Merge Errors at 32 × 18), `front-panel.test.mjs` (Error In and Error Out) and `window-state.test.mjs` (the two palettes) | **Verified**; what is unverified, in the rule itself |
 | 40j One-dimensional arrays | Tests in `front-panel.test.mjs` (array control and indicator), `diagram-editing.test.mjs` (array constant, menu of the indexed tunnels), `window-state.test.mjs` (the Array subpalette), `palettes.test.mjs` (its functions) and `qvi-round-trip.test.mjs` | **Verified** for what was measured; the gesture of stretching the panel array and the array's menu, unverified (see the rule) |
+| 40j bis An array is born empty and its element types it | `test/core/array-typing.test.mjs`, `front-panel.test.mjs` and `diagram-editing.test.mjs` (empty shells, dropping an element, no nesting) | **Verified** for what was measured; see the rule's unverified points |
 | 40k Arrays with two dimensions | Tests in `array-grid.test.mjs` (cells, Add and Remove Dimension), `diagram-editing.test.mjs` (menu, constant, stretching, wire, Index Array, Initialize Array), `front-panel.test.mjs` (panel array), `qvi-round-trip.test.mjs` (pairs saved) and `labview-inventory.test.mjs` (the menus) | **Verified** for the measurements; the stretching gestures, the indicator's menu and Initialize Array's second size, unverified (see the rule) |
 | 78 Format Into String and Scan From String | Tests in `format-nodes.test.mjs` (size, terminals, stretching, type boxes, menus, Add and Remove Parameter) and `palettes.test.mjs` | **Verified** for the size, the stretching and the menus; the terminals' exact heights, unverified (see the rule) |
 | 78b Unbundle By Name | Tests in `unbundle-by-name.test.mjs` (palette, size and look, terminals, handle and undo, list of names, both menus, Select Item, Remove Element, Create) | **Verified** for what the two reports measured; what is unverified, in the rule |

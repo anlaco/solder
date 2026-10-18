@@ -490,6 +490,7 @@ svg { display: block; overflow: visible; }
 .indice-array .campo-indice { flex: 1; border: 1px solid var(--array-index-field-border); height: 100%; box-sizing: border-box; padding-left: 3px; display: flex; align-items: center; }
 .caja-array { position: absolute; top: 0; box-sizing: border-box; background: var(--array-cell-background); border: 1px solid; padding: 1px; display: flex; }
 .celda-array { box-sizing: border-box; height: 21px; margin-top: 1px; display: flex; align-items: center; justify-content: center; background: var(--array-cell-background); border: 1px solid; white-space: pre; }
+.caja-array-indefinida { position: absolute; top: 0; box-sizing: border-box; background: var(--array-undefined-fill); border: 1px solid var(--array-undefined-line); box-shadow: inset 0 0 0 1px var(--array-undefined-fill), inset 0 0 0 2px var(--array-undefined-line); }
 .celda-array.vacia { background: var(--array-empty-cell-background); color: var(--array-empty-cell-text); }
 .celda-array.editando { cursor: text; }
 /* A constant with two dimensions (array-2d/constant-2d-empty.png, constant-2d-2x3-values.png): frame, white, frame. */

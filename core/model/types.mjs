@@ -48,6 +48,19 @@ export function arrayOf(element, addedDimensions = 1) {
 /** What one index takes out of an array: a 2D gives a 1D row, a 1D gives its element. */
 export const withoutOneDimension = (t) => (dimensionsOf(t) > 1 ? arrayOf(t.array, dimensionsOf(t) - 1) : t.array);
 
+/**
+ * The element of an array that has none yet (DT-060): a new Array or Array
+ * Constant is `{ array: "void" }` until an element is dropped inside, as in
+ * LabVIEW, where its type reads "1D array of void".
+ */
+export const VOID = "void";
+
+/** Is this an array with no element type yet? */
+export const isUndefinedArray = (t) => esArray(t) && t.array === VOID;
+
+/** Does this type carry an undefined array anywhere (in a cluster field, too)? */
+export const carriesUndefinedArray = (t) => isUndefinedArray(t) || (esCluster(t) && t.cluster.some((field) => carriesUndefinedArray(field.type)));
+
 export const esCluster = (t) => !!t && typeof t === "object" && Array.isArray(t.cluster);
 
 /**

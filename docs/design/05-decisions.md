@@ -26,6 +26,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [042](#dt-042) | Strings, arrays and clusters as in LabVIEW: a data space of handles in linear memory, no collector, with copies decided at compile time | Accepted · being implemented |
 | [043](#dt-043) | The error cluster as in LabVIEW: type, error in/out passing, automatic handling and own texts | Accepted · being implemented |
 | [049](#dt-049) | The items of an enum are its type; one Edit Items… for constant, control and indicator | Accepted · being implemented |
+| [060](#dt-060) | An array is born without an element type, and its element gives it one | Accepted · implemented in the editor |
 
 ## The 34 Red decisions
 
@@ -2111,3 +2112,40 @@ in that order, through companion `.css` files.**
 | Statement | What fails if it is broken | Status |
 |---|---|---|
 | Solder opens a `.vi` | nothing yet | Unverified: not started |
+
+## DT-060
+
+**An array is born without an element type, and its element gives it one.**
+
+- **Status:** Accepted on 2026-10-18 by the developer, after the measurements of
+  `labview-captures/reports/2026-10-18-array-typing-stage1.md` and `-stage2.md`.
+- **Complements:** [DT-044](#dt-044) (the type of an array), [DT-035](#dt-035).
+
+### How LabVIEW does it (measured in LabVIEW 2026 Q3)
+
+1. A new Array on the panel and a new Array Constant on the diagram are **empty shells**: they have no element,
+   their type is "1D array of void", and the VI is broken ("Control contains no elements and is undefined",
+   "Constant has undefined type").
+2. The type comes **only from the element dropped inside**: a control, indicator or constant. On the panel the
+   element also decides whether the array is a control or an indicator.
+3. An empty array **never adapts to a wire**: wired to a typed array the wire breaks (source "1D array of void");
+   wired to a polymorphic input such as Array Size, that node has a bad terminal.
+4. Changing the element (Replace, Representation, dragging it out) retypes the whole array and keeps its wires,
+   which break if the types no longer match.
+
+### Decision
+
+1. **The element type `"void"`** (`VOID` in `core/model/types.mjs`) is the element of an empty array:
+   `{ "array": "void" }`. It is valid only as an array's element and only on `arr-const`, `arr-control` and
+   `arr-indicator`; it never reaches the compiler, because a VI that carries it is not runnable.
+2. **The palette's Array and Array Constant place `{ "array": "void" }`.** `.sdg` files written before this keep
+   their `{ "array": "number" }` and open the same: there is nothing to migrate.
+3. **Nothing infers a type from a wire.** A void array wired to a typed input breaks the wire; wired to an input
+   that takes any array, the node has a bad terminal.
+
+### Verification
+
+| Statement | What fails if it is broken | Status |
+|---|---|---|
+| A void array breaks the VI with LabVIEW's errors | `test/core/array-typing.test.mjs`, `test/editor/error-list.test.mjs` | Verified |
+| The palette places empty arrays; an element dropped inside types them; Representation and Change to Indicator on the element retype the whole array; dragging a constant's element out empties it | `test/editor/front-panel.test.mjs`, `test/editor/diagram-editing.test.mjs`, `test/editor/labview-inventory.test.mjs` | Verified (Replace ▸ is a placeholder) |

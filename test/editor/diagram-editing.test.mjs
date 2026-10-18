@@ -1513,6 +1513,7 @@ test("la constante de array se escribe y se estira", () => {
   let d = ED.inicial();
   d = poner(d, "arr-const", { x: 100, y: 100 });
   const id = d.seleccion[0];
+  d = { ...d, g: Gr.fijarConfig(d.g, id, { type: { array: "number" }, value: [] }) };
   let n = nodoDe(d, id);
   const k = caja(n, CTX);
   assert.equal(k.alto, 25);
@@ -1900,4 +1901,171 @@ test("a wire dropped on a structure's border does not cover a tunnel already the
   const [first, second] = d.g.nodos.filter((n) => n.tipo === "tunnel-out").sort((a, b) => a.y - b.y);
   assert.ok(second, "two tunnels");
   assert.ok(second.y >= first.y + D.TAM_BORDE["tunnel-out"][1], "they do not overlap");
+});
+
+// array-typing/const-empty-crop.png, diag-empty-crop.png and const-wire-crop.png (DT-060): an Array Constant is born
+// with no element, 82 × 50 px: the 50 × 50 shell with a black double line and the index box on its left.
+test("an empty Array Constant is an 82 x 50 shell with the index box, and its wire is dashed", () => {
+  let d = poner(ED.inicial(), "arr-const", { x: 100, y: 100 });
+  const id = d.seleccion[0];
+  const n = nodoDe(d, id);
+  assert.deepEqual(n.config.type, { array: "void" });
+  const k = caja(n, CTX);
+  assert.deepEqual([k.ancho, k.alto], [82, 50]);
+  const html = contenido(d, CTX, tipos(d.g, CAT));
+  assert.match(html, /class="caja-array-indefinida"/);
+  assert.equal((html.match(/class="celda-array/g) ?? []).length, 0, "no element cells");
+  assert.doesNotMatch(html, /class="asa/, "an undefined array is not stretched");
+  // Typing into it does nothing.
+  assert.equal(ED.editar(d, CTX, id, 0).edicion ?? null, null);
+  // A typed one is unchanged (51 x 25 in the editor today).
+  const typed = Gr.fijarConfig(d.g, id, { type: { array: "number" }, value: [] });
+  assert.deepEqual([caja(nodoDe({ g: typed }, id), CTX).ancho, caja(nodoDe({ g: typed }, id), CTX).alto], [51, 25]);
+  // Its wire: 1 px, black, 2 on and 2 off.
+  d = poner(d, "array-size", { x: 300, y: 100 });
+  const sizeId = d.seleccion[0];
+  const wired = Gr.conectar(d.g, CAT, { nodo: id, puerto: "result", dir: "out" }, { nodo: sizeId, puerto: "array", dir: "in" });
+  const g = wired.g ?? wired;
+  const wire = contenido({ ...d, g }, CTX, tipos(g, CAT)).match(/<g class="cable[^"]*"[^>]*>(.*?)<\/g>/s)?.[1] ?? "";
+  // Two black pixel rows dashed 2 on and 2 off, the second a pixel ahead (const-wire.png).
+  assert.equal(wire.match(/<polyline[^>]*stroke="#000" stroke-width="1" stroke-dasharray="2 2" stroke-dashoffset="[02]"/g)?.length, 2);
+});
+
+// Stage 1 Q4 and stage 2 Q1, Q5d, Q6 (DT-060): a constant dropped in, or dragged onto, an empty Array Constant types it.
+const shellPoint = (d, id) => {
+  const k = caja(nodoDe(d, id), CTX);
+  return { x: k.x + 32 + 25, y: k.y + 25 };
+};
+const emptyShell = () => {
+  const d = poner(ED.inicial(), "arr-const", { x: 100, y: 100 });
+  return [d, d.seleccion[0]];
+};
+const dropConstant = (d, id, block, config) => {
+  const at = shellPoint(d, id);
+  return ED.pulsar(ED.moverA(ED.coger(d, block, config), CTX, at), CTX, FONDO, at);
+};
+
+test("a constant dropped inside an empty Array Constant types it", () => {
+  const cases = [
+    ["num-const", undefined, "i32"],
+    ["const", undefined, "number"],
+    ["str-const", undefined, "string"],
+    ["bool-const", undefined, "boolean"],
+    ["bool-const", { value: true }, "boolean"],
+  ];
+  for (const [block, config, elementType] of cases) {
+    const [d0, id] = emptyShell();
+    const d = dropConstant(d0, id, block, config);
+    assert.equal(d.g.nodos.length, 1, `${block}: no loose constant`);
+    assert.deepEqual(nodoDe(d, id).config.type, { array: elementType });
+    assert.deepEqual(nodoDe(d, id).config.value, []);
+  }
+  const [d0, id] = emptyShell();
+  const d = dropConstant(d0, id, "enum-const");
+  assert.ok(nodoDe(d, id).config.type.array.enum, "an enum constant gives its enum");
+});
+
+test("an Array Constant, a control terminal or a function dropped on an empty Array Constant is not nested", () => {
+  for (const block of ["arr-const", "add"]) {
+    const [d0, id] = emptyShell();
+    const d = dropConstant(d0, id, block);
+    assert.equal(d.g.nodos.length, 2, `${block} lands as a separate object`);
+    assert.deepEqual(nodoDe(d, id).config.type, { array: "void" });
+  }
+});
+
+test("a loose constant dragged onto an empty Array Constant nests in it, and it is one undo step", () => {
+  let [d, id] = emptyShell();
+  d = ED.confirmar(poner(d, "str-const", { x: 400, y: 100 }), CTX);
+  const loose = d.seleccion[0];
+  const history = H.registrar(H.nuevo(d.g), d.g);
+  const from = { x: 410, y: 105 };
+  const at = shellPoint(d, id);
+  d = ED.pulsar(d, CTX, { tipo: "nodo", id: loose }, from);
+  d = ED.moverA(d, CTX, at);
+  d = ED.soltar(d, CTX, { tipo: "nodo", id: loose }, at);
+  assert.equal(d.g.nodos.length, 1, "the loose constant is gone");
+  assert.deepEqual(nodoDe(d, id).config.type, { array: "string" });
+  const stepped = H.registrar(history, d.g);
+  assert.equal(stepped.antes.length, history.antes.length + 1);
+  assert.equal(H.deshacer(stepped).g.nodos.length, 2);
+});
+
+// array-typing/menus-array-constant-element-i32.png and menus-array-constant-nonindex-click.png, reports/2026-10-18-array-element-menus.md §3.
+const typedArrayConstant = (type, value) => {
+  const d = poner(ED.inicial(), "arr-const", { x: 100, y: 100 });
+  const id = d.seleccion[0];
+  return [{ ...d, g: Gr.fijarConfig(d.g, id, { type, value, visibles: 3 }) }, id];
+};
+const constantMenuHtml = (opened) => D.menuContextual(INV, opened.menu, ED.marcados(opened), undefined, ED.variantes(opened));
+const constantRows = (html) => [...html.matchAll(/data-id="([^"]+)"[^>]*><span class="texto-menu"[^>]*>([^<]*)</g)].map((m) => m[2]);
+
+test("the element of a typed array constant has its own menu and Representation retypes the whole constant", () => {
+  let [d, id] = typedArrayConstant({ array: "number" }, [1.4, 2.6, 3]);
+  assert.equal(D.menuDe(nodoDe(d, id), "result", d.g, true), "context.array-constant-element");
+  assert.equal(D.menuDe(nodoDe(d, id), "result", d.g, false), "context.array-constant", "the index and the margin keep the array's menu");
+  assert.equal(D.menuDe({ ...nodoDe(d, id), config: { type: { array: "string" } } }, "result", d.g, true), "context.array-constant", "only the numeric element was measured");
+
+  let opened = ED.abrirMenu(d, "context.array-constant-element", id, 0, 0);
+  assert.deepEqual(constantRows(constantMenuHtml(opened)), [
+    "Visible Items", "Change to Control", "Change to Indicator", "Change to Element", "Make Type Def.", "Description and Tip...", "Numeric Palette",
+    "Array Palette", "Create", "Replace", "Data Operations", "Advanced", "Representation", "Display Format...", "Properties",
+  ]);
+  assert.ok(ED.marcados(opened).has("context.array-constant-element.representation.dbl"));
+
+  // Representation: the whole constant becomes I32 with its values converted and its dimensions kept.
+  d = ED.orden(opened, "context.array-constant-element.representation.i32", CTX);
+  assert.deepEqual([nodoDe(d, id).config.type, nodoDe(d, id).config.value], [{ array: "i32" }, [1, 3, 3]]);
+  assert.ok(ED.marcados(ED.abrirMenu(d, "context.array-constant-element", id, 0, 0)).has("context.array-constant-element.representation.i32"));
+  d = ED.orden(ED.abrirMenu(d, "context.array-constant", id, 0, 0), "context.array-constant.add-dimension", CTX);
+  d = ED.orden(ED.abrirMenu(d, "context.array-constant-element", id, 0, 0), "context.array-constant-element.representation.u8", CTX);
+  assert.deepEqual([nodoDe(d, id).config.type, nodoDe(d, id).config.value], [{ array: "u8", dims: 2 }, [[1, 3, 3]]]);
+  // One undo step.
+  const history = H.registrar(H.nuevo(opened.g), ED.orden(opened, "context.array-constant-element.representation.i32", CTX).g);
+  assert.equal(history.antes.length, 1);
+  assert.deepEqual(nodoDe({ g: H.deshacer(history).g }, id).config.type, { array: "number" });
+});
+
+test("an empty Array Constant's menu has no Numeric Palette and no Change to Element, and no element menu", () => {
+  const [d, id] = emptyShell();
+  assert.equal(D.menuDe(nodoDe(d, id), "result", d.g, true), "context.array-constant");
+  const emptyRows = constantRows(constantMenuHtml(ED.abrirMenu(d, "context.array-constant", id, 0, 0)));
+  assert.ok(emptyRows.includes("Array Palette"));
+  assert.ok(!emptyRows.includes("Numeric Palette") && !emptyRows.includes("Change to Element"));
+  const [typed, typedId] = typedArrayConstant({ array: "number" }, []);
+  assert.ok(constantRows(constantMenuHtml(ED.abrirMenu(typed, "context.array-constant", typedId, 0, 0))).includes("Numeric Palette"));
+});
+
+// reports/2026-10-18-array-typing-stage2.md Q5d: the element dragged out of its shell leaves it empty again.
+test("dragging the element of a typed Array Constant out leaves it empty, keeps its wire and puts a loose constant where it was released", () => {
+  let [d, id] = typedArrayConstant({ array: "i32" }, [7, 8]);
+  d = poner(d, "array-size", { x: 400, y: 100 });
+  const sizeId = d.seleccion[0];
+  const wired = Gr.conectar(d.g, CAT, { nodo: id, puerto: "result", dir: "out" }, { nodo: sizeId, puerto: "array", dir: "in" });
+  d = { ...d, g: wired.g ?? wired, seleccion: [id] };
+  const history = H.registrar(H.nuevo(d.g), d.g);
+  const box = caja(nodoDe(d, id), CTX);
+  const onElement = { x: box.x + 40, y: box.y + 10 };
+  const release = { x: box.x + box.ancho + 200, y: box.y + 150 };
+
+  // Released inside its own constant, nothing changes; grabbed by the index, the whole constant moves.
+  const jiggled = ED.soltar(ED.moverA(ED.pulsar(d, CTX, { tipo: "nodo", id, campo: 1 }, onElement), CTX, { x: onElement.x + 3, y: onElement.y + 2 }), CTX, { tipo: "fondo" }, { x: onElement.x + 3, y: onElement.y + 2 });
+  assert.deepEqual([nodoDe(jiggled, id).config.value, nodoDe(jiggled, id).x], [[7, 8], nodoDe(d, id).x]);
+  const byIndex = ED.moverA(ED.pulsar(d, CTX, { tipo: "nodo", id }, { x: box.x + 5, y: box.y + 5 }), CTX, { x: box.x + 25, y: box.y + 5 });
+  assert.equal(nodoDe(byIndex, id).x, nodoDe(d, id).x + 20);
+
+  let pulled = ED.pulsar(d, CTX, { tipo: "nodo", id, campo: 1 }, onElement);
+  pulled = ED.moverA(pulled, CTX, release);
+  assert.equal(nodoDe(pulled, id).x, nodoDe(d, id).x, "the constant does not move");
+  pulled = ED.soltar(pulled, CTX, { tipo: "fondo" }, release);
+  assert.deepEqual([nodoDe(pulled, id).config.type, nodoDe(pulled, id).config.value], [{ array: "void" }, []]);
+  assert.equal(pulled.g.cables.length, 1, "the wire stays");
+  const loose = pulled.g.nodos.find((n) => n.tipo === "num-const");
+  assert.deepEqual([loose.config.type, loose.config.value], ["i32", 8], "a loose I32 constant with the element's value");
+  assert.ok(loose.x > box.x + box.ancho && loose.y > box.y, "where it was released");
+  assert.deepEqual(pulled.seleccion, [loose.id]);
+  // One undo step.
+  const stepped = H.registrar(history, pulled.g);
+  assert.equal(stepped.antes.length, history.antes.length + 1);
+  assert.deepEqual(nodoDe({ g: H.deshacer(stepped).g }, id).config.value, [7, 8]);
 });

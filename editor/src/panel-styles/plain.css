@@ -141,6 +141,7 @@
 .sd-panel .sd-array .sd-index { position: absolute; box-sizing: border-box; display: flex; }
 .sd-panel .sd-array .sd-index .sd-field { flex: 1; background: var(--sd-surface); border-color: var(--sd-line-soft); }
 .sd-panel .sd-array .sd-elements { position: absolute; box-sizing: border-box; border: 1px solid var(--sd-line-soft); border-radius: var(--sd-radius); background: var(--sd-recess); }
+.sd-panel .sd-array.sd-undefined .sd-elements { border-width: 4px; }
 .sd-panel .sd-array .sd-element { position: absolute; box-sizing: border-box; display: flex; }
 .sd-panel .sd-array .sd-element .sd-field { flex: 1; }
 .sd-panel .sd-array .sd-element.sd-empty .sd-field { background: var(--sd-empty); color: var(--sd-muted); }

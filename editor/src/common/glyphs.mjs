@@ -2098,6 +2098,24 @@ export const dibujoArray = (control) =>
   `<rect x="${ARRAY_VALUE_FIELD.x}" y="${ARRAY_VALUE_FIELD.y}" width="${control ? 18 : 17}" height="${ARRAY_VALUE_FIELD.height}" fill="#a8a8a8" stroke="#4c4c4c" stroke-width="1"/>` +
   texto(ARRAY_VALUE_FIELD.x + 9, ARRAY_VALUE_FIELD.y + ARRAY_VALUE_FIELD.height / 2, "123", 7.5, "#000", 700);
 
+/**
+ * The terminal of an array with no element yet (DT-060), measured in labview-captures/array-typing/diag-empty-crop.png:
+ * 38 × 38 like every terminal icon, but the frame is black, not the color of a type, and the tab is blank (there is
+ * no element type to name), so the notch in the bottom edge is white with no tag. The array drawing is the same
+ * generic one (index cells and the 123 field), and the arrow is white on the data side.
+ */
+export function terminalArrayIndefinido(control) {
+  const borde = control
+    ? `<rect x="1" y="1" width="36" height="36" fill="${PAPER}" stroke="#000" stroke-width="2"/>`
+    : `<rect x="0.5" y="0.5" width="37" height="37" fill="${PAPER}" stroke="#000" stroke-width="1"/>`;
+  const interior = `<rect x="3.5" y="3.5" width="31" height="31" fill="#e2e2e2" stroke="#000" stroke-width="1"/>`;
+  const flechita = control
+    ? `<path d="M32.5 15.5 V23.5 L36.5 19.5 Z" fill="${PAPER}" stroke="#000" stroke-width="1"/>`
+    : `<path d="M2.5 15.5 V23.5 L6.5 19.5 Z" fill="${PAPER}" stroke="#000" stroke-width="1"/>`;
+  const pestana = `<rect x="12" y="30" width="14" height="8" fill="${PAPER}"/>`;
+  return svg(borde + interior + `<g transform="translate(1 1)">${dibujoArray(control)}</g>` + flechita + pestana, "0 0 38 38");
+}
+
 // ——— Waveform Chart, Waveform Graph and XY Graph (labview-captures/graphs/) ———
 
 /**
