@@ -100,6 +100,10 @@ for (const [clave, c] of Object.entries(G.CURSORES)) {
 }
 
 let estado = E.inicial();
+// Where the pointer last was over the panel, to work its cursor out again after a repaint replaces the page,
+// and the cursor shown there.
+let lastPointer = null;
+let lastPanelCursor = null;
 let dia = ED.inicial();
 let pan = P.inicial(dia.g);
 let historial = H.nuevo(dia.g);
@@ -1178,6 +1182,7 @@ function pintar() {
   placePalettes(tam);
   for (const el of document.querySelectorAll(".explicacion, .lista-marcos")) dentro(el, tam);
   if (tip.visible) ponerTip();
+  if (conPanel) showPanelCursor();
 }
 
 /** The check marks of a menu opened from the page and not from the menu bar: the current page of VI Properties. */
@@ -1447,6 +1452,23 @@ function accionar(n, cuando, antes) {
 /** What can be clicked on a panel object to give it a cell of the connector pane. */
 const CONECTABLES = ["objeto", "casilla", "campo", "elem", "paso", "asa-array"];
 
+/**
+ * The edit-mode pointer over the panel (styles.css): worked out again on every move and every repaint, since
+ * selecting a control changes it without moving. While a press drags something, the pointer stays as it was.
+ */
+function showPanelCursor() {
+  const canvas = document.querySelector(".lienzo");
+  if (!canvas || !lastPointer) return;
+  if (pan.accion) {
+    if (lastPanelCursor) canvas.dataset.cursor = lastPanelCursor;
+    return;
+  }
+  const under = document.elementFromPoint(lastPointer.clientX, lastPointer.clientY);
+  lastPanelCursor = ejecutando ? null : P.hoverCursor(pan, objetivoPanel(under), punto(lastPointer));
+  if (lastPanelCursor) canvas.dataset.cursor = lastPanelCursor;
+  else delete canvas.dataset.cursor;
+}
+
 /** Pulsar en el panel: como en el diagrama, un doble clic en una etiqueta escribe en ella. */
 function pulsarPanel(ev) {
   const sobre = objetivoPanel(ev.target);
@@ -1461,7 +1483,7 @@ function pulsarPanel(ev) {
   if (pan.conector) return cambiarPanel(CP.assignClicked(pan, cat, CONECTABLES.includes(sobre.tipo) ? sobre.id : null));
   if (ev.detail >= 2 && sobre.tipo === "etiqueta") return cambiarPanel(P.editar(pan, sobre.id));
   // Doble clic en la casilla de un control: todo el valor seleccionado.
-  if (ev.detail >= 2 && sobre.tipo === "casilla" && pan.edicion?.valor) return cambiarPanel(P.editarValor(pan, ctx, sobre.id, true));
+  if (ev.detail >= 2 && sobre.tipo === "casilla" && (pan.edicion?.valor || P.doubleClickTypes(pan, sobre, punto(ev)))) return cambiarPanel(P.editarValor(pan, ctx, sobre.id, true));
   if (ev.detail >= 2 && sobre.tipo === "elem" && pan.edicion?.elem === sobre.k) return cambiarPanel(P.editarElemento(pan, ctx, sobre.id, sobre.k, true));
   if (ev.detail >= 2 && sobre.tipo === "campo" && pan.edicion?.campo === sobre.campo) return cambiarPanel(P.editarValor(pan, ctx, sobre.id, true, sobre.campo));
   cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), ev.shiftKey, ev.ctrlKey || ev.metaKey));
@@ -1485,6 +1507,8 @@ addEventListener("mousemove", (ev) => {
       pan = P.moverA(pan, ctx, punto(ev));
       pintar();
     }
+    lastPointer = { clientX: ev.clientX, clientY: ev.clientY };
+    showPanelCursor();
     return;
   }
   let nuevo = dia;

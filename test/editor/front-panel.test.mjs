@@ -210,6 +210,63 @@ test("a press near the edge of a control's value box moves the control instead o
   }
 });
 
+// Hover cursors and presses on a numeric or string control, selected or not
+// (labview-captures/reports/2026-10-17-numeric-cursor-map.md, 2026-10-18-numeric-hover-selected.md).
+test("the pointer over a control is the I-beam in its value box, the arrow on its edge and label, and the arrow all over once selected", () => {
+  for (const block of ["control", "str-control"]) {
+    const p = ponerYConfirmar(P.inicial(), block, { x: 100, y: 100 });
+    const node = p.g.nodos[0];
+    const box = P.caja(node);
+    const middle = { x: box.x + box.ancho - 10, y: box.y + Math.floor(box.alto / 2) };
+    const edge = { x: box.x + box.ancho - 2, y: middle.y };
+    const valueBox = { tipo: "casilla", id: node.id };
+    assert.equal(P.hoverCursor(p, valueBox, middle), "text", `${block}: I-beam inside the value box`);
+    assert.equal(P.hoverCursor(p, valueBox, edge), "move", `${block}: arrow on the 4 px band`);
+    assert.equal(P.hoverCursor(p, { tipo: "etiqueta", id: node.id }, middle), "move", `${block}: arrow on the label`);
+    if (block === "control") assert.equal(P.hoverCursor(p, { tipo: "paso", id: node.id, paso: 1 }, { x: box.x + 5, y: box.y + 5 }), "operate", "finger on the incrementer");
+
+    const selected = { ...p, seleccion: [node.id] };
+    assert.equal(P.hoverCursor(selected, valueBox, middle), "move", `${block}: selected, the value box shows the arrow`);
+    if (block === "control") assert.equal(P.hoverCursor(selected, { tipo: "paso", id: node.id, paso: 1 }, { x: box.x + 5, y: box.y + 5 }), "move", "selected, the incrementer shows the arrow");
+    assert.equal(P.hoverCursor(p, { tipo: "fondo" }, { x: 10, y: 10 }), null, "empty panel keeps the cross");
+  }
+});
+
+test("a selected control moves when dragged from its value box, a click does not type, and a double click does", () => {
+  for (const block of ["control", "str-control"]) {
+    let p = ponerYConfirmar(P.inicial(), block, { x: 100, y: 100 });
+    const node = p.g.nodos[0];
+    const box = P.caja(node);
+    const middle = { x: box.x + box.ancho - 10, y: box.y + Math.floor(box.alto / 2) };
+    const valueBox = { tipo: "casilla", id: node.id };
+    p = { ...p, seleccion: [node.id] };
+
+    const clicked = P.soltar(P.pulsar(p, CTX, valueBox, middle), CTX, valueBox, middle);
+    assert.equal(clicked.edicion, null, `${block}: a click on a selected control does not type`);
+    assert.deepEqual(clicked.seleccion, [node.id], `${block}: it stays selected`);
+    assert.equal(clicked.g.nodos[0].panel.x, node.panel.x, `${block}: and does not move`);
+
+    const to = { x: middle.x + 40, y: middle.y };
+    const dragged = P.soltar(P.moverA(P.pulsar(p, CTX, valueBox, middle), CTX, to), CTX, valueBox, to);
+    assert.equal(dragged.g.nodos[0].panel.x, node.panel.x + 40, `${block}: dragged from its value box, it moves`);
+
+    assert.ok(P.doubleClickTypes(p, valueBox, middle), `${block}: a double click inside the value box types`);
+    assert.ok(!P.doubleClickTypes(p, valueBox, { x: box.x + box.ancho - 2, y: middle.y }), `${block}: not on its 4 px band`);
+  }
+});
+
+test("dragging the label of a selected control moves the control with it; unselected, the label moves alone", () => {
+  let p = ponerYConfirmar(P.inicial(), "control", { x: 100, y: 100 });
+  const node = p.g.nodos[0];
+  const label = { tipo: "etiqueta", id: node.id };
+  const from = { x: 110, y: 90 };
+  const to = { x: 150, y: 90 };
+  const drag = (state) => P.soltar(P.moverA(P.pulsar(state, CTX, label, from), CTX, to), CTX, label, to);
+
+  assert.equal(drag({ ...p, seleccion: [node.id] }).g.nodos[0].panel.x, node.panel.x + 40, "selected: the control moves");
+  assert.equal(drag(p).g.nodos[0].panel.x, node.panel.x, "unselected: only the label moves");
+});
+
 // LabVIEW's default format shows 6 significant digits on the panel and 13 on the diagram
 // (labview-captures/reports/2026-10-15-numeric-display.md); a value only shown is not rounded.
 test("a DBL control shows 1.23457E+8 and keeps 123456789, the constant shows it in full", () => {
