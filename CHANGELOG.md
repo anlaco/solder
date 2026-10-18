@@ -6,6 +6,18 @@ features raises MINOR, one that only fixes things raises PATCH. The `-alpha` lab
 said the file format was not stable yet; `-beta` marks the maintainable version,
 whose files keep opening, and stays a `0.x` (DT-048, DT-055).
 
+## 0.4.2-beta — 2026-10-18
+
+### Fixes
+
+- The pointer over a numeric or string control on the Front Panel says what a
+  press will do, as in LabVIEW: the arrow on its edge and label, the I-beam in
+  the value box and the hand over the incrementer; the arrow all over once the
+  control is selected.
+- A selected numeric or string control moves when dragged from its value box;
+  a click there no longer types, and a double click types over the whole value.
+  Dragging the label of a selected control moves the control with it.
+
 ## 0.4.1-beta — 2026-10-17
 
 ### Fixes
