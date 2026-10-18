@@ -548,3 +548,12 @@ test("the structures' stretch handles lie inside the 6 px band that answers the 
     assert.ok(handles.every(inBand), `${kind}: a hidden handle never takes the interior`);
   }
 });
+
+test("the array drawing in an array terminal has 9 × 8 px index cells and a 9 px tall 123 field, as LabVIEW draws it", async () => {
+  // Measured at 8× on labview-captures/array-typing/diag-empty-crop.png and diag-all-top.png: the cells span y 5 to 29.
+  const { dibujoArray } = await import("../../editor/src/common/glyphs.mjs");
+  const drawing = dibujoArray(true);
+  const cells = [...drawing.matchAll(/<rect x="4.5" y="([\d.]+)" width="8" height="8"/g)].map((match) => Number(match[1]));
+  assert.deepEqual(cells, [4.5, 12.5, 20.5], "three cells stacked 8 px apart from the terminal's y 5");
+  assert.match(drawing, /<rect x="14.5" y="4.5" width="18" height="9"/, "the 123 field from x 15, 9 px tall");
+});
