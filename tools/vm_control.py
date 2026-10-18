@@ -34,11 +34,15 @@ class Vm:
                 return r["return"]
 
     def tamano(self):
-        import tempfile
-        from PIL import Image
-        with tempfile.NamedTemporaryFile(suffix=".ppm") as t:
-            self.orden("screendump", filename=t.name)
-            return Image.open(t.name).size
+        """The screen size, read once per connection: every move needs it, and a screendump each time cost
+        ~16 full screenshots per drag."""
+        if getattr(self, "screen_size", None) is None:
+            import tempfile
+            from PIL import Image
+            with tempfile.NamedTemporaryFile(suffix=".ppm") as t:
+                self.orden("screendump", filename=t.name)
+                self.screen_size = Image.open(t.name).size
+        return self.screen_size
 
     def mover(self, x, y):
         w, h = self.tamano()
