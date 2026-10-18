@@ -2078,3 +2078,36 @@ in that order, through companion `.css` files.**
 | Writing Solder's sheets left Old School unchanged | `scripts/panel-pixels/compare.sh` against b58c735: identical in every scene | Verified 2026-10-17 |
 | The `.sdg` does not change | the format tests (`test/end-to-end/format-versions.test.mjs`) stay green | Holds today; to recheck when styles are implemented |
 
+
+## DT-059
+
+**Solder opens LabVIEW's `.vi` files itself, without LabVIEW installed.**
+
+- **Status:** Accepted on 2026-10-17 by the developer, as a goal. When it is done, and in which order against the
+  plan, is not decided yet; nothing is built for it now.
+- **Why:** whoever comes from LabVIEW has programs already written. Being able to open them is what makes moving to
+  Solder possible, and it is the natural end of cloning LabVIEW one to one (DT-035).
+
+### Decision
+
+1. **Solder reads a `.vi` directly**: its own reader of LabVIEW's binary format, in JavaScript like the rest of
+   the core. A route that needs LabVIEW installed (exporting through VI Scripting) is not the product; it may be a
+   tool for us.
+2. **What opens is converted to Solder's model**, and saved as `.sdg`. A node or control Solder does not do yet
+   opens greyed and says why, as everything not done does (DT-035), instead of refusing the file.
+3. **Nothing of NI is copied** (rule 3): the reader is written from what the files contain, and the test files are
+   VIs we build ourselves in the virtual machine, never NI's.
+
+### Open points
+
+- Which LabVIEW versions are read (2026 Q3 first is the obvious start), and whether Solder ever writes a `.vi`.
+- The legal check of reading a closed format for interoperability (in the EU, Directive 2009/24/EC art. 6),
+  before the work starts.
+- How it is verified: LabVIEW in the virtual machine can describe the same VI in text (VI Scripting, the
+  `Solder Probe.vi` family of 2026-10-17), which gives the expected result for every test file.
+
+### Verification
+
+| Statement | What fails if it is broken | Status |
+|---|---|---|
+| Solder opens a `.vi` | nothing yet | Unverified: not started |
