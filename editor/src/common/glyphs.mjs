@@ -2071,14 +2071,21 @@ for (const [id, w, h, r, t] of [
 SUBPALETAS.variant = svg(caja(3.5, 4, 12.5, 12, NODE_FILL, 0.9, NODE_BORDER) + lleno(1.5, 6.5, 3.5, 9.5, NODE_BORDER) + lleno(12.5, 6.5, 14.5, 9.5, NODE_BORDER) + linea(3.5, 4, 6, 2, 0.9) + linea(6, 2, 10, 2, 0.9));
 
 /**
- * El dibujo del terminal de un array en el diagrama (labview-captures/array/array-control-terminal-diagrama.png y
- * array-indicador-terminal.png): tres celdas de índice i, j y k a la izquierda y la caja de los elementos arriba a
- * la derecha, con «123». El borde y la pestaña son del color del tipo del elemento.
+ * The array drawing inside an array terminal on the diagram, measured at 8× on
+ * labview-captures/array-typing/diag-empty-crop.png and the same in diag-all-top.png (typed arrays): three 8 px index
+ * cells i, j and k down the left from y 5 to 29, 9 px wide, and the 123 field across the top right, x 15 to 34 and
+ * 9 px tall. Coordinates are the terminal's minus one: the callers draw it translated by (1, 1).
  */
+const ARRAY_INDEX_CELL = { x: 4.5, width: 8, height: 8, firstY: 4.5 };
+const ARRAY_VALUE_FIELD = { x: 14.5, y: 4.5, height: 9 };
 export const dibujoArray = (control) =>
-  `<rect x="2.5" y="2.5" width="4.5" height="4.5" fill="#cfcfcf" stroke="#000" stroke-width="0.8"/><rect x="2.5" y="7" width="4.5" height="4.5" fill="#cfcfcf" stroke="#000" stroke-width="0.8"/><rect x="2.5" y="11.5" width="4.5" height="4.5" fill="#cfcfcf" stroke="#000" stroke-width="0.8"/>` +
-  texto(4.75, 5, "i", 3.6, "#000", 700) + texto(4.75, 9.5, "j", 3.6, "#000", 700) + texto(4.75, 14, "k", 3.6, "#000", 700) +
-  `<rect x="8" y="2.5" width="${control ? 18 : 17}" height="7" fill="#a8a8a8" stroke="#4c4c4c" stroke-width="1"/>` + texto(17, 6.2, "123", 4.6, "#000", 700);
+  ["i", "j", "k"].map((letter, row) => {
+    const top = ARRAY_INDEX_CELL.firstY + row * ARRAY_INDEX_CELL.height;
+    return `<rect x="${ARRAY_INDEX_CELL.x}" y="${top}" width="${ARRAY_INDEX_CELL.width}" height="${ARRAY_INDEX_CELL.height}" fill="#cfcfcf" stroke="#000" stroke-width="1"/>` +
+      texto(ARRAY_INDEX_CELL.x + ARRAY_INDEX_CELL.width / 2, top + ARRAY_INDEX_CELL.height / 2, letter, 7, "#000", 700);
+  }).join("") +
+  `<rect x="${ARRAY_VALUE_FIELD.x}" y="${ARRAY_VALUE_FIELD.y}" width="${control ? 18 : 17}" height="${ARRAY_VALUE_FIELD.height}" fill="#a8a8a8" stroke="#4c4c4c" stroke-width="1"/>` +
+  texto(ARRAY_VALUE_FIELD.x + 9, ARRAY_VALUE_FIELD.y + ARRAY_VALUE_FIELD.height / 2, "123", 7.5, "#000", 700);
 
 // ——— Waveform Chart, Waveform Graph and XY Graph (labview-captures/graphs/) ———
 
