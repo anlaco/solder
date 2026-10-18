@@ -362,6 +362,11 @@ svg { display: block; overflow: visible; }
    to them: their place, being typed into and being selected. */
 .lienzo-front-panel { overflow: hidden; cursor: var(--cursor-cruz, crosshair); }
 .objeto-panel { position: absolute; cursor: default; }
+/* The pointer the editor works out over a control's parts (front-panel.mjs, hoverCursor) wins over the style's. */
+.lienzo-front-panel[data-cursor] * { cursor: inherit !important; }
+.lienzo-front-panel[data-cursor="move"] { cursor: default; }
+.lienzo-front-panel[data-cursor="text"] { cursor: text; }
+.lienzo-front-panel[data-cursor="operate"] { cursor: pointer; }
 /* While a control's value is typed: a black frame around it. */
 .objeto-panel.editando-valor { outline: 1px solid var(--editing-outline); outline-offset: 1px; }
 .objeto-panel.seleccionado::before, .etiqueta.seleccionada::before {

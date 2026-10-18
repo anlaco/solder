@@ -297,8 +297,30 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > (`labview-captures/reports/2026-10-17-panel-move-zones.md`). The editor does the
 > 4 px band on numeric and string controls (`test/editor/front-panel.test.mjs`, "a press
 > near the edge…"); the indicator's caret and the Push Button's band are not done
-> (Solder moves an indicator from anywhere and a Boolean on any drag). The cursor
-> shapes are unverified: the VM captures do not show the pointer.
+> (Solder moves an indicator from anywhere and a Boolean on any drag).
+>
+> **Once selected, the whole control moves.** A press + drag anywhere in a selected
+> numeric control, value box included, moves it; a single click there neither types nor
+> changes the selection; a double click inside the value box types over the whole value.
+> A single click on the band of an unselected control only selects it. Dragging the label
+> of a selected control moves the control with it. Measured in LabVIEW 2026 Q3
+> (`labview-captures/reports/2026-10-18-numeric-hover-selected.md` §3–4); the editor
+> does it on numeric and string controls (`test/editor/front-panel.test.mjs`, "a selected
+> control moves…", "dragging the label of a selected control…"). Not done: a double click
+> on the band opens the Block Diagram at the terminal; LabVIEW's move also shifted the
+> control ≈ 11 px down on a horizontal drag (cause unverified, not copied).
+>
+> **The pointer says what a press will do** (edit mode, automatic tool): the positioning
+> arrow on the 4 px band and on the label, the I-beam inside the value box, the operating
+> finger over the incrementer's arrows, and the arrow over all of a selected control
+> (no I-beam, no finger). While a value is typed in an unselected control, the I-beam and
+> the finger stay. Measured with LabVIEW's own cursor ids
+> (`2026-10-17-numeric-cursor-map.md`, `2026-10-18-numeric-hover-selected.md` §1–2); the
+> editor shows them on numeric and string controls (`test/editor/front-panel.test.mjs`,
+> "the pointer over a control…"), with the system's arrow, I-beam and hand. Not done: the
+> resize cursors on the value box's left and right edges and the label's corners (LabVIEW
+> shows them selected or not, except while typing), and the string control's own map
+> (taken as the numeric's, unverified).
 
 > **Rule 40d — Run mode.** While the VI runs, both windows are in Run
 > mode: the Run arrow is filled, Abort lights up, the editing

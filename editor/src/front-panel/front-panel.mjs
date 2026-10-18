@@ -193,6 +193,32 @@ function isInMoveBand(box, point) {
   return inside && Math.min(fromLeft, fromTop, fromRight, fromBottom) < MOVE_BAND_PX;
 }
 
+/** Whether a press in the node's value box types in it: numeric controls with an incrementer, and string controls. */
+const typesInValueBox = (n) => (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control") && !esEnum(n?.config?.type);
+
+/**
+ * The edit-mode pointer over a panel object, as LabVIEW's automatic tool shows it
+ * (2026-10-17-numeric-cursor-map.md, 2026-10-18-numeric-hover-selected.md): "move" (the positioning
+ * arrow) on the label, on the 4 px band of a value box and over all of a selected control; "text" (the
+ * I-beam) inside the value box; "operate" (the finger) over the incrementer's arrows. `null` leaves the
+ * panel style's own pointer, for what is not measured yet.
+ */
+export function hoverCursor(p, sobre, pt) {
+  if (sobre?.tipo === "etiqueta") return "move";
+  const n = sobre && p.g.nodos.find((m) => m.id === sobre.id);
+  if (!typesInValueBox(n)) return null;
+  if (p.seleccion.includes(n.id) && (sobre.tipo === "casilla" || sobre.tipo === "paso" || sobre.tipo === "objeto")) return "move";
+  if (sobre.tipo === "paso") return "operate";
+  if (sobre.tipo === "casilla") return isInMoveBand(caja(n), pt) ? "move" : "text";
+  return null;
+}
+
+/** Whether a double click at the point types over the whole value: inside a value box, selected or not (its 4 px band opens the diagram in LabVIEW, not done). */
+export function doubleClickTypes(p, sobre, pt) {
+  const n = sobre?.tipo === "casilla" && p.g.nodos.find((m) => m.id === sobre.id);
+  return !!n && typesInValueBox(n) && !isInMoveBand(caja(n), pt);
+}
+
 /** Una etiqueta que nunca se ha movido va encima de la casilla, alineada con ella. */
 const etiquetaPorDefecto = (k, tam) => [k.casilla, -(tam.alto + (k.separacion ?? MEDIDAS_PANEL.separacion))];
 
@@ -402,10 +428,13 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
     const [pasoAncho, pasoAlto] = dimensionsOfNode(nodo.config) === 2 ? pasoCeldas2D(tipoElemento(nodo)) : [medidaElemento(tipoElemento(nodo))[0], 0];
     return { ...p, accion: { tipo: "estirar-array", nodo: sobre.id, lado: sobre.lado ?? "derecha", x0: pt.x, y0: pt.y, visibles0: visibleGrid(nodo.config), pasoAncho, pasoAlto } };
   }
-  // A click in a control's value box types in it, with the caret at the end; its outer band moves it.
+  // A click in a control's value box types in it, with the caret at the end; its outer band moves it, and
+  // so does all of it once the control is selected (2026-10-18-numeric-hover-selected.md §3).
   const n = p.g.nodos.find((m) => m.id === sobre.id);
-  if (sobre.tipo === "casilla" && (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control") && !esEnum(n?.config?.type) && !isInMoveBand(caja(n), pt)) return editarValor(p, ctx, sobre.id, false);
+  if (sobre.tipo === "casilla" && typesInValueBox(n) && !p.seleccion.includes(n.id) && !isInMoveBand(caja(n), pt)) return editarValor(p, ctx, sobre.id, false);
   if (sobre.tipo === "objeto" || sobre.tipo === "casilla") return { ...p, seleccion: elegir(sobre.id), accion: { tipo: "mover", x: pt.x, y: pt.y, nodo: sobre.id, movido: false, ...(duplicate ? { duplicar: true } : {}) } };
+  // The label of a selected object carries the object with it; otherwise it moves alone.
+  if (sobre.tipo === "etiqueta" && !shift && p.seleccion.includes(sobre.id)) return { ...p, accion: { tipo: "mover", x: pt.x, y: pt.y, nodo: sobre.id, movido: false, byLabel: true } };
   if (sobre.tipo === "etiqueta") return { ...p, seleccion: elegir(idEtiqueta(sobre.id)), accion: { tipo: "etiqueta", nodo: sobre.id, x: pt.x, y: pt.y } };
   return { ...p, seleccion: shift ? p.seleccion : [], accion: { tipo: "rectangulo", x0: pt.x, y0: pt.y, x1: pt.x, y1: pt.y, base: shift ? p.seleccion : [] } };
 }
@@ -491,7 +520,8 @@ export function soltar(p, ctx, sobre, pt) {
       // Pulsar un control booleano sin arrastrarlo cambia su valor (Switch When
       // Pressed, la acción mecánica de fábrica de los interruptores).
       const n = p.g.nodos.find((m) => m.id === accion.nodo);
-      return { ...p, g: n?.tipo === "bool-control" && !accion.movido ? alternar(p.g, n) : p.g, accion: null };
+      const toggles = n?.tipo === "bool-control" && !accion.movido && !accion.byLabel;
+      return { ...p, g: toggles ? alternar(p.g, n) : p.g, accion: null };
     }
     default:
       return { ...p, accion: null };
