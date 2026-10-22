@@ -71,15 +71,15 @@ export const MEDIDAS_ARRAY_PANEL = { indice: 41, altoIndice: 26, bajaCaja: 3, nu
 /**
  * A one-dimensional panel array, measured at 1:1 in labview-captures/array-typing/panel-all-top.png: the shell is a
  * 4 px bevel round its elements. A numeric control's element is 65 × 26 (its incrementer and, 1 px down, a 54 × 25
- * field), so the shell is 73 × 34; a string's is 100 × 25 (a 108 × 33 shell). A Boolean's keeps the 30 × 25 of
+ * field), so the shell is 73 × 34; a numeric indicator's 53 × 25 (a 61 × 33 shell); a string's is 100 × 25 (a 108 × 33 shell). A Boolean's keeps the 30 × 25 of
  * its old T/F field (unverified: LabVIEW draws the element itself, an LED is 21 × 25).
  */
-export const PANEL_ARRAY_1D = { bevel: 4, numericControl: [65, 26], string: [100, 25], boolean: [30, 25] };
-/** What one element of a one-dimensional panel array measures, by its type. */
-export function elementSize1D(elementType) {
+export const PANEL_ARRAY_1D = { bevel: 4, numericControl: [65, 26], numericIndicator: [53, 25], string: [100, 25], boolean: [30, 25] };
+/** What one element of a one-dimensional panel array measures, by its type and whether the array is a control. */
+export function elementSize1D(elementType, isControl) {
   if (elementType === "string") return PANEL_ARRAY_1D.string;
   if (elementType === "boolean") return PANEL_ARRAY_1D.boolean;
-  return PANEL_ARRAY_1D.numericControl;
+  return isControl ? PANEL_ARRAY_1D.numericControl : PANEL_ARRAY_1D.numericIndicator;
 }
 /**
  * A panel array with two dimensions, measured at 1:1 in labview-captures/array-2d/panel-array-2d-control-empty.png and
@@ -190,7 +190,7 @@ export function cajaObjeto(tipo, x, y, config) {
   }
   if (CONTROLES[tipo]?.array) {
     const A = MEDIDAS_ARRAY_PANEL;
-    const [elementWidth, elementHeight] = elementSize1D(config?.type?.array ?? "number");
+    const [elementWidth, elementHeight] = elementSize1D(config?.type?.array ?? "number", CONTROLES[tipo].control);
     const bevel = PANEL_ARRAY_1D.bevel;
     return { x, y, ancho: A.indice + visiblesPanel(config) * elementWidth + 2 * bevel, alto: Math.max(A.altoIndice, A.bajaCaja + elementHeight + 2 * bevel), casilla: A.indice };
   }
@@ -320,7 +320,7 @@ function arrayObject(n, ctx, frame, editing, valores) {
   const elementType = tipoElemento(n);
   const values = valoresDeArray(n, valores);
   const dimensions = dimensionsOfNode(n.config);
-  const [elementWidth, elementHeight] = dimensions === 2 ? medidaElemento(elementType) : elementSize1D(elementType);
+  const [elementWidth, elementHeight] = dimensions === 2 ? medidaElemento(elementType) : elementSize1D(elementType, frame.isControl);
   const pitch = dimensions === 2 ? pasoCeldas2D(elementType) : [elementWidth, elementHeight];
   const first = firstShown(n.config);
   const { rows, columns } = visibleGrid(n.config);
@@ -473,7 +473,7 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
   if (sobre.tipo === "asa-array") {
     const nodo = p.g.nodos.find((m) => m.id === sobre.id);
     if (isUndefinedArray(nodo.config?.type)) return p;
-    const [pasoAncho, pasoAlto] = dimensionsOfNode(nodo.config) === 2 ? pasoCeldas2D(tipoElemento(nodo)) : [elementSize1D(tipoElemento(nodo))[0], 0];
+    const [pasoAncho, pasoAlto] = dimensionsOfNode(nodo.config) === 2 ? pasoCeldas2D(tipoElemento(nodo)) : [elementSize1D(tipoElemento(nodo), CONTROLES[nodo.tipo].control)[0], 0];
     return { ...p, accion: { tipo: "estirar-array", nodo: sobre.id, lado: sobre.lado ?? "derecha", x0: pt.x, y0: pt.y, visibles0: visibleGrid(nodo.config), pasoAncho, pasoAlto } };
   }
   // A click in a control's value box types in it, with the caret at the end; its outer band moves it, and

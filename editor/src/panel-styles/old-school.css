@@ -198,6 +198,7 @@
 }
 .sd-panel .sd-array:not(.sd-two-dimensions) .sd-element .sd-incrementer + .sd-field { left: 11px; top: 1px; }
 .sd-panel .sd-array:not(.sd-two-dimensions) .sd-element.sd-empty { background: var(--panel-array-greyed-body); }
+.sd-panel .sd-indicator.sd-array:not(.sd-two-dimensions) .sd-element.sd-empty .sd-field { background: var(--panel-array-empty-indicator-background); }
 .sd-panel .sd-array:not(.sd-two-dimensions) .sd-element.sd-empty .sd-field {
   padding-left: 6px; border: 0; background: var(--panel-array-empty-background);
   box-shadow:
