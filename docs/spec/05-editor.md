@@ -567,16 +567,33 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   constants. Concatenate Strings does not have the *Add Input* menu: it is stretched by the handles.
 
 > **Rule 40j — One-dimensional arrays on the diagram and on the panel.** Measured in LabVIEW 2026 Q3 at 1:1
-> (`labview-captures/array/`). Empty array constant: 52 × 25 px (33 × 21 index and element box with two
-> borders in the type's color; each element, 15 × 21); it is typed into each element with a double click (a boolean is
-> toggled) and stretched by its right handle to show more. The panel array with a DBL: 114 × 36 px (41 × 26 index
-> and 72 × 33 box); it is typed into its elements, the index scrolls through them and a handle stretches the box. Its
-> terminal on the diagram (37 × 37) carries the border in the element's color and the cells i, j and k. The
-> one-dimensional array wire measures 2 px. An indexed loop tunnel is drawn 9 × 9 with `#ffffcc` background and a bracket in the type's
-> color; a For lets it be born indexed; the input's menu says Enable or Disable Indexing (it only turns on
-> if what arrives is an array) and the output's, Tunnel Mode ▸ Last Value, Indexing, Concatenating and Conditional
-> (the last two, greyed out). **Unverified:** the gesture of stretching the panel array with the mouse (the handles moved
-> the object in the VM). How it is born and typed: Rule 40j bis.
+> (`labview-captures/array/`, `labview-captures/array-typing/`; re-measured on 2026-10-22 from `const-num.png`,
+> `panel-all-top.png` and `panel-array-1a1.png`). Old School style, an element past the end of the value (greyed):
+> - *Array constant.* 51 × 25 px. The index, 32 × 21: a line in the type's color, 1 px of white and a second line round
+>   a 5 × 15 column of arrows (an up arrow, a bar, a double bar, a bar and a down arrow, in the type's color) and the
+>   19 × 15 field, divided by a 2 px line; the position is black. Against it, with no shared line, the shell: a double
+>   line in the type's color (line, 1 px of white, line) round the elements; each element is 15 × 21 with its line, and
+>   a greyed one is a 2 px frame in the type's color lightened to 40 % (`#9999ff` for an I32) round white, with grey
+>   text (`#999999`). An empty constant's index is the same in black. It is typed into each element with a double
+>   click (a boolean is toggled) and stretched by its right handle to show more.
+> - *Panel array.* The index column is 41 px wide: a 13 × 28 incrementer and, 3 px lower, a 28 × 25 box in a 4 px
+>   bevel with a `#fafafa` field and a black position. The shell is level with the box: a 4 px bevel (`#d3d3d3`,
+>   `#c2c2c2`, `#b7b7b7`, `#b1b1b1` on the top and left and `#eeeeee`, `#f2f2f2`, `#ededed`, `#eaeaea` on the bottom
+>   and right, from the outside in) round the elements. Each element is drawn as its control: a numeric control's is
+>   65 × 26 (its incrementer and, 1 px down, a 54 × 25 field in a 4 px bevel), so with a DBL control the shell is
+>   73 × 34 and the array 114 × 37; a numeric indicator's is 53 × 25 (a 61 × 33 shell); a string's is 100 × 25 (a 108 ×
+>   33 shell). Greyed, the field's bevel is `#c3c3c3`, `#bdbdbd`, `#b8b8b8`, `#b6b6b6` and `#cecece`, `#d0d0d0`,
+>   `#cecece`, `#cdcdcd`, its interior `#ebebeb` on a control and `#dbdbdb` on an indicator, its text `#878787`,
+>   on a `#c9c9c9` body. It is typed into its elements, the index scrolls through them and a handle stretches the shell.
+> - Its terminal on the diagram (37 × 37) carries the border in the element's color and the cells i, j and k. The
+>   one-dimensional array wire measures 2 px. An indexed loop tunnel is drawn 9 × 9 with `#ffffcc` background and a
+>   bracket in the type's color; a For lets it be born indexed; the input's menu says Enable or Disable Indexing (it
+>   only turns on if what arrives is an array) and the output's, Tunnel Mode ▸ Last Value, Indexing, Concatenating and
+>   Conditional (the last two, greyed out).
+> - **Unverified:** the gesture of stretching the panel array with the mouse (the handles moved the object in the VM);
+>   how an element WITH a value looks (drawn as the loose control or constant); the gap between elements; a Boolean
+>   element (an LED is 21 × 25; Solder keeps its 30 × 25 T/F field); where the arrows sit in the index's incrementer.
+>   How it is born and typed: Rule 40j bis.
 
 > **Rule 40j bis — An array is born empty and its element types it (DT-060).** Measured in LabVIEW 2026 Q3
 > (`labview-captures/reports/2026-10-18-array-typing-stage1.md` and `-stage2.md`).
@@ -848,7 +865,7 @@ would have required naming a test that did not exist.)*
 | 40g Flat and Stacked Sequence | Tests in `diagram-view.test.mjs` (film border, frames, tunnels, selector and local variables), `diagram-editing.test.mjs` (place, stretch, frames, menus, change shape, compile and run) and `structures.test.mjs` (widths in the file) | **Verified**; what is unverified, in the rule itself |
 | 40h Strings on the diagram and on the panel | Tests in `palettes.test.mjs` (each String function with its terminals and measurements), `window-state.test.mjs` (the four palettes), `front-panel.test.mjs` (control and indicator), `diagram-editing.test.mjs` (multi-line constant, Concatenate Strings, a string VI made with the mouse that runs) and `qvi-round-trip.test.mjs` (save and open) | **Verified**; what is unverified, in the rule itself |
 | 40i The error cluster | Tests in `error-cluster.test.mjs` (the wire, the constant and its edits, the two dialogs, Simple Error Handler and Merge Errors at 32 × 18), `front-panel.test.mjs` (Error In and Error Out) and `window-state.test.mjs` (the two palettes) | **Verified**; what is unverified, in the rule itself |
-| 40j One-dimensional arrays | Tests in `front-panel.test.mjs` (array control and indicator), `diagram-editing.test.mjs` (array constant, menu of the indexed tunnels), `window-state.test.mjs` (the Array subpalette), `palettes.test.mjs` (its functions) and `qvi-round-trip.test.mjs` | **Verified** for what was measured; the gesture of stretching the panel array and the array's menu, unverified (see the rule) |
+| 40j One-dimensional arrays | Tests in `front-panel.test.mjs` (array control and indicator, their shells and index), `diagram-view.test.mjs` (the constant's index and greyed element), `diagram-editing.test.mjs` (array constant, menu of the indexed tunnels), `window-state.test.mjs` (the Array subpalette), `palettes.test.mjs` (its functions) and `qvi-round-trip.test.mjs` | **Verified** for what was measured; the gesture of stretching the panel array and the array's menu, unverified (see the rule) |
 | 40j bis An array is born empty and its element types it | `test/core/array-typing.test.mjs`, `front-panel.test.mjs` and `diagram-editing.test.mjs` (empty shells, dropping an element, no nesting) | **Verified** for what was measured; see the rule's unverified points |
 | 40k Arrays with two dimensions | Tests in `array-grid.test.mjs` (cells, Add and Remove Dimension), `diagram-editing.test.mjs` (menu, constant, stretching, wire, Index Array, Initialize Array), `front-panel.test.mjs` (panel array), `qvi-round-trip.test.mjs` (pairs saved) and `labview-inventory.test.mjs` (the menus) | **Verified** for the measurements; the stretching gestures, the indicator's menu and Initialize Array's second size, unverified (see the rule) |
 | 78 Format Into String and Scan From String | Tests in `format-nodes.test.mjs` (size, terminals, stretching, type boxes, menus, Add and Remove Parameter) and `palettes.test.mjs` | **Verified** for the size, the stretching and the menus; the terminals' exact heights, unverified (see the rule) |
