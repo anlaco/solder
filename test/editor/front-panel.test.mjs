@@ -645,6 +645,16 @@ test("a numeric indicator array's shell is a 4 px bevel round a 53 × 25 element
   assert.equal(oldSchoolToken("--panel-array-empty-indicator-background"), "#dbdbdb");
 });
 
+// array/panel-array-1a1.png and array-typing/panel-all-top.png: a one-dimensional array's index is a 28 × 25 box with
+// the shell's bevel, a #fafafa field and a black number, level with the shell; its 13 × 28 incrementer stands on its
+// left and rises 3 px above it.
+test("a one-dimensional array's index box is level with its shell, with a black number, as in LabVIEW", () => {
+  const p = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "number" }, value: [] });
+  assert.match(P.contenido(p, CTX), /<div class="arr-indice" data-eje="columna" style="top:3px;width:41px;height:25px"><div class="incrementador"><svg viewBox="0 0 13 28"/);
+  assert.equal(oldSchoolToken("--panel-array-index-field-background"), "#fafafa");
+  assert.equal(oldSchoolToken("--panel-array-index-number"), "#000");
+});
+
 // array-2d/panel-array-menu-index.png, panel-array-2d-control-empty.png and panel-array-2d-stretched.png.
 test("Add Dimension and Remove Dimension on a panel array turn it into a 2D one and back", () => {
   let p = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "number" }, value: [1, 2, 3] });

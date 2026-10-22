@@ -69,9 +69,10 @@ export const MEDIDAS_ARRAY_PANEL = { indice: 41, altoIndice: 26, bajaCaja: 3, nu
  * A one-dimensional panel array, measured at 1:1 in labview-captures/array-typing/panel-all-top.png: the shell is a
  * 4 px bevel round its elements. A numeric control's element is 65 × 26 (its incrementer and, 1 px down, a 54 × 25
  * field), so the shell is 73 × 34; a numeric indicator's 53 × 25 (a 61 × 33 shell); a string's is 100 × 25 (a 108 × 33 shell). A Boolean's keeps the 30 × 25 of
- * its old T/F field (unverified: LabVIEW draws the element itself, an LED is 21 × 25).
+ * its old T/F field (unverified: LabVIEW draws the element itself, an LED is 21 × 25). The index box is 25 px tall
+ * and level with the shell; its incrementer rises 3 px above them.
  */
-export const PANEL_ARRAY_1D = { bevel: 4, numericControl: [65, 26], numericIndicator: [53, 25], string: [100, 25], boolean: [30, 25], controlFieldLeft: 11 };
+export const PANEL_ARRAY_1D = { bevel: 4, indexHeight: 25, numericControl: [65, 26], numericIndicator: [53, 25], string: [100, 25], boolean: [30, 25], controlFieldLeft: 11 };
 /** What one element of a one-dimensional panel array measures, by its type and whether the array is a control. */
 export function elementSize1D(elementType, isControl) {
   if (elementType === "string") return PANEL_ARRAY_1D.string;
@@ -290,6 +291,15 @@ function objetoError(n, elegido, edicion, valores) {
 }
 
 /** El incrementador de un elemento numérico: sólo el dibujo (no se pulsa: los pasos son los del índice). */
+/**
+ * The incrementer of a one-dimensional array's index: the same capsule and arrows, 13 × 28 px, outside the index box
+ * on its left (array/panel-array-1a1.png). Where its arrows sit inside the capsule is unverified.
+ */
+const ARRAY_INDEX_INCREMENTER = INCREMENTADOR.replace(
+  /<svg[^>]*>.*<\/svg>/,
+  `<svg viewBox="0 0 13 28" aria-hidden="true"><rect x="0.5" y="0.5" width="12" height="27" rx="6" fill="#dedede" stroke="#9c9c9c" stroke-width="1"/><polygon points="6.5,6 3.8,11 9.2,11" fill="#7a7a7a"/><polygon points="6.5,22 3.8,17 9.2,17" fill="#7a7a7a"/></svg>`,
+);
+
 const INCREMENTADOR_DECORADO = INCREMENTADOR.replace(/<div class="flecha-inc"[^>]*><\/div>/g, "");
 
 /** The text of an element of an array of the panel: what is being typed into it, or its value. */
@@ -327,10 +337,11 @@ function objetoArray(n, ctx, elegido, edicion, valores) {
     const place = dimensions === 2 ? `position:absolute;left:${px(B.margenIzquierdo - B.bordeCaja + column * pitch[0])};top:${px(B.margenArriba - B.bordeCaja + row * pitch[1])};` : "";
     return `<div class="elem-array${hay ? "" : " vacio"}${control ? "" : " indicador"}${editando ? " editando-valor" : ""}" data-k="${address}" style="${place}width:${px(ew)};height:${px(eh)}">${inc}<div class="casilla-elem${t === "string" ? " cadena" : ""}" style="left:${px(ini)};right:0"><span class="valor">${elementText(lista, address, dimensions, t, ctx, editando ? e : null)}</span></div></div>`;
   }).join("");
-  const indexField = (axis, top, position) => `<div class="arr-indice" data-eje="${axis}" style="top:${px(top)};width:${px(A.indice)};height:${px(A.altoIndice)}">${INCREMENTADOR}<div class="arr-campo"><span>${position}</span></div></div>`;
+  const indexField = (axis, top, position, height = A.altoIndice, incrementer = INCREMENTADOR) =>
+    `<div class="arr-indice" data-eje="${axis}" style="top:${px(top)};width:${px(A.indice)};height:${px(height)}">${incrementer}<div class="arr-campo"><span>${position}</span></div></div>`;
   const indices = dimensions === 2
     ? indexField("fila", 0, first.row) + indexField("columna", MEDIDAS_ARRAY_PANEL_2D.pasoIndices, first.column)
-    : indexField("columna", 0, first.column);
+    : indexField("columna", A.bajaCaja, first.column, PANEL_ARRAY_1D.indexHeight, ARRAY_INDEX_INCREMENTER);
   const cajaAlto = dimensions === 2 ? k.alto - A.bajaCaja : eh + 2 * PANEL_ARRAY_1D.bevel;
   const cajaEstilo = dimensions === 2 ? "" : `padding:${px(PANEL_ARRAY_1D.bevel)}`;
   const asa = (lado, left, top) => `<div class="asa-array" data-asa-array="1" data-lado="${lado}" style="left:${px(left - 3)};top:${px(top - 3)}"></div>`;
