@@ -495,12 +495,15 @@ svg { display: block; overflow: visible; }
 .indice-array .paso-indice { display: block; width: 5px; height: 15px; margin: 1px 0 1px 1px; background: var(--array-cell-background); color: var(--tipo); }
 .indice-array .paso-indice svg { display: block; }
 .indice-array .campo-indice { flex: 1; height: 15px; margin: 1px 1px 1px 2px; padding-left: 1px; display: flex; align-items: center; background: var(--array-cell-background); color: var(--canvas-text); }
-.caja-array { position: absolute; top: 0; box-sizing: border-box; background: var(--array-cell-background); border: 1px solid; padding: 1px; display: flex; }
-.celda-array { box-sizing: border-box; height: 21px; display: flex; align-items: center; justify-content: center; background: var(--array-cell-background); border: 1px solid; white-space: pre; }
+/* A one-dimensional constant's shell is a line, 1 px of white and a second line, all in the type's color, round its
+   elements; each element is a 13 × 19 tile, a 2 px frame in the type's color round white, and the tiles abut
+   (array-typing/defined-const.png). */
+.caja-array { position: absolute; top: 0; box-sizing: border-box; background: var(--array-cell-background); border: 1px solid var(--tipo); padding: 2px; display: flex; box-shadow: inset 0 0 0 1px var(--array-cell-background), inset 0 0 0 2px var(--tipo); }
+.celda-array { box-sizing: border-box; height: 19px; display: flex; align-items: center; justify-content: center; background: var(--array-cell-background); border: 2px solid var(--tipo); white-space: pre; }
 .caja-array-indefinida { position: absolute; top: 0; box-sizing: border-box; background: var(--array-undefined-fill); border: 1px solid var(--array-undefined-line); box-shadow: inset 0 0 0 1px var(--array-undefined-fill), inset 0 0 0 2px var(--array-undefined-line); }
-/* An element past the end is greyed: a 2 px frame in the type's color lightened, round white, and grey text
+/* An element past the end is greyed: its frame is the type's color lightened, and its text grey
    (array-typing/const-num.png: #9999ff for an I32). */
-.celda-array.vacia { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--tipo) 40%, var(--array-tint-mix-color)); color: var(--array-empty-cell-text); }
+.celda-array.vacia { border-color: color-mix(in srgb, var(--tipo) 40%, var(--array-tint-mix-color)); color: var(--array-empty-cell-text); }
 .celda-array.editando { cursor: text; }
 /* A constant with two dimensions (array-2d/constant-2d-empty.png, constant-2d-2x3-values.png): frame, white, frame. */
 .indice-array-2d { position: absolute; left: 0; top: 0; box-sizing: border-box; background: var(--array-cell-background); border: 1px solid var(--tipo); padding: 1px; }

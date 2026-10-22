@@ -108,11 +108,12 @@ export const MEDIDAS_CONSTANTE = { alto: 18, borde: 2, relleno: 5, minimo: 13 };
 export const MEDIDAS_CONSTANTE_ERROR = { ancho: 22, alto: 57, celdas: [11, 19, 19], borde: 3 };
 export const MEDIDAS_CADENA = { linea: 15, vertical: 4, horizontal: 8, minimo: 15 };
 /**
- * The array constant, measured at 1:1 in labview-captures/array/constante-array.png and array-typing/const-num.png
- * (empty, with an I32 element): the index, 32 × 21 px, and against its right the box of the elements, 25 px tall, each
- * with a double line in the type's color; each element measures what a constant does plus a 1 px line (15 × 21).
+ * The array constant, measured at 1:1 in labview-captures/array/constante-array.png, array-typing/const-num.png and
+ * defined-const.png (an I32 element, [5, 7] shown in three): the index, 32 × 21 px, and against its right the shell,
+ * 25 px tall: a line, 1 px of white and a second line (3 px on each side) round tiles as wide as a 2D constant's
+ * (13 × 19 for one digit), which abut.
  */
-export const MEDIDAS_ARRAY = { indice: 32, altoIndice: 21, alto: 25, relleno: 2, bordeElemento: 1, altoElemento: 21 };
+export const MEDIDAS_ARRAY = { indice: 32, altoIndice: 21, alto: 25, margenCaja: 3 };
 /**
  * A constant with two dimensions, measured at 1:1 in labview-captures/array-2d/constant-2d-empty.png,
  * constant-2d-2x3-values.png and constant-2d-stretched-4x9-empty.png (DBL, #ff7f00):
@@ -158,13 +159,12 @@ function widestShownText(n, ctx, edicion) {
 }
 
 /**
- * The width of the box of each element of the constant: the widest of the ones shown. With two
- * dimensions it is the column pitch (13 px at least).
+ * The width of each element's tile, which is also the pitch: the widest of the ones shown, 13 px at least, with one
+ * dimension or two.
  */
 export function anchoElementoArray(n, ctx, edicion) {
   const widest = widestShownText(n, ctx, edicion);
-  if (dimensionsOfNode(n.config) === 2) return Math.max(MEDIDAS_ARRAY_2D.anchoCelda, Math.ceil(widest) + MEDIDAS_ARRAY_2D.textoExtra);
-  return Math.max(MEDIDAS_CONSTANTE.minimo, widest + MEDIDAS_CONSTANTE.relleno) + 2 * MEDIDAS_ARRAY.bordeElemento;
+  return Math.max(MEDIDAS_ARRAY_2D.anchoCelda, Math.ceil(widest) + MEDIDAS_ARRAY_2D.textoExtra);
 }
 
 /** The size of the box of elements of a constant with two dimensions. */
@@ -499,7 +499,7 @@ export function caja(n, ctx, edicion) {
   }
   if (c?.array) {
     const A = MEDIDAS_ARRAY;
-    return { x: n.x, y: n.y, ancho: A.indice + visiblesArray(n) * anchoElementoArray(n, ctx, edicion) + 2 * A.relleno, alto: A.alto };
+    return { x: n.x, y: n.y, ancho: A.indice + visiblesArray(n) * anchoElementoArray(n, ctx, edicion) + 2 * A.margenCaja, alto: A.alto };
   }
   if (c?.error) return { x: n.x, y: n.y, ancho: MEDIDAS_CONSTANTE_ERROR.ancho, alto: MEDIDAS_CONSTANTE_ERROR.alto };
   if (c?.cadena) {
@@ -1024,11 +1024,11 @@ function constanteArray(n, k, ctx, edicion) {
     const ed = edicion?.nodo === n.id && edicion.elem === i ? edicion : null;
     const txt = esc(ed ? ed.texto : textoElemento(valores[i], t, ctx.separador));
     const valor = ed ? (ed.todo ? `<span class="texto-elegido">${txt}</span>` : `<span>${txt}</span><span class="caret"></span>`) : `<span>${txt}</span>`;
-    return `<div class="celda-array${i >= valores.length ? " vacia" : ""}${ed ? " editando" : ""}" data-campo="${i}" style="width:${px(ancho)};border-color:${color}">${valor}</div>`;
+    return `<div class="celda-array${i >= valores.length ? " vacia" : ""}${ed ? " editando" : ""}" data-campo="${i}" style="width:${px(ancho)}">${valor}</div>`;
   }).join("");
   return `<div class="constante-array" style="width:${px(k.ancho)};height:${px(A.alto)};--tipo:${color}">` +
     arrayIndexBox(A.indice, A.altoIndice, color, k0) +
-    `<div class="caja-array" style="left:${px(A.indice)};width:${px(k.ancho - A.indice)};height:${px(A.alto)};border-color:${color}">${celdas}</div></div>`;
+    `<div class="caja-array" style="left:${px(A.indice)};width:${px(k.ancho - A.indice)};height:${px(A.alto)}">${celdas}</div></div>`;
 }
 
 /**

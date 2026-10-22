@@ -568,10 +568,24 @@ test("an array constant's greyed element is a pale frame round white, as in LabV
   assert.match(html, /class="constante-array" style="[^"]*--tipo:#0000ff"/);
   assert.match(html, /class="celda-array vacia"/);
   const styles = readFileSync(new URL("../../editor/src/styles.css", import.meta.url), "utf8");
-  assert.match(styles, /\.celda-array\.vacia \{ box-shadow: inset 0 0 0 2px color-mix\(in srgb, var\(--tipo\) 40%, var\(--array-tint-mix-color\)\);/);
+  assert.match(styles, /\.celda-array\.vacia \{ border-color: color-mix\(in srgb, var\(--tipo\) 40%, var\(--array-tint-mix-color\)\);/);
   assert.doesNotMatch(styles.match(/\.celda-array \{[^}]*\}/)[0], /margin-top/, "the element fills the shell's line evenly");
   assert.equal(oldSchoolToken("--array-tint-mix-color"), "white");
   assert.equal(oldSchoolToken("--array-empty-cell-text"), "#999999");
+});
+
+// array-typing/defined-const.png ([5, 7] shown in three): the shell is a line, 1 px of white and a second line in the
+// type's color round 13 × 19 tiles that abut, each a 2 px frame in the type's color round a 9 × 15 white window.
+test("an array constant's element with a value is a 2 px frame in the type's color, as in LabVIEW", () => {
+  const made = crearNodo(nuevo(), CAT, "arr-const", 40, 40);
+  const g = Gr.fijarConfig(made.g, made.id, { type: { array: "i32" }, value: [5, 7], visibles: 3 });
+  const html = D.contenido({ ...ED.inicial(), g }, CTX, tipos(g, CAT));
+  assert.match(html, /<div class="caja-array" style="left:32px;width:45px;height:25px">/, "6 px of lines and three 13 px tiles");
+  assert.equal((html.match(/class="celda-array" data-campo="\d" style="width:13px"/g) ?? []).length, 2);
+  assert.match(html, /class="celda-array vacia" data-campo="2" style="width:13px"/);
+  const styles = readFileSync(new URL("../../editor/src/styles.css", import.meta.url), "utf8");
+  assert.match(styles, /\.caja-array \{[^}]*border: 1px solid var\(--tipo\); padding: 2px;[^}]*box-shadow: inset 0 0 0 1px var\(--array-cell-background\), inset 0 0 0 2px var\(--tipo\);/);
+  assert.match(styles, /\.celda-array \{[^}]*height: 19px;[^}]*border: 2px solid var\(--tipo\);/);
 });
 
 // array-typing/const-num.png and const-empty.png: an array constant's index is 32 × 21, a line in the type's color, 1 px
@@ -582,7 +596,7 @@ test("an array constant's index is a double line round its arrows and a black po
   const g = Gr.fijarConfig(made.g, made.id, { type: { array: "i32" }, value: [] });
   const html = D.contenido({ ...ED.inicial(), g }, CTX, tipos(g, CAT));
   assert.match(html, /<div class="indice-array" style="width:32px;height:21px;--tipo:#0000ff"><span class="paso-indice"><svg width="5" height="15"/);
-  assert.match(html, /<div class="caja-array" style="left:32px;width:19px;height:25px;/);
+  assert.match(html, /<div class="caja-array" style="left:32px;width:19px;height:25px">/);
   const styles = readFileSync(new URL("../../editor/src/styles.css", import.meta.url), "utf8");
   assert.match(styles, /\.indice-array \{[^}]*border: 1px solid var\(--tipo\); padding: 1px;[^}]*linear-gradient\(var\(--tipo\), var\(--tipo\)\) content-box/);
   assert.match(styles, /\.indice-array \.campo-indice \{[^}]*margin: 1px 1px 1px 2px;[^}]*color: var\(--canvas-text\)/, "a 2 px divider and a black position");
