@@ -634,6 +634,17 @@ test("a numeric control array's shell is a 4 px bevel round a 65 × 26 element, 
   assert.equal(oldSchoolToken("--panel-array-greyed-body"), "#c9c9c9");
 });
 
+// array-typing/panel-all-top.png: a numeric indicator array's shell is 61 × 33, a 4 px bevel round a 53 × 25 element
+// with no incrementer; past the end its interior is #dbdbdb.
+test("a numeric indicator array's shell is a 4 px bevel round a 53 × 25 element, as in LabVIEW", () => {
+  const p = ponerYConfirmar(P.inicial(), "arr-indicator", { x: 150, y: 100 }, { type: { array: "number" }, value: [] });
+  assert.deepEqual([P.caja(p.g.nodos[0]).ancho, P.caja(p.g.nodos[0]).alto], [41 + 61, 36]);
+  const html = P.contenido(p, CTX);
+  assert.match(html, /<div class="arr-caja" style="left:41px;top:3px;width:61px;height:33px;padding:4px">/);
+  assert.match(html, /<div class="elem-array vacio indicador" data-k="0" style="width:53px;height:25px">/);
+  assert.equal(oldSchoolToken("--panel-array-empty-indicator-background"), "#dbdbdb");
+});
+
 // array-2d/panel-array-menu-index.png, panel-array-2d-control-empty.png and panel-array-2d-stretched.png.
 test("Add Dimension and Remove Dimension on a panel array turn it into a 2D one and back", () => {
   let p = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "number" }, value: [1, 2, 3] });

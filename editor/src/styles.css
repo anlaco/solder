@@ -603,6 +603,7 @@ svg { display: block; overflow: visible; }
     inset 3px 3px 0 var(--panel-array-greyed-bevel-dark-3), inset -3px -3px 0 var(--panel-array-greyed-bevel-light-3),
     inset 4px 4px 0 var(--panel-array-greyed-bevel-dark-4), inset -4px -4px 0 var(--panel-array-greyed-bevel-light-4);
 }
+.objeto-panel.array:not(.dos-dimensiones) .elem-array.indicador.vacio .casilla-elem { background: var(--panel-array-empty-indicator-background); }
 /* A panel array with two dimensions (array-2d/panel-array-2d-stretched.png): the cells are placed one by one. */
 .objeto-panel.array.dos-dimensiones .arr-caja { display: block; }
 .objeto-panel.array.dos-dimensiones .elem-array { position: absolute; }

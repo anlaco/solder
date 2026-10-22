@@ -229,6 +229,7 @@
   /* An element past the end, greyed: its interior and text, and on a one-dimensional array its body and its field's
      bevel, from the outside in. */
   --panel-array-empty-background: #ebebeb;
+  --panel-array-empty-indicator-background: #dbdbdb;
   --panel-array-empty-text: #878787;
   --panel-array-greyed-body: #c9c9c9;
   --panel-array-greyed-bevel-dark-1: #c3c3c3;
