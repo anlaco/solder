@@ -3,6 +3,7 @@
 // front-panel.mjs and labels.mjs are pure functions.
 
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import * as CV from "../../core/model/control-values.mjs";
@@ -632,6 +633,24 @@ test("a numeric control array's shell is a 4 px bevel round a 65 × 26 element, 
   assert.equal(oldSchoolToken("--panel-array-empty-background"), "#ebebeb");
   assert.equal(oldSchoolToken("--panel-array-empty-text"), "#878787");
   assert.equal(oldSchoolToken("--panel-array-greyed-body"), "#c9c9c9");
+});
+
+// array-typing/defined-ctl.png: an element with a value is not drawn like a loose control. Its field sinks into a 4 px
+// bevel darker than the loose control's, round #fafafa on a control and #d2d2d2 on an indicator, on the shell's #a6a6a6.
+test("a one-dimensional array's element with a value sinks into a dark 4 px bevel, as in LabVIEW", () => {
+  const p = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "number" }, value: [1, 2] });
+  assert.match(P.contenido(p, CTX), /<div class="elem-array" data-k="0" style="width:65px;height:26px">/);
+  const bevel = [1, 2, 3, 4].flatMap((n) => [oldSchoolToken(`--panel-array-element-bevel-dark-${n}`), oldSchoolToken(`--panel-array-element-bevel-light-${n}`)]);
+  assert.deepEqual(bevel, ["#979797", "#b2b2b2", "#868686", "#b6b6b6", "#7b7b7b", "#b1b1b1", "#757575", "#aeaeae"], "outside in");
+  assert.equal(oldSchoolToken("--panel-array-element-background"), "#fafafa");
+  assert.equal(oldSchoolToken("--panel-array-element-indicator-background"), "#d2d2d2");
+  assert.equal(oldSchoolToken("--panel-array-box-background"), "#a6a6a6");
+  const styles = readFileSync(new URL("../../editor/src/styles.css", import.meta.url), "utf8");
+  const field = styles.match(/\.objeto-panel\.array:not\(\.dos-dimensiones\) \.casilla-elem \{[^}]*\}/)[0];
+  assert.match(field, /border: 0; background: var\(--panel-array-element-background\)/);
+  assert.match(field, /inset 4px 4px 0 var\(--panel-array-element-bevel-dark-4\), inset -4px -4px 0 var\(--panel-array-element-bevel-light-4\)/);
+  assert.doesNotMatch(field, /numeric-field/, "not the loose control's border");
+  assert.match(styles, /\.objeto-panel\.array:not\(\.dos-dimensiones\) \.elem-array\.indicador \.casilla-elem \{ background: var\(--panel-array-element-indicator-background\); \}/);
 });
 
 // array-typing/panel-all-top.png: a numeric indicator array's shell is 61 × 33, a 4 px bevel round a 53 × 25 element

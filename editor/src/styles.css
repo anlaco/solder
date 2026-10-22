@@ -603,16 +603,21 @@ svg { display: block; overflow: visible; }
     inset 3px 3px 0 var(--panel-array-bevel-dark-3), inset -3px -3px 0 var(--panel-array-bevel-light-3),
     inset 4px 4px 0 var(--panel-array-bevel-dark-4), inset -4px -4px 0 var(--panel-array-bevel-light-4);
 }
+/* An element with a value: a field sunk into a 4 px bevel, darker than a loose control's, one shade per pixel from the
+   outside in (array-typing/defined-ctl.png). */
 .objeto-panel.array:not(.dos-dimensiones) .casilla-elem {
-  padding: 0 0 0 2px; border: 4px solid;
-  border-color: var(--numeric-field-border-top) var(--numeric-field-border-right) var(--numeric-field-border-bottom) var(--numeric-field-border-left);
-  background: var(--numeric-field-background); box-shadow: inset 1px 1px 0 var(--numeric-field-inset);
+  padding: 0 0 0 6px; border: 0; background: var(--panel-array-element-background);
+  box-shadow:
+    inset 1px 1px 0 var(--panel-array-element-bevel-dark-1), inset -1px -1px 0 var(--panel-array-element-bevel-light-1),
+    inset 2px 2px 0 var(--panel-array-element-bevel-dark-2), inset -2px -2px 0 var(--panel-array-element-bevel-light-2),
+    inset 3px 3px 0 var(--panel-array-element-bevel-dark-3), inset -3px -3px 0 var(--panel-array-element-bevel-light-3),
+    inset 4px 4px 0 var(--panel-array-element-bevel-dark-4), inset -4px -4px 0 var(--panel-array-element-bevel-light-4);
 }
 .objeto-panel.array:not(.dos-dimensiones) .elem-array .incrementador + .casilla-elem { top: 1px; }
-.objeto-panel.array:not(.dos-dimensiones) .elem-array.indicador .casilla-elem { background: var(--numeric-indicator-background); }
+.objeto-panel.array:not(.dos-dimensiones) .elem-array.indicador .casilla-elem { background: var(--panel-array-element-indicator-background); }
 .objeto-panel.array:not(.dos-dimensiones) .elem-array.vacio { background: var(--panel-array-greyed-body); }
 .objeto-panel.array:not(.dos-dimensiones) .elem-array.vacio .casilla-elem {
-  padding-left: 6px; border: 0; background: var(--panel-array-empty-background);
+  background: var(--panel-array-empty-background);
   box-shadow:
     inset 1px 1px 0 var(--panel-array-greyed-bevel-dark-1), inset -1px -1px 0 var(--panel-array-greyed-bevel-light-1),
     inset 2px 2px 0 var(--panel-array-greyed-bevel-dark-2), inset -2px -2px 0 var(--panel-array-greyed-bevel-light-2),

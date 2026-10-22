@@ -216,7 +216,7 @@
   /* A one-dimensional array's index field (array-typing/panel-all-top.png). */
   --panel-array-index-field-background: #fafafa;
   --panel-array-index-number: #000;
-  --panel-array-box-background: #a8a8a8;
+  --panel-array-box-background: #a6a6a6;
   --panel-array-box-bevel-dark: #7a7a7a;
   --panel-array-box-bevel-light: #f2f2f2;
   --panel-array-cell-border: #7a7a7a;
@@ -229,6 +229,18 @@
   --panel-array-bevel-light-2: #f2f2f2;
   --panel-array-bevel-light-3: #ededed;
   --panel-array-bevel-light-4: #eaeaea;
+  /* An element with a value on a one-dimensional array: its field's bevel, from the outside in, and its interior on a
+     control and on an indicator (labview-captures/array-typing/defined-ctl.png). */
+  --panel-array-element-bevel-dark-1: #979797;
+  --panel-array-element-bevel-dark-2: #868686;
+  --panel-array-element-bevel-dark-3: #7b7b7b;
+  --panel-array-element-bevel-dark-4: #757575;
+  --panel-array-element-bevel-light-1: #b2b2b2;
+  --panel-array-element-bevel-light-2: #b6b6b6;
+  --panel-array-element-bevel-light-3: #b1b1b1;
+  --panel-array-element-bevel-light-4: #aeaeae;
+  --panel-array-element-background: #fafafa;
+  --panel-array-element-indicator-background: #d2d2d2;
   /* An element past the end, greyed: its interior and text, and on a one-dimensional array its body and its field's
      bevel, from the outside in. */
   --panel-array-empty-background: #ebebeb;
