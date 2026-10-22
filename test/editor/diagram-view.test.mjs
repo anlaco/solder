@@ -4,6 +4,7 @@
 // returns HTML.
 
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { COLORES } from "../../core/model/types.mjs";
@@ -556,4 +557,19 @@ test("the array drawing in an array terminal has 9 × 8 px index cells and a 9 p
   const cells = [...drawing.matchAll(/<rect x="4.5" y="([\d.]+)" width="8" height="8"/g)].map((match) => Number(match[1]));
   assert.deepEqual(cells, [4.5, 12.5, 20.5], "three cells stacked 8 px apart from the terminal's y 5");
   assert.match(drawing, /<rect x="14.5" y="4.5" width="18" height="9"/, "the 123 field from x 15, 9 px tall");
+});
+
+// array-typing/const-num.png and array/constante-array.png: an array constant's element past the end is a 2 px frame in
+// the type's color lightened to 40 % (#9999ff for an I32) round white, with grey text, 2 px inside the shell's line.
+test("an array constant's greyed element is a pale frame round white, as in LabVIEW", () => {
+  const made = crearNodo(nuevo(), CAT, "arr-const", 40, 40);
+  const g = Gr.fijarConfig(made.g, made.id, { type: { array: "i32" }, value: [] });
+  const html = D.contenido({ ...ED.inicial(), g }, CTX, tipos(g, CAT));
+  assert.match(html, /class="constante-array" style="[^"]*--tipo:#0000ff"/);
+  assert.match(html, /class="celda-array vacia"/);
+  const styles = readFileSync(new URL("../../editor/src/styles.css", import.meta.url), "utf8");
+  assert.match(styles, /\.celda-array\.vacia \{ box-shadow: inset 0 0 0 2px color-mix\(in srgb, var\(--tipo\) 40%, var\(--array-tint-mix-color\)\);/);
+  assert.doesNotMatch(styles.match(/\.celda-array \{[^}]*\}/)[0], /margin-top/, "the element fills the shell's line evenly");
+  assert.equal(oldSchoolToken("--array-tint-mix-color"), "white");
+  assert.equal(oldSchoolToken("--array-empty-cell-text"), "#999999");
 });
