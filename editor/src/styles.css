@@ -575,6 +575,34 @@ svg { display: block; overflow: visible; }
 .objeto-panel.array .elem-array.indicador .casilla-elem { background: var(--numeric-indicator-background); cursor: default; }
 .objeto-panel.array .elem-array.vacio .casilla-elem { background: var(--panel-array-empty-background); color: var(--panel-array-empty-text); }
 .objeto-panel.array .casilla-elem.cadena { line-height: 15px; }
+/* A one-dimensional array's shell is a 4 px bevel round its elements, one shade per pixel from the outside in (inset
+   shadows, the outermost on top); each element is drawn as its control, a field sunk into a 4 px bevel, a numeric
+   control's 1 px down after its incrementer. Past the end the element is greyed: a lighter bevel, a grey interior and
+   grey text, on a grey body (array-typing/panel-all-top.png). */
+.objeto-panel.array:not(.dos-dimensiones) .arr-caja {
+  border: 0;
+  box-shadow:
+    inset 1px 1px 0 var(--panel-array-bevel-dark-1), inset -1px -1px 0 var(--panel-array-bevel-light-1),
+    inset 2px 2px 0 var(--panel-array-bevel-dark-2), inset -2px -2px 0 var(--panel-array-bevel-light-2),
+    inset 3px 3px 0 var(--panel-array-bevel-dark-3), inset -3px -3px 0 var(--panel-array-bevel-light-3),
+    inset 4px 4px 0 var(--panel-array-bevel-dark-4), inset -4px -4px 0 var(--panel-array-bevel-light-4);
+}
+.objeto-panel.array:not(.dos-dimensiones) .casilla-elem {
+  padding: 0 0 0 2px; border: 4px solid;
+  border-color: var(--numeric-field-border-top) var(--numeric-field-border-right) var(--numeric-field-border-bottom) var(--numeric-field-border-left);
+  background: var(--numeric-field-background); box-shadow: inset 1px 1px 0 var(--numeric-field-inset);
+}
+.objeto-panel.array:not(.dos-dimensiones) .elem-array .incrementador + .casilla-elem { top: 1px; }
+.objeto-panel.array:not(.dos-dimensiones) .elem-array.indicador .casilla-elem { background: var(--numeric-indicator-background); }
+.objeto-panel.array:not(.dos-dimensiones) .elem-array.vacio { background: var(--panel-array-greyed-body); }
+.objeto-panel.array:not(.dos-dimensiones) .elem-array.vacio .casilla-elem {
+  padding-left: 6px; border: 0; background: var(--panel-array-empty-background);
+  box-shadow:
+    inset 1px 1px 0 var(--panel-array-greyed-bevel-dark-1), inset -1px -1px 0 var(--panel-array-greyed-bevel-light-1),
+    inset 2px 2px 0 var(--panel-array-greyed-bevel-dark-2), inset -2px -2px 0 var(--panel-array-greyed-bevel-light-2),
+    inset 3px 3px 0 var(--panel-array-greyed-bevel-dark-3), inset -3px -3px 0 var(--panel-array-greyed-bevel-light-3),
+    inset 4px 4px 0 var(--panel-array-greyed-bevel-dark-4), inset -4px -4px 0 var(--panel-array-greyed-bevel-light-4);
+}
 /* A panel array with two dimensions (array-2d/panel-array-2d-stretched.png): the cells are placed one by one. */
 .objeto-panel.array.dos-dimensiones .arr-caja { display: block; }
 .objeto-panel.array.dos-dimensiones .elem-array { position: absolute; }

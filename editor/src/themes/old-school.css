@@ -217,8 +217,28 @@
   --panel-array-box-bevel-dark: #7a7a7a;
   --panel-array-box-bevel-light: #f2f2f2;
   --panel-array-cell-border: #7a7a7a;
-  --panel-array-empty-background: #ececec;
-  --panel-array-empty-text: #9a9a9a;
+  /* A typed array's shell (array-typing/panel-all-top.png): a 4 px bevel, one shade per pixel from the outside in. */
+  --panel-array-bevel-dark-1: #d3d3d3;
+  --panel-array-bevel-dark-2: #c2c2c2;
+  --panel-array-bevel-dark-3: #b7b7b7;
+  --panel-array-bevel-dark-4: #b1b1b1;
+  --panel-array-bevel-light-1: #eeeeee;
+  --panel-array-bevel-light-2: #f2f2f2;
+  --panel-array-bevel-light-3: #ededed;
+  --panel-array-bevel-light-4: #eaeaea;
+  /* An element past the end, greyed: its interior and text, and on a one-dimensional array its body and its field's
+     bevel, from the outside in. */
+  --panel-array-empty-background: #ebebeb;
+  --panel-array-empty-text: #878787;
+  --panel-array-greyed-body: #c9c9c9;
+  --panel-array-greyed-bevel-dark-1: #c3c3c3;
+  --panel-array-greyed-bevel-dark-2: #bdbdbd;
+  --panel-array-greyed-bevel-dark-3: #b8b8b8;
+  --panel-array-greyed-bevel-dark-4: #b6b6b6;
+  --panel-array-greyed-bevel-light-1: #cecece;
+  --panel-array-greyed-bevel-light-2: #d0d0d0;
+  --panel-array-greyed-bevel-light-3: #cecece;
+  --panel-array-greyed-bevel-light-4: #cdcdcd;
   --array-handle: #0078d7;
   --array-handle-border: #fff;
   --graph-text: #000;

@@ -60,11 +60,24 @@ export const CONTROLES = {
 };
 
 /**
- * Un array del panel, medido a 1:1 en labview-captures/array/panel-array-1a1.png (con un elemento numérico DBL): el
- * índice, de 41 × 26 px, y la caja de los elementos a su derecha y 3 px más abajo, de 72 × 33 (el elemento, de
- * 67 × 25, con 3 px de bisel a los lados y 4 arriba y abajo). Los otros elementos tienen las medidas de su control.
+ * A panel array, measured at 1:1 in labview-captures/array/panel-array-1a1.png: the index column is 41 px wide and the
+ * box of the elements starts 3 px below the top of the object. The sizes of each element are those of a 2D array's
+ * cells (MEDIDAS_ARRAY_PANEL_2D); a one-dimensional array has its own (PANEL_ARRAY_1D).
  */
-export const MEDIDAS_ARRAY_PANEL = { indice: 41, altoIndice: 26, bajaCaja: 3, biselX: 3, biselY: 4, numerico: [67, 25], cadena: [100, 24], booleano: [30, 25] };
+export const MEDIDAS_ARRAY_PANEL = { indice: 41, altoIndice: 26, bajaCaja: 3, numerico: [67, 25], cadena: [100, 24], booleano: [30, 25] };
+/**
+ * A one-dimensional panel array, measured at 1:1 in labview-captures/array-typing/panel-all-top.png: the shell is a
+ * 4 px bevel round its elements. A numeric control's element is 65 × 26 (its incrementer and, 1 px down, a 54 × 25
+ * field), so the shell is 73 × 34; a string's is 100 × 25 (a 108 × 33 shell). A Boolean's keeps the 30 × 25 of
+ * its old T/F field (unverified: LabVIEW draws the element itself, an LED is 21 × 25).
+ */
+export const PANEL_ARRAY_1D = { bevel: 4, numericControl: [65, 26], string: [100, 25], boolean: [30, 25], controlFieldLeft: 11 };
+/** What one element of a one-dimensional panel array measures, by its type. */
+export function elementSize1D(elementType) {
+  if (elementType === "string") return PANEL_ARRAY_1D.string;
+  if (elementType === "boolean") return PANEL_ARRAY_1D.boolean;
+  return PANEL_ARRAY_1D.numericControl;
+}
 /**
  * A panel array with two dimensions, measured at 1:1 in labview-captures/array-2d/panel-array-2d-control-empty.png and
  * panel-array-2d-stretched.png: the index column is still 41 px wide but holds two fields, 28 px apart; the box of
@@ -76,7 +89,7 @@ export const MEDIDAS_ARRAY_PANEL_2D = { pasoIndices: 28, margenIzquierdo: 3, mar
 export const tipoElemento = (n) => n.config?.type?.array ?? "number";
 /** How many columns an array shows (its elements, for a 1D one). */
 export const visiblesPanel = (config) => visibleGrid(config).columns;
-/** Lo que mide cada elemento, según su tipo. */
+/** What each cell of a two-dimensional array measures, by its type. */
 export const medidaElemento = (t) => (t === "string" ? MEDIDAS_ARRAY_PANEL.cadena : t === "boolean" ? MEDIDAS_ARRAY_PANEL.booleano : MEDIDAS_ARRAY_PANEL.numerico);
 /** The distance between the cells of a 2D array: across and down. */
 export function pasoCeldas2D(t) {
@@ -165,8 +178,9 @@ export function cajaObjeto(tipo, x, y, config) {
   }
   if (CONTROLES[tipo]?.array) {
     const A = MEDIDAS_ARRAY_PANEL;
-    const [ew, eh] = medidaElemento(config?.type?.array ?? "number");
-    return { x, y, ancho: A.indice + visiblesPanel(config) * ew + 2 * A.biselX, alto: Math.max(A.altoIndice, A.bajaCaja + eh + 2 * A.biselY), casilla: A.indice };
+    const [elementWidth, elementHeight] = elementSize1D(config?.type?.array ?? "number");
+    const bevel = PANEL_ARRAY_1D.bevel;
+    return { x, y, ancho: A.indice + visiblesPanel(config) * elementWidth + 2 * bevel, alto: Math.max(A.altoIndice, A.bajaCaja + elementHeight + 2 * bevel), casilla: A.indice };
   }
   // A graph is its frame; the legend and the label go above it (graph-view.mjs).
   if (CONTROLES[tipo]?.grafico) return { x, y, ancho: GRAPH_MEASURES[tipo].width, alto: GRAPH_MEASURES[tipo].height, casilla: LABEL_PLACEMENT.indent, separacion: LABEL_PLACEMENT.gap };
@@ -297,7 +311,7 @@ function objetoArray(n, ctx, elegido, edicion, valores) {
   const control = CONTROLES[n.tipo].control;
   const lista = valoresDeArray(n, valores);
   const dimensions = dimensionsOfNode(n.config);
-  const [ew, eh] = medidaElemento(t);
+  const [ew, eh] = dimensions === 2 ? medidaElemento(t) : elementSize1D(t);
   const first = firstShown(n.config);
   const { rows, columns } = visibleGrid(n.config);
   const e = edicion?.valor && edicion.nodo === n.id && edicion.elem !== undefined ? edicion : null;
@@ -308,7 +322,7 @@ function objetoArray(n, ctx, elegido, edicion, valores) {
     const hay = dimensions === 2 ? isDefined(lista, 2, address) : address < lista.length;
     const editando = e?.elem === address;
     const inc = t !== "string" && t !== "boolean" && control ? INCREMENTADOR_DECORADO : "";
-    const ini = inc ? MEDIDAS_PANEL.incrementador - MEDIDAS_PANEL.solape : 0;
+    const ini = !inc ? 0 : dimensions === 2 ? MEDIDAS_PANEL.incrementador - MEDIDAS_PANEL.solape : PANEL_ARRAY_1D.controlFieldLeft;
     const B = MEDIDAS_ARRAY_PANEL_2D;
     const place = dimensions === 2 ? `position:absolute;left:${px(B.margenIzquierdo - B.bordeCaja + column * pitch[0])};top:${px(B.margenArriba - B.bordeCaja + row * pitch[1])};` : "";
     return `<div class="elem-array${hay ? "" : " vacio"}${control ? "" : " indicador"}${editando ? " editando-valor" : ""}" data-k="${address}" style="${place}width:${px(ew)};height:${px(eh)}">${inc}<div class="casilla-elem${t === "string" ? " cadena" : ""}" style="left:${px(ini)};right:0"><span class="valor">${elementText(lista, address, dimensions, t, ctx, editando ? e : null)}</span></div></div>`;
@@ -317,8 +331,8 @@ function objetoArray(n, ctx, elegido, edicion, valores) {
   const indices = dimensions === 2
     ? indexField("fila", 0, first.row) + indexField("columna", MEDIDAS_ARRAY_PANEL_2D.pasoIndices, first.column)
     : indexField("columna", 0, first.column);
-  const cajaAlto = dimensions === 2 ? k.alto - A.bajaCaja : eh + 2 * A.biselY;
-  const cajaEstilo = dimensions === 2 ? "" : `padding:${A.biselY}px ${A.biselX}px`;
+  const cajaAlto = dimensions === 2 ? k.alto - A.bajaCaja : eh + 2 * PANEL_ARRAY_1D.bevel;
+  const cajaEstilo = dimensions === 2 ? "" : `padding:${px(PANEL_ARRAY_1D.bevel)}`;
   const asa = (lado, left, top) => `<div class="asa-array" data-asa-array="1" data-lado="${lado}" style="left:${px(left - 3)};top:${px(top - 3)}"></div>`;
   const asas = !elegido ? ""
     : dimensions === 2
@@ -442,7 +456,7 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
   }
   if (sobre.tipo === "asa-array") {
     const nodo = p.g.nodos.find((m) => m.id === sobre.id);
-    const [pasoAncho, pasoAlto] = dimensionsOfNode(nodo.config) === 2 ? pasoCeldas2D(tipoElemento(nodo)) : [medidaElemento(tipoElemento(nodo))[0], 0];
+    const [pasoAncho, pasoAlto] = dimensionsOfNode(nodo.config) === 2 ? pasoCeldas2D(tipoElemento(nodo)) : [elementSize1D(tipoElemento(nodo))[0], 0];
     return { ...p, accion: { tipo: "estirar-array", nodo: sobre.id, lado: sobre.lado ?? "derecha", x0: pt.x, y0: pt.y, visibles0: visibleGrid(nodo.config), pasoAncho, pasoAlto } };
   }
   // A click in a control's value box types in it, with the caret at the end; its outer band moves it, and
