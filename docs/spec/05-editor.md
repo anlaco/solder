@@ -598,7 +598,7 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > **Rule 40j bis — An array is born empty and its element types it (DT-060).** Measured in LabVIEW 2026 Q3
 > (`labview-captures/reports/2026-10-18-array-typing-stage1.md` and `-stage2.md`).
 > - *Born empty.* The palette's Array (panel) and Array Constant (diagram) are `{ array: "void" }`. The panel shell is
->   80 × 80 px with a 4 px bevel round `#a6a6a6`, the index on its left; its terminal is 38 × 38 with a black frame,
+>   80 × 80 px with a 4 px bevel round `#a6a6a6`, the index on its left and level with it (Rule 40j); its terminal is 38 × 38 with a black frame,
 >   the generic array drawing and no type tag. The constant is 82 × 50: a 50 × 50 shell with a black double line and a
 >   white interior, the index (about 32 × 21) on its left. The VI is broken: "Array 'Array': Control contains no
 >   elements and is undefined" under **Front Panel Errors**, and "Array Constant: Constant has undefined type".

@@ -761,20 +761,21 @@ test("a string constant dropped on the diagram exists before its text is typed",
   assert.ok(Et.graphAtRest(d));
 });
 
-// array-typing/panel-empty-crop.png and diag-empty-crop.png (DT-060): a fresh Array control is an 80 x 80 shell with
-// a 4 px bevel, the index box on its left and no cells; its terminal is 38 x 38 with a black frame and no type tag.
+// array-typing/panel-empty.png, panel-empty-crop.png and diag-empty-crop.png (DT-060): a fresh Array control is an
+// 80 x 80 shell with a 4 px bevel, level with the index box on its left and 3 px below its incrementer's top, and no cells; its terminal is 38 x 38 with a black frame and no type tag.
 test("a fresh Array control is an empty 80 x 80 shell with a black-framed terminal", () => {
   let p = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 });
   p = ponerYConfirmar(p, "arr-indicator", { x: 450, y: 100 });
   const [control] = p.g.nodos;
   assert.deepEqual(control.config.type, { array: "void" });
   const k = P.caja(control);
-  assert.deepEqual([k.ancho, k.alto], [41 + 80, 80]);
+  assert.deepEqual([k.ancho, k.alto], [41 + 80, 3 + 80]);
   const html = P.contenido(p, CTX);
   assert.equal((html.match(/class="sd-element[ "]/g) ?? []).length, 0, "no cells to type into");
   assert.equal((html.match(/class="sd-index"/g) ?? []).length, 2);
   assert.equal((html.match(/sd-undefined/g) ?? []).length, 2);
-  assert.match(html, /<span class="sd-elements"[^>]*width:80px;height:80px/);
+  assert.match(html, /<span class="sd-elements" style="left:41px;top:3px;width:80px;height:80px">/);
+  assert.match(html, /<span class="sd-index" data-eje="columna" style="left:0px;top:3px;width:41px;height:25px">/);
   // No cells to type into, and no handles to stretch it.
   assert.equal(P.pulsar({ ...p, seleccion: [control.id] }, CTX, { tipo: "elem", id: control.id, k: 0 }, { x: 200, y: 112 }).edicion ?? null, null);
   assert.doesNotMatch(P.contenido({ ...p, seleccion: [control.id] }, CTX), /class="asa-array"/);

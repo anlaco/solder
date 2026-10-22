@@ -92,8 +92,9 @@ export function elementSize1D(elementType, isControl) {
 export const MEDIDAS_ARRAY_PANEL_2D = { pasoIndices: 28, margenIzquierdo: 3, margenDerecho: 4, margenArriba: 3, margenAbajo: 2, bordeCaja: 1, restaPasoAncho: 2, sumaPasoAlto: 1 };
 export const tipoElemento = (n) => n.config?.type?.array ?? "number";
 /**
- * A panel array with no element yet (DT-060). Measured in labview-captures/array-typing/panel-empty-crop.png: the shell
- * is 80 × 80 px (a 4 px bevel round a 72 × 72 interior) with the index box on its left, and it holds no cells.
+ * A panel array with no element yet (DT-060). Measured in labview-captures/array-typing/panel-empty.png: the shell is
+ * 80 × 80 px (a 4 px bevel round a 72 × 72 interior), level with the index box on its left and 3 px below the top of
+ * the incrementer, and it holds no cells.
  */
 export const MEDIDAS_ARRAY_PANEL_VACIO = { casilla: 80 };
 export const esArrayPanelVacio = (n) => !!CONTROLES[n?.tipo]?.array && isUndefinedArray(n.config?.type);
@@ -181,7 +182,8 @@ export function cajaObjeto(tipo, x, y, config) {
   const M = MEDIDAS_PANEL;
   if (claseError(tipo, config)) return { x, y, ancho: MEDIDAS_ERROR.ancho, alto: MEDIDAS_ERROR.alto, casilla: 0 };
   if (CONTROLES[tipo]?.array && isUndefinedArray(config?.type)) {
-    return { x, y, ancho: MEDIDAS_ARRAY_PANEL.indice + MEDIDAS_ARRAY_PANEL_VACIO.casilla, alto: MEDIDAS_ARRAY_PANEL_VACIO.casilla, casilla: MEDIDAS_ARRAY_PANEL.indice };
+    const shell = MEDIDAS_ARRAY_PANEL_VACIO.casilla;
+    return { x, y, ancho: MEDIDAS_ARRAY_PANEL.indice + shell, alto: MEDIDAS_ARRAY_PANEL.bajaCaja + shell, casilla: MEDIDAS_ARRAY_PANEL.indice };
   }
   if (CONTROLES[tipo]?.array && dimensionsOfNode(config) === 2) {
     const [A, B] = [MEDIDAS_ARRAY_PANEL, MEDIDAS_ARRAY_PANEL_2D];
@@ -305,8 +307,8 @@ const typedOrText = (editing, text) => {
 /** An array whose element is not defined yet: the index at 0 and the empty shell, with no cells and no handles. */
 function undefinedArrayObject(frame) {
   const A = MEDIDAS_ARRAY_PANEL;
-  const indices = [{ axis: "columna", box: { x: 0, y: A.bajaCaja, width: A.indice, height: A.altoIndice }, position: 0 }];
-  const elementsBox = { x: A.indice, y: 0, width: MEDIDAS_ARRAY_PANEL_VACIO.casilla, height: MEDIDAS_ARRAY_PANEL_VACIO.casilla };
+  const indices = [{ axis: "columna", box: { x: 0, y: A.bajaCaja, width: A.indice, height: PANEL_ARRAY_1D.indexHeight }, position: 0 }];
+  const elementsBox = { x: A.indice, y: A.bajaCaja, width: MEDIDAS_ARRAY_PANEL_VACIO.casilla, height: MEDIDAS_ARRAY_PANEL_VACIO.casilla };
   return HC.arrayHtml(frame, { indices, elementsBox, elementsHtml: "", handles: "", undefinedElement: true });
 }
 
