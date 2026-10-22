@@ -983,7 +983,7 @@ function constanteArray(n, k, ctx, edicion) {
     const valor = ed ? (ed.todo ? `<span class="texto-elegido">${txt}</span>` : `<span>${txt}</span><span class="caret"></span>`) : `<span>${txt}</span>`;
     return `<div class="celda-array${i >= valores.length ? " vacia" : ""}${ed ? " editando" : ""}" data-campo="${i}" style="width:${px(ancho)};border-color:${color}">${valor}</div>`;
   }).join("");
-  return `<div class="constante-array" style="width:${px(k.ancho)};height:${px(A.alto)}">` +
+  return `<div class="constante-array" style="width:${px(k.ancho)};height:${px(A.alto)};--tipo:${color}">` +
     `<div class="indice-array" style="width:${px(A.indice)};height:${px(A.altoIndice)};border-color:${color}"><span class="paso-indice">▴▾</span><span class="campo-indice">${k0}</span></div>` +
     `<div class="caja-array" style="left:${px(A.indice - A.solape)};width:${px(k.ancho - A.indice + A.solape)};height:${px(A.alto)};border-color:${color}">${celdas}</div></div>`;
 }
