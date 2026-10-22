@@ -1339,6 +1339,16 @@ export const INCREMENTER = {
 };
 
 /**
+ * The incrementer of a panel array's index: the same capsule and arrows, 13 × 28 px, outside the index box on its left
+ * (array/panel-array-1a1.png). Where its arrows sit inside the capsule is unverified.
+ */
+export const ARRAY_INDEX_INCREMENTER = {
+  width: 13,
+  height: 28,
+  drawing: `<rect x="0.5" y="0.5" width="12" height="27" rx="6" fill="#dedede" stroke="#9c9c9c" stroke-width="1"/><polygon points="6.5,6 3.8,11 9.2,11" fill="#7a7a7a"/><polygon points="6.5,22 3.8,17 9.2,17" fill="#7a7a7a"/>`,
+};
+
+/**
  * Los controles booleanos de la paleta, por el último segmento de su id (que es
  * el `style` del control): `dibujo(encendido)` da el SVG interior, en una caja
  * de `ancho` × `alto` px.

@@ -7,7 +7,7 @@
 // two never drift. Each file is the inline drawing of the old panel, which a pixel diff showed to give the same pixels
 // as a background image.
 
-import { BOOLEANOS, ERROR_CODE_ARROWS, ERROR_STATUS_SIZE, INCREMENTER, errorStatusDrawing } from "../common/glyphs.mjs";
+import { ARRAY_INDEX_INCREMENTER, BOOLEANOS, ERROR_CODE_ARROWS, ERROR_STATUS_SIZE, INCREMENTER, errorStatusDrawing } from "../common/glyphs.mjs";
 
 /** The directory of the files, relative to editor/src/panel-styles/. */
 export const OLD_SCHOOL_ART_DIRECTORY = "old-school";
@@ -55,7 +55,8 @@ export function oldSchoolArt(themeTokens) {
   );
   const errorStatus = [false, true].map((status) => ({ name: errorStatusArtName(status), content: svgFile({ ...ERROR_STATUS_SIZE, drawing: errorStatusDrawing(status) }) }));
   const codeArrows = { name: "error-code-arrows.svg", content: svgFile(ERROR_CODE_ARROWS) };
-  return [{ name: "incrementer.svg", content: svgFile(INCREMENTER) }, ...booleans, ...errorStatus, codeArrows];
+  const arrayIndexIncrementer = { name: "array-index-incrementer.svg", content: svgFile(ARRAY_INDEX_INCREMENTER) };
+  return [{ name: "incrementer.svg", content: svgFile(INCREMENTER) }, arrayIndexIncrementer, ...booleans, ...errorStatus, codeArrows];
 }
 
 /** The custom properties a theme sheet defines on `:root`, read from its text. */

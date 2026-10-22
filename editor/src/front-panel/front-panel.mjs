@@ -71,10 +71,11 @@ export const MEDIDAS_ARRAY_PANEL = { indice: 41, altoIndice: 26, bajaCaja: 3, nu
 /**
  * A one-dimensional panel array, measured at 1:1 in labview-captures/array-typing/panel-all-top.png: the shell is a
  * 4 px bevel round its elements. A numeric control's element is 65 × 26 (its incrementer and, 1 px down, a 54 × 25
- * field), so the shell is 73 × 34; a numeric indicator's 53 × 25 (a 61 × 33 shell); a string's is 100 × 25 (a 108 × 33 shell). A Boolean's keeps the 30 × 25 of
- * its old T/F field (unverified: LabVIEW draws the element itself, an LED is 21 × 25).
+ * field), so the shell is 73 × 34; a numeric indicator's 53 × 25 (a 61 × 33 shell); a string's is 100 × 25 (a
+ * 108 × 33 shell). A Boolean's keeps the 30 × 25 of its old T/F field (unverified: LabVIEW draws the element itself, an
+ * LED is 21 × 25). The index box is 25 px tall and level with the shell; its incrementer rises 3 px above them.
  */
-export const PANEL_ARRAY_1D = { bevel: 4, numericControl: [65, 26], numericIndicator: [53, 25], string: [100, 25], boolean: [30, 25] };
+export const PANEL_ARRAY_1D = { bevel: 4, indexHeight: 25, numericControl: [65, 26], numericIndicator: [53, 25], string: [100, 25], boolean: [30, 25] };
 /** What one element of a one-dimensional panel array measures, by its type and whether the array is a control. */
 export function elementSize1D(elementType, isControl) {
   if (elementType === "string") return PANEL_ARRAY_1D.string;
@@ -345,7 +346,7 @@ function arrayObject(n, ctx, frame, editing, valores) {
   const indexBox = (top) => ({ x: 0, y: top, width: A.indice, height: A.altoIndice });
   const indices = dimensions === 2
     ? [{ axis: "fila", box: indexBox(0), position: first.row }, { axis: "columna", box: indexBox(B.pasoIndices), position: first.column }]
-    : [{ axis: "columna", box: indexBox(0), position: first.column }];
+    : [{ axis: "columna", box: { x: 0, y: A.bajaCaja, width: A.indice, height: PANEL_ARRAY_1D.indexHeight }, position: first.column }];
   const elementsBox = { x: A.indice, y: A.bajaCaja, width: frame.box.ancho - A.indice, height: elementsHeight };
   return HC.arrayHtml(frame, { indices, elementsBox, elementsHtml, handles: frame.selected ? arrayHandles(frame.box, dimensions, elementsHeight) : "" });
 }
