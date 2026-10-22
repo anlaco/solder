@@ -533,9 +533,16 @@ svg { display: block; overflow: visible; }
 
 /* La constante de array: el índice y la caja de sus elementos (array/constante-array.png). */
 .constante-array { position: absolute; left: 0; top: 0; font-size: var(--fuente); line-height: 1; }
-.indice-array { position: absolute; left: 0; top: 0; box-sizing: border-box; background: var(--array-cell-background); border: 1px solid; padding: 1px; display: flex; align-items: center; }
-.indice-array .paso-indice { font-size: 7px; width: 9px; letter-spacing: -1px; color: var(--canvas-text); }
-.indice-array .campo-indice { flex: 1; border: 1px solid var(--array-index-field-border); height: 100%; box-sizing: border-box; padding-left: 3px; display: flex; align-items: center; }
+/* The index of a one-dimensional constant (array-typing/const-num.png): a line in the type's color, 1 px of white, and
+   a second line round the arrows and the field, which a 2 px line of that color divides. The content box is painted
+   in the color, so the white children leave the lines showing between them. */
+.indice-array {
+  position: absolute; left: 0; top: 0; box-sizing: border-box; display: flex; border: 1px solid var(--tipo); padding: 1px;
+  background: linear-gradient(var(--tipo), var(--tipo)) content-box, var(--array-cell-background);
+}
+.indice-array .paso-indice { display: block; width: 5px; height: 15px; margin: 1px 0 1px 1px; background: var(--array-cell-background); color: var(--tipo); }
+.indice-array .paso-indice svg { display: block; }
+.indice-array .campo-indice { flex: 1; height: 15px; margin: 1px 1px 1px 2px; padding-left: 1px; display: flex; align-items: center; background: var(--array-cell-background); color: var(--canvas-text); }
 .caja-array { position: absolute; top: 0; box-sizing: border-box; background: var(--array-cell-background); border: 1px solid; padding: 1px; display: flex; }
 .celda-array { box-sizing: border-box; height: 21px; display: flex; align-items: center; justify-content: center; background: var(--array-cell-background); border: 1px solid; white-space: pre; }
 /* An element past the end is greyed: a 2 px frame in the type's color lightened, round white, and grey text

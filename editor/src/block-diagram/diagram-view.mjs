@@ -107,11 +107,11 @@ export const MEDIDAS_CONSTANTE = { alto: 18, borde: 2, relleno: 5, minimo: 13 };
 export const MEDIDAS_CONSTANTE_ERROR = { ancho: 22, alto: 57, celdas: [11, 19, 19], borde: 3 };
 export const MEDIDAS_CADENA = { linea: 15, vertical: 4, horizontal: 8, minimo: 15 };
 /**
- * La constante de array, medida a 1:1 en labview-captures/array/constante-array.png (vacía, con un elemento I32):
- * el índice, de 33 × 21 px, y la caja de los elementos pegada a su derecha (solapa 1 px), de 25 px de alto, con
- * dos bordes del color del tipo; cada elemento mide lo que una constante más 2 px de borde y 3 de alto (15 × 21).
+ * The array constant, measured at 1:1 in labview-captures/array/constante-array.png and array-typing/const-num.png
+ * (empty, with an I32 element): the index, 32 × 21 px, and against its right the box of the elements, 25 px tall, each
+ * with a double line in the type's color; each element measures what a constant does plus a 1 px line (15 × 21).
  */
-export const MEDIDAS_ARRAY = { indice: 33, altoIndice: 21, solape: 1, alto: 25, relleno: 2, bordeElemento: 1, altoElemento: 21 };
+export const MEDIDAS_ARRAY = { indice: 32, altoIndice: 21, alto: 25, relleno: 2, bordeElemento: 1, altoElemento: 21 };
 /**
  * A constant with two dimensions, measured at 1:1 in labview-captures/array-2d/constant-2d-empty.png,
  * constant-2d-2x3-values.png and constant-2d-stretched-4x9-empty.png (DBL, #ff7f00):
@@ -495,7 +495,7 @@ export function caja(n, ctx, edicion) {
   }
   if (c?.array) {
     const A = MEDIDAS_ARRAY;
-    return { x: n.x, y: n.y, ancho: A.indice - A.solape + visiblesArray(n) * anchoElementoArray(n, ctx, edicion) + 2 * A.relleno, alto: A.alto };
+    return { x: n.x, y: n.y, ancho: A.indice + visiblesArray(n) * anchoElementoArray(n, ctx, edicion) + 2 * A.relleno, alto: A.alto };
   }
   if (c?.error) return { x: n.x, y: n.y, ancho: MEDIDAS_CONSTANTE_ERROR.ancho, alto: MEDIDAS_CONSTANTE_ERROR.alto };
   if (c?.cadena) {
@@ -969,6 +969,20 @@ function constanteArray2D(n, k, ctx, edicion) {
     `<div class="caja-array-2d" style="left:${px(M.indice)};width:${px(box.ancho)};height:${px(box.alto)}"><div class="interior-caja">${tiles}</div></div></div>`;
 }
 
+/**
+ * The arrows of an array constant's index, 5 × 15 px in the type's color (array-typing/const-num.png): an up arrow,
+ * a bar, a double bar, a bar and a down arrow.
+ */
+const INDEX_ARROWS =
+  `<svg width="5" height="15" viewBox="0 0 5 15" shape-rendering="crispEdges" fill="currentColor" aria-hidden="true">` +
+  `<rect x="2" y="1" width="1" height="1"/><rect x="1" y="2" width="3" height="2"/><rect x="0" y="4" width="5" height="1"/>` +
+  `<rect x="0" y="6" width="5" height="2"/><rect x="0" y="9" width="5" height="1"/><rect x="1" y="10" width="3" height="2"/>` +
+  `<rect x="2" y="12" width="1" height="1"/></svg>`;
+
+/** The index of a one-dimensional array constant: a double line in `color` round its arrows and its position. */
+const arrayIndexBox = (width, height, color, position) =>
+  `<div class="indice-array" style="width:${px(width)};height:${px(height)};--tipo:${color}"><span class="paso-indice">${INDEX_ARROWS}</span><span class="campo-indice">${position}</span></div>`;
+
 /** The array constant: the index on the left and, to its right, the box with the elements that show. */
 function constanteArray(n, k, ctx, edicion) {
   if (dimensionsOfNode(n.config) === 2) return constanteArray2D(n, k, ctx, edicion);
@@ -984,8 +998,8 @@ function constanteArray(n, k, ctx, edicion) {
     return `<div class="celda-array${i >= valores.length ? " vacia" : ""}${ed ? " editando" : ""}" data-campo="${i}" style="width:${px(ancho)};border-color:${color}">${valor}</div>`;
   }).join("");
   return `<div class="constante-array" style="width:${px(k.ancho)};height:${px(A.alto)};--tipo:${color}">` +
-    `<div class="indice-array" style="width:${px(A.indice)};height:${px(A.altoIndice)};border-color:${color}"><span class="paso-indice">▴▾</span><span class="campo-indice">${k0}</span></div>` +
-    `<div class="caja-array" style="left:${px(A.indice - A.solape)};width:${px(k.ancho - A.indice + A.solape)};height:${px(A.alto)};border-color:${color}">${celdas}</div></div>`;
+    arrayIndexBox(A.indice, A.altoIndice, color, k0) +
+    `<div class="caja-array" style="left:${px(A.indice)};width:${px(k.ancho - A.indice)};height:${px(A.alto)};border-color:${color}">${celdas}</div></div>`;
 }
 
 /**

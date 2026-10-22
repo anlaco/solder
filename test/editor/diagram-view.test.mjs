@@ -573,3 +573,17 @@ test("an array constant's greyed element is a pale frame round white, as in LabV
   assert.equal(oldSchoolToken("--array-tint-mix-color"), "white");
   assert.equal(oldSchoolToken("--array-empty-cell-text"), "#999999");
 });
+
+// array-typing/const-num.png and const-empty.png: an array constant's index is 32 × 21, a line in the type's color, 1 px
+// of white and a second line round a 5 × 15 column of arrows and the field, divided by a 2 px line; the shell follows
+// it, with no shared line.
+test("an array constant's index is a double line round its arrows and a black position, as in LabVIEW", () => {
+  const made = crearNodo(nuevo(), CAT, "arr-const", 40, 40);
+  const g = Gr.fijarConfig(made.g, made.id, { type: { array: "i32" }, value: [] });
+  const html = D.contenido({ ...ED.inicial(), g }, CTX, tipos(g, CAT));
+  assert.match(html, /<div class="indice-array" style="width:32px;height:21px;--tipo:#0000ff"><span class="paso-indice"><svg width="5" height="15"/);
+  assert.match(html, /<div class="caja-array" style="left:32px;width:19px;height:25px;/);
+  const styles = readFileSync(new URL("../../editor/src/styles.css", import.meta.url), "utf8");
+  assert.match(styles, /\.indice-array \{[^}]*border: 1px solid var\(--tipo\); padding: 1px;[^}]*linear-gradient\(var\(--tipo\), var\(--tipo\)\) content-box/);
+  assert.match(styles, /\.indice-array \.campo-indice \{[^}]*margin: 1px 1px 1px 2px;[^}]*color: var\(--canvas-text\)/, "a 2 px divider and a black position");
+});
