@@ -151,6 +151,18 @@
 }
 .sd-panel .sd-array .sd-element { display: block; }
 
+/* A one-dimensional array's shell: a 4 px bevel round its elements, one shade per pixel from the outside in, dark on
+   the top and left and light on the bottom and right (array-typing/panel-all-top.png). A border has one colour per
+   side, so the shades are inset shadows, the outermost on top. */
+.sd-panel .sd-array:not(.sd-two-dimensions) .sd-elements {
+  border: 0;
+  box-shadow:
+    inset 1px 1px 0 var(--panel-array-bevel-dark-1), inset -1px -1px 0 var(--panel-array-bevel-light-1),
+    inset 2px 2px 0 var(--panel-array-bevel-dark-2), inset -2px -2px 0 var(--panel-array-bevel-light-2),
+    inset 3px 3px 0 var(--panel-array-bevel-dark-3), inset -3px -3px 0 var(--panel-array-bevel-light-3),
+    inset 4px 4px 0 var(--panel-array-bevel-dark-4), inset -4px -4px 0 var(--panel-array-bevel-light-4);
+}
+
 /* An array with no element yet: the shell is 80 × 80 with a 4 px bevel round its grey interior, and holds no cells. */
 .sd-panel .sd-array.sd-undefined .sd-elements {
   /* A border has one colour per side, so the four shades of each side are inset shadows, the outermost on top. */
@@ -175,6 +187,25 @@
 .sd-panel .sd-array .sd-element-boolean[aria-checked="true"] { background: var(--panel-array-index-background); color: inherit; }
 .sd-panel .sd-indicator.sd-array .sd-element :is(.sd-field, .sd-element-boolean) { background: var(--numeric-indicator-background); cursor: default; }
 .sd-panel .sd-array .sd-element.sd-empty :is(.sd-field, .sd-element-boolean) { background: var(--panel-array-empty-background); color: var(--panel-array-empty-text); }
+
+/* In a one-dimensional array each element is drawn as its own control: a field sunk into a 4 px bevel, a numeric
+   control's 1 px down and 11 px right, after its incrementer. Past the end the element is greyed: a lighter bevel, a
+   grey interior and grey text, on a grey body (array-typing/panel-all-top.png). */
+.sd-panel .sd-array:not(.sd-two-dimensions) .sd-element .sd-field {
+  padding: 0 0 0 2px; border: 4px solid;
+  border-color: var(--numeric-field-border-top) var(--numeric-field-border-right) var(--numeric-field-border-bottom) var(--numeric-field-border-left);
+  background: var(--numeric-field-background); box-shadow: inset 1px 1px 0 var(--numeric-field-inset);
+}
+.sd-panel .sd-array:not(.sd-two-dimensions) .sd-element .sd-incrementer + .sd-field { left: 11px; top: 1px; }
+.sd-panel .sd-array:not(.sd-two-dimensions) .sd-element.sd-empty { background: var(--panel-array-greyed-body); }
+.sd-panel .sd-array:not(.sd-two-dimensions) .sd-element.sd-empty .sd-field {
+  padding-left: 6px; border: 0; background: var(--panel-array-empty-background);
+  box-shadow:
+    inset 1px 1px 0 var(--panel-array-greyed-bevel-dark-1), inset -1px -1px 0 var(--panel-array-greyed-bevel-light-1),
+    inset 2px 2px 0 var(--panel-array-greyed-bevel-dark-2), inset -2px -2px 0 var(--panel-array-greyed-bevel-light-2),
+    inset 3px 3px 0 var(--panel-array-greyed-bevel-dark-3), inset -3px -3px 0 var(--panel-array-greyed-bevel-light-3),
+    inset 4px 4px 0 var(--panel-array-greyed-bevel-dark-4), inset -4px -4px 0 var(--panel-array-greyed-bevel-light-4);
+}
 
 /* ——— Waveform Chart, Waveform Graph and XY Graph ——— */
 

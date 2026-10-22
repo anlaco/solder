@@ -16,6 +16,7 @@ import { COLORES, esError } from "../../core/model/types.mjs";
 import * as P from "../../editor/src/front-panel/front-panel.mjs";
 import * as UH from "../../editor/src/block-diagram/undo-history.mjs";
 import { CAT, INV } from "../helpers.mjs";
+import { oldSchoolToken } from "./old-school-theme.mjs";
 
 const CTX = D.contexto(CAT, D.glifosPorBloque(INV), ",");
 const FONDO = { tipo: "fondo" };
@@ -565,9 +566,9 @@ test("los controles Error In y Error Out se ponen en el panel con su terminal en
   assert.deepEqual(P.borrarSeleccion({ ...p, seleccion: [control.id] }).g.nodos.map((n) => n.tipo), ["cluster-indicator"]);
 });
 
-// array/panel-array-1a1.png y array-indicador-terminal.png: un array con un elemento numérico mide 114 × 36 px (el
-// índice, de 41 × 26, y la caja de 72 × 33 a su derecha); su terminal en el diagrama es de color del tipo del
-// elemento. Se escribe en los elementos, el índice los recorre y se estira para ver más.
+// array/panel-array-1a1.png and array-indicador-terminal.png: an array control with a numeric element measures
+// 114 × 37 px (the 41 px index column and the 73 × 34 shell, 3 px down); its terminal on the diagram has the color of
+// the element's type. Its elements are typed into, the index scrolls through them and the shell stretches to show more.
 test("un control y un indicador de array se ponen en el panel con su terminal en el diagrama", () => {
   const cfg = { type: { array: "number" }, value: [] };
   let p = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, cfg);
@@ -576,7 +577,7 @@ test("un control y un indicador de array se ponen en el panel con su terminal en
   assert.deepEqual([control.tipo, indicador.tipo], ["arr-control", "arr-indicator"]);
   assert.deepEqual([control.label.text, indicador.label.text], ["Array", "Array 2"]);
   const k = P.caja(control);
-  assert.deepEqual([k.ancho, k.alto], [41 + 67 + 6, 36]);
+  assert.deepEqual([k.ancho, k.alto], [41 + 73, 37]);
   let html = P.contenido(p, CTX);
   assert.equal((html.match(/class="sd-element[ "]/g) ?? []).length, 2);
   assert.equal((html.match(/class="sd-index"/g) ?? []).length, 2);
@@ -600,24 +601,38 @@ test("un control y un indicador de array se ponen en el panel con su terminal en
   assert.match(P.contenido(p, CTX), /data-k="2"[^>]*>.*?7,5/s);
   p = P.pulsar(P.pulsar(P.pulsar(p, CTX, { tipo: "paso", id: control.id, paso: -1 }, { x: 160, y: 120 }), CTX, { tipo: "paso", id: control.id, paso: -1 }, { x: 160, y: 120 }), CTX, { tipo: "paso", id: control.id, paso: -1 }, { x: 160, y: 120 });
   assert.equal(p.g.nodos[0].config.indice, 0);
-  // Estirar la caja por su asa enseña un elemento más por cada 67 px.
+  // Stretching the shell by its handle shows one more element every 65 px.
   p = { ...p, seleccion: [control.id] };
   assert.match(P.contenido(p, CTX), /class="asa-array"/);
   p = P.pulsar(p, CTX, { tipo: "asa-array", id: control.id }, { x: 260, y: 112 });
-  p = P.moverA(p, CTX, { x: 260 + 2 * 67, y: 112 });
+  p = P.moverA(p, CTX, { x: 260 + 2 * 65, y: 112 });
   p = P.soltar(p, CTX, FONDO, { x: 394, y: 112 });
   assert.equal(p.g.nodos[0].config.visibles, 3);
   assert.equal((P.contenido(p, CTX).match(/class="sd-element[ "]/g) ?? []).length, 4, "tres en el control y uno en el indicador");
-  assert.equal(P.caja(p.g.nodos[0]).ancho, 41 + 3 * 67 + 6);
+  assert.equal(P.caja(p.g.nodos[0]).ancho, 41 + 3 * 65 + 8);
   // Un array de cadenas y uno de booleanos.
   let q = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "string" }, value: ["a"] });
-  assert.equal(P.caja(q.g.nodos[0]).ancho, 41 + 100 + 6);
+  assert.equal(P.caja(q.g.nodos[0]).ancho, 41 + 100 + 8, "a 108 px shell");
   q = P.pulsar(q, CTX, { tipo: "elem", id: q.g.nodos[0].id, k: 0 }, { x: 200, y: 112 });
   q = P.confirmar(P.teclear(q, "b"));
   assert.deepEqual(CV.currentValue(q.g.nodos[0]), ["ab"]);
   let b = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "boolean" }, value: [] });
   b = P.pulsar(b, CTX, { tipo: "elem", id: b.g.nodos[0].id, k: 0 }, { x: 200, y: 112 });
   assert.deepEqual(CV.currentValue(b.g.nodos[0]), [true], "un booleano se alterna con el clic");
+});
+
+// array-typing/panel-all-top.png: a numeric control array's shell is 73 × 34, a 4 px bevel round a 65 × 26 element
+// (its incrementer and a 54 × 25 field 1 px down); past the end the element is greyed, its interior #ebebeb.
+test("a numeric control array's shell is a 4 px bevel round a 65 × 26 element, as in LabVIEW", () => {
+  const p = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "number" }, value: [] });
+  const html = P.contenido(p, CTX);
+  assert.match(html, /<span class="sd-elements" style="left:41px;top:3px;width:73px;height:34px">/);
+  assert.match(html, /<span class="sd-element sd-empty" data-k="0" style="left:4px;top:4px;width:65px;height:26px">/);
+  const bevel = [1, 2, 3, 4].flatMap((n) => [oldSchoolToken(`--panel-array-bevel-dark-${n}`), oldSchoolToken(`--panel-array-bevel-light-${n}`)]);
+  assert.deepEqual(bevel, ["#d3d3d3", "#eeeeee", "#c2c2c2", "#f2f2f2", "#b7b7b7", "#ededed", "#b1b1b1", "#eaeaea"], "outside in");
+  assert.equal(oldSchoolToken("--panel-array-empty-background"), "#ebebeb");
+  assert.equal(oldSchoolToken("--panel-array-empty-text"), "#878787");
+  assert.equal(oldSchoolToken("--panel-array-greyed-body"), "#c9c9c9");
 });
 
 // array-2d/panel-array-menu-index.png, panel-array-2d-control-empty.png and panel-array-2d-stretched.png.
