@@ -568,21 +568,26 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 
 > **Rule 40j — One-dimensional arrays on the diagram and on the panel.** Measured in LabVIEW 2026 Q3 at 1:1
 > (`labview-captures/array/`, `labview-captures/array-typing/`; re-measured on 2026-10-22 from `const-num.png`,
-> `panel-all-top.png` and `panel-array-1a1.png`). Old School style, an element past the end of the value (greyed):
+> `panel-all-top.png` and `panel-array-1a1.png`, and the elements with a value from `defined-ctl.png` and
+> `defined-const.png`, report `labview-captures/reports/2026-10-22-array-defined-elements.md`). Old School style:
 > - *Array constant.* 51 × 25 px. The index, 32 × 21: a line in the type's color, 1 px of white and a second line round
 >   a 5 × 15 column of arrows (an up arrow, a bar, a double bar, a bar and a down arrow, in the type's color) and the
 >   19 × 15 field, divided by a 2 px line; the position is black. Against it, with no shared line, the shell: a double
->   line in the type's color (line, 1 px of white, line) round the elements; each element is 15 × 21 with its line, and
->   a greyed one is a 2 px frame in the type's color lightened to 40 % (`#9999ff` for an I32) round white, with grey
->   text (`#999999`). An empty constant's index is the same in black. It is typed into each element with a double
+>   line in the type's color (line, 1 px of white, line, 3 px on each side) round the elements, which abut: each is a
+>   13 × 19 tile (for one digit), a 2 px frame in the type's color round a 9 × 15 white window with black text, so
+>   [5, 7] shown in three is 77 × 25. One past the end (greyed) has its frame in the type's color lightened to 40 %
+>   (`#9999ff` for an I32) and grey text (`#999999`). An empty constant's index is the same in black. It is typed into each element with a double
 >   click (a boolean is toggled) and stretched by its right handle to show more.
 > - *Panel array.* The index column is 41 px wide: a 13 × 28 incrementer and, 3 px lower, a 28 × 25 box in a 4 px
 >   bevel with a `#fafafa` field and a black position. The shell is level with the box: a 4 px bevel (`#d3d3d3`,
 >   `#c2c2c2`, `#b7b7b7`, `#b1b1b1` on the top and left and `#eeeeee`, `#f2f2f2`, `#ededed`, `#eaeaea` on the bottom
->   and right, from the outside in) round the elements. Each element is drawn as its control: a numeric control's is
->   65 × 26 (its incrementer and, 1 px down, a 54 × 25 field in a 4 px bevel), so with a DBL control the shell is
->   73 × 34 and the array 114 × 37; a numeric indicator's is 53 × 25 (a 61 × 33 shell); a string's is 100 × 25 (a 108 ×
->   33 shell). Greyed, the field's bevel is `#c3c3c3`, `#bdbdbd`, `#b8b8b8`, `#b6b6b6` and `#cecece`, `#d0d0d0`,
+>   and right, from the outside in) round the elements, on a `#a6a6a6` interior; the elements abut, with no gap. A
+>   numeric control's element is 65 × 26 (its incrementer and, 1 px down, a 54 × 25 field in a 4 px bevel), so with a
+>   DBL control the shell is 73 × 34 and the array 114 × 37; a numeric indicator's is 53 × 25 (a 61 × 33 shell); a
+>   string's is 100 × 25 (a 108 × 33 shell). With a value the field is not drawn like a loose control: its bevel is
+>   darker, `#979797`, `#868686`, `#7b7b7b`, `#757575` on the top and left and `#b2b2b2`, `#b6b6b6`, `#b1b1b1`,
+>   `#aeaeae` on the bottom and right, from the outside in, its interior `#fafafa` on a control and `#d2d2d2` on an
+>   indicator, its text black. Greyed, the field's bevel is `#c3c3c3`, `#bdbdbd`, `#b8b8b8`, `#b6b6b6` and `#cecece`, `#d0d0d0`,
 >   `#cecece`, `#cdcdcd`, its interior `#ebebeb` on a control and `#dbdbdb` on an indicator, its text `#878787`,
 >   on a `#c9c9c9` body. It is typed into its elements, the index scrolls through them and a handle stretches the shell.
 > - Its terminal on the diagram (37 × 37) carries the border in the element's color and the cells i, j and k. The
@@ -591,7 +596,9 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   only turns on if what arrives is an array) and the output's, Tunnel Mode ▸ Last Value, Indexing, Concatenating and
 >   Conditional (the last two, greyed out).
 > - **Unverified:** the gesture of stretching the panel array with the mouse (the handles moved the object in the VM);
->   how an element WITH a value looks (drawn as the loose control or constant); the gap between elements; a Boolean
+>   a numeric indicator array's element measured 54 px wide with two of them (a 116 × 33 shell; Solder keeps 53); the
+>   width of a constant's tile with a longer value (Solder widens it as a 2D constant's); the incrementer's own
+>   colours; the greyed constant element showed "5" in grey, apparently the element's default (not compared with Solder); a Boolean
 >   element (an LED is 21 × 25; Solder keeps its 30 × 25 T/F field); where the arrows sit in the index's incrementer.
 >   How it is born and typed: Rule 40j bis.
 

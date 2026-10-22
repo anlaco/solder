@@ -198,19 +198,24 @@
 .sd-panel .sd-indicator.sd-array .sd-element :is(.sd-field, .sd-element-boolean) { background: var(--numeric-indicator-background); cursor: default; }
 .sd-panel .sd-array .sd-element.sd-empty :is(.sd-field, .sd-element-boolean) { background: var(--panel-array-empty-background); color: var(--panel-array-empty-text); }
 
-/* In a one-dimensional array each element is drawn as its own control: a field sunk into a 4 px bevel, a numeric
-   control's 1 px down and 11 px right, after its incrementer. Past the end the element is greyed: a lighter bevel, a
-   grey interior and grey text, on a grey body (array-typing/panel-all-top.png). */
+/* In a one-dimensional array each element is a field sunk into a 4 px bevel, darker than a loose control's, one shade
+   per pixel from the outside in; a numeric control's sits 1 px down and 11 px right, after its incrementer
+   (array-typing/defined-ctl.png). Past the end the element is greyed: a lighter bevel, a grey interior and grey text,
+   on a grey body (array-typing/panel-all-top.png). */
 .sd-panel .sd-array:not(.sd-two-dimensions) .sd-element .sd-field {
-  padding: 0 0 0 2px; border: 4px solid;
-  border-color: var(--numeric-field-border-top) var(--numeric-field-border-right) var(--numeric-field-border-bottom) var(--numeric-field-border-left);
-  background: var(--numeric-field-background); box-shadow: inset 1px 1px 0 var(--numeric-field-inset);
+  padding: 0 0 0 6px; border: 0; background: var(--panel-array-element-background);
+  box-shadow:
+    inset 1px 1px 0 var(--panel-array-element-bevel-dark-1), inset -1px -1px 0 var(--panel-array-element-bevel-light-1),
+    inset 2px 2px 0 var(--panel-array-element-bevel-dark-2), inset -2px -2px 0 var(--panel-array-element-bevel-light-2),
+    inset 3px 3px 0 var(--panel-array-element-bevel-dark-3), inset -3px -3px 0 var(--panel-array-element-bevel-light-3),
+    inset 4px 4px 0 var(--panel-array-element-bevel-dark-4), inset -4px -4px 0 var(--panel-array-element-bevel-light-4);
 }
+.sd-panel .sd-indicator.sd-array:not(.sd-two-dimensions) .sd-element .sd-field { background: var(--panel-array-element-indicator-background); }
 .sd-panel .sd-array:not(.sd-two-dimensions) .sd-element .sd-incrementer + .sd-field { left: 11px; top: 1px; }
 .sd-panel .sd-array:not(.sd-two-dimensions) .sd-element.sd-empty { background: var(--panel-array-greyed-body); }
 .sd-panel .sd-indicator.sd-array:not(.sd-two-dimensions) .sd-element.sd-empty .sd-field { background: var(--panel-array-empty-indicator-background); }
 .sd-panel .sd-array:not(.sd-two-dimensions) .sd-element.sd-empty .sd-field {
-  padding-left: 6px; border: 0; background: var(--panel-array-empty-background);
+  background: var(--panel-array-empty-background);
   box-shadow:
     inset 1px 1px 0 var(--panel-array-greyed-bevel-dark-1), inset -1px -1px 0 var(--panel-array-greyed-bevel-light-1),
     inset 2px 2px 0 var(--panel-array-greyed-bevel-dark-2), inset -2px -2px 0 var(--panel-array-greyed-bevel-light-2),

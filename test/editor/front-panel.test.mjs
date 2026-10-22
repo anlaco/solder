@@ -3,6 +3,7 @@
 // front-panel.mjs and labels.mjs are pure functions.
 
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import * as CV from "../../core/model/control-values.mjs";
@@ -644,6 +645,24 @@ test("a numeric indicator array's shell is a 4 px bevel round a 53 × 25 element
   assert.match(html, /<span class="sd-elements" style="left:41px;top:3px;width:61px;height:33px">/);
   assert.match(html, /<span class="sd-element sd-empty" data-k="0" style="left:4px;top:4px;width:53px;height:25px">/);
   assert.equal(oldSchoolToken("--panel-array-empty-indicator-background"), "#dbdbdb");
+});
+
+// array-typing/defined-ctl.png: an element with a value is not drawn like a loose control. Its field sinks into a 4 px
+// bevel darker than the loose control's, round #fafafa on a control and #d2d2d2 on an indicator, on the shell's #a6a6a6.
+test("a one-dimensional array's element with a value sinks into a dark 4 px bevel, as in LabVIEW", () => {
+  const p = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "number" }, value: [1, 2] });
+  assert.match(P.contenido(p, CTX), /<span class="sd-element" data-k="0" style="left:4px;top:4px;width:65px;height:26px">/);
+  const bevel = [1, 2, 3, 4].flatMap((n) => [oldSchoolToken(`--panel-array-element-bevel-dark-${n}`), oldSchoolToken(`--panel-array-element-bevel-light-${n}`)]);
+  assert.deepEqual(bevel, ["#979797", "#b2b2b2", "#868686", "#b6b6b6", "#7b7b7b", "#b1b1b1", "#757575", "#aeaeae"], "outside in");
+  assert.equal(oldSchoolToken("--panel-array-element-background"), "#fafafa");
+  assert.equal(oldSchoolToken("--panel-array-element-indicator-background"), "#d2d2d2");
+  assert.equal(oldSchoolToken("--panel-array-box-background"), "#a6a6a6");
+  const styles = readFileSync(new URL("../../editor/src/panel-styles/old-school.css", import.meta.url), "utf8");
+  const field = styles.match(/\.sd-panel \.sd-array:not\(\.sd-two-dimensions\) \.sd-element \.sd-field \{[^}]*\}/)[0];
+  assert.match(field, /border: 0; background: var\(--panel-array-element-background\)/);
+  assert.match(field, /inset 4px 4px 0 var\(--panel-array-element-bevel-dark-4\), inset -4px -4px 0 var\(--panel-array-element-bevel-light-4\)/);
+  assert.doesNotMatch(field, /numeric-field/, "not the loose control's border");
+  assert.match(styles, /\.sd-indicator\.sd-array:not\(\.sd-two-dimensions\) \.sd-element \.sd-field \{ background: var\(--panel-array-element-indicator-background\); \}/);
 });
 
 // array/panel-array-1a1.png and array-typing/panel-all-top.png: a one-dimensional array's index is a 28 × 25 box with
