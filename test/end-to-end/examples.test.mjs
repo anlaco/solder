@@ -127,7 +127,7 @@ test("Oven Controller heats, holds and cools in LabVIEW's 66 iterations and ends
 
 test("the command line runs the subVIs of Instrument Protocol and prints their strings and error cluster", () => {
   const run = (relativePath) =>
-    execFileSync(process.execPath, ["--experimental-wasm-jspi", path.join(RAIZ, "cli/solder.mjs"), "run", path.join(RAIZ, "examples", relativePath)], { encoding: "utf8" });
+    execFileSync(process.execPath, [path.join(RAIZ, "cli/solder.mjs"), "run", path.join(RAIZ, "examples", relativePath)], { encoding: "utf8" });
   assert.equal(run("instrument-protocol/Simulated Instrument.sdg"), "Reply = ERR unknown command\n");
   assert.match(run("instrument-protocol/Parse Reply.sdg"), /error out = \{ status: TRUE, code: 85, source: Scan From String \(arg 1\) in Parse Reply\.sdg \}/);
 });

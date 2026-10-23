@@ -1,0 +1,46 @@
+{
+  "solder": 1,
+  "meta": {
+    "title": "Add After Wait",
+    "description": "Adds two controls while a Wait (ms) runs in its own clump: running it needs JSPI",
+    "tags": ["test", "timing"]
+  },
+  "front-panel": [
+    { "name": "ctrl_1", "role": "control",   "type": "number", "default": 5.0 },
+    { "name": "ctrl_2", "role": "control",   "type": "number", "default": 3.0 },
+    { "name": "ctrl_3", "role": "control",   "type": "number", "default": 10.0 },
+    { "name": "ind_1",  "role": "indicator", "type": "number" }
+  ],
+  "block-diagram": {
+    "nodes": [
+      { "name": "ctrl_1", "type": "control" },
+      { "name": "ctrl_2", "type": "control" },
+      { "name": "ctrl_3", "type": "control" },
+      { "name": "add_1",  "type": "add" },
+      { "name": "wait_1", "type": "wait-ms" },
+      { "name": "ind_1",  "type": "indicator" }
+    ],
+    "wires": [
+      { "from": "ctrl_1.result", "to": "add_1.a" },
+      { "from": "ctrl_2.result", "to": "add_1.b" },
+      { "from": "ctrl_3.result", "to": "wait_1.ms" },
+      { "from": "add_1.result",  "to": "ind_1.value" }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "ctrl_1": { "x":  40, "y":  80, "label": { "text": "A" } },
+      "ctrl_2": { "x":  40, "y": 160, "label": { "text": "B" } },
+      "ctrl_3": { "x":  40, "y": 240, "label": { "text": "Milliseconds" } },
+      "add_1":  { "x": 200, "y": 120, "label": { "text": "Add", "visible": false } },
+      "wait_1": { "x": 200, "y": 240, "label": { "text": "Wait (ms)", "visible": false } },
+      "ind_1":  { "x": 360, "y": 120, "label": { "text": "Sum" } }
+    },
+    "panel": {
+      "ctrl_1": { "x": 20, "y": 20, "label": { "text": "A" } },
+      "ctrl_2": { "x": 20, "y": 60, "label": { "text": "B" } },
+      "ctrl_3": { "x": 20, "y": 100, "label": { "text": "Milliseconds" } },
+      "ind_1":  { "x": 20, "y": 150, "label": { "text": "Sum" } }
+    }
+  }
+}

@@ -11,7 +11,7 @@
   "main": "editor/electron/main.mjs",
   "scripts": {
     "app": "node scripts/start-editor.mjs",
-    "test": "node --experimental-wasm-jspi --test 'test/**/*.test.mjs'",
+    "test": "node scripts/run-tests.mjs",
     "dist": "electron-builder --linux AppImage deb --win nsis --publish never"
   },
   "devDependencies": {

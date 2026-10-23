@@ -948,8 +948,9 @@ c. The panel gains **Run mode** and the behavior of controls (mechanical
    action, Latch). The editor's worker is kept alive between Runs and is
    restarted only if Abort fails to stop it.
 d. This decision does not touch `.qvi`, the schema, or the format: it is execution only.
-e. `cli/solder.mjs` and `npm test` launch Node with `--experimental-wasm-jspi`
-   until Node ships it stable. A VI with no waits also runs without it.
+e. `cli/solder.mjs` and `npm test` pass `--experimental-wasm-jspi` only to a Node that lacks JSPI without
+   it (`cli/jspi.mjs`): Node ships JSPI from 24.20 on and Node 26 refuses the flag (DT-061, "What was
+   measured" 1). A VI with no waits also runs without it.
 
 ### Spike that validates C before building M4
 
@@ -2255,5 +2256,5 @@ The spikes were run outside the repository and are not kept: items 2–4 have no
 | The scheduler alone resumes clumps, in order of (deadline, sequence), with one clump running at a time | — | Unverified: the scheduler is not written |
 | A Run whose clumps can no longer be woken ends with an error naming them | — | Unverified |
 | The same VI and instants give the same order of resumes in every host | — | Unverified: needs the reference traces |
-| JSPI runs with no flag from Node 24.22 on, and Node 26 refuses the flag | Measured on 2026-10-23 (above) | Measured, no test |
+| JSPI runs with no flag from Node 24.22 on, and Node 26 refuses the flag | Measured on 2026-10-23 (above); `test/end-to-end/command-line.test.mjs` checks that the flag is passed only when the running Node lacks JSPI and that the command line runs a VI that waits from a plain `node` (run on 24.19.0, 24.22.1 and 26.12.1 on 2026-10-23) | Verified on the Node that runs `npm test` |
 | wasmtime can keep several clumps of one instance suspended only through stack switching | Measured on 2026-10-23 (above) | Measured, no test |

@@ -140,8 +140,9 @@ const funcionesMath = Object.fromEntries(
     .map(([n, f]) => [`fn_${n}`, f.js]),
 );
 
-/** ¿Trae este motor JSPI, para suspender un clump mientras espera? */
+/** Whether this engine has JSPI, to suspend a clump while it waits. */
 export const conJSPI = typeof WebAssembly.Suspending === "function" && typeof WebAssembly.promising === "function";
+const NO_JSPI_MESSAGE = "This VI waits (Wait…) and this JavaScript engine has no JSPI. Use Node 24.20 or later, or start Node 24.19 with --experimental-wasm-jspi.";
 
 /** El error con que acaba un VI abortado: no es un fallo del VI. */
 export const abortado = () => Object.assign(new Error("The VI was aborted."), { abortado: true });
@@ -245,7 +246,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   const { bytes, controles, indicadores, clumps } = compilado;
   const { alEscribir, alSoltar, senal, separador = "." } = opciones;
   if (clumps.some((k) => k.largo) && !conJSPI)
-    throw new Error("This VI waits (Wait…) and this JavaScript engine has no JSPI. In Node: node --experimental-wasm-jspi.");
+    throw new Error(NO_JSPI_MESSAGE);
   const escritos = {};
   const leer = (i) => {
     const { nodo, tipo, mecanica } = controles[i];
@@ -711,7 +712,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     return turno;
   };
   if (clumps.some((k) => k.largo) || compilado.planes?.length) {
-    if (!conJSPI) throw new Error("This VI waits (Wait…) and this JavaScript engine has no JSPI. In Node: node --experimental-wasm-jspi.");
+    if (!conJSPI) throw new Error(NO_JSPI_MESSAGE);
   }
   try {
     await planificar(clumps, (i) => correrClump(`c${i}`, clumps[i].largo), senal);

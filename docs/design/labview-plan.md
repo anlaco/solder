@@ -386,7 +386,8 @@ on every operating system (issue #1). In order:
 4. The reference traces (DT-061 §8): a few VIs with parallel waits, the order of resumes they must give, and a test
    that runs them.
 5. Node 26: the command line and `npm test` pass `--experimental-wasm-jspi` only when the running Node needs it
-   (DT-061, "What was measured" 1).
+   (DT-061, "What was measured" 1). *Done on 2026-10-23, as a fix for 0.4 (`cli/jspi.mjs`,
+   `scripts/run-tests.mjs`): `npm test` and the command line checked on Node 24.19.0, 24.22.1 and 26.12.1.*
 The Rust host's stack switching (DT-061 §7) waits for the hardware host.
 
 **Then:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
