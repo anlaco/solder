@@ -734,7 +734,9 @@ right-click menus of the panel and the 19 missing Numeric controls.
   - Once a control is dropped into a panel array, it can be neither taken out nor deleted: the only way back is to
     delete the array and place a new one. What LabVIEW allows is unverified
     (`labview-captures/reports/2026-10-18-array-typing-stage2.md` Q5d: dragging it out was not achieved, Cut and
-    Delete were not tried): measure it first, then clone it.
+    Delete were not tried): measure it first, then clone it. *Done on 2026-10-23, as a fix for 0.4: measured
+    (`reports/2026-10-23-array-remove-element.md`: LabVIEW lets the element be selected alone, dragged out, cut and
+    deleted) and cloned (spec/05 Rule 40j bis); the array is empty again, `{ "array": "void" }` (DT-060).*
   - In the Block Diagram, a right-click on a panel array's terminal does not open its menu, so View As Icon cannot be
     turned off for it. *Done on 2026-10-23, as a fix for 0.4: the terminal's menu as measured
     (`reports/2026-10-23-array-terminal-menu.md`, spec/05 Rule 40j bis) and its compact view.*

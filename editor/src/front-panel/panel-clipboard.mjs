@@ -8,7 +8,7 @@
 // and gets its diagram terminal, unwired.
 
 import { ALTO_LINEA } from "../common/labels.mjs";
-import { MEDIDAS_PANEL, caja, objetos } from "./front-panel.mjs";
+import { MEDIDAS_PANEL, borrarSeleccion, caja, elementFragment, objetos, selectedElementArray } from "./front-panel.mjs";
 import { REPEATED_PASTE_STEP, remember, repeatCount } from "../common/paste-memory.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
@@ -17,19 +17,30 @@ const LABEL_SUFFIX = "#etiqueta";
 /** The panel objects selected, without their labels. */
 export const selectedObjects = (p) => p.seleccion.filter((id) => !id.endsWith(LABEL_SUFFIX) && p.g.nodos.some((n) => n.id === id && n.panel));
 
-/** Is there something Copy, Cut and Delete can act on? */
-export const hasSelection = (p) => selectedObjects(p).length > 0;
+/** Is there something Copy, Cut and Delete can act on? The element of an array, selected alone, too (measured enabled). */
+export const hasSelection = (p) => selectedObjects(p).length > 0 || !!selectedElementArray(p);
 
-/** Ctrl+C on the panel: the selected objects, without wires (a wire is not part of the panel). */
-export function copySelection(p) {
+const withoutWires = (graph, ids) => ({ ...copyFragment(graph, ids), wires: [] });
+
+/**
+ * Ctrl+C on the panel: the selected objects, without wires (a wire is not part of the panel). A selected element of an
+ * array is copied as the loose control it would become; `ctx` is needed for it.
+ */
+export function copySelection(p, ctx) {
+  if (selectedElementArray(p)) return elementFragment(p, ctx, withoutWires);
   const ids = selectedObjects(p);
-  return ids.length ? { ...copyFragment(p.g, ids), wires: [] } : null;
+  return ids.length ? withoutWires(p.g, ids) : null;
 }
 
-/** Ctrl+X on the panel: the fragment, and the panel without those objects (their terminals go with them, as Delete does). */
-export function cutSelection(p) {
-  const fragment = copySelection(p);
-  return fragment ? { fragment, p: { ...p, g: Gr.borrar(p.g, selectedObjects(p)), seleccion: [] } } : null;
+/**
+ * Ctrl+X on the panel: the fragment, and the panel without those objects (their terminals go with them, as Delete
+ * does). A selected element leaves its array empty, its wires kept (2026-10-23-array-remove-element.md §2).
+ */
+export function cutSelection(p, ctx) {
+  const fragment = copySelection(p, ctx);
+  if (!fragment) return null;
+  if (selectedElementArray(p)) return { fragment, p: borrarSeleccion(p) };
+  return { fragment, p: { ...p, g: Gr.borrar(p.g, selectedObjects(p)), seleccion: [] } };
 }
 
 /** Ctrl+A on the panel: every object. */

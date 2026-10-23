@@ -114,8 +114,8 @@ export function errorClusterHtml(frame, { status, fieldHtml }) {
  * One element of an array: `address` is its place (`data-k`), `place` its box inside the array's box, `on` the value
  * of a Boolean element.
  */
-export function arrayElementHtml({ address, place, defined, editing, elementType, valueHtml, on, isControl }) {
-  const classes = ["sd-element", ...(defined ? [] : ["sd-empty"]), ...(editing ? ["sd-editing"] : [])];
+export function arrayElementHtml({ address, place, defined, editing, elementType, valueHtml, on, isControl, selected = false }) {
+  const classes = ["sd-element", ...(defined ? [] : ["sd-empty"]), ...(editing ? ["sd-editing"] : []), ...(selected ? ["seleccionado"] : [])];
   const inside =
     elementType === "boolean"
       ? `<span class="sd-element-boolean" role="switch" aria-checked="${!!on}">${valueHtml}</span>`

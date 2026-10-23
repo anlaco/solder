@@ -2160,7 +2160,7 @@ in that order, through companion `.css` files.**
 | Statement | What fails if it is broken | Status |
 |---|---|---|
 | A void array breaks the VI with LabVIEW's errors | `test/core/array-typing.test.mjs`, `test/editor/error-list.test.mjs` | Verified |
-| The palette places empty arrays; an element dropped inside types them; Representation and Change to Indicator on the element retype the whole array; dragging a constant's element out empties it | `test/editor/front-panel.test.mjs`, `test/editor/diagram-editing.test.mjs`, `test/editor/labview-inventory.test.mjs` | Verified (Replace ▸ is a placeholder) |
+| The palette places empty arrays; an element dropped inside types them; Representation and Change to Indicator on the element retype the whole array; dragging a constant's element out empties it, and so do dragging out, Cut and Delete of a panel array's element (reports/2026-10-23-array-remove-element.md) | `test/editor/front-panel.test.mjs`, `test/editor/diagram-editing.test.mjs`, `test/editor/labview-inventory.test.mjs` | Verified (Replace ▸ is a placeholder) |
 
 ## DT-061
 

@@ -26,7 +26,7 @@ import * as CV from "../../../core/model/control-values.mjs";
 import * as Et from "../common/labels.mjs";
 import { BOOLEANOS } from "../common/glyphs.mjs";
 import { isUndefinedArray } from "../../../core/model/types.mjs";
-import { elementMenuRoot, isEmptyArrayShell, panelArrayFromElement, typeEmptyArray } from "../common/array-typing.mjs";
+import { controlForElement, elementMenuRoot, emptyArrayAgain, isEmptyArrayShell, panelArrayFromElement, typeEmptyArray } from "../common/array-typing.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { REPEATED_PASTE_STEP } from "../common/paste-memory.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
@@ -34,7 +34,7 @@ import { convertirValor, elementoPorDefecto, esEnum, formatear, leerElemento, le
 import { GRAPH_MEASURES, LABEL_PLACEMENT, graphSvg } from "./graph-view.mjs";
 import * as HC from "./html-controls.mjs";
 import { isGraph, labelShown, wireTypeOf } from "./graph-state.mjs";
-import { cellAddress, dimensionsOfNode, firstShown, indexSetting, isDefined, readCell, valueFitsDimensions, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
+import { cellAddress, dimensionsOfNode, firstShown, indexSetting, isDefined, parseCellAddress, readCell, valueFitsDimensions, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
 
 export const inicial = (g = Gr.nuevo()) => ({ g, seleccion: [], accion: null, edicion: null, menu: null });
 
@@ -250,6 +250,20 @@ export function doubleClickTypes(p, sobre, pt) {
 /** Una etiqueta que nunca se ha movido va encima de la casilla, alineada con ella. */
 const etiquetaPorDefecto = (k, tam) => [k.casilla, -(tam.alto + (k.separacion ?? MEDIDAS_PANEL.separacion))];
 
+/**
+ * The element of a typed panel array can be selected on its own, apart from the array
+ * (reports/2026-10-23-array-remove-element.md): its selection id is the array's with this suffix, as a label's is.
+ */
+const ELEMENT_SUFFIX = "#elemento";
+export const elementSelectionId = (arrayId) => `${arrayId}${ELEMENT_SUFFIX}`;
+
+/** The array whose element is the whole selection, or undefined. */
+export function selectedElementArray(p) {
+  const [only, ...others] = p.seleccion;
+  if (others.length || !only?.endsWith(ELEMENT_SUFFIX)) return undefined;
+  return p.g.nodos.find((n) => n.id === only.slice(0, -ELEMENT_SUFFIX.length));
+}
+
 /** La caja de la etiqueta de un objeto del panel. */
 export const cajaEtiqueta = (n, medir, edicion) => Et.caja(n, "panel", caja(n), etiquetaPorDefecto, medir, edicion);
 
@@ -312,24 +326,44 @@ function undefinedArrayObject(frame) {
   return HC.arrayHtml(frame, { indices, elementsBox, elementsHtml: "", handles: "", undefinedElement: true });
 }
 
+/** Where a typed panel array draws its elements, inside the object: their size, their pitch, the first one's corner and the first shown. */
+function cellGeometry(n, isControl) {
+  const [A, B] = [MEDIDAS_ARRAY_PANEL, MEDIDAS_ARRAY_PANEL_2D];
+  const elementType = tipoElemento(n);
+  const dimensions = dimensionsOfNode(n.config);
+  const [elementWidth, elementHeight] = dimensions === 2 ? medidaElemento(elementType) : elementSize1D(elementType, isControl);
+  const pitch = dimensions === 2 ? pasoCeldas2D(elementType) : [elementWidth, elementHeight];
+  const bevel = PANEL_ARRAY_1D.bevel;
+  const origin = dimensions === 2 ? { x: B.margenIzquierdo - B.bordeCaja, y: B.margenArriba - B.bordeCaja } : { x: bevel, y: bevel };
+  return { dimensions, elementWidth, elementHeight, pitch, origin, first: firstShown(n.config), elementsLeft: A.indice, elementsTop: A.bajaCaja };
+}
+
+/** The box on the panel of the shown element at `address` of a typed array. */
+export function elementBox(n, address) {
+  const { dimensions, elementWidth, elementHeight, pitch, origin, first, elementsLeft, elementsTop } = cellGeometry(n, isControlNode(n));
+  const { row, column } = dimensions === 2 ? parseCellAddress(address) : { row: first.row, column: address };
+  const box = caja(n);
+  return {
+    x: box.x + elementsLeft + origin.x + (column - first.column) * pitch[0],
+    y: box.y + elementsTop + origin.y + (row - first.row) * pitch[1],
+    ancho: elementWidth,
+    alto: elementHeight,
+  };
+}
+
 /**
  * A panel array: its index (one per dimension) and the elements shown from it; those past the end are greyed, with
  * their default value. Each element carries `data-k` (its place, or "row,column" with two dimensions), so a click on
  * it types into it (only on a control).
  */
-function arrayObject(n, ctx, frame, editing, valores) {
+function arrayObject(n, ctx, frame, editing, valores, elementSelected) {
   if (isUndefinedArray(n.config?.type)) return undefinedArrayObject(frame);
   const [A, B] = [MEDIDAS_ARRAY_PANEL, MEDIDAS_ARRAY_PANEL_2D];
   const elementType = tipoElemento(n);
   const values = valoresDeArray(n, valores);
-  const dimensions = dimensionsOfNode(n.config);
-  const [elementWidth, elementHeight] = dimensions === 2 ? medidaElemento(elementType) : elementSize1D(elementType, frame.isControl);
-  const pitch = dimensions === 2 ? pasoCeldas2D(elementType) : [elementWidth, elementHeight];
-  const first = firstShown(n.config);
+  const { dimensions, elementWidth, elementHeight, pitch, origin, first } = cellGeometry(n, frame.isControl);
   const { rows, columns } = visibleGrid(n.config);
-  const bevel = PANEL_ARRAY_1D.bevel;
-  const elementsHeight = dimensions === 2 ? frame.box.alto - A.bajaCaja : elementHeight + 2 * bevel;
-  const origin = dimensions === 2 ? { x: B.margenIzquierdo - B.bordeCaja, y: B.margenArriba - B.bordeCaja } : { x: bevel, y: bevel };
+  const elementsHeight = dimensions === 2 ? frame.box.alto - A.bajaCaja : elementHeight + 2 * PANEL_ARRAY_1D.bevel;
   const elementsHtml = Array.from({ length: rows * columns }, (_, i) => {
     const [row, column] = [Math.floor(i / columns), i % columns];
     const address = cellAddress(dimensions, first.row + row, first.column + column);
@@ -343,6 +377,7 @@ function arrayObject(n, ctx, frame, editing, valores) {
       valueHtml: elementText(values, address, dimensions, elementType, ctx, cellEditing),
       on: elementType === "boolean" && !!readCell(values, dimensions, address),
       isControl: frame.isControl,
+      selected: elementSelected,
     });
   }).join("");
   const indexBox = (top) => ({ x: 0, y: top, width: A.indice, height: A.altoIndice });
@@ -362,7 +397,7 @@ function panelObject(n, ctx, selected, p, resolvedTypes) {
     const type = resolvedTypes ? wireTypeOf(p.g, resolvedTypes, n.id) : undefined;
     return HC.graphHtml(frame, { kind: n.tipo, svg: graphSvg(n, { type, value: p.valores?.[n.id], charts: p.charts, separator: ctx.separador }) });
   }
-  if (esArrayPanel(n)) return arrayObject(n, ctx, frame, editing, p.valores);
+  if (esArrayPanel(n)) return arrayObject(n, ctx, frame, editing, p.valores, p.seleccion.includes(elementSelectionId(n.id)));
   if (claseError(n.tipo, n.config)) {
     const value = valorError(n, p.valores);
     return HC.errorClusterHtml(frame, { status: !!value.status, fieldHtml: (field) => typedOrText(editing?.campo === field ? editing : null, value[field]) });
@@ -394,6 +429,10 @@ export function contenido(p, ctx, resueltos) {
     const k = cajaObjeto(accion.bloque, accion.x, accion.y, accion.config);
     const t = Et.tamano(etiquetaNueva(accion.bloque, accion.config), ctx.medir);
     html += `<div class="contorno-colocar" style="left:${px(k.x + k.casilla)};top:${px(k.y - t.alto - (k.separacion ?? MEDIDAS_PANEL.separacion))};width:${px(t.ancho)};height:${px(t.alto)}"></div>`;
+    html += `<div class="contorno-colocar objeto" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}"></div>`;
+  }
+  if (accion?.tipo === "sacar-elemento" && accion.movido) {
+    const k = draggedElementBox(p, accion);
     html += `<div class="contorno-colocar objeto" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}"></div>`;
   }
   if (accion?.tipo === "rectangulo") {
@@ -468,10 +507,14 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
   }
   // Las flechas del incrementador suman o restan 1 por clic, como en LabVIEW; en un array, mueven el índice.
   if (sobre.tipo === "paso") return { ...p, g: esArrayPanel(p.g.nodos.find((m) => m.id === sobre.id)) ? pasoIndice(p.g, sobre.id, sobre.paso, sobre.eje) : pasoValor(p.g, sobre.id, sobre.paso) };
-  // Un elemento de un array de control se escribe; la asa de la caja la estira.
+  // An element of a typed array: the edge of its box selects it alone and drags it (out of the array, too); inside, a
+  // control's element is typed into. An indicator's element is selected wherever it is pressed (unverified).
   if (sobre.tipo === "elem") {
     const nodo = p.g.nodos.find((m) => m.id === sobre.id);
-    return CONTROLES[nodo?.tipo]?.control && !isUndefinedArray(nodo.config?.type) ? editarElemento(p, ctx, sobre.id, sobre.k, false) : pulsar(p, ctx, { tipo: "objeto", id: sobre.id }, pt, shift);
+    if (isUndefinedArray(nodo?.config?.type)) return pulsar(p, ctx, { tipo: "objeto", id: sobre.id }, pt, shift);
+    const grabsElement = !CONTROLES[nodo.tipo]?.control || p.seleccion.includes(elementSelectionId(nodo.id)) || isInMoveBand(elementBox(nodo, sobre.k), pt);
+    if (!grabsElement) return editarElemento(p, ctx, sobre.id, sobre.k, false);
+    return { ...p, seleccion: [elementSelectionId(nodo.id)], accion: { tipo: "sacar-elemento", nodo: nodo.id, k: sobre.k, x0: pt.x, y0: pt.y, x: pt.x, y: pt.y, movido: false } };
   }
   if (sobre.tipo === "asa-array") {
     const nodo = p.g.nodos.find((m) => m.id === sobre.id);
@@ -518,6 +561,8 @@ export function moverA(p, ctx, pt) {
     }
     case "rectangulo":
       return { ...p, accion: { ...accion, x1: pt.x, y1: pt.y } };
+    case "sacar-elemento":
+      return pt.x === accion.x && pt.y === accion.y ? p : { ...p, accion: { ...accion, x: pt.x, y: pt.y, movido: true } };
     case "estirar-array":
       return { ...p, g: Gr.fijarConfig(p.g, accion.nodo, estirarArray(p.g.nodos.find((m) => m.id === accion.nodo), accion, pt)) };
     default:
@@ -567,6 +612,8 @@ export function soltar(p, ctx, sobre, pt) {
       return accion.arrastrado && sobre ? colocar(p, ctx, pt) : p;
     case "rectangulo":
       return { ...p, seleccion: [...new Set([...accion.base, ...dentroDe(p, ctx, accion)])], accion: null };
+    case "sacar-elemento":
+      return accion.movido ? takeElementOut(p, ctx, accion, pt) : { ...p, accion: null };
     case "mover": {
       // Pulsar un control booleano sin arrastrarlo cambia su valor (Switch When
       // Pressed, la acción mecánica de fábrica de los interruptores).
@@ -577,6 +624,51 @@ export function soltar(p, ctx, sobre, pt) {
     default:
       return { ...p, accion: null };
   }
+}
+
+/**
+ * The loose control or indicator that the element of the panel array `array` becomes, with its terminal on the
+ * diagram, its box's corner at (x, y): `{ g, id }`, or null for an element that has none. Its label is the palette's
+ * ("Numeric", measured); its value is its default, not the element's (unverified).
+ */
+function looseElement(g, ctx, array, x, y) {
+  const made = controlForElement(array.config.type.array, array.tipo);
+  if (!made) return null;
+  return Gr.crearEnPanel(g, ctx.cat, made.block, x, y, etiquetaNueva(made.block, made.config), made.config);
+}
+
+/**
+ * Releasing a dragged element outside its array takes it out (reports/2026-10-23-array-remove-element.md §1): it becomes
+ * a loose control where it was dropped, with its own terminal, and the array is empty again, its wires kept to break.
+ * Released inside the array, nothing changes.
+ */
+function takeElementOut(p, ctx, accion, pt) {
+  const array = p.g.nodos.find((n) => n.id === accion.nodo);
+  const box = caja(array);
+  const inside = pt.x >= box.x && pt.x < box.x + box.ancho && pt.y >= box.y && pt.y < box.y + box.alto;
+  if (inside) return { ...p, accion: null };
+  const dropped = draggedElementBox(p, accion);
+  const made = controlForElement(array.config.type.array, array.tipo);
+  const valueBoxOffset = made ? cajaObjeto(made.block, 0, 0, made.config).casilla : 0;
+  const loose = looseElement(emptyArrayAgain(p.g, array.id), ctx, array, dropped.x - valueBoxOffset, dropped.y);
+  if (!loose) return { ...p, accion: null };
+  return { ...p, g: loose.g, seleccion: [loose.id], accion: null };
+}
+
+/** Where the element being dragged out is, moved with the pointer. */
+function draggedElementBox(p, accion) {
+  const box = elementBox(p.g.nodos.find((n) => n.id === accion.nodo), accion.k);
+  return { ...box, x: box.x + accion.x - accion.x0, y: box.y + accion.y - accion.y0 };
+}
+
+/**
+ * Ctrl+C and Ctrl+X on a selected element: the loose control it would become, as a fragment to paste (unverified:
+ * pasting what LabVIEW cut was not tried). `copyFragment` and `copySelection` take it from a graph that has it.
+ */
+export function elementFragment(p, ctx, copyOf) {
+  const array = selectedElementArray(p);
+  const loose = array && looseElement(p.g, ctx, array, array.panel.x, array.panel.y);
+  return loose ? copyOf(loose.g, [loose.id]) : null;
 }
 
 /** El valor de un control booleano pasa de TRUE a FALSE y al revés. */
@@ -730,6 +822,9 @@ export function escape(p) {
  * es ese punto del diagrama. Una etiqueta sola no se borra.
  */
 export function borrarSeleccion(p, placeOf) {
+  // A selected element goes alone: the array is empty again, its wires kept to break (2026-10-23-array-remove-element.md §2).
+  const array = selectedElementArray(p);
+  if (array) return { ...p, g: emptyArrayAgain(p.g, array.id), seleccion: [] };
   const nodos = p.seleccion.filter((id) => !esEtiqueta(id));
   return nodos.length ? { ...p, g: Gr.borrarDejandoCables(p.g, nodos, placeOf), seleccion: [] } : p;
 }

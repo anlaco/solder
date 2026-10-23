@@ -624,8 +624,18 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   Palette nor Change to Element). **Representation** on a numeric element retypes the WHOLE array, keeping its
 >   dimensions and converting every value; **Change to Indicator / Control**, from the array's menu or the element's,
 >   flips the whole array keeping its wires. Dragging the element of a typed array constant out of the constant
->   leaves it empty (value lost, wires kept to break) and puts a loose constant where it was released; on the panel the
->   element cannot be dragged out nor cut. Each change is one undo step. Not built, greyed: Replace, Create, Data
+>   leaves it empty (value lost, wires kept to break) and puts a loose constant where it was released. Each change is
+>   one undo step.
+> - *The panel element comes out* (`reports/2026-10-23-array-remove-element.md`, which corrects the earlier "cannot be
+>   dragged out nor cut": a fast drag moves nothing). A press on the 4 px edge of a control's element selects the element
+>   alone, with its own marching ants (inside it, the element is typed into); an indicator's element is selected wherever
+>   it is pressed. With the element selected, Edit ▸ Cut, Copy and Delete are enabled: **Delete** and **Cut** leave the
+>   array empty again, `{ "array": "void" }`, with its value lost and its wires kept to break, so the VI is broken again
+>   ("Control contains no elements and is undefined"); Cut keeps the element on the clipboard as the loose control it
+>   would become. **Dragging** the element out of the array and releasing it outside makes it a loose control or
+>   indicator of its type where it was dropped (label "Numeric"), with its own new terminal, and empties the array the
+>   same way; released inside, nothing changes. Each is one undo step. Deleting the selected array takes its element
+>   with it. Not built, greyed: Replace, Create, Data
 >   Operations and the rest of the rows (inventory).
 > - *The terminal has its own menu* (`context.panel-array-terminal`, `reports/2026-10-23-array-terminal-menu.md`). A
 >   right-click on a panel array's terminal on the diagram opens: Visible Items ▸, Find Control | Make Type Def. | Hide
@@ -638,7 +648,10 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   Icon** turns the 38 × 38 icon into the compact 32 × 16 terminal: a 2 px frame in the element's colour, its type
 >   after an opening bracket, and at the data end a patch of that colour with 70 % white holding the closing bracket (30 %
 >   white) and the arrow. Built: View As Icon, Representation, Change to Indicator / Control; the rest is greyed.
-> - **Unverified:** the order of the Front Panel and Block Diagram groups in the Error list; the indicator's error
+> - **Unverified:** for the panel element: string and Boolean elements (measured on a numeric), the width of the edge
+>   that selects it (taken as a scalar's 4 px), selecting an indicator's element anywhere, the value the loose control
+>   takes (its default here), what Paste gives after Cut; and the order of the Front Panel and Block Diagram groups in
+>   the Error list; the indicator's error
 >   text (taken as the control's); what happens to the wires of a loose constant dragged into a shell (here, deleted);
 >   the compact terminal of an indicator array (drawn as the control's, mirrored), of an empty array (drawn black with
 >   no type) and of string and Boolean arrays (drawn with `abc` and `TF`); whether an empty indicator array has Adapt To
@@ -887,7 +900,7 @@ would have required naming a test that did not exist.)*
 | 40h Strings on the diagram and on the panel | Tests in `palettes.test.mjs` (each String function with its terminals and measurements), `window-state.test.mjs` (the four palettes), `front-panel.test.mjs` (control and indicator), `diagram-editing.test.mjs` (multi-line constant, Concatenate Strings, a string VI made with the mouse that runs) and `qvi-round-trip.test.mjs` (save and open) | **Verified**; what is unverified, in the rule itself |
 | 40i The error cluster | Tests in `error-cluster.test.mjs` (the wire, the constant and its edits, the two dialogs, Simple Error Handler and Merge Errors at 32 × 18), `front-panel.test.mjs` (Error In and Error Out) and `window-state.test.mjs` (the two palettes) | **Verified**; what is unverified, in the rule itself |
 | 40j One-dimensional arrays | Tests in `front-panel.test.mjs` (array control and indicator, their shells and index), `diagram-view.test.mjs` (the constant's index and greyed element), `diagram-editing.test.mjs` (array constant, menu of the indexed tunnels), `window-state.test.mjs` (the Array subpalette), `palettes.test.mjs` (its functions) and `qvi-round-trip.test.mjs` | **Verified** for what was measured; the gesture of stretching the panel array and the array's menu, unverified (see the rule) |
-| 40j bis An array is born empty and its element types it | `test/core/array-typing.test.mjs`, `front-panel.test.mjs` and `diagram-editing.test.mjs` (empty shells, dropping an element, no nesting, the terminal's menu and View As Icon) | **Verified** for what was measured; see the rule's unverified points |
+| 40j bis An array is born empty and its element types it | `test/core/array-typing.test.mjs`, `front-panel.test.mjs` and `diagram-editing.test.mjs` (empty shells, dropping an element, no nesting, the terminal's menu and View As Icon, taking the panel element out) | **Verified** for what was measured; see the rule's unverified points |
 | 40k Arrays with two dimensions | Tests in `array-grid.test.mjs` (cells, Add and Remove Dimension), `diagram-editing.test.mjs` (menu, constant, stretching, wire, Index Array, Initialize Array), `front-panel.test.mjs` (panel array), `qvi-round-trip.test.mjs` (pairs saved) and `labview-inventory.test.mjs` (the menus) | **Verified** for the measurements; the stretching gestures, the indicator's menu and Initialize Array's second size, unverified (see the rule) |
 | 78 Format Into String and Scan From String | Tests in `format-nodes.test.mjs` (size, terminals, stretching, type boxes, menus, Add and Remove Parameter) and `palettes.test.mjs` | **Verified** for the size, the stretching and the menus; the terminals' exact heights, unverified (see the rule) |
 | 78b Unbundle By Name | Tests in `unbundle-by-name.test.mjs` (palette, size and look, terminals, handle and undo, list of names, both menus, Select Item, Remove Element, Create) | **Verified** for what the two reports measured; what is unverified, in the rule |

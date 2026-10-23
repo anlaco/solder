@@ -868,7 +868,7 @@ async function conocerSubVIs(fragment) {
 }
 
 function copiar() {
-  const fragment = conDiagrama ? DC.copySelection(dia) : PC.copySelection(pan);
+  const fragment = conDiagrama ? DC.copySelection(dia) : PC.copySelection(pan, ctx);
   if (fragment) guardarEnPortapapeles(fragment);
 }
 
@@ -880,7 +880,7 @@ function cortar() {
     guardarEnPortapapeles(cut.fragment);
     return cambiarDiagrama(cut.d);
   }
-  const cut = PC.cutSelection(pan);
+  const cut = PC.cutSelection(pan, ctx);
   if (!cut) return;
   guardarEnPortapapeles(cut.fragment);
   cambiarPanel(cut.p);

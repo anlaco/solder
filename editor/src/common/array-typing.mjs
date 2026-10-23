@@ -128,10 +128,27 @@ export function constantForElement(elementType, value) {
 }
 
 /**
- * The array `id` with no element again, as LabVIEW leaves a constant whose element was dragged out (stage 2, Q5d):
- * its value is lost and its wires stay, to break.
+ * The panel control or indicator that an element of `elementType` becomes when it is taken out of an array of
+ * `arrayKind` (`arr-control` or `arr-indicator`): `{ block, config }`, or null for an element that has none (a
+ * cluster, an enum...: unmeasured). The reverse of panelArrayFromElement.
+ */
+export function controlForElement(elementType, arrayKind) {
+  const isControl = arrayKind === "arr-control";
+  if (elementType === "string") return { block: isControl ? "str-control" : "str-indicator", config: undefined };
+  if (elementType === "boolean") return { block: isControl ? "bool-control" : "bool-indicator", config: undefined };
+  if (typeof elementType !== "string" || !esNumerico(elementType)) return null;
+  return { block: isControl ? "control" : "indicator", config: elementType === DEFAULT_NUMERIC_REPRESENTATION ? undefined : { type: elementType } };
+}
+
+/**
+ * The array `id` with no element again, as LabVIEW leaves an array whose element was dragged out, cut or deleted
+ * (stage 2, Q5d; reports/2026-10-23-array-remove-element.md): its value is lost and its wires stay, to break.
  */
 export const emptyArrayAgain = (graph, id) => ({
   ...graph,
-  nodos: graph.nodos.map((node) => (node.id === id ? { ...node, config: { ...node.config, type: { array: VOID }, value: [] } } : node)),
+  nodos: graph.nodos.map((node) => {
+    if (node.id !== id) return node;
+    const { currentValue, ...rest } = node;
+    return { ...rest, config: { ...node.config, type: { array: VOID }, value: [] } };
+  }),
 });

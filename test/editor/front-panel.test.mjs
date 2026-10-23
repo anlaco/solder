@@ -15,6 +15,7 @@ import * as G from "../../editor/src/common/glyphs.mjs";
 import * as Gr from "../../core/model/graph.mjs";
 import { COLORES, esError } from "../../core/model/types.mjs";
 import * as P from "../../editor/src/front-panel/front-panel.mjs";
+import * as PC from "../../editor/src/front-panel/panel-clipboard.mjs";
 import * as UH from "../../editor/src/block-diagram/undo-history.mjs";
 import { CAT, INV } from "../helpers.mjs";
 import { oldSchoolToken } from "./old-school-theme.mjs";
@@ -570,6 +571,12 @@ test("los controles Error In y Error Out se ponen en el panel con su terminal en
 // array/panel-array-1a1.png and array-indicador-terminal.png: an array control with a numeric element measures
 // 114 × 37 px (the 41 px index column and the 73 × 34 shell, 3 px down); its terminal on the diagram has the color of
 // the element's type. Its elements are typed into, the index scrolls through them and the shell stretches to show more.
+/** The middle of the first shown element of a typed panel array: a press there types into it, its edge selects it. */
+const elementCentre = (array) => {
+  const box = P.elementBox(array, 0);
+  return { x: box.x + box.ancho / 2, y: box.y + box.alto / 2 };
+};
+
 test("un control y un indicador de array se ponen en el panel con su terminal en el diagrama", () => {
   const cfg = { type: { array: "number" }, value: [] };
   let p = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, cfg);
@@ -614,11 +621,11 @@ test("un control y un indicador de array se ponen en el panel con su terminal en
   // Un array de cadenas y uno de booleanos.
   let q = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "string" }, value: ["a"] });
   assert.equal(P.caja(q.g.nodos[0]).ancho, 41 + 100 + 8, "a 108 px shell");
-  q = P.pulsar(q, CTX, { tipo: "elem", id: q.g.nodos[0].id, k: 0 }, { x: 200, y: 112 });
+  q = P.pulsar(q, CTX, { tipo: "elem", id: q.g.nodos[0].id, k: 0 }, elementCentre(q.g.nodos[0]));
   q = P.confirmar(P.teclear(q, "b"));
   assert.deepEqual(CV.currentValue(q.g.nodos[0]), ["ab"]);
   let b = ponerYConfirmar(P.inicial(), "arr-control", { x: 150, y: 100 }, { type: { array: "boolean" }, value: [] });
-  b = P.pulsar(b, CTX, { tipo: "elem", id: b.g.nodos[0].id, k: 0 }, { x: 200, y: 112 });
+  b = P.pulsar(b, CTX, { tipo: "elem", id: b.g.nodos[0].id, k: 0 }, elementCentre(b.g.nodos[0]));
   assert.deepEqual(CV.currentValue(b.g.nodos[0]), [true], "un booleano se alterna con el clic");
 });
 
@@ -1010,6 +1017,85 @@ test("View As Icon on a panel array's terminal draws it compact and back, in one
   const back = ED.orden(ED.abrirMenu(compact, TERMINAL_ROOT, id, 0, 0), `${TERMINAL_ROOT}.view-as-icon`, CTX);
   const icon = back.g.nodos.find((n) => n.id === id);
   assert.deepEqual([D.caja(icon, CTX).ancho, D.caja(icon, CTX).alto], [38, 38]);
+});
+
+// reports/2026-10-23-array-remove-element.md: the element of a panel array is selected alone by its edge, and then
+// dragged out, cut or deleted; the array is empty again and its wires stay, to break.
+const wiredNumericArray = () => {
+  const [p0, id] = typedPanelArray("arr-control", { type: { array: "number" }, value: [1, 2] });
+  const made = Gr.crearNodo(p0.g, CAT, "array-size", 400, 100);
+  const wired = Gr.conectar(made.g, CAT, { nodo: id, puerto: "result", dir: "out" }, { nodo: made.id, puerto: "array", dir: "in" });
+  return [{ ...p0, g: wired.g ?? wired }, id];
+};
+const elementEdge = (array) => {
+  const box = P.elementBox(array, 0);
+  return { x: box.x + box.ancho / 2, y: box.y + box.alto - 1 };
+};
+const arrayOf = (p, id) => p.g.nodos.find((n) => n.id === id);
+const assertEmptiedKeepingItsWire = (p, id) => {
+  assert.deepEqual(arrayOf(p, id).config.type, { array: "void" });
+  assert.deepEqual(arrayOf(p, id).config.value, []);
+  assert.equal(arrayOf(p, id).tipo, "arr-control", "the array stays a control");
+  assert.equal(p.g.cables.length, 1, "its wire stays, broken");
+  Gr.tipos(p.g, CAT);
+};
+
+test("the edge of a panel array's element selects the element alone; inside, it is typed into", () => {
+  const [p, id] = wiredNumericArray();
+  const selected = P.pulsar(p, CTX, { tipo: "elem", id, k: 0 }, elementEdge(arrayOf(p, id)));
+  assert.deepEqual(selected.seleccion, [P.elementSelectionId(id)]);
+  assert.equal(P.selectedElementArray(selected).id, id);
+  assert.ok(PC.hasSelection(selected), "Cut, Copy and Delete are enabled");
+  assert.match(P.contenido(P.soltar(selected, CTX, FONDO, elementEdge(arrayOf(p, id))), CTX), /class="sd-element seleccionado"/);
+  assert.equal(P.pulsar(p, CTX, { tipo: "elem", id, k: 0 }, elementCentre(arrayOf(p, id))).edicion?.elem, 0);
+});
+
+test("Delete and Cut on a selected element leave the array empty with its wire, in one undo step", () => {
+  const [p, id] = wiredNumericArray();
+  const selected = P.soltar(P.pulsar(p, CTX, { tipo: "elem", id, k: 0 }, elementEdge(arrayOf(p, id))), CTX, FONDO, elementEdge(arrayOf(p, id)));
+  const deleted = P.borrarSeleccion(selected, ED.terminalPlacer(CTX));
+  assertEmptiedKeepingItsWire(deleted, id);
+  assert.deepEqual(deleted.seleccion, []);
+  const history = UH.registrar(UH.nuevo(p.g), deleted.g);
+  assert.equal(history.antes.length, 1);
+  assert.deepEqual(arrayOf(UH.deshacer(history), id).config.type, { array: "number" }, "undo puts the element back");
+
+  const cut = PC.cutSelection(selected, CTX);
+  assertEmptiedKeepingItsWire(cut.p, id);
+  assert.deepEqual(cut.fragment.nodes.map((n) => n.tipo), ["control"], "the clipboard holds the Numeric it was");
+});
+
+test("dragging a panel array's element out makes it a loose control with its own terminal and empties the array", () => {
+  const [p, id] = wiredNumericArray();
+  const start = elementEdge(arrayOf(p, id));
+  const pressed = P.pulsar(p, CTX, { tipo: "elem", id, k: 0 }, start);
+  const inside = P.soltar(P.moverA(pressed, CTX, { x: start.x + 2, y: start.y }), CTX, FONDO, { x: start.x + 2, y: start.y });
+  assert.deepEqual(arrayOf(inside, id).config.type, { array: "number" }, "released inside the array, nothing changes");
+
+  const away = { x: start.x + 200, y: start.y + 150 };
+  const dragged = P.moverA(pressed, CTX, away);
+  assert.match(P.contenido(dragged, CTX), /class="contorno-colocar objeto"/, "the element's outline follows the pointer");
+  const out = P.soltar(dragged, CTX, FONDO, away);
+  assertEmptiedKeepingItsWire(out, id);
+  const loose = out.g.nodos.find((n) => n.id === out.seleccion[0]);
+  assert.equal(loose.tipo, "control");
+  assert.equal(loose.label.text, "Numeric");
+  const box = P.elementBox(arrayOf(p, id), 0);
+  assert.deepEqual([P.caja(loose).x + P.caja(loose).casilla, P.caja(loose).y], [box.x + 200, box.y + 150], "its value box lands where the element was dropped");
+  assert.equal(out.g.nodos.length, p.g.nodos.length + 1, "with its own terminal on the diagram");
+});
+
+test("the element of an indicator array, or a string or Boolean element, comes out as its own kind", () => {
+  for (const [block, elementType, expected] of [["arr-indicator", "number", "indicator"], ["arr-control", "string", "str-control"], ["arr-control", "boolean", "bool-control"], ["arr-control", "i32", "control"]]) {
+    const [p, id] = typedPanelArray(block, { type: { array: elementType } });
+    const start = elementEdge(arrayOf(p, id));
+    const away = { x: start.x + 300, y: start.y };
+    const out = P.soltar(P.moverA(P.pulsar(p, CTX, { tipo: "elem", id, k: 0 }, start), CTX, away), CTX, FONDO, away);
+    const loose = out.g.nodos.find((n) => n.id === out.seleccion[0]);
+    assert.equal(loose.tipo, expected, `${block} of ${elementType}`);
+    if (elementType === "i32") assert.equal(loose.config.type, "i32");
+    assert.deepEqual(arrayOf(out, id).config.type, { array: "void" });
+  }
 });
 
 test("Change to Indicator on an array or on its element flips the whole array and keeps its wires", () => {

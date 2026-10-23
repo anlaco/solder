@@ -369,7 +369,8 @@ svg { display: block; overflow: visible; }
 .lienzo-front-panel[data-cursor="operate"] { cursor: pointer; }
 /* While a control's value is typed: a black frame around it. */
 .objeto-panel.editando-valor { outline: 1px solid var(--editing-outline); outline-offset: 1px; }
-.objeto-panel.seleccionado::before, .etiqueta.seleccionada::before {
+/* The element of an array, selected alone (reports/2026-10-23-array-remove-element.md §1). */
+.objeto-panel.seleccionado::before, .etiqueta.seleccionada::before, .sd-element.seleccionado::before {
   content: ""; position: absolute; inset: -2.5px; pointer-events: none;
   background:
     repeating-linear-gradient(90deg, var(--selection-ants) 0 2px, transparent 2px 4px) top / 100% 1px no-repeat,
