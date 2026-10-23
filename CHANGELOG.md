@@ -6,6 +6,20 @@ features raises MINOR, one that only fixes things raises PATCH. The `-alpha` lab
 said the file format was not stable yet; `-beta` marks the maintainable version,
 whose files keep opening, and stays a `0.x` (DT-048, DT-055).
 
+## 0.4.3-beta — 2026-10-23
+
+### Fixes
+
+- On Windows, a VI with two loops that wait in parallel no longer hangs: when
+  both waits ended together, one loop stopped after its first iteration and the
+  VI never finished
+  ([#1](https://github.com/anlaco/solder/issues/1)).
+- One-dimensional arrays are drawn as in LabVIEW: the array constant's index
+  with its double line, its elements as 13 × 19 tiles and its greyed element;
+  the panel array's shell, its index box level with the shell, the smaller
+  element of a numeric indicator array and the dark bevel around its elements;
+  and the array terminal's index cells and 123 field at LabVIEW's size.
+
 ## 0.4.2-beta — 2026-10-18
 
 ### Fixes
