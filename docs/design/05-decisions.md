@@ -27,6 +27,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [043](#dt-043) | The error cluster as in LabVIEW: type, error in/out passing, automatic handling and own texts | Accepted · being implemented |
 | [049](#dt-049) | The items of an enum are its type; one Edit Items… for constant, control and indicator | Accepted · being implemented |
 | [060](#dt-060) | An array is born without an element type, and its element gives it one | Accepted · implemented in the editor |
+| [061](#dt-061) | One scheduler of our own decides which clump runs next; how a clump is suspended depends on the host | Accepted · not implemented |
 
 ## The 34 Red decisions
 
@@ -2159,3 +2160,100 @@ in that order, through companion `.css` files.**
 |---|---|---|
 | A void array breaks the VI with LabVIEW's errors | `test/core/array-typing.test.mjs`, `test/editor/error-list.test.mjs` | Verified |
 | The palette places empty arrays; an element dropped inside types them; Representation and Change to Indicator on the element retype the whole array; dragging a constant's element out empties it | `test/editor/front-panel.test.mjs`, `test/editor/diagram-editing.test.mjs`, `test/editor/labview-inventory.test.mjs` | Verified (Replace ▸ is a placeholder) |
+
+## DT-061
+
+**One scheduler of our own decides which clump runs next; how a clump is suspended depends on the host.**
+
+- **Status:** Accepted on 2026-10-23 by the developer.
+- **How it was decided:** issue [anlaco/solder#1](https://github.com/anlaco/solder/issues/1) opened the question. The
+  developer called a council of five independent voices: four fresh sessions with no context, plus the main session,
+  which wrote its idea down before reading theirs. The four sessions proposed the same idea (A, below), and the main
+  session a different one (B). The vote gave A 44 points and B 25. Two spikes then checked A's assumptions
+  (see "What was measured").
+- **Complements:** [DT-039](#dt-039) (the VI runs in the page's WASM engine), [DT-040](#dt-040) (clumps with JSPI),
+  [DT-041](#dt-041) (the iteration budget and `tiempo.ceder`), [DT-045](#dt-045) (subVIs that wait their turn),
+  [DT-047](#dt-047) (the debugger). It does not change the `.sdg` or what a VI computes.
+
+### Context
+
+Today the host's event loop is the scheduler: every suspending import (`ceder`, `esperar`, `esperar_multiplo`,
+`entrar_subvi`, `correr_plan`, `correr_subvi`, the two error dialogs, `dep.nodo`) builds its own promise and its own
+host callback (`setTimeout`, `setImmediate`, a `MessageChannel`, a worker message). The order in which clumps resume
+is therefore decided by Node, Chromium and the operating system's timers. Issue #1 is that class of bug: on Windows,
+two waits that end together ran in one task, two clumps yielded through one shared `MessageChannel`, and one of them
+was never woken again. The fix for 0.4.x (`core/runtime/turn-yielder.mjs`, a queue of waiting yields) repairs that one
+import; the others still depend on the host's order.
+
+### Decision
+
+1. **One scheduler per Run is the only thing that resumes a clump.** Every suspending import parks the clump that is
+   running with a typed reason (`yield`, `timer(deadline)`, `subvi-turn(plan)`, `join(subplan)`, `dialog(id)`,
+   `debug-pause`, later `io(handle)`) and nothing else may wake it.
+2. **The order is ours, never the host's.** A ready queue in order of arrival; a timer queue ordered by
+   (deadline, sequence number); a FIFO queue for each non-reentrant subVI; an inbox for what comes from outside
+   (control changes, Abort, dialog answers, debugger commands), read only at the start of a turn. Ties are broken by
+   a monotonic sequence number.
+3. **One clump runs at a time.** The scheduler resumes one, waits until it parks again or ends, and only then picks
+   the next. The iteration budget of DT-041 is kept **per clump**, not shared by all of them as today
+   (`presupuesto`, `ultimaLlamada`, `ultimaCesion`).
+4. **The host gives three things only:** the time, one timer for the earliest deadline, and "run the next turn".
+   The panel's writes are sent at the end of each turn, before a dialog and at the end of the Run, not on a timer of
+   their own.
+5. **Abort and deadlock are states of the scheduler.** Abort rejects every parked clump, clears the timers and
+   answers the open dialogs. If clumps are still alive while none is ready, no timer is pending and nothing is
+   expected from outside, the Run ends with an error that names the parked clumps and why they wait. The fault of
+   issue #1 would have been that error, not a VI that never finishes. The editor keeps `worker.terminate()` as a
+   last resort when Abort gets no answer.
+6. **A simulated clock for tests:** the same scheduler runs with a clock that jumps to the next deadline, so an
+   interleaving of parallel waits is checked exactly and in microseconds.
+7. **How a clump is suspended depends on the host, behind the scheduler's interface** "resume clump *i* and say why
+   it parked":
+   - in a JavaScript host (the editor's worker, the command line, the tests), **JSPI**, as today: the compiled
+     WebAssembly does not change;
+   - in the Rust hardware host, the **continuations of WebAssembly's stack-switching proposal**: each clump is a
+     continuation (`cont.new`) that parks with `suspend`, and the module exports a `resume` that runs one clump until
+     it parks and returns the reason. The compiler changes only the calls to suspending imports and the entry of each
+     clump. These are not state machines: the engine keeps the stack;
+   - when V8 ships stack switching, the JavaScript host may move to it too, and there is one mechanism everywhere.
+8. **The same semantics in every host:** reference traces shared by all the schedulers (the same VI and the same
+   instants must give the same order of resumes).
+
+### Rejected
+
+- **Leaving the event loop as the scheduler and fixing each import:** fixes issue #1, but every new suspending
+  feature (queues, notifiers, events, hardware I/O) brings its own ordering bug, and nothing is testable exactly.
+- **Compiling every clump to a resumable state machine, with the scheduler inside the module (idea B):** it is as
+  deterministic as A (determinism comes from owning the scheduler, not from where it lives); its one advantage, not
+  depending on JSPI, is given by stack switching without transforming every structure. DT-040 had already turned down
+  this option.
+- **Threads, a worker for each loop, shared memory:** real parallelism, but non-deterministic by nature, with
+  COOP/COEP and locks on the data of several clumps.
+
+### What was measured (2026-10-23)
+
+1. **JSPI without a flag in Node:** `WebAssembly.Suspending` and `WebAssembly.promising` exist with no flag in Node
+   24.22.1 (the current LTS) and 26.12.1, and the diagram of issue #1 gives the right values in both. Node 24.19
+   still needs `--experimental-wasm-jspi`, and **Node 26 refuses to start with it** (`bad option`), so `npm test` and
+   the documented command line do not run on Node 26 today.
+2. **wasmtime 50, two clumps of one instance suspended at once with `call_async`:** it does not compile
+   (`E0499: cannot borrow store as mutable more than once`). A call takes the `Store` for itself until it ends, so
+   the Rust host cannot do what JSPI does.
+3. **wasmtime 50 with stack switching** (`wasm_stack_switching`): two loops of 1000 ms and 500 ms as continuations of
+   one instance, resumed by a scheduler in Rust with synchronous calls only, give 3 and 3 iterations in 3000 ms, and
+   the tie at 1000 ms is resumed in the fixed order (deadline, then sequence).
+4. **The same module in V8 (Node 26.12.1):** it needs `--experimental-wasm-wasmfx`, and with it Node stops with an
+   internal compiler error (`Check failed`). In V8 stack switching is not ready yet.
+
+The spikes were run outside the repository and are not kept: items 2–4 have no test here yet.
+
+### Verification
+
+| Statement | What fails if it is broken | Status |
+|---|---|---|
+| Two yields at once through the `MessageChannel` both wake up, in order (issue #1) | `test/core/turn-yielder.test.mjs` | Verified |
+| The scheduler alone resumes clumps, in order of (deadline, sequence), with one clump running at a time | — | Unverified: the scheduler is not written |
+| A Run whose clumps can no longer be woken ends with an error naming them | — | Unverified |
+| The same VI and instants give the same order of resumes in every host | — | Unverified: needs the reference traces |
+| JSPI runs with no flag from Node 24.22 on, and Node 26 refuses the flag | Measured on 2026-10-23 (above) | Measured, no test |
+| wasmtime can keep several clumps of one instance suspended only through stack switching | Measured on 2026-10-23 (above) | Measured, no test |

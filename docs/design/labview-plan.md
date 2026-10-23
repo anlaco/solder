@@ -373,6 +373,22 @@ styles (Plain, Solder), once it is decided where a panel's style lives.
    priority): the styles used are Old School for development and Solder for the releases. The branch is ready to
    merge into `main` as 0.5.0-beta when the developer decides.*
 
+**Next: the execution scheduler** (DT-061, decided 2026-10-23), on a short `feature/scheduler` branch from `main`:
+one scheduler per Run is the only thing that resumes a clump, in our own order, so parallel loops behave the same
+on every operating system (issue #1). In order:
+1. `core/runtime/scheduler.mjs` with its own tests on a simulated clock: the ready queue, the timer queue ordered by
+   (deadline, sequence), the inbox, one clump at a time, Abort and deadlock as states (DT-061 §1–3, §5, §6).
+2. Every suspending import of `runtime.mjs` parks through it (`ceder`, `esperar`, `esperar_multiplo`, `entrar_subvi`,
+   `correr_plan`, `correr_subvi`, the dialogs, `dep.nodo`), with the iteration budget per clump; `planificar` and
+   `turn-yielder.mjs` become part of it. The existing tests stay green.
+3. The worker's panel writes sent at the end of each turn instead of `setTimeout(vaciar)` (DT-061 §4), and the
+   editor's `worker.terminate()` when Abort gets no answer.
+4. The reference traces (DT-061 §8): a few VIs with parallel waits, the order of resumes they must give, and a test
+   that runs them.
+5. Node 26: the command line and `npm test` pass `--experimental-wasm-jspi` only when the running Node needs it
+   (DT-061, "What was measured" 1).
+The Rust host's stack switching (DT-061 §7) waits for the hardware host.
+
 **Then:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
 lesson of NI's Core 1 course can be done in Solder, except lessons 2 and 15 and the DAQ and instrument parts of 4,
 7 and 8. The outline is in `labview-captures/core-courses/README.md`; first, list which lessons Solder misses.
