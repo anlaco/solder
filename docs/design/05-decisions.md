@@ -28,6 +28,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [049](#dt-049) | The items of an enum are its type; one Edit Items… for constant, control and indicator | Accepted · being implemented |
 | [060](#dt-060) | An array is born without an element type, and its element gives it one | Accepted · implemented in the editor |
 | [061](#dt-061) | One scheduler of our own decides which clump runs next; how a clump is suspended depends on the host | Accepted · not implemented |
+| [062](#dt-062) | Until 1.0 every beta is published from `main`: a feature raises MINOR, a fix raises PATCH | Accepted · in use |
 
 ## The 34 Red decisions
 
@@ -1929,7 +1930,7 @@ glow while the VI runs), **Oscilloscope** (dark, scope traces), **Blueprint** (d
 **Development happens on `main`; each published beta is maintained on its own release branch, which takes only
 fixes cherry-picked from `main`.**
 
-- **Status:** Accepted on 2026-10-17 by the developer, once 0.4.0-beta was published. Chosen over keeping `main` for
+- **Status:** Superseded by [DT-062](#dt-062) on 2026-10-23, until 1.0. Accepted on 2026-10-17 by the developer, once 0.4.0-beta was published. Chosen over keeping `main` for
   fixes and every feature on a long-lived branch (Git Flow without `develop`): features that last weeks (the HTML
   Front Panel, Core 1) would drift from `main`, every fix would have to be merged into each open branch, and
   conflicts between features would show up late.
@@ -2258,3 +2259,37 @@ The spikes were run outside the repository and are not kept: items 2–4 have no
 | The same VI and instants give the same order of resumes in every host | — | Unverified: needs the reference traces |
 | JSPI runs with no flag from Node 24.22 on, and Node 26 refuses the flag | Measured on 2026-10-23 (above); `test/end-to-end/command-line.test.mjs` checks that the flag is passed only when the running Node lacks JSPI and that the command line runs a VI that waits from a plain `node` (run on 24.19.0, 24.22.1 and 26.12.1 on 2026-10-23) | Verified on the Node that runs `npm test` |
 | wasmtime can keep several clumps of one instance suspended only through stack switching | Measured on 2026-10-23 (above) | Measured, no test |
+
+## DT-062
+
+**Until version 1.0 the beta follows `main`: every release is tagged on `main`, a feature raises MINOR and a fix
+raises PATCH. There are no release branches.**
+
+- **Status:** Accepted on 2026-10-23 by the developer. It supersedes [DT-057](#dt-057) until 1.0; §6 and §7 of DT-057
+  (what is a fix, when to publish) still hold.
+- **Why:** while Solder is a `0.x`, whoever tries the beta should get what `main` does. With DT-057 the two drifted
+  apart within a week: `release/0.4` stayed before DT-060 (arrays born empty), so of three fixes made on 2026-10-23 one
+  had no bug to fix on the beta and another no longer cherry-picked, while the developer, trying `main`, took it for
+  the beta.
+
+### Decision
+
+1. **`main` is the line of development and of releases.** It stays green after every commit. A feature longer than one
+   session goes on a short `feature/<short-name>` branch, merged back as soon as it works.
+2. **Versions** (`0.MINOR.PATCH-beta`, DT-055): a release that brings any feature raises MINOR and sets PATCH to 0
+   (`0.5.0-beta`); a release with fixes only raises PATCH (`0.5.1-beta`). A fix comes with a test that fails without it.
+3. **A release is made on `main`:** raise the version in `package.json` and `CHANGELOG.md`, `npm test`, tag
+   `v0.<MINOR>.<PATCH>-beta` on `main`, `npm run dist`, publish on GitHub as a pre-release. What goes out is told in the
+   CHANGELOG's "Unreleased" section, gathered as work lands.
+4. **When to publish** is DT-057 §7: a serious fix at once, minor fixes batched, a new MINOR when `main` has a coherent
+   set of features tried by hand in the app.
+5. **`release/0.4` is frozen** at `v0.4.3-beta`, plus a cherry-pick of the JSPI fix that was never published; it gets
+   nothing more. Only the latest beta is supported.
+6. **From 1.0 on** the release branches of DT-057 may come back; that is decided then.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Every published beta is a tag on `main` | `git merge-base --is-ancestor v<version> main` before publishing | **Unverified**: process, no automatic check |
+

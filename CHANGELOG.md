@@ -4,7 +4,55 @@ Solder follows [semantic versioning](https://semver.org) while in development:
 `0.MINOR.PATCH-alpha`, and from 0.4.0 on `0.MINOR.PATCH-beta`. A release that adds
 features raises MINOR, one that only fixes things raises PATCH. The `-alpha` label
 said the file format was not stable yet; `-beta` marks the maintainable version,
-whose files keep opening, and stays a `0.x` (DT-048, DT-055).
+whose files keep opening, and stays a `0.x` (DT-048, DT-055). Until 1.0 every
+release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
+
+## Unreleased
+
+### Fixes
+
+- `npm test` and the command line run on Node 26, which refuses to start with
+  `--experimental-wasm-jspi`: the flag is passed only to a Node that still
+  needs it (24.19 and older). Checked on Node 24.19, 24.22 and 26.12.
+- A right-click on a panel array's terminal on the Block Diagram opens its
+  menu, as in LabVIEW, and View As Icon draws the terminal compact.
+- The element of a panel array can be selected by its edge and dragged out,
+  cut or deleted, as in LabVIEW; the array is left empty with its wires.
+
+## 0.4.3-beta — 2026-10-23
+
+### Fixes
+
+- On Windows, a VI with two loops that wait in parallel no longer hangs: when
+  both waits ended together, one loop stopped after its first iteration and the
+  VI never finished
+  ([#1](https://github.com/anlaco/solder/issues/1)).
+- One-dimensional arrays are drawn as in LabVIEW: the array constant's index
+  with its double line, its elements as 13 × 19 tiles and its greyed element;
+  the panel array's shell, its index box level with the shell, the smaller
+  element of a numeric indicator array and the dark bevel around its elements;
+  and the array terminal's index cells and 123 field at LabVIEW's size.
+
+## 0.4.2-beta — 2026-10-18
+
+### Fixes
+
+- The pointer over a numeric or string control on the Front Panel says what a
+  press will do, as in LabVIEW: the arrow on its edge and label, the I-beam in
+  the value box and the hand over the incrementer; the arrow all over once the
+  control is selected.
+- A selected numeric or string control moves when dragged from its value box;
+  a click there no longer types, and a double click types over the whole value.
+  Dragging the label of a selected control moves the control with it.
+
+## 0.4.1-beta — 2026-10-17
+
+### Fixes
+
+- A numeric or string control on the Front Panel can be moved again: a press
+  within 4 px of its edge drags it, as in LabVIEW, and a press deeper in the
+  value box still types in it. Before, the whole control typed and could not be
+  dragged.
 
 ## 0.4.0-beta — 2026-10-17
 
