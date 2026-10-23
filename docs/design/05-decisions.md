@@ -1951,6 +1951,16 @@ fixes cherry-picked from `main`.**
    is supported: when 0.5 is published, `release/0.4` gets nothing more.
 6. **What is a fix:** something that is broken or behaves differently from LabVIEW in what the beta already does.
    Something the beta does not do yet is a feature. When in doubt, it is a feature: it waits for the next MINOR.
+7. **When to publish** (added on 2026-10-18 by the developer). A release costs the user a download and a changelog to
+   read, and costs us a tag, a build and a publication, so a commit is not a release:
+   - **A fix release goes out at once** when the fix is serious: the editor crashes, a `.sdg` is lost or damaged,
+     a VI computes a wrong result, or a common task cannot be done. One commit is then enough.
+   - **Minor fixes are batched** (drawing, texts, a rare case with a workaround): they wait on the release branch until
+     a few have gathered or one to two weeks have passed, whichever comes first, and go out together, so the
+     changelog tells one story instead of one version per fix.
+   - **A new MINOR goes out when `main` has a coherent set of features** that can be told in one sentence and changes
+     the experience against the current beta, with the tests green and tried by hand in the app; not one release per
+     feature.
 
 ### How it is verified
 
