@@ -28,7 +28,7 @@
 //              node or one of its terminals; `en`, the canvas point where it was opened
 //   aviso      why the last action could not be done (spec/05 rule 31)
 
-import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ARRAY_INDEFINIDA, MEDIDAS_ESTRUCTURA, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, borderFaceFor, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
+import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ARRAY_INDEFINIDA, MEDIDAS_ESTRUCTURA, PANEL_ARRAY_TERMINAL_MENU, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, borderFaceFor, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
 import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
 import * as EI from "./edit-items-dialog.mjs";
@@ -1435,9 +1435,42 @@ function elementVariants(n, root) {
   return variants;
 }
 
+/** The palette row of a panel array terminal's menu for each element type; a string has none (terminal-menu-string.png). */
+const TERMINAL_PALETTE_BY_ELEMENT = { numeric: "numeric-palette", boolean: "boolean-palette" };
+
+/**
+ * The rows of the menu of a panel array's terminal that follow its element and its kind
+ * (reports/2026-10-23-array-terminal-menu.md): the palette of the element and, for a numeric one, Representation; no
+ * Change to Element on an empty array; Export greyed on an empty or Boolean array; an indicator says Find Indicator,
+ * Hide Indicator and Change to Control, and has Adapt To Source opening the group of Representation.
+ */
+function terminalVariants(n, root) {
+  const elementType = n.config?.type?.array;
+  const empty = isUndefinedArray(n.config?.type);
+  const elementKind = empty ? null : elementType === "boolean" ? "boolean" : typeof elementType === "string" && esNumerico(elementType) ? "numeric" : null;
+  const row = (name) => `${root}.${name}`;
+  const variants = { ocultos: new Set(), rotulos: new Map(), separadores: new Map(), desactivados: new Set() };
+  for (const [kind, palette] of Object.entries(TERMINAL_PALETTE_BY_ELEMENT)) if (kind !== elementKind) variants.ocultos.add(row(palette));
+  if (!elementKind) variants.separadores.set(row("array-palette"), true);
+  if (elementKind !== "numeric") variants.ocultos.add(row("representation"));
+  if (empty) variants.ocultos.add(row("change-to-element"));
+  if (empty || elementKind === "boolean") variants.desactivados.add(row("export"));
+  if (n.tipo === "arr-indicator") {
+    variants.rotulos.set(row("find-control"), "Find Indicator");
+    variants.rotulos.set(row("hide-control"), "Hide Indicator");
+    variants.rotulos.set(row("change-to-indicator"), "Change to Control");
+    if (empty) variants.ocultos.add(row("adapt-to-source"));
+    else variants.separadores.set(row("representation"), false);
+  } else {
+    variants.ocultos.add(row("adapt-to-source"));
+  }
+  return variants;
+}
+
 /** The rows of the menu of an array that change with its dimensions (and, on the panel, with being an indicator). */
 function arrayVariants(n, root) {
   if (root.startsWith("context.panel-array-element")) return elementVariants(n, root);
+  if (root === PANEL_ARRAY_TERMINAL_MENU) return terminalVariants(n, root);
   const dimensions = dimensionsOfNode(n.config);
   const variants = { desactivados: new Set(), redirigidos: new Map(), rotulos: new Map() };
   // An array constant with no element yet has no Numeric Palette nor Change to Element (measured, menus-array-constant-nonindex-click.png).
@@ -1605,7 +1638,7 @@ export function marcados(d, ctx) {
   const abrev = r.startsWith("context.numeric-") && NUMERICOS[n.config?.type ?? DBL]?.abrev;
   if (abrev) m.add(`${r}.representation.${abrev.toLowerCase()}`);
   // The representation of an array's element is the array's own; the string element shows the defaults LabVIEW ticks.
-  const elementAbbreviation = r === NUMERIC_ELEMENT_ROOT || r === "context.array-constant-element" ? NUMERICOS[n.config?.type?.array]?.abrev : null;
+  const elementAbbreviation = [NUMERIC_ELEMENT_ROOT, "context.array-constant-element", PANEL_ARRAY_TERMINAL_MENU].includes(r) ? NUMERICOS[n.config?.type?.array]?.abrev : null;
   if (elementAbbreviation) m.add(`${r}.representation.${elementAbbreviation.toLowerCase()}`);
   if (r === `${NUMERIC_ELEMENT_ROOT}-string`) ["normal-display", "enable-wrapping"].forEach((row) => m.add(`${r}.${row}`));
   if ((n.config?.inverted ?? []).includes(d.menu.puerto ?? "result")) m.add(`${r}.invert`);

@@ -948,6 +948,70 @@ test("the indicator's element menu says Change to Control and has Adapt To Sourc
   assert.deepEqual(rowsOf(menuHtml(ED.abrirMenu(pb, "context.panel-array-element-boolean", idb, 0, 0))).slice(-3), ["Scale Object with Pane", "Mechanical Action", "Properties"]);
 });
 
+// reports/2026-10-23-array-terminal-menu.md: the terminal of a panel array on the Block Diagram has a menu of its own,
+// whose rows follow the element, and View As Icon draws it compact.
+const TERMINAL_ROOT = "context.panel-array-terminal";
+const terminalMenu = (block, elementType) => {
+  const [p, id] = typedPanelArray(block, { type: { array: elementType } });
+  const node = p.g.nodos.find((n) => n.id === id);
+  assert.equal(D.menuDe(node, "result", p.g), TERMINAL_ROOT, `${block} of ${elementType}`);
+  const opened = ED.abrirMenu(p, TERMINAL_ROOT, id, 0, 0);
+  return { p, id, opened, html: menuHtml(opened), rows: rowsOf(menuHtml(opened)) };
+};
+const separatorsIn = (html) => (html.match(/separador-menu/g) ?? []).length;
+const menuHeight = (html) => Number(/class="menu-contextual" data-menu="[^"]+" style="[^"]*height:([\d.]+)px/.exec(html)[1]);
+
+test("the terminal of a panel array opens LabVIEW's menu, whose rows follow its element", () => {
+  const numericControl = terminalMenu("arr-control", "number");
+  assert.deepEqual(numericControl.rows, [
+    "Visible Items", "Find Control", "Make Type Def.", "Hide Control", "Change to Indicator", "Change to Element", "Change to Constant",
+    "Description and Tip...", "Numeric Palette", "Array Palette", "Create", "Data Operations", "Advanced", "Export", "View As Icon",
+    "Representation", "Properties",
+  ]);
+  assert.equal(separatorsIn(numericControl.html), 7);
+  assert.ok(Math.abs(menuHeight(numericControl.html) - 390) <= 4, "165 x 390 in terminal-menu-control.png");
+  const marks = ED.marcados(numericControl.opened);
+  assert.ok(marks.has(`${TERMINAL_ROOT}.view-as-icon`) && marks.has(`${TERMINAL_ROOT}.representation.dbl`));
+
+  const numericIndicator = terminalMenu("arr-indicator", "number");
+  assert.deepEqual(numericIndicator.rows.slice(0, 5), ["Visible Items", "Find Indicator", "Make Type Def.", "Hide Indicator", "Change to Control"]);
+  assert.deepEqual(numericIndicator.rows.slice(-4), ["View As Icon", "Adapt To Source", "Representation", "Properties"]);
+  assert.ok(Math.abs(menuHeight(numericIndicator.html) - 409) <= 4, "Adapt To Source opens the group of Representation");
+
+  const string = terminalMenu("arr-control", "string");
+  assert.ok(!string.rows.includes("Numeric Palette") && !string.rows.includes("Representation"));
+  assert.ok(Math.abs(menuHeight(string.html) - 343) <= 4);
+  assert.doesNotMatch(string.html, /desactivado" data-id="context\.panel-array-terminal\.export"/);
+
+  const boolean = terminalMenu("arr-control", "boolean");
+  assert.deepEqual(boolean.rows.filter((row) => row.endsWith("Palette")), ["Boolean Palette", "Array Palette"]);
+  assert.ok(!boolean.rows.includes("Representation"));
+  assert.match(boolean.html, /desactivado" data-id="context\.panel-array-terminal\.export"/, "Export is greyed on a Boolean array");
+
+  // reports/2026-10-18-array-typing-stage2.md Q4: the empty array.
+  const empty = terminalMenu("arr-control", "void");
+  assert.deepEqual(empty.rows, [
+    "Visible Items", "Find Control", "Make Type Def.", "Hide Control", "Change to Indicator", "Change to Constant", "Description and Tip...",
+    "Array Palette", "Create", "Data Operations", "Advanced", "Export", "View As Icon", "Properties",
+  ]);
+  assert.match(empty.html, /desactivado" data-id="context\.panel-array-terminal\.export"/);
+});
+
+test("View As Icon on a panel array's terminal draws it compact and back, in one undo step", () => {
+  const { p, id, opened } = terminalMenu("arr-control", "number");
+  const compact = ED.orden(opened, `${TERMINAL_ROOT}.view-as-icon`, CTX);
+  const node = compact.g.nodos.find((n) => n.id === id);
+  assert.deepEqual([D.caja(node, CTX).ancho, D.caja(node, CTX).alto], [32, 16], "terminal-menu-term-compact.png");
+  const diagram = (g) => D.contenido({ ...ED.inicial(), g }, CTX, Gr.tipos(g, CAT));
+  assert.ok(diagram(compact.g).includes(G.terminalArrayCompacto(true, COLORES.flotante, "DBL")));
+  assert.ok(!ED.marcados(ED.abrirMenu(compact, TERMINAL_ROOT, id, 0, 0)).has(`${TERMINAL_ROOT}.view-as-icon`), "the tick is gone");
+  const history = UH.registrar(UH.nuevo(p.g), compact.g);
+  assert.equal(history.antes.length, 1);
+  const back = ED.orden(ED.abrirMenu(compact, TERMINAL_ROOT, id, 0, 0), `${TERMINAL_ROOT}.view-as-icon`, CTX);
+  const icon = back.g.nodos.find((n) => n.id === id);
+  assert.deepEqual([D.caja(icon, CTX).ancho, D.caja(icon, CTX).alto], [38, 38]);
+});
+
 test("Change to Indicator on an array or on its element flips the whole array and keeps its wires", () => {
   const [p0, id] = typedPanelArray("arr-control", { type: { array: "number" }, value: [1, 2] });
   const made = Gr.crearNodo(p0.g, CAT, "array-size", 400, 100);

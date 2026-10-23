@@ -849,6 +849,45 @@ export function terminalPanelCompacto(control, color, tipo) {
   return svg(borde + caja + bloque + textoTerminal(16.5, 8.2, tipo, 8.4, color), "0 0 32 16");
 }
 
+/** `color` (#rrggbb) mixed with white: the share of white goes from 0 (the colour) to 1 (white). */
+const mixedWithWhite = (color, whiteShare) =>
+  `#${[1, 3, 5].map((start) => {
+    const channel = parseInt(color.slice(start, start + 2), 16);
+    return Math.round(channel + (255 - channel) * whiteShare).toString(16).padStart(2, "0");
+  }).join("")}`;
+
+// The light patch at the data end of a compact array terminal, and the bracket drawn on it.
+const ARRAY_PATCH_WHITE_SHARE = 0.7;
+const ARRAY_PATCH_EDGE_WHITE_SHARE = 0.3;
+/** The width of each row of the arrow of a compact array terminal, from its top (terminal-menu-term-compact.png). */
+const ARRAY_COMPACT_ARROW_ROWS = [1, 2, 2, 3, 2, 2, 1];
+
+/**
+ * The terminal of a panel array in its compact view (View As Icon off), 32 × 16: a frame in the element's colour, its
+ * type between brackets, and at the data end a light patch of that colour with the closing bracket and the arrow.
+ * Measured at 1:1 for a DBL control on array-typing/terminal-menu-term-compact.png (#ff7f00, patch #ffd8b2 and
+ * #ffa54c: the colour with 70 % and 30 % white). The indicator is the control mirrored, with the 1 px frame of the
+ * other indicators: unverified.
+ */
+export function terminalArrayCompacto(control, color, tipo) {
+  const patch = mixedWithWhite(color, ARRAY_PATCH_WHITE_SHARE);
+  const patchEdge = mixedWithWhite(color, ARRAY_PATCH_EDGE_WHITE_SHARE);
+  const frame = control
+    ? `<rect x="1" y="1" width="30" height="14" fill="${PAPER}" stroke="${color}" stroke-width="2"/>`
+    : `<rect x="0.5" y="0.5" width="31" height="15" fill="${PAPER}" stroke="${color}" stroke-width="1"/>`;
+  const crisp = `shape-rendering="crispEdges"`;
+  const openingBracket = `<path d="M8 3.5 H5.5 V12.5 H8" fill="none" stroke="${color}" stroke-width="1" ${crisp}/>`;
+  const patchWithBracket =
+    `<rect x="22" y="2" width="8" height="12" fill="${patch}"/><rect x="30" y="2" width="2" height="12" fill="${patchEdge}"/>` +
+    `<path d="M24 3.5 H26.5 V12.5 H24" fill="none" stroke="${patchEdge}" stroke-width="1" ${crisp}/>`;
+  const mirrored = (body) => (control ? body : `<g transform="matrix(-1 0 0 1 32 0)">${body}</g>`);
+  // The arrow pixel by pixel, rows 5 to 11, pointing into the patch's edge as the data leaves (or, mirrored, enters).
+  const arrowPixels = ARRAY_COMPACT_ARROW_ROWS.map((width, row) => `<rect x="27" y="${5 + row}" width="${width}" height="1" fill="${TERMINAL_DIRECTION_ARROW}"/>`).join("");
+  const arrow = control ? arrowPixels : `<g transform="matrix(-1 0 0 1 32 0)">${arrowPixels}</g>`;
+  const typeText = textoTerminal(16, 8.2, tipo, 8.4, color);
+  return svg(frame + mirrored(openingBracket) + typeText + mirrored(patchWithBracket) + arrow, "0 0 32 16");
+}
+
 // ——— La subpaleta Boolean ———
 //
 // Medidas de labview-captures/block-diagram/boolean-funciones.png, tomadas en

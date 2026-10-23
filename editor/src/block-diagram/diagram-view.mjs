@@ -1094,9 +1094,9 @@ function nodo(n, d, ctx, resueltos, elegido) {
     const glifo = GRAPH_KINDS.includes(n.tipo)
       ? G.graphTerminal(n.tipo, n.tipo === "xy-graph" || esCluster(tipo), !!n.vista?.compacto)
       : isUndefinedArray(tipo)
-      ? G.terminalArrayIndefinido(control)
+      ? (n.vista?.compacto ? G.terminalArrayCompacto(control, COLOR_UNDEFINED_ARRAY, "") : G.terminalArrayIndefinido(control))
       : esArray(tipo)
-      ? G.terminalPanelIcono(control, aspecto(tipo).color, nombre(hoja), G.dibujoArray(control))
+      ? (n.vista?.compacto ? G.terminalArrayCompacto(control, aspecto(tipo).color, COMPACT_ARRAY_TAGS[hoja] ?? nombre(hoja)) : G.terminalPanelIcono(control, aspecto(tipo).color, nombre(hoja), G.dibujoArray(control)))
       : esError(tipo)
       ? (n.vista?.compacto ? G.terminalPanelCompacto(control, COLORES.error, "") : G.terminalPanelIcono(control, COLORES.error, "", G.dibujoError(control), "cluster"))
       : tipo === "boolean"
@@ -1425,10 +1425,10 @@ export function menuDe(n, puerto, g, onElement = false) {
   if (n.tipo === "str-control" || n.tipo === "str-indicator" || CONSTANTES[n.tipo]?.cadena) return null;
   if (n.tipo === "indicator") return "context.numeric-indicator";
   // The menu of the array constant (labview-captures/array-2d/constant-2d-menu-index.png and constant-2d-menu-shell.png).
-  // The terminal of an array control or indicator has no menu captured yet.
   // The element of a typed array constant has its own menu; the index and the margin of the shell keep the array's.
   if (n.tipo === "arr-const") return (onElement && elementMenuRoot(n)) || "context.array-constant";
-  if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return null;
+  // The terminal of a panel array has one menu whose rows follow its element (reports/2026-10-23-array-terminal-menu.md).
+  if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return PANEL_ARRAY_TERMINAL_MENU;
   // The right-click menu of the terminal of a graph was not captured.
   if (GRAPH_KINDS.includes(n.tipo)) return null;
   if (UN.isUnbundleByName(n)) return UN.rowHasName(n, UN.rowOfPort(puerto)) ? UN.ROW_MENU : UN.BODY_MENU;
@@ -1438,6 +1438,14 @@ export function menuDe(n, puerto, g, onElement = false) {
   if (n.tipo in MENU_COMPARISON) return MENU_COMPARISON[n.tipo];
   return CONSTANTES[n.tipo]?.editable ? "context.numeric-constant" : CONSTANTES[n.tipo] ? null : "context.function";
 }
+
+export const PANEL_ARRAY_TERMINAL_MENU = "context.panel-array-terminal";
+
+/** The type tag of a compact array terminal whose element is not numeric: the scalar terminals' tags, unverified for arrays. */
+const COMPACT_ARRAY_TAGS = { string: "abc", boolean: "TF" };
+
+/** The frame of an empty array's terminal is black (terminalArrayIndefinido); its compact view keeps it: unverified. */
+const COLOR_UNDEFINED_ARRAY = "#000000";
 
 /** El menú de clic derecho del borde de cada estructura y de cada nodo de su borde (labview-captures/structures/menu-*.png). */
 const MENU_ESTRUCTURA = {
@@ -1467,7 +1475,7 @@ const MENU_COMPARISON = {
 };
 
 /** Filas que en LabVIEW abren un submenú aunque su contenido no esté declarado. Es disposición. */
-const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "select-item", "type-palette", "cluster-type-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
+const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "array-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "select-item", "type-palette", "cluster-type-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
   // The graphs (labview-captures/graphs/): rows whose submenus are not declared yet.
   "marker-spacing", "style", "property-node", "invoke-node", "run-time-shortcut-menu", "enabled-state", "update-mode", "export", "x-scale", "y-scale", "common-plots", "color", "line-style", "line-width", "bar-plots", "fill-base-line", "interpolation", "point-style",
   // The Getting Started window's menus (labview-captures/getting-started/).

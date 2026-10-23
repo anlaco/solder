@@ -736,7 +736,8 @@ right-click menus of the panel and the 19 missing Numeric controls.
     (`labview-captures/reports/2026-10-18-array-typing-stage2.md` Q5d: dragging it out was not achieved, Cut and
     Delete were not tried): measure it first, then clone it.
   - In the Block Diagram, a right-click on a panel array's terminal does not open its menu, so View As Icon cannot be
-    turned off for it.
+    turned off for it. *Done on 2026-10-23, as a fix for 0.4: the terminal's menu as measured
+    (`reports/2026-10-23-array-terminal-menu.md`, spec/05 Rule 40j bis) and its compact view.*
 - **Array coercion (resolved):** an array of I32 that enters where one of DBL is expected is converted element by
   element into a new buffer, like LabVIEW's coercion point (`test/core/arrays.test.mjs`).
 

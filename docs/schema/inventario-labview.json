@@ -13633,6 +13633,281 @@
       "separado": true
     },
     {
+      "id": "context.panel-array-terminal",
+      "etiqueta": "Array Terminal",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::the terminal of a panel array opens LabVIEW's menu, whose rows follow its element",
+      "captura": "array-typing/terminal-menu-control.png"
+    },
+    {
+      "id": "context.panel-array-terminal.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the terminal are shown: its label.",
+      "necesita": "etiquetas",
+      "captura": "array-typing/terminal-menu-control.png"
+    },
+    {
+      "id": "context.panel-array-terminal.find-control",
+      "etiqueta": "Find Control",
+      "estado": "todo",
+      "labview": "Shows the array on the panel, selected; an indicator's row says Find Indicator.",
+      "necesita": "panel-frontal",
+      "captura": "array-typing/terminal-menu-control.png"
+    },
+    {
+      "id": "context.panel-array-terminal.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "array-typing/terminal-menu-control.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array-terminal.hide-control",
+      "etiqueta": "Hide Control",
+      "estado": "todo",
+      "labview": "Hides the array on the panel; the terminal stays on the diagram. An indicator's row says Hide Indicator.",
+      "necesita": "panel-frontal",
+      "captura": "array-typing/terminal-menu-control.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array-terminal.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::Change to Indicator on an array or on its element flips the whole array and keeps its wires",
+      "captura": "array-typing/terminal-menu-control.png"
+    },
+    {
+      "id": "context.panel-array-terminal.change-to-element",
+      "etiqueta": "Change to Element",
+      "estado": "todo",
+      "labview": "Turns the array into a single object of its element type; an empty array has no such row.",
+      "necesita": "menus-contextuales",
+      "captura": "array-typing/terminal-menu-control.png"
+    },
+    {
+      "id": "context.panel-array-terminal.change-to-constant",
+      "etiqueta": "Change to Constant",
+      "estado": "todo",
+      "labview": "Turns the array into an array constant on the diagram and removes it from the panel.",
+      "necesita": "menus-contextuales",
+      "captura": "array-typing/terminal-menu-control.png"
+    },
+    {
+      "id": "context.panel-array-terminal.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "array-typing/terminal-menu-control.png"
+    },
+    {
+      "id": "context.panel-array-terminal.numeric-palette",
+      "etiqueta": "Numeric Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the palette of a numeric element.",
+      "necesita": "menus-contextuales",
+      "captura": "array-typing/terminal-menu-control.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array-terminal.boolean-palette",
+      "etiqueta": "Boolean Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the palette of a Boolean element (terminal-menu-boolean.png).",
+      "necesita": "menus-contextuales",
+      "captura": "array-typing/terminal-menu-boolean.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array-terminal.array-palette",
+      "etiqueta": "Array Palette",
+      "estado": "todo",
+      "labview": "Opens the Array palette as a submenu.",
+      "necesita": "menus-contextuales",
+      "captura": "array-typing/terminal-menu-control.png"
+    },
+    {
+      "id": "context.panel-array-terminal.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates related objects: a constant, a control, an indicator, a local variable, a reference, a property node…",
+      "necesita": "menus-contextuales",
+      "captura": "array-typing/terminal-menu-control-create.png"
+    },
+    {
+      "id": "context.panel-array-terminal.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Cut, copy and paste data, and save the current value as the default value.",
+      "necesita": "menus-contextuales",
+      "captura": "array-typing/terminal-menu-control.png"
+    },
+    {
+      "id": "context.panel-array-terminal.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "array-typing/terminal-menu-control.png"
+    },
+    {
+      "id": "context.panel-array-terminal.export",
+      "etiqueta": "Export",
+      "estado": "todo",
+      "labview": "Exports the object: an image, a value… Greyed on an empty array and on a Boolean one (measured).",
+      "necesita": "menus-contextuales",
+      "captura": "array-typing/terminal-menu-control.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array-terminal.view-as-icon",
+      "etiqueta": "View As Icon",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::View As Icon on a panel array's terminal draws it compact and back, in one undo step",
+      "captura": "array-typing/terminal-menu-control-compact.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array-terminal.adapt-to-source",
+      "etiqueta": "Adapt To Source",
+      "estado": "todo",
+      "labview": "The indicator's type follows that of whatever it receives (only the indicator has this; measured).",
+      "necesita": "adaptar-a-la-fuente",
+      "captura": "array-typing/terminal-menu-indicator.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array-terminal.representation",
+      "etiqueta": "Representation",
+      "estado": "built",
+      "prueba": "test/editor/diagram-editing.test.mjs::representation cambia el tipo de una constante, un control y un indicador",
+      "captura": "array-typing/terminal-menu-control-representation.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-array-terminal.representation.ext",
+      "etiqueta": "EXT",
+      "estado": "todo",
+      "labview": "Extended precision, 80 bits.",
+      "necesita": "tipos-numericos",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.representation.dbl",
+      "etiqueta": "DBL",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::the element of a typed panel array has its own menu and Representation retypes the whole array",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.representation.sgl",
+      "etiqueta": "SGL",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::the element of a typed panel array has its own menu and Representation retypes the whole array",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.representation.fxp",
+      "etiqueta": "FXP",
+      "estado": "todo",
+      "labview": "Fixed point, with the chosen word length and integer part.",
+      "necesita": "tipos-numericos",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.representation.i64",
+      "etiqueta": "I64",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::the element of a typed panel array has its own menu and Representation retypes the whole array",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.representation.i32",
+      "etiqueta": "I32",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::the element of a typed panel array has its own menu and Representation retypes the whole array",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.representation.i16",
+      "etiqueta": "I16",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::the element of a typed panel array has its own menu and Representation retypes the whole array",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.representation.i8",
+      "etiqueta": "I8",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::the element of a typed panel array has its own menu and Representation retypes the whole array",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.representation.u64",
+      "etiqueta": "U64",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::the element of a typed panel array has its own menu and Representation retypes the whole array",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.representation.u32",
+      "etiqueta": "U32",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::the element of a typed panel array has its own menu and Representation retypes the whole array",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.representation.u16",
+      "etiqueta": "U16",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::the element of a typed panel array has its own menu and Representation retypes the whole array",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.representation.u8",
+      "etiqueta": "U8",
+      "estado": "built",
+      "prueba": "test/editor/front-panel.test.mjs::the element of a typed panel array has its own menu and Representation retypes the whole array",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.representation.cxt",
+      "etiqueta": "CXT",
+      "estado": "todo",
+      "labview": "Extended-precision complex.",
+      "necesita": "tipos-numericos",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.representation.cdb",
+      "etiqueta": "CDB",
+      "estado": "todo",
+      "labview": "Double-precision complex.",
+      "necesita": "tipos-numericos",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.representation.csg",
+      "etiqueta": "CSG",
+      "estado": "todo",
+      "labview": "Single-precision complex.",
+      "necesita": "tipos-numericos",
+      "captura": "array-typing/terminal-menu-control-representation.png"
+    },
+    {
+      "id": "context.panel-array-terminal.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the object's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "array-typing/terminal-menu-control.png",
+      "separado": true
+    },
+    {
       "id": "context.waveform-chart",
       "etiqueta": "Waveform Chart",
       "estado": "built",
