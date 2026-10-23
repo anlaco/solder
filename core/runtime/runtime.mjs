@@ -14,6 +14,7 @@ import { tipoWasm } from "../compiler/compiler.mjs";
 import { mensaje as mensajeDeError } from "./error-codes.mjs";
 import { aEntero64, cientifica, fraccionaria, noFinito, rellenar, separar } from "./number-text.mjs";
 import { formatIntoString, scanFromString } from "./format-string.mjs";
+import { createTurnYielder } from "./turn-yielder.mjs";
 
 /** The size of one row record of Format Into String and Scan From String in memory (the compiler's FORMAT_ROW_BYTES). */
 const FORMAT_ROW_BYTES = 16;
@@ -571,23 +572,10 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
       senal?.addEventListener("abort", fuera, { once: true });
     });
   const suspendible = (f) => (conJSPI ? new WebAssembly.Suspending(f) : f);
-  // Ceder en un bucle (DT-041): el bucle llama cuando agota su presupuesto de
-  // vueltas; aquí se ajusta para que llame cada ~1 ms, y cada ~8 ms se suspende
-  // de verdad para que corran los demás clumps, el panel y Abort. En un worker se
-  // suspende por un MessageChannel, que es inmediato (setTimeout(0) tarda hasta 4
-  // ms); en Node, por setImmediate.
-  let canalCeder = null;
-  const ceder1 = () =>
-    new Promise((ok) => {
-      // En Node, setImmediate deja correr a los temporizadores; un MessageChannel no.
-      if (typeof setImmediate === "function") return setImmediate(ok);
-      if (!canalCeder) {
-        canalCeder = new MessageChannel();
-        canalCeder.port1.unref?.();
-      }
-      canalCeder.port1.onmessage = ok;
-      canalCeder.port2.postMessage(0);
-    });
+  // Yielding in a loop (DT-041): the loop calls when it runs out of its budget of iterations;
+  // here the budget is adjusted so that it calls every ~1 ms, and every ~8 ms it really suspends
+  // so that the other clumps, the panel and Abort run (turn-yielder.mjs).
+  const turnYielder = createTurnYielder();
   let presupuesto = 1;
   let ultimaLlamada = performance.now();
   let ultimaCesion = ultimaLlamada;
@@ -600,7 +588,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
       ultimaLlamada = ahora;
       return presupuesto;
     }
-    return ceder1().then(() => {
+    return turnYielder.yieldTurn().then(() => {
       if (senal?.aborted) throw abortado();
       ultimaLlamada = ultimaCesion = performance.now();
       return presupuesto;
@@ -729,7 +717,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     await planificar(clumps, (i) => correrClump(`c${i}`, clumps[i].largo), senal);
   } finally {
     saveState(opciones.estado, bytes, ex.memoria);
-    canalCeder?.port1.close();
+    turnYielder.close();
   }
   return escritos;
 }
