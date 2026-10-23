@@ -713,6 +713,13 @@ right-click menus of the panel and the 19 missing Numeric controls.
 - **Pending:** it was not possible to stretch the panel array with the mouse in LabVIEW (the handles moved the object), so
   the growing gesture was cloned from the documentation, not from a capture. The panel array is born with one DBL element; the
   LabVIEW one is born empty and takes the type of the control dropped inside it (Change to Element, not done).
+- **Pending (reported by the developer, 2026-10-22):**
+  - Once a control is dropped into a panel array, it can be neither taken out nor deleted: the only way back is to
+    delete the array and place a new one. What LabVIEW allows is unverified
+    (`labview-captures/reports/2026-10-18-array-typing-stage2.md` Q5d: dragging it out was not achieved, Cut and
+    Delete were not tried): measure it first, then clone it.
+  - In the Block Diagram, a right-click on a panel array's terminal does not open its menu, so View As Icon cannot be
+    turned off for it.
 - **Array coercion (resolved):** an array of I32 that enters where one of DBL is expected is converted element by
   element into a new buffer, like LabVIEW's coercion point (`test/core/arrays.test.mjs`).
 
