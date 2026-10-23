@@ -7,17 +7,40 @@ said the file format was not stable yet; `-beta` marks the maintainable version,
 whose files keep opening, and stays a `0.x` (DT-048, DT-055). Until 1.0 every
 release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
-## Unreleased
+## 0.5.0-beta — 2026-10-23
+
+From this version on, until 1.0, every beta comes from the development line:
+a release with new features raises MINOR, one with fixes only raises PATCH, and
+0.4 is no longer maintained (DT-062). Files saved by 0.4 open unchanged.
+
+### The Front Panel
+
+- The panel is drawn as plain HTML and dressed by a panel style (DT-058): Old
+  School keeps LabVIEW 2026 Q3's look pixel by pixel, and the new Solder and
+  Solder Night styles give it Solder's own. The installed app shows Solder;
+  `SOLDER_PANEL_STYLE=old-school|plain|solder|solder-night` chooses another.
+- A VI can have a style of its own: a `.css` with its name next to its `.sdg`,
+  shown at once when it is created, edited or deleted.
+
+### Arrays as in LabVIEW
+
+- A new Array or Array Constant is born empty and breaks the VI ("Control
+  contains no elements and is undefined") until a control, indicator or
+  constant is dropped inside; that element gives the whole array its type and,
+  on the panel, makes it a control or an indicator (DT-060).
+- The element has its own right-click menu: Representation retypes the whole
+  array, and Change to Indicator or Control flips it, keeping its wires.
+- The element of a panel array can be selected by its edge and dragged out,
+  cut or deleted, as in LabVIEW; the array is left empty with its wires.
+- A right-click on a panel array's terminal on the Block Diagram opens its
+  menu, as in LabVIEW, and View As Icon draws the terminal compact.
 
 ### Fixes
 
 - `npm test` and the command line run on Node 26, which refuses to start with
   `--experimental-wasm-jspi`: the flag is passed only to a Node that still
   needs it (24.19 and older). Checked on Node 24.19, 24.22 and 26.12.
-- A right-click on a panel array's terminal on the Block Diagram opens its
-  menu, as in LabVIEW, and View As Icon draws the terminal compact.
-- The element of a panel array can be selected by its edge and dragged out,
-  cut or deleted, as in LabVIEW; the array is left empty with its wires.
+- Everything fixed in 0.4.1, 0.4.2 and 0.4.3, below.
 
 ## 0.4.3-beta — 2026-10-23
 
