@@ -2283,8 +2283,8 @@ raises PATCH. There are no release branches.**
    CHANGELOG's "Unreleased" section, gathered as work lands.
 4. **When to publish** is DT-057 §7: a serious fix at once, minor fixes batched, a new MINOR when `main` has a coherent
    set of features tried by hand in the app.
-5. **`release/0.4` is frozen** at `v0.4.3-beta`, plus a cherry-pick of the JSPI fix that was never published; it gets
-   nothing more. Only the latest beta is supported.
+5. **0.4 is no longer maintained:** the branch `release/0.4` was deleted on 2026-10-23, and the tags `v0.4.0-beta` to
+   `v0.4.3-beta` keep what was published. There is one line of versions, 0.x, and only the latest beta is supported.
 6. **From 1.0 on** the release branches of DT-057 may come back; that is decided then.
 
 ### How it is verified
