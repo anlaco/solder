@@ -386,6 +386,13 @@ memory, so a Run uses every core as in LabVIEW (DT-063). In order:
 2. Every suspending import of `runtime.mjs` parks through it (`ceder`, `esperar`, `esperar_multiplo`, `entrar_subvi`,
    `correr_plan`, `correr_subvi`, the dialogs, `dep.nodo`), with the iteration budget per clump; `planificar` and
    `turn-yielder.mjs` become part of it. The existing tests stay green.
+   *Done on 2026-10-24: `ejecutar` runs every clump through `createScheduler` on `createRealHost` (one thread: the
+   worker is one thread of the future pool); Wait, Wait Until Next ms Multiple, the yields of a loop (budget per
+   clump), subplans and subVI calls (`join`), the non-reentrant subVI's turn (`acquire`/`release`), the two error
+   dialogs and the debugger's pauses (`waitFor`) all park through it, and Abort is a message to it. An import finds
+   its clump with `currentContext()`. Highlight Execution's one clump at a time is the scheduler's
+   `oneClumpAtATime`, which lets the clumps of a subplan run while their parent waits for them. `planificar` and
+   `turn-yielder.mjs` are gone; issue #1's tests moved to `test/core/scheduler.test.mjs`. 804 tests green.*
 3. The worker's panel writes sent at the end of each turn instead of `setTimeout(vaciar)` (DT-061 §4), and the
    editor's `worker.terminate()` when Abort gets no answer.
 4. The reference traces (DT-061 §8): a few VIs with parallel waits, the order of resumes they must give, and a test

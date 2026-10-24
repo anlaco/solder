@@ -2256,9 +2256,9 @@ The spikes were run outside the repository and are not kept: items 2–4 have no
 
 | Statement | What fails if it is broken | Status |
 |---|---|---|
-| Two yields at once through the `MessageChannel` both wake up, in order (issue #1) | `test/core/turn-yielder.test.mjs` | Verified |
-| The scheduler alone resumes clumps, in order of (deadline, sequence), with one clump running at a time | `test/core/scheduler.test.mjs` | Verified in the scheduler; the runtime does not use it yet (plan step 2) |
-| A Run whose clumps can no longer be woken ends with an error naming them | `test/core/scheduler.test.mjs` | Verified in the scheduler; not yet in the runtime |
+| Two turns asked for at once through the `MessageChannel` both run, in order, and two waits that end together both wake (issue #1) | `test/core/scheduler.test.mjs` (the real host) | Verified |
+| The scheduler alone resumes clumps, in order of (deadline, sequence), with one clump running at a time | `test/core/scheduler.test.mjs` | Verified in the scheduler, which runs every clump of a Run since 2026-10-24 |
+| A Run whose clumps can no longer be woken ends with an error naming them | `test/core/scheduler.test.mjs` | Verified in the scheduler, which runs every clump of a Run since 2026-10-24 |
 | The same VI and instants give the same order of resumes in every host | — | Unverified: needs the reference traces |
 | JSPI runs with no flag from Node 24.22 on, and Node 26 refuses the flag | Measured on 2026-10-23 (above); `test/end-to-end/command-line.test.mjs` checks that the flag is passed only when the running Node lacks JSPI and that the command line runs a VI that waits from a plain `node` (run on 24.19.0, 24.22.1 and 26.12.1 on 2026-10-23) | Verified on the Node that runs `npm test` |
 | wasmtime can keep several clumps of one instance suspended only through stack switching | Measured on 2026-10-23 (above) | Measured, no test |

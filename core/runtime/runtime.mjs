@@ -14,7 +14,7 @@ import { tipoWasm } from "../compiler/compiler.mjs";
 import { mensaje as mensajeDeError } from "./error-codes.mjs";
 import { aEntero64, cientifica, fraccionaria, noFinito, rellenar, separar } from "./number-text.mjs";
 import { formatIntoString, scanFromString } from "./format-string.mjs";
-import { createTurnYielder } from "./turn-yielder.mjs";
+import { abortedError, createRealHost, createScheduler } from "./scheduler.mjs";
 
 /** The size of one row record of Format Into String and Scan From String in memory (the compiler's FORMAT_ROW_BYTES). */
 const FORMAT_ROW_BYTES = 16;
@@ -144,56 +144,11 @@ const funcionesMath = Object.fromEntries(
 export const conJSPI = typeof WebAssembly.Suspending === "function" && typeof WebAssembly.promising === "function";
 const NO_JSPI_MESSAGE = "This VI waits (Wait…) and this JavaScript engine has no JSPI. Use Node 24.20 or later, or start Node 24.19 with --experimental-wasm-jspi.";
 
-/** El error con que acaba un VI abortado: no es un fallo del VI. */
-export const abortado = () => Object.assign(new Error("The VI was aborted."), { abortado: true });
+/** The error a VI that was aborted ends with: not a fault of the VI. */
+export const abortado = abortedError;
 
 /** El reloj de milisegundos de LabVIEW: un U32 que da la vuelta, con el cero sin definir. */
 const reloj = () => Math.floor(performance.now()) >>> 0;
-
-/**
- * Corre los clumps por flujo de datos: cada uno en cuanto han acabado todos de
- * los que depende, y a la vez los que no dependen entre sí. `correr(i)` lanza
- * el clump i y devuelve una promesa si tarda. Acaba cuando acaban todos; el
- * primer error (o el Abort) lo para todo.
- */
-export function planificar(clumps, correr, senal) {
-  return new Promise((ok, mal) => {
-    const faltan = clumps.map((k) => k.deps.length);
-    const siguen = clumps.map(() => []);
-    clumps.forEach((k, i) => k.deps.forEach((d) => siguen[d].push(i)));
-    let hechos = 0;
-    let roto = false;
-    const fallo = (e) => {
-      if (!roto) {
-        roto = true;
-        mal(e);
-      }
-    };
-    const acabar = (i) => {
-      if (roto) return;
-      hechos++;
-      for (const s of siguen[i]) if (--faltan[s] === 0) lanzar(s);
-      if (hechos === clumps.length) ok();
-    };
-    const lanzar = (i) => {
-      if (roto) return;
-      if (senal?.aborted) return fallo(abortado());
-      let r;
-      try {
-        r = correr(i);
-      } catch (e) {
-        return fallo(e);
-      }
-      if (r && typeof r.then === "function") r.then(() => acabar(i), fallo);
-      else acabar(i);
-    };
-    if (!clumps.length) return ok();
-    senal?.addEventListener("abort", () => fallo(abortado()), { once: true });
-    clumps.forEach((k, i) => {
-      if (!k.deps.length) lanzar(i);
-    });
-  });
-}
 
 /**
  * What a VI and its subVIs keep from one Run to the next while they stay loaded
@@ -559,72 +514,58 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
       extra = r.pasado;
       return r.valor;
     };
-  const dormir = (ms) =>
-    new Promise((ok, mal) => {
-      if (senal?.aborted) return mal(abortado());
-      const fuera = () => {
-        clearTimeout(t);
-        mal(abortado());
-      };
-      const t = setTimeout(() => {
-        senal?.removeEventListener("abort", fuera);
-        ok();
-      }, ms);
-      senal?.addEventListener("abort", fuera, { once: true });
-    });
+  // Every clump runs, parks and is resumed by one scheduler (DT-061): the order is ours, never the
+  // host's. With a debugger every clump may stop at a node; with Highlight Execution they run one at
+  // a time, as LabVIEW does (DT-047).
+  const depurador = opciones.depurador;
+  const host = createRealHost();
+  const scheduler = createScheduler({ host, oneClumpAtATime: () => !!depurador?.unoACadaVez?.() });
+  const current = () => scheduler.currentContext();
   const suspendible = (f) => (conJSPI ? new WebAssembly.Suspending(f) : f);
-  // Yielding in a loop (DT-041): the loop calls when it runs out of its budget of iterations;
-  // here the budget is adjusted so that it calls every ~1 ms, and every ~8 ms it really suspends
-  // so that the other clumps, the panel and Abort run (turn-yielder.mjs).
-  const turnYielder = createTurnYielder();
-  let presupuesto = 1;
-  let ultimaLlamada = performance.now();
-  let ultimaCesion = ultimaLlamada;
+  const promisingClumps = new Map();
+  const runClumpFunction = (name, largo) => {
+    if (!largo && !(depurador && conJSPI)) return ex[name]();
+    if (!promisingClumps.has(name)) promisingClumps.set(name, WebAssembly.promising(ex[name]));
+    return promisingClumps.get(name)();
+  };
+  /** The clumps of a plan, as the scheduler takes them. */
+  const clumpSpecs = (plan, prefix) => plan.map((clump, index) => ({ name: `${prefix}c${index}`, deps: clump.deps, run: () => runClumpFunction(`${prefix}c${index}`, clump.largo) }));
+  /** Parks the calling clump until `promise` settles, unless it is already settled or is no promise. */
+  const waitFor = (promise, tag) => (promise && typeof promise.then === "function" ? current().waitFor(promise, tag) : promise);
+  // Yielding in a loop (DT-041): the loop calls when it runs out of its budget of iterations; the
+  // budget of each clump is adjusted so that it calls every ~1 ms, and every ~8 ms the clump really
+  // yields its turn, so that the other clumps, the panel and Abort run.
+  const budgets = new Map(); // clump name → { iterations, lastCall, lastYield }
+  let runStart = performance.now();
+  const YIELD_EVERY_MS = 8;
+  const MOST_ITERATIONS = 1 << 24;
   const ceder = suspendible(() => {
     if (senal?.aborted) throw abortado();
-    const ahora = performance.now();
-    const pasado = Math.max(ahora - ultimaLlamada, 0.001);
-    presupuesto = Math.max(1, Math.min(1 << 24, Math.round((presupuesto * 1) / pasado)));
-    if (ahora - ultimaCesion < 8) {
-      ultimaLlamada = ahora;
-      return presupuesto;
-    }
-    return turnYielder.yieldTurn().then(() => {
-      if (senal?.aborted) throw abortado();
-      ultimaLlamada = ultimaCesion = performance.now();
-      return presupuesto;
+    const context = current();
+    const now = performance.now();
+    if (!budgets.has(context.name)) budgets.set(context.name, { iterations: 1, lastCall: runStart, lastYield: runStart });
+    const budget = budgets.get(context.name);
+    const elapsed = Math.max(now - budget.lastCall, 0.001);
+    budget.iterations = Math.max(1, Math.min(MOST_ITERATIONS, Math.round(budget.iterations / elapsed)));
+    budget.lastCall = now;
+    if (now - budget.lastYield < YIELD_EVERY_MS) return budget.iterations;
+    return context.yield().then(() => {
+      budget.lastCall = budget.lastYield = performance.now();
+      return budget.iterations;
     });
   });
   // Un subplan: los clumps de un cuerpo con varios nodos largos, a la vez (DT-041).
-  let correrClump = null;
-  const correr_plan = suspendible(async (p) => {
-    await planificar(compilado.planes[p], (i) => correrClump(`p${p}c${i}`, compilado.planes[p][i].largo), senal);
-    return 0;
-  });
+  const correr_plan = suspendible((p) => current().join(clumpSpecs(compilado.planes[p], `p${p}`)).then(() => 0));
   // A subVI that waits (DT-045): a non-reentrant VI serves one call at a time, as LabVIEW
   // serializes simultaneous calls. A call enters (waiting while another one is inside), writes its
   // inputs, runs, reads its outputs and leaves; leaving hands the subVI to the next waiting call.
-  const subVIWaiters = new Map(); // plan → resolvers of the calls waiting to enter; present while busy
+  const subVILock = (p) => `subVI plan ${p}`;
   const entrar_subvi = suspendible((p) => {
-    const waiters = subVIWaiters.get(p);
-    if (!waiters) {
-      subVIWaiters.set(p, []);
-      return 0;
-    }
-    return new Promise((enter) => waiters.push(enter)).then(() => {
-      if (senal?.aborted) throw abortado();
-      return 0;
-    });
+    const waiting = current().acquire(subVILock(p));
+    return waiting ? waiting.then(() => 0) : 0;
   });
-  const salir_subvi = (p) => {
-    const next = subVIWaiters.get(p)?.shift();
-    if (next) next();
-    else subVIWaiters.delete(p);
-  };
-  const correr_subvi = suspendible(async (p) => {
-    await planificar(compilado.planes[p], (i) => correrClump(`p${p}c${i}`, compilado.planes[p][i].largo), senal);
-    return 0;
-  });
+  const salir_subvi = (p) => current().release(subVILock(p));
+  const correr_subvi = suspendible((p) => current().join(clumpSpecs(compilado.planes[p], `p${p}`)).then(() => 0));
   // Manejo automático de errores (DT-043): el diálogo lo saca quien llama
   // (`alErrorAutomatico`, que resuelve «continuar» o «parar»). Sin él —la línea
   // de órdenes—, el VI se detiene con el error.
@@ -632,7 +573,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     const err = leerCluster(dir, compilado.disposicionError);
     const nodo = compilado.automaticos?.[i];
     if (!opciones.alErrorAutomatico) throw Object.assign(new Error(`Error ${err.code} occurred at ${err.source}`), { error: err, nodo });
-    const r = await opciones.alErrorAutomatico({ ...err, nodo });
+    const r = await waitFor(opciones.alErrorAutomatico({ ...err, nodo }), "automatic error dialog");
     if (r === "parar") throw abortado();
     return 0;
   });
@@ -643,15 +584,13 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     const entrada = leerCluster(errIn, compilado.disposicionError);
     const err = !entrada.status && code !== 0 ? { status: true, code, source: leerCadena(src) } : entrada;
     const texto = mensajeDeError(err);
-    if (err.status) await opciones.alDialogoError?.({ ...err, mensaje: texto });
-    if (senal?.aborted) throw abortado();
+    if (err.status) await waitFor(opciones.alDialogoError?.({ ...err, mensaje: texto }), "Simple Error Handler dialog");
     ponerCluster(buf, compilado.disposicionError, err);
     ponerCadena(celdaSrc, err.source);
     ponerCadena(celdaMsg, texto);
     return err.status ? 1 : 0;
   });
   // Debugging (DT-047): the hooks the compiled VI calls while the debug flag is set.
-  const depurador = opciones.depurador;
   const valorDepurado = (nodo, salida, valor) => {
     const out = compilado.debugNodes?.[nodo]?.outputs?.[salida];
     if (!out || !depurador) return;
@@ -663,13 +602,14 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   const dep = {
     ...Object.fromEntries(["i32", "i64", "f32", "f64"].map((vt) => [`valor_${vt}`, valorDepurado])),
     nodo: suspendible((nodo) => {
-      const espera = depurador?.alNodo(nodo);
-      if (espera && typeof espera.then === "function") return espera.then(() => {
-        if (senal?.aborted) throw abortado();
-        return 0;
-      });
-      return 0;
+      const pause = waitFor(depurador?.alNodo(nodo), "debugger");
+      return pause && typeof pause.then === "function" ? pause.then(() => 0) : 0;
     }),
+  };
+  /** Wait (ms) and Wait Until Next ms Multiple: the clump parks until the deadline, then reads the clock. */
+  const sleep = (ms) => {
+    if (senal?.aborted) throw abortado();
+    return current().sleepUntil(performance.now() + ms).then(reloj);
   };
   const tiempo = {
     reloj,
@@ -680,14 +620,8 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     entrar_subvi,
     correr_subvi,
     salir_subvi,
-    esperar: suspendible(async (ms) => {
-      await dormir(ms);
-      return reloj();
-    }),
-    esperar_multiplo: suspendible(async (m) => {
-      await dormir(m > 0 ? m - (reloj() % m) : 0);
-      return reloj();
-    }),
+    esperar: suspendible((ms) => sleep(ms)),
+    esperar_multiplo: suspendible((m) => sleep(m > 0 ? m - (reloj() % m) : 0)),
   };
   const { instance } = await WebAssembly.instantiate(bytes, { panel, tiempo, cad, arr, dep, math: { random: Math.random, pow: Math.pow, ...funcionesMath } });
   ex = instance.exports;
@@ -696,29 +630,19 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     depurador.activar = (on) => memoria().setInt32(compilado.debugFlag, on ? 1 : 0, true);
     depurador.alConectar?.();
   }
-  const prometidas = new Map();
-  // With a debugger every clump may stop at a node, so every one runs as a promise; with
-  // Highlight Execution they run one at a time (DT-047).
-  let enSerie = Promise.resolve();
-  const correrUno = (nombre, largo) => {
-    if (!largo && !(depurador && conJSPI)) return ex[nombre]();
-    if (!prometidas.has(nombre)) prometidas.set(nombre, WebAssembly.promising(ex[nombre]));
-    return prometidas.get(nombre)();
-  };
-  correrClump = (nombre, largo) => {
-    if (!depurador?.unoACadaVez?.()) return correrUno(nombre, largo);
-    const turno = enSerie.catch(() => {}).then(() => correrUno(nombre, largo));
-    enSerie = turno;
-    return turno;
-  };
   if (clumps.some((k) => k.largo) || compilado.planes?.length) {
     if (!conJSPI) throw new Error(NO_JSPI_MESSAGE);
   }
+  const abortRun = () => scheduler.abort();
+  if (senal?.aborted) throw abortado();
+  senal?.addEventListener("abort", abortRun, { once: true });
+  runStart = performance.now();
   try {
-    await planificar(clumps, (i) => correrClump(`c${i}`, clumps[i].largo), senal);
+    await scheduler.run(clumpSpecs(clumps, ""));
   } finally {
+    senal?.removeEventListener("abort", abortRun);
     saveState(opciones.estado, bytes, ex.memoria);
-    turnYielder.close();
+    host.close();
   }
   return escritos;
 }

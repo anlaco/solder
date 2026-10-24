@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createScheduler, createVirtualHost } from "../../core/runtime/scheduler.mjs";
+import { createRealHost, createScheduler, createVirtualHost } from "../../core/runtime/scheduler.mjs";
 
 /** A scheduler on a virtual clock, with the trace of what it did. */
 function setUp(threadCount = 1) {
@@ -139,11 +139,63 @@ test("a clump that starts a subplan waits for it, and the subplan runs by datafl
 test("a clump waiting for an answer from outside gets it at the start of a turn, and the Run does not stop meanwhile", async () => {
   const { scheduler } = setUp();
   let answer;
-  const run = scheduler.run([{ name: "dialog", run: async (context) => (answer = await context.waitExternal("error dialog")) }]);
+  let answerDialog;
+  const dialog = new Promise((resolve) => (answerDialog = resolve));
+  const run = scheduler.run([{ run: async (context) => (answer = await context.waitFor(dialog, "error dialog")) }]);
   await new Promise((resolve) => setTimeout(resolve, 5));
-  scheduler.wake("dialog", "continue");
+  answerDialog("continue");
   await run;
   assert.equal(answer, "continue");
+});
+
+test("an answer from outside that fails is thrown in the clump that waited", async () => {
+  const { scheduler } = setUp();
+  const refused = new Error("the dialog was closed");
+  let caught;
+  await scheduler.run([
+    {
+      run: async (context) => {
+        try {
+          await context.waitFor(Promise.reject(refused), "dialog");
+        } catch (error) {
+          caught = error;
+        }
+      },
+    },
+  ]);
+  assert.equal(caught, refused);
+});
+
+test("while one clump at a time is asked for, a clump starts only when the started ones end, or wait for a subplan (DT-047)", async () => {
+  const host = createVirtualHost();
+  const events = [];
+  const scheduler = createScheduler({ host, oneClumpAtATime: () => true, onTrace: (event) => events.push(event) });
+  const twoSlices = async (context) => {
+    await context.yield();
+    await context.yield();
+  };
+  await scheduler.run([
+    { name: "a", run: twoSlices },
+    { name: "b", run: twoSlices },
+    { name: "loop", run: (context) => context.join([{ name: "body0", run: twoSlices }, { name: "body1", run: twoSlices }]) },
+  ]);
+  const startsAndEnds = events.filter((event) => event.event === "start" || event.event === "end").map((event) => `${event.event} ${event.clump}`);
+  assert.deepEqual(startsAndEnds, [
+    "start a", "end a", "start b", "end b", "start loop", "start body0", "end body0", "start body1", "end body1", "end loop",
+  ]);
+});
+
+test("an import finds the clump that called it: the one running on its host thread", async () => {
+  const { scheduler } = setUp();
+  const seen = [];
+  const importCalledBy = () => seen.push(scheduler.currentContext().name);
+  await scheduler.run([
+    { name: "first", run: async (context) => (importCalledBy(), await context.yield(), importCalledBy()) },
+    { name: "second", run: () => importCalledBy() },
+  ]);
+  assert.deepEqual(seen, ["first", "second", "first"]);
+  assert.equal(scheduler.currentContext(), null);
+  assert.throws(() => createScheduler({ host: createVirtualHost(), threadCount: 2 }).currentContext(), /one clump at a time/);
 });
 
 test("Abort rejects the parked clumps, clears the timers and ends the Run as aborted", async () => {
@@ -196,4 +248,50 @@ test("an error in a clump ends the Run with that error", async () => {
 
 test("a scheduler needs at least one thread", () => {
   assert.throws(() => createScheduler({ host: createVirtualHost(), threadCount: 0 }), RangeError);
+});
+
+// ——— The real host ———
+
+const NEVER_RUN_MS = 500;
+const withinTime = (promise) =>
+  Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error("a turn never ran")), NEVER_RUN_MS))]);
+const turnOf = (host) => new Promise((resolve) => host.soon(resolve));
+
+// Issue #1: two parallel loops whose waits end in the same task (Windows coalesces timers) asked for
+// a turn before the first message arrived; the first one must not be lost.
+test("two turns asked for through the MessageChannel at once both run, as in a worker", async () => {
+  const host = createRealHost({ immediate: null });
+  try {
+    await withinTime(Promise.all([turnOf(host), turnOf(host)]));
+  } finally {
+    host.close();
+  }
+});
+
+test("turns through the MessageChannel run in the order they were asked for", async () => {
+  const host = createRealHost({ immediate: null });
+  const order = [];
+  try {
+    await withinTime(Promise.all([1, 2, 3].map((n) => turnOf(host).then(() => order.push(n)))));
+    assert.deepEqual(order, [1, 2, 3]);
+  } finally {
+    host.close();
+  }
+});
+
+test("on the real host two waits that end together both wake, in the order they were made", async () => {
+  const host = createRealHost({ immediate: null });
+  const scheduler = createScheduler({ host });
+  const deadline = host.now() + 5;
+  const woken = [];
+  const waiter = (name) => async (context) => {
+    await context.sleepUntil(deadline);
+    woken.push(name);
+  };
+  try {
+    await withinTime(scheduler.run([{ run: waiter("first") }, { run: waiter("second") }]));
+    assert.deepEqual(woken, ["first", "second"]);
+  } finally {
+    host.close();
+  }
 });

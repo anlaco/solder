@@ -7,6 +7,15 @@ said the file format was not stable yet; `-beta` marks the maintainable version,
 whose files keep opening, and stays a `0.x` (DT-048, DT-055). Until 1.0 every
 release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
+## Unreleased
+
+### Running a VI
+
+- One scheduler of Solder's own runs every clump of a VI (DT-061): parallel loops,
+  waits, subVI calls and dialogs resume in the same order on every operating
+  system, and a VI whose clumps can no longer go on stops with an error that
+  names them instead of hanging.
+
 ## 0.5.0-beta — 2026-10-23
 
 From this version on, until 1.0, every beta comes from the development line:

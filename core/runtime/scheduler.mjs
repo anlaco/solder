@@ -4,9 +4,14 @@
 // is exact and the same in every host, which is what the reference traces check.
 //
 // A clump is a function that runs until it ends or parks. It parks by awaiting one of the methods
-// of the context it is given (`yield`, `sleepUntil`, `acquire`, `join`, `waitExternal`), and only
-// the scheduler wakes it. The host gives three things: the time, one timer for the earliest
-// deadline, and "run the next turn" (`createVirtualHost` is a host whose clock jumps, for tests).
+// of the context it is given (`yield`, `sleepUntil`, `acquire`, `join`, `waitFor`), and only the
+// scheduler wakes it. The host gives three things: the time, one timer for the earliest deadline,
+// and "run the next turn" (`createRealHost` for Node and the worker, `createVirtualHost`, whose
+// clock jumps, for tests).
+//
+// A WebAssembly import does not know which clump called it. Each host thread runs one clump at a
+// time (DT-063: a worker is one thread of the pool), so the clump that called is the one the
+// scheduler last started or resumed on it: `currentContext()`.
 
 /** The error a Run ends with when it is aborted: not a fault of the VI. */
 export const abortedError = () => Object.assign(new Error("The VI was aborted."), { abortado: true });
@@ -20,15 +25,20 @@ const PARK_REASONS = {
   external: "waits for an answer from outside",
 };
 
+/** The deadline when no timer is pending. */
+const NO_DEADLINE = Infinity;
+
 /**
  * Makes the scheduler of one Run.
- * @param {{ host: Host, threadCount?: number, onTrace?: (event: TraceEvent) => void }} options
- *   `threadCount` threads run clumps at once (DT-063); `onTrace` hears every start, resume, park and end.
+ * @param {{ host: Host, threadCount?: number, oneClumpAtATime?: () => boolean, onTrace?: (event: TraceEvent) => void }} options
+ *   `threadCount` threads run clumps at once (DT-063); while `oneClumpAtATime()` is true no clump
+ *   starts until the started ones have ended or wait for a subplan (Highlight Execution, DT-047);
+ *   `onTrace` hears every start, resume, park and end.
  * @typedef {{ now(): number, setTimer(at: number, wake: () => void): unknown, clearTimer(timer: unknown): void, soon(turn: () => void): void }} Host
  * @typedef {{ event: "start" | "resume" | "park" | "end", clump: string, thread: number, at: number, reason?: string }} TraceEvent
  * @typedef {{ name?: string, deps?: number[], run: (context: ClumpContext) => unknown }} ClumpSpec
  */
-export function createScheduler({ host, threadCount = 1, onTrace }) {
+export function createScheduler({ host, threadCount = 1, oneClumpAtATime = () => false, onTrace }) {
   if (!Number.isInteger(threadCount) || threadCount < 1) throw new RangeError(`A scheduler needs at least one thread, not ${threadCount}.`);
 
   const readyQueue = [];
@@ -36,12 +46,13 @@ export function createScheduler({ host, threadCount = 1, onTrace }) {
   const inbox = [];
   const lockWaiters = new Map(); // lock → clumps waiting for it, oldest first; present while the lock is held
   const parkedClumps = new Set();
+  const startedClumps = new Set(); // started and not ended
   const threads = Array.from({ length: threadCount }, () => null); // the clump each thread runs, or null
   let liveClumps = 0;
   let sequence = 0;
   let turnRequested = false;
   let hostTimer = null;
-  let hostTimerDeadline = Infinity;
+  let hostTimerDeadline = NO_DEADLINE;
   let finished = false;
   let settleRun = null;
 
@@ -63,6 +74,8 @@ export function createScheduler({ host, threadCount = 1, onTrace }) {
       resume: null,
       reject: null,
       parkReason: null,
+      wake: null,
+      context: null,
     }));
     specs.forEach((spec, index) => spec.deps?.forEach((dependency) => clumps[dependency].dependents.push(clumps[index])));
     liveClumps += clumps.length;
@@ -74,6 +87,7 @@ export function createScheduler({ host, threadCount = 1, onTrace }) {
   function endClump(clump) {
     trace("end", clump);
     freeThread(clump);
+    startedClumps.delete(clump);
     liveClumps--;
     for (const dependent of clump.dependents) if (--dependent.waitingFor === 0) readyQueue.push(dependent);
     if (--clump.group.remaining === 0) clump.group.onEnd();
@@ -101,23 +115,25 @@ export function createScheduler({ host, threadCount = 1, onTrace }) {
     });
   }
 
-  function makeReady(clump, value) {
-    clump.wakeValue = value;
+  /** The clump goes to the back of the ready queue, to be resumed with `wake` (a value or an error). */
+  function makeReady(clump, wake = { value: undefined }) {
+    clump.wake = wake;
     readyQueue.push(clump);
   }
 
   function contextOf(clump) {
     return {
       name: clump.name,
-      yield: () => park(clump, { kind: "yield" }, () => readyQueue.push(clump)),
+      yield: () => park(clump, { kind: "yield" }, () => makeReady(clump)),
       sleepUntil: (deadline) =>
         park(clump, { kind: "timer" }, () => {
           insertTimer({ deadline, sequence: sequence++, clump });
         }),
+      /** Nothing when the lock is free (the clump goes on without parking); otherwise a promise. */
       acquire: (lock) => {
         if (!lockWaiters.has(lock)) {
           lockWaiters.set(lock, []);
-          return Promise.resolve();
+          return undefined;
         }
         return park(clump, { kind: "lock", lock }, () => lockWaiters.get(lock).push(clump));
       },
@@ -131,8 +147,20 @@ export function createScheduler({ host, threadCount = 1, onTrace }) {
         park(clump, { kind: "join" }, () => {
           addGroup(specs, `${clump.name}.`, () => makeReady(clump));
         }),
-      waitExternal: (tag) => park(clump, { kind: "external", tag }, () => {}),
+      /** Waits for something outside the Run (a dialog, the debugger); its answer is read at the start of a turn. */
+      waitFor: (promise, tag) =>
+        park(clump, { kind: "external", tag }, () => {
+          promise.then(
+            (value) => postWake(clump, { value }),
+            (error) => postWake(clump, { error }),
+          );
+        }),
     };
+  }
+
+  function postWake(clump, wake) {
+    inbox.push({ kind: "wake", clump, wake });
+    requestTurn();
   }
 
   function insertTimer(timer) {
@@ -162,20 +190,29 @@ export function createScheduler({ host, threadCount = 1, onTrace }) {
   function readInbox() {
     for (const message of inbox.splice(0)) {
       if (message.kind === "abort") return endRun(abortedError());
-      if (message.kind === "wake" && message.clump.parkReason?.kind === "external") makeReady(message.clump, message.value);
+      if (message.kind === "wake" && message.clump.parkReason?.kind === "external") makeReady(message.clump, message.wake);
     }
   }
 
   function moveDueTimers() {
     const now = host.now();
-    while (timerQueue.length && timerQueue[0].deadline <= now) readyQueue.push(timerQueue.shift().clump);
+    while (timerQueue.length && timerQueue[0].deadline <= now) makeReady(timerQueue.shift().clump);
   }
 
   function dispatch() {
-    for (let thread = 0; thread < threads.length && readyQueue.length; thread++) {
+    for (let thread = 0; thread < threads.length; thread++) {
       if (threads[thread]) continue;
-      runOn(thread, readyQueue.shift());
+      const next = nextToRun();
+      if (next < 0) return;
+      runOn(thread, readyQueue.splice(next, 1)[0]);
     }
+  }
+
+  /** The oldest ready clump that may run now, or -1. */
+  function nextToRun() {
+    if (!oneClumpAtATime()) return readyQueue.length ? 0 : -1;
+    const anotherIsGoing = [...startedClumps].some((clump) => clump.parkReason?.kind !== "join");
+    return readyQueue.findIndex((clump) => clump.started || !anotherIsGoing);
   }
 
   function runOn(thread, clump) {
@@ -185,16 +222,19 @@ export function createScheduler({ host, threadCount = 1, onTrace }) {
       trace("resume", clump);
       parkedClumps.delete(clump);
       clump.parkReason = null;
-      const value = clump.wakeValue;
-      clump.wakeValue = undefined;
-      clump.resume(value);
+      const { value, error } = clump.wake;
+      clump.wake = null;
+      if (error) clump.reject(error);
+      else clump.resume(value);
       return;
     }
     clump.started = true;
+    startedClumps.add(clump);
+    clump.context = contextOf(clump);
     trace("start", clump);
     let result;
     try {
-      result = clump.run(contextOf(clump));
+      result = clump.run(clump.context);
     } catch (error) {
       return endRun(error);
     }
@@ -203,15 +243,15 @@ export function createScheduler({ host, threadCount = 1, onTrace }) {
   }
 
   function armHostTimer() {
-    const earliest = timerQueue[0]?.deadline ?? Infinity;
+    const earliest = timerQueue[0]?.deadline ?? NO_DEADLINE;
     if (earliest === hostTimerDeadline) return;
     if (hostTimer !== null) host.clearTimer(hostTimer);
     hostTimer = null;
     hostTimerDeadline = earliest;
-    if (earliest !== Infinity)
+    if (earliest !== NO_DEADLINE)
       hostTimer = host.setTimer(earliest, () => {
         hostTimer = null;
-        hostTimerDeadline = Infinity;
+        hostTimerDeadline = NO_DEADLINE;
         requestTurn();
       });
   }
@@ -255,13 +295,41 @@ export function createScheduler({ host, threadCount = 1, onTrace }) {
       inbox.push({ kind: "abort" });
       requestTurn();
     },
-    /** The answer to a clump that waits for something outside (a dialog, the debugger). */
-    wake(clumpName, value) {
-      const clump = [...parkedClumps].find((parked) => parked.name === clumpName);
-      if (!clump) return;
-      inbox.push({ kind: "wake", clump, value });
-      requestTurn();
+    /** The context of the clump running on this host thread, for an import that does not know who called it. */
+    currentContext() {
+      if (threadCount !== 1) throw new Error("A host thread runs one clump at a time: give its scheduler one thread.");
+      return threads[0]?.context ?? null;
     },
+  };
+}
+
+/**
+ * The host of a real Run, in Node or in a worker. A turn runs after due timers and the messages
+ * that came in (the panel, Abort): setImmediate in Node; in a worker, where there is none, a
+ * MessageChannel, which is immediate where setTimeout(0) takes up to 4 ms.
+ * @param {{ immediate?: ((turn: () => void) => unknown) | null }} [options] setImmediate; null where there is none
+ */
+export function createRealHost({ immediate = globalThis.setImmediate } = {}) {
+  let channel = null;
+  // Each message runs the oldest waiting turn, never only the last (issue #1: on Windows two
+  // waits that end together run in one task).
+  const waitingTurns = [];
+  return {
+    now: () => performance.now(),
+    setTimer: (at, wake) => setTimeout(wake, Math.max(0, at - performance.now())),
+    clearTimer: (timer) => clearTimeout(timer),
+    soon: (turn) => {
+      if (typeof immediate === "function") return void immediate(turn);
+      if (!channel) {
+        channel = new MessageChannel();
+        channel.port1.onmessage = () => waitingTurns.shift()?.();
+        channel.port1.unref?.();
+      }
+      waitingTurns.push(turn);
+      channel.port2.postMessage(0);
+    },
+    /** Releases the channel when the Run ends. */
+    close: () => channel?.port1.close(),
   };
 }
 
