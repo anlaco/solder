@@ -379,6 +379,10 @@ memory, so a Run uses every core as in LabVIEW (DT-063). In order:
 1. `core/runtime/scheduler.mjs` with its own tests on a simulated clock: the ready queue, the timer queue ordered by
    (deadline, sequence), the inbox, Abort and deadlock as states (DT-061 §1–2, §5, §6), designed for a pool of N
    threads from the start, with N = 1 as the exact-order mode (DT-063 §1, §4).
+   *Done on 2026-10-24: `createScheduler` and `createVirtualHost` (a host whose clock jumps to the next deadline), with
+   `test/core/scheduler.test.mjs`: dataflow order, yields, timers by (deadline, sequence), the 1000/500 ms interleave,
+   one clump at a time with N = 1 and N at once with a pool, the non-reentrant subVI's lock in arrival order, subplans
+   (`join`), answers from outside, Abort and deadlock. Nothing uses it yet: that is step 2.*
 2. Every suspending import of `runtime.mjs` parks through it (`ceder`, `esperar`, `esperar_multiplo`, `entrar_subvi`,
    `correr_plan`, `correr_subvi`, the dialogs, `dep.nodo`), with the iteration budget per clump; `planificar` and
    `turn-yielder.mjs` become part of it. The existing tests stay green.

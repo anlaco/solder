@@ -2257,8 +2257,8 @@ The spikes were run outside the repository and are not kept: items 2–4 have no
 | Statement | What fails if it is broken | Status |
 |---|---|---|
 | Two yields at once through the `MessageChannel` both wake up, in order (issue #1) | `test/core/turn-yielder.test.mjs` | Verified |
-| The scheduler alone resumes clumps, in order of (deadline, sequence), with one clump running at a time | — | Unverified: the scheduler is not written |
-| A Run whose clumps can no longer be woken ends with an error naming them | — | Unverified |
+| The scheduler alone resumes clumps, in order of (deadline, sequence), with one clump running at a time | `test/core/scheduler.test.mjs` | Verified in the scheduler; the runtime does not use it yet (plan step 2) |
+| A Run whose clumps can no longer be woken ends with an error naming them | `test/core/scheduler.test.mjs` | Verified in the scheduler; not yet in the runtime |
 | The same VI and instants give the same order of resumes in every host | — | Unverified: needs the reference traces |
 | JSPI runs with no flag from Node 24.22 on, and Node 26 refuses the flag | Measured on 2026-10-23 (above); `test/end-to-end/command-line.test.mjs` checks that the flag is passed only when the running Node lacks JSPI and that the command line runs a VI that waits from a plain `node` (run on 24.19.0, 24.22.1 and 26.12.1 on 2026-10-23) | Verified on the Node that runs `npm test` |
 | wasmtime can keep several clumps of one instance suspended only through stack switching | Measured on 2026-10-23 (above) | Measured, no test |
@@ -2380,6 +2380,6 @@ In the VM (Xeon E5-2683 v3, 4 physical cores, 8 logical processors), with VIs bu
 |-----------|-----------|--------|
 | Two independent loops that only compute run in parallel on N cores | — | **Unverified**: the pool is not written |
 | A clump never starts before every wire it reads is written, with N > 1 | — | **Unverified**: needs the reference traces |
-| A non-reentrant subVI called from parallel branches runs one call at a time | — | **Unverified** |
+| A non-reentrant subVI called from parallel branches runs one call at a time | `test/core/scheduler.test.mjs` (the lock, with four threads) | Verified in the scheduler; the pool is not written |
 | With N = 1 the order of resumes is the same in every host | — | **Unverified**: DT-061 §8 |
 | LabVIEW: one thread per logical processor per execution system and priority; compute loops, reentrant calls and branch consumers run in parallel; a non-reentrant subVI serializes | Measured on 2026-10-24 (above) | Measured, no test |
