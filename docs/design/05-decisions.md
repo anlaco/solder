@@ -29,6 +29,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [060](#dt-060) | An array is born without an element type, and its element gives it one | Accepted · implemented in the editor |
 | [061](#dt-061) | One scheduler of our own decides which clump runs next; how a clump is suspended depends on the host | Accepted · not implemented |
 | [062](#dt-062) | Until 1.0 every beta is published from `main`: a feature raises MINOR, a fix raises PATCH | Accepted · in use |
+| [063](#dt-063) | A Run uses every core: a pool of workers over one shared memory; independent Runs keep separate memories | Accepted · not implemented |
 
 ## The 34 Red decisions
 
@@ -2167,7 +2168,9 @@ in that order, through companion `.css` files.**
 
 **One scheduler of our own decides which clump runs next; how a clump is suspended depends on the host.**
 
-- **Status:** Accepted on 2026-10-23 by the developer.
+- **Status:** Accepted on 2026-10-23 by the developer. §3 (one clump at a time) and §8 (the same order in every host)
+  amended by [DT-063](#dt-063) on 2026-10-24: a pool of threads over one shared memory, with the exact order as the
+  N = 1 mode.
 - **How it was decided:** issue [anlaco/solder#1](https://github.com/anlaco/solder/issues/1) opened the question. The
   developer called a council of five independent voices: four fresh sessions with no context, plus the main session,
   which wrote its idea down before reading theirs. The four sessions proposed the same idea (A, below), and the main
@@ -2293,3 +2296,67 @@ raises PATCH. There are no release branches.**
 |-----------|-----------|--------|
 | Every published beta is a tag on `main` | `git merge-base --is-ancestor v<version> main` before publishing | **Unverified**: process, no automatic check |
 
+## DT-063
+
+**A Run uses every core, as LabVIEW does: a pool of workers shares one WebAssembly memory, and the scheduler of
+DT-061 hands ready clumps to whichever thread is free. Independent Runs keep separate memories.**
+
+- **Status:** Accepted on 2026-10-24 by the developer. It amends [DT-061](#dt-061) §3 and §8 and reverses the option
+  DT-061 rejected ("Threads, a worker for each loop, shared memory"); the rest of DT-061 holds.
+- **Why:** the developer's rule for technical choices (2026-10-24): **what brings Solder closest to LabVIEW and is the
+  most powerful, never the easiest.** LabVIEW runs the clumps of a VI on the threads of its execution systems, so two
+  independent loops that only compute use two cores; with one clump at a time Solder would be up to N times slower on
+  N cores for that kind of program. DT-061 chose determinism over parallelism; this decision chooses LabVIEW's
+  capability and keeps determinism as a mode.
+- **Complements:** [DT-039](#dt-039) (the VI runs in the page's WASM engine), [DT-040](#dt-040) (clumps),
+  [DT-042](#dt-042) (the data space in linear memory), [DT-045](#dt-045) (non-reentrant subVIs), [DT-061](#dt-061).
+  It does not change the `.sdg` or what a VI computes.
+
+### Decision
+
+1. **A pool of N workers per Run, one shared memory.** The compiled module declares its memory `shared`; every worker
+   of the pool instantiates the same module over that memory. The scheduler of DT-061 keeps its queues, its typed
+   park reasons, its inbox, Abort and deadlock as states, and its simulated clock; what changes is that it resumes a
+   ready clump on **any free thread** instead of one clump at a time. The iteration budget stays per clump.
+2. **What the compiler adds:** a stack of its own for each thread; the dependency counters of the clumps updated with
+   atomics, so a clump starts only when every wire it reads has been written; and a lock for what LabVIEW also
+   serializes — a non-reentrant subVI (its FIFO of DT-061 §2 becomes a lock shared by the threads), global variables,
+   and later queues, notifiers and functional globals.
+3. **Why shared memory is safe here.** The WebAssembly sandbox is not broken: the threads share the memory of their
+   own program, and nothing outside it is reachable except through our imports. The security risk of
+   `SharedArrayBuffer` is Spectre (a precise timer that can read other data of the same process), which is why it
+   needs cross-origin isolation: the editor's window that runs VIs is served with COOP/COEP, and it loads no
+   third-party content. The real risk is data races; dataflow removes most of them by construction (a wire has one
+   writer, and its readers start after it), and the locks of §2 cover the rest, as in LabVIEW.
+4. **Determinism is a mode, not the rule.** With N = 1 the order of resumes is exact, and the reference traces of
+   DT-061 §8 check it in every host. With N > 1 the order between independent branches is free, as in LabVIEW, and
+   the traces check the dataflow constraints (who may start before whom) and the results, not the order.
+5. **Where memories are separate.** One shared memory per Run (a top-level VI with all its subVIs). Two Runs that
+   are independent each have their own memory, so a fault in one cannot corrupt the other; later, code not
+   compiled by Solder (third-party libraries or plugins) runs in its own memory too. Within a Run there is no mix of
+   private and shared memory: WebAssembly shares a whole memory or none, wires cross branches all the time and
+   copying them between memories would lose what this decision is for, and mixing gains no security (one shared
+   memory already needs cross-origin isolation for the whole process).
+6. **In the Rust hardware host:** wasmtime with shared memory and one thread per worker, each with the stack-switching
+   continuations of DT-061 §7.
+7. **Measured in LabVIEW before N and the dispatch policy are fixed** (rule 2): how many threads each execution
+   system has and what decides it, how two loops that only compute are spread over the cores, how a reentrant subVI
+   called from parallel branches runs, and what the user can set (execution system and priority of a VI).
+
+### Rejected
+
+- **One clump at a time in one worker (DT-061 §3):** deterministic and simple, but it uses one core, below LabVIEW.
+- **Private memory per worker, shared only where needed:** WebAssembly cannot share part of a memory; mixing two
+  memories (multi-memory) makes every load and store choose one, with two paths in the compiler and runtime; every
+  wire between workers would be copied (an acquisition array of a million samples, on every crossing), which LabVIEW
+  never does; and it would not remove the need for cross-origin isolation.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Two independent loops that only compute run in parallel on N cores | — | **Unverified**: the pool is not written |
+| A clump never starts before every wire it reads is written, with N > 1 | — | **Unverified**: needs the reference traces |
+| A non-reentrant subVI called from parallel branches runs one call at a time | — | **Unverified** |
+| With N = 1 the order of resumes is the same in every host | — | **Unverified**: DT-061 §8 |
+| LabVIEW's threads per execution system and its spread of parallel loops | — | **Unverified**: to measure in the VM |

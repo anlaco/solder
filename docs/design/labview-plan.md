@@ -8,12 +8,9 @@
 
 When the developer says "keep going":
 
-1. Read this document: §2 (where we are) and §3b (what is next). Since 0.4.0-beta
-   (2026-10-16), continue with **"After the beta, first: the themes"** at the end of
-   the road in §3b (DT-056): the tokens and a first Solder theme are done since
-   2026-10-17 (`SOLDER_THEME=solder npm run app`); next, review it with the developer,
-   then the Front Panel as plain HTML with panel styles.
-   §4 gives the detail of each module.
+1. Read this document: §2 (where we are) and §3b (what is next). Since 0.5.0-beta
+   (2026-10-23), continue with **"Next: the execution scheduler"** at the end of the
+   road in §3b (DT-061 and DT-063). §4 gives the detail of each module.
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
    `win11 encender`, `tools/vm_control.py foto|clic|arrastrar|tecla|texto`.
@@ -373,11 +370,15 @@ styles (Plain, Solder), once it is decided where a panel's style lives.
    priority): the styles used are Old School for development and Solder for the releases. The branch is ready to
    merge into `main` as 0.5.0-beta when the developer decides.*
 
-**Next: the execution scheduler** (DT-061, decided 2026-10-23), on a short `feature/scheduler` branch from `main`:
-one scheduler per Run is the only thing that resumes a clump, in our own order, so parallel loops behave the same
-on every operating system (issue #1). In order:
+**Next: the execution scheduler** (DT-061, decided 2026-10-23, amended by DT-063 on 2026-10-24), on a short
+`feature/scheduler` branch from `main`: one scheduler per Run is the only thing that resumes a clump, so parallel loops
+behave the same on every operating system (issue #1), and it hands ready clumps to a pool of workers over one shared
+memory, so a Run uses every core as in LabVIEW (DT-063). In order:
+0. Measure LabVIEW's execution systems in the VM (DT-063 §7): threads per execution system, how two loops that only
+   compute spread over the cores, a reentrant subVI called from parallel branches, and the VI's execution settings.
 1. `core/runtime/scheduler.mjs` with its own tests on a simulated clock: the ready queue, the timer queue ordered by
-   (deadline, sequence), the inbox, one clump at a time, Abort and deadlock as states (DT-061 §1–3, §5, §6).
+   (deadline, sequence), the inbox, Abort and deadlock as states (DT-061 §1–2, §5, §6), designed for a pool of N
+   threads from the start, with N = 1 as the exact-order mode (DT-063 §1, §4).
 2. Every suspending import of `runtime.mjs` parks through it (`ceder`, `esperar`, `esperar_multiplo`, `entrar_subvi`,
    `correr_plan`, `correr_subvi`, the dialogs, `dep.nodo`), with the iteration budget per clump; `planificar` and
    `turn-yielder.mjs` become part of it. The existing tests stay green.
@@ -388,6 +389,9 @@ on every operating system (issue #1). In order:
 5. Node 26: the command line and `npm test` pass `--experimental-wasm-jspi` only when the running Node needs it
    (DT-061, "What was measured" 1). *Done on 2026-10-23, as a fix for 0.4 (`cli/jspi.mjs`,
    `scripts/run-tests.mjs`): `npm test` and the command line checked on Node 24.19.0, 24.22.1 and 26.12.1.*
+6. The pool (DT-063 §1–3): the module's memory `shared`, a stack per thread, the clumps' dependency counters with
+   atomics, the lock of non-reentrant subVIs and globals, COOP/COEP on the window that runs VIs, and N from what step 0
+   measured. The reference traces of step 4 run with N = 1 (exact order) and N > 1 (dataflow constraints and results).
 The Rust host's stack switching (DT-061 §7) waits for the hardware host.
 
 **Then:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
