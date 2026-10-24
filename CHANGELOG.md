@@ -16,6 +16,12 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   system, and a VI whose clumps can no longer go on stops with an error that
   names them instead of hanging.
 
+### Fixes
+
+- The toolbar's Abort button stops a VI whose loop writes to the panel all the
+  time: the window is no longer rebuilt on every value, so a click on a button
+  reaches it while the VI runs (Ctrl+. already worked).
+
 ## 0.5.0-beta — 2026-10-23
 
 From this version on, until 1.0, every beta comes from the development line:

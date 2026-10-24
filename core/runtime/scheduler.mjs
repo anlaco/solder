@@ -293,7 +293,8 @@ export function createScheduler({ host, threadCount = 1, oneClumpAtATime = () =>
           onTurnEnd();
           settleRun(null);
         });
-        requestTurn();
+        // The first turn runs at once: what depends on nothing starts when the Run does.
+        turn();
       });
     },
     /** Abort, read at the start of the next turn (DT-061 §5). */

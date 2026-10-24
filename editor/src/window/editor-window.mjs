@@ -38,6 +38,7 @@ import { addressFromText } from "../common/array-grid.mjs";
 import * as MD from "./modal-dialog.mjs";
 import * as GM from "../front-panel/graph-menus.mjs";
 import * as GS from "../front-panel/graph-state.mjs";
+import { morphInnerHtml } from "./dom-morph.mjs";
 import * as P from "../front-panel/front-panel.mjs";
 import * as PC from "../front-panel/panel-clipboard.mjs";
 import * as Paths from "../common/vi-paths.mjs";
@@ -1180,7 +1181,7 @@ function pintar() {
     const variantes = estado.menuBarra.id === EM.editMenuId(nombre) ? variantesDelMenuEdit() : {};
     extra.encima = (extra.encima ?? "") + D.menuContextual(inv, { raiz: estado.menuBarra.id, x: estado.menuBarra.x, y: estado.menuBarra.y }, marcasDelMenuBarra(estado.menuBarra.id), medirMenu, variantes, windowSize());
   }
-  document.body.innerHTML = V.ventana(inv, nombre, estado, extra);
+  morphInnerHtml(document.body, V.ventana(inv, nombre, estado, extra));
   const ventana = document.querySelector(".ventana");
   ventana.classList.toggle("cableando", dia.accion?.tipo === "cablear");
   // Mientras se arrastra un control desde la paleta, el lienzo lleva un borde punteado.
