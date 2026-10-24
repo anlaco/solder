@@ -2343,6 +2343,29 @@ DT-061 hands ready clumps to whichever thread is free. Independent Runs keep sep
    system has and what decides it, how two loops that only compute are spread over the cores, how a reentrant subVI
    called from parallel branches runs, and what the user can set (execution system and priority of a VI).
 
+### What was measured in LabVIEW (2026-10-24)
+
+In the VM (Xeon E5-2683 v3, 4 physical cores, 8 logical processors), with VIs built for it in
+`C:\solder-measure\exec-systems\`; reports `labview-captures/reports/2026-10-24-exec-systems-{a,b,c}.md`.
+
+1. **Threads:** `vi.lib\Utility\sysinfo.llb\threadconfig.vi`, run, shows 5 execution systems (standard,
+   instrument I/O, data acquisition, other 1, other 2) × 5 priorities (background, normal, above normal, high, time
+   critical), **every cell with as many threads as logical processors** (8). `LabVIEW.ini` has no thread key by default.
+2. **VI Properties ▸ Execution** (defaults first): reentrancy Non-reentrant / Shared clone / Preallocated clone;
+   priority normal, background, above normal, high, time critical, subroutine; preferred execution system same as
+   caller, user interface, standard, instrument I/O, data acquisition, other 1, other 2; Allow debugging ✓, Inline
+   subVI ☐, Enable automatic error handling ✓, Run when opened ☐, Suspend when called ☐, Clear indicators when
+   called ☐, Auto handle menus at launch ✓.
+3. **Compute-only loops run on separate cores:** a For Loop of 8·10⁸ iterations (x = x·mul + add) takes 3.0 s alone,
+   3.0 s with 2 copies in parallel and 3.1–3.6 s with 4; with 4, about 4 of the 8 logical processors are busy.
+4. **SubVI called from two parallel branches** (3 s per call): non-reentrant 5.9 s (the calls wait for each other),
+   shared clone 3.1 s and preallocated clone 3.2 s (in parallel).
+5. **A branched wire does not serialize:** one array wire branched to two 3 s consumers takes 3.2 s (3.0 s with one).
+   Show Buffer Allocations: two readers make no copy; two Replace Array Subset make **one** copy, in one of them,
+   and the other works on the original buffer.
+6. **Wait (ms):** 1 ms gives a mean period of 1.70–1.76 ms (min 0.01, max 10, sd ≈ 0.74; mostly 1–2 ms); 10 ms gives
+   10.44–10.47 ms (8.8 to 17.6, sd ≈ 0.8). Two 1 ms loops in parallel each keep the same period as one alone.
+
 ### Rejected
 
 - **One clump at a time in one worker (DT-061 §3):** deterministic and simple, but it uses one core, below LabVIEW.
@@ -2359,4 +2382,4 @@ DT-061 hands ready clumps to whichever thread is free. Independent Runs keep sep
 | A clump never starts before every wire it reads is written, with N > 1 | — | **Unverified**: needs the reference traces |
 | A non-reentrant subVI called from parallel branches runs one call at a time | — | **Unverified** |
 | With N = 1 the order of resumes is the same in every host | — | **Unverified**: DT-061 §8 |
-| LabVIEW's threads per execution system and its spread of parallel loops | — | **Unverified**: to measure in the VM |
+| LabVIEW: one thread per logical processor per execution system and priority; compute loops, reentrant calls and branch consumers run in parallel; a non-reentrant subVI serializes | Measured on 2026-10-24 (above) | Measured, no test |
