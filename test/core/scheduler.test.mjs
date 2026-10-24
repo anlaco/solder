@@ -246,6 +246,19 @@ test("an error in a clump ends the Run with that error", async () => {
   );
 });
 
+test("the end of a turn comes after the clumps it resumed have parked, and once more when the Run ends", async () => {
+  const host = createVirtualHost();
+  const log = [];
+  const scheduler = createScheduler({ host, onTurnEnd: () => log.push("turn end") });
+  const writer = (name) => async (context) => {
+    log.push(`${name} writes`);
+    await context.sleepUntil(10);
+    log.push(`${name} writes again`);
+  };
+  await scheduler.run([{ run: writer("a") }]);
+  assert.deepEqual(log.filter((entry, index) => entry !== log[index - 1]), ["turn end", "a writes", "turn end", "a writes again", "turn end"]);
+});
+
 test("a scheduler needs at least one thread", () => {
   assert.throws(() => createScheduler({ host: createVirtualHost(), threadCount: 0 }), RangeError);
 });

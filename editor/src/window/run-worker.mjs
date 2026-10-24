@@ -28,9 +28,9 @@
 //   { debug: { resumed: true } }           the VI goes on
 //   { fin: true, error?, abortado? }       the VI has finished
 //
-// Writes are gathered and sent when the VI yields (a wait) or finishes: a loop that
-// writes thousands of times a second does not flood the page, and the panel shows the
-// last value, as LabVIEW does. A Waveform Chart is not like that: each write is a
+// Writes are gathered and sent at the end of each turn of the scheduler (DT-061 §4), before a
+// dialog and when the VI finishes: a loop that writes thousands of times a second does not flood
+// the page, and the panel shows the last value, as LabVIEW does. A Waveform Chart is not like that: each write is a
 // point of its history, so every one of them is sent.
 
 import { createDebugController } from "../debugging/debug-controller.mjs";
@@ -54,7 +54,6 @@ let chartNodeIds = new Set();
 const MAX_BUFFERED_CHART_WRITES = 100000;
 /** The debugger of the Run in progress (debug-controller.mjs), or `null`. */
 let debugController = null;
-let programado = false;
 /** Los diálogos que esperan al usuario: su id y cómo seguir. */
 const respuestas = new Map();
 let siguiente = 0;
@@ -93,7 +92,6 @@ function startDebugger({ compilado, depuracion }) {
 }
 
 function vaciar() {
-  programado = false;
   const hayEscritos = Object.keys(pendientes).length > 0;
   const haySeries = Object.keys(pendingChartWrites).length > 0;
   if (!hayEscritos && !haySeries) return;
@@ -135,11 +133,8 @@ onmessage = async ({ data }) => {
     alEscribir: (nodo, v) => {
       if (chartNodeIds.has(nodo)) noteChartWrite(nodo, v);
       else pendientes[nodo] = v;
-      if (!programado) {
-        programado = true;
-        setTimeout(vaciar);
-      }
     },
+    alAcabarTurno: vaciar,
     alSoltar: (nodo) => postMessage({ soltar: nodo }),
   };
   debugController = data.depuracion ? startDebugger(data) : null;

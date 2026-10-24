@@ -395,8 +395,14 @@ memory, so a Run uses every core as in LabVIEW (DT-063). In order:
    `turn-yielder.mjs` are gone; issue #1's tests moved to `test/core/scheduler.test.mjs`. 804 tests green.*
 3. The worker's panel writes sent at the end of each turn instead of `setTimeout(vaciar)` (DT-061 §4), and the
    editor's `worker.terminate()` when Abort gets no answer.
+   *Done on 2026-10-24: the scheduler's `onTurnEnd` (the runtime's `alAcabarTurno`) comes once the clumps a turn
+   resumed have parked, and when the Run ends; the worker sends its writes then (`test/core/execution.test.mjs`,
+   `test/core/scheduler.test.mjs`). The editor already terminated the worker 500 ms after an unanswered Abort.*
 4. The reference traces (DT-061 §8): a few VIs with parallel waits, the order of resumes they must give, and a test
    that runs them.
+   *Done on 2026-10-24: `test/end-to-end/reference-traces.test.mjs` runs VIs with parallel loops on the virtual clock
+   (`ejecutar` takes `host`) and checks every write: the 1000/500 ms loops, issue #1's waits that end together, and
+   Wait Until Next ms Multiple against a plain wait, ties going to the wait made first.*
 5. Node 26: the command line and `npm test` pass `--experimental-wasm-jspi` only when the running Node needs it
    (DT-061, "What was measured" 1). *Done on 2026-10-23, as a fix for 0.4 (`cli/jspi.mjs`,
    `scripts/run-tests.mjs`): `npm test` and the command line checked on Node 24.19.0, 24.22.1 and 26.12.1.*

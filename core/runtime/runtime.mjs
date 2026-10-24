@@ -147,8 +147,8 @@ const NO_JSPI_MESSAGE = "This VI waits (Wait…) and this JavaScript engine has 
 /** The error a VI that was aborted ends with: not a fault of the VI. */
 export const abortado = abortedError;
 
-/** El reloj de milisegundos de LabVIEW: un U32 que da la vuelta, con el cero sin definir. */
-const reloj = () => Math.floor(performance.now()) >>> 0;
+/** LabVIEW's millisecond clock on a host's time: a U32 that wraps, with its zero undefined. */
+const millisecondTimer = (host) => () => Math.floor(host.now()) >>> 0;
 
 /**
  * What a VI and its subVIs keep from one Run to the next while they stay loaded
@@ -182,6 +182,8 @@ const sameBytes = (a, b) => !!a && a.length === b.length && a.every((byte, i) =>
  * cambiarlo mientras el VI corre. Devuelve el valor de cada indicador escrito,
  * por id. `opciones`:
  * - `alEscribir(nodo, valor)`: cada escritura en un indicador, en el momento.
+ * - `alAcabarTurno()`: the clumps of a turn have parked or ended, or the Run ended (DT-061 §4): the
+ *   moment to send what was written to the panel.
  * - `alSoltar(nodo)`: un control Latch que el diagrama ha leído a TRUE y que
  *   vuelve solo a FALSE (comprobado en LabVIEW con el botón Stop).
  * - `separador`: el separador decimal del sistema, para los números a cadena con
@@ -194,6 +196,9 @@ const sameBytes = (a, b) => !!a && a.length === b.length && a.every((byte, i) =>
  *   node index `i` is.
  * - `estado`: an object kept between Runs, through which the VI keeps its
  *   state while it stays loaded (DT-045).
+ * - `host`: where time and turns come from (scheduler.mjs); by default the real one. The reference traces
+ *   run on `createVirtualHost`, whose clock jumps.
+ * - `alTrazar(evento)`: every start, resume, park and end of a clump, from the scheduler.
  * - `senal`: un AbortSignal; el Abort para el VI aunque esté esperando, y la
  *   promesa se rechaza con un error `abortado`.
  */
@@ -518,8 +523,9 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   // host's. With a debugger every clump may stop at a node; with Highlight Execution they run one at
   // a time, as LabVIEW does (DT-047).
   const depurador = opciones.depurador;
-  const host = createRealHost();
-  const scheduler = createScheduler({ host, oneClumpAtATime: () => !!depurador?.unoACadaVez?.() });
+  const host = opciones.host ?? createRealHost();
+  const reloj = millisecondTimer(host);
+  const scheduler = createScheduler({ host, oneClumpAtATime: () => !!depurador?.unoACadaVez?.(), onTurnEnd: opciones.alAcabarTurno, onTrace: opciones.alTrazar });
   const current = () => scheduler.currentContext();
   const suspendible = (f) => (conJSPI ? new WebAssembly.Suspending(f) : f);
   const promisingClumps = new Map();
@@ -609,7 +615,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   /** Wait (ms) and Wait Until Next ms Multiple: the clump parks until the deadline, then reads the clock. */
   const sleep = (ms) => {
     if (senal?.aborted) throw abortado();
-    return current().sleepUntil(performance.now() + ms).then(reloj);
+    return current().sleepUntil(host.now() + ms).then(reloj);
   };
   const tiempo = {
     reloj,
@@ -642,7 +648,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   } finally {
     senal?.removeEventListener("abort", abortRun);
     saveState(opciones.estado, bytes, ex.memoria);
-    host.close();
+    host.close?.();
   }
   return escritos;
 }

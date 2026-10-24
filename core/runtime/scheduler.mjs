@@ -30,15 +30,16 @@ const NO_DEADLINE = Infinity;
 
 /**
  * Makes the scheduler of one Run.
- * @param {{ host: Host, threadCount?: number, oneClumpAtATime?: () => boolean, onTrace?: (event: TraceEvent) => void }} options
+ * @param {{ host: Host, threadCount?: number, oneClumpAtATime?: () => boolean, onTurnEnd?: () => void, onTrace?: (event: TraceEvent) => void }} options
  *   `threadCount` threads run clumps at once (DT-063); while `oneClumpAtATime()` is true no clump
  *   starts until the started ones have ended or wait for a subplan (Highlight Execution, DT-047);
- *   `onTrace` hears every start, resume, park and end.
+ *   `onTurnEnd` is called when the clumps of a turn have parked or ended, and when the Run ends
+ *   (the panel's writes are sent then, DT-061 §4); `onTrace` hears every start, resume, park and end.
  * @typedef {{ now(): number, setTimer(at: number, wake: () => void): unknown, clearTimer(timer: unknown): void, soon(turn: () => void): void }} Host
  * @typedef {{ event: "start" | "resume" | "park" | "end", clump: string, thread: number, at: number, reason?: string }} TraceEvent
  * @typedef {{ name?: string, deps?: number[], run: (context: ClumpContext) => unknown }} ClumpSpec
  */
-export function createScheduler({ host, threadCount = 1, oneClumpAtATime = () => false, onTrace }) {
+export function createScheduler({ host, threadCount = 1, oneClumpAtATime = () => false, onTurnEnd = () => {}, onTrace }) {
   if (!Number.isInteger(threadCount) || threadCount < 1) throw new RangeError(`A scheduler needs at least one thread, not ${threadCount}.`);
 
   const readyQueue = [];
@@ -176,9 +177,12 @@ export function createScheduler({ host, threadCount = 1, oneClumpAtATime = () =>
     host.soon(turn);
   }
 
+  // A turn starts once the clumps resumed by the last one have parked or ended: that is when the
+  // last turn really ends.
   function turn() {
     turnRequested = false;
     if (finished) return;
+    onTurnEnd();
     readInbox();
     if (finished) return;
     moveDueTimers();
@@ -269,6 +273,7 @@ export function createScheduler({ host, threadCount = 1, oneClumpAtATime = () =>
   function endRun(error) {
     if (finished) return;
     finished = true;
+    onTurnEnd();
     if (hostTimer !== null) host.clearTimer(hostTimer);
     for (const clump of parkedClumps) clump.reject(abortedError());
     parkedClumps.clear();
@@ -285,6 +290,7 @@ export function createScheduler({ host, threadCount = 1, oneClumpAtATime = () =>
         addGroup(specs, "c", () => {
           if (finished) return;
           finished = true;
+          onTurnEnd();
           settleRun(null);
         });
         requestTurn();

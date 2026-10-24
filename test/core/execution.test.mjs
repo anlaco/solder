@@ -60,6 +60,22 @@ test("las ramas independientes corren a la vez y cada indicador se escribe cuand
   assert.ok(Math.abs(b.v - a.v - 60) < 25, `${b.v} - ${a.v}`);
 });
 
+test("what a turn wrote is handed over when the turn ends, before a later wait ends (DT-061 §4)", async () => {
+  const circuit = vi(
+    [["k1", "const", { value: 60 }], ["w1", "wait-ms"], ["late", "indicator"], ["k2", "const", { value: 7 }], ["early", "indicator"]],
+    [["k1.result", "w1.ms"], ["w1.result", "late.value"], ["k2.result", "early.value"]],
+  );
+  const compiled = compilar(circuit.g, CAT);
+  const names = Object.fromEntries(Object.entries(circuit.id).map(([name, nodeId]) => [nodeId, name]));
+  const events = [];
+  await ejecutar(compiled, {}, { alEscribir: (nodeId) => events.push(`write ${names[nodeId]}`), alAcabarTurno: () => events.push("turn end") });
+  const early = events.indexOf("write early");
+  const late = events.indexOf("write late");
+  assert.ok(early >= 0 && late > early, events.join(", "));
+  assert.ok(events.slice(early, late).includes("turn end"), `the early write waited for the late one: ${events.join(", ")}`);
+  assert.equal(events.at(-1), "turn end", "the last writes are handed over when the Run ends");
+});
+
 test("lo que depende de una espera espera, y dos esperas en cadena se suman", async () => {
   // w2 recibe su tiempo de w1 (w1.result * 0 + 50): no puede empezar antes de que w1 acabe.
   const circuito = vi(
