@@ -34,3 +34,6 @@ AGENTS.md
 
 # Built installers (npm run dist)
 dist/
+
+# Local scratch work, never part of the project
+temp/
