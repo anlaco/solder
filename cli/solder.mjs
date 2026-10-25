@@ -5,10 +5,8 @@
 //   cli/solder.mjs wat   file.sdg   prints the WebAssembly module as text
 //   cli/solder.mjs check file.sdg   says whether it can run and, if not, why
 //
-// Controls take their default value from the panel. VIs that wait need JSPI (DT-040): on
-// a Node that lacks it without a flag, the command line starts itself again with the flag.
+// Controls take their default value from the panel.
 
-import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,18 +18,6 @@ import { leer } from "../core/model/qvi-format.mjs";
 import { startValue } from "../core/model/control-values.mjs";
 import { formatear } from "../core/model/types.mjs";
 import { wat } from "../core/compiler/wasm-encoder.mjs";
-import { JSPI_FLAG, jspiNodeArguments } from "./jspi.mjs";
-
-/** On a Node that needs the JSPI flag, runs this command again with it and exits as that run does. */
-function relaunchWithJSPIIfNeeded() {
-  const missing = jspiNodeArguments();
-  if (!missing.length || process.execArgv.includes(JSPI_FLAG)) return;
-  const relaunched = spawnSync(process.execPath, [...missing, ...process.execArgv, ...process.argv.slice(1)], { stdio: "inherit" });
-  if (relaunched.signal) process.kill(process.pid, relaunched.signal);
-  process.exit(relaunched.status);
-}
-
-relaunchWithJSPIIfNeeded();
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const cat = cargarCatalogo(JSON.parse(readFileSync(path.join(AQUI, "../docs/schema/blocks.json"), "utf8")));

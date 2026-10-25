@@ -63,9 +63,8 @@ node cli/solder.mjs run docs/schema/examples/suma-basica.qvi.json
 ```
 
 `run` executes a VI and prints its indicators, `wat` prints the WebAssembly
-module as text and `check` says whether it can run. VIs that wait need JSPI, which
-Node ships without a flag from 24.20 on; on an older Node 24 the command line
-starts itself again with `--experimental-wasm-jspi`.
+module as text and `check` says whether it can run. It needs no Node flag: a VI
+that waits parks its clumps without a stack (DT-063 §8).
 
 ## Layout
 

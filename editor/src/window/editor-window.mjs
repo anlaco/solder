@@ -52,7 +52,7 @@ import * as V from "./window-view.mjs";
 import { panelStyleFromQuery } from "../front-panel/panel-style.mjs";
 import { applyWindowStyle } from "../front-panel/window-stylesheet.mjs";
 import { buildHierarchy } from "./hierarchy-client.mjs";
-import { compilar } from "../../../core/compiler/compiler.mjs";
+import { compilar, runnableVI } from "../../../core/compiler/compiler.mjs";
 import { pruneConnector } from "../../../core/model/connector.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 
@@ -436,7 +436,7 @@ async function ejecutarVI({ stepFirst = false } = {}) {
   lanzado = true;
   canal.postMessage({ ejecutando: true });
   modoRun(true);
-  trabajador.postMessage({ orden: "run", clave: viKey, compilado: { bytes: c.bytes, controles: c.controles, indicadores: c.indicadores, clumps: c.clumps, planes: c.planes, automaticos: c.automaticos, disposicionError: c.disposicionError, debugFlag: c.debugFlag, debugNodes: c.debugNodes }, depuracion: debugging, valores: valoresDeControles(g), separador, charts: g.nodos.filter((n) => n.tipo === "waveform-chart").map((n) => n.id) });
+  trabajador.postMessage({ orden: "run", clave: viKey, compilado: runnableVI(c), depuracion: debugging, valores: valoresDeControles(g), separador, charts: g.nodos.filter((n) => n.tipo === "waveform-chart").map((n) => n.id) });
 }
 
 /**

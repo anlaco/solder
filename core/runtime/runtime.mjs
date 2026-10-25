@@ -3,8 +3,8 @@
 //
 // This is the module's host: it hands over control values when the module reads
 // them and collects indicator values when it writes them, at that moment. It
-// also provides time: the millisecond clock and waits, which suspend the calling
-// clump (JSPI) and let the others run. It provides nothing else: a VI has no
+// also provides time: the millisecond clock and waits, which park the calling
+// clump (it saves its state and returns, DT-063 §8) and let the others run. It provides nothing else: a VI has no
 // gates other than what is imported into it (DT-039, decision 4). The editor's
 // worker and the command line, in Node, use it the same way.
 
@@ -140,10 +140,6 @@ const funcionesMath = Object.fromEntries(
     .map(([n, f]) => [`fn_${n}`, f.js]),
 );
 
-/** Whether this engine has JSPI, to suspend a clump while it waits. */
-export const conJSPI = typeof WebAssembly.Suspending === "function" && typeof WebAssembly.promising === "function";
-const NO_JSPI_MESSAGE = "This VI waits (Wait…) and this JavaScript engine has no JSPI. Use Node 24.20 or later, or start Node 24.19 with --experimental-wasm-jspi.";
-
 /** The error a VI that was aborted ends with: not a fault of the VI. */
 export const abortado = abortedError;
 
@@ -205,8 +201,6 @@ const sameBytes = (a, b) => !!a && a.length === b.length && a.every((byte, i) =>
 export async function ejecutar(compilado, valores = {}, opciones = {}) {
   const { bytes, controles, indicadores, clumps } = compilado;
   const { alEscribir, alSoltar, senal, separador = "." } = opciones;
-  if (clumps.some((k) => k.largo) && !conJSPI)
-    throw new Error(NO_JSPI_MESSAGE);
   const escritos = {};
   const leer = (i) => {
     const { nodo, tipo, mecanica } = controles[i];
@@ -527,17 +521,41 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   const reloj = millisecondTimer(host);
   const scheduler = createScheduler({ host, oneClumpAtATime: () => !!depurador?.unoACadaVez?.(), onTurnEnd: opciones.alAcabarTurno, onTrace: opciones.alTrazar });
   const current = () => scheduler.currentContext();
-  const suspendible = (f) => (conJSPI ? new WebAssembly.Suspending(f) : f);
-  const promisingClumps = new Map();
-  const runClumpFunction = (name, largo) => {
-    if (!largo && !(depurador && conJSPI)) return ex[name]();
-    if (!promisingClumps.has(name)) promisingClumps.set(name, WebAssembly.promising(ex[name]));
-    return promisingClumps.get(name)();
+  // A clump parks without a stack (DT-063 §8): an import that has to wait leaves the promise of its
+  // answer in `pendingAnswer` and raises the module's `parking` global; the clump saves its state
+  // and returns. Its runner waits for the answer, hands it over in `resumeValue` and calls the clump
+  // again, which goes on from where it parked.
+  let pendingAnswer = null;
+  const isPromise = (value) => !!value && typeof value.then === "function";
+  /** What a suspending import answers: `answer` itself, or, when it is a promise, park until it settles. */
+  const parkOn = (answer) => {
+    if (!isPromise(answer)) return answer;
+    pendingAnswer = answer;
+    ex.parking.value = 1;
+    return 0;
   };
+  /** `then(answer)` now, or when `answer` settles if it is a promise. */
+  const whenAnswered = (answer, then) => (isPromise(answer) ? answer.then(then) : then(answer));
+  /** Calls the clump; true if it parked. */
+  const callClump = (name) => {
+    ex.parking.value = 0;
+    ex[name]();
+    return ex.parking.value === 1;
+  };
+  // The answer is taken before anything else runs: another clump may park in between.
+  async function resumeUntilEnd(name) {
+    do {
+      const answer = pendingAnswer;
+      pendingAnswer = null;
+      ex.resumeValue.value = Number(await answer) | 0;
+    } while (callClump(name));
+  }
+  /** Runs clump `name`: nothing if it ends at once, or a promise that settles when it ends. */
+  const runClumpFunction = (name) => (callClump(name) ? resumeUntilEnd(name) : undefined);
   /** The clumps of a plan, as the scheduler takes them. */
-  const clumpSpecs = (plan, prefix) => plan.map((clump, index) => ({ name: `${prefix}c${index}`, deps: clump.deps, run: () => runClumpFunction(`${prefix}c${index}`, clump.largo) }));
+  const clumpSpecs = (plan, prefix) => plan.map((clump, index) => ({ name: `${prefix}c${index}`, deps: clump.deps, run: () => runClumpFunction(`${prefix}c${index}`) }));
   /** Parks the calling clump until `promise` settles, unless it is already settled or is no promise. */
-  const waitFor = (promise, tag) => (promise && typeof promise.then === "function" ? current().waitFor(promise, tag) : promise);
+  const waitFor = (promise, tag) => (isPromise(promise) ? current().waitFor(promise, tag) : promise);
   // Yielding in a loop (DT-041): the loop calls when it runs out of its budget of iterations; the
   // budget of each clump is adjusted so that it calls every ~1 ms, and every ~8 ms the clump really
   // yields its turn, so that the other clumps, the panel and Abort run.
@@ -545,7 +563,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   let runStart = performance.now();
   const YIELD_EVERY_MS = 8;
   const MOST_ITERATIONS = 1 << 24;
-  const ceder = suspendible(() => {
+  const ceder = () => {
     if (senal?.aborted) throw abortado();
     const context = current();
     const now = performance.now();
@@ -555,47 +573,48 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     budget.iterations = Math.max(1, Math.min(MOST_ITERATIONS, Math.round(budget.iterations / elapsed)));
     budget.lastCall = now;
     if (now - budget.lastYield < YIELD_EVERY_MS) return budget.iterations;
-    return context.yield().then(() => {
+    return parkOn(context.yield().then(() => {
       budget.lastCall = budget.lastYield = performance.now();
       return budget.iterations;
-    });
-  });
+    }));
+  };
   // Un subplan: los clumps de un cuerpo con varios nodos largos, a la vez (DT-041).
-  const correr_plan = suspendible((p) => current().join(clumpSpecs(compilado.planes[p], `p${p}`)).then(() => 0));
+  const runPlan = (plan) => parkOn(current().join(clumpSpecs(compilado.planes[plan], `p${plan}`)).then(() => 0));
   // A subVI that waits (DT-045): a non-reentrant VI serves one call at a time, as LabVIEW
   // serializes simultaneous calls. A call enters (waiting while another one is inside), writes its
   // inputs, runs, reads its outputs and leaves; leaving hands the subVI to the next waiting call.
   const subVILock = (p) => `subVI plan ${p}`;
-  const entrar_subvi = suspendible((p) => {
-    const waiting = current().acquire(subVILock(p));
-    return waiting ? waiting.then(() => 0) : 0;
-  });
+  const entrar_subvi = (p) => parkOn(current().acquire(subVILock(p))?.then(() => 0) ?? 0);
   const salir_subvi = (p) => current().release(subVILock(p));
-  const correr_subvi = suspendible((p) => current().join(clumpSpecs(compilado.planes[p], `p${p}`)).then(() => 0));
   // Manejo automático de errores (DT-043): el diálogo lo saca quien llama
   // (`alErrorAutomatico`, que resuelve «continuar» o «parar»). Sin él —la línea
   // de órdenes—, el VI se detiene con el error.
-  const error_automatico = suspendible(async (i, dir) => {
+  const error_automatico = (i, dir) => {
     const err = leerCluster(dir, compilado.disposicionError);
     const nodo = compilado.automaticos?.[i];
     if (!opciones.alErrorAutomatico) throw Object.assign(new Error(`Error ${err.code} occurred at ${err.source}`), { error: err, nodo });
-    const r = await waitFor(opciones.alErrorAutomatico({ ...err, nodo }), "automatic error dialog");
-    if (r === "parar") throw abortado();
-    return 0;
-  });
+    return parkOn(whenAnswered(waitFor(opciones.alErrorAutomatico({ ...err, nodo }), "automatic error dialog"), (answer) => {
+      if (answer === "parar") throw abortado();
+      return 0;
+    }));
+  };
   // Simple Error Handler (DT-043): su diálogo propio (`alDialogoError`, que resuelve cuando el
   // usuario pulsa OK) y sus salidas. Sin diálogo —la línea de órdenes—, no espera. Sin
   // comprobar en LabVIEW: «type of dialog» distinto de 1, y un aviso (status FALSE) a la entrada.
-  const dialogo_error = suspendible(async (errIn, code, src, tipo, buf, celdaSrc, celdaMsg) => {
+  const dialogo_error = (errIn, code, src, tipo, buf, celdaSrc, celdaMsg) => {
     const entrada = leerCluster(errIn, compilado.disposicionError);
     const err = !entrada.status && code !== 0 ? { status: true, code, source: leerCadena(src) } : entrada;
     const texto = mensajeDeError(err);
-    if (err.status) await waitFor(opciones.alDialogoError?.({ ...err, mensaje: texto }), "Simple Error Handler dialog");
-    ponerCluster(buf, compilado.disposicionError, err);
-    ponerCadena(celdaSrc, err.source);
-    ponerCadena(celdaMsg, texto);
-    return err.status ? 1 : 0;
-  });
+    // The outputs are written once the dialog is closed, before the clump goes on.
+    const writeOutputs = () => {
+      ponerCluster(buf, compilado.disposicionError, err);
+      ponerCadena(celdaSrc, err.source);
+      ponerCadena(celdaMsg, texto);
+      return err.status ? 1 : 0;
+    };
+    if (!err.status) return writeOutputs();
+    return parkOn(whenAnswered(waitFor(opciones.alDialogoError?.({ ...err, mensaje: texto }), "Simple Error Handler dialog"), writeOutputs));
+  };
   // Debugging (DT-047): the hooks the compiled VI calls while the debug flag is set.
   const valorDepurado = (nodo, salida, valor) => {
     const out = compilado.debugNodes?.[nodo]?.outputs?.[salida];
@@ -607,37 +626,33 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   };
   const dep = {
     ...Object.fromEntries(["i32", "i64", "f32", "f64"].map((vt) => [`valor_${vt}`, valorDepurado])),
-    nodo: suspendible((nodo) => {
-      const pause = waitFor(depurador?.alNodo(nodo), "debugger");
-      return pause && typeof pause.then === "function" ? pause.then(() => 0) : 0;
-    }),
+    nodo: (nodo) => parkOn(whenAnswered(waitFor(depurador?.alNodo(nodo), "debugger"), () => 0)),
   };
   /** Wait (ms) and Wait Until Next ms Multiple: the clump parks until the deadline, then reads the clock. */
   const sleep = (ms) => {
     if (senal?.aborted) throw abortado();
-    return current().sleepUntil(host.now() + ms).then(reloj);
+    return parkOn(current().sleepUntil(host.now() + ms).then(reloj));
   };
   const tiempo = {
     reloj,
     ceder,
     error_automatico,
     dialogo_error,
-    correr_plan,
+    correr_plan: runPlan,
     entrar_subvi,
-    correr_subvi,
+    correr_subvi: runPlan,
     salir_subvi,
-    esperar: suspendible((ms) => sleep(ms)),
-    esperar_multiplo: suspendible((m) => sleep(m > 0 ? m - (reloj() % m) : 0)),
+    esperar: (ms) => sleep(ms),
+    esperar_multiplo: (m) => sleep(m > 0 ? m - (reloj() % m) : 0),
   };
   const { instance } = await WebAssembly.instantiate(bytes, { panel, tiempo, cad, arr, dep, math: { random: Math.random, pow: Math.pow, ...funcionesMath } });
   ex = instance.exports;
   restoreState(opciones.estado, bytes, ex.memoria);
+  // A Run that was aborted left its parked clumps' frames behind: every clump starts afresh.
+  for (const frame of compilado.frames ?? []) memoria().setInt32(frame, 0, true);
   if (depurador && compilado.debugFlag !== undefined) {
     depurador.activar = (on) => memoria().setInt32(compilado.debugFlag, on ? 1 : 0, true);
     depurador.alConectar?.();
-  }
-  if (clumps.some((k) => k.largo) || compilado.planes?.length) {
-    if (!conJSPI) throw new Error(NO_JSPI_MESSAGE);
   }
   const abortRun = () => scheduler.abort();
   if (senal?.aborted) throw abortado();

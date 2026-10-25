@@ -14,7 +14,8 @@
 //     globales: ["f64", …],                               // mutables, a cero
 //     memoria: { paginas },                               // opcional; se exporta como «memoria»
 //     datos: [{ desde, bytes: Uint8Array }],              // lo que la memoria trae al instanciarse
-//     exportaciones: [{ nombre, funcion }] }             // índice entre importaciones y funciones
+//     exportaciones: [{ nombre, funcion }],              // índice entre importaciones y funciones
+//     globalesExportadas: [{ nombre, global }] }         // a global the host reads and writes
 // Las funciones pueden tener parámetros (los de su tipo, antes que sus locales).
 // Una instrucción es { op: "f64.add" } o { op: "local.get", arg: 3 }.
 
@@ -131,6 +132,7 @@ export function codificar(m) {
   const globales = (m.globales ?? []).map((t) => [TIPOS_VALOR[t], 0x01, ...cero[t], 0x0b]);
   const exportaciones = [
     ...m.exportaciones.map((e) => [...nombreBytes(e.nombre), 0x00, ...uleb(e.funcion)]),
+    ...(m.globalesExportadas ?? []).map((e) => [...nombreBytes(e.nombre), 0x03, ...uleb(e.global)]),
     ...(m.memoria ? [[...nombreBytes("memoria"), 0x02, 0x00]] : []),
   ];
   const memoria = m.memoria ? [0x00, ...uleb(m.memoria.paginas)] : null;
@@ -171,6 +173,7 @@ export function wat(m) {
     lineas.push("  )");
   });
   m.exportaciones.forEach((e) => lineas.push(`  (export "${e.nombre}" (func ${e.funcion}))`));
+  (m.globalesExportadas ?? []).forEach((e) => lineas.push(`  (export "${e.nombre}" (global ${e.global}))`));
   lineas.push(")");
   return `${lineas.join("\n")}\n`;
 }

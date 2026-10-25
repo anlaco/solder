@@ -15,6 +15,11 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   waits, subVI calls and dialogs resume in the same order on every operating
   system, and a VI whose clumps can no longer go on stops with an error that
   names them instead of hanging.
+- A clump that waits saves its state and returns instead of suspending its
+  stack (DT-063 §8), so it can go on on any thread, as LabVIEW's clumps do. VIs
+  no longer need JSPI: the command line and the tests run on any Node with no
+  flag. A loop runs as fast as before with Allow Debugging off, and about a
+  third faster with it on while nobody is debugging.
 
 ### Fixes
 

@@ -25,6 +25,7 @@ import { FUNCIONES, analizar } from "./expression-parser.mjs";
 import { ERROR, NUMERICOS, dimensionsOf, esArray, esCluster, esEntero, esEnum, esNumerico, flattenArrayValue, limites, representacion } from "../model/types.mjs";
 import { codificar } from "./wasm-encoder.mjs";
 import { CELDAS, CIMA, EXPORTADAS, bloqueCadena, funcionesMemoria, i32 } from "./linear-memory.mjs";
+import { makeStackless } from "./stackless.mjs";
 
 /** El tipo de WebAssembly con que se representa un tipo de Solder. */
 export function tipoWasm(t) {
@@ -125,6 +126,8 @@ const IMPORTACIONES = [
 /** Los nodos que tardan: cada uno corre en su clump y cede mientras espera. */
 export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "simple-error-handler"]);
 const idImport = (nombre) => IMPORTACIONES.findIndex((i) => i.nombre === nombre);
+/** The imports that may park the clump that calls them (DT-063 §8): waits, yields, subplans, subVI turns, dialogs, the debugger. */
+const PARKING_IMPORTS = new Set(["ceder", "esperar", "esperar_multiplo", "correr_plan", "entrar_subvi", "correr_subvi", "nodo", "error_automatico", "dialogo_error"].map(idImport));
 
 const ins = (op, arg) => (arg === undefined ? { op } : { op, arg });
 
@@ -2553,6 +2556,23 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
   return { clumps, controles, indicadores };
 }
 
+/**
+ * What a Run needs of a compiled VI, to send it to a worker: everything but the module's tree.
+ * `frames` must go too, or an aborted Run leaves its clumps parked for the next one (DT-063 §8).
+ */
+export const runnableVI = (compiled) => ({
+  bytes: compiled.bytes,
+  controles: compiled.controles,
+  indicadores: compiled.indicadores,
+  clumps: compiled.clumps,
+  planes: compiled.planes,
+  automaticos: compiled.automaticos,
+  disposicionError: compiled.disposicionError,
+  debugFlag: compiled.debugFlag,
+  debugNodes: compiled.debugNodes,
+  frames: compiled.frames,
+});
+
 /** The module with the top-level VI `vi`, its subVIs and the memory functions, ready to instantiate. */
 function assemble(module, vi) {
   const { clumps, controles, indicadores } = vi;
@@ -2565,6 +2585,21 @@ function assemble(module, vi) {
     if (i < 0) i = tiposF.push({ params, results }) - 1;
     return i;
   };
+  // Every clump that may park saves its state and returns instead (DT-063 §8): its frame is in the
+  // data space, so it is reserved before the static zone is placed behind it.
+  const parkingGlobal = globales.push("i32") - 1;
+  const resumeValueGlobal = globales.push("i32") - 1;
+  const bodies = [...directFunctions, ...clumps, ...planes.flat()].map((k) => ({ params: [], results: [], locales: k.locales, cuerpo: k.cuerpo }));
+  const allFunctions = [...MEMORIA, ...bodies];
+  const { functions: stackless, frames } = makeStackless(allFunctions, {
+    importCount: IMPORTACIONES.length,
+    suspendingImports: PARKING_IMPORTS,
+    typeOfCall: (index) => (index < IMPORTACIONES.length ? IMPORTACIONES[index] : allFunctions[index - IMPORTACIONES.length]),
+    allocateFrame: (bytes) => module.bufer(bytes, 8),
+    parkingGlobal,
+    resumeValueGlobal,
+    debugFlagAddress: module.debugFlag,
+  });
   // La zona estática, detrás del data space; el montón, detrás (alineado a 8).
   const datos = [];
   let libre = CELDAS + ((module.space + 7) & ~7);
@@ -2578,11 +2613,9 @@ function assemble(module, vi) {
   const modulo = {
     tipos: tiposF,
     importaciones: IMPORTACIONES.map((im) => ({ modulo: im.modulo, nombre: im.nombre, tipo: tipo(im.params, im.results) })),
-    funciones: [
-      ...MEMORIA.map((f) => ({ tipo: tipo(f.params, f.results), locales: f.locales, cuerpo: f.cuerpo })),
-      ...[...directFunctions, ...clumps, ...planes.flat()].map((k) => ({ tipo: tipo([], []), locales: k.locales, cuerpo: k.cuerpo })),
-    ],
+    funciones: stackless.map((f) => ({ tipo: tipo(f.params, f.results), locales: f.locales, cuerpo: f.cuerpo })),
     globales,
+    globalesExportadas: [{ nombre: "parking", global: parkingGlobal }, { nombre: "resumeValue", global: resumeValueGlobal }],
     memoria: { paginas: 1 },
     datos,
     exportaciones: [
@@ -2591,5 +2624,5 @@ function assemble(module, vi) {
     ],
   };
   const plan = (lista) => lista.map((k) => ({ deps: [...k.deps], largo: k.largo }));
-  return { bytes: codificar(modulo), modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain };
+  return { bytes: codificar(modulo), modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, frames };
 }

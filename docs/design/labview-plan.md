@@ -58,7 +58,7 @@ and wired in the diagram, and the compiler runs them (DT-041).
 | Types | DBL, SGL, integers from 8 to 64 bits with and without sign, Boolean and **string** (also on the panel: controls and indicators), with coercion (DT-038) and the logical type of Boolean; constants, controls and indicators change representation with the Representation menu. **Arrays of one and two dimensions** (DT-042 d and DT-044: element type plus dimension count, one contiguous block; control, indicator and constant, Add/Remove Dimension; the compiler stops at 2D); clusters, only in memory (DT-042); the **error cluster** (DT-043) with its wire, controls, constant and dialogs in the editor |
 | `.qvi` | Reading and writing with exact round-trip (`core/model/qvi-format.mjs`) |
 | Compiler | Numeric (with Conversion, Data Manipulation, constants, Enum, Ring, Range Limits and Expression Node), Boolean, Comparison and Timing over scalars, numeric and Boolean controls and indicators (`core/compiler/compiler.mjs`). The diagram is split into clumps and runs by dataflow with JSPI (`core/runtime/runtime.mjs`, DT-040). `cli/solder.mjs run|wat|check` |
-| Execution | Live indicators, parallel branches, Abort (button and Ctrl+.), Latch When Released (Stop, OK and Cancel) and Run mode in both windows; While and For with shift registers and tunnels (Last Value), on top of the clumps. Still missing: each iteration yielding, and two waits in the same body overlapping |
+| Execution | Live indicators, parallel branches, Abort (button and Ctrl+.), Latch When Released (Stop, OK and Cancel) and Run mode in both windows; While and For with shift registers and tunnels (Last Value), on top of the clumps. One scheduler per Run resumes every clump (DT-061), and a clump that waits saves its state and returns instead of suspending a stack (DT-063 §8, 2026-10-25): no JSPI. Still missing: the pool of threads (DT-063 §9–10) |
 
 **Catalog blocks that the compiler does not emit yet:** arrays of more than two
 dimensions, Transpose 2D Array and Reshape Array, `number-to-boolean-array`,
@@ -413,6 +413,11 @@ memory, so a Run uses every core as in LabVIEW (DT-063). In order:
    live locals and resume point into a frame in the data space and returns to the scheduler, which calls it again to
    go on; JSPI is retired. Done on the single-threaded runtime first, with every existing test and the reference
    traces green, before any thread is added.
+   *Done on 2026-10-25 (DT-063 §8): `core/compiler/stackless.mjs` rewrites every function that may park (a rewinding
+   copy and running copies, the debugger's hooks only in the one used while debugging, only the live locals
+   saved), the runtime resumes clumps through `parking` and `resumeValue`, and JSPI is gone from the runtime, the
+   command line and `npm test`. A compute loop runs as fast as with JSPI with debugging off and ~35 % faster with it
+   allowed. 818 tests green.*
 7. The pool (DT-063 §1–3, §9: per-thread deques with work stealing, timers in the shared memory, each worker's loop
    in WebAssembly, `scheduler.mjs` kept as the reference model; §10: the panel as a transfer buffer in the shared
    memory, atomic scalars, a lock per string, array or cluster control, indicator cells and a chart ring of its

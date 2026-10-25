@@ -2356,6 +2356,18 @@ DT-061 hands ready clumps to whichever thread is free. Independent Runs keep sep
    the worker that suspended them and cannot move; the Rust host then needs no stack switching (DT-061 §7). Order of
    work: first on the single-threaded runtime of today, with every existing test and the reference traces as the
    check; then the pool, which then pins nothing.
+   *Done on 2026-10-25 on the single-threaded runtime* (`core/compiler/stackless.mjs`, applied to every function of a
+   module in `assemble`). A suspending import answers at once or leaves the promise of its answer and raises the
+   module's exported global `parking`; the clump stores the locals still read after that point (a liveness
+   analysis) and the point's number into its frame, and returns; its runner waits for the answer, puts it in the
+   global `resumeValue` and calls the clump again. Each function has a rewinding copy (every statement before a park
+   point guarded, a structure entered only if the point is inside it, an `if` taking the branch that holds it, a
+   loop rewound for the one iteration it parked in) and running copies that are the original code with a check of
+   `parking` after each call that may park, leaving through one exit outside every loop. A function with debugger
+   hooks has two running copies, with and without them, and takes the one the debug flag asks for when it starts or
+   resumes: turning debugging on reaches a running loop at its next yield (~8 ms), where it reached the next node
+   before. The frames are cleared at the start of every Run, since the memory a VI keeps between Runs (DT-045)
+   holds them too. JSPI is gone from the runtime, the command line and `npm test`.
 9. **The scheduler lives in the shared memory and its threads steal work** (decided by the developer on 2026-10-25).
    Each thread has its own deque of ready clumps: a clump that ends decrements its dependents' counters with atomics,
    pushes the ones that reach zero onto its own deque and takes the newest next (its inputs are still in that core's
@@ -2420,6 +2432,12 @@ Reports `labview-captures/reports/2026-10-25-thread-resume.md` and `2026-10-25-l
    (a dependency counter) 26 ns. A loop whose body has two long branches starts a subplan of 2–3 clumps per
    iteration: at 1 kHz that is ~6000 starts and ends a second, about half a core through a coordinator, nothing
    through counters (§9).
+7. **The cost of stackless clumps** (Node 24.19, development machine; a For Loop of 10⁸ iterations of
+   x = x·1.0000001 + 0.5 in a DBL shift register, best of 5): with JSPI 3.72 ns an iteration with Allow Debugging
+   off and 5.77 ns with it on; stackless with saving every local and guards in the loop, 5.42 and 27.85 ns; with the
+   running and rewinding copies, 3.73 and 7.43 ns; with one exit outside the loops, 7.04 ns on; with a running copy
+   without the debugger's hooks, **3.72 ns both**. An exit from inside a loop costs ~0.8 ns an iteration even when it
+   is never taken, and saving dead locals keeps them alive in the loop.
 6. **The panel** (reports `2026-10-25-indicator-chart.md`, `2026-10-25-local-variable.md`): writing an indicator in a
    loop of 10⁶ iterations takes 136 ms with the panel open, 126 ms closed (the diagram does not wait for the drawing);
    Advanced ▸ Synchronous Display exists, off by default, and on it costs ≈ 0.82 ms a write with the panel open. A
@@ -2481,7 +2499,11 @@ In the VM (Xeon E5-2683 v3, 4 physical cores, 8 logical processors), with VIs bu
 | With N = 1 the order of resumes is the same in every host | `test/end-to-end/reference-traces.test.mjs` | Verified in the JavaScript host |
 | LabVIEW: one thread per logical processor per execution system and priority; compute loops, reentrant calls and branch consumers run in parallel; a non-reentrant subVI serializes | Measured on 2026-10-24 (above) | Measured, no test |
 | LabVIEW resumes a clump after a Wait on any free thread, and loops of different lifetimes do not slow each other | Measured on 2026-10-25 (above) | Measured, no test |
-| A stackless clump resumed on another thread goes on with the same values | — | **Unverified**: §8 is not written |
+| A stackless clump goes on after each park with the same values, and is not called into its import again | `test/core/stackless.test.mjs` (a loop that parks inside an `if`), and every test of waits, loops, subplans, subVIs, dialogs and the debugger | Verified on one thread; on another thread, when the pool exists |
+| A Run after an aborted one starts every clump afresh | `test/core/stackless.test.mjs` (fails without clearing the frames) | Verified |
+| A VI that waits needs no JSPI | `test/end-to-end/command-line.test.mjs` (runs with `WebAssembly.Suspending` removed) | Verified |
+| Debugging turned on in the middle of a loop reaches its nodes, and turned off stops them | `test/core/stackless.test.mjs` | Verified |
+| A loop runs as fast as with JSPI with debugging off, and faster with it on | Measured on 2026-10-25 (above, case 7) | Measured, no test |
 | With N = 1 on the virtual clock the WebAssembly scheduler gives the reference model's trace | — | **Unverified**: §9 is not written |
 | The work-stealing deques lose and duplicate no clump under contention | — | **Unverified**: needs a stress test with many threads and repetitions |
 | LabVIEW: indicators asynchronous by default, a chart keeps every value up to its history, a local variable read across loops never goes back and is never torn (I32, short strings) | Measured on 2026-10-25 (above) | Measured, no test |
