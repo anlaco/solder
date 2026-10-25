@@ -7,7 +7,11 @@ said the file format was not stable yet; `-beta` marks the maintainable version,
 whose files keep opening, and stays a `0.x` (DT-048, DT-055). Until 1.0 every
 release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
-## Unreleased
+## 0.6.0-beta — 2026-10-25
+
+A VI now runs on every core of the computer, as in LabVIEW: its parallel loops
+and branches are shared out among one thread per logical processor. What a VI
+computes does not change; files saved by 0.5 open unchanged.
 
 ### Running a VI
 
