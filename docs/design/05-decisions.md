@@ -2302,7 +2302,10 @@ raises PATCH. There are no release branches.**
 DT-061 hands ready clumps to whichever thread is free. Independent Runs keep separate memories.**
 
 - **Status:** Accepted on 2026-10-24 by the developer. It amends [DT-061](#dt-061) §3 and §8 and reverses the option
-  DT-061 rejected ("Threads, a worker for each loop, shared memory"); the rest of DT-061 holds.
+  DT-061 rejected ("Threads, a worker for each loop, shared memory"); the rest of DT-061 holds. §8 (stackless
+  clumps that resume on any thread), §9 (the scheduler in the shared memory, with work stealing) and §10 (the panel
+  as a transfer buffer in the shared memory) accepted on 2026-10-25; they retire JSPI (DT-061 §1, §7) and replace
+  DT-061 §4.
 - **Why:** the developer's rule for technical choices (2026-10-24): **what brings Solder closest to LabVIEW and is the
   most powerful, never the easiest.** LabVIEW runs the clumps of a VI on the threads of its execution systems, so two
   independent loops that only compute use two cores; with one clump at a time Solder would be up to N times slower on
@@ -2343,6 +2346,89 @@ DT-061 hands ready clumps to whichever thread is free. Independent Runs keep sep
    system has and what decides it, how two loops that only compute are spread over the cores, how a reentrant subVI
    called from parallel branches runs, and what the user can set (execution system and priority of a VI).
 
+8. **A parked clump resumes on any thread: clumps are compiled stackless** (decided by the developer on 2026-10-25,
+   after the measurements of 2026-10-25 below). A clump that can park is emitted as a resumable function: at each
+   point where it may park (yield, Wait, Wait Until Next ms Multiple, a subplan, a subVI's turn or call, a dialog,
+   the debugger) it saves its live locals and a resume point into a frame in the data space and returns to the
+   scheduler; called again on any thread, it restores them and goes on from that point. Every function on the way
+   (the clump, the subVIs it calls) does the same, so a Wait deep inside a subVI parks the whole chain. The frames
+   live in the shared memory, so no state belongs to a thread. This replaces JSPI, whose suspended stacks belong to
+   the worker that suspended them and cannot move; the Rust host then needs no stack switching (DT-061 §7). Order of
+   work: first on the single-threaded runtime of today, with every existing test and the reference traces as the
+   check; then the pool, which then pins nothing.
+9. **The scheduler lives in the shared memory and its threads steal work** (decided by the developer on 2026-10-25).
+   Each thread has its own deque of ready clumps: a clump that ends decrements its dependents' counters with atomics,
+   pushes the ones that reach zero onto its own deque and takes the newest next (its inputs are still in that core's
+   cache); a thread with nothing to do steals the oldest from another's deque. The timers are a heap in the shared
+   memory ordered by (deadline, sequence), and a thread with nothing to do sleeps with `memory.atomic.wait32` until
+   the earliest deadline or a notify. Abort is a flag in the memory that every clump reads at its park points. A
+   deadlock is every thread asleep with no deadline and nothing waited for from outside. Each worker's loop (take a
+   clump, `call_indirect` it, read how it returned) is WebAssembly, so passing from one clump to the next never
+   crosses into JavaScript. Only the outside world stays in JavaScript: one coordinating thread takes the editor's
+   messages (the panel, a dialog's answer, Abort) and writes them into the memory. With N = 1 the ready queue is FIFO,
+   so the order of resumes and the reference traces stay as they are. `core/runtime/scheduler.mjs` is kept as the
+   reference model: on the virtual clock with N = 1 the WebAssembly scheduler must give exactly its trace.
+   This replaces the per-Run scheduler of DT-061 §1 as the thing that runs clumps; its rules (one order of our own,
+   typed park reasons, deadline and sequence, Abort and deadlock as states) hold.
+10. **The panel lives in the shared memory, as LabVIEW's transfer buffer** (decided by the developer on 2026-10-25:
+    "what is closest to LabVIEW"). A worker of the pool never receives a message during a Run (its loop is
+    WebAssembly, and it sleeps in `memory.atomic.wait32`), so control values cannot be copied to each worker; they
+    are in the memory, and the coordinator writes there what the editor sends.
+    - **A control, a local variable of it:** a scalar (Boolean, integer, SGL, DBL as its 64 bits) is written and read
+      with one atomic store and load; WebAssembly's atomics are sequentially consistent, so no thread reads an older
+      value after a newer one, as measured in LabVIEW. A string, array or cluster has a lock of its own: a writer takes
+      it, puts the new block, frees the old one and lets go; a reader takes it and **copies** the value, as NI says a
+      local variable copies its data. The lock spins briefly, then sleeps. Whether LabVIEW also protects large values
+      is unverified (only strings of 3–6 bytes measured); if a large array is ever read torn in LabVIEW, this is
+      revisited.
+    - **A Latch:** read with an atomic exchange that leaves FALSE, so only one reader sees TRUE; the release goes to the
+      editor as an indicator write does.
+    - **An indicator:** a cell with its last value and a version counter; the diagram writes it and never waits
+      (LabVIEW's default, Synchronous Display off). The coordinator walks the cells at the display's pace and sends the
+      editor only what changed; values written faster than that are skipped, as in LabVIEW.
+    - **A chart:** a ring in the shared memory of the chart's history length (1024 by default), written by the diagram;
+      the coordinator sends what is new since its last pass. When the VI writes more than the history holds between two
+      passes the oldest are lost, which is what LabVIEW's history does.
+    - **Synchronous Display and the Value property** (when they are done): the clump parks waiting for the editor to
+      confirm the drawing, on purpose slower than a local variable, as LabVIEW is (≈ 100–277 µs a write against
+      ≤ 0.2 µs).
+    This replaces DT-061 §4 (the panel's writes sent at the end of each turn): with threads there is no turn of the
+    whole Run.
+
+### What was measured in LabVIEW (2026-10-25): where a clump resumes, and the load it balances
+
+Reports `labview-captures/reports/2026-10-25-thread-resume.md` and `2026-10-25-load-balance.md`; VIs in
+`C:\solder-measure\exec-systems\`.
+
+1. **A clump resumes after a Wait on whichever thread is free.** GetCurrentThreadId (Call Library Function Node,
+   Run in any thread) read before and after a Wait (ms) 1, 500 iterations, 3 runs: one loop resumed on another
+   thread in 7–9 % of the iterations, using 2 threads; four loops in parallel in 13–52 %, all four sharing the same
+   3–4 threads. With Wait (ms) 0 or no Wait the thread never changed (1500 iterations each).
+2. **Loops of different lifetimes do not slow each other.** Loops of 20 × (≈ 47 ms of computing + Wait 10 ms): 8 in
+   parallel 1143 ms; 16 in parallel 1805 ms; 8 of them beside 8 that do only 2 iterations, 1173 ms (the long ones end
+   as they do alone). A model of the scheduler with 8 threads gives 1140, 1947 and 1227 ms when a clump resumes on any
+   thread, and 1140, 1947 and **1947 ms** when it is pinned to the thread it started on: pinning would make that
+   program 66 % slower than LabVIEW.
+3. **A loop that only computes yields about every 56 ms.** A loop of Wait (ms) 1 has a mean period of 1.75 ms alone and
+   2.53 ms beside 8 compute loops on the 8 threads, with 15–16 periods per run of 55.99–56.06 ms (unverified as a
+   quantum). Solder's loops yield every ~8 ms (DT-041).
+4. **What JSPI and a worker cost** (Node 24.19, measured on the development machine): a JSPI suspension and resume
+   285 ns, 4.2 µs through a turn of the scheduler; a worker 50–75 ms to start cold and ~7 MB. A loop parks at most
+   ~1000 times a second, so the cost of parking does not decide the design; balance and memory do.
+5. **What handing work between threads costs** (Node 24.19, same machine): a `postMessage` round trip between two
+   workers 44 µs; waking a sleeping thread with `Atomics.notify` and its answer 16 µs; an uncontended atomic decrement
+   (a dependency counter) 26 ns. A loop whose body has two long branches starts a subplan of 2–3 clumps per
+   iteration: at 1 kHz that is ~6000 starts and ends a second, about half a core through a coordinator, nothing
+   through counters (§9).
+6. **The panel** (reports `2026-10-25-indicator-chart.md`, `2026-10-25-local-variable.md`): writing an indicator in a
+   loop of 10⁶ iterations takes 136 ms with the panel open, 126 ms closed (the diagram does not wait for the drawing);
+   Advanced ▸ Synchronous Display exists, off by default, and on it costs ≈ 0.82 ms a write with the panel open. A
+   Waveform Chart written 100,000 times in 34 ms holds exactly 0…99,999 in its history (default length 1024; when full,
+   the oldest go). One loop writing a local variable of an I32 control 10⁶ times and another reading it in parallel:
+   never a decrease in 7.08 M reads, values skipped and repeated; the same with a string control: never a torn or
+   foreign value in 1.4 M reads (strings of 3–6 bytes). A write costs ≤ 0.2 µs by local variable and ≈ 100 µs (panel
+   closed) to 277 µs (open) by the Value property; Value (Signaling) the same.
+
 ### What was measured in LabVIEW (2026-10-24)
 
 In the VM (Xeon E5-2683 v3, 4 physical cores, 8 logical processors), with VIs built for it in
@@ -2373,6 +2459,17 @@ In the VM (Xeon E5-2683 v3, 4 physical cores, 8 logical processors), with VIs bu
   memories (multi-memory) makes every load and store choose one, with two paths in the compiler and runtime; every
   wire between workers would be copied (an acquisition array of a million samples, on every crossing), which LabVIEW
   never does; and it would not remove the need for cross-origin isolation.
+- **A parked clump pinned to the thread it started on (JSPI kept, §8 rejected):** no change to the compiler, but
+  LabVIEW resumes on any thread, and with loops of different lifetimes two long ones end up sharing a thread while
+  others idle (66 % slower than LabVIEW in the model, measured case 2 above).
+- **An elastic pool, a worker for each parked clump, the OS sharing the cores:** balances as well as §8 in the model
+  without touching the compiler, but costs a worker (~7 MB, 50–75 ms to start) for every loop that waits, puts more
+  threads than cores, and does not behave as LabVIEW's fixed threads do (no 56 ms stalls, case 3).
+- **The scheduler of DT-061 in one coordinating thread, the workers asking it by message (§9 rejected):** it exists
+  and is tested, but every start, end and park costs a round trip of ~44 µs and one thread hands out work for all.
+- **A coordinator with a fast path (dependents started by the worker through atomics, parks through the
+  coordinator):** two schedulers that must agree, with a clump's state half in JavaScript and half in the memory,
+  and every park still a round trip; it was needed only while a parked clump belonged to its worker (JSPI).
 
 ### How it is verified
 
@@ -2383,3 +2480,10 @@ In the VM (Xeon E5-2683 v3, 4 physical cores, 8 logical processors), with VIs bu
 | A non-reentrant subVI called from parallel branches runs one call at a time | `test/core/scheduler.test.mjs` (the lock, with four threads) | Verified in the scheduler; the pool is not written |
 | With N = 1 the order of resumes is the same in every host | `test/end-to-end/reference-traces.test.mjs` | Verified in the JavaScript host |
 | LabVIEW: one thread per logical processor per execution system and priority; compute loops, reentrant calls and branch consumers run in parallel; a non-reentrant subVI serializes | Measured on 2026-10-24 (above) | Measured, no test |
+| LabVIEW resumes a clump after a Wait on any free thread, and loops of different lifetimes do not slow each other | Measured on 2026-10-25 (above) | Measured, no test |
+| A stackless clump resumed on another thread goes on with the same values | — | **Unverified**: §8 is not written |
+| With N = 1 on the virtual clock the WebAssembly scheduler gives the reference model's trace | — | **Unverified**: §9 is not written |
+| The work-stealing deques lose and duplicate no clump under contention | — | **Unverified**: needs a stress test with many threads and repetitions |
+| LabVIEW: indicators asynchronous by default, a chart keeps every value up to its history, a local variable read across loops never goes back and is never torn (I32, short strings) | Measured on 2026-10-25 (above) | Measured, no test |
+| LabVIEW protects large values (arrays, long strings) read by a local variable while written | — | **Unverified**: to measure with an array of 10⁶ equal elements |
+| A control read by several threads never goes back and is never torn in Solder | — | **Unverified**: §10 is not written |

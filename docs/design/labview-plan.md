@@ -376,6 +376,9 @@ behave the same on every operating system (issue #1), and it hands ready clumps 
 memory, so a Run uses every core as in LabVIEW (DT-063). In order:
 0. Measure LabVIEW's execution systems in the VM (DT-063 §7): threads per execution system, how two loops that only
    compute spread over the cores, a reentrant subVI called from parallel branches, and the VI's execution settings.
+   *Done on 2026-10-24 and 2026-10-25 (DT-063 "What was measured"): one thread per logical processor per execution
+   system and priority; a clump resumes after a Wait on any free thread; loops of different lifetimes do not slow
+   each other.*
 1. `core/runtime/scheduler.mjs` with its own tests on a simulated clock: the ready queue, the timer queue ordered by
    (deadline, sequence), the inbox, Abort and deadlock as states (DT-061 §1–2, §5, §6), designed for a pool of N
    threads from the start, with N = 1 as the exact-order mode (DT-063 §1, §4).
@@ -406,10 +409,18 @@ memory, so a Run uses every core as in LabVIEW (DT-063). In order:
 5. Node 26: the command line and `npm test` pass `--experimental-wasm-jspi` only when the running Node needs it
    (DT-061, "What was measured" 1). *Done on 2026-10-23, as a fix for 0.4 (`cli/jspi.mjs`,
    `scripts/run-tests.mjs`): `npm test` and the command line checked on Node 24.19.0, 24.22.1 and 26.12.1.*
-6. The pool (DT-063 §1–3): the module's memory `shared`, a stack per thread, the clumps' dependency counters with
+6. Stackless clumps (DT-063 §8, decided 2026-10-25): every clump that can park, and every subVI it calls, saves its
+   live locals and resume point into a frame in the data space and returns to the scheduler, which calls it again to
+   go on; JSPI is retired. Done on the single-threaded runtime first, with every existing test and the reference
+   traces green, before any thread is added.
+7. The pool (DT-063 §1–3, §9: per-thread deques with work stealing, timers in the shared memory, each worker's loop
+   in WebAssembly, `scheduler.mjs` kept as the reference model; §10: the panel as a transfer buffer in the shared
+   memory, atomic scalars, a lock per string, array or cluster control, indicator cells and a chart ring of its
+   history length walked by the coordinator): the module's memory `shared`, a stack per thread, the clumps' dependency counters with
    atomics, the lock of non-reentrant subVIs and globals, COOP/COEP on the window that runs VIs, and N from what step 0
    measured. The reference traces of step 4 run with N = 1 (exact order) and N > 1 (dataflow constraints and results).
-The Rust host's stack switching (DT-061 §7) waits for the hardware host.
+With stackless clumps the Rust host needs no stack switching (DT-061 §7). Still to measure in LabVIEW before §10 is written:
+whether a large array read by a local variable while another loop writes it is ever torn.
 
 **Then:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
 lesson of NI's Core 1 course can be done in Solder, except lessons 2 and 15 and the DAQ and instrument parts of 4,
