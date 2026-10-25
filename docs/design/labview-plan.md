@@ -8,9 +8,11 @@
 
 When the developer says "keep going":
 
-1. Read this document: §2 (where we are) and §3b (what is next). Since 0.5.0-beta
-   (2026-10-23), continue with **"Next: the execution scheduler"** at the end of the
-   road in §3b (DT-061 and DT-063). §4 gives the detail of each module.
+1. Read this document: §2 (where we are) and §3b (what is next). The execution scheduler
+   at the end of the road in §3b (DT-061, DT-063) is done and merged into `main`
+   (2026-10-25); continue with **"Then: LabVIEW Core 1 without hardware"** right after it,
+   and keep in mind its list "Pending from the pool of threads". §4 gives the detail of
+   each module.
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
    `win11 encender`, `tools/vm_control.py foto|clic|arrastrar|tecla|texto`.
@@ -452,6 +454,18 @@ lesson of NI's Core 1 course can be done in Solder, except lessons 2 and 15 and 
 **Postponed behind these five:** *inplaceness* (DT-042 §5), which changes memory
 and speed but not results; it will be done when a real program
 runs slowly.
+
+**Pending from the pool of threads** (DT-063, left on 2026-10-25 when step 7 was merged):
+- Measure in LabVIEW how often the panel is redrawn while a VI writes an indicator; Solder's coordinator passes
+  over it every 16 ms, a guess (`DISPLAY_PASS_MS` in `core/runtime/runtime.mjs`).
+- Synchronous Display and the Value property (DT-063 §10): the clump parks until the editor confirms the drawing.
+- Highlight Execution on several threads: today a Run debugged from the start runs on one thread, and debugging
+  turned on during a pool Run does not keep one clump at a time.
+- Starting Node's workers is expensive (~4.5 s of CPU for 28, plus ~2.3 s in their first Run): it weighs on the
+  command line, which makes a pool for each run, and on the tests.
+- The test "las ramas independientes…" fails in about one full `npm test` out of two, since the suite now starts
+  pools in parallel; it passes on its own. Make it independent of the load.
+- Local variables of controls, which would let several loops read one large control at once (the lock allows it).
 
 **Postponed**, but not forgotten: the icon editor (every VI keeps the standard icon), Change to … (half captured, see M1), the *Adapt To Entered Data* switch, the
 right-click menus of the panel and the 19 missing Numeric controls.
