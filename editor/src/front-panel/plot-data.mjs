@@ -6,9 +6,9 @@
 // A pure module: the front panel calls it with the indicator's value and type.
 
 import { dimensionsOf, esArray, esCluster } from "../../../core/model/types.mjs";
+import { DEFAULT_CHART_HISTORY } from "../../../core/compiler/panel-memory.mjs";
 
-/** The chart history buffer: Chart History Length... shows 1024 by default (50-chart-history-length-dialog.png). */
-export const DEFAULT_CHART_HISTORY = 1024;
+export { DEFAULT_CHART_HISTORY };
 /** A chart in Strip mode shows 100 points: 0..100, then it scrolls (70-chart-random-run-*.png). */
 export const STRIP_SPAN = 100;
 /** The default scales of a fresh graph (03-three-fresh-panel.png). */

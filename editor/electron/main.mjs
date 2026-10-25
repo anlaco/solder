@@ -46,6 +46,15 @@ const THEMES_DIRECTORY = path.join(EDITOR, "src", "themes");
 const PANEL_STYLE_NAME = chosenPanelStyleName(process.env.SOLDER_PANEL_STYLE, app.isPackaged);
 const PANEL_STYLES_DIRECTORY = path.join(EDITOR, "src", "panel-styles");
 
+// Every page and worker of the editor is cross-origin isolated: a Run's threads share one WebAssembly
+// memory, and Chromium gives a SharedArrayBuffer only to an isolated page (DT-063 §3). The editor loads
+// nothing from another origin, so nothing has to opt in.
+const CROSS_ORIGIN_ISOLATION = { "cross-origin-opener-policy": "same-origin", "cross-origin-embedder-policy": "require-corp" };
+
+/** A response of the solder:// scheme, with the isolation headers. */
+const editorResponse = (body, { status = 200, type } = {}) =>
+  new Response(body, { status, headers: { ...CROSS_ORIGIN_ISOLATION, ...(type && { "content-type": type }) } });
+
 protocol.registerSchemesAsPrivileged([
   { scheme: "solder", privileges: { standard: true, secure: true, supportFetchAPI: true } },
 ]);
@@ -58,13 +67,13 @@ function serve() {
     const root = route.startsWith("/core/") ? path.dirname(CORE) : EDITOR;
     const file = OUTSIDE[route] ?? path.normalize(path.join(root, route === "/" ? "index.html" : route));
     if (!Object.values(OUTSIDE).includes(file) && !file.startsWith(EDITOR + path.sep) && !file.startsWith(CORE + path.sep)) {
-      return new Response("outside the editor", { status: 403 });
+      return editorResponse("outside the editor", { status: 403 });
     }
     try {
       const type = MEDIA_TYPES[path.extname(file)] ?? "application/octet-stream";
-      return new Response(await readFile(file), { headers: { "content-type": type } });
+      return editorResponse(await readFile(file), { type });
     } catch {
-      return new Response("not found", { status: 404 });
+      return editorResponse("not found", { status: 404 });
     }
   });
 }
@@ -72,14 +81,14 @@ function serve() {
 /** The sheet of the chosen theme, served after old-school.css; Old School has none and gets an empty one. */
 async function chosenThemeStylesheet() {
   const css = THEME.stylesheet ? await readFile(path.join(THEMES_DIRECTORY, THEME.stylesheet)) : "";
-  return new Response(css, { headers: { "content-type": MEDIA_TYPES[".css"] } });
+  return editorResponse(css, { type: MEDIA_TYPES[".css"] });
 }
 
 /** The sheet of the chosen panel style, served after plain.css; a style with no sheet of its own shows as Plain. */
 async function chosenPanelStylesheet() {
   const { stylesheet } = PANEL_STYLES[PANEL_STYLE_NAME];
   const css = stylesheet ? await readFile(path.join(PANEL_STYLES_DIRECTORY, stylesheet)) : "";
-  return new Response(css, { headers: { "content-type": MEDIA_TYPES[".css"] } });
+  return editorResponse(css, { type: MEDIA_TYPES[".css"] });
 }
 
 // SOLDER_TAMANO=<width>x<height>: the size of the client area of the windows, to compare with the captures.

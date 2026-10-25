@@ -1,5 +1,8 @@
-// The scheduler of one Run (DT-061, amended by DT-063): the only thing that starts or resumes a
-// clump, in an order of its own, never the host's. It hands ready clumps to a pool of threads, as
+// The reference model of the scheduler of one Run (DT-061, amended by DT-063 §9). The scheduler that
+// runs VIs is in the compiled module itself (core/compiler/pool-scheduler.mjs); this one keeps its
+// rules in plain JavaScript, with its own tests, and with one thread the module's must give exactly
+// its order of resumes (test/end-to-end/reference-traces.test.mjs). It starts and resumes clumps in
+// an order of its own, never the host's. It hands ready clumps to a pool of threads, as
 // LabVIEW hands them to the threads of its execution systems; with one thread the order of resumes
 // is exact and the same in every host, which is what the reference traces check.
 //
@@ -9,9 +12,9 @@
 // and "run the next turn" (`createRealHost` for Node and the worker, `createVirtualHost`, whose
 // clock jumps, for tests).
 //
-// A WebAssembly import does not know which clump called it. Each host thread runs one clump at a
-// time (DT-063: a worker is one thread of the pool), so the clump that called is the one the
-// scheduler last started or resumed on it: `currentContext()`.
+// A function the clumps call does not know which clump called it. Each host thread runs one clump
+// at a time, so the clump that called is the one the scheduler last started or resumed on it:
+// `currentContext()`. The hosts (`createRealHost`, `createVirtualHost`) are also the runtime's.
 
 /** The error a Run ends with when it is aborted: not a fault of the VI. */
 export const abortedError = () => Object.assign(new Error("The VI was aborted."), { abortado: true });

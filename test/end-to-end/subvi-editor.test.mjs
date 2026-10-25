@@ -21,7 +21,7 @@ import * as SN from "../../editor/src/block-diagram/subvi-nodes.mjs";
 import * as VP from "../../editor/src/window/vi-properties.mjs";
 import { assignPanelElement } from "../../core/model/connector.mjs";
 import { buildHierarchy } from "../../editor/src/window/hierarchy-client.mjs";
-import { compilar } from "../../core/compiler/compiler.mjs";
+import { compilar, runnableVI } from "../../core/compiler/compiler.mjs";
 import { CAT, INV, buildAdder } from "../helpers.mjs";
 
 // The run worker listens to the global `onmessage` and answers with `postMessage`, as in a browser.
@@ -33,7 +33,7 @@ await import("../../editor/src/window/run-worker.mjs");
 /** Runs a compiled VI in the worker, as the window does, and returns what the indicators received. */
 async function runInWorker(key, compiled, values = {}) {
   answers.length = 0;
-  await globalThis.onmessage({ data: { orden: "run", clave: key, compilado: { bytes: compiled.bytes, controles: compiled.controles, indicadores: compiled.indicadores, clumps: compiled.clumps, planes: compiled.planes, automaticos: compiled.automaticos, disposicionError: compiled.disposicionError }, valores: values, separador: "." } });
+  await globalThis.onmessage({ data: { orden: "run", clave: key, compilado: runnableVI(compiled), valores: values, separador: "." } });
   const last = answers.at(-1);
   assert.ok(last.fin && !last.error, JSON.stringify(last));
   return Object.assign({}, ...answers.map((a) => a.escritos ?? {}));

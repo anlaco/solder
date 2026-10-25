@@ -12,9 +12,15 @@
 //     importaciones: [{ modulo, nombre, tipo }],        // tipo: índice en `tipos`
 //     funciones: [{ tipo, locales: ["i32", …], cuerpo: [instrucción, …] }],
 //     globales: ["f64", …],                               // mutables, a cero
-//     memoria: { paginas },                               // opcional; se exporta como «memoria»
+//     memoria: { paginas, maximo, compartida, importada }, // opcional; se exporta como «memoria»
 //     datos: [{ desde, bytes: Uint8Array }],              // lo que la memoria trae al instanciarse
-//     exportaciones: [{ nombre, funcion }] }             // índice entre importaciones y funciones
+//     datosPasivos: true,                                 // the data is copied by `memory.init`, not at instantiation
+//     exportaciones: [{ nombre, funcion }],              // índice entre importaciones y funciones
+//     globalesExportadas: [{ nombre, global }],         // a global the host reads and writes
+//     tabla: [funcion, …] }                              // the functions `call_indirect` reaches, by position
+// A memory with `importada: { modulo, nombre }` is the host's: every thread of a pool instantiates the
+// module over the same one (DT-063 §1). Then the data must be passive, or each instantiation would
+// write it again over what the other threads have done; one `memory.init` per segment copies it.
 // Las funciones pueden tener parámetros (los de su tipo, antes que sus locales).
 // Una instrucción es { op: "f64.add" } o { op: "local.get", arg: 3 }.
 
@@ -26,7 +32,7 @@ const OPS = {
   // Control: `block`, `loop` e `if` llevan un tipo de bloque vacío (0x40); `br`
   // y `br_if`, la profundidad del bloque al que saltan.
   block: [0x02, 0x40], loop: [0x03, 0x40], if: [0x04, 0x40], else: [0x05], end: [0x0b], br: [0x0c], br_if: [0x0d],
-  "local.get": [0x20], "local.set": [0x21], "local.tee": [0x22], call: [0x10],
+  "local.get": [0x20], "local.set": [0x21], "local.tee": [0x22], call: [0x10], call_indirect: [0x11],
   "global.get": [0x23], "global.set": [0x24], return: [0x0f],
   // Memoria: `arg` es el desplazamiento; la alineación, la natural del tipo.
   "i32.load": [0x28], "i64.load": [0x29], "f32.load": [0x2a], "f64.load": [0x2b],
@@ -56,6 +62,13 @@ const OPS = {
   "f32.convert_i32_s": [0xb2], "f32.convert_i32_u": [0xb3], "f32.convert_i64_s": [0xb4], "f32.convert_i64_u": [0xb5], "f32.demote_f64": [0xb6],
   "f64.convert_i32_s": [0xb7], "f64.convert_i32_u": [0xb8], "f64.convert_i64_s": [0xb9], "f64.convert_i64_u": [0xba], "f64.promote_f32": [0xbb],
   "i32.extend8_s": [0xc0], "i32.extend16_s": [0xc1],
+  "memory.init": [0xfc, 8], "data.drop": [0xfc, 9],
+  // Atomics (prefix 0xfe, the threads proposal): sequentially consistent, on naturally aligned addresses.
+  "memory.atomic.notify": [0xfe, 0x00], "memory.atomic.wait32": [0xfe, 0x01], "memory.atomic.wait64": [0xfe, 0x02], "atomic.fence": [0xfe, 0x03, 0x00],
+  "i32.atomic.load": [0xfe, 0x10], "i64.atomic.load": [0xfe, 0x11], "i32.atomic.store": [0xfe, 0x17], "i64.atomic.store": [0xfe, 0x18],
+  "i32.atomic.rmw.add": [0xfe, 0x1e], "i64.atomic.rmw.add": [0xfe, 0x1f], "i32.atomic.rmw.sub": [0xfe, 0x25], "i64.atomic.rmw.sub": [0xfe, 0x26],
+  "i32.atomic.rmw.and": [0xfe, 0x2c], "i32.atomic.rmw.or": [0xfe, 0x33], "i32.atomic.rmw.xor": [0xfe, 0x3a],
+  "i32.atomic.rmw.xchg": [0xfe, 0x41], "i64.atomic.rmw.xchg": [0xfe, 0x42], "i32.atomic.rmw.cmpxchg": [0xfe, 0x48], "i64.atomic.rmw.cmpxchg": [0xfe, 0x49],
   // Conversiones con saturación (prefijo 0xfc): de coma flotante a entero sin trampa.
   "i32.trunc_sat_f32_s": [0xfc, 0], "i32.trunc_sat_f32_u": [0xfc, 1], "i32.trunc_sat_f64_s": [0xfc, 2], "i32.trunc_sat_f64_u": [0xfc, 3],
   "i64.trunc_sat_f32_s": [0xfc, 4], "i64.trunc_sat_f32_u": [0xfc, 5], "i64.trunc_sat_f64_s": [0xfc, 6], "i64.trunc_sat_f64_u": [0xfc, 7],
@@ -67,7 +80,25 @@ export const esOp = (op) => op in OPS;
 const ALINEACION = {
   "i32.load": 2, "i64.load": 3, "f32.load": 2, "f64.load": 3, "i32.load8_s": 0, "i32.load8_u": 0, "i32.load16_s": 1, "i32.load16_u": 1,
   "i32.store": 2, "i64.store": 3, "f32.store": 2, "f64.store": 3, "i32.store8": 0, "i32.store16": 1,
+  "memory.atomic.notify": 2, "memory.atomic.wait32": 2, "memory.atomic.wait64": 3,
+  "i32.atomic.load": 2, "i64.atomic.load": 3, "i32.atomic.store": 2, "i64.atomic.store": 3,
+  "i32.atomic.rmw.add": 2, "i64.atomic.rmw.add": 3, "i32.atomic.rmw.sub": 2, "i64.atomic.rmw.sub": 3,
+  "i32.atomic.rmw.and": 2, "i32.atomic.rmw.or": 2, "i32.atomic.rmw.xor": 2,
+  "i32.atomic.rmw.xchg": 2, "i64.atomic.rmw.xchg": 3, "i32.atomic.rmw.cmpxchg": 2, "i64.atomic.rmw.cmpxchg": 3,
 };
+
+// The limits of a memory: its pages, and its maximum when it has one (a shared memory must).
+const NO_MAXIMUM = 0x00;
+const WITH_MAXIMUM = 0x01;
+const SHARED_WITH_MAXIMUM = 0x03;
+function limitesMemoria({ paginas, maximo, compartida }) {
+  if (compartida) return [SHARED_WITH_MAXIMUM, ...uleb(paginas), ...uleb(maximo)];
+  return maximo === undefined ? [NO_MAXIMUM, ...uleb(paginas)] : [WITH_MAXIMUM, ...uleb(paginas), ...uleb(maximo)];
+}
+const IMPORT_FUNCTION = 0x00;
+const IMPORT_MEMORY = 0x02;
+const ACTIVE_SEGMENT = 0x00;
+const PASSIVE_SEGMENT = 0x01;
 
 /** Entero sin signo en LEB128. */
 function uleb(n) {
@@ -118,23 +149,39 @@ function instruccion({ op, arg }) {
   if (op === "f64.const") return [...cod, ...flotante(arg, 8)];
   if (["local.get", "local.set", "local.tee", "global.get", "global.set", "call", "br", "br_if"].includes(op)) return [...cod, ...uleb(arg)];
   if (op in ALINEACION) return [...cod, ...uleb(ALINEACION[op]), ...uleb(arg ?? 0)];
+  // call_indirect names the type of the function it calls, then table 0.
+  if (op === "call_indirect") return [...cod, ...uleb(arg), 0x00];
+  // memory.init names its data segment, then memory 0; data.drop, only the segment.
+  if (op === "memory.init") return [...cod, ...uleb(arg), 0x00];
+  if (op === "data.drop") return [...cod, ...uleb(arg)];
   return cod;
 }
 
 /** El módulo en binario, listo para `WebAssembly.instantiate`. */
 export function codificar(m) {
   const tipos = m.tipos.map((t) => [0x60, ...vector(t.params.map((p) => [TIPOS_VALOR[p]])), ...vector(t.results.map((r) => [TIPOS_VALOR[r]]))]);
-  const importaciones = m.importaciones.map((i) => [...nombreBytes(i.modulo), ...nombreBytes(i.nombre), 0x00, ...uleb(i.tipo)]);
+  const memoriaImportada = m.memoria?.importada;
+  const importaciones = [
+    ...m.importaciones.map((i) => [...nombreBytes(i.modulo), ...nombreBytes(i.nombre), IMPORT_FUNCTION, ...uleb(i.tipo)]),
+    ...(memoriaImportada ? [[...nombreBytes(memoriaImportada.modulo), ...nombreBytes(memoriaImportada.nombre), IMPORT_MEMORY, ...limitesMemoria(m.memoria)]] : []),
+  ];
   const funciones = m.funciones.map((f) => uleb(f.tipo));
   // Cada global es mutable y empieza a cero: su tipo, 0x01 y la expresión constante.
   const cero = { i32: [0x41, 0], i64: [0x42, 0], f32: [0x43, 0, 0, 0, 0], f64: [0x44, 0, 0, 0, 0, 0, 0, 0, 0] };
   const globales = (m.globales ?? []).map((t) => [TIPOS_VALOR[t], 0x01, ...cero[t], 0x0b]);
   const exportaciones = [
     ...m.exportaciones.map((e) => [...nombreBytes(e.nombre), 0x00, ...uleb(e.funcion)]),
+    ...(m.globalesExportadas ?? []).map((e) => [...nombreBytes(e.nombre), 0x03, ...uleb(e.global)]),
     ...(m.memoria ? [[...nombreBytes("memoria"), 0x02, 0x00]] : []),
   ];
-  const memoria = m.memoria ? [0x00, ...uleb(m.memoria.paginas)] : null;
-  const datos = (m.datos ?? []).map((d) => [0x00, 0x41, ...sleb(d.desde), 0x0b, ...uleb(d.bytes.length), ...d.bytes]);
+  const memoria = m.memoria && !memoriaImportada ? limitesMemoria(m.memoria) : null;
+  const FUNCREF = 0x70;
+  // A module with a table has it even when empty: its call_indirect needs table 0 to exist.
+  const tabla = m.tabla ? [FUNCREF, NO_MAXIMUM, ...uleb(m.tabla.length)] : null;
+  // One active segment fills the table from position 0.
+  const elementos = m.tabla?.length ? [ACTIVE_SEGMENT, 0x41, 0x00, 0x0b, ...vector(m.tabla.map((funcion) => uleb(funcion)))] : null;
+  const datos = (m.datos ?? []).map((d) =>
+    m.datosPasivos ? [PASSIVE_SEGMENT, ...uleb(d.bytes.length), ...d.bytes] : [ACTIVE_SEGMENT, 0x41, ...sleb(d.desde), 0x0b, ...uleb(d.bytes.length), ...d.bytes]);
   const codigo = m.funciones.map((f) => {
     // Los locales se agrupan por tipo consecutivo.
     const grupos = [];
@@ -150,9 +197,13 @@ export function codificar(m) {
     ...seccion(1, vector(tipos)),
     ...(importaciones.length ? seccion(2, vector(importaciones)) : []),
     ...seccion(3, vector(funciones)),
+    ...(tabla ? seccion(4, vector([tabla])) : []),
     ...(memoria ? seccion(5, vector([memoria])) : []),
     ...(globales.length ? seccion(6, vector(globales)) : []),
     ...(exportaciones.length ? seccion(7, vector(exportaciones)) : []),
+    ...(elementos ? seccion(9, vector([elementos])) : []),
+    // The data count, which memory.init needs before the code is read.
+    ...(m.datosPasivos && datos.length ? seccion(12, uleb(datos.length)) : []),
     ...seccion(10, vector(codigo)),
     ...(datos.length ? seccion(11, vector(datos)) : []),
   ]);
@@ -164,13 +215,18 @@ export function wat(m) {
   const lineas = ["(module"];
   m.tipos.forEach((t, i) => lineas.push(`  (type (;${i};) (func${firma(t)}))`));
   m.importaciones.forEach((im, i) => lineas.push(`  (import "${im.modulo}" "${im.nombre}" (func (;${i};) (type ${im.tipo})))`));
+  const memoria = m.memoria;
+  if (memoria?.importada) lineas.push(`  (import "${memoria.importada.modulo}" "${memoria.importada.nombre}" (memory ${memoria.paginas} ${memoria.maximo}${memoria.compartida ? " shared" : ""}))`);
   (m.globales ?? []).forEach((t, i) => lineas.push(`  (global (;${i};) (mut ${t}) (${t}.const 0))`));
   m.funciones.forEach((f, i) => {
     lineas.push(`  (func (;${m.importaciones.length + i};) (type ${f.tipo})${f.locales.length ? ` (local ${f.locales.join(" ")})` : ""}`);
     for (const ins of f.cuerpo) lineas.push(`    ${ins.op}${ins.arg !== undefined ? ` ${ins.arg}` : ""}`);
     lineas.push("  )");
   });
+  if (m.tabla) lineas.push(`  (table ${m.tabla.length} funcref)`);
+  if (m.tabla?.length) lineas.push(`  (elem (i32.const 0) func ${m.tabla.join(" ")})`);
   m.exportaciones.forEach((e) => lineas.push(`  (export "${e.nombre}" (func ${e.funcion}))`));
+  (m.globalesExportadas ?? []).forEach((e) => lineas.push(`  (export "${e.nombre}" (global ${e.global}))`));
   lineas.push(")");
   return `${lineas.join("\n")}\n`;
 }

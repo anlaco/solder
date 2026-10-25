@@ -19,7 +19,8 @@ import * as CH from "../../editor/src/front-panel/chart-history-dialog.mjs";
 import * as GM from "../../editor/src/front-panel/graph-menus.mjs";
 import * as GS from "../../editor/src/front-panel/graph-state.mjs";
 import { GRAPH_MEASURES, graphSvg, tickLabel } from "../../editor/src/front-panel/graph-view.mjs";
-import { compilar } from "../../core/compiler/compiler.mjs";
+import { compilar, runnableVI } from "../../core/compiler/compiler.mjs";
+import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { aTexto, leer } from "../../core/model/qvi-format.mjs";
 import { abrirSubpaleta, clic, inicial, paletaNueva } from "../../editor/src/window/window-state.mjs";
 import { celdasSubpaleta, subpaletas } from "../../editor/src/window/window-view.mjs";
@@ -511,6 +512,25 @@ function loopWritingToChart(count) {
   return { g, chart, indicator };
 }
 
+// DT-063 §10: the panel is a transfer buffer. A chart keeps a ring of its history in the memory and the
+// host sends what is new at each pass, so more writes than the history between two passes lose the
+// oldest, as LabVIEW's history does; an indicator shows the last value of each pass.
+test("between two passes over the panel a chart keeps the last writes of its history, an indicator the last one", async () => {
+  const WRITES = 3000;
+  const { g, chart, indicator } = loopWritingToChart(WRITES);
+  const compiled = compilar(Gr.fijarConfig(g, chart, { historyLength: 100 }), CAT);
+  assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
+  const received = { [chart]: [], [indicator]: [] };
+  await ejecutar(compiled, {}, { alEscribir: (node, value) => received[node].push(value) });
+  // The loop has no wait: its 3000 writes take a few microseconds, far more than a history between two passes.
+  const points = received[chart];
+  assert.ok(points.every((value, index) => index === 0 || value > points[index - 1]), "in the order they were written");
+  assert.deepEqual(points.slice(-100), Array.from({ length: 100 }, (_, index) => WRITES - 100 + index), "the last 100, every one");
+  assert.ok(points.length < WRITES, `the oldest are lost: ${points.length} of ${WRITES}`);
+  assert.equal(received[indicator].at(-1), WRITES - 1);
+  assert.ok(received[indicator].length < WRITES, "an indicator shows the last value of each pass");
+});
+
 test("the run worker sends every write to a chart and only the last one to an indicator", async () => {
   const sent = [];
   globalThis.postMessage = (message) => sent.push(message);
@@ -519,8 +539,7 @@ test("the run worker sends every write to a chart and only the last one to an in
   const { g, chart, indicator } = loopWritingToChart(5);
   const compiled = compilar(g, CAT);
   assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
-  const { bytes, controles, indicadores, clumps, planes, automaticos, disposicionError } = compiled;
-  await globalThis.onmessage({ data: { orden: "run", clave: "test", compilado: { bytes, controles, indicadores, clumps, planes, automaticos, disposicionError }, valores: {}, separador: ".", charts: [chart] } });
+  await globalThis.onmessage({ data: { orden: "run", clave: "test", compilado: runnableVI(compiled), valores: {}, separador: ".", charts: [chart] } });
   const series = sent.flatMap((message) => message.series?.[chart] ?? []);
   assert.deepEqual(series, [0, 1, 2, 3, 4], "each write is a point of the chart (70)");
   const written = Object.assign({}, ...sent.map((message) => message.escritos ?? {}));

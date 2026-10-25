@@ -551,8 +551,9 @@ carried out, and its proposed solution relied on DT-027, which turned out to be
 fiction.)*
 
 > **Resolved by DT-040.** If a VI has two branches and one is left waiting,
-> the other continues: the wait is an import that **suspends** its clump (JSPI) and
-> returns control to the host, which runs the others. It is what Rule
+> the other continues: the wait is an import that **parks** its clump —the clump
+> saves its state and returns (DT-063 §8)— and control goes back to the scheduler,
+> which runs the others. It is what Rule
 > 12b asks for and what LabVIEW does.
 
 > **Rule 20d.** Abort **MUST** stop the VI immediately, also in the middle of

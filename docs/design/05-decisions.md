@@ -2302,7 +2302,10 @@ raises PATCH. There are no release branches.**
 DT-061 hands ready clumps to whichever thread is free. Independent Runs keep separate memories.**
 
 - **Status:** Accepted on 2026-10-24 by the developer. It amends [DT-061](#dt-061) §3 and §8 and reverses the option
-  DT-061 rejected ("Threads, a worker for each loop, shared memory"); the rest of DT-061 holds.
+  DT-061 rejected ("Threads, a worker for each loop, shared memory"); the rest of DT-061 holds. §8 (stackless
+  clumps that resume on any thread), §9 (the scheduler in the shared memory, with work stealing) and §10 (the panel
+  as a transfer buffer in the shared memory) accepted on 2026-10-25; they retire JSPI (DT-061 §1, §7) and replace
+  DT-061 §4. §10's phase-fair lock and §11 (a persistent pool in the editor) accepted the same day.
 - **Why:** the developer's rule for technical choices (2026-10-24): **what brings Solder closest to LabVIEW and is the
   most powerful, never the easiest.** LabVIEW runs the clumps of a VI on the threads of its execution systems, so two
   independent loops that only compute use two cores; with one clump at a time Solder would be up to N times slower on
@@ -2322,11 +2325,25 @@ DT-061 hands ready clumps to whichever thread is free. Independent Runs keep sep
    atomics, so a clump starts only when every wire it reads has been written; and a lock for what LabVIEW also
    serializes — a non-reentrant subVI (its FIFO of DT-061 §2 becomes a lock shared by the threads), global variables,
    and later queues, notifiers and functional globals.
+   *Done on 2026-10-25, in three parts (plan step 7, parts 1–3).* (1) A value that one clump writes and another reads
+   crosses through a cell of the data space instead of a WebAssembly global, since each instance of the module (each
+   thread) has globals of its own; the only globals left are each thread's: `parking`, `resumeValue`, the clump and
+   the thread it runs (`test/core/thread-pool.test.mjs`). (2) The module imports its memory (`env.memory`, shared, at
+   most 65536 pages: wasm32's whole space, the limit a VI already had, which costs only address space) and its data
+   is passive, written once per Run by the exported `initialize`, so a thread that instantiates the module later does
+   not write it again; the encoder emits the atomics of the threads proposal; the heap's `asignar` and `liberar` take
+   a lock in the memory (`lock`/`unlock`, Drepper's three-state mutex: spins on `cmpxchg`, sleeps on
+   `memory.atomic.wait32`), checked by four threads allocating and freeing at once (without the lock they corrupt
+   the free list). No stack in the memory is needed: a parked clump's state is in its frame (§8), and each thread's
+   WebAssembly stack is its own. (3) The scheduler is in the module (§9).
 3. **Why shared memory is safe here.** The WebAssembly sandbox is not broken: the threads share the memory of their
    own program, and nothing outside it is reachable except through our imports. The security risk of
    `SharedArrayBuffer` is Spectre (a precise timer that can read other data of the same process), which is why it
    needs cross-origin isolation: the editor's window that runs VIs is served with COOP/COEP, and it loads no
-   third-party content. The real risk is data races; dataflow removes most of them by construction (a wire has one
+   third-party content. *Done on 2026-10-25:* every response of the editor's `solder://` scheme carries
+   `Cross-Origin-Opener-Policy: same-origin` and `Cross-Origin-Embedder-Policy: require-corp`; Chromium gives a
+   shared memory only to an isolated page, so this came with part 2 (checked in the editor under Xvfb:
+   `crossOriginIsolated` true, and a VI runs). The real risk is data races; dataflow removes most of them by construction (a wire has one
    writer, and its readers start after it), and the locks of §2 cover the rest, as in LabVIEW.
 4. **Determinism is a mode, not the rule.** With N = 1 the order of resumes is exact, and the reference traces of
    DT-061 §8 check it in every host. With N > 1 the order between independent branches is free, as in LabVIEW, and
@@ -2342,6 +2359,209 @@ DT-061 hands ready clumps to whichever thread is free. Independent Runs keep sep
 7. **Measured in LabVIEW before N and the dispatch policy are fixed** (rule 2): how many threads each execution
    system has and what decides it, how two loops that only compute are spread over the cores, how a reentrant subVI
    called from parallel branches runs, and what the user can set (execution system and priority of a VI).
+
+8. **A parked clump resumes on any thread: clumps are compiled stackless** (decided by the developer on 2026-10-25,
+   after the measurements of 2026-10-25 below). A clump that can park is emitted as a resumable function: at each
+   point where it may park (yield, Wait, Wait Until Next ms Multiple, a subplan, a subVI's turn or call, a dialog,
+   the debugger) it saves its live locals and a resume point into a frame in the data space and returns to the
+   scheduler; called again on any thread, it restores them and goes on from that point. Every function on the way
+   (the clump, the subVIs it calls) does the same, so a Wait deep inside a subVI parks the whole chain. The frames
+   live in the shared memory, so no state belongs to a thread. This replaces JSPI, whose suspended stacks belong to
+   the worker that suspended them and cannot move; the Rust host then needs no stack switching (DT-061 §7). Order of
+   work: first on the single-threaded runtime of today, with every existing test and the reference traces as the
+   check; then the pool, which then pins nothing.
+   *Done on 2026-10-25 on the single-threaded runtime* (`core/compiler/stackless.mjs`, applied to every function of a
+   module in `assemble`). A suspending import answers at once or leaves the promise of its answer and raises the
+   module's exported global `parking`; the clump stores the locals still read after that point (a liveness
+   analysis) and the point's number into its frame, and returns; its runner waits for the answer, puts it in the
+   global `resumeValue` and calls the clump again. Each function has a rewinding copy (every statement before a park
+   point guarded, a structure entered only if the point is inside it, an `if` taking the branch that holds it, a
+   loop rewound for the one iteration it parked in) and running copies that are the original code with a check of
+   `parking` after each call that may park, leaving through one exit outside every loop. A function with debugger
+   hooks has two running copies, with and without them, and takes the one the debug flag asks for when it starts or
+   resumes: turning debugging on reaches a running loop at its next yield (~8 ms), where it reached the next node
+   before. The frames are cleared at the start of every Run, since the memory a VI keeps between Runs (DT-045)
+   holds them too. JSPI is gone from the runtime, the command line and `npm test`.
+9. **The scheduler lives in the shared memory and its threads steal work** (decided by the developer on 2026-10-25).
+   Each thread has its own deque of ready clumps: a clump that ends decrements its dependents' counters with atomics,
+   pushes the ones that reach zero onto its own deque and takes the newest next (its inputs are still in that core's
+   cache); a thread with nothing to do steals the oldest from another's deque. The timers are a heap in the shared
+   memory ordered by (deadline, sequence), and a thread with nothing to do sleeps with `memory.atomic.wait32` until
+   the earliest deadline or a notify. Abort is a flag in the memory that every clump reads at its park points. A
+   deadlock is every thread asleep with no deadline and nothing waited for from outside. Each worker's loop (take a
+   clump, `call_indirect` it, read how it returned) is WebAssembly, so passing from one clump to the next never
+   crosses into JavaScript. Only the outside world stays in JavaScript: one coordinating thread takes the editor's
+   messages (the panel, a dialog's answer, Abort) and writes them into the memory. With N = 1 the ready queue is FIFO,
+   so the order of resumes and the reference traces stay as they are. `core/runtime/scheduler.mjs` is kept as the
+   reference model: on the virtual clock with N = 1 the WebAssembly scheduler must give exactly its trace.
+   This replaces the per-Run scheduler of DT-061 §1 as the thing that runs clumps; its rules (one order of our own,
+   typed park reasons, deadline and sequence, Abort and deadlock as states) hold.
+   *Done on 2026-10-25* (`core/compiler/pool-scheduler.mjs`, in every module after the memory functions). A header
+   at a fixed address (`SCHEDULER`) points to the module's tables: a record per clump (the wires it still waits
+   for, its state, why it parked, the value it resumes with, its deadline, its group, its dependents, its budget of
+   iterations), a record per group (group 0 is the top-level VI, group p + 1 is plan p: a subplan or a subVI that
+   waits), the timer heap, a lock with a FIFO of waiters per group, and one Chase–Lev deque per thread plus one for
+   the coordinator, allocated on the heap the first Run and kept with the memory. Clumps are called through a table
+   with `call_indirect`. A clump's state goes IDLE → READY → RUNNING → PARKED → READY … → ENDED; a clump woken while
+   it is still returning from its park (another thread ended its subplan, left the subVI it waits for, or the
+   coordinator answered) goes to WAKE_PENDING, and its thread makes it ready once it has returned, so no clump
+   resumes before its state is saved. The waits, the yields of a loop, subplans and a subVI's turn are functions of
+   the module (park primitives, `stackless.mjs`); only the dialogs and the debugger park through JavaScript
+   (`park_external`, `wake_external`). Two clocks are imported: `ahora`, the Run's clock for timers (virtual in the
+   reference traces), and `reloj_real`, for the budget of a loop, as before. `run_thread(thread, blocking)` has
+   two modes. Not blocking, as one thread in the runtime today: it runs one clump and returns, and JavaScript drives
+   the turns as the reference model does (the panel's writes at each turn, Abort and answers read between turns);
+   the reference traces, written from the model, pass unchanged. Blocking, as a thread of a pool: it takes the
+   newest clump of its own deque, steals the oldest of another's, and sleeps on `memory.atomic.wait32` until a
+   push, a new earliest deadline or the end of the Run; a deadlock is every thread idle with nothing ready, no timer
+   and nobody outside to answer. Checked with up to 16 real threads (`test/core/thread-pool.test.mjs`): parallel
+   loops whose every iteration starts a subplan and parks twice give every write exactly once, 30 times in a row;
+   a non-reentrant functional global called from six parallel loops on six threads counts every call (with its
+   lock broken the threads end in deadlock); and two loops that only compute take 450 ms on two threads against
+   790 ms on one (the rest is starting the workers). A compute loop runs as fast as before (3.71 ns an
+   iteration). The runtime still runs every Run on one thread: the pool needs the panel in the memory (§10) first,
+   and then N threads (plan step 7, parts 4 and 5). Threads of a pool must share one clock origin
+   (`performance.timeOrigin + performance.now()`), since each worker's `performance.now()` starts at its own.
+10. **The panel lives in the shared memory, as LabVIEW's transfer buffer** (decided by the developer on 2026-10-25:
+    "what is closest to LabVIEW"). A worker of the pool never receives a message during a Run (its loop is
+    WebAssembly, and it sleeps in `memory.atomic.wait32`), so control values cannot be copied to each worker; they
+    are in the memory, and the coordinator writes there what the editor sends.
+    - **A control, a local variable of it:** a scalar (Boolean, integer, SGL, DBL as its 64 bits) is written and read
+      with one atomic store and load; WebAssembly's atomics are sequentially consistent, so no thread reads an older
+      value after a newer one, as measured in LabVIEW. A string, array or cluster has a lock of its own: a writer takes
+      it, puts the new block, frees the old one and lets go; a reader takes it and **copies** the value, as NI says a
+      local variable copies its data. The lock spins briefly, then sleeps. LabVIEW protects large values too (measured on 2026-10-25,
+      below, case 8): a reader never sees a torn array or string of 10⁶ elements, so the lock per control stays. A
+      reader that never waits slows LabVIEW's writer 35–100 times for a string (case 8): its lock takes no turns.
+      **Solder's is a phase-fair reader-writer lock** (decided by the developer on 2026-10-25: "the most powerful";
+      Brandenburg and Anderson, "Spin-Based Reader-Writer Synchronization for Multiprocessor Real-Time Systems",
+      2010): any number of readers copy at once, a writer that arrives makes the new readers wait until it has
+      written, and after each write the readers that were waiting go in before the next writer. Neither readers nor
+      writers starve, and several loops that read one large control copy it in parallel. The values are the same as
+      in LabVIEW (never torn); only the pace differs, where LabVIEW's writer is held back. Rejected: the mutex of the
+      heap, which takes no turns (LabVIEW's pace, writers starved and readers one at a time), and a ticket lock
+      (turns, but readers still one at a time and a wake-up at every hand-over).
+    - **A Latch:** read with an atomic exchange that leaves FALSE, so only one reader sees TRUE; the release goes to the
+      editor as an indicator write does.
+    - **An indicator:** a cell with its last value and a version counter; the diagram writes it and never waits
+      (LabVIEW's default, Synchronous Display off). The coordinator walks the cells at the display's pace and sends the
+      editor only what changed; values written faster than that are skipped, as in LabVIEW.
+    - **A chart:** a ring in the shared memory of the chart's history length (1024 by default), written by the diagram;
+      the coordinator sends what is new since its last pass. When the VI writes more than the history holds between two
+      passes the oldest are lost, which is what LabVIEW's history does.
+    - **Synchronous Display and the Value property** (when they are done): the clump parks waiting for the editor to
+      confirm the drawing, on purpose slower than a local variable, as LabVIEW is (≈ 100–277 µs a write against
+      ≤ 0.2 µs).
+    This replaces DT-061 §4 (the panel's writes sent at the end of each turn): with threads there is no turn of the
+    whole Run.
+    *Done on 2026-10-25 (plan step 7, part 4;* `core/compiler/panel-memory.mjs`*).* Every control and indicator of the
+    top-level VI has a record in the data space: the lock (`read_lock`/`write_lock`, linear-memory.mjs), a count of
+    writes, a count of a Latch's releases and the value (8 bytes for a scalar, a handle, or the cluster in place); a
+    chart's record holds a ring of its history length instead of one value. The panel imports are gone. The diagram
+    writes an indicator and never waits: a scalar is one atomic store and its count goes up, a string, array or
+    cluster is copied in under the write lock, a chart writes the next slot of its ring. It reads a control with one
+    atomic load, a Latch with an atomic exchange that leaves FALSE (counting the release), and a string, array or
+    cluster by copying it under the read lock. The runtime, which is the coordinator, passes over the panel at the
+    end of each turn, before a dialog or the debugger shows something and when the Run ends: it reports each
+    indicator whose count changed with its last value, every write a chart's ring still holds, and each Latch
+    released; at the start of each turn it writes into the records the controls the caller changed. Values
+    written faster than the passes are skipped, as in LabVIEW (`test/editor/graphs.test.mjs`: 3000 writes in one
+    turn reach a chart of history 100 as the last 100, and an indicator as its last value). Four threads read
+    four 100,000-element array controls 3000 times each while the coordinator rewrites them: no read torn (16–17
+    per loop with the read lock removed), in `test/core/thread-pool.test.mjs`. The lock is checked on its own with
+    four readers and two writers on six threads: never a torn value or a reader beside a writer, readers inside
+    together, and nobody starved (a broken lock leaves a thread stuck, and the test ends it after 30 s). Writing an
+    indicator 10⁶ times in a loop takes 21 ms (LabVIEW 126–136 ms) and a chart 131 ms. Still missing: Synchronous
+    Display and the Value property, and the pass at the display's pace on its own thread, which comes with the pool
+    (part 5).
+
+11. **The pool lives as long as the editor, and a built application chooses its threads** (decided by the developer on
+    2026-10-25). In the editor the pool's workers are created at the first Run, N of them (one per logical
+    processor, as each of LabVIEW's execution systems has: measured on 2026-10-24), and they stay, asleep, between
+    Runs; each Run hands them its module and its new memory, so a Run starts at once, as in LabVIEW, whose threads
+    exist from the start, and Run Continuously does not pay a start at every round. Measured on the development
+    machine (28 logical processors): an idle worker of the editor costs ~4.8 MB (134 MB for 28, on an editor of
+    633 MB), one of Node ~10.5 MB; starting one cold, 50–75 ms. The command line runs one Run, so its pool lives as
+    long as the Run. A built application (the Application Builder, when it exists) starts its VI once, so its pool
+    is created at launch either way, and its number of threads is chosen when it is built, as LabVIEW's
+    `threadconfig.vi` sets the threads of each execution system; for a small target, the Rust host (§6) runs the
+    pool on native threads, which cost little more than their stacks.
+    Rejected: a pool for each Run (simple, nothing alive between Runs, but ~75 ms more at every Run and at every
+    round of Run Continuously), and a persistent pool released after a while without Runs (saves the memory while
+    nothing runs, but adds creating and destroying it, its races with a Run that arrives then, and the start again
+    after a pause).
+    *Done on 2026-10-25 (plan step 7, part 5).* A thread of the pool (`core/runtime/pool-thread.mjs`, the same in a
+    worker of the editor and one of Node) receives, through a new port for each Run, the compiled module and the
+    Run's memory, instantiates the module with its own host functions (`createHostFunctions`, over its instance)
+    and runs `run_thread` blocking until the Run is over. `ejecutar` with `poolPorts` is the coordinator: it
+    prepares the Run, hands every thread the module and the memory, passes over the panel every 16 ms (about one
+    frame of the display; LabVIEW's pace is unverified), turns Abort into the memory's abort flag, and shows the
+    dialogs the threads ask for: a thread parks the clump that called (`park_external`) and sends the dialog; the
+    coordinator answers and wakes the clump onto its own deque. A Run whose debugging is on from the start runs on
+    the coordinator's thread, turn by turn, so Highlight Execution keeps one clump at a time; debugging turned on in
+    the middle of a pool Run reaches its threads, which read each output's value before the clump goes on and send
+    it, and park at each node until the debugger lets it go. The editor's window creates its pool at the first Run
+    (`editor/src/window/browser-pool.mjs`, `navigator.hardwareConcurrency` workers) and hands the run worker one
+    port per thread; if the run worker has to be ended after an unanswered Abort, the pool goes with it, since its
+    threads may still be running that Run. The command line makes a pool for its one Run, `--threads N` (one per
+    logical processor by default, as `threadconfig.vi`; 1 gives the exact order). Measured on the development
+    machine (28 logical processors, Node 24.19): starting 28 workers of Node costs ~4.5 s of CPU and their first
+    Run ~2.3 s more (≈ 0.25 s of wall time), and from then on a Run of a newly compiled VI starts in 5 ms; 28 idle
+    threads spend 141 ms of CPU in 2 s of waits against 22 ms on one thread. In the editor the pool adds ~180 MB
+    when it is created. Checked by `test/core/pool-runtime.test.mjs` (parallel loops, a non-reentrant subVI that
+    keeps counting across pool Runs, Abort and the next Run, a dialog from a thread, a Stop button, debugging
+    turned on mid-Run), and by the three examples, which give LabVIEW's values on one thread and on a pool
+    (`test/end-to-end/examples.test.mjs`); in the editor under Xvfb, Temperature Monitor runs on the pool, ends on
+    LabVIEW's average and is aborted at once.
+
+### What was measured in LabVIEW (2026-10-25): where a clump resumes, and the load it balances
+
+Reports `labview-captures/reports/2026-10-25-thread-resume.md` and `2026-10-25-load-balance.md`; VIs in
+`C:\solder-measure\exec-systems\`.
+
+1. **A clump resumes after a Wait on whichever thread is free.** GetCurrentThreadId (Call Library Function Node,
+   Run in any thread) read before and after a Wait (ms) 1, 500 iterations, 3 runs: one loop resumed on another
+   thread in 7–9 % of the iterations, using 2 threads; four loops in parallel in 13–52 %, all four sharing the same
+   3–4 threads. With Wait (ms) 0 or no Wait the thread never changed (1500 iterations each).
+2. **Loops of different lifetimes do not slow each other.** Loops of 20 × (≈ 47 ms of computing + Wait 10 ms): 8 in
+   parallel 1143 ms; 16 in parallel 1805 ms; 8 of them beside 8 that do only 2 iterations, 1173 ms (the long ones end
+   as they do alone). A model of the scheduler with 8 threads gives 1140, 1947 and 1227 ms when a clump resumes on any
+   thread, and 1140, 1947 and **1947 ms** when it is pinned to the thread it started on: pinning would make that
+   program 66 % slower than LabVIEW.
+3. **A loop that only computes yields about every 56 ms.** A loop of Wait (ms) 1 has a mean period of 1.75 ms alone and
+   2.53 ms beside 8 compute loops on the 8 threads, with 15–16 periods per run of 55.99–56.06 ms (unverified as a
+   quantum). Solder's loops yield every ~8 ms (DT-041).
+4. **What JSPI and a worker cost** (Node 24.19, measured on the development machine): a JSPI suspension and resume
+   285 ns, 4.2 µs through a turn of the scheduler; a worker 50–75 ms to start cold and ~7 MB. A loop parks at most
+   ~1000 times a second, so the cost of parking does not decide the design; balance and memory do.
+5. **What handing work between threads costs** (Node 24.19, same machine): a `postMessage` round trip between two
+   workers 44 µs; waking a sleeping thread with `Atomics.notify` and its answer 16 µs; an uncontended atomic decrement
+   (a dependency counter) 26 ns. A loop whose body has two long branches starts a subplan of 2–3 clumps per
+   iteration: at 1 kHz that is ~6000 starts and ends a second, about half a core through a coordinator, nothing
+   through counters (§9).
+7. **The cost of stackless clumps** (Node 24.19, development machine; a For Loop of 10⁸ iterations of
+   x = x·1.0000001 + 0.5 in a DBL shift register, best of 5): with JSPI 3.72 ns an iteration with Allow Debugging
+   off and 5.77 ns with it on; stackless with saving every local and guards in the loop, 5.42 and 27.85 ns; with the
+   running and rewinding copies, 3.73 and 7.43 ns; with one exit outside the loops, 7.04 ns on; with a running copy
+   without the debugger's hooks, **3.72 ns both**. An exit from inside a loop costs ~0.8 ns an iteration even when it
+   is never taken, and saving dead locals keeps them alive in the loop.
+6. **The panel** (reports `2026-10-25-indicator-chart.md`, `2026-10-25-local-variable.md`): writing an indicator in a
+   loop of 10⁶ iterations takes 136 ms with the panel open, 126 ms closed (the diagram does not wait for the drawing);
+   Advanced ▸ Synchronous Display exists, off by default, and on it costs ≈ 0.82 ms a write with the panel open. A
+   Waveform Chart written 100,000 times in 34 ms holds exactly 0…99,999 in its history (default length 1024; when full,
+   the oldest go). One loop writing a local variable of an I32 control 10⁶ times and another reading it in parallel:
+   never a decrease in 7.08 M reads, values skipped and repeated; the same with a string control: never a torn or
+   foreign value in 1.4 M reads (strings of 3–6 bytes). A write costs ≤ 0.2 µs by local variable and ≈ 100 µs (panel
+   closed) to 277 µs (open) by the Value property; Value (Signaling) the same.
+
+8. **A large value read by a local variable while another loop writes it is never torn** (report
+   `2026-10-25-torn-large-values.md`; `TornArray.vi`, `TornString.vi`). One loop writes 2000 times a 1D I32 array of 10⁶
+   elements all equal to i (Initialize Array) to a local variable; another reads a local variable of it with no wait and
+   checks Array Max & Min: 0 torn in 7 runs (~2,560 reads), never an older value after a newer one. The same with a string
+   of 10⁶ equal characters: 0 torn in 4 runs (~818,000 reads). Show Buffer Allocations puts a dot on the local read (it
+   copies). The reader slows the writer: ~25 % for the array, 35–100 times for the string (0.17 ms a write alone,
+   6.5–18.4 ms with the reader, varying ~3× between runs), which looks like a lock on the control's data that a reader
+   that never waits keeps taking (mechanism unverified).
 
 ### What was measured in LabVIEW (2026-10-24)
 
@@ -2373,13 +2593,40 @@ In the VM (Xeon E5-2683 v3, 4 physical cores, 8 logical processors), with VIs bu
   memories (multi-memory) makes every load and store choose one, with two paths in the compiler and runtime; every
   wire between workers would be copied (an acquisition array of a million samples, on every crossing), which LabVIEW
   never does; and it would not remove the need for cross-origin isolation.
+- **A parked clump pinned to the thread it started on (JSPI kept, §8 rejected):** no change to the compiler, but
+  LabVIEW resumes on any thread, and with loops of different lifetimes two long ones end up sharing a thread while
+  others idle (66 % slower than LabVIEW in the model, measured case 2 above).
+- **An elastic pool, a worker for each parked clump, the OS sharing the cores:** balances as well as §8 in the model
+  without touching the compiler, but costs a worker (~7 MB, 50–75 ms to start) for every loop that waits, puts more
+  threads than cores, and does not behave as LabVIEW's fixed threads do (no 56 ms stalls, case 3).
+- **The scheduler of DT-061 in one coordinating thread, the workers asking it by message (§9 rejected):** it exists
+  and is tested, but every start, end and park costs a round trip of ~44 µs and one thread hands out work for all.
+- **A coordinator with a fast path (dependents started by the worker through atomics, parks through the
+  coordinator):** two schedulers that must agree, with a clump's state half in JavaScript and half in the memory,
+  and every park still a round trip; it was needed only while a parked clump belonged to its worker (JSPI).
 
 ### How it is verified
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| Two independent loops that only compute run in parallel on N cores | — | **Unverified**: the pool is not written |
-| A clump never starts before every wire it reads is written, with N > 1 | — | **Unverified**: needs the reference traces |
-| A non-reentrant subVI called from parallel branches runs one call at a time | `test/core/scheduler.test.mjs` (the lock, with four threads) | Verified in the scheduler; the pool is not written |
+| Two independent loops that only compute run in parallel on N cores | `test/core/thread-pool.test.mjs` (two threads under 75 % of one) | Verified |
+| The examples give LabVIEW's values on a pool of threads, dialogs included | `test/end-to-end/examples.test.mjs` (each example on one thread and on a pool of four) | Verified |
+| A Run on the pool stops at once on Abort, and the pool serves the next Run | `test/core/pool-runtime.test.mjs` | Verified |
+| A clump never starts before every wire it reads is written, with N > 1 | `test/core/thread-pool.test.mjs` (every write exactly once, with subplans, 16 threads in the probe) | Verified by results; not by a trace of the order |
+| A non-reentrant subVI called from parallel branches runs one call at a time | `test/core/scheduler.test.mjs` (the model, four threads); `test/core/thread-pool.test.mjs` (six real threads) | Verified |
+| No value crosses between clumps through a WebAssembly global, and the memory is the host's and shared | `test/core/thread-pool.test.mjs` | Verified |
+| Threads allocate and free on the heap at once without sharing a block | `test/core/thread-pool.test.mjs` (four threads, 200,000 times each) | Verified |
 | With N = 1 the order of resumes is the same in every host | `test/end-to-end/reference-traces.test.mjs` | Verified in the JavaScript host |
 | LabVIEW: one thread per logical processor per execution system and priority; compute loops, reentrant calls and branch consumers run in parallel; a non-reentrant subVI serializes | Measured on 2026-10-24 (above) | Measured, no test |
+| LabVIEW resumes a clump after a Wait on any free thread, and loops of different lifetimes do not slow each other | Measured on 2026-10-25 (above) | Measured, no test |
+| A stackless clump goes on after each park with the same values, and is not called into its import again | `test/core/stackless.test.mjs` (a loop that parks inside an `if`), and every test of waits, loops, subplans, subVIs, dialogs and the debugger | Verified on one thread; on another thread, when the pool exists |
+| A Run after an aborted one starts every clump afresh | `test/core/stackless.test.mjs` (fails without clearing the frames) | Verified |
+| A VI that waits needs no JSPI | `test/end-to-end/command-line.test.mjs` (runs with `WebAssembly.Suspending` removed) | Verified |
+| Debugging turned on in the middle of a loop reaches its nodes, and turned off stops them | `test/core/stackless.test.mjs` | Verified |
+| A loop runs as fast as with JSPI with debugging off, and faster with it on | Measured on 2026-10-25 (above, case 7) | Measured, no test |
+| With N = 1 on the virtual clock the WebAssembly scheduler gives the reference model's trace | `test/end-to-end/reference-traces.test.mjs` (traces written from the model, now run by the module's scheduler) | Verified |
+| The work-stealing deques lose and duplicate no clump under contention | `test/core/thread-pool.test.mjs` (every write exactly once, three times on six threads) | Verified |
+| LabVIEW: indicators asynchronous by default, a chart keeps every value up to its history, a local variable read across loops never goes back and is never torn (I32, short strings) | Measured on 2026-10-25 (above) | Measured, no test |
+| LabVIEW protects large values (arrays, long strings) read by a local variable while written | Measured on 2026-10-25 (above, case 8) | Measured, no test |
+| A control read by several threads never goes back and is never torn in Solder | `test/core/thread-pool.test.mjs` (four threads read array controls while the coordinator writes them; the lock on its own, six threads) | Verified for torn; going back follows from the lock and is not tested |
+| A chart keeps the last writes of its history between two passes, an indicator its last value | `test/editor/graphs.test.mjs` | Verified |

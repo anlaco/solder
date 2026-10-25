@@ -5,7 +5,9 @@
 //   0                el handle nulo: un array o una cadena vacíos
 //   CIMA (4)         dónde acaba el montón (I32)
 //   LISTAS (8)       la cabeza de la lista libre de cada clase de tamaño (32 × I32)
-//   CELDAS (136)     el data space: una celda (I32) por cada búfer de un nodo; la
+//   HEAP_LOCK (136)  the lock of the heap, since the threads of a pool share it (DT-063 §2)
+//   SCHEDULER (144)  the header of the Run's scheduler (pool-scheduler.mjs, DT-063 §9)
+//   CELDAS (272)     el data space: una celda (I32) por cada búfer de un nodo; la
 //                    celda es el *handle* y guarda la dirección del bloque
 //   …                las constantes (zona estática, que no se escribe nunca)
 //   …                el montón
@@ -17,7 +19,30 @@
 
 export const CIMA = 4;
 export const LISTAS = 8;
-export const CELDAS = LISTAS + 32 * 4;
+export const HEAP_LOCK = LISTAS + 32 * 4;
+export const SCHEDULER = HEAP_LOCK + 8;
+export const SCHEDULER_HEADER_BYTES = 128;
+// The data space starts 8-aligned, so a cell aligned inside it is aligned in memory, as atomics need.
+export const CELDAS = SCHEDULER + SCHEDULER_HEADER_BYTES;
+
+// The states of a lock (Drepper, "Futexes Are Tricky", mutex 3): only an unlock that finds someone
+// waiting pays for a notify.
+const UNLOCKED = 0;
+const LOCKED = 1;
+const LOCKED_WITH_WAITERS = 2;
+const WAIT_FOREVER = -1n;
+const WAKE_ALL = 0x7fffffff;
+
+// A phase-fair reader-writer lock (Brandenburg and Anderson, 2010, "PF-T"; DT-063 §10): readers go in
+// together, a writer that arrives makes the new readers wait, and after each write the readers that
+// were waiting go in before the next writer. Four I32 counters: readers in (with the writer's two bits
+// below them), readers out, writers' tickets taken and writers out.
+export const READ_WRITE_LOCK_BYTES = 16;
+const READ_WRITE = { readersIn: 0, readersOut: 4, writersIn: 8, writersOut: 12 };
+const READER = 0x100;
+const WRITER_BITS = 0x3;
+const WRITER_PRESENT = 0x2;
+const PHASE = 0x1;
 
 const ins = (op, arg) => (arg === undefined ? { op } : { op, arg });
 const get = (l) => ins("local.get", l);
@@ -31,9 +56,107 @@ const k = (n) => ins("i32.const", n);
  * locales, cuerpo }.
  */
 export function funcionesMemoria(llamar) {
-  // asignar(tam) → dirección de un bloque donde caben `tam` bytes.
-  const asignar = {
-    nombre: "asignar",
+  // lock(address): takes the lock at `address`, sleeping while another thread holds it.
+  const lock = {
+    nombre: "lock",
+    params: ["i32"],
+    results: [],
+    locales: ["i32"], // 1 the state found
+    cuerpo: [
+      get(0), k(UNLOCKED), k(LOCKED), ins("i32.atomic.rmw.cmpxchg"), tee(1),
+      ins("if"),
+      // Taken: say that someone waits, unless it was already said.
+      get(1), k(LOCKED_WITH_WAITERS), ins("i32.ne"),
+      ins("if"), get(0), k(LOCKED_WITH_WAITERS), ins("i32.atomic.rmw.xchg"), set(1), ins("end"),
+      ins("block"), ins("loop"),
+      get(1), ins("i32.eqz"), ins("br_if", 1),
+      get(0), k(LOCKED_WITH_WAITERS), ins("i64.const", WAIT_FOREVER), ins("memory.atomic.wait32"), ins("drop"),
+      get(0), k(LOCKED_WITH_WAITERS), ins("i32.atomic.rmw.xchg"), set(1),
+      ins("br", 0),
+      ins("end"), ins("end"),
+      ins("end"),
+    ],
+  };
+  // unlock(address): lets go of the lock at `address` and wakes one waiter, if there is one.
+  const unlock = {
+    nombre: "unlock",
+    params: ["i32"],
+    results: [],
+    locales: [],
+    cuerpo: [
+      get(0), k(1), ins("i32.atomic.rmw.sub"), k(LOCKED), ins("i32.ne"),
+      ins("if"),
+      get(0), k(UNLOCKED), ins("i32.atomic.store"),
+      get(0), k(1), ins("memory.atomic.notify"), ins("drop"),
+      ins("end"),
+    ],
+  };
+  /** Sleeps on the I32 at `address + field`, read into `valueLocal`, for as long as `keepWaiting` says so. */
+  const waitWhile = (field, valueLocal, keepWaiting) => [
+    ins("block"), ins("loop"),
+    get(0), ins("i32.atomic.load", field), set(valueLocal),
+    ...keepWaiting, ins("i32.eqz"), ins("br_if", 1),
+    get(0), k(field), ins("i32.add"), get(valueLocal), ins("i64.const", WAIT_FOREVER), ins("memory.atomic.wait32"), ins("drop"),
+    ins("br", 0),
+    ins("end"), ins("end"),
+  ];
+  const notifyAll = (field) => [get(0), k(field), ins("i32.add"), k(WAKE_ALL), ins("memory.atomic.notify"), ins("drop")];
+  // read_lock(address): goes in with the other readers, unless a writer is in or waiting; then it
+  // waits for that writer's phase to end.
+  const readLock = {
+    nombre: "read_lock",
+    params: ["i32"],
+    results: [],
+    locales: ["i32", "i32"], // 1 the writer's bits when it came, 2 the counter now
+    cuerpo: [
+      get(0), k(READER), ins("i32.atomic.rmw.add", READ_WRITE.readersIn), k(WRITER_BITS), ins("i32.and"), tee(1),
+      ins("if"),
+      ...waitWhile(READ_WRITE.readersIn, 2, [get(2), k(WRITER_BITS), ins("i32.and"), get(1), ins("i32.eq")]),
+      ins("end"),
+    ],
+  };
+  const readUnlock = {
+    nombre: "read_unlock",
+    params: ["i32"],
+    results: [],
+    locales: [],
+    cuerpo: [get(0), k(READER), ins("i32.atomic.rmw.add", READ_WRITE.readersOut), ins("drop"), ...notifyAll(READ_WRITE.readersOut)],
+  };
+  // write_lock(address): takes its turn among the writers, then closes the door to new readers and
+  // waits for the ones inside to leave.
+  const writeLock = {
+    nombre: "write_lock",
+    params: ["i32"],
+    results: [],
+    locales: ["i32", "i32", "i32"], // 1 its ticket, 2 a counter now, 3 the readers in when it closed the door
+    cuerpo: [
+      get(0), k(1), ins("i32.atomic.rmw.add", READ_WRITE.writersIn), set(1),
+      ...waitWhile(READ_WRITE.writersOut, 2, [get(2), get(1), ins("i32.ne")]),
+      get(0), k(WRITER_PRESENT), get(1), k(PHASE), ins("i32.and"), ins("i32.or"), ins("i32.atomic.rmw.add", READ_WRITE.readersIn), set(3),
+      ...waitWhile(READ_WRITE.readersOut, 2, [get(2), get(3), ins("i32.ne")]),
+    ],
+  };
+  const writeUnlock = {
+    nombre: "write_unlock",
+    params: ["i32"],
+    results: [],
+    locales: [],
+    cuerpo: [
+      get(0), k(~WRITER_BITS), ins("i32.atomic.rmw.and", READ_WRITE.readersIn), ins("drop"), ...notifyAll(READ_WRITE.readersIn),
+      get(0), k(1), ins("i32.atomic.rmw.add", READ_WRITE.writersOut), ins("drop"), ...notifyAll(READ_WRITE.writersOut),
+    ],
+  };
+  /** `inner`, called between taking the heap's lock and letting it go. */
+  const underHeapLock = (nombre, inner) => ({
+    nombre,
+    params: inner.params,
+    results: inner.results,
+    locales: [],
+    cuerpo: [k(HEAP_LOCK), ins("call", llamar("lock")), ...inner.params.map((_, i) => get(i)), ins("call", llamar(inner.nombre)), k(HEAP_LOCK), ins("call", llamar("unlock"))],
+  });
+  // allocateUnlocked(tam) → dirección de un bloque donde caben `tam` bytes.
+  const allocateUnlocked = {
+    nombre: "allocateUnlocked",
     params: ["i32"],
     results: ["i32"],
     locales: ["i32", "i32", "i32"], // 1 clase, 2 dirección, 3 páginas que faltan
@@ -58,9 +181,9 @@ export function funcionesMemoria(llamar) {
       get(2),
     ],
   };
-  // liberar(dirección): el bloque vuelve a la lista de su clase.
-  const liberar = {
-    nombre: "liberar",
+  // freeUnlocked(dirección): el bloque vuelve a la lista de su clase.
+  const freeUnlocked = {
+    nombre: "freeUnlocked",
     params: ["i32"],
     results: [],
     locales: ["i32"],
@@ -153,11 +276,16 @@ export function funcionesMemoria(llamar) {
       get(5), k(8), ins("i32.add"),
     ],
   };
-  return [asignar, liberar, redimensionar, longitud, datos, copiar, datos8, nuevoArray];
+  const asignar = underHeapLock("asignar", allocateUnlocked);
+  const liberar = underHeapLock("liberar", freeUnlocked);
+  return [asignar, liberar, redimensionar, longitud, datos, copiar, datos8, nuevoArray, lock, unlock, allocateUnlocked, freeUnlocked, readLock, readUnlock, writeLock, writeUnlock];
 }
 
-/** Los nombres de las funciones de la memoria que se exportan, para que el anfitrión escriba en el data space. */
-export const EXPORTADAS = ["redimensionar", "nuevo_array"];
+/** The names of the memory functions, in the order they go in the module. */
+export const MEMORY_FUNCTION_NAMES = funcionesMemoria(() => 0).map((f) => f.nombre);
+
+/** The memory functions the host calls: to write into the data space, and the panel's locks (DT-063 §10). */
+export const EXPORTADAS = ["redimensionar", "nuevo_array", "read_lock", "read_unlock", "write_lock", "write_unlock"];
 
 /**
  * Los bytes de una cadena en un bloque de la zona estática: [longitud][bytes],

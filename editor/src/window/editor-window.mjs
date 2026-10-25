@@ -23,6 +23,7 @@ import * as DS from "../debugging/debug-state.mjs";
 import * as DV from "../debugging/debug-view.mjs";
 import * as EL from "../debugging/error-list.mjs";
 import { buildDebugPlan, nodeDisplayName } from "../debugging/debug-plan.mjs";
+import { createBrowserPool } from "./browser-pool.mjs";
 import * as D from "../block-diagram/diagram-view.mjs";
 import * as DC from "../block-diagram/diagram-clipboard.mjs";
 import * as ED from "../block-diagram/diagram-editing.mjs";
@@ -52,7 +53,7 @@ import * as V from "./window-view.mjs";
 import { panelStyleFromQuery } from "../front-panel/panel-style.mjs";
 import { applyWindowStyle } from "../front-panel/window-stylesheet.mjs";
 import { buildHierarchy } from "./hierarchy-client.mjs";
-import { compilar } from "../../../core/compiler/compiler.mjs";
+import { compilar, runnableVI } from "../../../core/compiler/compiler.mjs";
 import { pruneConnector } from "../../../core/model/connector.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 
@@ -301,6 +302,8 @@ const abrirVI = () => window.solder?.abrir();
 // like LabVIEW's error list.
 
 let trabajador = null;
+/** The threads that run this window's VIs, created at the first Run and kept (DT-063 §11). */
+let pool = null;
 /** The VI Properties dialog while it is open (vi-properties.mjs), or `null`. */
 let propiedades = null;
 /** El VI corre (en cualquiera de las dos ventanas): las dos están en modo Run. */
@@ -433,10 +436,12 @@ async function ejecutarVI({ stepFirst = false } = {}) {
     trabajador = new Worker(new URL("./run-worker.mjs", import.meta.url), { type: "module" });
     trabajador.onmessage = ({ data }) => alMensaje(data);
   }
+  pool ??= createBrowserPool();
+  const poolPorts = pool.connect();
   lanzado = true;
   canal.postMessage({ ejecutando: true });
   modoRun(true);
-  trabajador.postMessage({ orden: "run", clave: viKey, compilado: { bytes: c.bytes, controles: c.controles, indicadores: c.indicadores, clumps: c.clumps, planes: c.planes, automaticos: c.automaticos, disposicionError: c.disposicionError, debugFlag: c.debugFlag, debugNodes: c.debugNodes }, depuracion: debugging, valores: valoresDeControles(g), separador, charts: g.nodos.filter((n) => n.tipo === "waveform-chart").map((n) => n.id) });
+  trabajador.postMessage({ orden: "run", clave: viKey, compilado: runnableVI(c), depuracion: debugging, valores: valoresDeControles(g), separador, charts: g.nodos.filter((n) => n.tipo === "waveform-chart").map((n) => n.id), poolPorts }, poolPorts);
 }
 
 /**
@@ -451,6 +456,9 @@ function abortar() {
   plazoAbort = setTimeout(() => {
     trabajador.terminate();
     trabajador = null;
+    // Its coordinator is gone, so the pool's threads may still be running that Run: a new pool for the next one.
+    pool?.close();
+    pool = null;
     acabar({ abortado: true });
   }, 500);
 }

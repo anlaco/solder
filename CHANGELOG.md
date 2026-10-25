@@ -15,12 +15,32 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   waits, subVI calls and dialogs resume in the same order on every operating
   system, and a VI whose clumps can no longer go on stops with an error that
   names them instead of hanging.
+- A clump that waits saves its state and returns instead of suspending its
+  stack (DT-063 §8), so it can go on on any thread, as LabVIEW's clumps do. VIs
+  no longer need JSPI: the command line and the tests run on any Node with no
+  flag. A loop runs as fast as before with Allow Debugging off, and about a
+  third faster with it on while nobody is debugging.
+- A Run uses every core, as in LabVIEW (DT-063): its clumps run on a pool of
+  one thread per logical processor that share one memory, and a thread with
+  nothing to do takes work from another's queue. Two loops that only compute
+  run side by side. The editor keeps its pool between Runs, so a Run starts at
+  once; the command line takes `--threads N` (1 runs the clumps in the exact
+  order). The scheduler is WebAssembly inside the compiled VI, and the editor's
+  windows are cross-origin isolated, which a shared memory needs.
+- The front panel lives in that shared memory, as LabVIEW's transfer buffer
+  (DT-063 §10): the diagram writes indicators without waiting for the editor
+  (a million writes to an indicator take about 21 ms) and the panel shows the
+  last value at each pass; a chart still gets every point its history holds.
+  A large control is read whole even while it is being written.
 
 ### Fixes
 
 - The toolbar's Abort button stops a VI whose loop writes to the panel all the
   time: the window is no longer rebuilt on every value, so a click on a button
   reaches it while the VI runs (Ctrl+. already worked).
+- In the editor, the source of an error raised inside a subVI names the chain
+  of VIs again ("Scan From String (arg 1) in Parse Reply.sdg->Instrument
+  Protocol.sdg"), as the command line already did.
 
 ## 0.5.0-beta — 2026-10-23
 

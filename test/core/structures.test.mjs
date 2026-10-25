@@ -246,7 +246,8 @@ test("abort para un bucle infinito sin esperas", async () => {
   const t0 = performance.now();
   await assert.rejects(ejecutar(compilar(v.g, CAT), {}, { senal: parar.signal, alEscribir: (_, x) => vistos.push(x) }), (e) => e.abortado);
   assert.ok(performance.now() - t0 < 200, "para en el acto");
-  assert.ok(vistos.length > 1000, `y mientras tanto el bucle giró (${vistos.length} vueltas)`);
+  // The panel shows the last value at each pass, skipping the ones in between (DT-063 §10): "i" says how far the loop went.
+  assert.ok(vistos.at(-1) > 1000, `and meanwhile the loop went round (${vistos.at(-1)} times)`);
 });
 
 test("un cable no cruza el borde de una estructura: conectar cruzando pone los tuneles", () => {

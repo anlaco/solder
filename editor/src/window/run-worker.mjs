@@ -2,9 +2,10 @@
 // that the interface does not freeze while the VI works.
 //
 // It receives:
-//   { orden: "run", clave, compilado, valores, separador, charts, depuracion? }
+//   { orden: "run", clave, compilado, valores, separador, charts, poolPorts, depuracion? }
 //        the key of the top-level VI (its path), the module, the value of the controls, the decimal
-//        separator of the system and the ids of the Waveform Charts. `compilado` carries `debugFlag`
+//        separator of the system, the ids of the Waveform Charts and one port to each thread of the
+//        window's pool (DT-063 §11): this worker coordinates the Run and the pool runs its clumps. `compilado` carries `debugFlag`
 //        and `debugNodes` (DT-047). `depuracion` is `{ plan, config, stepFirst }` when the page wants
 //        the debugger of this Run: the plan of the diagram (debug-plan.mjs), what it wants now
 //        (debug-controller.mjs `configure`) and whether to stop before the first node (Start Single Stepping).
@@ -28,10 +29,11 @@
 //   { debug: { resumed: true } }           the VI goes on
 //   { fin: true, error?, abortado? }       the VI has finished
 //
-// Writes are gathered and sent at the end of each turn of the scheduler (DT-061 §4), before a
-// dialog and when the VI finishes: a loop that writes thousands of times a second does not flood
-// the page, and the panel shows the last value, as LabVIEW does. A Waveform Chart is not like that: each write is a
-// point of its history, so every one of them is sent.
+// The runtime passes over the panel's memory at the end of each turn of the scheduler, before a
+// dialog and when the VI finishes (DT-063 §10), and what it reports is sent then: a loop that writes
+// thousands of times a second does not flood the page, and the panel shows the last value, as
+// LabVIEW does. A Waveform Chart is not like that: each write is a point of its history, so every one
+// its history still holds is sent.
 
 import { createDebugController } from "../debugging/debug-controller.mjs";
 import { ejecutar } from "../../../core/runtime/runtime.mjs";
@@ -136,6 +138,7 @@ onmessage = async ({ data }) => {
     },
     alAcabarTurno: vaciar,
     alSoltar: (nodo) => postMessage({ soltar: nodo }),
+    poolPorts: data.poolPorts,
   };
   debugController = data.depuracion ? startDebugger(data) : null;
   if (debugController) opciones.depurador = debugController.hooks;

@@ -1,20 +1,24 @@
 // Running a compiled VI (core/compiler/compiler.mjs): instantiating its
 // WebAssembly module and running its clumps by dataflow (DT-040).
 //
-// This is the module's host: it hands over control values when the module reads
-// them and collects indicator values when it writes them, at that moment. It
-// also provides time: the millisecond clock and waits, which suspend the calling
-// clump (JSPI) and let the others run. It provides nothing else: a VI has no
+// This is the module's host and the Run's coordinator: it writes the control
+// values into the panel's memory and passes over the indicators to report what
+// changed (DT-063 §10). It also provides the clocks; the waits, yields, subplans and subVI turns are the
+// module's own scheduler (pool-scheduler.mjs, DT-063 §9), which this host drives
+// turn by turn on one thread. It provides nothing else: a VI has no
 // gates other than what is imported into it (DT-039, decision 4). The editor's
 // worker and the command line, in Node, use it the same way.
 
 import { NUMERICOS, flattenArrayValue, nestArrayValue, representacion } from "../model/types.mjs";
 import { FUNCIONES } from "../compiler/expression-parser.mjs";
-import { tipoWasm } from "../compiler/compiler.mjs";
+import { MAXIMUM_PAGES, SHARED_MEMORY_IMPORT, tipoWasm } from "../compiler/compiler.mjs";
 import { mensaje as mensajeDeError } from "./error-codes.mjs";
 import { aEntero64, cientifica, fraccionaria, noFinito, rellenar, separar } from "./number-text.mjs";
 import { formatIntoString, scanFromString } from "./format-string.mjs";
-import { abortedError, createRealHost, createScheduler } from "./scheduler.mjs";
+import { abortedError, createRealHost } from "./scheduler.mjs";
+import { CLUMP, CLUMP_BYTES, HEADER, PARK_KIND, RUN_STATUS, STATE } from "../compiler/pool-scheduler.mjs";
+import { SCHEDULER } from "../compiler/linear-memory.mjs";
+import { PANEL_RECORD } from "../compiler/panel-memory.mjs";
 
 /** The size of one row record of Format Into String and Scan From String in memory (the compiler's FORMAT_ROW_BYTES). */
 const FORMAT_ROW_BYTES = 16;
@@ -140,15 +144,13 @@ const funcionesMath = Object.fromEntries(
     .map(([n, f]) => [`fn_${n}`, f.js]),
 );
 
-/** Whether this engine has JSPI, to suspend a clump while it waits. */
-export const conJSPI = typeof WebAssembly.Suspending === "function" && typeof WebAssembly.promising === "function";
-const NO_JSPI_MESSAGE = "This VI waits (Wait…) and this JavaScript engine has no JSPI. Use Node 24.20 or later, or start Node 24.19 with --experimental-wasm-jspi.";
-
 /** The error a VI that was aborted ends with: not a fault of the VI. */
 export const abortado = abortedError;
 
 /** LabVIEW's millisecond clock on a host's time: a U32 that wraps, with its zero undefined. */
-const millisecondTimer = (host) => () => Math.floor(host.now()) >>> 0;
+/** The millisecond timer (a U32 that wraps) of a clock in milliseconds. */
+export const millisecondTimerOf = (clock) => () => Math.floor(clock()) >>> 0;
+const millisecondTimer = (host) => millisecondTimerOf(() => host.now());
 
 /**
  * What a VI and its subVIs keep from one Run to the next while they stay loaded
@@ -176,83 +178,48 @@ const PAGE_BYTES = 65536;
 /** Is it the same module? The editor recompiles on every Run, so it is compared by content. */
 const sameBytes = (a, b) => !!a && a.length === b.length && a.every((byte, i) => byte === b[i]);
 
+/** What `debugValueReader` gives for an output the debugger does not know. */
+export const NO_DEBUG_VALUE = Symbol("no debug value");
+
 /**
- * Ejecuta el VI compilado. `valores` da el valor de cada control por su id de
- * nodo, y se lee cada vez que el diagrama lee el control: quien llama puede
- * cambiarlo mientras el VI corre. Devuelve el valor de cada indicador escrito,
- * por id. `opciones`:
- * - `alEscribir(nodo, valor)`: cada escritura en un indicador, en el momento.
- * - `alAcabarTurno()`: the clumps of a turn have parked or ended, or the Run ended (DT-061 §4): the
- *   moment to send what was written to the panel.
- * - `alSoltar(nodo)`: un control Latch que el diagrama ha leído a TRUE y que
- *   vuelve solo a FALSE (comprobado en LabVIEW con el botón Stop).
- * - `separador`: el separador decimal del sistema, para los números a cadena con
- *   «use system decimal point?» (por defecto, el punto).
- * - `depurador` (DT-047): `{ alValor(nodo, salida, valor), alNodo(nodo), unoACadaVez() }`. With it the
- *   VI reports every node and the value of its outputs while debugging is on: `alNodo` may return a promise
- *   (a breakpoint, a step, Highlight Execution's pace) and the clump waits for it. The runtime gives it
- *   `activar(on)` to turn debugging on or off, also in the middle of a Run; `unoACadaVez()` true makes the
- *   clumps run one at a time, as LabVIEW does with Highlight Execution. `compilado.debugNodes[i]` says which
- *   node index `i` is.
- * - `estado`: an object kept between Runs, through which the VI keeps its
- *   state while it stays loaded (DT-045).
- * - `host`: where time and turns come from (scheduler.mjs); by default the real one. The reference traces
- *   run on `createVirtualHost`, whose clock jumps.
- * - `alTrazar(evento)`: every start, resume, park and end of a clump, from the scheduler.
- * - `senal`: un AbortSignal; el Abort para el VI aunque esté esperando, y la
- *   promesa se rechaza con un error `abortado`.
+ * Reads the value a debug hook reports (DT-047) on the thread that runs the clump, before the clump
+ * goes on and changes it: output `salida` of debug node `nodo`, whose WebAssembly value is `valor` (a
+ * string, array or cluster goes by address).
  */
-export async function ejecutar(compilado, valores = {}, opciones = {}) {
-  const { bytes, controles, indicadores, clumps } = compilado;
-  const { alEscribir, alSoltar, senal, separador = "." } = opciones;
-  if (clumps.some((k) => k.largo) && !conJSPI)
-    throw new Error(NO_JSPI_MESSAGE);
-  const escritos = {};
-  const leer = (i) => {
-    const { nodo, tipo, mecanica } = controles[i];
-    const v = valores[nodo];
-    if (v && mecanica?.startsWith("latch")) {
-      valores[nodo] = false;
-      alSoltar?.(nodo);
-    }
-    return aWasm(v, tipo);
+export function debugValueReader(compilado, { leerCadena, leerCluster, leerArray }) {
+  return (nodo, salida, valor) => {
+    const out = compilado.debugNodes?.[nodo]?.outputs?.[salida];
+    if (!out) return NO_DEBUG_VALUE;
+    if (out.tipo === "string") return leerCadena(valor);
+    if (out.disposicion) return leerCluster(valor, out.disposicion);
+    if (out.elemento) return leerArray(valor, out.elemento, out.dims);
+    return deWasm(valor, out.tipo);
   };
-  const escribir = (i, v) => {
-    const { nodo, tipo } = indicadores[i];
-    escritos[nodo] = deWasm(v, tipo);
-    alEscribir?.(nodo, escritos[nodo]);
-  };
-  const panel = {};
-  for (const vt of ["i32", "i64", "f32", "f64"]) {
-    panel[`leer_${vt}`] = leer;
-    panel[`escribir_${vt}`] = escribir;
-  }
-  // Las cadenas (DT-042): el control se escribe en su celda, en UTF-8, como
-  // [longitud][bytes]; el indicador se lee de su handle. La memoria se vuelve a
-  // mirar cada vez porque puede haber crecido.
-  let ex = null;
-  const memoria = () => new DataView(ex.memoria.buffer);
-  panel.leer_cad = (i, celda) => {
-    const { nodo } = controles[i];
-    const bytes = new TextEncoder().encode(String(valores[nodo] ?? ""));
-    const p = ex.redimensionar(celda, 4 + bytes.length);
-    memoria().setInt32(p, bytes.length, true);
-    new Uint8Array(ex.memoria.buffer, p + 4, bytes.length).set(bytes);
-  };
+}
+
+/**
+ * The functions of the host that run on the thread that calls them: the string, array and Format/Scan
+ * functions the module imports, over that thread's instance (`exports()`, which exists once the module
+ * is instantiated) and the shared `memory`, and the readers and writers of values in the memory. Every
+ * thread of a pool makes its own (DT-063 §1); the coordinator too.
+ */
+export function createHostFunctions({ compilado, separador = ".", memory, exports }) {
+  // The memory is looked at again every time, since it may have grown.
+  const memoria = () => new DataView(memory.buffer);
   // Los clusters (DT-042): campo a campo, según la disposición que da el
   // compilador; sus cadenas, en sus celdas. Un valor de cluster es un objeto con
   // un valor por nombre de campo.
   const ponerCadena = (celda, texto) => {
     const bytes = new TextEncoder().encode(String(texto ?? ""));
-    const p = ex.redimensionar(celda, 4 + bytes.length);
+    const p = exports().redimensionar(celda, 4 + bytes.length);
     memoria().setInt32(p, bytes.length, true);
-    new Uint8Array(ex.memoria.buffer, p + 4, bytes.length).set(bytes);
+    new Uint8Array(memory.buffer, p + 4, bytes.length).set(bytes);
   };
   const leerCadena = (handle) => {
     const m = memoria();
     const p = m.getInt32(handle, true);
     const n = p ? m.getInt32(p, true) : 0;
-    return new TextDecoder().decode(new Uint8Array(ex.memoria.buffer, p + 4, n).slice());
+    return new TextDecoder().decode(new Uint8Array(memory.buffer, p + 4, n).slice());
   };
   const ponerCluster = (dir, d, v = {}) => {
     for (const c of d.campos) {
@@ -294,7 +261,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     const p = memoria().getInt32(celda, true);
     // `nuevo_array` reads the old element count in the first word.
     if (p && dims > 1) memoria().setInt32(p, memoria().getInt32(p, true) * memoria().getInt32(p + 4, true), true);
-    const d = ex.nuevo_array(celda, lista.length, el.tam, el.ref ? 1 : 0);
+    const d = exports().nuevo_array(celda, lista.length, el.tam, el.ref ? 1 : 0);
     sizes.forEach((size, dimension) => memoria().setInt32(d - 8 + 4 * dimension, size, true));
     lista.forEach((v, k) => {
       const a = d + k * el.tam;
@@ -316,37 +283,17 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     });
     return nestArrayValue(elements, sizes);
   };
-  panel.leer_arr = (i, celda) => ponerArray(celda, controles[i].elemento, valores[controles[i].nodo], controles[i].dims);
-  panel.escribir_arr = (i, handle) => {
-    const { nodo, elemento, dims } = indicadores[i];
-    escritos[nodo] = leerArray(handle, elemento, dims);
-    alEscribir?.(nodo, escritos[nodo]);
-  };
-  panel.leer_clu = (i, dir) => ponerCluster(dir, controles[i].disposicion, valores[controles[i].nodo]);
-  panel.escribir_clu = (i, dir) => {
-    const { nodo, disposicion } = indicadores[i];
-    escritos[nodo] = leerCluster(dir, disposicion);
-    alEscribir?.(nodo, escritos[nodo]);
-  };
-  panel.escribir_cad = (i, handle) => {
-    const { nodo } = indicadores[i];
-    const m = memoria();
-    const p = m.getInt32(handle, true);
-    const n = p ? m.getInt32(p, true) : 0;
-    escritos[nodo] = new TextDecoder().decode(new Uint8Array(ex.memoria.buffer, p + 4, n).slice());
-    alEscribir?.(nodo, escritos[nodo]);
-  };
   // Las funciones de cadena (DT-042 b): leen los handles de la memoria y dejan su resultado en la celda.
   const leerCad = (handle) => {
     const m = memoria();
     const p = m.getInt32(handle, true);
     const n = p ? m.getInt32(p, true) : 0;
-    return aBinario(new Uint8Array(ex.memoria.buffer, p + 4, n));
+    return aBinario(new Uint8Array(memory.buffer, p + 4, n));
   };
   const escribirCad = (celda, texto) => {
-    const p = ex.redimensionar(celda, 4 + texto.length);
+    const p = exports().redimensionar(celda, 4 + texto.length);
     memoria().setInt32(p, texto.length, true);
-    new Uint8Array(ex.memoria.buffer, p + 4, texto.length).set(aBytes(texto));
+    new Uint8Array(memory.buffer, p + 4, texto.length).set(aBytes(texto));
   };
   // Las funciones de array de una dimensión con elementos de tamaño fijo: leen los bytes de los
   // elementos de los handles y dejan el resultado en la celda (DT-042 d).
@@ -355,11 +302,11 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     const m = memoria();
     const p = m.getInt32(handle, true);
     const n = p ? m.getInt32(p, true) : 0;
-    return Array.from({ length: n }, (_, k) => new Uint8Array(ex.memoria.buffer, p + 8 + k * tam, tam).slice());
+    return Array.from({ length: n }, (_, k) => new Uint8Array(memory.buffer, p + 8 + k * tam, tam).slice());
   };
   const ponerCrudo = (celda, tam, lista) => {
-    const d = ex.nuevo_array(celda, lista.length, tam, 0);
-    lista.forEach((b, k) => new Uint8Array(ex.memoria.buffer, d + k * tam, tam).set(b));
+    const d = exports().nuevo_array(celda, lista.length, tam, 0);
+    lista.forEach((b, k) => new Uint8Array(memory.buffer, d + k * tam, tam).set(b));
   };
   const valorCrudo = (b, kind) => new DataView(b.buffer)[KINDS[kind]](0, true);
   const acotar = (i, n) => Math.min(Math.max(i, 0), n);
@@ -519,136 +466,407 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
       extra = r.pasado;
       return r.valor;
     };
-  // Every clump runs, parks and is resumed by one scheduler (DT-061): the order is ours, never the
-  // host's. With a debugger every clump may stop at a node; with Highlight Execution they run one at
-  // a time, as LabVIEW does (DT-047).
+  /** The value of type `type` at `address` of the memory: a scalar, a string's or array's handle, or a cluster. */
+  const readValue = (address, indicator) => {
+    const { tipo, elemento, dims, disposicion } = indicator;
+    if (tipo === "string") return leerCadena(address);
+    if (disposicion) return leerCluster(address, disposicion);
+    if (elemento) return leerArray(address, elemento, dims);
+    return deWasm(atomicScalar(memory, address, tipoWasm(tipo)), tipo);
+  };
+  const math = { random: Math.random, pow: Math.pow, ...funcionesMath };
+  return { cad, arr, math, ponerCadena, leerCadena, ponerCluster, leerCluster, ponerArray, leerArray, readValue };
+}
+
+/**
+ * Runs the compiled VI. `valores` gives the value of each control by its node id; the caller may
+ * change it while the VI runs, and what changed reaches the panel's memory at the start of the next
+ * turn (DT-063 §10). Returns the value of each indicator written, by id. `opciones`:
+ * - `alEscribir(nodo, valor)`: an indicator that changed since the last pass over the panel, with its
+ *   last value; a Waveform Chart, every write its history still holds, in order. The panel is passed
+ *   at the end of each turn, before a dialog or the debugger shows something, and when the Run ends.
+ * - `alAcabarTurno()`: the clumps of a turn have parked or ended, or the Run ended (DT-061 §4): the
+ *   moment to send what was written to the panel.
+ * - `alSoltar(nodo)`: a Latch control that the diagram read as TRUE and that goes back to FALSE by
+ *   itself (checked in LabVIEW with the Stop button).
+ * - `separador`: el separador decimal del sistema, para los números a cadena con
+ *   «use system decimal point?» (por defecto, el punto).
+ * - `depurador` (DT-047): `{ alValor(nodo, salida, valor), alNodo(nodo), unoACadaVez() }`. With it the
+ *   VI reports every node and the value of its outputs while debugging is on: `alNodo` may return a promise
+ *   (a breakpoint, a step, Highlight Execution's pace) and the clump waits for it. The runtime gives it
+ *   `activar(on)` to turn debugging on or off, also in the middle of a Run; `unoACadaVez()` true makes the
+ *   clumps run one at a time, as LabVIEW does with Highlight Execution. `compilado.debugNodes[i]` says which
+ *   node index `i` is.
+ * - `estado`: an object kept between Runs, through which the VI keeps its
+ *   state while it stays loaded (DT-045).
+ * - `host`: where time and turns come from (scheduler.mjs); by default the real one. The reference traces
+ *   run on `createVirtualHost`, whose clock jumps.
+ * - `senal`: un AbortSignal; el Abort para el VI aunque esté esperando, y la
+ *   promesa se rechaza con un error `abortado`.
+ */
+export async function ejecutar(compilado, valores = {}, opciones = {}) {
+  const { bytes, controles, indicadores, clumps } = compilado;
+  const { alEscribir, alSoltar, senal, separador = "." } = opciones;
+  const escritos = {};
+
+  let ex = null;
+  const memory = new WebAssembly.Memory({ initial: compilado.memoryPages, maximum: MAXIMUM_PAGES, shared: true });
+  const { cad, arr, math, ponerCadena, leerCadena, ponerCluster, leerCluster, ponerArray, leerArray, readValue } = createHostFunctions({ compilado, separador, memory, exports: () => ex });
+  const memoria = () => new DataView(memory.buffer);
+  // The controls are records of the panel too: at the start of each turn, what the caller changed in
+  // `valores` (the editor's messages, in the worker) is written into them, a string, array or cluster
+  // under the write lock. A Latch that the diagram read as TRUE goes back to FALSE here, and the
+  // caller is told (checked in LabVIEW with the Stop button).
+  const NOT_WRITTEN = Symbol("not written");
+  const writtenToMemory = controles.map(() => NOT_WRITTEN);
+  const releasesSeen = controles.map(() => 0);
+  const writeControl = (control, value) => {
+    const { record, tipo, elemento, dims, disposicion } = control;
+    const address = record + PANEL_RECORD.value;
+    if (tipo !== "string" && !elemento && !disposicion) return storeAtomicScalar(memory, address, tipoWasm(tipo), aWasm(value, tipo));
+    ex.write_lock(record + PANEL_RECORD.lock);
+    if (tipo === "string") ponerCadena(address, value);
+    else if (disposicion) ponerCluster(address, disposicion, value);
+    else ponerArray(address, elemento, value, dims);
+    ex.write_unlock(record + PANEL_RECORD.lock);
+  };
+  const syncControls = () => {
+    controles.forEach((control, index) => {
+      const { nodo, record, mecanica } = control;
+      if (mecanica?.startsWith("latch")) {
+        const releases = Atomics.load(new Int32Array(memory.buffer), (record + PANEL_RECORD.released) / 4);
+        if (releases !== releasesSeen[index]) {
+          releasesSeen[index] = releases;
+          valores[nodo] = false;
+          writtenToMemory[index] = false;
+          alSoltar?.(nodo);
+        }
+      }
+      if (valores[nodo] === writtenToMemory[index]) return;
+      writeControl(control, valores[nodo]);
+      writtenToMemory[index] = valores[nodo];
+    });
+  };
+  // The indicators are records of the panel in the memory (DT-063 §10): the diagram writes them and
+  // never waits; this walk, at the end of each turn and before anything the editor shows (a dialog,
+  // the debugger), reports what changed since the last one. A value written twice in between is
+  // reported once, as LabVIEW's panel skips values; a chart reports every write its history still holds.
+  const writesSeen = indicadores.map(() => 0);
+  const walkIndicators = () => {
+    indicadores.forEach((indicator, index) => {
+      const { nodo, record, historyLength } = indicator;
+      const writes = Atomics.load(new Int32Array(memory.buffer), (record + PANEL_RECORD.version) / 4);
+      if (writes === writesSeen[index]) return;
+      const locked = historyLength || indicator.tipo === "string" || indicator.disposicion || indicator.elemento;
+      if (locked) ex.read_lock(record + PANEL_RECORD.lock);
+      if (historyLength) {
+        for (let write = Math.max(writesSeen[index], writes - historyLength); write < writes; write++) {
+          escritos[nodo] = readValue(record + PANEL_RECORD.value + (write % historyLength) * indicator.slot, indicator);
+          alEscribir?.(nodo, escritos[nodo]);
+        }
+      } else {
+        escritos[nodo] = readValue(record + PANEL_RECORD.value, indicator);
+        alEscribir?.(nodo, escritos[nodo]);
+      }
+      if (locked) ex.read_unlock(record + PANEL_RECORD.lock);
+      writesSeen[index] = writes;
+    });
+  };
+  // Every clump runs, parks and is resumed by the module's own scheduler (DT-061, DT-063 §9): the
+  // order is ours, never the host's. Here one thread runs the clumps, one per turn, and JavaScript
+  // drives the turns, so the order is exactly the reference model's (scheduler.mjs). With a debugger
+  // every clump may stop at a node; with Highlight Execution they run one at a time, as LabVIEW does (DT-047).
   const depurador = opciones.depurador;
   const host = opciones.host ?? createRealHost();
   const reloj = millisecondTimer(host);
-  const scheduler = createScheduler({ host, oneClumpAtATime: () => !!depurador?.unoACadaVez?.(), onTurnEnd: opciones.alAcabarTurno, onTrace: opciones.alTrazar });
-  const current = () => scheduler.currentContext();
-  const suspendible = (f) => (conJSPI ? new WebAssembly.Suspending(f) : f);
-  const promisingClumps = new Map();
-  const runClumpFunction = (name, largo) => {
-    if (!largo && !(depurador && conJSPI)) return ex[name]();
-    if (!promisingClumps.has(name)) promisingClumps.set(name, WebAssembly.promising(ex[name]));
-    return promisingClumps.get(name)();
+  // An import that has to wait for the outside (a dialog, the debugger) parks its clump: the
+  // scheduler marks it and the clump saves its state and returns; when the answer comes, the clump
+  // is woken with it.
+  const isPromise = (value) => !!value && typeof value.then === "function";
+  let failRun = null;
+  let requestTurn = () => {};
+  /** What an import that may wait answers: `answer` itself, or, when it is a promise, park until it settles. */
+  const parkOn = (answer) => {
+    if (!isPromise(answer)) return answer;
+    const clump = ex.park_external();
+    answer.then(
+      (value) => {
+        ex.wake_external(COORDINATOR_THREAD, clump, Number(value) | 0);
+        requestTurn();
+      },
+      (error) => failRun(error),
+    );
+    return 0;
   };
-  /** The clumps of a plan, as the scheduler takes them. */
-  const clumpSpecs = (plan, prefix) => plan.map((clump, index) => ({ name: `${prefix}c${index}`, deps: clump.deps, run: () => runClumpFunction(`${prefix}c${index}`, clump.largo) }));
-  /** Parks the calling clump until `promise` settles, unless it is already settled or is no promise. */
-  const waitFor = (promise, tag) => (promise && typeof promise.then === "function" ? current().waitFor(promise, tag) : promise);
-  // Yielding in a loop (DT-041): the loop calls when it runs out of its budget of iterations; the
-  // budget of each clump is adjusted so that it calls every ~1 ms, and every ~8 ms the clump really
-  // yields its turn, so that the other clumps, the panel and Abort run.
-  const budgets = new Map(); // clump name → { iterations, lastCall, lastYield }
-  let runStart = performance.now();
-  const YIELD_EVERY_MS = 8;
-  const MOST_ITERATIONS = 1 << 24;
-  const ceder = suspendible(() => {
-    if (senal?.aborted) throw abortado();
-    const context = current();
-    const now = performance.now();
-    if (!budgets.has(context.name)) budgets.set(context.name, { iterations: 1, lastCall: runStart, lastYield: runStart });
-    const budget = budgets.get(context.name);
-    const elapsed = Math.max(now - budget.lastCall, 0.001);
-    budget.iterations = Math.max(1, Math.min(MOST_ITERATIONS, Math.round(budget.iterations / elapsed)));
-    budget.lastCall = now;
-    if (now - budget.lastYield < YIELD_EVERY_MS) return budget.iterations;
-    return context.yield().then(() => {
-      budget.lastCall = budget.lastYield = performance.now();
-      return budget.iterations;
-    });
-  });
-  // Un subplan: los clumps de un cuerpo con varios nodos largos, a la vez (DT-041).
-  const correr_plan = suspendible((p) => current().join(clumpSpecs(compilado.planes[p], `p${p}`)).then(() => 0));
-  // A subVI that waits (DT-045): a non-reentrant VI serves one call at a time, as LabVIEW
-  // serializes simultaneous calls. A call enters (waiting while another one is inside), writes its
-  // inputs, runs, reads its outputs and leaves; leaving hands the subVI to the next waiting call.
-  const subVILock = (p) => `subVI plan ${p}`;
-  const entrar_subvi = suspendible((p) => {
-    const waiting = current().acquire(subVILock(p));
-    return waiting ? waiting.then(() => 0) : 0;
-  });
-  const salir_subvi = (p) => current().release(subVILock(p));
-  const correr_subvi = suspendible((p) => current().join(clumpSpecs(compilado.planes[p], `p${p}`)).then(() => 0));
+  /** `then(answer)` now, or when `answer` settles if it is a promise. */
+  const whenAnswered = (answer, then) => (isPromise(answer) ? answer.then(then) : then(answer));
   // Manejo automático de errores (DT-043): el diálogo lo saca quien llama
   // (`alErrorAutomatico`, que resuelve «continuar» o «parar»). Sin él —la línea
   // de órdenes—, el VI se detiene con el error.
-  const error_automatico = suspendible(async (i, dir) => {
+  // The dialogs answer at once or with a promise; on one thread the clump parks on it (`parkOn`), on a
+  // pool the coordinator wakes the clump that a thread parked (runOnPool).
+  const automaticErrorDialog = (i, dir) => {
+    walkIndicators();
     const err = leerCluster(dir, compilado.disposicionError);
     const nodo = compilado.automaticos?.[i];
     if (!opciones.alErrorAutomatico) throw Object.assign(new Error(`Error ${err.code} occurred at ${err.source}`), { error: err, nodo });
-    const r = await waitFor(opciones.alErrorAutomatico({ ...err, nodo }), "automatic error dialog");
-    if (r === "parar") throw abortado();
-    return 0;
-  });
+    return whenAnswered(opciones.alErrorAutomatico({ ...err, nodo }), (answer) => {
+      if (answer === "parar") throw abortado();
+      return 0;
+    });
+  };
   // Simple Error Handler (DT-043): su diálogo propio (`alDialogoError`, que resuelve cuando el
   // usuario pulsa OK) y sus salidas. Sin diálogo —la línea de órdenes—, no espera. Sin
   // comprobar en LabVIEW: «type of dialog» distinto de 1, y un aviso (status FALSE) a la entrada.
-  const dialogo_error = suspendible(async (errIn, code, src, tipo, buf, celdaSrc, celdaMsg) => {
+  const errorHandlerDialog = (errIn, code, src, tipo, buf, celdaSrc, celdaMsg) => {
     const entrada = leerCluster(errIn, compilado.disposicionError);
     const err = !entrada.status && code !== 0 ? { status: true, code, source: leerCadena(src) } : entrada;
     const texto = mensajeDeError(err);
-    if (err.status) await waitFor(opciones.alDialogoError?.({ ...err, mensaje: texto }), "Simple Error Handler dialog");
-    ponerCluster(buf, compilado.disposicionError, err);
-    ponerCadena(celdaSrc, err.source);
-    ponerCadena(celdaMsg, texto);
-    return err.status ? 1 : 0;
-  });
-  // Debugging (DT-047): the hooks the compiled VI calls while the debug flag is set.
-  const valorDepurado = (nodo, salida, valor) => {
-    const out = compilado.debugNodes?.[nodo]?.outputs?.[salida];
-    if (!out || !depurador) return;
-    if (out.tipo === "string") return depurador.alValor(nodo, salida, leerCadena(valor));
-    if (out.disposicion) return depurador.alValor(nodo, salida, leerCluster(valor, out.disposicion));
-    if (out.elemento) return depurador.alValor(nodo, salida, leerArray(valor, out.elemento, out.dims));
-    depurador.alValor(nodo, salida, deWasm(valor, out.tipo));
+    // The outputs are written once the dialog is closed, before the clump goes on.
+    const writeOutputs = () => {
+      ponerCluster(buf, compilado.disposicionError, err);
+      ponerCadena(celdaSrc, err.source);
+      ponerCadena(celdaMsg, texto);
+      return err.status ? 1 : 0;
+    };
+    if (!err.status) return writeOutputs();
+    walkIndicators();
+    return whenAnswered(opciones.alDialogoError?.({ ...err, mensaje: texto }), writeOutputs);
   };
+  const dialogs = { error_automatico: automaticErrorDialog, dialogo_error: errorHandlerDialog };
+  // Debugging (DT-047): the hooks the compiled VI calls while the debug flag is set.
+  const readDebugValue = debugValueReader(compilado, { leerCadena, leerCluster, leerArray });
+  const valorDepurado = (nodo, salida, valor) => {
+    if (!depurador) return;
+    const value = readDebugValue(nodo, salida, valor);
+    if (value !== NO_DEBUG_VALUE) depurador.alValor(nodo, salida, value);
+  };
+  const debuggerStop = (nodo) => {
+    walkIndicators();
+    return whenAnswered(depurador?.alNodo(nodo), () => 0);
+  };
+  dialogs.debugger_node = debuggerStop;
   const dep = {
     ...Object.fromEntries(["i32", "i64", "f32", "f64"].map((vt) => [`valor_${vt}`, valorDepurado])),
-    nodo: suspendible((nodo) => {
-      const pause = waitFor(depurador?.alNodo(nodo), "debugger");
-      return pause && typeof pause.then === "function" ? pause.then(() => 0) : 0;
-    }),
-  };
-  /** Wait (ms) and Wait Until Next ms Multiple: the clump parks until the deadline, then reads the clock. */
-  const sleep = (ms) => {
-    if (senal?.aborted) throw abortado();
-    return current().sleepUntil(host.now() + ms).then(reloj);
+    nodo: (nodo) => parkOn(debuggerStop(nodo)),
   };
   const tiempo = {
     reloj,
-    ceder,
-    error_automatico,
-    dialogo_error,
-    correr_plan,
-    entrar_subvi,
-    correr_subvi,
-    salir_subvi,
-    esperar: suspendible((ms) => sleep(ms)),
-    esperar_multiplo: suspendible((m) => sleep(m > 0 ? m - (reloj() % m) : 0)),
+    ahora: () => host.now(),
+    reloj_real: () => performance.now(),
+    error_automatico: (...args) => parkOn(automaticErrorDialog(...args)),
+    dialogo_error: (...args) => parkOn(errorHandlerDialog(...args)),
   };
-  const { instance } = await WebAssembly.instantiate(bytes, { panel, tiempo, cad, arr, dep, math: { random: Math.random, pow: Math.pow, ...funcionesMath } });
+  const sharedMemory = { [SHARED_MEMORY_IMPORT.modulo]: { [SHARED_MEMORY_IMPORT.nombre]: memory } };
+  const { instance } = await WebAssembly.instantiate(bytes, { ...sharedMemory, tiempo, cad, arr, dep, math });
   ex = instance.exports;
+  ex.initialize();
   restoreState(opciones.estado, bytes, ex.memoria);
+  // A Run that was aborted left its parked clumps' frames behind: every clump starts afresh.
+  for (const frame of compilado.frames ?? []) memoria().setInt32(frame, 0, true);
   if (depurador && compilado.debugFlag !== undefined) {
     depurador.activar = (on) => memoria().setInt32(compilado.debugFlag, on ? 1 : 0, true);
     depurador.alConectar?.();
   }
-  if (clumps.some((k) => k.largo) || compilado.planes?.length) {
-    if (!conJSPI) throw new Error(NO_JSPI_MESSAGE);
-  }
-  const abortRun = () => scheduler.abort();
   if (senal?.aborted) throw abortado();
-  senal?.addEventListener("abort", abortRun, { once: true });
-  runStart = performance.now();
+  const passOverPanel = () => {
+    walkIndicators();
+    syncControls();
+    opciones.alAcabarTurno?.();
+  };
+  // A Run on a pool (DT-063 §11), unless it starts being debugged: then it runs on this thread, so that
+  // Highlight Execution runs one clump at a time. Debugging turned on later reaches the pool's threads,
+  // which send their nodes and values here.
+  const debuggedFromTheStart = depurador && compilado.debugFlag !== undefined && memoria().getInt32(compilado.debugFlag, true) !== 0;
+  if (opciones.poolPorts?.length && !debuggedFromTheStart) {
+    try {
+      await runOnPool({ ex, memory, bytes, compilado, separador, ports: opciones.poolPorts, dialogs, onDebugValue: (nodo, salida, value) => depurador?.alValor(nodo, salida, value), passOverPanel, senal });
+    } finally {
+      saveState(opciones.estado, bytes, ex.memoria);
+    }
+    return escritos;
+  }
   try {
-    await scheduler.run(clumpSpecs(clumps, ""));
+    await runTurns({ ex, host, compilado, oneClumpAtATime: () => !!depurador?.unoACadaVez?.(), onTurnEnd: () => {
+      walkIndicators();
+      syncControls();
+      opciones.alAcabarTurno?.();
+    }, senal, setFail: (fail) => (failRun = fail), setRequestTurn: (request) => (requestTurn = request) });
   } finally {
-    senal?.removeEventListener("abort", abortRun);
     saveState(opciones.estado, bytes, ex.memoria);
     host.close?.();
   }
   return escritos;
+}
+
+/** The scalar of WebAssembly type `wasmType` at `address`, read in one atomic load (a thread may be writing it). */
+function atomicScalar(memory, address, wasmType) {
+  if (wasmType === "i64" || wasmType === "f64") {
+    const bits = Atomics.load(new BigInt64Array(memory.buffer), address / 8);
+    return wasmType === "i64" ? bits : new Float64Array(new BigInt64Array([bits]).buffer)[0];
+  }
+  const bits = Atomics.load(new Int32Array(memory.buffer), address / 4);
+  return wasmType === "i32" ? bits : new Float32Array(new Int32Array([bits]).buffer)[0];
+}
+
+/** Stores the scalar `value` of WebAssembly type `wasmType` at `address`, in one atomic store. */
+function storeAtomicScalar(memory, address, wasmType, value) {
+  if (wasmType === "i64" || wasmType === "f64") {
+    const bits = wasmType === "i64" ? BigInt.asIntN(64, BigInt(value)) : new BigInt64Array(new Float64Array([value]).buffer)[0];
+    return void Atomics.store(new BigInt64Array(memory.buffer), address / 8, bits);
+  }
+  const bits = wasmType === "i32" ? value | 0 : new Int32Array(new Float32Array([value]).buffer)[0];
+  Atomics.store(new Int32Array(memory.buffer), address / 4, bits);
+}
+
+/** The thread that answers from outside the Run: with one thread, the same one that runs the clumps. */
+const COORDINATOR_THREAD = 0;
+const ONE_THREAD = 1;
+const NOT_BLOCKING = 0;
+
+/**
+ * Runs a Run's clumps on this thread through the module's scheduler, one clump per turn (DT-063 §9,
+ * with one thread): a turn starts once the clump of the last one has parked or ended, and between
+ * turns the host runs the messages that came in (the panel, Abort) and the answers from outside, as in
+ * the reference model. Resolves when the Run ends; rejects when it is aborted, deadlocks or fails.
+ */
+function runTurns({ ex, host, compilado, oneClumpAtATime, onTurnEnd = () => {}, senal, setFail, setRequestTurn }) {
+  return new Promise((resolve, reject) => {
+    let finished = false;
+    let turnRequested = false;
+    let hostTimer = null;
+    let hostTimerDeadline = Infinity;
+    const finish = (error) => {
+      if (finished) return;
+      finished = true;
+      onTurnEnd();
+      if (hostTimer !== null) host.clearTimer(hostTimer);
+      senal?.removeEventListener("abort", abortRun);
+      if (error) reject(error);
+      else resolve();
+    };
+    const requestTurn = () => {
+      if (turnRequested || finished) return;
+      turnRequested = true;
+      host.soon(turn);
+    };
+    const abortRun = () => {
+      ex.request_abort();
+      requestTurn();
+    };
+    const armHostTimer = () => {
+      const earliest = ex.next_deadline();
+      if (earliest === hostTimerDeadline) return;
+      if (hostTimer !== null) host.clearTimer(hostTimer);
+      hostTimer = null;
+      hostTimerDeadline = earliest;
+      if (earliest !== Infinity)
+        hostTimer = host.setTimer(earliest, () => {
+          hostTimer = null;
+          hostTimerDeadline = Infinity;
+          requestTurn();
+        });
+    };
+    function turn() {
+      turnRequested = false;
+      if (finished) return;
+      onTurnEnd();
+      ex.set_one_at_a_time(oneClumpAtATime() ? 1 : 0);
+      let status;
+      try {
+        status = ex.run_thread(COORDINATOR_THREAD, NOT_BLOCKING);
+      } catch (error) {
+        return finish(error);
+      }
+      if (status === RUN_STATUS.done) return finish(null);
+      if (status === RUN_STATUS.aborted) return finish(abortado());
+      if (status === RUN_STATUS.deadlock) return finish(deadlockError(ex, compilado));
+      if (status === RUN_STATUS.stepped) requestTurn();
+      armHostTimer();
+    }
+    setFail(finish);
+    setRequestTurn(requestTurn);
+    senal?.addEventListener("abort", abortRun, { once: true });
+    ex.prepare_run(ONE_THREAD, performance.now());
+    // The first turn runs at once: what depends on nothing starts when the Run does.
+    turn();
+  });
+}
+
+/** How often the coordinator passes over the panel while a pool runs: about one frame of the display (unverified in LabVIEW). */
+const DISPLAY_PASS_MS = 16;
+
+/**
+ * Runs a Run's clumps on a pool of threads (DT-063 §9–11), each behind one of `ports`
+ * (pool-thread.mjs): this thread is the coordinator. It prepares the Run, hands every thread the
+ * module and the memory, shows the dialogs they ask for and wakes their clumps with the answer,
+ * passes over the panel at the display's pace, and turns Abort and failures into the memory's abort
+ * flag. Resolves when every thread is done; rejects when the Run is aborted, deadlocks or fails.
+ */
+async function runOnPool({ ex, memory, bytes, compilado, separador, ports, dialogs, onDebugValue, passOverPanel, senal }) {
+  const module = await WebAssembly.compile(bytes);
+  const threads = ports.length;
+  const coordinatorThread = threads;
+  let failure = null;
+  const fail = (error) => {
+    failure ??= error;
+    ex.request_abort();
+  };
+  const abortRun = () => ex.request_abort();
+  senal?.addEventListener("abort", abortRun, { once: true });
+  passOverPanel();
+  ex.prepare_run(threads, sharedClock());
+  const pass = setInterval(passOverPanel, DISPLAY_PASS_MS);
+  const answerDialog = ({ name, clump, args }) => {
+    Promise.resolve()
+      .then(() => dialogs[name](...args))
+      .then((answer) => ex.wake_external(coordinatorThread, clump, Number(answer) | 0), fail);
+  };
+  const runs = ports.map(
+    (port, thread) =>
+      new Promise((resolve) => {
+        port.onmessage = ({ data }) => {
+          if (data.dialog) return answerDialog(data.dialog);
+          if (data.debugValue) return onDebugValue(...data.debugValue);
+          if (data.error) fail(Object.assign(new Error(data.error.message), { abortado: data.error.abortado }));
+          resolve();
+        };
+        port.postMessage({ start: { module, memory, thread, compilado: { disposicionError: compilado.disposicionError, callChain: compilado.callChain, debugNodes: compilado.debugNodes }, separador } });
+      }),
+  );
+  try {
+    await Promise.all(runs);
+  } finally {
+    clearInterval(pass);
+    senal?.removeEventListener("abort", abortRun);
+    for (const port of ports) port.close?.();
+    passOverPanel();
+  }
+  if (failure) throw failure;
+  const state = Atomics.load(new Int32Array(memory.buffer), (SCHEDULER + HEADER.runState) / 4);
+  if (state === RUN_STATUS.aborted) throw abortado();
+  if (state === RUN_STATUS.deadlock) throw deadlockError(ex, compilado);
+}
+
+/** The clock the threads of a pool share: each thread's `performance.now()` starts at its own origin. */
+export const sharedClock = () => performance.timeOrigin + performance.now();
+
+/** Why a parked clump waits, for the deadlock message. */
+const PARK_REASONS = {
+  [PARK_KIND.yield]: "yields its turn",
+  [PARK_KIND.timer]: "waits for a timer",
+  [PARK_KIND.lock]: "waits for its turn at a non-reentrant subVI",
+  [PARK_KIND.join]: "waits for the clumps it started",
+  [PARK_KIND.external]: "waits for an answer from outside",
+};
+
+/** The error of a Run whose clumps can no longer go on, naming each parked clump and what it waits for. */
+function deadlockError(ex, compilado) {
+  const memory = new DataView(ex.memoria.buffer);
+  const names = [...compilado.clumps.map((_, index) => `c${index}`), ...compilado.planes.flatMap((plan, p) => plan.map((_, index) => `p${p}c${index}`))];
+  const records = memory.getInt32(SCHEDULER + HEADER.clumps, true);
+  const parked = names.filter((_, id) => memory.getInt32(records + id * CLUMP_BYTES + CLUMP.state, true) === STATE.parked);
+  const reasonOf = (name) => PARK_REASONS[memory.getInt32(records + names.indexOf(name) * CLUMP_BYTES + CLUMP.parkKind, true)];
+  const who = parked.map((name) => `${name} ${reasonOf(name)}`).join("; ");
+  return Object.assign(new Error(`The VI can no longer go on: ${who || "no clump can run"}.`), { deadlock: parked });
 }

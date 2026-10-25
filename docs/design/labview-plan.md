@@ -58,7 +58,7 @@ and wired in the diagram, and the compiler runs them (DT-041).
 | Types | DBL, SGL, integers from 8 to 64 bits with and without sign, Boolean and **string** (also on the panel: controls and indicators), with coercion (DT-038) and the logical type of Boolean; constants, controls and indicators change representation with the Representation menu. **Arrays of one and two dimensions** (DT-042 d and DT-044: element type plus dimension count, one contiguous block; control, indicator and constant, Add/Remove Dimension; the compiler stops at 2D); clusters, only in memory (DT-042); the **error cluster** (DT-043) with its wire, controls, constant and dialogs in the editor |
 | `.qvi` | Reading and writing with exact round-trip (`core/model/qvi-format.mjs`) |
 | Compiler | Numeric (with Conversion, Data Manipulation, constants, Enum, Ring, Range Limits and Expression Node), Boolean, Comparison and Timing over scalars, numeric and Boolean controls and indicators (`core/compiler/compiler.mjs`). The diagram is split into clumps and runs by dataflow with JSPI (`core/runtime/runtime.mjs`, DT-040). `cli/solder.mjs run|wat|check` |
-| Execution | Live indicators, parallel branches, Abort (button and Ctrl+.), Latch When Released (Stop, OK and Cancel) and Run mode in both windows; While and For with shift registers and tunnels (Last Value), on top of the clumps. Still missing: each iteration yielding, and two waits in the same body overlapping |
+| Execution | Live indicators, parallel branches, Abort (button and Ctrl+.), Latch When Released (Stop, OK and Cancel) and Run mode in both windows; While and For with shift registers and tunnels (Last Value), on top of the clumps. The scheduler is in the compiled module, over a shared memory, with a deque per thread and work stealing (DT-063 §9, 2026-10-25), a clump that waits saves its state and returns instead of suspending a stack (DT-063 §8, no JSPI), the panel lives in that memory as LabVIEW's transfer buffer (§10), and a Run uses a pool of one thread per logical processor, kept by the editor between Runs (§11) |
 
 **Catalog blocks that the compiler does not emit yet:** arrays of more than two
 dimensions, Transpose 2D Array and Reshape Array, `number-to-boolean-array`,
@@ -376,6 +376,9 @@ behave the same on every operating system (issue #1), and it hands ready clumps 
 memory, so a Run uses every core as in LabVIEW (DT-063). In order:
 0. Measure LabVIEW's execution systems in the VM (DT-063 §7): threads per execution system, how two loops that only
    compute spread over the cores, a reentrant subVI called from parallel branches, and the VI's execution settings.
+   *Done on 2026-10-24 and 2026-10-25 (DT-063 "What was measured"): one thread per logical processor per execution
+   system and priority; a clump resumes after a Wait on any free thread; loops of different lifetimes do not slow
+   each other.*
 1. `core/runtime/scheduler.mjs` with its own tests on a simulated clock: the ready queue, the timer queue ordered by
    (deadline, sequence), the inbox, Abort and deadlock as states (DT-061 §1–2, §5, §6), designed for a pool of N
    threads from the start, with N = 1 as the exact-order mode (DT-063 §1, §4).
@@ -406,10 +409,41 @@ memory, so a Run uses every core as in LabVIEW (DT-063). In order:
 5. Node 26: the command line and `npm test` pass `--experimental-wasm-jspi` only when the running Node needs it
    (DT-061, "What was measured" 1). *Done on 2026-10-23, as a fix for 0.4 (`cli/jspi.mjs`,
    `scripts/run-tests.mjs`): `npm test` and the command line checked on Node 24.19.0, 24.22.1 and 26.12.1.*
-6. The pool (DT-063 §1–3): the module's memory `shared`, a stack per thread, the clumps' dependency counters with
+6. Stackless clumps (DT-063 §8, decided 2026-10-25): every clump that can park, and every subVI it calls, saves its
+   live locals and resume point into a frame in the data space and returns to the scheduler, which calls it again to
+   go on; JSPI is retired. Done on the single-threaded runtime first, with every existing test and the reference
+   traces green, before any thread is added.
+   *Done on 2026-10-25 (DT-063 §8): `core/compiler/stackless.mjs` rewrites every function that may park (a rewinding
+   copy and running copies, the debugger's hooks only in the one used while debugging, only the live locals
+   saved), the runtime resumes clumps through `parking` and `resumeValue`, and JSPI is gone from the runtime, the
+   command line and `npm test`. A compute loop runs as fast as with JSPI with debugging off and ~35 % faster with it
+   allowed. 818 tests green.*
+7. The pool (DT-063 §1–3, §9: per-thread deques with work stealing, timers in the shared memory, each worker's loop
+   in WebAssembly, `scheduler.mjs` kept as the reference model; §10: the panel as a transfer buffer in the shared
+   memory, atomic scalars, a lock per string, array or cluster control, indicator cells and a chart ring of its
+   history length walked by the coordinator): the module's memory `shared`, a stack per thread, the clumps' dependency counters with
    atomics, the lock of non-reentrant subVIs and globals, COOP/COEP on the window that runs VIs, and N from what step 0
    measured. The reference traces of step 4 run with N = 1 (exact order) and N > 1 (dataflow constraints and results).
-The Rust host's stack switching (DT-061 §7) waits for the hardware host.
+   In five parts, each with its tests green: (1) the values that cross between clumps go from WebAssembly globals to
+   cells of the data space; (2) the memory shared, imported and with a maximum, atomics in the encoder, a lock in the
+   allocator; (3) the scheduler in the shared memory with work stealing and each worker's loop in WebAssembly,
+   `scheduler.mjs` kept as the reference model (with N = 1, the same trace); (4) the panel as a transfer buffer
+   (§10); (5) COOP/COEP in Electron, and N equal to the number of logical processors.
+   *Parts 1–3 done on 2026-10-25, with COOP/COEP from part 5 (Chromium needs it for a shared memory)* (DT-063 §2, §3,
+   §9: `core/compiler/pool-scheduler.mjs`, `test/core/thread-pool.test.mjs`). The runtime runs the module's
+   scheduler on one thread, a turn per clump, and the reference traces pass unchanged; real threads are checked by
+   the tests. 824 tests green.
+   *Part 4 done on 2026-10-25* (DT-063 §10, `core/compiler/panel-memory.mjs`): controls, indicators and charts are
+   records in the shared memory, large values under a phase-fair reader-writer lock (decided that day: "the most
+   powerful"); the runtime passes over them at each turn. 827 tests green.
+   *Part 5 done on 2026-10-25* (DT-063 §11, decided that day: a persistent pool in the editor): every Run of the
+   editor runs on a pool of one thread per logical processor, created at the first Run, with `ejecutar` as the
+   coordinator; the command line takes `--threads N`. The three examples give LabVIEW's values on one thread and on
+   a pool. 840 tests green. **Step 7 is done.** Left for later: the pass over the panel at LabVIEW's pace (16 ms,
+   unverified), Synchronous Display and the Value property, Highlight Execution on several threads, and the cost of
+   starting Node's workers.
+With stackless clumps the Rust host needs no stack switching (DT-061 §7). Measured on 2026-10-25 (DT-063 case 8): a large
+array or string read by a local variable while another loop writes it is never torn in LabVIEW, so §10's lock per control stays.
 
 **Then:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
 lesson of NI's Core 1 course can be done in Solder, except lessons 2 and 15 and the DAQ and instrument parts of 4,
