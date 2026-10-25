@@ -2305,7 +2305,7 @@ DT-061 hands ready clumps to whichever thread is free. Independent Runs keep sep
   DT-061 rejected ("Threads, a worker for each loop, shared memory"); the rest of DT-061 holds. §8 (stackless
   clumps that resume on any thread), §9 (the scheduler in the shared memory, with work stealing) and §10 (the panel
   as a transfer buffer in the shared memory) accepted on 2026-10-25; they retire JSPI (DT-061 §1, §7) and replace
-  DT-061 §4. §10's phase-fair lock accepted the same day.
+  DT-061 §4. §10's phase-fair lock and §11 (a persistent pool in the editor) accepted the same day.
 - **Why:** the developer's rule for technical choices (2026-10-24): **what brings Solder closest to LabVIEW and is the
   most powerful, never the easiest.** LabVIEW runs the clumps of a VI on the threads of its execution systems, so two
   independent loops that only compute use two cores; with one clump at a time Solder would be up to N times slower on
@@ -2475,6 +2475,45 @@ DT-061 hands ready clumps to whichever thread is free. Independent Runs keep sep
     Display and the Value property, and the pass at the display's pace on its own thread, which comes with the pool
     (part 5).
 
+11. **The pool lives as long as the editor, and a built application chooses its threads** (decided by the developer on
+    2026-10-25). In the editor the pool's workers are created at the first Run, N of them (one per logical
+    processor, as each of LabVIEW's execution systems has: measured on 2026-10-24), and they stay, asleep, between
+    Runs; each Run hands them its module and its new memory, so a Run starts at once, as in LabVIEW, whose threads
+    exist from the start, and Run Continuously does not pay a start at every round. Measured on the development
+    machine (28 logical processors): an idle worker of the editor costs ~4.8 MB (134 MB for 28, on an editor of
+    633 MB), one of Node ~10.5 MB; starting one cold, 50–75 ms. The command line runs one Run, so its pool lives as
+    long as the Run. A built application (the Application Builder, when it exists) starts its VI once, so its pool
+    is created at launch either way, and its number of threads is chosen when it is built, as LabVIEW's
+    `threadconfig.vi` sets the threads of each execution system; for a small target, the Rust host (§6) runs the
+    pool on native threads, which cost little more than their stacks.
+    Rejected: a pool for each Run (simple, nothing alive between Runs, but ~75 ms more at every Run and at every
+    round of Run Continuously), and a persistent pool released after a while without Runs (saves the memory while
+    nothing runs, but adds creating and destroying it, its races with a Run that arrives then, and the start again
+    after a pause).
+    *Done on 2026-10-25 (plan step 7, part 5).* A thread of the pool (`core/runtime/pool-thread.mjs`, the same in a
+    worker of the editor and one of Node) receives, through a new port for each Run, the compiled module and the
+    Run's memory, instantiates the module with its own host functions (`createHostFunctions`, over its instance)
+    and runs `run_thread` blocking until the Run is over. `ejecutar` with `poolPorts` is the coordinator: it
+    prepares the Run, hands every thread the module and the memory, passes over the panel every 16 ms (about one
+    frame of the display; LabVIEW's pace is unverified), turns Abort into the memory's abort flag, and shows the
+    dialogs the threads ask for: a thread parks the clump that called (`park_external`) and sends the dialog; the
+    coordinator answers and wakes the clump onto its own deque. A Run whose debugging is on from the start runs on
+    the coordinator's thread, turn by turn, so Highlight Execution keeps one clump at a time; debugging turned on in
+    the middle of a pool Run reaches its threads, which read each output's value before the clump goes on and send
+    it, and park at each node until the debugger lets it go. The editor's window creates its pool at the first Run
+    (`editor/src/window/browser-pool.mjs`, `navigator.hardwareConcurrency` workers) and hands the run worker one
+    port per thread; if the run worker has to be ended after an unanswered Abort, the pool goes with it, since its
+    threads may still be running that Run. The command line makes a pool for its one Run, `--threads N` (one per
+    logical processor by default, as `threadconfig.vi`; 1 gives the exact order). Measured on the development
+    machine (28 logical processors, Node 24.19): starting 28 workers of Node costs ~4.5 s of CPU and their first
+    Run ~2.3 s more (≈ 0.25 s of wall time), and from then on a Run of a newly compiled VI starts in 5 ms; 28 idle
+    threads spend 141 ms of CPU in 2 s of waits against 22 ms on one thread. In the editor the pool adds ~180 MB
+    when it is created. Checked by `test/core/pool-runtime.test.mjs` (parallel loops, a non-reentrant subVI that
+    keeps counting across pool Runs, Abort and the next Run, a dialog from a thread, a Stop button, debugging
+    turned on mid-Run), and by the three examples, which give LabVIEW's values on one thread and on a pool
+    (`test/end-to-end/examples.test.mjs`); in the editor under Xvfb, Temperature Monitor runs on the pool, ends on
+    LabVIEW's average and is aborted at once.
+
 ### What was measured in LabVIEW (2026-10-25): where a clump resumes, and the load it balances
 
 Reports `labview-captures/reports/2026-10-25-thread-resume.md` and `2026-10-25-load-balance.md`; VIs in
@@ -2570,7 +2609,9 @@ In the VM (Xeon E5-2683 v3, 4 physical cores, 8 logical processors), with VIs bu
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| Two independent loops that only compute run in parallel on N cores | `test/core/thread-pool.test.mjs` (two threads under 75 % of one) | Verified on the pool of the test; the runtime still uses one thread |
+| Two independent loops that only compute run in parallel on N cores | `test/core/thread-pool.test.mjs` (two threads under 75 % of one) | Verified |
+| The examples give LabVIEW's values on a pool of threads, dialogs included | `test/end-to-end/examples.test.mjs` (each example on one thread and on a pool of four) | Verified |
+| A Run on the pool stops at once on Abort, and the pool serves the next Run | `test/core/pool-runtime.test.mjs` | Verified |
 | A clump never starts before every wire it reads is written, with N > 1 | `test/core/thread-pool.test.mjs` (every write exactly once, with subplans, 16 threads in the probe) | Verified by results; not by a trace of the order |
 | A non-reentrant subVI called from parallel branches runs one call at a time | `test/core/scheduler.test.mjs` (the model, four threads); `test/core/thread-pool.test.mjs` (six real threads) | Verified |
 | No value crosses between clumps through a WebAssembly global, and the memory is the host's and shared | `test/core/thread-pool.test.mjs` | Verified |

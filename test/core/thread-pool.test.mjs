@@ -512,3 +512,9 @@ test("an array control read on other threads while the coordinator writes it is 
   assert.ok(writes > 10, `the coordinator wrote while they read (${writes} writes)`);
   assert.deepEqual(result.indicators.map((indicator) => indicator.last), Array(LOOPS).fill(0), "no read was torn");
 });
+
+test("a VI with nothing in it compiles to a valid module and its Run ends at once", async () => {
+  const compiled = compilar(Gr.nuevo(), CAT);
+  assert.ok(WebAssembly.validate(compiled.bytes), "the scheduler's call_indirect has its table, empty");
+  assert.deepEqual(await ejecutar(compiled, {}), {});
+});

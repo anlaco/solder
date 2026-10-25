@@ -58,7 +58,7 @@ and wired in the diagram, and the compiler runs them (DT-041).
 | Types | DBL, SGL, integers from 8 to 64 bits with and without sign, Boolean and **string** (also on the panel: controls and indicators), with coercion (DT-038) and the logical type of Boolean; constants, controls and indicators change representation with the Representation menu. **Arrays of one and two dimensions** (DT-042 d and DT-044: element type plus dimension count, one contiguous block; control, indicator and constant, Add/Remove Dimension; the compiler stops at 2D); clusters, only in memory (DT-042); the **error cluster** (DT-043) with its wire, controls, constant and dialogs in the editor |
 | `.qvi` | Reading and writing with exact round-trip (`core/model/qvi-format.mjs`) |
 | Compiler | Numeric (with Conversion, Data Manipulation, constants, Enum, Ring, Range Limits and Expression Node), Boolean, Comparison and Timing over scalars, numeric and Boolean controls and indicators (`core/compiler/compiler.mjs`). The diagram is split into clumps and runs by dataflow with JSPI (`core/runtime/runtime.mjs`, DT-040). `cli/solder.mjs run|wat|check` |
-| Execution | Live indicators, parallel branches, Abort (button and Ctrl+.), Latch When Released (Stop, OK and Cancel) and Run mode in both windows; While and For with shift registers and tunnels (Last Value), on top of the clumps. The scheduler is in the compiled module, over a shared memory, with a deque per thread and work stealing (DT-063 §9, 2026-10-25), a clump that waits saves its state and returns instead of suspending a stack (DT-063 §8, no JSPI), and the panel lives in that memory as LabVIEW's transfer buffer (§10). The runtime still uses one thread: missing the pool of N threads (plan step 7, part 5) |
+| Execution | Live indicators, parallel branches, Abort (button and Ctrl+.), Latch When Released (Stop, OK and Cancel) and Run mode in both windows; While and For with shift registers and tunnels (Last Value), on top of the clumps. The scheduler is in the compiled module, over a shared memory, with a deque per thread and work stealing (DT-063 §9, 2026-10-25), a clump that waits saves its state and returns instead of suspending a stack (DT-063 §8, no JSPI), the panel lives in that memory as LabVIEW's transfer buffer (§10), and a Run uses a pool of one thread per logical processor, kept by the editor between Runs (§11) |
 
 **Catalog blocks that the compiler does not emit yet:** arrays of more than two
 dimensions, Transpose 2D Array and Reshape Array, `number-to-boolean-array`,
@@ -435,8 +435,13 @@ memory, so a Run uses every core as in LabVIEW (DT-063). In order:
    the tests. 824 tests green.
    *Part 4 done on 2026-10-25* (DT-063 §10, `core/compiler/panel-memory.mjs`): controls, indicators and charts are
    records in the shared memory, large values under a phase-fair reader-writer lock (decided that day: "the most
-   powerful"); the runtime passes over them at each turn. 827 tests green. Next: part 5, the pool of N threads in
-   the runtime (first, the decision whether its workers live between Runs).
+   powerful"); the runtime passes over them at each turn. 827 tests green.
+   *Part 5 done on 2026-10-25* (DT-063 §11, decided that day: a persistent pool in the editor): every Run of the
+   editor runs on a pool of one thread per logical processor, created at the first Run, with `ejecutar` as the
+   coordinator; the command line takes `--threads N`. The three examples give LabVIEW's values on one thread and on
+   a pool. 840 tests green. **Step 7 is done.** Left for later: the pass over the panel at LabVIEW's pace (16 ms,
+   unverified), Synchronous Display and the Value property, Highlight Execution on several threads, and the cost of
+   starting Node's workers.
 With stackless clumps the Rust host needs no stack switching (DT-061 §7). Measured on 2026-10-25 (DT-063 case 8): a large
 array or string read by a local variable while another loop writes it is never torn in LabVIEW, so §10's lock per control stays.
 

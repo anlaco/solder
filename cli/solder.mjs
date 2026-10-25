@@ -5,13 +5,19 @@
 //   cli/solder.mjs wat   file.sdg   prints the WebAssembly module as text
 //   cli/solder.mjs check file.sdg   says whether it can run and, if not, why
 //
+//   --threads N   with run: the threads of the pool (DT-063 §11), by default one per logical processor,
+//                 as each of LabVIEW's execution systems has; 1 runs the clumps in the exact order
+//
 // Controls take their default value from the panel.
 
 import { readFileSync } from "node:fs";
+import { availableParallelism } from "node:os";
+import { parseArgs } from "node:util";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { compilar } from "../core/compiler/compiler.mjs";
 import { ejecutar } from "../core/runtime/runtime.mjs";
+import { createNodePool } from "../core/runtime/node-pool.mjs";
 import { cargarCatalogo } from "../core/model/graph.mjs";
 import { loadHierarchy } from "../core/model/hierarchy.mjs";
 import { leer } from "../core/model/qvi-format.mjs";
@@ -31,9 +37,18 @@ function shownValue(value, type) {
   return formatear(value, type);
 }
 
-const [orden, fichero] = process.argv.slice(2);
-if (!["run", "wat", "check"].includes(orden) || !fichero) {
-  console.error("usage: solder.mjs run|wat|check file.sdg (or an old .qvi)");
+const USAGE = "usage: solder.mjs run|wat|check file.sdg (or an old .qvi) [--threads N]";
+let parsed;
+try {
+  parsed = parseArgs({ allowPositionals: true, options: { threads: { type: "string" } } });
+} catch {
+  console.error(USAGE);
+  process.exit(2);
+}
+const [orden, fichero] = parsed.positionals;
+const threads = parsed.values.threads === undefined ? availableParallelism() : Number(parsed.values.threads);
+if (!["run", "wat", "check"].includes(orden) || !fichero || !Number.isInteger(threads) || threads < 1) {
+  console.error(USAGE);
   process.exit(2);
 }
 
@@ -64,7 +79,9 @@ if (orden === "check") {
 } else {
   const porId = new Map(g.nodos.map((n) => [n.id, n]));
   const valores = Object.fromEntries(c.controles.map((k) => [k.nodo, startValue(porId.get(k.nodo))]));
-  const escritos = await ejecutar(c, valores);
+  // The pool lives as long as this one Run (DT-063 §11).
+  const pool = createNodePool(threads);
+  const escritos = await ejecutar(c, valores, { poolPorts: pool.connect() }).finally(() => pool.close());
   for (const i of c.indicadores) {
     const n = porId.get(i.nodo);
     const v = escritos[i.nodo];

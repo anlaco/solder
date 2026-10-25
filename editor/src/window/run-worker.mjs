@@ -2,9 +2,10 @@
 // that the interface does not freeze while the VI works.
 //
 // It receives:
-//   { orden: "run", clave, compilado, valores, separador, charts, depuracion? }
+//   { orden: "run", clave, compilado, valores, separador, charts, poolPorts, depuracion? }
 //        the key of the top-level VI (its path), the module, the value of the controls, the decimal
-//        separator of the system and the ids of the Waveform Charts. `compilado` carries `debugFlag`
+//        separator of the system, the ids of the Waveform Charts and one port to each thread of the
+//        window's pool (DT-063 §11): this worker coordinates the Run and the pool runs its clumps. `compilado` carries `debugFlag`
 //        and `debugNodes` (DT-047). `depuracion` is `{ plan, config, stepFirst }` when the page wants
 //        the debugger of this Run: the plan of the diagram (debug-plan.mjs), what it wants now
 //        (debug-controller.mjs `configure`) and whether to stop before the first node (Start Single Stepping).
@@ -137,6 +138,7 @@ onmessage = async ({ data }) => {
     },
     alAcabarTurno: vaciar,
     alSoltar: (nodo) => postMessage({ soltar: nodo }),
+    poolPorts: data.poolPorts,
   };
   debugController = data.depuracion ? startDebugger(data) : null;
   if (debugController) opciones.depurador = debugController.hooks;

@@ -176,9 +176,10 @@ export function codificar(m) {
   ];
   const memoria = m.memoria && !memoriaImportada ? limitesMemoria(m.memoria) : null;
   const FUNCREF = 0x70;
-  const tabla = m.tabla?.length ? [FUNCREF, NO_MAXIMUM, ...uleb(m.tabla.length)] : null;
+  // A module with a table has it even when empty: its call_indirect needs table 0 to exist.
+  const tabla = m.tabla ? [FUNCREF, NO_MAXIMUM, ...uleb(m.tabla.length)] : null;
   // One active segment fills the table from position 0.
-  const elementos = tabla ? [ACTIVE_SEGMENT, 0x41, 0x00, 0x0b, ...vector(m.tabla.map((funcion) => uleb(funcion)))] : null;
+  const elementos = m.tabla?.length ? [ACTIVE_SEGMENT, 0x41, 0x00, 0x0b, ...vector(m.tabla.map((funcion) => uleb(funcion)))] : null;
   const datos = (m.datos ?? []).map((d) =>
     m.datosPasivos ? [PASSIVE_SEGMENT, ...uleb(d.bytes.length), ...d.bytes] : [ACTIVE_SEGMENT, 0x41, ...sleb(d.desde), 0x0b, ...uleb(d.bytes.length), ...d.bytes]);
   const codigo = m.funciones.map((f) => {
@@ -222,7 +223,8 @@ export function wat(m) {
     for (const ins of f.cuerpo) lineas.push(`    ${ins.op}${ins.arg !== undefined ? ` ${ins.arg}` : ""}`);
     lineas.push("  )");
   });
-  if (m.tabla?.length) lineas.push(`  (table ${m.tabla.length} funcref)`, `  (elem (i32.const 0) func ${m.tabla.join(" ")})`);
+  if (m.tabla) lineas.push(`  (table ${m.tabla.length} funcref)`);
+  if (m.tabla?.length) lineas.push(`  (elem (i32.const 0) func ${m.tabla.join(" ")})`);
   m.exportaciones.forEach((e) => lineas.push(`  (export "${e.nombre}" (func ${e.funcion}))`));
   (m.globalesExportadas ?? []).forEach((e) => lineas.push(`  (export "${e.nombre}" (global ${e.global}))`));
   lineas.push(")");
