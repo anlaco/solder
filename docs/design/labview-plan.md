@@ -453,6 +453,15 @@ array or string read by a local variable while another loop writes it is never t
    functions behave against a Crucible instrument on the host (timeouts and their codes, termination characters,
    Bytes at Port); then the resource name control, constant and wire and the VISA functions. How the native I/O
    connects to the editor (DT-039 §5) is discussed with the developer at this step, before writing it.
+   *Measured on 2026-10-25: NI-VISA 26.5 is in the VM; the palettes
+   ([`2026-10-25-visa-palettes.md`](../../labview-captures/reports/2026-10-25-visa-palettes.md)) and Read over a TCP
+   socket against Crucible, termination, timeout and the error and warning codes
+   ([`2026-10-25-visa-read-socket.md`](../../labview-captures/reports/2026-10-25-visa-read-socket.md)). Next: the
+   native I/O discussion (DT-039 §5), then the resource name control and VISA Open, Write, Read and Close.*
+   *Native I/O decided on 2026-10-25 (DT-065), on `feature/visa`: the `solder-io` crate (sessions over TCP sockets,
+   the measured attributes and codes) and its N-API addon `solder-io-node`, built by `npm test`. Next: the Run's
+   coordinator calls it as an external wait (Node first), then the `utilityProcess` in the editor, then the VISA
+   resource name type, control and wire and the four functions in the compiler and the palettes.*
 2. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the firmware,
    and first served by a Crucible profile of it.
 3. **A DAQmx-like layer** over the ESP32, with its own DT after measuring DAQmx with a simulated NI device.

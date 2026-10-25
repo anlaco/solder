@@ -1,0 +1,9 @@
+# The hardware host (DT-039 e, DT-065): our own VISA in Rust, and its binding for Node.
+[workspace]
+members = ["native/solder-io", "native/solder-io-node"]
+resolver = "3"
+
+[workspace.package]
+edition = "2024"
+license = "AGPL-3.0-only"
+publish = false

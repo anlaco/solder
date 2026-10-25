@@ -1,0 +1,18 @@
+[package]
+name = "solder-io-node"
+version = "0.1.0"
+description = "Solder's own VISA for Node, as an N-API addon (DT-065)."
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+solder-io = { path = "../solder-io" }
+napi = { version = "3", default-features = false, features = ["napi4"] }
+napi-derive = "3"
+
+[build-dependencies]
+napi-build = "2"

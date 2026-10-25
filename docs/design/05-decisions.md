@@ -29,6 +29,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [060](#dt-060) | An array is born without an element type, and its element gives it one | Accepted · implemented in the editor |
 | [061](#dt-061) | One scheduler of our own decides which clump runs next; how a clump is suspended depends on the host | Accepted · not implemented |
 | [064](#dt-064) | Hardware before Core 1: VISA, then a classic ESP32 as a DAQ by SCPI, then a DAQmx-like layer; instruments simulated with Crucible | Accepted · not implemented |
+| [065](#dt-065) | Our own VISA in Rust: a library crate, an N-API addon run in a `utilityProcess`; no NI-VISA | Accepted · being implemented |
 | [062](#dt-062) | Until 1.0 every beta is published from `main`: a feature raises MINOR, a fix raises PATCH | Accepted · in use |
 | [063](#dt-063) | A Run uses every core: a pool of workers over one shared memory; independent Runs keep separate memories | Accepted · not implemented |
 
@@ -2682,3 +2683,53 @@ SCPI, then a DAQmx-like layer, and only then Core 1, with its hardware lessons i
 |-----------|-----------|--------|
 | Each VISA function behaves as in LabVIEW | Measurements against Crucible in the VM, and tests against Crucible in `npm test` | **Unverified**: nothing done yet |
 | No test of hardware I/O needs hardware | The I/O tests run against Crucible only | **Unverified** |
+
+## DT-065
+
+**Solder speaks to instruments through its own VISA, written in Rust: a library crate, loaded by Node as an N-API
+addon, which the editor runs in an Electron `utilityProcess`. Solder does not depend on NI-VISA.**
+
+- **Status:** Accepted on 2026-10-25 by the developer. It settles point 5 and consequence d of [DT-039](#dt-039)
+  (how the hardware host connects to the editor; blocking I/O) for the Instrument I/O of [DT-064](#dt-064).
+- **Why:** the behavior VISA shows in LabVIEW is measured
+  (`labview-captures/reports/2026-10-25-visa-read-socket.md`): its defaults, its stop conditions and its status
+  codes can be reproduced exactly by our own code, so Solder runs where NI-VISA is not installed and carries no
+  proprietary runtime. One Rust implementation serves every host: Node today, the future wasmtime host tomorrow.
+
+### Decision
+
+1. **Two crates in a Cargo workspace at the root** (DT-039 e: the workspace comes back with the hardware host):
+   - `native/solder-io`: the library. A resource manager with sessions, the resource strings, each session's
+     attributes (Timeout Value, Termination Character, Termination Character Enable) and VISA's status codes:
+     0 for success, positive for a warning, negative for an error, the values of the VISA standard (`visa.h`).
+     Transports: TCP sockets (`TCPIP[n]::host::port::SOCKET`) first, serial next. No Node in it.
+   - `native/solder-io-node`: the N-API binding (napi-rs), a `cdylib` loaded by Node as a `.node` file. Every
+     operation runs off the JavaScript thread (libuv's pool) and answers a promise, so a Read that waits for its
+     timeout blocks nobody.
+2. **An operation answers its status with its data**, as VISA does: a Read that times out still returns the bytes it
+   got (measured: 27 bytes and the timeout error).
+3. **In the editor**, the addon is loaded in a `utilityProcess` created by the main process, not in the renderer
+   (which is sandboxed) nor in the main process: a fault of native code ends that process, not the editor. The Run's
+   coordinator talks to it over a `MessagePort`. **In Node** (command line, tests) the coordinator loads the addon
+   directly.
+4. **A VISA function in a VI is an external wait**, like a dialog (DT-063 §8): the clump parks, the coordinator asks
+   the I/O, and wakes the clump with the answer, writing the data into the shared memory. No thread of the pool
+   blocks on I/O.
+5. **Tests do not need hardware nor NI-VISA.** The library's own tests, and the addon's from Node, run against a
+   small SCPI responder started by the test itself; Crucible (DT-064 §3) is the instrument for measuring LabVIEW and
+   for end-to-end runs. `npm test` builds the addon with Cargo first.
+
+### Consequences
+
+- Building Solder now needs the Rust toolchain of `rust-toolchain.toml`, and `npm run dist` needs the addon for each
+  platform it packages (Windows included).
+- What VISA does that is not measured yet (an invalid resource string, a peer that closes, Close's own result, how long
+  a refused Open takes) is written as "unverified" in the code and measured before it is relied on.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Read stops at the count, at the termination character when enabled, or at the timeout, with LabVIEW's codes | `native/solder-io/tests/socket_session.rs` against a local responder | **Verified** on a TCP socket (2026-10-25); by hand against Crucible's Keithley the addon gave LabVIEW's Q1: 27 bytes, the timeout code, 2026 ms |
+| The addon answers from Node without blocking its thread | `test/native/solder-io.test.mjs` | **Verified** |
+| A fault of the addon does not end the editor | — | **Unverified**: the `utilityProcess` does not exist yet |

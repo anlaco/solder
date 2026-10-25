@@ -37,3 +37,6 @@ dist/
 
 # Local scratch work, never part of the project
 temp/
+
+# Solder's own VISA, built by scripts/build-native.mjs (DT-065)
+*.node
