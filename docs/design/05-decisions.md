@@ -28,6 +28,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [049](#dt-049) | The items of an enum are its type; one Edit Items… for constant, control and indicator | Accepted · being implemented |
 | [060](#dt-060) | An array is born without an element type, and its element gives it one | Accepted · implemented in the editor |
 | [061](#dt-061) | One scheduler of our own decides which clump runs next; how a clump is suspended depends on the host | Accepted · not implemented |
+| [064](#dt-064) | Hardware before Core 1: VISA, then a classic ESP32 as a DAQ by SCPI, then a DAQmx-like layer; instruments simulated with Crucible | Accepted · not implemented |
 | [062](#dt-062) | Until 1.0 every beta is published from `main`: a feature raises MINOR, a fix raises PATCH | Accepted · in use |
 | [063](#dt-063) | A Run uses every core: a pool of workers over one shared memory; independent Runs keep separate memories | Accepted · not implemented |
 
@@ -2630,3 +2631,54 @@ In the VM (Xeon E5-2683 v3, 4 physical cores, 8 logical processors), with VIs bu
 | LabVIEW protects large values (arrays, long strings) read by a local variable while written | Measured on 2026-10-25 (above, case 8) | Measured, no test |
 | A control read by several threads never goes back and is never torn in Solder | `test/core/thread-pool.test.mjs` (four threads read array controls while the coordinator writes them; the lock on its own, six threads) | Verified for torn; going back follows from the lock and is not tested |
 | A chart keeps the last writes of its history between two passes, an indicator its last value | `test/editor/graphs.test.mjs` | Verified |
+
+## DT-064
+
+**Hardware comes before LabVIEW Core 1: first Instrument I/O with VISA, then a classic ESP32 as a DAQ spoken to by
+SCPI, then a DAQmx-like layer, and only then Core 1, with its hardware lessons included.**
+
+- **Status:** Accepted on 2026-10-25 by the developer. It moves [DT-054](#dt-054) (Core 1) behind the hardware and
+  narrows its exclusions; point 5 of [DT-039](#dt-039) (how the native I/O connects to the editor) stays open and is
+  discussed when that step comes.
+- **Why:** acquisition and control is what Solder is for (decided 2026-09-29), and Core 1 without hardware leaves out
+  exactly that: lessons 2 and 15 and the measuring parts of 4, 7 and 8. With hardware first, Core 1 is done once, with
+  real measurements, instead of with simulated data to be redone later. The charts and graphs a measurement needs are
+  already done (plan §3b step 4).
+
+### Decision
+
+1. **Order of work:**
+   1. **Instrument I/O with VISA:** the VISA resource name control, constant and wire, and the VISA functions LabVIEW
+      shows (Open, Configure Serial Port, Write, Read, Close, Bytes at Port and the rest of the palette, greyed with
+      its reason until done), over the transports the steps need.
+   2. **A classic ESP32 (with its two DACs) as a small DAQ:** analog inputs, analog outputs, digital lines and
+      counters, and hardware-timed sampling sent in SCPI definite-length binary blocks. **The developer writes the
+      firmware**; Solder only needs the command set, which is written down when this step comes and is served first by
+      a simulated ESP32 (point 3).
+   3. **A DAQmx-like layer** over it (Create Channel, Timing, Start, Read, Stop, Clear), so the ESP32 is a device the
+      way an NI card is. It gets its own DT, after measuring DAQmx in LabVIEW with a simulated NI device.
+   4. **LabVIEW Core 1** (DT-054), with the hardware lessons done on the ESP32 and on simulated instruments.
+2. **Measured in LabVIEW first** (rule 2): the VISA palette and every function's behavior (timeouts and their error
+   codes, termination characters, Bytes at Port), with LabVIEW in the VM speaking to a simulated instrument on the
+   Linux host. Later the ESP32 can be passed to the VM by USB to compare with the real device.
+3. **Instruments are simulated with [Crucible](https://github.com/anlaco/Crucible)**, the anlaco digital twin of a test
+   bench: it serves devices described in YAML over their protocol and transport (SCPI over TCP today, as
+   `TCPIP0::<host>::5025::SOCKET`; serial is in its roadmap). The same simulated instrument answers LabVIEW in the VM
+   (measurement) and Solder in the tests, so no test depends on hardware. A Crucible profile of the ESP32 DAQ is where
+   its command set is first written. What Crucible lacks (a serial transport, a DAQ profile) is done in Crucible, as
+   Crucible work.
+4. **The Olimex GateMateA1-EVB** (Cologne Chip FPGA) is the platform for anlaco's own instruments later; to Solder it
+   will be one more SCPI instrument. Programming it from Solder stays parked (`docs/ideas/fpga-yosys.md`).
+
+### Consequences
+
+- §3b of the plan gets these steps after the execution scheduler; Core 1 moves behind them.
+- The first transport may be TCP rather than serial, since that is what Crucible serves today; decided with the
+  measurements of step 1.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Each VISA function behaves as in LabVIEW | Measurements against Crucible in the VM, and tests against Crucible in `npm test` | **Unverified**: nothing done yet |
+| No test of hardware I/O needs hardware | The I/O tests run against Crucible only | **Unverified** |

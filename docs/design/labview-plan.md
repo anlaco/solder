@@ -10,9 +10,9 @@ When the developer says "keep going":
 
 1. Read this document: §2 (where we are) and §3b (what is next). The execution scheduler
    at the end of the road in §3b (DT-061, DT-063) is done and merged into `main`
-   (2026-10-25); continue with **"Then: LabVIEW Core 1 without hardware"** right after it,
-   and keep in mind its list "Pending from the pool of threads". §4 gives the detail of
-   each module.
+   (2026-10-25); continue with **"Then: hardware"** right after it (DT-064, which moved Core 1
+   behind it), and keep in mind its list "Pending from the pool of threads". §4 gives the
+   detail of each module.
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
    `win11 encender`, `tools/vm_control.py foto|clic|arrastrar|tecla|texto`.
@@ -447,9 +447,19 @@ memory, so a Run uses every core as in LabVIEW (DT-063). In order:
 With stackless clumps the Rust host needs no stack switching (DT-061 §7). Measured on 2026-10-25 (DT-063 case 8): a large
 array or string read by a local variable while another loop writes it is never torn in LabVIEW, so §10's lock per control stays.
 
-**Then:** **LabVIEW Core 1 without hardware** (DT-054, moved after the beta by DT-055): every
-lesson of NI's Core 1 course can be done in Solder, except lessons 2 and 15 and the DAQ and instrument parts of 4,
-7 and 8. The outline is in `labview-captures/core-courses/README.md`; first, list which lessons Solder misses.
+**Then: hardware** (DT-064, decided 2026-10-25), before Core 1. Instruments are simulated with Crucible
+(`~/Proyectos/Crucible`, SCPI over TCP today), for the measurements in the VM and for the tests alike:
+1. **Instrument I/O with VISA:** first measure in the VM whether NI-VISA is installed and how the VISA palette and
+   functions behave against a Crucible instrument on the host (timeouts and their codes, termination characters,
+   Bytes at Port); then the resource name control, constant and wire and the VISA functions. How the native I/O
+   connects to the editor (DT-039 §5) is discussed with the developer at this step, before writing it.
+2. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the firmware,
+   and first served by a Crucible profile of it.
+3. **A DAQmx-like layer** over the ESP32, with its own DT after measuring DAQmx with a simulated NI device.
+
+**After it:** **LabVIEW Core 1** (DT-054, moved after the beta by DT-055 and after the hardware by DT-064): every
+lesson of NI's Core 1 course can be done in Solder, the hardware lessons on the ESP32 and on simulated instruments.
+The outline is in `labview-captures/core-courses/README.md`; first, list which lessons Solder misses.
 
 **Postponed behind these five:** *inplaceness* (DT-042 §5), which changes memory
 and speed but not results; it will be done when a real program
@@ -780,8 +790,9 @@ right-click menus of the panel and the 19 missing Numeric controls.
 
 ### M8 — Waveform and graphs
 
-- [ ] Controls ▸ Graph (Waveform Chart, Waveform Graph, XY Graph) and the Waveform
-  subpalette.
+- [~] Controls ▸ Graph (Waveform Chart, Waveform Graph, XY Graph) and the Waveform
+  subpalette. *The three graphs done on 2026-10-09 (§3b step 4); missing Scope/Sweep, cursors, plot styles, the
+  other graphs and the Waveform subpalette.*
 
 ### M6, notes from 2026-10-02 on arrays
 
