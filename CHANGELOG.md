@@ -26,6 +26,9 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 - The toolbar's Abort button stops a VI whose loop writes to the panel all the
   time: the window is no longer rebuilt on every value, so a click on a button
   reaches it while the VI runs (Ctrl+. already worked).
+- In the editor, the source of an error raised inside a subVI names the chain
+  of VIs again ("Scan From String (arg 1) in Parse Reply.sdg->Instrument
+  Protocol.sdg"), as the command line already did.
 
 ## 0.5.0-beta — 2026-10-23
 

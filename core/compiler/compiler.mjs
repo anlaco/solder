@@ -2558,20 +2558,10 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
 
 /**
  * What a Run needs of a compiled VI, to send it to a worker: everything but the module's tree.
- * `frames` must go too, or an aborted Run leaves its clumps parked for the next one (DT-063 §8).
+ * Only the tree is left out, so a field the runtime reads is never lost on the way (the call
+ * chain of an error source was, once; the parked frames must go too, DT-063 §8).
  */
-export const runnableVI = (compiled) => ({
-  bytes: compiled.bytes,
-  controles: compiled.controles,
-  indicadores: compiled.indicadores,
-  clumps: compiled.clumps,
-  planes: compiled.planes,
-  automaticos: compiled.automaticos,
-  disposicionError: compiled.disposicionError,
-  debugFlag: compiled.debugFlag,
-  debugNodes: compiled.debugNodes,
-  frames: compiled.frames,
-});
+export const runnableVI = ({ modulo: _moduleTree, ...runnable }) => runnable;
 
 /** The module with the top-level VI `vi`, its subVIs and the memory functions, ready to instantiate. */
 function assemble(module, vi) {
