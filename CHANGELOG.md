@@ -20,6 +20,16 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   no longer need JSPI: the command line and the tests run on any Node with no
   flag. A loop runs as fast as before with Allow Debugging off, and about a
   third faster with it on while nobody is debugging.
+- The scheduler that runs a VI's clumps is now WebAssembly inside the
+  compiled VI, over a shared memory, ready for a pool of threads with work
+  stealing (DT-063 §9); for now a Run still uses one thread, with the same
+  order as before. The editor's windows are cross-origin isolated, which a
+  shared memory needs.
+- The front panel lives in that shared memory, as LabVIEW's transfer buffer
+  (DT-063 §10): the diagram writes indicators without waiting for the editor
+  (a million writes to an indicator take about 21 ms) and the panel shows the
+  last value at each pass; a chart still gets every point its history holds.
+  A large control is read whole even while it is being written.
 
 ### Fixes
 

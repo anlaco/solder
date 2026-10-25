@@ -2,17 +2,18 @@
 //
 // The diagram is split into clumps, as LabVIEW does (DT-040): each node that
 // takes time (Wait (ms)…) gets its own, and the instant ones are grouped by the
-// time-taking nodes they depend on. The module exports one clump per function
-// (`c0`, `c1`…) and the host launches them by dataflow: each one once the ones
-// it receives data from have finished, and in parallel those that do not depend
-// on each other (core/runtime/runtime.mjs). Values passed from one clump to
-// another travel through module globals; inside a clump, through locals.
+// time-taking nodes they depend on. Each clump is a function (`c0`, `c1`…), and
+// the module's own scheduler (pool-scheduler.mjs, DT-063 §9) runs them by
+// dataflow: each one once the ones it receives data from have finished, and in
+// parallel those that do not depend on each other. Values passed from one clump
+// to another travel through cells of the data space, which every thread shares;
+// inside a clump, through locals.
 //
-// Controls are read and indicators written through panel imports
-// (`panel.leer_f64(index)`, `panel.escribir_f64(index, value)`…), at the moment
-// the diagram reaches them, so the module touches nothing it is not given: the
-// host decides where values come from and where they go. Time is imported too
-// (`tiempo.esperar`, which suspends the clump).
+// The panel is in the shared memory too (panel-memory.mjs, DT-063 §10): the
+// diagram reads each control from its record and writes each indicator into its
+// own, and the host fills the first and walks the second. The module imports
+// only the clocks, the dialogs, the debugger and the functions written in
+// JavaScript: it touches nothing it is not given.
 //
 // Types are the ones resolved by core/model/graph.mjs, with their coercions:
 // each value is converted from the wire's type to the type of the terminal it
@@ -24,8 +25,10 @@ import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
 import { ERROR, NUMERICOS, dimensionsOf, esArray, esCluster, esEntero, esEnum, esNumerico, flattenArrayValue, limites, representacion } from "../model/types.mjs";
 import { codificar } from "./wasm-encoder.mjs";
-import { CELDAS, CIMA, EXPORTADAS, bloqueCadena, funcionesMemoria, i32 } from "./linear-memory.mjs";
+import { CELDAS, CIMA, EXPORTADAS, MEMORY_FUNCTION_NAMES, bloqueCadena, funcionesMemoria, i32 } from "./linear-memory.mjs";
 import { makeStackless } from "./stackless.mjs";
+import { DEFAULT_CHART_HISTORY, PANEL_RECORD, recordBytes, slotBytes } from "./panel-memory.mjs";
+import { SCHEDULER_EXPORTS, SCHEDULER_FUNCTION_NAMES, SCHEDULER_PARK_PRIMITIVES, schedulerData, schedulerFunctions } from "./pool-scheduler.mjs";
 
 /** El tipo de WebAssembly con que se representa un tipo de Solder. */
 export function tipoWasm(t) {
@@ -44,20 +47,12 @@ const conSigno = (t) => NUMERICOS[representacion(t)]?.signo ?? true;
 const bits = (t) => NUMERICOS[representacion(t)]?.bits ?? 32;
 const esFlotante = (t) => esNumerico(t) && !esEntero(t);
 
-/** Las importaciones del panel y de matemáticas, siempre en este orden: sus índices no cambian. */
-const VT = ["i32", "i64", "f32", "f64"];
+/**
+ * What the module imports from its host, always in this order: the string, array and math functions
+ * written in JavaScript, the clocks, the dialogs and the debugger. The panel is not imported: it is in
+ * the memory (panel-memory.mjs, DT-063 §10).
+ */
 const IMPORTACIONES = [
-  ...VT.map((vt) => ({ modulo: "panel", nombre: `leer_${vt}`, params: ["i32"], results: [vt] })),
-  ...VT.map((vt) => ({ modulo: "panel", nombre: `escribir_${vt}`, params: ["i32", vt], results: [] })),
-  // Una cadena del panel: el anfitrión la escribe en la celda del control o la lee del handle.
-  { modulo: "panel", nombre: "leer_cad", params: ["i32", "i32"], results: [] },
-  { modulo: "panel", nombre: "escribir_cad", params: ["i32", "i32"], results: [] },
-  // Un cluster del panel: el anfitrión lo escribe en el bloque del control o lo lee del indicador.
-  { modulo: "panel", nombre: "leer_clu", params: ["i32", "i32"], results: [] },
-  // Un array del panel, igual: el anfitrión lo escribe en la celda del control o lo lee del handle.
-  { modulo: "panel", nombre: "leer_arr", params: ["i32", "i32"], results: [] },
-  { modulo: "panel", nombre: "escribir_arr", params: ["i32", "i32"], results: [] },
-  { modulo: "panel", nombre: "escribir_clu", params: ["i32", "i32"], results: [] },
   // Las funciones de cadena que dependen del formato de LabVIEW, en JavaScript sobre la
   // misma memoria (DT-042 b): reciben handles y la celda donde dejar su resultado.
   ...[["sub", 4], ["reemplazar", 6]].map(([nombre, n]) => ({ modulo: "cad", nombre, params: Array(n).fill("i32"), results: [] })),
@@ -90,24 +85,12 @@ const IMPORTACIONES = [
   ...Object.entries(FUNCIONES)
     .filter(([, f]) => f.js)
     .map(([nombre, f]) => ({ modulo: "math", nombre: `fn_${nombre}`, params: Array(f.args).fill("f64"), results: ["f64"] })),
-  // El reloj de milisegundos (U32) y las esperas, que suspenden el clump que las llama.
+  // The millisecond timer (U32), the Run's clock for timers (the host's, virtual in the reference
+  // traces) and the real clock in milliseconds for the budget of a loop's iterations. The waits,
+  // yields, subplans and subVI turns are the module's own scheduler (pool-scheduler.mjs).
   { modulo: "tiempo", nombre: "reloj", params: [], results: ["i32"] },
-  { modulo: "tiempo", nombre: "esperar", params: ["f64"], results: ["i32"] },
-  { modulo: "tiempo", nombre: "esperar_multiplo", params: ["f64"], results: ["i32"] },
-  // Al final de una vuelta, cuando se acaba su presupuesto: deja correr a los
-  // demás clumps y al panel si ha pasado un rato, y da el presupuesto siguiente.
-  { modulo: "tiempo", nombre: "ceder", params: [], results: ["i32"] },
-  // Corre un subplan —los clumps de un cuerpo con varios nodos largos— y
-  // espera a que acaben todos (suspende quien lo llama).
-  { modulo: "tiempo", nombre: "correr_plan", params: ["i32"], results: ["i32"] },
-  // A call to a subVI that waits (DT-045). A non-reentrant VI serves one call at a time, and the
-  // whole call is one turn: `entrar_subvi` suspends the caller until the subVI is free, then the
-  // caller writes its inputs, `correr_subvi` runs the plan, the caller reads its outputs, and
-  // `salir_subvi` hands the subVI to the next call. Writing the inputs before waiting let a second
-  // call overwrite the first one's (bug #30).
-  { modulo: "tiempo", nombre: "entrar_subvi", params: ["i32"], results: ["i32"] },
-  { modulo: "tiempo", nombre: "correr_subvi", params: ["i32"], results: ["i32"] },
-  { modulo: "tiempo", nombre: "salir_subvi", params: ["i32"], results: [] },
+  { modulo: "tiempo", nombre: "ahora", params: [], results: ["f64"] },
+  { modulo: "tiempo", nombre: "reloj_real", params: [], results: ["f64"] },
   // Debugging (DT-047): the value of each output of a node that just ran, by its wasm type
   // (a string, array or cluster goes by address), and then the node itself, which may
   // suspend the clump (a breakpoint, a step, Highlight Execution's pace).
@@ -126,8 +109,8 @@ const IMPORTACIONES = [
 /** Los nodos que tardan: cada uno corre en su clump y cede mientras espera. */
 export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "simple-error-handler"]);
 const idImport = (nombre) => IMPORTACIONES.findIndex((i) => i.nombre === nombre);
-/** The imports that may park the clump that calls them (DT-063 §8): waits, yields, subplans, subVI turns, dialogs, the debugger. */
-const PARKING_IMPORTS = new Set(["ceder", "esperar", "esperar_multiplo", "correr_plan", "entrar_subvi", "correr_subvi", "nodo", "error_automatico", "dialogo_error"].map(idImport));
+/** The imports that may park the clump that calls them (DT-063 §8): the dialogs and the debugger, which wait for the outside. */
+const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error"].map(idImport);
 
 const ins = (op, arg) => (arg === undefined ? { op } : { op, arg });
 
@@ -882,25 +865,16 @@ const BLOQUES = {
   "and-array-elements": (e) => reducir(e, "and", 1),
   "or-array-elements": (e) => reducir(e, "or", 0),
   "arr-const": (e) => [ins("i32.const", e.arrayConstante(e.tOut(0), e.nodo.config?.value ?? []))],
-  "arr-control": (e) => {
-    const celda = e.celda();
-    return [ins("i32.const", e.indice), ins("i32.const", celda), ins("call", idImport("leer_arr")), ins("i32.const", celda)];
-  },
-  "cluster-control": (e) => {
-    const b = e.bufer(disposicion(e.tOut(0)).tam);
-    return [ins("i32.const", e.indice), ins("i32.const", b), ins("call", idImport("leer_clu")), ins("i32.const", b)];
-  },
-  "str-control": (e) => {
-    const celda = e.celda();
-    return [ins("i32.const", e.indice), ins("i32.const", celda), ins("call", idImport("leer_cad")), ins("i32.const", celda)];
-  },
+  "arr-control": (e) => readControl(e),
+  "cluster-control": (e) => readControl(e),
+  "str-control": (e) => readControl(e),
   // Timing: el reloj de milisegundos de LabVIEW es un U32 que da la vuelta.
   "tick-count-ms": () => [ins("call", idImport("reloj"))],
-  "wait-ms": (e) => [...e.entrada(0), ...convertir(e.tIn(0), "u32"), ins("f64.convert_i32_u"), ins("call", idImport("esperar"))],
-  "wait-until-next-ms-multiple": (e) => [...e.entrada(0), ...convertir(e.tIn(0), "u32"), ins("f64.convert_i32_u"), ins("call", idImport("esperar_multiplo"))],
-  control: (e) => [ins("i32.const", e.indice), ins("call", idImport(`leer_${tipoWasm(e.tOut(0))}`))],
+  "wait-ms": (e) => [...e.entrada(0), ...convertir(e.tIn(0), "u32"), ins("f64.convert_i32_u"), callScheduler("wait")],
+  "wait-until-next-ms-multiple": (e) => [...e.entrada(0), ...convertir(e.tIn(0), "u32"), ins("f64.convert_i32_u"), callScheduler("wait_multiple")],
+  control: (e) => readControl(e),
   // Un control booleano se lee igual: el booleano viaja como i32 0/1.
-  "bool-control": (e) => [ins("i32.const", e.indice), ins("call", idImport(`leer_${tipoWasm(e.tOut(0))}`))],
+  "bool-control": (e) => readControl(e),
 
   add: (e) => aritmetica(e, "add"),
   sub: (e) => aritmetica(e, "sub"),
@@ -1337,15 +1311,18 @@ function defaultValueCode(e, t, value) {
 function callSubVI(e, instance) {
   const { in: inputs, out: outputs } = e.cat.puertos(e.nodo);
   const waits = instance.direct === null;
-  const code = waits ? [ins("i32.const", instance.plan), ins("call", idImport("entrar_subvi")), ins("drop")] : [];
+  // A non-reentrant VI serves one call at a time (DT-045): the call enters (waiting while another one
+  // is inside) before it writes its inputs, runs the plan, reads its outputs and leaves. Writing the
+  // inputs before waiting let a second call overwrite the first one's (bug #30).
+  const code = waits ? [ins("i32.const", instance.plan), callScheduler("enter_subvi"), ins("drop")] : [];
   code.push(ins("i32.const", instance.callerCell), ins("i32.const", e.chainIndex), ins("i32.store"));
   inputs.forEach((port, i) => {
     const slot = instance.slots.get(port.name);
     const value = e.cableada(i) ? e.entrada(i) : defaultValueCode(e, port.type, port.defaultValue);
     code.push(...storeInSlot(port.type, slot, value, e.temporal));
   });
-  if (instance.direct !== null) code.push(ins("call", IMPORTACIONES.length + MEMORIA.length + instance.direct));
-  else code.push(ins("i32.const", instance.plan), ins("call", idImport("correr_subvi")), ins("drop"));
+  if (instance.direct !== null) code.push(ins("call", FIRST_COMPILED_FUNCTION + instance.direct));
+  else code.push(ins("i32.const", instance.plan), callScheduler("run_plan"), ins("drop"));
   for (const port of outputs) {
     const slot = instance.slots.get(port.name);
     if (!porReferencia(port.type)) {
@@ -1355,8 +1332,71 @@ function callSubVI(e, instance) {
     const own = esCluster(port.type) ? e.bufer(disposicion(port.type).tam) : e.celda();
     code.push(...copiarA(port.type, loadFromSlot(port.type, slot), [ins("i32.const", own)], e.temporal), ins("i32.const", own));
   }
-  if (waits) code.push(ins("i32.const", instance.plan), ins("call", idImport("salir_subvi")));
+  if (waits) code.push(ins("i32.const", instance.plan), callScheduler("leave_subvi"));
   return code;
+}
+
+/**
+ * An indicator of the top-level VI written into its record of the panel (DT-063 §10): the diagram never
+ * waits for the editor. A scalar is one atomic store, then its version goes up; a string, array or
+ * cluster is copied into the record under the write lock, so the host never reads it half-written. A
+ * chart (`historyLength`) writes into the next slot of its ring and counts the write. Returns the
+ * record's address and the code, which takes the value from `value`.
+ */
+function writeIndicator(module, type, value, temporal, historyLength) {
+  const slot = slotBytes(type, esCluster(type) ? disposicion(type).tam : undefined);
+  const record = module.bufer(recordBytes(slot, historyLength ?? 1), 8);
+  const at = (offset) => [ins("i32.const", record + offset)];
+  const lock = (name) => [...at(PANEL_RECORD.lock), llamarMemoria(name)];
+  const countWrite = [...at(PANEL_RECORD.version), ins("i32.const", 1), ins("i32.atomic.rmw.add"), ins("drop")];
+  // A chart's slot for this write: its count modulo the history; any other indicator has one.
+  const slotAddress = historyLength
+    ? [...at(PANEL_RECORD.version), ins("i32.atomic.load"), ins("i32.const", historyLength), ins("i32.rem_u"), ins("i32.const", slot), ins("i32.mul"), ins("i32.const", record + PANEL_RECORD.value), ins("i32.add")]
+    : at(PANEL_RECORD.value);
+  const held = temporal(porReferencia(type) ? "i32" : tipoWasm(type));
+  const store = porReferencia(type) ? copiarA(type, [ins("local.get", held)], slotAddress, temporal) : [...slotAddress, ins("local.get", held), ...atomicStore(tipoWasm(type))];
+  // A scalar that is not a chart needs no lock: one atomic store is never seen half-written.
+  const locked = historyLength || porReferencia(type);
+  const code = [...value, ins("local.set", held), ...(locked ? lock("write_lock") : []), ...store, ...countWrite, ...(locked ? lock("write_unlock") : [])];
+  return { record, slot, code };
+}
+
+/**
+ * A control of the top-level VI read from its record of the panel (DT-063 §10), where the host writes
+ * what the editor sends. A scalar is one atomic load; a Latch is an atomic exchange that leaves FALSE, so
+ * only one read sees TRUE, and it counts the release for the host to tell the editor. A string, array or
+ * cluster is copied into the node's own buffer under the read lock, as a local variable copies its data.
+ */
+function readControl(e) {
+  const record = e.controlRecord;
+  const type = e.tOut(0);
+  const at = (offset) => [ins("i32.const", record + offset)];
+  if (!porReferencia(type)) {
+    if (!mecanica(e.cat, e.nodo)?.startsWith("latch")) return [...at(PANEL_RECORD.value), ...atomicLoad(tipoWasm(type))];
+    const pressed = e.temporal("i32");
+    return [
+      ...at(PANEL_RECORD.value), ins("i32.const", 0), ins("i32.atomic.rmw.xchg"), ins("local.tee", pressed),
+      ins("if"), ...at(PANEL_RECORD.released), ins("i32.const", 1), ins("i32.atomic.rmw.add"), ins("drop"), ins("end"),
+      ins("local.get", pressed),
+    ];
+  }
+  const own = esCluster(type) ? e.bufer(disposicion(type).tam) : e.celda();
+  const lock = (name) => [...at(PANEL_RECORD.lock), llamarMemoria(name)];
+  return [...lock("read_lock"), ...copiarA(type, at(PANEL_RECORD.value), [ins("i32.const", own)], e.temporal), ...lock("read_unlock"), ins("i32.const", own)];
+}
+
+/** Loads a value of WebAssembly type `wasmType` from the address on the stack, in one atomic load. */
+function atomicLoad(wasmType) {
+  if (wasmType === "f64") return [ins("i64.atomic.load"), ins("f64.reinterpret_i64")];
+  if (wasmType === "f32") return [ins("i32.atomic.load"), ins("f32.reinterpret_i32")];
+  return [ins(`${wasmType}.atomic.load`)];
+}
+
+/** Stores the value of WebAssembly type `wasmType` on the stack at the address under it, in one atomic store. */
+function atomicStore(wasmType) {
+  if (wasmType === "f64") return [ins("i64.reinterpret_f64"), ins("i64.atomic.store")];
+  if (wasmType === "f32") return [ins("i32.reinterpret_f32"), ins("i32.atomic.store")];
+  return [ins(`${wasmType}.atomic.store`)];
 }
 
 /** The address of the null handle: a cell that always holds 0, the empty string or array. */
@@ -1706,8 +1746,38 @@ function guardarElemento(t, dir, valor, temporal) {
 }
 
 /** Las funciones de la memoria van las primeras del módulo: su índice, por nombre. */
-const MEMORIA_NOMBRES = ["asignar", "liberar", "redimensionar", "longitud", "datos", "copiar", "datos8", "nuevo_array"];
+const MEMORIA_NOMBRES = MEMORY_FUNCTION_NAMES;
+
+// The memory of a Run, created by the host and shared by its threads (DT-063 §1). A shared memory
+// must declare a maximum; this is wasm32's whole address space, the limit a VI already had, and it
+// costs only address space until the VI grows into it.
+export const SHARED_MEMORY_IMPORT = { modulo: "env", nombre: "memory" };
+export const MAXIMUM_PAGES = 65536;
+const PAGE_BYTES = 65536;
+const pagesFor = (bytes) => Math.max(1, Math.ceil(bytes / PAGE_BYTES));
 const MEMORIA = funcionesMemoria((n) => IMPORTACIONES.length + MEMORIA_NOMBRES.indexOf(n));
+
+// The globals of each thread (each instance of the module has its own): whether its clump is
+// parking, the answer it resumes with (stackless.mjs), and the clump and thread it runs.
+const THREAD_GLOBALS = { parking: 0, resumeValue: 1, currentClump: 2, currentThread: 3 };
+// A clump takes nothing and gives nothing: its type is the first of every module.
+const CLUMP_TYPE = 0;
+const FIRST_SCHEDULER_FUNCTION = IMPORTACIONES.length + MEMORIA.length;
+/** The index of a function by name: an import, a memory function or one of the scheduler's. */
+const runtimeFunctionIndex = (name) => {
+  if (MEMORIA_NOMBRES.includes(name)) return IMPORTACIONES.length + MEMORIA_NOMBRES.indexOf(name);
+  if (SCHEDULER_FUNCTION_NAMES.includes(name)) return FIRST_SCHEDULER_FUNCTION + SCHEDULER_FUNCTION_NAMES.indexOf(name);
+  const index = idImport(name);
+  if (index < 0) throw new Error(`No runtime function is called "${name}".`);
+  return index;
+};
+const SCHEDULER = schedulerFunctions({ functionIndex: runtimeFunctionIndex, globals: THREAD_GLOBALS, clumpType: CLUMP_TYPE });
+/** The functions every module has before its VIs': the memory's and the scheduler's. */
+const RUNTIME_FUNCTIONS = [...MEMORIA, ...SCHEDULER];
+const FIRST_COMPILED_FUNCTION = IMPORTACIONES.length + RUNTIME_FUNCTIONS.length;
+const callScheduler = (name) => ins("call", runtimeFunctionIndex(name));
+/** What may park a clump: the imports that wait for the outside and the scheduler's park primitives. */
+const PARK_PRIMITIVES = new Set([...PARKING_IMPORTS, ...SCHEDULER_PARK_PRIMITIVES.map(runtimeFunctionIndex)]);
 const llamarMemoria = (n) => ({ op: "call", arg: IMPORTACIONES.length + MEMORIA_NOMBRES.indexOf(n) });
 
 /**
@@ -1929,7 +1999,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
   const arriba = ordenArriba(g, deArriba.lista, raiz, deArriba.cadenas);
   const { clumpDe: clumpRaiz, clumps } = partir(g, arriba, raiz, esLargo, deArriba.cadenas);
   const clumpDe = (id) => clumpRaiz.get(raiz(id));
-  const { globales, constantes, datosFijos, planes, automaticos, bufer } = module;
+  const { constantes, datosFijos, planes, automaticos, bufer } = module;
   const nuevaCelda = () => bufer(4, 4);
   // El cluster «cero»: tan grande como el mayor cluster del VI; no se escribe nunca.
   const tamMax = Math.max(0, ...[...resueltos.entradas.values(), ...resueltos.salidas.values()].filter(esCluster).map((t) => disposicion(t).tam));
@@ -1989,7 +2059,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
   };
   // Manejo automático de errores, activo de fábrica (VI Properties ▸ Execution).
   const autoErrores = g.vi?.["automatic-error-handling"] !== false;
-  const valor = new Map(); // `${nodo}.${puerto}` → { local, global, clump }
+  const valor = new Map(); // `${nodo}.${puerto}` → { local, wasmType, clump, cell }
   const controles = [];
   const indicadores = [];
   const errores = [];
@@ -2024,7 +2094,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
    */
   const frameHook = (sid, phase, frameIndex = null) => debugHook(sid, [], { frame: phase, frameIndex });
 
-  // Las salidas que alguien lee desde otro clump necesitan una global.
+  // The outputs another clump reads need a crossing cell.
   const cruzan = new Set(g.cables.filter((c) => clumpDe(c.de.nodo) !== clumpDe(c.a.nodo)).map((c) => `${c.de.nodo}.${c.de.puerto}`));
 
   /** Lo que hace falta para emitir un nodo en el clump `k`. */
@@ -2041,19 +2111,20 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       const v = valor.get(`${c.de.nodo}.${c.de.puerto}`);
       // El nodo de origen ya dio un error: no hay valor, y el VI no se emitirá.
       if (!v) return [];
-      // Leído desde otra función —un clump de un subplan, o el bucle que lo
-      // llama—: el valor pasa a una global. Como cada salida se asigna una vez
-      // por ejecución, basta copiarla al final de lo que su función lleva
-      // emitido: en el bucle, eso queda antes de llamar al subplan.
-      if (v.clump !== k && v.global === undefined) {
-        v.global = globales.push(tipoWasm(t)) - 1;
-        v.clump.cuerpo.push(ins("local.get", v.local), ins("global.set", v.global));
+      // Read from another function —a clump of a subplan, or the loop that calls it—: the value
+      // goes through a cell of the data space. Each output is assigned once per execution, so it
+      // is enough to store it at the end of what its function has emitted so far: in the loop,
+      // that comes before the call to the subplan.
+      if (v.clump !== k && v.cell === undefined) {
+        v.wasmType ??= tipoWasm(t);
+        v.cell = crossingCell(v.wasmType);
+        v.clump.cuerpo.push(...storeCrossing(v));
       }
-      const leer = v.clump === k ? ins("local.get", v.local) : ins("global.get", v.global);
+      const leer = v.clump === k ? [ins("local.get", v.local)] : loadCrossing(v);
       // Un array con otro tipo de elemento se convierte entero en un búfer propio:
       // el punto de coerción de LabVIEW (DT-042).
-      if (esArray(t) && esArray(tIn(i)) && JSON.stringify(t.array) !== JSON.stringify(tIn(i).array)) return convertirArray(t, tIn(i), [leer]);
-      return [leer, ...convertir(t, tIn(i))];
+      if (esArray(t) && esArray(tIn(i)) && JSON.stringify(t.array) !== JSON.stringify(tIn(i).array)) return convertirArray(t, tIn(i), leer);
+      return [...leer, ...convertir(t, tIn(i))];
     };
     /** Copia el array que deja `origen` a una celda nueva, convirtiendo cada elemento de `desde.array` a `hacia.array`. */
     const convertirArray = (desde, hacia, origen) => {
@@ -2081,12 +2152,24 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     return { n, entradas, salidas, tIn, tOut, nuevoLocal, entrada, cableada, nombre: n.label?.text ?? n.name };
   }
 
-  /** El valor de una salida está en el local `l`; si alguien lo lee desde otro clump, también en una global. */
+  /**
+   * A cell of the data space for a value that crosses from one clump to another. It is memory and
+   * not a WebAssembly global because every thread of the pool has globals of its own but shares
+   * the memory (DT-063 §1): the clump that reads the value may run on another thread.
+   */
+  const crossingCell = (wasmType) => {
+    const bytes = wasmType === "i64" || wasmType === "f64" ? 8 : 4;
+    return bufer(bytes, bytes);
+  };
+  const storeCrossing = (v) => [ins("i32.const", v.cell), ins("local.get", v.local), ins(`${v.wasmType}.store`)];
+  const loadCrossing = (v) => [ins("i32.const", v.cell), ins(`${v.wasmType}.load`)];
+
+  /** The value of an output is in the local `l`; if another clump reads it, also in a crossing cell. */
   function dejar(k, id, puerto, l, vt) {
-    const v = { local: l, clump: k };
+    const v = { local: l, clump: k, wasmType: vt };
     if (cruzan.has(`${id}.${puerto}`)) {
-      v.global = globales.push(vt) - 1;
-      k.cuerpo.push(ins("local.get", l), ins("global.set", v.global));
+      v.cell = crossingCell(vt);
+      k.cuerpo.push(...storeCrossing(v));
     }
     valor.set(`${id}.${puerto}`, v);
   }
@@ -2104,16 +2187,19 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
         if (slot) k.cuerpo.push(...storeInSlot(tIn(0), slot, entrada(0), nuevoLocal));
         return;
       }
-      indicadores.push({ nodo: id, name: n.name, tipo: tIn(0), ...datosDePanel(tIn(0)) });
-      const escribe = tIn(0) === "string" ? "escribir_cad" : esCluster(tIn(0)) ? "escribir_clu" : esArray(tIn(0)) ? "escribir_arr" : `escribir_${tipoWasm(tIn(0))}`;
-      k.cuerpo.push(ins("i32.const", indicadores.length - 1), ...entrada(0), ins("call", idImport(escribe)), ...debugHook(id, []));
+      const historyLength = n.tipo === "waveform-chart" ? (n.config?.historyLength ?? DEFAULT_CHART_HISTORY) : null;
+      const { record, slot, code } = writeIndicator(module, tIn(0), entrada(0), nuevoLocal, historyLength);
+      indicadores.push({ nodo: id, name: n.name, tipo: tIn(0), record, ...(historyLength && { historyLength, slot }), ...datosDePanel(tIn(0)) });
+      k.cuerpo.push(...code, ...debugHook(id, []));
       return;
     }
     const emitir = n.tipo === "subvi" ? (e) => callSubVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subVIControl(e, asSubVI.get(n.name)) : BLOQUES[n.tipo];
     if (!emitir) return errores.push({ nodo: id, motivo: `The compiler cannot emit "${nombre}" (${n.tipo}) yet.` });
     const e = { nodo: n, cat, tIn, tOut, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex };
-    if (!asSubVI && PANEL_CONTROLS.includes(n.tipo))
-      controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), ...datosDePanel(tOut(0)) });
+    if (!asSubVI && PANEL_CONTROLS.includes(n.tipo)) {
+      e.controlRecord = module.bufer(recordBytes(slotBytes(tOut(0), esCluster(tOut(0)) ? disposicion(tOut(0)).tam : undefined)), 8);
+      controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), record: e.controlRecord, ...datosDePanel(tOut(0)) });
+    }
     try {
       const b = cat.bloque(n.tipo);
       const ie = entradas.findIndex((p) => p.name === "error-in");
@@ -2281,7 +2367,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     c.push(ins("local.get", i), ins("local.get", i), ins("i32.const", 0x7fffffff), ins("i32.ne"), ins("i32.add"), ins("local.set", i));
     c.push(
       ins("local.get", presupuesto), ins("i32.const", 1), ins("i32.sub"), ins("local.tee", presupuesto), ins("i32.const", 0), ins("i32.le_s"),
-      ins("if"), ins("call", idImport("ceder")), ins("local.set", presupuesto), ins("end"),
+      ins("if"), callScheduler("yield_point"), ins("local.set", presupuesto), ins("end"),
     );
     if (n !== null) c.push(ins("local.get", i), ins("local.get", n), ins("i32.lt_s"), ins("br_if", 0));
     else c.push(ins("local.get", parada), ins("i32.eqz"), ins("br_if", 0));
@@ -2482,14 +2568,14 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     const { clumpDe: deSub, clumps: sub } = partir(g, orden, rep, esLargo, cadenas);
     const p = planes.push(sub) - 1;
     for (const id of orden) emitirEn(id, sub[deSub.get(id)]);
-    k.cuerpo.push(ins("i32.const", p), ins("call", idImport("correr_plan")), ins("drop"));
+    k.cuerpo.push(ins("i32.const", p), callScheduler("run_plan"), ins("drop"));
   }
 
   /**
    * Un marco de una Flat Sequence: los túneles de entrada que lee primero, su
    * cuerpo y los túneles de salida que alimenta, que dan su valor al acabar el
    * marco. Lo que pasa de un marco a otro, si van en clumps distintos, viaja por
-   * una global (DT-041).
+   * una celda del data space (DT-041, DT-063 §1).
    */
   function emitirMarcoFlat(seq, m, k) {
     const deAqui = ids.filter((id) => porId.get(id).dentro === seq);
@@ -2563,7 +2649,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
  */
 export const runnableVI = ({ modulo: _moduleTree, ...runnable }) => runnable;
 
-/** The module with the top-level VI `vi`, its subVIs and the memory functions, ready to instantiate. */
+/** The module with the top-level VI `vi`, its subVIs, the memory functions and the scheduler, ready to instantiate. */
 function assemble(module, vi) {
   const { clumps, controles, indicadores } = vi;
   const { globales, constantes, datosFijos, planes, automaticos, directFunctions } = module;
@@ -2575,21 +2661,33 @@ function assemble(module, vi) {
     if (i < 0) i = tiposF.push({ params, results }) - 1;
     return i;
   };
+  if (tipo([], []) !== CLUMP_TYPE) throw new Error("The type of a clump must be the module's first.");
+  if (globales.length) throw new Error("The globals of a module are only its threads'.");
+  globales.push(...Object.keys(THREAD_GLOBALS).map(() => "i32"));
   // Every clump that may park saves its state and returns instead (DT-063 §8): its frame is in the
   // data space, so it is reserved before the static zone is placed behind it.
-  const parkingGlobal = globales.push("i32") - 1;
-  const resumeValueGlobal = globales.push("i32") - 1;
   const bodies = [...directFunctions, ...clumps, ...planes.flat()].map((k) => ({ params: [], results: [], locales: k.locales, cuerpo: k.cuerpo }));
-  const allFunctions = [...MEMORIA, ...bodies];
+  const allFunctions = [...RUNTIME_FUNCTIONS, ...bodies];
   const { functions: stackless, frames } = makeStackless(allFunctions, {
     importCount: IMPORTACIONES.length,
-    suspendingImports: PARKING_IMPORTS,
+    parkPrimitives: PARK_PRIMITIVES,
     typeOfCall: (index) => (index < IMPORTACIONES.length ? IMPORTACIONES[index] : allFunctions[index - IMPORTACIONES.length]),
     allocateFrame: (bytes) => module.bufer(bytes, 8),
-    parkingGlobal,
-    resumeValueGlobal,
+    parkingGlobal: THREAD_GLOBALS.parking,
+    resumeValueGlobal: THREAD_GLOBALS.resumeValue,
     debugFlagAddress: module.debugFlag,
   });
+  // The scheduler's tables (DT-063 §9): every clump by id —the top-level VI's, then each plan's— with
+  // its group and the clumps it waits for; group 0 is the top-level VI, group p + 1 is plan p.
+  const groups = [clumps, ...planes];
+  let firstOfGroup = 0;
+  const schedulerGroups = groups.map((members) => {
+    const group = { first: firstOfGroup, count: members.length };
+    firstOfGroup += members.length;
+    return group;
+  });
+  const schedulerClumps = groups.flatMap((members, group) => members.map((k) => ({ group, deps: [...k.deps].map((index) => schedulerGroups[group].first + index) })));
+  const schedulerTables = schedulerData({ clumps: schedulerClumps, groups: schedulerGroups, reserve: (bytes) => module.bufer(bytes, 8) });
   // La zona estática, detrás del data space; el montón, detrás (alineado a 8).
   const datos = [];
   let libre = CELDAS + ((module.space + 7) & ~7);
@@ -2597,22 +2695,35 @@ function assemble(module, vi) {
     datos.push({ desde: libre, bytes }, { desde: celda, bytes: i32(libre) });
     libre = (libre + bytes.length + 3) & ~3;
   }
-  datos.push(...datosFijos);
-  datos.push({ desde: CIMA, bytes: i32((libre + 7) & ~7) });
-  const primera = IMPORTACIONES.length + MEMORIA.length;
+  datos.push(...datosFijos, ...schedulerTables);
+  const heapStart = (libre + 7) & ~7;
+  datos.push({ desde: CIMA, bytes: i32(heapStart) });
+  const firstClumpFunction = FIRST_COMPILED_FUNCTION + directFunctions.length;
+  // The memory is the host's, shared by every thread of the Run, so the data is passive and this
+  // function writes it, once per Run, before any clump (DT-063 §1).
+  const initialize = {
+    params: [],
+    results: [],
+    locales: [],
+    cuerpo: datos.flatMap(({ desde, bytes }, segment) => [ins("i32.const", desde), ins("i32.const", 0), ins("i32.const", bytes.length), ins("memory.init", segment)]),
+  };
   const modulo = {
     tipos: tiposF,
     importaciones: IMPORTACIONES.map((im) => ({ modulo: im.modulo, nombre: im.nombre, tipo: tipo(im.params, im.results) })),
-    funciones: stackless.map((f) => ({ tipo: tipo(f.params, f.results), locales: f.locales, cuerpo: f.cuerpo })),
+    funciones: [...stackless, initialize].map((f) => ({ tipo: tipo(f.params, f.results), locales: f.locales, cuerpo: f.cuerpo })),
     globales,
-    globalesExportadas: [{ nombre: "parking", global: parkingGlobal }, { nombre: "resumeValue", global: resumeValueGlobal }],
-    memoria: { paginas: 1 },
+    globalesExportadas: [{ nombre: "parking", global: THREAD_GLOBALS.parking }, { nombre: "resumeValue", global: THREAD_GLOBALS.resumeValue }],
+    // call_indirect reaches clump `id` at position `id`.
+    tabla: schedulerClumps.map((_, id) => firstClumpFunction + id),
+    memoria: { paginas: pagesFor(heapStart), maximo: MAXIMUM_PAGES, compartida: true, importada: SHARED_MEMORY_IMPORT },
     datos,
+    datosPasivos: true,
     exportaciones: [
-      ...EXPORTADAS.map((nombre) => ({ nombre, funcion: IMPORTACIONES.length + MEMORIA_NOMBRES.indexOf(nombre) })),
-      ...[...clumps.map((_, i) => `c${i}`), ...planes.flatMap((sub, p) => sub.map((_, i) => `p${p}c${i}`))].map((nombre, i) => ({ nombre, funcion: primera + directFunctions.length + i })),
+      { nombre: "initialize", funcion: IMPORTACIONES.length + stackless.length },
+      ...[...EXPORTADAS, ...SCHEDULER_EXPORTS].map((nombre) => ({ nombre, funcion: runtimeFunctionIndex(nombre) })),
+      ...[...clumps.map((_, i) => `c${i}`), ...planes.flatMap((sub, p) => sub.map((_, i) => `p${p}c${i}`))].map((nombre, i) => ({ nombre, funcion: firstClumpFunction + i })),
     ],
   };
   const plan = (lista) => lista.map((k) => ({ deps: [...k.deps], largo: k.largo }));
-  return { bytes: codificar(modulo), modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, frames };
+  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, frames };
 }

@@ -28,10 +28,11 @@
 //   { debug: { resumed: true } }           the VI goes on
 //   { fin: true, error?, abortado? }       the VI has finished
 //
-// Writes are gathered and sent at the end of each turn of the scheduler (DT-061 §4), before a
-// dialog and when the VI finishes: a loop that writes thousands of times a second does not flood
-// the page, and the panel shows the last value, as LabVIEW does. A Waveform Chart is not like that: each write is a
-// point of its history, so every one of them is sent.
+// The runtime passes over the panel's memory at the end of each turn of the scheduler, before a
+// dialog and when the VI finishes (DT-063 §10), and what it reports is sent then: a loop that writes
+// thousands of times a second does not flood the page, and the panel shows the last value, as
+// LabVIEW does. A Waveform Chart is not like that: each write is a point of its history, so every one
+// its history still holds is sent.
 
 import { createDebugController } from "../debugging/debug-controller.mjs";
 import { ejecutar } from "../../../core/runtime/runtime.mjs";

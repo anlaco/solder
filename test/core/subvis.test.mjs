@@ -7,56 +7,8 @@ import { test } from "node:test";
 
 import { compilar, runnableVI } from "../../core/compiler/compiler.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
-import * as Gr from "../../core/model/graph.mjs";
 import { loadHierarchy } from "../../core/model/hierarchy.mjs";
-import { CAT } from "../helpers.mjs";
-
-/** Builds a VI with the catalog `cat`; `steps` receives an API that names each node. */
-function buildVI(cat, steps) {
-  const vi = { g: Gr.nuevo(), id: {} };
-  const api = {
-    node(name, block, config, inside) {
-      const r = Gr.crearNodo(vi.g, cat, block, 0, 0);
-      vi.g = config ? Gr.fijarConfig(r.g, r.id, config) : r.g;
-      vi.id[name] = r.id;
-      if (inside) vi.g = Gr.meter(vi.g, cat, [r.id], vi.id[inside]);
-    },
-    loop(name, block) {
-      const r = Gr.crearEstructura(vi.g, cat, block, 0, 0, 200, 150);
-      vi.g = r.g;
-      vi.id[name] = r.id;
-      for (const n of vi.g.nodos.filter((k) => k.dentro === r.id)) vi.id[`${name}:${{ "loop-iteration": "i", "loop-condition": "stop", "loop-count": "N" }[n.tipo]}`] = n.id;
-    },
-    shiftRegister(name, loop) {
-      const r = Gr.crearRegistro(vi.g, cat, vi.id[loop], 0);
-      vi.g = r.g;
-      vi.id[`${name}.left`] = r.izquierdo;
-      vi.id[`${name}.right`] = r.derecho;
-    },
-    wire(from, to) {
-      const split = (end) => [end.slice(0, end.lastIndexOf(".")), end.slice(end.lastIndexOf(".") + 1)];
-      const [[n1, p1], [n2, p2]] = [split(from), split(to)];
-      const r = Gr.conectarCruzando(vi.g, cat, { nodo: vi.id[n1], puerto: p1, dir: "out" }, { nodo: vi.id[n2], puerto: p2, dir: "in" });
-      assert.ok(!r.motivo, `${from} → ${to}: ${r.motivo}`);
-      vi.g = r.g;
-    },
-    connector(inputs, outputs) {
-      const name = (n) => (typeof n === "string" ? vi.g.nodos.find((k) => k.id === vi.id[n]).name : { ...n, name: vi.g.nodos.find((k) => k.id === vi.id[n.name]).name });
-      vi.g = { ...vi.g, vi: { ...vi.g.vi, connector: { inputs: inputs.map(name), outputs: outputs.map(name) } } };
-    },
-    execution(execution) {
-      vi.g = { ...vi.g, vi: { ...vi.g.vi, execution } };
-    },
-  };
-  steps(api);
-  return vi;
-}
-
-/** The catalog of a caller whose subVIs are `library` (relative path → VI built with buildVI). */
-function callerCatalog(library) {
-  const entries = new Map(Object.entries(library).map(([path, vi]) => [path, { key: path, g: vi.g, cat: CAT }]));
-  return Gr.conSubVIs(CAT, (path) => entries.get(path) ?? null);
-}
+import { CAT, buildVI, callerCatalog } from "../helpers.mjs";
 
 async function run(vi, cat, values = {}, options = {}, compiled = compilar(vi.g, cat)) {
   assert.ok(!compiled.errores, JSON.stringify(compiled.errores));

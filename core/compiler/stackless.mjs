@@ -3,8 +3,8 @@
 // any thread. Nothing of a parked clump lives on a stack, so no clump belongs to a thread.
 //
 // The protocol with the host:
-// - A suspending import either answers at once (it does not park) or asks to park: it sets the
-//   exported global `parking` to 1 and returns. The function then stores the locals it still needs
+// - A park primitive (an import, or a function of the scheduler in the module itself) either answers
+//   at once (it does not park) or asks to park: it sets the global `parking` to 1 and returns. The function then stores the locals it still needs
 //   (those read after that point before being written again) and the number of the point where it
 //   parked into its frame in the data space, and returns.
 // - To resume, the host sets `resumeValue` to what the import finally answers, clears `parking` and
@@ -48,7 +48,13 @@ function stackEffect(instruction, typeOfCall) {
     const { params, results } = typeOfCall(instruction.arg);
     return [params.length, results.length];
   }
-  if (op === "nop") return [0, 0];
+  if (op === "nop" || op === "atomic.fence") return [0, 0];
+  // The scheduler's only indirect call takes a clump, which has no parameters and no results.
+  if (op === "call_indirect") return [1, 0];
+  if (op === "data.drop") return [0, 0];
+  if (op === "memory.init") return [3, 0];
+  if (op.endsWith(".cmpxchg") || op.startsWith("memory.atomic.wait")) return [3, 1];
+  if (op.endsWith(".xchg") || op === "memory.atomic.notify") return [2, 1];
   if (op === "drop" || op === "local.set" || op === "global.set" || op === "br_if") return [1, 0];
   if (op === "select") return [3, 1];
   if (op === "local.get" || op === "global.get" || op === "memory.size" || op.endsWith(".const")) return [0, 1];
@@ -131,17 +137,18 @@ function liveAfterParkCalls(tree, isParkCall) {
 
 /**
  * Rewrites the functions of a module that may park. `functions` are `{ locales, cuerpo }` in module
- * order after `importCount` imports; `suspendingImports` are the indices of the imports that may
- * park; `typeOfCall(index)` gives `{ params, results }`; `allocateFrame(bytes)` reserves a frame in
+ * order after `importCount` imports; `parkPrimitives` are the indices of the functions —imports or
+ * functions of the module's scheduler— that park the clump themselves and answer through
+ * `resumeValue`; `typeOfCall(index)` gives `{ params, results }`; `allocateFrame(bytes)` reserves a frame in
  * the data space; `parkingGlobal` and `resumeValueGlobal` are the indices of the two globals.
  * Returns the rewritten functions and the frame address of each rewritten one.
  */
-export function makeStackless(functions, { importCount, suspendingImports, typeOfCall, allocateFrame, parkingGlobal, resumeValueGlobal, debugFlagAddress = null }) {
+export function makeStackless(functions, { importCount, parkPrimitives, typeOfCall, allocateFrame, parkingGlobal, resumeValueGlobal, debugFlagAddress = null }) {
   const trees = functions.map((f) => parse(f.cuerpo));
   // A function parks if it calls an import that parks or a function that parks: to a fixed point.
   const parks = new Set();
   const isParkCall = (instruction) =>
-    instruction.op === "call" && (suspendingImports.has(instruction.arg) || parks.has(instruction.arg - importCount));
+    instruction.op === "call" && (parkPrimitives.has(instruction.arg) || parks.has(instruction.arg - importCount));
   const containsParkCall = (items) => items.some((item) => (item.body ? containsParkCall(item.body) || containsParkCall(item.elseBody ?? []) : isParkCall(item)));
   for (let changed = true; changed; ) {
     changed = false;
@@ -155,7 +162,7 @@ export function makeStackless(functions, { importCount, suspendingImports, typeO
   const frames = [];
   const rewritten = functions.map((f, index) => {
     if (!parks.has(index)) return f;
-    const result = rewriteFunction(f, trees[index], { isParkCall, importCount, suspendingImports, typeOfCall, parkingGlobal, resumeValueGlobal, allocateFrame, debugFlagAddress });
+    const result = rewriteFunction(f, trees[index], { isParkCall, parkPrimitives, typeOfCall, parkingGlobal, resumeValueGlobal, allocateFrame, debugFlagAddress });
     frames.push(result.frame);
     return result.f;
   });
@@ -163,7 +170,7 @@ export function makeStackless(functions, { importCount, suspendingImports, typeO
 }
 
 function rewriteFunction(f, tree, context) {
-  const { isParkCall, importCount, typeOfCall, parkingGlobal, resumeValueGlobal, debugFlagAddress } = context;
+  const { isParkCall, parkPrimitives, typeOfCall, parkingGlobal, resumeValueGlobal, debugFlagAddress } = context;
   const locales = [...f.locales];
   const newLocal = (type) => locales.push(type) - 1;
   const resumeAt = newLocal("i32");
@@ -354,7 +361,7 @@ function rewriteFunction(f, tree, context) {
 
   function emitParkCall(call, args, answer) {
     const point = pointOf.get(call);
-    const callsImport = call.arg < importCount;
+    const answersThroughResumeValue = parkPrimitives.has(call.arg);
     out.push(...notRewinding());
     open("if");
     emitItems(args);
@@ -365,7 +372,7 @@ function rewriteFunction(f, tree, context) {
     out.push(ins("local.get", resumeAt), ins("i32.const", point), ins("i32.eq"));
     open("if");
     out.push(ins("i32.const", NOT_PARKED), ins("local.set", resumeAt), ...setPoint(NOT_PARKED));
-    if (callsImport) {
+    if (answersThroughResumeValue) {
       if (answer !== null) out.push(ins("global.get", resumeValueGlobal), ins("local.set", answer));
     } else {
       // The callee rewinds itself; it takes no arguments (a subVI's inputs are in its slots).

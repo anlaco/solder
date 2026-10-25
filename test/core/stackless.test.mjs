@@ -46,7 +46,7 @@ function transform(functions) {
   let nextFrame = FIRST_FRAME;
   return makeStackless(functions, {
     importCount: 1,
-    suspendingImports: new Set([0]),
+    parkPrimitives: new Set([0]),
     typeOfCall: (index) => (index === 0 ? PARK_TYPE : functions[index - 1]),
     allocateFrame: (bytes) => {
       const frame = nextFrame;
