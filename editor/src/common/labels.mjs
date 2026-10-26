@@ -59,6 +59,9 @@ export function teclear(e, tecla) {
   return { ...e, texto: e.todo ? c : e.texto + c, todo: false };
 }
 
+/** Ctrl+A while typing: all the text of the box is selected, so that the next key replaces it (as in LabVIEW, after a click). */
+export const seleccionarTodo = (e) => ({ ...e, todo: true });
+
 /** El HTML del texto de una etiqueta, con la selección o el cursor si se está escribiendo en ella. */
 function contenido(texto, e) {
   const lineas = texto.split("\n").map(esc);

@@ -193,14 +193,32 @@ test("the path functions and constants are placed from the File I/O palettes and
   assert.deepEqual(CAT.puertos({ tipo: "strip-path" }).out.map((p) => p.label), ["stripped path", "name"]);
 });
 
-test("the path functions are drawn as function nodes of String, with the generic drawing", () => {
-  for (const block of ["build-path", "strip-path", "path-type"]) {
-    assert.deepEqual(G.TAMANOS[block], [32, 32], `${block}: the size is not measured, so it is the generic 32 x 32`);
+test("the path functions have their own icons: 32 x 32 for Build Path and Strip Path, a 23 x 22 triangle for Path Type", () => {
+  for (const [block, size] of [["build-path", [32, 32]], ["strip-path", [32, 32]], ["path-type", [23, 22]]]) {
+    assert.deepEqual(G.TAMANOS[block], size, `${block}: measured size`);
     const { g } = Gr.crearNodo(Gr.nuevo(), CAT, block, 40, 40);
     const html = D.contenido({ ...ED.inicial(), g }, CTX, Gr.tipos(g, CAT));
     assert.match(html, new RegExp(`data-nodo="n[^"]*"[^>]*>`), block);
     assert.match(html, /<svg/, `${block} is drawn`);
+    const box = D.caja(g.nodos[0], CTX);
+    assert.deepEqual([box.ancho, box.alto], size, `${block}: the box`);
   }
+  assert.match(G.FUNCIONES["build-path"], /fill="var\(--node-fill\)" stroke="var\(--path-node-border\)" stroke-width="1"/, "the node fill and a 1 px border");
+  assert.match(G.FUNCIONES["build-path"], /fill="var\(--paper\)" stroke="var\(--ink\)"/, "the checkerboard boxes and the rectangle");
+  assert.ok(G.FUNCIONES["build-path"] !== G.FUNCIONES["strip-path"], "each has its drawing");
+  assert.match(G.FUNCIONES["path-type"], /M0\.5 0\.5L22\.5 10\.5L0\.5 21\.5Z/, "a triangle pointing right");
+  assert.match(G.FUNCIONES["path-type"], />\?<\/text>/, "with a question mark");
+  assert.doesNotMatch(G.FUNCIONES["build-path"] + G.FUNCIONES["strip-path"], /p\+n|p-n/, "no generic label");
+});
+
+test("the terminals of Build Path and Strip Path are where LabVIEW has them; Path Type's are at row 9-10 and at its tip", () => {
+  const rows = (block) => {
+    const { g } = Gr.crearNodo(Gr.nuevo(), CAT, block, 100, 100);
+    return D.terminales(g.nodos[0], CTX).map((terminal) => [terminal.dir, terminal.x - 100, terminal.y - 100]);
+  };
+  assert.deepEqual(rows("build-path"), [["in", 0, 8], ["in", 0, 24], ["out", 32, 16]]);
+  assert.deepEqual(rows("strip-path"), [["in", 0, 16], ["out", 32, 8], ["out", 32, 24]]);
+  assert.deepEqual(rows("path-type"), [["in", 0, 10], ["out", 22, 10.5]], "the input at rows 9-10, the output at row 10 of the tip, x + 22");
 });
 
 test("a path constant from the palette draws its box and a Run-ready value", () => {

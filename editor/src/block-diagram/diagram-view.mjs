@@ -134,16 +134,18 @@ const visaConstantSize = (text) => {
   return { ancho: M.textoDesde + (text ? anchoTexto(text) + M.relleno : M.areaVacia) + M.derecha, alto: M.alto };
 };
 /**
- * The constants of a path, measured in LabVIEW 2026 Q3 (reports/2026-10-26-path-type.md §2): a 2 px frame of the
- * type's colour round the glyph. A Path Constant is 19 px tall and 21 wide with no value, and grows to the right with
- * its text (Size To Text; `C:\a\b.txt` is 65 wide in LabVIEW's font, which is not identified, so the width of a text is
- * `anchoTexto`'s estimate plus `relleno`); the Empty Path Constant is 15 x 16 and Not A Path 17 x 17.
+ * The constants of a path, measured in LabVIEW 2026 Q3 (reports/2026-10-26-path-type.md §2, path-diagram-compare.md Q3): a
+ * 2 px frame of the type's colour round the glyph. A Path Constant is 19 px tall and 21 wide with no value, and grows to
+ * the right with its text (Size To Text): the text starts 12 px in and ends 4 px (`relleno`) before the frame's right
+ * edge (`C:\a\b.txt` is 49 px of text and a 65 px constant). The width of the text is `ctx.medir`'s, which the window
+ * measures in the font it draws with; the Empty Path Constant is 15 x 16 and Not A Path 17 x 17. Its output wire leaves
+ * at row 8-9 (`salida`), one row above the centre.
  */
-export const MEDIDAS_PATH_CONSTANT = { alto: 19, vacia: 21, relleno: 2, empty: { ancho: 15, alto: 16 }, "not-a-path": { ancho: 17, alto: 17 } };
-const pathConstantSize = (fixed, text) => {
+export const MEDIDAS_PATH_CONSTANT = { alto: 19, vacia: 21, textoDesde: 12, relleno: 4, salida: 9, empty: { ancho: 15, alto: 16 }, "not-a-path": { ancho: 17, alto: 17 } };
+const pathConstantSize = (fixed, text, ctx) => {
   if (fixed) return MEDIDAS_PATH_CONSTANT[fixed];
   const M = MEDIDAS_PATH_CONSTANT;
-  return { ancho: M.vacia + (text ? anchoTexto(text) + M.relleno : 0), alto: M.alto };
+  return { ancho: text ? M.textoDesde + Math.ceil(ctx.medir(text)) + M.relleno : M.vacia, alto: M.alto };
 };
 /**
  * The array constant, measured at 1:1 in labview-captures/array/constante-array.png, array-typing/const-num.png and
@@ -273,8 +275,8 @@ function textoConstante(n, ctx, edicion) {
  * `flecha` es la altura de su flecha, por donde entra o sale el cable.
  */
 export const MEDIDAS_TERMINAL_PANEL = { icono: { ancho: 38, alto: 38, flecha: 19.5 }, compacto: { ancho: 32, alto: 16, flecha: 8.5 } };
-/** The terminal of a path control or indicator is smaller: 32 x 32 as an icon and about 33 x 16 without (reports/2026-10-26-path-type.md §2). */
-export const MEDIDAS_TERMINAL_PATH = { icono: { ancho: 32, alto: 32, flecha: 22 }, compacto: { ancho: 33, alto: 16, flecha: 8 } };
+/** The terminal of a path control or indicator is as big as the others' (38 x 38 as an icon, 32 x 16 without) but its wire leaves one row higher: rows 18-19 and 7-8 (reports/2026-10-26-path-diagram-compare.md Q2). */
+export const MEDIDAS_TERMINAL_PATH = { icono: { ancho: 38, alto: 38, flecha: 19 }, compacto: { ancho: 32, alto: 16, flecha: 8 } };
 const isPathTerminal = (n) => n.tipo === "path-control" || n.tipo === "path-indicator";
 const esDelPanel = (n, ctx) => !!ctx.cat.bloque(n.tipo).panel;
 const medidasPanel = (n) => (isPathTerminal(n) ? MEDIDAS_TERMINAL_PATH : MEDIDAS_TERMINAL_PANEL)[n.vista?.compacto ? "compacto" : "icono"];
@@ -546,7 +548,7 @@ export function caja(n, ctx, edicion) {
   // Size To Text: it grows to the right with its text, also while it is typed (unverified), so its left edge stays.
   if (c?.visa) return { x: n.x, y: n.y, ...visaConstantSize(textoConstante(n, ctx, edicion)) };
   // The same for a path: Size To Text, growing to the right.
-  if (c?.path) return { x: n.x, y: n.y, ...pathConstantSize(c.fixed, textoConstante(n, ctx, edicion)) };
+  if (c?.path) return { x: n.x, y: n.y, ...pathConstantSize(c.fixed, textoConstante(n, ctx, edicion), ctx) };
   if (c?.cadena) {
     const M = MEDIDAS_CADENA;
     const size = (text) => {
@@ -597,6 +599,17 @@ function terminalZoneWidth(n, k, ctx, ins, outs) {
 }
 
 /**
+ * Nodes whose terminals are not spread evenly over their edges, measured in LabVIEW 2026 Q3 (path-diagram-compare.md): Path Type's
+ * input is at row 9-10 of its left edge and its output at row 10 of the tip, `fromRight` px in from the box's right edge; a
+ * Path Constant's output leaves at row 8-9. `y` is the wire's centre, from the node's top.
+ */
+const FIXED_TERMINAL_ROWS = {
+  "path-type": { in: { y: 10 }, out: { y: 10.5, fromRight: 1 } },
+  "path-constant": { out: { y: MEDIDAS_PATH_CONSTANT.salida } },
+};
+const fixedTerminalRows = (n) => FIXED_TERMINAL_ROWS[n.tipo];
+
+/**
  * Los terminales de un nodo: las entradas repartidas por el borde izquierdo y
  * las salidas por el derecho, en el orden del catálogo, como el connector
  * pane de las primitivas de LabVIEW (Add: x arriba, y abajo, x+y en la punta).
@@ -613,6 +626,7 @@ export function terminales(n, ctx, edicion) {
   const anchoZona = terminalZoneWidth(n, k, ctx, ins, outs);
   // Un terminal del panel recibe o da el dato por su flecha.
   const flecha = esDelPanel(n, ctx) ? medidasPanel(n).flecha : null;
+  const rows = fixedTerminalRows(n);
   const reparte = (lista, dir) =>
     lista.map((p, i0) => {
       // El túnel de salida de un Case tiene una entrada por marco, pero todas en el mismo sitio.
@@ -626,8 +640,8 @@ export function terminales(n, ctx, edicion) {
         // Una constante no tiene nombre en su terminal: LabVIEW no enseña tip.
         etiqueta: p.label ?? p.name,
         dir,
-        x: dir === "in" ? k.x : k.x + k.ancho,
-        y: flecha !== null ? k.y + flecha : fija ? k.y + ENTRADAS_DOS_DIMENSIONES[i] : k.y + alto * (i + 0.5),
+        x: dir === "in" ? k.x : k.x + k.ancho - (rows?.[dir]?.fromRight ?? 0),
+        y: rows?.[dir] ? k.y + rows[dir].y : flecha !== null ? k.y + flecha : fija ? k.y + ENTRADAS_DOS_DIMENSIONES[i] : k.y + alto * (i + 0.5),
         zona,
         centro: { x: zona.x + zona.ancho / 2, y: zona.y + zona.alto / 2 },
       };
@@ -763,15 +777,16 @@ export const SQUIGGLE_DASHES = "3 1";
 export const squiggleRows = (points, color) => UNDEFINED_ARRAY_ROWS.map(([shift, dashOffset]) => `<polyline points="${puntos(points)}" transform="translate(${shift} ${shift})" stroke="${color}" stroke-width="1" stroke-dasharray="${SQUIGGLE_DASHES}" stroke-dashoffset="${dashOffset}" shape-rendering="crispEdges"/>`).join("");
 
 /**
- * The wire of a path, measured at 1:1 in LabVIEW 2026 Q3 (reports/2026-10-26-path-type.md §2): every pixel row is
- * "###." (3 on, 1 off) in the type's colour. A scalar is 2 px, the second row shifted 1 px; an array is 3 px whose rows
- * read "#.###.", "###.###" and "#.###." (the outer rows start two pixels into the pattern). Each row is `[how far it
- * sits from the wire's centre, its dash offset]`. Two dimensions or more are not measured and are drawn as any array's.
+ * The wire of a path, measured at 1:1 in LabVIEW 2026 Q3 (reports/2026-10-26-path-diagram-compare.md Q4): every pixel row is
+ * "###." (3 on, 1 off) in the type's colour. A scalar is 2 px whose rows are out of phase by 2 px, half the period
+ * ("##.###." over ".###."); an array is 3 px whose outer rows read ".###.###" and whose middle row is shifted 2 px against them
+ * ("##.###.###"). Where the pattern starts depends on the wire (unverified how). Each row is `[how far it sits from the
+ * wire's centre, its dash offset]`. Two dimensions or more are not measured and are drawn as any array's.
  */
 export const PATH_WIRE_DASHES = "3 1";
 const PATH_WIRE_ROWS = {
-  0: [[-0.5, 0], [0.5, 1]],
-  1: [[-1, 2], [0, 0], [1, 2]],
+  0: [[-0.5, 1], [0.5, 3]],
+  1: [[-1, 3], [0, 1], [1, 3]],
 };
 const dashedRows = (points, color, rows) => rows.map(([shift, dashOffset]) => `<polyline points="${puntos(points)}" transform="translate(${shift} ${shift})" stroke="${color}" stroke-width="1" stroke-dasharray="${PATH_WIRE_DASHES}" stroke-dashoffset="${dashOffset}" shape-rendering="crispEdges"/>`).join("");
 
@@ -1152,7 +1167,7 @@ function pathConstant(n, ctx, edicion) {
   const shown = esc(text);
   const value = ed ? (ed.todo ? `<span class="texto-elegido">${shown}</span>` : `<span>${shown}</span><span class="caret"></span>`) : `<span>${shown}</span>`;
   return `<div class="constante path${ed ? " editando" : ""}" style="border-color:${color};--tipo:${color}">` +
-    `<span class="path-glifo">${G.pathGlyph()}</span>${text || ed ? `<span class="path-texto">${value}</span>` : ""}</div>`;
+    `<span class="path-glifo">${G.pathCellGlyph()}</span>${text || ed ? `<span class="path-texto">${value}</span>` : ""}</div>`;
 }
 
 /** Is this the terminal of a VISA resource name control or indicator? */

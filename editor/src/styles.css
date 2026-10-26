@@ -685,12 +685,12 @@ svg { display: block; overflow: visible; }
 .el-boton { position: absolute; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: var(--button-background); border: 1px solid var(--button-border-light); }
 .el-boton.defecto { border-color: var(--edit-items-button-default-border); }
 .el-boton.hueco { font-style: italic; color: var(--placeholder-text); }
-/* The constants of a path (reports/2026-10-26-path-type.md §2): the glyph at the left and the text after it, all in the type's
-   colour but the text. The Empty Path and Not A Path constants hold their glyph alone, centred, on a pale yellow fill. */
+/* The constants of a path (reports/2026-10-26-path-type.md §2, path-diagram-compare.md): the 6 x 10 glyph at the left and the text from
+   12 px in, all in the type's colour but the text. The Empty Path and Not A Path constants hold their glyph alone, centred, on a pale yellow fill. */
 .constante.path { display: block; box-sizing: border-box; }
-.constante.path .path-glifo { position: absolute; left: 3px; top: 1px; width: 11px; height: 13px; color: var(--tipo); }
-.constante.path .path-glifo svg { display: block; width: 11px; height: 13px; }
-.constante.path .path-texto { position: absolute; left: 16px; top: 0; bottom: 0; display: flex; align-items: center; white-space: pre; }
+.constante.path .path-glifo { position: absolute; left: 1px; top: 2px; width: 6px; height: 10px; color: var(--tipo); }
+.constante.path .path-glifo svg { display: block; width: 6px; height: 10px; }
+.constante.path .path-texto { position: absolute; left: 10px; top: 0; bottom: 0; display: flex; align-items: center; white-space: pre; }
 .constante.path-fija { box-sizing: border-box; }
 .constante.path-empty svg { width: 9px; height: 9px; }
 .constante.path-not-a-path svg { width: 11px; height: 11px; }

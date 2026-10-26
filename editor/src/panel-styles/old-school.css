@@ -81,19 +81,20 @@
    VISA resource name's (the bevel's rows above and below are taken from it: unverified), the type cell (8 px, #b3b3b3,
    the path glyph in black), a 1 px divider (the inside's own #e2e2e2), and the text area (#fafafa on a control, #d2d2d2
    on an indicator) whose text starts 2 px in. A control's browse button is 28 × 17 px outside the box, 2 px to its right:
-   a raised #c3c3c3 face with a yellow folder. */
+   a face with a vertical gradient (#cbcbcb to #c2c2c2) top-aligned with the box, and an open folder. The bevel's rows and
+   columns are the ones read in 2026-10-26-path-panel-compare.md (its right column and its type-cell glyph included). */
 .sd-panel .sd-path {
   display: block; background: #e2e2e2;
   box-shadow:
-    inset 1px 0 0 #c9c9c9, inset 0 1px 0 #d3d3d3, inset -1px 0 0 #eaeaea, inset 0 -1px 0 #eaeaea,
-    inset 2px 0 0 #c2c2c2, inset 0 2px 0 #c2c2c2, inset -2px 0 0 #ededed, inset 0 -2px 0 #ededed,
-    inset 3px 0 0 #b7b7b7, inset 0 3px 0 #adadad, inset -3px 0 0 #f2f2f2, inset 0 -3px 0 #f2f2f2,
-    inset 4px 0 0 #b1b1b1, inset 0 4px 0 #b1b1b1, inset -4px 0 0 #eeeeee, inset 0 -4px 0 #eeeeee;
+    inset 1px 0 0 #c9c9c9, inset 0 1px 0 #c9c9c9, inset -1px 0 0 #eeeeee, inset 0 -1px 0 #e4e4e4,
+    inset 2px 0 0 #c2c2c2, inset 0 2px 0 #c2c2c2, inset -2px 0 0 #f2f2f2, inset 0 -2px 0 #f2f2f2,
+    inset 3px 0 0 #b7b7b7, inset 0 3px 0 #b7b7b7, inset -3px 0 0 #ededed, inset 0 -3px 0 #ededed,
+    inset 4px 0 0 #b1b1b1, inset 0 4px 0 #b1b1b1, inset -4px 0 0 #e0e0e0, inset 0 -4px 0 #eaeaea;
 }
 .sd-panel .sd-path-cell::before { content: none; }
 .sd-panel .sd-path-cell { position: absolute; left: 4px; top: 4px; display: block; width: 8px; height: 17px; background: #b3b3b3; color: #000; }
-.sd-panel .sd-path-glyph { position: absolute; left: 1px; top: 5px; display: block; width: 6px; height: 7px; }
-.sd-panel .sd-path-glyph svg { display: block; width: 6px; height: 7px; }
+.sd-panel .sd-path-glyph { position: absolute; left: 1px; top: 3px; display: block; width: 6px; height: 10px; }
+.sd-panel .sd-path-glyph svg { display: block; width: 6px; height: 10px; }
 .sd-panel .sd-path .sd-field {
   position: absolute; left: 13px; top: 4px; width: 83px; height: 17px; padding: 0 0 0 2px; border: 0; border-radius: 0;
   background: #fafafa; font-size: var(--fuente); line-height: 1; justify-content: flex-start;
@@ -102,7 +103,7 @@
 .sd-panel .sd-path .sd-value { flex: initial; min-width: auto; overflow: hidden; white-space: pre; }
 .sd-panel .sd-path .caret { display: inline; vertical-align: baseline; }
 .sd-panel .sd-browse {
-  position: absolute; left: 102px; top: 4px; width: 28px; height: 17px; padding: 0; border: 0; border-radius: 0; background: #c3c3c3;
+  position: absolute; left: 102px; top: 0; width: 28px; height: 17px; padding: 0; border: 0; border-radius: 0; background: linear-gradient(#cbcbcb, #c2c2c2);
   box-shadow: inset 1px 1px 0 #e3e3e3, inset -1px -1px 0 #696969, inset 2px 2px 0 #fff, inset -2px -2px 0 #a0a0a0;
 }
 .sd-panel .sd-browse svg { position: absolute; left: 6px; top: 2px; width: 16px; height: 13px; }

@@ -23128,7 +23128,7 @@
       "id": "context.path-control-terminal.view-as-icon",
       "etiqueta": "View As Icon",
       "estado": "built",
-      "prueba": "test/editor/path-menus.test.mjs::View As Icon of the terminal of a path switches between 32 x 32 and 33 x 16",
+      "prueba": "test/editor/path-menus.test.mjs::View As Icon of the terminal of a path switches between 38 x 38 and 32 x 16",
       "captura": "file-io/path/menu-term-ctl-x2.png",
       "separado": true
     },

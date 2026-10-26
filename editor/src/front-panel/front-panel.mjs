@@ -30,7 +30,7 @@ import { controlForElement, elementMenuRoot, emptyArrayAgain, isEmptyArrayShell,
 import * as Gr from "../../../core/model/graph.mjs";
 import { REPEATED_PASTE_STEP } from "../common/paste-memory.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
-import { EMPTY_PATH, hostPathRules, pathFromText, pathToText } from "../../../core/model/paths.mjs";
+import { EMPTY_PATH, hostPathRules, isNotAPath, pathFromText, pathToText } from "../../../core/model/paths.mjs";
 import { abbreviatePath } from "../common/path-text.mjs";
 import { convertirValor, elementoPorDefecto, esEnum, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import { GRAPH_MEASURES, LABEL_PLACEMENT, graphSvg } from "./graph-view.mjs";
@@ -163,6 +163,8 @@ export const MEDIDAS_VISA_PANEL = { ancho: 104, alto: 26, bisel: 4, iconoAncho: 
  * are taken from the VISA resource name's: unverified. `textWidth` is the width of the text area less its 2 px of padding.
  */
 export const MEDIDAS_PATH_PANEL = { ancho: 100, alto: 25, bisel: 4, celda: 8, divisor: 1, relleno: 2, botonAncho: 28, botonAlto: 17, botonHueco: 2 };
+/** The gap between a path's label and its box: 3 px, one more than a numeric's (the label's baseline is 7 px above the box in LabVIEW, 6 in Solder's font). */
+const PATH_LABEL_GAP = 3;
 const pathTextWidth = (M = MEDIDAS_PATH_PANEL) => M.ancho - 2 * M.bisel - M.celda - M.divisor - M.relleno;
 
 /**
@@ -227,7 +229,7 @@ export function cajaObjeto(tipo, x, y, config) {
   if (CONTROLES[tipo]?.grafico) return { x, y, ancho: GRAPH_MEASURES[tipo].width, alto: GRAPH_MEASURES[tipo].height, casilla: LABEL_PLACEMENT.indent, separacion: LABEL_PLACEMENT.gap };
   const b = estiloDe(tipo, config);
   if (b) return { x, y, ancho: b.ancho, alto: b.alto, casilla: 0, separacion: SEPARACION_BOOLEANO };
-  if (CONTROLES[tipo]?.path) return { x, y, ancho: MEDIDAS_PATH_PANEL.ancho, alto: MEDIDAS_PATH_PANEL.alto, casilla: 0 };
+  if (CONTROLES[tipo]?.path) return { x, y, ancho: MEDIDAS_PATH_PANEL.ancho, alto: MEDIDAS_PATH_PANEL.alto, casilla: 0, separacion: PATH_LABEL_GAP };
   if (CONTROLES[tipo]?.visa) return { x, y, ancho: MEDIDAS_VISA_PANEL.ancho, alto: MEDIDAS_VISA_PANEL.alto, casilla: 0 };
   if (CONTROLES[tipo]?.cadena) return { x, y, ancho: MEDIDAS_CADENA_PANEL.ancho, alto: MEDIDAS_CADENA_PANEL.alto, casilla: 0 };
   const casilla = inicioCasilla(tipo);
@@ -310,7 +312,8 @@ const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 const esCadena = (n) => !!CONTROLES[n?.tipo]?.cadena;
 const tipoDe = (n) => n.config?.type ?? "number";
 /** The path a File Path Control or Indicator holds now, as the text of the host system's rules (the whole of it, never abbreviated). */
-const pathValueText = (n, ctx, valores) => pathToText(valores?.[n.id] ?? valorActual(n) ?? EMPTY_PATH, ctx.pathRules);
+const pathValueOf = (n, valores) => valores?.[n.id] ?? valorActual(n) ?? EMPTY_PATH;
+const pathValueText = (n, ctx, valores) => pathToText(pathValueOf(n, valores), ctx.pathRules);
 
 /** The text a path shows: too long for its text area, it loses its leading components for "..." (measured: `...\f`). */
 const shownPathText = (text, ctx) => abbreviatePath(text, (candidate) => (ctx.medir ?? Et.medirAproximado)(candidate) <= pathTextWidth(), ctx.pathRules ?? hostPathRules());
@@ -439,7 +442,7 @@ function panelObject(n, ctx, selected, p, resolvedTypes) {
   }
   if (control?.booleano) return HC.booleanHtml(frame, { style: n.config?.style ?? "push-button", on: encendido(n, p.valores) });
   const valueHtml = typedOrText(editing, textoValor(n, ctx, p.valores));
-  if (control?.path) return HC.pathHtml(frame, { valueHtml: typedOrText(editing, shownPathText(pathValueText(n, ctx, p.valores), ctx)) });
+  if (control?.path) return HC.pathHtml(frame, { valueHtml: typedOrText(editing, shownPathText(pathValueText(n, ctx, p.valores), ctx)), notAPath: isNotAPath(pathValueOf(n, p.valores)) });
   if (control?.visa) return HC.visaHtml(frame, { valueHtml });
   if (control?.cadena) return HC.stringHtml(frame, { valueHtml });
   return HC.numericHtml(frame, { valueHtml, withIncrementer: !!control?.incrementador, isEnum: esEnum(tipoDe(n)) });
@@ -737,6 +740,9 @@ export function editar(p, id) {
   const n = p.g.nodos.find((m) => m.id === id);
   return n ? { ...p, edicion: Et.editar(n), seleccion: [], accion: null } : p;
 }
+
+/** Ctrl+A while typing into a label, a control's box or an array element: all its text is selected. */
+export const seleccionarTodoTexto = (p) => (p.edicion ? { ...p, edicion: Et.seleccionarTodo(p.edicion) } : p);
 
 export const teclear = (p, tecla) => {
   if (!p.edicion) return p;

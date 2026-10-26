@@ -1013,7 +1013,9 @@ unverified is unverified here too.
 > and `test/editor/terminal-creation.test.mjs`.
 
 > **Rule 74 — Copy, cut, paste, delete and select all.** On the diagram and on the panel, Ctrl+C, Ctrl+X, Ctrl+V,
-> Ctrl+A and the Edit menu (Delete has no shortcut but the key). Copy takes the selected nodes with everything inside
+> Ctrl+A and the Edit menu (Delete has no shortcut but the key). While a text is being typed (a control's box, an array element, a
+> constant or a label), Ctrl+A selects all of it and the next key replaces it (LabVIEW: click in the box, then Ctrl+A; tested for the path
+> control, a string control and a constant). Copy takes the selected nodes with everything inside
 > a structure among them and the wires whose two ends are in the copy; the wires to what is left out are not copied
 > (`core/model/clipboard.mjs`). Cut removes the nodes and their wires (no broken wire is left; Delete, in contrast, leaves them
 > broken: rule 91) and one undo brings them back. Paste puts the copy centred on the pointer (the last place it was over the canvas; Edit ▸ Paste uses the same;
@@ -1500,10 +1502,10 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-26-file-io-palett
 > Storage/DataPlugin, Zip, XML, Datalog, Waveform File I/O and Packed Library with `formatos-de-archivo`, which says **not planned yet**.
 > The two Advanced TDMS folders after the first two and the contents of every folder below the first level were not opened in LabVIEW
 > (`contenido-no-capturado`). A folder with something done inside is done; the icons of the greyed elements are Solder's own
-> placeholders (a tile with a short word), since only their names and places were measured, and so are the nodes of Build Path, Strip
-> Path and Path Type: **their size and the place of their terminals were not measured**, so they are the generic 32 × 32 function nodes
-> with the terminals in the order of the context help (Build Path: base path above name or relative path; Strip Path: stripped path above
-> name). Controls ▸ Modern ▸ String & Path has File Path Control and File Path Indicator done (they put a `path-control` and a
+> placeholders (a tile with a short word), since only their names and places were measured. The nodes of Build Path, Strip
+> Path and Path Type are not: they have their own icons and sizes, measured against LabVIEW (06-visual.md §19: Build Path and Strip Path 32 × 32,
+> Path Type a triangle of 23 × 22 with its input at rows 9-10 and its output at the tip), with the terminals in the order of the context
+> help (Build Path: base path above name or relative path; Strip Path: stripped path above name). Controls ▸ Modern ▸ String & Path has File Path Control and File Path Indicator done (they put a `path-control` and a
 > `path-indicator`); the inventory has no File Path Control under Controls ▸ Classic or System, so there is nothing to grey there.
 > Tested.
 

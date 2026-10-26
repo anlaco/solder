@@ -15,7 +15,7 @@
 // The elements carry ARIA roles (button, switch, radio) instead of native buttons and inputs, which would take the
 // keyboard focus away from the editor; typing is drawn by the editor as in Old School.
 
-import { browseFolderGlyph, pathGlyph, visaIoGlyph } from "../common/glyphs.mjs";
+import { browseFolderGlyph, pathCellGlyph, visaIoGlyph } from "../common/glyphs.mjs";
 
 /** Every kind of object an HTML panel draws: each one has rules in plain.css (DT-058 §3, a test checks it). */
 export const PLAIN_KINDS = ["numeric", "enum", "string", "visa", "path", "boolean", "error-cluster", "array", "waveform-chart", "waveform-graph", "xy-graph"];
@@ -91,8 +91,8 @@ export function visaHtml(frame, { valueHtml }) {
  * A File Path Control or Indicator: the type cell with the path glyph and the text field with the path. A control has
  * the browse button (`data-browse`, which the window answers with the system's file dialog) outside the box, to its right.
  */
-export function pathHtml(frame, { valueHtml }) {
-  const cell = `<span class="sd-path-cell"><span class="sd-path-glyph" aria-hidden="true">${pathGlyph()}</span></span>`;
+export function pathHtml(frame, { valueHtml, notAPath = false }) {
+  const cell = `<span class="sd-path-cell"><span class="sd-path-glyph" aria-hidden="true">${pathCellGlyph(notAPath)}</span></span>`;
   const browse = frame.isControl ? `<span class="sd-browse" role="button" aria-label="Browse for path" data-browse>${browseFolderGlyph()}</span>` : "";
   return objectFrame({ ...frame, kind: "path" }, cell + field(frame.id, valueHtml) + browse);
 }

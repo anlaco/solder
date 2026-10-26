@@ -1752,6 +1752,11 @@ addEventListener("keydown", (ev) => {
     ev.preventDefault();
     return cambiarPanel(P.confirmar(pan));
   }
+  // Ctrl+A while a text is being typed selects all of it (LabVIEW: click in the box, then Ctrl+A).
+  if (ctrl && !ev.shiftKey && !ev.altKey && ev.key.toLowerCase() === "a" && (conDiagrama ? dia.edicion : conPanel && pan.edicion)) {
+    ev.preventDefault();
+    return conDiagrama ? cambiarDiagrama(ED.seleccionarTodoTexto(dia)) : cambiarPanel(P.seleccionarTodoTexto(pan));
+  }
   // LabVIEW's Ctrl shortcuts that run a menu command (shortcuts.mjs).
   if (ctrl && !ev.shiftKey && !ev.altKey) {
     const orden = commandForCtrlKey(ev.key);

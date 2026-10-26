@@ -49,6 +49,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   and Indicator from Controls ▸ Modern ▸ String & Path. The right-click menus of
   the path objects are LabVIEW's, with Data Operations and View As Icon working;
   the rest of File I/O is greyed with its reason.
+- A path too long for a File Path Control or Indicator shows its root and its tail
+  with "..." between, cut inside a component, as LabVIEW does (`C:\...ree\file.txt`),
+  and `...\...` when nothing fits. Ctrl+A while typing in a text box (a control's,
+  a constant's or a label's) selects all its text.
 
 ## 0.6.0-beta — 2026-10-25
 

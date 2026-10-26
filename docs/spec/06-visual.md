@@ -140,7 +140,7 @@ Wires encode the data type through **three visual channels**:
 | String   | Pink `#FF00FF` | 2 px | Dotted, 3 px on / 1 px off |
 | Integer  | Blue `#0000FF` | Thin (1px) | Solid |
 | VISA resource name | Purple `#7F007F` | 2 px | Squiggle: each row 3 px on / 1 px off, the lower row 2 px ahead (§17) |
-| Path | Teal `#007F7F` | 2 px (an array of paths, 3 px) | Each row 3 px on / 1 px off; the second row of a scalar shifted 1 px; an array's rows `#.###.`, `###.###`, `#.###.` (§19) |
+| Path | Teal `#007F7F` | 2 px (an array of paths, 3 px) | Each row 3 px on / 1 px off; the two rows of a scalar out of phase by 2 px (half the period); an array's outer rows `.###.###`, its middle row `##.###.###`, shifted 2 px (§19) |
 
 > **Boolean and string, measured at 1:1** (2026-10-15, `labview-captures/reports/2026-10-15-unbundle-by-name.md` Q1 and Q7,
 > `cluster/w4.png`, `w12.png`, `w28.png`): the wires, and the names of an Unbundle By Name, are `#007F00` and `#FF00FF`; no
@@ -698,33 +698,55 @@ the glyphs are drawn anew, only sizes, colours and order of parts are taken). Co
 section of `editor/src/common/glyphs.mjs`; `MEDIDAS_PATH_PANEL` in `editor/src/front-panel/front-panel.mjs`; `abbreviatePath` in
 `editor/src/common/path-text.mjs`; `.sd-path` and `.sd-browse` in `editor/src/panel-styles/`. Tests: `test/editor/path-objects.test.mjs`.
 
-- **Wire:** teal `#007F7F`. A scalar is 2 px, each pixel row `###.` (3 on, 1 off) and the second row shifted 1 px; an array of paths has
-  the same colour and pattern at 3 px, whose rows read `#.###.`, `###.###`, `#.###.`. Two dimensions are not measured and are drawn as any
-  array's wire.
-- **Terminals:** View As Icon on, 32 × 32 px: a 2 px teal frame on a control (1 px on an indicator, as the other types), a miniature of the
-  control, the word "Path" and the two-box glyph in a tab at the bottom, with the arrow of the side the data goes by. Off, about 33 × 16:
-  white fill, 2 px frame, the small glyph at the left and, at the data end, a light-teal patch `#B2D8D8` with the arrow `#4C4C3D` (a
-  control; an indicator mirrors it). **Unverified:** the exact drawing inside the 32 × 32 icon and the patch's edge colour (`#4CA5A5`, the
-  other types' rule); the measured sizes come from scripted drops.
-- **Path Constant:** a 2 px teal frame, white fill, the path glyph and the text in black: 21 × 19 with no value; with `C:\a\b.txt`, 65 × 19.
-  It grows to the right with its text (Size To Text and Left Justify are on) and does not clip a long value. Typing parses the text with
-  String To Path (the host system's rules) when Enter is pressed. Solder's width is 21 + the text measured by `anchoTexto` + 2, so its
-  `C:\a\b.txt` is wider than LabVIEW's 65 (LabVIEW's font is not identified). **Empty Path Constant:** 15 × 16, a 2 px teal frame on the
-  nodes' pale yellow (`#FFFFCC` in Old School), a glyph of its own. **Not A Path Constant:** 17 × 17, the same fill, a glyph of its own.
-- **File Path Control and Indicator (panel):** a 100 × 25 px box: a 4 px bevel, a type cell 8 px wide `#B3B3B3` with the black two-box glyph,
-  a 1 px divider `#E2E2E2`, and the text area (`#FAFAFA` on a control, `#D2D2D2` on an indicator) whose black text is left aligned from
-  about 15 px. An empty path shows blank; Not A Path shows `<Not A Path>`; a path too long for the area loses its leading components for
-  "..." (`...\f`). The control has a browse button outside the box, 2 px to its right: 28 × 17, a grey bevelled key (`#C3C3C3` face)
-  with a yellow `#FFFF00` folder; the indicator has none. Typing in the control and pressing Enter stores the text as String To Path reads
-  it. The button opens the system's file dialog (Electron's `dialog.showOpenDialog`, one existing file; Browse Options are not offered yet).
-  Old School draws it in CSS over Plain's markup (DT-058); Plain writes "Path" in the cell. **Unverified:** the bevel above and below the
-  text area (taken from the VISA resource name's), the button's height above the box, the label's default text ("Path") and whether
-  LabVIEW keeps as many trailing components as fit when it abbreviates.
+- **Wire:** teal `#007F7F`. A scalar is 2 px, each pixel row `###.` (3 on, 1 off) and the two rows **out of phase by 2 px**, half the 4 px
+  period (`##.###.###.###` over `.###.###.###`); an array of paths has the same colour and pattern at 3 px, whose outer rows read
+  `.###.###` and whose middle row reads `##.###.###` (shifted 2 px against the outer ones). Where the pattern starts depends on the wire
+  (another segment began `#.###.` over `###.`): **unverified** what fixes it. Two dimensions are not measured and are drawn as any array's wire.
+  (`reports/2026-10-26-path-diagram-compare.md` Q4 corrected the 1 px shift of the first report.)
+- **Terminals** (`2026-10-26-path-diagram-compare.md` Q2): View As Icon on, **38 × 38** px like every panel terminal: a frame of 2 px teal,
+  1 px white and 1 px teal (an indicator's: 1, 2, 1, as the other types: unverified), `#E2E2E2` inside; a band at the top with the "Path"
+  pill (a `#336666` block holding the glyph and "Path" in black on white for a control, on `#CCCCCC` for an indicator); a tab at the bottom
+  centre with the two-box glyph; and the black-outlined arrow on the frame, at the right edge of a control and the left of an indicator.
+  The wire leaves at rows 18-19 (centred). Off, **32 × 16**: 2 px teal, 1 px white and a 1 px teal inner frame round the small glyph
+  (9 × 8) and, at the data end, the patch: 8 px `#B2D8D8` and a 1 px `#4CA5A5` edge on each side, 13 tall, with the arrow `#4C4C3D`; an
+  indicator mirrors it. Wire at rows 7-8. **Unverified:** which rows the 13-tall patch covers, and the indicator's frame.
+- **Path Constant:** a 2 px teal frame, white fill, the 6 × 10 path glyph at the left and the text in black: 21 × 19 with no value; with
+  `C:\a\b.txt`, 65 × 19. The text starts 12 px in and ends **4 px** before the frame's right edge: the width is 12 + the text's width + 4,
+  the text measured in the font the window draws it with (`ctx.medir`, a canvas measure in the editor), so Solder's width follows its
+  font and is LabVIEW's 65 only when the text is 49 px wide. It grows to the right with its text (Size To Text and Left Justify are on) and
+  does not clip a long value. Its output wire leaves at row 8-9. Typing parses the text with String To Path (the host system's rules) when
+  Enter is pressed. **Empty Path Constant:** 15 × 16, a 2 px teal frame on the nodes' pale yellow (`#FFFFCC` in Old School), an anchor
+  (a stem, a crossbar at the top, the feet below). **Not A Path Constant:** 17 × 17, the same fill, a small square at the top left, one at
+  the bottom right and a crossed diagonal (an X). The drawings are ours.
+- **Path functions** (`2026-10-26-path-diagram-compare.md` Q1): Build Path and Strip Path are 32 × 32 with their terminals at rows 7-8 /
+  23-24 / 15-16 (the generic spread); the fill is the node fill and the border 1 px `#4C4C3D` (theme token `--path-node-border`). Build
+  Path shows a three-node tree and an arrow into a tall empty rectangle, a tree whose last node is solid and an arrow out, and, below, a
+  checkerboard box, an arrow and a second checkerboard box; Strip Path a tree with a solid last node into the rectangle, a tree with no
+  solid node out and a checkerboard box fed from the rectangle's bottom. **Path Type** is a right-pointing triangle ≈ 23 × 22 with the
+  path glyph and a "?": the input at rows 9-10 of the left edge, the output at row 10 of the tip (x + 22). The drawings are ours.
+- **File Path Control and Indicator (panel):** a 100 × 25 px box: a bevel of 4 px, whose rows from the outside in are, top `#C9C9C9`,
+  `#C2C2C2`, `#B7B7B7`, `#B1B1B1`, bottom `#E4E4E4`, `#F2F2F2`, `#EDEDED`, `#EAEAEA`, left as the top and right `#EEEEEE`, `#F2F2F2`,
+  `#EDEDED`, `#E0E0E0` (`2026-10-26-path-panel-compare.md`); a type cell 8 px wide `#B3B3B3` with a black 6 × 10 glyph at y +7..+16 (a small
+  square joined to a larger one; a value that is **Not A Path draws it crossed by a diagonal**); a 1 px divider (`#E2E2E2` in Solder; in
+  LabVIEW the panel's own colour: unverified); and the text area (`#FAFAFA` on a control, `#D2D2D2` on an indicator) whose text starts at
+  x +16. The label sits 3 px above the box (one more than a numeric's). An empty path shows blank; Not A Path shows `<Not A Path>`.
+  **A path too long for the area** shows the root, `...` and the tail, cut inside a component and keeping the separator: with an 83 px area,
+  `C:\aaaa\bbbb\cccc\dddd.txt` is `C:\...\dddd.txt`, `C:\one\two\three\file.txt` is `C:\...ree\file.txt`,
+  `C:\one\two\three\four\five\file.txt` is `C:\...ive\file.txt`, and when not even the root, `...` and the last component fit it is
+  `...\...` (`.../...` on POSIX). Solder keeps as many trailing characters as fit, always including the whole last component; the rule is
+  derived from those four points (`abbreviatePath`) and is **unverified** beyond them (wider boxes, relative and UNC paths). The control has a
+  browse button outside the box, 2 px to its right and **top-aligned with the box** (y0): 28 × 17, a face with a vertical gradient `#CBCBCB`
+  to `#C2C2C2`, and an **open** folder with a black outline, a yellow `#FFFF00` back flap and a `#666666` front; the indicator has none.
+  Typing in the control and pressing Enter stores the text as String To Path reads it; while typing, **Ctrl+A selects all the text** (also
+  in the other controls' boxes, constants and labels). The button opens the system's file dialog (Electron's `dialog.showOpenDialog`, one
+  existing file; Browse Options are not offered yet). Old School draws it in CSS over Plain's markup (DT-058); Plain writes "Path" in the
+  cell. **Unverified:** the label's cap height (a font matter: LabVIEW's text is 9 px tall, Solder's 8) and the button's inner bevel.
 
 ## History
 
 | Date       | Change |
 |------------|--------|
+| 2026-10-26 | §4.2 and §19 corrected against LabVIEW: the 38 × 38 and 32 × 16 terminals, the path functions' icons, the constants' glyphs and width, the wire's 2 px phase, the panel's bevel, cell glyph, button and abbreviation. |
 | 2026-10-26 | §4.2 and §19: the path: wire, terminals, constants, File Path Control and Indicator and the browse button. |
 | 2026-10-26 | §18: the VISA functions: tiles, terminals and icons. |
 | 2026-10-26 | §4.2 and §17: the VISA resource name: wire, constant, panel control and indicator, terminals, dropdown and palette, from `labview-captures/visa/`. |

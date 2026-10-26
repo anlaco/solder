@@ -2398,72 +2398,96 @@ export const PATH_PATCH = Object.freeze({ fill: "#b2d8d8", edge: "#4ca5a5" });
 /** The fill of the Empty Path and Not A Path constants: pale yellow like a primitive's, so the theme's node fill (measured #ffffcc in Old School). */
 export const PATH_FIXED_CONSTANT_FILL = NODE_FILL;
 
-/** A folder tree in two boxes: a small box, a line that drops from it and turns right, and a second box at its end. 11 x 13 px. */
+/** A folder tree in two boxes, the picture of a path in the terminals and the palette's constants: a small box, a line that drops from it and turns right, and a second box at its end. 11 x 13 px. */
 const pathBoxes = (color) =>
   `<g fill="none" stroke="${color}" stroke-width="1" shape-rendering="crispEdges">` +
   `<rect x="0.5" y="0.5" width="5" height="4"/><path d="M2.5 4.5V10.5H5.5"/><rect x="5.5" y="8.5" width="5" height="4"/></g>`;
 
-/** The glyph of a path in a constant, a terminal and the type cell of the panel: two boxes joined by a line. */
-export const pathGlyph = (color = "currentColor") => svg(pathBoxes(color), "0 0 11 13");
-
-/** The glyph of the Empty Path Constant: a ring with a slash, the sign of "nothing". 9 x 9 px. */
+/** The glyph of the Empty Path Constant: an anchor (a stem, a crossbar at the top and the feet at the bottom). 9 x 9 px. */
 export const emptyPathGlyph = (color = "currentColor") =>
-  svg(`<circle cx="4.5" cy="4.5" r="3.2" fill="none" stroke="${color}" stroke-width="1"/><path d="M1.5 7.5L7.5 1.5" stroke="${color}" stroke-width="1"/>`, "0 0 9 9");
+  svg(
+    `<g fill="none" stroke="${color}" stroke-width="1" shape-rendering="crispEdges"><path d="M4.5 1V8"/><path d="M2.5 2.5H6.5"/><path d="M1.5 5V6.5M7.5 5V6.5"/></g>` +
+      `<path d="M1.5 6.5Q4.5 10 7.5 6.5" fill="none" stroke="${color}" stroke-width="1"/>`,
+    "0 0 9 9",
+  );
 
-/** The glyph of the Not A Path Constant: the two boxes of a path struck through by a slash. 11 x 11 px. */
+/** The glyph of the Not A Path Constant: a small square at the top left, one at the bottom right and a crossed diagonal (an X) between them. 11 x 11 px. */
 export const notAPathGlyph = (color = "currentColor") =>
   svg(
-    `<g fill="none" stroke="${color}" stroke-width="1" shape-rendering="crispEdges"><rect x="0.5" y="0.5" width="4" height="3"/><path d="M2.5 3.5V8.5H4.5"/><rect x="5.5" y="7.5" width="4" height="3"/></g>` +
-      `<path d="M10 0.5L1 10.5" stroke="${color}" stroke-width="1"/>`,
+    `<g fill="none" stroke="${color}" stroke-width="1" shape-rendering="crispEdges"><rect x="0.5" y="0.5" width="3" height="3"/><rect x="7.5" y="7.5" width="3" height="3"/></g>` +
+      `<path d="M3.5 3.5L7.5 7.5M3.5 7.5L7.5 3.5" stroke="${color}" stroke-width="1"/>`,
     "0 0 11 11",
   );
 
-/** The picture of a path control inside its terminal as an icon: a text field with a path in it, over the grey of the terminal. */
-const dibujoPath = (left) =>
-  `<rect x="${left}" y="3" width="21" height="13" fill="#e2e2e2"/><rect x="${left + 2}" y="5" width="17" height="9" fill="${PAPER}" stroke="${PATH_COLOR}" stroke-width="1"/>` +
-  `<g transform="translate(${left + 7.2} 6.2) scale(0.5)">${pathBoxes(PATH_COLOR)}</g>`;
+/** The pill of a path terminal's top band: the glyph's block, and the word "Path" on white (a control) or on grey (an indicator). */
+const PATH_PILL = Object.freeze({ block: "#336666", controlText: PAPER, indicatorText: "#cccccc", band: "#aaaaaa", bandEdge: "#999999" });
+
+/** The top band of the icon terminal: a grey strip holding the pill, with the path glyph in white on its teal block. */
+const pathTerminalBand = (control) =>
+  `${lleno(4, 4, 34, 13, PATH_PILL.band)}${lleno(4, 13, 34, 14, PATH_PILL.bandEdge)}` +
+  `${lleno(6, 5.5, 14, 12, PATH_PILL.block)}<g transform="translate(7.6 5.9) scale(0.5)">${pathBoxes(PAPER)}</g>` +
+  `${lleno(14, 5.5, 32, 12, control ? PATH_PILL.controlText : PATH_PILL.indicatorText)}${textoTerminal(23, 9, "Path", 6.4, "#000")}`;
+
+/** The tab that bites into the bottom edge of the icon terminal, holding the two-box glyph. */
+const pathTerminalTab = () =>
+  `<rect x="11.5" y="29.5" width="15" height="8" fill="${PAPER}"/><polyline points="11.5,37 11.5,29.5 26.5,29.5 26.5,37" fill="none" stroke="${PATH_COLOR}" stroke-width="1"/>` +
+  `<g transform="translate(16.2 30.4) scale(0.5)">${pathBoxes(PATH_COLOR)}</g>`;
+
+/** The compact terminal's glyph: the two boxes in 9 x 8 px, so that they fit the inner frame. */
+const pathBoxesSmall = (color) =>
+  `<g fill="none" stroke="${color}" stroke-width="1" shape-rendering="crispEdges">` +
+  `<rect x="0.5" y="0.5" width="3" height="2"/><path d="M2.5 2.5V5.5H4.5"/><rect x="4.5" y="4.5" width="4" height="3"/></g>`;
 
 /**
- * The terminal of a path control or indicator on the diagram: as an icon, 32 x 32 (a frame in the type's colour, the
- * picture, the word "Path" and the two-box glyph in the tab at the bottom, and the arrow of the side the data goes
- * by); without View As Icon, 33 x 16 (white, the small glyph, and the light patch with the arrow at the data end).
- * A control has the 2 px frame and an indicator a 1 px one, as the other types' terminals do.
+ * The terminal of a path control or indicator on the diagram, measured at 1:1 in LabVIEW 2026 Q3 (reports/2026-10-26-path-diagram-compare.md).
+ * As an icon it is 38 x 38 like every panel terminal: a frame of 2 px teal, 1 px white and 1 px teal (an indicator's mirrors it:
+ * 1, 2, 1), the grey #e2e2e2 inside, the "Path" pill in a band at the top, the tab with the glyph at the bottom and the black-outlined
+ * arrow on the edge the data goes by; its wire leaves at row 18-19. Without View As Icon it is 32 x 16: the same frame round an
+ * inner frame that holds the small glyph, and at the data end the light patch (8 px #b2d8d8 and a 1 px edge on each side, 13 tall).
  */
 export function terminalPath(control, compact) {
-  const frame = (width, height) =>
-    control
-      ? `<rect x="1" y="1" width="${width - 2}" height="${height - 2}" fill="${PAPER}" stroke="${PATH_COLOR}" stroke-width="2"/>`
-      : `<rect x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" fill="${PAPER}" stroke="${PATH_COLOR}" stroke-width="1"/>`;
   if (compact) {
+    const frame = control
+      ? `<rect x="1" y="1" width="30" height="14" fill="${PAPER}" stroke="${PATH_COLOR}" stroke-width="2"/>`
+      : `<rect x="0.5" y="0.5" width="31" height="15" fill="${PAPER}" stroke="${PATH_COLOR}" stroke-width="1"/>`;
+    const innerFrame = `<rect x="${control ? 3.5 : 9.5}" y="3.5" width="19" height="9" fill="${PAPER}" stroke="${PATH_COLOR}" stroke-width="1"/>`;
     const patchX = control ? 22.5 : 0.5;
-    const glyphX = control ? 5 : 19;
     const arrow = control ? [[28, 5], [28, 11], [30.5, 8]] : [[4, 5], [4, 11], [6.5, 8]];
     return svg(
-      frame(33, 16) +
-        `<rect x="${patchX}" y="2.5" width="10" height="11" fill="${PATH_PATCH.fill}" stroke="${PATH_PATCH.edge}" stroke-width="1"/>` +
+      frame + innerFrame +
+        `<rect x="${patchX}" y="1.5" width="9" height="12" fill="${PATH_PATCH.fill}" stroke="${PATH_PATCH.edge}" stroke-width="1"/>` +
         poligono(arrow, TERMINAL_DIRECTION_ARROW) +
-        `<g transform="translate(${glyphX} 1.5)">${pathBoxes(PATH_COLOR)}</g>`,
-      "0 0 33 16",
+        `<g transform="translate(${control ? 9 : 14} 4)">${pathBoxesSmall(PATH_COLOR)}</g>`,
+      "0 0 32 16",
     );
   }
-  const arrow = control ? "M25.5 18V26L29.5 22Z" : "M6.5 18V26L2.5 22Z";
-  return svg(
-    frame(32, 32) +
-      dibujoPath(control ? 3 : 8) +
-      `<path d="${arrow}" fill="${PAPER}" stroke="#000" stroke-width="1"/>` +
-      textoTerminal(16, 20.6, "Path", 7, PATH_COLOR) +
-      `<rect x="11.5" y="24.5" width="9" height="7" fill="${PAPER}" stroke="${PATH_COLOR}" stroke-width="1"/>` +
-      `<g transform="translate(13.7 25.2) scale(0.45)">${pathBoxes(PATH_COLOR)}</g>`,
-    "0 0 32 32",
-  );
+  const frame = control
+    ? `<rect x="1" y="1" width="36" height="36" fill="${PAPER}" stroke="${PATH_COLOR}" stroke-width="2"/>`
+    : `<rect x="0.5" y="0.5" width="37" height="37" fill="${PAPER}" stroke="${PATH_COLOR}" stroke-width="1"/>`;
+  const innerFrame = `<rect x="3.5" y="3.5" width="31" height="31" fill="#e2e2e2" stroke="${PATH_COLOR}" stroke-width="1"/>`;
+  const arrow = control
+    ? `<path d="M32.5 14.5 V23.5 L36.5 19 Z" fill="${PAPER}" stroke="#000" stroke-width="1"/>`
+    : `<path d="M2.5 14.5 V23.5 L6.5 19 Z" fill="${PAPER}" stroke="#000" stroke-width="1"/>`;
+  return svg(frame + innerFrame + pathTerminalBand(control) + arrow + pathTerminalTab(), "0 0 38 38");
 }
 
-/** The browse button of a path control, outside its box: a raised grey key with a yellow folder, 28 x 17 px (drawn here, not NI's). */
+/**
+ * The glyph of the type cell of a File Path Control or Indicator on the panel, 6 x 10 px: a small square at the top left
+ * joined to a larger one at the bottom right. A value that is Not A Path crosses it with a diagonal (an X).
+ */
+export const pathCellGlyph = (notAPath = false, color = "currentColor") =>
+  svg(
+    `<g fill="none" stroke="${color}" stroke-width="1" shape-rendering="crispEdges"><rect x="0.5" y="0.5" width="2" height="2"/><path d="M1.5 3V7.5H2.5"/><rect x="2.5" y="5.5" width="3" height="4"/></g>` +
+      (notAPath ? `<path d="M0.5 9.5L5.5 0.5M0.5 0.5L5.5 9.5" stroke="${color}" stroke-width="1"/>` : ""),
+    "0 0 6 10",
+  );
+
+/** The folder on the browse button of a path control, 16 x 13 px: open, with a black outline, a yellow back flap and a #666666 front (drawn here, not NI's). */
 export const browseFolderGlyph = () =>
   svg(
-    `<path d="M1.5 3.5H5.5L6.5 2.5H11.5V4.5H1.5Z" fill="#ffff00" stroke="#666666" stroke-width="1" stroke-linejoin="round"/>` +
-      `<rect x="1.5" y="4.5" width="14" height="8" fill="#ffff00" stroke="#666666" stroke-width="1"/>`,
-    "0 0 17 14",
+    `<path d="M0.5 1.5H5.5L7 3H12.5V11.5H0.5Z" fill="#ffff00" stroke="#000" stroke-width="1" stroke-linejoin="round"/>` +
+      `<path d="M3 5.5H15.5L12.5 12.5H0.5Z" fill="#666666" stroke="#000" stroke-width="1" stroke-linejoin="round"/>`,
+    "0 0 16 13",
   );
 
 // ——— The File I/O palette (DT-067) ———
@@ -2520,11 +2544,60 @@ for (const [slug, [word, caption]] of Object.entries(FILE_IO_TILES)) {
   CAJAS[slug] ??= [0, 0, FILE_TILE_SIZE, FILE_TILE_SIZE];
 }
 
-// The functions of File I/O that are done and have a node on the diagram. The size is not measured: the generic 32 x 32 of
-// the String functions, with their terminals spread over it.
-nodoCadena("build-path", 32, 32, "p+n", 11);
-nodoCadena("strip-path", 32, 32, "p-n", 11);
-nodoCadena("path-type", 32, 32, "p?", 11);
+// The functions of File I/O that are done and have a node on the diagram. Build Path and Strip Path are 32 x 32 with the
+// terminals the generic spread gives (rows 7-8 / 23-24 / 15-16, measured); Path Type is a triangle (reports/2026-10-26-path-diagram-compare.md
+// Q1). The drawings are ours, after the description of what is in each: the node fill, a 1 px border (#4c4c3d in Old School), trees of small
+// squares, arrows, a tall rectangle and checkerboard boxes.
+
+const PATH_NODE_BORDER = "var(--path-node-border)";
+/** A square of a tree, 3 x 3 px outer; solid when it is the one the path comes out of. */
+const treeSquare = (x, y, solid) => `<rect x="${x + 0.5}" y="${y + 0.5}" width="2" height="2" fill="${solid ? INK : "none"}" stroke="${INK}" stroke-width="1" shape-rendering="crispEdges"/>`;
+/** A three-node tree: the root at the left and two children at the right, joined by a bus. 9 x 11 px at (x, y). */
+const pathTree = (x, y, solidLast) =>
+  treeSquare(x, y + 4, false) + treeSquare(x + 6, y, false) + treeSquare(x + 6, y + 8, solidLast) +
+  `<path d="M${x + 3} ${y + 5.5}H${x + 5.5}M${x + 5.5} ${y + 1.5}V${y + 9.5}M${x + 5.5} ${y + 1.5}H${x + 6}M${x + 5.5} ${y + 9.5}H${x + 6}" fill="none" stroke="${INK}" stroke-width="1" shape-rendering="crispEdges"/>`;
+/** An arrow of a data flow: a line and a head, `length` px long from (x, y) in the direction of `dx`, `dy` (one of them 0). */
+const pathArrow = (x, y, dx, dy, length) => {
+  const [tipX, tipY] = [x + dx * length, y + dy * length];
+  const [baseX, baseY] = [tipX - dx * 2, tipY - dy * 2];
+  const head = dx ? [[baseX, baseY - 2], [baseX, baseY + 2], [tipX, tipY]] : [[baseX - 2, baseY], [baseX + 2, baseY], [tipX, tipY]];
+  return `<path d="M${x} ${y}L${baseX} ${baseY}" stroke="${INK}" stroke-width="1" fill="none" shape-rendering="crispEdges"/>${poligono(head, INK)}`;
+};
+/** A box of a checkerboard, 7 x 7 px outer at (x, y): the name or relative path. */
+const checkerBox = (x, y) => {
+  const cells = [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]].map(([column, row]) => `<rect x="${x + 1 + column * 2}" y="${y + 1 + row * 2}" width="2" height="2" fill="${INK}"/>`).join("");
+  return `<rect x="${x + 0.5}" y="${y + 0.5}" width="6" height="6" fill="${PAPER}" stroke="${INK}" stroke-width="1" shape-rendering="crispEdges"/>${cells}`;
+};
+const pathNodeFrame = (w, h) => `<rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" fill="${NODE_FILL}" stroke="${PATH_NODE_BORDER}" stroke-width="1" shape-rendering="crispEdges"/>`;
+const pathRectangle = (height) => `<rect x="14.5" y="3.5" width="4" height="${height}" fill="${PAPER}" stroke="${INK}" stroke-width="1" shape-rendering="crispEdges"/>`;
+
+/** Build Path: the base path tree and an arrow into the rectangle, the appended tree and its arrow out, and the name below. */
+const buildPathIcon = () =>
+  svg(
+    pathNodeFrame(32, 32) + pathTree(1, 3, false) + pathArrow(10, 8.5, 1, 0, 4) + pathRectangle(14) + pathTree(21, 6, true) + pathArrow(19, 11.5, 1, 0, 2) +
+      pathArrow(29, 15.5, 1, 0, 2) + checkerBox(2, 21) + pathArrow(9, 24.5, 1, 0, 5) + checkerBox(14, 21) + pathArrow(17, 21, 0, -1, 3),
+    "0 0 32 32",
+  );
+
+/** Strip Path: the tree whose last node is solid goes into the rectangle; the stripped tree goes out and the name into a checkerboard box. */
+const stripPathIcon = () =>
+  svg(
+    pathNodeFrame(32, 32) + pathTree(1, 10, true) + pathArrow(10, 15.5, 1, 0, 4) + pathRectangle(16) + pathTree(21, 3, false) + pathArrow(19, 8.5, 1, 0, 2) +
+      pathArrow(29, 7.5, 1, 0, 2) + `<path d="M16.5 19.5V24.5H21" fill="none" stroke="${INK}" stroke-width="1" shape-rendering="crispEdges"/>` + checkerBox(22, 21),
+    "0 0 32 32",
+  );
+
+/** Path Type: a triangle pointing right, 23 x 22 px, with the glyph of a path and a question mark. */
+const pathTypeIcon = () =>
+  svg(
+    `<path d="M0.5 0.5L22.5 10.5L0.5 21.5Z" fill="${NODE_FILL}" stroke="${PATH_NODE_BORDER}" stroke-width="1" stroke-linejoin="round"/>` +
+      `<g transform="translate(2 6.8) scale(0.65)">${pathBoxes(INK)}</g>` + texto(13, 11, "?", 8.5, INK, 700),
+    "0 0 23 22",
+  );
+
+Object.assign(FUNCIONES, { "build-path": buildPathIcon(), "strip-path": stripPathIcon(), "path-type": pathTypeIcon() });
+Object.assign(CAJAS, { "build-path": [0, 0, 48, 48], "strip-path": [0, 0, 48, 48], "path-type": [0, 0, 34.5, 33] });
+Object.assign(TAMANOS, { "build-path": [32, 32], "strip-path": [32, 32], "path-type": [23, 22] });
 
 // The three constants in the palette: the box of a path in its colour with the two-box glyph; the empty and Not A Path ones
 // on the pale yellow of their diagram constants.

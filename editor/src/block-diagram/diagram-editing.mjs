@@ -1192,6 +1192,9 @@ export function editarEtiqueta(d, id) {
   return n?.label ? { ...d, edicion: Et.editar(n), seleccion: [], accion: null, menu: null } : d;
 }
 
+/** Ctrl+A while typing into a constant or a label: all its text is selected. */
+export const seleccionarTodoTexto = (d) => (d.edicion ? { ...d, edicion: Et.seleccionarTodo(d.edicion) } : d);
+
 /** Una tecla mientras se escribe: lo seleccionado se sustituye. En una etiqueta, Intro empieza otra línea. */
 export function teclear(d, tecla) {
   const e = d.edicion;

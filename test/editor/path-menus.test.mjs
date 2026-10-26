@@ -120,7 +120,7 @@ test("the terminals of a path have their measured menus", () => {
   assert.equal(INV.entrada(`${root}.file-i-o-palette`).necesita, "paleta-archivos-en-menu");
 });
 
-test("View As Icon of the terminal of a path switches between 32 x 32 and 33 x 16", () => {
+test("View As Icon of the terminal of a path switches between 38 x 38 and 32 x 16", () => {
   const root = "context.path-control-terminal";
   const { g, id } = panelObject("path-control");
   const menu = ED.abrirMenu({ ...ED.inicial(), g }, root, id, 0, 0);
@@ -128,7 +128,7 @@ test("View As Icon of the terminal of a path switches between 32 x 32 and 33 x 1
   const flipped = ED.orden(menu, `${root}.view-as-icon`, CTX);
   assert.equal(flipped.g.nodos[0].vista.compacto, true);
   const box = D.caja(flipped.g.nodos[0], CTX);
-  assert.deepEqual([box.ancho, box.alto], [33, 16]);
+  assert.deepEqual([box.ancho, box.alto], [32, 16]);
   assert.ok(!ED.marcados(ED.abrirMenu({ ...ED.inicial(), g: flipped.g }, root, id, 0, 0), CTX).has(`${root}.view-as-icon`), "unticked once compact");
   assert.equal(INV.entrada(`${root}.view-as-icon`).estado, "built");
 });
