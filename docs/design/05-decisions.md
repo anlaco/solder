@@ -2640,7 +2640,8 @@ SCPI, then a DAQmx-like layer, and only then Core 1, with its hardware lessons i
 
 - **Status:** Accepted on 2026-10-25 by the developer. It moves [DT-054](#dt-054) (Core 1) behind the hardware and
   narrows its exclusions; point 5 of [DT-039](#dt-039) (how the native I/O connects to the editor) stays open and is
-  discussed when that step comes.
+  discussed when that step comes. **Amended on 2026-10-26** by the developer: the order of point 1 is replaced by the
+  one in [Amendment of 2026-10-26](#amendment-of-2026-10-26).
 - **Why:** acquisition and control is what Solder is for (decided 2026-09-29), and Core 1 without hardware leaves out
   exactly that: lessons 2 and 15 and the measuring parts of 4, 7 and 8. With hardware first, Core 1 is done once, with
   real measurements, instead of with simulated data to be redone later. The charts and graphs a measurement needs are
@@ -2671,9 +2672,41 @@ SCPI, then a DAQmx-like layer, and only then Core 1, with its hardware lessons i
 4. **The Olimex GateMateA1-EVB** (Cologne Chip FPGA) is the platform for anlaco's own instruments later; to Solder it
    will be one more SCPI instrument. Programming it from Solder stays parked (`docs/ideas/fpga-yosys.md`).
 
+### Amendment of 2026-10-26
+
+The order is decided by technical dependencies, with Core 1 left out of the reasoning. It replaces point 1:
+
+1. **Merge `feature/visa` into `main`:** VISA Open, Write, Read and Close over TCP sockets, done and tested (DT-065,
+   DT-066).
+2. **File I/O:** the Path type (control, constant, wire, Build Path, Strip Path), text and delimited spreadsheet files,
+   the file dialogs, binary files later; measured in LabVIEW first.
+3. **VISA over serial:** ASRL resources and VISA Configure Serial Port, with a serial transport in Crucible. VISA
+   Bytes at Serial Port stays greyed until step 4.
+4. **Refnums with classes and the Property Node** (then the Invoke Node), in their own DT, designed from the start
+   with two classes: Instr (VISA, run as an external wait) and the panel controls (implicit nodes, run against the
+   panel memory of DT-063 §10). It brings the VISA Property Node and Bytes at Serial Port.
+5. **The classic ESP32 as a DAQ by SCPI** (old step 2). Its firmware can be written in parallel from step 3.
+6. **The DAQmx-like layer** (old step 3), over refnums and Property Nodes.
+7. **The rest of VI Server** (Open VI Reference, the VI and Application classes), and Core 1 (DT-054) as decided later.
+
+- **Why File I/O first:** almost every real program saves measurements or reads configuration, and acquiring without
+  saving is half the job; it needs nothing external (no Crucible transport, no firmware); each file function is an
+  external wait served by the I/O process of DT-065, which already exists; and its file refnum gives a second real
+  refnum, next to VISA's, before the class system is designed. It was already before Instrument I/O in the plan's
+  original order ("Afterwards, in this order").
+- **Why refnums and the Property Node before DAQmx:** DAQmx in LabVIEW rests on refnums (the task) and on Property
+  Nodes with classes of their own (Timing, Channel, Read); this is from memory and is measured before the DAQmx DT.
+  Neither VISA over serial nor the ESP32 by SCPI needs them, since VISA Configure Serial Port already enables the
+  termination character (T, 0xA) and sets the timeout (10 s) (`labview-captures/reports/2026-10-25-visa-palettes.md`).
+- **Why not the VISA Property Node alone:** in LabVIEW it is the generic Property Node of class "Instr"
+  (`labview-captures/reports/2026-10-26-visa-property-node.md`); built alone, it would be redone when the class system
+  comes. Its look, menus and behavior are already measured
+  (`labview-captures/reports/2026-10-26-visa-property-node-behavior.md`) and wait for step 4.
+
 ### Consequences
 
-- §3b of the plan gets these steps after the execution scheduler; Core 1 moves behind them.
+- §3b of the plan gets these steps after the execution scheduler; Core 1 moves behind them (order amended on
+  2026-10-26, above).
 - The first transport may be TCP rather than serial, since that is what Crucible serves today; decided with the
   measurements of step 1.
 

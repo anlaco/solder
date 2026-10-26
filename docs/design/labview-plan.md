@@ -12,8 +12,8 @@ When the developer says "keep going":
    at the end of the road in §3b (DT-061, DT-063) is done and merged into `main`
    (2026-10-25); continue with **"Then: hardware"** right after it (DT-064, which moved Core 1
    behind it), and keep in mind its list "Pending from the pool of threads". §4 gives the
-   detail of each module. Hardware step 1 (VISA) goes on in `feature/visa`: its "Next, in this
-   order" says where (2026-10-26).
+   detail of each module. Its order was amended on 2026-10-26 (DT-064, "Amendment of
+   2026-10-26"): VISA over TCP is merged into `main`, and the next step is **File I/O**.
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
    `win11 encender`, `tools/vm_control.py foto|clic|arrastrar|tecla|texto`.
@@ -477,16 +477,29 @@ array or string read by a local variable while another loop writes it is never t
    Close placed, wired and run; the rest greyed with its reason), the four nodes at their measured terminals. A VI
    built from the palettes ran in the editor against Crucible with LabVIEW's answer
    ([`2026-10-26-editor-visa-run.md`](../../labview-captures/reports/2026-10-26-editor-visa-run.md)). 890 tests green.
-   **Next, in this order** (decided with the developer on 2026-10-26): (a) the VISA Property Node with Timeout Value,
-   Termination Character and Termination Character Enable (without it a Read that does not fill its byte count
-   always waits the 2 s timeout); (b) serial ports (ASRL resources and VISA Configure Serial Port), which the ESP32
-   of step 2 needs; (c) merge `feature/visa` into `main` (DT-062). Then: finding VISA resources (the dropdown,
-   Select Item, VISA Find Resource); the constant's text width (LabVIEW's font is not identified); greyed menu rows
-   show no reason on hover (every menu of the editor); packaging the addon (Windows included) with the next
-   release. Then step 2, the ESP32.*
-2. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the firmware,
-   and first served by a Crucible profile of it.
-3. **A DAQmx-like layer** over the ESP32, with its own DT after measuring DAQmx with a simulated NI device.
+   *The VISA Property Node measured on 2026-10-26 (look, menus, the whole Select Property tree, and the behavior of
+   Timeout Value, Termination Character and Termination Character Enable:
+   [`2026-10-26-visa-property-node.md`](../../labview-captures/reports/2026-10-26-visa-property-node.md),
+   [`-behavior.md`](../../labview-captures/reports/2026-10-26-visa-property-node-behavior.md)). It is the generic
+   Property Node of class "Instr", so it waits for step 4 below.*
+   **Order amended on 2026-10-26** (DT-064, "Amendment of 2026-10-26"); the steps from here on are:
+   1. **Merge `feature/visa` into `main`** (DT-062): VISA over TCP sockets. *Done on 2026-10-26 (fast-forward,
+      890 tests green).*
+   2. **File I/O:** the Path type (control, constant, wire, Build Path, Strip Path), text and delimited spreadsheet
+      files, the file dialogs; binary files later. Measured in LabVIEW first; each function is an external wait served
+      by the I/O process (DT-065).
+   3. **VISA over serial:** ASRL resources and VISA Configure Serial Port, with a serial transport in Crucible; Bytes
+      at Serial Port greyed until step 4.
+   4. **Refnums with classes and the Property Node**, then the Invoke Node, in their own DT: classes Instr (VISA) and
+      the panel controls (implicit nodes) from the start.
+   5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the
+      firmware (in parallel from step 3), and first served by a Crucible profile of it.
+   6. **A DAQmx-like layer** over the ESP32, with its own DT after measuring DAQmx with a simulated NI device.
+   7. **The rest of VI Server** (Open VI Reference, the VI and Application classes).
+
+   Left over from VISA, to take up when they fit: finding VISA resources (the dropdown, Select Item, VISA Find
+   Resource); the constant's text width (LabVIEW's font is not identified); greyed menu rows show no reason on hover
+   (every menu of the editor); packaging the addon (Windows included) with the next release.
 
 **After it:** **LabVIEW Core 1** (DT-054, moved after the beta by DT-055 and after the hardware by DT-064): every
 lesson of NI's Core 1 course can be done in Solder, the hardware lessons on the ESP32 and on simulated instruments.
