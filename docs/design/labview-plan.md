@@ -491,8 +491,13 @@ array or string read by a local variable while another loop writes it is never t
       *Measured on 2026-10-26 ([`file-io-palette`](../../labview-captures/reports/2026-10-26-file-io-palette.md),
       [`path-type`](../../labview-captures/reports/2026-10-26-path-type.md),
       [`file-io-behavior`](../../labview-captures/reports/2026-10-26-file-io-behavior.md)) and decided in DT-067:
-      paths as a kind plus components with the host's rules, UTF-8 names, files in `solder-io`. Next: its point 10 (a),
-      the Path type and its functions.*
+      paths as a kind plus components with the host's rules, UTF-8 names, files in `solder-io`.*
+      *The core of DT-067 §10 (a) done on 2026-10-26: the `path` type (one handle in memory, components in the
+      `.sdg`), `core/model/paths.mjs` with the Windows rules measured, and Build Path, Strip Path, Path To String,
+      String To Path, Path Type, Path to Array of Strings, Array of Strings to Path, the three constants, the path
+      control and indicator terminals, and Equal?, Not Equal?, Empty String/Path? and Not A Number/Path/Refnum? on
+      paths, compiled and run (`test/core/paths.test.mjs`, `test/core/path-functions.test.mjs`). 906 tests green.
+      Next: the editor's side of (a) (wire, constants, File Path Control and Indicator, the palettes), then (b).*
    3. **VISA over serial:** ASRL resources and VISA Configure Serial Port, with a serial transport in Crucible; Bytes
       at Serial Port greyed until step 4.
    4. **Refnums with classes and the Property Node**, then the Invoke Node, in their own DT: classes Instr (VISA) and

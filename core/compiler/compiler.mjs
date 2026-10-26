@@ -23,7 +23,8 @@
 import { connectorPorts, ejecutable, nodesWithUndefinedInput, orden, requerido, tipos, undefinedArrayNodes } from "../model/graph.mjs";
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
-import { ERROR, NUMERICOS, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esEntero, esEnum, esNumerico, flattenArrayValue, inMemory, limites, representacion } from "../model/types.mjs";
+import { EMPTY_PATH, NOT_A_PATH, PATH_KIND, encodePath } from "../model/paths.mjs";
+import { ERROR, NUMERICOS, PATH, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esEntero, esEnum, esNumerico, flattenArrayValue, inMemory, limites, representacion } from "../model/types.mjs";
 import { codificar } from "./wasm-encoder.mjs";
 import { CELDAS, CIMA, EXPORTADAS, MEMORY_FUNCTION_NAMES, bloqueCadena, funcionesMemoria, i32 } from "./linear-memory.mjs";
 import { makeStackless } from "./stackless.mjs";
@@ -111,6 +112,17 @@ const IMPORTACIONES = [
   { modulo: "io", nombre: "visa_write", params: ["i32", "i32", "i32", "i32", "i32", "i32", "i32"], results: ["i32"] },
   { modulo: "io", nombre: "visa_read", params: ["i32", "i32", "i32", "i32", "i32", "i32", "i32", "i32"], results: ["i32"] },
   { modulo: "io", nombre: "visa_close", params: ["i32", "i32", "i32", "i32"], results: ["i32"] },
+  // The path functions (DT-067): the host reads each path's block, applies the rules of the system it runs
+  // on (core/model/paths.mjs) and writes the result into its cell. The first parameters are the output cells.
+  { modulo: "pth", nombre: "build_path", params: ["i32", "i32", "i32", "i32"], results: [] },
+  { modulo: "pth", nombre: "strip_path", params: ["i32", "i32", "i32"], results: [] },
+  { modulo: "pth", nombre: "path_to_string", params: ["i32", "i32"], results: [] },
+  { modulo: "pth", nombre: "string_to_path", params: ["i32", "i32"], results: [] },
+  { modulo: "pth", nombre: "path_kind", params: ["i32"], results: ["i32"] },
+  { modulo: "pth", nombre: "path_to_array", params: ["i32", "i32"], results: ["i32"] },
+  { modulo: "pth", nombre: "array_to_path", params: ["i32", "i32", "i32"], results: [] },
+  { modulo: "pth", nombre: "path_is_empty", params: ["i32"], results: ["i32"] },
+  { modulo: "pth", nombre: "paths_equal", params: ["i32", "i32"], results: ["i32"] },
 ];
 
 /** Los nodos que tardan: cada uno corre en su clump y cede mientras espera. */
@@ -636,7 +648,7 @@ const BLOQUES = {
   ...Object.fromEntries(
     ["empty-string-constant", "space-constant", "tab-constant", "carriage-return-constant", "line-feed-constant", "end-of-line-constant"].map((n) => [n, (e) => [ins("i32.const", e.cadena(e.cat.bloque(n).value))]]),
   ),
-  "empty-string-path": (e) => [...e.entrada(0), llamarMemoria("longitud"), ins("i32.eqz")],
+  "empty-string-path": (e) => (e.logicalTIn(0) === PATH ? [...e.entrada(0), ins("call", idImport("path_is_empty"))] : [...e.entrada(0), llamarMemoria("longitud"), ins("i32.eqz")]),
   "decimal-digit": (e) => claseDeCaracter(e, (c) => [get(c), k32(48), ins("i32.sub"), k32(10), ins("i32.lt_u")]),
   "octal-digit": (e) => claseDeCaracter(e, (c) => [get(c), k32(48), ins("i32.sub"), k32(8), ins("i32.lt_u")]),
   "hex-digit": (e) => claseDeCaracter(e, (c) => [
@@ -717,6 +729,27 @@ const BLOQUES = {
   "visa-write": (e) => visaFunction(e, "visa_write", [0, 1], { resourceOut: true, count: true }),
   "visa-read": (e) => visaFunction(e, "visa_read", [0, 1], { resourceOut: true, buffer: true, count: true }),
   "visa-close": (e) => visaFunction(e, "visa_close", [0], {}),
+  // Paths (DT-067): a constant is its block in the static zone, like a string's.
+  "path-constant": (e) => [ins("i32.const", e.cadena(encodePath(e.nodo.config?.value ?? EMPTY_PATH)))],
+  "empty-path-constant": (e) => [ins("i32.const", e.cadena(encodePath(EMPTY_PATH)))],
+  "not-a-path-constant": (e) => [ins("i32.const", e.cadena(encodePath(NOT_A_PATH)))],
+  "build-path": (e) => {
+    const cell = e.celda();
+    const nameIsPath = e.logicalTIn(1) === PATH ? 1 : 0;
+    return [k32(cell), ...e.entrada(0), ...e.entrada(1), k32(nameIsPath), ins("call", idImport("build_path")), k32(cell)];
+  },
+  "strip-path": (e) => {
+    const [strippedCell, nameCell] = [e.celda(), e.celda()];
+    return [k32(strippedCell), k32(nameCell), ...e.entrada(0), ins("call", idImport("strip_path")), k32(strippedCell), k32(nameCell)];
+  },
+  "path-to-string": (e) => llamarCad(e, "path_to_string", [0]),
+  "string-to-path": (e) => llamarCad(e, "string_to_path", [0]),
+  "path-type": (e) => [...e.entrada(0), ins("call", idImport("path_kind"))],
+  "path-to-array-of-strings": (e) => {
+    const [arrayCell, relative] = [e.celda(), e.temporal("i32")];
+    return [k32(arrayCell), ...e.entrada(0), ins("call", idImport("path_to_array")), ins("local.set", relative), k32(arrayCell), ins("local.get", relative)];
+  },
+  "array-of-strings-to-path": (e) => llamarCad(e, "array_to_path", [0, 1]),
   "simple-error-handler": (e) => {
     // The host decides everything (core/runtime/runtime.mjs): the dialog waits for the user.
     const [b, src, msg] = [e.bufer(ERR.tam), e.celda(), e.celda()];
@@ -912,6 +945,7 @@ const BLOQUES = {
   "cluster-control": (e) => readControl(e),
   "str-control": (e) => readControl(e),
   "visa-control": (e) => readControl(e),
+  "path-control": (e) => readControl(e),
   // Timing: el reloj de milisegundos de LabVIEW es un U32 que da la vuelta.
   "tick-count-ms": () => [ins("call", idImport("reloj"))],
   "wait-ms": (e) => [...e.entrada(0), ...convertir(e.tIn(0), "u32"), ins("f64.convert_i32_u"), callScheduler("wait")],
@@ -1029,6 +1063,7 @@ const BLOQUES = {
   "max-and-min": mayorYMenor,
   "in-range-and-coerce": enRango,
   "not-a-number-path-refnum": (e) => {
+    if (e.logicalTIn(0) === PATH) return [...e.entrada(0), ins("call", idImport("path_kind")), k32(PATH_KIND.NOT_A_PATH), ins("i32.eq")];
     if (!esFlotante(e.tIn(0))) return [ins("i32.const", 0)];
     const x = e.temporal(tipoWasm(e.tIn(0)));
     return [...e.entrada(0), ins("local.tee", x), ins("local.get", x), ins(`${tipoWasm(e.tIn(0))}.ne`)];
@@ -1075,6 +1110,11 @@ function instruccionComparar(t, op) {
 
 function comparar(e, op) {
   if (esCluster(e.tIn(0)) || esCluster(e.tIn(1))) throw new Error("Comparing clusters cannot be compiled yet (M6).");
+  // Two paths are equal with the host's rules (DT-067); how LabVIEW orders paths is not measured.
+  if (e.logicalTIn(0) === PATH) {
+    if (op !== "eq" && op !== "ne") throw new Error("Comparing paths by order is not measured in LabVIEW yet.");
+    return [...e.entrada(0), ...e.entrada(1), ins("call", idImport("paths_equal")), ...(op === "ne" ? [ins("i32.eqz")] : [])];
+  }
   // Las cadenas se comparan byte a byte, en el anfitrión: -1, 0 o 1.
   if (e.tIn(0) === "string") return [...e.entrada(0), ...e.entrada(1), ins("call", idImport("cmp")), k32(0), ins(`i32.${op}${op === "eq" || op === "ne" ? "" : "_s"}`)];
   return [...e.entrada(0), ...e.entrada(1), instruccionComparar(e.tIn(0), op)];
@@ -1271,7 +1311,7 @@ function juntarFilas(t, rowsCell, cell, temporal) {
   ];
 }
 
-const PANEL_CONTROLS = ["control", "bool-control", "str-control", "cluster-control", "arr-control", "visa-control"];
+const PANEL_CONTROLS = ["control", "bool-control", "str-control", "cluster-control", "arr-control", "visa-control", "path-control"];
 
 /**
  * The panel objects whose value the editor holds as a VISA resource name's text alone (DT-066): the runtime
@@ -1956,7 +1996,10 @@ function laidOutInMemory(resolved) {
  * the caller passes inputs and reads outputs (DT-045).
  */
 function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
-  const resueltos = laidOutInMemory(tipos(g, cat));
+  // A path is laid out as a string's handle, so the functions that take a path or a string, and the
+  // panel, look at the types as the graph has them.
+  const logicalTypes = tipos(g, cat);
+  const resueltos = laidOutInMemory(logicalTypes);
   if (!ejecutable(g, cat, resueltos)) {
     const errores = [...resueltos.cables.entries()].filter(([, c]) => c.roto).map(([id, c]) => ({ cable: id, motivo: c.roto }));
     const llegan = new Set(g.cables.map((c) => `${c.a.nodo}.${c.a.puerto}`));
@@ -2164,6 +2207,8 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     const { in: entradas, out: salidas } = cat.puertos(n);
     const tIn = (i) => resueltos.entradas.get(`${id}.${entradas[i].name}`);
     const tOut = (j) => resueltos.salidas.get(`${id}.${salidas[j].name}`);
+    const logicalTIn = (i) => logicalTypes.entradas.get(`${id}.${entradas[i].name}`);
+    const logicalTOut = (j) => logicalTypes.salidas.get(`${id}.${salidas[j].name}`);
     const nuevoLocal = (vt) => k.locales.push(vt) - 1;
     const entrada = (i) => {
       const c = llegaA.get(`${id}.${entradas[i].name}`);
@@ -2210,7 +2255,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       ];
     };
     const cableada = (i) => llegaA.has(`${id}.${entradas[i].name}`);
-    return { n, entradas, salidas, tIn, tOut, nuevoLocal, entrada, cableada, nombre: n.label?.text ?? n.name };
+    return { n, entradas, salidas, tIn, tOut, logicalTIn, logicalTOut, nuevoLocal, entrada, cableada, nombre: n.label?.text ?? n.name };
   }
 
   /**
@@ -2236,11 +2281,11 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
   }
 
   function emitirNodo(id, k) {
-    const { n, entradas, salidas, tIn, tOut, nuevoLocal, entrada, cableada, nombre } = contexto(id, k);
+    const { n, entradas, salidas, tIn, tOut, logicalTIn, logicalTOut, nuevoLocal, entrada, cableada, nombre } = contexto(id, k);
     const tiposNodo = [...entradas.map((_, i) => tIn(i)), ...salidas.map((_, j) => tOut(j))];
     if (tiposNodo.some((t) => !escalar(t))) return errores.push({ nodo: id, motivo: `"${nombre}" carries a type the compiler cannot emit yet.` });
     // Un indicador sin cable no se escribe: conserva su valor, como en LabVIEW.
-    if (["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator", "visa-indicator", "waveform-chart", "waveform-graph", "xy-graph"].includes(n.tipo)) {
+    if (["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator", "visa-indicator", "path-indicator", "waveform-chart", "waveform-graph", "xy-graph"].includes(n.tipo)) {
       if (!llegaA.has(`${id}.value`)) return;
       // In a subVI, a connector indicator leaves its value in its slot for the caller; any other one, nowhere.
       if (asSubVI) {
@@ -2250,17 +2295,17 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       }
       const historyLength = n.tipo === "waveform-chart" ? (n.config?.historyLength ?? DEFAULT_CHART_HISTORY) : null;
       const { record, slot, code } = writeIndicator(module, tIn(0), entrada(0), nuevoLocal, historyLength);
-      indicadores.push({ nodo: id, name: n.name, tipo: tIn(0), record, ...(historyLength && { historyLength, slot }), ...datosDePanel(tIn(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }) });
+      indicadores.push({ nodo: id, name: n.name, tipo: tIn(0), record, ...(historyLength && { historyLength, slot }), ...datosDePanel(tIn(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTIn(0) === PATH && { path: true }) });
       k.cuerpo.push(...code, ...debugHook(id, []));
       return;
     }
     if (VISA_FUNCTIONS.has(n.tipo)) module.usesInstrumentIo = true;
     const emitir = n.tipo === "subvi" ? (e) => callSubVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subVIControl(e, asSubVI.get(n.name)) : BLOQUES[n.tipo];
     if (!emitir) return errores.push({ nodo: id, motivo: `The compiler cannot emit "${nombre}" (${n.tipo}) yet.` });
-    const e = { nodo: n, cat, tIn, tOut, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex };
+    const e = { nodo: n, cat, tIn, tOut, logicalTIn, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex };
     if (!asSubVI && PANEL_CONTROLS.includes(n.tipo)) {
       e.controlRecord = module.bufer(recordBytes(slotBytes(tOut(0), esCluster(tOut(0)) ? disposicion(tOut(0)).tam : undefined)), 8);
-      controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), record: e.controlRecord, ...datosDePanel(tOut(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }) });
+      controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), record: e.controlRecord, ...datosDePanel(tOut(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTOut(0) === PATH && { path: true }) });
     }
     try {
       const b = cat.bloque(n.tipo);

@@ -14,7 +14,7 @@ const BLOCKING = 1;
 
 /**
  * Serves the Runs whose ports arrive through `onPort(listener)`. A port gets one message,
- * `{ start: { module, memory, thread, compilado, separador } }`, and answers
+ * `{ start: { module, memory, thread, compilado, separador, pathRules } }`, and answers
  * `{ externalWait: { name, clump, args } }` for each external wait of a clump on this thread, then
  * `{ status }` when the Run is over for this thread, or `{ error }` if a clump failed here.
  */
@@ -29,10 +29,10 @@ export function servePoolThread(onPort) {
   });
 }
 
-function runThread({ module, memory, thread, compilado, separador }, port) {
+function runThread({ module, memory, thread, compilado, separador, pathRules }, port) {
   let exports = null;
-  const host = createHostFunctions({ compilado, separador, memory, exports: () => exports });
-  const { cad, arr, math } = host;
+  const host = createHostFunctions({ compilado, separador, pathRules, memory, exports: () => exports });
+  const { cad, arr, math, pth } = host;
   // An external wait (a dialog, the debugger, an instrument) parks the clump that asked for it; the
   // coordinator answers it and wakes the clump with the answer.
   const askCoordinator = (name) => (...args) => {
@@ -58,7 +58,7 @@ function runThread({ module, memory, thread, compilado, separador }, port) {
   const io = Object.fromEntries(VISA_FUNCTION_NAMES.map((name) => [name, askCoordinator(name)]));
   const sharedMemory = { [SHARED_MEMORY_IMPORT.modulo]: { [SHARED_MEMORY_IMPORT.nombre]: memory } };
   try {
-    exports = new WebAssembly.Instance(module, { ...sharedMemory, tiempo, cad, arr, math, dep, io }).exports;
+    exports = new WebAssembly.Instance(module, { ...sharedMemory, tiempo, cad, arr, math, dep, io, pth }).exports;
     return { status: exports.run_thread(thread, BLOCKING) };
   } catch (error) {
     return { error: { message: error.message, abortado: !!error.abortado } };

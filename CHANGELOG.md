@@ -28,6 +28,18 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   drawn as 32 × 32 nodes with their terminals where LabVIEW has them, wired and run
   (their right-click menus are LabVIEW's); the other elements are greyed with their reason.
 
+### Files
+
+- The path type (DT-067): a path is kept as its kind and components, read and
+  written with the rules of the system Solder runs on, and saved in the `.sdg`
+  as components, so a VI keeps its paths on another system. Build Path, Strip
+  Path, Path To String, String To Path, Path Type, Path to Array of Strings,
+  Array of Strings to Path, the Path, Empty Path and Not A Path constants, and
+  Equal?, Not Equal?, Empty String/Path? and Not A Number/Path/Refnum? on paths
+  run in a VI with LabVIEW's results, measured case by case on Windows. A path
+  never wires to a string, as in LabVIEW. Names beyond ASCII work, without
+  LabVIEW's byte limit. The editor does not offer them yet.
+
 ## 0.6.0-beta — 2026-10-25
 
 A VI now runs on every core of the computer, as in LabVIEW: its parallel loops

@@ -167,7 +167,7 @@
       "enum": [
         "number", "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "sgl",
         "boolean", "string", "waveform",
-        "error", "tcp-connection", "serial-connection", "visa-resource"
+        "error", "tcp-connection", "serial-connection", "visa-resource", "path"
       ]
     },
 

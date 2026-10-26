@@ -12,7 +12,7 @@
 // A pure module with no mutation: every operation returns a new diagram.
 
 import { connectorTerminals } from "./connector.mjs";
-import { DBL, ERROR, NUMERICOS, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, carriesUndefinedArray, isUndefinedArray, nombre, withoutOneDimension } from "./types.mjs";
+import { DBL, ERROR, NUMERICOS, PATH, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, carriesUndefinedArray, isUndefinedArray, nombre, withoutOneDimension } from "./types.mjs";
 
 /** El catálogo de bloques, `docs/schema/blocks.json`. */
 export function cargarCatalogo(datos) {
@@ -845,6 +845,9 @@ function sustituir(t, vars) {
     if ("escalar" in t) return vars[t.escalar] ?? t.defecto ?? DBL;
     // Las funciones de carácter (Decimal Digit?…): una cadena o un número; sin nada cableado, una cadena.
     if ("texto" in t) return vars[t.texto] ?? "string";
+    // A path or a string: Build Path's name, which with nothing wired is a path (as since LabVIEW 2020),
+    // and Empty String/Path?, which is a string.
+    if ("pathOrString" in t) return vars[t.pathOrString] ?? t.defecto ?? PATH;
     if ("var" in t) return vars[t.var];
     if ("clusterOf" in t) return vars[t.clusterOf];
     // An element looked up by name in the cluster wired in; none of that name, no type (DT-050).
@@ -933,6 +936,11 @@ function restringir(t, decl) {
 function ligar(declarado, llega, vars) {
   if (!declarado || typeof declarado !== "object" || llega === undefined) return;
   if ("num" in declarado) {
+    // Not A Number/Path/Refnum? takes a path as well as a number (DT-067).
+    if (declarado.orPath && llega === PATH) {
+      vars[declarado.num] ??= PATH;
+      return;
+    }
     if (!esNumerico(llega)) return;
     vars[declarado.num] = restringir(vars[declarado.num] === undefined ? llega : comun(vars[declarado.num], llega), declarado);
   } else if ("logico" in declarado) {
@@ -944,12 +952,15 @@ function ligar(declarado, llega, vars) {
     // Booleano, cadena, cluster o número: lo que llega primero decide; mezclar clases rompe el cable.
     // Comprobado en LabVIEW 2026 Q3 (docs/reference/labview-errors.md §8): un túnel
     // de Case y Select aceptan clusters y cadenas; I32 con DBL da DBL; cadena con número rompe el cable.
-    if (llega !== "boolean" && llega !== "string" && !esNumerico(llega) && !esCluster(llega)) return;
+    // A path is compared too (DT-067), never mixed with a string: the second wire breaks.
+    if (llega !== "boolean" && llega !== "string" && llega !== PATH && !esNumerico(llega) && !esCluster(llega)) return;
     const v = vars[declarado.escalar];
     vars[declarado.escalar] = v === undefined ? llega : !esNumerico(v) || !esNumerico(llega) ? v : comun(v, llega);
   } else if ("texto" in declarado) {
     if (llega !== "string" && !esNumerico(llega)) return;
     if (vars[declarado.texto] === undefined) vars[declarado.texto] = llega;
+  } else if ("pathOrString" in declarado) {
+    if ((llega === PATH || llega === "string") && vars[declarado.pathOrString] === undefined) vars[declarado.pathOrString] = llega;
   } else if ("var" in declarado) {
     if (vars[declarado.var] === undefined) vars[declarado.var] = llega;
   } else if ("clusterOf" in declarado) {

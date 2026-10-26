@@ -10,6 +10,9 @@
 // worker and the command line, in Node, use it the same way.
 
 import { NUMERICOS, flattenArrayValue, nestArrayValue, representacion } from "../model/types.mjs";
+import {
+  EMPTY_PATH, arrayOfStringsToPath, buildPath, decodePath, encodePath, hostPathRules, isEmptyPath, pathFromText, pathToArrayOfStrings, pathToText, pathsEqual, stripPath,
+} from "../model/paths.mjs";
 import { FUNCIONES } from "../compiler/expression-parser.mjs";
 import { MAXIMUM_PAGES, SHARED_MEMORY_IMPORT, tipoWasm } from "../compiler/compiler.mjs";
 import { mensaje as mensajeDeError } from "./error-codes.mjs";
@@ -204,7 +207,7 @@ export function debugValueReader(compilado, { leerCadena, leerCluster, leerArray
  * is instantiated) and the shared `memory`, and the readers and writers of values in the memory. Every
  * thread of a pool makes its own (DT-063 §1); the coordinator too.
  */
-export function createHostFunctions({ compilado, separador = ".", memory, exports }) {
+export function createHostFunctions({ compilado, separador = ".", pathRules = hostPathRules(), memory, exports }) {
   // The memory is looked at again every time, since it may have grown.
   const memoria = () => new DataView(memory.buffer);
   // Los clusters (DT-042): campo a campo, según la disposición que da el
@@ -472,13 +475,37 @@ export function createHostFunctions({ compilado, separador = ".", memory, export
   /** The value of type `type` at `address` of the memory: a scalar, a string's or array's handle, or a cluster. */
   const readValue = (address, indicator) => {
     const { tipo, elemento, dims, disposicion } = indicator;
+    if (indicator.path) return decodePath(readBytes(address));
     if (tipo === "string") return leerCadena(address);
     if (disposicion) return leerCluster(address, disposicion);
     if (elemento) return leerArray(address, elemento, dims);
     return deWasm(atomicScalar(memory, address, tipoWasm(tipo)), tipo);
   };
   const math = { random: Math.random, pow: Math.pow, ...funcionesMath };
-  return { cad, arr, math, putBytes, readBytes, ponerCadena, leerCadena, ponerCluster, leerCluster, ponerArray, leerArray, readValue, functionSource };
+  // The path functions (DT-067): a path's block is decoded, the rules of the host applied, and the result written.
+  const STRING_ELEMENT = { tipo: "string", tam: 4, ref: true };
+  const readPath = (handle) => decodePath(readBytes(handle));
+  const writePath = (cell, path) => putBytes(cell, encodePath(path));
+  const pth = {
+    build_path: (cell, base, name, nameIsPath) => writePath(cell, buildPath(readPath(base), nameIsPath ? readPath(name) : leerCadena(name), pathRules)),
+    strip_path: (strippedCell, nameCell, path) => {
+      const { stripped, name } = stripPath(readPath(path));
+      writePath(strippedCell, stripped);
+      ponerCadena(nameCell, name);
+    },
+    path_to_string: (cell, path) => ponerCadena(cell, pathToText(readPath(path), pathRules)),
+    string_to_path: (cell, text) => writePath(cell, pathFromText(leerCadena(text), pathRules)),
+    path_kind: (path) => readPath(path).kind,
+    path_to_array: (arrayCell, path) => {
+      const { components, relative } = pathToArrayOfStrings(readPath(path));
+      ponerArray(arrayCell, STRING_ELEMENT, components);
+      return relative ? 1 : 0;
+    },
+    array_to_path: (cell, components, relative) => writePath(cell, arrayOfStringsToPath(leerArray(components, STRING_ELEMENT), relative !== 0)),
+    path_is_empty: (path) => (isEmptyPath(readPath(path)) ? 1 : 0),
+    paths_equal: (first, second) => (pathsEqual(readPath(first), readPath(second), pathRules) ? 1 : 0),
+  };
+  return { cad, arr, math, pth, putBytes, readBytes, ponerCadena, leerCadena, ponerCluster, leerCluster, ponerArray, leerArray, readValue, readPath, writePath, functionSource };
 }
 
 /**
@@ -494,6 +521,8 @@ export function createHostFunctions({ compilado, separador = ".", memory, export
  *   itself (checked in LabVIEW with the Stop button).
  * - `separador`: el separador decimal del sistema, para los números a cadena con
  *   «use system decimal point?» (por defecto, el punto).
+ * - `pathRules`: "windows" or "posix", the rules a path is read and written with (DT-067); by default,
+ *   those of the system the Run is on.
  * - `depurador` (DT-047): `{ alValor(nodo, salida, valor), alNodo(nodo), unoACadaVez() }`. With it the
  *   VI reports every node and the value of its outputs while debugging is on: `alNodo` may return a promise
  *   (a breakpoint, a step, Highlight Execution's pace) and the clump waits for it. The runtime gives it
@@ -509,13 +538,13 @@ export function createHostFunctions({ compilado, separador = ".", memory, export
  */
 export async function ejecutar(compilado, valores = {}, opciones = {}) {
   const { bytes, controles, indicadores, clumps } = compilado;
-  const { alEscribir, alSoltar, senal, separador = "." } = opciones;
+  const { alEscribir, alSoltar, senal, separador = ".", pathRules = hostPathRules() } = opciones;
   const escritos = {};
 
   let ex = null;
   const memory = new WebAssembly.Memory({ initial: compilado.memoryPages, maximum: MAXIMUM_PAGES, shared: true });
-  const hostFunctions = createHostFunctions({ compilado, separador, memory, exports: () => ex });
-  const { cad, arr, math, ponerCadena, leerCadena, ponerCluster, leerCluster, ponerArray, leerArray, readValue } = hostFunctions;
+  const hostFunctions = createHostFunctions({ compilado, separador, pathRules, memory, exports: () => ex });
+  const { cad, arr, math, pth, putBytes, ponerCadena, leerCadena, ponerCluster, leerCluster, ponerArray, leerArray, readValue } = hostFunctions;
   const memoria = () => new DataView(memory.buffer);
   // The controls are records of the panel too: at the start of each turn, what the caller changed in
   // `valores` (the editor's messages, in the worker) is written into them, a string, array or cluster
@@ -530,7 +559,8 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     const address = record + PANEL_RECORD.value;
     if (tipo !== "string" && !elemento && !disposicion) return storeAtomicScalar(memory, address, tipoWasm(tipo), aWasm(value, tipo));
     ex.write_lock(record + PANEL_RECORD.lock);
-    if (tipo === "string") ponerCadena(address, value);
+    if (control.path) putBytes(address, encodePath(value ?? EMPTY_PATH));
+    else if (tipo === "string") ponerCadena(address, value);
     else if (disposicion) ponerCluster(address, disposicion, value);
     else ponerArray(address, elemento, value, dims);
     ex.write_unlock(record + PANEL_RECORD.lock);
@@ -666,7 +696,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   };
   const io = Object.fromEntries(VISA_FUNCTION_NAMES.map((name) => [name, (...args) => parkOn(visaFunctions[name](...args))]));
   const sharedMemory = { [SHARED_MEMORY_IMPORT.modulo]: { [SHARED_MEMORY_IMPORT.nombre]: memory } };
-  const { instance } = await WebAssembly.instantiate(bytes, { ...sharedMemory, tiempo, cad, arr, dep, math, io });
+  const { instance } = await WebAssembly.instantiate(bytes, { ...sharedMemory, tiempo, cad, arr, dep, math, io, pth });
   ex = instance.exports;
   ex.initialize();
   restoreState(opciones.estado, bytes, ex.memoria);
@@ -688,7 +718,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   const debuggedFromTheStart = depurador && compilado.debugFlag !== undefined && memoria().getInt32(compilado.debugFlag, true) !== 0;
   if (opciones.poolPorts?.length && !debuggedFromTheStart) {
     try {
-      await runOnPool({ ex, memory, bytes, compilado, separador, ports: opciones.poolPorts, externalWaits, onDebugValue: (nodo, salida, value) => depurador?.alValor(nodo, salida, value), passOverPanel, senal });
+      await runOnPool({ ex, memory, bytes, compilado, separador, pathRules, ports: opciones.poolPorts, externalWaits, onDebugValue: (nodo, salida, value) => depurador?.alValor(nodo, salida, value), passOverPanel, senal });
     } finally {
       saveState(opciones.estado, bytes, ex.memoria);
     }
@@ -818,7 +848,7 @@ const DISPLAY_PASS_MS = 16;
  * passes over the panel at the display's pace, and turns Abort and failures into the memory's abort
  * flag. Resolves when every thread is done; rejects when the Run is aborted, deadlocks or fails.
  */
-async function runOnPool({ ex, memory, bytes, compilado, separador, ports, externalWaits, onDebugValue, passOverPanel, senal }) {
+async function runOnPool({ ex, memory, bytes, compilado, separador, pathRules, ports, externalWaits, onDebugValue, passOverPanel, senal }) {
   const module = await WebAssembly.compile(bytes);
   const threads = ports.length;
   const coordinatorThread = threads;
@@ -846,7 +876,7 @@ async function runOnPool({ ex, memory, bytes, compilado, separador, ports, exter
           if (data.error) fail(Object.assign(new Error(data.error.message), { abortado: data.error.abortado }));
           resolve();
         };
-        port.postMessage({ start: { module, memory, thread, compilado: { disposicionError: compilado.disposicionError, disposicionVisa: compilado.disposicionVisa, callChain: compilado.callChain, debugNodes: compilado.debugNodes }, separador } });
+        port.postMessage({ start: { module, memory, thread, compilado: { disposicionError: compilado.disposicionError, disposicionVisa: compilado.disposicionVisa, callChain: compilado.callChain, debugNodes: compilado.debugNodes }, separador, pathRules } });
       }),
   );
   try {

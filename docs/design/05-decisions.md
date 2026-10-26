@@ -2846,10 +2846,14 @@ does all the file semantics; component names are UTF-8.**
 ### Decision
 
 1. **The type** is `"path"` (`PATH` in `core/model/types.mjs`), a scalar name in the catalog, the graph and the
-   `.sdg`. The compiler lays it out, and only there, as the cluster `{ kind: U8, components: 1D array of string }`,
-   with kind 0 = absolute, 1 = relative, 2 = Not A Path, the numbering Path Type gives (measured). The empty path is
-   absolute with no components; the relative "." is relative with no components; Not A Path has no components; a
-   ".." component is kept as an empty string, as Path to Array of Strings shows it.
+   `.sdg`. Its value is a kind and components (`core/model/paths.mjs`), with kind 0 = absolute, 1 = relative,
+   2 = Not A Path, the numbering Path Type gives (measured). The empty path is absolute with no components; the
+   relative "." is relative with no components; Not A Path has no components; a ".." component is kept as an empty
+   string, as Path to Array of Strings shows it. **In memory** a path is one handle, like a string's and like
+   LabVIEW's own path handle: its block holds the kind in one byte and then each component as its UTF-8 length (U32)
+   and its bytes, and an empty block is the empty path, so a path never written (handle 0) reads as the empty path.
+   The compiler lays it out so (`inMemory`, amended on 2026-10-26 from a cluster with an array, which needed new
+   machinery for arrays inside clusters while the handle reuses every piece strings already have).
 2. **The `.sdg` stores a path as its kind and components**, never as text, so a VI saved on one system opens with
    the same path on another, as LabVIEW recompiles path constants for its target.
 3. **The rules of the system Solder runs on.** Parsing text into a path (String To Path, typing into a control),

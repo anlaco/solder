@@ -81,11 +81,19 @@ export const VISA_RESOURCE = "visa-resource";
 export const VISA_RESOURCE_LAYOUT = Object.freeze({ cluster: [{ name: "resource name", type: "string" }, { name: "session", type: "u32" }] });
 
 /**
- * A type as the compiler lays it out in memory: a VISA resource name becomes its cluster, inside arrays
- * and clusters too; every other type is itself.
+ * LabVIEW's path (DT-067): a scalar type of its own that never coerces to or from a string (measured: the
+ * wire breaks). Its value is a kind and components (core/model/paths.mjs).
+ */
+export const PATH = "path";
+
+/**
+ * A type as the compiler lays it out in memory: a VISA resource name becomes its cluster, and a path one
+ * handle like a string's, whose block holds its kind and components (DT-067 §1), inside arrays and
+ * clusters too; every other type is itself.
  */
 export function inMemory(t) {
   if (t === VISA_RESOURCE) return VISA_RESOURCE_LAYOUT;
+  if (t === PATH) return "string";
   if (esArray(t)) return { ...t, array: inMemory(t.array) };
   if (esCluster(t)) return { ...t, cluster: t.cluster.map((field) => ({ ...field, type: inMemory(field.type) })) };
   return t;
@@ -144,6 +152,7 @@ export function conversion(desde, hacia) {
 export function nombre(t) {
   if (esEnum(t)) return "enum";
   if (t === VISA_RESOURCE) return "VISA resource name";
+  if (t === PATH) return "path";
   if (esArray(t)) return `${dimensionsOf(t) > 1 ? `${dimensionsOf(t)}D ` : ""}array of ${nombre(t.array)}`;
   if (typeof t === "string") return NUMERICOS[t]?.abrev ?? t;
   if (t && typeof t === "object" && "cluster" in t) return "cluster";
@@ -184,6 +193,8 @@ export const COLORES = {
   error: "#7f7f00",
   /** The wire, terminals and constant of a VISA resource name: #7f007f, measured in LabVIEW 2026 Q3 (reports/2026-10-26-visa-resource-name-look.md Q1-Q3). */
   visa: "#7f007f",
+  /** The wire, terminals and constants of a path: teal #007f7f, measured in LabVIEW 2026 Q3 (reports/2026-10-26-path-type.md §2). */
+  path: "#007f7f",
 };
 
 function colorEscalar(t) {
@@ -191,6 +202,7 @@ function colorEscalar(t) {
   if (t === "boolean") return COLORES.booleano;
   if (t === "string") return COLORES.cadena;
   if (t === VISA_RESOURCE) return COLORES.visa;
+  if (t === PATH) return COLORES.path;
   return COLORES.otro;
 }
 
