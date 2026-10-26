@@ -1387,3 +1387,91 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-15-file-close.md`
 > about but close too. Cancel, or a cancelled Save As, closes nothing. The "List unsaved changes..." link and LabVIEW's list of
 > affected items are not there (the dialog is the system's), and its buttons do not turn into Save / Don't Save when the box is
 > unchecked. Tested in `test/editor/close-flow.test.mjs`.
+
+## 20. VISA resource name (2026-10-26, DT-065, DT-066)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-26-visa-resource-name-look.md` and `2026-10-25-visa-palettes.md` §4).
+The look is in [`06-visual.md`](06-visual.md) §17. Tests: `test/editor/visa-resource-name.test.mjs`.
+
+> **Rule 104 — The constant and the control hold a string.** A VISA resource name constant (`visa-resource-constant`) and the field of a
+> VISA resource name control (`visa-control`) are typed into as a string constant or control is, on **one line**: Enter confirms, as it
+> does in a numeric one, and what is typed is kept as it is, in `config.value` (the constant) or as the current value (the control; the
+> default the file saves does not change, DT-053). The constant grows to the right with its text; typing does not move its left edge. The
+> indicator shows the string the VI leaves in it after a Run. Create ▸ Constant, Control and Indicator on a terminal of type
+> `visa-resource` make these blocks, wired (`core/model/create-on-terminal.mjs`). A Run starts from the current value of the control
+> and the VISA functions open a session from that name (DT-066). Tested.
+
+> **Rule 105 — The dropdown arrow lists the VISA resources, and Solder has none to list yet.** The arrow of the constant, and the button
+> of the control (not of the indicator, which has none), open the menu `context.visa-dropdown` flush left under the object; a second
+> press on the arrow closes it. LabVIEW lists the resources of the machine, a separator and Refresh. Solder's VISA cannot find them yet
+> (DT-065), so the menu has **only its Refresh row, greyed**, and clicking it says why. The
+> menu is the inventory's, so it has the box of every menu (§16). **Unverified:** that the menu also opens in Run mode in Solder (the press is taken before the Run's own), the empty constant's dropdown in LabVIEW, the menu of a
+> real list and what picking a resource does (Solder has no row to pick).
+
+> **Rule 106 — The right-click menus.** The constant (`context.visa-constant`), the panel control (`context.visa-control`) and the two
+> terminals (`context.visa-control-terminal`, `context.visa-indicator-terminal`) have the rows and separators measured in LabVIEW,
+> in its order. What Solder does for other types it does here: **Data Operations** (Reinitialize to Default Value, Make Current Value
+> Default) on the control, the indicator and their terminals, and **View As Icon** on the terminals (38 × 38 or 32 × 16); the rest is
+> greyed with its reason (rule 54), as on the numeric ones. The VISA-specific rows are greyed and name their own missing piece: VISA
+> Palette ▸ (`paleta-visa-en-menu`), Select VISA Class ▸ with its two submenus, I/O Session (18 classes, Instr ticked) and Event Class (13),
+> Property and Method for Instr Class ▸ (`clases-visa`), and Select Item... and the dropdown's Refresh (`listar-recursos-visa`). Ticks:
+> Menu Button and Size To Text on the constant, Label on the terminals, Caption and Menu Button (and no Label, which is what was
+> measured) on the panel control, the I/O Session class and Instr on all. The terminals' Advanced is greyed, as in LabVIEW. **Unverified
+> or not done:** the menu of the panel indicator (it does not open), the submenus VISA Palette, Replace, Synchronous I/O Mode, Select
+> Item..., Properties, Customize..., Property Node and Invoke Node, the full list of Property for Instr Class, and the control
+> terminal's own Create ▸ list (it is the indicator terminal's).
+
+> **Rule 107 — Controls ▸ Modern ▸ I/O.** The subpalette has 3 columns and 13 elements in the measured order: Waveform, Digital Waveform,
+> Digital Data, Traditional DAQ Channel, DAQmx Name Controls (a subpalette, not opened in LabVIEW either), DataFinder, **VISA resource
+> name** (row 3, column 1; done: it puts a `visa-control` on the panel, labelled "VISA resource name", with its terminal), IVI Logical Name,
+> FieldPoint IO Point, IMAQ Session, Motion Resource, System Configuration and Shared Variable Control. The other twelve are greyed with
+> their reason (`tipo-waveform`, `drivers-de-adquisicion`, `variables-y-feedback`). The VISA resource name indicator is not in the
+> palette; it comes from Change to Indicator or Create ▸ Indicator, as in LabVIEW. Tested.
+
+## 21. The VISA functions in the editor (2026-10-26, DT-065, DT-066)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-25-visa-palettes.md` §1–3, `2026-10-26-visa-nodes.md` and
+`2026-10-26-visa-resource-name-look.md` Q5). The look is in [`06-visual.md`](06-visual.md) §18. Tests: `test/editor/visa-nodes.test.mjs`.
+
+> **Rule 108 — Functions ▸ Instrument I/O.** Right under Measurement I/O at the root of the Functions palette. It has four folders in
+> the cells measured in LabVIEW (row, column): Instrument Drivers (1, 1), VISA (2, 1), GPIB (2, 2) and Serial (2, 3). Solder unfolds the
+> category in the palette, whose grid is four columns wide (LabVIEW's window is three); the cells are LabVIEW's. **Instrument Drivers and
+> GPIB were not opened in LabVIEW**, so they are greyed folders with no content (`contenido-no-capturado`). VISA (3 × 2) holds VISA Write,
+> VISA Read, the folder VISA Advanced, VISA Clear, VISA Read STB and VISA Assert Trigger. VISA Advanced (3 × 4) holds VISA Open, VISA
+> Close, VISA Find Resource, VISA Set Timeout, VISA Property Node, the folder Bus/Interface Specific, VISA Write From File, VISA Read To
+> File, the folder Event Handling, VISA Lock Async.vi, VISA Unlock and the folder Register Access. Bus/Interface Specific (5 × 3, with
+> the third cell of the first row empty), VISA USB (4 × 1, third cell empty), Event Handling (4 × 2), Register Access (8 × 3) and Low
+> Level Register Access (4 × 3) have the names and cells of the report; Serial (4 × 2) is the same palette under Instrument I/O and under
+> Bus/Interface Specific. **Done:** VISA Open, VISA Write, VISA Read and VISA Close, wherever they are (VISA Write, Read and Close also
+> in both Serial palettes): each puts its block. Everything else is greyed with its reason (`funciones-visa-restantes`,
+> `puerto-serie-visa`, `nodos-de-propiedades`, `sub-vis`). The thumbtack of each subpalette is greyed (`paletas-fijas`). Tested.
+
+> **Rule 109 — The nodes are 32 × 32 and their terminals sit where LabVIEW has them.** VISA Open, Write, Read and Close are tiles of
+> 32 × 32 px. Their terminals are not spread over the edge as those of other functions are: they are 6 × 6 dots on rows 8 px apart (y 1,
+> 9, 17 and 25 from the top), the inputs on the left (x −3 to 2) and the outputs on the right (x 29 to 34); the wire attaches at x 0 or
+> x 31, at 3.5 px under the top of the dot. Open: resource name, duplicate session, access mode and error in on rows 1 to 4 of the left,
+> **VISA Open timeout on the top edge** (x 9 to 14), resource name out on row 1 and error out on row 4 of the right. Write: resource
+> name, write buffer, (row 3 empty) and error in on row 4; resource name out, return count, (empty) and error out. Read: resource name,
+> byte count, error in on row 4; resource name out, read buffer, return count and error out on rows 1 to 4. Close: resource name and
+> error in on row 4; error out on row 4. The dot's colour is its wire's. The tip of each is the name of its context help
+> (`visa-open` and the others in `docs/schema/blocks.json`). **Unverified:** the connector-pane pattern; which dot is which was read from
+> colour, place and the indices of the context help, not from each tip; where the wire of the top terminal leaves (Solder draws wires
+> from a top terminal as from the others; the stub of the hint, when the node is hovered, does point up); where a node hangs from the
+> cursor when it is picked from the palette (Solder: by its top-left corner, as most nodes). Tested.
+
+> **Rule 110 — The right-click menus of the VISA functions.** The body has `context.visa-function`: Visible Items ▸, Help, Examples,
+> Description and Tip..., a separator, Add Breakpoint, a separator, VISA Palette ▸, Replace ▸, a separator, Synchronous I/O Mode ▸, a
+> separator, Remove and Rewire, Create ▸, a separator and Properties (nothing greyed in LabVIEW). The **resource name terminal** has
+> `context.visa-function-resource-terminal`: Visible Items ▸, Help, Examples, Description and Tip..., a separator, Add Breakpoint, a
+> separator, VISA Palette ▸, Create ▸, a separator, Replace ▸, a separator, Synchronous I/O Mode ▸, a separator, Remove and Rewire, a
+> separator and Properties. Its Create ▸ has Constant, Control and Indicator, a separator, Property for Instr Class ▸, Method for Instr
+> Class ▸ (greyed in LabVIEW), Channel Writer..., a separator, All Controls and Indicators and All Constants. **Done**, as for any
+> function: Visible Items ▸ Terminals, Add Breakpoint (with Remove and Disable Breakpoint once there is one) and Create ▸ Constant,
+> Control, Indicator, All Controls and Indicators and All Constants; on the resource terminal they make the VISA resource name constant,
+> control and indicator (an indicator, which does not take an input, is made unwired). The rest is greyed with its reason (rule 54):
+> Label, Help, Examples, Description and Tip..., VISA Palette (`paleta-visa-en-menu`), Replace, Remove and Rewire, Property and Method
+> for Instr Class (`clases-visa`), Channel Writer (`canales`), Properties and **Synchronous I/O Mode (`modo-de-e-s-sincrono`; its
+> submenu was not captured)**. The other terminals of the nodes open the body's menu, as the terminals of any function do (their own was
+> not measured). **Unverified:** the contents of every submenu but Create's, and the Visible Items of the terminal menu (Solder's are
+> the function's). Tested.
+

@@ -18,6 +18,15 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   never opened open it, and closing a closed session is a warning (DT-066). The
   editor does not offer them yet; when it does, they will run in a process of
   their own, so that a fault in the instrument code cannot close the editor.
+- The editor draws and edits the VISA resource name: its purple wire, the
+  constant on the diagram, the control and indicator on the panel with their
+  terminals, the dropdown arrow (its menu only has Refresh, greyed, until
+  Solder can find resources), their right-click menus as LabVIEW has them, and
+  Controls ▸ Modern ▸ I/O with VISA resource name done.
+- Functions ▸ Instrument I/O, with its VISA, Serial, GPIB and Instrument Drivers
+  folders as LabVIEW lays them out. VISA Open, Write, Read and Close are placed from it,
+  drawn as 32 × 32 nodes with their terminals where LabVIEW has them, wired and run
+  (their right-click menus are LabVIEW's); the other elements are greyed with their reason.
 
 ## 0.6.0-beta — 2026-10-25
 

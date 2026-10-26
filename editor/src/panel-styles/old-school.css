@@ -45,6 +45,37 @@
 /* A string's field fills its box and keeps the lines of its text. */
 .sd-panel .sd-string .sd-field { width: 100%; white-space: pre; line-height: 15px; }
 
+/* ——— VISA resource name ———
+   Measured at 1:1 (labview-captures/visa/resource-name-p0.png and -i0.png, reports/2026-10-26-visa-resource-name-look.md
+   Q3). The box is 104 × 26 with a 4 px sunken bevel (its four rows on each side, from the outside in) round an
+   #e2e2e2 inside: the icon cell (9 × 18, #b3b3b3, the I/O glyph in black), a 1 px gap, a 17 px tall white field and,
+   on a control, a 17 × 17 raised button with a black arrow of 7, 5, 3 and 1 px. */
+.sd-panel .sd-visa {
+  display: block; background: #e2e2e2;
+  box-shadow:
+    inset 1px 0 0 #c9c9c9, inset 0 1px 0 #d3d3d3, inset -1px 0 0 #eaeaea, inset 0 -1px 0 #eaeaea,
+    inset 2px 0 0 #c2c2c2, inset 0 2px 0 #c2c2c2, inset -2px 0 0 #ededed, inset 0 -2px 0 #ededed,
+    inset 3px 0 0 #b7b7b7, inset 0 3px 0 #adadad, inset -3px 0 0 #f2f2f2, inset 0 -3px 0 #f2f2f2,
+    inset 4px 0 0 #b1b1b1, inset 0 4px 0 #b1b1b1, inset -4px 0 0 #eeeeee, inset 0 -4px 0 #eeeeee;
+}
+.sd-panel .sd-visa-icon { position: absolute; left: 4px; top: 4px; width: 9px; height: 18px; background: #b3b3b3; }
+.sd-panel .sd-visa-icon::before { content: none; }
+.sd-panel .sd-visa-glyph { position: absolute; left: 1px; top: 2.5px; display: block; width: 7px; height: 13px; color: #000; }
+.sd-panel .sd-visa-glyph svg { display: block; width: 7px; height: 13px; }
+.sd-panel .sd-visa .sd-field {
+  position: absolute; left: 14px; top: 5px; width: 86px; height: 17px; padding: 0 0 0 2px; border: 0; border-radius: 0;
+  background: #fff; font-size: var(--fuente); line-height: 1;
+}
+.sd-panel .sd-visa.sd-control .sd-field { width: 69px; }
+.sd-panel .sd-visa .sd-value { flex: initial; min-width: auto; overflow: visible; }
+.sd-panel .sd-visa .caret { display: inline; vertical-align: baseline; }
+.sd-panel .sd-visa .sd-dropdown {
+  position: absolute; left: 83px; top: 5px; width: 17px; height: 17px; padding: 0; border: 0; border-radius: 0; background: #b3b3b3;
+  box-shadow: inset 1px 1px 0 #e3e3e3, inset -1px -1px 0 #696969, inset 2px 2px 0 #fff, inset -2px -2px 0 #a0a0a0;
+}
+.sd-panel .sd-visa .sd-dropdown::before { position: absolute; left: 5px; top: 7px; border-top-color: #000; }
+.sd-panel .sd-visa .sd-dropdown:hover::before { border-top-color: #000; }
+
 /* ——— Booleans ——— */
 
 /* LabVIEW's drawing of each style and state, from old-school/, over the whole object and the 12 px around it

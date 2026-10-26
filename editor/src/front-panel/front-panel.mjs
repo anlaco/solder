@@ -50,6 +50,9 @@ export const CONTROLES = {
   // Un control o indicador de cadena: LabVIEW llama «String» a los dos (labview-captures/string/).
   "str-control": { etiqueta: "String", incrementador: false, cadena: true },
   "str-indicator": { etiqueta: "String", incrementador: false, cadena: true },
+  // A VISA resource name: a one-line text with its resource string, labelled as LabVIEW does (labview-captures/visa/resource-name-p0.png).
+  "visa-control": { etiqueta: "VISA resource name", incrementador: false, cadena: true, visa: true },
+  "visa-indicator": { etiqueta: "VISA resource name", incrementador: false, cadena: true, visa: true },
   // Un cluster: de momento sólo los de error (Error In y Error Out), que se distinguen por `config.style`.
   "cluster-control": { etiqueta: "Cluster", incrementador: false, cluster: true },
   "cluster-indicator": { etiqueta: "Cluster", incrementador: false, cluster: true },
@@ -140,6 +143,15 @@ export const valorError = (n, valores) => ({ ...ERROR_VACIO, ...(valores?.[n.id]
 export const MEDIDAS_CADENA_PANEL = { ancho: 100, alto: 24 };
 
 /**
+ * The box of a VISA resource name, measured at 1:1 in labview-captures/visa/resource-name-p0.png (control) and -i0.png
+ * (indicator), reports/2026-10-26-visa-resource-name-look.md Q3: 104 × 26 px with a 4 px sunken bevel round an 18 px
+ * tall inside that holds, left to right, the icon cell (9 wide) with the I/O glyph, a 1 px gap, the text field (69
+ * wide on a control, 86 on an indicator, 17 tall: the first row of the inside is a gap) and, on a control only, a 17 px
+ * dropdown button.
+ */
+export const MEDIDAS_VISA_PANEL = { ancho: 104, alto: 26, bisel: 4, iconoAncho: 9, hueco: 1, campoAlto: 17, botonAncho: 17 };
+
+/**
  * The kind of a boolean control (Push Button, Stop Button…): its size, drawing
  * and default label come from glyphs.mjs (BOOLEANOS), by the `style` in its
  * configuration. A block that is not boolean has none.
@@ -201,6 +213,7 @@ export function cajaObjeto(tipo, x, y, config) {
   if (CONTROLES[tipo]?.grafico) return { x, y, ancho: GRAPH_MEASURES[tipo].width, alto: GRAPH_MEASURES[tipo].height, casilla: LABEL_PLACEMENT.indent, separacion: LABEL_PLACEMENT.gap };
   const b = estiloDe(tipo, config);
   if (b) return { x, y, ancho: b.ancho, alto: b.alto, casilla: 0, separacion: SEPARACION_BOOLEANO };
+  if (CONTROLES[tipo]?.visa) return { x, y, ancho: MEDIDAS_VISA_PANEL.ancho, alto: MEDIDAS_VISA_PANEL.alto, casilla: 0 };
   if (CONTROLES[tipo]?.cadena) return { x, y, ancho: MEDIDAS_CADENA_PANEL.ancho, alto: MEDIDAS_CADENA_PANEL.alto, casilla: 0 };
   const casilla = inicioCasilla(tipo);
   return { x, y, ancho: casilla + (esEnum(config?.type) ? CASILLA_ENUM : M.casilla), alto: M.alto, casilla };
@@ -222,7 +235,7 @@ function isInMoveBand(box, point) {
 }
 
 /** Whether a press in the node's value box types in it: numeric controls with an incrementer, and string controls. */
-const typesInValueBox = (n) => (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control") && !esEnum(n?.config?.type);
+const typesInValueBox = (n) => (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control" || n?.tipo === "visa-control") && !esEnum(n?.config?.type);
 
 /**
  * The edit-mode pointer over a panel object, as LabVIEW's automatic tool shows it
@@ -404,6 +417,7 @@ function panelObject(n, ctx, selected, p, resolvedTypes) {
   }
   if (control?.booleano) return HC.booleanHtml(frame, { style: n.config?.style ?? "push-button", on: encendido(n, p.valores) });
   const valueHtml = typedOrText(editing, textoValor(n, ctx, p.valores));
+  if (control?.visa) return HC.visaHtml(frame, { valueHtml });
   if (control?.cadena) return HC.stringHtml(frame, { valueHtml });
   return HC.numericHtml(frame, { valueHtml, withIncrementer: !!control?.incrementador, isEnum: esEnum(tipoDe(n)) });
 }
@@ -683,6 +697,9 @@ export function menuDe(n, onElement = false) {
   if (isGraph(n)) return `context.${n.tipo}`;
   // An enum control or indicator has its own menus, measured (DT-049).
   if (esEnum(n.config?.type) && (n.tipo === "control" || n.tipo === "indicator")) return n.tipo === "control" ? "context.enum-control" : "context.enum-indicator";
+  // A VISA resource name (reports/2026-10-26-visa-resource-name-look.md Q5).
+  // The panel's indicator was not measured: its menu does not open yet.
+  if (n.tipo === "visa-control") return "context.visa-control";
   if (n.tipo === "bool-control") return "context.boolean-control";
   if (n.tipo === "bool-indicator") return "context.boolean-indicator";
   return null;
@@ -714,7 +731,9 @@ export function editarValor(p, ctx, id, todo, campo) {
   if (n && campo) return { ...p, edicion: { nodo: id, valor: true, campo, texto: String(valorError(n, p.valores)[campo]), todo, ...(campo === "source" ? { cadena: true } : {}) }, seleccion: [], accion: null };
   // `shown` remembers the text the box showed, so that confirming it untouched keeps the value it rounds.
   const shown = n && textoValor(n, ctx, p.valores);
-  return n ? { ...p, edicion: { nodo: id, valor: true, texto: shown, shown, todo, ...(esCadena(n) ? { cadena: true } : {}) }, seleccion: [], accion: null } : p;
+  // A VISA resource name is text on one line: Enter confirms it, and it is kept as typed.
+  const kindOfText = esCadena(n) ? (CONTROLES[n.tipo].visa ? { resourceName: true } : { cadena: true }) : {};
+  return n ? { ...p, edicion: { nodo: id, valor: true, texto: shown, shown, todo, ...kindOfText }, seleccion: [], accion: null } : p;
 }
 
 /**
@@ -792,8 +811,8 @@ export function confirmar(p) {
     const { [e.nodo]: _, ...valores } = p.valores ?? {};
     return { ...p, g: CV.setCurrentValue(p.g, e.nodo, { ...valorError(n, p.valores), [e.campo]: valor }), valores, edicion: null };
   }
-  // Una cadena se guarda tal cual, con sus saltos de línea.
-  if (e.cadena) {
+  // Una cadena se guarda tal cual, con sus saltos de línea; el nombre de un recurso VISA, también.
+  if (e.cadena || e.resourceName) {
     const { [e.nodo]: _, ...valores } = p.valores ?? {};
     return { ...p, g: CV.setCurrentValue(p.g, e.nodo, e.texto), valores, edicion: null };
   }

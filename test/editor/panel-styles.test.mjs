@@ -37,6 +37,8 @@ const EVERY_KIND = [
   ["control", { type: { enum: ["Bake", "Grill"] }, value: 1 }, "enum"],
   ["str-control", undefined, "string"],
   ["str-indicator", undefined, "string"],
+  ["visa-control", undefined, "visa"],
+  ["visa-indicator", undefined, "visa"],
   ...Object.keys(G.BOOLEANOS).map((style) => [G.BOOLEANOS[style].indicador ? "bool-indicator" : "bool-control", { style }, "boolean"]),
   ["cluster-control", errorConfig("error-in"), "error-cluster"],
   ["cluster-indicator", errorConfig("error-out"), "error-cluster"],

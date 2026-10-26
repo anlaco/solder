@@ -12,7 +12,8 @@ When the developer says "keep going":
    at the end of the road in §3b (DT-061, DT-063) is done and merged into `main`
    (2026-10-25); continue with **"Then: hardware"** right after it (DT-064, which moved Core 1
    behind it), and keep in mind its list "Pending from the pool of threads". §4 gives the
-   detail of each module.
+   detail of each module. Hardware step 1 (VISA) goes on in `feature/visa`: its "Next, in this
+   order" says where (2026-10-26).
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
    `win11 encender`, `tools/vm_control.py foto|clic|arrastrar|tecla|texto`.
@@ -471,8 +472,18 @@ array or string read by a local variable while another loop writes it is never t
    function and kept for the next ones, a `MessagePort` per Run handed to the run worker
    (`core/runtime/io-protocol.mjs`); a crash of it ends only it, and a Run waiting for an instrument then fails.
    Checked in real Electron against Crucible and by `test/end-to-end/io-process.test.mjs`. 854 tests green.
-   Next: the palettes, the VISA resource name control and constant and their wire, then trying a Run with VISA in the
-   editor; packaging the addon (Windows included) goes with the next release.*
+   *The editor done on 2026-10-26 (DT-066): the VISA resource name wire, constant, control, indicator, terminals and
+   menus, Controls ▸ Modern ▸ I/O, Functions ▸ Instrument I/O with every measured subpalette (Open, Write, Read and
+   Close placed, wired and run; the rest greyed with its reason), the four nodes at their measured terminals. A VI
+   built from the palettes ran in the editor against Crucible with LabVIEW's answer
+   ([`2026-10-26-editor-visa-run.md`](../../labview-captures/reports/2026-10-26-editor-visa-run.md)). 890 tests green.
+   **Next, in this order** (decided with the developer on 2026-10-26): (a) the VISA Property Node with Timeout Value,
+   Termination Character and Termination Character Enable (without it a Read that does not fill its byte count
+   always waits the 2 s timeout); (b) serial ports (ASRL resources and VISA Configure Serial Port), which the ESP32
+   of step 2 needs; (c) merge `feature/visa` into `main` (DT-062). Then: finding VISA resources (the dropdown,
+   Select Item, VISA Find Resource); the constant's text width (LabVIEW's font is not identified); greyed menu rows
+   show no reason on hover (every menu of the editor); packaging the addon (Windows included) with the next
+   release. Then step 2, the ESP32.*
 2. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the firmware,
    and first served by a Crucible profile of it.
 3. **A DAQmx-like layer** over the ESP32, with its own DT after measuring DAQmx with a simulated NI device.

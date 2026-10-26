@@ -86,6 +86,11 @@
 .sd-panel .sd-control:is(.sd-numeric, .sd-enum) > .sd-incrementer + .sd-field { padding-left: 2px; }
 .sd-panel .sd-control.sd-editing:is(.sd-numeric, .sd-enum, .sd-string) { box-shadow: var(--sd-raise), 0 0 0 3px var(--sd-accent-soft); }
 
+/* A VISA resource name: its field is a card like the string's, and its button a raised key. */
+.sd-panel .sd-visa-icon { padding-left: 2px; }
+.sd-panel .sd-visa .sd-dropdown { border: 0; background: var(--sd-surface); box-shadow: var(--sd-raise); }
+.sd-panel .sd-visa .sd-dropdown:hover { background: var(--sd-accent-soft); }
+
 /* ——— Booleans ——— */
 
 /* Buttons and rockers are raised keys; pressed, they sink and their text takes the accent. */

@@ -911,6 +911,7 @@ const BLOQUES = {
   "arr-control": (e) => readControl(e),
   "cluster-control": (e) => readControl(e),
   "str-control": (e) => readControl(e),
+  "visa-control": (e) => readControl(e),
   // Timing: el reloj de milisegundos de LabVIEW es un U32 que da la vuelta.
   "tick-count-ms": () => [ins("call", idImport("reloj"))],
   "wait-ms": (e) => [...e.entrada(0), ...convertir(e.tIn(0), "u32"), ins("f64.convert_i32_u"), callScheduler("wait")],
@@ -1270,7 +1271,13 @@ function juntarFilas(t, rowsCell, cell, temporal) {
   ];
 }
 
-const PANEL_CONTROLS = ["control", "bool-control", "str-control", "cluster-control", "arr-control"];
+const PANEL_CONTROLS = ["control", "bool-control", "str-control", "cluster-control", "arr-control", "visa-control"];
+
+/**
+ * The panel objects whose value the editor holds as a VISA resource name's text alone (DT-066): the runtime
+ * gives it a session of 0, which the first VISA function that uses it opens from the name.
+ */
+const RESOURCE_NAME_PANEL_OBJECTS = new Set(["visa-control", "visa-indicator"]);
 
 /**
  * The instance of a subVI that a `subvi` node calls (DT-045): a non-reentrant
@@ -2233,7 +2240,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     const tiposNodo = [...entradas.map((_, i) => tIn(i)), ...salidas.map((_, j) => tOut(j))];
     if (tiposNodo.some((t) => !escalar(t))) return errores.push({ nodo: id, motivo: `"${nombre}" carries a type the compiler cannot emit yet.` });
     // Un indicador sin cable no se escribe: conserva su valor, como en LabVIEW.
-    if (["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator", "waveform-chart", "waveform-graph", "xy-graph"].includes(n.tipo)) {
+    if (["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator", "visa-indicator", "waveform-chart", "waveform-graph", "xy-graph"].includes(n.tipo)) {
       if (!llegaA.has(`${id}.value`)) return;
       // In a subVI, a connector indicator leaves its value in its slot for the caller; any other one, nowhere.
       if (asSubVI) {
@@ -2243,7 +2250,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       }
       const historyLength = n.tipo === "waveform-chart" ? (n.config?.historyLength ?? DEFAULT_CHART_HISTORY) : null;
       const { record, slot, code } = writeIndicator(module, tIn(0), entrada(0), nuevoLocal, historyLength);
-      indicadores.push({ nodo: id, name: n.name, tipo: tIn(0), record, ...(historyLength && { historyLength, slot }), ...datosDePanel(tIn(0)) });
+      indicadores.push({ nodo: id, name: n.name, tipo: tIn(0), record, ...(historyLength && { historyLength, slot }), ...datosDePanel(tIn(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }) });
       k.cuerpo.push(...code, ...debugHook(id, []));
       return;
     }
@@ -2253,7 +2260,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     const e = { nodo: n, cat, tIn, tOut, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex };
     if (!asSubVI && PANEL_CONTROLS.includes(n.tipo)) {
       e.controlRecord = module.bufer(recordBytes(slotBytes(tOut(0), esCluster(tOut(0)) ? disposicion(tOut(0)).tam : undefined)), 8);
-      controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), record: e.controlRecord, ...datosDePanel(tOut(0)) });
+      controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), record: e.controlRecord, ...datosDePanel(tOut(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }) });
     }
     try {
       const b = cat.bloque(n.tipo);

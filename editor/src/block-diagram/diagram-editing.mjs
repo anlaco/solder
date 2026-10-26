@@ -40,7 +40,7 @@ import * as Gr from "../../../core/model/graph.mjs";
 import * as TC from "./terminal-creation.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { constantElementType, constantForElement, emptyArrayAgain, flipArrayKind, isEmptyArrayShell, setArrayRepresentation, typeEmptyArray } from "../common/array-typing.mjs";
-import { CONSTANT_DIGITS, DBL, NUMERICOS, POR_ABREVIATURA, convertirValor, esArray, isUndefinedArray, esEntero, esEnum, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
+import { CONSTANT_DIGITS, DBL, NUMERICOS, POR_ABREVIATURA, VISA_RESOURCE, convertirValor, esArray, isUndefinedArray, esEntero, esEnum, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 import * as SI from "./select-item-dialog.mjs";
 import { MAX_EDITOR_DIMENSIONS, addDimensionPatch, dimensionsOfNode, firstShown, readCell, removeDimensionPatch, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
@@ -1219,7 +1219,7 @@ function keepRightEdge(before, after, ctx) {
   const id = before.edicion?.nodo;
   const node = id && before.g.nodos.find((k) => k.id === id);
   const changed = node && after.g.nodos.find((k) => k.id === id);
-  if (!node || !changed || changed === node || !CONSTANTES[node.tipo] || before.edicion.elem !== undefined || before.edicion.campo || before.edicion.etiqueta) return after;
+  if (!node || !changed || changed === node || !CONSTANTES[node.tipo] || CONSTANTES[node.tipo].visa || before.edicion.elem !== undefined || before.edicion.campo || before.edicion.etiqueta) return after;
   const growth = caja(changed, ctx).ancho - caja(node, ctx).ancho;
   return growth ? { ...after, g: Gr.mover(after.g, [id], -growth, 0) } : after;
 }
@@ -1255,7 +1255,8 @@ function commitTyping(d, ctx) {
   // Una expresión se guarda tal cual: si no vale, la dirá el compilador.
   if (n.tipo === "expression-node") return { ...d, g: Gr.fijarConfig(d.g, n.id, { expression: e.texto }), edicion: null };
   // Una cadena se guarda tal cual, con sus saltos de línea.
-  if (n.tipo === "str-const") return { ...d, g: Gr.fijarValor(d.g, n.id, e.texto), edicion: null };
+  // The same goes for a VISA resource name, which is a string that carries no newline (Enter confirms).
+  if (n.tipo === "str-const" || n.tipo === "visa-resource-constant") return { ...d, g: Gr.fijarValor(d.g, n.id, e.texto), edicion: null };
   const b = ctx.cat.bloque(n.tipo);
   const tipo = n.config?.type ?? b.config?.default?.type ?? "number";
   const leido = leerNumero(e.texto, tipo);
@@ -1265,6 +1266,9 @@ function commitTyping(d, ctx) {
 }
 
 // ——— Menús de clic derecho ———
+
+/** The menu the arrow of a VISA resource name opens: the list of VISA resources, of which Solder has only Refresh, greyed. */
+export const VISA_DROPDOWN_MENU = "context.visa-dropdown";
 
 /**
  * Abrir el menú de un nodo, o de uno de sus terminales (`puerto`), donde se
@@ -1526,6 +1530,8 @@ function nodeVariants(d, ctx) {
   // Remove Parameter on the only row of Scan From String does nothing: there is always one.
   if (n?.tipo === "scan-from-string" && (n.config?.inputs ?? 1) <= 1) return { desactivados: new Set([`${r}.remove-parameter`]) };
   if (UN.isUnbundleByName(n)) return unbundleVariants(d, ctx, n);
+  // LabVIEW greys Advanced on the terminals of a VISA resource name (reports/2026-10-26-visa-resource-name-look.md Q5; why is unverified).
+  if (r === "context.visa-control-terminal" || r === "context.visa-indicator-terminal") return { desactivados: new Set([`${r}.advanced`]) };
   if (n?.tipo === "case-selector") {
     const caso = d.g.nodos.find((k) => k.id === n.dentro);
     return { ocultos: fila(caso && esBooleano(caso) ? "numeric-palette" : "boolean-palette"), rotulos: new Map() };
@@ -1607,8 +1613,14 @@ function createVariants(d, ctx) {
 function wireMenuVariants(d, ctx) {
   if (d.menu?.raiz !== WIRE_MENU_ROOT || !ctx) return {};
   const row = (name) => `${WIRE_MENU_ROOT}.${name}`;
-  const broken = Gr.tipos(d.g, ctx.cat).cables.get(d.menu.nodo);
-  if (!broken?.roto) return { ocultos: new Set([row("list-errors")]) };
+  const types = Gr.tipos(d.g, ctx.cat);
+  const broken = types.cables.get(d.menu.nodo);
+  // The palette row is named after the wire's type: a VISA resource name's is the VISA Palette, as on its terminal
+  // (reports/2026-10-26-visa-resource-name-look.md Q5; on the wire itself, unverified).
+  const wire = d.g.cables.find((candidate) => candidate.id === d.menu.nodo);
+  const wireType = wire?.de && types.salidas.get(`${wire.de.nodo}.${wire.de.puerto}`);
+  const rotulos = new Map(wireType === VISA_RESOURCE ? [[row("numeric-palette"), "VISA Palette"]] : []);
+  if (!broken?.roto) return { ocultos: new Set([row("list-errors")]), rotulos };
   const hidden = ["visible-items", "add-probe", "custom-probe", ...(broken.suelto ? ["clean-up-wire"] : [])];
   return { ocultos: new Set(hidden.map(row)), desactivados: new Set([row("add-breakpoint")]) };
 }
@@ -1618,10 +1630,24 @@ const mergeVariants = (a, b) => ({
   ...a,
   ocultos: new Set([...(a.ocultos ?? []), ...(b.ocultos ?? [])]),
   desactivados: new Set([...(a.desactivados ?? []), ...(b.desactivados ?? [])]),
+  rotulos: new Map([...(a.rotulos ?? []), ...(b.rotulos ?? [])]),
 });
 
 /** What changes in the rows of the open menu: the node's own variants and those of Create ▸. `ctx` is needed for the terminal's type. */
 export const variantes = (d, ctx) => (isGraphMenu(d) ? graphMenuVariants(d) : mergeVariants(mergeVariants(nodeVariants(d, ctx), createVariants(d, ctx)), wireMenuVariants(d, ctx)));
+
+/**
+ * What LabVIEW ticks in the menus of a VISA resource name, by the menu's root (reports/2026-10-26-visa-resource-name-look.md
+ * Q5): every one has the I/O Session class, and Instr in it; the constant has Menu Button visible and Size To Text; the
+ * terminals show Label; the panel control shows its Caption and Menu Button, with Label unticked ("Surprises" of the report).
+ */
+const VISA_CLASS_MARKS = ["select-visa-class.i-o-session", "select-visa-class.i-o-session.instr"];
+export const VISA_MENU_MARKS = {
+  "context.visa-constant": ["visible-items.menu-button", "size-to-text", ...VISA_CLASS_MARKS],
+  "context.visa-control-terminal": ["visible-items.label", ...VISA_CLASS_MARKS],
+  "context.visa-indicator-terminal": ["visible-items.label", ...VISA_CLASS_MARKS],
+  "context.visa-control": ["visible-items.caption", "visible-items.menu-button", ...VISA_CLASS_MARKS],
+};
 
 /** Qué filas del menú llevan la marca: Terminals si el nodo los enseña, el modo actual, Invert si lo está, la representación de un número. */
 export function marcados(d, ctx) {
@@ -1633,6 +1659,7 @@ export function marcados(d, ctx) {
   const m = new Set();
   if (n.vista?.terminales) m.add(`${r}.visible-items.terminals`);
   if (!n.vista?.compacto) m.add(`${r}.view-as-icon`);
+  for (const mark of VISA_MENU_MARKS[r] ?? []) m.add(`${r}.${mark}`);
   if (n.config?.mode) m.add(`${r}.change-mode.${n.config.mode}`);
   if (n.config?.mechanical) m.add(`${r}.mechanical-action.${n.config.mechanical}`);
   const abrev = r.startsWith("context.numeric-") && NUMERICOS[n.config?.type ?? DBL]?.abrev;

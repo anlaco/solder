@@ -139,6 +139,7 @@ Wires encode the data type through **three visual channels**:
 | Boolean  | Green `#007F00` | Thin (1px) | Dotted, 1 px on / 1 px off |
 | String   | Pink `#FF00FF` | 2 px | Dotted, 3 px on / 1 px off |
 | Integer  | Blue `#0000FF` | Thin (1px) | Solid |
+| VISA resource name | Purple `#7F007F` | 2 px | Squiggle: each row 3 px on / 1 px off, the lower row 2 px ahead (§17) |
 
 > **Boolean and string, measured at 1:1** (2026-10-15, `labview-captures/reports/2026-10-15-unbundle-by-name.md` Q1 and Q7,
 > `cluster/w4.png`, `w12.png`, `w28.png`): the wires, and the names of an Unbundle By Name, are `#007F00` and `#FF00FF`; no
@@ -634,10 +635,66 @@ Measured at 1:1 in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-15-unbundl
   ~5 px (`#8E8E8E` … `#FCFCFC`), Solder's a CSS blur. **Unverified:** where a drop-down list goes near an edge (Solder pushes it back
   inside the window); the vertical inset of the rows at 1:1 (Solder's text sits about 2 px lower, with another font).
 
+## 17. VISA resource name (2026-10-26, DT-065, DT-066)
+
+Measured at 1:1 in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-26-visa-resource-name-look.md`, captures
+`labview-captures/visa/resource-name-*.png`; the picture is drawn anew, only sizes, colours and order are taken). Code: `aspecto` and
+`COLORES.visa` in `core/model/types.mjs`, `squiggleRows`, `MEDIDAS_VISA_CONSTANT` and `visaConstant` in
+`editor/src/block-diagram/diagram-view.mjs`, the VISA section of `editor/src/common/glyphs.mjs`, `MEDIDAS_VISA_PANEL` in
+`editor/src/front-panel/front-panel.mjs` and `.sd-visa` in `editor/src/panel-styles/`. Tests: `test/editor/visa-resource-name.test.mjs`.
+
+- **Wire (Q2):** `#7F007F`, 2 px, a squiggle of period 4 px: two pixel rows, each 3 px on and 1 px off, the lower one shifted by 2 px
+  (`y=392` on at x 866-867, 869-871, 873; `y=393` on at 867-869, 871-873). Measured on an 8 px stretch only; drawn with the same two
+  rows as the undefined array's wire. The terminals of the VISA nodes are the same purple.
+- **Diagram constant (Q1):** 35 × 20 px empty, `#7F007F` border of 2 px, white inside. From the left: the border and the I/O glyph
+  (an "I" over a slash over a "0", 7 × 13 px, `#7F007F`, 1 px inside the border); the text from 14 px (12 px after the border's inner
+  edge); a 1 px divider; and a 9 px cell with the dropdown arrow, a down triangle 7, 5, 3 and 1 px wide on four rows. With a text it grows
+  **to the right** (Size To Text is on): 191 px with `TCPIP0::10.0.2.2::5125::SOCKET`, text 160 px wide, 5 px of padding before the
+  divider. Solder's width is 14 + text + 5 + 12 (empty: 9 for the text, 35 in all), with the text measured by `anchoTexto`.
+  **Unverified:** LabVIEW's font and size (Solder's text is wider, 192 px for that name), how the constant grows while it is typed.
+- **Panel control and indicator (Q3):** 104 × 26 px, a 4 px sunken bevel round an `#E2E2E2` inside of 18 px (rows, from the outside in:
+  left/top `#C9C9C9`/`#D3D3D3`, `#C2C2C2`, `#B7B7B7`/`#ADADAD`, `#B1B1B1`; right/bottom `#EAEAEA`, `#EDEDED`, `#F2F2F2`, `#EEEEEE`).
+  Icon cell 9 × 18, `#B3B3B3`, with the black glyph; a 1 px gap; the white field, 17 px tall under a 1 px line (69 px wide on a control,
+  86 on an indicator, which has no button); on the control a 17 × 17 raised button: `#E3E3E3` and white on the top and left, `#A0A0A0`
+  and `#696969` on the bottom and right, face `#B3B3B3`, a black arrow of 7, 5, 3 and 1 px. The label above is "VISA resource name"
+  (its cap height is 9 px, as every label's). Old School draws it in CSS over Plain's markup (`.sd-visa`, DT-058); Plain writes "I/O" in
+  the icon cell and Solder dresses the button as a key. **Unverified:** the text's padding and font inside the field.
+- **Terminals (Q3):** View As Icon on, 38 × 38, with the frame, the white layers and the type tab of every panel terminal (a control: 2 px
+  `#7F007F`, 1 px white, 1 px inner frame; an indicator: 1, 2, 1), a miniature of the control inside (the field with "VISA", a
+  `#AAAAAA` button) and "I/O" in the tab; off, 32 × 16 with the arrow cell tinted `#D8B2D8` edged `#A54CA5` (the type's colour with
+  white, as the green of the other types) and "I/0" in the box.
+- **Dropdown (Q4):** a box of `#F0F0F0` with a `#A0A0A0` border, flush left under the control (§16 describes the box; the panel's has a
+  grey shadow). In LabVIEW it lists the VISA resources of the machine, a separator and Refresh; Solder cannot find them yet (DT-065), so
+  its box has only the Refresh row, greyed, which says why when it is clicked.
+- **Palette (Controls ▸ Modern ▸ I/O):** 3 columns and 13 elements, in the order of `labview-captures/visa/controls-modern-io.png`;
+  VISA resource name at (row 3, column 1). Its icon, like the other twelve, is drawn anew.
+
+## 18. The VISA functions (2026-10-26, DT-065, DT-066)
+
+Measured at 1:1 in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-26-visa-nodes.md` Q1–Q3 and `2026-10-25-visa-palettes.md`;
+captures `labview-captures/visa/node-*.png` and `functions-*.png`). The icons are drawn anew from the words of the report; only the sizes,
+the colours and the layout are taken. Code: `editor/src/block-diagram/visa-nodes.mjs` (geometry) and the VISA functions section of
+`editor/src/common/glyphs.mjs`. Tests: `test/editor/visa-nodes.test.mjs`.
+
+- **Tile (Q1):** 32 × 32 px, the cream of the functions (`#FFFFCC`, 30 × 30 inside) inside a 1 px `#4C4C3D` outline; Solder takes both from
+  the theme's node fill and border. The drawing is in the outline's colour only.
+- **Terminals (Q2):** 6 × 6 dots filled with the colour of the wire: resource name `#7F007F`, error `#7F7F00`, Boolean `#007F00`, numeric
+  `#0000FF`, string `#FF00FF`. Rows 8 px apart; left for inputs, right for outputs, VISA Open's timeout on top; stubs of about 5 px. The
+  geometry is in the editor's rule 109.
+- **Icons (Q3):** "VISA" in italic capitals at the top left and one bold capital at the bottom left: O, W, R, C. Open, a sheet tilted about
+  20° with a dotted outline and a folded corner, lifted by a flap, a dark wedge below like a hinge; Close, the same sheet with a hook
+  curling over its top left; Write, a round timer with a cap at the top right, "abc" and an arrow pointing down and right toward a small
+  instrument (double frame, display, two dials) at the bottom right; Read, the same with the arrow pointing up and left. Every other
+  element of the VISA palettes has the tile with "VISA" and a short word (CLR, STB, TRG…): they are greyed, so only a hint of what they
+  do. **Not looked at in Solder yet:** the drawings were written from the description and checked by test (text and size), not by eye.
+- **Folders:** each folder of Instrument I/O is a small tile with the word of what it holds (VISA, SER, 488, REG…); not LabVIEW's pictures.
+
 ## History
 
 | Date       | Change |
 |------------|--------|
+| 2026-10-26 | §18: the VISA functions: tiles, terminals and icons. |
+| 2026-10-26 | §4.2 and §17: the VISA resource name: wire, constant, panel control and indicator, terminals, dropdown and palette, from `labview-captures/visa/`. |
 | 2026-10-15 | §4.2: Boolean `#007F00` and string `#FF00FF`, measured at 1:1 (were `#008000` and `#FF33CC`); their wire patterns recorded. §16: menus and drop-down lists, border, separators, insets and placement at the edges. |
 | 2026-10-09 | §15: broken wires with a loose end (DT-046), from `labview-captures/broken-wires/`. §5.1 updated. |
 | 2026-10-09 | §14: debugging (Highlight Execution, probes, breakpoints, Debug Window, Error list), from `labview-captures/debugging/`. |

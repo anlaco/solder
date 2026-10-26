@@ -7,9 +7,10 @@
 /** The error cluster with no error: what an unwired `error in` carries. */
 export const NO_ERROR = Object.freeze({ status: false, code: 0, source: "" });
 
-const EMPTY_VALUE_BY_CONTROL = { "str-control": "", "cluster-control": NO_ERROR, "arr-control": [] };
+// A VISA resource name control holds its resource string (DT-066).
+const EMPTY_VALUE_BY_CONTROL = { "str-control": "", "cluster-control": NO_ERROR, "arr-control": [], "visa-control": "" };
 
-const CONTROL_TYPES = new Set(["control", "bool-control", "str-control", "cluster-control", "arr-control"]);
+const CONTROL_TYPES = new Set(["control", "bool-control", "str-control", "cluster-control", "arr-control", "visa-control"]);
 
 /** Is this node a control of the front panel? */
 export const isControl = (node) => CONTROL_TYPES.has(node.tipo);

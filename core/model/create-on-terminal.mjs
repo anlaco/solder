@@ -5,7 +5,7 @@
 // LabVIEW); this module decides what is created and wires it.
 
 import { conectar, crearEnPanel, crearNodo, fijarConfig } from "./graph.mjs";
-import { esArray, esCluster, esEnum, esError, esNumerico } from "./types.mjs";
+import { VISA_RESOURCE, esArray, esCluster, esEnum, esError, esNumerico } from "./types.mjs";
 
 /**
  * The block and configuration that Create ▸ `kind` ("constant", "control" or
@@ -24,6 +24,7 @@ function constantBlock(type) {
   if (type === "boolean") return { tipo: "bool-const", config: { value: false } };
   if (type === "string") return { tipo: "str-const", config: { value: "" } };
   if (esError(type)) return { tipo: "error-cluster-constant" };
+  if (type === VISA_RESOURCE) return { tipo: "visa-resource-constant", config: { value: "" } };
   if (esArray(type)) return { tipo: "arr-const", config: { type, value: [] } };
   return null;
 }
@@ -36,6 +37,7 @@ function panelBlock(type, isControl) {
   if (esNumerico(type)) return { tipo: suffix, config: { type } };
   if (type === "boolean") return { tipo: `bool-${suffix}` };
   if (type === "string") return { tipo: `str-${suffix}` };
+  if (type === VISA_RESOURCE) return { tipo: `visa-${suffix}` };
   if (esArray(type)) return { tipo: `arr-${suffix}`, config: { type } };
   if (esError(type)) return { tipo: `cluster-${suffix}`, config: { type, style: isControl ? "error-in" : "error-out" } };
   if (esCluster(type)) return { tipo: `cluster-${suffix}`, config: { type } };

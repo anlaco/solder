@@ -11,7 +11,7 @@ import * as CV from "../../../core/model/control-values.mjs";
 
 export const isControl = CV.isControl;
 
-const INDICATOR_TYPES = new Set(["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator"]);
+const INDICATOR_TYPES = new Set(["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator", "visa-indicator"]);
 
 /** Is this node an indicator of the front panel that holds a value (a chart or a graph holds a history instead)? */
 export const isIndicator = (node) => INDICATOR_TYPES.has(node.tipo);

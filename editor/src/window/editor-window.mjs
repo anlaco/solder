@@ -1364,6 +1364,24 @@ const ancla = (el) => {
   return { x: r.left, y: r.bottom + 2 };
 };
 
+/**
+ * The arrow of a VISA resource name (the constant's, or the control's button) opens the menu of the VISA resources
+ * flush left under it, and a second press closes it. Solder cannot find resources yet, so the menu only has its
+ * greyed Refresh row, which says why (spec/05-editor.md, VISA resource name).
+ */
+function toggleVisaDropdown(ev, arrow) {
+  ev.preventDefault();
+  const nodeId = arrow.closest("[data-nodo]")?.dataset.nodo;
+  const owner = conPanel ? pan : dia;
+  if (!nodeId) return;
+  const closing = owner.menu?.raiz === ED.VISA_DROPDOWN_MENU;
+  const settled = conPanel ? P.confirmar(pan) : ED.confirmar(dia, ctx);
+  const box = arrow.closest(".constante, .objeto-panel").getBoundingClientRect();
+  const next = closing ? { ...settled, menu: null } : ED.abrirMenu(settled, ED.VISA_DROPDOWN_MENU, nodeId, box.left, box.bottom);
+  if (conPanel) cambiarPanel(next);
+  else cambiarDiagrama(next);
+}
+
 addEventListener("mousedown", (ev) => {
   if (ev.button !== 0) return;
   // Press and hold on Highlight Execution opens its speed menu (REPORT.md §1).
@@ -1387,6 +1405,8 @@ addEventListener("mousedown", (ev) => {
   if (estado.menuBarra) return;
   // A modal dialog swallows the mousedown: its parts answer to the click event.
   if (dialogoModal()) return ev.preventDefault();
+  const visaDropdown = ev.target.closest?.("[data-visa-dropdown]");
+  if (visaDropdown && !ev.target.closest(".menu-contextual")) return toggleVisaDropdown(ev, visaDropdown);
   if (ejecutando && !pan.menu) return pulsarEnRun(ev);
   if (dia.menu) {
     if (ev.target.closest(".menu-contextual")) return;
@@ -1465,7 +1485,7 @@ function pulsarEnRun(ev) {
   }
   ev.preventDefault();
   const n = pan.g.nodos.find((k) => k.id === sobre.id);
-  if ((sobre.tipo === "casilla" || sobre.tipo === "paso") && (n?.tipo === "control" || n?.tipo === "str-control")) return cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), false));
+  if ((sobre.tipo === "casilla" || sobre.tipo === "paso") && (n?.tipo === "control" || n?.tipo === "str-control" || n?.tipo === "visa-control")) return cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), false));
   // Un array se acciona como parado: se escribe en sus elementos y su índice se mueve (también el de un indicador).
   if ((sobre.tipo === "elem" && n?.tipo === "arr-control") || (sobre.tipo === "paso" && (n?.tipo === "arr-control" || n?.tipo === "arr-indicator"))) return cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), false));
   // Un control de error se acciona como parado: el status alterna y code y source se escriben.

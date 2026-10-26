@@ -15,11 +15,13 @@
 // The elements carry ARIA roles (button, switch, radio) instead of native buttons and inputs, which would take the
 // keyboard focus away from the editor; typing is drawn by the editor as in Old School.
 
+import { visaIoGlyph } from "../common/glyphs.mjs";
+
 /** Every kind of object an HTML panel draws: each one has rules in plain.css (DT-058 §3, a test checks it). */
-export const PLAIN_KINDS = ["numeric", "enum", "string", "boolean", "error-cluster", "array", "waveform-chart", "waveform-graph", "xy-graph"];
+export const PLAIN_KINDS = ["numeric", "enum", "string", "visa", "boolean", "error-cluster", "array", "waveform-chart", "waveform-graph", "xy-graph"];
 
 /** The parts that are only ornament in Plain: hidden by plain.css, shown by the style that draws them (a test checks it). */
-export const ORNAMENT_CLASSES = ["sd-art", "sd-radix", "sd-code-arrows", "sd-scrollbar", "sd-frame", "sd-plot-frame", "sd-swatch-frame"];
+export const ORNAMENT_CLASSES = ["sd-art", "sd-visa-glyph", "sd-radix", "sd-code-arrows", "sd-scrollbar", "sd-frame", "sd-plot-frame", "sd-swatch-frame"];
 
 /** An illustration a style may paint over the whole object, such as Old School's drawing of a Boolean. */
 const ART = `<span class="sd-art" aria-hidden="true"></span>`;
@@ -73,6 +75,17 @@ export function numericHtml(frame, { valueHtml, withIncrementer, isEnum }) {
 
 /** A string control or indicator: its text, with the lines it has. */
 export const stringHtml = (frame, { valueHtml }) => objectFrame({ ...frame, kind: "string" }, field(frame.id, valueHtml));
+
+/**
+ * A VISA resource name control or indicator: the icon cell, the text field with its resource string and, on a control,
+ * the dropdown button that lists the VISA resources (`data-visa-dropdown`, which the window answers). The I/O glyph is
+ * ornament: Plain writes "I/O" in the cell and Old School draws the glyph.
+ */
+export function visaHtml(frame, { valueHtml }) {
+  const icon = `<span class="sd-visa-icon"><span class="sd-visa-glyph" aria-hidden="true">${visaIoGlyph()}</span></span>`;
+  const dropdown = frame.isControl ? `<span class="sd-dropdown" role="button" aria-haspopup="menu" aria-label="VISA resources" data-visa-dropdown></span>` : "";
+  return objectFrame({ ...frame, kind: "visa" }, icon + field(frame.id, valueHtml) + dropdown);
+}
 
 /** The inside of a Boolean, by its style (`data-style` keeps the exact one, so a style can tell a rocker from a push button). */
 function booleanInner(style, on) {

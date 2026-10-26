@@ -443,6 +443,39 @@
     },
     "tipo-variant": {
       "desc": "The variant type: a value that carries any LabVIEW type with it, with its attributes, and the functions that convert to and from it"
+    },
+    "listar-recursos-visa": {
+      "desc": "listing the VISA resources of the machine, which the dropdown of a VISA resource name (Refresh) and Select Item... show: Solder's VISA opens a socket from a typed name but cannot find resources yet",
+      "ref": "design/05-decisions.md DT-065"
+    },
+    "clases-visa": {
+      "desc": "the VISA class of a resource name (Select VISA Class), which narrows the resources the list shows, and the Property and Method nodes of the Instr classes",
+      "ref": "design/05-decisions.md DT-065"
+    },
+    "paleta-visa-en-menu": {
+      "desc": "the VISA Palette submenu of the right-click menus of the VISA functions and of a resource name, which opens the VISA functions: the Functions palette has Instrument I/O now, but the menu does not open it yet"
+    },
+    "tipo-waveform": {
+      "desc": "the waveform, digital waveform and digital data types, with their controls and indicators"
+    },
+    "funciones-visa-restantes": {
+      "desc": "the VISA functions beyond Open, Write, Read and Close (clearing, the status byte, triggers, timeouts, locks, buffers, events, registers and the calls of each bus): Solder's own VISA opens sockets and moves bytes, and nothing more yet",
+      "ref": "design/05-decisions.md DT-065"
+    },
+    "puerto-serie-visa": {
+      "desc": "VISA over serial ports: configuring a port, the bytes waiting in it and its break line. Solder's VISA only opens sockets for now",
+      "ref": "design/05-decisions.md DT-065"
+    },
+    "nodos-de-propiedades": {
+      "desc": "property nodes, which read and write the attributes of a reference, among them the VISA Property Node"
+    },
+    "contenido-no-capturado": {
+      "desc": "the contents of a palette that has not been opened in LabVIEW yet (Instrument Drivers and GPIB)",
+      "ref": "labview-captures/reports/2026-10-25-visa-palettes.md"
+    },
+    "modo-de-e-s-sincrono": {
+      "desc": "the Synchronous I/O Mode submenu of the VISA functions, which says how a call waits for the instrument: its rows were not captured, and Solder's VISA runs every call as a wait of its own I/O process",
+      "ref": "design/05-decisions.md DT-066"
     }
   },
   "entradas": [
@@ -5281,10 +5314,809 @@
     {
       "id": "palette.functions.instrument-io",
       "etiqueta": "Instrument I/O",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the Instrument I/O category unfolds with its four subpalettes in their measured cells",
+      "captura": "visa/functions-instrument-io.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.instrument-drivers",
+      "etiqueta": "Instrument Drivers",
       "estado": "todo",
-      "labview": "Communication with instruments: VISA, serial, GPIB and instrument drivers.",
-      "necesita": "drivers-de-adquisicion",
-      "captura": "paletas/functions-programming.png"
+      "labview": "Folder of the drivers of the instruments installed (plug-and-play and IVI). Its contents were not opened in LabVIEW.",
+      "necesita": "contenido-no-capturado",
+      "captura": "visa/functions-instrument-io.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa",
+      "etiqueta": "VISA",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the VISA subpalettes open with the grids and names that were measured",
+      "captura": "visa/functions-instrument-io.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.gpib",
+      "etiqueta": "GPIB",
+      "estado": "todo",
+      "labview": "Folder of the GPIB functions, the instrument bus of IEEE 488. Its contents were not opened in LabVIEW.",
+      "necesita": "contenido-no-capturado",
+      "captura": "visa/functions-instrument-io.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.serial",
+      "etiqueta": "Serial",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the VISA subpalettes open with the grids and names that were measured",
+      "captura": "visa/functions-instrument-io.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "visa/functions-visa.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-write",
+      "etiqueta": "VISA Write",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::VISA Open, Write, Read and Close are placed from the palettes, also from Serial",
+      "bloque": "visa-write",
+      "captura": "visa/functions-visa.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-read",
+      "etiqueta": "VISA Read",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::VISA Open, Write, Read and Close are placed from the palettes, also from Serial",
+      "bloque": "visa-read",
+      "captura": "visa/functions-visa.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced",
+      "etiqueta": "VISA Advanced",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the VISA subpalettes open with the grids and names that were measured",
+      "captura": "visa/functions-visa.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-clear",
+      "etiqueta": "VISA Clear",
+      "estado": "todo",
+      "labview": "Clears the instrument: sends it the device-clear command and empties its buffers.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-read-stb",
+      "etiqueta": "VISA Read STB",
+      "estado": "todo",
+      "labview": "Reads the status byte of the instrument.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-assert-trigger",
+      "etiqueta": "VISA Assert Trigger",
+      "estado": "todo",
+      "labview": "Sends a trigger to the instrument.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "visa/functions-visa-advanced.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.visa-open",
+      "etiqueta": "VISA Open",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::VISA Open, Write, Read and Close are placed from the palettes, also from Serial",
+      "bloque": "visa-open",
+      "captura": "visa/functions-visa-advanced.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.visa-close",
+      "etiqueta": "VISA Close",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::VISA Open, Write, Read and Close are placed from the palettes, also from Serial",
+      "bloque": "visa-close",
+      "captura": "visa/functions-visa-advanced.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.visa-find-resource",
+      "etiqueta": "VISA Find Resource",
+      "estado": "todo",
+      "labview": "Lists the resources whose names match a search expression.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-advanced.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.visa-set-timeout",
+      "etiqueta": "VISA Set Timeout",
+      "estado": "todo",
+      "labview": "Changes how long a session waits for the instrument before a call gives up.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-advanced.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.visa-property-node",
+      "etiqueta": "VISA Property Node",
+      "estado": "todo",
+      "labview": "A node that reads and writes the attributes of a VISA session.",
+      "necesita": "nodos-de-propiedades",
+      "captura": "visa/functions-visa-advanced.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific",
+      "etiqueta": "Bus/Interface Specific",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the VISA subpalettes open with the grids and names that were measured",
+      "captura": "visa/functions-visa-advanced.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.visa-write-from-file",
+      "etiqueta": "VISA Write From File",
+      "estado": "todo",
+      "labview": "Sends the content of a file to the instrument.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-advanced.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.visa-read-to-file",
+      "etiqueta": "VISA Read To File",
+      "estado": "todo",
+      "labview": "Reads from the instrument into a file.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-advanced.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.event-handling",
+      "etiqueta": "Event Handling",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the VISA subpalettes open with the grids and names that were measured",
+      "captura": "visa/functions-visa-advanced.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.visa-lock-async-vi",
+      "etiqueta": "VISA Lock Async.vi",
+      "estado": "todo",
+      "labview": "A VI that locks a session for the exclusive use of this program, without waiting for the lock.",
+      "necesita": "sub-vis",
+      "captura": "visa/functions-visa-advanced.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.visa-unlock",
+      "etiqueta": "VISA Unlock",
+      "estado": "todo",
+      "labview": "Gives back the lock held on a session.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-advanced.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access",
+      "etiqueta": "Register Access",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the VISA subpalettes open with the grids and names that were measured",
+      "captura": "visa/functions-visa-advanced.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial",
+      "etiqueta": "Serial",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the VISA subpalettes open with the grids and names that were measured",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-usb",
+      "etiqueta": "VISA USB",
+      "estado": "todo",
+      "labview": "Folder of the functions for USB instruments: control transfers and interrupt data.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-set-i-o-buffer-size",
+      "etiqueta": "VISA Set I/O Buffer Size",
+      "estado": "todo",
+      "labview": "Sets the size of the buffer a session keeps for reading or writing.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-flush-i-o-buffer",
+      "etiqueta": "VISA Flush I/O Buffer",
+      "estado": "todo",
+      "labview": "Empties or sends what a session holds in its buffers.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-gpib-command",
+      "etiqueta": "VISA GPIB Command",
+      "estado": "todo",
+      "labview": "Sends command bytes on the GPIB bus.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-gpib-control-atn",
+      "etiqueta": "VISA GPIB Control ATN",
+      "estado": "todo",
+      "labview": "Sets or clears the attention line of the GPIB bus.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-gpib-pass-control",
+      "etiqueta": "VISA GPIB Pass Control",
+      "estado": "todo",
+      "labview": "Passes the role of controller of the GPIB bus to another device.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-gpib-send-ifc",
+      "etiqueta": "VISA GPIB Send IFC",
+      "estado": "todo",
+      "labview": "Pulses the interface-clear line of the GPIB bus.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-gpib-control-ren",
+      "etiqueta": "VISA GPIB Control REN",
+      "estado": "todo",
+      "labview": "Sets or clears the remote-enable line of the GPIB bus.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-vxi-cmd-or-query",
+      "etiqueta": "VISA VXI Cmd or Query",
+      "estado": "todo",
+      "labview": "Sends a command or a query to a VXI device.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-assert-interrupt-signal",
+      "etiqueta": "VISA Assert Interrupt Signal",
+      "estado": "todo",
+      "labview": "Raises an interrupt or a signal toward the controller of a VXI backplane.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-assert-utility-signal",
+      "etiqueta": "VISA Assert Utility Signal",
+      "estado": "todo",
+      "labview": "Raises one of the utility signals of a VXI backplane.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-map-trigger",
+      "etiqueta": "VISA Map Trigger",
+      "estado": "todo",
+      "labview": "Connects a trigger line to another.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-unmap-trigger",
+      "etiqueta": "VISA Unmap Trigger",
+      "estado": "todo",
+      "labview": "Disconnects two trigger lines that were connected.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-interface.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "visa/functions-visa-bus-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.visa-configure-serial-port",
+      "etiqueta": "VISA Configure Serial Port",
+      "estado": "todo",
+      "labview": "A polymorphic VI that sets the baud rate, the data bits, the parity, the stop bits and the flow control of a serial port.",
+      "necesita": "puerto-serie-visa",
+      "captura": "visa/functions-visa-bus-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.visa-write",
+      "etiqueta": "VISA Write",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::VISA Open, Write, Read and Close are placed from the palettes, also from Serial",
+      "bloque": "visa-write",
+      "captura": "visa/functions-visa-bus-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.visa-read",
+      "etiqueta": "VISA Read",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::VISA Open, Write, Read and Close are placed from the palettes, also from Serial",
+      "bloque": "visa-read",
+      "captura": "visa/functions-visa-bus-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.visa-close",
+      "etiqueta": "VISA Close",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::VISA Open, Write, Read and Close are placed from the palettes, also from Serial",
+      "bloque": "visa-close",
+      "captura": "visa/functions-visa-bus-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.visa-bytes-at-serial-port",
+      "etiqueta": "VISA Bytes at Serial Port",
+      "estado": "todo",
+      "labview": "A property node of the session that tells how many bytes wait in the serial port.",
+      "necesita": "nodos-de-propiedades",
+      "captura": "visa/functions-visa-bus-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.visa-serial-break-vi",
+      "etiqueta": "VISA Serial Break.vi",
+      "estado": "todo",
+      "labview": "A VI that holds the break line of a serial port for a while.",
+      "necesita": "sub-vis",
+      "captura": "visa/functions-visa-bus-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.visa-set-i-o-buffer-size",
+      "etiqueta": "VISA Set I/O Buffer Size",
+      "estado": "todo",
+      "labview": "Sets the size of the buffer a session keeps for reading or writing.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.visa-flush-i-o-buffer",
+      "etiqueta": "VISA Flush I/O Buffer",
+      "estado": "todo",
+      "labview": "Empties or sends what a session holds in its buffers.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-usb.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "visa/functions-visa-bus-usb.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-usb.visa-usb-control-in",
+      "etiqueta": "VISA USB Control In",
+      "estado": "todo",
+      "labview": "Reads from a USB device with a control transfer.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-usb.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-usb.visa-usb-control-out",
+      "etiqueta": "VISA USB Control Out",
+      "estado": "todo",
+      "labview": "Writes to a USB device with a control transfer.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-bus-usb.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-usb.visa-get-usb-interrupt-data-vi",
+      "etiqueta": "VISA Get USB Interrupt Data.vi",
+      "estado": "todo",
+      "labview": "A VI that gets the data of a USB interrupt event.",
+      "necesita": "sub-vis",
+      "captura": "visa/functions-visa-bus-usb.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.event-handling.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "visa/functions-visa-event-handling.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.event-handling.visa-enable-event",
+      "etiqueta": "VISA Enable Event",
+      "estado": "todo",
+      "labview": "Starts a session listening for an event.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-event-handling.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.event-handling.visa-wait-on-event",
+      "etiqueta": "VISA Wait on Event",
+      "estado": "todo",
+      "labview": "Waits until an event of a session happens or the time runs out.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-event-handling.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.event-handling.visa-disable-event",
+      "etiqueta": "VISA Disable Event",
+      "estado": "todo",
+      "labview": "Stops a session listening for an event.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-event-handling.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.event-handling.visa-discard-events",
+      "etiqueta": "VISA Discard Events",
+      "estado": "todo",
+      "labview": "Throws away the events a session has queued.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-event-handling.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.event-handling.wait-for-rqs-vi",
+      "etiqueta": "Wait for RQS.vi",
+      "estado": "todo",
+      "labview": "A VI that waits for a service request from the instrument.",
+      "necesita": "sub-vis",
+      "captura": "visa/functions-visa-event-handling.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.event-handling.select-event-type-ctl",
+      "etiqueta": "Select Event Type.ctl",
+      "estado": "todo",
+      "labview": "A control to choose a type of VISA event.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-event-handling.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-in-8",
+      "etiqueta": "VISA In 8",
+      "estado": "todo",
+      "labview": "Reads a 8-bit value from a register of the instrument.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-in-16",
+      "etiqueta": "VISA In 16",
+      "estado": "todo",
+      "labview": "Reads a 16-bit value from a register of the instrument.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-in-32",
+      "etiqueta": "VISA In 32",
+      "estado": "todo",
+      "labview": "Reads a 32-bit value from a register of the instrument.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-in-64",
+      "etiqueta": "VISA In 64",
+      "estado": "todo",
+      "labview": "Reads a 64-bit value from a register of the instrument.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-out-8",
+      "etiqueta": "VISA Out 8",
+      "estado": "todo",
+      "labview": "Writes a 8-bit value to a register of the instrument.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-out-16",
+      "etiqueta": "VISA Out 16",
+      "estado": "todo",
+      "labview": "Writes a 16-bit value to a register of the instrument.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-out-32",
+      "etiqueta": "VISA Out 32",
+      "estado": "todo",
+      "labview": "Writes a 32-bit value to a register of the instrument.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-out-64",
+      "etiqueta": "VISA Out 64",
+      "estado": "todo",
+      "labview": "Writes a 64-bit value to a register of the instrument.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-move-in-8",
+      "etiqueta": "VISA Move In 8",
+      "estado": "todo",
+      "labview": "Copies a block of 8-bit values from the instrument's memory to the computer.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-move-in-16",
+      "etiqueta": "VISA Move In 16",
+      "estado": "todo",
+      "labview": "Copies a block of 16-bit values from the instrument's memory to the computer.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-move-in-32",
+      "etiqueta": "VISA Move In 32",
+      "estado": "todo",
+      "labview": "Copies a block of 32-bit values from the instrument's memory to the computer.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-move-in-64",
+      "etiqueta": "VISA Move In 64",
+      "estado": "todo",
+      "labview": "Copies a block of 64-bit values from the instrument's memory to the computer.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-move-out-8",
+      "etiqueta": "VISA Move Out 8",
+      "estado": "todo",
+      "labview": "Copies a block of 8-bit values from the computer to the instrument's memory.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-move-out-16",
+      "etiqueta": "VISA Move Out 16",
+      "estado": "todo",
+      "labview": "Copies a block of 16-bit values from the computer to the instrument's memory.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-move-out-32",
+      "etiqueta": "VISA Move Out 32",
+      "estado": "todo",
+      "labview": "Copies a block of 32-bit values from the computer to the instrument's memory.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-move-out-64",
+      "etiqueta": "VISA Move Out 64",
+      "estado": "todo",
+      "labview": "Copies a block of 64-bit values from the computer to the instrument's memory.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-memory-allocation",
+      "etiqueta": "VISA Memory Allocation",
+      "estado": "todo",
+      "labview": "Reserves a block of the memory of the instrument for the program.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-memory-allocation-ex",
+      "etiqueta": "VISA Memory Allocation Ex",
+      "estado": "todo",
+      "labview": "Reserves a block of the memory of the instrument, with a choice of where.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-memory-free",
+      "etiqueta": "VISA Memory Free",
+      "estado": "todo",
+      "labview": "Gives back a block of memory that was reserved.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.visa-move",
+      "etiqueta": "VISA Move",
+      "estado": "todo",
+      "labview": "Copies a block between two places of the memory of the instrument or the computer.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access",
+      "etiqueta": "Low Level Register Access",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the VISA subpalettes open with the grids and names that were measured",
+      "captura": "visa/functions-visa-register-access.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "visa/functions-visa-low-level-register.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access.visa-map-address",
+      "etiqueta": "VISA Map Address",
+      "estado": "todo",
+      "labview": "Maps a range of the instrument's registers to the memory of the computer.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-low-level-register.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access.visa-unmap-address",
+      "etiqueta": "VISA Unmap Address",
+      "estado": "todo",
+      "labview": "Releases a range of registers that was mapped.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-low-level-register.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access.visa-peek-8",
+      "etiqueta": "VISA Peek 8",
+      "estado": "todo",
+      "labview": "Reads a 8-bit value from a mapped address.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-low-level-register.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access.visa-peek-16",
+      "etiqueta": "VISA Peek 16",
+      "estado": "todo",
+      "labview": "Reads a 16-bit value from a mapped address.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-low-level-register.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access.visa-peek-32",
+      "etiqueta": "VISA Peek 32",
+      "estado": "todo",
+      "labview": "Reads a 32-bit value from a mapped address.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-low-level-register.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access.visa-peek-64",
+      "etiqueta": "VISA Peek 64",
+      "estado": "todo",
+      "labview": "Reads a 64-bit value from a mapped address.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-low-level-register.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access.visa-poke-8",
+      "etiqueta": "VISA Poke 8",
+      "estado": "todo",
+      "labview": "Writes a 8-bit value to a mapped address.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-low-level-register.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access.visa-poke-16",
+      "etiqueta": "VISA Poke 16",
+      "estado": "todo",
+      "labview": "Writes a 16-bit value to a mapped address.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-low-level-register.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access.visa-poke-32",
+      "etiqueta": "VISA Poke 32",
+      "estado": "todo",
+      "labview": "Writes a 32-bit value to a mapped address.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-low-level-register.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access.visa-poke-64",
+      "etiqueta": "VISA Poke 64",
+      "estado": "todo",
+      "labview": "Writes a 64-bit value to a mapped address.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-visa-low-level-register.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.serial.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "visa/functions-instrument-io-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.serial.visa-configure-serial-port",
+      "etiqueta": "VISA Configure Serial Port",
+      "estado": "todo",
+      "labview": "A polymorphic VI that sets the baud rate, the data bits, the parity, the stop bits and the flow control of a serial port.",
+      "necesita": "puerto-serie-visa",
+      "captura": "visa/functions-instrument-io-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.serial.visa-write",
+      "etiqueta": "VISA Write",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::VISA Open, Write, Read and Close are placed from the palettes, also from Serial",
+      "bloque": "visa-write",
+      "captura": "visa/functions-instrument-io-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.serial.visa-read",
+      "etiqueta": "VISA Read",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::VISA Open, Write, Read and Close are placed from the palettes, also from Serial",
+      "bloque": "visa-read",
+      "captura": "visa/functions-instrument-io-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.serial.visa-close",
+      "etiqueta": "VISA Close",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::VISA Open, Write, Read and Close are placed from the palettes, also from Serial",
+      "bloque": "visa-close",
+      "captura": "visa/functions-instrument-io-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.serial.visa-bytes-at-serial-port",
+      "etiqueta": "VISA Bytes at Serial Port",
+      "estado": "todo",
+      "labview": "A property node of the session that tells how many bytes wait in the serial port.",
+      "necesita": "nodos-de-propiedades",
+      "captura": "visa/functions-instrument-io-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.serial.visa-serial-break-vi",
+      "etiqueta": "VISA Serial Break.vi",
+      "estado": "todo",
+      "labview": "A VI that holds the break line of a serial port for a while.",
+      "necesita": "sub-vis",
+      "captura": "visa/functions-instrument-io-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.serial.visa-set-i-o-buffer-size",
+      "etiqueta": "VISA Set I/O Buffer Size",
+      "estado": "todo",
+      "labview": "Sets the size of the buffer a session keeps for reading or writing.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-instrument-io-serial.png"
+    },
+    {
+      "id": "palette.functions.instrument-io.serial.visa-flush-i-o-buffer",
+      "etiqueta": "VISA Flush I/O Buffer",
+      "estado": "todo",
+      "labview": "Empties or sends what a session holds in its buffers.",
+      "necesita": "funciones-visa-restantes",
+      "captura": "visa/functions-instrument-io-serial.png"
     },
     {
       "id": "palette.functions.mathematics",
@@ -6207,10 +7039,121 @@
     {
       "id": "palette.controls.modern.io",
       "etiqueta": "I/O",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::the_VISA_resource_name_control_is_placed_from_Controls_Modern_I/O_with_its_terminal",
+      "captura": "visa/controls-modern-io.png"
+    },
+    {
+      "id": "palette.controls.modern.io.thumbtack",
+      "etiqueta": "Thumbtack",
       "estado": "todo",
-      "labview": "I/O resource names: DAQ channels, VISA resources and others.",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "visa/controls-modern-io.png"
+    },
+    {
+      "id": "palette.controls.modern.io.waveform",
+      "etiqueta": "Waveform",
+      "estado": "todo",
+      "labview": "A control for a waveform: values with a start time and a time step.",
+      "necesita": "tipo-waveform",
+      "captura": "visa/controls-modern-io.png"
+    },
+    {
+      "id": "palette.controls.modern.io.digital-waveform",
+      "etiqueta": "Digital Waveform",
+      "estado": "todo",
+      "labview": "A control for a digital waveform: samples of several lines over time.",
+      "necesita": "tipo-waveform",
+      "captura": "visa/controls-modern-io.png"
+    },
+    {
+      "id": "palette.controls.modern.io.digital-data",
+      "etiqueta": "Digital Data",
+      "estado": "todo",
+      "labview": "A control for digital data: the lines of a digital sample as a table of bits.",
+      "necesita": "tipo-waveform",
+      "captura": "visa/controls-modern-io.png"
+    },
+    {
+      "id": "palette.controls.modern.io.traditional-daq-channel",
+      "etiqueta": "Traditional DAQ Channel",
+      "estado": "todo",
+      "labview": "A control that names a channel of the traditional NI-DAQ driver.",
       "necesita": "drivers-de-adquisicion",
-      "captura": "paletas/controls.png"
+      "captura": "visa/controls-modern-io.png"
+    },
+    {
+      "id": "palette.controls.modern.io.daqmx-name-controls",
+      "etiqueta": "DAQmx Name Controls",
+      "estado": "todo",
+      "labview": "A subpalette of controls that name DAQmx tasks, channels, devices and the like.",
+      "necesita": "drivers-de-adquisicion",
+      "captura": "visa/controls-modern-io.png"
+    },
+    {
+      "id": "palette.controls.modern.io.datafinder",
+      "etiqueta": "DataFinder",
+      "estado": "todo",
+      "labview": "A control that names a DataFinder server's resource.",
+      "necesita": "drivers-de-adquisicion",
+      "captura": "visa/controls-modern-io.png"
+    },
+    {
+      "id": "palette.controls.modern.io.visa-resource-name",
+      "etiqueta": "VISA resource name",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::the_VISA_resource_name_control_is_placed_from_Controls_Modern_I/O_with_its_terminal",
+      "captura": "visa/controls-modern-io.png",
+      "bloque": "visa-control"
+    },
+    {
+      "id": "palette.controls.modern.io.ivi-logical-name",
+      "etiqueta": "IVI Logical Name",
+      "estado": "todo",
+      "labview": "A control that names an IVI logical instrument.",
+      "necesita": "drivers-de-adquisicion",
+      "captura": "visa/controls-modern-io.png"
+    },
+    {
+      "id": "palette.controls.modern.io.fieldpoint-io-point",
+      "etiqueta": "FieldPoint IO Point",
+      "estado": "todo",
+      "labview": "A control that names a FieldPoint input or output point.",
+      "necesita": "drivers-de-adquisicion",
+      "captura": "visa/controls-modern-io.png"
+    },
+    {
+      "id": "palette.controls.modern.io.imaq-session",
+      "etiqueta": "IMAQ Session",
+      "estado": "todo",
+      "labview": "A control that holds a session of an image acquisition device.",
+      "necesita": "drivers-de-adquisicion",
+      "captura": "visa/controls-modern-io.png"
+    },
+    {
+      "id": "palette.controls.modern.io.motion-resource",
+      "etiqueta": "Motion Resource",
+      "estado": "todo",
+      "labview": "A control that names a motion controller resource.",
+      "necesita": "drivers-de-adquisicion",
+      "captura": "visa/controls-modern-io.png"
+    },
+    {
+      "id": "palette.controls.modern.io.system-configuration",
+      "etiqueta": "System Configuration",
+      "estado": "todo",
+      "labview": "A control that names a resource of the system configuration.",
+      "necesita": "drivers-de-adquisicion",
+      "captura": "visa/controls-modern-io.png"
+    },
+    {
+      "id": "palette.controls.modern.io.shared-variable-control",
+      "etiqueta": "Shared Variable Control",
+      "estado": "todo",
+      "labview": "A control that holds a shared variable's reference.",
+      "necesita": "variables-y-feedback",
+      "captura": "visa/controls-modern-io.png"
     },
     {
       "id": "palette.controls.modern.variant-and-class",
@@ -17932,6 +18875,2497 @@
       "labview": "Shows the version and the credits.",
       "necesita": "editor-escritorio",
       "captura": "getting-started/menu_Help.png"
+    },
+    {
+      "id": "context.visa-dropdown",
+      "etiqueta": "VISA Resources",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::the_arrow_of_a_VISA_resource_name_opens_the_menu_with_only_Refresh,_greyed,_saying_why",
+      "captura": "visa/resource-name-dd0z.png"
+    },
+    {
+      "id": "context.visa-dropdown.refresh",
+      "etiqueta": "Refresh",
+      "estado": "todo",
+      "labview": "Looks again for the VISA resources of the machine and lists them above; LabVIEW lists the ones it finds, such as serial ports and network instruments.",
+      "necesita": "listar-recursos-visa",
+      "captura": "visa/resource-name-dd0z.png"
+    },
+    {
+      "id": "context.visa-constant",
+      "etiqueta": "VISA Resource Name Constant",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::the_VISA_resource_name_constant_has_its_own_menu,_measured",
+      "captura": "visa/resource-name-cm0z.png"
+    },
+    {
+      "id": "context.visa-constant.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas",
+      "captura": "visa/resource-name-cm0z.png"
+    },
+    {
+      "id": "context.visa-constant.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the label.",
+      "necesita": "etiquetas",
+      "captura": "visa/resource-name-cm0z.png"
+    },
+    {
+      "id": "context.visa-constant.visible-items.menu-button",
+      "etiqueta": "Menu Button",
+      "estado": "todo",
+      "labview": "Shows or hides the menu button.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-cm0z.png"
+    },
+    {
+      "id": "context.visa-constant.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Turns the constant into a control on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-cm0z.png"
+    },
+    {
+      "id": "context.visa-constant.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns the constant into an indicator on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-cm0z.png"
+    },
+    {
+      "id": "context.visa-constant.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the constant into an array constant of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-cm0z.png"
+    },
+    {
+      "id": "context.visa-constant.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the constant into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "visa/resource-name-cm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-constant.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "visa/resource-name-cm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-constant.visa-palette",
+      "etiqueta": "VISA Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the VISA functions that take a resource name.",
+      "necesita": "paleta-visa-en-menu",
+      "captura": "visa/resource-name-cm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-constant.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to the resource name.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-cm-cr-z.png"
+    },
+    {
+      "id": "context.visa-constant.create.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "A VISA resource name constant.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-cm-cr-z.png"
+    },
+    {
+      "id": "context.visa-constant.create.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "A VISA resource name control.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-cm-cr-z.png"
+    },
+    {
+      "id": "context.visa-constant.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "todo",
+      "labview": "A VISA resource name indicator.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-cm-cr-z.png"
+    },
+    {
+      "id": "context.visa-constant.create.property-for-instr-class",
+      "etiqueta": "Property for Instr Class",
+      "estado": "todo",
+      "labview": "A property node of the VISA class of the resource name.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-cr-z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-constant.create.method-for-instr-class",
+      "etiqueta": "Method for Instr Class",
+      "estado": "todo",
+      "labview": "An invoke node of the VISA class of the resource name; greyed in LabVIEW too.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-cr-z.png"
+    },
+    {
+      "id": "context.visa-constant.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "A Channel Writer for the resource name.",
+      "necesita": "canales",
+      "captura": "visa/resource-name-cm-cr-z.png"
+    },
+    {
+      "id": "context.visa-constant.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Groups the selection in a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "visa/resource-name-cm-cr-z.png"
+    },
+    {
+      "id": "context.visa-constant.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Swaps the constant for another object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-cm0z.png"
+    },
+    {
+      "id": "context.visa-constant.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Cut, copy and paste data, and save the current value as the default value.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-cm-da-z.png"
+    },
+    {
+      "id": "context.visa-constant.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the current value to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-cm-da-z.png"
+    },
+    {
+      "id": "context.visa-constant.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the current value to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-cm-da-z.png"
+    },
+    {
+      "id": "context.visa-constant.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes a value from the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-cm-da-z.png"
+    },
+    {
+      "id": "context.visa-constant.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options for the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-cm0z.png"
+    },
+    {
+      "id": "context.visa-constant.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Opens the control editor to change how the constant looks.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-cm-ad-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class",
+      "etiqueta": "Select VISA Class",
+      "estado": "todo",
+      "labview": "Chooses the VISA class of the resource name: I/O Session classes or Event classes. It narrows the resources the dropdown lists.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-sc-z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session",
+      "etiqueta": "I/O Session",
+      "estado": "todo",
+      "labview": "The I/O session classes, from Instr to FireWire Instr; the one in use is ticked (Instr).",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.instr",
+      "etiqueta": "Instr",
+      "estado": "todo",
+      "labview": "Selects the Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.gpib-instr",
+      "etiqueta": "GPIB Instr",
+      "estado": "todo",
+      "labview": "Selects the GPIB Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.vxi-gpib-vxi-mbd-instr",
+      "etiqueta": "VXI/GPIB-VXI MBD Instr",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI MBD Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.vxi-gpib-vxi-vme-rbd-instr",
+      "etiqueta": "VXI/GPIB-VXI/VME RBD Instr",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI/VME RBD Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.pxi-instr",
+      "etiqueta": "PXI Instr",
+      "estado": "todo",
+      "labview": "Selects the PXI Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.serial-instr",
+      "etiqueta": "Serial Instr",
+      "estado": "todo",
+      "labview": "Selects the Serial Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.tcp-ip-instr",
+      "etiqueta": "TCP/IP Instr",
+      "estado": "todo",
+      "labview": "Selects the TCP/IP Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.usb-instr",
+      "etiqueta": "USB Instr",
+      "estado": "todo",
+      "labview": "Selects the USB Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.vxi-gpib-vxi-vme-memacc",
+      "etiqueta": "VXI/GPIB-VXI/VME MemAcc",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI/VME MemAcc class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.pxi-memacc",
+      "etiqueta": "PXI MemAcc",
+      "estado": "todo",
+      "labview": "Selects the PXI MemAcc class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.vxi-gpib-vxi-backplane",
+      "etiqueta": "VXI/GPIB-VXI Backplane",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI Backplane class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.pxi-backplane",
+      "etiqueta": "PXI Backplane",
+      "estado": "todo",
+      "labview": "Selects the PXI Backplane class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.vxi-servant",
+      "etiqueta": "VXI Servant",
+      "estado": "todo",
+      "labview": "Selects the VXI Servant class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.gpib-boardinterface",
+      "etiqueta": "GPIB BoardInterface",
+      "estado": "todo",
+      "labview": "Selects the GPIB BoardInterface class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.gpib-servant",
+      "etiqueta": "GPIB Servant",
+      "estado": "todo",
+      "labview": "Selects the GPIB Servant class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.tcp-ip-socket",
+      "etiqueta": "TCP/IP Socket",
+      "estado": "todo",
+      "labview": "Selects the TCP/IP Socket class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.usb-raw",
+      "etiqueta": "USB Raw",
+      "estado": "todo",
+      "labview": "Selects the USB Raw class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.i-o-session.firewire-instr",
+      "etiqueta": "FireWire Instr",
+      "estado": "todo",
+      "labview": "Selects the FireWire Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.event-class",
+      "etiqueta": "Event Class",
+      "estado": "todo",
+      "labview": "The VISA event classes, for resource names that carry events.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.event-class.generic-event",
+      "etiqueta": "Generic Event",
+      "estado": "todo",
+      "labview": "Selects the Generic Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.event-class.service-request-event",
+      "etiqueta": "Service Request Event",
+      "estado": "todo",
+      "labview": "Selects the Service Request Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.event-class.trigger-event",
+      "etiqueta": "Trigger Event",
+      "estado": "todo",
+      "labview": "Selects the Trigger Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.event-class.vxi-signal-event",
+      "etiqueta": "VXI Signal Event",
+      "estado": "todo",
+      "labview": "Selects the VXI Signal Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.event-class.vxi-vme-interrupt-event",
+      "etiqueta": "VXI/VME Interrupt Event",
+      "estado": "todo",
+      "labview": "Selects the VXI/VME Interrupt Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.event-class.pxi-interrupt-event",
+      "etiqueta": "PXI Interrupt Event",
+      "estado": "todo",
+      "labview": "Selects the PXI Interrupt Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.event-class.usb-interrupt-event",
+      "etiqueta": "USB Interrupt Event",
+      "estado": "todo",
+      "labview": "Selects the USB Interrupt Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.event-class.clear-event",
+      "etiqueta": "Clear Event",
+      "estado": "todo",
+      "labview": "Selects the Clear Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.event-class.gpib-cic-event",
+      "etiqueta": "GPIB CIC Event",
+      "estado": "todo",
+      "labview": "Selects the GPIB CIC Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.event-class.gpib-talk-event",
+      "etiqueta": "GPIB Talk Event",
+      "estado": "todo",
+      "labview": "Selects the GPIB Talk Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.event-class.gpib-listen-event",
+      "etiqueta": "GPIB Listen Event",
+      "estado": "todo",
+      "labview": "Selects the GPIB Listen Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.event-class.vxi-vme-sysfail-event",
+      "etiqueta": "VXI/VME Sysfail Event",
+      "estado": "todo",
+      "labview": "Selects the VXI/VME Sysfail Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-constant.select-visa-class.event-class.vxi-vme-sysreset-event",
+      "etiqueta": "VXI/VME Sysreset Event",
+      "estado": "todo",
+      "labview": "Selects the VXI/VME Sysreset Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-constant.size-to-text",
+      "etiqueta": "Size To Text",
+      "estado": "todo",
+      "labview": "The constant grows and shrinks to the right with its text; ticked by default.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-cm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-constant.select-item",
+      "etiqueta": "Select Item...",
+      "estado": "todo",
+      "labview": "Opens a window with the VISA resources found, to pick one.",
+      "necesita": "listar-recursos-visa",
+      "captura": "visa/resource-name-cm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-constant.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "visa/resource-name-cm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control",
+      "etiqueta": "VISA Resource Name Control",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::the_VISA_resource_name_control_has_its_own_menu,_measured",
+      "captura": "visa/resource-name-pm0z.png"
+    },
+    {
+      "id": "context.visa-control.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas",
+      "captura": "visa/resource-name-pm0z.png"
+    },
+    {
+      "id": "context.visa-control.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the label.",
+      "necesita": "etiquetas",
+      "captura": "visa/resource-name-pm0z.png"
+    },
+    {
+      "id": "context.visa-control.visible-items.caption",
+      "etiqueta": "Caption",
+      "estado": "todo",
+      "labview": "Shows or hides the caption.",
+      "necesita": "etiquetas",
+      "captura": "visa/resource-name-pm0z.png"
+    },
+    {
+      "id": "context.visa-control.visible-items.menu-button",
+      "etiqueta": "Menu Button",
+      "estado": "todo",
+      "labview": "Shows or hides the menu button.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-pm0z.png"
+    },
+    {
+      "id": "context.visa-control.find-terminal",
+      "etiqueta": "Find Terminal",
+      "estado": "todo",
+      "labview": "Points out the control's terminal on the diagram.",
+      "necesita": "resaltar-terminal",
+      "captura": "visa/resource-name-pm0z.png"
+    },
+    {
+      "id": "context.visa-control.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns the control into an indicator.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-pm0z.png"
+    },
+    {
+      "id": "context.visa-control.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the control into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-pm0z.png"
+    },
+    {
+      "id": "context.visa-control.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the control into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "visa/resource-name-pm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "visa/resource-name-pm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to the control.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-pm-cr-z.png"
+    },
+    {
+      "id": "context.visa-control.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "A local variable of the control.",
+      "necesita": "variables-y-feedback",
+      "captura": "visa/resource-name-pm-cr-z.png"
+    },
+    {
+      "id": "context.visa-control.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "A reference to the control.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-pm-cr-z.png"
+    },
+    {
+      "id": "context.visa-control.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "A Property Node of the control.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-pm-cr-z.png"
+    },
+    {
+      "id": "context.visa-control.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "An Invoke Node of the control.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-pm-cr-z.png"
+    },
+    {
+      "id": "context.visa-control.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Groups the selection in a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "visa/resource-name-pm-cr-z.png"
+    },
+    {
+      "id": "context.visa-control.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Swaps the control for another one.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-pm0z.png"
+    },
+    {
+      "id": "context.visa-control.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::Data_Operations_of_a_VISA_resource_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-pm-da-z.png"
+    },
+    {
+      "id": "context.visa-control.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::Data_Operations_of_a_VISA_resource_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-pm-da-z.png"
+    },
+    {
+      "id": "context.visa-control.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::Data_Operations_of_a_VISA_resource_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-pm-da-z.png"
+    },
+    {
+      "id": "context.visa-control.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the current value to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-pm-da-z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the current value to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-pm-da-z.png"
+    },
+    {
+      "id": "context.visa-control.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes a value from the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-pm-da-z.png"
+    },
+    {
+      "id": "context.visa-control.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options for the control.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-pm0z.png"
+    },
+    {
+      "id": "context.visa-control.advanced.key-navigation",
+      "etiqueta": "Key Navigation...",
+      "estado": "todo",
+      "labview": "Key Navigation...: an option of the control.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-pm-ad-z.png"
+    },
+    {
+      "id": "context.visa-control.advanced.synchronous-display",
+      "etiqueta": "Synchronous Display",
+      "estado": "todo",
+      "labview": "Synchronous Display: an option of the control.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-pm-ad-z.png"
+    },
+    {
+      "id": "context.visa-control.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Customize...: an option of the control.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-pm-ad-z.png"
+    },
+    {
+      "id": "context.visa-control.advanced.run-time-shortcut-menu",
+      "etiqueta": "Run-Time Shortcut Menu",
+      "estado": "todo",
+      "labview": "Run-Time Shortcut Menu: an option of the control.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-pm-ad-z.png"
+    },
+    {
+      "id": "context.visa-control.advanced.hide-control",
+      "etiqueta": "Hide Control",
+      "estado": "todo",
+      "labview": "Hide Control: an option of the control.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-pm-ad-z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control.advanced.enabled-state",
+      "etiqueta": "Enabled State",
+      "estado": "todo",
+      "labview": "Enabled State: an option of the control.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-pm-ad-z.png"
+    },
+    {
+      "id": "context.visa-control.fit-control-to-pane",
+      "etiqueta": "Fit Control to Pane",
+      "estado": "todo",
+      "labview": "The control grows to fill the pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "visa/resource-name-pm0z.png"
+    },
+    {
+      "id": "context.visa-control.scale-object-with-pane",
+      "etiqueta": "Scale Object with Pane",
+      "estado": "todo",
+      "labview": "The control grows with the pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "visa/resource-name-pm0z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class",
+      "etiqueta": "Select VISA Class",
+      "estado": "todo",
+      "labview": "Chooses the VISA class of the resource name: I/O Session classes or Event classes. It narrows the resources the dropdown lists.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-pm-sc-z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session",
+      "etiqueta": "I/O Session",
+      "estado": "todo",
+      "labview": "The I/O session classes, from Instr to FireWire Instr; the one in use is ticked (Instr).",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.instr",
+      "etiqueta": "Instr",
+      "estado": "todo",
+      "labview": "Selects the Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.gpib-instr",
+      "etiqueta": "GPIB Instr",
+      "estado": "todo",
+      "labview": "Selects the GPIB Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.vxi-gpib-vxi-mbd-instr",
+      "etiqueta": "VXI/GPIB-VXI MBD Instr",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI MBD Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.vxi-gpib-vxi-vme-rbd-instr",
+      "etiqueta": "VXI/GPIB-VXI/VME RBD Instr",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI/VME RBD Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.pxi-instr",
+      "etiqueta": "PXI Instr",
+      "estado": "todo",
+      "labview": "Selects the PXI Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.serial-instr",
+      "etiqueta": "Serial Instr",
+      "estado": "todo",
+      "labview": "Selects the Serial Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.tcp-ip-instr",
+      "etiqueta": "TCP/IP Instr",
+      "estado": "todo",
+      "labview": "Selects the TCP/IP Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.usb-instr",
+      "etiqueta": "USB Instr",
+      "estado": "todo",
+      "labview": "Selects the USB Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.vxi-gpib-vxi-vme-memacc",
+      "etiqueta": "VXI/GPIB-VXI/VME MemAcc",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI/VME MemAcc class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.pxi-memacc",
+      "etiqueta": "PXI MemAcc",
+      "estado": "todo",
+      "labview": "Selects the PXI MemAcc class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.vxi-gpib-vxi-backplane",
+      "etiqueta": "VXI/GPIB-VXI Backplane",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI Backplane class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.pxi-backplane",
+      "etiqueta": "PXI Backplane",
+      "estado": "todo",
+      "labview": "Selects the PXI Backplane class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.vxi-servant",
+      "etiqueta": "VXI Servant",
+      "estado": "todo",
+      "labview": "Selects the VXI Servant class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.gpib-boardinterface",
+      "etiqueta": "GPIB BoardInterface",
+      "estado": "todo",
+      "labview": "Selects the GPIB BoardInterface class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.gpib-servant",
+      "etiqueta": "GPIB Servant",
+      "estado": "todo",
+      "labview": "Selects the GPIB Servant class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.tcp-ip-socket",
+      "etiqueta": "TCP/IP Socket",
+      "estado": "todo",
+      "labview": "Selects the TCP/IP Socket class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.usb-raw",
+      "etiqueta": "USB Raw",
+      "estado": "todo",
+      "labview": "Selects the USB Raw class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.i-o-session.firewire-instr",
+      "etiqueta": "FireWire Instr",
+      "estado": "todo",
+      "labview": "Selects the FireWire Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.event-class",
+      "etiqueta": "Event Class",
+      "estado": "todo",
+      "labview": "The VISA event classes, for resource names that carry events.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.event-class.generic-event",
+      "etiqueta": "Generic Event",
+      "estado": "todo",
+      "labview": "Selects the Generic Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.event-class.service-request-event",
+      "etiqueta": "Service Request Event",
+      "estado": "todo",
+      "labview": "Selects the Service Request Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.event-class.trigger-event",
+      "etiqueta": "Trigger Event",
+      "estado": "todo",
+      "labview": "Selects the Trigger Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.event-class.vxi-signal-event",
+      "etiqueta": "VXI Signal Event",
+      "estado": "todo",
+      "labview": "Selects the VXI Signal Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.event-class.vxi-vme-interrupt-event",
+      "etiqueta": "VXI/VME Interrupt Event",
+      "estado": "todo",
+      "labview": "Selects the VXI/VME Interrupt Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.event-class.pxi-interrupt-event",
+      "etiqueta": "PXI Interrupt Event",
+      "estado": "todo",
+      "labview": "Selects the PXI Interrupt Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.event-class.usb-interrupt-event",
+      "etiqueta": "USB Interrupt Event",
+      "estado": "todo",
+      "labview": "Selects the USB Interrupt Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.event-class.clear-event",
+      "etiqueta": "Clear Event",
+      "estado": "todo",
+      "labview": "Selects the Clear Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.event-class.gpib-cic-event",
+      "etiqueta": "GPIB CIC Event",
+      "estado": "todo",
+      "labview": "Selects the GPIB CIC Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.event-class.gpib-talk-event",
+      "etiqueta": "GPIB Talk Event",
+      "estado": "todo",
+      "labview": "Selects the GPIB Talk Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.event-class.gpib-listen-event",
+      "etiqueta": "GPIB Listen Event",
+      "estado": "todo",
+      "labview": "Selects the GPIB Listen Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.event-class.vxi-vme-sysfail-event",
+      "etiqueta": "VXI/VME Sysfail Event",
+      "estado": "todo",
+      "labview": "Selects the VXI/VME Sysfail Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control.select-visa-class.event-class.vxi-vme-sysreset-event",
+      "etiqueta": "VXI/VME Sysreset Event",
+      "estado": "todo",
+      "labview": "Selects the VXI/VME Sysreset Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control.select-item",
+      "etiqueta": "Select Item...",
+      "estado": "todo",
+      "labview": "Opens a window with the VISA resources found, to pick one.",
+      "necesita": "listar-recursos-visa",
+      "captura": "visa/resource-name-pm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "visa/resource-name-pm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control-terminal",
+      "etiqueta": "VISA Resource Name Control",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::the_terminals_of_a_VISA_resource_name_have_their_menus,_measured",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the label.",
+      "necesita": "etiquetas",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.find-control",
+      "etiqueta": "Find Control",
+      "estado": "todo",
+      "labview": "Points out the control on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control-terminal.hide-control",
+      "etiqueta": "Hide Control",
+      "estado": "todo",
+      "labview": "Hides the control on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control-terminal.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns the control into the other kind.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the object into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.change-to-constant",
+      "etiqueta": "Change to Constant",
+      "estado": "todo",
+      "labview": "Turns the object into a constant on the diagram.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.visa-palette",
+      "etiqueta": "VISA Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the VISA functions that take a resource name.",
+      "necesita": "paleta-visa-en-menu",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control-terminal.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to the resource name.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-control-terminal.create.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "A VISA resource name constant.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-control-terminal.create.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "A VISA resource name control.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-control-terminal.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "todo",
+      "labview": "A VISA resource name indicator.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-control-terminal.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "A local variable of the object.",
+      "necesita": "variables-y-feedback",
+      "captura": "visa/resource-name-tm-cr-z2.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control-terminal.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "A reference to the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-control-terminal.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "A Property Node of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-control-terminal.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "An Invoke Node of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-control-terminal.create.property-for-instr-class",
+      "etiqueta": "Property for Instr Class",
+      "estado": "todo",
+      "labview": "A property node of the VISA class of the resource name.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-tm-cr-z2.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control-terminal.create.method-for-instr-class",
+      "etiqueta": "Method for Instr Class",
+      "estado": "todo",
+      "labview": "An invoke node of the VISA class of the resource name; greyed in LabVIEW too.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-control-terminal.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "A Channel Writer for the resource name.",
+      "necesita": "canales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-control-terminal.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Groups the selection in a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-control-terminal.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::Data_Operations_of_a_VISA_resource_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-tm-da-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::Data_Operations_of_a_VISA_resource_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-tm-da-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::Data_Operations_of_a_VISA_resource_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-tm-da-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the current value to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-tm-da-z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control-terminal.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the current value to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-tm-da-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes a value from the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-tm-da-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options for the object; greyed out in LabVIEW on this terminal (why is unmeasured).",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class",
+      "etiqueta": "Select VISA Class",
+      "estado": "todo",
+      "labview": "Chooses the VISA class of the resource name: I/O Session classes or Event classes. It narrows the resources the dropdown lists.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session",
+      "etiqueta": "I/O Session",
+      "estado": "todo",
+      "labview": "The I/O session classes, from Instr to FireWire Instr; the one in use is ticked (Instr).",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.instr",
+      "etiqueta": "Instr",
+      "estado": "todo",
+      "labview": "Selects the Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.gpib-instr",
+      "etiqueta": "GPIB Instr",
+      "estado": "todo",
+      "labview": "Selects the GPIB Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.vxi-gpib-vxi-mbd-instr",
+      "etiqueta": "VXI/GPIB-VXI MBD Instr",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI MBD Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.vxi-gpib-vxi-vme-rbd-instr",
+      "etiqueta": "VXI/GPIB-VXI/VME RBD Instr",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI/VME RBD Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.pxi-instr",
+      "etiqueta": "PXI Instr",
+      "estado": "todo",
+      "labview": "Selects the PXI Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.serial-instr",
+      "etiqueta": "Serial Instr",
+      "estado": "todo",
+      "labview": "Selects the Serial Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.tcp-ip-instr",
+      "etiqueta": "TCP/IP Instr",
+      "estado": "todo",
+      "labview": "Selects the TCP/IP Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.usb-instr",
+      "etiqueta": "USB Instr",
+      "estado": "todo",
+      "labview": "Selects the USB Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.vxi-gpib-vxi-vme-memacc",
+      "etiqueta": "VXI/GPIB-VXI/VME MemAcc",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI/VME MemAcc class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.pxi-memacc",
+      "etiqueta": "PXI MemAcc",
+      "estado": "todo",
+      "labview": "Selects the PXI MemAcc class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.vxi-gpib-vxi-backplane",
+      "etiqueta": "VXI/GPIB-VXI Backplane",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI Backplane class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.pxi-backplane",
+      "etiqueta": "PXI Backplane",
+      "estado": "todo",
+      "labview": "Selects the PXI Backplane class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.vxi-servant",
+      "etiqueta": "VXI Servant",
+      "estado": "todo",
+      "labview": "Selects the VXI Servant class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.gpib-boardinterface",
+      "etiqueta": "GPIB BoardInterface",
+      "estado": "todo",
+      "labview": "Selects the GPIB BoardInterface class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.gpib-servant",
+      "etiqueta": "GPIB Servant",
+      "estado": "todo",
+      "labview": "Selects the GPIB Servant class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.tcp-ip-socket",
+      "etiqueta": "TCP/IP Socket",
+      "estado": "todo",
+      "labview": "Selects the TCP/IP Socket class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.usb-raw",
+      "etiqueta": "USB Raw",
+      "estado": "todo",
+      "labview": "Selects the USB Raw class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.i-o-session.firewire-instr",
+      "etiqueta": "FireWire Instr",
+      "estado": "todo",
+      "labview": "Selects the FireWire Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.event-class",
+      "etiqueta": "Event Class",
+      "estado": "todo",
+      "labview": "The VISA event classes, for resource names that carry events.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.event-class.generic-event",
+      "etiqueta": "Generic Event",
+      "estado": "todo",
+      "labview": "Selects the Generic Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.event-class.service-request-event",
+      "etiqueta": "Service Request Event",
+      "estado": "todo",
+      "labview": "Selects the Service Request Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.event-class.trigger-event",
+      "etiqueta": "Trigger Event",
+      "estado": "todo",
+      "labview": "Selects the Trigger Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.event-class.vxi-signal-event",
+      "etiqueta": "VXI Signal Event",
+      "estado": "todo",
+      "labview": "Selects the VXI Signal Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.event-class.vxi-vme-interrupt-event",
+      "etiqueta": "VXI/VME Interrupt Event",
+      "estado": "todo",
+      "labview": "Selects the VXI/VME Interrupt Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.event-class.pxi-interrupt-event",
+      "etiqueta": "PXI Interrupt Event",
+      "estado": "todo",
+      "labview": "Selects the PXI Interrupt Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.event-class.usb-interrupt-event",
+      "etiqueta": "USB Interrupt Event",
+      "estado": "todo",
+      "labview": "Selects the USB Interrupt Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.event-class.clear-event",
+      "etiqueta": "Clear Event",
+      "estado": "todo",
+      "labview": "Selects the Clear Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.event-class.gpib-cic-event",
+      "etiqueta": "GPIB CIC Event",
+      "estado": "todo",
+      "labview": "Selects the GPIB CIC Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.event-class.gpib-talk-event",
+      "etiqueta": "GPIB Talk Event",
+      "estado": "todo",
+      "labview": "Selects the GPIB Talk Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.event-class.gpib-listen-event",
+      "etiqueta": "GPIB Listen Event",
+      "estado": "todo",
+      "labview": "Selects the GPIB Listen Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.event-class.vxi-vme-sysfail-event",
+      "etiqueta": "VXI/VME Sysfail Event",
+      "estado": "todo",
+      "labview": "Selects the VXI/VME Sysfail Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.select-visa-class.event-class.vxi-vme-sysreset-event",
+      "etiqueta": "VXI/VME Sysreset Event",
+      "estado": "todo",
+      "labview": "Selects the VXI/VME Sysreset Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-control-terminal.view-as-icon",
+      "etiqueta": "View As Icon",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::View_As_Icon_of_the_terminal_of_a_VISA_resource_name_switches_between_38_x_38_and_32_x_16",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control-terminal.select-item",
+      "etiqueta": "Select Item...",
+      "estado": "todo",
+      "labview": "Opens a window with the VISA resources found, to pick one.",
+      "necesita": "listar-recursos-visa",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-control-terminal.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-indicator-terminal",
+      "etiqueta": "VISA Resource Name Indicator",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::the_terminals_of_a_VISA_resource_name_have_their_menus,_measured",
+      "captura": "visa/resource-name-tm0z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas",
+      "captura": "visa/resource-name-tm0z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the label.",
+      "necesita": "etiquetas",
+      "captura": "visa/resource-name-tm0z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.find-indicator",
+      "etiqueta": "Find Indicator",
+      "estado": "todo",
+      "labview": "Points out the indicator on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-tm0z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "visa/resource-name-tm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-indicator-terminal.hide-indicator",
+      "etiqueta": "Hide Indicator",
+      "estado": "todo",
+      "labview": "Hides the indicator on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-tm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-indicator-terminal.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Turns the indicator into the other kind.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-tm0z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the object into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm0z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.change-to-constant",
+      "etiqueta": "Change to Constant",
+      "estado": "todo",
+      "labview": "Turns the object into a constant on the diagram.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm0z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "visa/resource-name-tm0z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.visa-palette",
+      "etiqueta": "VISA Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the VISA functions that take a resource name.",
+      "necesita": "paleta-visa-en-menu",
+      "captura": "visa/resource-name-tm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-indicator-terminal.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to the resource name.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.create.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "A VISA resource name constant.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.create.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "A VISA resource name control.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "todo",
+      "labview": "A VISA resource name indicator.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "A local variable of the object.",
+      "necesita": "variables-y-feedback",
+      "captura": "visa/resource-name-tm-cr-z2.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-indicator-terminal.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "A reference to the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "A Property Node of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "An Invoke Node of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.create.property-for-instr-class",
+      "etiqueta": "Property for Instr Class",
+      "estado": "todo",
+      "labview": "A property node of the VISA class of the resource name.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-tm-cr-z2.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-indicator-terminal.create.method-for-instr-class",
+      "etiqueta": "Method for Instr Class",
+      "estado": "todo",
+      "labview": "An invoke node of the VISA class of the resource name; greyed in LabVIEW too.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "A Channel Writer for the resource name.",
+      "necesita": "canales",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Groups the selection in a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "visa/resource-name-tm-cr-z2.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::Data_Operations_of_a_VISA_resource_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-tm-da-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::Data_Operations_of_a_VISA_resource_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-tm-da-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::Data_Operations_of_a_VISA_resource_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-tm-da-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the current value to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-tm-da-z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-indicator-terminal.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the current value to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-tm-da-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes a value from the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-tm-da-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options for the object; greyed out in LabVIEW on this terminal (why is unmeasured).",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm0z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class",
+      "etiqueta": "Select VISA Class",
+      "estado": "todo",
+      "labview": "Chooses the VISA class of the resource name: I/O Session classes or Event classes. It narrows the resources the dropdown lists.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-tm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session",
+      "etiqueta": "I/O Session",
+      "estado": "todo",
+      "labview": "The I/O session classes, from Instr to FireWire Instr; the one in use is ticked (Instr).",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.instr",
+      "etiqueta": "Instr",
+      "estado": "todo",
+      "labview": "Selects the Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.gpib-instr",
+      "etiqueta": "GPIB Instr",
+      "estado": "todo",
+      "labview": "Selects the GPIB Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.vxi-gpib-vxi-mbd-instr",
+      "etiqueta": "VXI/GPIB-VXI MBD Instr",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI MBD Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.vxi-gpib-vxi-vme-rbd-instr",
+      "etiqueta": "VXI/GPIB-VXI/VME RBD Instr",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI/VME RBD Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.pxi-instr",
+      "etiqueta": "PXI Instr",
+      "estado": "todo",
+      "labview": "Selects the PXI Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.serial-instr",
+      "etiqueta": "Serial Instr",
+      "estado": "todo",
+      "labview": "Selects the Serial Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.tcp-ip-instr",
+      "etiqueta": "TCP/IP Instr",
+      "estado": "todo",
+      "labview": "Selects the TCP/IP Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.usb-instr",
+      "etiqueta": "USB Instr",
+      "estado": "todo",
+      "labview": "Selects the USB Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.vxi-gpib-vxi-vme-memacc",
+      "etiqueta": "VXI/GPIB-VXI/VME MemAcc",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI/VME MemAcc class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.pxi-memacc",
+      "etiqueta": "PXI MemAcc",
+      "estado": "todo",
+      "labview": "Selects the PXI MemAcc class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.vxi-gpib-vxi-backplane",
+      "etiqueta": "VXI/GPIB-VXI Backplane",
+      "estado": "todo",
+      "labview": "Selects the VXI/GPIB-VXI Backplane class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.pxi-backplane",
+      "etiqueta": "PXI Backplane",
+      "estado": "todo",
+      "labview": "Selects the PXI Backplane class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.vxi-servant",
+      "etiqueta": "VXI Servant",
+      "estado": "todo",
+      "labview": "Selects the VXI Servant class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.gpib-boardinterface",
+      "etiqueta": "GPIB BoardInterface",
+      "estado": "todo",
+      "labview": "Selects the GPIB BoardInterface class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.gpib-servant",
+      "etiqueta": "GPIB Servant",
+      "estado": "todo",
+      "labview": "Selects the GPIB Servant class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.tcp-ip-socket",
+      "etiqueta": "TCP/IP Socket",
+      "estado": "todo",
+      "labview": "Selects the TCP/IP Socket class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.usb-raw",
+      "etiqueta": "USB Raw",
+      "estado": "todo",
+      "labview": "Selects the USB Raw class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.i-o-session.firewire-instr",
+      "etiqueta": "FireWire Instr",
+      "estado": "todo",
+      "labview": "Selects the FireWire Instr class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-io-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.event-class",
+      "etiqueta": "Event Class",
+      "estado": "todo",
+      "labview": "The VISA event classes, for resource names that carry events.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.event-class.generic-event",
+      "etiqueta": "Generic Event",
+      "estado": "todo",
+      "labview": "Selects the Generic Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.event-class.service-request-event",
+      "etiqueta": "Service Request Event",
+      "estado": "todo",
+      "labview": "Selects the Service Request Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.event-class.trigger-event",
+      "etiqueta": "Trigger Event",
+      "estado": "todo",
+      "labview": "Selects the Trigger Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.event-class.vxi-signal-event",
+      "etiqueta": "VXI Signal Event",
+      "estado": "todo",
+      "labview": "Selects the VXI Signal Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.event-class.vxi-vme-interrupt-event",
+      "etiqueta": "VXI/VME Interrupt Event",
+      "estado": "todo",
+      "labview": "Selects the VXI/VME Interrupt Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.event-class.pxi-interrupt-event",
+      "etiqueta": "PXI Interrupt Event",
+      "estado": "todo",
+      "labview": "Selects the PXI Interrupt Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.event-class.usb-interrupt-event",
+      "etiqueta": "USB Interrupt Event",
+      "estado": "todo",
+      "labview": "Selects the USB Interrupt Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.event-class.clear-event",
+      "etiqueta": "Clear Event",
+      "estado": "todo",
+      "labview": "Selects the Clear Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.event-class.gpib-cic-event",
+      "etiqueta": "GPIB CIC Event",
+      "estado": "todo",
+      "labview": "Selects the GPIB CIC Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.event-class.gpib-talk-event",
+      "etiqueta": "GPIB Talk Event",
+      "estado": "todo",
+      "labview": "Selects the GPIB Talk Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.event-class.gpib-listen-event",
+      "etiqueta": "GPIB Listen Event",
+      "estado": "todo",
+      "labview": "Selects the GPIB Listen Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.event-class.vxi-vme-sysfail-event",
+      "etiqueta": "VXI/VME Sysfail Event",
+      "estado": "todo",
+      "labview": "Selects the VXI/VME Sysfail Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-visa-class.event-class.vxi-vme-sysreset-event",
+      "etiqueta": "VXI/VME Sysreset Event",
+      "estado": "todo",
+      "labview": "Selects the VXI/VME Sysreset Event class.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-cm-ev-z.png"
+    },
+    {
+      "id": "context.visa-indicator-terminal.view-as-icon",
+      "etiqueta": "View As Icon",
+      "estado": "built",
+      "prueba": "test/editor/visa-resource-name.test.mjs::View_As_Icon_of_the_terminal_of_a_VISA_resource_name_switches_between_38_x_38_and_32_x_16",
+      "captura": "visa/resource-name-tm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-indicator-terminal.select-item",
+      "etiqueta": "Select Item...",
+      "estado": "todo",
+      "labview": "Opens a window with the VISA resources found, to pick one.",
+      "necesita": "listar-recursos-visa",
+      "captura": "visa/resource-name-tm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-indicator-terminal.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "visa/resource-name-tm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-function",
+      "etiqueta": "VISA Function",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the node's label.",
+      "necesita": "etiquetas",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.visible-items.terminals",
+      "etiqueta": "Terminals",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the function's help.",
+      "necesita": "ayuda-contextual",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Looks for examples that use the function.",
+      "necesita": "ejemplos",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/node-write-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-function.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.visa-palette",
+      "etiqueta": "VISA Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the VISA functions.",
+      "necesita": "paleta-visa-en-menu",
+      "captura": "visa/node-write-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-function.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the function with another, keeping the wires that fit.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.synchronous-io-mode",
+      "etiqueta": "Synchronous I/O Mode",
+      "estado": "todo",
+      "labview": "Chooses how the call waits for the instrument.",
+      "necesita": "modo-de-e-s-sincrono",
+      "captura": "visa/node-write-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-function.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the node and joins the wire that went in to the one that came out.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/node-write-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-function.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/node-write-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-function.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/node-write-menu.png"
+    },
+    {
+      "id": "context.visa-function.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the node's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "visa/node-write-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-function-resource-terminal",
+      "etiqueta": "VISA Function Resource Name Terminal",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the resource terminal of a VISA node has its own menu with Create making the VISA constant, control and indicator",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the node's label.",
+      "necesita": "etiquetas",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.visible-items.terminals",
+      "etiqueta": "Terminals",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the function's help.",
+      "necesita": "ayuda-contextual",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Looks for examples that use the function.",
+      "necesita": "ejemplos",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/resource-name-m0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-function-resource-terminal.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the right-click menu of a VISA node is the measured one",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.visa-palette",
+      "etiqueta": "VISA Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the VISA functions.",
+      "necesita": "paleta-visa-en-menu",
+      "captura": "visa/resource-name-m0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-function-resource-terminal.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the resource terminal of a VISA node has its own menu with Create making the VISA constant, control and indicator",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the resource terminal of a VISA node has its own menu with Create making the VISA constant, control and indicator",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the resource terminal of a VISA node has its own menu with Create making the VISA constant, control and indicator",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the resource terminal of a VISA node has its own menu with Create making the VISA constant, control and indicator",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.create.property-for-instr-class",
+      "etiqueta": "Property for Instr Class",
+      "estado": "todo",
+      "labview": "A property node of the VISA class of the resource name.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-m0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-function-resource-terminal.create.method-for-instr-class",
+      "etiqueta": "Method for Instr Class",
+      "estado": "todo",
+      "labview": "An invoke node of the VISA class of the resource name; greyed in LabVIEW too.",
+      "necesita": "clases-visa",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the resource terminal of a VISA node has its own menu with Create making the VISA constant, control and indicator",
+      "captura": "visa/resource-name-m0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-function-resource-terminal.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/visa-nodes.test.mjs::the resource terminal of a VISA node has its own menu with Create making the VISA constant, control and indicator",
+      "captura": "visa/resource-name-m0z.png"
+    },
+    {
+      "id": "context.visa-function-resource-terminal.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the function with another, keeping the wires that fit.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-m0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-function-resource-terminal.synchronous-io-mode",
+      "etiqueta": "Synchronous I/O Mode",
+      "estado": "todo",
+      "labview": "Chooses how the call waits for the instrument.",
+      "necesita": "modo-de-e-s-sincrono",
+      "captura": "visa/resource-name-m0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-function-resource-terminal.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the node and joins the wire that went in to the one that came out.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-m0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.visa-function-resource-terminal.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the node's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "visa/resource-name-m0z.png",
+      "separado": true
     }
   ]
 }

@@ -15,10 +15,11 @@ import { PANE_SIZE } from "../../../core/model/connector.mjs";
 import { isSubVI, portsWithAnchors } from "./subvi-nodes.mjs";
 import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
+import * as VN from "./visa-nodes.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { brokenWireMarks, endPoint } from "./broken-wire.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
-import { COLORES, CONSTANT_DIGITS, aspecto, isUndefinedArray, esArray, esCluster, esEntero, esEnum, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
+import { COLORES, CONSTANT_DIGITS, VISA_RESOURCE, aspecto, isUndefinedArray, esArray, esCluster, esEntero, esEnum, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
 import { GRAPH_KINDS, labelShown } from "../front-panel/graph-state.mjs";
 import { elementMenuRoot } from "../common/array-typing.mjs";
 import { MAX_EDITOR_DIMENSIONS, cellAddress, dimensionsOfNode, firstShown, isDefined, readCell, visibleGrid } from "../common/array-grid.mjs";
@@ -81,6 +82,9 @@ export const CONSTANTES = {
   // (Intro baja de línea y se confirma con Enter Text o con un clic fuera); las fijas
   // llevan un signo y no se editan.
   "str-const": { editable: true, cadena: true, texto: (n) => n.config?.value ?? "" },
+  // A VISA resource name: a box in the type's colour with an I/O glyph, the resource's text, a divider and a dropdown
+  // arrow (labview-captures/reports/2026-10-26-visa-resource-name-look.md Q1). One line only.
+  "visa-resource-constant": { editable: true, visa: true, texto: (n) => n.config?.value ?? "" },
   ...Object.fromEntries(Object.entries(G.SIGNOS_CADENA).map(([id, signo]) => [id, { cadena: true, texto: () => signo }])),
   // La constante de error (labview-captures/errores/202.png): tres celdas, status, code y source;
   // un clic en la del status la alterna, y un doble clic en las otras escribe en ellas.
@@ -107,6 +111,18 @@ export const MEDIDAS_CONSTANTE = { alto: 18, borde: 2, relleno: 5, minimo: 13 };
  */
 export const MEDIDAS_CONSTANTE_ERROR = { ancho: 22, alto: 57, celdas: [11, 19, 19], borde: 3 };
 export const MEDIDAS_CADENA = { linea: 15, vertical: 4, horizontal: 8, minimo: 15 };
+/**
+ * The constant of a VISA resource name, measured at 1:1 in labview-captures/visa/resource-name-c0.png (empty) and
+ * -c3.png ("TCPIP0::10.0.2.2::5125::SOCKET"): 20 px tall; from the left edge, the 14 px of the border and the I/O
+ * glyph, the text area (9 px empty; the text and 5 px of padding otherwise: Size To Text grows it to the right),
+ * and 12 px of divider, arrow cell and border. Empty it is 35 px wide; with that text 191, in LabVIEW's font, which
+ * is not identified, so the width of a text is `anchoTexto`'s estimate.
+ */
+export const MEDIDAS_VISA_CONSTANT = { alto: 20, textoDesde: 14, areaVacia: 9, relleno: 5, derecha: 12 };
+const visaConstantSize = (text) => {
+  const M = MEDIDAS_VISA_CONSTANT;
+  return { ancho: M.textoDesde + (text ? anchoTexto(text) + M.relleno : M.areaVacia) + M.derecha, alto: M.alto };
+};
 /**
  * The array constant, measured at 1:1 in labview-captures/array/constante-array.png, array-typing/const-num.png and
  * defined-const.png (an I32 element, [5, 7] shown in three): the index, 32 × 21 px, and against its right the shell,
@@ -502,6 +518,8 @@ export function caja(n, ctx, edicion) {
     return { x: n.x, y: n.y, ancho: A.indice + visiblesArray(n) * anchoElementoArray(n, ctx, edicion) + 2 * A.margenCaja, alto: A.alto };
   }
   if (c?.error) return { x: n.x, y: n.y, ancho: MEDIDAS_CONSTANTE_ERROR.ancho, alto: MEDIDAS_CONSTANTE_ERROR.alto };
+  // Size To Text: it grows to the right with its text, also while it is typed (unverified), so its left edge stays.
+  if (c?.visa) return { x: n.x, y: n.y, ...visaConstantSize(textoConstante(n, ctx, edicion)) };
   if (c?.cadena) {
     const M = MEDIDAS_CADENA;
     const size = (text) => {
@@ -563,6 +581,7 @@ export function terminales(n, ctx, edicion) {
   if (isSubVI(n)) return terminalesSubVI(n, k, ctx);
   if (FN.isFormatNode(n, ctx.cat)) return FN.formatNodeTerminals(n, k, ctx.cat);
   if (UN.isUnbundleByName(n)) return UN.unbundleTerminals(n, k, ctx.cat);
+  if (VN.isVisaNode(n)) return VN.visaTerminals(n, k, ctx.cat);
   const { in: ins, out: outs } = ctx.cat.puertos(n);
   const anchoZona = terminalZoneWidth(n, k, ctx, ins, outs);
   // Un terminal del panel recibe o da el dato por su flecha.
@@ -708,12 +727,21 @@ const puntos = (r) => r.map(([x, y]) => `${f2(x)},${f2(y)}`).join(" ");
  */
 const UNDEFINED_ARRAY_ROWS = [[-0.5, 0], [0.5, 2]];
 
+/**
+ * The squiggle of a VISA resource name's wire, the same two pixel rows as the undefined array's but in the type's
+ * colour: each row is 3 px on and 1 px off, the lower one two pixels ahead of the upper one (measured at 1:1 in
+ * labview-captures/visa/resource-name-c0.png, reports/2026-10-26-visa-resource-name-look.md Q2, on 8 px only).
+ */
+export const SQUIGGLE_DASHES = "3 1";
+export const squiggleRows = (points, color) => UNDEFINED_ARRAY_ROWS.map(([shift, dashOffset]) => `<polyline points="${puntos(points)}" transform="translate(${shift} ${shift})" stroke="${color}" stroke-width="1" stroke-dasharray="${SQUIGGLE_DASHES}" stroke-dashoffset="${dashOffset}" shape-rendering="crispEdges"/>`).join("");
+
 /** Pinta un cable: su color es el de su tipo y su grosor, el de su dimensión. Uno roto se pinta aparte (broken-wire.mjs). */
 function trazo(r, tipo) {
   // An array with no element yet: 2 px like any 1D wire, each pixel row dashed 2 on and 2 off in black, the second
   // row one pixel ahead of the first (measured at 1:1 on labview-captures/array-typing/const-wire.png).
   if (isUndefinedArray(tipo)) return UNDEFINED_ARRAY_ROWS.map(([shift, dashOffset]) => `<polyline points="${puntos(r)}" transform="translate(${shift} ${shift})" stroke="#000" stroke-width="1" stroke-dasharray="2 2" stroke-dashoffset="${dashOffset}" shape-rendering="crispEdges"/>`).join("");
-  const { color, dimension, error } = aspecto(tipo);
+  const { color, dimension, error, squiggle } = aspecto(tipo);
+  if (squiggle) return squiggleRows(r, color);
   // Un cable de error mide 3 px: borde oliva y, en el centro, trazos de 2 px amarillos y negros (YYKK).
   if (error) return `<polyline points="${puntos(r)}" stroke="${color}" stroke-width="3"/><polyline points="${puntos(r)}" stroke="#ffff00" stroke-width="1" stroke-dasharray="2 2"/><polyline points="${puntos(r)}" stroke="#000" stroke-width="1" stroke-dasharray="2 2" stroke-dashoffset="-2"/>`;
   if (dimension === 0) return `<polyline points="${puntos(r)}" stroke="${color}" stroke-width="1.33"/>`;
@@ -1067,6 +1095,23 @@ function structureShowsStretchHandles(structure, d, selected) {
   return selected || d.sobre?.nodo === structure.id;
 }
 
+/** Is this the terminal of a VISA resource name control or indicator? */
+const isVisaTerminal = (n) => n.tipo === "visa-control" || n.tipo === "visa-indicator";
+
+/**
+ * The constant of a VISA resource name: the I/O glyph, the text (being typed, when it is), the divider and the
+ * dropdown arrow, which opens the menu of the VISA resources (`data-visa-dropdown`, handled by the window).
+ */
+function visaConstant(n, ctx, edicion) {
+  const ed = edicion?.nodo === n.id ? edicion : null;
+  const text = esc(textoConstante(n, ctx, edicion));
+  const value = ed ? (ed.todo ? `<span class="texto-elegido">${text}</span>` : `<span>${text}</span><span class="caret"></span>`) : `<span>${text}</span>`;
+  const { color } = aspecto(VISA_RESOURCE);
+  return `<div class="constante visa${ed ? " editando" : ""}" style="border-color:${color};--tipo:${color}">` +
+    `<span class="visa-glifo">${G.visaIoGlyph()}</span><span class="visa-texto">${value}</span>` +
+    `<span class="visa-division"></span><span class="visa-flecha" data-visa-dropdown>${G.visaDropdownArrow()}</span></div>`;
+}
+
 function nodo(n, d, ctx, resueltos, elegido) {
   const k = caja(n, ctx, d.edicion);
   const c = CONSTANTES[n.tipo];
@@ -1077,6 +1122,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
     cuerpo = constanteError(n, d.edicion);
   } else if (c?.array) {
     cuerpo = constanteArray(n, k, ctx, d.edicion);
+  } else if (c?.visa) {
+    cuerpo = visaConstant(n, ctx, d.edicion);
   } else if (c) {
     const b = ctx.cat.bloque(n.tipo);
     const tipo = resueltos?.salidas.get(`${n.id}.result`) ?? n.config?.type ?? b.config?.default?.type ?? b.out[0].type;
@@ -1091,7 +1138,9 @@ function nodo(n, d, ctx, resueltos, elegido) {
     const control = ctx.cat.puertos(n).out.length > 0;
     let hoja = tipo;
     while (esArray(hoja)) hoja = hoja.array;
-    const glifo = GRAPH_KINDS.includes(n.tipo)
+    const glifo = isVisaTerminal(n)
+      ? G.terminalVisa(control, !!n.vista?.compacto)
+      : GRAPH_KINDS.includes(n.tipo)
       ? G.graphTerminal(n.tipo, n.tipo === "xy-graph" || esCluster(tipo), !!n.vista?.compacto)
       : isUndefinedArray(tipo)
       ? (n.vista?.compacto ? G.terminalArrayCompacto(control, COLOR_UNDEFINED_ARRAY, "") : G.terminalArrayIndefinido(control))
@@ -1417,6 +1466,10 @@ export function menuDe(n, puerto, g, onElement = false) {
   // constant (DT-049); the diagram terminal of a panel enum uses the same rows.
   if (esEnum(n.config?.type) && (n.tipo === "control" || n.tipo === "indicator")) return n.tipo === "control" ? "context.enum-control" : "context.enum-indicator";
   if (n.tipo === "enum-const") return "context.enum-constant";
+  // The menus of a VISA resource name, measured (reports/2026-10-26-visa-resource-name-look.md Q5).
+  if (n.tipo === "visa-resource-constant") return "context.visa-constant";
+  if (n.tipo === "visa-control") return "context.visa-control-terminal";
+  if (n.tipo === "visa-indicator") return "context.visa-indicator-terminal";
   if (n.tipo === "control") return "context.numeric-control";
   if (n.tipo === "bool-control") return "context.boolean-control-terminal";
   // El menú de la constante booleana no está capturado.
@@ -1432,6 +1485,8 @@ export function menuDe(n, puerto, g, onElement = false) {
   // The right-click menu of the terminal of a graph was not captured.
   if (GRAPH_KINDS.includes(n.tipo)) return null;
   if (UN.isUnbundleByName(n)) return UN.rowHasName(n, UN.rowOfPort(puerto)) ? UN.ROW_MENU : UN.BODY_MENU;
+  // The VISA functions: the menu of the resource name terminal and the one of the rest of the node (reports/2026-10-26-visa-nodes.md Q4, visa-resource-name-look.md Q5).
+  if (VN.isVisaNode(n)) return puerto === VN.RESOURCE_PORT ? VN.RESOURCE_TERMINAL_MENU : VN.BODY_MENU;
   if (n.tipo === "format-into-string") return "context.format-into-string";
   if (n.tipo === "scan-from-string") return puerto && /^(default|output)-\d+$/.test(puerto) ? "context.scan-from-string-parameter" : "context.scan-from-string";
   if (n.tipo === "compound-arithmetic") return puerto?.startsWith("value-") ? "context.compound-arithmetic-input" : "context.compound-arithmetic";
@@ -1475,7 +1530,7 @@ const MENU_COMPARISON = {
 };
 
 /** Filas que en LabVIEW abren un submenú aunque su contenido no esté declarado. Es disposición. */
-const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "array-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "select-item", "type-palette", "cluster-type-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
+const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "array-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "select-item", "visa-palette", "synchronous-io-mode", "property-for-instr-class", "method-for-instr-class", "type-palette", "cluster-type-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
   // The graphs (labview-captures/graphs/): rows whose submenus are not declared yet.
   "marker-spacing", "style", "property-node", "invoke-node", "run-time-shortcut-menu", "enabled-state", "update-mode", "export", "x-scale", "y-scale", "common-plots", "color", "line-style", "line-width", "bar-plots", "fill-base-line", "interpolation", "point-style",
   // The Getting Started window's menus (labview-captures/getting-started/).

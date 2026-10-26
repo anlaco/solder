@@ -59,11 +59,12 @@ const identityQuery = (resource, byteCount, { errorIn } = {}) =>
   });
 
 /** Runs `vi` with Solder's VISA, on the pool when `poolPorts` is given; the writes come back by the names `vi` gave its nodes. */
-async function run(vi, options = {}) {
+async function run(vi, options = {}, values = {}) {
   const compiled = compilar(vi.g, CAT);
   assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
   const byId = Object.fromEntries(Object.entries(vi.id).map(([name, nodeId]) => [nodeId, name]));
-  const written = await ejecutar(compiled, {}, { io: loadSolderIo(), ...options });
+  const valuesById = Object.fromEntries(Object.entries(values).map(([name, value]) => [vi.id[name], value]));
+  const written = await ejecutar(compiled, valuesById, { io: loadSolderIo(), ...options });
   return Object.fromEntries(Object.entries(written).map(([nodeId, value]) => [byId[nodeId], value]));
 }
 
@@ -206,6 +207,42 @@ test("when the I/O process ends, a Run waiting for an instrument fails instead o
     assert.ok(performance.now() - start < 1000, "it fails at once, not at the Read's timeout");
   } finally {
     io.close();
+    instrument.stop();
+  }
+});
+
+/** A VISA resource name control → Open → Read → Close, with Open's resource name out on an indicator. */
+const queryFromAControl = (byteCount) =>
+  buildVI(CAT, (b) => {
+    b.node("name", "visa-control");
+    b.node("open", "visa-open");
+    b.node("query", "str-const", { value: "*IDN?\n" });
+    b.node("write", "visa-write");
+    b.node("count", "const", { value: byteCount, type: "u32" });
+    b.node("read", "visa-read");
+    b.node("close", "visa-close");
+    b.node("opened", "visa-indicator");
+    b.node("buffer", "str-indicator");
+    b.wire("name.result", "open.resource");
+    b.wire("open.resource-out", "opened.value");
+    b.wire("open.resource-out", "write.resource");
+    b.wire("query.result", "write.write-buffer");
+    b.wire("open.error-out", "write.error-in");
+    b.wire("write.resource-out", "read.resource");
+    b.wire("count.result", "read.byte-count");
+    b.wire("write.error-out", "read.error-in");
+    b.wire("read.resource-out", "close.resource");
+    b.wire("read.error-out", "close.error-in");
+    b.wire("read.read-buffer", "buffer.value");
+  });
+
+test("a VISA resource name control gives the name typed on the panel, and an indicator shows the name", async () => {
+  const instrument = await startInstrument();
+  try {
+    const shown = await run(queryFromAControl(IDENTITY.length), {}, { name: instrument.resource });
+    assert.equal(shown.buffer, IDENTITY);
+    assert.equal(shown.opened, instrument.resource);
+  } finally {
     instrument.stop();
   }
 });

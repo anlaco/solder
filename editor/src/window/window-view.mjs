@@ -128,6 +128,23 @@ const REJILLAS = {
   "palette.controls.modern.graph": { columnas: 4, celdas: { "3d-picture": [3, 2] } },
   // Its folder Controls, from 02-palette-graph-subfolder-controls.png: 4 + 3.
   "palette.controls.modern.graph.controls": { columnas: 4, celdas: {} },
+  // I/O, from labview-captures/visa/controls-modern-io.png: 3 columns and 13 elements, five rows (reports/2026-10-25-visa-palettes.md §4).
+  "palette.controls.modern.io": { columnas: 3, celdas: {} },
+  // Functions ▸ Instrument I/O and below, from labview-captures/visa/functions-*.png (reports/2026-10-25-visa-palettes.md §1–3).
+  // Instrument I/O is a category of the palette, so it unfolds in the palette's four columns; its cells are the measured ones
+  // (the window of LabVIEW is three columns wide: Instr Drivers alone on the first row, VISA, GPIB and Serial on the second).
+  "palette.functions.instrument-io": { columnas: 3, celdas: { visa: [1, 0] } },
+  "palette.functions.instrument-io.visa": { columnas: 3, celdas: {} },
+  "palette.functions.instrument-io.visa.visa-advanced": { columnas: 3, celdas: {} },
+  // Bus/Interface Specific: 5 × 3, the third cell of the first row empty.
+  "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific": { columnas: 5, celdas: { "visa-set-i-o-buffer-size": [0, 3] } },
+  "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.visa-usb": { columnas: 4, celdas: { "visa-get-usb-interrupt-data-vi": [0, 3] } },
+  "palette.functions.instrument-io.visa.visa-advanced.event-handling": { columnas: 4, celdas: { "select-event-type-ctl": [1, 3] } },
+  // Register Access: 8 × 3; the last row has three functions, a gap of three cells, VISA Move and the Low Level folder.
+  "palette.functions.instrument-io.visa.visa-advanced.register-access": { columnas: 8, celdas: { "visa-move": [2, 6] } },
+  "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access": { columnas: 4, celdas: { "visa-peek-8": [1, 0], "visa-poke-8": [2, 0] } },
+  "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial": { columnas: 4, celdas: {} },
+  "palette.functions.instrument-io.serial": { columnas: 4, celdas: {} },
 };
 const REJILLA_POR_DEFECTO = { columnas: 6, celdas: {} };
 
@@ -347,11 +364,19 @@ function carpeta(inv, e, left, top, abierta) {
 function rejilla(inv, categoria, abierta) {
   const P = MEDIDAS_PALETA;
   const hijos = inv.hijos(categoria).filter((e) => !e.oculto);
-  const filas = Math.ceil(hijos.length / P.columnas);
+  // A category whose cells are measured skips the ones LabVIEW leaves empty (`celdas` of REJILLAS); the others fill in order.
+  const fijas = REJILLAS[categoria]?.celdas ?? {};
+  let siguiente = 0;
+  const sitios = hijos.map((e) => {
+    const fija = fijas[ultimo(e.id)];
+    if (fija) siguiente = fija[0] * P.columnas + fija[1];
+    return siguiente++;
+  });
+  const filas = Math.floor(Math.max(0, ...sitios) / P.columnas) + 1;
   const alto = P.sobreRejilla + (filas - 1) * P.pasoIcono + P.altoCarpeta + P.bajoRejilla;
   const carpetas = hijos
     .map((e, i) => {
-      const [f, c] = [Math.floor(i / P.columnas), i % P.columnas];
+      const [f, c] = [Math.floor(sitios[i] / P.columnas), sitios[i] % P.columnas];
       return carpeta(inv, e, P.margenRejilla + c * P.pasoIcono, P.sobreRejilla + f * P.pasoIcono, e.id === abierta);
     })
     .join("");

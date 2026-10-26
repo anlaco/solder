@@ -156,6 +156,8 @@ export function nombre(t) {
  * booleanos, rosa las cadenas— y el grosor, la dimensión.
  */
 export function aspecto(t) {
+  // A VISA resource name: purple, 2 px, drawn as a squiggle (measured, labview-captures/reports/2026-10-26-visa-resource-name-look.md Q2).
+  if (t === VISA_RESOURCE) return { color: COLORES.visa, dimension: 0, squiggle: true };
   // El cluster de error: oliva, con trazos amarillos y negros (docs/reference/labview-errors.md §1).
   if (esError(t)) return { color: COLORES.error, dimension: 0, error: true };
   const dimension = dimensionsOf(t);
@@ -180,12 +182,15 @@ export const COLORES = {
   otro: "#7f3f00",
   /** El borde de un cable de error y de su terminal y su constante: #7f7f00, medido en LabVIEW 2026 Q3. */
   error: "#7f7f00",
+  /** The wire, terminals and constant of a VISA resource name: #7f007f, measured in LabVIEW 2026 Q3 (reports/2026-10-26-visa-resource-name-look.md Q1-Q3). */
+  visa: "#7f007f",
 };
 
 function colorEscalar(t) {
   if (esNumerico(t)) return esEntero(t) ? COLORES.entero : COLORES.flotante;
   if (t === "boolean") return COLORES.booleano;
   if (t === "string") return COLORES.cadena;
+  if (t === VISA_RESOURCE) return COLORES.visa;
   return COLORES.otro;
 }
 

@@ -276,6 +276,16 @@ svg { display: block; overflow: visible; }
 /* Una constante de cadena puede tener varias líneas: Intro baja de línea. */
 .constante.cadena { white-space: pre; line-height: 15px; justify-content: flex-start; align-items: flex-start; padding: 0 2px; box-sizing: border-box; font-size: var(--fuente); }
 .constante.cadena .caret { display: inline-block; vertical-align: -2px; }
+/* The constant of a VISA resource name (labview-captures/visa/resource-name-c0.png, at 1:1): the I/O glyph at the left,
+   the text, a 1 px divider and the dropdown arrow in a 9 px cell at the right; all but the text in the type's color
+   (--tipo). Offsets are from the padding box, 2 px inside the border. */
+.constante.visa { display: block; box-sizing: border-box; }
+.constante.visa .visa-glifo { position: absolute; left: 1px; top: 2px; width: 7px; height: 13px; color: var(--tipo); }
+.constante.visa .visa-texto { position: absolute; left: 12px; top: 0; bottom: 0; display: flex; align-items: center; white-space: pre; }
+.constante.visa .visa-division { position: absolute; right: 9px; top: 0; bottom: 0; width: 1px; background: var(--tipo); }
+.constante.visa .visa-flecha { position: absolute; right: 0; top: 0; bottom: 0; width: 9px; color: var(--tipo); }
+.constante.visa .visa-flecha svg { position: absolute; left: 1px; top: 6px; width: 7px; height: 4px; }
+.constante.visa .visa-glifo svg { display: block; width: 7px; height: 13px; }
 /* Expression Node: celdas de terminal y la expresión en medio, de block-diagram/numeric-expression-node.png. */
 .expresion { position: relative; box-sizing: border-box; width: 100%; height: 100%; background: var(--expression-background); border: 1px solid var(--expression-border); display: flex; align-items: center; justify-content: center; font-size: 11px; white-space: nowrap; }
 .expresion .expresion-lados { position: absolute; left: -1px; top: -1px; width: calc(100% + 2px); height: calc(100% + 2px); pointer-events: none; }

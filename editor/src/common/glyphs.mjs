@@ -836,7 +836,7 @@ export function terminalPanelIcono(control, color, tipo, dibujo) {
  * la caja. En el lado del dato, un bloque verde claro de 10 × 12 con la flecha
  * gris oscura (#4c4c3d).
  */
-export function terminalPanelCompacto(control, color, tipo) {
+export function terminalPanelCompacto(control, color, tipo, patch = { fill: "#b2d8b2", edge: "#4ca54c" }) {
   const borde = control
     ? `<rect x="1" y="1" width="30" height="14" fill="${PAPER}" stroke="${color}" stroke-width="2"/>`
     : `<rect x="0.5" y="0.5" width="31" height="15" fill="${PAPER}" stroke="${color}" stroke-width="1"/>`;
@@ -844,8 +844,8 @@ export function terminalPanelCompacto(control, color, tipo) {
     ? `<rect x="3.5" y="3.5" width="19" height="9" fill="${PAPER}" stroke="${color}" stroke-width="1"/>`
     : `<rect x="9.5" y="3.5" width="19" height="9" fill="${PAPER}" stroke="${color}" stroke-width="1"/>`;
   const bloque = control
-    ? `<rect x="22.5" y="2.5" width="9" height="11" fill="#b2d8b2" stroke="#4ca54c" stroke-width="1"/>` + poligono([[28, 5], [28, 11], [30.5, 8]], TERMINAL_DIRECTION_ARROW)
-    : `<rect x="0.5" y="2.5" width="9" height="11" fill="#b2d8b2" stroke="#4ca54c" stroke-width="1"/>` + poligono([[4, 5], [4, 11], [6.5, 8]], TERMINAL_DIRECTION_ARROW);
+    ? `<rect x="22.5" y="2.5" width="9" height="11" fill="${patch.fill}" stroke="${patch.edge}" stroke-width="1"/>` + poligono([[28, 5], [28, 11], [30.5, 8]], TERMINAL_DIRECTION_ARROW)
+    : `<rect x="0.5" y="2.5" width="9" height="11" fill="${patch.fill}" stroke="${patch.edge}" stroke-width="1"/>` + poligono([[4, 5], [4, 11], [6.5, 8]], TERMINAL_DIRECTION_ARROW);
   return svg(borde + caja + bloque + textoTerminal(16.5, 8.2, tipo, 8.4, color), "0 0 32 16");
 }
 
@@ -2234,4 +2234,153 @@ Object.assign(CONTROLES, {
 Object.assign(CARPETAS_CONTROLES, {
   controls: svg(`<circle cx="8" cy="8" r="6" fill="#f0f0f0" stroke="${INK}" stroke-width="0.8"/><circle cx="8" cy="8" r="3.4" fill="none" stroke="#7a7a7a" stroke-width="0.6"/>${linea(8, 2, 8, 14, 0.6, "#7a7a7a")}${linea(2, 8, 14, 8, 0.6, "#7a7a7a")}`),
   datatypes: svg(`${caja(2, 2.5, 14, 13.5, PAPER, 0.8)}${linea(2, 6, 14, 6, 0.6)}${linea(6.5, 2.5, 6.5, 13.5, 0.6)}`),
+});
+
+// ——— VISA resource name (DT-066) ———
+//
+// Drawn anew after labview-captures/visa/resource-name-*.png (reports/2026-10-26-visa-resource-name-look.md): what is
+// taken from them is the sizes, the colours and the order of the parts, never NI's drawing.
+
+/** The colour of a VISA resource name's wire, terminals and constant (the same as `COLORES.visa`, which glyphs.mjs does not import). */
+export const VISA_COLOR = "#7f007f";
+
+/** The I/O glyph of the constant and of the panel's icon cell: an "I" over a slash over a "0", 7 × 13 px, in `color`. */
+export const visaIoGlyph = (color = "currentColor") =>
+  svg(
+    `<g fill="none" stroke="${color}" stroke-width="1" shape-rendering="crispEdges">` +
+      `<path d="M1 0.5H6M3.5 0.5V4.5M1 4.5H6"/><path d="M6.5 5.5L1.5 10.5" shape-rendering="auto"/>` +
+      `<rect x="2.5" y="8.5" width="3" height="4"/></g>`,
+    "0 0 7 13",
+  );
+
+/** The dropdown arrow of the constant and of the control's button: a down triangle 7, 5, 3 and 1 px wide on four rows. */
+export const visaDropdownArrow = (color = "currentColor") =>
+  svg([[0, 7], [1, 5], [2, 3], [3, 1]].map(([row, width]) => `<rect x="${(7 - width) / 2}" y="${row}" width="${width}" height="1" fill="${color}"/>`).join(""), "0 0 7 4");
+
+/**
+ * The picture of a VISA resource name control inside its terminal in the diagram (View As Icon on): the text field
+ * with "VISA" and a grey button with a black arrow, on the grey of the terminal. The terminal itself (frame, type tab
+ * and arrow) is `terminalPanelIcono`; this is its `dibujo`.
+ */
+export const dibujoVisa = () =>
+  `<rect x="2" y="7" width="26" height="1.4" fill="#a8a8a8"/><rect x="2" y="8.4" width="26" height="13" fill="#9a9a9a"/>` +
+  `<rect x="3" y="9" width="17.5" height="11.5" fill="${PAPER}"/>${texto(11.7, 15, "VISA", 6, "#000", 700)}` +
+  `<rect x="20.5" y="9" width="7.5" height="11.5" fill="#aaaaaa"/><path d="M22.5 13.2H26.5L24.5 16.4Z" fill="#000"/>` +
+  `<rect x="2" y="21.5" width="26" height="1.4" fill="#cfcfcf"/>`;
+
+/** The light patch at the data end of the compact terminal: the colour mixed with white (#d8b2d8, edge #a54ca5), measured. */
+export const VISA_PATCH = Object.freeze({ fill: "#d8b2d8", edge: "#a54ca5" });
+
+/** The terminal of a VISA resource name control or indicator: View As Icon on (38 × 38) or off (32 × 16). */
+export const terminalVisa = (control, compact) =>
+  compact
+    ? terminalPanelCompacto(control, VISA_COLOR, "I/0", VISA_PATCH)
+    : terminalPanelIcono(control, VISA_COLOR, "I/O", dibujoVisa());
+
+// ——— The VISA functions (reports/2026-10-25-visa-palettes.md §1–3, 2026-10-26-visa-nodes.md Q3) ———
+//
+// Drawn anew from the words of the report: a pale-yellow tile with a dark outline, "VISA" in italic capitals at the
+// top left and one bold capital at the bottom left (O, W, R, C), and a small drawing that suggests what the function
+// does. The tile is the node itself: 32 x 32 px, so the palette and the diagram show the same picture.
+
+const VISA_TILE_SIZE = 48;
+const VISA_CAPTION = (size = 8.5) =>
+  `<text x="4" y="9" font-family="Arial, 'Liberation Sans', sans-serif" font-style="italic" font-weight="700" font-size="${size}" fill="${INK}" dominant-baseline="central">VISA</text>`;
+/** The bold letter (or short word) at the bottom left of a tile; a longer one is set smaller to fit. */
+const visaLabel = (label) => {
+  const size = label.length === 1 ? 15 : label.length <= 3 ? 11 : 8.5;
+  return `<text x="4.5" y="39" font-family="Arial, 'Liberation Sans', sans-serif" font-weight="700" font-size="${size}" fill="${INK}" dominant-baseline="central">${label}</text>`;
+};
+const visaTile = (body) => svg48(caja(0.75, 0.75, VISA_TILE_SIZE - 0.75, VISA_TILE_SIZE - 0.75, NODE_FILL, 1.5, NODE_BORDER) + body);
+
+/** A small instrument seen from the front: a double frame, a display and two dials. */
+const visaInstrument = (x, y) =>
+  caja(x, y, x + 17, y + 12, "none", 1.3, INK) + caja(x + 2, y + 2, x + 15, y + 10, "none", 0.9, INK) +
+  lleno(x + 3.5, y + 3.5, x + 8.5, y + 6.5, INK) + `<circle cx="${x + 11.5}" cy="${y + 5}" r="1.4" fill="${INK}"/><circle cx="${x + 11.5}" cy="${y + 8.2}" r="1.4" fill="${INK}"/>`;
+
+/** The timer at the top right of VISA Write and Read: a round dial with a cap. */
+const visaTimer = `<circle cx="37" cy="11.5" r="5.5" fill="${PAPER}" stroke="${INK}" stroke-width="1.3"/>${linea(37, 11.5, 37, 8, 1.1)}${linea(37, 11.5, 39.5, 12.5, 1.1)}${lleno(35.5, 3.4, 38.5, 5, INK)}`;
+
+/** A sheet tilted about 20 degrees to the right with a dotted outline and a folded corner, the picture of Open and Close. */
+const visaSheet = `<g transform="rotate(20 30 25)"><rect x="22" y="14" width="16" height="22" fill="${PAPER}" stroke="${INK}" stroke-width="1.2" stroke-dasharray="1.6 1.6"/>` +
+  `${poligono([[33, 14], [38, 19], [33, 19]], INK)}${linea(25, 24, 35, 24, 0.9)}${linea(25, 28, 35, 28, 0.9)}</g>`;
+
+Object.assign(FUNCIONES, {
+  "visa-open": visaTile(
+    VISA_CAPTION() + visaSheet +
+      // the flap that lifts the sheet from the left, and the wedge of a hinge at the bottom
+      poligono([[11, 33], [20, 25], [22, 29], [14, 36]], PAPER, INK, 1.1) + poligono([[22, 44], [40, 44], [40, 39]], INK) + visaLabel("O"),
+  ),
+  "visa-write": visaTile(
+    VISA_CAPTION() + visaTimer + texto48(15, 22, "abc", 8.5, INK, 400) + linea(21, 27, 29, 33, 1.3) + flecha(31, 35, 1, 0.9, 6) + visaInstrument(28, 33) + visaLabel("W"),
+  ),
+  "visa-read": visaTile(
+    VISA_CAPTION() + visaTimer + texto48(15, 22, "abc", 8.5, INK, 400) + linea(21, 27, 29, 33, 1.3) + flecha(19, 25, -1, -0.9, 6) + visaInstrument(28, 33) + visaLabel("R"),
+  ),
+  "visa-close": visaTile(
+    VISA_CAPTION() + visaSheet +
+      // the hook that curls over its top left and pulls it shut
+      `<path d="M13 36 C 8 28, 12 20, 22 20" fill="none" stroke="${INK}" stroke-width="2.4" stroke-linecap="round"/>` + poligono([[20, 16], [26, 20], [20, 24]], INK) + visaLabel("C"),
+  ),
+});
+for (const block of ["visa-open", "visa-write", "visa-read", "visa-close"]) CAJAS[block] = [0, 0, VISA_TILE_SIZE, VISA_TILE_SIZE];
+
+// The elements of the VISA palettes that are not done yet: the same tile, with the short word of what they do.
+const VISA_LABELS = {
+  "visa-clear": "CLR", "visa-read-stb": "STB", "visa-assert-trigger": "TRG", "visa-find-resource": "FIND", "visa-set-timeout": "TMO",
+  "visa-property-node": "PROP", "visa-write-from-file": "WF", "visa-read-to-file": "RF", "visa-lock-async-vi": "LOCK", "visa-unlock": "UNLK",
+  "visa-set-i-o-buffer-size": "BUF", "visa-flush-i-o-buffer": "FLSH", "visa-gpib-command": "CMD", "visa-gpib-control-atn": "ATN",
+  "visa-gpib-pass-control": "PASS", "visa-gpib-send-ifc": "IFC", "visa-gpib-control-ren": "REN", "visa-vxi-cmd-or-query": "VXI",
+  "visa-assert-interrupt-signal": "INT", "visa-assert-utility-signal": "UTIL", "visa-map-trigger": "MAP", "visa-unmap-trigger": "UNMAP",
+  "visa-usb-control-in": "IN", "visa-usb-control-out": "OUT", "visa-get-usb-interrupt-data-vi": "INT",
+  "visa-enable-event": "EN", "visa-wait-on-event": "WAIT", "visa-disable-event": "DIS", "visa-discard-events": "DISC", "wait-for-rqs-vi": "RQS", "select-event-type-ctl": "EVT",
+  "visa-memory-allocation": "ALLOC", "visa-memory-allocation-ex": "ALLOC+", "visa-memory-free": "FREE", "visa-move": "MOVE",
+  "visa-map-address": "MAP", "visa-unmap-address": "UNMAP", "visa-configure-serial-port": "CFG", "visa-bytes-at-serial-port": "BYTES", "visa-serial-break-vi": "BRK",
+};
+for (const bits of [8, 16, 32, 64]) {
+  Object.assign(VISA_LABELS, { [`visa-in-${bits}`]: `IN${bits}`, [`visa-out-${bits}`]: `OUT${bits}`, [`visa-move-in-${bits}`]: `MI${bits}`, [`visa-move-out-${bits}`]: `MO${bits}`, [`visa-peek-${bits}`]: `PK${bits}`, [`visa-poke-${bits}`]: `PO${bits}` });
+}
+for (const [slug, label] of Object.entries(VISA_LABELS)) {
+  FUNCIONES[slug] = visaTile(VISA_CAPTION() + visaLabel(label));
+  CAJAS[slug] = [0, 0, VISA_TILE_SIZE, VISA_TILE_SIZE];
+}
+
+// The folders of Functions ▸ Instrument I/O: a small tile with the word of what is inside.
+const visaFolder = (word, size = 4.4) => svg(caja(1.5, 2.5, 14.5, 13.5, NODE_FILL, 1, NODE_BORDER) + texto(8, 8.1, word, size, INK, 700));
+Object.assign(SUBPALETAS, {
+  "instrument-drivers": visaFolder("DRV"),
+  visa: visaFolder("VISA"),
+  gpib: visaFolder("488"),
+  serial: visaFolder("SER"),
+  "visa-advanced": visaFolder("VISA+", 3.9),
+  "bus-interface-specific": visaFolder("BUS"),
+  "event-handling": visaFolder("EVT"),
+  "register-access": visaFolder("REG"),
+  "visa-usb": visaFolder("USB"),
+  "low-level-register-access": visaFolder("LOW"),
+});
+
+// Controls ▸ Modern ▸ I/O, drawn anew for the palette (reports/2026-10-25-visa-palettes.md §4): a small picture or the
+// letters of what each one names. Only VISA resource name is done.
+const ioBox = (label, size = 9) => svg48(ampliar(1.3, caja(5, 18, 43, 30, PAPER, 1.2, "#7a7a7a") + texto48(24, 24.3, label, size, INK, 600)));
+const waveformPath = (points, color) => `<polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.6"/>`;
+Object.assign(CONTROLES, {
+  waveform: svg48(ampliar(1.2, caja(6, 10, 42, 38, PAPER, 1.2, "#7a7a7a") + waveformPath("9,24 14,14 19,34 24,14 29,34 34,14 39,24", "#00a000"))),
+  "digital-waveform": svg48(ampliar(1.2, caja(6, 10, 42, 38, PAPER, 1.2, "#7a7a7a") + waveformPath("9,32 9,16 17,16 17,32 25,32 25,16 33,16 33,32 39,32", "#0000ff"))),
+  "digital-data": svg48(ampliar(1.3, caja(5, 14, 43, 34, PAPER, 1.2, "#7a7a7a") + texto48(24, 24.3, "0101", 11, "#0000ff", 700))),
+  "traditional-daq-channel": ioBox("DAQ"),
+  datafinder: ioBox("DF", 10),
+  "visa-resource-name": svg48(ampliar(1.3,
+    caja(5, 17, 43, 31, "#c2c2c2", 1.2, "#7a7a7a") + lleno(6, 18, 12, 30, "#b3b3b3") +
+      `<g transform="translate(7.2 19.5) scale(0.7)">${visaIoGlyph("#000")}</g>` +
+      lleno(13, 18, 31, 30, PAPER) + lleno(31, 18, 42, 30, "#b3b3b3") + poligono([[34, 22.5], [39, 22.5], [36.5, 26]], "#000"))),
+  "ivi-logical-name": ioBox("IVI"),
+  "fieldpoint-io-point": ioBox("FP", 10),
+  "imaq-session": ioBox("IMAQ", 8),
+  "motion-resource": ioBox("Motion", 7),
+  "system-configuration": ioBox("Sys", 10),
+  "shared-variable-control": ioBox("SV", 10),
+});
+Object.assign(CARPETAS_CONTROLES, {
+  "daqmx-name-controls": svg(caja(1.5, 3.5, 14.5, 12.5, PAPER, 0.8) + texto(8, 8.2, "DAQmx", 3.8)),
 });

@@ -524,8 +524,9 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   const NOT_WRITTEN = Symbol("not written");
   const writtenToMemory = controles.map(() => NOT_WRITTEN);
   const releasesSeen = controles.map(() => 0);
-  const writeControl = (control, value) => {
+  const writeControl = (control, shownValue) => {
     const { record, tipo, elemento, dims, disposicion } = control;
+    const value = control.resourceName ? resourceNameValue(shownValue) : shownValue;
     const address = record + PANEL_RECORD.value;
     if (tipo !== "string" && !elemento && !disposicion) return storeAtomicScalar(memory, address, tipoWasm(tipo), aWasm(value, tipo));
     ex.write_lock(record + PANEL_RECORD.lock);
@@ -569,7 +570,8 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
           alEscribir?.(nodo, escritos[nodo]);
         }
       } else {
-        escritos[nodo] = readValue(record + PANEL_RECORD.value, indicator);
+        const value = readValue(record + PANEL_RECORD.value, indicator);
+        escritos[nodo] = indicator.resourceName ? value["resource name"] : value;
         alEscribir?.(nodo, escritos[nodo]);
       }
       if (locked) ex.read_unlock(record + PANEL_RECORD.lock);
@@ -704,6 +706,12 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   }
   return escritos;
 }
+
+/**
+ * A VISA resource name as it lives in memory, from the text a panel shows (DT-066): with no session yet; the
+ * first VISA function that uses it opens one from the name, as LabVIEW does.
+ */
+const resourceNameValue = (text) => ({ "resource name": text ?? "", session: 0 });
 
 /** The scalar of WebAssembly type `wasmType` at `address`, read in one atomic load (a thread may be writing it). */
 function atomicScalar(memory, address, wasmType) {

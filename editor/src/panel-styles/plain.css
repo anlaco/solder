@@ -42,6 +42,7 @@
 
 /* Ornament is for the styles that want it (html-controls.mjs, ORNAMENT_CLASSES). */
 .sd-panel .sd-art { display: none; }
+.sd-panel .sd-visa-glyph { display: none; }
 .sd-panel .sd-radix { display: none; }
 .sd-panel .sd-code-arrows { display: none; }
 .sd-panel .sd-scrollbar { display: none; }
@@ -84,6 +85,20 @@
 
 .sd-panel .sd-string { display: flex; }
 .sd-panel .sd-string .sd-field { flex: 1; align-items: flex-start; padding-top: 4px; white-space: pre; line-height: 15px; }
+
+/* ——— VISA resource name ——— */
+
+/* The icon cell says "I/O", the field holds the resource, and a control's button opens the list of resources. */
+.sd-panel .sd-visa { display: flex; align-items: stretch; gap: 3px; }
+.sd-panel .sd-visa-icon { flex: none; display: grid; place-items: center; width: 24px; color: var(--sd-muted); font-size: 10px; }
+.sd-panel .sd-visa-icon::before { content: "I/O"; }
+.sd-panel .sd-visa .sd-field { flex: 1; }
+.sd-panel .sd-dropdown {
+  box-sizing: border-box; flex: none; display: grid; place-items: center; width: 22px;
+  border: 1px solid var(--sd-line); border-radius: var(--sd-radius); background: var(--sd-button); cursor: default;
+}
+.sd-panel .sd-dropdown::before { content: ""; border: 3.5px solid transparent; border-top: 4px solid var(--sd-muted); border-bottom-width: 0; }
+.sd-panel .sd-dropdown:hover::before { border-top-color: var(--sd-accent); }
 
 /* ——— Boolean ——— */
 
