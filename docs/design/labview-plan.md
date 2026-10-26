@@ -533,9 +533,6 @@ runs slowly.
   turned on during a pool Run does not keep one clump at a time.
 - Starting Node's workers is expensive (~4.5 s of CPU for 28, plus ~2.3 s in their first Run): it weighs on the
   command line, which makes a pool for each run, and on the tests.
-- The test "las ramas independientes…" fails in about one full `npm test` out of two, since the suite now starts
-  pools in parallel; it passes on its own. Make it independent of the load. So does "un control sin entradas se lee
-  al empezar…" (seen on 2026-10-26: it changes the control after 10 ms, which a loaded Run may not reach first).
 - Local variables of controls, which would let several loops read one large control at once (the lock allows it).
 
 **Postponed**, but not forgotten: the icon editor (every VI keeps the standard icon), Change to … (half captured, see M1), the *Adapt To Entered Data* switch, the

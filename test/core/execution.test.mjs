@@ -8,6 +8,7 @@ import { test } from "node:test";
 
 import { compilar } from "../../core/compiler/compiler.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
+import { createVirtualHost } from "../../core/runtime/scheduler.mjs";
 import * as Gr from "../../core/model/graph.mjs";
 import { CAT } from "../helpers.mjs";
 
@@ -39,7 +40,9 @@ async function cronometrar({ g, id }, valores = {}, opciones = {}) {
 }
 
 // En LabVIEW, un Wait de 1000 y otro de 2000 en ramas distintas acaban a 1 s y
-// a 2 s, y lo que no depende de ellos sale al empezar (run/r4.png).
+// a 2 s, y lo que no depende de ellos sale al empezar (run/r4.png). It runs on the
+// virtual host (DT-061 §6), whose clock jumps to the next deadline, so the times are
+// exact and do not depend on how loaded the machine is.
 test("las ramas independientes corren a la vez y cada indicador se escribe cuando le llega el dato", async () => {
   const circuito = vi(
     [["k1", "const", { value: 60 }], ["w1", "wait-ms"], ["a", "indicator"],
@@ -47,17 +50,17 @@ test("las ramas independientes corren a la vez y cada indicador se escribe cuand
      ["k3", "const", { value: 7 }], ["c", "indicator"]],
     [["k1.result", "w1.ms"], ["w1.result", "a.value"], ["k2.result", "w2.ms"], ["w2.result", "b.value"], ["k3.result", "c.value"]],
   );
-  const { fin, llegadas, t0 } = await cronometrar(circuito);
-  await fin;
-  const total = performance.now() - t0;
+  const host = createVirtualHost();
+  const nombre = Object.fromEntries(Object.entries(circuito.id).map(([k, v]) => [v, k]));
+  const llegadas = [];
+  await ejecutar(compilar(circuito.g, CAT), {}, { host, alEscribir: (nodo, v) => llegadas.push({ que: nombre[nodo], v, t: host.now() }) });
   assert.deepEqual(llegadas.map((l) => l.que), ["c", "a", "b"]);
   const [c, a, b] = llegadas;
-  assert.ok(c.t < 20, `c sale al empezar (${c.t} ms)`);
-  assert.ok(a.t >= 55 && a.t < 110, `a, tras su Wait de 60 (${a.t} ms)`);
-  assert.ok(b.t >= 115 && b.t < 180, `b, tras su Wait de 120 (${b.t} ms)`);
-  assert.ok(total < 180, `las dos esperas se solapan: ${total} ms, no 180`);
-  // La salida de Wait es el reloj de milisegundos: la de b va unos 60 ms detrás de la de a.
-  assert.ok(Math.abs(b.v - a.v - 60) < 25, `${b.v} - ${a.v}`);
+  assert.equal(c.t, 0, "c sale al empezar");
+  assert.equal(a.t, 60, "a, tras su Wait de 60");
+  assert.equal(b.t, 120, "b, tras su Wait de 120: las dos esperas se solapan, no suman 180");
+  // La salida de Wait es el reloj de milisegundos: la de b va 60 ms detrás de la de a.
+  assert.equal(b.v - a.v, 60);
 });
 
 test("what a turn wrote is handed over when the turn ends, before a later wait ends (DT-061 §4)", async () => {
@@ -139,10 +142,15 @@ test("un control sin entradas se lee al empezar: cambiarlo durante una espera no
     [["k", "const", { value: 40 }], ["w", "wait-ms"], ["cero", "const", { value: 0 }], ["m", "mul"], ["x", "control"], ["s", "add"], ["r", "indicator"]],
     [["k.result", "w.ms"], ["w.result", "m.a"], ["cero.result", "m.b"], ["m.result", "s.a"], ["x.result", "s.b"], ["s.result", "r.value"]],
   );
-  const c = compilar(g, CAT);
   const valores = { [id.x]: 1 };
-  setTimeout(() => (valores[id.x] = 5), 10);
-  const escritos = await ejecutar(c, valores);
+  // The control changes once the first turn is over, while the Wait is running: tied to the Run's turns, not to
+  // a timer, so a loaded machine cannot move the change before the first clump has run.
+  let turnos = 0;
+  const alAcabarTurno = () => {
+    if (++turnos === 1) valores[id.x] = 5;
+  };
+  const escritos = await ejecutar(compilar(g, CAT), valores, { host: createVirtualHost(), alAcabarTurno });
+  assert.ok(turnos > 1, "the Wait ended in a later turn");
   // Un control sin entradas está en el primer clump: LabVIEW lo lee al empezar, no tras la espera.
   assert.equal(escritos[id.r], 1);
 });
