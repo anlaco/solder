@@ -39,6 +39,8 @@ const EVERY_KIND = [
   ["str-indicator", undefined, "string"],
   ["visa-control", undefined, "visa"],
   ["visa-indicator", undefined, "visa"],
+  ["path-control", undefined, "path"],
+  ["path-indicator", undefined, "path"],
   ...Object.keys(G.BOOLEANOS).map((style) => [G.BOOLEANOS[style].indicador ? "bool-indicator" : "bool-control", { style }, "boolean"]),
   ["cluster-control", errorConfig("error-in"), "error-cluster"],
   ["cluster-indicator", errorConfig("error-out"), "error-cluster"],

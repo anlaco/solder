@@ -15,13 +15,13 @@
 // The elements carry ARIA roles (button, switch, radio) instead of native buttons and inputs, which would take the
 // keyboard focus away from the editor; typing is drawn by the editor as in Old School.
 
-import { visaIoGlyph } from "../common/glyphs.mjs";
+import { browseFolderGlyph, pathGlyph, visaIoGlyph } from "../common/glyphs.mjs";
 
 /** Every kind of object an HTML panel draws: each one has rules in plain.css (DT-058 §3, a test checks it). */
-export const PLAIN_KINDS = ["numeric", "enum", "string", "visa", "boolean", "error-cluster", "array", "waveform-chart", "waveform-graph", "xy-graph"];
+export const PLAIN_KINDS = ["numeric", "enum", "string", "visa", "path", "boolean", "error-cluster", "array", "waveform-chart", "waveform-graph", "xy-graph"];
 
 /** The parts that are only ornament in Plain: hidden by plain.css, shown by the style that draws them (a test checks it). */
-export const ORNAMENT_CLASSES = ["sd-art", "sd-visa-glyph", "sd-radix", "sd-code-arrows", "sd-scrollbar", "sd-frame", "sd-plot-frame", "sd-swatch-frame"];
+export const ORNAMENT_CLASSES = ["sd-art", "sd-visa-glyph", "sd-path-glyph", "sd-radix", "sd-code-arrows", "sd-scrollbar", "sd-frame", "sd-plot-frame", "sd-swatch-frame"];
 
 /** An illustration a style may paint over the whole object, such as Old School's drawing of a Boolean. */
 const ART = `<span class="sd-art" aria-hidden="true"></span>`;
@@ -85,6 +85,16 @@ export function visaHtml(frame, { valueHtml }) {
   const icon = `<span class="sd-visa-icon"><span class="sd-visa-glyph" aria-hidden="true">${visaIoGlyph()}</span></span>`;
   const dropdown = frame.isControl ? `<span class="sd-dropdown" role="button" aria-haspopup="menu" aria-label="VISA resources" data-visa-dropdown></span>` : "";
   return objectFrame({ ...frame, kind: "visa" }, icon + field(frame.id, valueHtml) + dropdown);
+}
+
+/**
+ * A File Path Control or Indicator: the type cell with the path glyph and the text field with the path. A control has
+ * the browse button (`data-browse`, which the window answers with the system's file dialog) outside the box, to its right.
+ */
+export function pathHtml(frame, { valueHtml }) {
+  const cell = `<span class="sd-path-cell"><span class="sd-path-glyph" aria-hidden="true">${pathGlyph()}</span></span>`;
+  const browse = frame.isControl ? `<span class="sd-browse" role="button" aria-label="Browse for path" data-browse>${browseFolderGlyph()}</span>` : "";
+  return objectFrame({ ...frame, kind: "path" }, cell + field(frame.id, valueHtml) + browse);
 }
 
 /** The inside of a Boolean, by its style (`data-style` keeps the exact one, so a style can tell a rocker from a push button). */

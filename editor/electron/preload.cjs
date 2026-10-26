@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld("solder", {
   abrirRuta: (ruta) => ipcRenderer.invoke("vi:open-path", ruta),
   /** The file dialog of Select a VI...: the absolute path chosen, or nothing. */
   elegirVI: () => ipcRenderer.invoke("vi:choose-subvi"),
+  /** The file dialog of a File Path Control's browse button: the absolute path chosen, or nothing. */
+  elegirRuta: () => ipcRenderer.invoke("path:choose"),
   /** The text of every VI reached from this one, by absolute path: `{ texts, missing }`. */
   textosDeSubVIs: (texto) => ipcRenderer.invoke("vi:subvi-texts", texto),
   /** The same for the VI at an absolute path, which is included. */

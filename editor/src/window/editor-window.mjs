@@ -56,6 +56,7 @@ import { buildHierarchy } from "./hierarchy-client.mjs";
 import { compilar, runnableVI } from "../../../core/compiler/compiler.mjs";
 import { pruneConnector } from "../../../core/model/connector.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
+import { pathFromText } from "../../../core/model/paths.mjs";
 
 const nombre = new URLSearchParams(location.search).get("ventana") ?? "front-panel";
 /** The style the Front Panel is drawn in (DT-058), chosen by the main process. */
@@ -1382,6 +1383,19 @@ function toggleVisaDropdown(ev, arrow) {
   else cambiarDiagrama(next);
 }
 
+/**
+ * The browse button of a File Path Control opens the system's file dialog and the path chosen becomes the control's
+ * value, as if it had been typed. The dialog's options (Browse Options..., spec/05-editor.md) are not offered yet: it picks
+ * one existing file. Without the Electron bridge (a plain browser) there is no dialog and the button does nothing.
+ */
+async function browseForPath(ev, button) {
+  ev.preventDefault();
+  const nodeId = button.closest("[data-nodo]")?.dataset.nodo;
+  if (!conPanel || !nodeId || !window.solder?.elegirRuta) return;
+  const chosen = await window.solder.elegirRuta();
+  if (chosen) cambiarPanel(P.fijarRuta(P.confirmar(pan), nodeId, pathFromText(chosen, ctx.pathRules)));
+}
+
 addEventListener("mousedown", (ev) => {
   if (ev.button !== 0) return;
   // Press and hold on Highlight Execution opens its speed menu (REPORT.md §1).
@@ -1405,6 +1419,8 @@ addEventListener("mousedown", (ev) => {
   if (estado.menuBarra) return;
   // A modal dialog swallows the mousedown: its parts answer to the click event.
   if (dialogoModal()) return ev.preventDefault();
+  const browseButton = ev.target.closest?.("[data-browse]");
+  if (browseButton && !ev.target.closest(".menu-contextual")) return browseForPath(ev, browseButton);
   const visaDropdown = ev.target.closest?.("[data-visa-dropdown]");
   if (visaDropdown && !ev.target.closest(".menu-contextual")) return toggleVisaDropdown(ev, visaDropdown);
   if (ejecutando && !pan.menu) return pulsarEnRun(ev);
@@ -1485,7 +1501,7 @@ function pulsarEnRun(ev) {
   }
   ev.preventDefault();
   const n = pan.g.nodos.find((k) => k.id === sobre.id);
-  if ((sobre.tipo === "casilla" || sobre.tipo === "paso") && (n?.tipo === "control" || n?.tipo === "str-control" || n?.tipo === "visa-control")) return cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), false));
+  if ((sobre.tipo === "casilla" || sobre.tipo === "paso") && (n?.tipo === "control" || n?.tipo === "str-control" || n?.tipo === "visa-control" || n?.tipo === "path-control")) return cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), false));
   // Un array se acciona como parado: se escribe en sus elementos y su índice se mueve (también el de un indicador).
   if ((sobre.tipo === "elem" && n?.tipo === "arr-control") || (sobre.tipo === "paso" && (n?.tipo === "arr-control" || n?.tipo === "arr-indicator"))) return cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), false));
   // Un control de error se acciona como parado: el status alterna y code y source se escriben.

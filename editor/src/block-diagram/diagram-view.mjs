@@ -17,9 +17,10 @@ import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
 import * as VN from "./visa-nodes.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
+import { EMPTY_PATH, hostPathRules, pathToText } from "../../../core/model/paths.mjs";
 import { brokenWireMarks, endPoint } from "./broken-wire.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
-import { COLORES, CONSTANT_DIGITS, VISA_RESOURCE, aspecto, isUndefinedArray, esArray, esCluster, esEntero, esEnum, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
+import { COLORES, CONSTANT_DIGITS, PATH, VISA_RESOURCE, aspecto, isUndefinedArray, esArray, esCluster, esEntero, esEnum, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
 import { GRAPH_KINDS, labelShown } from "../front-panel/graph-state.mjs";
 import { elementMenuRoot } from "../common/array-typing.mjs";
 import { MAX_EDITOR_DIMENSIONS, cellAddress, dimensionsOfNode, firstShown, isDefined, readCell, visibleGrid } from "../common/array-grid.mjs";
@@ -45,7 +46,11 @@ export function glifosPorBloque(inv) {
  * separador decimal del sistema y cómo se mide un texto en la fuente de la
  * ventana, para las etiquetas.
  */
-export const contexto = (cat, glifos, separador = ".", medir = Et.medirAproximado) => ({ cat, glifos, separador, medir });
+/**
+ * What the diagram and the panel need to draw and to measure. `pathRules` is the host's by default ("windows" or
+ * "posix"): the rules a path is shown and read with (core/model/paths.mjs).
+ */
+export const contexto = (cat, glifos, separador = ".", medir = Et.medirAproximado, pathRules = hostPathRules()) => ({ cat, glifos, separador, medir, pathRules });
 
 /** The nodes that grow by 8 px for each dimension beyond the first, as LabVIEW stretches them by itself (array-2d/indexarray-2d-node-icon.png). */
 const NODOS_POR_DIMENSION = new Set(["index-array", "initialize-array"]);
@@ -84,7 +89,12 @@ export const CONSTANTES = {
   "str-const": { editable: true, cadena: true, texto: (n) => n.config?.value ?? "" },
   // A VISA resource name: a box in the type's colour with an I/O glyph, the resource's text, a divider and a dropdown
   // arrow (labview-captures/reports/2026-10-26-visa-resource-name-look.md Q1). One line only.
-  "visa-resource-constant": { editable: true, visa: true, texto: (n) => n.config?.value ?? "" },
+  "visa-resource-constant": { editable: true, visa: true, growsRight: true, texto: (n) => n.config?.value ?? "" },
+  // A path (DT-067): a teal box with the path glyph and, when it has a value, its text as the host system writes it.
+  // Typing parses the text as String To Path does. The empty path and Not A Path have constants of their own, which are not typed into.
+  "path-constant": { editable: true, path: true, growsRight: true, texto: (n, ctx) => pathToText(n.config?.value ?? EMPTY_PATH, ctx.pathRules) },
+  "empty-path-constant": { path: true, fixed: "empty", texto: () => "" },
+  "not-a-path-constant": { path: true, fixed: "not-a-path", texto: () => "" },
   ...Object.fromEntries(Object.entries(G.SIGNOS_CADENA).map(([id, signo]) => [id, { cadena: true, texto: () => signo }])),
   // La constante de error (labview-captures/errores/202.png): tres celdas, status, code y source;
   // un clic en la del status la alterna, y un doble clic en las otras escribe en ellas.
@@ -122,6 +132,18 @@ export const MEDIDAS_VISA_CONSTANT = { alto: 20, textoDesde: 14, areaVacia: 9, r
 const visaConstantSize = (text) => {
   const M = MEDIDAS_VISA_CONSTANT;
   return { ancho: M.textoDesde + (text ? anchoTexto(text) + M.relleno : M.areaVacia) + M.derecha, alto: M.alto };
+};
+/**
+ * The constants of a path, measured in LabVIEW 2026 Q3 (reports/2026-10-26-path-type.md §2): a 2 px frame of the
+ * type's colour round the glyph. A Path Constant is 19 px tall and 21 wide with no value, and grows to the right with
+ * its text (Size To Text; `C:\a\b.txt` is 65 wide in LabVIEW's font, which is not identified, so the width of a text is
+ * `anchoTexto`'s estimate plus `relleno`); the Empty Path Constant is 15 x 16 and Not A Path 17 x 17.
+ */
+export const MEDIDAS_PATH_CONSTANT = { alto: 19, vacia: 21, relleno: 2, empty: { ancho: 15, alto: 16 }, "not-a-path": { ancho: 17, alto: 17 } };
+const pathConstantSize = (fixed, text) => {
+  if (fixed) return MEDIDAS_PATH_CONSTANT[fixed];
+  const M = MEDIDAS_PATH_CONSTANT;
+  return { ancho: M.vacia + (text ? anchoTexto(text) + M.relleno : 0), alto: M.alto };
 };
 /**
  * The array constant, measured at 1:1 in labview-captures/array/constante-array.png, array-typing/const-num.png and
@@ -251,8 +273,11 @@ function textoConstante(n, ctx, edicion) {
  * `flecha` es la altura de su flecha, por donde entra o sale el cable.
  */
 export const MEDIDAS_TERMINAL_PANEL = { icono: { ancho: 38, alto: 38, flecha: 19.5 }, compacto: { ancho: 32, alto: 16, flecha: 8.5 } };
+/** The terminal of a path control or indicator is smaller: 32 x 32 as an icon and about 33 x 16 without (reports/2026-10-26-path-type.md §2). */
+export const MEDIDAS_TERMINAL_PATH = { icono: { ancho: 32, alto: 32, flecha: 22 }, compacto: { ancho: 33, alto: 16, flecha: 8 } };
+const isPathTerminal = (n) => n.tipo === "path-control" || n.tipo === "path-indicator";
 const esDelPanel = (n, ctx) => !!ctx.cat.bloque(n.tipo).panel;
-const medidasPanel = (n) => MEDIDAS_TERMINAL_PANEL[n.vista?.compacto ? "compacto" : "icono"];
+const medidasPanel = (n) => (isPathTerminal(n) ? MEDIDAS_TERMINAL_PATH : MEDIDAS_TERMINAL_PANEL)[n.vista?.compacto ? "compacto" : "icono"];
 
 /** Separación entre un terminal del panel y su etiqueta, en el diagrama. */
 const HUECO_ETIQUETA = 3;
@@ -520,6 +545,8 @@ export function caja(n, ctx, edicion) {
   if (c?.error) return { x: n.x, y: n.y, ancho: MEDIDAS_CONSTANTE_ERROR.ancho, alto: MEDIDAS_CONSTANTE_ERROR.alto };
   // Size To Text: it grows to the right with its text, also while it is typed (unverified), so its left edge stays.
   if (c?.visa) return { x: n.x, y: n.y, ...visaConstantSize(textoConstante(n, ctx, edicion)) };
+  // The same for a path: Size To Text, growing to the right.
+  if (c?.path) return { x: n.x, y: n.y, ...pathConstantSize(c.fixed, textoConstante(n, ctx, edicion)) };
   if (c?.cadena) {
     const M = MEDIDAS_CADENA;
     const size = (text) => {
@@ -735,13 +762,27 @@ const UNDEFINED_ARRAY_ROWS = [[-0.5, 0], [0.5, 2]];
 export const SQUIGGLE_DASHES = "3 1";
 export const squiggleRows = (points, color) => UNDEFINED_ARRAY_ROWS.map(([shift, dashOffset]) => `<polyline points="${puntos(points)}" transform="translate(${shift} ${shift})" stroke="${color}" stroke-width="1" stroke-dasharray="${SQUIGGLE_DASHES}" stroke-dashoffset="${dashOffset}" shape-rendering="crispEdges"/>`).join("");
 
+/**
+ * The wire of a path, measured at 1:1 in LabVIEW 2026 Q3 (reports/2026-10-26-path-type.md §2): every pixel row is
+ * "###." (3 on, 1 off) in the type's colour. A scalar is 2 px, the second row shifted 1 px; an array is 3 px whose rows
+ * read "#.###.", "###.###" and "#.###." (the outer rows start two pixels into the pattern). Each row is `[how far it
+ * sits from the wire's centre, its dash offset]`. Two dimensions or more are not measured and are drawn as any array's.
+ */
+export const PATH_WIRE_DASHES = "3 1";
+const PATH_WIRE_ROWS = {
+  0: [[-0.5, 0], [0.5, 1]],
+  1: [[-1, 2], [0, 0], [1, 2]],
+};
+const dashedRows = (points, color, rows) => rows.map(([shift, dashOffset]) => `<polyline points="${puntos(points)}" transform="translate(${shift} ${shift})" stroke="${color}" stroke-width="1" stroke-dasharray="${PATH_WIRE_DASHES}" stroke-dashoffset="${dashOffset}" shape-rendering="crispEdges"/>`).join("");
+
 /** Pinta un cable: su color es el de su tipo y su grosor, el de su dimensión. Uno roto se pinta aparte (broken-wire.mjs). */
 function trazo(r, tipo) {
   // An array with no element yet: 2 px like any 1D wire, each pixel row dashed 2 on and 2 off in black, the second
   // row one pixel ahead of the first (measured at 1:1 on labview-captures/array-typing/const-wire.png).
   if (isUndefinedArray(tipo)) return UNDEFINED_ARRAY_ROWS.map(([shift, dashOffset]) => `<polyline points="${puntos(r)}" transform="translate(${shift} ${shift})" stroke="#000" stroke-width="1" stroke-dasharray="2 2" stroke-dashoffset="${dashOffset}" shape-rendering="crispEdges"/>`).join("");
-  const { color, dimension, error, squiggle } = aspecto(tipo);
+  const { color, dimension, error, squiggle, dashed } = aspecto(tipo);
   if (squiggle) return squiggleRows(r, color);
+  if (dashed && PATH_WIRE_ROWS[dimension]) return dashedRows(r, color, PATH_WIRE_ROWS[dimension]);
   // Un cable de error mide 3 px: borde oliva y, en el centro, trazos de 2 px amarillos y negros (YYKK).
   if (error) return `<polyline points="${puntos(r)}" stroke="${color}" stroke-width="3"/><polyline points="${puntos(r)}" stroke="#ffff00" stroke-width="1" stroke-dasharray="2 2"/><polyline points="${puntos(r)}" stroke="#000" stroke-width="1" stroke-dasharray="2 2" stroke-dashoffset="-2"/>`;
   if (dimension === 0) return `<polyline points="${puntos(r)}" stroke="${color}" stroke-width="1.33"/>`;
@@ -1095,6 +1136,25 @@ function structureShowsStretchHandles(structure, d, selected) {
   return selected || d.sobre?.nodo === structure.id;
 }
 
+/**
+ * A Path Constant: the path glyph and its text (being typed, when it is). The Empty Path and Not A Path constants are
+ * a glyph of their own on a pale yellow fill.
+ */
+function pathConstant(n, ctx, edicion) {
+  const { color } = aspecto(PATH);
+  const fixed = CONSTANTES[n.tipo].fixed;
+  if (fixed) {
+    const glyph = fixed === "empty" ? G.emptyPathGlyph(color) : G.notAPathGlyph(color);
+    return `<div class="constante path-fija path-${fixed}" style="border-color:${color};background:${G.PATH_FIXED_CONSTANT_FILL}">${glyph}</div>`;
+  }
+  const ed = edicion?.nodo === n.id ? edicion : null;
+  const text = textoConstante(n, ctx, edicion);
+  const shown = esc(text);
+  const value = ed ? (ed.todo ? `<span class="texto-elegido">${shown}</span>` : `<span>${shown}</span><span class="caret"></span>`) : `<span>${shown}</span>`;
+  return `<div class="constante path${ed ? " editando" : ""}" style="border-color:${color};--tipo:${color}">` +
+    `<span class="path-glifo">${G.pathGlyph()}</span>${text || ed ? `<span class="path-texto">${value}</span>` : ""}</div>`;
+}
+
 /** Is this the terminal of a VISA resource name control or indicator? */
 const isVisaTerminal = (n) => n.tipo === "visa-control" || n.tipo === "visa-indicator";
 
@@ -1124,6 +1184,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
     cuerpo = constanteArray(n, k, ctx, d.edicion);
   } else if (c?.visa) {
     cuerpo = visaConstant(n, ctx, d.edicion);
+  } else if (c?.path) {
+    cuerpo = pathConstant(n, ctx, d.edicion);
   } else if (c) {
     const b = ctx.cat.bloque(n.tipo);
     const tipo = resueltos?.salidas.get(`${n.id}.result`) ?? n.config?.type ?? b.config?.default?.type ?? b.out[0].type;
@@ -1138,7 +1200,9 @@ function nodo(n, d, ctx, resueltos, elegido) {
     const control = ctx.cat.puertos(n).out.length > 0;
     let hoja = tipo;
     while (esArray(hoja)) hoja = hoja.array;
-    const glifo = isVisaTerminal(n)
+    const glifo = isPathTerminal(n)
+      ? G.terminalPath(control, !!n.vista?.compacto)
+      : isVisaTerminal(n)
       ? G.terminalVisa(control, !!n.vista?.compacto)
       : GRAPH_KINDS.includes(n.tipo)
       ? G.graphTerminal(n.tipo, n.tipo === "xy-graph" || esCluster(tipo), !!n.vista?.compacto)
@@ -1470,6 +1534,9 @@ export function menuDe(n, puerto, g, onElement = false) {
   if (n.tipo === "visa-resource-constant") return "context.visa-constant";
   if (n.tipo === "visa-control") return "context.visa-control-terminal";
   if (n.tipo === "visa-indicator") return "context.visa-indicator-terminal";
+  // The menus of a path, measured (reports/2026-10-26-path-type.md §2). The Not A Path Constant's was not read: it has the Empty one's rows.
+  if (isPathTerminal(n)) return "context.path-control-terminal";
+  if (CONSTANTES[n.tipo]?.path) return `context.${n.tipo}`;
   if (n.tipo === "control") return "context.numeric-control";
   if (n.tipo === "bool-control") return "context.boolean-control-terminal";
   // El menú de la constante booleana no está capturado.
@@ -1530,7 +1597,7 @@ const MENU_COMPARISON = {
 };
 
 /** Filas que en LabVIEW abren un submenú aunque su contenido no esté declarado. Es disposición. */
-const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "array-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "select-item", "visa-palette", "synchronous-io-mode", "property-for-instr-class", "method-for-instr-class", "type-palette", "cluster-type-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
+const CON_SUBMENU = ["visible-items", "numeric-palette", "boolean-palette", "array-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "select-item", "visa-palette", "file-i-o-palette", "synchronous-io-mode", "property-for-instr-class", "method-for-instr-class", "type-palette", "cluster-type-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
   // The graphs (labview-captures/graphs/): rows whose submenus are not declared yet.
   "marker-spacing", "style", "property-node", "invoke-node", "run-time-shortcut-menu", "enabled-state", "update-mode", "export", "x-scale", "y-scale", "common-plots", "color", "line-style", "line-width", "bar-plots", "fill-base-line", "interpolation", "point-style",
   // The Getting Started window's menus (labview-captures/getting-started/).

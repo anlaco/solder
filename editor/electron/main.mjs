@@ -485,6 +485,11 @@ function handleRequests() {
     const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select a VI", properties: ["openFile"], filters: FILTERS });
     return result.canceled || !result.filePaths.length ? null : pathKey(result.filePaths[0]);
   });
+  // The browse button of a File Path Control: the file dialog (Browse Options are not offered yet: one existing file); returns the absolute path or nothing.
+  ipcMain.handle("path:choose", async (event) => {
+    const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select a file", properties: ["openFile"] });
+    return result.canceled || !result.filePaths.length ? null : result.filePaths[0];
+  });
   // The text of every VI that a VI reaches, from the disk (not from the other open VIs: a caller sees a subVI when it is saved).
   ipcMain.handle("vi:subvi-texts", (event, text) => {
     const entry = openOf(event).entry;

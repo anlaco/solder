@@ -37,10 +37,11 @@ import * as CP from "../front-panel/connector-pane.mjs";
 import { graphCommand, graphMenuMarks, graphMenuVariants, isGraphMenu } from "../front-panel/graph-menus.mjs";
 import * as Et from "../common/labels.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
+import { pathFromText } from "../../../core/model/paths.mjs";
 import * as TC from "./terminal-creation.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { constantElementType, constantForElement, emptyArrayAgain, flipArrayKind, isEmptyArrayShell, setArrayRepresentation, typeEmptyArray } from "../common/array-typing.mjs";
-import { CONSTANT_DIGITS, DBL, NUMERICOS, POR_ABREVIATURA, VISA_RESOURCE, convertirValor, esArray, isUndefinedArray, esEntero, esEnum, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
+import { CONSTANT_DIGITS, DBL, NUMERICOS, PATH, POR_ABREVIATURA, VISA_RESOURCE, convertirValor, esArray, isUndefinedArray, esEntero, esEnum, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 import * as SI from "./select-item-dialog.mjs";
 import { MAX_EDITOR_DIMENSIONS, addDimensionPatch, dimensionsOfNode, firstShown, readCell, removeDimensionPatch, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
@@ -1213,13 +1214,14 @@ export function confirmar(d, ctx) {
 
 /**
  * A constant keeps its right edge, where its wire leaves, when what was typed into it
- * changes its width: it grows or shrinks on its left (measured, B12 of real-programs-0.3.md).
+ * changes its width: it grows or shrinks on its left (measured, B12 of real-programs-0.3.md). The constants that
+ * grow to the right (`growsRight`: a VISA resource name and a path) keep their left edge instead.
  */
 function keepRightEdge(before, after, ctx) {
   const id = before.edicion?.nodo;
   const node = id && before.g.nodos.find((k) => k.id === id);
   const changed = node && after.g.nodos.find((k) => k.id === id);
-  if (!node || !changed || changed === node || !CONSTANTES[node.tipo] || CONSTANTES[node.tipo].visa || before.edicion.elem !== undefined || before.edicion.campo || before.edicion.etiqueta) return after;
+  if (!node || !changed || changed === node || !CONSTANTES[node.tipo] || CONSTANTES[node.tipo].growsRight || before.edicion.elem !== undefined || before.edicion.campo || before.edicion.etiqueta) return after;
   const growth = caja(changed, ctx).ancho - caja(node, ctx).ancho;
   return growth ? { ...after, g: Gr.mover(after.g, [id], -growth, 0) } : after;
 }
@@ -1257,6 +1259,8 @@ function commitTyping(d, ctx) {
   // Una cadena se guarda tal cual, con sus saltos de línea.
   // The same goes for a VISA resource name, which is a string that carries no newline (Enter confirms).
   if (n.tipo === "str-const" || n.tipo === "visa-resource-constant") return { ...d, g: Gr.fijarValor(d.g, n.id, e.texto), edicion: null };
+  // A path is read from the text as String To Path reads it, with the rules of the host: every text is a path (DT-067).
+  if (n.tipo === "path-constant") return { ...d, g: Gr.fijarValor(d.g, n.id, pathFromText(e.texto, ctx.pathRules)), edicion: null };
   const b = ctx.cat.bloque(n.tipo);
   const tipo = n.config?.type ?? b.config?.default?.type ?? "number";
   const leido = leerNumero(e.texto, tipo);
@@ -1489,6 +1493,23 @@ function arrayVariants(n, root) {
 }
 
 /**
+ * The menus of a File Path Control are also the ones of a File Path Indicator, which says Change to Control. Only the
+ * panel's first rows were read on the indicator (reports/2026-10-26-path-type.md §1); on its terminal the rows that name
+ * the object follow the other indicators' terminals (Find Indicator, Hide Indicator, Change to Control), unverified.
+ */
+const PATH_PANEL_MENU = "context.path-control";
+const PATH_TERMINAL_MENU = "context.path-control-terminal";
+const PATH_INDICATOR_ROOTS = new Set([PATH_PANEL_MENU, PATH_TERMINAL_MENU]);
+function pathIndicatorVariants(root) {
+  const rotulos = new Map([[`${root}.change-to-indicator`, "Change to Control"]]);
+  if (root === PATH_TERMINAL_MENU) {
+    rotulos.set(`${root}.find-control`, "Find Indicator");
+    rotulos.set(`${root}.hide-control`, "Hide Indicator");
+  }
+  return { rotulos };
+}
+
+/**
  * The rows that a node's menu shows or renames according to what it is: a
  * Boolean Case has "Show Case True/False" and "Make This Case True/False", a
  * numeric one has "Show Case...", the Default and Radix, and its Default row
@@ -1532,6 +1553,7 @@ function nodeVariants(d, ctx) {
   if (UN.isUnbundleByName(n)) return unbundleVariants(d, ctx, n);
   // LabVIEW greys Advanced on the terminals of a VISA resource name (reports/2026-10-26-visa-resource-name-look.md Q5; why is unverified).
   if (r === "context.visa-control-terminal" || r === "context.visa-indicator-terminal") return { desactivados: new Set([`${r}.advanced`]) };
+  if (n && PATH_INDICATOR_ROOTS.has(r) && n.tipo === "path-indicator") return pathIndicatorVariants(r);
   if (n?.tipo === "case-selector") {
     const caso = d.g.nodos.find((k) => k.id === n.dentro);
     return { ocultos: fila(caso && esBooleano(caso) ? "numeric-palette" : "boolean-palette"), rotulos: new Map() };
@@ -1619,7 +1641,9 @@ function wireMenuVariants(d, ctx) {
   // (reports/2026-10-26-visa-resource-name-look.md Q5; on the wire itself, unverified).
   const wire = d.g.cables.find((candidate) => candidate.id === d.menu.nodo);
   const wireType = wire?.de && types.salidas.get(`${wire.de.nodo}.${wire.de.puerto}`);
-  const rotulos = new Map(wireType === VISA_RESOURCE ? [[row("numeric-palette"), "VISA Palette"]] : []);
+  // A path's wire names the File I/O Palette, as the path's terminal does (on the wire itself, unverified).
+  const palettes = new Map([[VISA_RESOURCE, "VISA Palette"], [PATH, "File I/O Palette"]]);
+  const rotulos = new Map(palettes.has(wireType) ? [[row("numeric-palette"), palettes.get(wireType)]] : []);
   if (!broken?.roto) return { ocultos: new Set([row("list-errors")]), rotulos };
   const hidden = ["visible-items", "add-probe", "custom-probe", ...(broken.suelto ? ["clean-up-wire"] : [])];
   return { ocultos: new Set(hidden.map(row)), desactivados: new Set([row("add-breakpoint")]) };
@@ -1649,6 +1673,17 @@ export const VISA_MENU_MARKS = {
   "context.visa-control": ["visible-items.caption", "visible-items.menu-button", ...VISA_CLASS_MARKS],
 };
 
+/**
+ * What LabVIEW ticks in the menus of a path (reports/2026-10-26-path-type.md §1-2): Allow Dropping on the panel, and
+ * Browse Button on a control (an indicator's is greyed and unticked); a Path Constant has Size To Text and Left Justify Text.
+ * The terminals' View As Icon is ticked by the general rule.
+ */
+const PATH_CONSTANT_MARKS = ["size-to-text", "left-justify-text"];
+function pathMenuMarks(root, node) {
+  if (root === PATH_PANEL_MENU) return ["advanced.allow-dropping", ...(node.tipo === "path-control" ? ["visible-items.browse-button"] : [])];
+  return root === "context.path-constant" ? PATH_CONSTANT_MARKS : [];
+}
+
 /** Qué filas del menú llevan la marca: Terminals si el nodo los enseña, el modo actual, Invert si lo está, la representación de un número. */
 export function marcados(d, ctx) {
   if (CP.hasConnectorMenu(d)) return CP.menuMarks(d);
@@ -1660,6 +1695,7 @@ export function marcados(d, ctx) {
   if (n.vista?.terminales) m.add(`${r}.visible-items.terminals`);
   if (!n.vista?.compacto) m.add(`${r}.view-as-icon`);
   for (const mark of VISA_MENU_MARKS[r] ?? []) m.add(`${r}.${mark}`);
+  for (const mark of pathMenuMarks(r, n)) m.add(`${r}.${mark}`);
   if (n.config?.mode) m.add(`${r}.change-mode.${n.config.mode}`);
   if (n.config?.mechanical) m.add(`${r}.mechanical-action.${n.config.mechanical}`);
   const abrev = r.startsWith("context.numeric-") && NUMERICOS[n.config?.type ?? DBL]?.abrev;

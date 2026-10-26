@@ -2384,3 +2384,163 @@ Object.assign(CONTROLES, {
 Object.assign(CARPETAS_CONTROLES, {
   "daqmx-name-controls": svg(caja(1.5, 3.5, 14.5, 12.5, PAPER, 0.8) + texto(8, 8.2, "DAQmx", 3.8)),
 });
+
+// ——— Path (DT-067) ———
+//
+// Drawn anew after the sizes, colours and order of parts measured in reports/2026-10-26-path-type.md §1-2, never NI's drawing.
+
+/** The colour of a path's wire, terminals and constants (the same as `COLORES.path`, which glyphs.mjs does not import). */
+export const PATH_COLOR = "#007f7f";
+
+/** The light patch at the data end of the compact terminal: the colour mixed with white (#b2d8d8, measured; the edge follows the other types'). */
+export const PATH_PATCH = Object.freeze({ fill: "#b2d8d8", edge: "#4ca5a5" });
+
+/** The fill of the Empty Path and Not A Path constants: pale yellow like a primitive's, so the theme's node fill (measured #ffffcc in Old School). */
+export const PATH_FIXED_CONSTANT_FILL = NODE_FILL;
+
+/** A folder tree in two boxes: a small box, a line that drops from it and turns right, and a second box at its end. 11 x 13 px. */
+const pathBoxes = (color) =>
+  `<g fill="none" stroke="${color}" stroke-width="1" shape-rendering="crispEdges">` +
+  `<rect x="0.5" y="0.5" width="5" height="4"/><path d="M2.5 4.5V10.5H5.5"/><rect x="5.5" y="8.5" width="5" height="4"/></g>`;
+
+/** The glyph of a path in a constant, a terminal and the type cell of the panel: two boxes joined by a line. */
+export const pathGlyph = (color = "currentColor") => svg(pathBoxes(color), "0 0 11 13");
+
+/** The glyph of the Empty Path Constant: a ring with a slash, the sign of "nothing". 9 x 9 px. */
+export const emptyPathGlyph = (color = "currentColor") =>
+  svg(`<circle cx="4.5" cy="4.5" r="3.2" fill="none" stroke="${color}" stroke-width="1"/><path d="M1.5 7.5L7.5 1.5" stroke="${color}" stroke-width="1"/>`, "0 0 9 9");
+
+/** The glyph of the Not A Path Constant: the two boxes of a path struck through by a slash. 11 x 11 px. */
+export const notAPathGlyph = (color = "currentColor") =>
+  svg(
+    `<g fill="none" stroke="${color}" stroke-width="1" shape-rendering="crispEdges"><rect x="0.5" y="0.5" width="4" height="3"/><path d="M2.5 3.5V8.5H4.5"/><rect x="5.5" y="7.5" width="4" height="3"/></g>` +
+      `<path d="M10 0.5L1 10.5" stroke="${color}" stroke-width="1"/>`,
+    "0 0 11 11",
+  );
+
+/** The picture of a path control inside its terminal as an icon: a text field with a path in it, over the grey of the terminal. */
+const dibujoPath = (left) =>
+  `<rect x="${left}" y="3" width="21" height="13" fill="#e2e2e2"/><rect x="${left + 2}" y="5" width="17" height="9" fill="${PAPER}" stroke="${PATH_COLOR}" stroke-width="1"/>` +
+  `<g transform="translate(${left + 7.2} 6.2) scale(0.5)">${pathBoxes(PATH_COLOR)}</g>`;
+
+/**
+ * The terminal of a path control or indicator on the diagram: as an icon, 32 x 32 (a frame in the type's colour, the
+ * picture, the word "Path" and the two-box glyph in the tab at the bottom, and the arrow of the side the data goes
+ * by); without View As Icon, 33 x 16 (white, the small glyph, and the light patch with the arrow at the data end).
+ * A control has the 2 px frame and an indicator a 1 px one, as the other types' terminals do.
+ */
+export function terminalPath(control, compact) {
+  const frame = (width, height) =>
+    control
+      ? `<rect x="1" y="1" width="${width - 2}" height="${height - 2}" fill="${PAPER}" stroke="${PATH_COLOR}" stroke-width="2"/>`
+      : `<rect x="0.5" y="0.5" width="${width - 1}" height="${height - 1}" fill="${PAPER}" stroke="${PATH_COLOR}" stroke-width="1"/>`;
+  if (compact) {
+    const patchX = control ? 22.5 : 0.5;
+    const glyphX = control ? 5 : 19;
+    const arrow = control ? [[28, 5], [28, 11], [30.5, 8]] : [[4, 5], [4, 11], [6.5, 8]];
+    return svg(
+      frame(33, 16) +
+        `<rect x="${patchX}" y="2.5" width="10" height="11" fill="${PATH_PATCH.fill}" stroke="${PATH_PATCH.edge}" stroke-width="1"/>` +
+        poligono(arrow, TERMINAL_DIRECTION_ARROW) +
+        `<g transform="translate(${glyphX} 1.5)">${pathBoxes(PATH_COLOR)}</g>`,
+      "0 0 33 16",
+    );
+  }
+  const arrow = control ? "M25.5 18V26L29.5 22Z" : "M6.5 18V26L2.5 22Z";
+  return svg(
+    frame(32, 32) +
+      dibujoPath(control ? 3 : 8) +
+      `<path d="${arrow}" fill="${PAPER}" stroke="#000" stroke-width="1"/>` +
+      textoTerminal(16, 20.6, "Path", 7, PATH_COLOR) +
+      `<rect x="11.5" y="24.5" width="9" height="7" fill="${PAPER}" stroke="${PATH_COLOR}" stroke-width="1"/>` +
+      `<g transform="translate(13.7 25.2) scale(0.45)">${pathBoxes(PATH_COLOR)}</g>`,
+    "0 0 32 32",
+  );
+}
+
+/** The browse button of a path control, outside its box: a raised grey key with a yellow folder, 28 x 17 px (drawn here, not NI's). */
+export const browseFolderGlyph = () =>
+  svg(
+    `<path d="M1.5 3.5H5.5L6.5 2.5H11.5V4.5H1.5Z" fill="#ffff00" stroke="#666666" stroke-width="1" stroke-linejoin="round"/>` +
+      `<rect x="1.5" y="4.5" width="14" height="8" fill="#ffff00" stroke="#666666" stroke-width="1"/>`,
+    "0 0 17 14",
+  );
+
+// ——— The File I/O palette (DT-067) ———
+//
+// Drawn anew from the names and kinds of reports/2026-10-26-file-io-palette.md: a pale-yellow tile with a dark outline and
+// the short word of what the function does, as the VISA functions are. The look of LabVIEW's own icons was not measured
+// (only their places and names), so these are placeholders for the palettes. The nodes of the path functions that are done
+// use the generic function-node drawing of the String functions, since their look on the diagram was not measured either.
+
+const FILE_TILE_SIZE = 48;
+/** A tile with its word; a longer word is set smaller so that it fits inside the tile. */
+const fileTile = (word, caption = "") => {
+  const size = Math.min(15, 40 / (0.62 * word.length));
+  const heading = caption
+    ? `<text x="4" y="9" font-family="Arial, 'Liberation Sans', sans-serif" font-style="italic" font-weight="700" font-size="8" fill="${INK}" dominant-baseline="central">${caption}</text>`
+    : "";
+  return svg48(caja(0.75, 0.75, FILE_TILE_SIZE - 0.75, FILE_TILE_SIZE - 0.75, NODE_FILL, 1.5, NODE_BORDER) + heading + texto48(24, caption ? 30 : 24.3, word, size, INK, 700));
+};
+
+/** The elements of the File I/O palettes that are not done, by the id of their last segment: [word, caption]. */
+const FILE_IO_TILES = {
+  "write-delimited-spreadsheet-vi": ["→SHT"], "read-delimited-spreadsheet-vi": ["SHT→"], "write-to-measurement-file": ["→MEAS"], "read-from-measurement-file": ["MEAS→"],
+  "open-create-replace-file": ["OPEN"], "close-file": ["CLOSE"], "format-into-file": ["→FMT"], "scan-from-file": ["FMT→"],
+  "write-to-text-file": ["→TXT"], "read-from-text-file": ["TXT→"], "write-to-binary-file": ["→BIN"], "read-from-binary-file": ["BIN→"],
+  "current-vis-path": ["VI"], "get-system-directory": ["SYS"], "not-a-refnum-constant": ["NaR"], "default-directory": ["DIR"], "default-data-directory": ["DATA"],
+  "vi-library": ["LIB"], "application-directory": ["APP"], "temporary-directory": ["TMP"],
+  "open-config-data-vi": ["OPEN"], "read-key-vi": ["READ"], "write-key-vi": ["WRITE"], "remove-key-vi": ["-KEY"], "remove-section-vi": ["-SEC"],
+  "close-config-data-vi": ["CLOSE"], "get-key-names-vi": ["KEYS"], "get-section-names-vi": ["SECS"], "not-a-config-data-refnum-vi": ["NaR?"],
+  "tdms-open": ["OPEN", "TDMS"], "tdms-write": ["WRITE", "TDMS"], "tdms-read": ["READ", "TDMS"], "tdms-close": ["CLOSE", "TDMS"],
+  "tdms-list-contents": ["LIST", "TDMS"], "tdms-set-properties": ["→PROP", "TDMS"], "tdms-get-properties": ["PROP→", "TDMS"], "tdms-flush": ["FLUSH", "TDMS"],
+  "tdms-file-viewer": ["VIEW", "TDMS"], "tdms-defragment": ["DEFRAG", "TDMS"],
+  "tdms-advanced-open": ["OPEN+", "TDMS"], "tdms-advanced-close": ["CLOSE+", "TDMS"], "tdms-set-channel-information": ["CHAN", "TDMS"],
+  "tdms-create-scaling-information-vi": ["SCALE", "TDMS"], "tdms-delete-data": ["DEL", "TDMS"], "tdms-set-next-write-position": ["→WPOS", "TDMS"],
+  "tdms-set-next-read-position": ["→RPOS", "TDMS"], "tdms-reserve-file-size": ["RSV", "TDMS"], "tdms-convert-format-vi": ["CONV", "TDMS"],
+  "open-data-storage": ["OPEN"], "write-data": ["WRITE"], "read-data": ["READ"], "close-data-storage": ["CLOSE"], "set-properties": ["→PROP"], "get-properties": ["PROP→"],
+  "delete-data-vi": ["DEL"], "data-file-viewer": ["VIEW"], "convert-to-tdm-or-tdms-vi": ["→TDM"], "manage-dataplugins": ["PLUG"],
+  "get-object-info-vi": ["OBJ?"], "get-property-info-vi": ["PRP?"], "set-property-vi": ["→PRP"], "get-property-vi": ["PRP→"], "merge-storage-refnums-vi": ["MERGE"],
+  "create-query-expression-vi": ["QRY"], "merge-query-expressions-vi": ["QRY+"], "execute-query-expression-vi": ["RUN"], "refnum-to-id-vi": ["REF→ID"], "id-to-refnum": ["ID→REF"],
+  "new-zip-file-vi": ["NEW"], "add-file-to-zip-vi": ["ADD"], "close-zip-file-vi": ["CLOSE"], "unzip-vi": ["UNZIP"],
+  "write-to-xml-file-vi": ["→XML"], "read-from-xml-file-vi": ["XML→"], "escape-xml-vi": ["ESC"], "unescape-xml-vi": ["UNESC"],
+  "write-waveforms-to-file-vi": ["→WFM"], "read-waveforms-from-file-vi": ["WFM→"], "export-waveforms-to-spreadsheet-file-vi": ["WFM→XLS"],
+  "get-file-position": ["POS?"], "get-file-size": ["SIZE?"], "get-permissions": ["PERM?"], "get-type-and-creator": ["TYPE?"], "preallocated-read-from-binary-file": ["PRE"], "file-dialog": ["DLG"],
+  "set-file-position": ["→POS"], "set-file-size": ["→SIZE"], "set-permissions": ["→PERM"], "set-type-and-creator": ["→TYPE"], "show-in-file-system-vi": ["SHOW"], "is-name-multiplatform-vi": ["NAME?"],
+  "create-file-with-incrementing-suffix-vi": ["FILE+1"], move: ["MOVE"], copy: ["COPY"], delete: ["DEL"], "flush-file": ["FLUSH"], "deny-access": ["DENY"],
+  "file-directory-info": ["INFO"], "get-volume-info": ["VOL"], "create-folder": ["MKDIR"], "list-folder": ["LIST"], "check-if-file-or-folder-exists-vi": ["EXISTS"], "recursive-file-list-vi": ["RLIST"],
+  "refnum-to-path": ["ref→p"], "compare-two-paths-vi": ["p=p?"], "get-file-extension-vi": [".EXT"], "file-checksum-vi": ["SUM"], "generate-temporary-file-path-vi": ["TMP"],
+  "read-datalog": ["READ", "LOG"], "set-datalog-position": ["→POS", "LOG"], "set-number-of-records": ["→N", "LOG"], "write-datalog": ["WRITE", "LOG"],
+  "get-datalog-position": ["POS?", "LOG"], "get-number-of-records": ["N?", "LOG"],
+  "get-exported-file-list-vi": ["LIST"], "get-exported-file-path-vi": ["PATH"], "packed-library-path-vi": ["LIB"],
+  "create-directory-recursive-vi": ["MKDIR+"], "create-file-and-containing-folders-vi": ["FILE+"],
+};
+for (const [slug, [word, caption]] of Object.entries(FILE_IO_TILES)) {
+  FUNCIONES[slug] ??= fileTile(word, caption);
+  CAJAS[slug] ??= [0, 0, FILE_TILE_SIZE, FILE_TILE_SIZE];
+}
+
+// The functions of File I/O that are done and have a node on the diagram. The size is not measured: the generic 32 x 32 of
+// the String functions, with their terminals spread over it.
+nodoCadena("build-path", 32, 32, "p+n", 11);
+nodoCadena("strip-path", 32, 32, "p-n", 11);
+nodoCadena("path-type", 32, 32, "p?", 11);
+
+// The three constants in the palette: the box of a path in its colour with the two-box glyph; the empty and Not A Path ones
+// on the pale yellow of their diagram constants.
+const pathConstantIcon = (fill, inner) => svg48(caja(10, 14, 38, 34, fill, 3, PATH_COLOR) + inner);
+Object.assign(FUNCIONES, {
+  "path-constant": pathConstantIcon(PAPER, `<g transform="translate(18.5 16.5) scale(1.3)">${pathBoxes(PATH_COLOR)}</g>`),
+  "empty-path-constant": pathConstantIcon(PATH_FIXED_CONSTANT_FILL, `<g transform="translate(19.5 19) scale(1.5)">${emptyPathGlyph(PATH_COLOR).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g>`),
+  "not-a-path-constant": pathConstantIcon(PATH_FIXED_CONSTANT_FILL, `<g transform="translate(19 18.5) scale(1.3)">${notAPathGlyph(PATH_COLOR).replace(/^<svg[^>]*>|<\/svg>$/g, "")}</g>`),
+});
+for (const slug of ["path-constant", "empty-path-constant", "not-a-path-constant"]) CAJAS[slug] = [9, 13, 39, 35];
+
+// The folders: a small tile with the word of what is inside, as Instrument I/O's are.
+const fileFolder = (word) => svg(caja(1.5, 2.5, 14.5, 13.5, NODE_FILL, 1, NODE_BORDER) + texto(8, 8.1, word, Math.min(4.4, 12 / (0.62 * word.length)), INK, 700));
+Object.assign(SUBPALETAS, {
+  "file-constants": fileFolder("CONST"), "configuration-file-vis": fileFolder("CFG"), "tdm-streaming": fileFolder("TDMS"), "advanced-tdms": fileFolder("TDMS+"),
+  "tdms-advanced-synchronous-i-o": fileFolder("SYNC"), "tdms-advanced-asynchronous-i-o": fileFolder("ASYNC"), "storage-dataplugin": fileFolder("DATA"),
+  "advanced-storage": fileFolder("DATA+"), zip: fileFolder("ZIP"), xml: fileFolder("XML"), "labview-schema": fileFolder("SCHEMA"), "waveform-file-i-o": fileFolder("WFM"),
+  "advanced-file-functions": fileFolder("ADV"), datalog: fileFolder("LOG"), "packed-library": fileFolder("PKG"),
+});

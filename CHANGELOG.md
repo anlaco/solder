@@ -38,7 +38,17 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   Equal?, Not Equal?, Empty String/Path? and Not A Number/Path/Refnum? on paths
   run in a VI with LabVIEW's results, measured case by case on Windows. A path
   never wires to a string, as in LabVIEW. Names beyond ASCII work, without
-  LabVIEW's byte limit. The editor does not offer them yet.
+  LabVIEW's byte limit. The editor draws and edits the path: its teal dashed
+  wire, the terminals, the Path, Empty Path and Not A Path constants on the
+  diagram, and the File Path Control and Indicator on the panel, whose browse
+  button opens the system's file dialog.
+- Functions ▸ Programming ▸ File I/O opens with every subpalette as LabVIEW lays it
+  out; from it, Build Path, Strip Path, the three path constants, Path To String,
+  String To Path, Path to Array of Strings, Array of Strings to Path and Path
+  Type are placed (the four conversions also from String), and File Path Control
+  and Indicator from Controls ▸ Modern ▸ String & Path. The right-click menus of
+  the path objects are LabVIEW's, with Data Operations and View As Icon working;
+  the rest of File I/O is greyed with its reason.
 
 ## 0.6.0-beta — 2026-10-25
 

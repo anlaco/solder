@@ -476,6 +476,42 @@
     "modo-de-e-s-sincrono": {
       "desc": "the Synchronous I/O Mode submenu of the VISA functions, which says how a call waits for the instrument: its rows were not captured, and Solder's VISA runs every call as a wait of its own I/O process",
       "ref": "design/05-decisions.md DT-066"
+    },
+    "funciones-de-archivo": {
+      "desc": "the file refnum and the file functions: Open/Create/Replace File, Close File, Write to and Read from Text File, Get File Size, Refnum to Path and Delete, with the file refnum constant",
+      "ref": "design/05-decisions.md DT-067 §10 (b)"
+    },
+    "hojas-de-calculo": {
+      "desc": "Array To Spreadsheet String, Spreadsheet String To Array and the Write and Read Delimited Spreadsheet VIs",
+      "ref": "design/05-decisions.md DT-067 §10 (c)"
+    },
+    "dialogos-de-archivo": {
+      "desc": "the system's file dialogs: the one a file function opens when it is not given a path, and File Dialog",
+      "ref": "design/05-decisions.md DT-067 §10 (d)"
+    },
+    "archivos-binarios-y-carpetas": {
+      "desc": "binary files, Format Into File and Scan From File, the Configuration File VIs, the folder and file-information functions and the path utilities: they come after the first four steps of File I/O",
+      "ref": "design/05-decisions.md DT-067 §10"
+    },
+    "rutas-del-sistema": {
+      "desc": "the paths of the system and of the running program: the VI's own path and the system, default, temporary, library and application directories",
+      "ref": "design/05-decisions.md DT-067 §10: after the folder functions"
+    },
+    "formatos-de-archivo": {
+      "desc": "the other file formats of File I/O: TDMS, Storage/DataPlugin, Zip, XML, Waveform files, Datalog and packed libraries. Not planned yet",
+      "ref": "design/05-decisions.md DT-067 §10"
+    },
+    "paleta-archivos-en-menu": {
+      "desc": "the File I/O Palette submenu of the right-click menus of a path, its constants and its terminals, which opens the file functions that take a path",
+      "ref": "labview-captures/reports/2026-10-26-path-type.md §2"
+    },
+    "opciones-de-ruta": {
+      "desc": "the Browse Options of a File Path Control: the prompt, pattern label, pattern, button text, selection mode and start path of its file dialog",
+      "ref": "labview-captures/reports/2026-10-26-path-type.md §1"
+    },
+    "justificar-constantes": {
+      "desc": "the layout of a path constant's text: turning Size To Text off to give it a size of its own, and left and right justification",
+      "ref": "labview-captures/reports/2026-10-26-path-type.md §2"
     }
   },
   "entradas": [
@@ -4151,9 +4187,8 @@
     {
       "id": "palette.functions.programming.string.path-array-string-conversion",
       "etiqueta": "Path/Array/String Conversion",
-      "estado": "todo",
-      "labview": "Converts between paths, arrays and strings. Captured: 6 functions in 4 columns, all greyed out.",
-      "necesita": "tipo-ruta",
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
       "captura": "string/string-path-array-string-abierta.png"
     },
     {
@@ -4525,34 +4560,34 @@
     {
       "id": "palette.functions.programming.string.path-array-string-conversion.path-to-array-of-strings",
       "etiqueta": "Path to Array of Strings",
-      "estado": "todo",
-      "labview": "Splits a path into an array of its components.",
-      "necesita": "tipo-ruta",
-      "captura": "string/string-path-array-string-abierta.png"
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
+      "captura": "string/string-path-array-string-abierta.png",
+      "bloque": "path-to-array-of-strings"
     },
     {
       "id": "palette.functions.programming.string.path-array-string-conversion.array-of-strings-to-path",
       "etiqueta": "Array of Strings to Path",
-      "estado": "todo",
-      "labview": "Joins an array of strings into a path.",
-      "necesita": "tipo-ruta",
-      "captura": "string/string-path-array-string-abierta.png"
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
+      "captura": "string/string-path-array-string-abierta.png",
+      "bloque": "array-of-strings-to-path"
     },
     {
       "id": "palette.functions.programming.string.path-array-string-conversion.path-to-string",
       "etiqueta": "Path To String",
-      "estado": "todo",
-      "labview": "Converts a path into its string.",
-      "necesita": "tipo-ruta",
-      "captura": "string/string-path-array-string-abierta.png"
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
+      "captura": "string/string-path-array-string-abierta.png",
+      "bloque": "path-to-string"
     },
     {
       "id": "palette.functions.programming.string.path-array-string-conversion.string-to-path",
       "etiqueta": "String To Path",
-      "estado": "todo",
-      "labview": "Converts a string into a path.",
-      "necesita": "tipo-ruta",
-      "captura": "string/string-path-array-string-abierta.png"
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
+      "captura": "string/string-path-array-string-abierta.png",
+      "bloque": "string-to-path"
     },
     {
       "id": "palette.functions.programming.string.path-array-string-conversion.string-to-byte-array",
@@ -4932,10 +4967,1303 @@
     {
       "id": "palette.functions.programming.file-io",
       "etiqueta": "File I/O",
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the File I/O palette and its subpalettes have the grids and names that were measured",
+      "captura": "file-io/fio-palette_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.thumbtack",
+      "etiqueta": "Thumbtack",
       "estado": "todo",
-      "labview": "Open, read, write and close files, and work with directories.",
-      "necesita": "bloques",
-      "captura": "paletas/functions-programming.png"
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "file-io/fio-palette_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.write-delimited-spreadsheet-vi",
+      "etiqueta": "Write Delimited Spreadsheet.vi",
+      "estado": "todo",
+      "labview": "A VI that turns a 1D or 2D array of numbers into delimited text and writes it to a file, or appends it.",
+      "necesita": "hojas-de-calculo",
+      "captura": "file-io/fio-palette_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.read-delimited-spreadsheet-vi",
+      "etiqueta": "Read Delimited Spreadsheet.vi",
+      "estado": "todo",
+      "labview": "A VI that reads delimited text from a file and gives it back as a 2D array, or just its first row.",
+      "necesita": "hojas-de-calculo",
+      "captura": "file-io/fio-palette_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.write-to-measurement-file",
+      "etiqueta": "Write To Measurement File",
+      "estado": "todo",
+      "labview": "The Express VI that saves signals to a measurement file, with its own configuration dialog.",
+      "necesita": "express-vis",
+      "captura": "file-io/fio-palette_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.read-from-measurement-file",
+      "etiqueta": "Read From Measurement File",
+      "estado": "todo",
+      "labview": "The Express VI that reads signals back from a measurement file, with its own configuration dialog.",
+      "necesita": "express-vis",
+      "captura": "file-io/fio-palette_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.open-create-replace-file",
+      "etiqueta": "Open/Create/Replace File",
+      "estado": "todo",
+      "labview": "Opens, creates or replaces a file from a path (or from a dialog if no path is wired) and gives its refnum.",
+      "necesita": "funciones-de-archivo",
+      "captura": "file-io/fio-palette_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.close-file",
+      "etiqueta": "Close File",
+      "estado": "todo",
+      "labview": "Closes an open file and gives back the path it was opened from.",
+      "necesita": "funciones-de-archivo",
+      "captura": "file-io/fio-palette_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.format-into-file",
+      "etiqueta": "Format Into File",
+      "estado": "todo",
+      "labview": "Writes values to a file as text, following a format string.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/fio-palette_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.scan-from-file",
+      "etiqueta": "Scan From File",
+      "estado": "todo",
+      "labview": "Reads text from a file and converts it to values, following a format string.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/fio-palette_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.write-to-text-file",
+      "etiqueta": "Write to Text File",
+      "estado": "todo",
+      "labview": "Writes a string, or an array of strings as lines, to a text file, opening it and closing it when it is given a path.",
+      "necesita": "funciones-de-archivo",
+      "captura": "file-io/fio-palette_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.read-from-text-file",
+      "etiqueta": "Read from Text File",
+      "estado": "todo",
+      "labview": "Reads a number of characters, or of lines, from a text file.",
+      "necesita": "funciones-de-archivo",
+      "captura": "file-io/fio-palette_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.write-to-binary-file",
+      "etiqueta": "Write to Binary File",
+      "estado": "todo",
+      "labview": "Writes data to a file as bytes, in the byte order asked for.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/fio-palette_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.read-from-binary-file",
+      "etiqueta": "Read from Binary File",
+      "estado": "todo",
+      "labview": "Reads bytes from a file and rebuilds values of the type wired to it.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/fio-palette_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.build-path",
+      "etiqueta": "Build Path",
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
+      "captura": "file-io/fio-palette_s.png",
+      "bloque": "build-path"
+    },
+    {
+      "id": "palette.functions.programming.file-io.strip-path",
+      "etiqueta": "Strip Path",
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
+      "captura": "file-io/fio-palette_s.png",
+      "bloque": "strip-path"
+    },
+    {
+      "id": "palette.functions.programming.file-io.file-constants",
+      "etiqueta": "File Constants",
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the File I/O palette and its subpalettes have the grids and names that were measured",
+      "captura": "file-io/fc_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.file-constants.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "file-io/fc_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.file-constants.path-constant",
+      "etiqueta": "Path Constant",
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
+      "captura": "file-io/fc_s.png",
+      "bloque": "path-constant"
+    },
+    {
+      "id": "palette.functions.programming.file-io.file-constants.current-vis-path",
+      "etiqueta": "Current VI's Path",
+      "estado": "todo",
+      "labview": "Gives the path of the VI that is running.",
+      "necesita": "rutas-del-sistema",
+      "captura": "file-io/fc_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.file-constants.get-system-directory",
+      "etiqueta": "Get System Directory",
+      "estado": "todo",
+      "labview": "Gives the path of one of the system's own folders, chosen from a list.",
+      "necesita": "rutas-del-sistema",
+      "captura": "file-io/fc_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.file-constants.empty-path-constant",
+      "etiqueta": "Empty Path Constant",
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
+      "captura": "file-io/fc_s.png",
+      "bloque": "empty-path-constant"
+    },
+    {
+      "id": "palette.functions.programming.file-io.file-constants.not-a-path-constant",
+      "etiqueta": "Not A Path Constant",
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
+      "captura": "file-io/fc_s.png",
+      "bloque": "not-a-path-constant"
+    },
+    {
+      "id": "palette.functions.programming.file-io.file-constants.not-a-refnum-constant",
+      "etiqueta": "Not a Refnum Constant",
+      "estado": "todo",
+      "labview": "A file refnum that refers to nothing.",
+      "necesita": "funciones-de-archivo",
+      "captura": "file-io/fc_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.file-constants.default-directory",
+      "etiqueta": "Default Directory",
+      "estado": "todo",
+      "labview": "Gives the folder LabVIEW-style programs use by default for files.",
+      "necesita": "rutas-del-sistema",
+      "captura": "file-io/fc_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.file-constants.default-data-directory",
+      "etiqueta": "Default Data Directory",
+      "estado": "todo",
+      "labview": "Gives the folder meant for the data files a program writes.",
+      "necesita": "rutas-del-sistema",
+      "captura": "file-io/fc_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.file-constants.vi-library",
+      "etiqueta": "VI Library",
+      "estado": "todo",
+      "labview": "Gives the path of the folder where the libraries of VIs are installed.",
+      "necesita": "rutas-del-sistema",
+      "captura": "file-io/fc_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.file-constants.application-directory",
+      "etiqueta": "Application Directory",
+      "estado": "todo",
+      "labview": "Gives the path of the folder the running program lives in.",
+      "necesita": "rutas-del-sistema",
+      "captura": "file-io/fc_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.file-constants.temporary-directory",
+      "etiqueta": "Temporary Directory",
+      "estado": "todo",
+      "labview": "Gives the path of the system's folder for temporary files.",
+      "necesita": "rutas-del-sistema",
+      "captura": "file-io/fc_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.configuration-file-vis",
+      "etiqueta": "Configuration File VIs",
+      "estado": "todo",
+      "labview": "Folder of the VIs that keep settings in a configuration file made of sections and keys.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/cfg_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.configuration-file-vis.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "file-io/cfg_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.configuration-file-vis.open-config-data-vi",
+      "etiqueta": "Open Config Data.vi",
+      "estado": "todo",
+      "labview": "Opens a configuration file, or makes one, and gives a reference to its data.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/cfg_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.configuration-file-vis.read-key-vi",
+      "etiqueta": "Read Key.vi",
+      "estado": "todo",
+      "labview": "Reads the value of a key in a section.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/cfg_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.configuration-file-vis.write-key-vi",
+      "etiqueta": "Write Key.vi",
+      "estado": "todo",
+      "labview": "Writes the value of a key in a section.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/cfg_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.configuration-file-vis.remove-key-vi",
+      "etiqueta": "Remove Key.vi",
+      "estado": "todo",
+      "labview": "Deletes a key from a section.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/cfg_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.configuration-file-vis.remove-section-vi",
+      "etiqueta": "Remove Section.vi",
+      "estado": "todo",
+      "labview": "Deletes a section with all its keys.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/cfg_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.configuration-file-vis.close-config-data-vi",
+      "etiqueta": "Close Config Data.vi",
+      "estado": "todo",
+      "labview": "Closes the configuration data, saving it to the file if asked.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/cfg_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.configuration-file-vis.get-key-names-vi",
+      "etiqueta": "Get Key Names.vi",
+      "estado": "todo",
+      "labview": "Lists the keys of a section.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/cfg_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.configuration-file-vis.get-section-names-vi",
+      "etiqueta": "Get Section Names.vi",
+      "estado": "todo",
+      "labview": "Lists the sections of the file.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/cfg_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.configuration-file-vis.not-a-config-data-refnum-vi",
+      "etiqueta": "Not A Config Data Refnum.vi",
+      "estado": "todo",
+      "labview": "Tells whether a reference to configuration data refers to nothing.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/cfg_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming",
+      "etiqueta": "TDM Streaming",
+      "estado": "todo",
+      "labview": "Folder of the functions that stream data to TDMS files, the format of National Instruments' measurement tools. Not planned yet.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/tdm_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "file-io/tdm_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.tdms-open",
+      "etiqueta": "TDMS Open",
+      "estado": "todo",
+      "labview": "Opens or creates a TDMS file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/tdm_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.tdms-write",
+      "etiqueta": "TDMS Write",
+      "estado": "todo",
+      "labview": "Appends data to a channel of a TDMS file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/tdm_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.tdms-read",
+      "etiqueta": "TDMS Read",
+      "estado": "todo",
+      "labview": "Reads data from a channel of a TDMS file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/tdm_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.tdms-close",
+      "etiqueta": "TDMS Close",
+      "estado": "todo",
+      "labview": "Closes a TDMS file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/tdm_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.tdms-list-contents",
+      "etiqueta": "TDMS List Contents",
+      "estado": "todo",
+      "labview": "Lists the groups and channels a TDMS file holds.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/tdm_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.tdms-set-properties",
+      "etiqueta": "TDMS Set Properties",
+      "estado": "todo",
+      "labview": "Sets properties on a file, group or channel of a TDMS file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/tdm_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.tdms-get-properties",
+      "etiqueta": "TDMS Get Properties",
+      "estado": "todo",
+      "labview": "Reads properties from a file, group or channel of a TDMS file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/tdm_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.tdms-flush",
+      "etiqueta": "TDMS Flush",
+      "estado": "todo",
+      "labview": "Forces the data buffered for a TDMS file onto the disk.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/tdm_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.tdms-file-viewer",
+      "etiqueta": "TDMS File Viewer",
+      "estado": "todo",
+      "labview": "Opens a window to browse a TDMS file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/tdm_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.tdms-defragment",
+      "etiqueta": "TDMS Defragment",
+      "estado": "todo",
+      "labview": "Rewrites a TDMS file so that its data is stored contiguously.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/tdm_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.advanced-tdms",
+      "etiqueta": "Advanced TDMS",
+      "estado": "todo",
+      "labview": "Folder of the lower-level TDMS functions.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/atdm2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.advanced-tdms.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "file-io/atdm2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.advanced-tdms.tdms-advanced-open",
+      "etiqueta": "TDMS Advanced Open",
+      "estado": "todo",
+      "labview": "Opens a TDMS file with control over how it is read and written.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/atdm2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.advanced-tdms.tdms-advanced-close",
+      "etiqueta": "TDMS Advanced Close",
+      "estado": "todo",
+      "labview": "Closes a file opened with the advanced open.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/atdm2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.advanced-tdms.tdms-set-channel-information",
+      "etiqueta": "TDMS Set Channel Information",
+      "estado": "todo",
+      "labview": "Describes a channel (data type, number of values) before it is written.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/atdm2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.advanced-tdms.tdms-create-scaling-information-vi",
+      "etiqueta": "TDMS Create Scaling Information.vi",
+      "estado": "todo",
+      "labview": "Builds the scaling a channel is stored with.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/atdm2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.advanced-tdms.tdms-delete-data",
+      "etiqueta": "TDMS Delete Data",
+      "estado": "todo",
+      "labview": "Deletes data from a TDMS file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/atdm2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.advanced-tdms.tdms-set-next-write-position",
+      "etiqueta": "TDMS Set Next Write Position",
+      "estado": "todo",
+      "labview": "Moves the point where the next write lands.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/atdm2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.advanced-tdms.tdms-set-next-read-position",
+      "etiqueta": "TDMS Set Next Read Position",
+      "estado": "todo",
+      "labview": "Moves the point where the next read starts.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/atdm2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.advanced-tdms.tdms-reserve-file-size",
+      "etiqueta": "TDMS Reserve File Size",
+      "estado": "todo",
+      "labview": "Reserves disk space for a TDMS file before it is written.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/atdm2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.advanced-tdms.tdms-convert-format-vi",
+      "etiqueta": "TDMS Convert Format.vi",
+      "estado": "todo",
+      "labview": "Converts a TDMS file from one internal layout to another.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/atdm2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.advanced-tdms.tdms-advanced-synchronous-i-o",
+      "etiqueta": "TDMS Advanced Synchronous I/O",
+      "estado": "todo",
+      "labview": "Folder of TDMS functions for synchronous or asynchronous access. Its contents were not opened in LabVIEW.",
+      "necesita": "contenido-no-capturado",
+      "captura": "file-io/atdm2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.tdm-streaming.advanced-tdms.tdms-advanced-asynchronous-i-o",
+      "etiqueta": "TDMS Advanced Asynchronous I/O",
+      "estado": "todo",
+      "labview": "Folder of TDMS functions for synchronous or asynchronous access. Its contents were not opened in LabVIEW.",
+      "necesita": "contenido-no-capturado",
+      "captura": "file-io/atdm2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin",
+      "etiqueta": "Storage/DataPlugin",
+      "estado": "todo",
+      "labview": "Folder of the functions that read and write data files through DataPlugins, which understand many file formats. Not planned yet.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/st2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "file-io/st2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.open-data-storage",
+      "etiqueta": "Open Data Storage",
+      "estado": "todo",
+      "labview": "Opens a data file through a DataPlugin.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/st2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.write-data",
+      "etiqueta": "Write Data",
+      "estado": "todo",
+      "labview": "Writes data to an open data file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/st2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.read-data",
+      "etiqueta": "Read Data",
+      "estado": "todo",
+      "labview": "Reads data from an open data file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/st2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.close-data-storage",
+      "etiqueta": "Close Data Storage",
+      "estado": "todo",
+      "labview": "Closes a data file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/st2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.set-properties",
+      "etiqueta": "Set Properties",
+      "estado": "todo",
+      "labview": "Sets properties on the objects of a data file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/st2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.get-properties",
+      "etiqueta": "Get Properties",
+      "estado": "todo",
+      "labview": "Reads properties from the objects of a data file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/st2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.delete-data-vi",
+      "etiqueta": "Delete Data.vi",
+      "estado": "todo",
+      "labview": "Deletes data from a data file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/st2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.data-file-viewer",
+      "etiqueta": "Data File Viewer",
+      "estado": "todo",
+      "labview": "Opens a window to browse a data file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/st2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.convert-to-tdm-or-tdms-vi",
+      "etiqueta": "Convert to TDM or TDMS.vi",
+      "estado": "todo",
+      "labview": "Converts a data file to a TDM or TDMS file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/st2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.manage-dataplugins",
+      "etiqueta": "Manage DataPlugins",
+      "estado": "todo",
+      "labview": "Opens the window where the DataPlugins are installed and removed.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/st2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.advanced-storage",
+      "etiqueta": "Advanced Storage",
+      "estado": "todo",
+      "labview": "Folder of the lower-level data storage functions.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/as2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.advanced-storage.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "file-io/as2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.advanced-storage.get-object-info-vi",
+      "etiqueta": "Get Object Info.vi",
+      "estado": "todo",
+      "labview": "Describes an object of a data file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/as2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.advanced-storage.get-property-info-vi",
+      "etiqueta": "Get Property Info.vi",
+      "estado": "todo",
+      "labview": "Describes a property of a data file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/as2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.advanced-storage.set-property-vi",
+      "etiqueta": "Set Property.vi",
+      "estado": "todo",
+      "labview": "Sets one property of a data file's object.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/as2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.advanced-storage.get-property-vi",
+      "etiqueta": "Get Property.vi",
+      "estado": "todo",
+      "labview": "Reads one property of a data file's object.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/as2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.advanced-storage.merge-storage-refnums-vi",
+      "etiqueta": "Merge Storage Refnums.vi",
+      "estado": "todo",
+      "labview": "Joins several data storage references into one.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/as2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.advanced-storage.create-query-expression-vi",
+      "etiqueta": "Create Query Expression.vi",
+      "estado": "todo",
+      "labview": "Builds a search expression over the data in storage.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/as2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.advanced-storage.merge-query-expressions-vi",
+      "etiqueta": "Merge Query Expressions.vi",
+      "estado": "todo",
+      "labview": "Joins several search expressions into one.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/as2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.advanced-storage.execute-query-expression-vi",
+      "etiqueta": "Execute Query Expression.vi",
+      "estado": "todo",
+      "labview": "Runs a search expression and gives the objects it finds.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/as2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.advanced-storage.refnum-to-id-vi",
+      "etiqueta": "Refnum to ID.vi",
+      "estado": "todo",
+      "labview": "Turns a storage reference into an identifier that can be kept.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/as2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.storage-dataplugin.advanced-storage.id-to-refnum",
+      "etiqueta": "ID to Refnum",
+      "estado": "todo",
+      "labview": "Turns an identifier back into a storage reference.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/as2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.zip",
+      "etiqueta": "Zip",
+      "estado": "todo",
+      "labview": "Folder of the VIs that make and read zip archives. Not planned yet.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/zp_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.zip.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "file-io/zp_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.zip.new-zip-file-vi",
+      "etiqueta": "New Zip File.vi",
+      "estado": "todo",
+      "labview": "Creates a zip archive.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/zp_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.zip.add-file-to-zip-vi",
+      "etiqueta": "Add File to Zip.vi",
+      "estado": "todo",
+      "labview": "Puts a file into a zip archive.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/zp_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.zip.close-zip-file-vi",
+      "etiqueta": "Close Zip File.vi",
+      "estado": "todo",
+      "labview": "Closes a zip archive.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/zp_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.zip.unzip-vi",
+      "etiqueta": "Unzip.vi",
+      "estado": "todo",
+      "labview": "Extracts the files of a zip archive.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/zp_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.xml",
+      "etiqueta": "XML",
+      "estado": "todo",
+      "labview": "Folder of the functions that store LabVIEW data as XML. Not planned yet.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/xs_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.xml.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "file-io/xs_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.xml.labview-schema",
+      "etiqueta": "LabVIEW Schema",
+      "estado": "todo",
+      "labview": "Folder of the functions that read and write data in the XML schema LabVIEW defines.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/xs_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.xml.labview-schema.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "file-io/xs_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.xml.labview-schema.flatten-to-xml",
+      "etiqueta": "Flatten To XML",
+      "estado": "todo",
+      "labview": "Turns a value into XML text.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/xs_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.xml.labview-schema.unflatten-from-xml",
+      "etiqueta": "Unflatten From XML",
+      "estado": "todo",
+      "labview": "Rebuilds a value from XML text.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/xs_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.xml.labview-schema.write-to-xml-file-vi",
+      "etiqueta": "Write to XML File.vi",
+      "estado": "todo",
+      "labview": "Writes a value to a file as XML.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/xs_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.xml.labview-schema.read-from-xml-file-vi",
+      "etiqueta": "Read From XML File.vi",
+      "estado": "todo",
+      "labview": "Reads a value back from an XML file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/xs_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.xml.labview-schema.escape-xml-vi",
+      "etiqueta": "Escape XML.vi",
+      "estado": "todo",
+      "labview": "Replaces the characters XML reserves with their escapes.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/xs_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.xml.labview-schema.unescape-xml-vi",
+      "etiqueta": "Unescape XML.vi",
+      "estado": "todo",
+      "labview": "Turns XML escapes back into the characters.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/xs_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.waveform-file-i-o",
+      "etiqueta": "Waveform File I/O",
+      "estado": "todo",
+      "labview": "Folder of the VIs that save waveforms to files. Not planned yet.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/wf_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.waveform-file-i-o.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "file-io/wf_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.waveform-file-i-o.write-waveforms-to-file-vi",
+      "etiqueta": "Write Waveforms to File.vi",
+      "estado": "todo",
+      "labview": "Saves waveforms to a file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/wf_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.waveform-file-i-o.read-waveforms-from-file-vi",
+      "etiqueta": "Read Waveforms from File.vi",
+      "estado": "todo",
+      "labview": "Reads waveforms saved by the writer.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/wf_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.waveform-file-i-o.export-waveforms-to-spreadsheet-file-vi",
+      "etiqueta": "Export Waveforms to Spreadsheet File.vi",
+      "estado": "todo",
+      "labview": "Saves waveforms as a spreadsheet text file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/wf_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions",
+      "etiqueta": "Advanced File Functions",
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the File I/O palette and its subpalettes have the grids and names that were measured",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.get-file-position",
+      "etiqueta": "Get File Position",
+      "estado": "todo",
+      "labview": "Gives where the next read or write of an open file will happen.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.get-file-size",
+      "etiqueta": "Get File Size",
+      "estado": "todo",
+      "labview": "Gives the size in bytes of an open file.",
+      "necesita": "funciones-de-archivo",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.get-permissions",
+      "etiqueta": "Get Permissions",
+      "estado": "todo",
+      "labview": "Gives the access permissions of a file.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.get-type-and-creator",
+      "etiqueta": "Get Type and Creator",
+      "estado": "todo",
+      "labview": "Gives the type and creator codes of a file (macOS).",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.preallocated-read-from-binary-file",
+      "etiqueta": "Preallocated Read from Binary File",
+      "estado": "todo",
+      "labview": "Reads bytes from a file into a buffer that is already there.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.file-dialog",
+      "etiqueta": "File Dialog",
+      "estado": "todo",
+      "labview": "Shows the system's dialog to choose a file and gives the path chosen.",
+      "necesita": "dialogos-de-archivo",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.set-file-position",
+      "etiqueta": "Set File Position",
+      "estado": "todo",
+      "labview": "Moves where the next read or write of an open file will happen.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.set-file-size",
+      "etiqueta": "Set File Size",
+      "estado": "todo",
+      "labview": "Cuts or extends an open file to a size.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.set-permissions",
+      "etiqueta": "Set Permissions",
+      "estado": "todo",
+      "labview": "Changes the access permissions of a file.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.set-type-and-creator",
+      "etiqueta": "Set Type and Creator",
+      "estado": "todo",
+      "labview": "Changes the type and creator codes of a file (macOS).",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.show-in-file-system-vi",
+      "etiqueta": "Show in File System.vi",
+      "estado": "todo",
+      "labview": "Opens the system's file browser with a path selected.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.is-name-multiplatform-vi",
+      "etiqueta": "Is Name Multiplatform.vi",
+      "estado": "todo",
+      "labview": "Tells whether a name is valid on every operating system.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.create-file-with-incrementing-suffix-vi",
+      "etiqueta": "Create File with Incrementing Suffix.vi",
+      "estado": "todo",
+      "labview": "Makes a new file, adding a number to its name if the name is taken.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.move",
+      "etiqueta": "Move",
+      "estado": "todo",
+      "labview": "Moves a file or a folder to another place.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.copy",
+      "etiqueta": "Copy",
+      "estado": "todo",
+      "labview": "Copies a file or a folder.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.delete",
+      "etiqueta": "Delete",
+      "estado": "todo",
+      "labview": "Deletes a file or a folder, with a confirmation if asked.",
+      "necesita": "funciones-de-archivo",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.flush-file",
+      "etiqueta": "Flush File",
+      "estado": "todo",
+      "labview": "Forces what is buffered for an open file onto the disk.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.deny-access",
+      "etiqueta": "Deny Access",
+      "estado": "todo",
+      "labview": "Locks a file so that other programs cannot use it.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.file-directory-info",
+      "etiqueta": "File/Directory Info",
+      "estado": "todo",
+      "labview": "Gives the size, dates and kind of a file or folder.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.get-volume-info",
+      "etiqueta": "Get Volume Info",
+      "estado": "todo",
+      "labview": "Gives the size and free space of a disk.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.create-folder",
+      "etiqueta": "Create Folder",
+      "estado": "todo",
+      "labview": "Creates a folder.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.list-folder",
+      "etiqueta": "List Folder",
+      "estado": "todo",
+      "labview": "Lists the files and folders inside a folder.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.check-if-file-or-folder-exists-vi",
+      "etiqueta": "Check if File or Folder Exists.vi",
+      "estado": "todo",
+      "labview": "Tells whether a path leads to a file or a folder.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.recursive-file-list-vi",
+      "etiqueta": "Recursive File List.vi",
+      "estado": "todo",
+      "labview": "Lists the files of a folder and of all the folders inside it.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.path-to-string",
+      "etiqueta": "Path To String",
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
+      "captura": "file-io/af2_s.png",
+      "bloque": "path-to-string"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.string-to-path",
+      "etiqueta": "String To Path",
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
+      "captura": "file-io/af2_s.png",
+      "bloque": "string-to-path"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.path-to-array-of-strings",
+      "etiqueta": "Path to Array of Strings",
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
+      "captura": "file-io/af2_s.png",
+      "bloque": "path-to-array-of-strings"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.array-of-strings-to-path",
+      "etiqueta": "Array of Strings to Path",
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
+      "captura": "file-io/af2_s.png",
+      "bloque": "array-of-strings-to-path"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.refnum-to-path",
+      "etiqueta": "Refnum to Path",
+      "estado": "todo",
+      "labview": "Gives the path an open file was opened from.",
+      "necesita": "funciones-de-archivo",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.path-type",
+      "etiqueta": "Path Type",
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::the path functions and constants are placed from the File I/O palettes and from String",
+      "captura": "file-io/af2_s.png",
+      "bloque": "path-type"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.compare-two-paths-vi",
+      "etiqueta": "Compare Two Paths.vi",
+      "estado": "todo",
+      "labview": "Tells whether two paths are the same, one inside the other or different.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.get-file-extension-vi",
+      "etiqueta": "Get File Extension.vi",
+      "estado": "todo",
+      "labview": "Splits the extension from the name of a file.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.file-checksum-vi",
+      "etiqueta": "File Checksum.vi",
+      "estado": "todo",
+      "labview": "Computes a checksum of the contents of a file.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.generate-temporary-file-path-vi",
+      "etiqueta": "Generate Temporary File Path.vi",
+      "estado": "todo",
+      "labview": "Makes a path for a temporary file that does not exist yet.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.datalog",
+      "etiqueta": "Datalog",
+      "estado": "todo",
+      "labview": "Folder of the functions for datalog files, which store records of one LabVIEW type.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/dl2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.datalog.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "file-io/dl2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.datalog.open-create-replace-file",
+      "etiqueta": "Open/Create/Replace File",
+      "estado": "todo",
+      "labview": "Opens, creates or replaces a datalog file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/dl2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.datalog.close-file",
+      "etiqueta": "Close File",
+      "estado": "todo",
+      "labview": "Closes a datalog file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/dl2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.datalog.read-datalog",
+      "etiqueta": "Read Datalog",
+      "estado": "todo",
+      "labview": "Reads records from a datalog file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/dl2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.datalog.set-datalog-position",
+      "etiqueta": "Set Datalog Position",
+      "estado": "todo",
+      "labview": "Moves to a record of a datalog file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/dl2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.datalog.set-number-of-records",
+      "etiqueta": "Set Number of Records",
+      "estado": "todo",
+      "labview": "Cuts or extends a datalog file to a number of records.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/dl2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.datalog.write-datalog",
+      "etiqueta": "Write Datalog",
+      "estado": "todo",
+      "labview": "Writes records to a datalog file.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/dl2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.datalog.get-datalog-position",
+      "etiqueta": "Get Datalog Position",
+      "estado": "todo",
+      "labview": "Gives the record the next read or write will use.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/dl2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.datalog.get-number-of-records",
+      "etiqueta": "Get Number of Records",
+      "estado": "todo",
+      "labview": "Gives how many records a datalog file holds.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/dl2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.packed-library",
+      "etiqueta": "Packed Library",
+      "estado": "todo",
+      "labview": "Folder of the VIs that look inside packed project libraries.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/pl_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.packed-library.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "file-io/pl_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.packed-library.get-exported-file-list-vi",
+      "etiqueta": "Get Exported File List.vi",
+      "estado": "todo",
+      "labview": "Lists the files a packed library exports.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/pl_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.packed-library.get-exported-file-path-vi",
+      "etiqueta": "Get Exported File Path.vi",
+      "estado": "todo",
+      "labview": "Gives the path of one exported file of a packed library.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/pl_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.packed-library.packed-library-path-vi",
+      "etiqueta": "Packed Library Path.vi",
+      "estado": "todo",
+      "labview": "Gives the path of the packed library a file belongs to.",
+      "necesita": "formatos-de-archivo",
+      "captura": "file-io/pl_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.create-directory-recursive-vi",
+      "etiqueta": "Create Directory Recursive.vi",
+      "estado": "todo",
+      "labview": "Creates a folder and every folder above it that is missing.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
+    },
+    {
+      "id": "palette.functions.programming.file-io.advanced-file-functions.create-file-and-containing-folders-vi",
+      "etiqueta": "Create File and Containing Folders.vi",
+      "estado": "todo",
+      "labview": "Creates a file, and the folders it needs, in one step.",
+      "necesita": "archivos-binarios-y-carpetas",
+      "captura": "file-io/af2_s.png"
     },
     {
       "id": "palette.functions.programming.timing",
@@ -6629,18 +7957,18 @@
     {
       "id": "palette.controls.modern.string-and-path.file-path-control",
       "etiqueta": "File Path Control",
-      "estado": "todo",
-      "labview": "A control with a file path and a button to choose it.",
-      "necesita": "tipo-ruta",
-      "captura": "string/controls-string-path.png"
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::File Path Control and Indicator are placed from Controls Modern String and Path with their terminal",
+      "captura": "string/controls-string-path.png",
+      "bloque": "path-control"
     },
     {
       "id": "palette.controls.modern.string-and-path.file-path-indicator",
       "etiqueta": "File Path Indicator",
-      "estado": "todo",
-      "labview": "An indicator for a file path.",
-      "necesita": "tipo-ruta",
-      "captura": "string/controls-string-path.png"
+      "estado": "built",
+      "prueba": "test/editor/file-io-palette.test.mjs::File Path Control and Indicator are placed from Controls Modern String and Path with their terminal",
+      "captura": "string/controls-string-path.png",
+      "bloque": "path-indicator"
     },
     {
       "id": "palette.controls.modern.data-containers",
@@ -21365,6 +22693,777 @@
       "labview": "Opens the node's properties dialog.",
       "necesita": "propiedades",
       "captura": "visa/resource-name-m0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-control",
+      "etiqueta": "File Path Control",
+      "estado": "built",
+      "prueba": "test/editor/path-menus.test.mjs::the File Path Control has its measured menu on the panel",
+      "captura": "file-io/path/menu-ctl-modern-x2.png"
+    },
+    {
+      "id": "context.path-control.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas",
+      "captura": "file-io/path/menu-ctl-visible-x4.png"
+    },
+    {
+      "id": "context.path-control.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the label.",
+      "necesita": "etiquetas",
+      "captura": "file-io/path/menu-ctl-visible-x4.png"
+    },
+    {
+      "id": "context.path-control.visible-items.caption",
+      "etiqueta": "Caption",
+      "estado": "todo",
+      "labview": "Shows or hides the caption.",
+      "necesita": "etiquetas",
+      "captura": "file-io/path/menu-ctl-visible-x4.png"
+    },
+    {
+      "id": "context.path-control.visible-items.scrollbar",
+      "etiqueta": "Scrollbar",
+      "estado": "todo",
+      "labview": "Shows a scrollbar on the path's text; greyed out in LabVIEW for a path.",
+      "necesita": "etiquetas",
+      "captura": "file-io/path/menu-ctl-visible-x4.png"
+    },
+    {
+      "id": "context.path-control.visible-items.browse-button",
+      "etiqueta": "Browse Button",
+      "estado": "todo",
+      "labview": "Shows or hides the button that opens the file dialog; ticked on a control, greyed out and unticked on an indicator.",
+      "necesita": "etiquetas",
+      "captura": "file-io/path/menu-ctl-visible-x4.png"
+    },
+    {
+      "id": "context.path-control.find-terminal",
+      "etiqueta": "Find Terminal",
+      "estado": "todo",
+      "labview": "Points out the control's terminal on the diagram.",
+      "necesita": "resaltar-terminal",
+      "captura": "file-io/path/menu-ctl-modern-x2.png"
+    },
+    {
+      "id": "context.path-control.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns the control into an indicator.",
+      "necesita": "panel-frontal",
+      "captura": "file-io/path/menu-ctl-modern-x2.png"
+    },
+    {
+      "id": "context.path-control.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the control into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-ctl-modern-x2.png"
+    },
+    {
+      "id": "context.path-control.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "file-io/path/menu-ctl-modern-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-control.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "file-io/path/menu-ctl-modern-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-control.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to the control.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-ctl-subs-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-control.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "A local variable of the control.",
+      "necesita": "variables-y-feedback",
+      "captura": "file-io/path/menu-ctl-subs-x2.png"
+    },
+    {
+      "id": "context.path-control.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "A reference to the control.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-ctl-subs-x2.png"
+    },
+    {
+      "id": "context.path-control.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "A Property Node of the control.",
+      "necesita": "nodos-de-propiedades",
+      "captura": "file-io/path/menu-ctl-subs-x2.png"
+    },
+    {
+      "id": "context.path-control.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "An Invoke Node of the control.",
+      "necesita": "nodos-de-propiedades",
+      "captura": "file-io/path/menu-ctl-subs-x2.png"
+    },
+    {
+      "id": "context.path-control.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Groups the selection in a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "file-io/path/menu-ctl-subs-x2.png"
+    },
+    {
+      "id": "context.path-control.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Swaps the control for another one.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-ctl-replace.png"
+    },
+    {
+      "id": "context.path-control.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/path-menus.test.mjs::Data Operations of a path control makes its current value its default",
+      "captura": "file-io/path/menu-ctl-dataop.png"
+    },
+    {
+      "id": "context.path-control.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/path-menus.test.mjs::Data Operations of a path control makes its current value its default",
+      "captura": "file-io/path/menu-ctl-dataop.png"
+    },
+    {
+      "id": "context.path-control.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/path-menus.test.mjs::Data Operations of a path control makes its current value its default",
+      "captura": "file-io/path/menu-ctl-dataop.png"
+    },
+    {
+      "id": "context.path-control.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the current value to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "file-io/path/menu-ctl-dataop.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-control.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the current value to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "file-io/path/menu-ctl-dataop.png"
+    },
+    {
+      "id": "context.path-control.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes a value from the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "file-io/path/menu-ctl-dataop.png"
+    },
+    {
+      "id": "context.path-control.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options for the control.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-ctl-subs-x2.png"
+    },
+    {
+      "id": "context.path-control.advanced.key-navigation",
+      "etiqueta": "Key Navigation...",
+      "estado": "todo",
+      "labview": "Chooses how the keyboard reaches the control.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-ctl-subs-x2.png"
+    },
+    {
+      "id": "context.path-control.advanced.synchronous-display",
+      "etiqueta": "Synchronous Display",
+      "estado": "todo",
+      "labview": "Makes the panel redraw the control each time its value changes.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-ctl-subs-x2.png"
+    },
+    {
+      "id": "context.path-control.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Opens the control editor to change how the control is drawn.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-ctl-subs-x2.png"
+    },
+    {
+      "id": "context.path-control.advanced.run-time-shortcut-menu",
+      "etiqueta": "Run-Time Shortcut Menu",
+      "estado": "todo",
+      "labview": "Chooses the menu the control shows when the VI runs.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-ctl-subs-x2.png"
+    },
+    {
+      "id": "context.path-control.advanced.hide-control",
+      "etiqueta": "Hide Control",
+      "estado": "todo",
+      "labview": "Hides the control on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "file-io/path/menu-ctl-subs-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-control.advanced.enabled-state",
+      "etiqueta": "Enabled State",
+      "estado": "todo",
+      "labview": "Enables or disables the control, or disables it and greys it.",
+      "necesita": "panel-frontal",
+      "captura": "file-io/path/menu-ctl-subs-x2.png"
+    },
+    {
+      "id": "context.path-control.advanced.allow-dropping",
+      "etiqueta": "Allow Dropping",
+      "estado": "todo",
+      "labview": "Lets a file dragged from the system be dropped on the control; ticked by default.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-ctl-subs-x2.png"
+    },
+    {
+      "id": "context.path-control.fit-control-to-pane",
+      "etiqueta": "Fit Control to Pane",
+      "estado": "todo",
+      "labview": "The control grows to fill the pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "file-io/path/menu-ctl-modern-x2.png"
+    },
+    {
+      "id": "context.path-control.scale-object-with-pane",
+      "etiqueta": "Scale Object with Pane",
+      "estado": "todo",
+      "labview": "The control grows with the pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "file-io/path/menu-ctl-modern-x2.png"
+    },
+    {
+      "id": "context.path-control.browse-options",
+      "etiqueta": "Browse Options...",
+      "estado": "todo",
+      "labview": "Opens the Browse Options tab of the properties: the prompt, the pattern and the kind of selection the file dialog offers.",
+      "necesita": "opciones-de-ruta",
+      "captura": "file-io/path/browse-opt-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-control.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "file-io/path/menu-ctl-modern-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-control-terminal",
+      "etiqueta": "File Path Control",
+      "estado": "built",
+      "prueba": "test/editor/path-menus.test.mjs::the terminals of a path have their measured menus",
+      "captura": "file-io/path/menu-term-ctl-x2.png"
+    },
+    {
+      "id": "context.path-control-terminal.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas",
+      "captura": "file-io/path/menu-term-ctl-x2.png"
+    },
+    {
+      "id": "context.path-control-terminal.find-control",
+      "etiqueta": "Find Control",
+      "estado": "todo",
+      "labview": "Points out the control on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "file-io/path/menu-term-ctl-x2.png"
+    },
+    {
+      "id": "context.path-control-terminal.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "file-io/path/menu-term-ctl-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-control-terminal.hide-control",
+      "etiqueta": "Hide Control",
+      "estado": "todo",
+      "labview": "Hides the control on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "file-io/path/menu-term-ctl-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-control-terminal.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns the control into the other kind.",
+      "necesita": "panel-frontal",
+      "captura": "file-io/path/menu-term-ctl-x2.png"
+    },
+    {
+      "id": "context.path-control-terminal.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the object into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-term-ctl-x2.png"
+    },
+    {
+      "id": "context.path-control-terminal.change-to-constant",
+      "etiqueta": "Change to Constant",
+      "estado": "todo",
+      "labview": "Turns the object into a constant on the diagram.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-term-ctl-x2.png"
+    },
+    {
+      "id": "context.path-control-terminal.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "file-io/path/menu-term-ctl-x2.png"
+    },
+    {
+      "id": "context.path-control-terminal.file-i-o-palette",
+      "etiqueta": "File I/O Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the file functions that take a path.",
+      "necesita": "paleta-archivos-en-menu",
+      "captura": "file-io/path/menu-term-ctl-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-control-terminal.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to the path.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-term-ctl-x2.png"
+    },
+    {
+      "id": "context.path-control-terminal.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/path-menus.test.mjs::Data Operations of a path control makes its current value its default"
+    },
+    {
+      "id": "context.path-control-terminal.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/path-menus.test.mjs::Data Operations of a path control makes its current value its default"
+    },
+    {
+      "id": "context.path-control-terminal.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/path-menus.test.mjs::Data Operations of a path control makes its current value its default"
+    },
+    {
+      "id": "context.path-control-terminal.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the current value to the clipboard.",
+      "necesita": "copiar-datos",
+      "separado": true
+    },
+    {
+      "id": "context.path-control-terminal.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the current value to the clipboard.",
+      "necesita": "copiar-datos"
+    },
+    {
+      "id": "context.path-control-terminal.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes a value from the clipboard.",
+      "necesita": "copiar-datos"
+    },
+    {
+      "id": "context.path-control-terminal.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options for the object.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-term-ctl-x2.png"
+    },
+    {
+      "id": "context.path-control-terminal.view-as-icon",
+      "etiqueta": "View As Icon",
+      "estado": "built",
+      "prueba": "test/editor/path-menus.test.mjs::View As Icon of the terminal of a path switches between 32 x 32 and 33 x 16",
+      "captura": "file-io/path/menu-term-ctl-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-control-terminal.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "file-io/path/menu-term-ctl-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-constant",
+      "etiqueta": "Path Constant",
+      "estado": "built",
+      "prueba": "test/editor/path-menus.test.mjs::the Path Constant has its measured menu",
+      "captura": "file-io/path/menu-const-path-x2.png"
+    },
+    {
+      "id": "context.path-constant.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas",
+      "captura": "file-io/path/menu-const-path-x2.png"
+    },
+    {
+      "id": "context.path-constant.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Turns the constant into a control on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "file-io/path/menu-const-path-x2.png"
+    },
+    {
+      "id": "context.path-constant.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns the constant into an indicator on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "file-io/path/menu-const-path-x2.png"
+    },
+    {
+      "id": "context.path-constant.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the constant into an array constant of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-const-path-x2.png"
+    },
+    {
+      "id": "context.path-constant.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the constant into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "file-io/path/menu-const-path-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-constant.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "file-io/path/menu-const-path-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-constant.file-i-o-palette",
+      "etiqueta": "File I/O Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the file functions that take a path.",
+      "necesita": "paleta-archivos-en-menu",
+      "captura": "file-io/path/menu-const-path-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-constant.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to the constant.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-const-path-x2.png"
+    },
+    {
+      "id": "context.path-constant.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Swaps the constant for another object.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-const-path-x2.png"
+    },
+    {
+      "id": "context.path-constant.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Cut, copy and paste data, and save the current value as the default value.",
+      "necesita": "copiar-datos",
+      "captura": "file-io/path/menu-const-path-x2.png"
+    },
+    {
+      "id": "context.path-constant.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options for the object.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-const-path-x2.png"
+    },
+    {
+      "id": "context.path-constant.size-to-text",
+      "etiqueta": "Size To Text",
+      "estado": "todo",
+      "labview": "The constant grows and shrinks to the right with its text; ticked by default.",
+      "necesita": "justificar-constantes",
+      "captura": "file-io/path/menu-const-path-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-constant.left-justify-text",
+      "etiqueta": "Left Justify Text",
+      "estado": "todo",
+      "labview": "Aligns the text of the constant to its left; ticked by default.",
+      "necesita": "justificar-constantes",
+      "captura": "file-io/path/menu-const-path-x2.png"
+    },
+    {
+      "id": "context.path-constant.right-justify-text",
+      "etiqueta": "Right Justify Text",
+      "estado": "todo",
+      "labview": "Aligns the text of the constant to its right.",
+      "necesita": "justificar-constantes",
+      "captura": "file-io/path/menu-const-path-x2.png"
+    },
+    {
+      "id": "context.path-constant.browse-for-path",
+      "etiqueta": "Browse for Path...",
+      "estado": "todo",
+      "labview": "Opens the file dialog and puts the path chosen in the constant.",
+      "necesita": "dialogos-de-archivo",
+      "captura": "file-io/path/menu-const-path-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.path-constant.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "file-io/path/menu-const-path-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.empty-path-constant",
+      "etiqueta": "Empty Path Constant",
+      "estado": "built",
+      "prueba": "test/editor/path-menus.test.mjs::the Empty Path Constant and the Not A Path Constant have their menus",
+      "captura": "file-io/path/menu-const-empty-x2.png"
+    },
+    {
+      "id": "context.empty-path-constant.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas",
+      "captura": "file-io/path/menu-const-empty-x2.png"
+    },
+    {
+      "id": "context.empty-path-constant.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Turns the constant into a control on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "file-io/path/menu-const-empty-x2.png"
+    },
+    {
+      "id": "context.empty-path-constant.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns the constant into an indicator on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "file-io/path/menu-const-empty-x2.png"
+    },
+    {
+      "id": "context.empty-path-constant.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the constant into an array constant of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-const-empty-x2.png"
+    },
+    {
+      "id": "context.empty-path-constant.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "file-io/path/menu-const-empty-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.empty-path-constant.file-i-o-palette",
+      "etiqueta": "File I/O Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the file functions that take a path.",
+      "necesita": "paleta-archivos-en-menu",
+      "captura": "file-io/path/menu-const-empty-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.empty-path-constant.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to the constant.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-const-empty-x2.png"
+    },
+    {
+      "id": "context.empty-path-constant.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Swaps the constant for another object.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-const-empty-x2.png"
+    },
+    {
+      "id": "context.empty-path-constant.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Cut, copy and paste data, and save the current value as the default value.",
+      "necesita": "copiar-datos",
+      "captura": "file-io/path/menu-const-empty-x2.png"
+    },
+    {
+      "id": "context.empty-path-constant.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options for the object.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/path/menu-const-empty-x2.png"
+    },
+    {
+      "id": "context.empty-path-constant.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "file-io/path/menu-const-empty-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.not-a-path-constant",
+      "etiqueta": "Not A Path Constant",
+      "estado": "built",
+      "prueba": "test/editor/path-menus.test.mjs::the Empty Path Constant and the Not A Path Constant have their menus"
+    },
+    {
+      "id": "context.not-a-path-constant.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas"
+    },
+    {
+      "id": "context.not-a-path-constant.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Turns the constant into a control on the panel.",
+      "necesita": "panel-frontal"
+    },
+    {
+      "id": "context.not-a-path-constant.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns the constant into an indicator on the panel.",
+      "necesita": "panel-frontal"
+    },
+    {
+      "id": "context.not-a-path-constant.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the constant into an array constant of its type.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.not-a-path-constant.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "separado": true
+    },
+    {
+      "id": "context.not-a-path-constant.file-i-o-palette",
+      "etiqueta": "File I/O Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the file functions that take a path.",
+      "necesita": "paleta-archivos-en-menu",
+      "separado": true
+    },
+    {
+      "id": "context.not-a-path-constant.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to the constant.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.not-a-path-constant.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Swaps the constant for another object.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.not-a-path-constant.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Cut, copy and paste data, and save the current value as the default value.",
+      "necesita": "copiar-datos"
+    },
+    {
+      "id": "context.not-a-path-constant.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options for the object.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.not-a-path-constant.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "propiedades",
       "separado": true
     }
   ]

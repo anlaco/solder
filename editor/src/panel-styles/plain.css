@@ -43,6 +43,7 @@
 /* Ornament is for the styles that want it (html-controls.mjs, ORNAMENT_CLASSES). */
 .sd-panel .sd-art { display: none; }
 .sd-panel .sd-visa-glyph { display: none; }
+.sd-panel .sd-path-glyph { display: none; }
 .sd-panel .sd-radix { display: none; }
 .sd-panel .sd-code-arrows { display: none; }
 .sd-panel .sd-scrollbar { display: none; }
@@ -99,6 +100,19 @@
 }
 .sd-panel .sd-dropdown::before { content: ""; border: 3.5px solid transparent; border-top: 4px solid var(--sd-muted); border-bottom-width: 0; }
 .sd-panel .sd-dropdown:hover::before { border-top-color: var(--sd-accent); }
+
+/* ——— File path ——— */
+
+/* The type cell says "Path", the field holds the path and a control's browse button sits outside the box, to its right. */
+.sd-panel .sd-path { display: flex; align-items: stretch; gap: 3px; }
+.sd-panel .sd-path-cell { flex: none; display: grid; place-items: center; width: 24px; color: var(--sd-muted); font-size: 10px; }
+.sd-panel .sd-path-cell::before { content: "Path"; }
+.sd-panel .sd-path .sd-field { flex: 1; }
+.sd-panel .sd-browse {
+  box-sizing: border-box; position: absolute; left: calc(100% + 2px); top: 4px; display: grid; place-items: center; width: 28px; height: 17px;
+  border: 1px solid var(--sd-line); border-radius: var(--sd-radius); background: var(--sd-button); cursor: default;
+}
+.sd-panel .sd-browse svg { display: block; width: 14px; height: 12px; }
 
 /* ——— Boolean ——— */
 

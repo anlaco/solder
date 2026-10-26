@@ -1475,3 +1475,61 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-25-visa-palettes.
 > not measured). **Unverified:** the contents of every submenu but Create's, and the Visible Items of the terminal menu (Solder's are
 > the function's). Tested.
 
+
+## 22. The path in the palettes and menus (2026-10-26, DT-067)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-26-file-io-palette.md` §1–3 for the palette and
+`2026-10-26-path-type.md` §1–2 for the menus). The look is in [`06-visual.md`](06-visual.md) §19. Tests:
+`test/editor/file-io-palette.test.mjs` and `test/editor/path-menus.test.mjs`.
+
+> **Rule 111 — Functions ▸ Programming ▸ File I/O.** The folder has 6 rows of 4 cells, in LabVIEW's places (row, column): the
+> two delimited-spreadsheet VIs and the two measurement-file Express VIs on row 1; Open/Create/Replace File, Close File, Format Into
+> File and Scan From File on row 2; Write to and Read from Text File, Write to and Read from Binary File on row 3; Build Path, Strip
+> Path, File Constants and Configuration File VIs on row 4; TDM Streaming, Storage/DataPlugin, Zip and XML on row 5; and, on row 6,
+> Waveform File I/O at (6, 1) and Advanced File Functions at (6, 4). Every subpalette one level deep has the names, kinds and cells
+> of the report (File Constants 4 × 3; Configuration File VIs 2 × 6 with gaps at (2, 1), (2, 4) and (2, 6); TDM Streaming 3 × 4 with a gap at
+> (3, 3); Advanced TDMS 3 × 5; Storage/DataPlugin 3 × 4 with a gap at (2, 3); Advanced Storage 4 × 3 with gaps at (1, 3) and (4, 3); Zip
+> 2 × 3; XML a single cell, the folder LabVIEW Schema 3 × 2; Waveform File I/O 1 × 3; Advanced File Functions 7 × 6 with the path
+> functions on row 5; Datalog 3 × 3; Packed Library 1 × 3). **Done:** Build Path and Strip Path; in File Constants, Path Constant,
+> Empty Path Constant and Not A Path Constant; in Advanced File Functions, Path To String, String To Path, Path to Array of Strings,
+> Array of Strings to Path and Path Type; and, in Functions ▸ String ▸ Path/Array/String Conversion, the same four conversions.
+> **Everything else is greyed with its reason** (rule 54): the file refnum and the file functions with `funciones-de-archivo`
+> (DT-067 §10 (b)); the spreadsheet VIs with `hojas-de-calculo` (c); File Dialog with `dialogos-de-archivo` (d); binary files, Format Into
+> File, Scan From File, the Configuration File VIs and the folder and file-information functions with `archivos-binarios-y-carpetas`;
+> the system directories and the VI's own path with `rutas-del-sistema`; the Measurement File Express VIs with `express-vis`; TDMS,
+> Storage/DataPlugin, Zip, XML, Datalog, Waveform File I/O and Packed Library with `formatos-de-archivo`, which says **not planned yet**.
+> The two Advanced TDMS folders after the first two and the contents of every folder below the first level were not opened in LabVIEW
+> (`contenido-no-capturado`). A folder with something done inside is done; the icons of the greyed elements are Solder's own
+> placeholders (a tile with a short word), since only their names and places were measured, and so are the nodes of Build Path, Strip
+> Path and Path Type: **their size and the place of their terminals were not measured**, so they are the generic 32 × 32 function nodes
+> with the terminals in the order of the context help (Build Path: base path above name or relative path; Strip Path: stripped path above
+> name). Controls ▸ Modern ▸ String & Path has File Path Control and File Path Indicator done (they put a `path-control` and a
+> `path-indicator`); the inventory has no File Path Control under Controls ▸ Classic or System, so there is nothing to grey there.
+> Tested.
+
+> **Rule 112 — The right-click menus of the path objects.** The panel's File Path Control and Indicator share `context.path-control`:
+> Visible Items ▸ (Label, Caption, Scrollbar, Browse Button), Find Terminal, Change to Indicator, Change to Array, a separator, Make
+> Type Def., a separator, Description and Tip..., a separator, Create ▸ (Local Variable, Reference, Property Node, Invoke Node, Cluster
+> from Selection), Replace ▸, Data Operations ▸ (Reinitialize to Default Value, Make Current Value Default, a separator, Cut Data, Copy
+> Data, Paste Data), Advanced ▸ (Key Navigation..., Synchronous Display, Customize..., Run-Time Shortcut Menu, a separator, Hide Control,
+> Enabled State, Allow Dropping), Fit Control to Pane, Scale Object with Pane, a separator, Browse Options..., a separator and
+> Properties. Ticked: Allow Dropping, and Browse Button on a control (an indicator's is greyed and unticked). An indicator says Change to
+> Control. The terminal on the diagram has `context.path-control-terminal`: Visible Items ▸, Find Control, a separator, Make Type Def., a
+> separator, Hide Control, Change to Indicator, Change to Array, Change to Constant, Description and Tip..., a separator, File I/O
+> Palette ▸, Create ▸, Data Operations ▸, Advanced ▸, a separator, View As Icon (ticked) and, after a separator, Properties. The Path Constant has
+> `context.path-constant`: Visible Items ▸, Change to Control, Change to Indicator, Change to Array, a separator, Make Type Def., a
+> separator, Description and Tip..., a separator, File I/O Palette ▸, Create ▸, Replace ▸, Data Operations ▸, Advanced ▸, a separator, Size To
+> Text and Left Justify Text (both ticked), Right Justify Text, a separator, Browse for Path..., a separator and Properties; the Empty
+> Path Constant has `context.empty-path-constant`: the same up to Description and Tip..., then File I/O Palette ▸, Create ▸, Replace ▸,
+> Data Operations ▸, Advanced ▸, a separator and Properties. **Done:** Data Operations ▸ Reinitialize to Default Value and Make
+> Current Value Default (panel and terminals) and View As Icon (the terminals). The menu of a path wire names its palette row File I/O
+> Palette. **Greyed with their reason:** Visible Items (`etiquetas`: only graphs hide their label so far), Find Terminal and Find
+> Control (`resaltar-terminal`, `panel-frontal`), the changes of class (`panel-frontal`, `menus-contextuales`), Make Type Def.
+> (`definiciones-de-tipo`), Description and Tip... (`descripciones`), the File I/O Palette submenu (`paleta-archivos-en-menu`), Create
+> and Replace (`menus-contextuales`), Cut, Copy and Paste Data (`copiar-datos`), Advanced, Fit Control to Pane and Scale Object with Pane,
+> **Browse Options... (`opciones-de-ruta`)**, Size To Text and the justifications (`justificar-constantes`), **Browse for Path...
+> (`dialogos-de-archivo`)** and Properties (`propiedades`). **Unverified:** the indicator's panel menu below its first rows (it opens the
+> control's); the labels of the indicator's terminal menu (Find Indicator, Hide Indicator and Change to Control, taken from the other
+> indicators' terminals); the contents of the terminal's Create ▸ and of the constants' Create ▸, Replace ▸ and Data Operations ▸;
+> **the Not A Path Constant's menu, which has the Empty Path Constant's rows because only its height and row count were read**; the
+> palette row's name on the wire. A path function node has the generic function menu. Tested.

@@ -30,6 +30,8 @@ import { controlForElement, elementMenuRoot, emptyArrayAgain, isEmptyArrayShell,
 import * as Gr from "../../../core/model/graph.mjs";
 import { REPEATED_PASTE_STEP } from "../common/paste-memory.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
+import { EMPTY_PATH, hostPathRules, pathFromText, pathToText } from "../../../core/model/paths.mjs";
+import { abbreviatePath } from "../common/path-text.mjs";
 import { convertirValor, elementoPorDefecto, esEnum, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import { GRAPH_MEASURES, LABEL_PLACEMENT, graphSvg } from "./graph-view.mjs";
 import * as HC from "./html-controls.mjs";
@@ -53,6 +55,9 @@ export const CONTROLES = {
   // A VISA resource name: a one-line text with its resource string, labelled as LabVIEW does (labview-captures/visa/resource-name-p0.png).
   "visa-control": { etiqueta: "VISA resource name", incrementador: false, cadena: true, visa: true },
   "visa-indicator": { etiqueta: "VISA resource name", incrementador: false, cadena: true, visa: true },
+  // A path: File Path Control and Indicator. LabVIEW's default label is unverified ("Path" is the word on its terminal).
+  "path-control": { etiqueta: "Path", incrementador: false, path: true },
+  "path-indicator": { etiqueta: "Path", incrementador: false, path: true },
   // Un cluster: de momento sólo los de error (Error In y Error Out), que se distinguen por `config.style`.
   "cluster-control": { etiqueta: "Cluster", incrementador: false, cluster: true },
   "cluster-indicator": { etiqueta: "Cluster", incrementador: false, cluster: true },
@@ -152,6 +157,15 @@ export const MEDIDAS_CADENA_PANEL = { ancho: 100, alto: 24 };
 export const MEDIDAS_VISA_PANEL = { ancho: 104, alto: 26, bisel: 4, iconoAncho: 9, hueco: 1, campoAlto: 17, botonAncho: 17 };
 
 /**
+ * The box of a File Path Control and Indicator, measured in LabVIEW 2026 Q3 (reports/2026-10-26-path-type.md §1): 100 × 25
+ * px of a 4 px bevel, the type cell (8 px), a 1 px divider and the text area, which starts 2 px in. The control's browse
+ * button is 28 × 17 px, outside the box and 2 px to its right. The vertical bevel and the button's height above the box
+ * are taken from the VISA resource name's: unverified. `textWidth` is the width of the text area less its 2 px of padding.
+ */
+export const MEDIDAS_PATH_PANEL = { ancho: 100, alto: 25, bisel: 4, celda: 8, divisor: 1, relleno: 2, botonAncho: 28, botonAlto: 17, botonHueco: 2 };
+const pathTextWidth = (M = MEDIDAS_PATH_PANEL) => M.ancho - 2 * M.bisel - M.celda - M.divisor - M.relleno;
+
+/**
  * The kind of a boolean control (Push Button, Stop Button…): its size, drawing
  * and default label come from glyphs.mjs (BOOLEANOS), by the `style` in its
  * configuration. A block that is not boolean has none.
@@ -213,6 +227,7 @@ export function cajaObjeto(tipo, x, y, config) {
   if (CONTROLES[tipo]?.grafico) return { x, y, ancho: GRAPH_MEASURES[tipo].width, alto: GRAPH_MEASURES[tipo].height, casilla: LABEL_PLACEMENT.indent, separacion: LABEL_PLACEMENT.gap };
   const b = estiloDe(tipo, config);
   if (b) return { x, y, ancho: b.ancho, alto: b.alto, casilla: 0, separacion: SEPARACION_BOOLEANO };
+  if (CONTROLES[tipo]?.path) return { x, y, ancho: MEDIDAS_PATH_PANEL.ancho, alto: MEDIDAS_PATH_PANEL.alto, casilla: 0 };
   if (CONTROLES[tipo]?.visa) return { x, y, ancho: MEDIDAS_VISA_PANEL.ancho, alto: MEDIDAS_VISA_PANEL.alto, casilla: 0 };
   if (CONTROLES[tipo]?.cadena) return { x, y, ancho: MEDIDAS_CADENA_PANEL.ancho, alto: MEDIDAS_CADENA_PANEL.alto, casilla: 0 };
   const casilla = inicioCasilla(tipo);
@@ -235,7 +250,7 @@ function isInMoveBand(box, point) {
 }
 
 /** Whether a press in the node's value box types in it: numeric controls with an incrementer, and string controls. */
-const typesInValueBox = (n) => (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control" || n?.tipo === "visa-control") && !esEnum(n?.config?.type);
+const typesInValueBox = (n) => (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control" || n?.tipo === "visa-control" || n?.tipo === "path-control") && !esEnum(n?.config?.type);
 
 /**
  * The edit-mode pointer over a panel object, as LabVIEW's automatic tool shows it
@@ -294,7 +309,14 @@ const esc = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
  */
 const esCadena = (n) => !!CONTROLES[n?.tipo]?.cadena;
 const tipoDe = (n) => n.config?.type ?? "number";
+/** The path a File Path Control or Indicator holds now, as the text of the host system's rules (the whole of it, never abbreviated). */
+const pathValueText = (n, ctx, valores) => pathToText(valores?.[n.id] ?? valorActual(n) ?? EMPTY_PATH, ctx.pathRules);
+
+/** The text a path shows: too long for its text area, it loses its leading components for "..." (measured: `...\f`). */
+const shownPathText = (text, ctx) => abbreviatePath(text, (candidate) => (ctx.medir ?? Et.medirAproximado)(candidate) <= pathTextWidth(), ctx.pathRules ?? hostPathRules());
+
 const textoValor = (n, ctx, valores) => {
+  if (CONTROLES[n?.tipo]?.path) return pathValueText(n, ctx, valores);
   // An enum shows the name of its current item (DT-049); while running, the value that
   // arrives is the item's number.
   if (esEnum(tipoDe(n))) return (n.config?.type?.enum ?? [])[valores?.[n.id] ?? valorActual(n) ?? 0] ?? "";
@@ -417,6 +439,7 @@ function panelObject(n, ctx, selected, p, resolvedTypes) {
   }
   if (control?.booleano) return HC.booleanHtml(frame, { style: n.config?.style ?? "push-button", on: encendido(n, p.valores) });
   const valueHtml = typedOrText(editing, textoValor(n, ctx, p.valores));
+  if (control?.path) return HC.pathHtml(frame, { valueHtml: typedOrText(editing, shownPathText(pathValueText(n, ctx, p.valores), ctx)) });
   if (control?.visa) return HC.visaHtml(frame, { valueHtml });
   if (control?.cadena) return HC.stringHtml(frame, { valueHtml });
   return HC.numericHtml(frame, { valueHtml, withIncrementer: !!control?.incrementador, isEnum: esEnum(tipoDe(n)) });
@@ -700,6 +723,8 @@ export function menuDe(n, onElement = false) {
   // A VISA resource name (reports/2026-10-26-visa-resource-name-look.md Q5).
   // The panel's indicator was not measured: its menu does not open yet.
   if (n.tipo === "visa-control") return "context.visa-control";
+  // A File Path Control and Indicator share a menu; the indicator's Change to Control is a variant (diagram-editing.mjs).
+  if (n.tipo === "path-control" || n.tipo === "path-indicator") return "context.path-control";
   if (n.tipo === "bool-control") return "context.boolean-control";
   if (n.tipo === "bool-indicator") return "context.boolean-indicator";
   return null;
@@ -732,7 +757,8 @@ export function editarValor(p, ctx, id, todo, campo) {
   // `shown` remembers the text the box showed, so that confirming it untouched keeps the value it rounds.
   const shown = n && textoValor(n, ctx, p.valores);
   // A VISA resource name is text on one line: Enter confirms it, and it is kept as typed.
-  const kindOfText = esCadena(n) ? (CONTROLES[n.tipo].visa ? { resourceName: true } : { cadena: true }) : {};
+  // A path is read as String To Path reads it, with the host's rules, when it is confirmed.
+  const kindOfText = esCadena(n) ? (CONTROLES[n.tipo].visa ? { resourceName: true } : { cadena: true }) : CONTROLES[n?.tipo]?.path ? { pathRules: ctx.pathRules ?? hostPathRules() } : {};
   return n ? { ...p, edicion: { nodo: id, valor: true, texto: shown, shown, todo, ...kindOfText }, seleccion: [], accion: null } : p;
 }
 
@@ -771,6 +797,12 @@ export function editarElemento(p, ctx, id, k, todo) {
   if (t === "boolean") return { ...p, g: CV.setCurrentValue(p.g, id, writeCell(valoresDeArray(n, p.valores), dimensions, k, !v, t)), seleccion: [], accion: null };
   const texto = t === "string" ? String(v ?? "") : formatear(v ?? 0, t, ctx.separador);
   return { ...p, edicion: { nodo: id, valor: true, elem: k, texto, shown: texto, todo, ...(t === "string" ? { cadena: true } : {}) }, seleccion: [], accion: null };
+}
+
+/** The browse button of a path control chose `path`: it becomes the control's current value, as if it had been typed. */
+export function fijarRuta(p, id, path) {
+  const { [id]: _, ...valores } = p.valores ?? {};
+  return { ...p, g: CV.setCurrentValue(p.g, id, path), valores };
 }
 
 /** Una flecha del incrementador: el valor sube o baja 1. */
@@ -815,6 +847,11 @@ export function confirmar(p) {
   if (e.cadena || e.resourceName) {
     const { [e.nodo]: _, ...valores } = p.valores ?? {};
     return { ...p, g: CV.setCurrentValue(p.g, e.nodo, e.texto), valores, edicion: null };
+  }
+  // Every text is a path: Not A Path when it says so, the empty path when it is empty (measured, reports/2026-10-26-path-type.md §4).
+  if (e.pathRules) {
+    const { [e.nodo]: _, ...valores } = p.valores ?? {};
+    return { ...p, g: CV.setCurrentValue(p.g, e.nodo, pathFromText(e.texto, e.pathRules)), valores, edicion: null };
   }
   const leido = leerNumero(e.texto, "number");
   if (!leido) return { ...p, edicion: null };

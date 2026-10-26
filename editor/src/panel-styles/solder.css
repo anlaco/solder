@@ -91,6 +91,11 @@
 .sd-panel .sd-visa .sd-dropdown { border: 0; background: var(--sd-surface); box-shadow: var(--sd-raise); }
 .sd-panel .sd-visa .sd-dropdown:hover { background: var(--sd-accent-soft); }
 
+/* A file path: the type cell a little in from the edge, and the browse button a raised key. */
+.sd-panel .sd-path-cell { padding-left: 2px; }
+.sd-panel .sd-path .sd-browse { border: 0; background: var(--sd-surface); box-shadow: var(--sd-raise); }
+.sd-panel .sd-path .sd-browse:hover { background: var(--sd-accent-soft); }
+
 /* ——— Booleans ——— */
 
 /* Buttons and rockers are raised keys; pressed, they sink and their text takes the accent. */

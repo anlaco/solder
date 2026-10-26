@@ -80,7 +80,6 @@ test("una categoría con contenido se abre y se cierra", () => {
 
 test("una categoría sin contenido explica lo que falta", () => {
   assert.equal(clic(conPaleta(), INV, "palette.functions.measurement-io", AQUI).abierta.id, "palette.functions.measurement-io");
-  assert.equal(clic(conPaleta(), INV, "palette.functions.programming.file-io", AQUI).abierta.id, "palette.functions.programming.file-io");
 });
 
 // Regla 53b en una rejilla: la carpeta con contenido abre su subpaleta al lado,
@@ -343,7 +342,7 @@ test("la carpeta additional string functions abre su subpaleta", () => {
   assert.deepEqual(INV.hijos(id).filter((e) => !esHueco(e)).map((e) => ultimo(e.id)), ["rotate-string", "reverse-string"]);
 });
 
-// controls-string-path.png: tres columnas y cinco elementos; los dos de cadena, hechos, y el resto, en gris.
+// controls-string-path.png: tres columnas y cinco elementos; los de cadena y los de ruta (DT-067), hechos, y Combo Box, en gris.
 test("la carpeta string and path de controls abre su subpaleta", () => {
   const id = "palette.controls.modern.string-and-path";
   const conControles = { ...inicial(), paleta: paletaNueva("palette.controls", 40, 30) };
@@ -354,8 +353,8 @@ test("la carpeta string and path de controls abre su subpaleta", () => {
   assert.equal(columnas, 3);
   assert.deepEqual(sitios.map((s) => [s.fila, s.columna, s.e.etiqueta]), [[0, 0, "String Control"], [0, 1, "String Indicator"], [0, 2, "Combo Box"], [1, 0, "File Path Control"], [1, 1, "File Path Indicator"]]);
   const html = subpaletas(INV, abierta.paleta);
-  for (const hecho of ["string-control", "string-indicator"]) assert.match(html, new RegExp(`class="icono-funcion" data-id="${id}\\.${hecho}"`), `${hecho} está hecho`);
-  for (const hueco of ["combo-box", "file-path-control", "file-path-indicator"]) assert.match(html, new RegExp(`class="icono-funcion hueco" data-id="${id}\\.${hueco}"`), `${hueco} es un hueco`);
+  for (const hecho of ["string-control", "string-indicator", "file-path-control", "file-path-indicator"]) assert.match(html, new RegExp(`class="icono-funcion" data-id="${id}\\.${hecho}"`), `${hecho} está hecho`);
+  for (const hueco of ["combo-box"]) assert.match(html, new RegExp(`class="icono-funcion hueco" data-id="${id}\\.${hueco}"`), `${hueco} es un hueco`);
   assert.doesNotMatch(paleta(INV, { ...conControles.paleta, desplegadas: ["palette.controls.modern"] }), new RegExp(`carpeta hueco" data-id="${id}"`));
 });
 

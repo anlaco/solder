@@ -496,8 +496,14 @@ array or string read by a local variable while another loop writes it is never t
       `.sdg`), `core/model/paths.mjs` with the Windows rules measured, and Build Path, Strip Path, Path To String,
       String To Path, Path Type, Path to Array of Strings, Array of Strings to Path, the three constants, the path
       control and indicator terminals, and Equal?, Not Equal?, Empty String/Path? and Not A Number/Path/Refnum? on
-      paths, compiled and run (`test/core/paths.test.mjs`, `test/core/path-functions.test.mjs`). 906 tests green.
-      Next: the editor's side of (a) (wire, constants, File Path Control and Indicator, the palettes), then (b).*
+      paths, compiled and run (`test/core/paths.test.mjs`, `test/core/path-functions.test.mjs`). 906 tests green.*
+      *The editor's side of (a) done on 2026-10-26 (spec/05 §22 rules 111–112, spec/06 §19): the teal wire, the
+      terminals, the three constants, File Path Control and Indicator with their browse button (the system's file
+      dialog), Functions ▸ Programming ▸ File I/O laid out as measured with every subpalette (what is done placeable,
+      the rest greyed with its reason), the path functions of String ▸ Path/Array/String Conversion, and the measured
+      right-click menus. 945 tests green. Not checked by eye yet against LabVIEW; unverified: the function nodes'
+      look and terminal positions, the constant's text width, the 32 × 32 terminal's drawing. Next: (b), the file
+      refnum and the text file functions.*
    3. **VISA over serial:** ASRL resources and VISA Configure Serial Port, with a serial transport in Crucible; Bytes
       at Serial Port greyed until step 4.
    4. **Refnums with classes and the Property Node**, then the Invoke Node, in their own DT: classes Instr (VISA) and
@@ -528,7 +534,8 @@ runs slowly.
 - Starting Node's workers is expensive (~4.5 s of CPU for 28, plus ~2.3 s in their first Run): it weighs on the
   command line, which makes a pool for each run, and on the tests.
 - The test "las ramas independientes…" fails in about one full `npm test` out of two, since the suite now starts
-  pools in parallel; it passes on its own. Make it independent of the load.
+  pools in parallel; it passes on its own. Make it independent of the load. So does "un control sin entradas se lee
+  al empezar…" (seen on 2026-10-26: it changes the control after 10 ms, which a loaded Run may not reach first).
 - Local variables of controls, which would let several loops read one large control at once (the lock allows it).
 
 **Postponed**, but not forgotten: the icon editor (every VI keeps the standard icon), Change to … (half captured, see M1), the *Adapt To Entered Data* switch, the

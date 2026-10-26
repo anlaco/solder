@@ -171,7 +171,13 @@ export function aspecto(t) {
   if (esError(t)) return { color: COLORES.error, dimension: 0, error: true };
   const dimension = dimensionsOf(t);
   const base = esArray(t) ? aspecto(t.array).color : colorEscalar(t);
-  return { color: base, dimension };
+  // A path, alone or in an array, is dashed three on and one off in its colour (measured, reports/2026-10-26-path-type.md §2).
+  return { color: base, dimension, ...(isPathOrArrayOfPaths(t) ? { dashed: true } : {}) };
+}
+
+/** Is this type a path, or an array whose elements are paths? */
+function isPathOrArrayOfPaths(t) {
+  return esArray(t) ? isPathOrArrayOfPaths(t.array) : t === PATH;
 }
 
 /**

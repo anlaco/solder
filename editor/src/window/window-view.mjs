@@ -145,6 +145,28 @@ const REJILLAS = {
   "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access": { columnas: 4, celdas: { "visa-peek-8": [1, 0], "visa-poke-8": [2, 0] } },
   "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial": { columnas: 4, celdas: {} },
   "palette.functions.instrument-io.serial": { columnas: 4, celdas: {} },
+  // Functions ▸ Programming ▸ File I/O and its subpalettes, from labview-captures/file-io/ (reports/2026-10-26-file-io-palette.md §1-2).
+  // The top level is 6 rows of 4: Waveform File I/O alone at the start of the last row and Advanced File Functions at its end.
+  "palette.functions.programming.file-io": { columnas: 4, celdas: { "waveform-file-i-o": [5, 0], "advanced-file-functions": [5, 3] } },
+  "palette.functions.programming.file-io.file-constants": { columnas: 3, celdas: {} },
+  // Configuration File VIs: 6 columns; the second row has Get Key Names, Get Section Names and, after a gap, Not A Config Data Refnum.
+  "palette.functions.programming.file-io.configuration-file-vis": { columnas: 6, celdas: { "get-key-names-vi": [1, 1], "not-a-config-data-refnum-vi": [1, 4] } },
+  // TDM Streaming: 4 columns; its third row ends with a gap and the folder Advanced TDMS.
+  "palette.functions.programming.file-io.tdm-streaming": { columnas: 4, celdas: { "advanced-tdms": [2, 3] } },
+  // Advanced TDMS: 5 columns; the third row has folders (only the first two were read).
+  "palette.functions.programming.file-io.tdm-streaming.advanced-tdms": { columnas: 5, celdas: { "tdms-advanced-synchronous-i-o": [2, 0] } },
+  // Storage/DataPlugin: 4 columns; Delete Data.vi sits at the end of the second row, after a gap.
+  "palette.functions.programming.file-io.storage-dataplugin": { columnas: 4, celdas: { "delete-data-vi": [1, 3] } },
+  // Advanced Storage: 3 columns; the first row has two VIs and a gap, the second row starts with Set Property.vi.
+  "palette.functions.programming.file-io.storage-dataplugin.advanced-storage": { columnas: 3, celdas: { "set-property-vi": [1, 0] } },
+  "palette.functions.programming.file-io.zip": { columnas: 3, celdas: {} },
+  "palette.functions.programming.file-io.xml": { columnas: 1, celdas: {} },
+  "palette.functions.programming.file-io.xml.labview-schema": { columnas: 2, celdas: {} },
+  "palette.functions.programming.file-io.waveform-file-i-o": { columnas: 3, celdas: {} },
+  // Advanced File Functions: 6 columns and 7 rows; row 5 is the path functions, row 6 ends with the folders Datalog and Packed Library.
+  "palette.functions.programming.file-io.advanced-file-functions": { columnas: 6, celdas: {} },
+  "palette.functions.programming.file-io.advanced-file-functions.datalog": { columnas: 3, celdas: { "read-datalog": [1, 0] } },
+  "palette.functions.programming.file-io.advanced-file-functions.packed-library": { columnas: 3, celdas: {} },
 };
 const REJILLA_POR_DEFECTO = { columnas: 6, celdas: {} };
 
