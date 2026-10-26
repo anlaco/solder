@@ -114,7 +114,9 @@ const IMPORTACIONES = [
 ];
 
 /** Los nodos que tardan: cada uno corre en su clump y cede mientras espera. */
-export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "simple-error-handler", "visa-open", "visa-write", "visa-read", "visa-close"]);
+/** The VISA functions (DT-066): each waits for an instrument, and a Run that has one needs the instrument I/O. */
+const VISA_FUNCTIONS = new Set(["visa-open", "visa-write", "visa-read", "visa-close"]);
+export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "simple-error-handler", ...VISA_FUNCTIONS]);
 const idImport = (nombre) => IMPORTACIONES.findIndex((i) => i.nombre === nombre);
 /** The imports that may park the clump that calls them (DT-063 §8): the dialogs, the debugger and VISA, which wait for the outside. */
 const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error", "visa_open", "visa_write", "visa_read", "visa_close"].map(idImport);
@@ -2245,6 +2247,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       k.cuerpo.push(...code, ...debugHook(id, []));
       return;
     }
+    if (VISA_FUNCTIONS.has(n.tipo)) module.usesInstrumentIo = true;
     const emitir = n.tipo === "subvi" ? (e) => callSubVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subVIControl(e, asSubVI.get(n.name)) : BLOQUES[n.tipo];
     if (!emitir) return errores.push({ nodo: id, motivo: `The compiler cannot emit "${nombre}" (${n.tipo}) yet.` });
     const e = { nodo: n, cat, tIn, tOut, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex };
@@ -2777,5 +2780,5 @@ function assemble(module, vi) {
     ],
   };
   const plan = (lista) => lista.map((k) => ({ deps: [...k.deps], largo: k.largo }));
-  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), disposicionVisa: disposicionCompleta(VISA_RESOURCE_LAYOUT), debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, frames };
+  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), disposicionVisa: disposicionCompleta(VISA_RESOURCE_LAYOUT), usesInstrumentIo: !!module.usesInstrumentIo, debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, frames };
 }

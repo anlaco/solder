@@ -9,7 +9,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, BrowserWindow, dialog, ipcMain, Menu, protocol, screen } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, MessageChannelMain, protocol, screen, utilityProcess } from "electron";
 import { OLD_VI_EXTENSION, VI_EXTENSION, isVIFile, pathKey, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey } from "../src/common/vi-paths.mjs";
 import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
@@ -19,6 +19,7 @@ import { CHOSEN_PANEL_STYLE_ROUTE, PANEL_STYLES, chosenPanelStyleName } from "..
 import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from "../src/getting-started/start-state.mjs";
 import { WINDOW_KINDS, createRegistry, isDirty, recordChange, recordSave, viName, windowTitle } from "./vi-registry.mjs";
 import { readWindowStyle, watchWindowStyle } from "./window-style.mjs";
+import { createInstrumentIoProcess } from "./instrument-io-process.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EDITOR = path.resolve(HERE, "..");
@@ -539,7 +540,20 @@ function handleRequests() {
   });
   // Ctrl+T: Window ▸ Tile Left and Right (REPORT.md §4).
   ipcMain.on("vi:tile", (event) => tileWindows(openOf(event)));
+  // A Run that talks to instruments gets its own port to the I/O process (DT-065 §3).
+  ipcMain.on("io:connect", (event) => event.sender.postMessage("io:port", null, [instrumentIo.connect()]));
 }
+
+// Solder's VISA runs in a process of its own, so that a fault of its native code does not end the editor.
+// When it ends, every window is told: a Run waiting for an instrument fails instead of hanging.
+const instrumentIo = createInstrumentIoProcess({
+  fork: () => utilityProcess.fork(path.join(HERE, "io-process.mjs"), [], { serviceName: "Solder instrument I/O" }),
+  createChannel: () => new MessageChannelMain(),
+  onExit: () => {
+    if (quitting) return;
+    for (const window of BrowserWindow.getAllWindows()) window.webContents.send("io:exited");
+  },
+});
 
 /** The VI file named on the command line: a double click on a file in the system's file manager starts Solder with it. */
 const viFileInArguments = (argv) => argv.slice(1).find((argument) => isVIFile(argument) && !argument.startsWith("-"));
@@ -558,7 +572,10 @@ app.whenReady().then(async () => {
   handleRequests();
   // SOLDER_ABRIR=<file.sdg>: starts with that VI open instead of a new one (for the comparisons of capturing-labview.md §5).
   await loadStartState();
-  app.on("before-quit", () => (quitting = true));
+  app.on("before-quit", () => {
+    quitting = true;
+    instrumentIo.stop();
+  });
   // LabVIEW starts on its Getting Started window; started with a VI file it opens only that VI (REPORT.md §3).
   // The captures for the comparisons start on a new VI.
   const fileToOpen = process.env.SOLDER_ABRIR ?? viFileInArguments(process.argv);

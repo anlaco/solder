@@ -2732,7 +2732,8 @@ addon, which the editor runs in an Electron `utilityProcess`. Solder does not de
 |-----------|-----------|--------|
 | Read stops at the count, at the termination character when enabled, or at the timeout, with LabVIEW's codes | `native/solder-io/tests/socket_session.rs` against a local responder | **Verified** on a TCP socket (2026-10-25); by hand against Crucible's Keithley the addon gave LabVIEW's Q1: 27 bytes, the timeout code, 2026 ms |
 | The addon answers from Node without blocking its thread | `test/native/solder-io.test.mjs` | **Verified** |
-| A fault of the addon does not end the editor | — | **Unverified**: the `utilityProcess` does not exist yet |
+| A fault of the addon does not end the editor | `test/end-to-end/io-process.test.mjs`: the I/O process, a real `utilityProcess`, is killed with SIGSEGV while Electron's main process goes on, and the next connection starts a new one that answers | **Verified** (2026-10-26; skipped where Electron has no display) |
+| A Run waiting for an instrument fails when the I/O process ends | `test/core/visa.test.mjs`, through a message port | **Verified** |
 
 ## DT-066
 
@@ -2772,7 +2773,10 @@ Write, Read and Close are compiled as external waits that the Run's coordinator 
 
 ### Consequences
 
-- The editor's palettes, the VISA resource name control and its wire are still to do; so is the `utilityProcess`.
+- The editor's palettes, the VISA resource name control and its wire are still to do. The `utilityProcess` exists
+  (2026-10-26): the main process starts it with the first Run that has a VISA function (`usesInstrumentIo`), and
+  each such Run gets its own `MessagePort` to it, which the page hands to the run worker. A packaged Solder does not
+  carry the addon yet; its I/O process then answers every operation with that error.
 - The sessions a Run opens by name stay open after it. Whether LabVIEW closes a VI's VISA sessions when it stops is
   **unverified**, and so are: a refnum 0 on entry (LabVIEW gives a name a refnum as soon as it is set), Open with a
   nonzero timeout, access mode or duplicate session, which status wins when a warning comes in and the function

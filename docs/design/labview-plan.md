@@ -466,8 +466,13 @@ array or string read by a local variable while another loop writes it is never t
    resource name type (`visa-resource`), VISA Open, Write, Read and Close in the catalog and the compiler, each an
    external wait that the Run's coordinator answers through the addon, on one thread and on a pool, with LabVIEW's
    measured edges ([`2026-10-26-visa-edges.md`](../../labview-captures/reports/2026-10-26-visa-edges.md): auto-open
-   by name, Close of a closed session is a warning); the command line loads the addon. 848 tests green. Next: the
-   `utilityProcess` in the editor, then the palettes, the VISA resource name control and constant and their wire.*
+   by name, Close of a closed session is a warning); the command line loads the addon. 848 tests green.*
+   *The editor's I/O process done on 2026-10-26 (DT-065 §3): a `utilityProcess` started by the first Run with a VISA
+   function and kept for the next ones, a `MessagePort` per Run handed to the run worker
+   (`core/runtime/io-protocol.mjs`); a crash of it ends only it, and a Run waiting for an instrument then fails.
+   Checked in real Electron against Crucible and by `test/end-to-end/io-process.test.mjs`. 854 tests green.
+   Next: the palettes, the VISA resource name control and constant and their wire, then trying a Run with VISA in the
+   editor; packaging the addon (Windows included) goes with the next release.*
 2. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the firmware,
    and first served by a Crucible profile of it.
 3. **A DAQmx-like layer** over the ESP32, with its own DT after measuring DAQmx with a simulated NI device.

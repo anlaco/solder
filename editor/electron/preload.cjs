@@ -70,6 +70,18 @@ contextBridge.exposeInMainWorld("solder", {
   },
   /** This VI's window style changed on disk, or the VI was saved next to another one: `callback(text)`. */
   alCambiarEstiloVentana: (callback) => ipcRenderer.on("vi:window-style", (_event, text) => callback(text)),
+  /**
+   * Solder's VISA for a Run (DT-065 §3). A port cannot cross the context bridge, so it reaches the page as a
+   * window message `{ solderIoPort: true }` with the port in its `ports`.
+   */
+  io: {
+    /** Asks for a port to the instrument I/O process. */
+    conectar: () => ipcRenderer.send("io:connect"),
+    /** The I/O process ended: `callback()`. A Run waiting for an instrument must fail. */
+    alTerminar: (callback) => ipcRenderer.on("io:exited", () => callback()),
+  },
   /** Some VI was saved, at this absolute path: `callback({ id, key })`. The callers of a saved subVI must see its new connector. */
   alGuardar: (callback) => ipcRenderer.on("vi:saved", (_event, saved) => callback(saved)),
 });
+
+ipcRenderer.on("io:port", (event) => window.postMessage({ solderIoPort: true }, "*", event.ports));

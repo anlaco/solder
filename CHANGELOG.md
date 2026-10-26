@@ -16,7 +16,8 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   command line, against a TCP socket instrument, with LabVIEW's codes and
   behavior: a Read keeps what arrived at a timeout, Write and Read on a name
   never opened open it, and closing a closed session is a warning (DT-066). The
-  editor does not offer them yet.
+  editor does not offer them yet; when it does, they will run in a process of
+  their own, so that a fault in the instrument code cannot close the editor.
 
 ## 0.6.0-beta — 2026-10-25
 

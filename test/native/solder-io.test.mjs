@@ -4,33 +4,14 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createServer } from "node:net";
+import { IDENTITY, startInstrument } from "../instrument.mjs";
 import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
 
-const IDENTITY = "Solder,Test Instrument,0,1.0\n";
 const VI_SUCCESS_MAX_CNT = 1073676294;
 const VI_ERROR_TMO = -1073807339;
 const VI_ERROR_INV_OBJECT = -1073807346;
 const TEST_TIMEOUT_MS = 200;
 const TICK_MS = 10;
-
-/** An instrument on a free local port that answers `*IDN?`; resolves to its resource string and a way to stop it. */
-async function startInstrument() {
-  const server = createServer((connection) => {
-    let pending = "";
-    connection.on("data", (chunk) => {
-      pending += chunk;
-      let newline;
-      while ((newline = pending.indexOf("\n")) >= 0) {
-        if (pending.slice(0, newline).trim() === "*IDN?") connection.write(IDENTITY);
-        pending = pending.slice(newline + 1);
-      }
-    });
-  });
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const resource = `TCPIP0::127.0.0.1::${server.address().port}::SOCKET`;
-  return { resource, stop: () => server.close() };
-}
 
 test("solder-io opens, writes, reads and closes a socket with VISA's codes", async () => {
   const io = loadSolderIo();

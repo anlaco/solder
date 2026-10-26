@@ -431,6 +431,9 @@ async function ejecutarVI({ stepFirst = false } = {}) {
   if (errorRows().length) return openErrorList();
   const c = compilar(g, cat, { name: currentVIName() });
   if (c.errores) return window.solder?.avisar("The VI cannot run.", c.errores.map((e) => e.motivo).join("\n"));
+  // A VI that talks to instruments gets a port to the I/O process for this Run (DT-065 §3).
+  const ioPort = c.usesInstrumentIo ? await instrumentIoPort() : null;
+  if (ejecutando) return ioPort?.close();
   const debugging = allowsDebugging(g) ? { plan: (debugPlan = buildDebugPlan(g, c.debugNodes, ctx, inv)), config: DS.controllerConfig(debug, g), stepFirst } : null;
   if (!trabajador) {
     trabajador = new Worker(new URL("./run-worker.mjs", import.meta.url), { type: "module" });
@@ -441,8 +444,30 @@ async function ejecutarVI({ stepFirst = false } = {}) {
   lanzado = true;
   canal.postMessage({ ejecutando: true });
   modoRun(true);
-  trabajador.postMessage({ orden: "run", clave: viKey, compilado: runnableVI(c), depuracion: debugging, valores: valoresDeControles(g), separador, charts: g.nodos.filter((n) => n.tipo === "waveform-chart").map((n) => n.id), poolPorts }, poolPorts);
+  const transferred = ioPort ? [...poolPorts, ioPort] : poolPorts;
+  trabajador.postMessage({ orden: "run", clave: viKey, compilado: runnableVI(c), depuracion: debugging, valores: valoresDeControles(g), separador, charts: g.nodos.filter((n) => n.tipo === "waveform-chart").map((n) => n.id), poolPorts, ioPort }, transferred);
 }
+
+/**
+ * A port to the instrument I/O process, which the main process sends as a window message because a port
+ * cannot cross the context bridge (preload.cjs). Outside Electron there is none: the Run says so if it
+ * reaches a VISA function.
+ */
+function instrumentIoPort() {
+  if (!window.solder?.io) return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const receive = (event) => {
+      if (event.source !== window || !event.data?.solderIoPort) return;
+      window.removeEventListener("message", receive);
+      resolve(event.ports[0]);
+    };
+    window.addEventListener("message", receive);
+    window.solder.io.conectar();
+  });
+}
+
+// When the I/O process ends, a Run waiting for an instrument fails instead of waiting for ever.
+window.solder?.io?.alTerminar(() => trabajador?.postMessage({ orden: "io-exited" }));
 
 /**
  * Abort: el VI para en el acto, aunque esté esperando. Si en medio segundo el

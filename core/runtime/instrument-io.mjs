@@ -2,8 +2,8 @@
 // clump parks, the Run's coordinator asks the I/O for it here, writes the outputs into the shared
 // memory and answers, and the clump is woken. No thread of the Run ever blocks on an instrument.
 //
-// `io` is Solder's VISA: the addon in Node (native/solder-io-node), the editor's I/O process later.
-// Its operations answer promises with VISA's status codes.
+// `io` is Solder's VISA: the addon in Node (native/solder-io-node), or the editor's I/O process through
+// a message port (io-protocol.mjs). Its operations answer VISA's status codes, at once or by a promise.
 
 /** VISA's VI_SUCCESS. A positive status is a warning, a negative one an error. */
 const VI_SUCCESS = 0;
@@ -68,12 +68,13 @@ export function createVisaFunctions({ io, host, memory, compilado }) {
   // Write and Read on a name never opened, or whose session was closed, open it from the name and go on.
   // The sessions opened here, by name, for this Run (whether LabVIEW closes them when the VI stops: unverified).
   const sessionsByName = new Map();
-  const isLive = (visa, session) => session !== NO_SESSION && visa.attributes(session).status === VI_SUCCESS;
+  const isLive = async (visa, session) => session !== NO_SESSION && (await visa.attributes(session)).status === VI_SUCCESS;
   /** The live session of `resource`, opened from its name if it has none: `{ session }` or `{ status }` when that Open failed. */
   const sessionOf = async (visa, resource, resourceOut) => {
     const name = resource["resource name"];
-    const live = [resource.session, sessionsByName.get(name) ?? NO_SESSION].find((session) => isLive(visa, session));
-    if (live !== undefined) return useSession(resource, resourceOut, live);
+    for (const session of [resource.session, sessionsByName.get(name) ?? NO_SESSION]) {
+      if (await isLive(visa, session)) return useSession(resource, resourceOut, session);
+    }
     const opened = await visa.open(name);
     if (opened.status < 0) return { status: opened.status };
     sessionsByName.set(name, opened.session);
@@ -99,7 +100,7 @@ export function createVisaFunctions({ io, host, memory, compilado }) {
       visaFunction("VISA Write", { resourceIn, errorIn, resourceOut, countOut, errorOut, chainIndex }, async (visa, resource) => {
         const { session, status: openStatus } = await sessionOf(visa, resource, resourceOut);
         if (openStatus !== undefined) return openStatus;
-        const { count, status } = await visa.write(session, Buffer.from(readBytes(buffer)));
+        const { count, status } = await visa.write(session, readBytes(buffer));
         writeCount(countOut, count);
         return status;
       }),
@@ -114,8 +115,8 @@ export function createVisaFunctions({ io, host, memory, compilado }) {
       }),
     // Closing a session that is not open is a warning, not an error (measured).
     visa_close: (resourceIn, errorIn, errorOut, chainIndex) =>
-      visaFunction("VISA Close", { resourceIn, errorIn, resourceOut: 0, errorOut, chainIndex }, (visa, resource) => {
-        if (!isLive(visa, resource.session)) return VI_WARN_NULL_OBJECT;
+      visaFunction("VISA Close", { resourceIn, errorIn, resourceOut: 0, errorOut, chainIndex }, async (visa, resource) => {
+        if (!(await isLive(visa, resource.session))) return VI_WARN_NULL_OBJECT;
         if (sessionsByName.get(resource["resource name"]) === resource.session) sessionsByName.delete(resource["resource name"]);
         return visa.close(resource.session);
       }),

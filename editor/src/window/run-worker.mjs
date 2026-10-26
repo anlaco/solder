@@ -9,6 +9,7 @@
 //        and `debugNodes` (DT-047). `depuracion` is `{ plan, config, stepFirst }` when the page wants
 //        the debugger of this Run: the plan of the diagram (debug-plan.mjs), what it wants now
 //        (debug-controller.mjs `configure`) and whether to stop before the first node (Start Single Stepping).
+//        `ioPort`, when the VI talks to instruments, is this Run's port to the editor's I/O process (DT-065 §3).
 //   { orden: "control", nodo, valor }      a control changed while the VI runs
 //   { orden: "abort" }                     Abort
 //   { orden: "respuesta", id, valor }      what the user answered to a dialog: "continuar" or "parar" in the one of
@@ -16,6 +17,7 @@
 //   { orden: "debug-config", config }      Highlight Execution, Retain Wire Values, probes and breakpoints changed
 //   { orden: "debug-pause" }               the Pause button of a VI that runs
 //   { orden: "debug-resume", modo }        Continue ("continue"), Step Into ("into"), Step Over ("over") or Step Out ("out")
+//   { orden: "io-exited" }                 the I/O process ended: what the Run waits for from an instrument fails
 // It sends:
 //   { escritos: { nodo: valor }, series: { nodo: [valor…] } }   what reaches the indicators, live; a Waveform Chart gets
 //                                          every write, in order (`series`), not only the last one
@@ -37,6 +39,7 @@
 
 import { createDebugController } from "../debugging/debug-controller.mjs";
 import { ejecutar } from "../../../core/runtime/runtime.mjs";
+import { createIoClient } from "../../../core/runtime/io-protocol.mjs";
 
 /**
  * What each top-level VI and its subVIs keep from one Run to the next, by the key of the VI
@@ -54,6 +57,8 @@ let pendingChartWrites = {};
 let chartNodeIds = new Set();
 /** The most that is kept of a chart between two messages: its history (1024 points by default) cannot use more than the last ones. */
 const MAX_BUFFERED_CHART_WRITES = 100000;
+/** Solder's VISA for the Run in progress, through its port to the I/O process (io-protocol.mjs), or `null`. */
+let instrumentIo = null;
 /** The debugger of the Run in progress (debug-controller.mjs), or `null`. */
 let debugController = null;
 /** Los diálogos que esperan al usuario: su id y cómo seguir. */
@@ -121,6 +126,7 @@ onmessage = async ({ data }) => {
     for (const ok of respuestas.values()) ok("parar");
     return respuestas.clear();
   }
+  if (data.orden === "io-exited") return instrumentIo?.fail("The instrument I/O process stopped.");
   if (data.orden !== "run") return;
   valores = { ...data.valores };
   chartNodeIds = new Set(data.charts);
@@ -140,6 +146,9 @@ onmessage = async ({ data }) => {
     alSoltar: (nodo) => postMessage({ soltar: nodo }),
     poolPorts: data.poolPorts,
   };
+  // Solder's VISA, through this Run's port to the editor's I/O process (DT-065 §3).
+  instrumentIo = data.ioPort ? createIoClient(data.ioPort) : null;
+  if (instrumentIo) opciones.io = instrumentIo;
   debugController = data.depuracion ? startDebugger(data) : null;
   if (debugController) opciones.depurador = debugController.hooks;
   try {
@@ -157,5 +166,7 @@ onmessage = async ({ data }) => {
     debugController = null;
     valores = null;
     parar = null;
+    instrumentIo?.disconnect();
+    instrumentIo = null;
   }
 };

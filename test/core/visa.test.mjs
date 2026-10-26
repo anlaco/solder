@@ -5,50 +5,23 @@
 
 import assert from "node:assert/strict";
 import { after, test } from "node:test";
-import { createServer } from "node:net";
+import { MessageChannel } from "node:worker_threads";
 
 import { compilar } from "../../core/compiler/compiler.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { createNodePool } from "../../core/runtime/node-pool.mjs";
 import { ERROR } from "../../core/model/types.mjs";
+import { IDENTITY, startInstrument } from "../instrument.mjs";
 import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
+import { createIoClient, serveSolderIo } from "../../core/runtime/io-protocol.mjs";
 import { CAT, buildVI } from "../helpers.mjs";
 
-const IDENTITY = "Solder,Test Instrument,0,1.0\n";
 const VI_SUCCESS_MAX_CNT = 1073676294;
 const VI_WARN_NULL_OBJECT = 1073676418;
 const THREADS = 2;
 
 const pool = createNodePool(THREADS);
 after(() => pool.close());
-
-/**
- * An instrument on a free local port that answers `*IDN?`; resolves to its resource string and a way to
- * stop it, which also drops the connections of sessions a VI left open.
- */
-async function startInstrument() {
-  const connections = new Set();
-  const server = createServer((connection) => {
-    connections.add(connection);
-    connection.on("close", () => connections.delete(connection));
-    let pending = "";
-    connection.on("data", (chunk) => {
-      pending += chunk;
-      let newline;
-      while ((newline = pending.indexOf("\n")) >= 0) {
-        if (pending.slice(0, newline).trim() === "*IDN?") connection.write(IDENTITY);
-        pending = pending.slice(newline + 1);
-      }
-    });
-  });
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const resource = `TCPIP0::127.0.0.1::${server.address().port}::SOCKET`;
-  const stop = () => {
-    server.close();
-    for (const connection of connections) connection.destroy();
-  };
-  return { resource, stop };
-}
 
 /** Open → Write `*IDN?\n` → Read `byteCount` → Close, errors chained, with the read and each error out shown. */
 const identityQuery = (resource, byteCount, { errorIn } = {}) =>
@@ -195,6 +168,44 @@ test("closing a closed session is a warning, and Write and Read after Close open
     assert.deepEqual(shown.closeAgainError, { status: false, code: VI_WARN_NULL_OBJECT, source: "VISA Close" });
     assert.equal(shown.buffer, IDENTITY);
   } finally {
+    instrument.stop();
+  }
+});
+
+/** Solder's VISA served over a message port, as the editor's I/O process serves it to a Run's coordinator. */
+function ioThroughAPort() {
+  const { port1, port2 } = new MessageChannel();
+  serveSolderIo(loadSolderIo(), { onRequest: (listener) => port1.on("message", listener), answer: (message) => port1.postMessage(message) });
+  const client = createIoClient(port2);
+  return { client, close: () => (client.disconnect(), port1.close()) };
+}
+
+test("a Run talks to an instrument through a message port to the I/O, as in the editor", async () => {
+  const instrument = await startInstrument();
+  const io = ioThroughAPort();
+  try {
+    const shown = await run(identityQuery(instrument.resource, IDENTITY.length), { io: io.client, poolPorts: pool.connect() });
+    assert.equal(shown.buffer, IDENTITY);
+    assert.deepEqual(shown.closeError, { status: false, code: VI_SUCCESS_MAX_CNT, source: "VISA Read" });
+  } finally {
+    io.close();
+    instrument.stop();
+  }
+});
+
+test("when the I/O process ends, a Run waiting for an instrument fails instead of hanging", async () => {
+  const instrument = await startInstrument();
+  const io = ioThroughAPort();
+  const LOST_AFTER_MS = 50;
+  try {
+    // More bytes than the instrument sends: the Read waits for its 2 s timeout.
+    const running = run(identityQuery(instrument.resource, 1000), { io: io.client });
+    setTimeout(() => io.client.fail("The instrument I/O process stopped."), LOST_AFTER_MS);
+    const start = performance.now();
+    await assert.rejects(running, /The instrument I\/O process stopped/);
+    assert.ok(performance.now() - start < 1000, "it fails at once, not at the Read's timeout");
+  } finally {
+    io.close();
     instrument.stop();
   }
 });
