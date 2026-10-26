@@ -2823,3 +2823,93 @@ Write, Read and Close are compiled as external waits that the Run's coordinator 
 | With an error in, nothing runs and the outputs give their defaults | `test/core/visa.test.mjs` | **Verified** |
 | Write and Read with no Open, and after a Close, open from the name; a second Close is a warning | `test/core/visa.test.mjs` | **Verified** against LabVIEW's measurements of 2026-10-26 |
 | A Run without I/O fails saying why | `test/core/visa.test.mjs` | **Verified** |
+
+## DT-067
+
+**File I/O: a path is a type of its own, kept as a kind and a list of components and read and written with the rules
+of the system Solder runs on; file refnums and the file functions are external waits served by `solder-io`, which
+does all the file semantics; component names are UTF-8.**
+
+- **Status:** Accepted on 2026-10-26 by the developer. It is step 2 of the order of [DT-064](#dt-064) (amendment of
+  2026-10-26) and builds on [DT-042](#dt-042) (the data space), [DT-043](#dt-043) (the error cluster and its codes),
+  [DT-063](#dt-063) §8 (external waits), [DT-065](#dt-065) (`solder-io` and the I/O process) and
+  [DT-066](#dt-066) (a typed reference laid out as a cluster).
+- **Why:** measured in LabVIEW on 2026-10-26 (`labview-captures/reports/2026-10-26-file-io-palette.md`,
+  `-path-type.md`, `-file-io-behavior.md`): a path is not text. It never coerces to or from a string (the wire
+  breaks), it keeps "empty" apart from `<Not A Path>`, and Path to Array of Strings shows it as a kind (absolute,
+  relative, Not A Path) plus components. LabVIEW users rely on exactly that: the community's standing advice is to
+  keep paths as paths, so that LabVIEW changes the separator when a VI moves to another system, and their complaints
+  are about paths built as text, about losing `<Not A Path>` through a string, and about non-ASCII names, which
+  LabVIEW stores in bytes with a 255-byte limit per component (forum research of 2026-10-26, sources in the session
+  of that day).
+
+### Decision
+
+1. **The type** is `"path"` (`PATH` in `core/model/types.mjs`), a scalar name in the catalog, the graph and the
+   `.sdg`. The compiler lays it out, and only there, as the cluster `{ kind: U8, components: 1D array of string }`,
+   with kind 0 = absolute, 1 = relative, 2 = Not A Path, the numbering Path Type gives (measured). The empty path is
+   absolute with no components; the relative "." is relative with no components; Not A Path has no components; a
+   ".." component is kept as an empty string, as Path to Array of Strings shows it.
+2. **The `.sdg` stores a path as its kind and components**, never as text, so a VI saved on one system opens with
+   the same path on another, as LabVIEW recompiles path constants for its target.
+3. **The rules of the system Solder runs on.** Parsing text into a path (String To Path, typing into a control),
+   writing it out (Path To String, the panel, error sources) and comparing paths follow the host:
+   - **Windows:** the rules measured on 2026-10-26: `\` is the only separator (`/` is an ordinary character), a
+     drive is its first component (`C:\a` → ["C","a"]), a UNC share is one component (`\\server\share`), a trailing
+     separator and a doubled one are dropped, `\\?\` is removed, the text `<Not A Path>` gives Not A Path, and Equal?
+     ignores case.
+   - **Linux and macOS:** `/` as separator and `/` as root; the rest (how the root and the empty path differ, whether
+     Equal? keeps case) is **unverified** until it is measured in LabVIEW for Linux, and is written so in the code.
+   Build Path and Strip Path work on the components and are the same everywhere (measured cases: an absolute or
+   empty name, or a Not A Path base, give Not A Path; an empty base with "b" gives the root "b"; Strip Path of a root
+   gives the empty path and the drive as name; of a single relative name, "." and the name).
+4. **Component names are UTF-8**, like every Solder string (DT-042 §6), with no byte limit; `solder-io` turns them
+   into the system's own names (wide names on Windows). A VI whose names are ASCII behaves as in LabVIEW; beyond
+   ASCII, Solder does what LabVIEW users ask for instead of reproducing a limit. This is the one deliberate departure.
+5. **The file refnum** is a type of its own, `"file-refnum"`, laid out as a U32; 0 is Not A Refnum. Each Open gives
+   a new nonzero number (LabVIEW's grow by 0x100000; the values themselves are not reproduced).
+6. **`solder-io` gains files and does all their semantics**, so every host (Node today, wasmtime later) behaves the
+   same: the six operations and three access modes of Open/Create/Replace File with their codes (7, 8, 10, 43), the
+   position at the start after an open, Write and Read at the current position, Convert EOL (on by default: any
+   end of line is written as the system's, CRLF on Windows; on reading, CR, LF, CRLF and LFCR become LF), Read Lines,
+   reading past the end (error 4 with the data read), Close File of a closed refnum (error 1), Get File Size, Delete.
+   The end of line written on Linux is LF: **unverified**.
+7. **Each file function is an external wait** (DT-063 §8, as in DT-066 §3): the clump parks, the coordinator asks the
+   I/O process and writes the outputs into the shared memory. The error sources are LabVIEW's as measured:
+   `"<function> in <VI>.vi"`, a line break and the path (or `<Not A Path>`); Close File without the path.
+8. **The dialogs** (a `file` input left unwired, op 5's confirmation, File Dialog) are external waits answered by the
+   editor with the system's own dialog and LabVIEW's titles (measured: "Choose or enter path of text file to write",
+   "… to read"). The command line has no dialogs: it answers cancelled, with error 43, and says why.
+9. **Write and Read Delimited Spreadsheet** are compiled as what they are in LabVIEW: Array To Spreadsheet String or
+   Spreadsheet String To Array (the format engine of Format Into String and Scan From String, already in the core)
+   plus a file write or read. Their measured edges are kept: the instance follows the data (DBL with format unwired is
+   `%.3f`, I64 `%d`), `%d` rounds half to even, every row ends with the system's end of line, a ragged file is padded
+   with 0, EOF? is true only when more rows are asked for than exist (with warning 4), and their error sources are
+   LabVIEW's subVI chains. **Before they are written**, LabVIEW's localized decimal point is measured (the Spanish VM
+   wrote and read "."; the option behind it is not identified).
+10. **In this order:** (a) the type, its wire, terminals, constants (Path, Empty Path, Not A Path), File Path Control
+    and Indicator, and Build Path, Strip Path, Path To String, String To Path, Path Type, Path to Array of Strings,
+    Array of Strings to Path, Empty String/Path? and Not A Number/Path/Refnum? on paths, Equal? on paths; (b) the file
+    refnum, Open/Create/Replace File, Close File, Write to Text File, Read from Text File, Get File Size, Delete;
+    (c) Array To Spreadsheet String, Spreadsheet String To Array and the two Delimited VIs; (d) the dialogs and File
+    Dialog. Binary files, Format Into File and Scan From File, Configuration File VIs and the folder functions come
+    later; TDMS, Storage/DataPlugin, Zip, XML, Datalog and Waveform File I/O are greyed with their reason (DT-035).
+
+### Consequences
+
+- `core/runtime/error-codes.mjs` gains the codes 1, 4, 7, 8, 10 and 43 with texts of our own (DT-043 §5).
+- A path's look (teal wire, its pattern, terminals, the three constants, the control and indicator with their browse
+  button) goes into `spec/06` from `labview-captures/reports/2026-10-26-path-type.md` as each piece is drawn.
+- Measured but not settled: Read Lines with `count` unwired, whether Close File closes when an error comes in, the
+  Path Type enum's item names, a GUI-dropped control's label, the system File Path Control. They are written
+  "unverified" where the code meets them.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Build Path, Strip Path, String To Path, Path To String, Path Type and Equal? give LabVIEW's values on Windows | Tests with the measured tables of `2026-10-26-path-type.md` | **Unverified**: nothing done yet |
+| A path keeps its kind and components through the `.sdg` | Round-trip test | **Unverified** |
+| Open/Create/Replace, Write and Read Text File and Close File give LabVIEW's bytes, positions and codes | `native/solder-io` tests and `test/core` tests with the measured tables of `2026-10-26-file-io-behavior.md` | **Unverified** |
+| Write and Read Delimited Spreadsheet give LabVIEW's bytes and arrays | Tests with the same report's tables | **Unverified** |
+| Linux and macOS path rules and end of line | Measured in LabVIEW for Linux | **Unverified** |

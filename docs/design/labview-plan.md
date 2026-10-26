@@ -488,6 +488,11 @@ array or string read by a local variable while another loop writes it is never t
    2. **File I/O:** the Path type (control, constant, wire, Build Path, Strip Path), text and delimited spreadsheet
       files, the file dialogs; binary files later. Measured in LabVIEW first; each function is an external wait served
       by the I/O process (DT-065).
+      *Measured on 2026-10-26 ([`file-io-palette`](../../labview-captures/reports/2026-10-26-file-io-palette.md),
+      [`path-type`](../../labview-captures/reports/2026-10-26-path-type.md),
+      [`file-io-behavior`](../../labview-captures/reports/2026-10-26-file-io-behavior.md)) and decided in DT-067:
+      paths as a kind plus components with the host's rules, UTF-8 names, files in `solder-io`. Next: its point 10 (a),
+      the Path type and its functions.*
    3. **VISA over serial:** ASRL resources and VISA Configure Serial Port, with a serial transport in Crucible; Bytes
       at Serial Port greyed until step 4.
    4. **Refnums with classes and the Property Node**, then the Invoke Node, in their own DT: classes Instr (VISA) and
