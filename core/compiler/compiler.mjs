@@ -23,7 +23,7 @@
 import { connectorPorts, ejecutable, nodesWithUndefinedInput, orden, requerido, tipos, undefinedArrayNodes } from "../model/graph.mjs";
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
-import { ERROR, NUMERICOS, dimensionsOf, esArray, esCluster, esEntero, esEnum, esNumerico, flattenArrayValue, limites, representacion } from "../model/types.mjs";
+import { ERROR, NUMERICOS, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esEntero, esEnum, esNumerico, flattenArrayValue, inMemory, limites, representacion } from "../model/types.mjs";
 import { codificar } from "./wasm-encoder.mjs";
 import { CELDAS, CIMA, EXPORTADAS, MEMORY_FUNCTION_NAMES, bloqueCadena, funcionesMemoria, i32 } from "./linear-memory.mjs";
 import { makeStackless } from "./stackless.mjs";
@@ -104,13 +104,20 @@ const IMPORTACIONES = [
   // sitios. Da «error?». Params: error in, código, handle del source, tipo de diálogo, búfer de
   // «error out», celda de «source out», celda de «message».
   { modulo: "tiempo", nombre: "dialogo_error", params: ["i32", "i32", "i32", "i32", "i32", "i32", "i32"], results: ["i32"] },
+  // Solder's VISA (DT-065 §4, DT-066): each function parks its clump while the Run's coordinator talks to the
+  // instrument, which writes the outputs into their places (core/runtime/instrument-io.mjs). By address:
+  // the resource name in, the error in, then the outputs; the last parameter is the call chain's index.
+  { modulo: "io", nombre: "visa_open", params: ["i32", "i32", "i32", "i32", "i32", "i32"], results: ["i32"] },
+  { modulo: "io", nombre: "visa_write", params: ["i32", "i32", "i32", "i32", "i32", "i32", "i32"], results: ["i32"] },
+  { modulo: "io", nombre: "visa_read", params: ["i32", "i32", "i32", "i32", "i32", "i32", "i32", "i32"], results: ["i32"] },
+  { modulo: "io", nombre: "visa_close", params: ["i32", "i32", "i32", "i32"], results: ["i32"] },
 ];
 
 /** Los nodos que tardan: cada uno corre en su clump y cede mientras espera. */
-export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "simple-error-handler"]);
+export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "simple-error-handler", "visa-open", "visa-write", "visa-read", "visa-close"]);
 const idImport = (nombre) => IMPORTACIONES.findIndex((i) => i.nombre === nombre);
-/** The imports that may park the clump that calls them (DT-063 §8): the dialogs and the debugger, which wait for the outside. */
-const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error"].map(idImport);
+/** The imports that may park the clump that calls them (DT-063 §8): the dialogs, the debugger and VISA, which wait for the outside. */
+const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error", "visa_open", "visa_write", "visa_read", "visa_close"].map(idImport);
 
 const ins = (op, arg) => (arg === undefined ? { op } : { op, arg });
 
@@ -460,6 +467,35 @@ function readRow(t, record) {
 const formatRows = (e, prefix) => e.cat.puertos(e.nodo).in.map((port, index) => ({ port, index })).filter(({ port }) => port.name.startsWith(prefix));
 
 /** Format Into String: resulting string and error out (the host writes both). */
+/**
+ * A VISA function (DT-066): `inputs` are the indices of what goes to the host before the error in (the
+ * resource name and the function's own value), then the error in. Its outputs get
+ * places of their own, the host writes them while the clump is parked, and they are left on the stack in
+ * the catalog's order: resource name out, read buffer, return count, error out.
+ */
+function visaFunction(e, importName, inputs, { resourceOut, buffer, count }) {
+  const places = {
+    resourceOut: resourceOut ? e.bufer(disposicion(VISA_RESOURCE_LAYOUT).tam) : null,
+    buffer: buffer ? e.celda() : null,
+    count: count ? e.bufer(4) : null,
+    errorOut: e.bufer(disposicion(ERROR).tam),
+  };
+  const errorIn = e.cat.puertos(e.nodo).in.findIndex((port) => port.name === "error-in");
+  const addresses = [places.resourceOut, places.buffer, places.count, places.errorOut].filter((place) => place !== null);
+  const outputs = [
+    ...(resourceOut ? [ins("i32.const", places.resourceOut)] : []),
+    ...(buffer ? [ins("i32.const", places.buffer)] : []),
+    ...(count ? [ins("i32.const", places.count), ins("i32.load")] : []),
+    ins("i32.const", places.errorOut),
+  ];
+  return [
+    ...inputs.flatMap((index) => e.entrada(index)), ...e.entrada(errorIn),
+    ...addresses.map((address) => ins("i32.const", address)), ins("i32.const", e.chainIndex),
+    ins("call", idImport(importName)), ins("drop"),
+    ...outputs,
+  ];
+}
+
 function formatIntoString(e) {
   const rows = formatRows(e, "input-");
   const buffer = e.bufer(rows.length * FORMAT_ROW_BYTES);
@@ -674,6 +710,11 @@ const BLOQUES = {
       ins("i32.const", b),
     ];
   },
+  "visa-resource-constant": (e) => [ins("i32.const", e.clusterConstante(VISA_RESOURCE_LAYOUT, { "resource name": e.nodo.config?.value ?? "", session: 0 }))],
+  "visa-open": (e) => visaFunction(e, "visa_open", [0, 1], { resourceOut: true }),
+  "visa-write": (e) => visaFunction(e, "visa_write", [0, 1], { resourceOut: true, count: true }),
+  "visa-read": (e) => visaFunction(e, "visa_read", [0, 1], { resourceOut: true, buffer: true, count: true }),
+  "visa-close": (e) => visaFunction(e, "visa_close", [0], {}),
   "simple-error-handler": (e) => {
     // The host decides everything (core/runtime/runtime.mjs): the dialog waits for the user.
     const [b, src, msg] = [e.bufer(ERR.tam), e.celda(), e.celda()];
@@ -1242,7 +1283,10 @@ function subVIInstance(callee, node, module, callerKey) {
   if (module.instances.has(key)) return module.instances.get(key);
   const slots = new Map();
   const ports = connectorPorts(callee);
-  for (const port of [...ports.in, ...ports.out]) slots.set(port.name, { address: slotFor(port.type, module), type: port.type });
+  for (const port of [...ports.in, ...ports.out]) {
+    const type = inMemory(port.type);
+    slots.set(port.name, { address: slotFor(type, module), type });
+  }
   const callerCell = module.bufer(4, 4);
   const chainIndex = module.callChain.push({ name: viNameOf(callee.key), callerCell }) - 1;
   const compiled = compileVI(callee.g, callee.cat, module, slots, key, chainIndex);
@@ -1309,7 +1353,9 @@ function defaultValueCode(e, t, value) {
  * call to the same instance cannot touch its slots in between.
  */
 function callSubVI(e, instance) {
-  const { in: inputs, out: outputs } = e.cat.puertos(e.nodo);
+  const laidOut = (ports) => ports.map((port) => ({ ...port, type: inMemory(port.type) }));
+  const inputs = laidOut(e.cat.puertos(e.nodo).in);
+  const outputs = laidOut(e.cat.puertos(e.nodo).out);
   const waits = instance.direct === null;
   // A non-reentrant VI serves one call at a time (DT-045): the call enters (waiting while another one
   // is inside) before it writes its inputs, runs the plan, reads its outputs and leaves. Writing the
@@ -1888,6 +1934,12 @@ function newModule() {
   return module;
 }
 
+/** The resolved types of a VI with each terminal's type as it is laid out in memory (`inMemory`). */
+function laidOutInMemory(resolved) {
+  const mapTypes = (types) => new Map([...types].map(([terminal, type]) => [terminal, inMemory(type)]));
+  return { ...resolved, entradas: mapTypes(resolved.entradas), salidas: mapTypes(resolved.salidas) };
+}
+
 /**
  * Compiles one VI into `module`. `asSubVI` is null for the top-level VI, whose
  * controls and indicators are the panel's; for a subVI it maps the name of each
@@ -1895,7 +1947,7 @@ function newModule() {
  * the caller passes inputs and reads outputs (DT-045).
  */
 function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
-  const resueltos = tipos(g, cat);
+  const resueltos = laidOutInMemory(tipos(g, cat));
   if (!ejecutable(g, cat, resueltos)) {
     const errores = [...resueltos.cables.entries()].filter(([, c]) => c.roto).map(([id, c]) => ({ cable: id, motivo: c.roto }));
     const llegan = new Set(g.cables.map((c) => `${c.a.nodo}.${c.a.puerto}`));
@@ -2725,5 +2777,5 @@ function assemble(module, vi) {
     ],
   };
   const plan = (lista) => lista.map((k) => ({ deps: [...k.deps], largo: k.largo }));
-  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, frames };
+  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), disposicionVisa: disposicionCompleta(VISA_RESOURCE_LAYOUT), debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, frames };
 }

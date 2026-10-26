@@ -462,6 +462,12 @@ array or string read by a local variable while another loop writes it is never t
    the measured attributes and codes) and its N-API addon `solder-io-node`, built by `npm test`. Next: the Run's
    coordinator calls it as an external wait (Node first), then the `utilityProcess` in the editor, then the VISA
    resource name type, control and wire and the four functions in the compiler and the palettes.*
+   *External wait and the core of the four functions done on 2026-10-26 (DT-066), on `feature/visa`: the VISA
+   resource name type (`visa-resource`), VISA Open, Write, Read and Close in the catalog and the compiler, each an
+   external wait that the Run's coordinator answers through the addon, on one thread and on a pool, with LabVIEW's
+   measured edges ([`2026-10-26-visa-edges.md`](../../labview-captures/reports/2026-10-26-visa-edges.md): auto-open
+   by name, Close of a closed session is a warning); the command line loads the addon. 848 tests green. Next: the
+   `utilityProcess` in the editor, then the palettes, the VISA resource name control and constant and their wire.*
 2. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the firmware,
    and first served by a Crucible profile of it.
 3. **A DAQmx-like layer** over the ESP32, with its own DT after measuring DAQmx with a simulated NI device.

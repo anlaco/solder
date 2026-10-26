@@ -19,6 +19,7 @@ import { abortedError, createRealHost } from "./scheduler.mjs";
 import { CLUMP, CLUMP_BYTES, HEADER, PARK_KIND, RUN_STATUS, STATE } from "../compiler/pool-scheduler.mjs";
 import { SCHEDULER } from "../compiler/linear-memory.mjs";
 import { PANEL_RECORD } from "../compiler/panel-memory.mjs";
+import { VISA_FUNCTION_NAMES, createVisaFunctions } from "./instrument-io.mjs";
 
 /** The size of one row record of Format Into String and Scan From String in memory (the compiler's FORMAT_ROW_BYTES). */
 const FORMAT_ROW_BYTES = 16;
@@ -209,18 +210,20 @@ export function createHostFunctions({ compilado, separador = ".", memory, export
   // Los clusters (DT-042): campo a campo, según la disposición que da el
   // compilador; sus cadenas, en sus celdas. Un valor de cluster es un objeto con
   // un valor por nombre de campo.
-  const ponerCadena = (celda, texto) => {
-    const bytes = new TextEncoder().encode(String(texto ?? ""));
-    const p = exports().redimensionar(celda, 4 + bytes.length);
-    memoria().setInt32(p, bytes.length, true);
-    new Uint8Array(memory.buffer, p + 4, bytes.length).set(bytes);
+  // A LabVIEW string is bytes: an instrument's answer goes in as it came, text goes in as UTF-8.
+  const putBytes = (cell, bytes) => {
+    const block = exports().redimensionar(cell, 4 + bytes.length);
+    memoria().setInt32(block, bytes.length, true);
+    new Uint8Array(memory.buffer, block + 4, bytes.length).set(bytes);
   };
-  const leerCadena = (handle) => {
+  const readBytes = (handle) => {
     const m = memoria();
-    const p = m.getInt32(handle, true);
-    const n = p ? m.getInt32(p, true) : 0;
-    return new TextDecoder().decode(new Uint8Array(memory.buffer, p + 4, n).slice());
+    const block = m.getInt32(handle, true);
+    const length = block ? m.getInt32(block, true) : 0;
+    return new Uint8Array(memory.buffer, block + 4, length).slice();
   };
+  const ponerCadena = (celda, texto) => putBytes(celda, new TextEncoder().encode(String(texto ?? "")));
+  const leerCadena = (handle) => new TextDecoder().decode(readBytes(handle));
   const ponerCluster = (dir, d, v = {}) => {
     for (const c of d.campos) {
       const x = v[c.nombre];
@@ -475,7 +478,7 @@ export function createHostFunctions({ compilado, separador = ".", memory, export
     return deWasm(atomicScalar(memory, address, tipoWasm(tipo)), tipo);
   };
   const math = { random: Math.random, pow: Math.pow, ...funcionesMath };
-  return { cad, arr, math, ponerCadena, leerCadena, ponerCluster, leerCluster, ponerArray, leerArray, readValue };
+  return { cad, arr, math, putBytes, readBytes, ponerCadena, leerCadena, ponerCluster, leerCluster, ponerArray, leerArray, readValue, functionSource };
 }
 
 /**
@@ -511,7 +514,8 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
 
   let ex = null;
   const memory = new WebAssembly.Memory({ initial: compilado.memoryPages, maximum: MAXIMUM_PAGES, shared: true });
-  const { cad, arr, math, ponerCadena, leerCadena, ponerCluster, leerCluster, ponerArray, leerArray, readValue } = createHostFunctions({ compilado, separador, memory, exports: () => ex });
+  const hostFunctions = createHostFunctions({ compilado, separador, memory, exports: () => ex });
+  const { cad, arr, math, ponerCadena, leerCadena, ponerCluster, leerCluster, ponerArray, leerArray, readValue } = hostFunctions;
   const memoria = () => new DataView(memory.buffer);
   // The controls are records of the panel too: at the start of each turn, what the caller changed in
   // `valores` (the editor's messages, in the worker) is written into them, a string, array or cluster
@@ -633,7 +637,8 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     walkIndicators();
     return whenAnswered(opciones.alDialogoError?.({ ...err, mensaje: texto }), writeOutputs);
   };
-  const dialogs = { error_automatico: automaticErrorDialog, dialogo_error: errorHandlerDialog };
+  const visaFunctions = createVisaFunctions({ io: opciones.io, host: hostFunctions, memory, compilado });
+  const externalWaits = { error_automatico: automaticErrorDialog, dialogo_error: errorHandlerDialog, ...visaFunctions };
   // Debugging (DT-047): the hooks the compiled VI calls while the debug flag is set.
   const readDebugValue = debugValueReader(compilado, { leerCadena, leerCluster, leerArray });
   const valorDepurado = (nodo, salida, valor) => {
@@ -645,7 +650,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     walkIndicators();
     return whenAnswered(depurador?.alNodo(nodo), () => 0);
   };
-  dialogs.debugger_node = debuggerStop;
+  externalWaits.debugger_node = debuggerStop;
   const dep = {
     ...Object.fromEntries(["i32", "i64", "f32", "f64"].map((vt) => [`valor_${vt}`, valorDepurado])),
     nodo: (nodo) => parkOn(debuggerStop(nodo)),
@@ -657,8 +662,9 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     error_automatico: (...args) => parkOn(automaticErrorDialog(...args)),
     dialogo_error: (...args) => parkOn(errorHandlerDialog(...args)),
   };
+  const io = Object.fromEntries(VISA_FUNCTION_NAMES.map((name) => [name, (...args) => parkOn(visaFunctions[name](...args))]));
   const sharedMemory = { [SHARED_MEMORY_IMPORT.modulo]: { [SHARED_MEMORY_IMPORT.nombre]: memory } };
-  const { instance } = await WebAssembly.instantiate(bytes, { ...sharedMemory, tiempo, cad, arr, dep, math });
+  const { instance } = await WebAssembly.instantiate(bytes, { ...sharedMemory, tiempo, cad, arr, dep, math, io });
   ex = instance.exports;
   ex.initialize();
   restoreState(opciones.estado, bytes, ex.memoria);
@@ -680,7 +686,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   const debuggedFromTheStart = depurador && compilado.debugFlag !== undefined && memoria().getInt32(compilado.debugFlag, true) !== 0;
   if (opciones.poolPorts?.length && !debuggedFromTheStart) {
     try {
-      await runOnPool({ ex, memory, bytes, compilado, separador, ports: opciones.poolPorts, dialogs, onDebugValue: (nodo, salida, value) => depurador?.alValor(nodo, salida, value), passOverPanel, senal });
+      await runOnPool({ ex, memory, bytes, compilado, separador, ports: opciones.poolPorts, externalWaits, onDebugValue: (nodo, salida, value) => depurador?.alValor(nodo, salida, value), passOverPanel, senal });
     } finally {
       saveState(opciones.estado, bytes, ex.memoria);
     }
@@ -799,11 +805,12 @@ const DISPLAY_PASS_MS = 16;
 /**
  * Runs a Run's clumps on a pool of threads (DT-063 §9–11), each behind one of `ports`
  * (pool-thread.mjs): this thread is the coordinator. It prepares the Run, hands every thread the
- * module and the memory, shows the dialogs they ask for and wakes their clumps with the answer,
+ * module and the memory, answers the external waits they ask for (a dialog, the debugger, an
+ * instrument) and wakes their clumps with the answer,
  * passes over the panel at the display's pace, and turns Abort and failures into the memory's abort
  * flag. Resolves when every thread is done; rejects when the Run is aborted, deadlocks or fails.
  */
-async function runOnPool({ ex, memory, bytes, compilado, separador, ports, dialogs, onDebugValue, passOverPanel, senal }) {
+async function runOnPool({ ex, memory, bytes, compilado, separador, ports, externalWaits, onDebugValue, passOverPanel, senal }) {
   const module = await WebAssembly.compile(bytes);
   const threads = ports.length;
   const coordinatorThread = threads;
@@ -817,21 +824,21 @@ async function runOnPool({ ex, memory, bytes, compilado, separador, ports, dialo
   passOverPanel();
   ex.prepare_run(threads, sharedClock());
   const pass = setInterval(passOverPanel, DISPLAY_PASS_MS);
-  const answerDialog = ({ name, clump, args }) => {
+  const answerExternalWait = ({ name, clump, args }) => {
     Promise.resolve()
-      .then(() => dialogs[name](...args))
+      .then(() => externalWaits[name](...args))
       .then((answer) => ex.wake_external(coordinatorThread, clump, Number(answer) | 0), fail);
   };
   const runs = ports.map(
     (port, thread) =>
       new Promise((resolve) => {
         port.onmessage = ({ data }) => {
-          if (data.dialog) return answerDialog(data.dialog);
+          if (data.externalWait) return answerExternalWait(data.externalWait);
           if (data.debugValue) return onDebugValue(...data.debugValue);
           if (data.error) fail(Object.assign(new Error(data.error.message), { abortado: data.error.abortado }));
           resolve();
         };
-        port.postMessage({ start: { module, memory, thread, compilado: { disposicionError: compilado.disposicionError, callChain: compilado.callChain, debugNodes: compilado.debugNodes }, separador } });
+        port.postMessage({ start: { module, memory, thread, compilado: { disposicionError: compilado.disposicionError, disposicionVisa: compilado.disposicionVisa, callChain: compilado.callChain, debugNodes: compilado.debugNodes }, separador } });
       }),
   );
   try {

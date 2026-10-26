@@ -7,6 +7,17 @@ said the file format was not stable yet; `-beta` marks the maintainable version,
 whose files keep opening, and stays a `0.x` (DT-048, DT-055). Until 1.0 every
 release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
+## Unreleased
+
+### Instruments
+
+- Solder speaks to instruments through its own VISA, written in Rust, with no
+  NI-VISA needed (DT-065). VISA Open, Write, Read and Close run in a VI from the
+  command line, against a TCP socket instrument, with LabVIEW's codes and
+  behavior: a Read keeps what arrived at a timeout, Write and Read on a name
+  never opened open it, and closing a closed session is a warning (DT-066). The
+  editor does not offer them yet.
+
 ## 0.6.0-beta — 2026-10-25
 
 A VI now runs on every core of the computer, as in LabVIEW: its parallel loops

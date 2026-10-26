@@ -8,13 +8,14 @@
 
 import { NO_DEBUG_VALUE, createHostFunctions, debugValueReader, millisecondTimerOf, sharedClock } from "./runtime.mjs";
 import { SHARED_MEMORY_IMPORT } from "../compiler/compiler.mjs";
+import { VISA_FUNCTION_NAMES } from "./instrument-io.mjs";
 
 const BLOCKING = 1;
 
 /**
  * Serves the Runs whose ports arrive through `onPort(listener)`. A port gets one message,
  * `{ start: { module, memory, thread, compilado, separador } }`, and answers
- * `{ dialog: { name, clump, args } }` for each dialog of a clump on this thread, then
+ * `{ externalWait: { name, clump, args } }` for each external wait of a clump on this thread, then
  * `{ status }` when the Run is over for this thread, or `{ error }` if a clump failed here.
  */
 export function servePoolThread(onPort) {
@@ -32,10 +33,11 @@ function runThread({ module, memory, thread, compilado, separador }, port) {
   let exports = null;
   const host = createHostFunctions({ compilado, separador, memory, exports: () => exports });
   const { cad, arr, math } = host;
-  // A dialog parks the clump that asked for it; the coordinator shows it and wakes the clump with the answer.
+  // An external wait (a dialog, the debugger, an instrument) parks the clump that asked for it; the
+  // coordinator answers it and wakes the clump with the answer.
   const askCoordinator = (name) => (...args) => {
     const clump = exports.park_external();
-    port.postMessage({ dialog: { name, clump, args } });
+    port.postMessage({ externalWait: { name, clump, args } });
     return 0;
   };
   const tiempo = {
@@ -53,9 +55,10 @@ function runThread({ module, memory, thread, compilado, separador }, port) {
     if (value !== NO_DEBUG_VALUE) port.postMessage({ debugValue: [nodo, salida, value] });
   };
   const dep = { valor_i32: sendDebugValue, valor_i64: sendDebugValue, valor_f32: sendDebugValue, valor_f64: sendDebugValue, nodo: askCoordinator("debugger_node") };
+  const io = Object.fromEntries(VISA_FUNCTION_NAMES.map((name) => [name, askCoordinator(name)]));
   const sharedMemory = { [SHARED_MEMORY_IMPORT.modulo]: { [SHARED_MEMORY_IMPORT.nombre]: memory } };
   try {
-    exports = new WebAssembly.Instance(module, { ...sharedMemory, tiempo, cad, arr, math, dep }).exports;
+    exports = new WebAssembly.Instance(module, { ...sharedMemory, tiempo, cad, arr, math, dep, io }).exports;
     return { status: exports.run_thread(thread, BLOCKING) };
   } catch (error) {
     return { error: { message: error.message, abortado: !!error.abortado } };

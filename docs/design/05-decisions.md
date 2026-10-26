@@ -2733,3 +2733,56 @@ addon, which the editor runs in an Electron `utilityProcess`. Solder does not de
 | Read stops at the count, at the termination character when enabled, or at the timeout, with LabVIEW's codes | `native/solder-io/tests/socket_session.rs` against a local responder | **Verified** on a TCP socket (2026-10-25); by hand against Crucible's Keithley the addon gave LabVIEW's Q1: 27 bytes, the timeout code, 2026 ms |
 | The addon answers from Node without blocking its thread | `test/native/solder-io.test.mjs` | **Verified** |
 | A fault of the addon does not end the editor | — | **Unverified**: the `utilityProcess` does not exist yet |
+
+## DT-066
+
+**A VISA resource name is a type of its own, laid out in memory as its resource string and its session; VISA Open,
+Write, Read and Close are compiled as external waits that the Run's coordinator answers through Solder's VISA.**
+
+- **Status:** Accepted on 2026-10-26 by the developer, who chose to join the external wait of [DT-065](#dt-065) §4
+  with the core of the VISA functions, so that it is tested with real VIs. It builds on [DT-042](#dt-042) (the data
+  space), [DT-043](#dt-043) (the error cluster) and [DT-063](#dt-063) §8 (external waits).
+- **Why:** LabVIEW's VISA resource name carries a name and a refnum (measured over ActiveX as `[name, refnum]`,
+  `labview-captures/reports/2026-10-25-visa-read-socket.md`); laid out as a cluster, it reuses every piece of
+  memory, copying, panel records and subVI slots that clusters already have, while staying a type of its own on
+  wires, in the catalog and in the `.sdg`.
+
+### Decision
+
+1. **The type** is `"visa-resource"` (`VISA_RESOURCE` in `core/model/types.mjs`), a scalar name in the catalog,
+   the graph and the `.sdg`. The compiler lays it out, and only there (`inMemory`), as the cluster
+   `{ "resource name": string, session: U32 }`; a new constant has session 0.
+2. **The blocks** `visa-open`, `visa-write`, `visa-read`, `visa-close` and `visa-resource-constant`, with the terminals
+   and types measured (`labview-captures/reports/2026-10-26-visa-edges.md` Q1: counts, byte count and Open timeout
+   are U32). Access mode and duplicate session are accepted and not used yet.
+3. **Each VISA function parks its clump** through an import of the `io` module (`visa_open`, `visa_write`,
+   `visa_read`, `visa_close`), which takes the addresses of its inputs and of its outputs. On one thread the
+   runtime parks on the I/O's promise; on a pool the thread hands the call to the coordinator, as a dialog does.
+   The coordinator talks to the I/O and writes the outputs into the shared memory before waking the clump
+   (`core/runtime/instrument-io.mjs`).
+4. **What LabVIEW does, measured** (2026-10-25 and 2026-10-26 reports): with an error in nothing runs, the error
+   passes untouched, the resource name passes through and the buffer and the count give "" and 0; a warning that
+   comes in passes a clean function unchanged; an error or warning carries `"<function> in <call chain>"` as its
+   source; Write and Read on a name with no live session (never opened, or closed) open it from the name and go on;
+   every Open gives a new session; Close of a session that is not open is the warning VI_WARN_NULL_OBJECT
+   (1073676418).
+5. **The I/O is given to the Run** (`ejecutar`'s `io` option): the addon in Node (the command line loads it itself,
+   the tests pass it). A Run without it that reaches a VISA function fails, saying that instrument I/O is not
+   available: the editor until its `utilityProcess` exists.
+
+### Consequences
+
+- The editor's palettes, the VISA resource name control and its wire are still to do; so is the `utilityProcess`.
+- The sessions a Run opens by name stay open after it. Whether LabVIEW closes a VI's VISA sessions when it stops is
+  **unverified**, and so are: a refnum 0 on entry (LabVIEW gives a name a refnum as soon as it is set), Open with a
+  nonzero timeout, access mode or duplicate session, which status wins when a warning comes in and the function
+  gives its own, and a failed auto-open's error.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Open, Write, Read and Close run against an instrument, on one thread and on a pool, with LabVIEW's warning passed through Close | `test/core/visa.test.mjs` against a local responder | **Verified** |
+| With an error in, nothing runs and the outputs give their defaults | `test/core/visa.test.mjs` | **Verified** |
+| Write and Read with no Open, and after a Close, open from the name; a second Close is a warning | `test/core/visa.test.mjs` | **Verified** against LabVIEW's measurements of 2026-10-26 |
+| A Run without I/O fails saying why | `test/core/visa.test.mjs` | **Verified** |

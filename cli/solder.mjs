@@ -24,6 +24,7 @@ import { leer } from "../core/model/qvi-format.mjs";
 import { startValue } from "../core/model/control-values.mjs";
 import { formatear } from "../core/model/types.mjs";
 import { wat } from "../core/compiler/wasm-encoder.mjs";
+import { loadSolderIo } from "../native/solder-io-node/solder-io.mjs";
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const cat = cargarCatalogo(JSON.parse(readFileSync(path.join(AQUI, "../docs/schema/blocks.json"), "utf8")));
@@ -81,10 +82,22 @@ if (orden === "check") {
   const valores = Object.fromEntries(c.controles.map((k) => [k.nodo, startValue(porId.get(k.nodo))]));
   // The pool lives as long as this one Run (DT-063 §11).
   const pool = createNodePool(threads);
-  const escritos = await ejecutar(c, valores, { poolPorts: pool.connect() }).finally(() => pool.close());
+  const escritos = await ejecutar(c, valores, { poolPorts: pool.connect(), io: instrumentIo() }).finally(() => pool.close());
   for (const i of c.indicadores) {
     const n = porId.get(i.nodo);
     const v = escritos[i.nodo];
     console.log(`${n.label?.text ?? n.name} = ${shownValue(v, i.tipo)}`);
+  }
+}
+
+/**
+ * Solder's VISA (DT-065), which the command line loads itself. Without the addon (not built), a VI with no
+ * VISA function still runs, and one that has them fails saying that instrument I/O is not available.
+ */
+function instrumentIo() {
+  try {
+    return loadSolderIo();
+  } catch {
+    return undefined;
   }
 }

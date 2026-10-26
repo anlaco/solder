@@ -70,6 +70,27 @@ export const esCluster = (t) => !!t && typeof t === "object" && Array.isArray(t.
 export const ERROR = Object.freeze({ cluster: [{ name: "status", type: "boolean" }, { name: "code", type: "i32" }, { name: "source", type: "string" }] });
 export const esError = (t) => esCluster(t) && JSON.stringify(t) === JSON.stringify(ERROR);
 
+/**
+ * LabVIEW's VISA resource name (DT-066): a scalar type of its own on wires, terminals and in the `.sdg`.
+ * It carries the resource string and the session VISA Open gave it (measured over ActiveX as the pair
+ * `[name, refnum]`, labview-captures/reports/2026-10-25-visa-read-socket.md).
+ */
+export const VISA_RESOURCE = "visa-resource";
+
+/** How a VISA resource name lives in memory: its two parts, laid out as a cluster (DT-066). */
+export const VISA_RESOURCE_LAYOUT = Object.freeze({ cluster: [{ name: "resource name", type: "string" }, { name: "session", type: "u32" }] });
+
+/**
+ * A type as the compiler lays it out in memory: a VISA resource name becomes its cluster, inside arrays
+ * and clusters too; every other type is itself.
+ */
+export function inMemory(t) {
+  if (t === VISA_RESOURCE) return VISA_RESOURCE_LAYOUT;
+  if (esArray(t)) return { ...t, array: inMemory(t.array) };
+  if (esCluster(t)) return { ...t, cluster: t.cluster.map((field) => ({ ...field, type: inMemory(field.type) })) };
+  return t;
+}
+
 /** Un enum es, para convertir, un entero sin signo de 16 bits, como en LabVIEW. */
 export const representacion = (t) => (esEnum(t) ? "u16" : t);
 
@@ -122,6 +143,7 @@ export function conversion(desde, hacia) {
 /** How a type is named when explaining a broken wire: "DBL", "array of I32", "2D array of DBL". */
 export function nombre(t) {
   if (esEnum(t)) return "enum";
+  if (t === VISA_RESOURCE) return "VISA resource name";
   if (esArray(t)) return `${dimensionsOf(t) > 1 ? `${dimensionsOf(t)}D ` : ""}array of ${nombre(t.array)}`;
   if (typeof t === "string") return NUMERICOS[t]?.abrev ?? t;
   if (t && typeof t === "object" && "cluster" in t) return "cluster";
