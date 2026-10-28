@@ -151,6 +151,12 @@ pub fn file_size(refnum: u32) -> AsyncTask<FileTask<FileSizeAnswer>> {
     })
 }
 
+/// Moves an open file's position to its end, for appending: its error.
+#[napi]
+pub fn file_move_to_end(refnum: u32) -> AsyncTask<FileTask<i32>> {
+    FileTask::run(move || code_of(FILE_MANAGER.move_to_end(refnum).err()))
+}
+
 /// Delete of a file or a folder: its error.
 #[napi]
 pub fn file_delete(name: String, entire_hierarchy: bool) -> AsyncTask<FileTask<i32>> {

@@ -6,7 +6,7 @@
 // fileOpen(name, operation, access) → { refnum, error }, fileClose(refnum) → { name, error },
 // fileWrite(refnum, bytes, convertEol) → error, fileWriteLines(refnum, lines, convertEol) → error,
 // fileRead(refnum, count, convertEol) → { text, error }, fileReadLine(refnum, convertEol) → { text, error },
-// fileReadLines(refnum, count) → { lines, error }, fileSize(refnum) → { size, error },
+// fileReadLines(refnum, count) → { lines, error }, fileSize(refnum) → { size, error }, fileMoveToEnd(refnum) → error,
 // fileDelete(name, entireHierarchy) → error, and, at once,
 // fileName(refnum).
 

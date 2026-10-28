@@ -360,6 +360,10 @@ svg { display: block; overflow: visible; }
 .asa { position: absolute; width: 4px; height: 4px; background: var(--node-handle); cursor: ns-resize; z-index: 2; }
 .asa.oculta { background: transparent; }
 /* Invert: un circulito en el terminal invertido. */
+/* Read Delimited Spreadsheet's instance ring: a ring control under the icon (file-io/delimited/dropped-both.png). */
+.anillo-instancia { position: absolute; box-sizing: border-box; border: 1px solid var(--menu-border); background: var(--menu-background); cursor: default; }
+.anillo-instancia .texto-anillo { position: absolute; left: 3px; top: 3px; font-family: "Segoe UI", "Noto Sans", sans-serif; font-size: var(--fuente); color: var(--canvas-text); white-space: nowrap; }
+.anillo-instancia .flecha-anillo { position: absolute; right: 3px; top: 8px; border-left: 3px solid transparent; border-right: 3px solid transparent; border-top: 4px solid var(--canvas-text); }
 .invertida { position: absolute; width: 3.6px; height: 3.6px; border-radius: 50%; background: var(--invert-dot-fill); border: 1px solid var(--invert-dot-border); box-sizing: border-box; pointer-events: none; }
 /* En una subpaleta, el nombre de lo que está bajo el ratón, centrado bajo el título. */
 .nombre-sobre { position: absolute; left: 0; right: 0; transform: translateY(-50%); text-align: center; white-space: nowrap; }

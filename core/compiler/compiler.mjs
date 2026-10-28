@@ -125,6 +125,9 @@ const IMPORTACIONES = [
   { modulo: "io", nombre: "file_read_text", params: Array(12).fill("i32"), results: ["i32"] },
   { modulo: "io", nombre: "file_size", params: Array(7).fill("i32"), results: ["i32"] },
   { modulo: "io", nombre: "file_delete", params: Array(9).fill("i32"), results: ["i32"] },
+  // Write and Read Delimited Spreadsheet (DT-067 §9): the spreadsheet string and the file in one wait.
+  { modulo: "io", nombre: "file_write_spreadsheet", params: Array(16).fill("i32"), results: ["i32"] },
+  { modulo: "io", nombre: "file_read_spreadsheet", params: Array(17).fill("i32"), results: ["i32"] },
   // The path functions (DT-067): the host reads each path's block, applies the rules of the system it runs
   // on (core/model/paths.mjs) and writes the result into its cell. The first parameters are the output cells.
   { modulo: "pth", nombre: "build_path", params: ["i32", "i32", "i32", "i32"], results: [] },
@@ -152,12 +155,12 @@ function spreadsheetCall(e, importName, inputs, arrayType) {
 /** The VISA functions (DT-066): each waits for an instrument, and a Run that has one needs the I/O. */
 const VISA_FUNCTIONS = new Set(["visa-open", "visa-write", "visa-read", "visa-close"]);
 /** The file functions (DT-067): each waits for the disk, served by the same I/O as VISA. */
-const FILE_FUNCTIONS = new Set(["open-create-replace-file", "close-file", "write-to-text-file", "read-from-text-file", "get-file-size", "delete"]);
+const FILE_FUNCTIONS = new Set(["open-create-replace-file", "close-file", "write-to-text-file", "read-from-text-file", "get-file-size", "delete", "write-delimited-spreadsheet-vi", "read-delimited-spreadsheet-vi"]);
 /** The nodes that take time: each runs in its own clump and yields while it waits. */
 export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "simple-error-handler", ...VISA_FUNCTIONS, ...FILE_FUNCTIONS]);
 const idImport = (nombre) => IMPORTACIONES.findIndex((i) => i.nombre === nombre);
 /** The imports that may park the clump that calls them (DT-063 §8): the dialogs, the debugger, VISA and files, which wait for the outside. */
-const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error", "visa_open", "visa_write", "visa_read", "visa_close", "file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete"].map(idImport);
+const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error", "visa_open", "visa_write", "visa_read", "visa_close", "file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete", "file_write_spreadsheet", "file_read_spreadsheet"].map(idImport);
 
 const ins = (op, arg) => (arg === undefined ? { op } : { op, arg });
 
@@ -537,7 +540,7 @@ function visaFunction(e, importName, inputs, { resourceOut, buffer, count }) {
 }
 
 /** The bytes of each kind of place a file function's output takes, for those the host writes by address. */
-const FILE_OUTPUT_BYTES = { refnum: 4, boolean: 4, size: 8 };
+const FILE_OUTPUT_BYTES = { refnum: 4, boolean: 4, i32: 4, size: 8 };
 
 /**
  * A file function (DT-067 §7): `inputs` is the code that leaves the host's arguments up to the error in,
@@ -548,7 +551,7 @@ const FILE_OUTPUT_BYTES = { refnum: 4, boolean: 4, size: 8 };
 function fileFunction(e, importName, inputs, outputs) {
   const places = outputs.map((kind) => (kind === "cell" ? e.celda() : kind === "error" ? e.bufer(disposicion(ERROR).tam) : e.bufer(FILE_OUTPUT_BYTES[kind])));
   const load = (kind, place) => {
-    if (kind === "refnum" || kind === "boolean") return [k32(place), ins("i32.load")];
+    if (kind === "refnum" || kind === "boolean" || kind === "i32") return [k32(place), ins("i32.load")];
     if (kind === "size") return [k32(place), ins("i64.load")];
     return [k32(place)];
   };
@@ -562,6 +565,23 @@ function fileFunction(e, importName, inputs, outputs) {
 /** How Read from Text File reads: bytes, lines with Read Lines and count wired, or the next line with count unwired (measured). */
 export const READ_MODE = Object.freeze({ BYTES: 0, LINES: 1, NEXT_LINE: 2 });
 const readMode = (e) => (!e.nodo.config?.["read-lines"] ? READ_MODE.BYTES : e.cableada(2) ? READ_MODE.LINES : READ_MODE.NEXT_LINE);
+
+/** An input that may be left unwired with no value to pass: its handle (0 unwired) and whether it is wired. */
+const optionalHandle = (e, index) => (e.cableada(index) ? [...e.entrada(index), k32(1)] : [k32(0), k32(0)]);
+
+/** The SPREADSHEET_ELEMENTS number of an array input's element; DBL when it is unwired. */
+const spreadsheetElementOfInput = (e, index) => SPREADSHEET_ELEMENTS.indexOf(e.cableada(index) ? representacion(e.tIn(index).array) ?? e.tIn(index).array : DBL_ELEMENT);
+const DBL_ELEMENT = "number";
+
+/**
+ * Write Delimited Spreadsheet's unwired format, by its instance (measured): %.3f for reals, though the label says
+ * "%d"; %d for integers; %s for strings.
+ */
+function delimitedWriteFormat(e, dataIndex) {
+  if (e.cableada(1)) return e.entrada(1);
+  const element = SPREADSHEET_ELEMENTS[spreadsheetElementOfInput(e, dataIndex)];
+  return [k32(e.cadena(element === "string" ? "%s" : NUMERICOS[element].entero ? "%d" : "%.3f"))];
+}
 
 /** A file function's `file` input: the refnum or path handle, whether it is a path, and whether it is wired (unwired asks for a dialog). */
 function fileInput(e, index) {
@@ -801,6 +821,20 @@ const BLOQUES = {
   "delete": (e) =>
     fileFunction(e, "file_delete", [...(e.cableada(1) ? e.entrada(1) : [k32(0)]), k32(e.cableada(1) ? 1 : 0), ...e.entrada(2), ...e.entrada(3)], ["cell", "boolean", "error"]),
   "get-file-size": (e) => fileFunction(e, "file_size", [...e.entrada(0), k32(e.logicalTIn(0) === PATH ? 1 : 0)], ["refnum", "size", "error"]),
+  // The instance follows the data: 1D data's type when it is wired, the 2D's otherwise (measured: 1D wins when not empty).
+  "write-delimited-spreadsheet-vi": (e) => {
+    const instanceData = e.cableada(3) ? 3 : 2;
+    return fileFunction(e, "file_write_spreadsheet", [
+      ...optionalHandle(e, 0), ...delimitedWriteFormat(e, instanceData),
+      ...optionalHandle(e, 2), k32(spreadsheetElementOfInput(e, 2)), ...optionalHandle(e, 3), k32(spreadsheetElementOfInput(e, 3)),
+      ...e.entrada(4), ...e.entrada(6), ...e.entrada(7),
+    ], ["cell", "error"]);
+  },
+  "read-delimited-spreadsheet-vi": (e) =>
+    fileFunction(e, "file_read_spreadsheet", [
+      ...optionalHandle(e, 0), ...e.entrada(1), ...e.entrada(2), ...e.entrada(3), ...e.entrada(4), ...e.entrada(6), ...e.entrada(7),
+      k32(SPREADSHEET_ELEMENTS.indexOf(representacion(e.tOut(1).array) ?? e.tOut(1).array)),
+    ], ["cell", "cell", "cell", "i32", "boolean", "error"]),
   // Paths (DT-067): a constant is its block in the static zone, like a string's.
   "path-constant": (e) => [ins("i32.const", e.cadena(encodePath(e.nodo.config?.value ?? EMPTY_PATH)))],
   "empty-path-constant": (e) => [ins("i32.const", e.cadena(encodePath(EMPTY_PATH)))],

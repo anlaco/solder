@@ -481,10 +481,6 @@
       "desc": "what is left of the file refnum after Open/Create/Replace File, Close File, Write to and Read from Text File, Get File Size and Delete (done): Refnum to Path and the Not A Refnum constant",
       "ref": "design/05-decisions.md DT-067 §10 (b)"
     },
-    "hojas-de-calculo": {
-      "desc": "Array To Spreadsheet String, Spreadsheet String To Array and the Write and Read Delimited Spreadsheet VIs",
-      "ref": "design/05-decisions.md DT-067 §10 (c)"
-    },
     "dialogos-de-archivo": {
       "desc": "the system's file dialogs: the one a file function opens when it is not given a path, and File Dialog",
       "ref": "design/05-decisions.md DT-067 §10 (d)"
@@ -4982,17 +4978,17 @@
     {
       "id": "palette.functions.programming.file-io.write-delimited-spreadsheet-vi",
       "etiqueta": "Write Delimited Spreadsheet.vi",
-      "estado": "todo",
-      "labview": "A VI that turns a 1D or 2D array of numbers into delimited text and writes it to a file, or appends it.",
-      "necesita": "hojas-de-calculo",
+      "estado": "built",
+      "prueba": "test/editor/delimited-spreadsheet-nodes.test.mjs::both VIs are placed from the File I/O palette",
+      "bloque": "write-delimited-spreadsheet-vi",
       "captura": "file-io/fio-palette_s.png"
     },
     {
       "id": "palette.functions.programming.file-io.read-delimited-spreadsheet-vi",
       "etiqueta": "Read Delimited Spreadsheet.vi",
-      "estado": "todo",
-      "labview": "A VI that reads delimited text from a file and gives it back as a 2D array, or just its first row.",
-      "necesita": "hojas-de-calculo",
+      "estado": "built",
+      "prueba": "test/editor/delimited-spreadsheet-nodes.test.mjs::both VIs are placed from the File I/O palette",
+      "bloque": "read-delimited-spreadsheet-vi",
       "captura": "file-io/fio-palette_s.png"
     },
     {

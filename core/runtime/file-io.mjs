@@ -9,6 +9,7 @@
 // Measured in LabVIEW 2026 Q3 on Windows: labview-captures/reports/2026-10-26-file-io-behavior.md.
 
 import { READ_MODE } from "../compiler/compiler.mjs";
+import { arrayToSpreadsheetString, endOfLineFor, firstRowOf, readDelimitedRows, rowsToArray, transposeArray } from "./spreadsheet.mjs";
 import { EMPTY_PATH, NOT_A_PATH, NOT_A_PATH_TEXT, PATH_KIND, isEmptyPath, isNotAPath, pathFromText, pathToText } from "../model/paths.mjs";
 
 /** What the import answers its clump with: the work is in the outputs it wrote. */
@@ -26,6 +27,24 @@ const REPLACE_OR_CREATE = 4;
 /** And Read from Text File's: it opens, and a missing file is error 7 (measured). */
 const OPEN = 0;
 const READ_WRITE = 0;
+/** What Write Delimited Spreadsheet opens with: open or create to append, replace or create otherwise. */
+const OPEN_OR_CREATE = 3;
+/** The code Read Delimited Spreadsheet's warning has when it asked for more rows than there were (measured). */
+const END_OF_FILE = 4;
+/** The mark after read of a Read Delimited Spreadsheet that read nothing (measured on an error and a cancelled dialog). */
+const NOTHING_READ = -1;
+
+/**
+ * The error sources of the Delimited VIs, as LabVIEW's subVIs raise them (measured,
+ * labview-captures/reports/2026-10-26-file-io-behavior.md §7 and 2026-10-28-delimited-spreadsheet.md Q3).
+ */
+const WRITE_DELIMITED_CHAIN = (instance) => `Open/Create/Replace File in Write Spreadsheet String.vi->Write Delimited Spreadsheet (${instance}).vi`;
+const READ_DELIMITED_SOURCE = Object.freeze({ open: "Open File+.vi:Open File", dialog: "Open File+.vi:File Dialog", endOfFile: "Read File+ (string): Read File" });
+
+/** Write Delimited Spreadsheet's instance, which its error sources name: reals are DBL, integers I64 (measured with I32). */
+const writeInstanceOf = (element) => (element.kind === "string" ? "string" : element.kind === "int" ? "I64" : "DBL");
+/** An integer element as the I64 instance writes it. */
+const AS_I64 = { kind: "int", bits: 64, signed: true };
 
 /**
  * The file functions a compiled VI imports, each `(...addresses) → ANSWERED | Promise`. `host` is the Run's
@@ -112,6 +131,24 @@ export function createFileFunctions({ io, host, memory, compilado, pathRules }) 
     const block = view().getInt32(handle, true);
     const count = block ? view().getInt32(block, true) : 0;
     return Array.from({ length: count }, (_, index) => readBytes(block + 8 + 4 * index));
+  };
+
+  /** The array Write Delimited Spreadsheet writes: 1D data when wired and not empty, else the 2D (measured), transposed if asked. */
+  const delimitedData = ({ twoD, twoDWired, twoDElement, oneD, oneDWired, oneDElement, transpose }) => {
+    const one = oneDWired ? host.readSpreadsheetArray(oneD, oneDElement, 1) : { sizes: [0], elements: [] };
+    const useOne = one.elements.length > 0;
+    const code = useOne ? oneDElement : twoDElement;
+    let array = useOne ? one : twoDWired ? host.readSpreadsheetArray(twoD, twoDElement, 2) : { sizes: [0, 0], elements: [] };
+    if (useOne) array = transpose ? { sizes: [array.elements.length, 1], elements: array.elements } : { sizes: [1, array.elements.length], elements: array.elements };
+    else if (transpose) array = transposeArray(array);
+    const element = host.spreadsheetElementOf(code);
+    return { array, element: element.kind === "int" ? AS_I64 : element };
+  };
+  /** A Write Delimited error: its chain through LabVIEW's subVIs and the VI it ran in, and the file after a line break. */
+  const writeDelimitedError = (code, instance, chainIndex, fileText) => {
+    const caller = host.callChainOf(chainIndex);
+    const chain = caller ? `${WRITE_DELIMITED_CHAIN(instance)}->${caller}` : WRITE_DELIMITED_CHAIN(instance);
+    return { status: true, code, source: fileText === null ? chain : `${chain}<APPEND>\n${fileText}` };
   };
 
   return {
@@ -243,8 +280,90 @@ export function createFileFunctions({ io, host, memory, compilado, pathRules }) 
         return { code: await files.fileDelete(name, !!entireHierarchy), fileText: name };
       });
     },
+
+    // Write Delimited Spreadsheet (DT-067 §9): with an error in the file is untouched and new file path is Not A Path; an
+    // unwired path is a dialog, cancelled until the editor has one (error 43 with no file, measured as a cancel).
+    file_write_spreadsheet: (path, pathWired, format, twoD, twoDWired, twoDElement, oneD, oneDWired, oneDElement, append, transpose, delimiter, errorIn, newPathCell, errorOut, chainIndex) => {
+      writePath(newPathCell, NOT_A_PATH);
+      const incoming = readError(errorIn);
+      if (incoming.status) {
+        writeError(errorOut, incoming);
+        return ANSWERED;
+      }
+      const { array, element } = delimitedData({ twoD, twoDWired, twoDElement, oneD, oneDWired, oneDElement, transpose });
+      const instance = writeInstanceOf(element);
+      const fail = (code, fileText) => {
+        writeError(errorOut, writeDelimitedError(code, instance, chainIndex, fileText));
+        return ANSWERED;
+      };
+      if (!pathWired) return fail(ERROR_CODE.CANCELLED, null);
+      const wanted = readPath(path);
+      const name = systemNameOf(wanted);
+      if (name === null) return fail(ERROR_CODE.NOT_AN_ABSOLUTE_PATH, shownPath(wanted));
+      const text = arrayToSpreadsheetString({ format: host.textOf(format), array, element, delimiter: host.textOf(delimiter), endOfLine: endOfLineFor(pathRules) });
+      return (async () => {
+        const files = requireIo();
+        const { refnum, error } = await files.fileOpen(name, append ? OPEN_OR_CREATE : REPLACE_OR_CREATE, READ_WRITE);
+        if (error !== NO_ERROR_CODE) return fail(error, name);
+        const moved = append ? await files.fileMoveToEnd(refnum) : NO_ERROR_CODE;
+        const written = moved !== NO_ERROR_CODE ? moved : await files.fileWrite(refnum, new TextEncoder().encode(text), false);
+        await files.fileClose(refnum);
+        if (written !== NO_ERROR_CODE) return fail(written, name);
+        writePath(newPathCell, wanted);
+        writeError(errorOut, incoming.code !== NO_ERROR_CODE ? incoming : NO_ERROR);
+        return ANSWERED;
+      })();
+    },
+
+    // Read Delimited Spreadsheet (DT-067 §9): the whole file is read and the rows taken from it as LabVIEW's steps do.
+    file_read_spreadsheet: (path, pathWired, format, rows, offset, maxCharacters, transpose, delimiter, elementCode, errorIn, newPathCell, allRowsCell, firstRowCell, markOut, endOfFileOut, errorOut, chainIndex) => {
+      const element = host.spreadsheetElementOf(elementCode);
+      const nothing = () => {
+        host.writeSpreadsheetArray(allRowsCell, elementCode, 2, { sizes: [0, 0], elements: [] });
+        host.writeSpreadsheetArray(firstRowCell, elementCode, 1, { sizes: [0], elements: [] });
+        view().setInt32(markOut, NOTHING_READ, true);
+        writeBoolean(endOfFileOut, false);
+      };
+      nothing();
+      writePath(newPathCell, NOT_A_PATH);
+      const incoming = readError(errorIn);
+      if (incoming.status) {
+        writeError(errorOut, incoming);
+        return ANSWERED;
+      }
+      const fail = (code, source) => {
+        writeError(errorOut, { status: true, code, source });
+        return ANSWERED;
+      };
+      if (!pathWired) return fail(ERROR_CODE.CANCELLED, READ_DELIMITED_SOURCE.dialog);
+      const wanted = readPath(path);
+      // Measured with a missing file: new file path is the path given.
+      writePath(newPathCell, wanted);
+      const name = systemNameOf(wanted);
+      // Unverified: the source of a relative or empty path; Open File+'s is taken.
+      if (name === null) return fail(ERROR_CODE.NOT_AN_ABSOLUTE_PATH, READ_DELIMITED_SOURCE.open);
+      return (async () => {
+        const files = requireIo();
+        const { refnum, error } = await files.fileOpen(name, OPEN, READ_WRITE);
+        if (error !== NO_ERROR_CODE) return fail(error, READ_DELIMITED_SOURCE.open);
+        const read = await files.fileRead(refnum, -1, false);
+        await files.fileClose(refnum);
+        const text = new TextDecoder().decode(read.text);
+        const steps = readDelimitedRows({ text, rows, offset, maxCharacters });
+        let array = rowsToArray({ rows: steps.rows, format: host.textOf(format), element, delimiter: host.textOf(delimiter) });
+        if (transpose) array = transposeArray(array);
+        host.writeSpreadsheetArray(allRowsCell, elementCode, 2, array);
+        host.writeSpreadsheetArray(firstRowCell, elementCode, 1, firstRowOf(array));
+        view().setInt32(markOut, steps.mark, true);
+        writeBoolean(endOfFileOut, steps.endOfFile);
+        // More rows asked for than there were: EOF? and warning 4 (measured), which replaces a warning that came in.
+        const warning = { status: false, code: END_OF_FILE, source: READ_DELIMITED_SOURCE.endOfFile };
+        writeError(errorOut, steps.endOfFile ? warning : incoming.code !== NO_ERROR_CODE ? incoming : NO_ERROR);
+        return ANSWERED;
+      })();
+    },
   };
 }
 
 /** The names of the file imports, the ones a pool thread hands to the coordinator. */
-export const FILE_FUNCTION_NAMES = ["file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete"];
+export const FILE_FUNCTION_NAMES = ["file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete", "file_write_spreadsheet", "file_read_spreadsheet"];

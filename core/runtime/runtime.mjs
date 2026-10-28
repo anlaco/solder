@@ -493,24 +493,34 @@ export function createHostFunctions({ compilado, separador = ".", pathRules = ho
     const write = (address, value) => memoria()[set](address, bits === 64 ? BigInt.asIntN(64, value) : Number(BigInt.asIntN(bits, value)), true);
     return { element: { kind: "int", bits, signed: signo }, size: bytes, read, write };
   };
-  cad.array_to_spreadsheet = (cell, format, arrayHandle, delimiter, elementCode, dimensions) => {
+  /** An array of a spreadsheet function as `{ sizes, elements }`, read from its handle. */
+  const readSpreadsheetArray = (arrayHandle, elementCode, dimensions) => {
     const access = elementAccess(elementCode);
     const block = memoria().getInt32(arrayHandle, true);
     const sizes = Array.from({ length: dimensions }, (_, dimension) => (block ? memoria().getInt32(block + 4 * dimension, true) : 0));
     const count = sizes.reduce((product, size) => product * size, 1);
-    const elements = Array.from({ length: count }, (_, k) => access.read(block + ARRAY_HEADER_BYTES + k * access.size));
-    const text = arrayToSpreadsheetString({ format: decodificar(leerCad(format)), array: { sizes, elements }, element: access.element, delimiter: decodificar(leerCad(delimiter)), endOfLine: endOfLineFor(pathRules) });
-    escribirCad(cell, codificar(text));
+    return { sizes, elements: Array.from({ length: count }, (_, k) => access.read(block + ARRAY_HEADER_BYTES + k * access.size)) };
   };
-  cad.spreadsheet_to_array = (cell, format, text, delimiter, elementCode, dimensions) => {
+  /** Writes `{ sizes, elements }` into an array cell of a spreadsheet function. */
+  const writeSpreadsheetArray = (cell, elementCode, dimensions, { sizes, elements }) => {
     const access = elementAccess(elementCode);
-    const { sizes, elements } = spreadsheetStringToArray({ format: decodificar(leerCad(format)), text: decodificar(leerCad(text)), element: access.element, delimiter: decodificar(leerCad(delimiter)), dimensions });
     const block = memoria().getInt32(cell, true);
     // `nuevo_array` reads the old element count in the first word, as ponerArray does.
     if (block && dimensions > 1) memoria().setInt32(block, memoria().getInt32(block, true) * memoria().getInt32(block + 4, true), true);
     const data = exports().nuevo_array(cell, elements.length, access.size, access.reference ? 1 : 0);
     sizes.forEach((size, dimension) => memoria().setInt32(data - ARRAY_HEADER_BYTES + 4 * dimension, size, true));
     elements.forEach((value, k) => access.write(data + k * access.size, value));
+  };
+  const spreadsheetElementOf = (elementCode) => elementAccess(elementCode).element;
+  const textOf = (handle) => decodificar(leerCad(handle));
+  cad.array_to_spreadsheet = (cell, format, arrayHandle, delimiter, elementCode, dimensions) => {
+    const array = readSpreadsheetArray(arrayHandle, elementCode, dimensions);
+    const text = arrayToSpreadsheetString({ format: textOf(format), array, element: spreadsheetElementOf(elementCode), delimiter: textOf(delimiter), endOfLine: endOfLineFor(pathRules) });
+    escribirCad(cell, codificar(text));
+  };
+  cad.spreadsheet_to_array = (cell, format, text, delimiter, elementCode, dimensions) => {
+    const array = spreadsheetStringToArray({ format: textOf(format), text: textOf(text), element: spreadsheetElementOf(elementCode), delimiter: textOf(delimiter), dimensions });
+    writeSpreadsheetArray(cell, elementCode, dimensions, array);
   };
   for (const [nombre, f] of [["leer_dec", CADENAS.leerDec], ["leer_hex", CADENAS.leerHex], ["leer_oct", CADENAS.leerOct], ["leer_frac", CADENAS.leerFrac]])
     cad[nombre] = (s, o) => {
@@ -551,7 +561,7 @@ export function createHostFunctions({ compilado, separador = ".", pathRules = ho
     path_is_empty: (path) => (isEmptyPath(readPath(path)) ? 1 : 0),
     paths_equal: (first, second) => (pathsEqual(readPath(first), readPath(second), pathRules) ? 1 : 0),
   };
-  return { cad, arr, math, pth, putBytes, readBytes, ponerCadena, leerCadena, ponerCluster, leerCluster, ponerArray, leerArray, readValue, readPath, writePath, functionSource };
+  return { cad, arr, math, pth, putBytes, readBytes, ponerCadena, leerCadena, ponerCluster, leerCluster, ponerArray, leerArray, readValue, readPath, writePath, functionSource, callChainOf: (chainIndex) => (compilado.callChain ? callChainText(chainIndex) : ""), readSpreadsheetArray, writeSpreadsheetArray, spreadsheetElementOf, textOf };
 }
 
 /**

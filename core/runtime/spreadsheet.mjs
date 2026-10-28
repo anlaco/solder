@@ -78,18 +78,78 @@ const TRAILING_END_OF_LINE = /(\r\n|\r|\n)$/;
  */
 export function spreadsheetStringToArray({ format, text, element, delimiter, dimensions }) {
   if (text === "") return { sizes: Array(dimensions).fill(0), elements: [] };
-  const separator = delimiterOf(delimiter);
   const body = text.replace(TRAILING_END_OF_LINE, "");
-  const read = fieldReader(format, element);
   if (dimensions === 1) {
-    const elements = body.split(separator).map(read);
+    const read = fieldReader(format, element);
+    const elements = body.split(delimiterOf(delimiter)).map(read);
     return { sizes: [elements.length], elements };
   }
-  const rows = body.split(END_OF_LINE).map((line) => line.split(separator).map(read));
-  const columns = Math.max(...rows.map((row) => row.length));
+  return rowsToArray({ rows: body.split(END_OF_LINE), format, element, delimiter });
+}
+
+/** A 2D array from the text of its rows: each split at the delimiter, read, and padded to the widest row. */
+export function rowsToArray({ rows, format, element, delimiter }) {
+  const read = fieldReader(format, element);
+  const separator = delimiterOf(delimiter);
+  const fields = rows.map((line) => line.split(separator).map(read));
+  const columns = fields.length ? Math.max(...fields.map((row) => row.length)) : 0;
   const empty = read("");
-  const elements = rows.flatMap((row) => [...row, ...Array(columns - row.length).fill(empty)]);
-  return { sizes: [rows.length, columns], elements };
+  const elements = fields.flatMap((row) => [...row, ...Array(columns - row.length).fill(empty)]);
+  return { sizes: [fields.length, columns], elements };
+}
+
+/** The 2D array with its rows and columns swapped. */
+export function transposeArray({ sizes: [rows, columns], elements }) {
+  const swapped = [];
+  for (let column = 0; column < columns; column++) for (let row = 0; row < rows; row++) swapped.push(elements[row * columns + column]);
+  return { sizes: [columns, rows], elements: swapped };
+}
+
+/** The first row of a 2D array, as a 1D array; none when it has no rows. */
+export const firstRowOf = ({ sizes: [rows, columns], elements }) => (rows === 0 ? { sizes: [0], elements: [] } : { sizes: [columns], elements: elements.slice(0, columns) });
+
+const END_OF_LINE_AT = /^(\r\n|\r|\n)/;
+
+/**
+ * The rows Read Delimited Spreadsheet reads from `text` (labview-captures/reports/2026-10-28-delimited-spreadsheet.md
+ * Q4): from `offset`, all of them when `rows` is negative (`maxCharacters` is then ignored); otherwise `rows` steps,
+ * each reading a whole line, or with `maxCharacters` up to that many characters. A step stopped by an end of line
+ * consumes it and ends the row; one stopped by the limit leaves the row open for the next step. A step with nothing
+ * left to read, or a line the file ends without an end of line, is the end of the file. Gives the rows' text, the
+ * mark after the read and whether the end of the file was reached.
+ */
+export function readDelimitedRows({ text, rows, offset, maxCharacters }) {
+  let position = Math.min(Math.max(offset, 0), text.length);
+  if (rows < 0) {
+    const rest = text.slice(position);
+    return { rows: rest === "" ? [] : rest.replace(TRAILING_END_OF_LINE, "").split(END_OF_LINE), mark: text.length, endOfFile: false };
+  }
+  const read = [];
+  let open = null;
+  let endOfFile = false;
+  for (let step = 0; step < rows; step++) {
+    if (position >= text.length) {
+      endOfFile = true;
+      break;
+    }
+    const lineEnd = text.slice(position).search(END_OF_LINE);
+    const untilEnd = lineEnd < 0 ? text.length - position : lineEnd;
+    const length = maxCharacters > 0 ? Math.min(maxCharacters, untilEnd) : untilEnd;
+    open = (open ?? "") + text.slice(position, position + length);
+    position += length;
+    // A step that fills the limit leaves even an end of line right after it for the next step (measured: rows 1 with
+    // max 5 on `1,2.5\r\n` marks 5, rows 2 marks 7).
+    const stoppedByLimit = maxCharacters > 0 && length === maxCharacters;
+    if (stoppedByLimit) continue;
+    const ending = END_OF_LINE_AT.exec(text.slice(position));
+    if (ending) position += ending[0].length;
+    else endOfFile = true;
+    read.push(open);
+    open = null;
+    if (endOfFile) break;
+  }
+  if (open !== null) read.push(open);
+  return { rows: read, mark: position, endOfFile };
 }
 
 /** How a field is read: a string as it is; a number by the first conversion of the format (the report §4). */

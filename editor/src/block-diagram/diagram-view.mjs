@@ -1287,7 +1287,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
     const [gw, gh] = G.TAMANOS[clave] ?? [];
     cuerpo = `<div class="glifo-nodo" style="left:${px(-k.dx)};top:${px(-k.dy)}${gw ? `;width:${px(gw)};height:${px(gh)}` : ""}">${glifo}</div>`;
   }
-  const zonas = terminales(n, ctx, d.edicion)
+  let zonas = terminales(n, ctx, d.edicion)
     .filter((t) => terminalVisible(n, t, d.g))
     .map(
       (t) =>
@@ -1323,6 +1323,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
     .map((t) => `<div class="invertida" style="left:${px(t.x - k.x + (t.dir === "in" ? -1.8 : 1.8) - 1.8)};top:${px(t.y - k.y - 1.8)}"></div>`)
     .join("");
   const escribiendo = d.edicion?.nodo === n.id && !d.edicion.etiqueta;
+  if (n.tipo === SpreadsheetNodes.READ_DELIMITED) zonas += instanceRing(n);
   return `<div class="nodo${elegido || escribiendo ? " seleccionado" : ""}${editable}${litByDebugger(d, n.id)}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${cuerpo}${circulos}${zonas}${asas}</div>`;
 }
 
@@ -1410,6 +1411,25 @@ function selectorDeMarcos(n, ctx, d, resueltos) {
   return `<div class="selector-de-marcos" style="left:${px(m.x)};top:0">${cuerpo}${zonas}</div>`;
 }
 
+/** Read Delimited Spreadsheet's instance ring under its icon: the instance's name and the ring's arrow. */
+function instanceRing(n) {
+  const R = SpreadsheetNodes.INSTANCE_RING;
+  return `<div class="anillo-instancia" data-nodo="${esc(n.id)}" style="left:${px(R.x)};top:${px(R.y)};width:${px(R.ancho)};height:${px(R.alto)}"><span class="texto-anillo">${esc(SpreadsheetNodes.instanceLabel(n))}</span><span class="flecha-anillo"></span></div>`;
+}
+
+/** The list a click on Read Delimited Spreadsheet's ring opens, with the check mark on its instance (read-ring-menu.png). */
+function listaInstancias(d, ctx) {
+  const n = d.g.nodos.find((k) => k.id === d.lista.nodo);
+  const M = MEDIDAS_MENU;
+  const instances = SpreadsheetNodes.READ_INSTANCES;
+  const current = n.config?.instance ?? "double";
+  const filas = instances
+    .map(({ value, label }, k) => `<div class="item-menu item-instancia${value === current ? " marcado" : ""}" data-nodo="${esc(n.id)}" data-instancia="${esc(value)}" style="top:${px(M.arriba + k * M.fila)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(label)}</span></div>`)
+    .join("");
+  const ancho = listWidth(instances.map(({ label }) => label), ctx);
+  return `<div class="menu-contextual lista-marcos" style="left:${px(d.lista.x)};top:${px(d.lista.y)};width:${px(ancho)};height:${px(M.arriba * 2 + instances.length * M.fila)}">${filas}</div>`;
+}
+
 /**
  * The drop-down list of the items of an enum or ring constant, with the check mark on the
  * one it shows: what a click on the constant opens (measured, enum report 2026-10-14,
@@ -1431,6 +1451,7 @@ function listaValores(d, ctx) {
 function listaAbierta(d, ctx, resueltos) {
   const tipo = d.g.nodos.find((n) => n.id === d.lista.nodo)?.tipo;
   if (tipo === UN.BLOCK) return listaElementos(d, ctx);
+  if (tipo === SpreadsheetNodes.READ_DELIMITED) return listaInstancias(d, ctx);
   return CONSTANTES[tipo]?.selector ? listaValores(d, ctx) : listaMarcos(d, ctx, resueltos);
 }
 

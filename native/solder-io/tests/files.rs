@@ -314,3 +314,16 @@ fn read_lines_with_count_unwired_gives_the_next_line_with_its_end() {
         assert_eq!(files.read_line(refnum, true), solder_io::TextRead { text: line.to_vec(), error: None });
     }
 }
+
+#[test]
+fn moving_to_the_end_appends_after_the_old_bytes() {
+    let folder = scratch_folder();
+    let name = file_with(&folder, b"zz");
+    let files = FileManager::new();
+    let refnum = files.open(&name, Operation::OpenOrCreate, Access::ReadWrite).unwrap();
+    files.move_to_end(refnum).unwrap();
+    files.write_text(refnum, b"1.0", false).unwrap();
+    files.close(refnum).unwrap();
+    assert_eq!(fs::read(&name).unwrap(), b"zz1.0");
+    assert_eq!(files.move_to_end(refnum), Err(FileError::INVALID_INPUT), "a closed refnum is error 1");
+}

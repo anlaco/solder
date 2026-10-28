@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { arrayToSpreadsheetString, spreadsheetStringToArray } from "../../core/runtime/spreadsheet.mjs";
+import { arrayToSpreadsheetString, readDelimitedRows, spreadsheetStringToArray } from "../../core/runtime/spreadsheet.mjs";
 
 const DBL = { kind: "float" };
 const I32 = { kind: "int", bits: 32, signed: true };
@@ -144,4 +144,39 @@ test("§4: strings are read as they are, whatever the format", () => {
   assert.deepEqual(read("%s", "a,b,c\n\n", oneDimension), ["a", "b", "c\n"]);
   assert.deepEqual(read("%s", "a,b\nc,d\n", oneDimension), ["a", "b\nc", "d"]);
   assert.deepEqual(read("%s", ",\n", oneDimension), ["", ""]);
+});
+
+// Read Delimited Spreadsheet's steps (labview-captures/reports/2026-10-28-delimited-spreadsheet.md Q4).
+test("delimited Q4: rows, offset and max characters per row give LabVIEW's rows and mark", () => {
+  const small = "1,2.5\r\n3,4\r\n";
+  const steps = (text, rows, offset, maxCharacters) => {
+    const result = readDelimitedRows({ text, rows, offset, maxCharacters });
+    return [result.rows, result.mark, result.endOfFile];
+  };
+  assert.deepEqual(steps(small, -1, 3, 0), [[".5", "3,4"], 12, false]);
+  assert.deepEqual(steps(small, 1, 3, 0), [[".5"], 7, false]);
+  assert.deepEqual(steps(small, -1, 6, 0), [["", "3,4"], 12, false]);
+  assert.deepEqual(steps(small, 1, 6, 0), [[""], 7, false]);
+  assert.deepEqual(steps(small, -1, 0, 3), [["1,2.5", "3,4"], 12, false], "max is ignored with all rows");
+  assert.deepEqual(steps(small, 1, 0, 3), [["1,2"], 3, false]);
+  assert.deepEqual(steps(small, 1, 0, 5), [["1,2.5"], 5, false]);
+  assert.deepEqual(steps(small, 1, 7, 0), [["3,4"], 12, false]);
+  assert.deepEqual(steps(small, 1, 7, 2), [["3,"], 9, false]);
+  assert.deepEqual(steps(small, 3, 0, 3), [["1,2.5", "3,4"], 10, false]);
+  assert.deepEqual(steps(small, 2, 0, 3), [["1,2.5"], 7, false]);
+  assert.deepEqual(steps(small, 2, 0, 5), [["1,2.5"], 7, false]);
+  assert.deepEqual(steps(small, 3, 0, 0), [["1,2.5", "3,4"], 12, true], "more rows than there are");
+  assert.deepEqual(steps(small, 0, 0, 0), [[], 0, false]);
+  assert.deepEqual(steps("1,2", 1, 0, 0), [["1,2"], 3, true], "a last line with no end of line");
+
+  const long = "1,2,3,4,5\r\n6,7,8,9,10\r\n11,12\r\n";
+  const measured = [
+    [1, 3, ["1,2"], 3], [1, 5, ["1,2,3"], 5], [1, 8, ["1,2,3,4,"], 8], [1, 20, ["1,2,3,4,5"], 11],
+    [2, 3, ["1,2,3,"], 6], [2, 5, ["1,2,3,4,5"], 11], [3, 3, ["1,2,3,4,5"], 9], [3, 5, ["1,2,3,4,5", "6,7,8"], 16],
+    [3, 8, ["1,2,3,4,5", "6,7,8,9,"], 19], [4, 5, ["1,2,3,4,5", "6,7,8,9,10"], 21], [4, 8, ["1,2,3,4,5", "6,7,8,9,10"], 23],
+    [4, 3, ["1,2,3,4,5"], 11],
+  ];
+  for (const [rows, maxCharacters, expectedRows, mark] of measured) assert.deepEqual(steps(long, rows, 0, maxCharacters), [expectedRows, mark, false], `${rows} rows, max ${maxCharacters}`);
+  assert.deepEqual(steps(long, 4, 0, 0), [["1,2,3,4,5", "6,7,8,9,10", "11,12"], 30, true]);
+  assert.deepEqual(steps(long, 4, 0, 20), [["1,2,3,4,5", "6,7,8,9,10", "11,12"], 30, true]);
 });

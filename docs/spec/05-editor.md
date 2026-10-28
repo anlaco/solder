@@ -1500,9 +1500,10 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-26-file-io-palett
 > functions on row 5; Datalog 3 × 3; Packed Library 1 × 3). **Done:** Build Path and Strip Path; in File Constants, Path Constant,
 > Empty Path Constant and Not A Path Constant; in Advanced File Functions, Path To String, String To Path, Path to Array of Strings,
 > Array of Strings to Path and Path Type; and, in Functions ▸ String ▸ Path/Array/String Conversion, the same four conversions.
-> Also **done** (rule 113): Open/Create/Replace File, Close File, Write to Text File, Read from Text File, Get File Size and Delete.
+> Also **done** (rule 113): Open/Create/Replace File, Close File, Write to Text File, Read from Text File, Get File Size and Delete;
+> and (rule 114) Write Delimited Spreadsheet and Read Delimited Spreadsheet.
 > **Everything else is greyed with its reason** (rule 54): Refnum to Path and the Not A Refnum constant with `funciones-de-archivo`
-> (DT-067 §10 (b)); the spreadsheet VIs with `hojas-de-calculo` (c); File Dialog with `dialogos-de-archivo` (d); binary files, Format Into
+> (DT-067 §10 (b)); File Dialog with `dialogos-de-archivo` (d); binary files, Format Into
 > File, Scan From File, the Configuration File VIs and the folder and file-information functions with `archivos-binarios-y-carpetas`;
 > the system directories and the VI's own path with `rutas-del-sistema`; the Measurement File Express VIs with `express-vis`; TDMS,
 > Storage/DataPlugin, Zip, XML, Datalog, Waveform File I/O and Packed Library with `formatos-de-archivo`, which says **not planned yet**.
@@ -1559,4 +1560,29 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-26-file-io-palett
 > icon changes. The other rows are greyed with their reason (`paleta-archivos-en-menu`, `menus-contextuales`, `propiedades`...). **Unverified:** Write's
 > menu position of Convert EOL beyond its capture, which terminal Representation applies to and its contents, the Create submenus' rows, and the
 > drawing of the icons. Tested: `test/editor/file-io-nodes.test.mjs`.
+
+> **Rule 114 — Write and Read Delimited Spreadsheet (DT-067 §10 (c)).** Placed from File I/O, row 1. Measured on 2026-10-28
+> (`labview-captures/reports/2026-10-28-delimited-spreadsheet.md`, `2026-10-26-file-io-behavior.md` §5–§7):
+> - **The nodes** are 32 × 32 with the cells of their connector pane as terminal rectangles (corners 7 × 7, side rows 7 × 6, the
+>   top and bottom columns 6 × 16; `editor/src/block-diagram/spreadsheet-nodes.mjs`). Write shows no selector ring and chooses its
+>   instance from the data (reals DBL, integers I64, strings). **Read shows its instance ring** under the icon ("Double ▾"); a
+>   click lists Double, Integer, System String and UTF-8 String with the current one ticked, and the one chosen
+>   (`config.instance`) is the element of `all rows` and `first row`.
+> - **Write:** 1D data when it is wired and not empty, otherwise 2D data, through Array To Spreadsheet String (spec/04 Rule
+>   21l), transposed with `transpose?` (a transposed 1D is one column); an unwired format is `%.3f` for reals, `%d` for integers
+>   and `%s` for strings. The file is replaced, or with `append to file?` written right after what it had. `new file path` is the
+>   path written. A missing folder is error 7 from `Open/Create/Replace File in Write Spreadsheet String.vi->Write Delimited
+>   Spreadsheet (DBL).vi->` and the caller, with the file after `<APPEND>`.
+> - **Read:** from `start of read offset`, all rows (then `max characters/row` is ignored) or `number of rows` steps, each a whole
+>   line or up to `max characters/row` characters: a step stopped by an end of line consumes it and ends the row, one that fills
+>   the limit leaves the row open. `first row` is the first row of the result, after `transpose?`. Asking for more than there is
+>   gives EOF? and warning 4 from `Read File+ (string): Read File`; a missing file is error 7 from `Open File+.vi:Open File` with
+>   `mark after read` -1.
+> - **With an error in** nothing is done: the error passes, the file is untouched, `new file path` is Not A Path and Read's mark
+>   is -1. **An unwired path** is a dialog, answered cancelled until DT-067 §10 (d): error 43 (Write's chain with no file; Read's
+>   `Open File+.vi:File Dialog`).
+> - **Unverified:** the unnamed terminals of the pane; Read's Integer, String and UTF-8 instances in LabVIEW (only Double was
+>   run); from which edge a wire reaches the `delimiter` of Array To Spreadsheet String and Spreadsheet String To Array, alone in
+>   the middle column of their 32 × 32 node (taken as the top); `max characters/row` with an offset inside a line; the ring's exact drawing and width; offsets beyond ASCII. Tested:
+>   `test/core/delimited-spreadsheet.test.mjs`, `test/core/spreadsheet.test.mjs`, `test/editor/delimited-spreadsheet-nodes.test.mjs`.
 

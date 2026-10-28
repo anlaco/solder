@@ -290,6 +290,12 @@ impl FileManager {
         self.with_file(refnum, |open| open.file.metadata().map(|metadata| metadata.len()).map_err(error_of))?
     }
 
+    /// Moves the position to the end of the file, where the next write appends: what Write Delimited
+    /// Spreadsheet does with `append to file?` (measured: the new rows come right after the old bytes).
+    pub fn move_to_end(&self, refnum: FileRefnum) -> Result<(), FileError> {
+        self.with_file(refnum, |open| open.file.seek(SeekFrom::End(0)).map(|_| ()).map_err(error_of))?
+    }
+
     fn with_file<T>(&self, refnum: FileRefnum, operation: impl FnOnce(&mut OpenFile) -> T) -> Result<T, FileError> {
         let open = self.lock_files().get(&refnum).cloned().ok_or(FileError::INVALID_INPUT)?;
         let mut open = open.lock().unwrap_or_else(PoisonError::into_inner);

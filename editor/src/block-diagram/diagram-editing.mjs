@@ -857,7 +857,9 @@ export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
         ? { ...d, g: Gr.fijarConfig(d.g, sobre.nodo, { value: sobre.k }), lista: null }
         : sobre.tipo === "fila-elemento"
           ? { ...d, g: chooseUnbundleName(d, ctx, sobre.k), lista: null }
-          : { ...d, lista: null };
+          : sobre.tipo === "fila-instancia"
+            ? { ...d, g: ajustarSelectores(Gr.fijarConfig(d.g, sobre.nodo, { instance: sobre.instancia }), ctx), lista: null }
+            : { ...d, lista: null };
   // Pulsar fuera de la constante en la que se escribe confirma lo escrito, y
   // nada más: es lo que se ve en el vídeo.
   const enLoQueSeEscribe = d.edicion?.marco ? sobre.tipo === "marco" && sobre.zona === "texto" && sobre.nodo === d.edicion.nodo : sobre.id === d.edicion?.nodo && sobre.tipo === (d.edicion?.etiqueta ? "etiqueta" : "nodo");
@@ -887,6 +889,8 @@ export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
     const pulsado = d.g.nodos.find((n) => n.id === sobre.id);
     // A click on a name row of an Unbundle By Name drops the list of the names of the cluster wired in; unwired, there is none.
     if (UN.isUnbundleByName(pulsado) && sobre.fila !== undefined && UN.clusterElementNames(d.g, ctx.cat, pulsado.id).length) return { ...d0, seleccion: elegir(sobre.id), lista: { nodo: sobre.id, x: p.x, y: p.y, fila: sobre.fila } };
+    // Read Delimited Spreadsheet's ring opens its instances (read-ring-menu.png).
+    if (sobre.anillo) return { ...d0, seleccion: elegir(sobre.id), lista: { nodo: sobre.id, x: p.x, y: p.y } };
     if (CONSTANTES[pulsado?.tipo]?.selector && !d.seleccion.includes(sobre.id)) return { ...d0, seleccion: elegir(sobre.id), lista: { nodo: sobre.id, x: p.x, y: p.y } };
     // Una constante booleana cambia con un clic, como en LabVIEW; si se arrastra, se mueve.
     // La constante de error, igual, con la celda de su status.

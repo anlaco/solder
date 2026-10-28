@@ -108,6 +108,8 @@ test("only the path and file functions and the path constants of File I/O are do
     "advanced-file-functions.array-of-strings-to-path", "advanced-file-functions.path-type",
     // DT-067 §10 (b): the file functions (test/editor/file-io-nodes.test.mjs).
     "open-create-replace-file", "close-file", "write-to-text-file", "read-from-text-file", "advanced-file-functions.get-file-size", "advanced-file-functions.delete",
+    // DT-067 §10 (c): the spreadsheet VIs (test/editor/delimited-spreadsheet-nodes.test.mjs).
+    "write-delimited-spreadsheet-vi", "read-delimited-spreadsheet-vi",
   ].map((tail) => `${ROOT}.${tail}`);
   const everything = INV.entradas.filter((e) => e.id.startsWith(`${ROOT}.`) && ultimo(e.id) !== "thumbtack" && INV.hijos(e.id).length === 0);
   assert.equal(everything.length, 135, "every measured element is declared (the report's two unread folders of Advanced TDMS are holes without contents)");
@@ -123,15 +125,13 @@ test("only the path and file functions and the path constants of File I/O are do
   // The folders that hold something done are done; the others are holes that say why.
   for (const folder of ["", ".file-constants", ".advanced-file-functions"]) assert.equal(INV.entrada(`${ROOT}${folder}`).estado, "built", folder || "File I/O");
   for (const folder of ["configuration-file-vis", "tdm-streaming", "storage-dataplugin", "zip", "xml", "waveform-file-i-o"]) assert.ok(esHueco(INV.entrada(`${ROOT}.${folder}`)), folder);
-  // The reasons: file functions with (b), the spreadsheet VIs with (c), the dialogs with (d), the other formats not planned.
+  // The reasons: file functions with (b), the dialogs with (d), the other formats not planned.
   const reason = (tail) => INV.entrada(`${ROOT}.${tail}`).necesita;
   assert.equal(reason("advanced-file-functions.refnum-to-path"), "funciones-de-archivo");
-  assert.equal(reason("write-delimited-spreadsheet-vi"), "hojas-de-calculo");
   assert.equal(reason("advanced-file-functions.file-dialog"), "dialogos-de-archivo");
   assert.equal(reason("tdm-streaming.tdms-open"), "formatos-de-archivo");
   assert.match(INV.desbloqueos["formatos-de-archivo"].desc, /Not planned yet/);
   assert.match(INV.desbloqueos["funciones-de-archivo"].ref, /§10 \(b\)/);
-  assert.match(INV.desbloqueos["hojas-de-calculo"].ref, /§10 \(c\)/);
   assert.match(INV.desbloqueos["dialogos-de-archivo"].ref, /§10 \(d\)/);
 });
 

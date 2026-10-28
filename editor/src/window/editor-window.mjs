@@ -1298,6 +1298,9 @@ function objetivo(el) {
   if (filaValor) return { tipo: "fila-valor", nodo: filaValor.dataset.nodo, k: Number(filaValor.dataset.valor) };
   const fila = el.closest(".item-marco");
   if (fila) return { tipo: "fila-marco", nodo: fila.dataset.nodo, k: Number(fila.dataset.marco) };
+  // The rows of Read Delimited Spreadsheet's instance list.
+  const filaInstancia = el.closest(".item-instancia");
+  if (filaInstancia) return { tipo: "fila-instancia", nodo: filaInstancia.dataset.nodo, instancia: filaInstancia.dataset.instancia };
   // The names in the list of an Unbundle By Name.
   const filaElemento = el.closest(".item-elemento");
   if (filaElemento) return { tipo: "fila-elemento", nodo: filaElemento.dataset.nodo, k: Number(filaElemento.dataset.elemento) };
@@ -1309,7 +1312,7 @@ function objetivo(el) {
   if (t) return { tipo: "terminal", nodo: t.dataset.nodo, puerto: t.dataset.puerto, dir: t.dataset.dir };
   const n = el.closest(".nodo");
   // Un nodo con celdas (la constante de error) dice sobre cuál se pulsó.
-  if (n && !n.closest(".fantasma")) return { tipo: "nodo", id: n.dataset.nodo, ...(el.closest(".celda-error") ? { campo: el.closest(".celda-error").dataset.campo } : {}), ...(el.closest(".fila-nombre") ? { fila: Number(el.closest(".fila-nombre").dataset.fila) } : {}), ...(el.closest(".celda-array, .celda-grid") ? { campo: addressFromText(el.closest(".celda-array, .celda-grid").dataset.campo) } : {}) };
+  if (n && !n.closest(".fantasma")) return { tipo: "nodo", id: n.dataset.nodo, ...(el.closest(".celda-error") ? { campo: el.closest(".celda-error").dataset.campo } : {}), ...(el.closest(".fila-nombre") ? { fila: Number(el.closest(".fila-nombre").dataset.fila) } : {}), ...(el.closest(".anillo-instancia") ? { anillo: true } : {}), ...(el.closest(".celda-array, .celda-grid") ? { campo: addressFromText(el.closest(".celda-array, .celda-grid").dataset.campo) } : {}) };
   const c = el.closest(".tramo-zona");
   if (c) return { tipo: "tramo", cable: c.dataset.cable, k: Number(c.dataset.tramo) };
   return { tipo: "fondo" };

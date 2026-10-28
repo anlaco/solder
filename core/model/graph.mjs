@@ -902,6 +902,9 @@ function dimensionesDeBuildArray(n, ins, tipoQueLlega) {
   };
 }
 
+/** The element of each instance of Read Delimited Spreadsheet: Double, Integer (I64), System String and UTF-8 String (measured). */
+export const DELIMITED_INSTANCE_ELEMENTS = Object.freeze({ double: DBL, integer: "i64", string: "string", "utf-8-string": "string" });
+
 /**
  * The type of an output that depends on what is wired, not only on the
  * variables (DT-044, measured in LabVIEW 2026 Q3):
@@ -923,6 +926,11 @@ function tipoDeSalida(declarado, vars, nodo, ins, tipoEntrada, cableada) {
     const indices = ins.filter((p) => p.name.startsWith("index"));
     const unwired = indices.filter((p) => !cableada(p.name)).length;
     return unwired === 0 ? array.array : arrayOf(array.array, unwired);
+  }
+  // Read Delimited Spreadsheet: its instance, chosen on the node, gives the element of its arrays (DT-067 §9).
+  if (declarado && typeof declarado === "object" && "delimitedInstance" in declarado) {
+    const element = DELIMITED_INSTANCE_ELEMENTS[nodo.config?.instance ?? "double"];
+    return declarado.dims === 1 ? { array: element } : arrayOf(element, declarado.dims);
   }
   // Initialize Array: as many dimensions as size inputs.
   if (declarado && typeof declarado === "object" && declarado.dims === "config") {
@@ -986,7 +994,8 @@ function ligar(declarado, llega, vars) {
   } else if ("spreadsheetArray" in declarado) {
     // A Boolean, cluster or path array, or one of more than two dimensions, breaks the wire (measured on Boolean).
     const element = esArray(llega) ? llega.array : undefined;
-    const fits = dimensionsOf(llega) <= 2 && (element === "string" || esNumerico(element));
+    const dimensionsFit = declarado.dims === undefined ? dimensionsOf(llega) <= 2 : dimensionsOf(llega) === declarado.dims;
+    const fits = dimensionsFit && (element === "string" || esNumerico(element));
     if (fits && vars[declarado.spreadsheetArray] === undefined) vars[declarado.spreadsheetArray] = llega;
   } else if ("var" in declarado) {
     if (vars[declarado.var] === undefined) vars[declarado.var] = llega;
