@@ -9,6 +9,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 
 import { compilar } from "../../core/compiler/compiler.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
+import { createVirtualHost } from "../../core/runtime/scheduler.mjs";
 import * as Gr from "../../core/model/graph.mjs";
 import { aTexto, leer } from "../../core/model/qvi-format.mjs";
 import { CAT, leer as leerJson } from "../helpers.mjs";
@@ -226,10 +227,11 @@ test("dos bucles en paralelo van cada uno a su ritmo y uno sin esperas no bloque
     b.cable("mb.result", "wb.ms");
     b.cable("b:i.i", "ib.value");
   });
-  const t0 = performance.now();
-  await correr(v);
-  const t = performance.now() - t0;
-  assert.ok(t >= 95 && t < 160, `5 × 20 ms y 2 × 50 ms a la vez: ~100 ms, no 200 (${t} ms)`);
+  // On the virtual host (DT-061 §6) the clock jumps to each deadline, so the time is exact and a loaded
+  // machine cannot fail it.
+  const host = createVirtualHost();
+  await correr(v, {}, { host });
+  assert.equal(host.now(), 100, "5 × 20 ms and 2 × 50 ms at the same time: 100 ms, not 200");
 });
 
 test("abort para un bucle infinito sin esperas", async () => {
