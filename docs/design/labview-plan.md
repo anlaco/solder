@@ -523,7 +523,8 @@ array or string read by a local variable while another loop writes it is never t
 
    Left over from VISA, to take up when they fit: finding VISA resources (the dropdown, Select Item, VISA Find
    Resource); the constant's text width (LabVIEW's font is not identified); greyed menu rows show no reason on hover
-   (every menu of the editor); packaging the addon (Windows included) with the next release.
+   (every menu of the editor). *Packaging the addon done in 0.7.0-beta (2026-10-28): one per platform, Windows'
+   built in the Windows virtual machine (`scripts/build-native.mjs`).*
 
 **After it:** **LabVIEW Core 1** (DT-054, moved after the beta by DT-055 and after the hardware by DT-064): every
 lesson of NI's Core 1 course can be done in Solder, the hardware lessons on the ESP32 and on simulated instruments.
