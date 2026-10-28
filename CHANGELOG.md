@@ -9,15 +9,22 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+## 0.7.0-beta — 2026-10-28
+
+A VI can now talk to instruments and read and write files, as in LabVIEW:
+Solder's own VISA over TCP sockets and the text file functions, both served by
+a library of Solder's own in Rust that the Linux and Windows packages carry. Files
+saved by 0.6 open unchanged.
+
 ### Instruments
 
 - Solder speaks to instruments through its own VISA, written in Rust, with no
   NI-VISA needed (DT-065). VISA Open, Write, Read and Close run in a VI from the
   command line, against a TCP socket instrument, with LabVIEW's codes and
   behavior: a Read keeps what arrived at a timeout, Write and Read on a name
-  never opened open it, and closing a closed session is a warning (DT-066). The
-  editor does not offer them yet; when it does, they will run in a process of
-  their own, so that a fault in the instrument code cannot close the editor.
+  never opened open it, and closing a closed session is a warning (DT-066). In
+  the editor they run in a process of their own, so that a fault in the
+  instrument code cannot close the editor.
 - The editor draws and edits the VISA resource name: its purple wire, the
   constant on the diagram, the control and indicator on the panel with their
   terminals, the dropdown arrow (its menu only has Refresh, greyed, until
