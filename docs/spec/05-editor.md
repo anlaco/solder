@@ -1495,7 +1495,8 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-26-file-io-palett
 > functions on row 5; Datalog 3 × 3; Packed Library 1 × 3). **Done:** Build Path and Strip Path; in File Constants, Path Constant,
 > Empty Path Constant and Not A Path Constant; in Advanced File Functions, Path To String, String To Path, Path to Array of Strings,
 > Array of Strings to Path and Path Type; and, in Functions ▸ String ▸ Path/Array/String Conversion, the same four conversions.
-> **Everything else is greyed with its reason** (rule 54): the file refnum and the file functions with `funciones-de-archivo`
+> Also **done** (rule 113): Open/Create/Replace File, Close File, Write to Text File, Read from Text File, Get File Size and Delete.
+> **Everything else is greyed with its reason** (rule 54): Refnum to Path and the Not A Refnum constant with `funciones-de-archivo`
 > (DT-067 §10 (b)); the spreadsheet VIs with `hojas-de-calculo` (c); File Dialog with `dialogos-de-archivo` (d); binary files, Format Into
 > File, Scan From File, the Configuration File VIs and the folder and file-information functions with `archivos-binarios-y-carpetas`;
 > the system directories and the VI's own path with `rutas-del-sistema`; the Measurement File Express VIs with `express-vis`; TDMS,
@@ -1535,3 +1536,22 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-26-file-io-palett
 > indicators' terminals); the contents of the terminal's Create ▸ and of the constants' Create ▸, Replace ▸ and Data Operations ▸;
 > **the Not A Path Constant's menu, which has the Empty Path Constant's rows because only its height and row count were read**; the
 > palette row's name on the wire. A path function node has the generic function menu. Tested.
+
+> **Rule 113 — The file functions (DT-067 §10 (b)).** Open/Create/Replace File, Close File, Write to Text File and Read from Text File
+> (File I/O, row 2 and row 3) and Get File Size and Delete (Advanced File Functions, (1, 2) and (3, 4)) are placed from the palette; the
+> Datalog copies of Open and Close stay greyed. Each is a 32 × 32 node with the terminal rectangles measured in
+> `labview-captures/reports/2026-10-28-file-nodes-look.md` §1 (look in [`06-visual.md`](06-visual.md) §19). **Create ▸** on `operation` and `access` of
+> Open makes an enum constant, control or indicator with the measured items (`open`, `replace`, `create`, `open or create`, `replace or create`,
+> `replace or create with confirmation`; `read/write`, `read-only`, `write-only`). Menus (same report §4; Write's from `2026-10-26-file-io-behavior.md` §2):
+> **Open and Close** have `context.file-function`: Visible Items ▸, Help, Examples, Description and Tip..., a separator, Add Breakpoint, a separator,
+> File I/O Palette ▸, Replace ▸, a separator, Remove and Rewire, Create ▸, a separator and Properties; **Get File Size and Delete** have
+> `context.advanced-file-function`, the same with "Advanced File Functions Palette ▸" (LabVIEW greys Examples there; Solder greys it everywhere
+> until it has examples). **Write to Text File** has `context.write-to-text-file`: the first rows and Add Breakpoint, a separator, File I/O Palette ▸,
+> String Palette ▸, Create ▸, a separator, Replace ▸, **Convert EOL** (ticked), a separator, Remove and Rewire, a separator and Properties. **Read from
+> Text File** has `context.read-from-text-file`: File I/O Palette ▸, Replace ▸, **Read Lines** (unticked), **Convert EOL** (ticked), Representation ▸, a
+> separator, Remove and Rewire, Create ▸, a separator and Properties. The two checkable rows toggle `config["convert-eol"]` and `config["read-lines"]`,
+> one step of undo each; with Read Lines on and `count` wired the `text` output is a 1D array of strings and a wired string indicator breaks, and Read's
+> icon changes. The other rows are greyed with their reason (`paleta-archivos-en-menu`, `menus-contextuales`, `propiedades`...). **Unverified:** Write's
+> menu position of Convert EOL beyond its capture, which terminal Representation applies to and its contents, the Create submenus' rows, and the
+> drawing of the icons. Tested: `test/editor/file-io-nodes.test.mjs`.
+

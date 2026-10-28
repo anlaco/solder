@@ -16,6 +16,7 @@ import { isSubVI, portsWithAnchors } from "./subvi-nodes.mjs";
 import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
 import * as VN from "./visa-nodes.mjs";
+import * as FileNodes from "./file-nodes.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { EMPTY_PATH, hostPathRules, pathToText } from "../../../core/model/paths.mjs";
 import { brokenWireMarks, endPoint } from "./broken-wire.mjs";
@@ -67,6 +68,8 @@ export const PASO_ENTRADAS_DOS_DIMENSIONES = 8;
 const glifoDe = (n, ctx) => {
   if (n.tipo === "bool-const") return n.config?.value ? "true-constant" : "false-constant";
   const glifo = ctx.glifos.get(n.tipo);
+  // Read from Text File draws another icon with Read Lines on (reports/2026-10-28-file-nodes-look.md §5).
+  if (n.tipo === "read-from-text-file" && n.config?.["read-lines"]) return `${glifo}-lines`;
   return tieneDosDimensiones(n) ? `${glifo}-2d` : glifo;
 };
 
@@ -523,6 +526,7 @@ export function caja(n, ctx, edicion) {
   if (isSubVI(n)) return { x: n.x, y: n.y, ancho: PANE_SIZE, alto: PANE_SIZE };
   if (FN.isFormatNode(n, ctx.cat)) return { x: n.x, y: n.y, ...FN.formatNodeSize(n, ctx.cat) };
   if (UN.isUnbundleByName(n)) return { x: n.x, y: n.y, ...UN.unbundleSize(n, ctx.cat, ctx.medir) };
+  if (FileNodes.isFileNode(n)) return { x: n.x, y: n.y, ...FileNodes.fileNodeSize() };
   if (esExpresion(n)) {
     const M = MEDIDAS_EXPRESION;
     return { x: n.x, y: n.y, ancho: 2 * M.lado + Math.max(M.minimoTexto, anchoTexto(textoExpresion(n, edicion)) + M.relleno), alto: M.alto };
@@ -622,6 +626,7 @@ export function terminales(n, ctx, edicion) {
   if (FN.isFormatNode(n, ctx.cat)) return FN.formatNodeTerminals(n, k, ctx.cat);
   if (UN.isUnbundleByName(n)) return UN.unbundleTerminals(n, k, ctx.cat);
   if (VN.isVisaNode(n)) return VN.visaTerminals(n, k, ctx.cat);
+  if (FileNodes.isFileNode(n)) return FileNodes.fileNodeTerminals(n, k, ctx.cat);
   const { in: ins, out: outs } = ctx.cat.puertos(n);
   const anchoZona = terminalZoneWidth(n, k, ctx, ins, outs);
   // Un terminal del panel recibe o da el dato por su flecha.
@@ -1569,6 +1574,8 @@ export function menuDe(n, puerto, g, onElement = false) {
   if (UN.isUnbundleByName(n)) return UN.rowHasName(n, UN.rowOfPort(puerto)) ? UN.ROW_MENU : UN.BODY_MENU;
   // The VISA functions: the menu of the resource name terminal and the one of the rest of the node (reports/2026-10-26-visa-nodes.md Q4, visa-resource-name-look.md Q5).
   if (VN.isVisaNode(n)) return puerto === VN.RESOURCE_PORT ? VN.RESOURCE_TERMINAL_MENU : VN.BODY_MENU;
+  // Write to and Read from Text File have a menu of their own, with Convert EOL and Read Lines (file-io-behavior.md §2, §3); the other file functions' menus were not read.
+  if (FileNodes.MENU_ROOTS[n.tipo]) return FileNodes.MENU_ROOTS[n.tipo];
   if (n.tipo === "format-into-string") return "context.format-into-string";
   if (n.tipo === "scan-from-string") return puerto && /^(default|output)-\d+$/.test(puerto) ? "context.scan-from-string-parameter" : "context.scan-from-string";
   if (n.tipo === "compound-arithmetic") return puerto?.startsWith("value-") ? "context.compound-arithmetic-input" : "context.compound-arithmetic";

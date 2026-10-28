@@ -741,12 +741,21 @@ section of `editor/src/common/glyphs.mjs`; `MEDIDAS_PATH_PANEL` in `editor/src/f
   in the other controls' boxes, constants and labels). The button opens the system's file dialog (Electron's `dialog.showOpenDialog`, one
   existing file; Browse Options are not offered yet). Old School draws it in CSS over Plain's markup (DT-058); Plain writes "Path" in the
   cell. **Unverified:** the label's cap height (a font matter: LabVIEW's text is 9 px tall, Solder's 8) and the button's inner bevel.
+- **File refnum and the file nodes (DT-067 §10 (b)):** measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-28-file-nodes-look.md`
+  §1-5). The refnum's wire is `#007F7F`, 1 px and **solid**: the path's colour, where the path's wire is dashed; the pins of both are
+  `#007F7F` on hover. The six file functions (Open/Create/Replace File, Close File, Write to and Read from Text File, Get File Size, Delete)
+  are **32 × 32**, a 1 px border (`#4C4C3D` in Old School), fill `#FFFFCC`, icon only. Terminal hot rectangles, from the node's corner: side
+  terminals on rows 8 px apart (y 0, 8, 16, 24), 8 × 8 (16 × 8 on Close File and Get File Size); `prompt` is a top terminal at (8, 0) 8 × 16 on Open,
+  Write, Read and Delete, and Open's `disable buffering` a bottom one at (8, 16) 8 × 16; pins at x 0 left, x 31 right, x 12 top and bottom. With
+  Read Lines on, Read from Text File's icon changes. The icons are drawn anew (a sheet with a mark over it; a bigger sheet of text lines for
+  Read Lines): their drawing is **unverified**. Code: `file-nodes.mjs` and the file section of `glyphs.mjs`. Tests: `test/editor/file-io-nodes.test.mjs`.
 
 ## History
 
 | Date       | Change |
 |------------|--------|
 | 2026-10-26 | §4.2 and §19 corrected against LabVIEW: the 38 × 38 and 32 × 16 terminals, the path functions' icons, the constants' glyphs and width, the wire's 2 px phase, the panel's bevel, cell glyph, button and abbreviation. |
+| 2026-10-28 | §19: the file refnum's wire and the file functions' nodes, measured. |
 | 2026-10-26 | §4.2 and §19: the path: wire, terminals, constants, File Path Control and Indicator and the browse button. |
 | 2026-10-26 | §18: the VISA functions: tiles, terminals and icons. |
 | 2026-10-26 | §4.2 and §17: the VISA resource name: wire, constant, panel control and indicator, terminals, dropdown and palette, from `labview-captures/visa/`. |

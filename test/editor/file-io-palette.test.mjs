@@ -100,12 +100,14 @@ test("the File I/O palette and its subpalettes have the grids and names that wer
   }
 });
 
-test("only the path functions and constants of File I/O are done and every other element is greyed with its reason", () => {
+test("only the path and file functions and the path constants of File I/O are done and every other element is greyed with its reason", () => {
   const done = [
     "build-path", "strip-path",
     "file-constants.path-constant", "file-constants.empty-path-constant", "file-constants.not-a-path-constant",
     "advanced-file-functions.path-to-string", "advanced-file-functions.string-to-path", "advanced-file-functions.path-to-array-of-strings",
     "advanced-file-functions.array-of-strings-to-path", "advanced-file-functions.path-type",
+    // DT-067 §10 (b): the file functions (test/editor/file-io-nodes.test.mjs).
+    "open-create-replace-file", "close-file", "write-to-text-file", "read-from-text-file", "advanced-file-functions.get-file-size", "advanced-file-functions.delete",
   ].map((tail) => `${ROOT}.${tail}`);
   const everything = INV.entradas.filter((e) => e.id.startsWith(`${ROOT}.`) && ultimo(e.id) !== "thumbtack" && INV.hijos(e.id).length === 0);
   assert.equal(everything.length, 135, "every measured element is declared (the report's two unread folders of Advanced TDMS are holes without contents)");
@@ -123,7 +125,7 @@ test("only the path functions and constants of File I/O are done and every other
   for (const folder of ["configuration-file-vis", "tdm-streaming", "storage-dataplugin", "zip", "xml", "waveform-file-i-o"]) assert.ok(esHueco(INV.entrada(`${ROOT}.${folder}`)), folder);
   // The reasons: file functions with (b), the spreadsheet VIs with (c), the dialogs with (d), the other formats not planned.
   const reason = (tail) => INV.entrada(`${ROOT}.${tail}`).necesita;
-  assert.equal(reason("open-create-replace-file"), "funciones-de-archivo");
+  assert.equal(reason("advanced-file-functions.refnum-to-path"), "funciones-de-archivo");
   assert.equal(reason("write-delimited-spreadsheet-vi"), "hojas-de-calculo");
   assert.equal(reason("advanced-file-functions.file-dialog"), "dialogos-de-archivo");
   assert.equal(reason("tdm-streaming.tdms-open"), "formatos-de-archivo");

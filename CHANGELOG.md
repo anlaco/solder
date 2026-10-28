@@ -49,6 +49,15 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   and Indicator from Controls ▸ Modern ▸ String & Path. The right-click menus of
   the path objects are LabVIEW's, with Data Operations and View As Icon working;
   the rest of File I/O is greyed with its reason.
+- Open/Create/Replace File, Close File, Write to Text File, Read from Text File,
+  Get File Size and Delete are placed from File I/O, and a Run that uses them gets the editor's I/O process (DT-067).
+  The two text functions have Convert EOL and Read Lines in their right-click
+  menus, as LabVIEW does; Create on Open's operation and access makes an enum
+  with LabVIEW's items. They give LabVIEW's bytes, positions and error codes, and
+  the files a Run leaves open are closed when it finishes. The nodes are 32 × 32
+  with LabVIEW's terminal rectangles (the prompt on top, Open's disable buffering
+  at the bottom), the file refnum's wire is the path's teal but solid, and Read
+  from Text File's icon changes with Read Lines.
 - A path too long for a File Path Control or Indicator shows its root and its tail
   with "..." between, cut inside a component, as LabVIEW does (`C:\...ree\file.txt`),
   and `...\...` when nothing fits. Ctrl+A while typing in a text box (a control's,

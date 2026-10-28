@@ -39,6 +39,7 @@ import * as Et from "../common/labels.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { pathFromText } from "../../../core/model/paths.mjs";
 import * as TC from "./terminal-creation.mjs";
+import * as FileNodes from "./file-nodes.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { constantElementType, constantForElement, emptyArrayAgain, flipArrayKind, isEmptyArrayShell, setArrayRepresentation, typeEmptyArray } from "../common/array-typing.mjs";
 import { CONSTANT_DIGITS, DBL, NUMERICOS, PATH, POR_ABREVIATURA, VISA_RESOURCE, convertirValor, esArray, isUndefinedArray, esEntero, esEnum, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
@@ -1337,6 +1338,12 @@ export function orden(d, id, ctx) {
     const n = d.g.nodos.find((k) => k.id === nodo);
     return cerrar(Gr.fijarConfig(d.g, nodo, { [clave]: !(n.config?.[clave] ?? extremo === "lower") }));
   }
+  // Convert EOL and Read Lines of the text file functions: each row ticks or unticks its config key (file-io-behavior.md §2, §3).
+  const toggledKey = FileNodes.toggledConfigKey(id);
+  if (toggledKey) {
+    const n = d.g.nodos.find((k) => k.id === nodo);
+    return cerrar(Gr.fijarConfig(d.g, nodo, { [toggledKey]: !(n.config?.[toggledKey] ?? FileNodes.CHECKABLE_ROWS[toggledKey]) }));
+  }
   // Indexado de los túneles de un bucle (array/tunel-salida-menu-modo.png): Last Value o Indexing en la salida, y
   // Enable o Disable Indexing en la entrada, que sólo se enciende si lo que llega es un array.
   if (id.endsWith(".tunnel-mode.last-value") || id.endsWith(".tunnel-mode.indexing")) {
@@ -1708,6 +1715,7 @@ export function marcados(d, ctx) {
   if (elementAbbreviation) m.add(`${r}.representation.${elementAbbreviation.toLowerCase()}`);
   if (r === `${NUMERIC_ELEMENT_ROOT}-string`) ["normal-display", "enable-wrapping"].forEach((row) => m.add(`${r}.${row}`));
   if ((n.config?.inverted ?? []).includes(d.menu.puerto ?? "result")) m.add(`${r}.invert`);
+  if (FileNodes.MENU_ROOTS[n.tipo]) for (const key of FileNodes.tickedKeys(n)) m.add(`${r}.${key}`);
   if (n.tipo === "in-range-and-coerce") {
     if (n.config?.["include-upper-limit"]) m.add(`${r}.include-upper-limit`);
     if (n.config?.["include-lower-limit"] ?? true) m.add(`${r}.include-lower-limit`);

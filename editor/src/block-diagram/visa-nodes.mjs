@@ -22,14 +22,14 @@ export const BODY_MENU = "context.visa-function";
 export const RESOURCE_TERMINAL_MENU = "context.visa-function-resource-terminal";
 
 /** The rows of terminals are this far apart, the first one starting at `FIRST_ROW`. */
-const ROW_PITCH = 8;
-const FIRST_ROW = 1;
+export const ROW_PITCH = 8;
+export const FIRST_ROW = 1;
 /** The side of a terminal's dot. */
-const DOT_SIZE = 6;
+export const DOT_SIZE = 6;
 /** Where the wire attaches, from the top of its dot (left and right) or from the left of it (top). */
-const ATTACH_OFFSET = 3.5;
+export const ATTACH_OFFSET = 3.5;
 /** The dots stick out of the tile by this much (x -3..2 on the left, 29..34 on the right, y -3..2 on top). */
-const DOT_OUTSIDE = 3;
+export const DOT_OUTSIDE = 3;
 /** The wire attaches at the outline pixel of the tile: x 0 on the left and x 31 on the right. */
 const RIGHT_ATTACH_X = VISA_NODE_SIZE - 1;
 /** The left of the dot of the top terminal (x 9..14). */

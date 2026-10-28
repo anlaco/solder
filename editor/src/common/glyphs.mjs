@@ -4,6 +4,7 @@
 // iconos de LabVIEW son de NI. Cada glifo se dibuja en una rejilla de 16 × 16.
 
 import { cellRect } from "../../../core/model/connector.mjs";
+import { FILE_NODE_SIZE } from "../block-diagram/file-nodes.mjs";
 import { CONNECTOR_PATTERNS } from "../../../core/model/connector-patterns.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
 
@@ -2598,6 +2599,38 @@ const pathTypeIcon = () =>
 Object.assign(FUNCIONES, { "build-path": buildPathIcon(), "strip-path": stripPathIcon(), "path-type": pathTypeIcon() });
 Object.assign(CAJAS, { "build-path": [0, 0, 48, 48], "strip-path": [0, 0, 48, 48], "path-type": [0, 0, 34.5, 33] });
 Object.assign(TAMANOS, { "build-path": [32, 32], "strip-path": [32, 32], "path-type": [23, 22] });
+
+// The nodes of the file functions of File I/O (DT-067 §10 (b)): Open/Create/Replace File, Close File, Write to and Read from
+// Text File, Get File Size and Delete. Their size (32 x 32), border, fill and icon-only look are measured
+// (reports/2026-10-28-file-nodes-look.md §1, §5); the drawings are ours, after what each does: a sheet with a folded corner and a
+// mark over it. Read from Text File with Read Lines on shows a bigger sheet full of text lines (the icon changes in LabVIEW).
+
+/** A sheet of paper `width` x `height` px at (x, y), with the folded corner and `lines` lines of text. */
+const filePage = (x, y, width = 11, height = 14, lines = 2) => {
+  const [right, bottom] = [x + width - 0.5, y + height - 0.5];
+  const textLines = Array.from({ length: lines }, (_, i) => `M${x + 2.5} ${y + 7.5 + i * 3}H${right - 2}`).join("");
+  return poligono([[x + 0.5, y + 0.5], [right - 3, y + 0.5], [right, y + 3.5], [right, bottom], [x + 0.5, bottom]], PAPER, INK, 1) +
+    poligono([[right - 3, y + 0.5], [right - 3, y + 3.5], [right, y + 3.5]], INK) +
+    `<path d="${textLines}" fill="none" stroke="${INK}" stroke-width="1" shape-rendering="crispEdges"/>`;
+};
+/** A cross of two strokes over a sheet at (x, y). */
+const fileCross = (x, y, width) => linea(x + 2, y + 5, x + 9, y + 12, width) + linea(x + 9, y + 5, x + 2, y + 12, width);
+
+const fileNodeIcon = (pageX, overlay, page = filePage(pageX, 9)) => svg(pathNodeFrame(32, 32) + page + overlay, "0 0 32 32");
+const FILE_NODE_ICONS = {
+  "open-create-replace-file": fileNodeIcon(6, pathArrow(22, 24, 0, -1, 14)),
+  "close-file": fileNodeIcon(11, fileCross(11, 9, 1.4)),
+  "write-to-text-file": fileNodeIcon(16, pathArrow(3, 16, 1, 0, 11)),
+  "read-from-text-file": fileNodeIcon(5, pathArrow(18, 16, 1, 0, 11)),
+  "read-from-text-file-lines": fileNodeIcon(0, pathArrow(20, 16, 1, 0, 9), filePage(4, 5, 15, 22, 5)),
+  "get-file-size": fileNodeIcon(6, pathArrow(24, 16, 0, -1, 9) + pathArrow(24, 16, 0, 1, 9)),
+  delete: fileNodeIcon(11, fileCross(11, 9, 2)),
+};
+for (const [block, icon] of Object.entries(FILE_NODE_ICONS)) {
+  FUNCIONES[block] = icon;
+  CAJAS[block] = [0, 0, FILE_NODE_SIZE * 1.5, FILE_NODE_SIZE * 1.5];
+  TAMANOS[block] = [FILE_NODE_SIZE, FILE_NODE_SIZE];
+}
 
 // The three constants in the palette: the box of a path in its colour with the two-box glyph; the empty and Not A Path ones
 // on the pale yellow of their diagram constants.

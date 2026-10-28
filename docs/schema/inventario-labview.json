@@ -478,7 +478,7 @@
       "ref": "design/05-decisions.md DT-066"
     },
     "funciones-de-archivo": {
-      "desc": "the file refnum and the file functions: Open/Create/Replace File, Close File, Write to and Read from Text File, Get File Size, Refnum to Path and Delete, with the file refnum constant",
+      "desc": "what is left of the file refnum after Open/Create/Replace File, Close File, Write to and Read from Text File, Get File Size and Delete (done): Refnum to Path and the Not A Refnum constant",
       "ref": "design/05-decisions.md DT-067 §10 (b)"
     },
     "hojas-de-calculo": {
@@ -5014,18 +5014,18 @@
     {
       "id": "palette.functions.programming.file-io.open-create-replace-file",
       "etiqueta": "Open/Create/Replace File",
-      "estado": "todo",
-      "labview": "Opens, creates or replaces a file from a path (or from a dialog if no path is wired) and gives its refnum.",
-      "necesita": "funciones-de-archivo",
-      "captura": "file-io/fio-palette_s.png"
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the six file functions are placed from the File I/O palettes",
+      "captura": "file-io/fio-palette_s.png",
+      "bloque": "open-create-replace-file"
     },
     {
       "id": "palette.functions.programming.file-io.close-file",
       "etiqueta": "Close File",
-      "estado": "todo",
-      "labview": "Closes an open file and gives back the path it was opened from.",
-      "necesita": "funciones-de-archivo",
-      "captura": "file-io/fio-palette_s.png"
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the six file functions are placed from the File I/O palettes",
+      "captura": "file-io/fio-palette_s.png",
+      "bloque": "close-file"
     },
     {
       "id": "palette.functions.programming.file-io.format-into-file",
@@ -5046,18 +5046,18 @@
     {
       "id": "palette.functions.programming.file-io.write-to-text-file",
       "etiqueta": "Write to Text File",
-      "estado": "todo",
-      "labview": "Writes a string, or an array of strings as lines, to a text file, opening it and closing it when it is given a path.",
-      "necesita": "funciones-de-archivo",
-      "captura": "file-io/fio-palette_s.png"
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the six file functions are placed from the File I/O palettes",
+      "captura": "file-io/fio-palette_s.png",
+      "bloque": "write-to-text-file"
     },
     {
       "id": "palette.functions.programming.file-io.read-from-text-file",
       "etiqueta": "Read from Text File",
-      "estado": "todo",
-      "labview": "Reads a number of characters, or of lines, from a text file.",
-      "necesita": "funciones-de-archivo",
-      "captura": "file-io/fio-palette_s.png"
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the six file functions are placed from the File I/O palettes",
+      "captura": "file-io/fio-palette_s.png",
+      "bloque": "read-from-text-file"
     },
     {
       "id": "palette.functions.programming.file-io.write-to-binary-file",
@@ -5868,10 +5868,10 @@
     {
       "id": "palette.functions.programming.file-io.advanced-file-functions.get-file-size",
       "etiqueta": "Get File Size",
-      "estado": "todo",
-      "labview": "Gives the size in bytes of an open file.",
-      "necesita": "funciones-de-archivo",
-      "captura": "file-io/af2_s.png"
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the six file functions are placed from the File I/O palettes",
+      "captura": "file-io/af2_s.png",
+      "bloque": "get-file-size"
     },
     {
       "id": "palette.functions.programming.file-io.advanced-file-functions.get-permissions",
@@ -5980,10 +5980,10 @@
     {
       "id": "palette.functions.programming.file-io.advanced-file-functions.delete",
       "etiqueta": "Delete",
-      "estado": "todo",
-      "labview": "Deletes a file or a folder, with a confirmation if asked.",
-      "necesita": "funciones-de-archivo",
-      "captura": "file-io/af2_s.png"
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the six file functions are placed from the File I/O palettes",
+      "captura": "file-io/af2_s.png",
+      "bloque": "delete"
     },
     {
       "id": "palette.functions.programming.file-io.advanced-file-functions.flush-file",
@@ -22693,6 +22693,756 @@
       "labview": "Opens the node's properties dialog.",
       "necesita": "propiedades",
       "captura": "visa/resource-name-m0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.write-to-text-file",
+      "etiqueta": "Write to Text File",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the right-click menu of Write to Text File is the measured one",
+      "captura": "file-io/behavior/wt-menu_s.png"
+    },
+    {
+      "id": "context.write-to-text-file.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the right-click menu of Write to Text File is the measured one",
+      "captura": "file-io/behavior/wt-menu_s.png"
+    },
+    {
+      "id": "context.write-to-text-file.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the node's label.",
+      "necesita": "etiquetas",
+      "captura": "file-io/behavior/wt-menu_s.png"
+    },
+    {
+      "id": "context.write-to-text-file.visible-items.terminals",
+      "etiqueta": "Terminals",
+      "estado": "built",
+      "prueba": "test/editor/diagram-view.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
+      "captura": "file-io/behavior/wt-menu_s.png"
+    },
+    {
+      "id": "context.write-to-text-file.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the function's help.",
+      "necesita": "ayuda-contextual",
+      "captura": "file-io/behavior/wt-menu_s.png"
+    },
+    {
+      "id": "context.write-to-text-file.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Looks for examples that use the function.",
+      "necesita": "ejemplos",
+      "captura": "file-io/behavior/wt-menu_s.png"
+    },
+    {
+      "id": "context.write-to-text-file.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "file-io/behavior/wt-menu_s.png"
+    },
+    {
+      "id": "context.write-to-text-file.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.write-to-text-file.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
+    },
+    {
+      "id": "context.write-to-text-file.file-i-o-palette",
+      "etiqueta": "File I/O Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the File I/O functions.",
+      "necesita": "paleta-archivos-en-menu",
+      "captura": "file-io/behavior/wt-menu_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.write-to-text-file.string-palette",
+      "etiqueta": "String Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the string functions.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/behavior/wt-menu_s.png"
+    },
+    {
+      "id": "context.write-to-text-file.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the right-click menu of Write to Text File is the measured one",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.write-to-text-file.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.write-to-text-file.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.write-to-text-file.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.write-to-text-file.create.scalar",
+      "etiqueta": "Scalar",
+      "estado": "todo",
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "file-io/behavior/wt-menu_s.png"
+    },
+    {
+      "id": "context.write-to-text-file.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "file-io/behavior/wt-menu_s.png"
+    },
+    {
+      "id": "context.write-to-text-file.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "file-io/behavior/wt-menu_s.png"
+    },
+    {
+      "id": "context.write-to-text-file.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "file-io/behavior/wt-menu_s.png"
+    },
+    {
+      "id": "context.write-to-text-file.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.write-to-text-file.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
+    },
+    {
+      "id": "context.write-to-text-file.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the function with another, keeping the wires that fit.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/behavior/wt-menu_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.write-to-text-file.convert-eol",
+      "etiqueta": "Convert EOL",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::Convert EOL and Read Lines are ticked from the menu of the text file nodes",
+      "captura": "file-io/behavior/wt-menu_s.png"
+    },
+    {
+      "id": "context.write-to-text-file.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the node and joins the wire that went in to the one that came out.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/behavior/wt-menu_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.write-to-text-file.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the node's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "file-io/behavior/wt-menu_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.read-from-text-file",
+      "etiqueta": "Read from Text File",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the right-click menu of Read from Text File is the measured one",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the right-click menu of Read from Text File is the measured one",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the node's label.",
+      "necesita": "etiquetas",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.visible-items.terminals",
+      "etiqueta": "Terminals",
+      "estado": "built",
+      "prueba": "test/editor/diagram-view.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the function's help.",
+      "necesita": "ayuda-contextual",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Looks for examples that use the function.",
+      "necesita": "ejemplos",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.read-from-text-file.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
+    },
+    {
+      "id": "context.read-from-text-file.file-i-o-palette",
+      "etiqueta": "File I/O Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the File I/O functions.",
+      "necesita": "paleta-archivos-en-menu",
+      "captura": "file-io/behavior/rt-menu_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.read-from-text-file.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the function with another, keeping the wires that fit.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.read-lines",
+      "etiqueta": "Read Lines",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::Convert EOL and Read Lines are ticked from the menu of the text file nodes",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.convert-eol",
+      "etiqueta": "Convert EOL",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::Convert EOL and Read Lines are ticked from the menu of the text file nodes",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.representation",
+      "etiqueta": "Representation",
+      "estado": "todo",
+      "labview": "Submenu of the numeric representation; which terminal it applies to and its contents were not read.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the node and joins the wire that went in to the one that came out.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/behavior/rt-menu_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.read-from-text-file.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the right-click menu of Read from Text File is the measured one",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.read-from-text-file.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.read-from-text-file.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.read-from-text-file.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.read-from-text-file.create.scalar",
+      "etiqueta": "Scalar",
+      "estado": "todo",
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "file-io/behavior/rt-menu_s.png"
+    },
+    {
+      "id": "context.read-from-text-file.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.read-from-text-file.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
+    },
+    {
+      "id": "context.read-from-text-file.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the node's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "file-io/behavior/rt-menu_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.file-function",
+      "etiqueta": "File Function",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the right-click menus of the other four file functions are the measured ones",
+      "captura": "file-io/look/menu-open.png"
+    },
+    {
+      "id": "context.file-function.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the right-click menus of the other four file functions are the measured ones",
+      "captura": "block-diagram/numeric-menu-funcion.png"
+    },
+    {
+      "id": "context.file-function.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the node's label.",
+      "necesita": "etiquetas",
+      "captura": "file-io/look/menu-open.png"
+    },
+    {
+      "id": "context.file-function.visible-items.terminals",
+      "etiqueta": "Terminals",
+      "estado": "built",
+      "prueba": "test/editor/diagram-view.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
+      "captura": "block-diagram/numeric-vista-terminales.png"
+    },
+    {
+      "id": "context.file-function.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the function's help.",
+      "necesita": "ayuda-contextual",
+      "captura": "file-io/look/menu-open.png"
+    },
+    {
+      "id": "context.file-function.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Looks for examples that use the function.",
+      "necesita": "ejemplos",
+      "captura": "file-io/look/menu-open.png"
+    },
+    {
+      "id": "context.file-function.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "file-io/look/menu-open.png"
+    },
+    {
+      "id": "context.file-function.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.file-function.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
+    },
+    {
+      "id": "context.file-function.file-i-o-palette",
+      "etiqueta": "File I/O Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the file functions.",
+      "necesita": "paleta-archivos-en-menu",
+      "captura": "file-io/look/menu-open.png",
+      "separado": true
+    },
+    {
+      "id": "context.file-function.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the function with another, keeping the wires that fit.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/look/menu-open.png"
+    },
+    {
+      "id": "context.file-function.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the node and joins the wire that went in to the one that came out.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/look/menu-open.png",
+      "separado": true
+    },
+    {
+      "id": "context.file-function.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the right-click menus of the other four file functions are the measured ones",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.file-function.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.file-function.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.file-function.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.file-function.create.scalar",
+      "etiqueta": "Scalar",
+      "estado": "todo",
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "file-io/look/menu-open.png"
+    },
+    {
+      "id": "context.file-function.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "file-io/look/menu-open.png"
+    },
+    {
+      "id": "context.file-function.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "file-io/look/menu-open.png"
+    },
+    {
+      "id": "context.file-function.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "file-io/look/menu-open.png"
+    },
+    {
+      "id": "context.file-function.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.file-function.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
+    },
+    {
+      "id": "context.file-function.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the node's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "file-io/look/menu-open.png",
+      "separado": true
+    },
+    {
+      "id": "context.advanced-file-function",
+      "etiqueta": "Advanced File Function",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the right-click menus of the other four file functions are the measured ones",
+      "captura": "file-io/look/hover-getsize-8x.png"
+    },
+    {
+      "id": "context.advanced-file-function.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the right-click menus of the other four file functions are the measured ones",
+      "captura": "block-diagram/numeric-menu-funcion.png"
+    },
+    {
+      "id": "context.advanced-file-function.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the node's label.",
+      "necesita": "etiquetas",
+      "captura": "file-io/look/hover-getsize-8x.png"
+    },
+    {
+      "id": "context.advanced-file-function.visible-items.terminals",
+      "etiqueta": "Terminals",
+      "estado": "built",
+      "prueba": "test/editor/diagram-view.test.mjs::la_vista_de_terminales_colorea_cada_terminal_con_su_tipo",
+      "captura": "block-diagram/numeric-vista-terminales.png"
+    },
+    {
+      "id": "context.advanced-file-function.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the function's help.",
+      "necesita": "ayuda-contextual",
+      "captura": "file-io/look/hover-getsize-8x.png"
+    },
+    {
+      "id": "context.advanced-file-function.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Looks for examples that use the function.",
+      "necesita": "ejemplos",
+      "captura": "file-io/look/hover-getsize-8x.png"
+    },
+    {
+      "id": "context.advanced-file-function.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "file-io/look/hover-getsize-8x.png"
+    },
+    {
+      "id": "context.advanced-file-function.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.advanced-file-function.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
+    },
+    {
+      "id": "context.advanced-file-function.file-i-o-palette",
+      "etiqueta": "Advanced File Functions Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the file functions.",
+      "necesita": "paleta-archivos-en-menu",
+      "captura": "file-io/look/hover-getsize-8x.png",
+      "separado": true
+    },
+    {
+      "id": "context.advanced-file-function.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the function with another, keeping the wires that fit.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/look/hover-getsize-8x.png"
+    },
+    {
+      "id": "context.advanced-file-function.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the node and joins the wire that went in to the one that came out.",
+      "necesita": "menus-contextuales",
+      "captura": "file-io/look/hover-getsize-8x.png",
+      "separado": true
+    },
+    {
+      "id": "context.advanced-file-function.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/file-io-nodes.test.mjs::the right-click menus of the other four file functions are the measured ones",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.advanced-file-function.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.advanced-file-function.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.advanced-file-function.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.advanced-file-function.create.scalar",
+      "etiqueta": "Scalar",
+      "estado": "todo",
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "file-io/look/hover-getsize-8x.png"
+    },
+    {
+      "id": "context.advanced-file-function.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "file-io/look/hover-getsize-8x.png"
+    },
+    {
+      "id": "context.advanced-file-function.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "file-io/look/hover-getsize-8x.png"
+    },
+    {
+      "id": "context.advanced-file-function.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "file-io/look/hover-getsize-8x.png"
+    },
+    {
+      "id": "context.advanced-file-function.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.advanced-file-function.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
+    },
+    {
+      "id": "context.advanced-file-function.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the node's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "file-io/look/hover-getsize-8x.png",
       "separado": true
     },
     {
