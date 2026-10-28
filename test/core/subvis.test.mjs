@@ -7,6 +7,7 @@ import { test } from "node:test";
 
 import { compilar, runnableVI } from "../../core/compiler/compiler.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
+import { createVirtualHost } from "../../core/runtime/scheduler.mjs";
 import { loadHierarchy } from "../../core/model/hierarchy.mjs";
 import { CAT, buildVI, callerCatalog } from "../helpers.mjs";
 
@@ -154,16 +155,15 @@ async function timeTwoParallelCalls(execution) {
     b.wire("a.indicator_1", "ra.value");
     b.wire("b.indicator_1", "rb.value");
   });
-  const start = performance.now();
-  await run(caller, cat);
-  return performance.now() - start;
+  // On the virtual host (DT-061 §6) the waits end at exact times, whatever the load of the machine.
+  const host = createVirtualHost();
+  await run(caller, cat, {}, { host });
+  return host.now();
 }
 
 test("two parallel calls to a non-reentrant subVI that waits take turns; reentrant ones overlap", async () => {
-  const serialized = await timeTwoParallelCalls();
-  assert.ok(serialized >= 290, `non-reentrant: ${serialized} ms, expected about 300`);
-  const overlapped = await timeTwoParallelCalls({ reentrancy: "preallocated" });
-  assert.ok(overlapped < 250, `preallocated clones: ${overlapped} ms, expected about 150`);
+  assert.equal(await timeTwoParallelCalls(), 300, "non-reentrant: one call after the other");
+  assert.equal(await timeTwoParallelCalls({ reentrancy: "preallocated" }), 150, "preallocated clones: at the same time");
 });
 
 /** echo: a subVI that waits, then returns its input `x` unchanged. */

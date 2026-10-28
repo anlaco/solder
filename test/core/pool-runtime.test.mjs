@@ -23,8 +23,11 @@ async function runOnPool(vi, values = {}, options = {}, cat = CAT) {
   return Object.fromEntries(Object.entries(written).map(([nodeId, value]) => [byId[nodeId], value]));
 }
 
-/** `loops` For Loops in parallel, each of `count` turns of Wait (ms) `ms`, showing its "i". */
-const waitingLoops = (loops, count, ms) =>
+/**
+ * `loops` For Loops in parallel, each of `count` turns of Wait (ms) `ms`, showing its "i"; with `timers`, each
+ * also hands out the millisecond timer after each of its waits, through an indexing tunnel, to `timers<loop>`.
+ */
+const waitingLoops = (loops, count, ms, { timers = false } = {}) =>
   buildVI(CAT, (b) => {
     for (let loop = 0; loop < loops; loop++) {
       b.loop(`l${loop}`, "for-loop");
@@ -35,17 +38,23 @@ const waitingLoops = (loops, count, ms) =>
       b.wire(`ms${loop}.result`, `wait${loop}.ms`);
       b.node(`shown${loop}`, "indicator", null, `l${loop}`);
       b.wire(`l${loop}:i.i`, `shown${loop}.value`);
+      if (timers) {
+        b.node(`timers${loop}`, "arr-indicator", { type: { array: "u32" } });
+        b.wire(`wait${loop}.result`, `timers${loop}.value`);
+      }
     }
   });
 
 test("parallel loops that wait run on the pool, at the same time, and give their values", async () => {
-  // The first Run starts the pool's workers; the editor's pool is already warm from then on.
-  await runOnPool(waitingLoops(1, 1, 0));
-  const start = performance.now();
-  const written = await runOnPool(waitingLoops(4, 40, 2));
-  const elapsed = performance.now() - start;
-  assert.deepEqual(written, { shown0: 39, shown1: 39, shown2: 39, shown3: 39 });
-  assert.ok(elapsed < 4 * 40 * 2, `in parallel: ${elapsed.toFixed(0)} ms`);
+  const loops = 4;
+  const written = await runOnPool(waitingLoops(loops, 40, 2, { timers: true }));
+  for (let loop = 0; loop < loops; loop++) assert.equal(written[`shown${loop}`], 39);
+  // At the same time: every loop started waiting before any loop finished. Unlike a wall-clock bound, this
+  // holds however loaded the machine is.
+  const timers = Array.from({ length: loops }, (_, loop) => written[`timers${loop}`]);
+  const latestFirstWait = Math.max(...timers.map((loopTimers) => loopTimers[0]));
+  const earliestLastWait = Math.min(...timers.map((loopTimers) => loopTimers.at(-1)));
+  assert.ok(latestFirstWait < earliestLastWait, `the loops overlap: ${latestFirstWait} < ${earliestLastWait}`);
 });
 
 /** A functional global that counts its calls and waits 0 ms while it is called. */
