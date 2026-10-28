@@ -2,9 +2,9 @@
 // `--release` builds it optimized, as `npm run dist` needs; without it, the debug build of the tests.
 
 import { spawnSync } from "node:child_process";
-import { copyFileSync } from "node:fs";
+import { copyFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { ADDON_PATH } from "../native/solder-io-node/solder-io.mjs";
+import { ADDON_PATH, addonFileName } from "../native/solder-io-node/solder-io.mjs";
 
 const REPOSITORY_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const ADDON_CRATE = "solder-io-node";
@@ -29,4 +29,19 @@ export function buildNative({ release = false } = {}) {
   copyFileSync(new URL(`target/${profileDirectory}/${libraryFileName}`, `file://${REPOSITORY_ROOT}`), ADDON_PATH);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) buildNative({ release: process.argv.includes("--release") });
+/**
+ * The addons a release packs that this machine does not build (DT-062): Windows' is built in the Windows virtual
+ * machine (`cargo build --release -p solder-io-node`) and its `solder_io_node.dll` copied here under this name.
+ */
+const ADDONS_BUILT_ELSEWHERE = [addonFileName("win32", "x64")];
+
+/** Fails when an addon the release packs is missing, since electron-builder would leave it out without a word. */
+export function requireReleaseAddons() {
+  const missing = ADDONS_BUILT_ELSEWHERE.filter((fileName) => !existsSync(new URL(`../native/solder-io-node/${fileName}`, import.meta.url)));
+  if (missing.length) throw new Error(`The release needs ${missing.join(", ")} in native/solder-io-node/ (built in the Windows virtual machine).`);
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  buildNative({ release: process.argv.includes("--release") });
+  if (process.argv.includes("--for-release")) requireReleaseAddons();
+}

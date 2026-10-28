@@ -13,7 +13,10 @@
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
-export const ADDON_PATH = fileURLToPath(new URL("./solder-io.node", import.meta.url));
+/** The addon's file for a system and processor: one per platform, so a release can carry Linux's and Windows'. */
+export const addonFileName = (platform = process.platform, arch = process.arch) => `solder-io-${platform}-${arch}.node`;
+
+export const ADDON_PATH = fileURLToPath(new URL(`./${addonFileName()}`, import.meta.url));
 
 let solderIo = null;
 
