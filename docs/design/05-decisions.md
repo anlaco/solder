@@ -32,6 +32,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [065](#dt-065) | Our own VISA in Rust: a library crate, an N-API addon run in a `utilityProcess`; no NI-VISA | Accepted · being implemented |
 | [062](#dt-062) | Until 1.0 every beta is published from `main`: a feature raises MINOR, a fix raises PATCH | Accepted · in use |
 | [063](#dt-063) | A Run uses every core: a pool of workers over one shared memory; independent Runs keep separate memories | Accepted · not implemented |
+| [068](#dt-068) | A wire with several sinks is a tree from its geometry: the junction dot is where routes part, never stored | Accepted · implemented |
 
 ## The 34 Red decisions
 
@@ -2938,3 +2939,49 @@ Decided by the developer while starting (b):
 | Open/Create/Replace, Write and Read Text File, Close File, Get File Size and Delete give LabVIEW's bytes, positions and codes | `native/solder-io/tests/files.rs` and `test/core/file-io.test.mjs` with the measured tables of `2026-10-26-file-io-behavior.md`, `2026-10-28-file-size-delete.md` and `2026-10-28-file-io-gaps.md` | Verified (2026-10-28), on Linux; the end of line written is the host's |
 | Write and Read Delimited Spreadsheet give LabVIEW's bytes and arrays | Tests with the same report's tables | **Unverified** |
 | Linux and macOS path rules and end of line | Measured in LabVIEW for Linux | **Unverified** |
+
+## DT-068
+
+**A wire with several sinks is a tree that comes from its geometry: one route per sink is stored, the tree is the
+union of the routes that leave the same source, and a junction dot is drawn wherever two of them part. The dot is
+never stored.**
+
+- **Status:** Accepted on 2026-10-28 by the developer. It replaces the stored branch point (`union` in memory,
+  `junction` in the `.sdg`).
+- **Why:** the dot was a point saved when the branch was made, unrelated to the routes: moving a node or dragging a
+  segment left it floating, and the branches came apart. It was also born in the wrong place. Measured in LabVIEW on
+  2026-10-28 (`labview-captures/reports/2026-10-28-wire-junctions-a.md`, `-b.md`): a dot is wherever three branches
+  meet; it moves with the segment it lies on, follows the sink whose branch leaves there, and the shared vertical is
+  one segment that carries every branch. A point that is a function of the geometry needs no storage, and storing it
+  is what made it float. An explicit tree in the `.sdg` was considered and left out: no measured behavior needs it.
+
+### Decision
+
+1. **The tree** of a source is the union of the routes of its wires (`editor/src/block-diagram/wire-tree.mjs`).
+   Two routes part at the last point they share walking from the source; that point, unless it is the source
+   terminal itself, is a junction and gets a dot of the wire's colour. Broken wires are not part of it.
+2. **A shared segment is one segment.** Dragging a segment drags it in every wire of the same source whose route
+   shares it from the source (same start, same direction), so the branches and the junctions on it stay together.
+3. **Where a branch is born** (measured, `-a.md`): a second wire from a wired output takes the default route, so the
+   trunk grows to the farthest sink and each nearer branch leaves it with a dot; a wire pulled from an input and
+   finished on a horizontal comes down at the click when the input is below, no closer than 3 px to the input, and
+   goes up next to the input (5 px before it when the click is left of it, 3 px otherwise) when the input is above;
+   finished on a vertical, it leaves from the point of the segment nearest the input, never at the click.
+4. **The `.sdg`** keeps `bends` per sink as before and no longer writes `junction`; a `junction` saved earlier is
+   accepted by the schema and not read, so older files open and show their dots where the routes part.
+
+### Consequences
+
+- `Gr.fijarUnion` and the wire's `union` are gone; the clipboard and the format no longer carry them.
+- Not done and not measured: in LabVIEW the source moving right takes the shared vertical with it (output x + 7,
+  `-b.md` Q1), while Solder keeps a wire's bends where they are; selecting a branch and deleting it (what is left,
+  whether the rest becomes one plain wire); a branch started on a junction.
+
+### How it is verified
+
+| What | Mechanism | Status |
+|------|-----------|--------|
+| Dots where branches part, trunk that grows, dot at the elbow for a sink above and one below | `test/editor/diagram-editing.test.mjs`, `test/editor/wire-tree.test.mjs` with the numbers of `-a.md` Q3 | Verified (2026-10-28) |
+| The dot follows nodes and dragged segments; a shared segment moves every branch | `test/editor/diagram-editing.test.mjs` with `-b.md` Q1–Q4 | Verified (2026-10-28) |
+| A branch finished on a horizontal or a vertical is born where LabVIEW puts it | `test/editor/diagram-editing.test.mjs` with `-a.md` Q1, Q2 | Verified (2026-10-28) |
+| An old `junction` opens and is not kept | `test/end-to-end/qvi-round-trip.test.mjs` | Verified (2026-10-28) |

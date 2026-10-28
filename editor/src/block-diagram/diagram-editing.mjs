@@ -28,11 +28,12 @@
 //              node or one of its terminals; `en`, the canvas point where it was opened
 //   aviso      why the last action could not be done (spec/05 rule 31)
 
-import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ARRAY_INDEFINIDA, MEDIDAS_ESTRUCTURA, PANEL_ARRAY_TERMINAL_MENU, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, borderFaceFor, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, terminales } from "./diagram-view.mjs";
+import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ARRAY_INDEFINIDA, MEDIDAS_ESTRUCTURA, PANEL_ARRAY_TERMINAL_MENU, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, borderFaceFor, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, ruta, terminales } from "./diagram-view.mjs";
 import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
 import * as EI from "./edit-items-dialog.mjs";
 import { endPoint } from "./broken-wire.mjs";
+import { sharedSegmentCount } from "./wire-tree.mjs";
 import * as CP from "../front-panel/connector-pane.mjs";
 import { graphCommand, graphMenuMarks, graphMenuVariants, isGraphMenu } from "../front-panel/graph-menus.mjs";
 import * as Et from "../common/labels.mjs";
@@ -593,7 +594,7 @@ function correrMarcos(g, id, desde, dx) {
   if (!ids.length || !dx) return g;
   const corridos = Gr.conContenido(g, ids);
   const r = Gr.mover(g, ids, dx, 0);
-  return { ...r, cables: r.cables.map((c) => (corridos.has(c.de.nodo) || corridos.has(c.a.nodo) ? (({ codos, union, ...resto }) => resto)(c) : c)) };
+  return { ...r, cables: r.cables.map((c) => (corridos.has(c.de.nodo) || corridos.has(c.a.nodo) ? (({ codos, ...resto }) => resto)(c) : c)) };
 }
 
 /** El marco al que se refiere un menú: en una Flat, el que hay en la x donde se hizo clic (de fábrica, el primero); en una Stacked, el que se ve. */
@@ -650,7 +651,7 @@ function cambiarSecuencia(g, id) {
     const { activo, ...config } = n.config ?? {};
     return { ...n, tipo: flat ? "stacked-sequence" : "flat-sequence", tam, config: { ...config, marcos, ...(flat ? { activo: 0 } : {}) } };
   });
-  return { ...r, nodos, cables: r.cables.map(({ codos, union, ...c }) => c) };
+  return { ...r, nodos, cables: r.cables.map(({ codos, ...c }) => c) };
 }
 
 /** Make This The Default Case y Remove Default: sólo un marco es el Default (case-edit5.png). */
@@ -928,15 +929,13 @@ export function moverA(d, ctx, p) {
     case "tramo": {
       const c = d.g.cables.find((k) => k.id === accion.cable);
       const ext = extremos(d.g, ctx);
-      const [a, b] = [endPoint(c.de, ext), endPoint(c.a, ext)];
-      const codos = c.codos ?? codosPorDefecto(a, b);
       const horizontal = accion.k % 2 === 0;
       const delta = Math.round(horizontal ? p.y - accion.y : p.x - accion.x);
       if (!delta) return d;
-      const r = moverTramo(codos, a, b, accion.k, delta);
-      const seleccion = d.seleccion.map((s) => (s === `${c.id}#${accion.k}` ? `${c.id}#${r.k}` : s));
+      const { g, k } = dragSegment(d.g, ext, c, accion.k, delta);
+      const seleccion = d.seleccion.map((s) => (s === `${c.id}#${accion.k}` ? `${c.id}#${k}` : s));
       const avance = horizontal ? { y: accion.y + delta } : { x: accion.x + delta };
-      return { ...d, g: Gr.fijarCodos(d.g, c.id, r.codos), seleccion, accion: { ...accion, k: r.k, ...avance } };
+      return { ...d, g, seleccion, accion: { ...accion, k, ...avance } };
     }
     case "rectangulo":
       return { ...d, accion: { ...accion, x1: p.x, y1: p.y } };
@@ -1026,25 +1025,47 @@ function indexedTunnelIfLoop(g, ctx, tunnelId, source) {
   return { ...g, nodos: g.nodos.map((n) => (n.id === tunnelId ? { ...n, config: { ...n.config, indexado: true } } : n)) };
 }
 
+/** A wire's bends, the default ones when it has none of its own, and its route. */
+function bendsAndRoute(wire, terminals) {
+  const [from, to] = [endPoint(wire.de, terminals), endPoint(wire.a, terminals)];
+  const bends = wire.codos ?? codosPorDefecto(from, to);
+  return { from, to, bends, route: ruta(from, to, bends) };
+}
+
+/**
+ * Drags segment `k` of `wire` by `delta`. A segment the wire shares with other branches of the same source is one
+ * segment of the tree, so they all move with it, and the junctions on it go along (DT-068, measured in
+ * labview-captures/reports/2026-10-28-wire-junctions-b.md Q3, Q5). Returns the graph and the index the dragged
+ * segment has now.
+ */
+function dragSegment(g, terminals, wire, k, delta) {
+  const dragged = bendsAndRoute(wire, terminals);
+  const moved = moverTramo(dragged.bends, dragged.from, dragged.to, k, delta);
+  let result = Gr.fijarCodos(g, wire.id, moved.codos);
+  if (Gr.esSuelto(wire.de)) return { g: result, k: moved.k };
+  for (const sibling of g.cables) {
+    const sameSource = sibling.id !== wire.id && !Gr.esSuelto(sibling.de) && sibling.de.nodo === wire.de.nodo && sibling.de.puerto === wire.de.puerto;
+    if (!sameSource || Gr.esSuelto(sibling.a)) continue;
+    const branch = bendsAndRoute(sibling, terminals);
+    if (sharedSegmentCount(dragged.route, branch.route) <= k) continue;
+    result = Gr.fijarCodos(result, sibling.id, moverTramo(branch.bends, branch.from, branch.to, k, delta).codos);
+  }
+  return { g: result, k: moved.k };
+}
+
 /** Joins two terminals with a wire shaped like a new one; why it cannot be done goes in `aviso`. */
 function wireTerminals(d, ctx, desde, sobre, p) {
   let codos;
-  let junction = null;
   if (desde.dir !== sobre.dir) {
     const ext = extremos(d.g, ctx);
     const [de, a] = desde.dir === "out" ? [desde, sobre] : [sobre, desde];
-    const source = ext.get(`${de.nodo}.${de.puerto}`);
-    codos = codosPorDefecto(source, ext.get(`${a.nodo}.${a.puerto}`));
-    // A second wire from an output that already has one is a branch of it: both share the vertical just after
-    // the source, and the dot sits on that elbow (2026-10-15-wire-bends.md §3).
-    const sourceIsWired = d.g.cables.some((c) => c.de.nodo === de.nodo && c.de.puerto === de.puerto);
-    if (sourceIsWired && codos.length === 1) junction = [codos[0], source.y];
+    // A second wire from an output that already has one is a branch of it: both share the vertical just after the
+    // source, so the trunk grows and the dot is where the branches part (2026-10-28-wire-junctions-a.md Q3, DT-068).
+    codos = codosPorDefecto(ext.get(`${de.nodo}.${de.puerto}`), ext.get(`${a.nodo}.${a.puerto}`));
   }
   const r = unir(d.g, ctx, desde, sobre, codos);
   if (r.motivo) return { ...d, accion: null, aviso: { texto: r.motivo, x: p.x, y: p.y } };
-  const isNewWire = r.g.cables.length > d.g.cables.length;
-  const g = junction && isNewWire ? Gr.fijarUnion(r.g, r.id, junction) : r.g;
-  return { ...d, g: ajustarSelectores(g, ctx), accion: null, seleccion: [] };
+  return { ...d, g: ajustarSelectores(r.g, ctx), accion: null, seleccion: [] };
 }
 
 /**
@@ -1065,9 +1086,8 @@ function rewireLooseEnd(d, ctx, sobre, p) {
 }
 
 /**
- * Un cable que se está tirando desde una entrada termina en otro cable: sale de
- * él una rama que lleva el mismo dato, con su punto de unión, como en LabVIEW.
- * Desde una salida no se puede: ese cable ya tiene quien lo alimente.
+ * A wire pulled from an input and finished on another wire: a branch that carries the same data leaves it, as in
+ * LabVIEW, and its dot is where it parts (DT-068). From an output it cannot be: that wire already has a source.
  */
 function unirACable(d, ctx, sobre, p) {
   const { desde } = d.accion;
@@ -1082,7 +1102,7 @@ function unirACable(d, ctx, sobre, p) {
   const r = rama(c.codos ?? codosPorDefecto(a, b), a, b, sobre.k, destino, p);
   const hecho = unir(d.g, ctx, { ...c.de, dir: "out" }, desde, r.codos);
   if (hecho.motivo) return { ...d, accion: null, aviso: { texto: hecho.motivo, x: p.x, y: p.y } };
-  return { ...d, g: ajustarSelectores(Gr.fijarUnion(hecho.g, hecho.id, r.union), ctx), accion: null, seleccion: [] };
+  return { ...d, g: ajustarSelectores(hecho.g, ctx), accion: null, seleccion: [] };
 }
 
 /** Soltar el botón. */

@@ -166,7 +166,7 @@ export function escribir(g, cat) {
     const [anchor, dir] = esSuelto(c.de) ? [c.a, "in"] : [c.de, "out"];
     const marco = marcoDe(g, cat, anchor.nodo, anchor.puerto, dir) ?? (esSuelto(c.a) || esSuelto(c.de) ? undefined : marcoDe(g, cat, c.a.nodo, c.a.puerto, "in"));
     ambito(ambitoDe(g, cat, anchor.nodo, anchor.puerto, dir), marco).wires.push({ from, to });
-    if (typeof to === "string" && (c.codos || c.union)) recorridos[to] = limpio({ bends: c.codos, junction: c.union });
+    if (typeof to === "string" && c.codos) recorridos[to] = { bends: c.codos };
   }
   // Un ámbito sin nada no lleva listas vacías.
   for (const a of ambitos.values()) {
@@ -353,10 +353,9 @@ export function leer(datos, cat) {
   };
   const cables = cablesPendientes.map((w, i) => {
     const c = { id: `c${g.siguiente + i}`, de: extremo(w.from, "out", w.marco), a: extremo(w.to, "in", w.marco) };
+    // A `junction` saved before DT-068 is not read: the dot is where the branches part.
     const codos = typeof w.to === "string" ? lay.wires?.[w.to]?.bends : undefined;
     if (codos) c.codos = codos;
-    const union = typeof w.to === "string" ? lay.wires?.[w.to]?.junction : undefined;
-    if (union) c.union = union;
     return c;
   });
   const extra = limpio({ meta: vi.meta, capabilities: vi.capabilities, connector: vi.connector, execution: vi.execution });

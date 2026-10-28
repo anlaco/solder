@@ -63,7 +63,6 @@ export function pasteFragment(g, fragment, { dx = 0, dy = 0, panelDx = dx, panel
   const pastedWires = fragment.wires.map((c) => {
     const wire = { ...structuredClone(c), id: `c${next++}`, de: { ...c.de, nodo: newId.get(c.de.nodo) }, a: { ...c.a, nodo: newId.get(c.a.nodo) } };
     if (c.codos) wire.codos = shiftBends(c.codos);
-    if (c.union) wire.union = [c.union[0] + dx, c.union[1] + dy];
     return wire;
   });
   return {

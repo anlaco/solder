@@ -9,6 +9,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- A wire's junction dot is drawn where its branches part, as in LabVIEW, so it no longer stays behind when a node
+  moves or a segment is dragged; a segment that branches share moves with all of them, and a branch finished on
+  another wire starts where LabVIEW starts it (DT-068).
+
 ## 0.7.0-beta — 2026-10-28
 
 A VI can now talk to instruments and read and write files, as in LabVIEW:

@@ -60,9 +60,8 @@ function viCompleto() {
   cablear(dbl, "result", mayor, "x");
   cablear(i32, "result", mayor, "y");
   void rango;
-  // Una rama del cable de la constante DBL, con su punto de unión.
+  // A branch of the DBL constant's wire: its dot is drawn where it parts from the other routes (DT-068).
   cablear(dbl, "result", ca, "value-2", [120, 240, 188]);
-  g = Gr.fijarUnion(g, g.cables.at(-1).id, [120, 266]);
   return g;
 }
 
@@ -99,6 +98,17 @@ test("lo que se guarda se abre igual", () => {
   // Se puede seguir editando: los ids nuevos no chocan con los que hay.
   const mas = Gr.crearNodo(abierto, CAT, "add", 0, 0);
   assert.equal(new Set(mas.g.nodos.map((n) => n.id)).size, mas.g.nodos.length);
+});
+
+// DT-068: a junction is where branches part, so a `junction` saved before is accepted and not read.
+test("a junction saved before DT-068 opens and is not kept", () => {
+  const vi = escribir(viCompleto(), CAT);
+  const [branchEnd] = Object.keys(vi.layout.wires);
+  vi.layout.wires[branchEnd] = { ...vi.layout.wires[branchEnd], junction: [1, 2] };
+  assert.ok(validar(vi), errores());
+  const opened = leer(vi, CAT);
+  assert.ok(opened.cables.every((wire) => !("union" in wire)));
+  assert.equal(escribir(opened, CAT).layout.wires[branchEnd].junction, undefined);
 });
 
 test("un vi vacío se guarda y se abre", () => {

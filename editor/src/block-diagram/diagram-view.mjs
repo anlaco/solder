@@ -20,6 +20,7 @@ import * as FileNodes from "./file-nodes.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { EMPTY_PATH, hostPathRules, pathToText } from "../../../core/model/paths.mjs";
 import { brokenWireMarks, endPoint } from "./broken-wire.mjs";
+import { junctionPoints } from "./wire-tree.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
 import { COLORES, CONSTANT_DIGITS, PATH, VISA_RESOURCE, aspecto, isUndefinedArray, esArray, esCluster, esEntero, esEnum, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
 import { GRAPH_KINDS, labelShown } from "../front-panel/graph-state.mjs";
@@ -717,30 +718,38 @@ export function ruta(a, b, codos = codosPorDefecto(a, b)) {
   return pts;
 }
 
-/** Cuánto antes de la entrada baja una rama: 12 px, medido en LabVIEW 2026 Q3. */
-const ANTES_RAMA = 12;
+/**
+ * How close to the input a branch may come down when it is finished on a horizontal: 3 px before where the wire meets
+ * the input, or 5 px when the input is above the wire and the click left of it (measured in LabVIEW 2026 Q3,
+ * labview-captures/reports/2026-10-28-wire-junctions-a.md Q1).
+ */
+const BRANCH_CLEARANCE = 3;
+const BRANCH_CLEARANCE_FROM_BELOW = 5;
 
 /**
- * Una rama que sale del tramo `k` de un cable (de `a` a `b`, con sus `codos`)
- * hacia la entrada `destino`, pinchada en `p`. Sigue el cable hasta ese tramo y
- * gira hacia el destino. Como en LabVIEW, en un tramo horizontal la unión no
- * queda donde se pincha, sino tan cerca del destino como deja el tramo: la rama
- * baja 12 px antes de la entrada. Devuelve los codos de la rama y su punto de
- * unión.
+ * A branch out of segment `k` of a wire (from `a` to `b`, with its `bends`) to the input `destino`, finished by a
+ * click at `click`. It follows the wire up to that segment and turns to the input. Measured in LabVIEW 2026 Q3
+ * (labview-captures/reports/2026-10-28-wire-junctions-a.md Q1, Q2): on a horizontal, with the input below, the branch
+ * comes down at the click, no closer to the input than BRANCH_CLEARANCE; with the input above, it goes up next to the
+ * input whatever the click. On a vertical, it leaves from the point of the segment nearest the input, never at the
+ * click. Returns the branch's bends; its junction is where it parts from the wire (wire-tree.mjs).
  */
-export function rama(codos, a, b, k, destino, p) {
-  const pts = ruta(a, b, codos);
-  const [[x1, y1], [x2, y2]] = [pts[k], pts[k + 1]];
-  const entre = (v, u, w) => Math.min(Math.max(v, Math.min(u, w)), Math.max(u, w));
+export function rama(bends, a, b, k, destino, click) {
+  const points = ruta(a, b, bends);
+  const [[x1, y1], [x2, y2]] = [points[k], points[k + 1]];
+  const within = (value, from, to) => Math.min(Math.max(value, Math.min(from, to)), Math.max(from, to));
   if (y1 === y2) {
-    const jx = f2(entre(destino.x - ANTES_RAMA, x1, x2));
-    const antes = codos.slice(0, k);
-    // En el último tramo, el que entra en `b`, falta la y a la que llega.
-    if (k > codos.length) antes.push(b.y);
-    return { codos: [...antes, jx], union: [jx, y1] };
+    const inputAbove = destino.y < y1;
+    const clickLeftOfInput = click.x < destino.x;
+    const closest = destino.x - (inputAbove && clickLeftOfInput ? BRANCH_CLEARANCE_FROM_BELOW : BRANCH_CLEARANCE);
+    const junctionX = f2(within(inputAbove ? closest : Math.min(click.x, closest), x1, x2));
+    const before = bends.slice(0, k);
+    // On the last segment, the one that enters `b`, the y it reaches is not among the bends yet.
+    if (k > bends.length) before.push(b.y);
+    return { codos: [...before, junctionX] };
   }
-  const jy = f2(entre(p.y, y1, y2));
-  return { codos: [...codos.slice(0, k), jy, f2(destino.x - ANTES_RAMA)], union: [x1, jy] };
+  // The vertical's x is the last bend kept: from it the branch runs on to the input's y and enters horizontally.
+  return { codos: bends.slice(0, k) };
 }
 
 /**
@@ -836,6 +845,22 @@ function tipoEntrada(n, t, g, resueltos) {
   return c ? resueltos.cables.get(c.id)?.tipo : resueltos.entradas.get(`${n.id}.${t.puerto}`);
 }
 
+/** Gathers the routes that leave each source terminal, which together are one wire's tree (DT-068). */
+function addRouteOfSource(routesBySource, wire, route, type) {
+  const key = `${wire.de.nodo}.${wire.de.puerto}`;
+  if (!routesBySource.has(key)) routesBySource.set(key, { type, routes: [] });
+  routesBySource.get(key).routes.push(route);
+}
+
+/** A dot of the wire's colour wherever two branches of the same wire part (DT-068). */
+function junctionDots(routesBySource) {
+  let dots = "";
+  for (const { type, routes } of routesBySource.values()) {
+    for (const [x, y] of junctionPoints(routes)) dots += `<circle class="union" cx="${f2(x)}" cy="${f2(y)}" r="2.2" fill="${aspecto(type).color}"/>`;
+  }
+  return dots;
+}
+
 /**
  * Everything the diagram paints inside the canvas. `d` is the state from
  * diagram-editing.mjs.
@@ -851,6 +876,7 @@ export function contenido(d0, ctx, resueltos) {
   let cables = "";
   let cunas = "";
   let tuneles = "";
+  const routesBySource = new Map();
   for (const c of g.cables) {
     const a = endPoint(c.de, ext);
     const b = endPoint(c.a, ext);
@@ -875,12 +901,13 @@ export function contenido(d0, ctx, resueltos) {
     cables += `</g>`;
     // En una Flat Sequence, un cable que va de un marco a uno posterior cruza cada separador por un túnel (secuencia-15.png).
     if (Gr.conectado(c)) tuneles += tunelesDeSecuencia(g, c, r, info.tipo);
-    // El punto de unión de una rama: un punto del color del cable.
-    if (c.union && !info.roto) cunas += `<circle class="union" cx="${f2(c.union[0])}" cy="${f2(c.union[1])}" r="2.2" fill="${aspecto(info.tipo).color}"/>`;
+    if (!info.roto && Gr.conectado(c)) addRouteOfSource(routesBySource, c, r, info.tipo);
     // El punto de coerción: una cuña roja en el borde de la entrada que convierte.
     const aSelector = g.nodos.find((k) => k.id === c.a.nodo)?.tipo === "case-selector";
     if (!info.roto && (info.coercion || (aSelector && esNumericoNoEntero(info.tipo)))) cunas += `<polygon class="coercion" points="${f2(b.x)},${f2(b.y - 2.7)} ${f2(b.x + 3.3)},${f2(b.y)} ${f2(b.x)},${f2(b.y + 2.7)}"/>`;
   }
+
+  cunas += junctionDots(routesBySource);
 
   // El cable que se está tirando: punteado, en horizontal hasta la x del ratón
   // y en vertical hasta él.

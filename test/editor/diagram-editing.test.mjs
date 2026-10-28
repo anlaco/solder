@@ -78,17 +78,88 @@ test("a new wire turns 7 px after its source, whichever end it starts from", () 
   }
 });
 
-// §3: a second wire from an output that already has one is a branch on the same vertical, with its dot on the elbow.
-test("a second wire from a wired output branches on the same vertical", () => {
-  let d = poner(poner(poner(ED.inicial(), "const", { x: 0, y: 60 }), "increment", { x: 200, y: 0 }), "increment", { x: 200, y: 120 });
+/** The junction dots the diagram draws, as [x, y]. */
+const junctionDots = (d) => [...D_contenido(d).matchAll(/class="union" cx="([^"]+)" cy="([^"]+)"/g)].map(([, x, y]) => [Number(x), Number(y)]);
+
+/** Drags a node by (dx, dy). */
+function moveNode(d, id, dx, dy) {
+  const node = d.g.nodos.find((n) => n.id === id);
+  const start = { x: node.x + 5, y: node.y + 5 };
+  const end = { x: start.x + dx, y: start.y + dy };
+  d = ED.pulsar(d, CTX, { tipo: "nodo", id }, start);
+  d = ED.moverA(d, CTX, end);
+  return ED.soltar(d, CTX, { tipo: "nodo", id }, end);
+}
+
+/** Drags segment `k` of a wire from `start` to `end`. */
+function dragSegment(d, wireId, k, start, end) {
+  d = ED.pulsar(d, CTX, { tipo: "tramo", cable: wireId, k }, start);
+  d = ED.moverA(d, CTX, end);
+  return ED.soltar(d, CTX, FONDO, end);
+}
+
+/** A constant wired to three Increments below it, each by a plain wire from the constant's output. */
+function threeSinks() {
+  let d = poner(ED.inicial(), "const", { x: 0, y: 0 });
+  for (const y of [60, 140, 200]) d = poner(d, "increment", { x: 200, y });
+  const [c, ...sinks] = ids(d);
+  for (const sink of sinks) d = cablear(d, terminal(d, c, "result"), terminal(d, sink, "x"));
+  return { d, c, sinks, source: extremos(d.g, CTX).get(`${c}.result`), inputY: (d, sink) => terminal(d, sink, "x")[1].y };
+}
+
+// 2026-10-28-wire-junctions-a.md Q3 (DT-068): more wires from a wired output share its vertical, which grows to the
+// farthest sink, and there is a dot wherever a branch leaves it; none at the source's elbow nor at the far end.
+test("wires from a wired output share one trunk with a dot where each branch leaves", () => {
+  const { d, sinks, source, inputY } = threeSinks();
+  const trunkX = source.x + SOURCE_STUB;
+  assert.ok(d.g.cables.every((wire) => wire.codos[0] === trunkX), "one vertical");
+  assert.ok(d.g.cables.every((wire) => !("union" in wire)), "the dot is not stored");
+  assert.deepEqual(junctionDots(d), [[trunkX, inputY(d, sinks[0])], [trunkX, inputY(d, sinks[1])]]);
+});
+
+// Q3: with one sink above the source and one below, the branches part at the source's elbow.
+test("a sink above and one below the source part at the elbow", () => {
+  let d = poner(ED.inicial(), "const", { x: 0, y: 100 });
+  d = poner(poner(d, "increment", { x: 200, y: 0 }), "increment", { x: 200, y: 200 });
   const [c, upper, lower] = ids(d);
-  d = cablear(d, terminal(d, c, "result"), terminal(d, upper, "x"));
   d = cablear(d, terminal(d, c, "result"), terminal(d, lower, "x"));
+  d = cablear(d, terminal(d, c, "result"), terminal(d, upper, "x"));
   const source = extremos(d.g, CTX).get(`${c}.result`);
-  const [first, second] = d.g.cables;
-  assert.deepEqual(second.codos, first.codos, "both share the vertical");
-  assert.equal(first.union, undefined, "the first wire has no dot");
-  assert.deepEqual(second.union, [source.x + SOURCE_STUB, source.y]);
+  assert.deepEqual(junctionDots(d), [[source.x + SOURCE_STUB, source.y]]);
+});
+
+// 2026-10-28-wire-junctions-b.md Q2, Q1: the dot stays on the wire when nodes move, because it is where the routes part.
+test("a junction follows the sink whose branch leaves there and stays on the wire when the source moves", () => {
+  let { d, c, sinks, source, inputY } = threeSinks();
+  const trunkX = source.x + SOURCE_STUB;
+  d = moveNode(d, sinks[0], 0, 30);
+  assert.deepEqual(junctionDots(d)[0], [trunkX, inputY(d, sinks[0])], "it slides down with the branch");
+  d = moveNode(d, sinks[0], 30, 0);
+  assert.deepEqual(junctionDots(d)[0], [trunkX, inputY(d, sinks[0])], "moving the sink sideways leaves it");
+  d = moveNode(d, c, 0, 20);
+  assert.deepEqual(junctionDots(d), [[trunkX, inputY(d, sinks[0])], [trunkX, inputY(d, sinks[1])]], "the source moving down leaves them");
+});
+
+// 2026-10-28-wire-junctions-b.md Q3: the shared vertical is one segment of the tree; every branch and its dots follow it.
+test("dragging a shared segment moves every branch on it, with its junctions", () => {
+  let { d, sinks, source, inputY } = threeSinks();
+  const trunkX = source.x + SOURCE_STUB;
+  const midTrunk = (source.y + inputY(d, sinks[0])) / 2;
+  d = dragSegment(d, d.g.cables[0].id, 1, { x: trunkX, y: midTrunk }, { x: trunkX + 20, y: midTrunk });
+  assert.ok(d.g.cables.every((wire) => wire.codos[0] === trunkX + 20), "all three verticals moved");
+  assert.deepEqual(junctionDots(d), [[trunkX + 20, inputY(d, sinks[0])], [trunkX + 20, inputY(d, sinks[1])]]);
+});
+
+// 2026-10-28-wire-junctions-b.md Q4: dragging a branch's own horizontal slides its dot along the trunk; the others stay.
+test("dragging the horizontal that leaves a junction slides the dot along the trunk", () => {
+  let { d, sinks, source, inputY } = threeSinks();
+  const trunkX = source.x + SOURCE_STUB;
+  const branchY = inputY(d, sinks[0]);
+  const [first, ...others] = d.g.cables;
+  const othersBefore = others.map((wire) => wire.codos);
+  d = dragSegment(d, first.id, 2, { x: trunkX + 50, y: branchY }, { x: trunkX + 50, y: branchY + 20 });
+  assert.deepEqual(d.g.cables.slice(1).map((wire) => wire.codos), othersBefore, "the other branches do not move");
+  assert.deepEqual(junctionDots(d)[0], [trunkX, branchY + 20]);
 });
 
 test("un cable también se hace con dos clics", () => {
@@ -420,37 +491,70 @@ test("la constante booleana cambia con un clic y se mueve arrastrándola", () =>
   assert.equal(e.g.nodos[0].config.mode, "and");
 });
 
-// En LabVIEW 2026 Q3: un cable que se tira desde una entrada y se suelta en otro
-// cable sale de él, con un punto de unión, y baja 12 px antes de la entrada.
-test("un cable que acaba en otro cable sale de él como una rama", () => {
-  let d = ED.inicial();
-  d = poner(d, "const", { x: 20, y: 40 });
-  d = poner(d, "add", { x: 200, y: 100 });
-  const [k, add] = ids(d);
-  d = cablear(d, terminal(d, k, "result"), terminal(d, add, "a"));
-  const padre = d.g.cables[0];
-  const [tb, pb] = terminal(d, add, "b");
-  // Clic en la entrada b y clic en el primer tramo del cable.
-  d = ED.pulsar(d, CTX, tb, pb);
-  d = ED.soltar(d, CTX, tb, pb);
-  const r = ruta(...[`${k}.result`, `${add}.a`].map((t) => extremos(d.g, CTX).get(t)), padre.codos);
-  d = ED.pulsar(d, CTX, { tipo: "tramo", cable: padre.id, k: 0 }, { x: r[0][0] + 5, y: r[0][1] });
-  assert.equal(d.g.cables.length, 2);
-  const nueva = d.g.cables[1];
-  assert.deepEqual([nueva.de, nueva.a], [padre.de, { nodo: add, puerto: "b" }], "lleva el mismo dato que el cable del que sale");
-  assert.equal(nueva.union[1], r[0][1], "la unión está en el tramo pinchado");
-  assert.equal(nueva.union[0], Math.min(pb.x - 12, r[1][0]), "tan cerca del destino como deja el tramo");
-  assert.equal(tipos(d.g, CAT).cables.get(nueva.id).roto, null);
-  assert.match(D_contenido(d), /class="union"/);
+/** Starts a wire on an input with a click and finishes it with a click on segment `k` of `wire` at `point`. */
+function branchOnto(d, input, wire, k, point) {
+  const [terminalTarget, terminalPoint] = input;
+  d = ED.soltar(ED.pulsar(d, CTX, terminalTarget, terminalPoint), CTX, terminalTarget, terminalPoint);
+  return ED.pulsar(d, CTX, { tipo: "tramo", cable: wire.id, k }, point);
+}
 
-  // Desde una salida, no: ese cable ya tiene fuente.
+/** A constant wired to input `wired` of an Add whose other input is free, and the wire's route. */
+function addWiredOn(wired) {
+  let d = poner(poner(ED.inicial(), "const", { x: 20, y: 40 }), "add", { x: 200, y: 100 });
+  const [constant, add] = ids(d);
+  d = cablear(d, terminal(d, constant, "result"), terminal(d, add, wired));
+  const wire = d.g.cables[0];
+  const route = ruta(...[`${constant}.result`, `${add}.${wired}`].map((t) => extremos(d.g, CTX).get(t)), wire.codos);
+  return { d, add, wire, route };
+}
+
+// 2026-10-28-wire-junctions-a.md Q1 (DT-068): a wire pulled from an input and finished on a horizontal of another wire
+// above it is a branch that comes down at the click, no closer to the input than 3 px; its dot is where it parts.
+test("a wire finished on a horizontal above its input branches down at the click", () => {
+  const { d: start, add, wire, route } = addWiredOn("a");
+  const [trunkX, wireY] = route.at(-2);
+  const input = terminal(start, add, "b");
+  const clickX = trunkX + 20;
+  let d = branchOnto(start, input, wire, 2, { x: clickX, y: wireY });
+  assert.equal(d.g.cables.length, 2);
+  const branch = d.g.cables[1];
+  assert.deepEqual([branch.de, branch.a], [wire.de, { nodo: add, puerto: "b" }], "it carries the data of the wire it leaves");
+  assert.deepEqual(branch.codos, [trunkX, wireY, clickX]);
+  assert.equal(tipos(d.g, CAT).cables.get(branch.id).roto, null);
+  assert.deepEqual(junctionDots(d), [[clickX, wireY]]);
+
+  d = branchOnto(start, input, wire, 2, { x: input[1].x + 10, y: wireY });
+  assert.deepEqual(junctionDots(d), [[input[1].x - 3, wireY]], "a click past the input stops 3 px before it");
+
+  // From an output it cannot be: that wire already has a source.
   d = poner(d, "const", { x: 20, y: 200 });
-  const k2 = ids(d)[2];
-  const [ts, ps] = terminal(d, k2, "result");
-  d = ED.soltar(ED.pulsar(d, CTX, ts, ps), CTX, ts, ps);
-  d = ED.pulsar(d, CTX, { tipo: "tramo", cable: padre.id, k: 0 }, { x: r[0][0] + 5, y: r[0][1] });
+  const output = terminal(d, ids(d)[2], "result");
+  d = branchOnto(d, output, wire, 2, { x: clickX, y: wireY });
   assert.equal(d.g.cables.length, 2);
   assert.match(d.aviso.texto, /already has a source/);
+});
+
+// Q1: with the input above the wire, the branch goes up next to the input whatever the click.
+test("a wire finished on a horizontal below its input branches up next to the input", () => {
+  const { d: start, add, wire, route } = addWiredOn("b");
+  const [trunkX, wireY] = route.at(-2);
+  const input = terminal(start, add, "a");
+  const d = branchOnto(start, input, wire, 2, { x: trunkX + 20, y: wireY });
+  assert.deepEqual(junctionDots(d), [[input[1].x - 5, wireY]]);
+});
+
+// Q2: finished on a vertical, the branch leaves from the point of the segment nearest its input, never at the click.
+test("a wire finished on a vertical branches from the point nearest its input", () => {
+  let d = poner(ED.inicial(), "const", { x: 0, y: 0 });
+  d = poner(poner(d, "increment", { x: 200, y: 200 }), "increment", { x: 200, y: 100 });
+  const [c, far, middle] = ids(d);
+  d = cablear(d, terminal(d, c, "result"), terminal(d, far, "x"));
+  const wire = d.g.cables[0];
+  const trunkX = wire.codos[0];
+  const input = terminal(d, middle, "x");
+  d = branchOnto(d, input, wire, 1, { x: trunkX, y: input[1].y - 40 });
+  assert.deepEqual(d.g.cables[1].codos, [trunkX]);
+  assert.deepEqual(junctionDots(d), [[trunkX, input[1].y]]);
 });
 
 function D_contenido(d) {

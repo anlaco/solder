@@ -183,10 +183,15 @@ loose. See §5.4.)*
 - A new wire turns **7 px after its source**, whichever end it was drawn from and however far the input is
   (measured 2026-10-15, `labview-captures/reports/2026-10-15-wire-bends.md` §1, §2, §5; the "4 px from where it is
   released" read from the video was wrong). A second wire from an output that already has one is a **branch** of it:
-  the two share that vertical and the junction dot sits on its elbow (§3). Tests in
-  `test/editor/diagram-editing.test.mjs`. **Unverified:** a wire finished on another wire puts the dot at the click
-  on a horizontal and on the elbow on the source's vertical (§4, one click each); Solder keeps the branch 12 px
-  before the input, as measured earlier, until this is measured again.
+  they share that vertical, which grows to the farthest sink.
+- **A wire with several sinks is a tree** (DT-068): a **junction dot** is drawn wherever two branches part, never at
+  the source terminal, and it is not stored, so it stays on the wire when nodes move or segments are dragged; a
+  segment two branches share is dragged as one, with its dots. A wire pulled from an input and finished on another
+  wire's horizontal comes down at the click when the input is below, no closer than 3 px to the input, and goes up
+  next to the input when it is above; finished on a vertical, it leaves from the point of the segment nearest the
+  input (measured 2026-10-28, `labview-captures/reports/2026-10-28-wire-junctions-a.md`, `-b.md`). Tests in
+  `test/editor/diagram-editing.test.mjs` and `test/editor/wire-tree.test.mjs`. **Unverified:** the source moving
+  right takes the shared vertical with it in LabVIEW, not in Solder; deleting one branch.
 - A **segment** is selected with a click, with marching ants only on it, and is
   dragged sideways: vertical ones horizontally and horizontal ones
   vertically. Dragging the first or the last, which are attached to a terminal,

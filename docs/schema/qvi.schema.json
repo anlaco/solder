@@ -94,7 +94,7 @@
                 "type": "array", "items": { "type": "number" }
               },
               "junction": {
-                "description": "Si el wire es una rama de otro que lleva el mismo dato, dónde sale de él: el punto de unión que se dibuja.",
+                "description": "Written before DT-068 and no longer read: a junction dot is drawn wherever two branches of the same wire part.",
                 "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2
               }
             }
