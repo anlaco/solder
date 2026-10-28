@@ -139,6 +139,14 @@ function defaultPieces(values) {
   return pieces;
 }
 
+/**
+ * One specifier of a parsed format applied to one argument, as Format Into String does it: `{ text }`, or
+ * `{ error }` with a FORMAT_ERRORS code. Array To Spreadsheet String applies it to every element.
+ */
+export function formatPiece(piece, arg, decimal = ".") {
+  return formatOne(piece, arg, decimal);
+}
+
 function formatOne(piece, arg, decimal) {
   const { conversion } = piece;
   if (TIME_CONVERSIONS.has(conversion)) throw new Error("Format Into String: the time formats %t and %T are not done yet.");

@@ -9,6 +9,8 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Array To Spreadsheet String and Spreadsheet String To Array, in Functions ▸ String, write and read arrays of
+  numbers and strings as LabVIEW does (DT-067).
 - A wire's junction dot is drawn where its branches part, as in LabVIEW, so it no longer stays behind when a node
   moves or a segment is dragged; a segment that branches share moves with all of them, and a branch finished on
   another wire starts where LabVIEW starts it (DT-068).

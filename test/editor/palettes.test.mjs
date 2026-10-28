@@ -397,7 +397,7 @@ test("cada función de string se pone en el diagrama con sus terminales", () => 
     ...INV.hijos(`${STRING}.additional-string-functions`),
   ].filter((e) => !e.id.endsWith(".thumbtack") && !INV.tieneContenido(e.id) && !e.etiqueta.includes("Conversion"));
   const hechas = todas.filter((e) => !esHueco(e) && e.bloque);
-  assert.equal(hechas.length, 17 + 10 + 2, "String (with Scan From String and Format Into String), Number/String Conversion y Additional String Functions");
+  assert.equal(hechas.length, 19 + 10 + 2, "String (with Scan From String, Format Into String and the two spreadsheet functions), Number/String Conversion y Additional String Functions");
   for (const e of hechas) {
     assert.ok(CAT.tiene(e.bloque), `${e.id}: su bloque ${e.bloque} no está en el catálogo`);
     assert.ok(G.FUNCIONES[ultimo(e.id)] && G.CAJAS[ultimo(e.id)], `${e.id}: sin glifo o sin caja`);
@@ -422,6 +422,8 @@ test("cada función de string se pone en el diagrama con sus terminales", () => 
   assert.deepEqual(etiquetas("number-to-fractional-string"), ["use system decimal point (T)", "number", "width (-)", "precision (6)", "F-format string"]);
   assert.deepEqual(etiquetas("decimal-string-to-number"), ["string", "offset", "default (0 I32)", "offset past number", "number"]);
   assert.deepEqual(etiquetas("fract-exp-string-to-number"), ["use system decimal point (T)", "string", "offset", "default (0 DBL)", "offset past number", "number"]);
+  assert.deepEqual(etiquetas("array-to-spreadsheet-string"), ["format string", "array", "delimiter (Tab)", "spreadsheet string"]);
+  assert.deepEqual(etiquetas("spreadsheet-string-to-array"), ["format string", "spreadsheet string", "array type (2D Dbl)", "delimiter (Tab)", "array"]);
   // Las medidas del diagrama, a 1:1, en píxeles: String Length, 32 × 17; String Subset, 44 × 32; To Upper Case, 37 × 11.
   const medida = (b) => {
     const [x0, y0, x1, y1] = G.CAJAS[b];
@@ -506,4 +508,20 @@ test("every entry of Ring & Enum and every built control has its palette icon", 
   const ringAndEnum = INV.hijos("palette.controls.modern.ring-and-enum");
   assert.deepEqual(ringAndEnum.map((entry) => entry.etiqueta), ["Text Ring", "Menu Ring", "Enum", "Pict Ring", "Text & Pict Ring"]);
   for (const entry of ringAndEnum) assert.ok(G.CONTROLES[ultimo(entry.id)], `${entry.id}: no icon`);
+});
+
+// 2026-10-28-spreadsheet-strings.md §1: both spreadsheet functions are 32 x 32 with the inputs on the left column, the
+// delimiter alone in the middle one and the output on the right; the hot rectangles are LabVIEW's.
+test("the spreadsheet functions have LabVIEW's terminal rectangles", () => {
+  const zones = (block) => {
+    const { g, ids } = con(block);
+    const node = g.nodos.find((n) => n.id === ids[0]);
+    return Object.fromEntries(terminales(node, CTX).map((t) => [t.puerto, [t.zona.x - node.x, t.zona.y - node.y, t.zona.ancho, t.zona.alto]]));
+  };
+  assert.deepEqual(zones("array-to-spreadsheet-string"), {
+    "format-string": [0, 0, 11, 16], array: [0, 16, 11, 16], delimiter: [11, 0, 10, 32], "spreadsheet-string": [21, 0, 11, 32],
+  });
+  assert.deepEqual(zones("spreadsheet-string-to-array"), {
+    "format-string": [0, 0, 11, 11], "spreadsheet-string": [0, 11, 11, 10], "array-type": [0, 21, 11, 11], delimiter: [11, 0, 10, 32], array: [21, 0, 11, 32],
+  });
 });

@@ -4233,17 +4233,17 @@
     {
       "id": "palette.functions.programming.string.spreadsheet-string-to-array",
       "etiqueta": "Spreadsheet String To Array",
-      "estado": "todo",
-      "labview": "Converts a spreadsheet string (separated rows and columns) into an array.",
-      "necesita": "tipo-array",
+      "estado": "built",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "bloque": "spreadsheet-string-to-array",
       "captura": "string/string-subpaleta.png"
     },
     {
       "id": "palette.functions.programming.string.array-to-spreadsheet-string",
       "etiqueta": "Array To Spreadsheet String",
-      "estado": "todo",
-      "labview": "Converts an array into a spreadsheet string, with tabs and line breaks.",
-      "necesita": "tipo-array",
+      "estado": "built",
+      "prueba": "test/editor/palettes.test.mjs::cada función de string se pone en el diagrama con sus terminales",
+      "bloque": "array-to-spreadsheet-string",
       "captura": "string/string-subpaleta.png"
     },
     {

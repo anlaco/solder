@@ -512,6 +512,11 @@ array or string read by a local variable while another loop writes it is never t
       (DT-067, amendment of 2026-10-28). 987 tests green. Unverified: the look of the six nodes and of the refnum wire
       (being measured), the refnum control and indicator on the panel (not done), the end of line on Linux. Next:
       (c), the spreadsheet functions.*
+      *(c), first half, done on 2026-10-28: Array To Spreadsheet String and Spreadsheet String To Array, measured
+      ([`spreadsheet-strings`](../../labview-captures/reports/2026-10-28-spreadsheet-strings.md), which also settles the
+      decimal point: always "." with LabVIEW's default), in the core (`core/runtime/spreadsheet.mjs`, spec/04 Rule 21l)
+      and in Functions ▸ String with their measured terminals. 1015 tests green. Next: Write and Read Delimited
+      Spreadsheet, which need writing at the end of a file in `solder-io` for `append to file?`.*
    3. **VISA over serial:** ASRL resources and VISA Configure Serial Port, with a serial transport in Crucible; Bytes
       at Serial Port greyed until step 4.
    4. **Refnums with classes and the Property Node**, then the Invoke Node, in their own DT: classes Instr (VISA) and

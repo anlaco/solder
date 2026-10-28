@@ -857,6 +857,8 @@ function sustituir(t, vars) {
     if ("pathOrRefnum" in t) return vars[t.pathOrRefnum] ?? PATH;
     // Write to Text File's text: a string, or a 1D array of strings written as lines; a string unwired.
     if ("textOrLines" in t) return vars[t.textOrLines] ?? "string";
+    // The spreadsheet functions' array: one or two dimensions of numbers or strings; unwired, its default (DT-067).
+    if ("spreadsheetArray" in t) return vars[t.spreadsheetArray] ?? t.defecto;
     // An input that says whether it is wired, and an output whose type follows it: Read Lines gives an
     // array of strings with count wired and a string, the next line, without it (measured).
     if ("marksWired" in t) return t.is;
@@ -981,6 +983,11 @@ function ligar(declarado, llega, vars) {
   } else if ("textOrLines" in declarado) {
     const isLines = esArray(llega) && dimensionsOf(llega) === 1 && llega.array === "string";
     if ((llega === "string" || isLines) && vars[declarado.textOrLines] === undefined) vars[declarado.textOrLines] = llega;
+  } else if ("spreadsheetArray" in declarado) {
+    // A Boolean, cluster or path array, or one of more than two dimensions, breaks the wire (measured on Boolean).
+    const element = esArray(llega) ? llega.array : undefined;
+    const fits = dimensionsOf(llega) <= 2 && (element === "string" || esNumerico(element));
+    if (fits && vars[declarado.spreadsheetArray] === undefined) vars[declarado.spreadsheetArray] = llega;
   } else if ("var" in declarado) {
     if (vars[declarado.var] === undefined) vars[declarado.var] = llega;
   } else if ("clusterOf" in declarado) {

@@ -67,6 +67,10 @@ const IMPORTACIONES = [
   // Format Into String and Scan From String (spec/04 Rule 21j): the rows go through a buffer of
   // FORMAT_ROW_BYTES per row; the host writes the result and the error cluster.
   { modulo: "cad", nombre: "formatear", params: Array(9).fill("i32"), results: [] },
+  // Array To Spreadsheet String and Spreadsheet String To Array (DT-067 §9): the result's cell, the format, the
+  // array (or the text), the delimiter, the element type (SPREADSHEET_ELEMENTS) and the dimensions.
+  { modulo: "cad", nombre: "array_to_spreadsheet", params: Array(6).fill("i32"), results: [] },
+  { modulo: "cad", nombre: "spreadsheet_to_array", params: Array(6).fill("i32"), results: [] },
   { modulo: "cad", nombre: "escanear", params: Array(10).fill("i32"), results: ["i32"] },
   // celda, número, width y los bits de su tipo (un hexadecimal negativo es su complemento a dos).
   ...["dec", "hex", "oct"].map((nombre) => ({ modulo: "cad", nombre, params: ["i32", "f64", "i32", "i32"], results: [] })),
@@ -133,6 +137,17 @@ const IMPORTACIONES = [
   { modulo: "pth", nombre: "path_is_empty", params: ["i32"], results: ["i32"] },
   { modulo: "pth", nombre: "paths_equal", params: ["i32", "i32"], results: ["i32"] },
 ];
+
+/** The element types the spreadsheet functions take, numbered as the host reads them (DT-067 §9). */
+export const SPREADSHEET_ELEMENTS = Object.freeze(["number", "sgl", "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "string"]);
+
+/** A spreadsheet function's call: the result's cell, its three inputs by index, the element type and dimensions of `arrayType`. */
+function spreadsheetCall(e, importName, inputs, arrayType) {
+  const cell = e.celda();
+  const element = SPREADSHEET_ELEMENTS.indexOf(representacion(arrayType.array) ?? arrayType.array);
+  const delimiter = e.cableada(inputs[2]) ? e.entrada(inputs[2]) : [ins("i32.const", e.cadena(""))];
+  return [k32(cell), ...e.entrada(inputs[0]), ...e.entrada(inputs[1]), ...delimiter, k32(element), k32(dimensionsOf(arrayType)), ins("call", idImport(importName)), k32(cell)];
+}
 
 /** The VISA functions (DT-066): each waits for an instrument, and a Run that has one needs the I/O. */
 const VISA_FUNCTIONS = new Set(["visa-open", "visa-write", "visa-read", "visa-close"]);
@@ -665,6 +680,8 @@ const BLOQUES = {
     return [ins("i32.const", c1), ins("i32.const", c2), ...e.entrada(0), ...e.entrada(1), ...e.entrada(2), ...largo, ins("call", idImport("reemplazar")), ins("i32.const", c1), ins("i32.const", c2)];
   },
   "format-into-string": (e) => formatIntoString(e),
+  "array-to-spreadsheet-string": (e) => spreadsheetCall(e, "array_to_spreadsheet", [0, 1, 2], e.tIn(1)),
+  "spreadsheet-string-to-array": (e) => spreadsheetCall(e, "spreadsheet_to_array", [0, 1, 3], e.tOut(0)),
   "scan-from-string": (e) => scanFromString(e),
   "search-and-replace-string": (e) => {
     const [celda, n] = [e.celda(), e.temporal("i32")];

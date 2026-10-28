@@ -493,6 +493,24 @@ Measured in LabVIEW 2026 Q3 by running each case (`labview-captures/format-scan/
 > - Not done: the time specifiers `%t` and `%T` (a run-time error says so), the Edit Format String dialog,
 >   and Format Value and Scan Value as nodes (their rules are in the engine).
 
+> **Rule 21l — Spreadsheet strings.** Array To Spreadsheet String and Spreadsheet String To Array (measured
+> 2026-10-28, `labview-captures/reports/2026-10-28-spreadsheet-strings.md`; tested in `test/core/spreadsheet.test.mjs` and
+> `test/core/spreadsheet-functions.test.mjs`):
+> - **The array** is one or two dimensions of numbers or strings; a Boolean array breaks the wire. `format string` is
+>   required on both; `delimiter` unwired or empty is a tab and is matched literally, of any length.
+> - **Writing:** each element through the format, literals included (`[%.1f]` gives `[1.5]`), as Format Into String
+>   formats one argument; an empty format, `%s` and a conversion LabVIEW does not know (the `,` of `%,3f`) are `%f`
+>   for a number; a string is written as it is (no quoting; `%s` pads and truncates). Elements are joined by the
+>   delimiter and **every row ends with the system's end of line, the last too** (CRLF on Windows; LF elsewhere is
+>   **unverified**). A one-dimensional array is one row; an empty array, an empty string.
+> - **Reading:** rows end at CR, LF or CRLF (one trailing end of line is dropped), fields at the delimiter, and rows
+>   are padded to the widest with 0 or "". A one-dimensional type splits only at the delimiter. A number is read by the
+>   first conversion: `%d` an integer prefix (`2.5` is 2), `%x` hexadecimal, any other a real after leading blanks
+>   (`inf`, `nan`; `-nan` and what is not a number are 0); a decimal separator code makes every field 0. Into an integer
+>   type a real rounds half to even and both saturate. A string is read as it is, whatever the format.
+> - **The decimal is always the point:** LabVIEW's default (`useLocaleDecimalPt=False`) was measured; the option on is
+>   **unverified**. Not done: 3D arrays (LabVIEW writes a `[p, 0, 0]` header per page).
+
 > **Rule 21k — Where an error was raised.** The source of an error that a function raises ends with
 > ` in ` and the VIs it ran in, the VI of the function first and each caller after it, joined by `->`:
 > `Scan From String (arg 1) in Parse Reply.vi->Instrument Protocol.vi` in LabVIEW. The chain is the one

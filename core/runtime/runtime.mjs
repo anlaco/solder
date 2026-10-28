@@ -14,10 +14,11 @@ import {
   EMPTY_PATH, arrayOfStringsToPath, buildPath, decodePath, encodePath, hostPathRules, isEmptyPath, pathFromText, pathToArrayOfStrings, pathToText, pathsEqual, stripPath,
 } from "../model/paths.mjs";
 import { FUNCIONES } from "../compiler/expression-parser.mjs";
-import { MAXIMUM_PAGES, SHARED_MEMORY_IMPORT, tipoWasm } from "../compiler/compiler.mjs";
+import { MAXIMUM_PAGES, SHARED_MEMORY_IMPORT, SPREADSHEET_ELEMENTS, tipoWasm } from "../compiler/compiler.mjs";
 import { mensaje as mensajeDeError } from "./error-codes.mjs";
 import { aEntero64, cientifica, fraccionaria, noFinito, rellenar, separar } from "./number-text.mjs";
 import { formatIntoString, scanFromString } from "./format-string.mjs";
+import { arrayToSpreadsheetString, endOfLineFor, spreadsheetStringToArray } from "./spreadsheet.mjs";
 import { abortedError, createRealHost } from "./scheduler.mjs";
 import { CLUMP, CLUMP_BYTES, HEADER, PARK_KIND, RUN_STATUS, STATE } from "../compiler/pool-scheduler.mjs";
 import { SCHEDULER } from "../compiler/linear-memory.mjs";
@@ -128,10 +129,19 @@ export const CADENAS = {
 function aWasm(v, tipo) {
   if (tipo === "boolean") return v ? 1 : 0;
   const vt = tipoWasm(tipo);
-  if (vt === "i64") return BigInt(Math.round(Number(v ?? 0)));
+  // A BigInt is kept as it is: through a JavaScript number an I64 would lose its last digits.
+  if (vt === "i64") return typeof v === "bigint" ? BigInt.asIntN(64, v) : BigInt(Math.round(Number(v ?? 0)));
   if (vt === "i32") return Math.round(Number(v ?? 0)) | 0;
   return Number(v ?? 0);
 }
+
+/** The bytes before an array's elements in its block: the size of each dimension, up to two (DT-044). */
+const ARRAY_HEADER_BYTES = 8;
+/** The DataView methods that read and write each integer element. */
+const INTEGER_ACCESSORS = {
+  i8: ["getInt8", "setInt8"], i16: ["getInt16", "setInt16"], i32: ["getInt32", "setInt32"], i64: ["getBigInt64", "setBigInt64"],
+  u8: ["getUint8", "setInt8"], u16: ["getUint16", "setInt16"], u32: ["getUint32", "setInt32"], u64: ["getBigUint64", "setBigInt64"],
+};
 
 /** Lo que escribe el módulo en un indicador, como número de JavaScript o booleano. */
 function deWasm(v, tipo) {
@@ -283,7 +293,7 @@ export function createHostFunctions({ compilado, separador = ".", pathRules = ho
     const sizes = Array.from({ length: dims }, (_, dimension) => (p ? m.getInt32(p + 4 * dimension, true) : 0));
     const n = sizes.reduce((product, size) => product * size, 1);
     const elements = Array.from({ length: n }, (_, k) => {
-      const a = p + 8 + k * el.tam;
+      const a = p + ARRAY_HEADER_BYTES + k * el.tam;
       if (el.tipo === "string") return leerCadena(a);
       if (el.disposicion) return leerCluster(a, el.disposicion);
       return deWasm(m[LEER[el.carga]](a, true), el.tipo);
@@ -466,6 +476,41 @@ export function createHostFunctions({ compilado, separador = ".", pathRules = ho
     escribirCad(cell, codificar(result.remaining));
     formatError(errorOut, errorIn, source, chainIndex, result);
     return codificar(text.slice(0, result.offset)).length;
+  };
+  // The spreadsheet functions (DT-067 §9) read and write the elements as they are in memory, so an I64 keeps
+  // every digit (a JavaScript number would round it).
+  const elementAccess = (code) => {
+    const type = SPREADSHEET_ELEMENTS[code];
+    if (type === "string") return { element: { kind: "string" }, size: 4, read: (address) => leerCadena(address), write: (address, value) => ponerCadena(address, value), reference: true };
+    const { bits, entero, signo } = NUMERICOS[type];
+    const bytes = bits / 8;
+    if (!entero) {
+      const [get, set] = bits === 64 ? ["getFloat64", "setFloat64"] : ["getFloat32", "setFloat32"];
+      return { element: { kind: "float" }, size: bytes, read: (address) => memoria()[get](address, true), write: (address, value) => memoria()[set](address, value, true) };
+    }
+    const [get, set] = INTEGER_ACCESSORS[`${signo ? "i" : "u"}${bits}`];
+    const read = (address) => BigInt(memoria()[get](address, true));
+    const write = (address, value) => memoria()[set](address, bits === 64 ? BigInt.asIntN(64, value) : Number(BigInt.asIntN(bits, value)), true);
+    return { element: { kind: "int", bits, signed: signo }, size: bytes, read, write };
+  };
+  cad.array_to_spreadsheet = (cell, format, arrayHandle, delimiter, elementCode, dimensions) => {
+    const access = elementAccess(elementCode);
+    const block = memoria().getInt32(arrayHandle, true);
+    const sizes = Array.from({ length: dimensions }, (_, dimension) => (block ? memoria().getInt32(block + 4 * dimension, true) : 0));
+    const count = sizes.reduce((product, size) => product * size, 1);
+    const elements = Array.from({ length: count }, (_, k) => access.read(block + ARRAY_HEADER_BYTES + k * access.size));
+    const text = arrayToSpreadsheetString({ format: decodificar(leerCad(format)), array: { sizes, elements }, element: access.element, delimiter: decodificar(leerCad(delimiter)), endOfLine: endOfLineFor(pathRules) });
+    escribirCad(cell, codificar(text));
+  };
+  cad.spreadsheet_to_array = (cell, format, text, delimiter, elementCode, dimensions) => {
+    const access = elementAccess(elementCode);
+    const { sizes, elements } = spreadsheetStringToArray({ format: decodificar(leerCad(format)), text: decodificar(leerCad(text)), element: access.element, delimiter: decodificar(leerCad(delimiter)), dimensions });
+    const block = memoria().getInt32(cell, true);
+    // `nuevo_array` reads the old element count in the first word, as ponerArray does.
+    if (block && dimensions > 1) memoria().setInt32(block, memoria().getInt32(block, true) * memoria().getInt32(block + 4, true), true);
+    const data = exports().nuevo_array(cell, elements.length, access.size, access.reference ? 1 : 0);
+    sizes.forEach((size, dimension) => memoria().setInt32(data - ARRAY_HEADER_BYTES + 4 * dimension, size, true));
+    elements.forEach((value, k) => access.write(data + k * access.size, value));
   };
   for (const [nombre, f] of [["leer_dec", CADENAS.leerDec], ["leer_hex", CADENAS.leerHex], ["leer_oct", CADENAS.leerOct], ["leer_frac", CADENAS.leerFrac]])
     cad[nombre] = (s, o) => {

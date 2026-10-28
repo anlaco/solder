@@ -2937,6 +2937,7 @@ Decided by the developer while starting (b):
 | Build Path, Strip Path, String To Path, Path To String, Path Type and Equal? give LabVIEW's values on Windows | `test/core/paths.test.mjs`, `test/core/path-functions.test.mjs` with the measured tables of `2026-10-26-path-type.md` | Verified (2026-10-26) |
 | A path keeps its kind and components through the `.sdg` | Round-trip test | **Unverified** |
 | Open/Create/Replace, Write and Read Text File, Close File, Get File Size and Delete give LabVIEW's bytes, positions and codes | `native/solder-io/tests/files.rs` and `test/core/file-io.test.mjs` with the measured tables of `2026-10-26-file-io-behavior.md`, `2026-10-28-file-size-delete.md` and `2026-10-28-file-io-gaps.md` | Verified (2026-10-28), on Linux; the end of line written is the host's |
+| Array To Spreadsheet String and Spreadsheet String To Array give LabVIEW's strings and arrays, and the decimal is the point | `test/core/spreadsheet.test.mjs`, `test/core/spreadsheet-functions.test.mjs` with the tables of `2026-10-28-spreadsheet-strings.md` | Verified (2026-10-28) |
 | Write and Read Delimited Spreadsheet give LabVIEW's bytes and arrays | Tests with the same report's tables | **Unverified** |
 | Linux and macOS path rules and end of line | Measured in LabVIEW for Linux | **Unverified** |
 

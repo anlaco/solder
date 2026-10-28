@@ -17,6 +17,7 @@ import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
 import * as VN from "./visa-nodes.mjs";
 import * as FileNodes from "./file-nodes.mjs";
+import * as SpreadsheetNodes from "./spreadsheet-nodes.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { EMPTY_PATH, hostPathRules, pathToText } from "../../../core/model/paths.mjs";
 import { brokenWireMarks, endPoint } from "./broken-wire.mjs";
@@ -528,6 +529,7 @@ export function caja(n, ctx, edicion) {
   if (FN.isFormatNode(n, ctx.cat)) return { x: n.x, y: n.y, ...FN.formatNodeSize(n, ctx.cat) };
   if (UN.isUnbundleByName(n)) return { x: n.x, y: n.y, ...UN.unbundleSize(n, ctx.cat, ctx.medir) };
   if (FileNodes.isFileNode(n)) return { x: n.x, y: n.y, ...FileNodes.fileNodeSize() };
+  if (SpreadsheetNodes.isSpreadsheetNode(n)) return { x: n.x, y: n.y, ...SpreadsheetNodes.spreadsheetNodeSize() };
   if (esExpresion(n)) {
     const M = MEDIDAS_EXPRESION;
     return { x: n.x, y: n.y, ancho: 2 * M.lado + Math.max(M.minimoTexto, anchoTexto(textoExpresion(n, edicion)) + M.relleno), alto: M.alto };
@@ -628,6 +630,7 @@ export function terminales(n, ctx, edicion) {
   if (UN.isUnbundleByName(n)) return UN.unbundleTerminals(n, k, ctx.cat);
   if (VN.isVisaNode(n)) return VN.visaTerminals(n, k, ctx.cat);
   if (FileNodes.isFileNode(n)) return FileNodes.fileNodeTerminals(n, k, ctx.cat);
+  if (SpreadsheetNodes.isSpreadsheetNode(n)) return SpreadsheetNodes.spreadsheetNodeTerminals(n, k, ctx.cat);
   const { in: ins, out: outs } = ctx.cat.puertos(n);
   const anchoZona = terminalZoneWidth(n, k, ctx, ins, outs);
   // Un terminal del panel recibe o da el dato por su flecha.
