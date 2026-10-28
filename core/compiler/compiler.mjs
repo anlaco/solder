@@ -24,7 +24,7 @@ import { connectorPorts, ejecutable, nodesWithUndefinedInput, orden, requerido, 
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
 import { EMPTY_PATH, NOT_A_PATH, PATH_KIND, encodePath } from "../model/paths.mjs";
-import { ERROR, NUMERICOS, PATH, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esEntero, esEnum, esNumerico, flattenArrayValue, inMemory, limites, representacion } from "../model/types.mjs";
+import { ERROR, FILE_REFNUM, NUMERICOS, PATH, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esEntero, esEnum, esNumerico, flattenArrayValue, inMemory, limites, representacion } from "../model/types.mjs";
 import { codificar } from "./wasm-encoder.mjs";
 import { CELDAS, CIMA, EXPORTADAS, MEMORY_FUNCTION_NAMES, bloqueCadena, funcionesMemoria, i32 } from "./linear-memory.mjs";
 import { makeStackless } from "./stackless.mjs";
@@ -112,6 +112,15 @@ const IMPORTACIONES = [
   { modulo: "io", nombre: "visa_write", params: ["i32", "i32", "i32", "i32", "i32", "i32", "i32"], results: ["i32"] },
   { modulo: "io", nombre: "visa_read", params: ["i32", "i32", "i32", "i32", "i32", "i32", "i32", "i32"], results: ["i32"] },
   { modulo: "io", nombre: "visa_close", params: ["i32", "i32", "i32", "i32"], results: ["i32"] },
+  // The file functions (DT-067 §7), external waits like VISA's (core/runtime/file-io.mjs). By value or
+  // handle the inputs and whether the file is a path and is wired, then the error in by address, the
+  // outputs' places and the call chain's index.
+  { modulo: "io", nombre: "file_open", params: Array(9).fill("i32"), results: ["i32"] },
+  { modulo: "io", nombre: "file_close", params: Array(5).fill("i32"), results: ["i32"] },
+  { modulo: "io", nombre: "file_write_text", params: Array(11).fill("i32"), results: ["i32"] },
+  { modulo: "io", nombre: "file_read_text", params: Array(12).fill("i32"), results: ["i32"] },
+  { modulo: "io", nombre: "file_size", params: Array(7).fill("i32"), results: ["i32"] },
+  { modulo: "io", nombre: "file_delete", params: Array(9).fill("i32"), results: ["i32"] },
   // The path functions (DT-067): the host reads each path's block, applies the rules of the system it runs
   // on (core/model/paths.mjs) and writes the result into its cell. The first parameters are the output cells.
   { modulo: "pth", nombre: "build_path", params: ["i32", "i32", "i32", "i32"], results: [] },
@@ -125,13 +134,15 @@ const IMPORTACIONES = [
   { modulo: "pth", nombre: "paths_equal", params: ["i32", "i32"], results: ["i32"] },
 ];
 
-/** Los nodos que tardan: cada uno corre en su clump y cede mientras espera. */
-/** The VISA functions (DT-066): each waits for an instrument, and a Run that has one needs the instrument I/O. */
+/** The VISA functions (DT-066): each waits for an instrument, and a Run that has one needs the I/O. */
 const VISA_FUNCTIONS = new Set(["visa-open", "visa-write", "visa-read", "visa-close"]);
-export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "simple-error-handler", ...VISA_FUNCTIONS]);
+/** The file functions (DT-067): each waits for the disk, served by the same I/O as VISA. */
+const FILE_FUNCTIONS = new Set(["open-create-replace-file", "close-file", "write-to-text-file", "read-from-text-file", "get-file-size", "delete"]);
+/** The nodes that take time: each runs in its own clump and yields while it waits. */
+export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "simple-error-handler", ...VISA_FUNCTIONS, ...FILE_FUNCTIONS]);
 const idImport = (nombre) => IMPORTACIONES.findIndex((i) => i.nombre === nombre);
-/** The imports that may park the clump that calls them (DT-063 §8): the dialogs, the debugger and VISA, which wait for the outside. */
-const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error", "visa_open", "visa_write", "visa_read", "visa_close"].map(idImport);
+/** The imports that may park the clump that calls them (DT-063 §8): the dialogs, the debugger, VISA and files, which wait for the outside. */
+const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error", "visa_open", "visa_write", "visa_read", "visa_close", "file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete"].map(idImport);
 
 const ins = (op, arg) => (arg === undefined ? { op } : { op, arg });
 
@@ -510,6 +521,39 @@ function visaFunction(e, importName, inputs, { resourceOut, buffer, count }) {
   ];
 }
 
+/** The bytes of each kind of place a file function's output takes, for those the host writes by address. */
+const FILE_OUTPUT_BYTES = { refnum: 4, boolean: 4, size: 8 };
+
+/**
+ * A file function (DT-067 §7): `inputs` is the code that leaves the host's arguments up to the error in,
+ * and `outputs` the kinds of its outputs in the catalog's order ("refnum", "boolean", "size", "cell" for a
+ * string, path or array, and "error"). Each output gets a place of its own, the host writes them while the
+ * clump is parked, and they are left on the stack in that order.
+ */
+function fileFunction(e, importName, inputs, outputs) {
+  const places = outputs.map((kind) => (kind === "cell" ? e.celda() : kind === "error" ? e.bufer(disposicion(ERROR).tam) : e.bufer(FILE_OUTPUT_BYTES[kind])));
+  const load = (kind, place) => {
+    if (kind === "refnum" || kind === "boolean") return [k32(place), ins("i32.load")];
+    if (kind === "size") return [k32(place), ins("i64.load")];
+    return [k32(place)];
+  };
+  return [
+    ...inputs, ...e.entrada(e.cat.puertos(e.nodo).in.findIndex((port) => port.name === "error-in")),
+    ...places.map(k32), k32(e.chainIndex), ins("call", idImport(importName)), ins("drop"),
+    ...outputs.flatMap((kind, index) => load(kind, places[index])),
+  ];
+}
+
+/** How Read from Text File reads: bytes, lines with Read Lines and count wired, or the next line with count unwired (measured). */
+export const READ_MODE = Object.freeze({ BYTES: 0, LINES: 1, NEXT_LINE: 2 });
+const readMode = (e) => (!e.nodo.config?.["read-lines"] ? READ_MODE.BYTES : e.cableada(2) ? READ_MODE.LINES : READ_MODE.NEXT_LINE);
+
+/** A file function's `file` input: the refnum or path handle, whether it is a path, and whether it is wired (unwired asks for a dialog). */
+function fileInput(e, index) {
+  const wired = e.cableada(index);
+  return [...(wired ? e.entrada(index) : [k32(0)]), k32(e.logicalTIn(index) === PATH ? 1 : 0), k32(wired ? 1 : 0)];
+}
+
 function formatIntoString(e) {
   const rows = formatRows(e, "input-");
   const buffer = e.bufer(rows.length * FORMAT_ROW_BYTES);
@@ -729,6 +773,17 @@ const BLOQUES = {
   "visa-write": (e) => visaFunction(e, "visa_write", [0, 1], { resourceOut: true, count: true }),
   "visa-read": (e) => visaFunction(e, "visa_read", [0, 1], { resourceOut: true, buffer: true, count: true }),
   "visa-close": (e) => visaFunction(e, "visa_close", [0], {}),
+  // The file functions (DT-067 §7). Their inputs by the catalog's index: prompt is not used until the dialogs.
+  "open-create-replace-file": (e) =>
+    fileFunction(e, "file_open", [...(e.cableada(1) ? e.entrada(1) : [k32(0)]), k32(e.cableada(1) ? 1 : 0), ...e.entrada(2), ...e.entrada(3)], ["refnum", "boolean", "error"]),
+  "close-file": (e) => fileFunction(e, "file_close", e.entrada(0), ["cell", "error"]),
+  "write-to-text-file": (e) =>
+    fileFunction(e, "file_write_text", [...fileInput(e, 1), ...e.entrada(2), k32(esArray(e.tIn(2)) ? 1 : 0), k32(e.nodo.config?.["convert-eol"] ?? true ? 1 : 0)], ["refnum", "boolean", "error"]),
+  "read-from-text-file": (e) =>
+    fileFunction(e, "file_read_text", [...fileInput(e, 1), ...e.entrada(2), k32(readMode(e)), k32(e.nodo.config?.["convert-eol"] ?? true ? 1 : 0)], ["refnum", "cell", "boolean", "error"]),
+  "delete": (e) =>
+    fileFunction(e, "file_delete", [...(e.cableada(1) ? e.entrada(1) : [k32(0)]), k32(e.cableada(1) ? 1 : 0), ...e.entrada(2), ...e.entrada(3)], ["cell", "boolean", "error"]),
+  "get-file-size": (e) => fileFunction(e, "file_size", [...e.entrada(0), k32(e.logicalTIn(0) === PATH ? 1 : 0)], ["refnum", "size", "error"]),
   // Paths (DT-067): a constant is its block in the static zone, like a string's.
   "path-constant": (e) => [ins("i32.const", e.cadena(encodePath(e.nodo.config?.value ?? EMPTY_PATH)))],
   "empty-path-constant": (e) => [ins("i32.const", e.cadena(encodePath(EMPTY_PATH)))],
@@ -1064,6 +1119,7 @@ const BLOQUES = {
   "in-range-and-coerce": enRango,
   "not-a-number-path-refnum": (e) => {
     if (e.logicalTIn(0) === PATH) return [...e.entrada(0), ins("call", idImport("path_kind")), k32(PATH_KIND.NOT_A_PATH), ins("i32.eq")];
+    if (e.logicalTIn(0) === FILE_REFNUM) return [...e.entrada(0), ins("i32.eqz")];
     if (!esFlotante(e.tIn(0))) return [ins("i32.const", 0)];
     const x = e.temporal(tipoWasm(e.tIn(0)));
     return [...e.entrada(0), ins("local.tee", x), ins("local.get", x), ins(`${tipoWasm(e.tIn(0))}.ne`)];
@@ -2299,7 +2355,8 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       k.cuerpo.push(...code, ...debugHook(id, []));
       return;
     }
-    if (VISA_FUNCTIONS.has(n.tipo)) module.usesInstrumentIo = true;
+    // VISA and the file functions are served by the same I/O (the editor's I/O process).
+    if (VISA_FUNCTIONS.has(n.tipo) || FILE_FUNCTIONS.has(n.tipo)) module.usesInstrumentIo = true;
     const emitir = n.tipo === "subvi" ? (e) => callSubVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subVIControl(e, asSubVI.get(n.name)) : BLOQUES[n.tipo];
     if (!emitir) return errores.push({ nodo: id, motivo: `The compiler cannot emit "${nombre}" (${n.tipo}) yet.` });
     const e = { nodo: n, cat, tIn, tOut, logicalTIn, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex };

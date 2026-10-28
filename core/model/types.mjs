@@ -87,13 +87,20 @@ export const VISA_RESOURCE_LAYOUT = Object.freeze({ cluster: [{ name: "resource 
 export const PATH = "path";
 
 /**
- * A type as the compiler lays it out in memory: a VISA resource name becomes its cluster, and a path one
- * handle like a string's, whose block holds its kind and components (DT-067 §1), inside arrays and
- * clusters too; every other type is itself.
+ * LabVIEW's file refnum (DT-067 §5): a scalar type of its own, laid out as a U32 that names an open file in
+ * `solder-io`; 0 is Not A Refnum. It never coerces to or from a number.
+ */
+export const FILE_REFNUM = "file-refnum";
+
+/**
+ * A type as the compiler lays it out in memory: a VISA resource name becomes its cluster, a path one
+ * handle like a string's, whose block holds its kind and components (DT-067 §1), and a file refnum its
+ * U32, inside arrays and clusters too; every other type is itself.
  */
 export function inMemory(t) {
   if (t === VISA_RESOURCE) return VISA_RESOURCE_LAYOUT;
   if (t === PATH) return "string";
+  if (t === FILE_REFNUM) return "u32";
   if (esArray(t)) return { ...t, array: inMemory(t.array) };
   if (esCluster(t)) return { ...t, cluster: t.cluster.map((field) => ({ ...field, type: inMemory(field.type) })) };
   return t;
@@ -153,6 +160,8 @@ export function nombre(t) {
   if (esEnum(t)) return "enum";
   if (t === VISA_RESOURCE) return "VISA resource name";
   if (t === PATH) return "path";
+  // Unverified: the name LabVIEW gives this type in a broken wire's explanation.
+  if (t === FILE_REFNUM) return "file refnum";
   if (esArray(t)) return `${dimensionsOf(t) > 1 ? `${dimensionsOf(t)}D ` : ""}array of ${nombre(t.array)}`;
   if (typeof t === "string") return NUMERICOS[t]?.abrev ?? t;
   if (t && typeof t === "object" && "cluster" in t) return "cluster";
@@ -209,6 +218,8 @@ function colorEscalar(t) {
   if (t === "string") return COLORES.cadena;
   if (t === VISA_RESOURCE) return COLORES.visa;
   if (t === PATH) return COLORES.path;
+  // A file refnum is the path's teal, solid where the path is dashed (measured, reports/2026-10-28-file-nodes-look.md §2-3).
+  if (t === FILE_REFNUM) return COLORES.path;
   return COLORES.otro;
 }
 

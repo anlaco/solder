@@ -1,5 +1,8 @@
 //! Solder's VISA for Node (DT-065). Every operation runs on libuv's pool and answers a promise, so
 //! a Read waiting for its timeout never blocks the JavaScript thread. Statuses are VISA's codes.
+//! The file functions (DT-067) are in `files`.
+
+mod files;
 
 use std::sync::LazyLock;
 use std::time::Duration;

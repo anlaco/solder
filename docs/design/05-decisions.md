@@ -2899,21 +2899,42 @@ does all the file semantics; component names are UTF-8.**
     Dialog. Binary files, Format Into File and Scan From File, Configuration File VIs and the folder functions come
     later; TDMS, Storage/DataPlugin, Zip, XML, Datalog and Waveform File I/O are greyed with their reason (DT-035).
 
+### Amendment of 2026-10-28 (before the dialogs)
+
+Decided by the developer while starting (b):
+
+1. **Until (d), every host answers a dialog as cancelled.** A `file` input left unwired on Open/Create/Replace
+   File, Write to Text File or Read from Text File gives what LabVIEW gives when its dialog is cancelled
+   (measured): cancelled TRUE, Not A Refnum, error 43 with the source `"<function> in <VI>.vi"`, a line break and
+   `<Not A Path>`. The editor does the same as the command line until (d) gives it the system's dialog.
+2. **Op 5 on an existing file is a Cancel until (d):** the file is left untouched, cancelled TRUE, error 43, Not A
+   Refnum. A file is never replaced without the confirmation LabVIEW asks for.
+3. **File contents are the string's bytes.** Solder strings are UTF-8 (DT-042 §6), so Write and Read Text File
+   write and read those bytes with no conversion. With ASCII text this is LabVIEW's behavior; beyond ASCII LabVIEW
+   writes the system's ANSI code page (measured: "é" → `e9`), and Solder keeps UTF-8, the same departure as §4.
+
 ### Consequences
 
-- `core/runtime/error-codes.mjs` gains the codes 1, 4, 7, 8, 10 and 43 with texts of our own (DT-043 §5).
+- `core/runtime/error-codes.mjs` gains the codes 1, 4, 5, 6, 7, 8, 10, 43, 1059 and 1430 with texts of our own
+  (DT-043 §5); 5, 6, 1059 and 1430 were measured on 2026-10-28 (`2026-10-28-file-size-delete.md`,
+  `2026-10-28-file-io-gaps.md`).
 - A path's look (teal wire, its pattern, terminals, the three constants, the control and indicator with their browse
   button) goes into `spec/06` from `labview-captures/reports/2026-10-26-path-type.md` as each piece is drawn.
-- Measured but not settled: Read Lines with `count` unwired, whether Close File closes when an error comes in, the
-  Path Type enum's item names, a GUI-dropped control's label, the system File Path Control. They are written
-  "unverified" where the code meets them.
+- Measured on 2026-10-28 and done (`2026-10-28-file-io-gaps.md`): an empty, relative or Not A Path path is error 1430
+  in every file function and a folder 1059; a closed refnum is error 1 with no file in the source; Close File closes
+  even with an error in; the files a Run leaves open are closed when it finishes; Read Lines with `count` unwired
+  gives a string, the next line with its end of line, and LFCR is two ends of line in Read Lines; an array of
+  strings ends every element with the system's end of line, also with Convert EOL off; with an error in, Write to
+  Text File gives Not A Refnum and Read from Text File passes its refnum.
+- Measured but not settled: the Path Type enum's item names, a GUI-dropped control's label, the system File Path
+  Control. They are written "unverified" where the code meets them.
 
 ### How it is verified
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| Build Path, Strip Path, String To Path, Path To String, Path Type and Equal? give LabVIEW's values on Windows | Tests with the measured tables of `2026-10-26-path-type.md` | **Unverified**: nothing done yet |
+| Build Path, Strip Path, String To Path, Path To String, Path Type and Equal? give LabVIEW's values on Windows | `test/core/paths.test.mjs`, `test/core/path-functions.test.mjs` with the measured tables of `2026-10-26-path-type.md` | Verified (2026-10-26) |
 | A path keeps its kind and components through the `.sdg` | Round-trip test | **Unverified** |
-| Open/Create/Replace, Write and Read Text File and Close File give LabVIEW's bytes, positions and codes | `native/solder-io` tests and `test/core` tests with the measured tables of `2026-10-26-file-io-behavior.md` | **Unverified** |
+| Open/Create/Replace, Write and Read Text File, Close File, Get File Size and Delete give LabVIEW's bytes, positions and codes | `native/solder-io/tests/files.rs` and `test/core/file-io.test.mjs` with the measured tables of `2026-10-26-file-io-behavior.md`, `2026-10-28-file-size-delete.md` and `2026-10-28-file-io-gaps.md` | Verified (2026-10-28), on Linux; the end of line written is the host's |
 | Write and Read Delimited Spreadsheet give LabVIEW's bytes and arrays | Tests with the same report's tables | **Unverified** |
 | Linux and macOS path rules and end of line | Measured in LabVIEW for Linux | **Unverified** |

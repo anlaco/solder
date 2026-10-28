@@ -16,8 +16,13 @@
 export const CODIGOS = {
   1: ["One of the inputs given to the function is not acceptable, for instance a file path that holds characters the operating system forbids."],
   2: ["There was not enough free memory to finish the operation.", "The operating system could not find the file it was asked for."],
+  // File I/O (DT-067).
+  4: ["The end of the file came before everything that was asked for could be read; what was read is still given."],
+  5: ["The file is open, and the operation needs it closed: close it first."],
+  6: ["The file operation failed for a reason the operating system gave and that has no more specific code."],
   7: ["The file does not exist where it was looked for: it may have been moved, renamed or deleted. Check the path."],
-  8: ["The file exists but this user is not allowed to do that with it: check its permissions."],
+  8: ["The file exists but this user is not allowed to do that with it: check its permissions.", "The file was opened with an access mode that does not allow this, for instance a write on a file opened read-only."],
+  10: ["A file with that name already exists, and the operation asked for one that did not."],
   42: ["An error happened that has no more specific code."],
   43: ["The person using the program cancelled the operation."],
   56: ["The network operation took longer than the time allowed for it, either by the program or by the system."],
@@ -29,6 +34,9 @@ export const CODIGOS = {
   83: ["The function has more inputs or outputs than the format string has specifiers for."],
   84: ["The format string has more specifiers than the function has inputs or outputs."],
   85: ["The text could not be read with the format string: it does not hold the kind of data the format asks for at that point."],
+  // File I/O (DT-067).
+  1059: ["The path names a folder, and the operation needs a file."],
+  1430: ["The path is empty, relative or not a path, and the operation needs an absolute path to a file or folder."],
 };
 
 const SEPARADOR = "=".repeat(26);

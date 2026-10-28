@@ -1,12 +1,15 @@
-// Solder's VISA over a message port (DT-065 §3): the editor's I/O process serves it, and a Run's
+// Solder's VISA and files over a message port (DT-065 §3): the editor's I/O process serves it, and a Run's
 // coordinator, in the run worker, is its client. Every operation is a request with an id that answers
 // once; the bytes travel as Uint8Array.
 //
-//   request  { id, operation, args }      operation: open, write, read, close, attributes, changeAttributes
+//   request  { id, operation, args }      operation: one of IO_OPERATIONS
 //   answer   { id, answer } | { id, error }
 
 /** The operations a client may ask for: those of native/solder-io-node/solder-io.mjs. */
-export const IO_OPERATIONS = ["open", "write", "read", "close", "attributes", "changeAttributes"];
+export const IO_OPERATIONS = [
+  "open", "write", "read", "close", "attributes", "changeAttributes",
+  "fileOpen", "fileClose", "fileWrite", "fileWriteLines", "fileRead", "fileReadLine", "fileReadLines", "fileSize", "fileDelete", "fileName",
+];
 
 /**
  * Serves `solderIo` to the requests that `onRequest(listener)` hears, answering through `answer(message)`.

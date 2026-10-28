@@ -12,7 +12,7 @@
 // A pure module with no mutation: every operation returns a new diagram.
 
 import { connectorTerminals } from "./connector.mjs";
-import { DBL, ERROR, NUMERICOS, PATH, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, carriesUndefinedArray, isUndefinedArray, nombre, withoutOneDimension } from "./types.mjs";
+import { DBL, ERROR, FILE_REFNUM, NUMERICOS, PATH, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, carriesUndefinedArray, isUndefinedArray, nombre, withoutOneDimension } from "./types.mjs";
 
 /** El catálogo de bloques, `docs/schema/blocks.json`. */
 export function cargarCatalogo(datos) {
@@ -83,7 +83,7 @@ export function cargarCatalogo(datos) {
         const size = (k) => ({ name: k === 0 ? "size" : `size-${k}`, label: `dimension size ${k}`, type: "i32", dir });
         return [{ name: "element", label: "element", type: { var: "E" }, dir }, ...Array.from({ length: dims }, (_, k) => size(k))];
       }
-      return (Array.isArray(b[dir]) ? b[dir] : []).map((p) => ({ ...p, dir }));
+      return (Array.isArray(b[dir]) ? b[dir] : []).map((p) => ({ ...withTypeOfConfig(p, nodo), dir }));
     };
     // Un puerto de tipo "error" es el cluster de error (DT-043).
     const conError = (l) => l.map((p) => (p.type === "error" ? { ...p, type: ERROR } : p));
@@ -100,6 +100,17 @@ export function cargarCatalogo(datos) {
     return p;
   }
   return { datos, bloque, puertos, puerto, tiene: (tipo) => tipo in bloques };
+}
+
+/**
+ * A port whose type a node's menu changes, as Read Lines makes Read from Text File's text an array of
+ * strings (measured): `"type-if-config": { "<config key>": <type when it is on> }`.
+ */
+function withTypeOfConfig(port, nodo) {
+  const byConfig = port["type-if-config"];
+  if (!byConfig) return port;
+  const [key, type] = Object.entries(byConfig).find(([configKey]) => nodo.config?.[configKey]) ?? [];
+  return key === undefined ? port : { ...port, type };
 }
 
 /**
@@ -848,6 +859,14 @@ function sustituir(t, vars) {
     // A path or a string: Build Path's name, which with nothing wired is a path (as since LabVIEW 2020),
     // and Empty String/Path?, which is a string.
     if ("pathOrString" in t) return vars[t.pathOrString] ?? t.defecto ?? PATH;
+    // A file function's `file`: a path or a file refnum; with nothing wired, a path (the dialog).
+    if ("pathOrRefnum" in t) return vars[t.pathOrRefnum] ?? PATH;
+    // Write to Text File's text: a string, or a 1D array of strings written as lines; a string unwired.
+    if ("textOrLines" in t) return vars[t.textOrLines] ?? "string";
+    // An input that says whether it is wired, and an output whose type follows it: Read Lines gives an
+    // array of strings with count wired and a string, the next line, without it (measured).
+    if ("marksWired" in t) return t.is;
+    if ("ifWired" in t) return sustituir(vars[t.ifWired] ? t.then : t.else, vars);
     if ("var" in t) return vars[t.var];
     if ("clusterOf" in t) return vars[t.clusterOf];
     // An element looked up by name in the cluster wired in; none of that name, no type (DT-050).
@@ -936,9 +955,9 @@ function restringir(t, decl) {
 function ligar(declarado, llega, vars) {
   if (!declarado || typeof declarado !== "object" || llega === undefined) return;
   if ("num" in declarado) {
-    // Not A Number/Path/Refnum? takes a path as well as a number (DT-067).
-    if (declarado.orPath && llega === PATH) {
-      vars[declarado.num] ??= PATH;
+    // Not A Number/Path/Refnum? takes a path or a file refnum as well as a number (DT-067).
+    if (declarado.orPath && (llega === PATH || llega === FILE_REFNUM)) {
+      vars[declarado.num] ??= llega;
       return;
     }
     if (!esNumerico(llega)) return;
@@ -961,6 +980,13 @@ function ligar(declarado, llega, vars) {
     if (vars[declarado.texto] === undefined) vars[declarado.texto] = llega;
   } else if ("pathOrString" in declarado) {
     if ((llega === PATH || llega === "string") && vars[declarado.pathOrString] === undefined) vars[declarado.pathOrString] = llega;
+  } else if ("pathOrRefnum" in declarado) {
+    if ((llega === PATH || llega === FILE_REFNUM) && vars[declarado.pathOrRefnum] === undefined) vars[declarado.pathOrRefnum] = llega;
+  } else if ("marksWired" in declarado) {
+    vars[declarado.marksWired] = true;
+  } else if ("textOrLines" in declarado) {
+    const isLines = esArray(llega) && dimensionsOf(llega) === 1 && llega.array === "string";
+    if ((llega === "string" || isLines) && vars[declarado.textOrLines] === undefined) vars[declarado.textOrLines] = llega;
   } else if ("var" in declarado) {
     if (vars[declarado.var] === undefined) vars[declarado.var] = llega;
   } else if ("clusterOf" in declarado) {
