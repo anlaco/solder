@@ -395,7 +395,18 @@ function alMensaje(data) {
     dialogoError = data.dialogo;
     pintar();
   }
+  if (data.archivo) answerFileDialog(data.archivo);
   if (data.fin) acabar(data);
+}
+
+/**
+ * A Run's file dialog or confirmation (DT-067, amendment of 2026-10-29): the main process shows the system's own,
+ * and the answer goes back to the worker that asked, if it is still the one running.
+ */
+async function answerFileDialog({ id, kind, request }) {
+  const worker = trabajador;
+  const answer = kind === "confirm" ? await window.solder.confirmRun(request) : await window.solder.chooseRunFile(request);
+  if (worker && worker === trabajador) worker.postMessage({ orden: "respuesta", id, valor: answer ?? null });
 }
 
 /**

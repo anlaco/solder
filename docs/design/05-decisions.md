@@ -2914,6 +2914,55 @@ Decided by the developer while starting (b):
    write and read those bytes with no conversion. With ASCII text this is LabVIEW's behavior; beyond ASCII LabVIEW
    writes the system's ANSI code page (measured: "é" → `e9`), and Solder keeps UTF-8, the same departure as §4.
 
+### Amendment of 2026-10-29 (the dialogs, step (d1))
+
+Measured on 2026-10-29 (`labview-captures/reports/2026-10-29-file-dialogs.md`, `2026-10-29-file-dialog-express.md`
+§8–§10) and decided with the developer. It replaces points 1 and 2 of the amendment of 2026-10-28 in the editor:
+
+1. **Step (d) is split.** (d1) is the dialog of every file function already done when its path input is unwired,
+   and the two confirmations (op 5 on an existing file, Delete with `confirm` true). (d2) is File Dialog, the first
+   Express VI, after its own DT on Express VIs; until then it stays greyed with its reason.
+2. **The host shows the dialog, the core says which.** A Run takes an optional `dialogs` host next to `io`:
+   `chooseFile({ title, mode })` answers the system's name of the file chosen or `null` for Cancel, and
+   `confirm({ message, detail })` answers whether OK was pressed. The core decides the title and the mode
+   (`core/runtime/file-dialogs.mjs`) and what each answer does; a host without `dialogs` (the command line) answers
+   every dialog Cancel, as before. The editor serves `dialogs` from Electron's main process with the system's own
+   dialogs, as LabVIEW uses Windows' (run worker → its window → IPC → `dialog`).
+3. **Titles and modes, as measured.** The wired `prompt` is the title; unwired, the title is the function's own:
+
+   | Function | Title | Mode |
+   |---|---|---|
+   | Open/Create/Replace op 0 | Choose or enter path of file to open | existing |
+   | op 1 | Choose or enter path of file to replace | existing |
+   | op 2 | Enter path of file to create | new |
+   | op 3 | Choose or enter path of file to open or create | any |
+   | op 4, op 5 | Choose or enter path of file to replace or create | any (4), new (5) |
+   | Write to Text File | Choose or enter path of text file to write | new |
+   | Read from Text File | Choose or enter path of text file to read | existing |
+   | Write Delimited Spreadsheet | Choose file to write. | any |
+   | Read Delimited Spreadsheet | Choose file to read. | existing |
+   | Delete | Choose or enter path of file to delete | existing |
+
+   *existing*: only a file that exists (an Open dialog); *new*: any name, and the system asks before an existing
+   file is chosen (a Save dialog with its overwrite question); *any*: any name, with no question. The OK button reads
+   "OK" and the filter is "All Files (*.*)". After the dialog the function opens the file chosen with its own
+   operation, except op 5, which opens with op 4: the system's question took the place of LabVIEW's confirmation
+   (measured). Op 2 on an existing file answered Yes is error 10, as with a wired path.
+4. **Confirmations.** Op 5 with a wired path that exists asks with a message box with no title, the path, "This file
+   already exists." and "Do you want to replace it?", OK and Cancel; OK replaces (op 4), Cancel is error 43 with
+   the path, as measured. Delete with `confirm` true asks "`<prompt>` `<path>`?" (prompt "Delete" unwired), OK and
+   Cancel. Unverified: the text with a wired prompt, and `confirm` after Delete's own dialog (asked here too).
+5. **Cancel, as measured:** cancelled true, Not A Refnum or Not A Path, error 43 with the source
+   `"<function> in <VI>.vi"` for Open/Create/Replace and Delete (no file), with `<APPEND>\n<Not A Path>` for Write
+   and Read Text File, and the Delimited VIs' own sources (§9).
+6. **One last folder for the editor.** Every dialog opens in the folder of the last file chosen in any dialog of the
+   editor (measured: LabVIEW shares it between functions; a Cancel leaves it). The first one is the user's home
+   folder (unverified: what LabVIEW opens first was not measured). It lives in memory, not on disk.
+7. **Departures the system's dialogs force, written down:** Delete's dialog has no "Current Folder" button and picks
+   only files (Electron's open dialog is a file or a folder picker on Windows and Linux, not both); *any* on
+   Windows is a Save dialog that asks before an existing file (on Linux the question is turned off, as LabVIEW);
+   the button and window texts are the system's, in its language, as LabVIEW's are.
+
 ### Consequences
 
 - `core/runtime/error-codes.mjs` gains the codes 1, 4, 5, 6, 7, 8, 10, 43, 1059 and 1430 with texts of our own
@@ -2939,6 +2988,7 @@ Decided by the developer while starting (b):
 | Open/Create/Replace, Write and Read Text File, Close File, Get File Size and Delete give LabVIEW's bytes, positions and codes | `native/solder-io/tests/files.rs` and `test/core/file-io.test.mjs` with the measured tables of `2026-10-26-file-io-behavior.md`, `2026-10-28-file-size-delete.md` and `2026-10-28-file-io-gaps.md` | Verified (2026-10-28), on Linux; the end of line written is the host's |
 | Array To Spreadsheet String and Spreadsheet String To Array give LabVIEW's strings and arrays, and the decimal is the point | `test/core/spreadsheet.test.mjs`, `test/core/spreadsheet-functions.test.mjs` with the tables of `2026-10-28-spreadsheet-strings.md` | Verified (2026-10-28) |
 | Write and Read Delimited Spreadsheet give LabVIEW's bytes and arrays | `test/core/delimited-spreadsheet.test.mjs` and `test/core/spreadsheet.test.mjs` with the tables of `2026-10-26-file-io-behavior.md` §5–§7 and `2026-10-28-delimited-spreadsheet.md` | Verified (2026-10-28), on Linux; the end of line written is the host's |
+| The unwired path input asks with the title and mode measured, Cancel gives LabVIEW's outputs and the confirmations replace or cancel as measured (amendment of 2026-10-29) | `test/core/file-dialogs.test.mjs` with a scripted `dialogs` host and the tables of `2026-10-29-file-dialogs.md`; the Electron side by `test/editor/file-dialog-options.test.mjs` | Verified in the core; the system dialogs **unverified** by eye |
 | Linux and macOS path rules and end of line | Measured in LabVIEW for Linux | **Unverified** |
 
 ## DT-068

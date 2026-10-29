@@ -21,6 +21,10 @@ contextBridge.exposeInMainWorld("solder", {
   elegirVI: () => ipcRenderer.invoke("vi:choose-subvi"),
   /** The file dialog of a File Path Control's browse button: the absolute path chosen, or nothing. */
   elegirRuta: () => ipcRenderer.invoke("path:choose"),
+  /** A Run's file dialog `{ title, mode }` (DT-067, amendment of 2026-10-29): the system's name of the file chosen, or nothing. */
+  chooseRunFile: (request) => ipcRenderer.invoke("run:choose-file", request),
+  /** A Run's confirmation `{ message, detail }`: whether OK was pressed. */
+  confirmRun: (question) => ipcRenderer.invoke("run:confirm", question),
   /** The text of every VI reached from this one, by absolute path: `{ texts, missing }`. */
   textosDeSubVIs: (texto) => ipcRenderer.invoke("vi:subvi-texts", texto),
   /** The same for the VI at an absolute path, which is included. */

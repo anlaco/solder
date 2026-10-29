@@ -6,9 +6,14 @@
 // through a message port (io-protocol.mjs). Its file operations answer LabVIEW's error codes, 0 for none,
 // and take the system's own name of a file, which is made here from the Solder path with the host's rules.
 //
-// Measured in LabVIEW 2026 Q3 on Windows: labview-captures/reports/2026-10-26-file-io-behavior.md.
+// An unwired path input asks `dialogs` (file-dialogs.mjs), the host's own dialogs; a host without them answers
+// every dialog Cancel (DT-067, amendment of 2026-10-29).
+//
+// Measured in LabVIEW 2026 Q3 on Windows: labview-captures/reports/2026-10-26-file-io-behavior.md and
+// 2026-10-29-file-dialogs.md.
 
 import { READ_MODE } from "../compiler/compiler.mjs";
+import { CANCELLING_DIALOGS, deleteConfirmation, fileDialogOf, replaceConfirmation } from "./file-dialogs.mjs";
 import { arrayToSpreadsheetString, endOfLineFor, firstRowOf, readDelimitedRows, rowsToArray, transposeArray } from "./spreadsheet.mjs";
 import { EMPTY_PATH, NOT_A_PATH, NOT_A_PATH_TEXT, PATH_KIND, isEmptyPath, isNotAPath, pathFromText, pathToText } from "../model/paths.mjs";
 
@@ -29,6 +34,8 @@ const OPEN = 0;
 const READ_WRITE = 0;
 /** What Write Delimited Spreadsheet opens with: open or create to append, replace or create otherwise. */
 const OPEN_OR_CREATE = 3;
+/** Op 5 asks before it replaces a file that exists; once asked, the file is opened with op 4 (measured). */
+const REPLACE_OR_CREATE_WITH_CONFIRMATION = 5;
 /** The code Read Delimited Spreadsheet's warning has when it asked for more rows than there were (measured). */
 const END_OF_FILE = 4;
 /** The mark after read of a Read Delimited Spreadsheet that read nothing (measured on an error and a cancelled dialog). */
@@ -49,10 +56,10 @@ const AS_I64 = { kind: "int", bits: 64, signed: true };
 /**
  * The file functions a compiled VI imports, each `(...addresses) → ANSWERED | Promise`. `host` is the Run's
  * createHostFunctions over `memory`; `compilado` gives the error cluster's layout; `pathRules` turns a path
- * into the system's name of the file. Without `io` (an editor with no I/O process yet), a file function
- * fails the Run.
+ * into the system's name of the file; `dialogs` shows the dialogs of an unwired path and the confirmations
+ * (file-dialogs.mjs). Without `io` (an editor with no I/O process yet), a file function fails the Run.
  */
-export function createFileFunctions({ io, host, memory, compilado, pathRules }) {
+export function createFileFunctions({ io, dialogs = CANCELLING_DIALOGS, host, memory, compilado, pathRules }) {
   const view = () => new DataView(memory.buffer);
   const { leerCluster, ponerCluster, putBytes, readBytes, readPath, writePath, functionSource } = host;
   const errorLayout = compilado.disposicionError;
@@ -77,6 +84,14 @@ export function createFileFunctions({ io, host, memory, compilado, pathRules }) 
   const systemNameOf = (path) => (isNotAPath(path) || path.kind === PATH_KIND.RELATIVE || path.components.length === 0 ? null : pathToText(path, pathRules));
   const shownPath = (path) => (isNotAPath(path) ? NOT_A_PATH_TEXT : pathToText(path, pathRules));
 
+  /** The text of a prompt input, or `null` when it is unwired and the function's own title is used. */
+  const promptOf = (prompt, promptWired) => (promptWired ? host.textOf(prompt) : null);
+  /** Asks the host for a file with `functionName`'s dialog: the system's name of the file chosen, or `null` for Cancel. */
+  const chooseFile = (functionName, options) => Promise.resolve(dialogs.chooseFile(fileDialogOf(functionName, options)));
+  /** Op 5 on a file that exists: asks, and on OK opens it with op 4, as LabVIEW does once it asked (measured). */
+  const confirmReplace = async (files, name, access) =>
+    (await dialogs.confirm(replaceConfirmation(name))) ? files.fileOpen(name, REPLACE_OR_CREATE, access) : { refnum: NOT_A_REFNUM, error: ERROR_CODE.CANCELLED };
+
   /**
    * The common shape of a file function. With an error in it does no work: the error passes unchanged
    * (unverified for these functions; measured on Close File). Otherwise `work(io)` does it and gives
@@ -97,10 +112,14 @@ export function createFileFunctions({ io, host, memory, compilado, pathRules }) 
   /**
    * The open file a function works on: the refnum wired, or a path opened with `operation` (measured: Write
    * to Text File replaces or creates, Read from Text File opens; both hand on the open refnum). An unwired
-   * file asks for a dialog, which is cancelled until the editor has one (DT-067, amendment of 2026-10-28).
+   * file asks with `functionName`'s dialog; a Cancel is error 43 with Not A Path as its file (measured).
    */
-  const openFileOf = async (files, { file, fileIsPath, fileWired, operation }) => {
-    if (!fileWired) return { code: ERROR_CODE.CANCELLED, cancelled: true, fileText: NOT_A_PATH_TEXT };
+  const openFileOf = async (files, { functionName, prompt, file, fileIsPath, fileWired, operation }) => {
+    if (!fileWired) {
+      const chosen = await chooseFile(functionName, { prompt });
+      if (chosen === null) return { code: ERROR_CODE.CANCELLED, cancelled: true, fileText: NOT_A_PATH_TEXT };
+      return openByName(files, chosen, operation);
+    }
     if (!fileIsPath) {
       const name = await files.fileName(file);
       // A refnum that is not open is error 1, without a file in the source (measured on Get File Size).
@@ -109,6 +128,9 @@ export function createFileFunctions({ io, host, memory, compilado, pathRules }) 
     const path = readPath(file);
     const name = systemNameOf(path);
     if (name === null) return { code: ERROR_CODE.NOT_AN_ABSOLUTE_PATH, fileText: shownPath(path) };
+    return openByName(files, name, operation);
+  };
+  const openByName = async (files, name, operation) => {
     const { refnum, error } = await files.fileOpen(name, operation, READ_WRITE);
     return error !== NO_ERROR_CODE ? { code: error, fileText: name } : { refnum: rememberOpen(refnum), fileText: name };
   };
@@ -144,6 +166,11 @@ export function createFileFunctions({ io, host, memory, compilado, pathRules }) 
     const element = host.spreadsheetElementOf(code);
     return { array, element: element.kind === "int" ? AS_I64 : element };
   };
+  /** The path chosen in `functionName`'s dialog (the Delimited VIs have no prompt), or `null` for Cancel. */
+  const chosenPathOf = async (functionName) => {
+    const name = await chooseFile(functionName);
+    return name === null ? null : pathFromText(name, pathRules);
+  };
   /** A Write Delimited error: its chain through LabVIEW's subVIs and the VI it ran in, and the file after a line break. */
   const writeDelimitedError = (code, instance, chainIndex, fileText) => {
     const caller = host.callChainOf(chainIndex);
@@ -158,21 +185,29 @@ export function createFileFunctions({ io, host, memory, compilado, pathRules }) 
       openedHere.clear();
       if (io) await Promise.allSettled(refnums.map((refnum) => io.fileClose(refnum)));
     },
-    file_open: (path, pathWired, operation, access, errorIn, refnumOut, cancelledOut, errorOut, chainIndex) => {
+    file_open: (prompt, promptWired, path, pathWired, operation, access, errorIn, refnumOut, cancelledOut, errorOut, chainIndex) => {
       writeRefnum(refnumOut, NOT_A_REFNUM);
       writeBoolean(cancelledOut, false);
       return fileFunction("Open/Create/Replace File", { errorIn, errorOut, chainIndex }, async (files) => {
-        if (!pathWired) {
-          writeBoolean(cancelledOut, true);
-          return { code: ERROR_CODE.CANCELLED, fileText: NOT_A_PATH_TEXT };
+        let name;
+        if (pathWired) {
+          const wanted = readPath(path);
+          name = systemNameOf(wanted);
+          if (name === null) return { code: ERROR_CODE.NOT_AN_ABSOLUTE_PATH, fileText: shownPath(wanted) };
+        } else {
+          name = await chooseFile("Open/Create/Replace File", { operation, prompt: promptOf(prompt, promptWired) });
+          // Measured: a cancelled dialog's source names no file.
+          if (name === null) {
+            writeBoolean(cancelledOut, true);
+            return { code: ERROR_CODE.CANCELLED, fileText: null };
+          }
         }
-        const wanted = readPath(path);
-        const name = systemNameOf(wanted);
-        if (name === null) return { code: ERROR_CODE.NOT_AN_ABSOLUTE_PATH, fileText: shownPath(wanted) };
-        const { refnum, error } = await files.fileOpen(name, operation, access);
+        // After the dialog op 5 does not ask again: the system's question took the place of LabVIEW's (measured).
+        const chosenOperation = !pathWired && operation === REPLACE_OR_CREATE_WITH_CONFIRMATION ? REPLACE_OR_CREATE : operation;
+        let { refnum, error } = await files.fileOpen(name, chosenOperation, access);
+        if (error === ERROR_CODE.CANCELLED && chosenOperation === REPLACE_OR_CREATE_WITH_CONFIRMATION) ({ refnum, error } = await confirmReplace(files, name, access));
         if (error === NO_ERROR_CODE) rememberOpen(refnum);
-        writeRefnum(refnumOut, refnum);
-        // Op 5's confirmation is answered Cancel until the editor has the dialog (amendment of 2026-10-28).
+        writeRefnum(refnumOut, error === NO_ERROR_CODE ? refnum : NOT_A_REFNUM);
         if (error === ERROR_CODE.CANCELLED) writeBoolean(cancelledOut, true);
         return { code: error, fileText: name };
       });
@@ -196,11 +231,11 @@ export function createFileFunctions({ io, host, memory, compilado, pathRules }) 
     },
 
     // With an error in, Write to Text File gives Not A Refnum while Read from Text File passes its refnum (measured).
-    file_write_text: (file, fileIsPath, fileWired, text, textIsLines, convertEol, errorIn, refnumOut, cancelledOut, errorOut, chainIndex) => {
+    file_write_text: (prompt, promptWired, file, fileIsPath, fileWired, text, textIsLines, convertEol, errorIn, refnumOut, cancelledOut, errorOut, chainIndex) => {
       writeRefnum(refnumOut, fileIsPath || !fileWired || readError(errorIn).status ? NOT_A_REFNUM : file);
       writeBoolean(cancelledOut, false);
       return fileFunction("Write to Text File", { errorIn, errorOut, chainIndex }, async (files) => {
-        const opened = await openFileOf(files, { file, fileIsPath, fileWired, operation: REPLACE_OR_CREATE });
+        const opened = await openFileOf(files, { functionName: "Write to Text File", prompt: promptOf(prompt, promptWired), file, fileIsPath, fileWired, operation: REPLACE_OR_CREATE });
         if (opened.cancelled) writeBoolean(cancelledOut, true);
         if (opened.code !== undefined) {
           // A refnum that is not open gives Not A Refnum (measured).
@@ -213,13 +248,13 @@ export function createFileFunctions({ io, host, memory, compilado, pathRules }) 
       });
     },
 
-    file_read_text: (file, fileIsPath, fileWired, count, readMode, convertEol, errorIn, refnumOut, textCell, cancelledOut, errorOut, chainIndex) => {
+    file_read_text: (prompt, promptWired, file, fileIsPath, fileWired, count, readMode, convertEol, errorIn, refnumOut, textCell, cancelledOut, errorOut, chainIndex) => {
       writeRefnum(refnumOut, fileIsPath || !fileWired ? NOT_A_REFNUM : file);
       writeBoolean(cancelledOut, false);
       if (readMode === READ_MODE.LINES) putLines(textCell, []);
       else putBytes(textCell, new Uint8Array(0));
       return fileFunction("Read from Text File", { errorIn, errorOut, chainIndex }, async (files) => {
-        const opened = await openFileOf(files, { file, fileIsPath, fileWired, operation: OPEN });
+        const opened = await openFileOf(files, { functionName: "Read from Text File", prompt: promptOf(prompt, promptWired), file, fileIsPath, fileWired, operation: OPEN });
         if (opened.cancelled) writeBoolean(cancelledOut, true);
         if (opened.code !== undefined) {
           // A refnum that is not open gives Not A Refnum (measured).
@@ -259,21 +294,26 @@ export function createFileFunctions({ io, host, memory, compilado, pathRules }) 
     },
 
     // Delete: the deleted path is the one given, also on an error (a relative one too), except an empty path
-    // or Not A Path, which give the empty path (measured). Confirm asks with a dialog, cancelled until the editor has one, as op 5
-    // (DT-067, amendment of 2026-10-28).
-    file_delete: (path, pathWired, entireHierarchy, confirm, errorIn, deletedPathCell, cancelledOut, errorOut, chainIndex) => {
+    // or Not A Path, which give the empty path (measured). An unwired path asks with Delete's dialog, and a Cancel
+    // gives Not A Path and a source with no file (measured); `confirm` asks before deleting (amendment of 2026-10-29).
+    file_delete: (prompt, promptWired, path, pathWired, entireHierarchy, confirm, errorIn, deletedPathCell, cancelledOut, errorOut, chainIndex) => {
       const wanted = pathWired ? readPath(path) : NOT_A_PATH;
-      const name = systemNameOf(wanted);
-      // Unverified: the deleted path of an unwired path's cancelled dialog.
       writePath(deletedPathCell, pathWired && (isNotAPath(wanted) || isEmptyPath(wanted)) ? EMPTY_PATH : wanted);
       writeBoolean(cancelledOut, false);
       return fileFunction("Delete", { errorIn, errorOut, chainIndex }, async (files) => {
+        const promptText = promptOf(prompt, promptWired);
+        let name = systemNameOf(wanted);
         if (!pathWired) {
-          writeBoolean(cancelledOut, true);
-          return { code: ERROR_CODE.CANCELLED, fileText: NOT_A_PATH_TEXT };
+          name = await chooseFile("Delete", { prompt: promptText });
+          if (name === null) {
+            writeBoolean(cancelledOut, true);
+            return { code: ERROR_CODE.CANCELLED, fileText: null };
+          }
+          writePath(deletedPathCell, pathFromText(name, pathRules));
         }
         if (name === null) return { code: ERROR_CODE.NOT_AN_ABSOLUTE_PATH, fileText: shownPath(wanted) };
-        if (confirm) {
+        // Unverified: whether confirm asks again after Delete's own dialog; it does here.
+        if (confirm && !(await dialogs.confirm(deleteConfirmation(name, promptText)))) {
           writeBoolean(cancelledOut, true);
           return { code: ERROR_CODE.CANCELLED, fileText: name };
         }
@@ -282,7 +322,7 @@ export function createFileFunctions({ io, host, memory, compilado, pathRules }) 
     },
 
     // Write Delimited Spreadsheet (DT-067 §9): with an error in the file is untouched and new file path is Not A Path; an
-    // unwired path is a dialog, cancelled until the editor has one (error 43 with no file, measured as a cancel).
+    // unwired path asks with its dialog, which never asks before replacing (measured); a Cancel is error 43 with no file.
     file_write_spreadsheet: (path, pathWired, format, twoD, twoDWired, twoDElement, oneD, oneDWired, oneDElement, append, transpose, delimiter, errorIn, newPathCell, errorOut, chainIndex) => {
       writePath(newPathCell, NOT_A_PATH);
       const incoming = readError(errorIn);
@@ -296,12 +336,12 @@ export function createFileFunctions({ io, host, memory, compilado, pathRules }) 
         writeError(errorOut, writeDelimitedError(code, instance, chainIndex, fileText));
         return ANSWERED;
       };
-      if (!pathWired) return fail(ERROR_CODE.CANCELLED, null);
-      const wanted = readPath(path);
-      const name = systemNameOf(wanted);
-      if (name === null) return fail(ERROR_CODE.NOT_AN_ABSOLUTE_PATH, shownPath(wanted));
       const text = arrayToSpreadsheetString({ format: host.textOf(format), array, element, delimiter: host.textOf(delimiter), endOfLine: endOfLineFor(pathRules) });
       return (async () => {
+        const wanted = pathWired ? readPath(path) : await chosenPathOf("Write Delimited Spreadsheet");
+        if (wanted === null) return fail(ERROR_CODE.CANCELLED, null);
+        const name = systemNameOf(wanted);
+        if (name === null) return fail(ERROR_CODE.NOT_AN_ABSOLUTE_PATH, shownPath(wanted));
         const files = requireIo();
         const { refnum, error } = await files.fileOpen(name, append ? OPEN_OR_CREATE : REPLACE_OR_CREATE, READ_WRITE);
         if (error !== NO_ERROR_CODE) return fail(error, name);
@@ -335,14 +375,14 @@ export function createFileFunctions({ io, host, memory, compilado, pathRules }) 
         writeError(errorOut, { status: true, code, source });
         return ANSWERED;
       };
-      if (!pathWired) return fail(ERROR_CODE.CANCELLED, READ_DELIMITED_SOURCE.dialog);
-      const wanted = readPath(path);
-      // Measured with a missing file: new file path is the path given.
-      writePath(newPathCell, wanted);
-      const name = systemNameOf(wanted);
-      // Unverified: the source of a relative or empty path; Open File+'s is taken.
-      if (name === null) return fail(ERROR_CODE.NOT_AN_ABSOLUTE_PATH, READ_DELIMITED_SOURCE.open);
       return (async () => {
+        const wanted = pathWired ? readPath(path) : await chosenPathOf("Read Delimited Spreadsheet");
+        if (wanted === null) return fail(ERROR_CODE.CANCELLED, READ_DELIMITED_SOURCE.dialog);
+        // Measured with a missing file: new file path is the path given.
+        writePath(newPathCell, wanted);
+        const name = systemNameOf(wanted);
+        // Unverified: the source of a relative or empty path; Open File+'s is taken.
+        if (name === null) return fail(ERROR_CODE.NOT_AN_ABSOLUTE_PATH, READ_DELIMITED_SOURCE.open);
         const files = requireIo();
         const { refnum, error } = await files.fileOpen(name, OPEN, READ_WRITE);
         if (error !== NO_ERROR_CODE) return fail(error, READ_DELIMITED_SOURCE.open);

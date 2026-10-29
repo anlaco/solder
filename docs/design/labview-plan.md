@@ -522,6 +522,17 @@ array or string read by a local variable while another loop writes it is never t
       LabVIEW's error sources through its subVIs, Read's steps of `max characters/row`, and in the editor both nodes with
       their measured terminals and Read's instance ring (spec/05 rule 114). 1027 tests green. Not checked by eye yet against
       LabVIEW: the ring's drawing. Next: (d), the dialogs.*
+      *Measured on 2026-10-29 ([`file-dialogs`](../../labview-captures/reports/2026-10-29-file-dialogs.md),
+      [`file-dialog-express`](../../labview-captures/reports/2026-10-29-file-dialog-express.md)); (d) split by DT-067's
+      amendment of 2026-10-29 into (d1) the functions' dialogs and (d2) File Dialog, the first Express VI.*
+      *(d1) done on 2026-10-29: an unwired path asks the Run's `dialogs` host with LabVIEW's title and mode
+      (`core/runtime/file-dialogs.mjs`), the wired prompt as title; op 5 and Delete's confirm ask before replacing or
+      deleting; the editor shows the system's own dialogs from Electron's main process, in the last folder chosen
+      (`editor/electron/file-dialog-options.mjs`); the command line answers Cancel. Checked in real Electron under Xvfb
+      ([`editor-run-dialogs`](../../labview-captures/reports/2026-10-29-editor-run-dialogs.md)). 1039 tests green.
+      Departures: Delete picks only files; on Linux the "All Files" filter is not shown; an Abort leaves an open
+      dialog on screen, whose answer is then ignored (unverified what LabVIEW does). Next: the DT on Express VIs,
+      measured first, then (d2) File Dialog on it.*
       *Found on the way, to fix as its own step: an I64 or U64 indicator hands its value to the editor as a JavaScript
       number (`deWasm` in `core/runtime/runtime.mjs`), so beyond 2^53 it shows rounded digits where LabVIEW shows them
       exact; the value inside the VI is exact.*

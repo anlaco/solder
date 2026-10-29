@@ -75,6 +75,31 @@ function preguntar(pregunta, error) {
   });
 }
 
+/** What Abort answers every waiting dialog with. */
+const ABORTED = "parar";
+
+/**
+ * A file dialog or a confirmation of the Run (DT-067, amendment of 2026-10-29), shown by the window: `kind` is
+ * "choose-file" or "confirm". What was written so far goes first, as for the error dialogs.
+ */
+function askWindow(kind, request) {
+  vaciar();
+  return new Promise((answer) => {
+    const id = ++siguiente;
+    respuestas.set(id, answer);
+    postMessage({ archivo: { id, kind, request } });
+  });
+}
+
+/** The Run's `dialogs` host (core/runtime/file-dialogs.mjs): an Abort answers Cancel. */
+const windowDialogs = {
+  chooseFile: async (request) => {
+    const chosen = await askWindow("choose-file", request);
+    return typeof chosen === "string" && chosen !== ABORTED ? chosen : null;
+  },
+  confirm: async (question) => (await askWindow("confirm", question)) === true,
+};
+
 /** Notes a write to a chart, without keeping more than any history can hold. */
 function noteChartWrite(nodo, valor) {
   const serie = (pendingChartWrites[nodo] ??= []);
@@ -123,7 +148,7 @@ onmessage = async ({ data }) => {
     parar?.abort();
     debugController?.release();
     // Un diálogo abierto no puede dejar el VI esperando: Abort lo contesta.
-    for (const ok of respuestas.values()) ok("parar");
+    for (const ok of respuestas.values()) ok(ABORTED);
     return respuestas.clear();
   }
   if (data.orden === "io-exited") return instrumentIo?.fail("The instrument I/O process stopped.");
@@ -145,6 +170,7 @@ onmessage = async ({ data }) => {
     alAcabarTurno: vaciar,
     alSoltar: (nodo) => postMessage({ soltar: nodo }),
     poolPorts: data.poolPorts,
+    dialogs: windowDialogs,
   };
   // Solder's VISA, through this Run's port to the editor's I/O process (DT-065 §3).
   instrumentIo = data.ioPort ? createIoClient(data.ioPort) : null;

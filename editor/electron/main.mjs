@@ -7,6 +7,7 @@
 // file://: so ES modules and the inventory's `fetch` work as in a browser.
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, dialog, ipcMain, Menu, MessageChannelMain, protocol, screen, utilityProcess } from "electron";
@@ -20,6 +21,7 @@ import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from
 import { WINDOW_KINDS, createRegistry, isDirty, recordChange, recordSave, viName, windowTitle } from "./vi-registry.mjs";
 import { readWindowStyle, watchWindowStyle } from "./window-style.mjs";
 import { createInstrumentIoProcess } from "./instrument-io-process.mjs";
+import { chosenFileOf, confirmationBoxFor, confirmedBy, folderAfter, systemDialogFor } from "./file-dialog-options.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EDITOR = path.resolve(HERE, "..");
@@ -176,6 +178,11 @@ let quitting = false;
 let sharedClipboard = null;
 /** The Error list's Show Warnings, for the whole session; it starts off, as LabVIEW's Options default (measured). */
 let showWarnings = false;
+/**
+ * Where a Run's next file dialog opens: the folder of the last file chosen in any of them (measured: LabVIEW shares
+ * it between functions, and a Cancel leaves it). Unverified: the first one, which LabVIEW was not measured for.
+ */
+let lastFileDialogFolder = os.homedir();
 
 const keyOf = (entry) => (entry.path ? pathKey(entry.path) : untitledKey(entry.id));
 
@@ -490,6 +497,18 @@ function handleRequests() {
     const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select a file", properties: ["openFile"] });
     return result.canceled || !result.filePaths.length ? null : result.filePaths[0];
   });
+  // A Run's file dialog (DT-067, amendment of 2026-10-29): the system's own, in the folder of the last file chosen;
+  // returns the system's name of the file chosen, or nothing for Cancel.
+  ipcMain.handle("run:choose-file", async (event, request) => {
+    const { kind, options } = systemDialogFor(request, lastFileDialogFolder);
+    const owner = ownerOf(event);
+    const result = kind === "open" ? await dialog.showOpenDialog(owner, options) : await dialog.showSaveDialog(owner, options);
+    const chosen = chosenFileOf(kind, result);
+    if (chosen !== null) lastFileDialogFolder = folderAfter(chosen);
+    return chosen;
+  });
+  // A Run's confirmation (op 5, Delete with confirm): whether OK was pressed.
+  ipcMain.handle("run:confirm", async (event, question) => confirmedBy(await dialog.showMessageBox(ownerOf(event), confirmationBoxFor(question))));
   // The text of every VI that a VI reaches, from the disk (not from the other open VIs: a caller sees a subVI when it is saved).
   ipcMain.handle("vi:subvi-texts", (event, text) => {
     const entry = openOf(event).entry;

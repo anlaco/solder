@@ -143,8 +143,8 @@ impl FileManager {
     }
 
     /// Open/Create/Replace File. The position starts at 0 whatever the operation (measured: never at
-    /// the end). Op 5 on an existing file is cancelled until the editor has its confirmation dialog
-    /// (DT-067, amendment of 2026-10-28).
+    /// the end). Op 5 on an existing file answers Cancelled: the caller asks LabVIEW's confirmation
+    /// and, on OK, opens with op 4 (DT-067, amendment of 2026-10-29).
     pub fn open(&self, name: &str, operation: Operation, access: Access) -> Result<FileRefnum, FileError> {
         let existing = fs::metadata(name).ok();
         if existing.as_ref().is_some_and(|metadata| metadata.is_dir()) {

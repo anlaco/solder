@@ -119,12 +119,12 @@ const IMPORTACIONES = [
   // The file functions (DT-067 §7), external waits like VISA's (core/runtime/file-io.mjs). By value or
   // handle the inputs and whether the file is a path and is wired, then the error in by address, the
   // outputs' places and the call chain's index.
-  { modulo: "io", nombre: "file_open", params: Array(9).fill("i32"), results: ["i32"] },
+  { modulo: "io", nombre: "file_open", params: Array(11).fill("i32"), results: ["i32"] },
   { modulo: "io", nombre: "file_close", params: Array(5).fill("i32"), results: ["i32"] },
-  { modulo: "io", nombre: "file_write_text", params: Array(11).fill("i32"), results: ["i32"] },
-  { modulo: "io", nombre: "file_read_text", params: Array(12).fill("i32"), results: ["i32"] },
+  { modulo: "io", nombre: "file_write_text", params: Array(13).fill("i32"), results: ["i32"] },
+  { modulo: "io", nombre: "file_read_text", params: Array(14).fill("i32"), results: ["i32"] },
   { modulo: "io", nombre: "file_size", params: Array(7).fill("i32"), results: ["i32"] },
-  { modulo: "io", nombre: "file_delete", params: Array(9).fill("i32"), results: ["i32"] },
+  { modulo: "io", nombre: "file_delete", params: Array(11).fill("i32"), results: ["i32"] },
   // Write and Read Delimited Spreadsheet (DT-067 §9): the spreadsheet string and the file in one wait.
   { modulo: "io", nombre: "file_write_spreadsheet", params: Array(16).fill("i32"), results: ["i32"] },
   { modulo: "io", nombre: "file_read_spreadsheet", params: Array(17).fill("i32"), results: ["i32"] },
@@ -810,16 +810,16 @@ const BLOQUES = {
   "visa-write": (e) => visaFunction(e, "visa_write", [0, 1], { resourceOut: true, count: true }),
   "visa-read": (e) => visaFunction(e, "visa_read", [0, 1], { resourceOut: true, buffer: true, count: true }),
   "visa-close": (e) => visaFunction(e, "visa_close", [0], {}),
-  // The file functions (DT-067 §7). Their inputs by the catalog's index: prompt is not used until the dialogs.
+  // The file functions (DT-067 §7), by the catalog's index. A wired prompt is the title of the dialog of an unwired path.
   "open-create-replace-file": (e) =>
-    fileFunction(e, "file_open", [...(e.cableada(1) ? e.entrada(1) : [k32(0)]), k32(e.cableada(1) ? 1 : 0), ...e.entrada(2), ...e.entrada(3)], ["refnum", "boolean", "error"]),
+    fileFunction(e, "file_open", [...optionalHandle(e, 0), ...(e.cableada(1) ? e.entrada(1) : [k32(0)]), k32(e.cableada(1) ? 1 : 0), ...e.entrada(2), ...e.entrada(3)], ["refnum", "boolean", "error"]),
   "close-file": (e) => fileFunction(e, "file_close", e.entrada(0), ["cell", "error"]),
   "write-to-text-file": (e) =>
-    fileFunction(e, "file_write_text", [...fileInput(e, 1), ...e.entrada(2), k32(esArray(e.tIn(2)) ? 1 : 0), k32(e.nodo.config?.["convert-eol"] ?? true ? 1 : 0)], ["refnum", "boolean", "error"]),
+    fileFunction(e, "file_write_text", [...optionalHandle(e, 0), ...fileInput(e, 1), ...e.entrada(2), k32(esArray(e.tIn(2)) ? 1 : 0), k32(e.nodo.config?.["convert-eol"] ?? true ? 1 : 0)], ["refnum", "boolean", "error"]),
   "read-from-text-file": (e) =>
-    fileFunction(e, "file_read_text", [...fileInput(e, 1), ...e.entrada(2), k32(readMode(e)), k32(e.nodo.config?.["convert-eol"] ?? true ? 1 : 0)], ["refnum", "cell", "boolean", "error"]),
+    fileFunction(e, "file_read_text", [...optionalHandle(e, 0), ...fileInput(e, 1), ...e.entrada(2), k32(readMode(e)), k32(e.nodo.config?.["convert-eol"] ?? true ? 1 : 0)], ["refnum", "cell", "boolean", "error"]),
   "delete": (e) =>
-    fileFunction(e, "file_delete", [...(e.cableada(1) ? e.entrada(1) : [k32(0)]), k32(e.cableada(1) ? 1 : 0), ...e.entrada(2), ...e.entrada(3)], ["cell", "boolean", "error"]),
+    fileFunction(e, "file_delete", [...optionalHandle(e, 0), ...(e.cableada(1) ? e.entrada(1) : [k32(0)]), k32(e.cableada(1) ? 1 : 0), ...e.entrada(2), ...e.entrada(3)], ["cell", "boolean", "error"]),
   "get-file-size": (e) => fileFunction(e, "file_size", [...e.entrada(0), k32(e.logicalTIn(0) === PATH ? 1 : 0)], ["refnum", "size", "error"]),
   // The instance follows the data: 1D data's type when it is wired, the 2D's otherwise (measured: 1D wins when not empty).
   "write-delimited-spreadsheet-vi": (e) => {

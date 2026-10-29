@@ -161,7 +161,7 @@ test("each operation of Open/Create/Replace File on an existing and a missing fi
     [OPERATION.create, { existing: 10, missing: 0 }],
     [OPERATION.openOrCreate, { existing: 0, missing: 0 }],
     [OPERATION.replaceOrCreate, { existing: 0, missing: 0 }],
-    // Cancelled until the editor has the confirmation dialog (DT-067, amendment of 2026-10-28).
+    // With no dialogs host, as on the command line, the confirmation answers Cancel (DT-067, amendment of 2026-10-29).
     [OPERATION.replaceOrCreateWithConfirmation, { existing: 43, missing: 0 }],
   ];
   for (const [operation, codes] of measured) {
@@ -261,7 +261,7 @@ test("the access mode refuses a write or a read with error 8", async () => {
   assert.equal(read.text, "");
 });
 
-test("Close File of a closed refnum is error 1, and an unwired file answers as a cancelled dialog", async () => {
+test("Close File of a closed refnum is error 1, and with no dialogs host an unwired file answers as a cancelled dialog", async () => {
   const name = newFile("hello");
   const vi = buildVI(CAT, (b) => {
     b.node("file", "path-control");
@@ -442,7 +442,7 @@ test("Delete gives LabVIEW's deleted path, cancelled and codes", async () => {
   assert.deepEqual(notAPath.deleteError, { status: true, code: 1430, source: sourceOf("Delete", "<Not A Path>") });
 });
 
-test("Delete keeps a file that is open (error 5) and, until the dialogs, one it must confirm (error 43)", async () => {
+test("Delete keeps a file that is open (error 5) and, with no dialogs host, one it must confirm (error 43)", async () => {
   const name = newFile("hello");
   const vi = buildVI(CAT, (b) => {
     b.node("file", "path-control");

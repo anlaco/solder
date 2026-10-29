@@ -726,7 +726,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     return whenAnswered(opciones.alDialogoError?.({ ...err, mensaje: texto }), writeOutputs);
   };
   const visaFunctions = createVisaFunctions({ io: opciones.io, host: hostFunctions, memory, compilado });
-  const fileFunctions = createFileFunctions({ io: opciones.io, host: hostFunctions, memory, compilado, pathRules });
+  const fileFunctions = createFileFunctions({ io: opciones.io, dialogs: opciones.dialogs, host: hostFunctions, memory, compilado, pathRules });
   const externalWaits = { error_automatico: automaticErrorDialog, dialogo_error: errorHandlerDialog, ...visaFunctions, ...fileFunctions };
   // Debugging (DT-047): the hooks the compiled VI calls while the debug flag is set.
   const readDebugValue = debugValueReader(compilado, { leerCadena, leerCluster, leerArray });

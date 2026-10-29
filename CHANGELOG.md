@@ -16,6 +16,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 - A wire's junction dot is drawn where its branches part, as in LabVIEW, so it no longer stays behind when a node
   moves or a segment is dragged; a segment that branches share moves with all of them, and a branch finished on
   another wire starts where LabVIEW starts it (DT-068).
+- A file function whose path is unwired opens the system's own file dialog, with LabVIEW's title for each function
+  and operation (or the wired prompt), in the folder of the last file chosen; a Cancel gives LabVIEW's outputs.
+  Open/Create/Replace File's "replace or create with confirmation" and Delete's confirm now ask before they replace
+  or delete, instead of always cancelling. The command line still answers every dialog Cancel (DT-067).
 
 ## 0.7.0-beta — 2026-10-28
 
