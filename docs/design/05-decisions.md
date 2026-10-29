@@ -33,6 +33,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [062](#dt-062) | Until 1.0 every beta is published from `main`: a feature raises MINOR, a fix raises PATCH | Accepted · in use |
 | [063](#dt-063) | A Run uses every core: a pool of workers over one shared memory; independent Runs keep separate memories | Accepted · not implemented |
 | [068](#dt-068) | A wire with several sinks is a tree from its geometry: the junction dot is where routes part, never stored | Accepted · implemented |
+| [069](#dt-069) | An Express VI is a catalog node configured in its `config` and compiled to WebAssembly; lean: Time Delay and File Dialog first, reviewed with the community before 1.0 | Accepted · not implemented |
 
 ## The 34 Red decisions
 
@@ -3036,3 +3037,77 @@ never stored.**
 | The dot follows nodes and dragged segments; a shared segment moves every branch | `test/editor/diagram-editing.test.mjs` with `-b.md` Q1–Q4 | Verified (2026-10-28) |
 | A branch finished on a horizontal or a vertical is born where LabVIEW puts it | `test/editor/diagram-editing.test.mjs` with `-a.md` Q1, Q2 | Verified (2026-10-28) |
 | An old `junction` opens and is not kept | `test/end-to-end/qvi-round-trip.test.mjs` | Verified (2026-10-28) |
+
+## DT-069
+
+**An Express VI is a catalog node whose configuration lives in the node (`config` in the `.sdg`) and is compiled
+straight to WebAssembly; the editor gives it LabVIEW's configuration dialog, its two states and an expandable node.
+The mechanism is kept lean: File Dialog and Time Delay first, dynamic data and the large Express VIs later.**
+
+- **Status:** Accepted on 2026-10-29 by the developer, with a review before 1.0: if the community does not use
+  Express VIs in Solder, they are taken out before 1.0, and the community decides.
+- **Why:** File Dialog, step (d2) of DT-067, is an Express VI, and Express VIs are what LabVIEW's beginners and
+  courses meet first (Core 1, DT-054), the audience of the courses the developer plans. Experienced developers avoid
+  them, mostly because of dynamic data and the large ones (DAQ Assistant, Simulate Signal); those can wait. Measured
+  on 2026-10-29 (`labview-captures/reports/2026-10-29-express-vi-common.md`, `2026-10-29-file-dialog-express.md`).
+
+### Decision
+
+1. **What it is.** A block of the catalog with an `express` section: its context-help number, the lines of its
+   "configured as follows" block, and the configuration keys each line shows. Its configuration is the node's
+   `config`, saved in the `.sdg` as any other node's (as the Expression Node's text); `config.configured` says
+   whether a configuration dialog was ever closed with OK. The compiler compiles the block from its configuration,
+   as any other function (DT-039): there is no hidden subVI and no interpreter. In LabVIEW an Express VI is a subVI
+   with its configuration (measured: the scripting export lists it as `SubVI` named `"0"`); Solder keeps the same
+   behavior without the subVI.
+2. **Two states, as measured.** Dropped and cancelled (or made by a program), the node is *unconfigured*: the
+   default terminals on the icon, no configuration block in its help. Any OK, even with nothing changed, makes it
+   *configured*: the terminals the dialog sets move into expansion rows under the icon, the others stay on the
+   icon, and the node grows around it. Which terminals each state shows, and their types, come from the block's
+   configuration through the catalog (as `type-if-config` does today), so a configuration can add a terminal (Square's
+   Duty cycle) or change a type (File Dialog's `selected paths`).
+3. **The dialog.** It opens when the node is dropped from a palette or Quick Drop, on a double click and on
+   Properties; its title is "Configure `<Express VI>` [`<caption>`]", with OK (default), Cancel and Help. Each
+   Express VI's dialog is its own module in the editor; their frame and buttons are shared. An OK is one undo step,
+   "Change Attribute"; Cancel changes nothing.
+4. **Wires.** A reconfiguration keeps every wire whose terminal still exists with the same name; a wire whose
+   terminal changed type is broken, and one whose terminal is gone is removed (measured on File Dialog: the
+   indicator of `selected path` breaks when it becomes an array).
+5. **The node.** Fill #cce8ff, border #3366ff, 96 px wide, the 32 × 32 icon at the top and a Caption (Visible Items
+   ▸ Caption, checked) below it; expansion rows 16 px apart, white, with #3366ff lines, grown by dragging the bottom
+   edge; View As Icon makes it 38 × 38 with the icon at (3, 3) and no terminals drawn. The expandable node is a new
+   piece of the editor, made for Express VIs and shaped so that subVI nodes can take it later.
+6. **The menu** is the one measured, common to every Express VI: Visible Items ▸ Caption, Help, Examples,
+   Description and Tip…, Add Breakpoint, `<palette>` Palette ▸, Replace ▸, Open Front Panel, Size To Text, View As
+   Icon, Remove and Rewire, Create ▸, Properties.
+7. **Not yet, greyed with their reason (DT-035):** Open Front Panel ▸ Convert (it needs a VI generated from the
+   configuration, done later), every Express VI that carries dynamic data (Simulate Signal and the Express palette's
+   signal ones, which wait for their own DT), and the large ones (DAQ Assistant waits for the DAQmx-like layer of
+   DT-064).
+8. **First ones:** Time Delay, small and cheap, to try the mechanism with a wait the runtime already has; then File
+   Dialog, which closes DT-067 (d2), with the system's dialogs as in (d1): File or folder, existing or new, single
+   or several files, with the departures (d1) already wrote down.
+
+### Consequences
+
+- `docs/schema/blocks.json` gains the `express` section and its schema; the `.sdg` schema needs nothing new
+  (`config` is free), but each Express VI's keys are written in its block.
+- The context help gains the "configured as follows" block after a dashed line.
+- Measured since (`2026-10-29-time-delay.md`): Time Delay waits also with an error in, which passes unchanged; a
+  wired value wins over the configuration; 0, a negative number and NaN do not wait; File Dialog placed from the
+  palette opens its dialog. Still unverified: Redo of a reconfiguration, how a fraction of a millisecond is rounded.
+- Taken while building the editor (stage A, 2026-10-29), small enough to follow from the points above: the block's
+  `express` section also names the Express VI (`name`) and its palette (`palette`), which the dialog's title, the
+  caption and the menu's palette row show; `config.caption` is a node's own caption, the name by default; an
+  Express node's `y` is the top of its unconfigured box, and a configured one sits 8 px higher; the undo history
+  gains step names, and only the Express OK has one yet; an OK that changes nothing on a configured node records
+  no step; the terminals keep the function terminal menu, only the body has the Express VI menu.
+
+### How it is verified
+
+| What | Mechanism | Status |
+|------|-----------|--------|
+| Unconfigured and configured terminals, types by configuration, wires kept or broken | `test/core/express-vi.test.mjs` | **Unverified** (to do) |
+| Time Delay waits its configured time, or the wired one | A test on the virtual host (`createVirtualHost`, DT-061 §6) | **Unverified** (to do) |
+| Dialog on drop, double click and Properties; OK is one undo step | `test/editor/express-vi-nodes.test.mjs` (Time Delay) | Done for Time Delay; File Dialog's body is to do |
+| The node, its rows and its menu look as LabVIEW's | Comparison of captures with `scripts/measure.py` | **Unverified** (to do) |

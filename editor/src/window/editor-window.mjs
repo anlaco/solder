@@ -45,6 +45,7 @@ import * as PC from "../front-panel/panel-clipboard.mjs";
 import * as Paths from "../common/vi-paths.mjs";
 import * as Q from "../../../core/model/qvi-format.mjs";
 import * as SN from "../block-diagram/subvi-nodes.mjs";
+import * as ExpressNodes from "../block-diagram/express-nodes.mjs";
 import { commandForCtrlKey } from "./shortcuts.mjs";
 import * as RV from "./run-values.mjs";
 import * as Sync from "./graph-sync.mjs";
@@ -147,9 +148,9 @@ function publicarGrafo(g, { markModified = true } = {}) {
  * The graph has come to rest —nothing half done, no text half written—: the
  * step is kept to undo it and the other window receives it.
  */
-function quieto(g) {
+function quieto(g, stepName) {
   // The values of a Run are not steps to undo.
-  if (!ejecutando) historial = H.registrar(historial, g);
+  if (!ejecutando) historial = H.registrar(historial, g, stepName);
   if (conDiagrama) setDebug(DS.pruneToGraph(debug, g));
   if (g === publicado) return;
   publicarGrafo(g);
@@ -990,6 +991,8 @@ function variantesDelMenuEdit() {
   return EM.editMenuVariants(nombre, {
     canUndo: historial.antes.length > 0,
     canRedo: historial.despues.length > 0,
+    undoName: H.undoName(historial),
+    redoName: H.redoName(historial),
     canCopy: hayParaCopiar,
     hasSelection: seleccion.length > 0,
     clipboardFilled: !!portapapeles.paquete,
@@ -1071,7 +1074,7 @@ function aplicarEnDialogo(intent, abierto) {
   if (intent.cancel) return cambiarActual({ ...actual, [abierto.field]: null });
   if (!intent.accept) return;
   const g = MD.accepted(intent.dialog ? { ...abierto, dialog: intent.dialog } : abierto, actual.g);
-  return cambiarActual({ ...actual, ...(g !== actual.g && { g }), [abierto.field]: null });
+  return cambiarActual({ ...actual, ...(g !== actual.g && { g }), [abierto.field]: null }, abierto.mod.stepName?.());
 }
 
 /**
@@ -1257,13 +1260,13 @@ function sinTerminalesHuerfanos(view) {
 
 /**
  * Changes the diagram. When it comes to rest —nothing half done, no text half
- * written—, the step is kept to undo it.
+ * written—, the step is kept to undo it, with its name if it has one.
  */
-function cambiarDiagrama(nuevo) {
+function cambiarDiagrama(nuevo, stepName) {
   if (nuevo === dia) return;
   dia = sinTerminalesHuerfanos(nuevo);
   // What Create made is a step of undo before its value or label is typed: the typing is another one (REPORT.md §A).
-  if (Et.graphAtRest(dia)) quieto(dia.g);
+  if (Et.graphAtRest(dia)) quieto(dia.g, stepName);
   pintar();
 }
 
@@ -1490,6 +1493,9 @@ addEventListener("mousedown", (ev) => {
   if (ev.detail >= 2 && sobreDiagrama.tipo === "marco" && sobreDiagrama.zona === "texto") return cambiarDiagrama(ED.editarMarco(dia, sobreDiagrama.nodo, ctx));
   // A double click on a subVI opens its Front Panel.
   if (ev.detail >= 2 && sobreDiagrama.tipo === "nodo" && SN.isSubVI(dia.g.nodos.find((n) => n.id === sobreDiagrama.id))) return abrirSubVI(sobreDiagrama.id);
+  // A double click on an Express VI opens its configuration dialog (DT-069 §3).
+  const doubleClicked = ev.detail >= 2 && sobreDiagrama.tipo === "nodo" && dia.g.nodos.find((n) => n.id === sobreDiagrama.id);
+  if (doubleClicked && ExpressNodes.isExpressNode(doubleClicked, cat)) return cambiarDiagrama(ED.openConfiguration(dia, ctx, doubleClicked.id));
   const id = ev.detail >= 2 && nodoDe(sobreDiagrama);
   if (id && (D.CONSTANTES[dia.g.nodos.find((n) => n.id === id)?.tipo]?.editable || dia.g.nodos.find((n) => n.id === id)?.tipo === "expression-node")) return cambiarDiagrama(ED.editar(dia, ctx, id, sobreDiagrama.campo));
   cambiarDiagrama(ED.pulsar(dia, ctx, sobreDiagrama, punto(ev), ev.shiftKey, ev.ctrlKey || ev.metaKey));
@@ -1727,7 +1733,7 @@ addEventListener("contextmenu", (ev) => {
   const n = id && dia.g.nodos.find((k) => k.id === id);
   // A name row of an Unbundle By Name has the menu of its output terminal.
   const puerto = o?.tipo === "terminal" ? o.puerto : o?.fila !== undefined ? UN.portOfRow(o.fila) : null;
-  const raiz = n && D.menuDe(n, puerto, dia.g, o?.campo !== undefined);
+  const raiz = n && D.menuDe(n, puerto, dia.g, o?.campo !== undefined, cat);
   if (raiz) {
     estado = { ...estado, paleta: null, abierta: null };
     return cambiarDiagrama(ED.abrirMenu(ED.confirmar(dia, ctx), raiz, id, ev.clientX, ev.clientY, puerto, punto(ev)));

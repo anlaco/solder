@@ -533,6 +533,17 @@ array or string read by a local variable while another loop writes it is never t
       Departures: Delete picks only files; on Linux the "All Files" filter is not shown; an Abort leaves an open
       dialog on screen, whose answer is then ignored (unverified what LabVIEW does). Next: the DT on Express VIs,
       measured first, then (d2) File Dialog on it.*
+      *Express VIs measured on 2026-10-29 ([`express-vi-common`](../../labview-captures/reports/2026-10-29-express-vi-common.md))
+      and decided in DT-069 (lean: Time Delay, then File Dialog; dynamic data later; reviewed with the community before
+      1.0). Next: the core of DT-069 with Time Delay, then the editor's expandable node and dialog, then (d2).*
+      *Time Delay done on 2026-10-29 (DT-069, stage A): its runtime measured
+      ([`time-delay`](../../labview-captures/reports/2026-10-29-time-delay.md)) and compiled to the scheduler's wait
+      (`core/model/express.mjs`, `test/core/express-vi.test.mjs` on the virtual host); in the editor placed from Timing,
+      its configuration dialog on drop, double click and Properties, OK as one "Change Attribute" undo step, the node
+      unconfigured and configured with its row, the common Express VI menu; compared with LabVIEW's captures
+      ([`editor-time-delay-compare`](../../labview-captures/reports/2026-10-29-editor-time-delay-compare.md)) and fixed.
+      1061 tests green. Not matched: the title bar's icon and the rounded buttons of Windows. Next: stage B (dragging the
+      bottom edge, View As Icon, the context help's configuration block), then (d2) File Dialog.*
       *Found on the way, to fix as its own step: an I64 or U64 indicator hands its value to the editor as a JavaScript
       number (`deWasm` in `core/runtime/runtime.mjs`), so beyond 2^53 it shows rounded digits where LabVIEW shows them
       exact; the value inside the VI is exact.*

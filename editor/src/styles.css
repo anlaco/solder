@@ -541,6 +541,20 @@ svg { display: block; overflow: visible; }
 .glifo-subvi { position: absolute; inset: 0; pointer-events: none; }
 .glifo-subvi svg { width: 100%; height: 100%; }
 
+/* An Express VI node (DT-069), measured in LabVIEW 2026 Q3: a blue box with its icon, its caption, white rows for the terminals
+   that leave the icon and a chevron. The positions are set by block-diagram/express-nodes.mjs. */
+.nodo .express-frame { position: absolute; inset: 0; box-sizing: border-box; background: var(--express-node-fill); border: 1px solid var(--express-node-border); pointer-events: none; }
+.express-icon { position: absolute; width: 32px; height: 32px; pointer-events: none; }
+.express-icon svg { width: 100%; height: 100%; }
+.express-caption { position: absolute; left: 0; width: 100%; display: flex; align-items: center; justify-content: center; font-size: 11px; white-space: nowrap; pointer-events: none; }
+.express-row { position: absolute; left: 1px; width: 94px; box-sizing: border-box; background: var(--express-row-fill); border-top: 1px solid var(--express-node-border); font-size: 11px; line-height: 15px; white-space: nowrap; overflow: hidden; pointer-events: none; }
+.express-row.last { border-bottom: 1px solid var(--express-node-border); }
+.express-row span { position: absolute; top: 0; }
+.express-chevron { position: absolute; width: 7px; height: 7px; pointer-events: none; }
+.express-chevron svg { width: 100%; height: 100%; }
+.express-mark { position: absolute; width: 3px; height: 5px; pointer-events: none; }
+.express-mark svg { display: block; }
+
 /* VI Properties, from labview-captures/subvi/vi-properties-execution-default.png. The positions are set by window/vi-properties.mjs. */
 .pv-velo { position: absolute; inset: 0; z-index: 40; display: flex; align-items: center; justify-content: center; }
 .pv-dialogo { position: relative; background: var(--dialog-background); border: 1px solid var(--dialog-border); box-shadow: 0 4px 16px var(--dialog-shadow); }
@@ -588,6 +602,14 @@ svg { display: block; overflow: visible; }
 .pv-dialogo.dialogo-historial { font-size: var(--fuente); }
 .pv-campo { box-sizing: border-box; border: 1px solid var(--field-border); background: var(--field-background); display: flex; align-items: center; padding: 0 3px; }
 .pv-campo .caret { display: inline-block; }
+/* The configuration dialog of an Express VI (block-diagram/express-dialog.mjs sets the positions). */
+.pv-dialogo.dialogo-express { font-size: var(--fuente); }
+.dialogo-express .pv-campo { position: absolute; padding-right: 15px; }
+.dialogo-express .pv-spin { position: absolute; right: 1px; top: 1px; bottom: 1px; display: flex; flex-direction: column; border-left: 1px solid var(--field-border); }
+.dialogo-express .pv-spin > div { flex: 1; position: relative; }
+.dialogo-express .pv-spin-up::after, .dialogo-express .pv-spin-down::after { content: ""; position: absolute; left: 50%; top: 50%; margin-left: -3px; border-left: 3px solid transparent; border-right: 3px solid transparent; }
+.dialogo-express .pv-spin-up::after { margin-top: -2px; border-bottom: 3px solid var(--checkbox-border); }
+.dialogo-express .pv-spin-down::after { margin-top: -1px; border-top: 3px solid var(--checkbox-border); }
 /* Select Item… of an enum, from labview-captures/select-item/a1.png (select-item-dialog.mjs sets the positions):
    the field keeps the focus border, and the highlight hugs the item's text instead of the whole row. */
 .pv-dialogo.dialogo-seleccion-item { font-size: var(--fuente); border-color: var(--select-item-dialog-border); }

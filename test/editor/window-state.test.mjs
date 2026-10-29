@@ -200,7 +200,7 @@ test("la carpeta timing abre su subpaleta", () => {
   assert.deepEqual(donde["wait-until-next-ms-multiple"], [0, 3]);
   assert.deepEqual(donde["time-stamp-constant"], [3, 2]);
   const hechos = INV.hijos(id).filter((e) => !esHueco(e)).map((e) => e.id.slice(id.length + 1));
-  assert.deepEqual(hechos, ["tick-count-ms", "wait-ms", "wait-until-next-ms-multiple"]);
+  assert.deepEqual(hechos, ["tick-count-ms", "wait-ms", "wait-until-next-ms-multiple", "time-delay"]);
 });
 
 // structures/paleta.png y nombres.png, capturadas en LabVIEW 2026 Q3: cuatro

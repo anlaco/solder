@@ -20,6 +20,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   and operation (or the wired prompt), in the folder of the last file chosen; a Cancel gives LabVIEW's outputs.
   Open/Create/Replace File's "replace or create with confirmation" and Delete's confirm now ask before they replace
   or delete, instead of always cancelling. The command line still answers every dialog Cancel (DT-067).
+- Time Delay, in Functions ▸ Programming ▸ Timing, is the first Express VI (DT-069): placing it opens its
+  configuration dialog ("Configure Time Delay [Time Delay]"), as do a double click and Properties; OK configures it as one
+  undo step ("Undo Change Attribute") and the Delay Time terminal moves into a row under the icon, keeping its wire.
+  The node and its right-click menu are drawn as LabVIEW's; the rows the editor cannot do yet are greyed with their reason.
 - Fixed: a path constant, dropped from the palette or made with Create ▸ Constant, is ready to type into at once,
   as in LabVIEW; what was typed into it first was lost, and the Run then gave error 1430.
 - Fixed: the toolbar's Abort tooltip, the Debug Window and the Error List name the VI by its file once it is saved,

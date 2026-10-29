@@ -423,6 +423,14 @@
             "include-lower-limit": {
               "description": "Para in-range-and-coerce: si el límite inferior cuenta como dentro del rango (de fábrica, sí).",
               "type": "boolean"
+            },
+            "configured": {
+              "description": "For an Express VI (DT-069): whether its configuration dialog was ever closed with OK. Until then its terminals are all on the icon; after, the ones the dialog sets are in expansion rows.",
+              "type": "boolean"
+            },
+            "delay": {
+              "description": "For time-delay: the seconds it waits when its Delay Time terminal is unwired (DT-069); never negative.",
+              "type": "number", "minimum": 0
             }
           }
         }

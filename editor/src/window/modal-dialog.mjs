@@ -1,4 +1,4 @@
-// The modal dialogs of the VI window — Edit Items… and Select Item… of an enum, and Chart History Length… —:
+// The modal dialogs of the VI window — Edit Items… and Select Item… of an enum, Chart History Length… and the configuration of an Express VI —:
 // which one is open and what a key or a click means for it.
 //
 // It exists because of the review of the enum commit (#32, 2026-10-14): the routing used to live
@@ -13,6 +13,7 @@
 
 import * as CH from "../front-panel/chart-history-dialog.mjs";
 import * as EI from "../block-diagram/edit-items-dialog.mjs";
+import * as XD from "../block-diagram/express-dialog.mjs";
 import * as SI from "../block-diagram/select-item-dialog.mjs";
 
 /**
@@ -24,6 +25,7 @@ export const DIALOGS = [
   { field: "itemsDialog", side: "diagram", mod: EI },
   { field: "itemsDialog", side: "panel", mod: EI },
   { field: "graphDialog", side: "panel", mod: CH },
+  { field: "expressDialog", side: "diagram", mod: XD },
   { field: "selectItemDialog", side: "diagram", mod: SI },
   { field: "selectItemDialog", side: "panel", mod: SI },
 ];

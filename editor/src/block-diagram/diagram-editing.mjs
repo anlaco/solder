@@ -41,9 +41,11 @@ import * as Gr from "../../../core/model/graph.mjs";
 import { pathFromText } from "../../../core/model/paths.mjs";
 import * as TC from "./terminal-creation.mjs";
 import * as FileNodes from "./file-nodes.mjs";
+import * as ExpressNodes from "./express-nodes.mjs";
+import * as ExpressDialog from "./express-dialog.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { constantElementType, constantForElement, emptyArrayAgain, flipArrayKind, isEmptyArrayShell, setArrayRepresentation, typeEmptyArray } from "../common/array-typing.mjs";
-import { CONSTANT_DIGITS, DBL, NUMERICOS, PATH, POR_ABREVIATURA, VISA_RESOURCE, convertirValor, esArray, isUndefinedArray, esEntero, esEnum, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
+import { CONSTANT_DIGITS, DBL, NUMERICOS, PATH, POR_ABREVIATURA, VISA_RESOURCE, convertirValor, esArray, isUndefinedArray, esEntero, esEnum, esError, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 import * as SI from "./select-item-dialog.mjs";
 import { MAX_EDITOR_DIMENSIONS, addDimensionPatch, dimensionsOfNode, firstShown, readCell, removeDimensionPatch, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
@@ -60,6 +62,8 @@ const AGARRE = { x: 4, y: 4 };
 /** The point of a block that hangs from the cursor: Format Into String and Scan From String, their centre (format-scan/31-scan-placed.png). */
 const grabPoint = (block, ctx) => {
   if (FN.isFormatNode({ tipo: block }, ctx.cat)) return FN.formatNodeGrabPoint(block, ctx.cat);
+  // An Express VI hangs by the middle of its node (DT-069).
+  if (ExpressNodes.isExpressNode({ tipo: block }, ctx.cat)) return ExpressNodes.expressGrabPoint();
   // Unbundle By Name hangs by its centre too (cluster palette, stage 1: dropped at the click, centred).
   return block === UN.BLOCK ? UN.grabPoint(ctx.cat, ctx.medir) : AGARRE;
 };
@@ -157,7 +161,25 @@ function colocar(d, ctx, p) {
   const elementType = shellId && constantElementType(g.nodos.find((n) => n.id === id));
   if (elementType) return { ...d, g: typeEmptyArray(d.g, shellId, elementType), seleccion: [shellId], accion: null, aviso: null };
   // Soltarlo dentro de un bucle lo mete en él (DT-041).
-  return { ...d, g: alojar(g, ctx, [id]), seleccion: [id], accion: null, aviso: null, edicion: typingAfterDrop(d, id) };
+  const placed = { ...d, g: alojar(g, ctx, [id]), seleccion: [id], accion: null, aviso: null, edicion: typingAfterDrop(d, id) };
+  // An Express VI asks for its configuration as it is dropped (DT-069 §3); cancelling it keeps the node, unconfigured.
+  return openConfigurationOnDrop(placed, ctx, id);
+}
+
+/** Opens the configuration dialog of the Express VI just dropped, if its dialog is done. */
+const openConfigurationOnDrop = (d, ctx, id) => {
+  const node = nodoPor(d.g, id);
+  return ExpressNodes.isExpressNode(node, ctx.cat) && ExpressDialog.hasDialog(node.tipo) ? { ...d, expressDialog: ExpressDialog.open(node, ctx.cat, { dropped: true }) } : d;
+};
+
+/**
+ * Opens the configuration dialog of an Express VI node: on a double click and from Properties (DT-069 §3). Anything
+ * else, and an Express VI whose dialog is not done, leaves the state as it was.
+ */
+export function openConfiguration(d, ctx, id) {
+  const node = nodoPor(d.g, id);
+  if (!node || !ExpressNodes.isExpressNode(node, ctx.cat) || !ExpressDialog.hasDialog(node.tipo)) return d;
+  return { ...d, menu: null, accion: null, edicion: null, seleccion: [id], expressDialog: ExpressDialog.open(node, ctx.cat) };
 }
 
 /**
@@ -1342,6 +1364,8 @@ export function orden(d, id, ctx) {
   if (id.endsWith(".edit-items")) return { ...d, menu: null, itemsDialog: EI.open(nodoPor(d.g, nodo)) };
   // Select Item… of an enum opens its window of items with a filter (select-item-dialog.mjs).
   if (/^context\.enum-(constant|control|indicator)\.select-item$/.test(id)) return { ...d, menu: null, selectItemDialog: SI.open(nodoPor(d.g, nodo)) };
+  // Properties of an Express VI is its configuration dialog (DT-069 §3).
+  if (d.menu.raiz === ExpressNodes.EXPRESS_MENU && id === `${ExpressNodes.EXPRESS_MENU}.properties`) return openConfiguration(d, ctx, nodo);
   const ultimo = id.slice(id.lastIndexOf(".") + 1);
   const unbundleResult = unbundleCommand(d, id, ctx);
   if (unbundleResult) return unbundleResult;
@@ -1564,6 +1588,8 @@ function nodeVariants(d, ctx) {
   const n = d.menu && d.g.nodos.find((k) => k.id === d.menu.nodo);
   const r = d.menu?.raiz;
   const fila = (...ids) => new Set(ids.map((i) => `${r}.${i}`));
+  // The palette row of an Express VI is named after its palette: "Timing Palette" (measured).
+  if (n && r === ExpressNodes.EXPRESS_MENU && ctx) return { rotulos: new Map([[`${r}.palette`, `${ctx.cat.bloque(n.tipo).express.palette} Palette`]]) };
   if (n && esCase(n)) {
     const ms = marcosDe(n);
     const m = ms[activoDe(n)];
@@ -1601,7 +1627,22 @@ function nodeVariants(d, ctx) {
     const caso = d.g.nodos.find((k) => k.id === n.dentro);
     return { ocultos: fila(caso && esBooleano(caso) ? "numeric-palette" : "boolean-palette"), rotulos: new Map() };
   }
+  const terminalPalette = functionTerminalPaletteVariants(d, ctx, r);
+  if (terminalPalette) return terminalPalette;
   return {};
+}
+
+/**
+ * The palette row of a function's terminal menu is named after the terminal's type. Only the error cluster is
+ * done: "Dialog & User Interface Palette", as measured on the error cluster of Unbundle By Name (the same name on
+ * a function's terminal is unverified); the other types keep "Numeric Palette".
+ */
+function functionTerminalPaletteVariants(d, ctx, root) {
+  if (root !== "context.function" || !d.menu.puerto || !ctx) return null;
+  const types = Gr.tipos(d.g, ctx.cat);
+  const key = `${d.menu.nodo}.${d.menu.puerto}`;
+  const type = types.entradas.get(key) ?? types.salidas.get(key);
+  return esError(type) ? { rotulos: new Map([[`${root}.numeric-palette`, UN.typePaletteLabel(type)]]) } : null;
 }
 
 /**
@@ -1736,7 +1777,9 @@ export function marcados(d, ctx) {
   const r = d.menu.raiz;
   const m = new Set();
   if (n.vista?.terminales) m.add(`${r}.visible-items.terminals`);
-  if (!n.vista?.compacto) m.add(`${r}.view-as-icon`);
+  if (!n.vista?.compacto && r !== ExpressNodes.EXPRESS_MENU) m.add(`${r}.view-as-icon`);
+  // Caption is the one item of an Express VI's Visible Items, ticked (measured).
+  if (r === ExpressNodes.EXPRESS_MENU) m.add(`${r}.visible-items.caption`);
   for (const mark of VISA_MENU_MARKS[r] ?? []) m.add(`${r}.${mark}`);
   for (const mark of pathMenuMarks(r, n)) m.add(`${r}.${mark}`);
   if (n.config?.mode) m.add(`${r}.change-mode.${n.config.mode}`);

@@ -157,7 +157,7 @@ const VISA_FUNCTIONS = new Set(["visa-open", "visa-write", "visa-read", "visa-cl
 /** The file functions (DT-067): each waits for the disk, served by the same I/O as VISA. */
 const FILE_FUNCTIONS = new Set(["open-create-replace-file", "close-file", "write-to-text-file", "read-from-text-file", "get-file-size", "delete", "write-delimited-spreadsheet-vi", "read-delimited-spreadsheet-vi"]);
 /** The nodes that take time: each runs in its own clump and yields while it waits. */
-export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "simple-error-handler", ...VISA_FUNCTIONS, ...FILE_FUNCTIONS]);
+export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "time-delay", "simple-error-handler", ...VISA_FUNCTIONS, ...FILE_FUNCTIONS]);
 const idImport = (nombre) => IMPORTACIONES.findIndex((i) => i.nombre === nombre);
 /** The imports that may park the clump that calls them (DT-063 §8): the dialogs, the debugger, VISA and files, which wait for the outside. */
 const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error", "visa_open", "visa_write", "visa_read", "visa_close", "file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete", "file_write_spreadsheet", "file_read_spreadsheet"].map(idImport);
@@ -584,6 +584,25 @@ function delimitedWriteFormat(e, dataIndex) {
 }
 
 /** A file function's `file` input: the refnum or path handle, whether it is a path, and whether it is wired (unwired asks for a dialog). */
+const MS_PER_SECOND = 1000;
+
+/**
+ * Time Delay (DT-069): it waits the wired seconds, or the configured ones when the terminal is unwired; it waits
+ * also with an error in, which passes unchanged; 0, a negative number and NaN do not wait (measured,
+ * labview-captures/reports/2026-10-29-time-delay.md). Unverified: how LabVIEW rounds a fraction of a millisecond;
+ * here it is cut off.
+ */
+function timeDelay(e) {
+  const seconds = e.cableada(0) ? [...e.entrada(0), ...convertir(e.tIn(0), "number")] : [ins("f64.const", e.nodo.config?.delay ?? e.cat.bloque("time-delay").config.delay.value)];
+  const milliseconds = e.temporal("f64");
+  return [
+    ...seconds, ins("f64.const", MS_PER_SECOND), ins("f64.mul"), ins("f64.floor"), ins("local.tee", milliseconds),
+    ins("f64.const", 0), ins("local.get", milliseconds), ins("f64.const", 0), ins("f64.gt"), ins("select"),
+    callScheduler("wait"), ins("drop"),
+    ...e.entrada(1),
+  ];
+}
+
 function fileInput(e, index) {
   const wired = e.cableada(index);
   return [...(wired ? e.entrada(index) : [k32(0)]), k32(e.logicalTIn(index) === PATH ? 1 : 0), k32(wired ? 1 : 0)];
@@ -1055,6 +1074,7 @@ const BLOQUES = {
   // Timing: el reloj de milisegundos de LabVIEW es un U32 que da la vuelta.
   "tick-count-ms": () => [ins("call", idImport("reloj"))],
   "wait-ms": (e) => [...e.entrada(0), ...convertir(e.tIn(0), "u32"), ins("f64.convert_i32_u"), callScheduler("wait")],
+  "time-delay": (e) => timeDelay(e),
   "wait-until-next-ms-multiple": (e) => [...e.entrada(0), ...convertir(e.tIn(0), "u32"), ins("f64.convert_i32_u"), callScheduler("wait_multiple")],
   control: (e) => readControl(e),
   // Un control booleano se lee igual: el booleano viaja como i32 0/1.

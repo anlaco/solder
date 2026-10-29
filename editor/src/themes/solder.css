@@ -158,6 +158,11 @@
   --node-border: #2b2f36;
   --time-node-fill: #ffffff;
   --time-node-border: #2b2f36;
+  --express-node-fill: #cce8ff; /* Express VI nodes, measured in LabVIEW 2026 Q3 (DT-069). */
+  --express-node-border: #3366ff;
+  --express-row-fill: #ffffff;
+  --express-chevron: #8496a5;
+  --express-icon-bar: #0000ff;
   --format-node-border: #2b2f36;
   --path-node-border: #2b2f36;
   --structure-terminal-fill: #ffffff;

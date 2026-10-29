@@ -204,7 +204,7 @@ test("cada función de comparison se pone en el diagrama con sus terminales", ()
 test("cada función de timing se pone en el diagrama con sus terminales", () => {
   const TIMING = "palette.functions.programming.timing";
   const hechas = INV.hijos(TIMING).filter((e) => !esHueco(e) && e.bloque);
-  assert.deepEqual(hechas.map((e) => e.bloque), ["tick-count-ms", "wait-ms", "wait-until-next-ms-multiple"]);
+  assert.deepEqual(hechas.map((e) => e.bloque), ["tick-count-ms", "wait-ms", "wait-until-next-ms-multiple", "time-delay"]);
   for (const e of hechas) {
     const { g, ids } = con(e.bloque);
     const ts = terminales(g.nodos.find((n) => n.id === ids[0]), CTX);

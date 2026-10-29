@@ -317,7 +317,7 @@
     },
     "express-vis": {
       "desc": "Express VIs: nodes with a configuration dialog and dynamic signals",
-      "ref": "undecided: there is no plan"
+      "ref": "design/05-decisions.md DT-069 (Time Delay and File Dialog first; dynamic data later)"
     },
     "vis-maleables": {
       "desc": "malleable VIs (.vim) and the Type Specialization structure, which adapt the code to the wired type",
@@ -508,6 +508,18 @@
     "justificar-constantes": {
       "desc": "the layout of a path constant's text: turning Size To Text off to give it a size of its own, and left and right justification",
       "ref": "labview-captures/reports/2026-10-26-path-type.md §2"
+    },
+    "express-caption": {
+      "desc": "showing and hiding an Express VI node's caption (Visible Items ▸ Caption)",
+      "ref": "design/05-decisions.md DT-069 §5"
+    },
+    "express-nodo-ampliable": {
+      "desc": "the Express VI node's other states: View As Icon, Size To Text and its bottom edge dragged to grow the rows",
+      "ref": "design/05-decisions.md DT-069 §5 (stage B)"
+    },
+    "express-a-subvi": {
+      "desc": "converting an Express VI to a standard subVI (Open Front Panel), which needs a VI generated from its configuration",
+      "ref": "design/05-decisions.md DT-069 §7"
     }
   },
   "entradas": [
@@ -6359,9 +6371,9 @@
     {
       "id": "palette.functions.programming.timing.time-delay",
       "etiqueta": "Time Delay",
-      "estado": "todo",
-      "labview": "Waits for the requested seconds. It is an Express VI.",
-      "necesita": "express-vis",
+      "estado": "built",
+      "prueba": "test/editor/express-vi-nodes.test.mjs::Time Delay is placed from the Timing palette and opens its configuration dialog",
+      "bloque": "time-delay",
       "captura": "run/timing-paleta.png"
     },
     {
@@ -8787,6 +8799,179 @@
       "labview": "Opens the node's properties dialog.",
       "necesita": "propiedades",
       "captura": "block-diagram/numeric-menu-funcion.png",
+      "separado": true
+    },
+    {
+      "id": "context.express-vi",
+      "etiqueta": "Express VI",
+      "estado": "built",
+      "prueba": "test/editor/express-vi-nodes.test.mjs::the right-click menu of an Express VI is the one measured",
+      "captura": "express-vi/td-menu2.png"
+    },
+    {
+      "id": "context.express-vi.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Chooses what the node shows: its caption.",
+      "necesita": "express-caption",
+      "captura": "express-vi/td-menu2.png"
+    },
+    {
+      "id": "context.express-vi.visible-items.caption",
+      "etiqueta": "Caption",
+      "estado": "todo",
+      "labview": "Shows or hides the node's caption.",
+      "necesita": "express-caption",
+      "captura": "express-vi/td-menu2.png"
+    },
+    {
+      "id": "context.express-vi.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the Express VI's help.",
+      "necesita": "ayuda-contextual",
+      "captura": "express-vi/td-menu2.png"
+    },
+    {
+      "id": "context.express-vi.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Looks for examples that use the Express VI.",
+      "necesita": "ejemplos",
+      "captura": "express-vi/td-menu2.png"
+    },
+    {
+      "id": "context.express-vi.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "express-vi/td-menu2.png"
+    },
+    {
+      "id": "context.express-vi.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.express-vi.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
+    },
+    {
+      "id": "context.express-vi.palette",
+      "etiqueta": "Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the palette the Express VI comes from.",
+      "necesita": "menus-contextuales",
+      "captura": "express-vi/td-menu2.png",
+      "separado": true
+    },
+    {
+      "id": "context.express-vi.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the Express VI with another, keeping the wires that fit.",
+      "necesita": "menus-contextuales",
+      "captura": "express-vi/td-menu2.png"
+    },
+    {
+      "id": "context.express-vi.open-front-panel",
+      "etiqueta": "Open Front Panel",
+      "estado": "todo",
+      "labview": "Converts the Express VI to a standard subVI, after asking, and opens its front panel.",
+      "necesita": "express-a-subvi",
+      "captura": "express-vi/td-menu2.png",
+      "separado": true
+    },
+    {
+      "id": "context.express-vi.size-to-text",
+      "etiqueta": "Size To Text",
+      "estado": "todo",
+      "labview": "Fits the node to its caption.",
+      "necesita": "express-nodo-ampliable",
+      "captura": "express-vi/td-menu2.png",
+      "separado": true
+    },
+    {
+      "id": "context.express-vi.view-as-icon",
+      "etiqueta": "View As Icon",
+      "estado": "todo",
+      "labview": "Draws the node as its icon alone, 38 × 38 px, with no caption or terminals.",
+      "necesita": "express-nodo-ampliable",
+      "captura": "express-vi/td-menu2.png"
+    },
+    {
+      "id": "context.express-vi.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the node and joins the wire that went in to the one that came out.",
+      "necesita": "menus-contextuales",
+      "captura": "express-vi/td-menu2.png",
+      "separado": true
+    },
+    {
+      "id": "context.express-vi.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/express-vi-nodes.test.mjs::the right-click menu of an Express VI is the one measured",
+      "captura": "express-vi/td-menu2.png"
+    },
+    {
+      "id": "context.express-vi.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/express-vi-nodes.test.mjs::the right-click menu of an Express VI is the one measured",
+      "captura": "express-vi/td-menu2.png"
+    },
+    {
+      "id": "context.express-vi.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/express-vi-nodes.test.mjs::the right-click menu of an Express VI is the one measured",
+      "captura": "express-vi/td-menu2.png"
+    },
+    {
+      "id": "context.express-vi.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/express-vi-nodes.test.mjs::the right-click menu of an Express VI is the one measured",
+      "captura": "express-vi/td-menu2.png"
+    },
+    {
+      "id": "context.express-vi.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "express-vi/td-menu2.png"
+    },
+    {
+      "id": "context.express-vi.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/express-vi-nodes.test.mjs::All Constants from the menu of an Express VI wires constants to the inputs that have none",
+      "captura": "express-vi/td-menu2.png",
+      "separado": true
+    },
+    {
+      "id": "context.express-vi.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/express-vi-nodes.test.mjs::All Constants from the menu of an Express VI wires constants to the inputs that have none",
+      "captura": "express-vi/td-menu2.png"
+    },
+    {
+      "id": "context.express-vi.properties",
+      "etiqueta": "Properties",
+      "estado": "built",
+      "prueba": "test/editor/express-vi-nodes.test.mjs::a double click and Properties open the same configuration dialog",
+      "captura": "express-vi/td-menu2.png",
       "separado": true
     },
     {
@@ -19627,6 +19812,35 @@
       "labview": "Opens the help of this dialog.",
       "necesita": "ayuda-contextual",
       "captura": "graphs/50-chart-history-length-dialog.png"
+    },
+    {
+      "id": "dialog.express-vi",
+      "etiqueta": "Configure Express VI",
+      "estado": "built",
+      "prueba": "test/editor/express-vi-nodes.test.mjs::the configuration dialog opens as Time Delay is dropped and Cancel keeps the node unconfigured",
+      "captura": "express-vi/td-dlg.png"
+    },
+    {
+      "id": "dialog.express-vi.ok",
+      "etiqueta": "OK",
+      "estado": "built",
+      "prueba": "test/editor/express-vi-nodes.test.mjs::OK configures the node as one undo step named Change Attribute",
+      "captura": "express-vi/td-dlg.png"
+    },
+    {
+      "id": "dialog.express-vi.cancel",
+      "etiqueta": "Cancel",
+      "estado": "built",
+      "prueba": "test/editor/express-vi-nodes.test.mjs::the configuration dialog opens as Time Delay is dropped and Cancel keeps the node unconfigured",
+      "captura": "express-vi/td-dlg.png"
+    },
+    {
+      "id": "dialog.express-vi.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of the Express VI's dialog.",
+      "necesita": "ayuda-contextual",
+      "captura": "express-vi/td-dlg.png"
     },
     {
       "id": "dialog.enum-edit-items",

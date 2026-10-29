@@ -33,8 +33,10 @@ export const editMenuId = (windowName) => `window.${windowName}.menu.edit`;
  *   canCopy               a node or a panel object is selected
  *   hasSelection          anything at all is selected
  *   clipboardFilled       something was copied
+ *   undoName, redoName    what the step to undo or to redo is called, if it has a name: the rows say "Undo Change
+ *                         Attribute" (measured on an Express VI's dialog, DT-069)
  */
-export function editMenuVariants(windowName, { canUndo, canRedo, canCopy, hasSelection, clipboardFilled }) {
+export function editMenuVariants(windowName, { canUndo, canRedo, canCopy, hasSelection, clipboardFilled, undoName, redoName }) {
   const row = (name) => `${editMenuId(windowName)}.${name}`;
   const desactivados = new Set();
   if (!canUndo) desactivados.add(row("undo"));
@@ -46,6 +48,8 @@ export function editMenuVariants(windowName, { canUndo, canRedo, canCopy, hasSel
   if (!hasSelection) desactivados.add(row("delete"));
   if (!clipboardFilled) desactivados.add(row("paste"));
   const rotulos = new Map();
+  if (canUndo && undoName) rotulos.set(row("undo"), `Undo ${undoName}`);
+  if (canRedo && redoName) rotulos.set(row("redo"), `Redo ${redoName}`);
   if (windowName === "block-diagram" && !hasSelection) {
     rotulos.set(row("remove-broken-wires-from-selection"), "Remove Broken Wires");
     rotulos.set(row("clean-up-selection"), "Clean Up Diagram");

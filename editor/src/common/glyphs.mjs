@@ -1035,12 +1035,41 @@ Object.assign(FUNCIONES, {
 // VIs: en su sitio, en gris, con un rótulo corto.
 for (const [id, rotulo] of Object.entries({
   "high-resolution-relative-seconds": "s.μs", "stall-data-flow": "stall", "get-date-time-string": "→abc", "get-date-time-in-seconds": "now",
-  "date-time-to-seconds": "→ts", "seconds-to-date-time": "ts→", "to-time-stamp": "#→ts", "time-delay": "delay", "elapsed-time": "Δt",
+  "date-time-to-seconds": "→ts", "seconds-to-date-time": "ts→", "to-time-stamp": "#→ts", "elapsed-time": "Δt",
   "notification-polling-wait": "poll", "format-date-time-string": "fmt", "time-stamp-constant": "12:00",
 })) FUNCIONES[id] = cajaTiempo(texto48(24, 24.5, rotulo, rotulo.length > 3 ? 10 : 13));
 for (const id of ["tick-count-ms", "wait-ms", "wait-until-next-ms-multiple", "high-resolution-relative-seconds", "stall-data-flow", "get-date-time-string",
-  "get-date-time-in-seconds", "date-time-to-seconds", "seconds-to-date-time", "to-time-stamp", "time-delay", "elapsed-time",
+  "get-date-time-in-seconds", "date-time-to-seconds", "seconds-to-date-time", "to-time-stamp", "elapsed-time",
   "notification-polling-wait", "format-date-time-string", "time-stamp-constant"]) CAJAS[id] = TIEMPO;
+
+// ——— Express VIs (DT-069) ———
+//
+// The icon of an Express VI is 32 × 32 px: a black rounded frame, one black row at the top and then a 2 px bar of #0000ff
+// across it (measured in LabVIEW 2026 Q3, reports/2026-10-29-express-vi-common.md §2 and
+// 2026-10-29-editor-time-delay-compare.md §2). The drawings are our own.
+
+const EXPRESS_ICON_SIZE = 32;
+const EXPRESS_BAR = "var(--express-icon-bar)";
+const EXPRESS_SAND = "var(--express-node-border)";
+const expressFrame = (inside) =>
+  `<rect x="0.5" y="0.5" width="31" height="31" fill="${PAPER}" stroke="${INK}" stroke-width="1" rx="3"/>` +
+  `<rect x="2" y="1" width="28" height="2" fill="${EXPRESS_BAR}"/>` +
+  inside;
+
+/** Time Delay: an hourglass, its two caps and the sand in each bulb. */
+const HOURGLASS =
+  lleno(9, 10, 23, 11.5, INK) + lleno(9, 26.5, 23, 28, INK) +
+  poligono([[10.5, 11.5], [21.5, 11.5], [16, 19], [21.5, 26.5], [10.5, 26.5], [16, 19]], "none", INK, 1) +
+  poligono([[12.5, 13], [19.5, 13], [16, 18]], EXPRESS_SAND) + poligono([[12.5, 26], [19.5, 26], [16, 22]], EXPRESS_SAND);
+
+/** The 32 × 32 icons the nodes of the Express VIs draw, by block. */
+export const EXPRESS_ICONS = { "time-delay": svg(expressFrame(HOURGLASS), `0 0 ${EXPRESS_ICON_SIZE} ${EXPRESS_ICON_SIZE}`) };
+
+// The palette shows the same icon, centred in its 48 px cell.
+const EXPRESS_PALETTE_MARGIN = (48 - EXPRESS_ICON_SIZE) / 2;
+const EXPRESS_PALETTE_INK = [EXPRESS_PALETTE_MARGIN, EXPRESS_PALETTE_MARGIN, 48 - EXPRESS_PALETTE_MARGIN, 48 - EXPRESS_PALETTE_MARGIN];
+FUNCIONES["time-delay"] = svg48(`<g transform="translate(${EXPRESS_PALETTE_MARGIN} ${EXPRESS_PALETTE_MARGIN})">${expressFrame(HOURGLASS)}</g>`);
+CAJAS["time-delay"] = EXPRESS_PALETTE_INK;
 
 // ——— Representation ———
 //
