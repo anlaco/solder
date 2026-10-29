@@ -985,6 +985,7 @@ export function moverA(d, ctx, p) {
       if (arr?.tipo === "arr-const") return { ...d, g: Gr.fijarConfig(accion.g0, accion.nodo, stretchedArrayConstant(arr, ctx, accion, p)) };
       if (arr?.tipo === "initialize-array") return { ...d, g: stretchedInitializeArray(accion, p, ctx) };
       if (esEstructura(accion.g0.nodos.find((k) => k.id === accion.nodo), ctx)) return { ...d, g: estirarEstructura(accion, p, ctx) };
+      if (arr && ExpressNodes.isExpressNode(arr, ctx.cat)) return { ...d, g: ExpressNodes.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / ExpressNodes.ROW_PITCH)) };
       if (UN.isUnbundleByName(arr)) return { ...d, g: UN.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / UN.ROW_STEP)) };
       if (arr && FN.isFormatNode(arr, ctx.cat)) return { ...d, g: FN.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / FN.FORMAT_ROW_STEP)) };
       // Cada celda que se estira es una entrada más; por arriba, las nuevas
@@ -1365,7 +1366,7 @@ export function orden(d, id, ctx) {
   // Select Item… of an enum opens its window of items with a filter (select-item-dialog.mjs).
   if (/^context\.enum-(constant|control|indicator)\.select-item$/.test(id)) return { ...d, menu: null, selectItemDialog: SI.open(nodoPor(d.g, nodo)) };
   // Properties of an Express VI is its configuration dialog (DT-069 §3).
-  if (d.menu.raiz === ExpressNodes.EXPRESS_MENU && id === `${ExpressNodes.EXPRESS_MENU}.properties`) return openConfiguration(d, ctx, nodo);
+  if (ExpressNodes.isExpressMenu(d.menu.raiz) && id === `${d.menu.raiz}.properties`) return openConfiguration(d, ctx, nodo);
   const ultimo = id.slice(id.lastIndexOf(".") + 1);
   const unbundleResult = unbundleCommand(d, id, ctx);
   if (unbundleResult) return unbundleResult;
@@ -1589,7 +1590,7 @@ function nodeVariants(d, ctx) {
   const r = d.menu?.raiz;
   const fila = (...ids) => new Set(ids.map((i) => `${r}.${i}`));
   // The palette row of an Express VI is named after its palette: "Timing Palette" (measured).
-  if (n && r === ExpressNodes.EXPRESS_MENU && ctx) return { rotulos: new Map([[`${r}.palette`, `${ctx.cat.bloque(n.tipo).express.palette} Palette`]]) };
+  if (n && ExpressNodes.isExpressMenu(r) && ctx) return { rotulos: new Map([[`${r}.palette`, `${ctx.cat.bloque(n.tipo).express.palette} Palette`]]) };
   if (n && esCase(n)) {
     const ms = marcosDe(n);
     const m = ms[activoDe(n)];
@@ -1777,9 +1778,11 @@ export function marcados(d, ctx) {
   const r = d.menu.raiz;
   const m = new Set();
   if (n.vista?.terminales) m.add(`${r}.visible-items.terminals`);
-  if (!n.vista?.compacto && r !== ExpressNodes.EXPRESS_MENU) m.add(`${r}.view-as-icon`);
-  // Caption is the one item of an Express VI's Visible Items, ticked (measured).
+  if (!n.vista?.compacto && !ExpressNodes.isExpressMenu(r)) m.add(`${r}.view-as-icon`);
+  // Caption is the one item of an Express VI's Visible Items, ticked (measured); in the icon view View As Icon is ticked instead
+  // (the caption is not drawn there; whether Caption stays ticked is unverified).
   if (r === ExpressNodes.EXPRESS_MENU) m.add(`${r}.visible-items.caption`);
+  if (r === ExpressNodes.EXPRESS_ICON_MENU) m.add(`${r}.view-as-icon`);
   for (const mark of VISA_MENU_MARKS[r] ?? []) m.add(`${r}.${mark}`);
   for (const mark of pathMenuMarks(r, n)) m.add(`${r}.${mark}`);
   if (n.config?.mode) m.add(`${r}.change-mode.${n.config.mode}`);

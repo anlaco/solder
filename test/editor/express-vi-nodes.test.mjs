@@ -175,11 +175,11 @@ test("configured, the Delay Time terminal leaves the icon for a white row and th
   assert.deepEqual([at["error-in"].x, at["error-in"].y - box.y], [box.x, 33 + 2.5], "the others stay on the icon where they were");
   assert.deepEqual([at["error-out"].x, at["error-out"].y - box.y], [box.x + 95, 22 + 2.5]);
   const html = D.contenido(configured, CTX, Gr.tipos(configured.g, CAT));
-  assert.match(html, /class="express-row in last" style="top:57px;height:16px"><span style="left:13px">Delay Time \(s\)<\/span>/, "the row, lines at y 57 and 72, its label at x 14");
+  assert.match(html, /class="express-row in last" style="top:57px;height:16px"><span style="left:13px;color:#ff7f00">Delay Time \(s\)<\/span>/, "the row, lines at y 57 and 72, its label at x 14");
   assert.match(html, /class="express-icon" style="left:32px;top:4px"/, "the icon stays at (32, 4)");
   assert.match(html, /class="express-chevron" style="left:45px;top:73px"/, "the chevron under the row");
   const marks = [...html.matchAll(/class="express-mark" style="left:(\d+)px;top:([\d.]+)px"><svg[^>]*><path[^>]*fill="([^"]+)"/g)].map(([, left, top, color]) => [Number(left), Number(top), color]);
-  assert.deepEqual(marks, [[2, 62, "var(--ink)"], [2, 33, "#7f7f00"], [91, 22, "#7f7f00"]], "the row's terminal is a black triangle at x 2, y 62; the others keep their type colour");
+  assert.deepEqual(marks, [[2, 62, "var(--express-black)"], [2, 33, "#7f7f00"], [91, 22, "#7f7f00"]], "the row's terminal is a black triangle at x 2, y 62; the others keep their type colour");
   assert.match(html, /width:96px;height:82px/);
   assert.equal(XN.ROW_PITCH, 16);
 });
@@ -223,8 +223,8 @@ test("the right-click menu of an Express VI is the one measured", () => {
   const frontPanel = INV.entrada(`${MENU}.open-front-panel`);
   assert.ok(esHueco(frontPanel));
   assert.match(INV.explicacion(frontPanel).solder, /converting an Express VI to a standard subVI.*DT-069 §7/);
-  for (const row of ["help", "examples", "description-and-tip", "palette", "replace", "size-to-text", "view-as-icon", "remove-and-rewire", "visible-items.caption"]) assert.ok(esHueco(INV.entrada(`${MENU}.${row}`)), row);
-  for (const row of ["add-breakpoint", "create", "properties"]) assert.ok(!esHueco(INV.entrada(`${MENU}.${row}`)), row);
+  for (const row of ["help", "examples", "description-and-tip", "palette", "replace", "size-to-text", "remove-and-rewire", "visible-items.caption"]) assert.ok(esHueco(INV.entrada(`${MENU}.${row}`)), row);
+  for (const row of ["add-breakpoint", "create", "properties", "view-as-icon"]) assert.ok(!esHueco(INV.entrada(`${MENU}.${row}`)), row);
   // Create ▸ Constant, Control and Indicator need a terminal and are greyed on the body.
   const { desactivados } = ED.variantes(opened, CTX);
   for (const row of ["constant", "control", "indicator"]) assert.ok(desactivados.has(`${MENU}.create.${row}`), row);
@@ -317,4 +317,133 @@ test("the Palette row of the Express VI menu has its submenu arrow", () => {
   const opened = ED.abrirMenu(d, MENU, id, 0, 0);
   const html = D.menuContextual(INV, opened.menu, ED.marcados(opened, CTX), undefined, ED.variantes(opened, CTX));
   assert.match(html, /data-id="context\.express-vi\.palette"[^>]*>(?:(?!<\/div>).)*flecha-menu/, "Timing Palette ▸");
+});
+
+// ——— Stage B: the rows grown by the bottom edge and View As Icon ———
+
+/** Drags the bottom edge of the node `rows` rows down (negative: up) and lets go, as the window does. */
+function dragBottomEdge(d, id, rows) {
+  const box = D.caja(nodeOf(d.g, id), CTX);
+  const start = { x: box.x + 48, y: box.y + box.alto - 1 };
+  const grabbed = ED.pulsar(d, CTX, { tipo: "asa", nodo: id, lado: "abajo" }, start);
+  const moved = ED.moverA(grabbed, CTX, { x: start.x, y: start.y + rows * XN.ROW_PITCH });
+  return ED.soltar(moved, CTX, null, { x: start.x, y: start.y + rows * XN.ROW_PITCH });
+}
+
+test("dragging the bottom edge grows the rows in connector order, never below the configured ones, in one undo step", () => {
+  const { d, id } = dropTimeDelay();
+  assert.match(D.contenido(d, CTX, Gr.tipos(d.g, CAT)), /class="asa oculta express-edge"[^>]*data-asa="abajo"/, "the bottom edge has its handle");
+  let history = H.registrar(H.nuevo(Gr.nuevo()), d.g);
+  const grown = dragBottomEdge(d, id, 3);
+  assert.equal(grown.accion, null);
+  history = H.registrar(history, grown.g, undefined);
+  const node = nodeOf(grown.g, id);
+  assert.equal(node.vista.rows, 3, "the number of rows is kept in the node (capped at the terminals it has)");
+  const box = D.caja(node, CTX);
+  assert.deepEqual([box.ancho, box.alto], [96, 114], "67 -> 114 (measured)");
+  const html = D.contenido(grown, CTX, Gr.tipos(grown.g, CAT));
+  const labels = [...html.matchAll(/class="express-row (in|out)[^"]*"[^>]*><span[^>]*color:(#[0-9a-f]+)"[^>]*>([^<]*)</g)].map(([, side, color, label]) => [side, color, label]);
+  assert.deepEqual(labels, [["in", "#ff7f00", "Delay Time (s)"], ["in", "#7f7f00", "error in (no error)"], ["out", "#7f7f00", "error out"]], "the terminals in connector order, with their type's colour");
+  assert.match(html, /express-row in" style="top:57px/);
+  assert.doesNotMatch(html, /express-chevron/, "no chevron once every terminal is a row (measured)");
+  assert.match(html, /left:6px;color:#7f7f00">error in \(no error\)</, "an input label that does not fit moves left to x 7 (measured on error in)");
+  assert.match(html, /left:13px;color:#ff7f00">Delay Time/, "one that fits starts at x 14");
+  assert.match(html, /left:44\.5px;color:#7f7f00" class="centred">error out</, "an output's label is centred on x 45.5 (measured)");
+  assert.match(html, /express-row out last" style="top:89px/, "16 px pitch, the last row's bottom line closes them");
+  // A terminal in a row leaves the icon: every mark is in a row, and wires attach there.
+  const at = Object.fromEntries(D.terminales(node, CTX).map((t) => [t.puerto, t]));
+  assert.deepEqual([at["delay-time"].y - box.y, at["error-in"].y - box.y, at["error-out"].y - box.y], [62 + 2.5, 78 + 2.5, 94 + 2.5]);
+  assert.equal(at["error-out"].x, box.x + 95);
+  assert.deepEqual([...html.matchAll(/class="express-mark" style="left:(\d+)px/g)].map(([, left]) => Number(left)), [2, 2, 91]);
+  // One Ctrl+Z restores the 96 x 67.
+  assert.equal(history.antes.length, 2);
+  const undone = H.deshacer(history);
+  assert.deepEqual([D.caja(nodeOf(undone.g, id), CTX).ancho, D.caja(nodeOf(undone.g, id), CTX).alto], [96, 67]);
+  // Dragging up removes rows, but not below the configured ones.
+  const configured = { ...grown, g: accept({ ...grown, expressDialog: XD.open(node, CAT) }) };
+  assert.equal(D.caja(nodeOf(configured.g, id), CTX).alto, 114, "configuring keeps the rows that were dragged out");
+  const shrunk = dragBottomEdge(configured, id, -5);
+  assert.equal(D.caja(nodeOf(shrunk.g, id), CTX).alto, 82, "one row, the configured one");
+  assert.equal(nodeOf(shrunk.g, id).vista, undefined, "and nothing is kept for the rows");
+  assert.equal(D.caja(nodeOf(dragBottomEdge(d, id, 1).g, id), CTX).alto, 82, "one step adds one row");
+  assert.equal(D.caja(nodeOf(dragBottomEdge(d, id, 9).g, id), CTX).alto, 114, "no more rows than terminals");
+});
+
+test("the rows of an Express VI node are saved with its view and open the same", () => {
+  const { d, id } = dropTimeDelay({ x: 50, y: 50 });
+  const grown = dragBottomEdge(d, id, 2).g;
+  const file = escribir(grown, CAT);
+  assert.ok(validate(file), JSON.stringify(validate.errors));
+  assert.equal(file.layout.diagram["time-delay_1"].rows, 2);
+  // View As Icon is written as `true` when on, and absent when off (a terminal's is `false`: its default is the icon).
+  const asIcon = Gr.alternarIcono(grown, grown.nodos[0].id);
+  const iconFile = escribir(asIcon, CAT);
+  assert.equal(iconFile.layout.diagram["time-delay_1"]["view-as-icon"], true);
+  assert.ok(validate(iconFile), JSON.stringify(validate.errors));
+  assert.equal(nodeOf(leer(aTexto(asIcon, CAT), CAT), grown.nodos[0].id).vista.compacto, true);
+  assert.equal("view-as-icon" in escribir(grown, CAT).layout.diagram["time-delay_1"], false);
+  const terminal = Gr.crearEnPanel(Gr.nuevo(), CAT, "control", 0, 0, "Numeric");
+  assert.equal(escribir(Gr.alternarIcono(terminal.g, terminal.id), CAT).layout.diagram[terminal.g.nodos[0].name]["view-as-icon"], false, "a terminal keeps its convention");
+  const reopened = leer(aTexto(grown, CAT), CAT);
+  assert.equal(nodeOf(reopened, reopened.nodos[0].id).vista.rows, 2);
+  assert.equal(aTexto(reopened, CAT), aTexto(grown, CAT));
+  const withoutRows = escribir(d.g, CAT);
+  assert.equal("rows" in withoutRows.layout.diagram["time-delay_1"], false);
+  const zero = escribir(grown, CAT);
+  zero.layout.diagram["time-delay_1"].rows = 0;
+  assert.equal(validate(zero), false);
+});
+
+test("View As Icon draws the node as 38 x 38 with its own menu, and toggling it back restores the rows", () => {
+  const { d, id } = dropTimeDelay();
+  const configured = { ...d, g: accept(d) };
+  const wired = Gr.conectar(Gr.crearNodo(configured.g, CAT, "const", 0, 0).g, CAT, { nodo: "n2", puerto: "result", dir: "out" }, { nodo: id, puerto: "delay-time", dir: "in" });
+  const before = { ...configured, g: wired.g };
+  // Not done yet in the normal menu: the row is built and toggles the icon view.
+  assert.ok(!esHueco(INV.entrada(`${MENU}.view-as-icon`)));
+  const toggled = ED.orden(ED.abrirMenu(before, MENU, id, 0, 0), `${MENU}.view-as-icon`, CTX);
+  const node = nodeOf(toggled.g, id);
+  const box = D.caja(node, CTX);
+  assert.deepEqual([box.ancho, box.alto], [38, 38]);
+  const html = D.contenido(toggled, CTX, Gr.tipos(toggled.g, CAT));
+  assert.match(html, /class="express-frame icon-view"/);
+  assert.match(html, /class="express-icon" style="left:3px;top:3px"/, "the icon at (3, 3)");
+  assert.doesNotMatch(html.match(/<div class="express-frame icon-view">.*?<\/svg>/)[0], /border-radius|rx=|<path/, "the corners are a hard stepped chamfer, not an arc");
+  assert.match(html, /<rect x="4" y="1" width="1" height="1"/, "the staircase of 5 px: the first row starts at x 5 and the next at x 4");
+  assert.match(html, /<rect x="0" y="5" width="1" height="1"/, "and the last step at x 0");
+  assert.match(html, /<rect x="0" y="32" width="1" height="1"/, "the same at the bottom left: the sixth row from the bottom at x 0");
+  assert.match(html, /<rect x="4" y="36" width="1" height="1"/);
+  for (const absent of ["express-caption", "express-chevron", "express-row", "express-mark", "express-edge"]) assert.doesNotMatch(html, new RegExp(absent), `${absent} is not drawn`);
+  // Wires attach to the edges of the icon: Delay Time higher on the left, error in and error out at mid height.
+  const at = Object.fromEntries(D.terminales(node, CTX).map((t) => [t.puerto, t]));
+  assert.deepEqual([at["delay-time"].x, at["error-in"].x, at["error-out"].x], [box.x, box.x, box.x + 37]);
+  assert.deepEqual([at["delay-time"].y - box.y, at["error-in"].y - box.y, at["error-out"].y - box.y], [15, 31, 31], "the wires meet the box at y 15 and 31 (measured)");
+  assert.equal(toggled.g.cables.length, 1, "the wire is kept");
+  // Toggling off restores the rows; each toggle is one step.
+  const back = ED.orden(ED.abrirMenu(toggled, D.menuDe(node, null, toggled.g, false, CAT), id, 0, 0), `${XN.EXPRESS_ICON_MENU}.view-as-icon`, CTX);
+  assert.deepEqual([D.caja(nodeOf(back.g, id), CTX).ancho, D.caja(nodeOf(back.g, id), CTX).alto], [96, 82]);
+  assert.equal(H.deshacer(H.registrar(H.nuevo(before.g), toggled.g)).g, before.g, "one Ctrl+Z undoes the toggle");
+  // A grown node keeps its rows through the icon view.
+  const grown = dragBottomEdge(d, id, 2);
+  const iconGrown = ED.orden(ED.abrirMenu(grown, MENU, id, 0, 0), `${MENU}.view-as-icon`, CTX);
+  const restored = ED.orden(ED.abrirMenu(iconGrown, XN.EXPRESS_ICON_MENU, id, 0, 0), `${XN.EXPRESS_ICON_MENU}.view-as-icon`, CTX);
+  assert.equal(D.caja(nodeOf(restored.g, id), CTX).alto, D.caja(nodeOf(grown.g, id), CTX).alto);
+});
+
+test("in the icon view the menu has the measured rows in their order", () => {
+  const { d, id } = dropTimeDelay();
+  const iconView = { ...d, g: Gr.alternarIcono(d.g, id) };
+  const node = nodeOf(iconView.g, id);
+  assert.equal(D.menuDe(node, null, iconView.g, false, CAT), XN.EXPRESS_ICON_MENU);
+  const rows = INV.hijos(XN.EXPRESS_ICON_MENU).map((row) => `${row.etiqueta}${row.separado ? " |" : ""}`);
+  assert.deepEqual(rows, ["Visible Items", "Help", "Examples", "Description and Tip...", "Add Breakpoint |", "Disable Breakpoint", "Palette |", "Create", "Replace |", "Open Front Panel |", "View As Icon |", "Remove and Rewire |", "Properties |"], "Size To Text is gone and Create comes before Replace");
+  const opened = ED.abrirMenu(iconView, XN.EXPRESS_ICON_MENU, id, 0, 0);
+  assert.ok(ED.marcados(opened, CTX).has(`${XN.EXPRESS_ICON_MENU}.view-as-icon`), "View As Icon is ticked");
+  assert.equal(ED.variantes(opened, CTX).rotulos.get(`${XN.EXPRESS_ICON_MENU}.palette`), "Timing Palette");
+  assert.ok(!ED.marcados(ED.abrirMenu(d, MENU, id, 0, 0), CTX).has(`${MENU}.view-as-icon`), "unticked on the normal node");
+  const html = D.menuContextual(INV, opened.menu, ED.marcados(opened, CTX), undefined, ED.variantes(opened, CTX));
+  assert.equal((html.match(/class="separador-menu"/g) ?? []).length, 7, "seven separators, the first after Description and Tip...");
+  const made = ED.orden(opened, `${XN.EXPRESS_ICON_MENU}.create.all-constants`, CTX);
+  assert.equal(made.g.cables.length, 2);
+  assert.ok(ED.orden(opened, `${XN.EXPRESS_ICON_MENU}.properties`, CTX).expressDialog, "Properties opens the dialog from the icon view");
 });

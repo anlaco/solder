@@ -1050,9 +1050,10 @@ for (const id of ["tick-count-ms", "wait-ms", "wait-until-next-ms-multiple", "hi
 
 const EXPRESS_ICON_SIZE = 32;
 const EXPRESS_BAR = "var(--express-icon-bar)";
+const EXPRESS_BLACK = "var(--express-black)";
 const EXPRESS_SAND = "var(--express-node-border)";
 const expressFrame = (inside) =>
-  `<rect x="0.5" y="0.5" width="31" height="31" fill="${PAPER}" stroke="${INK}" stroke-width="1" rx="3"/>` +
+  `<rect x="0.5" y="0.5" width="31" height="31" fill="${PAPER}" stroke="${EXPRESS_BLACK}" stroke-width="1" rx="3"/>` +
   `<rect x="2" y="1" width="28" height="2" fill="${EXPRESS_BAR}"/>` +
   inside;
 

@@ -544,12 +544,16 @@ svg { display: block; overflow: visible; }
 /* An Express VI node (DT-069), measured in LabVIEW 2026 Q3: a blue box with its icon, its caption, white rows for the terminals
    that leave the icon and a chevron. The positions are set by block-diagram/express-nodes.mjs. */
 .nodo .express-frame { position: absolute; inset: 0; box-sizing: border-box; background: var(--express-node-fill); border: 1px solid var(--express-node-border); pointer-events: none; }
+.nodo .express-frame.icon-view { border: 0; background: none; }
+.express-frame.icon-view svg { display: block; }
+.express-edge { cursor: ns-resize; }
 .express-icon { position: absolute; width: 32px; height: 32px; pointer-events: none; }
 .express-icon svg { width: 100%; height: 100%; }
 .express-caption { position: absolute; left: 0; width: 100%; display: flex; align-items: center; justify-content: center; font-size: 11px; white-space: nowrap; pointer-events: none; }
 .express-row { position: absolute; left: 1px; width: 94px; box-sizing: border-box; background: var(--express-row-fill); border-top: 1px solid var(--express-node-border); font-size: 11px; line-height: 15px; white-space: nowrap; overflow: hidden; pointer-events: none; }
 .express-row.last { border-bottom: 1px solid var(--express-node-border); }
-.express-row span { position: absolute; top: 0; }
+.express-row span { position: absolute; top: -1px; }
+.express-row span.centred { transform: translateX(-50%); }
 .express-chevron { position: absolute; width: 7px; height: 7px; pointer-events: none; }
 .express-chevron svg { width: 100%; height: 100%; }
 .express-mark { position: absolute; width: 3px; height: 5px; pointer-events: none; }

@@ -162,6 +162,7 @@
   --express-node-border: #3366ff;
   --express-row-fill: #ffffff;
   --express-chevron: #8496a5;
+  --express-black: #000000; /* The icon's frame and the triangles of the rows: pure black, measured. */
   --express-icon-bar: #0000ff;
   --format-node-border: #2b2f36;
   --path-node-border: #2b2f36;

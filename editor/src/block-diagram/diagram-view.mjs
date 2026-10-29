@@ -1276,7 +1276,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
   } else if (FN.isFormatNode(n, ctx.cat)) {
     cuerpo = `<div class="glifo-formato">${FN.formatNodeBody(n, k, ctx.cat, resueltos)}</div>`;
   } else if (ExpressNodes.isExpressNode(n, ctx.cat)) {
-    cuerpo = ExpressNodes.expressBody(n, k, ctx.cat, resueltos);
+    cuerpo = ExpressNodes.expressBody(n, k, ctx.cat, resueltos, ctx.medir);
   } else if (UN.isUnbundleByName(n)) {
     cuerpo = `<div class="glifo-formato">${UN.unbundleBody(n, k, ctx.cat, resueltos)}</div>${UN.nameRowZones(n, k, ctx.cat)}`;
   } else if (esExpresion(n)) {
@@ -1307,6 +1307,11 @@ function nodo(n, d, ctx, resueltos, elegido) {
   // Initialize Array is stretched downwards to add a dimension size (array-2d/initializearray-contexthelp.png).
   if (n.tipo === "initialize-array") asas = `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(k.ancho / 2 - 3)};top:${px(k.alto - 3)}"></div>`;
   // Format Into String and Scan From String are stretched downwards to add rows (format-scan/16-node-stretched.png).
+  // An Express VI is stretched downwards by its bottom edge to show more of its terminals as rows (DT-069); not in the icon view.
+  if (ExpressNodes.isExpressNode(n, ctx.cat) && !ExpressNodes.isIconView(n)) {
+    const edge = ExpressNodes.stretchHandle(k);
+    asas = `<div class="asa oculta express-edge" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(edge.x)};top:${px(edge.y)};width:${px(edge.ancho)};height:${px(edge.alto)}"></div>`;
+  }
   if (FN.isFormatNode(n, ctx.cat)) {
     const handle = FN.formatNodeHandle(k);
     asas = `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(handle.x)};top:${px(handle.y)}"></div>`;
@@ -1603,7 +1608,7 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   if (n.tipo in MENU_ESTRUCTURA) return MENU_ESTRUCTURA[n.tipo];
   if (isSubVI(n)) return "context.subvi";
   // An Express VI has one menu for every one (DT-069 §6); its terminals keep the function's.
-  if (!puerto && cat && ExpressNodes.isExpressNode(n, cat)) return ExpressNodes.EXPRESS_MENU;
+  if (!puerto && cat && ExpressNodes.isExpressNode(n, cat)) return ExpressNodes.isIconView(n) ? ExpressNodes.EXPRESS_ICON_MENU : ExpressNodes.EXPRESS_MENU;
   // An enum has its own menus, measured with the panel control, the indicator and the
   // constant (DT-049); the diagram terminal of a panel enum uses the same rows.
   if (esEnum(n.config?.type) && (n.tipo === "control" || n.tipo === "indicator")) return n.tipo === "control" ? "context.enum-control" : "context.enum-indicator";

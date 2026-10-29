@@ -136,7 +136,10 @@ export function escribir(g, cat) {
       label: etiqueta,
       "label-offset": n.etiqueta,
       "show-terminals": n.vista?.terminales || undefined,
-      "view-as-icon": n.vista?.compacto ? false : undefined,
+      // A terminal is an icon by default, so its file says `false` when it is not; an Express VI is a box by default, so its file
+      // says `true` when it is an icon (DT-069).
+      "view-as-icon": n.vista?.compacto ? Boolean(b.express) : undefined,
+      rows: n.vista?.rows || undefined,
     });
     if (esPanel) {
       const salida = cat.puertos(n).out.length > 0;
@@ -262,8 +265,8 @@ export function leer(datos, cat) {
         const texto = d.label?.text ?? p?.label?.text;
         if (texto !== undefined) n.label = { text: texto };
         if (d["label-offset"]) n.etiqueta = d["label-offset"];
-        if (d["show-terminals"] || d["view-as-icon"] === false) {
-          n.vista = limpio({ terminales: d["show-terminals"] || undefined, compacto: d["view-as-icon"] === false || undefined });
+        if (d["show-terminals"] || d["view-as-icon"] !== undefined || d.rows) {
+          n.vista = limpio({ terminales: d["show-terminals"] || undefined, compacto: d["view-as-icon"] === Boolean(cat.bloque(nodo.type).express) || undefined, rows: d.rows || undefined });
         }
         if (p) n.panel = limpio({ x: p.x, y: p.y, etiqueta: p["label-offset"] });
         return n;

@@ -544,6 +544,11 @@ array or string read by a local variable while another loop writes it is never t
       ([`editor-time-delay-compare`](../../labview-captures/reports/2026-10-29-editor-time-delay-compare.md)) and fixed.
       1061 tests green. Not matched: the title bar's icon and the rounded buttons of Windows. Next: stage B (dragging the
       bottom edge, View As Icon, the context help's configuration block), then (d2) File Dialog.*
+      *Stage B done on 2026-10-29: rows grown by dragging the bottom edge (one undo step, `rows` in the `.sdg`), View As
+      Icon (38 × 38, its own menu, `"view-as-icon": true` for an Express node), compared with LabVIEW
+      ([`editor-time-delay-b-compare`](../../labview-captures/reports/2026-10-29-editor-time-delay-b-compare.md)) and
+      fixed. 1065 tests green. Left: the context help's "configured as follows" block waits for the Context Help window
+      (`configuredAsLines` is ready). Next: (d2) File Dialog.*
       *Found on the way, to fix as its own step: an I64 or U64 indicator hands its value to the editor as a JavaScript
       number (`deWasm` in `core/runtime/runtime.mjs`), so beyond 2^53 it shows rounded digits where LabVIEW shows them
       exact; the value inside the VI is exact.*

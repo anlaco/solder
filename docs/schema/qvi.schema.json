@@ -253,8 +253,12 @@
           "type": "boolean"
         },
         "view-as-icon": {
-          "description": "View As Icon del terminal de un control o indicador. Por defecto, cierto.",
+          "description": "View As Icon del terminal de un control o indicador. Por defecto, cierto; se escribe `false` cuando no lo es. En un Express VI es al revés: el nodo es una caja por defecto y se escribe `true` cuando View As Icon está activo (DT-069).",
           "type": "boolean"
+        },
+        "rows": {
+          "description": "For an Express VI: how many expansion rows its node shows, set by dragging its bottom edge (DT-069). Never fewer than the rows its configuration needs; written only when it is more than none.",
+          "type": "integer", "minimum": 1
         }
       }
     },
