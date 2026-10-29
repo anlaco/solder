@@ -111,3 +111,19 @@ test("every example is a .sdg and every subVI it names is there", () => {
     }
   }
 });
+
+test("a VI goes by its file name once saved, and by its Untitled name before", () => {
+  assert.equal(Paths.viDisplayName(Paths.untitledKey(1), "Untitled 1"), "Untitled 1");
+  assert.equal(Paths.viDisplayName("/home/ana/vis/dlg1.sdg", "Untitled 1"), "dlg1.sdg");
+  assert.equal(Paths.viDisplayName("C:\\Users\\ana\\dlg1.sdg", "Untitled 1"), "dlg1.sdg");
+});
+
+test("the window names the VI by its current name, not the one it was opened with", () => {
+  // Abort's tooltip kept saying `Abort execution of "Untitled 1"` after the VI was saved as dlg1.sdg
+  // (labview-captures/reports/2026-10-29-editor-run-dialogs.md): the toolbar read the name the window
+  // was opened with, which a Save does not change.
+  const source = readFileSync(`${RAIZ}/editor/src/window/editor-window.mjs`, "utf8");
+  const namesRead = source.match(/viInfo\.name/g) ?? [];
+  assert.equal(namesRead.length, 1, "only currentVIName() reads the name the window was opened with");
+  assert.match(source, /const currentVIName = \(\) => Paths\.viDisplayName\(viKey, viInfo\.name\)/);
+});

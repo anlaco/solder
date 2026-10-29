@@ -179,6 +179,28 @@ test("a Path Constant draws its glyph and its text in the host's rules, and is t
   assert.doesNotMatch(emptyDrawn, /path-texto/, "no value: the glyph alone");
 });
 
+// Typed into at once in LabVIEW, after a drop and after Create ▸ Constant (reports/2026-10-29-path-constant-typing.md);
+// Solder left both out of typing, so what was typed first was lost and the Run gave error 1430 (empty path).
+const typeAndConfirm = (d, text) => ED.confirmar([...text].reduce(ED.teclear, d), WINDOWS);
+
+test("a Path Constant dropped from the palette is ready to type into, empty", () => {
+  const point = { x: 100, y: 100 };
+  const dropped = ED.pulsar(ED.moverA(ED.coger(ED.inicial(), "path-constant"), WINDOWS, point), WINDOWS, { tipo: "fondo" }, point);
+  const constant = dropped.g.nodos.find((n) => n.tipo === "path-constant");
+  assert.deepEqual(dropped.edicion, { nodo: constant.id, texto: "", todo: false, nuevo: true }, "one line, so not a string's editor");
+  const typed = typeAndConfirm(dropped, FILE);
+  assert.deepEqual(typed.g.nodos.find((n) => n.id === constant.id).config.value, fileOn("windows"));
+});
+
+test("Create ▸ Constant on a path terminal leaves the new constant's value typed in", () => {
+  const { g, id } = Gr.crearNodo(Gr.nuevo(), CAT, "open-create-replace-file", 300, 100);
+  const made = ED.createOnTerminal({ ...ED.inicial(), g }, WINDOWS, id, "file-path", "constant");
+  const constant = made.g.nodos.find((n) => n.tipo === "path-constant");
+  assert.deepEqual(made.edicion, { nodo: constant.id, texto: "", todo: true, nuevo: true }, "the value, not the label");
+  const typed = typeAndConfirm(made, FILE);
+  assert.deepEqual(typed.g.nodos.find((n) => n.id === constant.id).config.value, fileOn("windows"));
+});
+
 test("typing into a Path Constant reads the text as String To Path does, when Enter confirms", () => {
   const { g, id } = place("path-constant");
   let d = ED.editar({ ...ED.inicial(), g }, WINDOWS, id);

@@ -157,11 +157,20 @@ function colocar(d, ctx, p) {
   const elementType = shellId && constantElementType(g.nodos.find((n) => n.id === id));
   if (elementType) return { ...d, g: typeEmptyArray(d.g, shellId, elementType), seleccion: [shellId], accion: null, aviso: null };
   // Soltarlo dentro de un bucle lo mete en él (DT-041).
-  // Una constante de cadena recién soltada queda lista para escribir en ella (bd-string-constant-editando.png);
-  // una de enum, con el editor en el nombre de su único ítem, que nace vacío (DT-049, medido).
-  const bloque = CONSTANTES[d.accion.bloque];
-  const escribir = bloque?.editable && bloque.cadena ? { nodo: id, texto: "", todo: false, cadena: true, nuevo: true } : d.accion.bloque === "enum-const" ? { nodo: id, texto: "", todo: false, item: true, nuevo: true } : d.edicion;
-  return { ...d, g: alojar(g, ctx, [id]), seleccion: [id], accion: null, aviso: null, edicion: escribir };
+  return { ...d, g: alojar(g, ctx, [id]), seleccion: [id], accion: null, aviso: null, edicion: typingAfterDrop(d, id) };
+}
+
+/**
+ * What is typed into right after a constant is dropped: a string or a path constant is ready to type into, empty
+ * (bd-string-constant-editando.png; reports/2026-10-29-path-constant-typing.md (a)); an enum constant, the name of its
+ * only item, which starts empty (DT-049, measured). Anything else leaves the typing as it was.
+ */
+function typingAfterDrop(d, id) {
+  const constant = CONSTANTES[d.accion.bloque];
+  if (constant?.editable && constant.cadena) return { nodo: id, texto: "", todo: false, cadena: true, nuevo: true };
+  if (constant?.editable && constant.path) return { nodo: id, texto: "", todo: false, nuevo: true };
+  if (d.accion.bloque === "enum-const") return { nodo: id, texto: "", todo: false, item: true, nuevo: true };
+  return d.edicion;
 }
 
 // ——— Estructuras: While Loop y For Loop (DT-041, M4) ———
@@ -1768,8 +1777,11 @@ export function marcados(d, ctx) {
 /** The id of the right-click menu of a wire (`menu.nodo` holds the wire's id). */
 export const WIRE_MENU_ROOT = "context.wire";
 
-/** The blocks whose value is typed into right after they are created (their constants have a text to edit). */
-const TYPED_CONSTANTS = new Set(["num-const", "const", "str-const"]);
+/**
+ * The blocks whose value is typed into right after they are created (their constants have a text to edit).
+ * A path constant too (reports/2026-10-29-path-constant-typing.md (b)): without it, what was typed was lost.
+ */
+const TYPED_CONSTANTS = new Set(["num-const", "const", "str-const", "path-constant"]);
 
 /**
  * What is typed into right after a Create, as LabVIEW leaves it

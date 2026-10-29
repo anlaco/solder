@@ -47,6 +47,9 @@ export const untitledKey = (id) => `untitled:${id}`;
 /** Does this key stand for a VI saved in a file? */
 export const isSavedKey = (key) => typeof key === "string" && isAbsolutePath(key);
 
+/** The name a VI goes by: its file name once saved, `untitledName` ("Untitled N") before (spec/04 Rule 21k). */
+export const viDisplayName = (key, untitledName) => (isSavedKey(key) ? withSlashes(key).split("/").pop() : untitledName);
+
 /** A path split into its root (`/`, `C:/` or nothing) and its folders and file name. */
 function splitPath(path) {
   const slashed = withSlashes(path);

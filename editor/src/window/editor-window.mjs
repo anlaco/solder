@@ -209,8 +209,8 @@ async function refrescarJerarquia() {
 /** Does this graph have a subVI node whose callee this window does not know yet? */
 const faltaSubVI = (g) => g.nodos.some((n) => SN.isSubVI(n) && !cat.findSubVI?.(n.config?.vi));
 
-/** The name an error source gives this VI: its file name once saved, "Untitled N" before (spec/04 Rule 21k). */
-const currentVIName = () => (Paths.isSavedKey(viKey) ? viKey.split(/[\\/]/).pop() : viInfo.name);
+/** The name this VI goes by now, in error sources, the toolbar and the debugging windows: it changes when the VI is saved. */
+const currentVIName = () => Paths.viDisplayName(viKey, viInfo.name);
 
 /**
  * The page's own title follows the window's (which the main process sets, asterisk included):
@@ -592,7 +592,7 @@ function debugToolbar() {
     allowDebugging: allowsDebugging(grafo()),
     highlight: debug.highlight,
     retain: debug.retain,
-    viName: viInfo.name,
+    viName: currentVIName(),
     nodeName: paused?.name ?? "",
     nodeIsSubVI: !!node && SN.isSubVI(node),
     container: container ? (container.tipo === "while-loop" || container.tipo === "for-loop" ? "loop" : "structure") : null,
@@ -744,12 +744,12 @@ function floatingWindows() {
   let windows = "";
   let popup = "";
   if (debug.debugWindow.open) {
-    windows += DV.debugWindow(inv, debug, grafo(), { viName: viInfo.name, separator: separador, position: debugUi.debugWindowAt ?? defaultWindowPosition(DV.DEBUG_WINDOW.width, DV.DEBUG_WINDOW.height) });
+    windows += DV.debugWindow(inv, debug, grafo(), { viName: currentVIName(), separator: separador, position: debugUi.debugWindowAt ?? defaultWindowPosition(DV.DEBUG_WINDOW.width, DV.DEBUG_WINDOW.height) });
     if (debugUi.menu) popup += D.menuContextual(inv, debugUi.menu, DV.debugWindowMenuMarks(debug), medirMenu, DV.debugWindowMenuVariants(debug), windowSize());
     if (debugUi.askingToCloseProbes) windows += DV.closeProbesDialog(inv);
   }
   if (errorList.open) {
-    windows += DV.errorListWindow(inv, { rows: listRows(), state: errorList, viName: viInfo.name, position: debugUi.errorListAt ?? defaultWindowPosition(DV.ERROR_LIST.width, DV.ERROR_LIST.height, 30) });
+    windows += DV.errorListWindow(inv, { rows: listRows(), state: errorList, viName: currentVIName(), position: debugUi.errorListAt ?? defaultWindowPosition(DV.ERROR_LIST.width, DV.ERROR_LIST.height, 30) });
   }
   return { windows, popup };
 }
