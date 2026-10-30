@@ -2,16 +2,20 @@
 //! sessions to instruments and reads and writes them with the attributes and status codes VISA has, so a
 //! VI behaves as it does in LabVIEW without NI-VISA installed (measured in LabVIEW 2026 Q3 with NI-VISA
 //! 26.5: `labview-captures/reports/2026-10-25-visa-read-socket.md`). And files (DT-067), apart from VISA,
-//! with LabVIEW's File I/O semantics and error codes.
+//! with LabVIEW's File I/O semantics and error codes. Serial ports since DT-070.
 
 mod files;
 mod manager;
+mod port_table;
 mod resource;
+mod serial;
 mod session;
 mod status;
 
-pub use manager::{ResourceManager, SessionId};
+pub use manager::{Opened, ResourceManager};
+pub use port_table::{PortTable, Resolved};
 pub use resource::ResourceAddress;
-pub use session::{Attributes, AttributesChange, ReadResult, WriteResult};
+pub use serial::{EndMode, FlowControl, LineSettings, Parity, StopBits};
+pub use session::{Attributes, AttributesChange, ReadResult, SerialAttributes, SessionId, WriteResult};
 pub use status::Status;
 pub use files::{Access, FileError, FileManager, FileRefnum, LinesRead, Operation, SYSTEM_END_OF_LINE, TextRead, convert_ends_of_line};

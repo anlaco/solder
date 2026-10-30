@@ -463,8 +463,8 @@
       "ref": "design/05-decisions.md DT-065"
     },
     "puerto-serie-visa": {
-      "desc": "VISA over serial ports: configuring a port, the bytes waiting in it and its break line. Solder's VISA only opens sockets for now",
-      "ref": "design/05-decisions.md DT-065"
+      "desc": "VISA Configure Serial Port, a polymorphic subVI built on the Property Node: Solder's VISA opens serial ports (ASRL) with a new session's settings, and configuring them waits for property nodes, Solder's vi.lib and polymorphic VIs",
+      "ref": "design/05-decisions.md DT-070"
     },
     "nodos-de-propiedades": {
       "desc": "property nodes, which read and write the attributes of a reference, among them the VISA Property Node"

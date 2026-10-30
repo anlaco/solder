@@ -13,10 +13,13 @@ impl Status {
     pub const SUCCESS_MAX_COUNT: Status = Status(0x3FFF_0006);
     /// The session handed in is not open (measured: -1073807346).
     pub const ERROR_INVALID_OBJECT: Status = Status(0xBFFF_000E_u32 as i32);
-    /// Nothing answers at the resource (measured: -1073807343, a socket with nothing listening).
+    /// Nothing answers at the resource, or the string is not one (measured: -1073807343, a socket with nothing
+    /// listening, and `COM1`, `ASRL1` or `ASRL::INSTR` with no port).
     pub const ERROR_RESOURCE_NOT_FOUND: Status = Status(0xBFFF_0011_u32 as i32);
-    /// The resource string does not follow VISA's syntax (unverified in LabVIEW).
-    pub const ERROR_INVALID_RESOURCE_NAME: Status = Status(0xBFFF_0012_u32 as i32);
+    /// The session's transport has no such attribute (measured: -1073807331, Baud Rate on a TCP socket).
+    pub const ERROR_ATTRIBUTE_NOT_SUPPORTED: Status = Status(0xBFFF_001D_u32 as i32);
+    /// The attribute does not take that value (measured: -1073807330, a baud rate of 0 or 3 data bits).
+    pub const ERROR_ATTRIBUTE_STATE_NOT_SUPPORTED: Status = Status(0xBFFF_001E_u32 as i32);
     /// The operation did not finish within the session's timeout (measured: -1073807339).
     pub const ERROR_TIMEOUT: Status = Status(0xBFFF_0015_u32 as i32);
     /// The transport failed in a way VISA has no closer code for (unverified in LabVIEW).

@@ -86,13 +86,14 @@ export function createVisaFunctions({ io, host, memory, compilado }) {
   };
 
   return {
-    // Every Open gives a session of its own (measured: a new refnum each time).
+    // Every Open gives a session of its own (measured: a new refnum each time), and its name out is the
+    // resource as VISA writes it: an alias as typed, a resource with its keywords in capitals (DT-070 §2).
     visa_open: (resourceIn, timeoutMs, errorIn, resourceOut, errorOut, chainIndex) =>
       visaFunction("VISA Open", { resourceIn, errorIn, resourceOut, errorOut, chainIndex }, async (visa, resource) => {
-        const { session, status } = await visa.open(resource["resource name"]);
+        const { session, status, nameOut } = await visa.open(resource["resource name"]);
         if (status >= 0) {
           sessionsByName.set(resource["resource name"], session);
-          writeResource(resourceOut, { ...resource, session });
+          writeResource(resourceOut, { "resource name": nameOut ?? resource["resource name"], session });
         }
         return status;
       }),

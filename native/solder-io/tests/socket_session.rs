@@ -34,7 +34,7 @@ fn start_instrument() -> String {
 }
 
 fn open_with_test_timeout(manager: &ResourceManager) -> u32 {
-    let session = manager.open(&start_instrument()).unwrap();
+    let session = manager.open(&start_instrument()).unwrap().session;
     let change = AttributesChange { timeout: Some(TEST_TIMEOUT), ..Default::default() };
     assert_eq!(manager.change_attributes(session, change), Status::SUCCESS);
     session
@@ -43,7 +43,7 @@ fn open_with_test_timeout(manager: &ResourceManager) -> u32 {
 #[test]
 fn a_new_socket_session_has_the_measured_defaults() {
     let manager = ResourceManager::new();
-    let session = manager.open(&start_instrument()).unwrap();
+    let session = manager.open(&start_instrument()).unwrap().session;
     let attributes = manager.attributes(session).unwrap();
     assert_eq!(attributes.timeout, Duration::from_millis(2000));
     assert_eq!(attributes.termination_character, b'\n');
@@ -123,7 +123,7 @@ fn opening_a_port_where_nothing_listens_is_resource_not_found() {
 #[test]
 fn a_closed_session_is_an_invalid_object() {
     let manager = ResourceManager::new();
-    let session = manager.open(&start_instrument()).unwrap();
+    let session = manager.open(&start_instrument()).unwrap().session;
     assert_eq!(manager.close(session), Status::SUCCESS);
     assert_eq!(manager.read(session, 1).status, Status::ERROR_INVALID_OBJECT);
     assert_eq!(manager.write(session, b"x").status, Status::ERROR_INVALID_OBJECT);

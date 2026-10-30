@@ -3115,3 +3115,82 @@ The mechanism is kept lean: File Dialog and Time Delay first, dynamic data and t
 | Time Delay waits its configured time, or the wired one | A test on the virtual host (`createVirtualHost`, DT-061 §6) | **Unverified** (to do) |
 | Dialog on drop, double click and Properties; OK is one undo step | `test/editor/express-vi-nodes.test.mjs` (Time Delay) | Done for Time Delay; File Dialog's body is to do |
 | The node, its rows and its menu look as LabVIEW's | Comparison of captures with `scripts/measure.py` | **Unverified** (to do) |
+
+## DT-070
+
+**VISA over serial: Solder's own serial transport in `solder-io` (no serial library), ASRL resources with a table,
+device paths and aliases, and the session behavior measured in LabVIEW. VISA Configure Serial Port waits for the
+Property Node and comes as a real polymorphic subVI; Crucible serves a serial port, real or a pseudo-terminal.**
+
+- **Status:** Accepted on 2026-10-30 by the developer, who chose the Property Node first and our own serial code.
+  It amends [DT-065](#dt-065) §1 (the serial transport) and the order of [DT-064](#dt-064)'s amendment of
+  2026-10-26 (steps 3 and 4).
+- **Why:** measured on 2026-10-30 with a real COM1 in the VM (a QEMU 16550 on a host socket):
+  `labview-captures/reports/2026-10-30-visa-serial-no-port.md` and `2026-10-30-visa-serial-com1.md`. VISA
+  Configure Serial Port is not a primitive: it is a polymorphic VI of `vi.lib` whose diagram is one Property Node of
+  nine rows, and its errors name that node ("Property Node (arg 2) in VISA Configure Serial Port (Instr).vi->x.vi").
+  Built as a block, it would be redone when the Property Node comes; the developer chose to build it once, right.
+
+### Decision
+
+1. **The transport.** `solder-io` gains a serial transport next to the TCP socket, behind one interface (write by a
+   deadline, receive with a patience). The serial code is ours: termios on Linux and macOS, the Win32 communications
+   API on Windows; only the system's declarations come from crates (`libc`, `windows-sys`).
+2. **Resources.** `ASRL<n>::INSTR`, `ASRL<device path>::INSTR` (`ASRL/dev/ttyUSB0::INSTR`) and aliases. On Windows
+   `ASRL<n>` is `COM<n>` and `COM<n>` is an alias of it (measured: COM1 is ASRL1::INSTR, LPT1 is ASRL10). On Linux
+   and macOS a table like NI-VISA's `visaconf.ini` gives each port its number, kept between runs: ASRL1–ASRL4 for
+   `/dev/ttyS0`–`3` (macOS has none), and the next free number for a USB port the first time it is seen, by its stable
+   name (`/dev/serial/by-id/…`, `/dev/cu.*`); the user's aliases (`ESP32` → `ASRL5::INSTR`) live in the same table.
+   What NI-VISA does on Linux is **unverified**. A name that is not a resource, malformed or unknown, is
+   VI_ERROR_RSRC_NFOUND (-1073807343), as measured for `ASRL1`, `ASRL::INSTR`, `COM1` with no port; name out keeps an
+   alias as typed and gives the canonical case of a resource (`asrl1::instr` → `ASRL1::INSTR`).
+3. **A new serial session** (measured on ASRL1): Timeout Value 2000 ms, Termination Character 10, Termination
+   Character Enable false, End Mode for Reads TermChar (2), End Mode for Writes None (0), 9600 baud, 8 data bits, no
+   parity, 1 stop bit (10), no flow control. Each Open sets the port to those: what a session set does not survive
+   its Close.
+4. **Read** stops at the byte count (warning 1073676294), at the termination character when End Mode for Reads is
+   TermChar (code 0) or, failing that, when Termination Character Enable is true (warning 1073676293), or at the
+   timeout (-1073807339, with what arrived). A timeout of 0 returns what is buffered at once, with the timeout error.
+   Bytes beyond a Read wait for the next one. **Write** sends exactly the bytes given (End Mode for Writes None; the
+   other modes are not implemented).
+5. **Two sessions on one port** both open (measured); what the second reads of an answer to the first's Write is
+   nothing (measured: a timeout). Solder shares one handle per port, with the line settings of the port and the
+   timeout and termination of each session, and gives what arrives to the oldest open session (where NI-VISA puts it
+   is unverified).
+6. **Serial attributes** in `solder-io`, for the Property Node of step 4: Baud Rate (0 is
+   VI_ERROR_NSUP_ATTR_STATE, -1073807330; a value such as 7 is accepted, measured), Data Bits 5–8 (3 and 9 refused
+   with -1073807330; 5 and 6 unverified), Stop Bits 10/15/20, Parity 0–4, Flow Control 0–5, End Mode for Reads 0–2,
+   and Number of Bytes at Serial Port (read only). On a TCP socket a serial attribute is VI_ERROR_NSUP_ATTR
+   (-1073807331, measured at Baud Rate).
+7. **VISA Configure Serial Port and VISA Bytes at Serial Port come after the Property Node** (step 4): Configure as a
+   polymorphic subVI of Solder's own `vi.lib`, (Instr) and (Serial Instr), its diagram drawn anew with the measured
+   rows in their order (Timeout Value, Baud Rate, Data Bits, Stop Bits, Parity, Termination Character Enable,
+   Termination Character, Flow Control, End Mode for Reads: TermChar when the termination is enabled, None when not)
+   and its measured terminals and defaults (timeout 10000 U32, baud 9600 U32, data bits 8 U16, parity enum U16, stop
+   bits ring U16, flow control ring U16, Enable Termination Char TRUE, termination char 0xA U8). Solder's `vi.lib`
+   and polymorphic VIs each get their own DT then. Until then both stay greyed in the palettes, saying why.
+8. **Crucible serves a serial port** (Crucible work, its own code too): its SCPI loop serves any stream of bytes, and
+   a bench's `transporte` gains `tipo: serial` with `dispositivo:` (a real port, with its line settings) or `pty:` (a
+   pseudo-terminal Crucible creates, with a link at that path, for runs without hardware). The VM's COM1 reaches it
+   through `socat` between QEMU's socket and that pseudo-terminal.
+9. **Tests.** `solder-io`'s own tests open a pseudo-terminal pair with a responder on the other side; Node's tests
+   use a small responder binary of `solder-io` built by `npm test`'s Cargo step, which opens a pseudo-terminal and
+   prints its path. Windows' code is tried by hand in the VM against its COM1.
+
+### Order of the hardware steps, amended
+
+3. **VISA over serial, the transport:** points 1–6 and 8; VISA Open, Write, Read and Close over ASRL with a new
+   session's settings.
+4. **Refnums with classes and the Property Node**, as decided (Instr and the panel controls).
+4b. **VISA Configure Serial Port and Bytes at Serial Port** (point 7), with Solder's `vi.lib` and polymorphic VIs.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| ASRL names, aliases and NFOUND | `native/solder-io` unit tests (`resource.rs`, `port_table.rs`) | **Verified** (2026-10-30) |
+| A new serial session's defaults; Read's stops and codes; Write adds nothing; refused values; two sessions | `native/solder-io/tests/serial_session.rs` over a pseudo-terminal | **Verified** against the measurements of 2026-10-30 |
+| VISA functions over serial in a VI, on one thread and on a pool | `test/core/visa.test.mjs` against `serial-test-instrument` | **Verified** |
+| Crucible serves a serial port | `crates/crucible/tests/smoke_serie.rs` in Crucible; Solder and LabVIEW in the VM against Crucible's Keithley through COM1 and `socat` | **Verified** (2026-10-30): both read `Keithley,2400,1234567,A1.2\n`, 27 bytes, code 0 |
+| The Win32 transport | By hand in the VM against COM1 (`ASRL1::INSTR`, `COM1`, `asrl1::instr`; settings, baud 0, timeout, Bytes at Port) | **Verified** (2026-10-30); no automatic test, as Windows has no pseudo-terminal |
+| What NI-VISA does on Linux and macOS (numbers, device paths) | — | **Unverified** |

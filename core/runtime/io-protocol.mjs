@@ -7,7 +7,7 @@
 
 /** The operations a client may ask for: those of native/solder-io-node/solder-io.mjs. */
 export const IO_OPERATIONS = [
-  "open", "write", "read", "close", "attributes", "changeAttributes",
+  "open", "write", "read", "close", "attributes", "changeAttributes", "bytesAtPort",
   "fileOpen", "fileClose", "fileWrite", "fileWriteLines", "fileRead", "fileReadLine", "fileReadLines", "fileSize", "fileMoveToEnd", "fileDelete", "fileName",
 ];
 

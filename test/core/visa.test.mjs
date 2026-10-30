@@ -11,13 +11,14 @@ import { compilar } from "../../core/compiler/compiler.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { createNodePool } from "../../core/runtime/node-pool.mjs";
 import { ERROR } from "../../core/model/types.mjs";
-import { IDENTITY, startInstrument } from "../instrument.mjs";
+import { HAS_SERIAL_TEST_INSTRUMENT, IDENTITY, SERIAL_IDENTITY, startInstrument, startSerialInstrument } from "../instrument.mjs";
 import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
 import { createIoClient, serveSolderIo } from "../../core/runtime/io-protocol.mjs";
 import { CAT, buildVI } from "../helpers.mjs";
 
 const VI_SUCCESS_MAX_CNT = 1073676294;
 const VI_WARN_NULL_OBJECT = 1073676418;
+const VI_ERROR_RSRC_NFOUND = -1073807343;
 const THREADS = 2;
 
 const pool = createNodePool(THREADS);
@@ -250,4 +251,41 @@ test("a VISA resource name control gives the name typed on the panel, and an ind
 test("a Run with VISA but no instrument I/O fails and says why", async () => {
   const vi = identityQuery("TCPIP0::127.0.0.1::1::SOCKET", 1);
   await assert.rejects(run(vi, { io: undefined }), /Instrument I\/O is not available/);
+});
+
+// VISA over serial (DT-070), against a pseudo-terminal, compared with LabVIEW on a real COM1
+// (labview-captures/reports/2026-10-30-visa-serial-com1.md).
+const serialTest = HAS_SERIAL_TEST_INSTRUMENT ? test : test.skip;
+const NO_ERROR = { status: false, code: 0, source: "" };
+
+for (const [where, options] of [["on one thread", () => ({})], ["on a pool", () => ({ poolPorts: pool.connect() })]]) {
+  serialTest(`over a serial port, a new session's Read stops at the line feed with no warning ${where}`, async () => {
+    const instrument = await startSerialInstrument();
+    try {
+      const shown = await run(identityQuery(instrument.resource, 100), options());
+      assert.equal(shown.buffer, SERIAL_IDENTITY);
+      assert.equal(shown.returned, SERIAL_IDENTITY.length);
+      assert.deepEqual(shown.readError, NO_ERROR);
+      assert.deepEqual(shown.closeError, NO_ERROR);
+    } finally {
+      instrument.stop();
+    }
+  });
+}
+
+serialTest("VISA Open gives a serial resource back with its keywords in capitals", async () => {
+  const instrument = await startSerialInstrument();
+  try {
+    const typed = instrument.resource.replace("ASRL", "asrl").replace("INSTR", "instr");
+    const shown = await run(queryFromAControl(100), {}, { name: typed });
+    assert.equal(shown.opened, instrument.resource);
+    assert.equal(shown.buffer, SERIAL_IDENTITY);
+  } finally {
+    instrument.stop();
+  }
+});
+
+test("a serial name that is no resource is not found, as LabVIEW says for ASRL::INSTR", async () => {
+  const shown = await run(identityQuery("ASRL::INSTR", 1));
+  assert.deepEqual(shown.readError, { status: true, code: VI_ERROR_RSRC_NFOUND, source: "VISA Open" });
 });

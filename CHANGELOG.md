@@ -9,6 +9,13 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- VISA Open, Write, Read and Close talk over serial ports (DT-070): `ASRL<n>::INSTR` (on Windows `COM<n>`, also as
+  the alias `COM<n>`), `ASRL<device>::INSTR` such as `ASRL/dev/ttyUSB0::INSTR`, and aliases kept in Solder's
+  `visa-ports.conf`. A new serial session has LabVIEW's settings (9600 baud, 8 data bits, no parity, 1 stop bit,
+  2 s timeout) and a Read stops at the line feed with no warning, as measured. The serial code is Solder's own, on
+  termios and on the Win32 API. VISA Open writes a resource name back with its keywords in capitals, and a name that
+  is no resource is "not found" (-1073807343), as LabVIEW says. VISA Configure Serial Port and Bytes at Serial Port
+  stay greyed until the Property Node.
 - Array To Spreadsheet String and Spreadsheet String To Array, in Functions ▸ String, write and read arrays of
   numbers and strings as LabVIEW does (DT-067).
 - Write Delimited Spreadsheet and Read Delimited Spreadsheet, in Functions ▸ File I/O, write, append and read

@@ -5,3 +5,13 @@ description = "Solder's own VISA: sessions to instruments, with VISA's attribute
 edition.workspace = true
 license.workspace = true
 publish.workspace = true
+
+# Only the systems' declarations: the serial code is Solder's own (DT-070 §1).
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Devices_Communication", "Win32_Foundation", "Win32_Storage_FileSystem", "Win32_Security", "Win32_System_IO"] }
+
+[target.'cfg(unix)'.dev-dependencies]
+libc = "0.2"

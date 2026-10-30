@@ -1,8 +1,9 @@
 // Loads Solder's own VISA (DT-065), the addon `scripts/build-native.mjs` builds. Its functions answer
-// promises with VISA's status codes: open(resource) → { session, status }, write(session, bytes) →
+// promises with VISA's status codes: open(resource) → { session, status, nameOut }, write(session, bytes) →
 // { count, status }, read(session, count) → { data, status }, close(session) → status, and, at once,
-// attributes(session) and changeAttributes(session, { timeoutMs, terminationCharacter,
-// terminationCharacterEnabled }). The file functions (DT-067) answer LabVIEW's error codes, 0 for none:
+// attributes(session) (with `serial` on a serial session, DT-070), changeAttributes(session, { timeoutMs,
+// terminationCharacter, terminationCharacterEnabled, baudRate, dataBits, parity, stopBits, flowControl,
+// endModeForReads }) and bytesAtPort(session) → { count, status }. The file functions (DT-067) answer LabVIEW's error codes, 0 for none:
 // fileOpen(name, operation, access) → { refnum, error }, fileClose(refnum) → { name, error },
 // fileWrite(refnum, bytes, convertEol) → error, fileWriteLines(refnum, lines, convertEol) → error,
 // fileRead(refnum, count, convertEol) → { text, error }, fileReadLine(refnum, convertEol) → { text, error },
