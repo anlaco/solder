@@ -3226,3 +3226,85 @@ editor's interface. "VI" is LabVIEW's word and is used only for LabVIEW's.**
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
 | The editor's interface says OVI where LabVIEW says VI | `test/editor/ovi-words.test.mjs`: no "VI" as a word in the inventory's names and reasons, nor in the string literals of `editor/` and `core/` (an allow-list for LabVIEW names that must keep it; NI's `.vi` file names pass) | Verified (2026-10-30) |
+
+## DT-072
+
+**Refnums with classes and the Property Node: one node with a class (the panel controls' implicit nodes, control
+references and Instr from the start), a catalog of properties in LabVIEW's order, LabVIEW's run-time rules, Value
+against the panel memory and waiting for the drawing, and the rest of a control's properties answered by the
+editor, as LabVIEW's UI thread does.**
+
+- **Status:** Accepted on 2026-10-30 by the developer ("as close to LabVIEW as possible"; control references in this
+  same step; the error source as LabVIEW's; Value waits for the drawing, as LabVIEW). It is step 4 of
+  [DT-064](#dt-064)'s amendment of 2026-10-26 and brings what [DT-070](#dt-070) §7 waits for.
+- **Why:** measured on 2026-10-30 and 2026-10-26: `labview-captures/reports/2026-10-30-panel-property-node.md`
+  (menus, look), `2026-10-30-panel-property-node-behavior.md` (run time), `2026-10-26-visa-property-node.md` and
+  `-behavior.md` (Instr). Every property's name, short name and direction is in
+  `labview-captures/catalog/vi-server-properties.tsv` (13 276 rows, local evidence).
+
+### Decision
+
+1. **One Property Node with a class.** A block `property-node`, `config: { class, link?, rows: [{ property, write }],
+   ignoreErrors }`. The class is a path in LabVIEW's hierarchy (`GObject ▸ Control ▸ Numeric`, `Boolean`, `String`…;
+   `Instr`), so what `Control` offers every control offers. Its terminals come from its rows, as an Express OVI's do
+   ([DT-069](#dt-069)). Two kinds, as measured:
+   - **Implicit**, made from a control (`link` is the control's id, never its label): no reference terminals, error
+     in and out. An 8 px cream (#ffffcc) header framed in #4c4c3d with the error glyphs at both ends and a 12 × 5 bar
+     in the control's type colour, the control's label drawn above the node, 16 px rows, the width of the longest row
+     text, grown around its centre.
+   - **Explicit**, with a reference wired (Instr, and the control references of §2): an 18 px header with the class
+     name, reference in and out.
+2. **Refnums with classes are a type**, `{ refnum: "<class>" }`. The VISA resource name is the Instr class's and keeps
+   its layout ([DT-066](#dt-066)). **Control references come in this step**: Create ▸ Reference, the control refnum
+   on the panel and the diagram, and Disconnect From Control (an implicit node becomes an explicit one). Their look
+   and menus are measured before they are built.
+3. **The catalog of properties**, `docs/schema/properties.json`: for each class, its properties in LabVIEW's menu order
+   and groups, long and short name, type, read or write, and a verdict (done, or a hole with its reason, as
+   [DT-035](#dt-035) asks), made from the TSV and the measured types (Disabled the enum Enabled, Disabled, Disabled
+   and Grayed Out; Position `LVPositionTypeDef` Left, Top I32; Bounds `LVBoundsTypeDef` Width, Height U32). Create ▸
+   Property Node ▸, Select Property ▸ and the rows' colours come from it.
+4. **The run-time rules, for every class, as measured.** Rows run top to bottom. An error in runs nothing: the outputs
+   are their defaults and the error passes unchanged; a warning in runs and passes. A failing row stops the node and
+   the rows after it give defaults; the source is LabVIEW's, `Property Node (arg N) in <chain><APPEND>\nProperty
+   Name: <b>P</b>`, with the `<b>` as LabVIEW writes it. With Ignore Errors inside Node every row runs and the error
+   is still given, without what follows `<APPEND>`. An unwired write row breaks the OVI.
+5. **Instr** rows are external waits served by `native/solder-io` ([DT-065](#dt-065) §3), which keeps each session's
+   timeout, termination and serial attributes ([DT-070](#dt-070) §6): auto-open of a closed or never-opened name,
+   the defaults back after Close, and the measured codes (-1073807330, -1073807331).
+6. **The panel controls' properties:**
+   - **Value** reads and writes the control's record in the panel memory ([DT-063](#dt-063) §10), so a terminal read
+     after a Value write gives what was written (measured). **A write waits until the editor has drawn it**, as
+     LabVIEW does (≈ 277 µs a write, against ≤ 0.2 µs for a terminal or a local variable): the clump parks and the
+     editor's confirmation wakes it. Where there is no panel (the command line) it does not wait. Reading Value of a
+     latch Boolean is error 1193.
+   - **Value (Signaling)** is Value plus a Value Change event once there is an Event Structure; on an indicator it
+     gives no error (measured).
+   - **Every other property** (Visible, Disabled, Key Focus, Label.Text, Caption.Text, Position, Bounds, Has
+     Caption…) is the panel's state, not the diagram's data: each row is an external wait answered by the panel's
+     host, as LabVIEW runs them in its user interface thread. The editor answers from its panel; the command line
+     from a panel model with no window. Measured: Visible hides the control and its label; Disabled 1 stops the
+     control without greying it, 2 greys it too; writing Caption.Text does not show a hidden caption; Key Focus
+     reads FALSE with no panel open; a control with no caption gives 1320 on its Caption row.
+7. **The editor:** Create ▸ Property Node ▸ from a terminal and from the panel object; the node's and the row's menus
+   as measured (Select Property, Change To Write/Read, Change All To…, Add and Remove Element, Find ▸, Link to ▸ Pane ▸,
+   Name Format with Short Names, Ignore Errors inside Node, Disconnect From Control); Create ▸ Constant, Control and
+   Indicator from a row; the Instr node from Functions ▸ Instrument I/O ▸ VISA ▸ VISA Advanced and from Create ▸
+   Property for Instr Class.
+8. **The first properties done:** for the controls Value, Value (Signaling) (its event when the Event Structure
+   comes), Visible, Disabled, Key Focus, Label.Text, Caption.Text, Position and Bounds; for Instr Timeout Value,
+   Termination Character and its Enable, Resource Name, Resource Class, the serial attributes of DT-070 §6 and Number
+   of Bytes at Serial Port. Every other one is listed, greyed with its reason.
+9. **Stages:** (a) the catalog and the core (the block, the refnum type, rows, errors, Value on the panel memory,
+   Instr's waits), tested on the virtual host; (b) the rows answered by the panel's host; (c) the editor; (d) control
+   references, measured first; (e) compared with LabVIEW. Then DT-070 §7: VISA Configure Serial Port in `ovi.lib`
+   and Bytes at Serial Port.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The run-time rules of §4 | Tests in `test/core/` against the measured cases | **Unverified** (to do, stage a) |
+| Value waits for the drawing and is seen by a later terminal read | A test on the virtual host | **Unverified** (stage a) |
+| The panel rows of §6 | Tests against the panel's host | **Unverified** (stage b) |
+| The node's look and menus | Compared with LabVIEW's captures | **Unverified** (stage e) |
+| Long Names and No Names; whether the label above an implicit node follows a rename; Caption.Text on a control with no caption; a subOVI writing its own indicator with its panel closed; whether changes made at run time are saved | To measure in LabVIEW | **Unverified** |

@@ -573,6 +573,10 @@ array or string read by a local variable while another loop writes it is never t
       I/O process). Next: step 4, the Property Node.*
    4. **Refnums with classes and the Property Node**, then the Invoke Node, in their own DT: classes Instr (VISA) and
       the panel controls (implicit nodes) from the start.
+      *Measured on 2026-10-30 ([`panel-property-node`](../../labview-captures/reports/2026-10-30-panel-property-node.md),
+      [`-behavior`](../../labview-captures/reports/2026-10-30-panel-property-node-behavior.md)) and decided in DT-072:
+      one node with a class, control references in this step, Value against the panel memory waiting for the drawing,
+      the other control properties answered by the editor. Next: stage (a), the catalog of properties and the core.*
    4b. **VISA Configure Serial Port and Bytes at Serial Port** (DT-070 §7): Configure as a polymorphic subOVI of
       Solder's own `vi.lib` built on the Property Node; greyed until then.
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the
