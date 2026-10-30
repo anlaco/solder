@@ -54,6 +54,7 @@ import * as V from "./window-view.mjs";
 import { panelStyleFromQuery } from "../front-panel/panel-style.mjs";
 import { applyWindowStyle } from "../front-panel/window-stylesheet.mjs";
 import { buildHierarchy } from "./hierarchy-client.mjs";
+import * as PP from "../front-panel/panel-properties.mjs";
 import { compilar, runnableVI } from "../../../core/compiler/compiler.mjs";
 import { pruneConnector } from "../../../core/model/connector.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
@@ -376,10 +377,39 @@ function mandarControles(g) {
 }
 
 /** Un Latch leído vuelve a FALSE en las dos ventanas, sin que cuente como edición. */
-function soltarLatch(nodo) {
-  vistos[nodo] = false;
-  if (conDiagrama) dia = { ...dia, g: CV.setCurrentValue(dia.g, nodo, false) };
-  else pan = { ...pan, g: CV.setCurrentValue(pan.g, nodo, false) };
+const soltarLatch = (nodo) => setControlFromRun(nodo, false);
+
+/**
+ * A control the Run changed —a Latch read, back to FALSE, or Value written by a Property Node (DT-072)—, in both
+ * windows and without counting as an edit; the worker already has it, so it is not sent back.
+ */
+function setControlFromRun(nodo, valor) {
+  vistos[nodo] = valor;
+  if (conDiagrama) dia = { ...dia, g: CV.setCurrentValue(dia.g, nodo, valor) };
+  else pan = { ...pan, g: CV.setCurrentValue(pan.g, nodo, valor) };
+  pintar();
+}
+
+/**
+ * A Property Node's row for the panel (DT-072 §6), asked by the worker that runs: read or written over the panel's run
+ * state, which both windows keep; "draw" is answered once what was sent has been painted.
+ */
+function answerPanelRequest({ id, kind, request }) {
+  const worker = trabajador;
+  const answer = (valor) => worker && worker === trabajador && worker.postMessage({ orden: "respuesta", id, valor });
+  if (kind === "draw") return requestAnimationFrame(() => answer(null));
+  const runProps = pan.runProps ?? PP.emptyRunState();
+  if (kind === "get") return answer(PP.readProperty(grafo(), runProps, request.nodo, request.property));
+  const written = PP.writeProperty(grafo(), runProps, request.nodo, request.property, request.value);
+  if (written.graph !== grafo()) ponerGrafo(written.graph, { share: true });
+  setRunProps(written.runState);
+  canal.postMessage({ runProps: written.runState });
+  answer(written.answer);
+}
+
+/** The panel's run state (panel-properties.mjs): what Property Nodes changed, drawn by the Front Panel. */
+function setRunProps(runProps) {
+  pan = { ...pan, runProps };
   pintar();
 }
 
@@ -398,6 +428,11 @@ function alMensaje(data) {
     pintar();
   }
   if (data.archivo) answerFileDialog(data.archivo);
+  if (data.panel) answerPanelRequest(data.panel);
+  if (data.controlEscrito) {
+    setControlFromRun(data.controlEscrito.nodo, data.controlEscrito.valor);
+    canal.postMessage({ controlEscrito: data.controlEscrito });
+  }
   if (data.fin) acabar(data);
 }
 
@@ -1148,6 +1183,8 @@ canal.onmessage = ({ data }) => {
   if (data.valores) return mostrarValores(data.valores, data.series);
   if ("ejecutando" in data) return modoRun(data.ejecutando);
   if (data.soltar) return soltarLatch(data.soltar);
+  if (data.controlEscrito) return setControlFromRun(data.controlEscrito.nodo, data.controlEscrito.valor);
+  if (data.runProps) return setRunProps(data.runProps);
   if (data.control) {
     if (lanzado) trabajador.postMessage({ orden: "control", ...data.control });
     vistos[data.control.nodo] = data.control.valor;
@@ -1522,6 +1559,8 @@ function pulsarEnRun(ev) {
     return;
   }
   ev.preventDefault();
+  // A control a Property Node disabled cannot be operated (DT-072 §6, measured for Disabled 1 and 2).
+  if (!PP.isOperable(pan.runProps, sobre.id)) return;
   const n = pan.g.nodos.find((k) => k.id === sobre.id);
   if ((sobre.tipo === "casilla" || sobre.tipo === "paso") && (n?.tipo === "control" || n?.tipo === "str-control" || n?.tipo === "visa-control" || n?.tipo === "path-control")) return cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), false));
   // Un array se acciona como parado: se escribe en sus elementos y su índice se mueve (también el de un indicador).

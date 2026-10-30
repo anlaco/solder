@@ -588,6 +588,10 @@ array or string read by a local variable while another loop writes it is never t
       of `solder-io` with auto-open; with no window, a panel answers Visible, Disabled, Key Focus and Label.Text
       (`windowlessPanel`). Not yet: Position and Bounds (clusters), a node inside a subOVI, the explicit control
       classes. 1113 tests green. Next: stage (b), the rows the editor's panel answers.*
+      *Stage (b) done on 2026-10-30: the run worker asks the window for each panel row and for "drawn" after a Value
+      write (`panel` messages), the window answers from `editor/src/front-panel/panel-properties.mjs` and shares the
+      run state with the other window; the Front Panel hides an invisible object and its label, greys Disabled 2, and
+      a disabled control is not operated; Position and Bounds run as clusters. Next: stage (c), the node in the editor.*
    4b. **VISA Configure Serial Port and Bytes at Serial Port** (DT-070 §7): Configure as a polymorphic subOVI of
       Solder's own `vi.lib` built on the Property Node; greyed until then.
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the

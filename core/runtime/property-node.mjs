@@ -57,8 +57,11 @@ const resourceClassOf = (name) => (name.includes("::") ? name.slice(name.lastInd
 /** The function an error source names. */
 const FUNCTION_NAME = "Property Node";
 
-/** The value a read row gives when it does not run: zero, FALSE or the empty string. */
-const defaultOf = (type) => (type === "string" ? "" : type === "boolean" ? false : 0);
+/** The value a read row gives when it does not run: zero, FALSE, the empty string, or a cluster of them. */
+const defaultOf = (type) => {
+  if (type?.cluster) return Object.fromEntries(type.cluster.map((field) => [field.name, defaultOf(field.type)]));
+  return type === "string" ? "" : type === "boolean" ? false : 0;
+};
 
 const isInteger = (type) => typeof type === "string" && /^[iu](8|16|32|64)$/.test(type);
 
@@ -72,16 +75,18 @@ export function createPropertyNodeFunction({ compilado, host, memory, panel, ins
   const errorLayout = compilado.disposicionError;
   const view = () => new DataView(memory.buffer);
 
-  function readRowValue(record, type) {
+  function readRowValue(record, type, row) {
     const memoryView = view();
+    if (type?.cluster) return leerCluster(memoryView.getInt32(record + ROW_VALUE_OFFSET, true), row.disposicion);
     if (type === "string") return leerCadena(memoryView.getInt32(record + ROW_VALUE_OFFSET, true));
     if (type === "boolean") return memoryView.getInt32(record + ROW_VALUE_OFFSET, true) !== 0;
     if (isInteger(type) || typeof type === "object") return Number(memoryView.getBigInt64(record + ROW_VALUE_OFFSET, true));
     return memoryView.getFloat64(record + ROW_VALUE_OFFSET, true);
   }
 
-  function writeRowValue(record, type, value) {
+  function writeRowValue(record, type, value, row) {
     const memoryView = view();
+    if (type?.cluster) return ponerCluster(memoryView.getInt32(record + ROW_VALUE_OFFSET, true), row.disposicion, value);
     if (type === "string") return ponerCadena(memoryView.getInt32(record + ROW_BITS_OFFSET, true), String(value));
     if (type === "boolean") return memoryView.setInt32(record + ROW_VALUE_OFFSET, value ? 1 : 0, true);
     if (isInteger(type) || typeof type === "object") return memoryView.setBigInt64(record + ROW_VALUE_OFFSET, BigInt(Math.trunc(Number(value))), true);
@@ -125,7 +130,7 @@ export function createPropertyNodeFunction({ compilado, host, memory, panel, ins
       const { link, rows, ignoreErrors } = compilado.propertyNodes[index];
       const isInstr = link === null;
       const recordOf = (row) => rowsAddress + row * ROW_BYTES;
-      const giveDefaults = (from) => rows.forEach((row, k) => k >= from && !row.write && writeRowValue(recordOf(k), row.tipo, defaultOf(row.tipo)));
+      const giveDefaults = (from) => rows.forEach((row, k) => k >= from && !row.write && writeRowValue(recordOf(k), row.tipo, defaultOf(row.tipo), row));
       const resource = isInstr ? leerCluster(referenceIn, compilado.disposicionVisa) : null;
       if (isInstr) ponerCluster(referenceOut, compilado.disposicionVisa, resource);
       const incoming = leerCluster(errorIn, errorLayout);
@@ -149,12 +154,12 @@ export function createPropertyNodeFunction({ compilado, host, memory, panel, ins
       let failure = null;
       for (let k = 0; k < rows.length; k++) {
         const row = rows[k];
-        const result = asResult(await runRow(row, row.write ? readRowValue(recordOf(k), row.tipo) : undefined));
+        const result = asResult(await runRow(row, row.write ? readRowValue(recordOf(k), row.tipo, row) : undefined));
         if (result.error === undefined) {
-          if (!row.write) writeRowValue(recordOf(k), row.tipo, result.value ?? defaultOf(row.tipo));
+          if (!row.write) writeRowValue(recordOf(k), row.tipo, result.value ?? defaultOf(row.tipo), row);
           continue;
         }
-        if (!row.write) writeRowValue(recordOf(k), row.tipo, defaultOf(row.tipo));
+        if (!row.write) writeRowValue(recordOf(k), row.tipo, defaultOf(row.tipo), row);
         failure ??= { status: true, code: result.error, source: errorSource(row, k + 1, chainIndex, { ignoreErrors, isInstr }) };
         if (!ignoreErrors) {
           giveDefaults(k + 1);

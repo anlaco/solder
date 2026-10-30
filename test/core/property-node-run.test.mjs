@@ -260,3 +260,25 @@ test("a Timeout Value beyond 2147483647 is refused with VI_ERROR_NSUP_ATTR_STATE
     instrument.stop();
   }
 });
+
+test("Position and Bounds go as clusters: the caller's panel answers them, and a written Position reaches it", async () => {
+  const asked = [];
+  const panel = {
+    get: (link, property) => (asked.push(["get", property]), property === "Bounds" ? { Width: 50, Height: 18 } : { Left: 10, Top: 20 }),
+    set: (link, property, value) => void asked.push(["set", property, value]),
+  };
+  const position = { cluster: [{ name: "Left", type: "i32" }, { name: "Top", type: "i32" }] };
+  const vi = propertyVI({ target: "control", className: "Numeric", rows: [{ property: "Position" }, { property: "Bounds" }, { property: "Position", write: true }] }, (b) => {
+    b.node("where", "cluster-indicator", { type: position });
+    b.node("size", "cluster-indicator", { type: { cluster: [{ name: "Width", type: "u32" }, { name: "Height", type: "u32" }] } });
+    b.node("moveTo", "cluster-control", { type: position });
+    b.wire("node.row-0", "where.value");
+    b.wire("node.row-1", "size.value");
+    b.wire("moveTo.result", "node.row-2");
+  });
+  const shown = await run(vi, { moveTo: { Left: 300, Top: 40 } }, { panel });
+  assert.deepEqual(shown.where, { Left: 10, Top: 20 });
+  assert.deepEqual(shown.size, { Width: 50, Height: 18 });
+  assert.deepEqual(asked.at(-1), ["set", "Position", { Left: 300, Top: 40 }]);
+  assert.deepEqual(shown.errorOut, NO_ERROR);
+});

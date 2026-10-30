@@ -29,6 +29,9 @@
 //   { debug: { paused: { node, kind, phase?, wire?, container, name } } }   the VI stopped (kind: "before", "at", "wire",
 //                                          "frame" of a structure with its phase, or "diagram" at the end)
 //   { debug: { resumed: true } }           the VI goes on
+//   { panel: { id, kind, request } }      a Property Node's row for the panel (DT-072 §6): kind "get" or "set" with
+//                                          `{ nodo, property, value? }`, or "draw": answer once what was sent is drawn
+//   { controlEscrito: { nodo, valor } }    a Property Node wrote Value of a control
 //   { fin: true, error?, abortado? }       the VI has finished
 //
 // The runtime passes over the panel's memory at the end of each turn of the scheduler, before a
@@ -79,17 +82,33 @@ function preguntar(pregunta, error) {
 const ABORTED = "parar";
 
 /**
- * A file dialog or a confirmation of the Run (DT-067, amendment of 2026-10-29), shown by the window: `kind` is
- * "choose-file" or "confirm". What was written so far goes first, as for the error dialogs.
+ * Asks the window and waits for its answer: under `topic` "archivo" a file dialog or a confirmation of the Run
+ * (DT-067, amendment of 2026-10-29), `kind` "choose-file" or "confirm"; under "panel" a Property Node's row (DT-072).
+ * What was written so far goes first, as for the error dialogs.
  */
-function askWindow(kind, request) {
+function askWindow(kind, request, topic = "archivo") {
   vaciar();
   return new Promise((answer) => {
     const id = ++siguiente;
     respuestas.set(id, answer);
-    postMessage({ archivo: { id, kind, request } });
+    postMessage({ [topic]: { id, kind, request } });
   });
 }
+
+/**
+ * The Run's panel for the Property Node (DT-072 §6): the window answers each row, and a Value written waits until
+ * the window has drawn it. An Abort answers every question with nothing.
+ */
+const windowPanel = {
+  get: async (link, property) => {
+    const answer = await askWindow("get", { nodo: link.nodo, property }, "panel");
+    return answer === ABORTED ? undefined : answer;
+  },
+  set: async (link, property, value) => {
+    const answer = await askWindow("set", { nodo: link.nodo, property, value }, "panel");
+    return answer === ABORTED ? undefined : answer;
+  },
+};
 
 /** The Run's `dialogs` host (core/runtime/file-dialogs.mjs): an Abort answers Cancel. */
 const windowDialogs = {
@@ -173,6 +192,9 @@ onmessage = async ({ data }) => {
     },
     alAcabarTurno: vaciar,
     alSoltar: (nodo) => postMessage({ soltar: nodo }),
+    alEscribirControl: (nodo, valor) => postMessage({ controlEscrito: { nodo, valor } }),
+    alDibujar: () => askWindow("draw", null, "panel"),
+    panel: windowPanel,
     poolPorts: data.poolPorts,
     dialogs: windowDialogs,
   };

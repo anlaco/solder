@@ -729,3 +729,9 @@ svg { display: block; overflow: visible; }
 .constante.path-fija { box-sizing: border-box; }
 .constante.path-empty svg { width: 9px; height: 9px; }
 .constante.path-not-a-path svg { width: 11px; height: 11px; }
+
+/* A control a Property Node set to Disabled and Grayed Out (DT-072 §6): LabVIEW greys its body and its label
+   (measured, property-node-panel/stage-b/q2_montage.png); the shade here is an approximation, not measured. */
+.sd-grayed {
+  opacity: 0.5;
+}

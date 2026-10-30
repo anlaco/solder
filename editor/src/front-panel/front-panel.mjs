@@ -35,6 +35,7 @@ import { abbreviatePath } from "../common/path-text.mjs";
 import { PATH, convertirValor, elementoPorDefecto, esEnum, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import { GRAPH_MEASURES, LABEL_PLACEMENT, graphSvg } from "./graph-view.mjs";
 import * as HC from "./html-controls.mjs";
+import { DISABLED, disabledOf, isVisible } from "./panel-properties.mjs";
 import { isGraph, labelShown, wireTypeOf } from "./graph-state.mjs";
 import { cellAddress, dimensionsOfNode, firstShown, indexSetting, isDefined, parseCellAddress, readCell, valueFitsDimensions, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
 
@@ -431,7 +432,7 @@ function arrayObject(n, ctx, frame, editing, valores, elementSelected) {
 /** One object of the panel; a graph's legend and plot swatch are parts of it (`data-parte`) with menus of their own. */
 function panelObject(n, ctx, selected, p, resolvedTypes) {
   const editing = p.edicion?.valor && p.edicion.nodo === n.id ? p.edicion : null;
-  const frame = { id: n.id, box: caja(n), label: n.label?.text ?? "", selected, editing: !!editing, isControl: isControlNode(n) };
+  const frame = { id: n.id, box: caja(n), label: n.label?.text ?? "", selected, editing: !!editing, isControl: isControlNode(n), classes: disabledClasses(p.runProps, n.id) };
   const control = CONTROLES[n.tipo];
   if (isGraph(n)) {
     const type = resolvedTypes ? wireTypeOf(p.g, resolvedTypes, n.id) : undefined;
@@ -450,6 +451,13 @@ function panelObject(n, ctx, selected, p, resolvedTypes) {
   return HC.numericHtml(frame, { valueHtml, withIncrementer: !!control?.incrementador, isEnum: esEnum(tipoDe(n)) });
 }
 
+/** How a Property Node's Disabled shows (DT-072 §6, measured): 1 keeps the look, 2 greys the object and its label. */
+function disabledClasses(runProps, nodeId) {
+  const disabled = disabledOf(runProps, nodeId);
+  if (disabled === DISABLED.grayed) return ["sd-disabled", "sd-grayed"];
+  return disabled === DISABLED.disabled ? ["sd-disabled"] : [];
+}
+
 /**
  * Everything the panel draws inside the canvas, as the plain HTML every panel style dresses (DT-058). `resueltos`:
  * the diagram's types (`Gr.tipos`), which graphs need to know what they receive; if they are not given and there is
@@ -460,9 +468,12 @@ export function contenido(p, ctx, resueltos) {
   const tipos = resueltos ?? (objetos(p.g).some(isGraph) ? Gr.tipos(p.g, ctx.cat) : undefined);
   let html = "";
   for (const n of objetos(p.g)) {
+    // A Property Node's Visible FALSE hides the object and its label (DT-072 §6, measured).
+    if (!isVisible(p.runProps, n.id)) continue;
     const selected = elegidos.has(n.id);
     html += panelObject(n, ctx, selected, p, tipos);
-    if (labelShown(n)) html += Et.pintar(n, cajaEtiqueta(n, ctx.medir, p.edicion), { edicion: p.edicion, elegida: elegidos.has(idEtiqueta(n.id)), publicClass: "sd-label" });
+    const labelClass = disabledOf(p.runProps, n.id) === DISABLED.grayed ? "sd-label sd-grayed" : "sd-label";
+    if (labelShown(n)) html += Et.pintar(n, cajaEtiqueta(n, ctx.medir, p.edicion), { edicion: p.edicion, elegida: elegidos.has(idEtiqueta(n.id)), publicClass: labelClass });
   }
   const { accion } = p;
   if (accion?.tipo === "colocar" && accion.x !== undefined) {

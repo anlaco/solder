@@ -650,7 +650,9 @@ function scanFromString(e) {
 //
 // Each row is a record of FORMAT_ROW_BYTES, as Format Into String's: a write row's value is written into it
 // before the call, and the host writes a read row's value into it, a string into the cell the record's bits
-// word names. The host runs the rows top to bottom with LabVIEW's rules (core/runtime/property-node.mjs).
+// word names. A cluster (Position, Bounds) goes by address: a write row's record holds the cluster wired in, a
+// read row's the node's own buffer, which the host fills. The host runs the rows top to bottom with LabVIEW's rules
+// (core/runtime/property-node.mjs).
 
 /** A Property Node: its read rows, in order, and its error out. */
 function propertyNode(e) {
@@ -664,16 +666,18 @@ function propertyNode(e) {
   const hostRows = rows.map((row, index) => {
     const property = e.cat.properties?.find(className, row.property);
     if (!property?.done) throw new Error(`The property "${row.property}" of the Property Node cannot run yet.`);
-    if (typeof property.type === "object" && !property.type.of && !property.type.enum) throw new Error(`The property "${row.property}" of the Property Node cannot run yet.`);
     const portName = `row-${index}`;
+    const layout = (type) => (esCluster(type) ? { disposicion: disposicionCompleta(type) } : {});
     if (row.write) {
       const input = inputs.findIndex((port) => port.name === portName);
-      code.push(...writeRow(e.tIn(input), rowRecord(index), e.entrada(input)));
-      return { property: row.property, write: true, tipo: e.tIn(input) };
+      const type = e.tIn(input);
+      code.push(...(esCluster(type) ? [k32(rowRecord(index)), ...e.entrada(input), ins("i32.store", ROW_VALUE_OFFSET)] : writeRow(type, rowRecord(index), e.entrada(input))));
+      return { property: row.property, write: true, tipo: type, ...layout(type) };
     }
     const type = e.tOut(outputs.findIndex((port) => port.name === portName));
     if (type === "string") code.push(k32(rowRecord(index)), k32(e.celda()), ins("i32.store", ROW_BITS_OFFSET));
-    return { property: row.property, write: false, tipo: type };
+    if (esCluster(type)) code.push(k32(rowRecord(index)), k32(e.bufer(disposicion(type).tam)), ins("i32.store", ROW_VALUE_OFFSET));
+    return { property: row.property, write: false, tipo: type, ...layout(type) };
   });
   const index = e.registerPropertyNode({ class: className, link, rows: hostRows, ignoreErrors });
   const errorIn = inputs.findIndex((port) => port.name === "error-in");
@@ -687,6 +691,7 @@ function propertyNode(e) {
     if (port.name === "error-out") return [k32(errorOut)];
     if (port.name === "reference-out") return [k32(referenceOut)];
     const row = Number(port.name.slice("row-".length));
+    if (esCluster(hostRows[row].tipo)) return [k32(rowRecord(row)), ins("i32.load", ROW_VALUE_OFFSET)];
     return readRow(hostRows[row].tipo, rowRecord(row));
   };
   return [...code, ...outputs.flatMap(leaveOutput)];
