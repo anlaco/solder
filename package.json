@@ -32,6 +32,7 @@
       "editor/**/*",
       "core/**/*",
       "docs/schema/blocks.json",
+      "docs/schema/properties.json",
       "docs/schema/inventario-labview.json",
       "build/icon.png",
       "native/solder-io-node/solder-io.mjs"

@@ -31,7 +31,9 @@ const APP_ICON = path.resolve(EDITOR, "../build/icon.png");
 const INVENTORY = path.resolve(EDITOR, "../docs/schema/inventario-labview.json");
 /** The block catalog: the only source of terminals (spec/03, rule 3). */
 const CATALOG = path.resolve(EDITOR, "../docs/schema/blocks.json");
-const OUTSIDE = { "/inventario.json": INVENTORY, "/blocks.json": CATALOG };
+/** The properties of the Property Node (DT-072). */
+const PROPERTIES = path.resolve(EDITOR, "../docs/schema/properties.json");
+const OUTSIDE = { "/inventario.json": INVENTORY, "/blocks.json": CATALOG, "/properties.json": PROPERTIES };
 /** The core (DT-039): the page and the command line import it, so it lives outside the editor. */
 const CORE = path.resolve(EDITOR, "../core");
 

@@ -27,7 +27,8 @@ import { wat } from "../core/compiler/wasm-encoder.mjs";
 import { loadSolderIo } from "../native/solder-io-node/solder-io.mjs";
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
-const cat = cargarCatalogo(JSON.parse(readFileSync(path.join(AQUI, "../docs/schema/blocks.json"), "utf8")));
+const readSchema = (name) => JSON.parse(readFileSync(path.join(AQUI, "../docs/schema", name), "utf8"));
+const cat = cargarCatalogo(readSchema("blocks.json"), readSchema("properties.json"));
 
 /** An indicator's value as the panel would show it. */
 function shownValue(value, type) {

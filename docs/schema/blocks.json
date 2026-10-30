@@ -479,6 +479,11 @@
                           { "name": "error-in", "label": "error in (no error)", "type": "error", "default": 0 }],
                    "out": [{ "name": "error-out", "label": "error out", "type": "error" }],
                    "side-effect": true },
+    "property-node": { "cat": "application-control", "desc": "Property Node (DT-072): reads and writes properties of its class, one row each, top to bottom. Linked to a panel control by its node name (implicit: no reference terminals, Value of the control's type) or with a reference wired (Instr). An error in runs nothing; a failing row stops the node unless Ignore Errors inside Node is on (labview-captures/reports/2026-10-30-panel-property-node-behavior.md)",
+                   "in": "dynamic:property-rows", "out": "dynamic:property-rows", "dynamic-ports": true, "type-from": "link",
+                   "config": { "class": { "type": "string", "value": "Numeric" }, "link": { "type": "string", "value": null },
+                               "rows": { "type": "propertyRows", "value": [] }, "ignore-errors": { "type": "boolean", "value": false } },
+                   "side-effect": true },
 
     "path-control": { "cat": "file-io", "desc": "Terminal of a File Path Control: its value is a path, the empty path by default (DT-067)",
                    "in": [], "out": [{ "name": "result", "type": "path" }],

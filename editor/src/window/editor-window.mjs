@@ -65,9 +65,10 @@ const panelStyle = panelStyleFromQuery(new URLSearchParams(location.search).get(
 const prefijo = `window.${nombre}`;
 document.title = V.TITULOS[nombre];
 
+const fetchJson = (url) => fetch(url).then((response) => response.json());
 const [inv, baseCatalog] = await Promise.all([
-  fetch("/inventario.json").then((r) => r.json()).then(cargarInventario),
-  fetch("/blocks.json").then((r) => r.json()).then(Gr.cargarCatalogo),
+  fetchJson("/inventario.json").then(cargarInventario),
+  Promise.all([fetchJson("/blocks.json"), fetchJson("/properties.json")]).then(([blocks, properties]) => Gr.cargarCatalogo(blocks, properties)),
 ]);
 /** The VI these windows show, as the main process knows it (without it, as in a plain browser, a new VI). */
 const viInfo = (await window.solder?.iniciar()) ?? { id: "0", text: null, key: Paths.untitledKey(0), name: "Untitled 1", untitledNumber: 1 };

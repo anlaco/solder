@@ -577,6 +577,11 @@ array or string read by a local variable while another loop writes it is never t
       [`-behavior`](../../labview-captures/reports/2026-10-30-panel-property-node-behavior.md)) and decided in DT-072:
       one node with a class, control references in this step, Value against the panel memory waiting for the drawing,
       the other control properties answered by the editor. Next: stage (a), the catalog of properties and the core.*
+      *Stage (a), first half, done on 2026-10-30: `docs/schema/properties.json` (the measured menus of GObject, Control,
+      Numeric, Boolean, String, Text and Instr, with the first properties' short names, types and access), the
+      `property-node` block with one terminal per row (`core/model/property-node.mjs`), Value typed by the linked
+      control, the class, link, rows and Ignore Errors in the `.sdg` (`test/core/property-node.test.mjs`). 1099 tests
+      green. Next: running the rows (Value on the panel memory, errors, Instr's waits).*
    4b. **VISA Configure Serial Port and Bytes at Serial Port** (DT-070 §7): Configure as a polymorphic subOVI of
       Solder's own `vi.lib` built on the Property Node; greyed until then.
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the

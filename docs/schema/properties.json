@@ -1,0 +1,976 @@
+{
+ "_comment": [
+  "THE PROPERTIES OF THE PROPERTY NODE (docs/design/05-decisions.md, DT-072 §3), by class, in the order and",
+  "groups of LabVIEW 2026 Q3's menus. A class's menu is its parent's groups and then its own, separated. An item",
+  "is a property (`done` with its short name, access and type, or a hole, greyed), a submenu (`submenu`), the",
+  "properties of a text object (`of`: Label and Caption, after a Reference row), or a separator. A property's id",
+  "is the names of its path joined by ':' (`Label:Text`, `Serial Settings:Baud Rate`); an `All Elements` row is",
+  "its submenu's id. `{ \"of\": \"control\" }` is the type of the control the node is linked to.",
+  "Measured: labview-captures/reports/2026-10-30-panel-property-node.md, 2026-10-26-visa-property-node.md and",
+  "-behavior.md, 2026-10-30-visa-serial-com1.md. `shortVerified: false` and `typeVerified: false` mark what was",
+  "not measured yet (a short name or a type taken from VISA Configure Serial Port's terminals)."
+ ],
+ "version": 1,
+ "hole": "Not done yet: DT-072 §8 lists the properties done first.",
+ "classes": {
+  "GObject": {
+   "parent": null,
+   "groups": [
+    [
+     {
+      "name": "Class ID"
+     },
+     {
+      "name": "Class Name"
+     },
+     {
+      "name": "Is On Block Diagram?"
+     },
+     {
+      "name": "Owner"
+     },
+     {
+      "name": "Owning VI"
+     }
+    ],
+    [
+     {
+      "name": "Bounds",
+      "short": "Bounds",
+      "submenu": [
+       {
+        "name": "All Elements",
+        "short": "Bounds",
+        "access": "read",
+        "type": {
+         "cluster": [
+          {
+           "name": "Width",
+           "type": "u32"
+          },
+          {
+           "name": "Height",
+           "type": "u32"
+          }
+         ]
+        },
+        "done": true,
+        "whole": true,
+        "typedef": "LVBoundsTypeDef.ctl"
+       },
+       {
+        "separator": true
+       },
+       {
+        "name": "Area Height"
+       },
+       {
+        "name": "Area Width"
+       }
+      ]
+     },
+     {
+      "name": "Dependencies",
+      "submenu": []
+     },
+     {
+      "name": "Group Member Refs[]"
+     },
+     {
+      "name": "Grouped"
+     },
+     {
+      "name": "Locked"
+     },
+     {
+      "name": "Master Bounds Rect"
+     },
+     {
+      "name": "Position",
+      "short": "Position",
+      "submenu": [
+       {
+        "name": "All Elements",
+        "short": "Position",
+        "access": "read-write",
+        "type": {
+         "cluster": [
+          {
+           "name": "Left",
+           "type": "i32"
+          },
+          {
+           "name": "Top",
+           "type": "i32"
+          }
+         ]
+        },
+        "done": true,
+        "whole": true,
+        "typedef": "LVPositionTypeDef.ctl"
+       },
+       {
+        "separator": true
+       },
+       {
+        "name": "Left"
+       },
+       {
+        "name": "Top"
+       }
+      ]
+     },
+     {
+      "name": "Selected"
+     },
+     {
+      "name": "Total Bounds Rect"
+     },
+     {
+      "name": "UID"
+     }
+    ]
+   ]
+  },
+  "Control": {
+   "parent": "GObject",
+   "groups": [
+    [
+     {
+      "name": "Auto-Update From Typedef"
+     },
+     {
+      "name": "Blinking"
+     },
+     {
+      "name": "Built-In Mouse Wheel Support"
+     },
+     {
+      "name": "Caption",
+      "of": "Text"
+     },
+     {
+      "name": "Control Index"
+     },
+     {
+      "name": "Control Reference Nodes[]"
+     },
+     {
+      "name": "Data Binding",
+      "submenu": []
+     },
+     {
+      "name": "DataSocket",
+      "submenu": []
+     },
+     {
+      "name": "Default Value"
+     },
+     {
+      "name": "Default Value (Undoable)"
+     },
+     {
+      "name": "Description"
+     },
+     {
+      "name": "Disabled",
+      "short": "Disabled",
+      "access": "read-write",
+      "type": {
+       "enum": [
+        "Enabled",
+        "Disabled",
+        "Disabled and Grayed Out"
+       ]
+      },
+      "done": true
+     },
+     {
+      "name": "Focus Key Binding"
+     },
+     {
+      "name": "Grow Info",
+      "submenu": []
+     },
+     {
+      "name": "Has Caption",
+      "short": "HasCaption",
+      "access": "read",
+      "type": "boolean",
+      "done": true
+     },
+     {
+      "name": "Indicator"
+     },
+     {
+      "name": "Invoke Nodes[]"
+     },
+     {
+      "name": "Is On Connector Pane"
+     },
+     {
+      "name": "Is Typedef?"
+     },
+     {
+      "name": "Key Focus",
+      "short": "KeyFocus",
+      "access": "read-write",
+      "type": "boolean",
+      "done": true
+     },
+     {
+      "name": "Label",
+      "of": "Text"
+     },
+     {
+      "name": "Local Variables[]"
+     },
+     {
+      "name": "Owning Pane"
+     },
+     {
+      "name": "Property Nodes[]"
+     },
+     {
+      "name": "Skip When Tabbing"
+     },
+     {
+      "name": "Style ID"
+     },
+     {
+      "name": "Synchronous Display"
+     },
+     {
+      "name": "Terminal",
+      "submenu": []
+     },
+     {
+      "name": "Tip Strip"
+     },
+     {
+      "name": "Typedef",
+      "submenu": []
+     },
+     {
+      "name": "Value",
+      "short": "Value",
+      "access": "read-write",
+      "type": {
+       "of": "control"
+      },
+      "done": true
+     },
+     {
+      "name": "Value (Signaling)",
+      "short": "Val(Sgnl)",
+      "access": "write",
+      "type": {
+       "of": "control"
+      },
+      "done": true
+     },
+     {
+      "name": "Value (Undoable)"
+     },
+     {
+      "name": "Visible",
+      "short": "Visible",
+      "access": "read-write",
+      "type": "boolean",
+      "done": true
+     },
+     {
+      "name": "XControl",
+      "submenu": []
+     }
+    ]
+   ]
+  },
+  "Numeric": {
+   "parent": "Control",
+   "groups": [
+    [
+     {
+      "name": "Adapt To Source"
+     },
+     {
+      "name": "Data Entry Limits",
+      "submenu": []
+     },
+     {
+      "name": "Decrement Key Binding"
+     },
+     {
+      "name": "Fixed-Point Overflow Status Visible?"
+     },
+     {
+      "name": "Fixed-Point Representation",
+      "submenu": []
+     },
+     {
+      "name": "Increment Key Binding"
+     },
+     {
+      "name": "Representation"
+     },
+     {
+      "name": "Response to Value Outside Limits",
+      "submenu": []
+     },
+     {
+      "name": "Unit Label",
+      "submenu": []
+     }
+    ],
+    [
+     {
+      "name": "Display Format",
+      "submenu": []
+     },
+     {
+      "name": "Format String"
+     },
+     {
+      "name": "Increment/Decrement Visible?"
+     },
+     {
+      "name": "Numeric Text",
+      "submenu": []
+     },
+     {
+      "name": "Radix Visible?"
+     },
+     {
+      "name": "Text Width"
+     }
+    ]
+   ],
+   "color": "#ff7f00"
+  },
+  "Boolean": {
+   "parent": "Control",
+   "groups": [
+    [
+     {
+      "name": "Boolean Text",
+      "submenu": []
+     },
+     {
+      "name": "Button Size",
+      "submenu": []
+     },
+     {
+      "name": "Colors [4]"
+     },
+     {
+      "name": "Lock Boolean Text In Center"
+     },
+     {
+      "name": "Mechanical Action"
+     },
+     {
+      "name": "Multiple Text String"
+     },
+     {
+      "name": "Strings [4]"
+     },
+     {
+      "name": "Toggle Key Binding"
+     }
+    ]
+   ],
+   "color": "#007f00"
+  },
+  "String": {
+   "parent": "Control",
+   "groups": [
+    [
+     {
+      "name": "Allow Dragging"
+     },
+     {
+      "name": "Allow Dropping"
+     },
+     {
+      "name": "Display Format Visible?"
+     },
+     {
+      "name": "Display Style"
+     },
+     {
+      "name": "Enable Wrapping"
+     },
+     {
+      "name": "Horizontal Scrollbar Visible"
+     },
+     {
+      "name": "Limit To Single Line?"
+     },
+     {
+      "name": "Size",
+      "submenu": []
+     },
+     {
+      "name": "Text",
+      "submenu": []
+     },
+     {
+      "name": "Update While Typing?"
+     },
+     {
+      "name": "UTF-8 Encoded?"
+     },
+     {
+      "name": "Vertical Scrollbar Visible"
+     }
+    ]
+   ],
+   "color": "#ff00ff"
+  },
+  "Text": {
+   "parent": "GObject",
+   "groups": [
+    [
+     {
+      "name": "Colors",
+      "submenu": []
+     },
+     {
+      "name": "Owning Pane"
+     },
+     {
+      "name": "Size",
+      "submenu": []
+     },
+     {
+      "name": "Visible"
+     }
+    ],
+    [
+     {
+      "name": "Attached Object"
+     },
+     {
+      "name": "Document Bounds",
+      "submenu": []
+     },
+     {
+      "name": "Enable Hyperlinks"
+     },
+     {
+      "name": "Font",
+      "submenu": []
+     },
+     {
+      "name": "Justification"
+     },
+     {
+      "name": "Lock"
+     },
+     {
+      "name": "Scroll Position"
+     },
+     {
+      "name": "Selection",
+      "submenu": []
+     },
+     {
+      "name": "Size to Text?"
+     },
+     {
+      "name": "Text",
+      "short": "Text",
+      "access": "read-write",
+      "type": "string",
+      "done": true
+     },
+     {
+      "name": "Text Colors",
+      "submenu": []
+     },
+     {
+      "name": "Text Is UTF8?"
+     },
+     {
+      "name": "Text Overflow"
+     },
+     {
+      "name": "Vertical Arrangement"
+     }
+    ]
+   ]
+  },
+  "Instr": {
+   "parent": null,
+   "groups": [
+    [
+     {
+      "name": "General Settings",
+      "submenu": [
+       {
+        "name": "Maximum Queue Length"
+       },
+       {
+        "name": "Resource Lock State"
+       },
+       {
+        "name": "Resource Name",
+        "short": "Resource Name",
+        "access": "read",
+        "type": "string",
+        "done": true,
+        "shortVerified": false
+       },
+       {
+        "name": "Resource Class",
+        "short": "Resource Class",
+        "access": "read",
+        "type": "string",
+        "done": true,
+        "shortVerified": false
+       },
+       {
+        "name": "Timeout Value",
+        "short": "Timeout",
+        "access": "read-write",
+        "type": "u32",
+        "done": true
+       },
+       {
+        "name": "User Data"
+       }
+      ]
+     },
+     {
+      "name": "Interface Information",
+      "submenu": [
+       {
+        "name": "Interface Number"
+       },
+       {
+        "name": "Interface Type"
+       },
+       {
+        "name": "Interface Description"
+       }
+      ]
+     },
+     {
+      "name": "Version Information",
+      "submenu": [
+       {
+        "name": "Version of Implementation"
+       },
+       {
+        "name": "Version of Specification"
+       },
+       {
+        "name": "Resource Manufacturer Identification"
+       },
+       {
+        "name": "Resource Manufacturer Name"
+       }
+      ]
+     }
+    ],
+    [
+     {
+      "name": "General Settings",
+      "submenu": [
+       {
+        "name": "Manufacturer Name"
+       },
+       {
+        "name": "Model Name"
+       },
+       {
+        "name": "Manufacturer Identification"
+       },
+       {
+        "name": "Model Code"
+       },
+       {
+        "name": "Slot"
+       },
+       {
+        "name": "Trigger Identifier"
+       },
+       {
+        "name": "Allow DMA Transfers"
+       }
+      ]
+     },
+     {
+      "name": "Message Based Settings",
+      "submenu": [
+       {
+        "name": "Termination Character",
+        "short": "TermChar",
+        "access": "read-write",
+        "type": "u8",
+        "done": true
+       },
+       {
+        "name": "Termination Character Enable",
+        "short": "TermChar En",
+        "access": "read-write",
+        "type": "boolean",
+        "done": true
+       },
+       {
+        "name": "Send End Enable"
+       },
+       {
+        "name": "Suppress End Enable"
+       },
+       {
+        "name": "File Append Enable"
+       },
+       {
+        "name": "Is 488.2 Compliant"
+       },
+       {
+        "name": "IO Protocol"
+       }
+      ]
+     },
+     {
+      "name": "Register Based Settings",
+      "submenu": [
+       {
+        "name": "Window Base Address"
+       },
+       {
+        "name": "Window Size"
+       },
+       {
+        "name": "Window Access"
+       },
+       {
+        "name": "Source Increment Count"
+       },
+       {
+        "name": "Destination Increment Count"
+       }
+      ]
+     },
+     {
+      "name": "GPIB Settings",
+      "submenu": [
+       {
+        "name": "Primary Address"
+       },
+       {
+        "name": "Secondary Address"
+       },
+       {
+        "name": "Readdressing"
+       },
+       {
+        "name": "Unaddressing"
+       },
+       {
+        "name": "Line REN State"
+       }
+      ]
+     },
+     {
+      "name": "Serial Settings",
+      "submenu": [
+       {
+        "name": "Number of Bytes at Serial Port",
+        "short": "Number of Bytes at Serial Port",
+        "access": "read",
+        "type": "u32",
+        "done": true,
+        "shortVerified": false,
+        "typeVerified": false
+       },
+       {
+        "name": "Baud Rate",
+        "short": "Baud Rate",
+        "access": "read-write",
+        "type": "u32",
+        "done": true,
+        "shortVerified": false,
+        "typeVerified": false
+       },
+       {
+        "name": "Data Bits",
+        "short": "Data Bits",
+        "access": "read-write",
+        "type": "u16",
+        "done": true,
+        "shortVerified": false,
+        "typeVerified": false
+       },
+       {
+        "name": "Parity",
+        "short": "Parity",
+        "access": "read-write",
+        "type": "u16",
+        "done": true,
+        "shortVerified": false,
+        "typeVerified": false
+       },
+       {
+        "name": "Stop Bits",
+        "short": "Stop Bits",
+        "access": "read-write",
+        "type": "u16",
+        "done": true,
+        "shortVerified": false,
+        "typeVerified": false
+       },
+       {
+        "name": "Flow Control",
+        "short": "Flow Control",
+        "access": "read-write",
+        "type": "u16",
+        "done": true,
+        "shortVerified": false,
+        "typeVerified": false
+       },
+       {
+        "name": "End Mode for Reads",
+        "short": "End Mode for Reads",
+        "access": "read-write",
+        "type": "u16",
+        "done": true,
+        "shortVerified": false,
+        "typeVerified": false
+       },
+       {
+        "name": "End Mode for Writes"
+       },
+       {
+        "name": "Flow Control XON Character"
+       },
+       {
+        "name": "Flow Control XOFF Character"
+       },
+       {
+        "name": "Error Replacement Character"
+       },
+       {
+        "name": "Discard NUL Characters"
+       },
+       {
+        "name": "Break Length"
+       },
+       {
+        "name": "Allow Transmit"
+       },
+       {
+        "name": "Wire Mode"
+       },
+       {
+        "name": "Modem Line Settings",
+        "submenu": []
+       },
+       {
+        "name": "Is Port Connected"
+       }
+      ]
+     },
+     {
+      "name": "PXI/PCI Settings",
+      "submenu": [
+       {
+        "name": "Allow Write Combining"
+       },
+       {
+        "name": "PCI Device Number"
+       },
+       {
+        "name": "PCI Function Number"
+       },
+       {
+        "name": "PCI Bus Number"
+       },
+       {
+        "name": "PXI Chassis Number"
+       },
+       {
+        "name": "Slot Path"
+       },
+       {
+        "name": "Slot Local Bus Left"
+       },
+       {
+        "name": "Slot Local Bus Right"
+       },
+       {
+        "name": "Trigger Bus Number"
+       },
+       {
+        "name": "Star Trigger Bus Number"
+       },
+       {
+        "name": "Star Trigger Line"
+       },
+       {
+        "name": "Express Settings",
+        "submenu": []
+       },
+       {
+        "name": "PCI Resources",
+        "submenu": []
+       }
+      ]
+     },
+     {
+      "name": "TCP/IP Settings",
+      "submenu": [
+       {
+        "name": "Dot-Notation Address"
+       },
+       {
+        "name": "Computer Hostname"
+       },
+       {
+        "name": "No Packet Delay"
+       },
+       {
+        "name": "Keep-Alive Packets"
+       },
+       {
+        "name": "LAN Device Name"
+       },
+       {
+        "name": "Server Certificate Issuer Name"
+       },
+       {
+        "name": "Server Certificate Subject Name"
+       },
+       {
+        "name": "Server Certificate Expiration Date"
+       },
+       {
+        "name": "Server Certificate Is Perpetual"
+       },
+       {
+        "name": "TLS Cipher Suite"
+       },
+       {
+        "name": "Is HiSLIP"
+       },
+       {
+        "name": "HiSLIP Settings",
+        "submenu": []
+       }
+      ]
+     },
+     {
+      "name": "USB Settings",
+      "submenu": [
+       {
+        "name": "Serial Number"
+       },
+       {
+        "name": "USB Interface Number"
+       },
+       {
+        "name": "USB Protocol"
+       },
+       {
+        "name": "Maximum Interrupt Size"
+       }
+      ]
+     },
+     {
+      "name": "VXI/VME Settings",
+      "submenu": [
+       {
+        "name": "Fast Data Channel",
+        "submenu": []
+       },
+       {
+        "name": "Mainframe Logical Address"
+       },
+       {
+        "name": "VXI Memory Base Address"
+       },
+       {
+        "name": "VXI Memory Size"
+       },
+       {
+        "name": "VXI Memory Address Space"
+       },
+       {
+        "name": "VXI Logical Address"
+       },
+       {
+        "name": "Immediate Servant"
+       },
+       {
+        "name": "VXI Commander Logical Address"
+       },
+       {
+        "name": "Source Access Privilege"
+       },
+       {
+        "name": "Destination Access Privilege"
+       },
+       {
+        "name": "Window Access Privilege"
+       },
+       {
+        "name": "Source Byte Order"
+       },
+       {
+        "name": "Destination Byte Order"
+       },
+       {
+        "name": "Window Byte Order"
+       },
+       {
+        "name": "Supported VXI Trigger Lines"
+       },
+       {
+        "name": "VXI Trigger Lines Enable"
+       },
+       {
+        "name": "VXI Trigger Directions"
+       },
+       {
+        "name": "VXI Device Class"
+       }
+      ]
+     },
+     {
+      "name": "FireWire Settings",
+      "submenu": [
+       {
+        "name": "Destination Upper Offset"
+       },
+       {
+        "name": "Source Upper Offset"
+       },
+       {
+        "name": "Window Upper Offset"
+       },
+       {
+        "name": "Vendor ID"
+       },
+       {
+        "name": "Lower Chip ID"
+       },
+       {
+        "name": "Upper Chip ID"
+       }
+      ]
+     },
+     {
+      "name": "Interface Information",
+      "submenu": [
+       {
+        "name": "Interface Number of Parent"
+       }
+      ]
+     }
+    ]
+   ]
+  }
+ }
+}

@@ -12,11 +12,16 @@
 // A pure module with no mutation: every operation returns a new diagram.
 
 import { connectorTerminals } from "./connector.mjs";
+import { LINKED_CONTROL_TYPE, loadProperties } from "./property-node.mjs";
 import { DBL, ERROR, FILE_REFNUM, NUMERICOS, PATH, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, carriesUndefinedArray, isUndefinedArray, nombre, withoutOneDimension } from "./types.mjs";
 
-/** El catálogo de bloques, `docs/schema/blocks.json`. */
-export function cargarCatalogo(datos) {
+/**
+ * The catalog of blocks, `docs/schema/blocks.json`, and of the Property Node's properties,
+ * `docs/schema/properties.json` (DT-072); without the latter a Property Node has only its error terminals.
+ */
+export function cargarCatalogo(datos, propertiesData) {
   const bloques = datos.blocks;
+  const properties = propertiesData ? loadProperties(propertiesData) : null;
   function bloque(tipo) {
     const b = bloques[tipo];
     if (!b) throw new Error(`the block "${tipo}" is not in the catalog`);
@@ -29,6 +34,8 @@ export function cargarCatalogo(datos) {
   function puertos(nodo) {
     const b = bloque(nodo.tipo);
     const lista = (dir) => {
+      // The Property Node: its reference, error and one terminal per row (DT-072).
+      if (b[dir] === "dynamic:property-rows") return (properties?.ports(nodo) ?? { in: [{ name: "error-in", label: "error in (no error)", type: "error", default: 0 }], out: [{ name: "error-out", label: "error out", type: "error" }] })[dir].map((p) => ({ ...p, dir }));
       // Bundle y Unbundle: un puerto por campo del cluster de `config.type`.
       if (b[dir] === "dynamic:cluster-fields") {
         const campos = nodo.config?.type?.cluster ?? [];
@@ -99,7 +106,7 @@ export function cargarCatalogo(datos) {
     if (!p) throw new Error(`"${nodo.tipo}" has no ${dir === "in" ? "input" : "output"} port "${nombrePuerto}"`);
     return p;
   }
-  return { datos, bloque, puertos, puerto, tiene: (tipo) => tipo in bloques };
+  return { datos, bloque, puertos, puerto, tiene: (tipo) => tipo in bloques, properties };
 }
 
 /**
@@ -1027,6 +1034,16 @@ function ligar(declarado, llega, vars) {
  * Una variable numérica sin nada cableado queda en DBL, que es lo que enseña
  * LabVIEW en una función sin cablear.
  */
+/** The type of the panel object a Property Node is linked to, by its node name; undefined when there is none. */
+export function linkedControlType(g, cat, node) {
+  const linked = g.nodos.find((candidate) => candidate.name === node.config?.link);
+  if (!linked) return undefined;
+  const block = cat.bloque(linked.tipo);
+  if (block["type-from"] === "config") return linked.config?.type ?? block.config?.default?.type;
+  const { in: inputs, out: outputs } = cat.puertos(linked);
+  return [...outputs, ...inputs][0]?.type;
+}
+
 export function tipos(g, cat) {
   const r = resolverTipos(g, cat, new Map());
   // Un shift register sin valor inicial cableado toma el tipo de lo que le entra
@@ -1058,6 +1075,8 @@ function resolverTipos(g, cat, pistas) {
     if (tipoConfig) {
       for (const p of [...outs, ...ins]) if (p.type?.var) vars[p.type.var] = tipoConfig;
     }
+    // A Property Node linked to a control: its Value rows carry the control's type (DT-072).
+    if (b["type-from"] === "link") vars[LINKED_CONTROL_TYPE] = linkedControlType(g, cat, n);
     for (const p of ins) {
       const c = llegaA.get(`${n.id}.${p.name}`);
       if (c && !enCiclo.has(c.de.nodo)) ligar(p.type, salidas.get(`${c.de.nodo}.${c.de.puerto}`), vars);

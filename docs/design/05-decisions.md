@@ -3265,9 +3265,10 @@ editor, as LabVIEW's UI thread does.**
    Property Node ▸, Select Property ▸ and the rows' colours come from it.
 4. **The run-time rules, for every class, as measured.** Rows run top to bottom. An error in runs nothing: the outputs
    are their defaults and the error passes unchanged; a warning in runs and passes. A failing row stops the node and
-   the rows after it give defaults; the source is LabVIEW's, `Property Node (arg N) in <chain><APPEND>\nProperty
-   Name: <b>P</b>`, with the `<b>` as LabVIEW writes it. With Ignore Errors inside Node every row runs and the error
-   is still given, without what follows `<APPEND>`. An unwired write row breaks the OVI.
+   the rows after it give defaults; the source is LabVIEW's, `Property Node (arg N) in <chain>`, and for a panel
+   control's error (1193, 1320) it goes on `<APPEND>\nProperty Name: <b>P</b>`, with the `<b>` as LabVIEW writes it;
+   an Instr row's error (-1073807330, -1073807331) has no `<APPEND>` (measured). With Ignore Errors inside Node every
+   row runs and the error is still given, without what follows `<APPEND>`. An unwired write row breaks the OVI.
 5. **Instr** rows are external waits served by `native/solder-io` ([DT-065](#dt-065) §3), which keeps each session's
    timeout, termination and serial attributes ([DT-070](#dt-070) §6): auto-open of a closed or never-opened name,
    the defaults back after Close, and the measured codes (-1073807330, -1073807331).
