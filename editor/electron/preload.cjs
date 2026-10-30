@@ -23,6 +23,8 @@ contextBridge.exposeInMainWorld("solder", {
   elegirRuta: () => ipcRenderer.invoke("path:choose"),
   /** A Run's file dialog `{ title, mode }` (DT-067, amendment of 2026-10-29): the system's name of the file chosen, or nothing. */
   chooseRunFile: (request) => ipcRenderer.invoke("run:choose-file", request),
+  /** File Dialog's request (DT-069): `{ paths, exists }`, or nothing for Cancel. */
+  fileDialogRun: (request) => ipcRenderer.invoke("run:file-dialog", request),
   /** A Run's confirmation `{ message, detail }`: whether OK was pressed. */
   confirmRun: (question) => ipcRenderer.invoke("run:confirm", question),
   /** The text of every VI reached from this one, by absolute path: `{ texts, missing }`. */

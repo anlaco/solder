@@ -175,6 +175,8 @@
 .sd-panel .sd-array .sd-element .sd-field { flex: 1; }
 .sd-panel .sd-array .sd-element.sd-empty .sd-field { background: var(--sd-empty); color: var(--sd-muted); }
 .sd-panel .sd-array .sd-element-string { white-space: pre; line-height: 15px; }
+/* An element that is a path keeps its cell at the left, and its text after it. */
+.sd-panel .sd-array .sd-path-cell + .sd-field { padding-left: 14px; box-sizing: border-box; }
 .sd-panel .sd-array .sd-element-boolean { flex: 1; display: grid; place-items: center; border: 1px solid var(--sd-line); border-radius: var(--sd-radius); background: var(--sd-button); }
 .sd-panel .sd-array .sd-element-boolean[aria-checked="true"] { background: var(--sd-led-on); color: var(--sd-accent-ink); }
 

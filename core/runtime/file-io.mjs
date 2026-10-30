@@ -12,8 +12,8 @@
 // Measured in LabVIEW 2026 Q3 on Windows: labview-captures/reports/2026-10-26-file-io-behavior.md and
 // 2026-10-29-file-dialogs.md.
 
-import { READ_MODE } from "../compiler/compiler.mjs";
-import { CANCELLING_DIALOGS, deleteConfirmation, fileDialogOf, replaceConfirmation } from "./file-dialogs.mjs";
+import { FILE_DIALOG_CODES, READ_MODE } from "../compiler/compiler.mjs";
+import { CANCELLING_DIALOGS, deleteConfirmation, fileDialogOf, fileDialogRequest, replaceConfirmation } from "./file-dialogs.mjs";
 import { arrayToSpreadsheetString, endOfLineFor, firstRowOf, readDelimitedRows, rowsToArray, transposeArray } from "./spreadsheet.mjs";
 import { EMPTY_PATH, NOT_A_PATH, NOT_A_PATH_TEXT, PATH_KIND, isEmptyPath, isNotAPath, pathFromText, pathToText } from "../model/paths.mjs";
 
@@ -50,6 +50,8 @@ const READ_DELIMITED_SOURCE = Object.freeze({ open: "Open File+.vi:Open File", d
 
 /** Write Delimited Spreadsheet's instance, which its error sources name: reals are DBL, integers I64 (measured with I32). */
 const writeInstanceOf = (element) => (element.kind === "string" ? "string" : element.kind === "int" ? "I64" : "DBL");
+/** The element of an array of paths: each a handle to its block, laid out as a string's (DT-067). */
+const PATH_ELEMENT = Object.freeze({ tipo: "string", tam: 4, ref: true, path: true });
 /** An integer element as the I64 instance writes it. */
 const AS_I64 = { kind: "int", bits: 64, signed: true };
 
@@ -171,6 +173,13 @@ export function createFileFunctions({ io, dialogs = CANCELLING_DIALOGS, host, me
     const name = await chooseFile(functionName);
     return name === null ? null : pathFromText(name, pathRules);
   };
+  /** Writes `paths` as a 1D array of paths into `cell`. */
+  const putPaths = (cell, paths) => host.ponerArray(cell, PATH_ELEMENT, paths);
+  /** File Dialog's source: its name, the VI it ran in after "->", and an end of line (measured: `File Dialog->fd.vi\r\n`). */
+  const fileDialogSource = (chainIndex) => {
+    const caller = host.callChainOf(chainIndex);
+    return `${caller ? `File Dialog->${caller}` : "File Dialog"}\r\n`;
+  };
   /** A Write Delimited error: its chain through LabVIEW's subVIs and the VI it ran in, and the file after a line break. */
   const writeDelimitedError = (code, instance, chainIndex, fileText) => {
     const caller = host.callChainOf(chainIndex);
@@ -179,6 +188,40 @@ export function createFileFunctions({ io, dialogs = CANCELLING_DIALOGS, host, me
   };
 
   return {
+    // File Dialog (DT-069, DT-067 (d2)), measured in labview-captures/reports/2026-10-29-file-dialog-run.md: with an
+    // error in it shows no dialog and passes the error; a warning passes on an OK and a Cancel replaces it with error 43;
+    // a Cancel gives Not A Path (an empty array with several items), exists false, cancelled true.
+    file_dialog: (startPath, startWired, defaultName, pattern, patternLabel, buttonLabel, prompt, selection, existence, multiple, errorIn, selectedCell, existsOut, cancelledOut, errorOut, chainIndex) => {
+      const nothingSelected = () => (multiple ? putPaths(selectedCell, []) : writePath(selectedCell, NOT_A_PATH));
+      nothingSelected();
+      writeBoolean(existsOut, false);
+      writeBoolean(cancelledOut, false);
+      const incoming = readError(errorIn);
+      if (incoming.status) {
+        writeError(errorOut, incoming);
+        return ANSWERED;
+      }
+      const config = { selection: FILE_DIALOG_CODES.selection[selection], existence: FILE_DIALOG_CODES.existence[existence], multiple: Boolean(multiple) };
+      const request = fileDialogRequest(config, {
+        prompt: host.textOf(prompt), buttonLabel: host.textOf(buttonLabel), defaultName: host.textOf(defaultName),
+        pattern: host.textOf(pattern), patternLabel: host.textOf(patternLabel),
+        startPath: startWired ? systemNameOf(readPath(startPath)) : null,
+      });
+      return Promise.resolve(dialogs.fileDialog(request)).then((answer) => {
+        if (!answer) {
+          writeBoolean(cancelledOut, true);
+          writeError(errorOut, { status: true, code: ERROR_CODE.CANCELLED, source: fileDialogSource(chainIndex) });
+          return ANSWERED;
+        }
+        const chosen = answer.paths.map((name) => pathFromText(name, pathRules));
+        if (multiple) putPaths(selectedCell, chosen);
+        else writePath(selectedCell, chosen[0]);
+        writeBoolean(existsOut, answer.exists);
+        writeError(errorOut, incoming.code !== NO_ERROR_CODE ? incoming : NO_ERROR);
+        return ANSWERED;
+      });
+    },
+
     /** Closes what the Run left open, once it has finished; an I/O that is gone has nothing left to close. */
     closeFilesLeftOpen: async () => {
       const refnums = [...openedHere];
@@ -406,4 +449,4 @@ export function createFileFunctions({ io, dialogs = CANCELLING_DIALOGS, host, me
 }
 
 /** The names of the file imports, the ones a pool thread hands to the coordinator. */
-export const FILE_FUNCTION_NAMES = ["file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete", "file_write_spreadsheet", "file_read_spreadsheet"];
+export const FILE_FUNCTION_NAMES = ["file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete", "file_write_spreadsheet", "file_read_spreadsheet", "file_dialog"];

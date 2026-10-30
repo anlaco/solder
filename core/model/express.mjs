@@ -26,8 +26,22 @@ export function expansionRowPorts(block, node, ports) {
 /** The "configured as follows" lines of the context help, or none while unconfigured (measured: "Delay Time: 2.5 s"). */
 export function configuredAsLines(block, node) {
   if (!isExpress(block) || !isConfigured(node)) return [];
-  return (block.express["configured-as"] ?? []).map(({ label, key, unit }) => `${label}: ${formatSetting(node.config[key])}${unit ? ` ${unit}` : ""}`);
+  const settingOf = (key) => (DERIVED_SETTINGS[key] ? DERIVED_SETTINGS[key](node.config) : formatSetting(node.config[key]));
+  return (block.express["configured-as"] ?? []).map(({ label, key, unit }) => `${label}: ${settingOf(key)}${unit ? ` ${unit}` : ""}`);
 }
+
+/** What File Dialog's help names its existence and selection settings (measured: "New or existing file"). */
+const EXISTENCE_WORDS = Object.freeze({ existing: "Existing", new: "New", "new-or-existing": "New or existing" });
+const SELECTION_WORDS = Object.freeze({ file: "file", folder: "folder", "file-or-folder": "file or folder" });
+
+/**
+ * The settings a help line shows that are made of several configuration keys. File Dialog's Selection Mode is
+ * "Multi-select" with several items (measured); otherwise its existence and selection, as "New or existing file"
+ * (measured). Unverified: the words of the other combinations.
+ */
+const DERIVED_SETTINGS = Object.freeze({
+  "selection-mode": (config) => (config.multiple ? "Multi-select" : `${EXISTENCE_WORDS[config.existence]} ${SELECTION_WORDS[config.selection]}`),
+});
 
 /**
  * The smallest magnitude the context help writes in exponent form (measured: 1e9 is "1E+9", 2.123456 is written

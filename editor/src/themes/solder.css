@@ -161,6 +161,8 @@
   --express-node-fill: #cce8ff; /* Express VI nodes, measured in LabVIEW 2026 Q3 (DT-069). */
   --express-node-border: #3366ff;
   --express-row-fill: #ffffff;
+  --express-dialog-background: #ffffff; /* The Express VIs' configuration dialogs (measured on File Dialog's: #eeeeee, frame lines #dfdfdf). */
+  --express-dialog-group-border: #e3e6ec;
   --express-chevron: #8496a5;
   --express-black: #000000; /* The icon's frame and the triangles of the rows: pure black, measured. */
   --express-icon-bar: #0000ff;

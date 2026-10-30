@@ -50,12 +50,12 @@ export function delay(state) {
 /** How much a click on a spin arrow changes the delay. Unverified: LabVIEW's step. */
 const SPIN_STEP = 1;
 
-/** A click on a spin arrow: the delay goes up or down by the step, never below 0, and is written with three decimals. */
+/** A click on a spin arrow (an answer `{ body }`): the delay goes up or down by the step, never below 0, and is written with three decimals. */
 export function click(state, part) {
   const direction = { "spin-up": 1, "spin-down": -1 }[part];
   if (!direction) return null;
   const value = Math.max(LEAST_DELAY, delay(state) + direction * SPIN_STEP);
-  return { ...state, text: value.toFixed(SHOWN_DECIMALS), typed: true, todo: false };
+  return { body: { ...state, text: value.toFixed(SHOWN_DECIMALS), typed: true, todo: false } };
 }
 
 /** What an OK sets in the node's configuration. */

@@ -406,7 +406,8 @@ function alMensaje(data) {
  */
 async function answerFileDialog({ id, kind, request }) {
   const worker = trabajador;
-  const answer = kind === "confirm" ? await window.solder.confirmRun(request) : await window.solder.chooseRunFile(request);
+  const ask = { confirm: window.solder.confirmRun, "file-dialog": window.solder.fileDialogRun, "choose-file": window.solder.chooseRunFile }[kind];
+  const answer = await ask(request);
   if (worker && worker === trabajador) worker.postMessage({ orden: "respuesta", id, valor: answer ?? null });
 }
 

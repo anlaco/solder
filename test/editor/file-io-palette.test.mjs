@@ -110,6 +110,8 @@ test("only the path and file functions and the path constants of File I/O are do
     "open-create-replace-file", "close-file", "write-to-text-file", "read-from-text-file", "advanced-file-functions.get-file-size", "advanced-file-functions.delete",
     // DT-067 §10 (c): the spreadsheet VIs (test/editor/delimited-spreadsheet-nodes.test.mjs).
     "write-delimited-spreadsheet-vi", "read-delimited-spreadsheet-vi",
+    // DT-067 (d2): File Dialog, an Express VI (test/editor/file-dialog-express-nodes.test.mjs).
+    "advanced-file-functions.file-dialog",
   ].map((tail) => `${ROOT}.${tail}`);
   const everything = INV.entradas.filter((e) => e.id.startsWith(`${ROOT}.`) && ultimo(e.id) !== "thumbtack" && INV.hijos(e.id).length === 0);
   assert.equal(everything.length, 135, "every measured element is declared (the report's two unread folders of Advanced TDMS are holes without contents)");
@@ -128,7 +130,7 @@ test("only the path and file functions and the path constants of File I/O are do
   // The reasons: file functions with (b), the dialogs with (d), the other formats not planned.
   const reason = (tail) => INV.entrada(`${ROOT}.${tail}`).necesita;
   assert.equal(reason("advanced-file-functions.refnum-to-path"), "funciones-de-archivo");
-  assert.equal(reason("advanced-file-functions.file-dialog"), "dialogos-de-archivo");
+  assert.equal(INV.entrada(`${ROOT}.advanced-file-functions.file-dialog`).estado, "built", "File Dialog is an Express VI now (DT-069)");
   assert.equal(reason("tdm-streaming.tdms-open"), "formatos-de-archivo");
   assert.match(INV.desbloqueos["formatos-de-archivo"].desc, /Not planned yet/);
   assert.match(INV.desbloqueos["funciones-de-archivo"].ref, /§10 \(b\)/);

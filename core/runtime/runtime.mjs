@@ -282,7 +282,9 @@ export function createHostFunctions({ compilado, separador = ".", pathRules = ho
     sizes.forEach((size, dimension) => memoria().setInt32(d - 8 + 4 * dimension, size, true));
     lista.forEach((v, k) => {
       const a = d + k * el.tam;
-      if (el.tipo === "string") ponerCadena(a, v);
+      // A path element is its block, as a path's cell holds it (DT-067); in memory it is laid out as a string.
+      if (el.path) putBytes(a, encodePath(v));
+      else if (el.tipo === "string") ponerCadena(a, v);
       else if (el.disposicion) ponerCluster(a, el.disposicion, v);
       else memoria()[ESCRIBIR[el.guarda]](a, aWasm(v, el.tipo), true);
     });
@@ -294,6 +296,7 @@ export function createHostFunctions({ compilado, separador = ".", pathRules = ho
     const n = sizes.reduce((product, size) => product * size, 1);
     const elements = Array.from({ length: n }, (_, k) => {
       const a = p + ARRAY_HEADER_BYTES + k * el.tam;
+      if (el.path) return decodePath(readBytes(a));
       if (el.tipo === "string") return leerCadena(a);
       if (el.disposicion) return leerCluster(a, el.disposicion);
       return deWasm(m[LEER[el.carga]](a, true), el.tipo);

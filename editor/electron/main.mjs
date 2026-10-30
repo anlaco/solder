@@ -6,7 +6,7 @@
 // The page is served over a protocol of its own, `solder://`, and not from
 // file://: so ES modules and the inventory's `fetch` work as in a browser.
 
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,7 +21,7 @@ import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from
 import { WINDOW_KINDS, createRegistry, isDirty, recordChange, recordSave, viName, windowTitle } from "./vi-registry.mjs";
 import { readWindowStyle, watchWindowStyle } from "./window-style.mjs";
 import { createInstrumentIoProcess } from "./instrument-io-process.mjs";
-import { chosenFileOf, confirmationBoxFor, confirmedBy, folderAfter, systemDialogFor } from "./file-dialog-options.mjs";
+import { chosenFileOf, chosenFilesOf, confirmationBoxFor, confirmedBy, fileDialogFor, folderAfter, systemDialogFor } from "./file-dialog-options.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const EDITOR = path.resolve(HERE, "..");
@@ -183,6 +183,20 @@ let showWarnings = false;
  * it between functions, and a Cancel leaves it). Unverified: the first one, which LabVIEW was not measured for.
  */
 let lastFileDialogFolder = os.homedir();
+
+/** Whether `name` names a file or folder on the disk. */
+const pathExists = (name) => stat(name).then(() => true, () => false);
+/**
+ * The folder a File Dialog opens in for its start path: the path when it is a folder, the folder it is in when it is a
+ * file, and for a path that does not exist its nearest folder that does, or the Desktop when there is none (measured).
+ */
+async function folderOfStart(startPath) {
+  for (let candidate = startPath; ; candidate = path.dirname(candidate)) {
+    const info = await stat(candidate).catch(() => null);
+    if (info) return info.isDirectory() ? candidate : path.dirname(candidate);
+    if (path.dirname(candidate) === candidate) return app.getPath("desktop");
+  }
+}
 
 const keyOf = (entry) => (entry.path ? pathKey(entry.path) : untitledKey(entry.id));
 
@@ -506,6 +520,20 @@ function handleRequests() {
     const chosen = chosenFileOf(kind, result);
     if (chosen !== null) lastFileDialogFolder = folderAfter(chosen);
     return chosen;
+  });
+  // File Dialog (DT-069): the system's dialog for its request; returns `{ paths, exists }`, or nothing for Cancel. A
+  // start path that is a folder opens there, a file opens its folder (measured, the name box empty); unwired, the
+  // last folder. `exists` is whether everything chosen exists (measured: false for a new name).
+  ipcMain.handle("run:file-dialog", async (event, request) => {
+    const startFolder = request.startPath ? await folderOfStart(request.startPath) : lastFileDialogFolder;
+    const { kind, options } = fileDialogFor(request, startFolder, request.defaultName);
+    const owner = ownerOf(event);
+    const result = kind === "open" ? await dialog.showOpenDialog(owner, options) : await dialog.showSaveDialog(owner, options);
+    const paths = chosenFilesOf(kind, result);
+    if (paths === null) return null;
+    lastFileDialogFolder = folderAfter(paths[0]);
+    const exists = (await Promise.all(paths.map(pathExists))).every(Boolean);
+    return { paths, exists };
   });
   // A Run's confirmation (op 5, Delete with confirm): whether OK was pressed.
   ipcMain.handle("run:confirm", async (event, question) => confirmedBy(await dialog.showMessageBox(ownerOf(event), confirmationBoxFor(question))));

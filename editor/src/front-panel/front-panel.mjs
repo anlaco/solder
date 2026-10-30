@@ -32,7 +32,7 @@ import { REPEATED_PASTE_STEP } from "../common/paste-memory.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { EMPTY_PATH, hostPathRules, isNotAPath, pathFromText, pathToText } from "../../../core/model/paths.mjs";
 import { abbreviatePath } from "../common/path-text.mjs";
-import { convertirValor, elementoPorDefecto, esEnum, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
+import { PATH, convertirValor, elementoPorDefecto, esEnum, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import { GRAPH_MEASURES, LABEL_PLACEMENT, graphSvg } from "./graph-view.mjs";
 import * as HC from "./html-controls.mjs";
 import { isGraph, labelShown, wireTypeOf } from "./graph-state.mjs";
@@ -333,6 +333,8 @@ const encendido = (n, valores) => !!(valores?.[n.id] ?? valorActual(n));
 function elementText(lista, address, dimensions, type, ctx, editing) {
   if (editing) return editing.todo ? `<span class="texto-elegido">${esc(editing.texto)}</span>` : `<span>${esc(editing.texto)}</span><span class="caret"></span>`;
   const value = readCell(lista, dimensions, address);
+  // A path element is an object: it is shown as the path it is, by the host's rules, as a File Path Indicator shows it.
+  if (type === PATH) return `<span>${esc(pathToText(value ?? EMPTY_PATH, ctx.pathRules ?? hostPathRules()))}</span>`;
   return `<span>${esc(type === "string" ? String(value ?? "") : type === "boolean" ? (value ? "T" : "F") : formatear(value ?? elementoPorDefecto(type), type, ctx.separador))}</span>`;
 }
 

@@ -48,8 +48,44 @@ const DELETE_PROMPT = "Delete";
 /** Delete's question with `confirm` true. Unverified: the text with a wired prompt. */
 export const deleteConfirmation = (fileName, prompt = null) => ({ message: `${prompt ?? DELETE_PROMPT} ${fileName}?`, detail: "" });
 
+/** File Dialog's title when its prompt is unwired or empty, by what it selects (measured). */
+const FILE_DIALOG_TITLES = Object.freeze({
+  file: "Choose or Enter Path of File",
+  folder: "Choose or Enter Path of Folder",
+  "file-or-folder": "Choose or Enter Path of Folder or File",
+  several: "Choose or Enter Path of File(s)",
+});
+/** And its OK button when the button label is unwired or empty (measured). */
+const FILE_DIALOG_BUTTON = "OK";
+/** The filter LabVIEW always offers (measured: "All Files (*.*)", first in the list). */
+export const ALL_FILES_FILTER = Object.freeze({ name: "All Files", extensions: ["*"] });
+
+/**
+ * File Dialog's request to the host (DT-069, DT-067 (d2)): its configuration (`selection` file, folder or
+ * file-or-folder; `existence` existing, new or new-or-existing; `multiple`) and its inputs, as texts or `null` when
+ * unwired. The host decides whether `startPath` is a folder or a file in one (measured: a file opens its folder with
+ * the name box empty). `filters` puts the wired pattern first and keeps All Files (measured: both offered, the
+ * pattern selected); a pattern "*.txt" with the label "Text" is the filter "Text (*.txt)" (measured).
+ */
+export function fileDialogRequest(config, { prompt, buttonLabel, startPath, defaultName, pattern, patternLabel }) {
+  const patterns = (pattern ?? "").split(";").map((one) => one.trim()).filter(Boolean);
+  const extensions = patterns.map((one) => one.replace(/^\*\.?/, "") || "*");
+  const patternName = patternLabel ? `${patternLabel} (${patterns.join(";")})` : patterns.join(";");
+  return {
+    title: prompt || (config.multiple ? FILE_DIALOG_TITLES.several : FILE_DIALOG_TITLES[config.selection]),
+    buttonLabel: buttonLabel || FILE_DIALOG_BUTTON,
+    selection: config.selection,
+    existence: config.existence,
+    multiple: Boolean(config.multiple),
+    startPath: startPath || null,
+    defaultName: defaultName || null,
+    filters: patterns.length ? [{ name: patternName, extensions }, ALL_FILES_FILTER] : [ALL_FILES_FILTER],
+  };
+}
+
 /** The host of a Run with no window, as the command line: every dialog answers Cancel (DT-067, amendment of 2026-10-28). */
 export const CANCELLING_DIALOGS = Object.freeze({
   chooseFile: async () => null,
   confirm: async () => false,
+  fileDialog: async () => null,
 });

@@ -1063,14 +1063,25 @@ const HOURGLASS =
   poligono([[10.5, 11.5], [21.5, 11.5], [16, 19], [21.5, 26.5], [10.5, 26.5], [16, 19]], "none", INK, 1) +
   poligono([[12.5, 13], [19.5, 13], [16, 18]], EXPRESS_SAND) + poligono([[12.5, 26], [19.5, 26], [16, 22]], EXPRESS_SAND);
 
+/** File Dialog: a page with a folded corner inside a speech bubble. */
+const FILE_IN_BUBBLE =
+  `<path d="M7 11h18a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H15l-4.5 4v-4H7a1.5 1.5 0 0 1-1.5-1.5v-10A1.5 1.5 0 0 1 7 11z" fill="${PAPER}" stroke="${EXPRESS_BLACK}" stroke-width="1" stroke-linejoin="round"/>` +
+  `<path d="M12.5 13.5h5l2.5 2.5v6.5h-7.5z" fill="${PAPER}" stroke="${INK}" stroke-width="1"/><path d="M17.5 13.5v2.5h2.5" fill="none" stroke="${INK}" stroke-width="1"/>` +
+  lleno(14, 18.5, 18.5, 19.5, EXPRESS_SAND) + lleno(14, 20.5, 18.5, 21.5, EXPRESS_SAND);
+
+/** What each Express VI draws inside its frame. */
+const EXPRESS_DRAWINGS = { "time-delay": HOURGLASS, "file-dialog": FILE_IN_BUBBLE };
+
 /** The 32 × 32 icons the nodes of the Express VIs draw, by block. */
-export const EXPRESS_ICONS = { "time-delay": svg(expressFrame(HOURGLASS), `0 0 ${EXPRESS_ICON_SIZE} ${EXPRESS_ICON_SIZE}`) };
+export const EXPRESS_ICONS = Object.fromEntries(Object.entries(EXPRESS_DRAWINGS).map(([block, drawing]) => [block, svg(expressFrame(drawing), `0 0 ${EXPRESS_ICON_SIZE} ${EXPRESS_ICON_SIZE}`)]));
 
 // The palette shows the same icon, centred in its 48 px cell.
 const EXPRESS_PALETTE_MARGIN = (48 - EXPRESS_ICON_SIZE) / 2;
 const EXPRESS_PALETTE_INK = [EXPRESS_PALETTE_MARGIN, EXPRESS_PALETTE_MARGIN, 48 - EXPRESS_PALETTE_MARGIN, 48 - EXPRESS_PALETTE_MARGIN];
-FUNCIONES["time-delay"] = svg48(`<g transform="translate(${EXPRESS_PALETTE_MARGIN} ${EXPRESS_PALETTE_MARGIN})">${expressFrame(HOURGLASS)}</g>`);
-CAJAS["time-delay"] = EXPRESS_PALETTE_INK;
+for (const [block, drawing] of Object.entries(EXPRESS_DRAWINGS)) {
+  FUNCIONES[block] = svg48(`<g transform="translate(${EXPRESS_PALETTE_MARGIN} ${EXPRESS_PALETTE_MARGIN})">${expressFrame(drawing)}</g>`);
+  CAJAS[block] = EXPRESS_PALETTE_INK;
+}
 
 // ——— Representation ———
 //

@@ -607,8 +607,13 @@ svg { display: block; overflow: visible; }
 .pv-campo { box-sizing: border-box; border: 1px solid var(--field-border); background: var(--field-background); display: flex; align-items: center; padding: 0 3px; }
 .pv-campo .caret { display: inline-block; }
 /* The configuration dialog of an Express VI (block-diagram/express-dialog.mjs sets the positions). */
-.pv-dialogo.dialogo-express { font-size: var(--fuente); }
+.pv-dialogo.dialogo-express { font-size: var(--fuente); background: var(--express-dialog-background); }
+.dialogo-express .pv-grupo { border-color: var(--express-dialog-group-border); }
+.dialogo-express .pv-grupo-titulo { background: var(--express-dialog-background); }
 .dialogo-express .pv-campo { position: absolute; padding-right: 15px; }
+.dialogo-express .pv-grupo-titulo { font-weight: 600; }
+.dialogo-express .pv-check.desactivada, .dialogo-express .pv-radio.desactivada { color: var(--placeholder-text); }
+.dialogo-express .pv-check, .dialogo-express .pv-radio { position: absolute; }
 .dialogo-express .pv-spin { position: absolute; right: 1px; top: 1px; bottom: 1px; display: flex; flex-direction: column; border-left: 1px solid var(--field-border); }
 .dialogo-express .pv-spin > div { flex: 1; position: relative; }
 .dialogo-express .pv-spin-up::after, .dialogo-express .pv-spin-down::after { content: ""; position: absolute; left: 50%; top: 50%; margin-left: -3px; border-left: 3px solid transparent; border-right: 3px solid transparent; }

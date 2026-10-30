@@ -98,6 +98,10 @@ const windowDialogs = {
     return typeof chosen === "string" && chosen !== ABORTED ? chosen : null;
   },
   confirm: async (question) => (await askWindow("confirm", question)) === true,
+  fileDialog: async (request) => {
+    const answer = await askWindow("file-dialog", request);
+    return answer && typeof answer === "object" ? answer : null;
+  },
 };
 
 /** Notes a write to a chart, without keeping more than any history can hold. */

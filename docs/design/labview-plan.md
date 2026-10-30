@@ -549,6 +549,14 @@ array or string read by a local variable while another loop writes it is never t
       ([`editor-time-delay-b-compare`](../../labview-captures/reports/2026-10-29-editor-time-delay-b-compare.md)) and
       fixed. 1065 tests green. Left: the context help's "configured as follows" block waits for the Context Help window
       (`configuredAsLines` is ready). Next: (d2) File Dialog.*
+      *(d2) File Dialog done on 2026-10-30, which closes File I/O step 2 but binary files: measured
+      ([`file-dialog-run`](../../labview-captures/reports/2026-10-29-file-dialog-run.md)), its runtime an external
+      wait answered by the system's dialogs (folder, several files, filters, button label, the start folder rules),
+      arrays of paths in the runtime and on the panel, its configuration dialog and node in the editor, compared with
+      LabVIEW ([`editor-file-dialog-compare`](../../labview-captures/reports/2026-10-29-editor-file-dialog-compare.md))
+      and fixed. 1080 tests green. Departures: Folder + New and File or folder use the system's folder picker, not
+      LabVIEW's dialog with "Current Folder"; the LLB check box and Use UTF-8 are greyed with their reason. Next: step 3,
+      VISA over serial; binary files when a lesson asks for them.*
       *Found on the way, to fix as its own step: an I64 or U64 indicator hands its value to the editor as a JavaScript
       number (`deWasm` in `core/runtime/runtime.mjs`), so beyond 2^53 it shows rounded digits where LabVIEW shows them
       exact; the value inside the VI is exact.*

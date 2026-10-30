@@ -25,6 +25,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   undo step ("Undo Change Attribute") and the Delay Time terminal moves into a row under the icon, keeping its wire.
   The node and its right-click menu are drawn as LabVIEW's; the rows the editor cannot do yet are greyed with their reason.
   Dragging the node's bottom edge shows more terminals as rows, and View As Icon draws it as its icon alone.
+- File Dialog, in Functions ▸ File I/O ▸ Advanced File Functions, is the second Express VI: it asks with the system's
+  dialog for a file or a folder, existing, new or either, one or several, with its prompt, button label and pattern,
+  and says whether what was chosen exists, as LabVIEW does (DT-069, DT-067). Arrays of paths now run and show on the
+  panel.
 - Fixed: a path constant, dropped from the palette or made with Create ▸ Constant, is ready to type into at once,
   as in LabVIEW; what was typed into it first was lost, and the Run then gave error 1430.
 - Fixed: the toolbar's Abort tooltip, the Debug Window and the Error List name the VI by its file once it is saved,

@@ -63,7 +63,7 @@ const AGARRE = { x: 4, y: 4 };
 const grabPoint = (block, ctx) => {
   if (FN.isFormatNode({ tipo: block }, ctx.cat)) return FN.formatNodeGrabPoint(block, ctx.cat);
   // An Express VI hangs by the middle of its node (DT-069).
-  if (ExpressNodes.isExpressNode({ tipo: block }, ctx.cat)) return ExpressNodes.expressGrabPoint();
+  if (ExpressNodes.isExpressNode({ tipo: block }, ctx.cat)) return ExpressNodes.expressGrabPoint(block);
   // Unbundle By Name hangs by its centre too (cluster palette, stage 1: dropped at the click, centred).
   return block === UN.BLOCK ? UN.grabPoint(ctx.cat, ctx.medir) : AGARRE;
 };
@@ -1634,16 +1634,17 @@ function nodeVariants(d, ctx) {
 }
 
 /**
- * The palette row of a function's terminal menu is named after the terminal's type. Only the error cluster is
- * done: "Dialog & User Interface Palette", as measured on the error cluster of Unbundle By Name (the same name on
- * a function's terminal is unverified); the other types keep "Numeric Palette".
+ * The palette row of a function's terminal menu is named after the terminal's type. Done: the error cluster, "Dialog & User
+ * Interface Palette", as measured on the error cluster of Unbundle By Name, and a path, "File I/O Palette", as a path's wire
+ * says; on a function's terminal both names are unverified. The other types keep "Numeric Palette".
  */
 function functionTerminalPaletteVariants(d, ctx, root) {
   if (root !== "context.function" || !d.menu.puerto || !ctx) return null;
   const types = Gr.tipos(d.g, ctx.cat);
   const key = `${d.menu.nodo}.${d.menu.puerto}`;
   const type = types.entradas.get(key) ?? types.salidas.get(key);
-  return esError(type) ? { rotulos: new Map([[`${root}.numeric-palette`, UN.typePaletteLabel(type)]]) } : null;
+  const label = esError(type) ? UN.typePaletteLabel(type) : type === PATH ? "File I/O Palette" : null;
+  return label ? { rotulos: new Map([[`${root}.numeric-palette`, label]]) } : null;
 }
 
 /**
@@ -1862,7 +1863,18 @@ export function createOnTerminal(d, ctx, nodo, puerto, kind) {
 export function createOnNode(d, ctx, nodo, item) {
   const made = TC.createForNode(d.g, ctx, { nodo, kinds: TC.ALL_KINDS[item], panelSize: ctx.panelSize });
   if (made.motivo) return withReason(d, made.motivo);
-  return typeIntoCreated({ ...d, g: made.g, aviso: null }, ctx, made.ids);
+  return typeIntoCreated({ ...d, g: insideTheCanvas(made.g, made.ids), aviso: null }, ctx, made.ids);
+}
+
+/**
+ * The stack of objects "All" makes grows upwards from the node's last terminal, so on a node with many terminals near the top
+ * (File Dialog has eleven) it reaches negative coordinates, out of sight. The whole stack moves down, or right, just enough to be
+ * seen; its order and spacing stay. (LabVIEW scrolls the diagram instead; unverified.)
+ */
+function insideTheCanvas(g, ids) {
+  const made = g.nodos.filter((node) => ids.includes(node.id));
+  const [dx, dy] = [Math.max(0, -Math.min(...made.map((node) => node.x))), Math.max(0, -Math.min(...made.map((node) => node.y)))];
+  return dx || dy ? Gr.mover(g, ids, dx, dy) : g;
 }
 
 /** Create ▸ Constant, Control or Indicator on a wire: an unwired object at the point where the menu was opened. */

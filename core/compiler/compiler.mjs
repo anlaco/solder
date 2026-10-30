@@ -128,6 +128,8 @@ const IMPORTACIONES = [
   // Write and Read Delimited Spreadsheet (DT-067 §9): the spreadsheet string and the file in one wait.
   { modulo: "io", nombre: "file_write_spreadsheet", params: Array(16).fill("i32"), results: ["i32"] },
   { modulo: "io", nombre: "file_read_spreadsheet", params: Array(17).fill("i32"), results: ["i32"] },
+  // File Dialog (DT-069): its inputs, its configuration as codes, the error in, its outputs' places, the chain.
+  { modulo: "io", nombre: "file_dialog", params: Array(16).fill("i32"), results: ["i32"] },
   // The path functions (DT-067): the host reads each path's block, applies the rules of the system it runs
   // on (core/model/paths.mjs) and writes the result into its cell. The first parameters are the output cells.
   { modulo: "pth", nombre: "build_path", params: ["i32", "i32", "i32", "i32"], results: [] },
@@ -155,12 +157,12 @@ function spreadsheetCall(e, importName, inputs, arrayType) {
 /** The VISA functions (DT-066): each waits for an instrument, and a Run that has one needs the I/O. */
 const VISA_FUNCTIONS = new Set(["visa-open", "visa-write", "visa-read", "visa-close"]);
 /** The file functions (DT-067): each waits for the disk, served by the same I/O as VISA. */
-const FILE_FUNCTIONS = new Set(["open-create-replace-file", "close-file", "write-to-text-file", "read-from-text-file", "get-file-size", "delete", "write-delimited-spreadsheet-vi", "read-delimited-spreadsheet-vi"]);
+const FILE_FUNCTIONS = new Set(["open-create-replace-file", "close-file", "write-to-text-file", "read-from-text-file", "get-file-size", "delete", "write-delimited-spreadsheet-vi", "read-delimited-spreadsheet-vi", "file-dialog"]);
 /** The nodes that take time: each runs in its own clump and yields while it waits. */
 export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "time-delay", "simple-error-handler", ...VISA_FUNCTIONS, ...FILE_FUNCTIONS]);
 const idImport = (nombre) => IMPORTACIONES.findIndex((i) => i.nombre === nombre);
 /** The imports that may park the clump that calls them (DT-063 §8): the dialogs, the debugger, VISA and files, which wait for the outside. */
-const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error", "visa_open", "visa_write", "visa_read", "visa_close", "file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete", "file_write_spreadsheet", "file_read_spreadsheet"].map(idImport);
+const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error", "visa_open", "visa_write", "visa_read", "visa_close", "file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete", "file_write_spreadsheet", "file_read_spreadsheet", "file_dialog"].map(idImport);
 
 const ins = (op, arg) => (arg === undefined ? { op } : { op, arg });
 
@@ -585,6 +587,8 @@ function delimitedWriteFormat(e, dataIndex) {
 
 /** A file function's `file` input: the refnum or path handle, whether it is a path, and whether it is wired (unwired asks for a dialog). */
 const MS_PER_SECOND = 1000;
+/** How File Dialog's configuration travels to its import: each setting by its index here. */
+export const FILE_DIALOG_CODES = Object.freeze({ selection: ["file", "folder", "file-or-folder"], existence: ["existing", "new", "new-or-existing"] });
 
 /**
  * Time Delay (DT-069): it waits the wired seconds, or the configured ones when the terminal is unwired; it waits
@@ -854,6 +858,14 @@ const BLOQUES = {
       ...optionalHandle(e, 0), ...e.entrada(1), ...e.entrada(2), ...e.entrada(3), ...e.entrada(4), ...e.entrada(6), ...e.entrada(7),
       k32(SPREADSHEET_ELEMENTS.indexOf(representacion(e.tOut(1).array) ?? e.tOut(1).array)),
     ], ["cell", "cell", "cell", "i32", "boolean", "error"]),
+  // File Dialog (DT-069): the strings by handle (empty when unwired), its configuration as codes of FILE_DIALOG_CODES.
+  "file-dialog": (e) => {
+    const config = e.nodo.config ?? {};
+    return fileFunction(e, "file_dialog", [
+      ...optionalHandle(e, 0), ...e.entrada(1), ...e.entrada(3), ...e.entrada(4), ...e.entrada(5), ...e.entrada(6),
+      k32(FILE_DIALOG_CODES.selection.indexOf(config.selection ?? "file")), k32(FILE_DIALOG_CODES.existence.indexOf(config.existence ?? "new-or-existing")), k32(config.multiple ? 1 : 0),
+    ], ["cell", "boolean", "boolean", "error"]);
+  },
   // Paths (DT-067): a constant is its block in the static zone, like a string's.
   "path-constant": (e) => [ins("i32.const", e.cadena(encodePath(e.nodo.config?.value ?? EMPTY_PATH)))],
   "empty-path-constant": (e) => [ins("i32.const", e.cadena(encodePath(EMPTY_PATH)))],
@@ -1910,6 +1922,12 @@ function datosDePanel(t) {
   return {};
 }
 
+/** The panel data of a value of memory type `t` and logical type `logical`: an array of paths says so of its elements. */
+function panelDataOf(t, logical) {
+  const data = datosDePanel(t);
+  return esArray(logical) && logical.array === PATH ? { ...data, elemento: { ...data.elemento, path: true } } : data;
+}
+
 /** La disposición de un cluster con la de sus clusters de dentro, para que el anfitrión lo lea y lo escriba. */
 function disposicionCompleta(t) {
   const d = disposicion(t);
@@ -2422,7 +2440,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       }
       const historyLength = n.tipo === "waveform-chart" ? (n.config?.historyLength ?? DEFAULT_CHART_HISTORY) : null;
       const { record, slot, code } = writeIndicator(module, tIn(0), entrada(0), nuevoLocal, historyLength);
-      indicadores.push({ nodo: id, name: n.name, tipo: tIn(0), record, ...(historyLength && { historyLength, slot }), ...datosDePanel(tIn(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTIn(0) === PATH && { path: true }) });
+      indicadores.push({ nodo: id, name: n.name, tipo: tIn(0), record, ...(historyLength && { historyLength, slot }), ...panelDataOf(tIn(0), logicalTIn(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTIn(0) === PATH && { path: true }) });
       k.cuerpo.push(...code, ...debugHook(id, []));
       return;
     }
@@ -2433,7 +2451,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     const e = { nodo: n, cat, tIn, tOut, logicalTIn, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex };
     if (!asSubVI && PANEL_CONTROLS.includes(n.tipo)) {
       e.controlRecord = module.bufer(recordBytes(slotBytes(tOut(0), esCluster(tOut(0)) ? disposicion(tOut(0)).tam : undefined)), 8);
-      controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), record: e.controlRecord, ...datosDePanel(tOut(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTOut(0) === PATH && { path: true }) });
+      controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), record: e.controlRecord, ...panelDataOf(tOut(0), logicalTOut(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTOut(0) === PATH && { path: true }) });
     }
     try {
       const b = cat.bloque(n.tipo);

@@ -9,12 +9,13 @@
 // 2026-10-29-express-vi-common.md §1, §6).
 //
 // A body is a module with: `SIZE` (the dialog's width and height), `open(node, block)` its state, `key(state, key)` its
-// state after a key typed into it, optionally `click(state, part)` its state after a click on one of its parts (`dialog.express-vi.<part>`), `changes(state)` the configuration an OK sets, and `view(state)` the markup of its
+// state after a key typed into it, optionally `click(state, part)` what a click on one of its parts (`dialog.express-vi.<part>`) means: `{ body }` its new state or `{ explain: true }` for a part that is greyed with a reason (DT-035), and optionally `BUTTONS` where its row of buttons is when it is not the usual one, `changes(state)` the configuration an OK sets, and `view(state)` the markup of its
 // own parts, placed from the dialog's top left corner.
 
 import { configure } from "../../../core/model/express.mjs";
 import { esHueco } from "../common/labview-inventory.mjs";
 import { configureTitle } from "./express-nodes.mjs";
+import * as FileDialog from "./file-dialog-express-dialog.mjs";
 import * as TimeDelay from "./time-delay-dialog.mjs";
 
 export const DIALOG_ID = "dialog.express-vi";
@@ -23,7 +24,7 @@ export const DIALOG_ID = "dialog.express-vi";
 export const UNDO_STEP_NAME = "Change Attribute";
 
 /** The bodies of the Express VIs whose dialog is done, by block. */
-const BODIES = { "time-delay": TimeDelay };
+const BODIES = { "time-delay": TimeDelay, "file-dialog": FileDialog };
 
 /** Whether the Express VI `block` has its configuration dialog done. */
 export const hasDialog = (block) => block in BODIES;
@@ -66,8 +67,9 @@ export function click(dialog, id) {
   if (part === "ok") return { accept: true };
   if (part === "cancel" || part === "close") return { cancel: true };
   if (part === "help") return { explain: true };
-  const body = BODIES[dialog.bloque].click?.(dialog.body, part);
-  return body ? { dialog: { ...dialog, body } } : null;
+  const answer = BODIES[dialog.bloque].click?.(dialog.body, part);
+  if (answer?.explain) return { explain: true };
+  return answer?.body ? { dialog: { ...dialog, body: answer.body } } : null;
 }
 
 /**
@@ -91,11 +93,12 @@ const holeClass = (inv, id) => (esHueco(inv.resolver(id) ?? { estado: "todo" }) 
 export function view(inv, dialog) {
   const body = BODIES[dialog.bloque];
   const { width, height } = body.SIZE;
-  const buttonTop = height - FRAME.buttonsBottom - FRAME.button.height;
+  const buttonBox = body.BUTTONS ?? FRAME.button;
+  const buttonTop = height - FRAME.buttonsBottom - buttonBox.height;
   const buttons = [{ key: "ok", label: "OK", defaultButton: true }, { key: "cancel", label: "Cancel" }, { key: "help", label: "Help" }]
-    .map(({ key: part, label, defaultButton }) => `<div class="pv-boton${defaultButton ? " defecto" : ""}${holeClass(inv, `${DIALOG_ID}.${part}`)}" data-id="${DIALOG_ID}.${part}" style="left:${px(FRAME.button[part])};top:${px(buttonTop)};width:${px(FRAME.button.width)};height:${px(FRAME.button.height)}">${label}</div>`)
+    .map(({ key: part, label, defaultButton }) => `<div class="pv-boton${defaultButton ? " defecto" : ""}${holeClass(inv, `${DIALOG_ID}.${part}`)}" data-id="${DIALOG_ID}.${part}" style="left:${px(buttonBox[part])};top:${px(buttonTop)};width:${px(buttonBox.width)};height:${px(buttonBox.height)}">${label}</div>`)
     .join("");
   return `<div class="pv-velo"><div class="pv-dialogo dialogo-express" data-dialogo="${DIALOG_ID}" style="width:${px(width)};height:${px(height)}">` +
     `<div class="pv-titulo" style="height:${px(FRAME.titleHeight)}"><span>${esc(dialog.titulo)}</span><span class="pv-cerrar" data-id="${DIALOG_ID}.close">✕</span></div>` +
-    `${body.view(dialog.body)}${buttons}</div></div>`;
+    `${body.view(dialog.body, inv)}${buttons}</div></div>`;
 }

@@ -15,6 +15,7 @@
 // The elements carry ARIA roles (button, switch, radio) instead of native buttons and inputs, which would take the
 // keyboard focus away from the editor; typing is drawn by the editor as in Old School.
 
+import { PATH } from "../../../core/model/types.mjs";
 import { browseFolderGlyph, pathCellGlyph, visaIoGlyph } from "../common/glyphs.mjs";
 
 /** Every kind of object an HTML panel draws: each one has rules in plain.css (DT-058 §3, a test checks it). */
@@ -142,7 +143,9 @@ export function arrayElementHtml({ address, place, defined, editing, elementType
   const inside =
     elementType === "boolean"
       ? `<span class="sd-element-boolean" role="switch" aria-checked="${!!on}">${valueHtml}</span>`
-      : `<span class="sd-field${elementType === "string" ? " sd-element-string" : ""}"><span class="sd-value">${valueHtml}</span></span>`;
+      : elementType === PATH
+        ? `<span class="sd-path-cell"><span class="sd-path-glyph" aria-hidden="true">${pathCellGlyph(false)}</span></span><span class="sd-field sd-element-string"><span class="sd-value">${valueHtml}</span></span>`
+        : `<span class="sd-field${elementType === "string" ? " sd-element-string" : ""}"><span class="sd-value">${valueHtml}</span></span>`;
   const step = isControl && elementType !== "string" && elementType !== "boolean" ? DECORATIVE_INCREMENTER : "";
   return `<span class="${classes.join(" ")}" data-k="${address}" style="left:${px(place.x)};top:${px(place.y)};width:${px(place.width)};height:${px(place.height)}">${step}${inside}</span>`;
 }

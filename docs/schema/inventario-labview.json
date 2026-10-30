@@ -520,6 +520,10 @@
     "express-a-subvi": {
       "desc": "converting an Express VI to a standard subVI (Open Front Panel), which needs a VI generated from its configuration",
       "ref": "design/05-decisions.md DT-069 §7"
+    },
+    "express-llb": {
+      "desc": "LLBs and packed project libraries, which Solder does not have",
+      "ref": "design/05-decisions.md DT-069"
     }
   },
   "entradas": [
@@ -5908,9 +5912,9 @@
     {
       "id": "palette.functions.programming.file-io.advanced-file-functions.file-dialog",
       "etiqueta": "File Dialog",
-      "estado": "todo",
-      "labview": "Shows the system's dialog to choose a file and gives the path chosen.",
-      "necesita": "dialogos-de-archivo",
+      "estado": "built",
+      "prueba": "test/editor/file-dialog-express-nodes.test.mjs::File Dialog is placed from Advanced File Functions and opens its configuration dialog",
+      "bloque": "file-dialog",
       "captura": "file-io/af2_s.png"
     },
     {
@@ -19997,6 +20001,71 @@
       "estado": "built",
       "prueba": "test/editor/express-vi-nodes.test.mjs::the configuration dialog opens as Time Delay is dropped and Cancel keeps the node unconfigured",
       "captura": "express-vi/td-dlg.png"
+    },
+    {
+      "id": "dialog.express-vi.limit",
+      "etiqueta": "Limit selection to single item",
+      "estado": "built",
+      "prueba": "test/editor/file-dialog-express-nodes.test.mjs::File Dialog's configuration dialog maps its choices to the node's keys",
+      "captura": "file-io/file-dialog/config-dialog.png"
+    },
+    {
+      "id": "dialog.express-vi.selection-file",
+      "etiqueta": "File",
+      "estado": "built",
+      "prueba": "test/editor/file-dialog-express-nodes.test.mjs::File Dialog's configuration dialog maps its choices to the node's keys",
+      "captura": "file-io/file-dialog/config-dialog.png"
+    },
+    {
+      "id": "dialog.express-vi.selection-folder",
+      "etiqueta": "Folder",
+      "estado": "built",
+      "prueba": "test/editor/file-dialog-express-nodes.test.mjs::File Dialog's configuration dialog maps its choices to the node's keys",
+      "captura": "file-io/file-dialog/config-dialog.png"
+    },
+    {
+      "id": "dialog.express-vi.selection-file-or-folder",
+      "etiqueta": "File or folder",
+      "estado": "built",
+      "prueba": "test/editor/file-dialog-express-nodes.test.mjs::File Dialog's configuration dialog maps its choices to the node's keys",
+      "captura": "file-io/file-dialog/config-dialog.png"
+    },
+    {
+      "id": "dialog.express-vi.existence-existing",
+      "etiqueta": "Existing",
+      "estado": "built",
+      "prueba": "test/editor/file-dialog-express-nodes.test.mjs::File Dialog's configuration dialog maps its choices to the node's keys",
+      "captura": "file-io/file-dialog/config-dialog.png"
+    },
+    {
+      "id": "dialog.express-vi.existence-new",
+      "etiqueta": "New",
+      "estado": "built",
+      "prueba": "test/editor/file-dialog-express-nodes.test.mjs::File Dialog's configuration dialog maps its choices to the node's keys",
+      "captura": "file-io/file-dialog/config-dialog.png"
+    },
+    {
+      "id": "dialog.express-vi.existence-new-or-existing",
+      "etiqueta": "New or existing",
+      "estado": "built",
+      "prueba": "test/editor/file-dialog-express-nodes.test.mjs::File Dialog's configuration dialog maps its choices to the node's keys",
+      "captura": "file-io/file-dialog/config-dialog.png"
+    },
+    {
+      "id": "dialog.express-vi.llb-files",
+      "etiqueta": "Allow selection of files in LLBs and packed project libraries",
+      "estado": "todo",
+      "labview": "Lets the dialog choose files inside LLBs and packed project libraries.",
+      "necesita": "express-llb",
+      "captura": "file-io/file-dialog/config-dialog.png"
+    },
+    {
+      "id": "dialog.express-vi.use-utf-8",
+      "etiqueta": "Use UTF-8",
+      "estado": "elsewhere",
+      "labview": "Converts the function to UTF-8 strings; it cannot be configured back to system encoding.",
+      "solder": "Solder's strings are UTF-8 already (DT-042 §6), so there is nothing to convert.",
+      "captura": "file-io/file-dialog/config-dialog.png"
     },
     {
       "id": "dialog.express-vi.help",

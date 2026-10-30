@@ -33,7 +33,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [062](#dt-062) | Until 1.0 every beta is published from `main`: a feature raises MINOR, a fix raises PATCH | Accepted · in use |
 | [063](#dt-063) | A Run uses every core: a pool of workers over one shared memory; independent Runs keep separate memories | Accepted · not implemented |
 | [068](#dt-068) | A wire with several sinks is a tree from its geometry: the junction dot is where routes part, never stored | Accepted · implemented |
-| [069](#dt-069) | An Express VI is a catalog node configured in its `config` and compiled to WebAssembly; lean: Time Delay and File Dialog first, reviewed with the community before 1.0 | Accepted · not implemented |
+| [069](#dt-069) | An Express VI is a catalog node configured in its `config` and compiled to WebAssembly; lean: Time Delay and File Dialog first, reviewed with the community before 1.0 | Accepted · implemented (Time Delay, File Dialog) |
 
 ## The 34 Red decisions
 
@@ -3096,6 +3096,10 @@ The mechanism is kept lean: File Dialog and Time Delay first, dynamic data and t
 - Measured since (`2026-10-29-time-delay.md`): Time Delay waits also with an error in, which passes unchanged; a
   wired value wins over the configuration; 0, a negative number and NaN do not wait; File Dialog placed from the
   palette opens its dialog. Still unverified: Redo of a reconfiguration, how a fraction of a millisecond is rounded.
+- File Dialog (2026-10-30, `2026-10-29-file-dialog-run.md`): with an error in it shows no dialog; a warning passes on
+  an OK and a Cancel replaces it with error 43, whose source is `File Dialog->` and the VI, ended by CR LF; its title
+  follows what it selects; a start path that does not exist opens its nearest existing folder, or the Desktop. Its
+  folder modes other than Folder + Existing use the system's folder picker (DT-067's amendment of 2026-10-29, point 7).
 - Taken while building the editor (stage A, 2026-10-29), small enough to follow from the points above: the block's
   `express` section also names the Express VI (`name`) and its palette (`palette`), which the dialog's title, the
   caption and the menu's palette row show; `config.caption` is a node's own caption, the name by default; an

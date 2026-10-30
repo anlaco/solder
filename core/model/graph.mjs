@@ -103,14 +103,18 @@ export function cargarCatalogo(datos) {
 }
 
 /**
- * A port whose type a node's menu changes, as Read Lines makes Read from Text File's text an array of
- * strings (measured): `"type-if-config": { "<config key>": <type when it is on> }`.
+ * A port whose type a node's menu or configuration changes, as Read Lines makes Read from Text File's text an
+ * array of strings (measured): `"type-if-config": { "<config key>": <type when it is on> }`, and
+ * `"label-if-config"` the same for its label.
  */
 function withTypeOfConfig(port, nodo) {
   const byConfig = port["type-if-config"];
   if (!byConfig) return port;
   const [key, type] = Object.entries(byConfig).find(([configKey]) => nodo.config?.[configKey]) ?? [];
-  return key === undefined ? port : { ...port, type };
+  if (key === undefined) return port;
+  // And its label, as File Dialog's "selected path" becomes "selected paths" (measured).
+  const label = port["label-if-config"]?.[key];
+  return label === undefined ? { ...port, type } : { ...port, type, label };
 }
 
 /**
