@@ -1,7 +1,7 @@
 # 05 — Editor interaction
 
 > Status: **DRAFT** — pending review
-> Normative. Defines **how a VI is manipulated**: mouse, keyboard, dialogs.
+> Normative. Defines **how an OVI is manipulated**: mouse, keyboard, dialogs.
 > [`06-visual.md`](06-visual.md) defines how it **looks**; this one, how it is **used**.
 
 ## 1. Scope
@@ -84,7 +84,7 @@ most specific to most general:
 
 > **Rule 26.** Dragging a node **into or out of** a structure
 > **changes which scope it belongs to**, as in LabVIEW: when dropped, the node belongs to
-> the smallest structure that contains its center, or to the VI's diagram if it
+> the smallest structure that contains its center, or to the OVI's diagram if it
 > falls in none. The same applies when placing a node from the palette and when dropping
 > a structure around nodes already placed, which enter it. The
 > membership is still explicit in the file (`dentro`, DT-041): what
@@ -249,7 +249,7 @@ menu is broken down, its zoom entries will go as `never` citing this rule.)*
 
 ## 7. Synchronization between canvases
 
-Front Panel and Block Diagram are two views of the **same** VI, not two documents.
+Front Panel and Block Diagram are two views of the **same** OVI, not two documents.
 
 > **Rule 38.** Creating a control or indicator on the Front Panel **MUST** create its
 > terminal node on the Block Diagram, and vice versa.
@@ -327,7 +327,7 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > shows them selected or not, except while typing), and the string control's own map
 > (taken as the numeric's, unverified).
 
-> **Rule 40d — Run mode.** While the VI runs, both windows are in Run
+> **Rule 40d — Run mode.** While the OVI runs, both windows are in Run
 > mode: the Run arrow is filled, Abort lights up, the editing
 > tools disappear (font, align, distribute, size, order) and the panel
 > loses the grid. On the panel, a click **actuates** the controls according to their
@@ -338,9 +338,9 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > actions, greyed out. Ctrl+M (Run mode without running) and the right-click menu in
 > Run mode, not done.
 
-> **Rule 40m — An object exists when it is dropped; typing a value or running does not change the saved VI.**
+> **Rule 40m — An object exists when it is dropped; typing a value or running does not change the saved OVI.**
 > A control or indicator dropped on the panel (and a string constant dropped on
-> the diagram) is in the VI at once, with its terminal in the diagram, in both
+> the diagram) is in the OVI at once, with its terminal in the diagram, in both
 > windows and with the modified mark; the label (or text) that opens in edit mode
 > only changes it, as LabVIEW does. Save, Save As, Exit, Run and switching
 > windows first commit whatever is being typed (tests in
@@ -348,13 +348,13 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >
 > **Current value and default value (DT-053).** Each panel object has a *default*
 > value, the one the file saves, and a *current* value. Operating a control, in
-> edit mode (Rule 40c) or while the VI runs, changes only its current value: it is
-> one step to undo (LabVIEW calls it "Data Change") and does not mark the VI
+> edit mode (Rule 40c) or while the OVI runs, changes only its current value: it is
+> one step to undo (LabVIEW calls it "Data Change") and does not mark the OVI
 > modified; after save and reopen the object shows its default again. The Run
 > starts from the current values, and when it ends the controls keep what was
 > operated and each indicator keeps what it shows as its current value; a Latch
 > that was read is FALSE again in both windows (Rule 20e). Only these change the
-> default, each as one step to undo that marks the VI modified: Edit ▸ Make Current
+> default, each as one step to undo that marks the OVI modified: Edit ▸ Make Current
 > Values Default (every object) and, on the panel with a selection, Make Selected
 > Values Default (the selection); Data Operations ▸ Make Current Value Default (the
 > object right-clicked, control or indicator). Edit ▸ Reinitialize Values to Default
@@ -471,7 +471,7 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   `"Init", "Heat"`. Editing the label: for a string, a bare word is that string,
 >   commas inside quotes belong to the string; for an enum, an item name or number
 >   (shown afterwards as the name). Add Case After/Before on a string Case adds a frame
->   with no value (blank label; the core reports the VI broken); on an enum Case it takes
+>   with no value (blank label; the core reports the OVI broken); on an enum Case it takes
 >   the first item without a frame. Border menu: *Case Insensitive Match* (check item,
 >   string only, between Make This The Default Case and Remove and Rewire; on, it
 >   draws a small pink `A=a` at the bottom-left corner of the frame); Radix is
@@ -562,7 +562,7 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > - **String control and indicator** (`panel-string-editando.png`): a box of
 >   100 × 24 px with the bevel of the numeric ones, white on the control and gray on the
 >   indicator, with the label "String" above (and "String 2"…). It is typed into the
->   control with a click, in edit mode **and in Run mode** (the VI reads the new value);
+>   control with a click, in edit mode **and in Run mode** (the OVI reads the new value);
 >   Enter starts a new line; *Enter Text* or a click outside confirm. In edit mode the
 >   toolbar shows the *Enter Text* mark. Its terminal on the diagram is pink, with
 >   "abc".
@@ -612,7 +612,7 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 > - *Born empty.* The palette's Array (panel) and Array Constant (diagram) are `{ array: "void" }`. The panel shell is
 >   80 × 80 px with a 4 px bevel round `#a6a6a6`, the index on its left and level with it (Rule 40j); its terminal is 38 × 38 with a black frame,
 >   the generic array drawing and no type tag. The constant is 82 × 50: a 50 × 50 shell with a black double line and a
->   white interior, the index (about 32 × 21) on its left. The VI is broken: "Array 'Array': Control contains no
+>   white interior, the index (about 32 × 21) on its left. The OVI is broken: "Array 'Array': Control contains no
 >   elements and is undefined" under **Front Panel Errors**, and "Array Constant: Constant has undefined type".
 > - *No adaptation.* An empty array never takes a type from a wire: into a typed array the wire breaks ("array of
 >   void"); into Array Size, which takes any array, the wire is a 1 px dashed black line and Array Size has
@@ -635,7 +635,7 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   dragged out nor cut": a fast drag moves nothing). A press on the 4 px edge of a control's element selects the element
 >   alone, with its own marching ants (inside it, the element is typed into); an indicator's element is selected wherever
 >   it is pressed. With the element selected, Edit ▸ Cut, Copy and Delete are enabled: **Delete** and **Cut** leave the
->   array empty again, `{ "array": "void" }`, with its value lost and its wires kept to break, so the VI is broken again
+>   array empty again, `{ "array": "void" }`, with its value lost and its wires kept to break, so the OVI is broken again
 >   ("Control contains no elements and is undefined"); Cut keeps the element on the clipboard as the loose control it
 >   would become. **Dragging** the element out of the array and releasing it outside makes it a loose control or
 >   indicator of its type where it was dropped (label "Numeric"), with its own new terminal, and empties the array the
@@ -725,9 +725,9 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   first; with no match one greyed row stays (the item highlighted last, or the first) and Enter
 >   picks it. Up and Down move the highlight and wrap; a click highlights, a double click or Enter
 >   picks and closes; Escape and the X close with no change, and a click outside does not. Picking
->   is one step to undo: on the constant it changes the value and marks the VI modified, on a
+>   is one step to undo: on the constant it changes the value and marks the OVI modified, on a
 >   control or indicator only its current value (DT-053). *Differences:* the window is centred on
->   the VI window, not on the screen; the undo label is "Undo"; Enter with nothing highlighted
+>   the OVI window, not on the screen; the undo label is "Undo"; Enter with nothing highlighted
 >   closes it with no change (unverified in LabVIEW).
 > - **Edit Items…** is one dialog for the constant, the control and the indicator: "Enum Constant
 >   Properties" (the panel objects' title is unverified), 500 × 500, five tabs — Appearance, Data
@@ -794,12 +794,12 @@ Front Panel and Block Diagram are two views of the **same** VI, not two document
 >   (stretched like Compound Arithmetic, born with 2 inputs and measures 32 × 18),
 >   Error Cluster From Error Code and Error Cluster Constant; the rest, greyed out with their
 >   reason; the five folders (Multiple Errors, Events, Menu, Cursor and Help), not opened.
-> - **The two error dialogs** are modal over the window that launched the VI, with no
->   title text (program icon and ✕ in its bar), and the VI **waits** until they are
+> - **The two error dialogs** are modal over the window that launched the OVI, with no
+>   title text (program icon and ✕ in its bar), and the OVI **waits** until they are
 >   answered. The automatic handling one (`44b-dialogo-x3.png`): red ✘ icon, "Error N
 >   occurred at …" and "Possible reason(s):" in bold, the text, the detail of the
 >   source, "Search ni.com for error" (greyed out) and the buttons **Continue**, the factory default
->   (Enter), and **Stop**; Stop aborts the VI. The Simple Error Handler one
+>   (Enter), and **Stop**; Stop aborts the OVI. The Simple Error Handler one
 >   has two forms: for a **defined code** it looks like the automatic one (icon, bold, the source
 >   with its call chain, the greyed link) but its only button is **Continue**, which closes it
 >   (`labview-captures/reports/2026-10-15-seh-85.md`, Instrument Protocol with `FOO`); for an
@@ -820,18 +820,18 @@ mechanism.)*
 
 ## 8. Editing state
 
-> **Rule 41.** The editor **MUST** distinguish a VI with unsaved changes and
+> **Rule 41.** The editor **MUST** distinguish an OVI with unsaved changes and
 > **MUST** ask for confirmation before discarding them.
 
 > **Rule 41 is implemented in the web editor** (2026-09-30,
 > `editor/electron/main.mjs`): each window tells the main process how
-> the VI stands after each change; if it does not match what is saved, the title carries
-> an asterisk, as in LabVIEW, and before opening another VI or closing the panel it
+> the OVI stands after each change; if it does not match what is saved, the title carries
+> an asterisk, as in LabVIEW, and before opening another OVI or closing the panel it
 > asks whether to save, not save or not continue. An automatic test is missing: it has been
 > verified in the application.
 
 > **Rule 42.** The editor **MUST** offer undo and redo on every
-> operation that modifies the VI.
+> operation that modifies the OVI.
 
 > **Rule 42 is implemented for the diagram** (2026-09-30,
 > `editor/src/block-diagram/undo-history.mjs`): since the graph is never mutated, each stable state
@@ -859,7 +859,7 @@ the editor's code.
 > *placeholder* is shown disabled; it **MUST NOT** be omitted.
 
 > **Rule 53.** An element whose *verdict* is not `built` **MUST NOT** modify the
-> VI or start any action. Activating it —with the mouse, from a menu or with
+> OVI or start any action. Activating it —with the mouse, from a menu or with
 > its keyboard shortcut— only shows its explanation.
 
 *(The shortcut matters. Someone coming from LabVIEW will press `Ctrl+Z` without looking at the menu. A
@@ -902,7 +902,7 @@ would have required naming a test that did not exist.)*
 | 28, 29 deleting takes the wires with it | Test: after deleting no orphan wire remains | **Rule 28 verified** ("deleting a node deletes its wires"); rule 29: a loop goes with everything that is its own, but still without asking for confirmation |
 | 40f Case Structure | Tests in `diagram-view.test.mjs` and `diagram-editing.test.mjs` (measurements, frames, menus, compile and run) | **Verified**; what is unverified, in the rule itself |
 | 40g Flat and Stacked Sequence | Tests in `diagram-view.test.mjs` (film border, frames, tunnels, selector and local variables), `diagram-editing.test.mjs` (place, stretch, frames, menus, change shape, compile and run) and `structures.test.mjs` (widths in the file) | **Verified**; what is unverified, in the rule itself |
-| 40h Strings on the diagram and on the panel | Tests in `palettes.test.mjs` (each String function with its terminals and measurements), `window-state.test.mjs` (the four palettes), `front-panel.test.mjs` (control and indicator), `diagram-editing.test.mjs` (multi-line constant, Concatenate Strings, a string VI made with the mouse that runs) and `qvi-round-trip.test.mjs` (save and open) | **Verified**; what is unverified, in the rule itself |
+| 40h Strings on the diagram and on the panel | Tests in `palettes.test.mjs` (each String function with its terminals and measurements), `window-state.test.mjs` (the four palettes), `front-panel.test.mjs` (control and indicator), `diagram-editing.test.mjs` (multi-line constant, Concatenate Strings, a string OVI made with the mouse that runs) and `qvi-round-trip.test.mjs` (save and open) | **Verified**; what is unverified, in the rule itself |
 | 40i The error cluster | Tests in `error-cluster.test.mjs` (the wire, the constant and its edits, the two dialogs, Simple Error Handler and Merge Errors at 32 × 18), `front-panel.test.mjs` (Error In and Error Out) and `window-state.test.mjs` (the two palettes) | **Verified**; what is unverified, in the rule itself |
 | 40j One-dimensional arrays | Tests in `front-panel.test.mjs` (array control and indicator, their shells and index), `diagram-view.test.mjs` (the constant's index and greyed element), `diagram-editing.test.mjs` (array constant, menu of the indexed tunnels), `window-state.test.mjs` (the Array subpalette), `palettes.test.mjs` (its functions) and `qvi-round-trip.test.mjs` | **Verified** for what was measured; the gesture of stretching the panel array and the array's menu, unverified (see the rule) |
 | 40j bis An array is born empty and its element types it | `test/core/array-typing.test.mjs`, `front-panel.test.mjs` and `diagram-editing.test.mjs` (empty shells, dropping an element, no nesting, the terminal's menu and View As Icon, taking the panel element out) | **Verified** for what was measured; see the rule's unverified points |
@@ -917,7 +917,7 @@ would have required naming a test that did not exist.)*
 | 42 undo | Test "undo goes back a whole gesture" (`test/editor/diagram-editing.test.mjs`) | **Verified** on the diagram |
 | 52, 55 what is declared is painted, and what is painted is declared | Screenless painting test against the inventory: each painted element has its entry, and each entry is painted in its order (`test/editor/window-view.test.mjs`) | **Verified** for the *Front Panel* and the *Block Diagram* |
 | 52 where LabVIEW puts it | Position test: each element of the toolbar, within 2 px at most of its place in the captures ("the toolbar falls where it does in LabVIEW") | **Verified** for the *Front Panel* and the *Block Diagram* |
-| 53 a placeholder does not act | Interaction test: the click, the right-click on the canvas and a shortcut only open the explanation, and Esc closes it (`test/editor/window-state.test.mjs`) | **Verified**. That it does not change the VI is trivial as long as there is no model |
+| 53 a placeholder does not act | Interaction test: the click, the right-click on the canvas and a shortcut only open the explanation, and Esc closes it (`test/editor/window-state.test.mjs`) | **Verified**. That it does not change the OVI is trivial as long as there is no model |
 | 53b a declared container opens | Tests of the function palette: right-click on the diagram opens it; a category with content opens and closes; one without content is only explained (`test/editor/window-state.test.mjs`) | **Verified** |
 | 54 the explanation is complete | Inventory schema: each verdict requires its field and only its own; explanation test (`test/editor/labview-inventory.test.mjs`) | **Verified** |
 | 56 `built` requires proof | Schema: `built` requires `prueba`. Test: the proof exists and the block is in `blocks.json` | **Verified**. The only `built` ones are the palette's double arrows, with their test |
@@ -932,13 +932,13 @@ would have required naming a test that did not exist.)*
 | 4 | Selection by drag rectangle | Unspecified. The web editor has it like LabVIEW: it selects what the rectangle touches, and `Shift` adds |
 | 5 | Break the inventory down area by area, with captures of the reference in front (DT-035 §5 and §8). **Started**: the *Project Explorer*, the *Front Panel*, the *Block Diagram* and the function palette, 127 entries; the contents of the menus, not yet | That rules 52–56 have something to check |
 
-## 12. SubVIs (DT-045, 2026-10-03)
+## 12. SubOVIs (DT-045, 2026-10-03)
 
 Measured in LabVIEW 2026 Q3 (`labview-captures/subvi/`).
 
-> **Rule 66 — Several VIs open.** Each open VI has its own Front Panel and Block Diagram, its own file and its
-> own unsaved changes (asterisk and "Save changes?" per VI). File ▸ Open opens another VI in new windows, or
-> brings forward the windows of one already open; File ▸ Exit asks about each VI with unsaved changes and quits (rule 98). Tested in
+> **Rule 66 — Several OVIs open.** Each open OVI has its own Front Panel and Block Diagram, its own file and its
+> own unsaved changes (asterisk and "Save changes?" per OVI). File ▸ Open opens another OVI in new windows, or
+> brings forward the windows of one already open; File ▸ Exit asks about each OVI with unsaved changes and quits (rule 98). Tested in
 > `test/editor/vi-registry.test.mjs`.
 
 > **Rule 67 — Connector pane.** The Front Panel shows the pattern 4-2-2-4 (cells 0-3 left, 4-5 and 6-7 middle,
@@ -956,7 +956,7 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/subvi/`).
 > middle cells (ours: top for 4 and 6, bottom for 5 and 7); the default cell of a terminal written without one.
 > Tested in `test/editor/connector-pane.test.mjs` and `test/editor/connector-patterns.test.mjs`.
 
-> **Rule 68 — SubVI node.** Select a VI... (Functions palette) opens the file dialog; the VI follows the cursor
+> **Rule 68 — SubOVI node.** Select an OVI... (Functions palette) opens the file dialog; the OVI follows the cursor
 > and a click drops it. The node is the 32 × 32 icon of the callee; its terminals sit on the edge next to their
 > connector cell, with the wire touching the border. Double click or Open Front Panel opens the callee's windows.
 > The other menu rows are placeholders. Tested in `test/editor/subvi-nodes.test.mjs`.
@@ -965,13 +965,13 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/subvi/`).
 > absolute path, and every save (first save or Save As elsewhere) rebases it relative to the new file.
 > Tested in `test/editor/vi-paths.test.mjs`.
 
-> **Rule 70 — Hierarchy in the editor.** A VI is loaded with its subVIs (`loadHierarchy`); Run compiles what is on
-> disk and keeps one `estado` per top-level VI between Runs. When a subVI is saved, the open callers rebuild their
+> **Rule 70 — Hierarchy in the editor.** An OVI is loaded with its subOVIs (`loadHierarchy`); Run compiles what is on
+> disk and keeps one `estado` per top-level OVI between Runs. When a subOVI is saved, the open callers rebuild their
 > view; wires to ports that no longer exist **stay, broken, with a loose end where the terminal was drawn**, and the caller is
-> not marked modified (rule 91; measured, DT-046). A missing subVI or a recursive call breaks the Run arrow and Run reports why.
+> not marked modified (rule 91; measured, DT-046). A missing subOVI or a recursive call breaks the Run arrow and Run reports why.
 > Tested in `test/end-to-end/subvi-editor.test.mjs` and `test/editor/subvi-nodes.test.mjs`.
 
-> **Rule 71 — VI Properties.** File ▸ VI Properties (Ctrl+I) and the connector and icon menus open a modal dialog on
+> **Rule 71 — OVI Properties.** File ▸ OVI Properties (Ctrl+I) and the connector and icon menus open a modal dialog on
 > Execution; Non-reentrant and Preallocated clone work and write `vi.execution`; the rest is greyed with its reason.
 > Tested in `test/editor/vi-properties.test.mjs`.
 
@@ -1009,7 +1009,7 @@ unverified is unverified here too.
 > **Rule 73 — The wire menu.** Right-click on a wire, or on a terminal that has one (not a structure's border), opens
 > the wire's menu (`context.wire`): Clean Up Wire, Create Wire Branch, Delete Wire Branch, | Visible Items ▸,
 > | Insert ▸, | Numeric Palette ▸, Create ▸, | Add Probe, Custom Probe ▸, Add Breakpoint, | Description and
-> Tip.... Create ▸ is Constant, Control, Indicator, Create SubVI from Selected Wires and Channel Writer...; the three
+> Tip.... Create ▸ is Constant, Control, Indicator, Create SubOVI from Selected Wires and Channel Writer...; the three
 > that work make the object of the wire's type, centred on the click's x: the **Indicator is wired** to the wire's source
 > (a branch) and the Control and the Constant are left unwired; a control or indicator starts 1 px below the click and is
 > named after the source's output, or by its default name ("Numeric 2") when the source has none, as a tunnel; a constant
@@ -1031,9 +1031,9 @@ unverified is unverified here too.
 > panel's left column, with a numbered label ("x 5"); pasted on the panel, a control is centred on the pointer, numbered,
 > and gets its terminal on the diagram, unwired, 8 px down and to the right of the original's (unverified); a
 > diagram-only fragment pasted on the panel takes just its controls and indicators. One paste is one step of undo. The
-> clipboard is shared by every open VI through the main process (`clipboard:write` and `clipboard:read`; it is kept as
-> JSON text, not on the system clipboard, so what else the user copied does not matter): a subVI node pasted in
-> another VI has its stored path rebased to the file it is pasted in and its callee read first. Cut, Copy and Delete
+> clipboard is shared by every open OVI through the main process (`clipboard:write` and `clipboard:read`; it is kept as
+> JSON text, not on the system clipboard, so what else the user copied does not matter): a subOVI node pasted in
+> another OVI has its stored path rebased to the file it is pasted in and its callee read first. Cut, Copy and Delete
 > are greyed with nothing selected (Delete also works on a selected wire); Paste is greyed with nothing copied
 > (unverified: the captures had something copied). Select All selects every node and wire of the diagram, or every
 > panel object. Tested in `test/editor/create-and-paste.test.mjs`.
@@ -1041,13 +1041,13 @@ unverified is unverified here too.
 > **Rule 75 — The Edit menu.** Undo Ctrl+Z, Redo Ctrl+Shift+Z | Cut, Copy, Paste, Paste Special Ctrl+Shift+V, Delete,
 > Select All | Make Current Values Default, Reinitialize Values to Default | Customize Control..., Import Picture to
 > Clipboard..., Set Tabbing Order... | Remove Broken Wires from Selection Ctrl+B, Clean Up Selection Ctrl+U, Remove
-> Breakpoints from Hierarchy, Create VI Snippet from Selection, Create SubVI | Enable Diagram Grid Alignment Ctrl+#,
-> Show Hidden Controls While Editing, Align Items Ctrl+Shift+A, Distribute Items Ctrl+Shift+D | VI Revision History...
+> Breakpoints from Hierarchy, Create OVI Snippet from Selection, Create SubOVI | Enable Diagram Grid Alignment Ctrl+#,
+> Show Hidden Controls While Editing, Align Items Ctrl+Shift+A, Distribute Items Ctrl+Shift+D | OVI Revision History...
 > Ctrl+Y, Run-Time Menu..., Adjust Pane Origin | Find and Replace... Ctrl+F, Show Search Results Ctrl+Shift+F. On the
 > panel: Make Selected Values Default, Reinitialize Selected Values to Default, Clean Up Panel, Disable Panel Grid
 > Alignment; Customize Control... and Adjust Pane Origin are enabled there and greyed on the diagram (ours: all are
 > placeholders with their reason). With nothing selected the diagram's "...from Selection" rows read "Remove Broken
-> Wires" and "Clean Up Diagram", and Create VI Snippet and Create SubVI are greyed. Undo and Redo work (greyed with no step).
+> Wires" and "Clean Up Diagram", and Create OVI Snippet and Create SubOVI are greyed. Undo and Redo work (greyed with no step).
 > Unverified: LabVIEW names the step in the row ("Undo Create"); ours says "Undo". Tested in `test/editor/edit-menu.test.mjs`.
 
 > **Rule 76 — Ctrl+drag.** Dragging the selection with Ctrl held leaves the originals and carries copies of them,
@@ -1144,10 +1144,10 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/graphs/`, with `REPORT.md`); how 
 > Tested in `test/editor/graphs.test.mjs`.
 >
 > **Rule 80 — A chart keeps its history.** Each write to a Waveform Chart adds points to its history (a number, one; a 1D array, all of
-> them at once, 72; a cluster, one per plot, 74); the history lasts after the VI stops and through the next Runs (the X axis goes on, 71),
+> them at once, 72; a cluster, one per plot, 74); the history lasts after the OVI stops and through the next Runs (the X axis goes on, 71),
 > and is cleared by Data Operations ▸ Clear Chart (75) and when the type of its wire changes (71). Its length is 1024 by default
 > (Chart History Length..., `50-chart-history-length-dialog.png`: "Number of data points in chart history buffer", OK, Cancel, Help;
-> here a whole number of at least 1; what LabVIEW does with another value is unverified). The history belongs to the window, not to the VI:
+> here a whole number of at least 1; what LabVIEW does with another value is unverified). The history belongs to the window, not to the OVI:
 > it is not saved in the `.sdg`. The run worker sends the chart **every** write, in order, and the other indicators only the last
 > one of each pause. A Waveform Graph or an XY Graph keeps the last value it received (Clear Graph empties it).
 >
@@ -1159,7 +1159,7 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/graphs/`, with `REPORT.md`); how 
 > chart's X is the Strip window and has AutoScale X unchecked; switching it on fits the whole history (unverified). Everything else is
 > a hole with its reason (rule 55), among them the legend's and the plot swatch's menus (`90`–`98`, `context.plot-legend`,
 > `context.plot-swatch`: opened by right-clicking them, all greyed), Update Mode (Scope and Sweep), Stack Plots, markers, cursors
-> and annotations, Export and Create ▸. While the VI runs, right-click on a chart or a graph opens its run-time menu (`88`, `89`:
+> and annotations, Export and Create ▸. While the OVI runs, right-click on a chart or a graph opens its run-time menu (`88`, `89`:
 > `context.run-chart`, `context.run-graph`; the XY Graph takes the graph's, unverified) with Clear Chart / Graph, AutoScale X and Y
 > and Visible Items ▸ (its content unverified: the same four toggles); the rest is greyed.
 >
@@ -1181,21 +1181,21 @@ looks is in [`06-visual.md`](06-visual.md) §14. What the report marks unverifie
 
 > **Rule 83 — The debugging buttons.** The diagram's toolbar has, after Pause, Highlight Execution, Retain Wire Values, Step Into,
 > Step Over and Step Out (`10b`); the panel's has Pause. Edit mode: all enabled but Step Out; Step Into and Step Over read "Start
-> Single Stepping" (13, 14). Running: Run reads "Running", Abort `Abort execution of "<VI>"` (75), Pause is black, the steps are
+> Single Stepping" (13, 14). Running: Run reads "Running", Abort `Abort execution of "<OVI>"` (75), Pause is black, the steps are
 > greyed. Stopped: Pause is red and reads "Continue", Step Into and Over read "Step over <node>", Step Out "Finish Iteration" inside a
-> loop (75, `74b`). A broken VI shows the broken Run arrow, "List Errors" (98), and greys Run Continuously, Abort and the steps (91c).
-> With VI Properties ▸ Execution ▸ Allow debugging off, Highlight Execution, Retain Wire Values, Pause and the steps are greyed and
+> loop (75, `74b`). A broken OVI shows the broken Run arrow, "List Errors" (98), and greys Run Continuously, Abort and the steps (91c).
+> With OVI Properties ▸ Execution ▸ Allow debugging off, Highlight Execution, Retain Wire Values, Pause and the steps are greyed and
 > their tooltip says why (unverified in LabVIEW). **Unverified:** what Pause does in edit mode (here, nothing), what Start Single
-> Stepping does (here: the VI starts and stops before its first node), "Step out of <VI>" at the top level (here also "Finish
-> Structure" in a Case or a sequence), the tooltips of the steps while the VI runs, and Step Into on a subVI node (greyed here:
-> the subVI is not stepped into yet).
+> Stepping does (here: the OVI starts and stops before its first node), "Step out of <OVI>" at the top level (here also "Finish
+> Structure" in a Case or a sequence), the tooltips of the steps while the OVI runs, and Step Into on a subOVI node (greyed here:
+> the subOVI is not stepped into yet).
 >
 > **Rule 84 — Highlight Execution.** A toggle (no pressed frame, `20`); pressing and holding it for 1.5 s opens a menu Slow, Medium
 > (default), Fast, Very Fast with a check on the current one; releasing over a speed picks it, releasing elsewhere closes the menu
 > and leaves the bulb on (22, 42). It can be turned on before or during a Run. While it is on the diagram is dimmed (60 % toward
 > white) for 0.6 s, each node returns to full color when it runs, a 5 px band grows along each of its wires and a value tag
-> appears at the source when the band arrives; when a node runs again everything dims anew; when the VI ends everything returns to
-> normal (30–35). Parallel clumps run one at a time. **Pace:** the worker holds the VI after each node for the length of the
+> appears at the source when the band arrives; when a node runs again everything dims anew; when the OVI ends everything returns to
+> normal (30–35). Parallel clumps run one at a time. **Pace:** the worker holds the OVI after each node for the length of the
 > longest wire that leaves it divided by the speed (500 and 1000 px/s for Slow and Medium, measured as estimates; 3200 and 5300
 > px/s for Fast and Very Fast, extrapolated from the iteration times: **unverified**), with a floor per node (120, 50, 15 and 5 ms:
 > unverified). LabVIEW's pace is not fixed per node: it grows with wire length and node count (REPORT §1).
@@ -1210,47 +1210,47 @@ looks is in [`06-visual.md`](06-visual.md) §14. What the report marks unverifie
 >
 > **Rule 86 — Breakpoints.** A node's menu and a wire's menu offer Add Breakpoint; with one, "Remove Breakpoint" and "Disable (Enable)
 > Breakpoint" take its place (79). On a node it is a 3 px red frame outside the node, 2 px red and 1 px white when disabled (73, 80);
-> on a wire, a red disc of 19 px with the number (71). The VI stops **before** the node, drawn inverted with the marching frame
-> (74). The compiled VI only reports after a node, so the worker recovers "before": a node is ready when every wire from a reporting
+> on a wire, a red disc of 19 px with the number (71). The OVI stops **before** the node, drawn inverted with the marching frame
+> (74). The compiled OVI only reports after a node, so the worker recovers "before": a node is ready when every wire from a reporting
 > node has delivered its value, and the stop happens in the report that made it ready. A node with no reporting inputs (a constant)
 > stops right after it; inputs that come through a border of a structure do not count. With parallel clumps another clump may run the
 > node before the stop (Highlight Execution serializes them, breakpoints do not). A breakpoint on a wire stops after the node it
 > starts at ("not distinctly observed in LabVIEW": **unverified**). Breakpoints on structures are holes. Breakpoints are
-> not saved and are listed in the Debug Window. Edit ▸ Remove Breakpoints from Hierarchy clears them (this VI only: subVIs are not debugged).
+> not saved and are listed in the Debug Window. Edit ▸ Remove Breakpoints from Hierarchy clears them (this OVI only: subOVIs are not debugged).
 >
 > **Rule 87 — Stopped.** The Run arrow stays "running", Pause is red (Continue) and Abort is enabled (74b). Continue goes on to the next
 > breakpoint; Step Over (and Step Into) runs the node and stops before the next one that is ready (76, 78); Step Out finishes the iteration of
 > the loop (or the structure) the node is in and stops at the next node outside it (REPORT §4: tooltip only; the behavior is
-> **unverified**). Pause stops before the next node that is ready. Abort frees a stopped VI.
+> **unverified**). Pause stops before the next node that is ready. Abort frees a stopped OVI.
 >
 > **Rule 88 — The Debug Window.** View ▸ Debug Window (Ctrl+D), Add Probe and the diagram open it: 682 × 338, toolbar (Remove Selected Probes and
 > Breakpoints, Enable/Disable greyed without a selected breakpoint, Project Environment Settings and Help as holes, Debug Options), the
-> list "Probes and Breakpoints | Value | Last Update" with the VI as a group, zebra rows and the selected row in blue, and the
+> list "Probes and Breakpoints | Value | Last Update" with the OVI as a group, zebra rows and the selected row in blue, and the
 > Probe Display pane with its Probe Options (the Custom Probe list). Debug Options: Hide Probe Display, ✓Keep Window on Top, ✓Show Values
 > on Wires, Wrap Text (55–58). Last Update is `h:mm:ss,mmm` with the decimal separator of the system. Closing it asks "This operation will close all
-> probes in VIs that are open outside of projects. Do you wish to continue?" and, with Yes, removes the probes (63, 64); "Do not
+> probes in OVIs that are open outside of projects. Do you wish to continue?" and, with Yes, removes the probes (63, 64); "Do not
 > ask again" is a hole. **Here it is a floating window drawn over the Block Diagram, like the dialogs, not an operating-system window;
 > from the Front Panel, Ctrl+D asks the diagram to open it.** It can be dragged by its title bar; Keep Window on Top is always so.
 >
-> **Rule 89 — The Error list.** View ▸ Error List (Ctrl+L) or the broken Run arrow open it: 661 × 412, "Items with errors" (the VI with
+> **Rule 89 — The Error list.** View ▸ Error List (Ctrl+L) or the broken Run arrow open it: 661 × 412, "Items with errors" (the OVI with
 > a red cross), "N errors and warnings", Show Warnings, the group "Block Diagram Errors" with one row per object ("Wait (ms): Contains
 > unwired or bad terminal"), Details, Close, Show Error (default) and Help (92). Show Error and a double click bring the diagram to the
 > front and frame the object with the marching frame, until something is clicked on the diagram (93, 95; how LabVIEW clears it is
 > unverified). Rows come from the required inputs nobody wired, the broken wires (with their reason), what the hierarchy cannot
-> load and what the compiler refuses. Run on a VI that cannot run opens the Error list instead of a message box. Unlike LabVIEW's, the
+> load and what the compiler refuses. Run on an OVI that cannot run opens the Error list instead of a message box. Unlike LabVIEW's, the
 > text of Details is our own.
 >
 > **Rule 89b — Warnings** (2026-10-16, `labview-captures/reports/2026-10-16-warnings-frame-stops.md` §A). With **Show Warnings**
 > checked the list adds, after the errors, one group "Block Diagram Warnings" (also for panel terminals) with a row per constant that
 > nothing reads ("Diagram Constant: unwired block diagram constant") and per panel terminal with no wire ("Front Panel Terminal
-> '<label>': unwired front panel terminal"); the count label counts them; a VI with warnings only has no red cross. Warnings never break
-> the VI. Show Warnings is one setting for the whole session, shared by every VI and starting unchecked (the main process keeps it).
-> While it is on and the VI has warnings, both toolbars show the yellow triangle **List Warnings** left of Run, which opens the Error
+> '<label>': unwired front panel terminal"); the count label counts them; an OVI with warnings only has no red cross. Warnings never break
+> the OVI. Show Warnings is one setting for the whole session, shared by every OVI and starting unchecked (the main process keeps it).
+> While it is on and the OVI has warnings, both toolbars show the yellow triangle **List Warnings** left of Run, which opens the Error
 > list. Tested in `test/editor/debugging.test.mjs`. **Unverified:** the Boolean, enum, ring, array and error cluster constants warn like
 > the numeric and string ones; the named constants of the palettes (pi, Tab…) and hidden objects give no warning here; Tools ▸ Options
 > ▸ Environment ▸ "Show warnings in Error List dialog by default" is not cloned.
 >
-> **Rule 90 — Allow debugging.** VI Properties ▸ Execution ▸ Allow debugging (on by default) writes `vi.execution["allow-debugging"]` (only when false). With it
+> **Rule 90 — Allow debugging.** OVI Properties ▸ Execution ▸ Allow debugging (on by default) writes `vi.execution["allow-debugging"]` (only when false). With it
 > off the compiler emits no debug hooks and Rule 83's buttons are greyed.
 >
 > **Rule 90b — The borders of the structures** (2026-10-16, `labview-captures/reports/2026-10-16-border-probes.md`). A loop's input
@@ -1263,7 +1263,7 @@ looks is in [`06-visual.md`](06-visual.md) §14. What the report marks unverifie
 > `test/editor/debug-controller.test.mjs` (borders) and `test/editor/debugging.test.mjs` (the "#4" tag). **Not done yet:** the tag
 > on N, LabVIEW's single-step stops at the structure frames themselves (the loop before it starts and at the end of each
 > iteration, the Case before and after its frame, the whole diagram at the end; Solder stops "at" the last node instead, also
-> once more at each indicator when the VI ends), and constants tagged at the start of the Run. Checked in the running editor
+> once more at each indicator when the OVI ends), and constants tagged at the start of the Run. Checked in the running editor
 > (`labview-captures/reports/2026-10-16-solder-border-probes.md`). *Done since:* the tag on N (once, it stays through the iterations),
 > constants tagged as their band starts, and the stops of Rule 90c.
 >
@@ -1274,7 +1274,7 @@ looks is in [`06-visual.md`](06-visual.md) §14. What the report marks unverifie
 > For Loop", which finishes the whole loop); a Case after its frame (all three "Finish Case Structure"); a Flat Sequence at the end of
 > each frame (that frame's border blinks; "Step to next frame", Step Out "Finish Flat Sequence Structure"; after the last frame all three
 > say so) and between frames (the whole structure's border blinks); and the end of the diagram (a 2 px line blinks at the inner edge of
-> the canvas; only Step Out, all three `Finish VI "<name>"`). Tested in `test/editor/debug-controller.test.mjs` and
+> the canvas; only Step Out, all three `Finish OVI "<name>"`). Tested in `test/editor/debug-controller.test.mjs` and
 > `test/editor/debugging.test.mjs`; checked in the running editor (`labview-captures/reports/2026-10-16-solder-frame-stops.md`).
 > **Unverified:** the While Loop and the Stacked Sequence (the Stacked has no frame stops yet), a
 > structure inside another (Step Out from its start finishes the outer one here), the greyed second frame of a Flat Sequence at its
@@ -1290,9 +1290,9 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/broken-wires/REPORT.md`, cited by
 > constants or structures with everything inside and their tunnels, and **every wire to the rest stays, broken, with a loose end
 > where the terminal was** (REPORT §1: `13`, `15`, `19`); one delete is one step of undo, and Ctrl+Z restores node and wires (`14`).
 > (2) **Ctrl+X** (Cut) takes the wires with the nodes and leaves nothing broken (measured). (3) **Deleting a control or indicator
-> on the Front Panel** leaves its wires on the diagram broken (rule 77). (4) A subVI saved without a connector terminal leaves
+> on the Front Panel** leaves its wires on the diagram broken (rule 77). (4) A subOVI saved without a connector terminal leaves
 > the wires of its open callers, and of a caller opened later, broken with the loose end at the old terminal; the caller is not
-> marked modified and the VI always opens (REPORT §2). A wire whose two ends would be loose is not kept. Selecting a wire and
+> marked modified and the OVI always opens (REPORT §2). A wire whose two ends would be loose is not kept. Selecting a wire and
 > deleting it removes the whole wire.
 >
 > **Rule 92 — Where the loose end is and how the wire goes.** The loose end is the point where the terminal was drawn (the
@@ -1329,12 +1329,12 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/broken-wires/REPORT.md`, cited by
 
 Measured in LabVIEW 2026 Q3 (`labview-captures/editor-checks/REPORT.md`; the captures are local evidence and are not committed).
 
-> **Rule 96 — The two windows of a VI always hold the same graph.** Each window keeps its own copy and sends it to the other when it
+> **Rule 96 — The two windows of an OVI always hold the same graph.** Each window keeps its own copy and sends it to the other when it
 > comes to rest; the copies are **stamped** (a revision number and the window that made it, `editor/src/window/graph-sync.mjs`).
 > A window takes an incoming copy only if its stamp is newer than the one it holds; an older copy is not taken and is answered
 > with the newer one. Two changes made at the same time carry the same revision and the window name decides, the same in both,
 > so both windows end up on one graph (the other change is lost, as there is nothing to merge it with). Before this, two copies
-> that crossed on their way swapped for good and Save wrote a different VI depending on the window it was pressed in. Undo and a
+> that crossed on their way swapped for good and Save wrote a different OVI depending on the window it was pressed in. Undo and a
 > hierarchy rebuild that changes the graph (Run) are copies like any other. Tested in `test/editor/graph-sync.test.mjs`.
 > **Not reproduced:** the `.sdg` of the Windows tester, whose diagram showed an out-and-back wire after dragging the Stop
 > terminal into a While Loop, could not be obtained from the editor with pure drags (15 912 drops and 16 000 random drags
@@ -1345,19 +1345,19 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/editor-checks/REPORT.md`; the cap
 > a rubber band started on an empty point of the loop interior (the band does not move the loop) and Delete (REPORT §2).
 > Tested in `test/editor/diagram-editing.test.mjs` and checked in the real window.
 
-> **Rule 98 — File ▸ Exit (Ctrl+Q).** It asks about each VI with unsaved changes, one after the other: "Save changes? (Exit)",
-> "<VI> has unsaved changes. <VI> is about to leave memory. Its unsaved changes will be lost.", with **Save**, **Don't Save**
-> and **Cancel** (Cancel keeps everything open). Then it **quits the application**: no blank VI is opened afterwards. With nothing
+> **Rule 98 — File ▸ Exit (Ctrl+Q).** It asks about each OVI with unsaved changes, one after the other: "Save changes? (Exit)",
+> "<OVI> has unsaved changes. <OVI> is about to leave memory. Its unsaved changes will be lost.", with **Save**, **Don't Save**
+> and **Cancel** (Cancel keeps everything open). Then it **quits the application**: no blank OVI is opened afterwards. With nothing
 > modified it quits at once, without a question (REPORT §3). The "List unsaved changes..." link of LabVIEW's dialog is not
-> there (the dialog is the system's). **Unverified:** Exit with a new untitled VI that was never modified. Tested in
+> there (the dialog is the system's). **Unverified:** Exit with a new untitled OVI that was never modified. Tested in
 > `test/editor/exit-flow.test.mjs`.
 
-> **Rule 99 — Where the windows of a VI go.** A new VI (and the first start) opens its Front Panel in front and its Block Diagram
+> **Rule 99 — Where the windows of an OVI go.** A new OVI (and the first start) opens its Front Panel in front and its Block Diagram
 > behind it, 49 px to the left and 30 px up, both 1090 x 696 outer; scaled down if the screen is smaller. The pair starts where
 > LabVIEW put it on a 1920 x 1080 screen (61 % of the free width, 39 % of the free height: unverified for other screens) and each
-> VI opened later sits 30 px down and right of the one before. **Ctrl+T** (Window ▸ Tile Left and Right) puts the Front Panel
+> OVI opened later sits 30 px down and right of the one before. **Ctrl+T** (Window ▸ Tile Left and Right) puts the Front Panel
 > on the left and the Block Diagram on the right, side by side, no overlap (12 px at the sides, 3 px above and below, 20 px
-> between: 938 x 1018 each on the measured screen). **Ctrl+E** brings forward the other window of the VI, from either one, a pure
+> between: 938 x 1018 each on the measured screen). **Ctrl+E** brings forward the other window of the OVI, from either one, a pure
 > toggle. The Window menu itself is not captured yet, so only these two shortcuts exist (`editor/electron/window-layout.mjs`,
 > `editor/src/window/shortcuts.mjs`; `test/editor/window-layout.test.mjs`).
 
@@ -1371,26 +1371,26 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/editor-checks/REPORT.md`; the cap
 > (the object made of the terminal's type, wired when it fits; the constant of the count goes outside the loop, where its wire
 > comes from); their labels and places are **unverified**. Tested in `test/editor/loop-terminals-create.test.mjs`.
 
-## 19. New VI, Close and Close All (2026-10-15)
+## 19. New OVI, Close and Close All (2026-10-15)
 
 Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-15-file-close.md`).
 
-> **Rule 101 — File ▸ New VI (Ctrl+N).** It opens a blank VI in its own pair of windows, placed as rule 99 says, from either
-> window of any VI. Its name is **Untitled N**, and N never goes back: closing Untitled 1 and pressing Ctrl+N gives Untitled 2,
-> and every way of making a VI shares one counter. Tested in `test/editor/vi-registry.test.mjs` and
+> **Rule 101 — File ▸ New OVI (Ctrl+N).** It opens a blank OVI in its own pair of windows, placed as rule 99 says, from either
+> window of any OVI. Its name is **Untitled N**, and N never goes back: closing Untitled 1 and pressing Ctrl+N gives Untitled 2,
+> and every way of making an OVI shares one counter. Tested in `test/editor/vi-registry.test.mjs` and
 > `test/editor/window-layout.test.mjs`.
 
-> **Rule 102 — File ▸ Close (Ctrl+W).** On the **Front Panel** the whole VI leaves memory, both windows. A VI without unsaved
+> **Rule 102 — File ▸ Close (Ctrl+W).** On the **Front Panel** the whole OVI leaves memory, both windows. An OVI without unsaved
 > changes (a new one never touched included) closes at once; one with changes asks first: "Save changes before closing?" (no
-> "(Close)" in this title), "<VI> has unsaved changes. <VI> is about to leave memory. Its unsaved changes will be lost.",
+> "(Close)" in this title), "<OVI> has unsaved changes. <OVI> is about to leave memory. Its unsaved changes will be lost.",
 > **Save** (the default), **Don't Save** and **Cancel**, which closes nothing. On the **Block Diagram** Close only hides that
-> window, without a question, and the VI stays with its Front Panel (Ctrl+E brings the diagram back). **Unverified:** Close on the
-> Block Diagram of a VI with changes; Esc and the dialog's X (taken here as Cancel). Tested in `test/editor/close-flow.test.mjs`.
+> window, without a question, and the OVI stays with its Front Panel (Ctrl+E brings the diagram back). **Unverified:** Close on the
+> Block Diagram of an OVI with changes; Esc and the dialog's X (taken here as Cancel). Tested in `test/editor/close-flow.test.mjs`.
 
-> **Rule 103 — File ▸ Close All** (no shortcut). One dialog, "Save changes? (Close All)", about the VI **created last** among
+> **Rule 103 — File ▸ Close All** (no shortcut). One dialog, "Save changes? (Close All)", about the OVI **created last** among
 > those with changes (not the one in front), with the texts of rule 102 and a box **"Apply same action to the remaining N affected
 > items"**, checked; its buttons are **Save - All** (the default), **Don't Save - All** and **Cancel**. Checked, the answer is
-> applied to all; unchecked, each VI gets its own dialog, the last one without the box. The VIs without changes are not asked
+> applied to all; unchecked, each OVI gets its own dialog, the last one without the box. The OVIs without changes are not asked
 > about but close too. Cancel, or a cancelled Save As, closes nothing. The "List unsaved changes..." link and LabVIEW's list of
 > affected items are not there (the dialog is the system's), and its buttons do not turn into Save / Don't Save when the box is
 > unchecked. Tested in `test/editor/close-flow.test.mjs`.
@@ -1404,7 +1404,7 @@ The look is in [`06-visual.md`](06-visual.md) §17. Tests: `test/editor/visa-res
 > VISA resource name control (`visa-control`) are typed into as a string constant or control is, on **one line**: Enter confirms, as it
 > does in a numeric one, and what is typed is kept as it is, in `config.value` (the constant) or as the current value (the control; the
 > default the file saves does not change, DT-053). The constant grows to the right with its text; typing does not move its left edge. The
-> indicator shows the string the VI leaves in it after a Run. Create ▸ Constant, Control and Indicator on a terminal of type
+> indicator shows the string the OVI leaves in it after a Run. Create ▸ Constant, Control and Indicator on a terminal of type
 > `visa-resource` make these blocks, wired (`core/model/create-on-terminal.mjs`). A Run starts from the current value of the control
 > and the VISA functions open a session from that name (DT-066). Tested.
 
@@ -1490,11 +1490,11 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-26-file-io-palett
 `test/editor/file-io-palette.test.mjs` and `test/editor/path-menus.test.mjs`.
 
 > **Rule 111 — Functions ▸ Programming ▸ File I/O.** The folder has 6 rows of 4 cells, in LabVIEW's places (row, column): the
-> two delimited-spreadsheet VIs and the two measurement-file Express VIs on row 1; Open/Create/Replace File, Close File, Format Into
+> two delimited-spreadsheet OVIs and the two measurement-file Express OVIs on row 1; Open/Create/Replace File, Close File, Format Into
 > File and Scan From File on row 2; Write to and Read from Text File, Write to and Read from Binary File on row 3; Build Path, Strip
-> Path, File Constants and Configuration File VIs on row 4; TDM Streaming, Storage/DataPlugin, Zip and XML on row 5; and, on row 6,
+> Path, File Constants and Configuration File OVIs on row 4; TDM Streaming, Storage/DataPlugin, Zip and XML on row 5; and, on row 6,
 > Waveform File I/O at (6, 1) and Advanced File Functions at (6, 4). Every subpalette one level deep has the names, kinds and cells
-> of the report (File Constants 4 × 3; Configuration File VIs 2 × 6 with gaps at (2, 1), (2, 4) and (2, 6); TDM Streaming 3 × 4 with a gap at
+> of the report (File Constants 4 × 3; Configuration File OVIs 2 × 6 with gaps at (2, 1), (2, 4) and (2, 6); TDM Streaming 3 × 4 with a gap at
 > (3, 3); Advanced TDMS 3 × 5; Storage/DataPlugin 3 × 4 with a gap at (2, 3); Advanced Storage 4 × 3 with gaps at (1, 3) and (4, 3); Zip
 > 2 × 3; XML a single cell, the folder LabVIEW Schema 3 × 2; Waveform File I/O 1 × 3; Advanced File Functions 7 × 6 with the path
 > functions on row 5; Datalog 3 × 3; Packed Library 1 × 3). **Done:** Build Path and Strip Path; in File Constants, Path Constant,
@@ -1504,8 +1504,8 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-26-file-io-palett
 > and (rule 114) Write Delimited Spreadsheet and Read Delimited Spreadsheet.
 > **Everything else is greyed with its reason** (rule 54): Refnum to Path and the Not A Refnum constant with `funciones-de-archivo`
 > (DT-067 §10 (b)); File Dialog with `dialogos-de-archivo` (d); binary files, Format Into
-> File, Scan From File, the Configuration File VIs and the folder and file-information functions with `archivos-binarios-y-carpetas`;
-> the system directories and the VI's own path with `rutas-del-sistema`; the Measurement File Express VIs with `express-vis`; TDMS,
+> File, Scan From File, the Configuration File OVIs and the folder and file-information functions with `archivos-binarios-y-carpetas`;
+> the system directories and the OVI's own path with `rutas-del-sistema`; the Measurement File Express OVIs with `express-vis`; TDMS,
 > Storage/DataPlugin, Zip, XML, Datalog, Waveform File I/O and Packed Library with `formatos-de-archivo`, which says **not planned yet**.
 > The two Advanced TDMS folders after the first two and the contents of every folder below the first level were not opened in LabVIEW
 > (`contenido-no-capturado`). A folder with something done inside is done; the icons of the greyed elements are Solder's own

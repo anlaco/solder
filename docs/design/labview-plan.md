@@ -1,7 +1,7 @@
 # Cloning LabVIEW module by module
 
 > Living work plan. It starts on 2026-09-30, when the editor already builds,
-> saves, opens and runs a VI. For what comes next it replaces the roadmap in
+> saves, opens and runs an OVI. For what comes next it replaces the roadmap in
 > [`00-provisional-plan.md`](../reference/history/00-provisional-plan.md) §7.1, which is now closed.
 
 ## 0. How to continue in a new session
@@ -38,21 +38,21 @@ When the developer says "keep going":
   for the hardware host.
 - **Work goes by modules**, and a module is not finished until it meets all of
   §3. First what is needed to program (types, functions, structures); then what
-  organizes programs (subVIs, projects, classes).
+  organizes programs (subOVIs, projects, classes).
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
 
-**The full circuit works:** a VI is built, saved to `.qvi`, opened the same way,
+**The full circuit works:** an OVI is built, saved to `.qvi`, opened the same way,
 and Run compiles it to WebAssembly and executes it **by dataflow, like
 LabVIEW** (DT-040): independent branches run at the same time, each indicator is
 painted when its data arrives, Abort stops at once and the panel switches to Run
 mode. Since 2026-10-01 also **with loops**: While and For are placed, stretched
 and wired in the diagram, and the compiler runs them (DT-041).
-718 tests green. **The three examples give the same values as in LabVIEW** (2026-10-15). **SubVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several VIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read. **VIs are saved as `.sdg`** (DT-051, 2026-10-15): every Solder extension starts with `sd` (`.sdt` reserved for a future textual language, `.sdproj`, `.sdlib`), and an old `.qvi` still opens. **New VI, Close and Close All** (spec/05 rules 101–103, 2026-10-15) work as measured, and Solder **starts on LabVIEW's Getting Started window** (DT-052), which comes back when the last VI closes. **The colors are theme tokens** (DT-056, 2026-10-17): the current look is the Old School theme, unchanged pixel by pixel, and `SOLDER_THEME=solder` shows a first Solder theme. **The Front Panel has panel styles** (DT-058, 2026-10-17, on `feature/html-front-panel`): every control is drawn once, as plain HTML, and each style is a CSS sheet over `plain.css`, the mother template; Old School is one of them, identical pixel by pixel to the old drawing, and `SOLDER_PANEL_STYLE=plain`, `solder` or `solder-night` shows the other styles.
+718 tests green. **The three examples give the same values as in LabVIEW** (2026-10-15). **SubOVIs** work (DT-045): a hierarchy compiles into one module, non-reentrant by default with its state kept between calls and Runs, preallocated clones, two parallel calls of a non-reentrant subOVI each keep their own inputs (bug #30, fixed 2026-10-10), and the editor opens several OVIs with their connector pane. **Enums are editable** (DT-049, 2026-10-14): the items are the enum's type, Edit Items… works on the constant, the control and the indicator with the measured menus, and the frames of an enum Case go by item name. **Unbundle By Name** (DT-050, 2026-10-15) reads elements of a cluster by name, so the status of an error cluster can be read. **OVIs are saved as `.sdg`** (DT-051, 2026-10-15): every Solder extension starts with `sd` (`.sdt` reserved for a future textual language, `.sdproj`, `.sdlib`), and an old `.qvi` still opens. **New OVI, Close and Close All** (spec/05 rules 101–103, 2026-10-15) work as measured, and Solder **starts on LabVIEW's Getting Started window** (DT-052), which comes back when the last OVI closes. **The colors are theme tokens** (DT-056, 2026-10-17): the current look is the Old School theme, unchanged pixel by pixel, and `SOLDER_THEME=solder` shows a first Solder theme. **The Front Panel has panel styles** (DT-058, 2026-10-17, on `feature/html-front-panel`): every control is drawn once, as plain HTML, and each style is a CSS sheet over `plain.css`, the mother template; Old School is one of them, identical pixel by pixel to the old drawing, and `SOLDER_PANEL_STYLE=plain`, `solder` or `solder-night` shows the other styles.
 
 | Piece | Status |
 |-------|--------|
-| VI windows (Front Panel, Block Diagram) | Cloned; menus: File (New VI, Open, Close, Close All, Save, Save As, Exit done) and **Edit** (Undo, Redo, Cut, Copy, Paste, Delete, Select All, Make Current Values Default and Reinitialize Values to Default done; the rest greyed with its reason). Toolbar: Run, Abort and Enter Text done; in Run mode, the LabVIEW toolbar (filled arrow, no editing tools) |
+| OVI windows (Front Panel, Block Diagram) | Cloned; menus: File (New OVI, Open, Close, Close All, Save, Save As, Exit done) and **Edit** (Undo, Redo, Cut, Copy, Paste, Delete, Select All, Make Current Values Default and Reinitialize Values to Default done; the rest greyed with its reason). Toolbar: Run, Abort and Enter Text done; in Run mode, the LabVIEW toolbar (filled arrow, no editing tools) |
 | Functions ▸ Programming palette | Numeric: 32 functions placed and wireable, plus Conversion (13), Data Manipulation (9) and Math & Scientific Constants (17). Boolean: 16. Comparison: 16 of 29 (the twelve comparisons, Select, Max & Min, In Range and Coerce and Not A Number?), with their menus; the rest greyed out. Timing: 3 of 15 (Tick Count (ms), Wait (ms), Wait Until Next ms Multiple). Structures: 4 of 16 (For Loop, While Loop, Case Structure and Flat Sequence Structure), with their placeholders in place. **String: 27 functions and constants done** (with Number/String Conversion and Additional String Functions; the rest greyed out). **Dialog & User Interface: 5 of 23** (Simple Error Handler, Clear Errors, Merge Errors, Error Cluster From Error Code and Error Cluster Constant). The other categories, placeholders |
 | Controls ▸ Modern palette | Numeric Control and Numeric Indicator done, **String & Path: String Control and String Indicator (3 greyed out)**, **Ring & Enum: Enum done (control and indicator, with Edit Items…)**, **Data Containers: Error In and Error Out (6 greyed out)**, and Boolean: 10 of its 13 controls (Push Button, Round/Square LED, switches, sliders, OK, Cancel, Stop); Rocker, Vert Rocker and Radio Buttons, placeholders. 19 Numeric controls and 10 folders, placeholders |
 | Diagram editing | Place, move, wire (also as a branch from another wire), bends, selection, delete, undo, editable constants, complete Compound Arithmetic, View As Icon, labels. **Structures** (M4, spec/05 Rule 40e): While Loop and For Loop placed with two clicks or by dragging a rectangle, drawn at 1:1 with their "i", condition and "N" terminals, tunnels and shift registers attached to the border; they move with what is inside, stretch by their eight handles, a node dropped inside or outside enters or leaves, a wire from one scope to another creates its tunnels, and their menus (Add Shift Register, Stop if True and Continue if True); Case Structure (Rule 40f: frames, selector, tunnels, menus); **Flat and Stacked Sequence** (Rule 40g): film border at 1:1, frames of their own width, wire between frames through tunnels on the separators, selector and local variables in the Stacked, Add/Delete Frame and Replace |
@@ -81,7 +81,7 @@ such as the structures— is finished when:
 4. **In the editor:** it is placed, wired and edited, and its menus do what they do
    in LabVIEW; its controls and indicators work on the panel.
 5. **Compiled:** each function is emitted to WebAssembly and gives **the same as
-   LabVIEW**. Where there is doubt (overflows, rounding, edge cases), the same VI
+   LabVIEW**. Where there is doubt (overflows, rounding, edge cases), the same OVI
    is built in LabVIEW, run, and the result compared.
 6. **Saved:** what is new goes into the `.qvi` and comes out the same (round-trip).
 7. **Tested and written:** tests for all of the above; new rules in `spec/`.
@@ -116,14 +116,14 @@ programs goes **before the rest of the modules**, in this order:
 1. **2-dimensional arrays** (M6): Build Array of several 1Ds, Index Array with
    two indices, 2D control, indicator and constant, with the memory of DT-042.
    *Done on 2026-10-03 (DT-044, spec/04 Rule 21i, spec/05 Rule 40k).*
-2. **SubVIs** (R6): connector pane, icon editor and compiled call.
+2. **SubOVIs** (R6): connector pane, icon editor and compiled call.
    *Core and editor done on 2026-10-08 (DT-045, spec/04 Rules 19c–19d, spec/05 §12); the other
    35 connector patterns, shared clones and recursion are missing. The icon editor is postponed
-   (decided 2026-10-08): every VI uses the standard subVI icon.*
+   (decided 2026-10-08): every OVI uses the standard subOVI icon.*
 3. **What is used every minute in the editor:** Create ▸ Constant / Control /
    Indicator on a terminal (M1) and copy, cut and paste (Edit menu).
    *Done on 2026-10-08 (spec/05 §13, rules 72–77): Create ▸ on a node's terminals and on a wire,
-   All Controls and Indicators / All Constants, copy, cut, paste (shared between open VIs),
+   All Controls and Indicators / All Constants, copy, cut, paste (shared between open OVIs),
    Ctrl+drag, Select All and the Edit menu. Missing: Scalar ▸ and Channel Writer..., the other
    menus' Create ▸ (constants, controls, tunnels, shift registers), and the broken wire that
    LabVIEW leaves when a control is deleted on the panel (rule 77, a decision to take).*
@@ -136,7 +136,7 @@ programs goes **before the rest of the modules**, in this order:
 6. **Debugging:** probes, execution highlighting and the error list.
    *Done on 2026-10-09 (DT-047, spec/05 §16 rules 83–90, spec/06 §14): Highlight Execution with its four speeds, Retain Wire Values, probes, breakpoints on nodes
    and wires, Pause and the three steps, the Debug Window, the Error list and Allow debugging. Missing: the borders of the structures report no values (tunnels,
-   shift registers, "i"), breakpoints on structures, stepping into a subVI, the custom probes, warnings (and the toolbar triangle) and several facts marked unverified.*
+   shift registers, "i"), breakpoints on structures, stepping into a subOVI, the custom probes, warnings (and the toolbar triangle) and several facts marked unverified.*
 
 *Stage 1 closed on 2026-10-09 with version **0.1.0-alpha** (DT-048).*
 
@@ -150,26 +150,26 @@ of maintenance with fixes only (`0.N.x-beta`).
 
 1. **Broken wires** (DT-046, to be proposed) — `0.2.0-alpha`. A wire may keep one loose end, drawn
    dashed with LabVIEW's red cross, which breaks Run: when a panel control is deleted its wire stays,
-   and a caller whose subVI lost a connector terminal **opens** with those wires broken (today it does
+   and a caller whose subOVI lost a connector terminal **opens** with those wires broken (today it does
    not open at all: a valid file that cannot be opened is the worst failure for a stable version).
    Edit ▸ Remove Broken Wires (Ctrl+B) clears them. It changes the `.qvi`, so it goes before step 5.
    *Done on 2026-10-09 (DT-046, spec/05 §17 rules 91–95, spec/06 §15): Delete on the diagram and on
-   the panel leaves the wires broken (Cut takes them), a caller whose subVI lost a terminal opens with
+   the panel leaves the wires broken (Cut takes them), a caller whose subOVI lost a terminal opens with
    them broken, Ctrl+B, re-wiring a loose end, the drawing, the wire menu and the Error List.*
 2. **The Windows installer tested** in the virtual machine: install, open, save, run, uninstall. The
    installers are built on Linux (`npm run dist`, electron-builder) and Windows was never run.
    *Done on 2026-10-09: 0.2.0-alpha tested in the VM, its problems fixed in 0.2.1-alpha (its own icon,
-   `Solder.exe`, `.qvi` association, a clean uninstall, Exit, the windows of a new VI, the two windows
-   of a VI kept in step, a dropped control saved at once, latched Booleans not saved TRUE) and
+   `Solder.exe`, `.qvi` association, a clean uninstall, Exit, the windows of a new OVI, the two windows
+   of an OVI kept in step, a dropped control saved at once, latched Booleans not saved TRUE) and
    0.2.1-alpha tested again (`labview-captures/windows-install-0.2.1*`).*
-3. **Real programs written with Solder**, as a user would: two or three complete VIs (for example a
-   measurement loop with a chart, a string protocol with Format/Scan and subVIs, a state machine with a
+3. **Real programs written with Solder**, as a user would: two or three complete OVIs (for example a
+   measurement loop with a chart, a string protocol with Format/Scan and subOVIs, a state machine with a
    Case and shift registers). Every failure or annoyance found becomes a fix; they are the test of
    whether the maintainable version is ready.
    *Written on 2026-10-09/10 ([`real-programs-0.2.md`](real-programs-0.2.md), `examples/`): Temperature
    Monitor works and matches LabVIEW; Instrument Protocol gives a wrong result (two calls of one
-   non-reentrant subVI mix their inputs); Oven Controller works with I32 states. 36 findings, eight of them
-   blockers (New VI, string selector, array constant type, Build Array, Unbundle, error cluster on the loop
+   non-reentrant subOVI mix their inputs); Oven Controller works with I32 states. 36 findings, eight of them
+   blockers (New OVI, string selector, array constant type, Build Array, Unbundle, error cluster on the loop
    condition, enum items, shift register menu). Next: the fixes, in the order of §3 of that report, for
    0.3.0-alpha.*
    **Rule decided on 2026-10-10:** nothing else is implemented until the examples in `examples/` behave
@@ -177,10 +177,10 @@ of maintenance with fixes only (`0.N.x-beta`).
    selector, enum states, Unbundle By Name, no workarounds), with deterministic inputs (no Random Number) so
    their outputs can be compared value by value; LabVIEW's outputs are written down once as the reference and
    a test runs each example against them. Order: (1) the three examples built in LabVIEW and their outputs
-   written down, (2) the subVI fault (#30), (3) only what the examples need, (4) the comparison tests green.
+   written down, (2) the subOVI fault (#30), (3) only what the examples need, (4) the comparison tests green.
    *(1) done on 2026-10-10: the three examples built in LabVIEW and their outputs written in
    [`examples/README.md`](../../examples/README.md).*
-   *(2) done on 2026-10-10: the subVI fault #30 fixed (a call to a non-reentrant subVI takes its turn
+   *(2) done on 2026-10-10: the subOVI fault #30 fixed (a call to a non-reentrant subOVI takes its turn
    before writing its inputs; DT-045 §2, measured with `Two Calls.vi`). Next: (3), only what the examples
    need; note that the Solder `Simulated Instrument.qvi` still has the workarounds (Random Number,
    Equal? + Select) and gives a random voltage where LabVIEW gives `5.0000`.*
@@ -193,10 +193,10 @@ was reviewed the same day and closed on 2026-10-14: what a key or a click means 
 in its own module (`editor/src/window/modal-dialog.mjs`, which also took over the Chart History dialog)
 and the shell only applies it, with `test/editor/modal-dialogs.test.mjs` crossing that seam. The
 dialog's Delete follows the rule measured on 2026-10-15: by the name, not the row count. Nothing more is needed by the examples.*
-   *New VI, Close and Close All (#1) done on 2026-10-15 (spec/05 rules 101–103, DT-052): measured in LabVIEW
+   *New OVI, Close and Close All (#1) done on 2026-10-15 (spec/05 rules 101–103, DT-052): measured in LabVIEW
    ([`2026-10-15-file-close.md`](../../labview-captures/reports/2026-10-15-file-close.md)); Close on the Block Diagram
-   only hides it, Close All asks once about the VI created last with "Apply same action…", and the Untitled number never
-   goes back. Closing the last VI shows the **Getting Started window**, cloned 1:1 with texts of its own
+   only hides it, Close All asks once about the OVI created last with "Apply same action…", and the Untitled number never
+   goes back. Closing the last OVI shows the **Getting Started window**, cloned 1:1 with texts of its own
    ([`2026-10-15-getting-started.md`](../../labview-captures/reports/2026-10-15-getting-started.md)), on which Solder now
    starts; checked in the running editor (`labview-captures/solder-close-check/`).*
    *(4) done on 2026-10-15: the three examples rebuilt in the editor without workarounds and
@@ -273,11 +273,11 @@ dialog's Delete follows the rule measured on 2026-10-15: by the name, not the ro
    values to probes and Highlight Execution (tunnels, shift registers, "i", "N"); the warning triangle
    and its list; anything step 3 finds that looks done but is not. Also: the explanation of a hole
    opened over a modal dialog does not dismiss when something else in the dialog is clicked (it
-   swallows the mousedown before the click-outside rule); the same in VI Properties, so it is fixed
+   swallows the mousedown before the click-outside rule); the same in OVI Properties, so it is fixed
    for all of them at once (seen 2026-10-14,
    [`2026-10-14-editor-dialog-check.md`](../../labview-captures/reports/2026-10-14-editor-dialog-check.md)).
    *The explanation over a modal dialog done on 2026-10-16: a click anywhere else in Edit Items, Select Item, Chart
-   History or VI Properties closes it, and a click on another greyed part opens that one in its place
+   History or OVI Properties closes it, and a click on another greyed part opens that one in its place
    (`clicEnDialogoModal`, `test/editor/window-state.test.mjs`); checked in the running editor
    ([`2026-10-16-solder-dialog-tip.md`](../../labview-captures/reports/2026-10-16-solder-dialog-tip.md)).*
    *The borders of the structures done on 2026-10-16 (spec/05 Rule 90b): tunnels, shift registers and "i" report to probes
@@ -328,7 +328,7 @@ styles (Plain, Solder), once it is decided where a panel's style lives.
    `editor/src/front-panel/panel-style.mjs`; Old School is untouched. `test/editor/panel-styles.test.mjs` checks the
    boxes, the hooks, the public classes and that every kind has Plain rules.*
    *One drawing only, decided on 2026-10-17 (DT-058 §5 and §9 amended): Old School becomes a panel style,
-   `editor/src/panel-styles/old-school.css` over Plain's markup, and the old drawing is deleted. Next: a fixture VI
+   `editor/src/panel-styles/old-school.css` over Plain's markup, and the old drawing is deleted. Next: a fixture OVI
    with every kind and state and its BEFORE capture; then, kind by kind (numeric and enum, string, the Booleans, error
    in and out, arrays, graphs), the ornament parts in `html-controls.mjs`, hidden in `plain.css`, and the Old School
    look in `old-school.css`, each proven by a pixel diff with zero changed pixels; then the old drawing and
@@ -366,8 +366,8 @@ styles (Plain, Solder), once it is decided where a panel's style lives.
    `PANEL_STYLES` (`SOLDER_PANEL_STYLE=solder|solder-night`); Old School is still identical pixel by pixel.
    Captures of the three examples: [`2026-10-17-panel-solder.md`](../../labview-captures/reports/2026-10-17-panel-solder.md).
    Next: the window's companion `.css` (window > project > editor).*
-   *The window's companion `.css` done on 2026-10-17 (DT-058 §9): `<VI name>.css` next to the `.sdg` styles that
-   VI's panel over the editor's style, is read again whenever it changes on disk, and follows the VI on Save As;
+   *The window's companion `.css` done on 2026-10-17 (DT-058 §9): `<OVI name>.css` next to the `.sdg` styles that
+   OVI's panel over the editor's style, is read again whenever it changes on disk, and follows the OVI on Save As;
    checked in the editor ([`2026-10-17-window-style.md`](../../labview-captures/reports/2026-10-17-window-style.md)).
    The project level waits for `.sdproj`. **The window style is provisional and gets no more time** (DT-058,
    priority): the styles used are Old School for development and Solder for the releases. The branch is ready to
@@ -378,7 +378,7 @@ styles (Plain, Solder), once it is decided where a panel's style lives.
 behave the same on every operating system (issue #1), and it hands ready clumps to a pool of workers over one shared
 memory, so a Run uses every core as in LabVIEW (DT-063). In order:
 0. Measure LabVIEW's execution systems in the VM (DT-063 §7): threads per execution system, how two loops that only
-   compute spread over the cores, a reentrant subVI called from parallel branches, and the VI's execution settings.
+   compute spread over the cores, a reentrant subOVI called from parallel branches, and the OVI's execution settings.
    *Done on 2026-10-24 and 2026-10-25 (DT-063 "What was measured"): one thread per logical processor per execution
    system and priority; a clump resumes after a Wait on any free thread; loops of different lifetimes do not slow
    each other.*
@@ -387,14 +387,14 @@ memory, so a Run uses every core as in LabVIEW (DT-063). In order:
    threads from the start, with N = 1 as the exact-order mode (DT-063 §1, §4).
    *Done on 2026-10-24: `createScheduler` and `createVirtualHost` (a host whose clock jumps to the next deadline), with
    `test/core/scheduler.test.mjs`: dataflow order, yields, timers by (deadline, sequence), the 1000/500 ms interleave,
-   one clump at a time with N = 1 and N at once with a pool, the non-reentrant subVI's lock in arrival order, subplans
+   one clump at a time with N = 1 and N at once with a pool, the non-reentrant subOVI's lock in arrival order, subplans
    (`join`), answers from outside, Abort and deadlock. Nothing uses it yet: that is step 2.*
 2. Every suspending import of `runtime.mjs` parks through it (`ceder`, `esperar`, `esperar_multiplo`, `entrar_subvi`,
    `correr_plan`, `correr_subvi`, the dialogs, `dep.nodo`), with the iteration budget per clump; `planificar` and
    `turn-yielder.mjs` become part of it. The existing tests stay green.
    *Done on 2026-10-24: `ejecutar` runs every clump through `createScheduler` on `createRealHost` (one thread: the
    worker is one thread of the future pool); Wait, Wait Until Next ms Multiple, the yields of a loop (budget per
-   clump), subplans and subVI calls (`join`), the non-reentrant subVI's turn (`acquire`/`release`), the two error
+   clump), subplans and subOVI calls (`join`), the non-reentrant subOVI's turn (`acquire`/`release`), the two error
    dialogs and the debugger's pauses (`waitFor`) all park through it, and Abort is a message to it. An import finds
    its clump with `currentContext()`. Highlight Execution's one clump at a time is the scheduler's
    `oneClumpAtATime`, which lets the clumps of a subplan run while their parent waits for them. `planificar` and
@@ -404,15 +404,15 @@ memory, so a Run uses every core as in LabVIEW (DT-063). In order:
    *Done on 2026-10-24: the scheduler's `onTurnEnd` (the runtime's `alAcabarTurno`) comes once the clumps a turn
    resumed have parked, and when the Run ends; the worker sends its writes then (`test/core/execution.test.mjs`,
    `test/core/scheduler.test.mjs`). The editor already terminated the worker 500 ms after an unanswered Abort.*
-4. The reference traces (DT-061 §8): a few VIs with parallel waits, the order of resumes they must give, and a test
+4. The reference traces (DT-061 §8): a few OVIs with parallel waits, the order of resumes they must give, and a test
    that runs them.
-   *Done on 2026-10-24: `test/end-to-end/reference-traces.test.mjs` runs VIs with parallel loops on the virtual clock
+   *Done on 2026-10-24: `test/end-to-end/reference-traces.test.mjs` runs OVIs with parallel loops on the virtual clock
    (`ejecutar` takes `host`) and checks every write: the 1000/500 ms loops, issue #1's waits that end together, and
    Wait Until Next ms Multiple against a plain wait, ties going to the wait made first.*
 5. Node 26: the command line and `npm test` pass `--experimental-wasm-jspi` only when the running Node needs it
    (DT-061, "What was measured" 1). *Done on 2026-10-23, as a fix for 0.4 (`cli/jspi.mjs`,
    `scripts/run-tests.mjs`): `npm test` and the command line checked on Node 24.19.0, 24.22.1 and 26.12.1.*
-6. Stackless clumps (DT-063 §8, decided 2026-10-25): every clump that can park, and every subVI it calls, saves its
+6. Stackless clumps (DT-063 §8, decided 2026-10-25): every clump that can park, and every subOVI it calls, saves its
    live locals and resume point into a frame in the data space and returns to the scheduler, which calls it again to
    go on; JSPI is retired. Done on the single-threaded runtime first, with every existing test and the reference
    traces green, before any thread is added.
@@ -425,7 +425,7 @@ memory, so a Run uses every core as in LabVIEW (DT-063). In order:
    in WebAssembly, `scheduler.mjs` kept as the reference model; §10: the panel as a transfer buffer in the shared
    memory, atomic scalars, a lock per string, array or cluster control, indicator cells and a chart ring of its
    history length walked by the coordinator): the module's memory `shared`, a stack per thread, the clumps' dependency counters with
-   atomics, the lock of non-reentrant subVIs and globals, COOP/COEP on the window that runs VIs, and N from what step 0
+   atomics, the lock of non-reentrant subOVIs and globals, COOP/COEP on the window that runs OVIs, and N from what step 0
    measured. The reference traces of step 4 run with N = 1 (exact order) and N > 1 (dataflow constraints and results).
    In five parts, each with its tests green: (1) the values that cross between clumps go from WebAssembly globals to
    cells of the data space; (2) the memory shared, imported and with a maximum, atomics in the encoder, a lock in the
@@ -474,7 +474,7 @@ array or string read by a local variable while another loop writes it is never t
    Checked in real Electron against Crucible and by `test/end-to-end/io-process.test.mjs`. 854 tests green.
    *The editor done on 2026-10-26 (DT-066): the VISA resource name wire, constant, control, indicator, terminals and
    menus, Controls ▸ Modern ▸ I/O, Functions ▸ Instrument I/O with every measured subpalette (Open, Write, Read and
-   Close placed, wired and run; the rest greyed with its reason), the four nodes at their measured terminals. A VI
+   Close placed, wired and run; the rest greyed with its reason), the four nodes at their measured terminals. An OVI
    built from the palettes ran in the editor against Crucible with LabVIEW's answer
    ([`2026-10-26-editor-visa-run.md`](../../labview-captures/reports/2026-10-26-editor-visa-run.md)). 890 tests green.
    *The VISA Property Node measured on 2026-10-26 (look, menus, the whole Select Property tree, and the behavior of
@@ -524,23 +524,23 @@ array or string read by a local variable while another loop writes it is never t
       LabVIEW: the ring's drawing. Next: (d), the dialogs.*
       *Measured on 2026-10-29 ([`file-dialogs`](../../labview-captures/reports/2026-10-29-file-dialogs.md),
       [`file-dialog-express`](../../labview-captures/reports/2026-10-29-file-dialog-express.md)); (d) split by DT-067's
-      amendment of 2026-10-29 into (d1) the functions' dialogs and (d2) File Dialog, the first Express VI.*
+      amendment of 2026-10-29 into (d1) the functions' dialogs and (d2) File Dialog, the first Express OVI.*
       *(d1) done on 2026-10-29: an unwired path asks the Run's `dialogs` host with LabVIEW's title and mode
       (`core/runtime/file-dialogs.mjs`), the wired prompt as title; op 5 and Delete's confirm ask before replacing or
       deleting; the editor shows the system's own dialogs from Electron's main process, in the last folder chosen
       (`editor/electron/file-dialog-options.mjs`); the command line answers Cancel. Checked in real Electron under Xvfb
       ([`editor-run-dialogs`](../../labview-captures/reports/2026-10-29-editor-run-dialogs.md)). 1039 tests green.
       Departures: Delete picks only files; on Linux the "All Files" filter is not shown; an Abort leaves an open
-      dialog on screen, whose answer is then ignored (unverified what LabVIEW does). Next: the DT on Express VIs,
+      dialog on screen, whose answer is then ignored (unverified what LabVIEW does). Next: the DT on Express OVIs,
       measured first, then (d2) File Dialog on it.*
-      *Express VIs measured on 2026-10-29 ([`express-vi-common`](../../labview-captures/reports/2026-10-29-express-vi-common.md))
+      *Express OVIs measured on 2026-10-29 ([`express-vi-common`](../../labview-captures/reports/2026-10-29-express-vi-common.md))
       and decided in DT-069 (lean: Time Delay, then File Dialog; dynamic data later; reviewed with the community before
       1.0). Next: the core of DT-069 with Time Delay, then the editor's expandable node and dialog, then (d2).*
       *Time Delay done on 2026-10-29 (DT-069, stage A): its runtime measured
       ([`time-delay`](../../labview-captures/reports/2026-10-29-time-delay.md)) and compiled to the scheduler's wait
       (`core/model/express.mjs`, `test/core/express-vi.test.mjs` on the virtual host); in the editor placed from Timing,
       its configuration dialog on drop, double click and Properties, OK as one "Change Attribute" undo step, the node
-      unconfigured and configured with its row, the common Express VI menu; compared with LabVIEW's captures
+      unconfigured and configured with its row, the common Express OVI menu; compared with LabVIEW's captures
       ([`editor-time-delay-compare`](../../labview-captures/reports/2026-10-29-editor-time-delay-compare.md)) and fixed.
       1061 tests green. Not matched: the title bar's icon and the rounded buttons of Windows. Next: stage B (dragging the
       bottom edge, View As Icon, the context help's configuration block), then (d2) File Dialog.*
@@ -559,7 +559,7 @@ array or string read by a local variable while another loop writes it is never t
       VISA over serial; binary files when a lesson asks for them.*
       *Found on the way, to fix as its own step: an I64 or U64 indicator hands its value to the editor as a JavaScript
       number (`deWasm` in `core/runtime/runtime.mjs`), so beyond 2^53 it shows rounded digits where LabVIEW shows them
-      exact; the value inside the VI is exact.*
+      exact; the value inside the OVI is exact.*
    3. **VISA over serial, the transport** (DT-070, amended 2026-10-30): our own serial code in `solder-io`, ASRL
       resources with their table and aliases, a new session's measured settings, and a serial transport in Crucible.
       *Measured on 2026-10-30 with a COM1 added to the VM
@@ -573,12 +573,12 @@ array or string read by a local variable while another loop writes it is never t
       I/O process). Next: step 4, the Property Node.*
    4. **Refnums with classes and the Property Node**, then the Invoke Node, in their own DT: classes Instr (VISA) and
       the panel controls (implicit nodes) from the start.
-   4b. **VISA Configure Serial Port and Bytes at Serial Port** (DT-070 §7): Configure as a polymorphic subVI of
+   4b. **VISA Configure Serial Port and Bytes at Serial Port** (DT-070 §7): Configure as a polymorphic subOVI of
       Solder's own `vi.lib` built on the Property Node; greyed until then.
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the
       firmware (in parallel from step 3), and first served by a Crucible profile of it.
    6. **A DAQmx-like layer** over the ESP32, with its own DT after measuring DAQmx with a simulated NI device.
-   7. **The rest of VI Server** (Open VI Reference, the VI and Application classes).
+   7. **The rest of OVI Server** (Open OVI Reference, the OVI and Application classes).
 
    Left over from VISA, to take up when they fit: finding VISA resources (the dropdown, Select Item, VISA Find
    Resource); the constant's text width (LabVIEW's font is not identified); greyed menu rows show no reason on hover
@@ -594,7 +594,7 @@ and speed but not results; it will be done when a real program
 runs slowly.
 
 **Pending from the pool of threads** (DT-063, left on 2026-10-25 when step 7 was merged):
-- Measure in LabVIEW how often the panel is redrawn while a VI writes an indicator; Solder's coordinator passes
+- Measure in LabVIEW how often the panel is redrawn while an OVI writes an indicator; Solder's coordinator passes
   over it every 16 ms, a guess (`DISPLAY_PASS_MS` in `core/runtime/runtime.mjs`).
 - Synchronous Display and the Value property (DT-063 §10): the clump parks until the editor confirms the drawing.
 - Highlight Execution on several threads: today a Run debugged from the start runs on one thread, and debugging
@@ -603,7 +603,7 @@ runs slowly.
   command line, which makes a pool for each run, and on the tests.
 - Local variables of controls, which would let several loops read one large control at once (the lock allows it).
 
-**Postponed**, but not forgotten: the icon editor (every VI keeps the standard icon), Change to … (half captured, see M1), the *Adapt To Entered Data* switch, the
+**Postponed**, but not forgotten: the icon editor (every OVI keeps the standard icon), Change to … (half captured, see M1), the *Adapt To Entered Data* switch, the
 right-click menus of the panel and the 19 missing Numeric controls.
 
 ## 4. The modules, in order
@@ -764,7 +764,7 @@ right-click menus of the panel and the 19 missing Numeric controls.
   Of Line, Match Pattern and Match Regular Expression (regular expressions), Scan
   From String, Format Into String, Format Value and Scan Value (the Edit Format
   String dialog and inputs that grow), Format Date/Time String (time stamp), Build Text
-  (Express VI), Spreadsheet String To Array and Array To Spreadsheet String (arrays), the
+  (Express OVI), Spreadsheet String To Array and Array To Spreadsheet String (arrays), the
   Additional String Functions with arrays or regular expressions, and the
   Path/Array/String Conversion (paths) and Flatten/Unflatten String folders.
   **Unverified in LabVIEW:** the order of `location` in Trim Whitespace.vi, Replace
@@ -784,7 +784,7 @@ right-click menus of the panel and the 19 missing Numeric controls.
 - [x] **Editable string constant in the diagram**, multi-line *(2026-10-01)*:
   15 × 19 px empty and 22 × 34 with two lines, measured in LabVIEW; just dropped it is
   ready to type; Enter goes down a line, it is confirmed with Enter Text or a click
-  outside. A VI with strings is saved, opened and runs (`qvi-round-trip.test.mjs`).
+  outside. An OVI with strings is saved, opened and runs (`qvi-round-trip.test.mjs`).
 
 ### M4 — Structures: sequences and loops
 
@@ -865,7 +865,7 @@ right-click menus of the panel and the 19 missing Numeric controls.
   they wait for strings), Empty Array?, comparing arrays and clusters with *Comparison
   Mode* (Compare Elements / Aggregates), Is Path and Not Empty?, Fixed-Point
   Overflow? (FXP) and the three that are not simple functions: the Comparison
-  Express VI, Assert Type and Is Value Changed.vim (malleable VIs).
+  Express OVI, Assert Type and Is Value Changed.vim (malleable OVIs).
 - [ ] **Not tried in LabVIEW:** In Range and Coerce with a NaN only in the upper
   limit (with x or with the lower one it is NaN), and Max & Min with integers of
   different sign (the common-type rule is assumed).
@@ -912,7 +912,7 @@ right-click menus of the panel and the 19 missing Numeric controls.
   *(2026-10-01.)* Subpalette captured (15 elements, 4 columns) and Tick
   Count (ms), Wait (ms) and Wait Until Next ms Multiple done, with JSPI (DT-040). The
   rest waits for the time stamp (`tipo-timestamp`), for strings, for clusters,
-  for subVIs or for Express VIs.
+  for subOVIs or for Express OVIs.
 
 ### M8 — Waveform and graphs
 
@@ -951,7 +951,7 @@ right-click menus of the panel and the 19 missing Numeric controls.
 
 ### Afterwards, in this order
 
-- **SubVIs:** connector pane, icon editor, compiled call (R6).
+- **SubOVIs:** connector pane, icon editor, compiled call (R6).
 - **Dialog & User Interface**, **File I/O** (with their gates, R7).
 - **Instrument I/O:** serial and VISA, with the host in Rust (DT-039 §5).
 - **Projects:** `.qproj` and Project Explorer.
@@ -977,17 +977,17 @@ probes and execution highlighting.
 - 2026-10-01 — M1: Expression Node verified in LabVIEW and fixed (`**` is power, `^` is exclusive or; 39 functions). Range Limits with DBL: −Inf/+Inf. The part of M1 that §3b asks for is closed; what was postponed stays unchecked. Next: M2, Boolean for real.
 - 2026-10-01 — M2, first step: Controls ▸ Modern ▸ Boolean captured (13 elements, 3 columns, menus and the 6 mechanical actions), 10 controls done with their green "TF" terminal, `bool-control` and `bool-indicator` compiled (i32 0/1) and `.qvi` with class and mechanical action. Only Switch When Pressed is selectable; Run mode of the panel and Latch, pending the execution decision (M4).
 - 2026-10-01 — M2: drawings of the ten Boolean controls compared with LabVIEW at 1:1 (off and on) and fixed; panel terminals at 38 × 38 (icon) and 32 × 16 (compact), with the label of a Boolean 4 px from the drawing. Unresolved: the exact box of the toggles and the position of their labels.
-- 2026-10-01 — M5: Functions ▸ Comparison captured (29 elements, context help and five menus) and done over numbers and Booleans: 16 functions placed, wireable and compiled, with behavior measured in LabVIEW (NaN, coercion, FALSE < TRUE, Select, Max & Min, In Range and Coerce); the rest greyed out until strings (M3), arrays (M6) and malleable VIs. Next: M4, structures.
+- 2026-10-01 — M5: Functions ▸ Comparison captured (29 elements, context help and five menus) and done over numbers and Booleans: 16 functions placed, wireable and compiled, with behavior measured in LabVIEW (NaN, coercion, FALSE < TRUE, Select, Max & Min, In Range and Coerce); the rest greyed out until strings (M3), arrays (M6) and malleable OVIs. Next: M4, structures.
 - 2026-10-01 — Run like LabVIEW (DT-040, decided): circuits built in LabVIEW (While with Stop and Wait, output tunnel, two Waits in parallel; Abort; the click on a stopped Boolean) and cloned. The compiler splits the diagram into clumps and the host runs them by dataflow with JSPI: parallel branches, live indicators, immediate Abort, Latch When Released (and Stop, OK and Cancel are born Latch), Run mode in both windows. Timing: Tick Count, Wait and Wait Until Next ms Multiple. Tested in the real editor in Xvfb. Next: M4, with the loops on this scheduler.
 - 2026-10-01 — M4, While Loop and For Loop in the editor: Functions ▸ Programming ▸ Structures captured (16 elements, 4 columns) and declared in full in the inventory (While and For done; Case, sequences, Event, Timed, Formula Node and the rest, greyed out with their reason), along with the border menus of each loop and of "i", the condition, "N", the tunnels and the shift registers. The two loops, drawn at 1:1 (frame, terminals of 16 × 16, tunnels of 9 × 9, shift registers of 16 × 12, handles of 6 × 6; compared pixel by pixel with LabVIEW) and editable: place with two clicks or a rectangle (minimum 48 × 48), move with what is inside, stretch, move nodes in and out, tunnels when wiring across the border, Add Shift Register and Stop/Continue if True. Rule 26 of spec/05 is amended (dragging between scopes reassigns, as in LabVIEW). Next: Case Structure and the sequences (M4), or arrays (M6) for the tunnels with Indexing.
 - 2026-10-01 — M4, the core of the loops (DT-041): structures in the flat model with `dentro`, tunnels and shift registers as border nodes, inline compilation inside the loop's clump with adaptive yielding, and nested `.qvi` (spec/02 amended: condition, N and initial value are wired). 13 behavior tests; the sum example gives 45.
 - 2026-10-01 — M4, Case Structure in the editor: captured (hatched frame, frame selector, "?", tunnels, menus of the border, the selector and the tunnels), verified in LabVIEW (DBL into the selector rounds to even; For with N = 0 gives 0) and done with measurements compared pixel by pixel; the frames become "0, Default" and "1" when an integer is wired. A Case made with the mouse compiles and runs. Next: sequences, or arrays (M6).
 - 2026-10-01 — M4, the core of the Case (DT-041 §6–8: frames in the plan, selector, tunnels with one input per frame and Use Default If Unwired, if/else chain, `.qvi` with `frames`) and the subplans: two waits in the same body overlap.
-- 2026-10-01 — M4, Flat and Stacked Sequence in the editor: captured in LabVIEW (film border of 250 × 200 with frames, separators of 5 px and holes every 12; minimum frame of 38; tunnels of 9 × 9 on the separators; selector "0 [0..1]" of 72 × 17; local variable of 13 × 13 with write arrow, read arrow and in checkerboard; menus of both) and done with the border compared pixel by pixel (66 px of difference, all from the tunnel and the wire that LabVIEW did not have in that capture). Verified by building and running the VI in LabVIEW: the output tunnel of a Flat writes the indicator when its frame ends (at ~1 s with a Wait of 1000 ms in frame 0), not when the sequence ends as the core did; fixed the same day (each frame of a Flat is an element of the dataflow, DT-041 §9). Next: Add Sequence Local, or arrays (M6).
-- 2026-10-01 — M3, String: Functions ▸ Programming ▸ String captured in full (28 elements in 5 columns, plus Number/String Conversion of 12, Additional String Functions of 13, Path/Array/String Conversion of 6 and Flatten/Unflatten String of 9, with the context help of each function), Controls ▸ Modern ▸ String & Path (5) and the string constant and control (measured at 1:1: constant of 15 × 19 px empty and 22 × 34 with two lines; control of 100 × 24 px). 27 functions and constants and the two controls done; the rest greyed out with their reason. Results measured by building each function in LabVIEW (String Subset, Replace Substring, Search and Replace String, the Number To … String and … String To Number, and the string comparisons, byte by byte) and carried into `spec/04` (rules 21b–21f) and into tests. The functions that depend on LabVIEW's format are JavaScript imports over the memory of DT-042 (`cad.*`), with round-to-even for exact numbers; the allocator and the cells do not change. Comparison accepts strings and gains Empty String/Path?, Decimal/Hex/Octal Digit? and White Space?. The editor writes the constant and the control with Enter as line break; a string VI is saved, opened and runs. 248 tests. Next: M6 (arrays and clusters), or the right-click menus of the string constant and control, and Format Into String.
+- 2026-10-01 — M4, Flat and Stacked Sequence in the editor: captured in LabVIEW (film border of 250 × 200 with frames, separators of 5 px and holes every 12; minimum frame of 38; tunnels of 9 × 9 on the separators; selector "0 [0..1]" of 72 × 17; local variable of 13 × 13 with write arrow, read arrow and in checkerboard; menus of both) and done with the border compared pixel by pixel (66 px of difference, all from the tunnel and the wire that LabVIEW did not have in that capture). Verified by building and running the OVI in LabVIEW: the output tunnel of a Flat writes the indicator when its frame ends (at ~1 s with a Wait of 1000 ms in frame 0), not when the sequence ends as the core did; fixed the same day (each frame of a Flat is an element of the dataflow, DT-041 §9). Next: Add Sequence Local, or arrays (M6).
+- 2026-10-01 — M3, String: Functions ▸ Programming ▸ String captured in full (28 elements in 5 columns, plus Number/String Conversion of 12, Additional String Functions of 13, Path/Array/String Conversion of 6 and Flatten/Unflatten String of 9, with the context help of each function), Controls ▸ Modern ▸ String & Path (5) and the string constant and control (measured at 1:1: constant of 15 × 19 px empty and 22 × 34 with two lines; control of 100 × 24 px). 27 functions and constants and the two controls done; the rest greyed out with their reason. Results measured by building each function in LabVIEW (String Subset, Replace Substring, Search and Replace String, the Number To … String and … String To Number, and the string comparisons, byte by byte) and carried into `spec/04` (rules 21b–21f) and into tests. The functions that depend on LabVIEW's format are JavaScript imports over the memory of DT-042 (`cad.*`), with round-to-even for exact numbers; the allocator and the cells do not change. Comparison accepts strings and gains Empty String/Path?, Decimal/Hex/Octal Digit? and White Space?. The editor writes the constant and the control with Enter as line break; a string OVI is saved, opened and runs. 248 tests. Next: M6 (arrays and clusters), or the right-click menus of the string constant and control, and Format Into String.
 - 2026-10-02 — Decided: the error cluster goes into M6, after the basic clusters and before arrays. Arrays and clusters go on the memory of DT-042, not on WasmGC.
 - 2026-10-02 — M6, the error cluster in the editor (DT-043): captured in LabVIEW the Controls ▸ Modern ▸ Data Containers subpalette (2 columns, 8 elements: Array, Cluster, RealMatrix.ctl, ComplexMatrix.ctl, Set, Map, Error In 3D.ctl and Error Out 3D.ctl) and the Error Out control at 1:1 (155 × 121 px). Done: the wire (3 px, olive border and yellow and black dashes), the Error In/Out controls with their terminal, the editable error constant (22 × 57 px), Dialog & User Interface declared in full (23 elements, 4 columns; 5 done), Simple Error Handler, the two modal dialogs (the automatic handling one with Continue and Stop, and the Simple Error Handler one with OK), `core/runtime/error-codes.mjs` with codes 1, 2, 7, 8, 42, 43, 56, 63 and 66 and the paragraph for the undefined code, and the error terminals of Search and Replace String. 266 tests. Next: arrays (M6), the basic clusters with their controls (Bundle, Unbundle, Cluster) or Explain Error.
 - 2026-10-02 — M6, arrays in the editor: Functions ▸ Programming ▸ Array captured in full (34 elements, 5 columns, context help of each one, measurements of each function dropped in the diagram) and Controls ▸ Modern ▸ Data Containers ▸ Array; the panel array menu, the indexed output tunnel menu and that of a function, captured. Done: Replace Array Subset, Insert Into Array, Delete From Array, Sort 1D Array, Rotate 1D Array, Split 1D Array and Increment/Decrement Array Element (JavaScript module `arr`), the array control, indicator and constant, indexed tunnels with their menu and the 2 px array wire; the `.qvi` saves `indexed`, `visible-elements` and `index`. LabVIEW's edge cases remain unverified (see M6). 287 tests.
-- 2026-10-03 — M6, 2D arrays (second stage, item 1). Researched how LabVIEW types arrays (type descriptor: element plus dimension count, no arrays of arrays) and decided DT-044: `{ array: E, dims: N }` and one block `[rows][columns][elements]`. Captured in LabVIEW (`labview-captures/array-2d/`): the 2D constant, panel array, terminal and 3 px wire at 1:1, the menus with Add/Remove Dimension, and the results of Array Size, Index Array (element, row, column, out of range), Build Array (padding, 2D + 1D, Concatenate Inputs), Initialize Array, Transpose, Reshape and nested Fors; Add Dimension still enabled at 34 dimensions. Core: types, memory, panel, coercion, Array Size, Index Array, Build Array, Initialize Array and auto-indexing in 2D. Editor: the wire, the 2D constant and panel array (editable, stretchable), Index Array and Initialize Array with two inputs. Unverified: Index Array with no index wired, ragged rows out of a loop. Not done: more than 2 dimensions, Transpose/Reshape, Index Array's extra index groups, Build Array's Concatenate lock. 327 tests. Next: subVIs (R6).
-- 2026-10-08 — SubVIs, stages (a) and (b) of DT-045. Researched how LabVIEW calls a subVI (separate compiled code, one data space when non-reentrant, clones when reentrant, recursion only with shared clones), checked again by an independent review, and decided DT-045. Captured in LabVIEW (`labview-captures/subvi/`): the 4-2-2-4 connector pane and its menus, Recommended by default and no Required outputs, the subVI node and its menu, the unwired input taking the control's default (5 + 3 = 8), the broken Run with a Required input unwired, the functional global counting 1, 2 and then 3, 4 in the next Run (1, 1 and 2, 2 with preallocated clones), VI Properties ▸ Execution, the icon editor and the recursion error. Core: one module per hierarchy with a data space per instance, direct calls or JSPI plans, a queue per non-reentrant VI, uninitialized shift registers that keep their value, state kept between Runs, the hierarchy loaded from relative paths, the command line. Editor: several VIs open, connector pane, Select a VI..., the subVI node, double click to open, VI Properties ▸ Execution. DBL orange corrected to the measured `#ff7f00`. Unverified: the total time of two parallel calls. Not done: the icon editor (stage c), the other connector patterns, View As Icon off, shared clones, recursion; a caller whose saved wires point to ports its subVI no longer has does not open. 360 tests.
-- 2026-10-09 — Debugging (second stage, item 6, the last of it). Measured in LabVIEW (`labview-captures/debugging/`): one Debug Window for probes and breakpoints, Highlight Execution with four speeds, the stops before a node, the Error list. Core (DT-047): hooks after each node. Editor: a controller in the run worker that stops, steps and paces the VI, the toolbar buttons with their states, probes, breakpoints, the Debug Window and the Error list as floating windows, Allow debugging in VI Properties. Unverified: the pace of Fast and Very Fast, Step Out, wire breakpoints, what Pause and Start Single Stepping do in edit mode. 500 tests.
+- 2026-10-03 — M6, 2D arrays (second stage, item 1). Researched how LabVIEW types arrays (type descriptor: element plus dimension count, no arrays of arrays) and decided DT-044: `{ array: E, dims: N }` and one block `[rows][columns][elements]`. Captured in LabVIEW (`labview-captures/array-2d/`): the 2D constant, panel array, terminal and 3 px wire at 1:1, the menus with Add/Remove Dimension, and the results of Array Size, Index Array (element, row, column, out of range), Build Array (padding, 2D + 1D, Concatenate Inputs), Initialize Array, Transpose, Reshape and nested Fors; Add Dimension still enabled at 34 dimensions. Core: types, memory, panel, coercion, Array Size, Index Array, Build Array, Initialize Array and auto-indexing in 2D. Editor: the wire, the 2D constant and panel array (editable, stretchable), Index Array and Initialize Array with two inputs. Unverified: Index Array with no index wired, ragged rows out of a loop. Not done: more than 2 dimensions, Transpose/Reshape, Index Array's extra index groups, Build Array's Concatenate lock. 327 tests. Next: subOVIs (R6).
+- 2026-10-08 — SubOVIs, stages (a) and (b) of DT-045. Researched how LabVIEW calls a subVI (separate compiled code, one data space when non-reentrant, clones when reentrant, recursion only with shared clones), checked again by an independent review, and decided DT-045. Captured in LabVIEW (`labview-captures/subvi/`): the 4-2-2-4 connector pane and its menus, Recommended by default and no Required outputs, the subOVI node and its menu, the unwired input taking the control's default (5 + 3 = 8), the broken Run with a Required input unwired, the functional global counting 1, 2 and then 3, 4 in the next Run (1, 1 and 2, 2 with preallocated clones), OVI Properties ▸ Execution, the icon editor and the recursion error. Core: one module per hierarchy with a data space per instance, direct calls or JSPI plans, a queue per non-reentrant OVI, uninitialized shift registers that keep their value, state kept between Runs, the hierarchy loaded from relative paths, the command line. Editor: several OVIs open, connector pane, Select an OVI..., the subOVI node, double click to open, OVI Properties ▸ Execution. DBL orange corrected to the measured `#ff7f00`. Unverified: the total time of two parallel calls. Not done: the icon editor (stage c), the other connector patterns, View As Icon off, shared clones, recursion; a caller whose saved wires point to ports its subOVI no longer has does not open. 360 tests.
+- 2026-10-09 — Debugging (second stage, item 6, the last of it). Measured in LabVIEW (`labview-captures/debugging/`): one Debug Window for probes and breakpoints, Highlight Execution with four speeds, the stops before a node, the Error list. Core (DT-047): hooks after each node. Editor: a controller in the run worker that stops, steps and paces the OVI, the toolbar buttons with their states, probes, breakpoints, the Debug Window and the Error list as floating windows, Allow debugging in OVI Properties. Unverified: the pace of Fast and Very Fast, Step Out, wire breakpoints, what Pause and Start Single Stepping do in edit mode. 500 tests.

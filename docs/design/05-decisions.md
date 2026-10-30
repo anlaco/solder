@@ -3163,7 +3163,7 @@ Property Node and comes as a real polymorphic subVI; Crucible serves a serial po
    and Number of Bytes at Serial Port (read only). On a TCP socket a serial attribute is VI_ERROR_NSUP_ATTR
    (-1073807331, measured at Baud Rate).
 7. **VISA Configure Serial Port and VISA Bytes at Serial Port come after the Property Node** (step 4): Configure as a
-   polymorphic subVI of Solder's own `vi.lib`, (Instr) and (Serial Instr), its diagram drawn anew with the measured
+   polymorphic subVI of Solder's own `vi.lib` (`ovi.lib` since DT-071), (Instr) and (Serial Instr), its diagram drawn anew with the measured
    rows in their order (Timeout Value, Baud Rate, Data Bits, Stop Bits, Parity, Termination Character Enable,
    Termination Character, Flow Control, End Mode for Reads: TermChar when the termination is enabled, None when not)
    and its measured terminals and defaults (timeout 10000 U32, baud 9600 U32, data bits 8 U16, parity enum U16, stop
@@ -3194,3 +3194,35 @@ Property Node and comes as a real polymorphic subVI; Crucible serves a serial po
 | Crucible serves a serial port | `crates/crucible/tests/smoke_serie.rs` in Crucible; Solder and LabVIEW in the VM against Crucible's Keithley through COM1 and `socat` | **Verified** (2026-10-30): both read `Keithley,2400,1234567,A1.2\n`, 27 bytes, code 0 |
 | The Win32 transport | By hand in the VM against COM1 (`ASRL1::INSTR`, `COM1`, `asrl1::instr`; settings, baud 0, timeout, Bytes at Port) | **Verified** (2026-10-30); no automatic test, as Windows has no pseudo-terminal |
 | What NI-VISA does on Linux and macOS (numbers, device paths) | — | **Unverified** |
+
+## DT-071
+
+**Solder's program unit is the OVI, *Open Virtual Instrument*, not the VI: in the documentation, the code and the
+editor's interface. "VI" is LabVIEW's word and is used only for LabVIEW's.**
+
+- **Status:** Accepted on 2026-10-30 by the developer, to start setting Solder apart from LabVIEW in how it is named.
+  It amends [DT-035](#dt-035) (the editor clones LabVIEW's names one to one): where a name says what Solder's program
+  unit is, Solder's word wins over LabVIEW's.
+- **Why:** "VI" is NI's term. Solder's unit is the same idea, open: an OVI. Its files already have names of their
+  own ([DT-051](#dt-051)): `.sdg` (*Solder Graphics*), an OVI drawn as a diagram, and in the future `.sdt` (*Solder
+  Text*), an OVI written as code.
+
+### Decision
+
+1. **The words.** An OVI (plural OVIs); a subOVI; an Express OVI; a polymorphic OVI; Solder's own library of OVIs is
+   `ovi.lib` (it replaces the `vi.lib` of [DT-070](#dt-070) §7). Every LabVIEW name built on "VI" follows: New OVI,
+   OVI Properties, OVI Server, Open OVI Reference, the OVI class.
+2. **Where.** The documentation, comments, new identifiers, commit messages and **the editor's interface** (menus,
+   windows, dialogs, tooltips, palettes). The rest of what the editor shows stays LabVIEW's, as DT-035 says.
+3. **What keeps "VI".** LabVIEW itself: its VIs measured in the virtual machine, the `.vi` files there, the reports in
+   `labview-captures/`, NI's names quoted as such (`VISA Configure Serial Port (Instr).vi`), and the history of this
+   log: the decisions before this one say VI where they mean what is now an OVI.
+4. **What is already written.** The living documentation (README, `docs/README.md`, `spec/`, the plan, CLAUDE.md)
+   is changed now. Code and tests change by the Boy Scout rule, when they are touched (`buildVI` becomes `buildOvi`
+   then); the editor's interface texts are changed as a step of their own, each with its test.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The editor's interface says OVI where LabVIEW says VI | A test over the menus, windows and palettes' texts | **Unverified** (to do, its own step) |

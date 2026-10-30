@@ -40,7 +40,7 @@ editor is an implementation.
 ### 2.2 What is part of the migration
 
 - The complete visual language: nodes, wires, types, control structures,
-  sub-VIs.
+  subOVIs.
 - The compiler, with WebAssembly as its target.
 - The editor: *Block Diagram* and *Front Panel*.
 - The execution runtime, with its capability model.
@@ -62,31 +62,32 @@ editor is an implementation.
 
 ## 3. The program and its parts
 
-**VI** — *Virtual Instrument*. The program unit of Solder. It is equivalent to a
+**OVI** — *Open Virtual Instrument*. The program unit of Solder. It is equivalent to a
 function or to a complete program depending on how it is invoked. It is saved in
-a `.sdg` file. A VI is made up of a *Front Panel*, a *Block Diagram* and,
-optionally, a *connector pane*.
+a `.sdg` file. An OVI is made up of a *Front Panel*, a *Block Diagram* and,
+optionally, a *connector pane*. It is what LabVIEW calls a VI; Solder says OVI (DT-071),
+and keeps "VI" for LabVIEW's own.
 
-**Front Panel** (FP) — The user interface of the VI: the set of *controls* and
+**Front Panel** (FP) — The user interface of the OVI: the set of *controls* and
 *indicators* with their visual layout. It is what the person running the program
 sees.
 
-**Block Diagram** (BD) — The *graph* that defines what the VI does. It is the
+**Block Diagram** (BD) — The *graph* that defines what the OVI does. It is the
 code.
 
 **Control** — An element of the *Front Panel* that supplies an **input** value to
 the program. Each control has a *default value* that is part of the semantics of
-the VI, not of its presentation.
+the OVI, not of its presentation.
 
 **Indicator** — An element of the *Front Panel* that shows an **output** value.
 
-**Sub-VI** — A VI invoked from the *Block Diagram* of another. Any VI with a
-*connector pane* can be used as a sub-VI; it is the calling context that
+**SubOVI** — An OVI invoked from the *Block Diagram* of another. Any OVI with a
+*connector pane* can be used as a subOVI; it is the calling context that
 determines it, not a mark in the file.
 
 **Connector pane** — The declaration of which *controls* and *indicators* of the
-*Front Panel* act as input and output parameters when the VI is used as a
-*sub-VI*. Its presence enables that use.
+*Front Panel* act as input and output parameters when the OVI is used as a
+*subOVI*. Its presence enables that use.
 
 ## 4. The graph
 
@@ -119,7 +120,7 @@ type*. Every port has:
 
 **Dynamic port** — A *port* whose name or whose number is not fixed by the *block
 type* but by the configuration of the specific *node*: the fields of a `bundle`,
-the outputs of an `unbundle`, the parameters of a *sub-VI*.
+the outputs of an `unbundle`, the parameters of a *subOVI*.
 
 **Terminal** — The **visual** representation of a *port* on the canvas of the
 *Block Diagram*. A port is semantics; a terminal is presentation. Moving a
@@ -137,7 +138,7 @@ it was only checked when connecting, and that is why the corpus contained
 undetected violations.)*
 
 **Broken wire** — A *wire* whose ends have incompatible *data types*, or that
-violates some connection rule. A VI with broken wires **MUST NOT** compile.
+violates some connection rule. An OVI with broken wires **MUST NOT** compile.
 
 **Structure** — A *node* that contains a subgraph and controls its execution:
 `while-loop`, `for-loop`, `case-structure`.
@@ -199,15 +200,15 @@ obtained from the operation that opens the resource.
 
 ## 7. Files
 
-**`.sdg`** (Solder Graphical) — A *VI*. It contains the graph, the *Front Panel* and the
+**`.sdg`** (Solder Graphics) — An *OVI* drawn as a diagram. It contains the graph, the *Front Panel* and the
 *presentation layer*. **It is the source of truth**: the compiled module is a
 derived artifact and **MUST NOT** be stored inside the file. Until DT-051 it was
 written `.qvi`; a `.qvi` still opens, and saved in place it keeps its name.
 
-**`.sdt`** (Solder Text) — Reserved for a future textual Solder language
-(DT-051). Nothing reads or writes it yet.
+**`.sdt`** (Solder Text) — Reserved for a future textual Solder language: an *OVI*
+written as code (DT-051, DT-071). Nothing reads or writes it yet.
 
-**`.sdlib`** — A library: a set of VIs distributed as a unit (`.qlib` before DT-051).
+**`.sdlib`** — A library: a set of OVIs distributed as a unit (`.qlib` before DT-051).
 
 **`.sdproj`** — A project: the file tree and its dependencies (`.qproj` before DT-051).
 
@@ -224,7 +225,7 @@ external resources and *capabilities*.
 the logic of the program and nothing else.
 
 **Capability** *(gate)* — An explicit permission that the *host* grants to the
-*guest* to access a specific external resource. Denied by default: a VI with no
+*guest* to access a specific external resource. Denied by default: an OVI with no
 declared capabilities **MUST NOT** be able to open any resource.
 
 **Tick** — A unit of execution of the *guest* driven by the *host*. It lets

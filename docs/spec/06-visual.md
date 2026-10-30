@@ -91,9 +91,9 @@ the base has the two inputs (a, b) distributed vertically.
 
 *The specific shapes of each primitive will be defined when it is implemented.*
 
-### 3.2 SubVIs: the 4224 pattern
+### 3.2 SubOVIs: the 4224 pattern
 
-SubVIs use the connector pane with the **4-2-2-4** pattern as a starting
+SubOVIs use the connector pane with the **4-2-2-4** pattern as a starting
 point:
 - 4 terminals on top
 - 2 terminals on the left (inputs)
@@ -105,11 +105,11 @@ The connector pane takes up the whole block — there is no dead space.
 
 If more terminals are needed, additional patterns will be considered.
 
-### 3.3 SubVIs: view-as-icon
+### 3.3 SubOVIs: view-as-icon
 
-SubVIs also support `view-as-icon`:
+SubOVIs also support `view-as-icon`:
 
-**Icon ON:** Square with the VI's icon and a border in the color of the type.
+**Icon ON:** Square with the OVI's icon and a border in the color of the type.
 
 **Icon OFF:** Compact rectangle. It shows input arrows (left) and
 output arrows (right) in the color of each terminal's data type. At the
@@ -237,7 +237,7 @@ Measured at 1:1 in `labview-captures/array-2d/` (DBL):
 When a wire is connected between terminals of incompatible types:
 - The wire **is drawn** (the gesture is not prevented)
 - A **red X** is shown at the midpoint of the wire
-- The VI cannot run while there are broken wires
+- The OVI cannot run while there are broken wires
 - When hovering over the broken wire: tooltip with the reason
   ("Type mismatch: expected DBL, got TF")
 
@@ -313,7 +313,7 @@ starting with a basic palette and adding hover + pin later.*
 > above the bottom it is pushed up, and if that push is more than about 78 px it flips above the click and ends
 > 41 px below it (the threshold lies between 71 and 86 px, unverified). Near the right edge it ends 2 px left of the
 > click. A subpalette that would end too low is pushed up to the same limit, and one that would leave the room on the
-> right opens left of its folder. LabVIEW draws them over the desktop; Solder's palettes live in the VI window's
+> right opens left of its folder. LabVIEW draws them over the desktop; Solder's palettes live in the OVI window's
 > page, so the window is their screen (`placePalette`, `placeSubpalette` in `editor/src/window/window-view.mjs`,
 > tests in `test/editor/window-view.test.mjs`).
 
@@ -330,7 +330,7 @@ entry of the LabVIEW inventory when its area is broken down (DT-035):
 - Error clusters and their visual representation
 - Diagram decorations (free labels, comments, flat sequence)
 - Selection and highlight colors
-- Typography and text sizes *(resolved for the VI windows: §10)*
+- Typography and text sizes *(resolved for the OVI windows: §10)*
 - Property Nodes and their expandable format
 - Specific representations of each primitive (shapes of Add, Sub, Mul, etc.)
 - Cluster: brown wire + twisted pattern + field editor
@@ -409,7 +409,7 @@ is magenta in `74-diagram-chart-cluster-two-scalars.png`.
 ### 8.6 Compilation
 
 The three blocks (`waveform-chart`, `waveform-graph`, `xy-graph`) are panel indicators whose type is the wire's (`docs/schema/blocks.json`).
-When the VI runs the runtime writes their value like any indicator; the chart's history lives in the window (`pan.charts`), not in the VI
+When the OVI runs the runtime writes their value like any indicator; the chart's history lives in the window (`pan.charts`), not in the OVI
 or in the `.sdg`; a Run does not clear it and a change in the type of its wire does. The run worker sends the chart every write, in order,
 and the other indicators only the last one of each pause (`run-worker.mjs`).
 
@@ -448,7 +448,7 @@ test.*
 
 ---
 
-## 10. The VI windows: measurements and typography
+## 10. The OVI windows: measurements and typography
 
 The *Front Panel* and the *Block Diagram* clone the LabVIEW 2026Q3 captures
 (`labview-captures/front-panel/vi-nuevo.png` and
@@ -513,15 +513,15 @@ same pixel—. The comparisons are made by starting the editor on a virtual scre
 (Electron with `--force-device-scale-factor=1.5`) and
 overlaying it on the captures; that is not a test.
 
-## 11. SubVIs: connector pane, icon and node (DT-045)
+## 11. SubOVIs: connector pane, icon and node (DT-045)
 
 From `labview-captures/subvi/` (1:1, window pixels). The connector pane is 32 × 32 px, top right, left of the
 icon (x 1355..1386, y 71..102 in the capture), grid every 8 px, 1 px black lines (`connector-assigned-zoom8x.png`):
 an input cell is filled with its type colour; an output cell is black with a 4 × 4 square of the colour. The
-icon is 32 × 32 with a 1 px black border; the default icon is ours, with the untitled-VI number at the bottom right
-when known (opened files show none). The subVI node is that icon, wires touching its border
+icon is 32 × 32 with a 1 px black border; the default icon is ours, with the untitled-OVI number at the bottom right
+when known (opened files show none). The subOVI node is that icon, wires touching its border
 (`caller-x-unwired-diagram.png`); on hover each terminal shows a dot and a 4.5 px whisker in its type colour.
-Menus: `connector-menu.png`, `icon-menu.png`, `subvi-node-menu.png`. VI Properties: dialog 640 × 380, positions
+Menus: `connector-menu.png`, `icon-menu.png`, `subvi-node-menu.png`. OVI Properties: dialog 640 × 380, positions
 in `editor/src/window/vi-properties.mjs` (`vi-properties-execution-default.png`). Type colours are the wire colours,
 `#ff7f00` for DBL, the same as measured in the connector cells.
 
@@ -770,6 +770,6 @@ section of `editor/src/common/glyphs.mjs`; `MEDIDAS_PATH_PANEL` in `editor/src/f
 | 2026-09-29 | §4 and §5.3: wire colors by type and coercion dot, implemented in the editor (DT-038). |
 | 2026-09-29 | §6.3: the hover that opens the subpalettes, implemented. §10: the subpalettes, cloned from Numeric's, and the palettes' shadow. |
 | 2026-09-29 | §9 and §10: the editor moves to the web (DT-037); measurements in CSS px, the header and the palette recalibrated pixel by pixel. |
-| 2026-09-29 | §6.2 superseded by DT-035. Added §9: declared placeholders (rule 57), with the mark already implemented. §1.1 marked: the reference does have zoom. Added §10: measurements and typography of the VI windows. §1.1: the "no zoom" is kept as a difference from LabVIEW |
+| 2026-09-29 | §6.2 superseded by DT-035. Added §9: declared placeholders (rule 57), with the mark already implemented. §1.1 marked: the reference does have zoom. Added §10: measurements and typography of the OVI windows. §1.1: the "no zoom" is kept as a difference from LabVIEW |
 | 2026-04-03 | Added section 8: Waveform Chart and Graph |
 | 2026-03-22 | Initial creation — planning meeting |

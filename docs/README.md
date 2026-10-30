@@ -22,7 +22,7 @@ informative text explains.
 1. [`design/labview-plan.md`](design/labview-plan.md): where we are (§2) and
    what comes next (§3b).
 2. [`spec/01-glossary.md`](spec/01-glossary.md): the vocabulary. *Port*,
-   *terminal* or *VI* have a precise meaning here.
+   *terminal* or *OVI* have a precise meaning here.
 3. [`design/05-decisions.md`](design/05-decisions.md): the technical
    decisions, from DT-035 on.
 4. Whichever `spec/` document you are working on.

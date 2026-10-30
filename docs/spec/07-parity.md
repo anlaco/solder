@@ -68,7 +68,7 @@ the contract.
 
 What defines the identity of the language:
 
-- **The values produced by each VI in `corpus/`.**
+- **The values produced by each OVI in `corpus/`.**
 - The dataflow semantics ([`04`](04-dynamic-semantics.md) Rule 11).
 - That the body of a While Loop runs at least once (Rule 15).
 - The indeterminacy of the order between independent nodes (Rule 12).
@@ -156,7 +156,7 @@ is a separate matter and has its own tests.
 
 ```
 corpus/
-├── <nombre>.qvi          el VI reparado, en JSON
+├── <nombre>.qvi          el OVI reparado, en JSON
 ├── <nombre>.esperado     valores de cada indicador, capturados
 └── README.md             procedencia de cada fichero y qué ejercita
 ```
@@ -177,8 +177,8 @@ The corpus **MUST** cover, with at least one file each:
 - The four scalar types and the two composite ones.
 - The three control structures.
 - Shift registers and tunnels.
-- Sub-VIs and `.qlib`.
-- A VI that does **not** compile, for each checkable rule in
+- SubOVIs and `.qlib`.
+- An OVI that does **not** compile, for each checkable rule in
   [`03`](03-static-semantics.md): incompatible types, fan-in, cycle, unknown
   port, unconnected input, unassigned case tunnel.
 

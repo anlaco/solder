@@ -46,7 +46,7 @@ them physically**:
 | Layer | Where it lives | Does it affect the compiled program? |
 |------|-----------|-------------------------------|
 | **Semantic** | `block-diagram`, `capabilities`, and `default`/`type` of the `front-panel` | Yes |
-| **Interface** | `front-panel`, `connector` | Determines how the VI is invoked |
+| **Interface** | `front-panel`, `connector` | Determines how the OVI is invoked |
 | **Presentation** | `layout` | **No** |
 
 > **Normative requirement.** A conforming compiler **MUST NOT** read `layout`.
@@ -69,7 +69,7 @@ canvases with the same name and a different position on each**.
 ### 3.1 `name` is the only identity
 
 Every node, panel element, structure and shift register has a `name` that is
-**unique across the whole VI** and immutable. **There are no numeric identifiers.**
+**unique across the whole OVI** and immutable. **There are no numeric identifiers.**
 
 *(The earlier format had a numeric `id` and a `name` at the same time, which
 forced keeping two identities in sync and produced hacks such as the pseudo-`id`s
@@ -92,9 +92,9 @@ pattern to it that requires both halves to be non-empty.
 Port names **MUST** be the ones declared by the block registry.
 
 **A loose end (DT-046).** Either end of a wire may instead be `{ "loose": [x, y] }`, the point of the diagram where a
-terminal was. Such a wire is **broken**: the VI is valid to read and to draw but does not compile until the wire is
+terminal was. Such a wire is **broken**: the OVI is valid to read and to draw but does not compile until the wire is
 wired again or removed (Edit ▸ Remove Broken Wires). The loose end appears when a node or a control is deleted
-leaving its wires, and when a subVI no longer has the terminal a wire went to; a wire with both ends loose is never
+leaving its wires, and when a subOVI no longer has the terminal a wire went to; a wire with both ends loose is never
 saved. The `bends` of a wire whose destination is loose are not saved (the key of `layout.wires` is the destination);
 the route is drawn again by default. Existing files stay valid.
 
@@ -125,7 +125,7 @@ one it knows, instead of trying to read it halfway.
 raises this number and comes with an **automatic migration** from the version before
 (`MIGRATIONS` in `core/model/qvi-format.mjs`): a reader brings an older file up to its own
 version, one migration after another, so every file a released Solder saved still opens.
-The VIs saved by each release are kept in `test/fixtures/released/<version>/`, and
+The OVIs saved by each release are kept in `test/fixtures/released/<version>/`, and
 `test/end-to-end/format-versions.test.mjs` opens and compiles all of them; a release adds its
 folder. The `.qvi` extension of the alphas still opens (DT-051).
 
@@ -151,7 +151,7 @@ open, so declaring one is always an author's mistake.)*
 The full model will be in `design/03-seguridad.md` *(not yet written)*.
 
 > **Open question.** Fixing an IP inside the program file makes the
-> VI stop working when the test bench changes, and makes a colleague's `.sdg`
+> OVI stop working when the test bench changes, and makes a colleague's `.sdg`
 > useless. A level of indirection is needed —profiles, per-subnet wildcards, or
 > project-level permissions— or everyone will put `["*"]` on the
 > first day. **Unresolved; it is the work of `design/03-seguridad.md`.**
@@ -184,7 +184,7 @@ compatibility rules are in [`03-static-semantics.md`](03-static-semantics.md) §
 
 ### 4.5 `connector` *(optional)*
 
-Enables use as a *sub-VI*. It lists which panel elements act as inputs
+Enables use as a *subOVI*. It lists which panel elements act as inputs
 and which as outputs, by their `name`:
 
 ```json
@@ -210,9 +210,9 @@ LabVIEW) or `optional`; an output cannot be `required`.
 
 ### 4.5b `execution` *(optional)*
 
-VI Properties ▸ Execution. `{ "reentrancy": "preallocated" }` gives each call
-site its own copy of the VI; without it the VI is non-reentrant, as a new VI in
-LabVIEW (DT-045). `{ "allow-debugging": false }` is VI Properties ▸ Execution ▸ Allow
+OVI Properties ▸ Execution. `{ "reentrancy": "preallocated" }` gives each call
+site its own copy of the OVI; without it the OVI is non-reentrant, as a new OVI in
+LabVIEW (DT-045). `{ "allow-debugging": false }` is OVI Properties ▸ Execution ▸ Allow
 debugging unchecked: the compiler emits no debug hooks (DT-047) and the editor greys
 the debugging buttons. It is only written when false, because checked is the default.
 
@@ -224,7 +224,7 @@ its panel elements.
 
 ### 4.6 `block-diagram` *(required)*
 
-A *scope*: `nodes`, `wires` and `structures`. The body of a VI and that of each
+A *scope*: `nodes`, `wires` and `structures`. The body of an OVI and that of each
 structure have **exactly the same shape**, which allows nesting without
 special cases.
 
@@ -240,7 +240,7 @@ correct program that the editor will arrange as best it can.
 - `wires`: by destination (`name.port`, unique because an input receives a single
   wire), their bends in `bends`: a list that alternates x and y and starts and ends with x.
 
-> **Normative requirement.** Writing a VI, reading it and writing it again **MUST**
+> **Normative requirement.** Writing an OVI, reading it and writing it again **MUST**
 > give the same text, and what is read **MUST** be drawn the same as what was saved. It is
 > checked by `test/end-to-end/qvi-round-trip.test.mjs` ("lo que se guarda se abre igual"), with
 > the reading and writing of `core/model/qvi-format.mjs`.
@@ -360,7 +360,7 @@ violated.)*
 | Artifact | What it guarantees |
 |-----------|---------------|
 | [`../schema/qvi.schema.json`](../schema/qvi.schema.json) | The syntax, in an executable form |
-| [`../schema/examples/suma-basica.qvi.json`](../schema/examples/suma-basica.qvi.json) | A real simple VI validates |
+| [`../schema/examples/suma-basica.qvi.json`](../schema/examples/suma-basica.qvi.json) | A real simple OVI validates |
 | [`../schema/examples/while-loop-suma.qvi.json`](../schema/examples/while-loop-suma.qvi.json) | Structures, shift registers and terminals validate |
 | [`../schema/examples/escalar-array.qvi.json`](../schema/examples/escalar-array.qvi.json) | Composite types (`array`, `cluster`) and tunnels validate |
 | [`../schema/examples/casos-no-validos.json`](../schema/examples/casos-no-validos.json) | **22 cases that the schema MUST reject** |

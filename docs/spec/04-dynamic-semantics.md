@@ -1,7 +1,7 @@
 # 04 — Dynamic semantics
 
 > Status: **DRAFT** — pending review
-> Normative. Defines what a VI **does** when it runs.
+> Normative. Defines what an OVI **does** when it runs.
 > Requires [`03-static-semantics.md`](03-static-semantics.md).
 
 ## 1. Execution model
@@ -19,10 +19,10 @@ Everything else follows from this: there is no statement order, only dependencie
 Verified in LabVIEW 2026 Q3 (`labview-captures/run/`, DT-040):
 
 > **Rule 11b.** An indicator is written **when its terminal runs**, and the
-> panel shows it at that moment, with the VI still running; not at the end.
+> panel shows it at that moment, with the OVI still running; not at the end.
 
 > **Rule 11c.** A control is read **when its terminal runs**. One with
-> nothing before it —outside a loop— is read when the VI starts: changing it
+> nothing before it —outside a loop— is read when the OVI starts: changing it
 > afterwards does not count. Inside a loop, it is read on every iteration.
 
 > **Rule 11d.** A Run does not clear the indicators: they keep the value from the
@@ -87,13 +87,13 @@ This is what LabVIEW does, and it is what allows optimization and parallelizatio
 
 > **Rule 12b.** Two nodes with no data dependency between them **run at the same
 > time** when either takes a while: a 1000 ms Wait and a 2000 ms one on different
-> branches finish at 1 s and 2 s, and the VI at 2 s; a loop keeps spinning
+> branches finish at 1 s and 2 s, and the OVI at 2 s; a loop keeps spinning
 > meanwhile. What does not depend on anything slow runs at the start.
 
 > **Verifiable consequence.** Since the order does not depend on position on the
 > canvas, **moving a node cannot change the result**. Together with the
 > presentation invariant of [`02-syntax.md`](02-syntax.md) §2, this is checked by
-> compiling the same VI with different `layout`s and comparing the modules.
+> compiling the same OVI with different `layout`s and comparing the modules.
 
 ### 4.2 When order does matter: side effects
 
@@ -194,7 +194,7 @@ not exist. LabVIEW requires the same.)*
 > **included** to `"c"` **excluded**, in byte order (`"bzz"` yes; `"c"`, `"ca"` and
 > `"B"` no), unlike an integer range, which includes both ends. A string selector
 > needs a Default frame; a frame with no value, or a value in two frames, breaks
-> the VI. Frames keep the order they were given. *(Measured in LabVIEW 2026 Q3 on
+> the OVI. Frames keep the order they were given. *(Measured in LabVIEW 2026 Q3 on
 > 2026-10-10, `labview-captures/reports/2026-10-10-string-case.md`; tests "a string
 > case …" in `test/core/structures.test.mjs`. Unverified: case folding of non-ASCII
 > letters, a range under Case Insensitive Match, open string ranges.)*
@@ -202,7 +202,7 @@ not exist. LabVIEW requires the same.)*
 > **Rule 17e — Enum selector.** Frames are named by the enum's items, quoted
 > (`"Init"`), and stored by item **name** (DT-049: a number typed in the selector
 > resolves to that item's name). A frame for every item makes the Default frame
-> unnecessary; an item with no frame and no Default breaks the VI ("no case for
+> unnecessary; an item with no frame and no Default breaks the OVI ("no case for
 > some selector values"). A range of items includes both ends (`"Heat".."Done"` takes
 > Heat and Done), as an integer range does. There is no Case Insensitive Match. A frame
 > whose name no longer names an item — the stale name left by deleting the item in Edit
@@ -236,26 +236,26 @@ not exist. LabVIEW requires the same.)*
 
 > **Rule 19c — Uninitialized shift register.** A shift register whose initial value is not wired starts
 > each execution of its loop with the value it held when the loop last ended (the type's default the first
-> time), and keeps it while the VI stays loaded: this is LabVIEW's functional global variable (NI, *Reentrancy*;
-> measured with a subVI in `labview-captures/subvi/functional-global-*`). Tested in `test/core/subvis.test.mjs`.
+> time), and keeps it while the OVI stays loaded: this is LabVIEW's functional global variable (NI, *Reentrancy*;
+> measured with a subOVI in `labview-captures/subvi/functional-global-*`). Tested in `test/core/subvis.test.mjs`.
 
-### 5.5 SubVIs (DT-045, 2026-10-03)
+### 5.5 SubOVIs (DT-045, 2026-10-03)
 
-A `subvi` node calls another VI; its ports are the connector of that VI (spec/03 Rule 4). Measured in LabVIEW
+A `subvi` node calls another OVI; its ports are the connector of that OVI (spec/03 Rule 4). Measured in LabVIEW
 2026 Q3 (`labview-captures/subvi/`) and tested in `test/core/subvis.test.mjs`:
 
-> **Rule 19d — SubVI calls.**
+> **Rule 19d — SubOVI calls.**
 >
-> - The node runs when all its wired inputs have arrived and gives all its outputs when the subVI has finished.
-> - An unwired input takes the default value of the subVI's control (`x` with default 5 and `y` = 3 gives 8).
+> - The node runs when all its wired inputs have arrived and gives all its outputs when the subOVI has finished.
+> - An unwired input takes the default value of the subOVI's control (`x` with default 5 and `y` = 3 gives 8).
 > - An unwired **Required** input breaks the caller; outputs cannot be Required. A new terminal is Recommended.
-> - A VI is **non-reentrant** by default: all its callers share one data space, its state survives between
+> - An OVI is **non-reentrant** by default: all its callers share one data space, its state survives between
 >   calls and between Runs while the hierarchy stays loaded (two calls to a counter give 1 and 2, and the next
 >   Run 3 and 4), and simultaneous calls wait for each other. With **preallocated clones**, each call site has
 >   its own data space (1 and 1, then 2 and 2). Shared clones are not done yet.
 > - **Recursion**, direct or mutual, is an error: LabVIEW refuses a recursive call in a non-reentrant VI, and the
 >   reentrancy it needs (shared clones) is not done yet.
-> - Unverified: the timing of two parallel calls to a non-reentrant subVI that waits (the capture compared their
+> - Unverified: the timing of two parallel calls to a non-reentrant subOVI that waits (the capture compared their
 >   timer values, 1000 ms apart, not the total time); here they take turns, as NI documents.
 
 ## 6. Observable behavior in the edge cases
@@ -290,7 +290,7 @@ what magnitude— as part of `07-parity.md`.
 
 > **PENDING DECISION.** Three options, with different consequences:
 >
-> 1. **Stop the VI** with an error pointing at the node. It is what WebAssembly
+> 1. **Stop the OVI** with an error pointing at the node. It is what WebAssembly
 >    does naturally: `array.get` out of range produces a *trap*.
 > 2. **Return the default value of the type** (0, `""`, `false`). It is what
 >    LabVIEW does.
@@ -377,7 +377,7 @@ constant its value is a list of rows; a ragged value is padded with the element'
 > - Select Item changes the element a row shows; its wire stays and takes the new type. Remove Element
 >   takes the row and its wire (measured on the last row; on another row, the rows below move up with
 >   their wires: unverified).
-> - With the cluster unwired the rows keep their names, the outputs have no type and the VI cannot run.
+> - With the cluster unwired the rows keep their names, the outputs have no type and the OVI cannot run.
 >   Only a cluster can be wired in: anything else is a broken wire (the reason LabVIEW gives: unverified).
 > - Unverified: growing beyond five rows, shrinking by dragging, Add Element, and what LabVIEW does
 >   when the source cluster changes and a row's name no longer exists (here, that output has no type
@@ -512,14 +512,14 @@ Measured in LabVIEW 2026 Q3 by running each case (`labview-captures/format-scan/
 >   **unverified**. Not done: 3D arrays (LabVIEW writes a `[p, 0, 0]` header per page).
 
 > **Rule 21k — Where an error was raised.** The source of an error that a function raises ends with
-> ` in ` and the VIs it ran in, the VI of the function first and each caller after it, joined by `->`:
+> ` in ` and the OVIs it ran in, the OVI of the function first and each caller after it, joined by `->`:
 > `Scan From String (arg 1) in Parse Reply.vi->Instrument Protocol.vi` in LabVIEW. The chain is the one
-> of that call: a non-reentrant subVI called from two places names the caller of each call. Solder names
-> a VI by its file name, so the same error reads `… in Parse Reply.sdg->Instrument Protocol.sdg`; a VI
+> of that call: a non-reentrant subOVI called from two places names the caller of each call. Solder names
+> an OVI by its file name, so the same error reads `… in Parse Reply.sdg->Instrument Protocol.sdg`; an OVI
 > never saved is `Untitled N`. *(Measured in LabVIEW 2026 Q3 on 2026-10-10, Instrument Protocol with the
 > command `FOO`, `examples/README.md`; tests "the source of an error raised …" in
 > `test/core/subvis.test.mjs`. Done for Format Into String and Scan From String. Unverified: the form for an
-> error raised in the top-level VI, which Solder writes `… in Top.sdg`, and the other functions that raise
+> error raised in the top-level OVI, which Solder writes `… in Top.sdg`, and the other functions that raise
 > errors.)*
 
 ## 7. Blocking operations
@@ -535,7 +535,7 @@ The blocks marked `blocking` —today only `tcp-read`— can take seconds.
 > has been requested, instead of an indivisible wait. With a real socket, that is
 > a short timeout and retry, not a 60 s timeout.
 
-> **Rule 20c.** The execution of a VI **MUST NOT** happen on the interface
+> **Rule 20c.** The execution of an OVI **MUST NOT** happen on the interface
 > thread.
 
 ### 7.1 Verified — probe T8
@@ -546,9 +546,9 @@ that does not respond and measures the duration of the worst frame of a 60 fps l
 
 | Case | Worst frame | Stop takes | Result |
 |------|-------------|------------|--------|
-| **a** — VI on the interface thread, Stop by *epoch* | — | **never** | The read runs the full 3000 ms. **Epoch does NOT interrupt a host call** |
-| **b** — VI on a worker thread, non-cancelable import | **16 ms** | never | The interface stays alive, but the operation cannot be aborted |
-| **c** — VI on a worker thread, **cancelable import** | **16 ms** | **301 ms** of 3000 | Interface alive **and** Stop effective |
+| **a** — OVI on the interface thread, Stop by *epoch* | — | **never** | The read runs the full 3000 ms. **Epoch does NOT interrupt a host call** |
+| **b** — OVI on a worker thread, non-cancelable import | **16 ms** | never | The interface stays alive, but the operation cannot be aborted |
+| **c** — OVI on a worker thread, **cancelable import** | **16 ms** | **301 ms** of 3000 | Interface alive **and** Stop effective |
 | **d** — infinite loop in the compiled module, Stop by *epoch* | — | 200 ms | Aborted. **Epoch is still needed** |
 
 **Conclusions, and there are three:**
@@ -568,13 +568,13 @@ that does not respond and measures the duration of the worst frame of a 60 fps l
 carried out, and its proposed solution relied on DT-027, which turned out to be
 fiction.)*
 
-> **Resolved by DT-040.** If a VI has two branches and one is left waiting,
+> **Resolved by DT-040.** If an OVI has two branches and one is left waiting,
 > the other continues: the wait is an import that **parks** its clump —the clump
 > saves its state and returns (DT-063 §8)— and control goes back to the scheduler,
 > which runs the others. It is what Rule
 > 12b asks for and what LabVIEW does.
 
-> **Rule 20d.** Abort **MUST** stop the VI immediately, also in the middle of
+> **Rule 20d.** Abort **MUST** stop the OVI immediately, also in the middle of
 > a wait. What was already written to the indicators stays; what was missing is not
 > written. Verified in LabVIEW 2026 Q3 (`labview-captures/run/r3.png`).
 
@@ -594,9 +594,9 @@ source }`.
 > do it, and the warning continues.
 
 > **Rule 21a.** If a node's `error out` is left **unwired** and carries
-> `status` TRUE, the VI stops there and the editor shows the automatic error
-> handling dialog (Continue / Stop), unless it is disabled in the VI. Without an editor
-> (the command line), the VI stops with the error.
+> `status` TRUE, the OVI stops there and the editor shows the automatic error
+> handling dialog (Continue / Stop), unless it is disabled in the OVI. Without an editor
+> (the command line), the OVI stops with the error.
 
 > **Rule 21g.** Merge Errors gives the first error from top to bottom; if there is none,
 > the first warning; if not that either, the first input. Clear Errors gives (FALSE, 0, "").
@@ -609,7 +609,7 @@ The texts of the errors are Solder's own; the codes are LabVIEW's
 | Rule | Mechanism | Status |
 |------|-----------|--------|
 | 11 dataflow | The whole golden corpus | Pending |
-| 12 indeterminate order | Compile the same VI with different `layout`s and compare modules | Pending |
+| 12 indeterminate order | Compile the same OVI with different `layout`s and compare modules | Pending |
 | 13 order by dependency | Test: two chained `tcp-write`s write in order | Pending |
 | 14 independent refnums | Test: two `tcp-open`s give different connections | Pending |
 | 15 the body runs once | Test: a while with a condition true from the start iterates 1 time | Pending |
@@ -624,7 +624,7 @@ The texts of the errors are Solder's own; the codes are LabVIEW's
 
 | # | Issue | Blocks |
 |---|-------|--------|
-| 1 | **Index out of range** (§6.3) | The compiler. Recommendation: stop the VI |
+| 1 | **Index out of range** (§6.3) | The compiler. Recommendation: stop the OVI |
 | 2 | Blocking I/O (§7) | ✅ **Resolved** by probe T8: worker thread + cancelable imports + epoch |
 | 3 | Exact number format (§6.1) | `07-parity.md` |
 | 4 | `display` cannot be ordered (§4.2) | Nothing urgent; inherited and noted limitation |

@@ -1,13 +1,13 @@
 # 03 — Static semantics
 
 > Status: **DRAFT** — pending review
-> Normative. Defines when a syntactically valid VI is also **correct**.
+> Normative. Defines when a syntactically valid OVI is also **correct**.
 > Requires [`01-glossary.md`](01-glossary.md) and [`02-syntax.md`](02-syntax.md).
 
 ## 1. Scope
 
 [`02-syntax.md`](02-syntax.md) defines what a `.sdg` is **well formed as a
-document**. This one defines what a VI is **well formed as a program**: types,
+document**. This one defines what an OVI is **well formed as a program**: types,
 ports, connections and graph structure.
 
 Everything declared checkable here is checked by `solder check`, and it **MUST**
@@ -106,7 +106,7 @@ bits.)*
 > (with an I32: 3/2 → 2, 5/2 → 2, 5·2.7 → 14). The syntax is that of the Formula
 > Node, that of C: `**` is the power (right-associative and stronger than the
 > leading minus: −x\*\*2 = −(x\*\*2)); `^` is exclusive or, weaker than `+` and
-> `−`, and with a non-integer input the VI does not compile (*Integer type
+> `−`, and with a non-integer input the OVI does not compile (*Integer type
 > required*); `%`, `mod` and `rem` give the truncated remainder (−2.5 % 2 = −0.5).
 > The functions are the 39 in its contextual help; `sinc(x)` is sin(x)/x, `int`
 > rounds to even, `intrz` truncates and `getexp`/`getman` split in base 2.
@@ -204,7 +204,7 @@ arrays without Concatenate Inputs) a multidimensional array appears instead.
 
 > **Rule 2c — The empty array (DT-060).** `{ "array": "void" }` is an array with no element yet: what the
 > palette's Array and Array Constant place, as in LabVIEW 2026 Q3. `"void"` is valid only as the element of
-> `arr-const`, `arr-control` and `arr-indicator`. A VI that has one is not runnable; nothing infers its type
+> `arr-const`, `arr-control` and `arr-indicator`. An OVI that has one is not runnable; nothing infers its type
 > from a wire. Tested in `test/core/array-typing.test.mjs`.
 
 *(Motivation: in Red it did not matter because the language is dynamic. For
@@ -271,7 +271,7 @@ for §3.3 to make sense.)*
 The cluster blocks —`bundle`, `unbundle`, `cluster-control`,
 `cluster-indicator`— use the variable `C`, bound to the cluster declared in
 `config.type` or in the panel, **never from a wire**. `subvi` takes its types from
-the `connector` of the invoked VI. None of them propagates: the node itself
+the `connector` of the invoked OVI. None of them propagates: the node itself
 declares its shape. That is the dynamic ports mechanism of §4.3 and was already
 solved.
 
@@ -293,7 +293,7 @@ same order the compiler needs anyway.
 > `b: string` is an error.
 
 > **Rule 2e.** If a type variable cannot be bound —because the port that
-> determines it has no wire— the VI **MUST NOT** compile, and the error **MUST**
+> determines it has no wire— the OVI **MUST NOT** compile, and the error **MUST**
 > point at the unconnected port, not at the unresolved variable.
 
 #### Why not the alternative
@@ -327,7 +327,7 @@ soon as there are two numeric types Rule 2 starts rejecting reasonable programs.
 
 *(In Red this rule was not met: port resolution and the whole type system lived in
 the render layer, the compiler had its own duplicated copy of the computation for
-sub-VIs, and the registry had **zero** per-type decision sites against 89 in the
+subOVIs, and the registry had **zero** per-type decision sites against 89 in the
 interface. See [`../whitelist.md`](../reference/history/whitelist.md) §3
 (DT-032) and §8, Rule 12.
 There was also a decision adopted to fix it —DT-032, "centralized type-info"—
@@ -359,10 +359,10 @@ type:
 | `bundle` | One input port for each field of the cluster declared in `config.type` |
 | `unbundle` | One output port for each field of the cluster declared in `config.type` |
 | `cluster-control` / `cluster-indicator` | A single port for the whole cluster |
-| `subvi` | One port for each input and output of the `connector` of the invoked VI |
+| `subvi` | One port for each input and output of the `connector` of the invoked OVI |
 
 For `subvi`, the ports take the name of the corresponding panel element of the
-invoked VI.
+invoked OVI.
 
 *(In Red they were called `p1`, `p2`… derived from the position of the pin in the
 connector, and that computation was literally duplicated between the render layer
@@ -450,7 +450,7 @@ cases.)*
 
 ### 6.1 Names
 
-> **Rule 6.** Every `name` **MUST** be unique within the VI, including the nodes
+> **Rule 6.** Every `name` **MUST** be unique within the OVI, including the nodes
 > inside structures, the shift registers and the structures themselves.
 
 *(The namespace is flat and not per scope, because wires reference unqualified
@@ -492,9 +492,9 @@ single scope.
 ### 6.4 Unconnected inputs
 
 > **Rule 10.** An input port with no wire and no declared default value means the
-> VI **MUST NOT** compile. The terminal of an indicator (a block with `panel` in
+> OVI **MUST NOT** compile. The terminal of an indicator (a block with `panel` in
 > the catalogue) is the exception: with no wire, the indicator keeps its value,
-> and the VI compiles, as in LabVIEW.
+> and the OVI compiles, as in LabVIEW.
 
 *(It is LabVIEW's "broken node". In Red there was no check at all: `grep -rn
 "check-\|validate" src/` finds **no** validation function in the whole tree.)*
