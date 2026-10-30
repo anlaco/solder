@@ -9,6 +9,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- The Property Node runs (DT-072), so far from the command line: a node linked to a numeric, Boolean or string
+  control or indicator reads and writes Value, Visible, Disabled, Key Focus and Label.Text, and a VISA one reads and
+  writes Timeout Value, the termination character and the serial settings, with LabVIEW's rules for errors (a
+  failing row stops the node, Ignore Errors inside Node runs them all). The editor does not place it yet.
 - The editor calls Solder's program unit an OVI, Open Virtual Instrument, where LabVIEW says VI (DT-071): File ▸ New
   OVI, OVI Properties, Select an OVI..., subOVI and Express OVI in the menus, palettes and dialogs, Recent OVIs in the
   Getting Started window, and the run and error messages. NI's own file names, such as `Trim Whitespace.vi`, keep

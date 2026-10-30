@@ -20,7 +20,7 @@
 // enters, like LabVIEW's coercion dot. Whatever the compiler cannot emit yet is
 // returned as an error, with its node; nothing is emitted halfway.
 
-import { connectorPorts, ejecutable, nodesWithUndefinedInput, orden, requerido, tipos, undefinedArrayNodes } from "../model/graph.mjs";
+import { connectorPorts, ejecutable, linkedControlType, nodesWithUndefinedInput, orden, requerido, tipos, undefinedArrayNodes } from "../model/graph.mjs";
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
 import { EMPTY_PATH, NOT_A_PATH, PATH_KIND, encodePath } from "../model/paths.mjs";
@@ -130,6 +130,10 @@ const IMPORTACIONES = [
   { modulo: "io", nombre: "file_read_spreadsheet", params: Array(17).fill("i32"), results: ["i32"] },
   // File Dialog (DT-069): its inputs, its configuration as codes, the error in, its outputs' places, the chain.
   { modulo: "io", nombre: "file_dialog", params: Array(16).fill("i32"), results: ["i32"] },
+  // The Property Node (DT-072): its index in `propertyNodes`, its rows' records, the reference in (0 for an implicit
+  // node), the error in, the reference out's and the error out's places and the call chain's index. The host runs
+  // the rows top to bottom and writes what they read.
+  { modulo: "io", nombre: "property_node", params: Array(7).fill("i32"), results: ["i32"] },
   // The path functions (DT-067): the host reads each path's block, applies the rules of the system it runs
   // on (core/model/paths.mjs) and writes the result into its cell. The first parameters are the output cells.
   { modulo: "pth", nombre: "build_path", params: ["i32", "i32", "i32", "i32"], results: [] },
@@ -159,10 +163,10 @@ const VISA_FUNCTIONS = new Set(["visa-open", "visa-write", "visa-read", "visa-cl
 /** The file functions (DT-067): each waits for the disk, served by the same I/O as VISA. */
 const FILE_FUNCTIONS = new Set(["open-create-replace-file", "close-file", "write-to-text-file", "read-from-text-file", "get-file-size", "delete", "write-delimited-spreadsheet-vi", "read-delimited-spreadsheet-vi", "file-dialog"]);
 /** The nodes that take time: each runs in its own clump and yields while it waits. */
-export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "time-delay", "simple-error-handler", ...VISA_FUNCTIONS, ...FILE_FUNCTIONS]);
+export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "time-delay", "simple-error-handler", "property-node", ...VISA_FUNCTIONS, ...FILE_FUNCTIONS]);
 const idImport = (nombre) => IMPORTACIONES.findIndex((i) => i.nombre === nombre);
 /** The imports that may park the clump that calls them (DT-063 §8): the dialogs, the debugger, VISA and files, which wait for the outside. */
-const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error", "visa_open", "visa_write", "visa_read", "visa_close", "file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete", "file_write_spreadsheet", "file_read_spreadsheet", "file_dialog"].map(idImport);
+const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error", "visa_open", "visa_write", "visa_read", "visa_close", "file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete", "file_write_spreadsheet", "file_read_spreadsheet", "file_dialog", "property_node"].map(idImport);
 
 const ins = (op, arg) => (arg === undefined ? { op } : { op, arg });
 
@@ -642,6 +646,52 @@ function scanFromString(e) {
   return [...code, ins("i32.const", remaining), ins("local.get", offset), ins("i32.const", errorOut), ...rows.flatMap(({ index }, k) => readRow(e.tIn(index), buffer + k * FORMAT_ROW_BYTES))];
 }
 
+// ——— The Property Node (DT-072) ———
+//
+// Each row is a record of FORMAT_ROW_BYTES, as Format Into String's: a write row's value is written into it
+// before the call, and the host writes a read row's value into it, a string into the cell the record's bits
+// word names. The host runs the rows top to bottom with LabVIEW's rules (core/runtime/property-node.mjs).
+
+/** A Property Node: its read rows, in order, and its error out. */
+function propertyNode(e) {
+  const { class: className, link = null, rows = [], "ignore-errors": ignoreErrors = false } = e.nodo.config ?? {};
+  if (link === null && className !== "Instr") throw new Error(`A Property Node of class ${className} with a reference wired cannot run yet.`);
+  const { in: inputs, out: outputs } = e.cat.puertos(e.nodo);
+  const buffer = e.bufer(Math.max(1, rows.length) * FORMAT_ROW_BYTES);
+  const errorOut = e.bufer(disposicion(ERROR).tam);
+  const code = [];
+  const rowRecord = (row) => buffer + row * FORMAT_ROW_BYTES;
+  const hostRows = rows.map((row, index) => {
+    const property = e.cat.properties?.find(className, row.property);
+    if (!property?.done) throw new Error(`The property "${row.property}" of the Property Node cannot run yet.`);
+    if (typeof property.type === "object" && !property.type.of && !property.type.enum) throw new Error(`The property "${row.property}" of the Property Node cannot run yet.`);
+    const portName = `row-${index}`;
+    if (row.write) {
+      const input = inputs.findIndex((port) => port.name === portName);
+      code.push(...writeRow(e.tIn(input), rowRecord(index), e.entrada(input)));
+      return { property: row.property, write: true, tipo: e.tIn(input) };
+    }
+    const type = e.tOut(outputs.findIndex((port) => port.name === portName));
+    if (type === "string") code.push(k32(rowRecord(index)), k32(e.celda()), ins("i32.store", ROW_BITS_OFFSET));
+    return { property: row.property, write: false, tipo: type };
+  });
+  const index = e.registerPropertyNode({ class: className, link, rows: hostRows, ignoreErrors });
+  const errorIn = inputs.findIndex((port) => port.name === "error-in");
+  const referenceIn = inputs.findIndex((port) => port.name === "reference");
+  const referenceOut = referenceIn >= 0 ? e.bufer(disposicion(VISA_RESOURCE_LAYOUT).tam) : 0;
+  code.push(
+    k32(index), k32(buffer), ...(referenceIn >= 0 ? e.entrada(referenceIn) : [k32(0)]), ...e.entrada(errorIn), k32(referenceOut), k32(errorOut), k32(e.chainIndex),
+    ins("call", idImport("property_node")), ins("drop"),
+  );
+  const leaveOutput = (port) => {
+    if (port.name === "error-out") return [k32(errorOut)];
+    if (port.name === "reference-out") return [k32(referenceOut)];
+    const row = Number(port.name.slice("row-".length));
+    return readRow(hostRows[row].tipo, rowRecord(row));
+  };
+  return [...code, ...outputs.flatMap(leaveOutput)];
+}
+
 /** Number To Decimal/Hexadecimal/Octal String: número (f64) y width. */
 function numeroACadena(e, nombre) {
   const celda = e.celda();
@@ -833,6 +883,7 @@ const BLOQUES = {
   "visa-write": (e) => visaFunction(e, "visa_write", [0, 1], { resourceOut: true, count: true }),
   "visa-read": (e) => visaFunction(e, "visa_read", [0, 1], { resourceOut: true, buffer: true, count: true }),
   "visa-close": (e) => visaFunction(e, "visa_close", [0], {}),
+  "property-node": (e) => propertyNode(e),
   // The file functions (DT-067 §7), by the catalog's index. A wired prompt is the title of the dialog of an unwired path.
   "open-create-replace-file": (e) =>
     fileFunction(e, "file_open", [...optionalHandle(e, 0), ...(e.cableada(1) ? e.entrada(1) : [k32(0)]), k32(e.cableada(1) ? 1 : 0), ...e.entrada(2), ...e.entrada(3)], ["refnum", "boolean", "error"]),
@@ -1574,12 +1625,10 @@ function callSubVI(e, instance) {
  * An indicator of the top-level VI written into its record of the panel (DT-063 §10): the diagram never
  * waits for the editor. A scalar is one atomic store, then its version goes up; a string, array or
  * cluster is copied into the record under the write lock, so the host never reads it half-written. A
- * chart (`historyLength`) writes into the next slot of its ring and counts the write. Returns the
- * record's address and the code, which takes the value from `value`.
+ * chart (`historyLength`) writes into the next slot of its ring and counts the write. Returns the code,
+ * which takes the value from `value`, into the record at `record` whose values take `slot` bytes each.
  */
-function writeIndicator(module, type, value, temporal, historyLength) {
-  const slot = slotBytes(type, esCluster(type) ? disposicion(type).tam : undefined);
-  const record = module.bufer(recordBytes(slot, historyLength ?? 1), 8);
+function writeIndicator(record, slot, type, value, temporal, historyLength) {
   const at = (offset) => [ins("i32.const", record + offset)];
   const lock = (name) => [...at(PANEL_RECORD.lock), llamarMemoria(name)];
   const countWrite = [...at(PANEL_RECORD.version), ins("i32.const", 1), ins("i32.atomic.rmw.add"), ins("drop")];
@@ -1591,8 +1640,7 @@ function writeIndicator(module, type, value, temporal, historyLength) {
   const store = porReferencia(type) ? copiarA(type, [ins("local.get", held)], slotAddress, temporal) : [...slotAddress, ins("local.get", held), ...atomicStore(tipoWasm(type))];
   // A scalar that is not a chart needs no lock: one atomic store is never seen half-written.
   const locked = historyLength || porReferencia(type);
-  const code = [...value, ins("local.set", held), ...(locked ? lock("write_lock") : []), ...store, ...countWrite, ...(locked ? lock("write_unlock") : [])];
-  return { record, slot, code };
+  return [...value, ins("local.set", held), ...(locked ? lock("write_lock") : []), ...store, ...countWrite, ...(locked ? lock("write_unlock") : [])];
 }
 
 /**
@@ -2112,6 +2160,7 @@ function newModule() {
     directFunctions: [], // the single clump of each synchronous subVI instance
     debugNodes: [], // DT-047: the nodes that report to the debugger, by index: { vi, nodo, outputs }
     instances: new Map(), // instance key → compiled subVI instance
+    propertyNodes: [], // DT-072: what the host needs to run each Property Node, by index
     // The VIs an error source names (spec/04 Rule 21k): by chain index, the VI's name and the cell
     // where each call to it writes the chain index of its caller; the top-level VI has no cell.
     callChain: [],
@@ -2312,6 +2361,44 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
   const controles = [];
   const indicadores = [];
   const errores = [];
+  // The panel's records, by node id (DT-063 §10): made when a control or a wired indicator is emitted, or
+  // earlier by a Property Node linked to it (DT-072), which may come first and may link an unwired indicator.
+  const panelRecords = new Map();
+  /** The record of panel object `id`, whose value is of `type` (a chart keeps `historyLength` of them). */
+  function panelRecordOf(id, type, historyLength = null) {
+    if (!panelRecords.has(id)) {
+      const slot = slotBytes(type, esCluster(type) ? disposicion(type).tam : undefined);
+      panelRecords.set(id, { record: module.bufer(recordBytes(slot, historyLength ?? 1), 8), slot });
+    }
+    return panelRecords.get(id);
+  }
+  /** An indicator of the top-level VI, listed once for the host to walk; returns its record. */
+  function registerIndicator(id, type, logicalType, historyLength = null) {
+    const { record, slot } = panelRecordOf(id, type, historyLength);
+    if (!indicadores.some((indicator) => indicator.nodo === id)) {
+      const n = porId.get(id);
+      indicadores.push({ nodo: id, name: n.name, tipo: type, record, ...(historyLength && { historyLength, slot }), ...panelDataOf(type, logicalType), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalType === PATH && { path: true }) });
+    }
+    return { record, slot };
+  }
+  /**
+   * Records what the host needs to run a Property Node and returns its index. An implicit node's control or
+   * indicator gets its record here; an unwired indicator is listed so that what the node writes reaches the panel.
+   */
+  function registerPropertyNode(entry) {
+    const node = entry.link === null ? null : g.nodos.find((candidate) => candidate.name === entry.link);
+    if (entry.link !== null && !node) throw new Error(`The control "${entry.link}" this Property Node is linked to is not on the panel.`);
+    if (node && asSubVI) throw new Error("A Property Node linked to a control of a subOVI cannot run yet.");
+    let linked = null;
+    if (node) {
+      const type = inMemory(linkedControlType(g, cat, node));
+      const isControl = PANEL_CONTROLS.includes(node.tipo);
+      if (isControl) panelRecordOf(node.id, type);
+      else registerIndicator(node.id, type, linkedControlType(g, cat, node));
+      linked = { nodo: node.id, control: isControl, mecanica: mecanica(cat, node) ?? null, label: node.label?.text ?? "" };
+    }
+    return module.propertyNodes.push({ ...entry, link: linked }) - 1;
+  }
   // Allow Debugging (VI Properties ▸ Execution), on by default as in LabVIEW (DT-047).
   const allowDebugging = g.vi?.execution?.["allow-debugging"] !== false;
 
@@ -2439,18 +2526,18 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
         return;
       }
       const historyLength = n.tipo === "waveform-chart" ? (n.config?.historyLength ?? DEFAULT_CHART_HISTORY) : null;
-      const { record, slot, code } = writeIndicator(module, tIn(0), entrada(0), nuevoLocal, historyLength);
-      indicadores.push({ nodo: id, name: n.name, tipo: tIn(0), record, ...(historyLength && { historyLength, slot }), ...panelDataOf(tIn(0), logicalTIn(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTIn(0) === PATH && { path: true }) });
-      k.cuerpo.push(...code, ...debugHook(id, []));
+      const { record, slot } = registerIndicator(id, tIn(0), logicalTIn(0), historyLength);
+      k.cuerpo.push(...writeIndicator(record, slot, tIn(0), entrada(0), nuevoLocal, historyLength), ...debugHook(id, []));
       return;
     }
     // VISA and the file functions are served by the same I/O (the editor's I/O process).
-    if (VISA_FUNCTIONS.has(n.tipo) || FILE_FUNCTIONS.has(n.tipo)) module.usesInstrumentIo = true;
+    // VISA's Property Node too (DT-072 §5).
+    if (VISA_FUNCTIONS.has(n.tipo) || FILE_FUNCTIONS.has(n.tipo) || (n.tipo === "property-node" && n.config?.class === "Instr")) module.usesInstrumentIo = true;
     const emitir = n.tipo === "subvi" ? (e) => callSubVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subVIControl(e, asSubVI.get(n.name)) : BLOQUES[n.tipo];
     if (!emitir) return errores.push({ nodo: id, motivo: `The compiler cannot emit "${nombre}" (${n.tipo}) yet.` });
-    const e = { nodo: n, cat, tIn, tOut, logicalTIn, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex };
+    const e = { nodo: n, cat, tIn, tOut, logicalTIn, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex, registerPropertyNode };
     if (!asSubVI && PANEL_CONTROLS.includes(n.tipo)) {
-      e.controlRecord = module.bufer(recordBytes(slotBytes(tOut(0), esCluster(tOut(0)) ? disposicion(tOut(0)).tam : undefined)), 8);
+      e.controlRecord = panelRecordOf(id, tOut(0)).record;
       controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), record: e.controlRecord, ...panelDataOf(tOut(0), logicalTOut(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTOut(0) === PATH && { path: true }) });
     }
     try {
@@ -2978,5 +3065,5 @@ function assemble(module, vi) {
     ],
   };
   const plan = (lista) => lista.map((k) => ({ deps: [...k.deps], largo: k.largo }));
-  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), disposicionVisa: disposicionCompleta(VISA_RESOURCE_LAYOUT), usesInstrumentIo: !!module.usesInstrumentIo, debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, frames };
+  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), disposicionVisa: disposicionCompleta(VISA_RESOURCE_LAYOUT), usesInstrumentIo: !!module.usesInstrumentIo, debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, propertyNodes: module.propertyNodes, frames };
 }

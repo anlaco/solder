@@ -582,6 +582,12 @@ array or string read by a local variable while another loop writes it is never t
       `property-node` block with one terminal per row (`core/model/property-node.mjs`), Value typed by the linked
       control, the class, link, rows and Ignore Errors in the `.sdg` (`test/core/property-node.test.mjs`). 1099 tests
       green. Next: running the rows (Value on the panel memory, errors, Instr's waits).*
+      *Stage (a) done on 2026-10-30: the node is one external wait (`property_node`, `core/runtime/property-node.mjs`)
+      whose rows run top to bottom with the measured error rules; Value reads and writes the panel's record (an
+      unwired indicator linked to a node gets one) and a write waits for `alDibujar`; Instr rows are VISA attributes
+      of `solder-io` with auto-open; with no window, a panel answers Visible, Disabled, Key Focus and Label.Text
+      (`windowlessPanel`). Not yet: Position and Bounds (clusters), a node inside a subOVI, the explicit control
+      classes. 1113 tests green. Next: stage (b), the rows the editor's panel answers.*
    4b. **VISA Configure Serial Port and Bytes at Serial Port** (DT-070 §7): Configure as a polymorphic subOVI of
       Solder's own `vi.lib` built on the Property Node; greyed until then.
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the

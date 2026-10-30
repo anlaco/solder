@@ -25,6 +25,7 @@ import { SCHEDULER } from "../compiler/linear-memory.mjs";
 import { PANEL_RECORD } from "../compiler/panel-memory.mjs";
 import { VISA_FUNCTION_NAMES, createVisaFunctions } from "./instrument-io.mjs";
 import { FILE_FUNCTION_NAMES, createFileFunctions } from "./file-io.mjs";
+import { PROPERTY_NODE_FUNCTION_NAMES, createPropertyNodeFunction } from "./property-node.mjs";
 
 /** The size of one row record of Format Into String and Scan From String in memory (the compiler's FORMAT_ROW_BYTES). */
 const FORMAT_ROW_BYTES = 16;
@@ -567,6 +568,34 @@ export function createHostFunctions({ compilado, separador = ".", pathRules = ho
   return { cad, arr, math, pth, putBytes, readBytes, ponerCadena, leerCadena, ponerCluster, leerCluster, ponerArray, leerArray, readValue, readPath, writePath, functionSource, callChainOf: (chainIndex) => (compilado.callChain ? callChainText(chainIndex) : ""), readSpreadsheetArray, writeSpreadsheetArray, spreadsheetElementOf, textOf };
 }
 
+/** LabVIEW's error for a control's caption when it has none (measured on the Caption row; Caption.Text: unverified). */
+const NO_CAPTION_ERROR = 1320;
+
+/**
+ * The panel state of a Run with no window (the command line), for the Property Node (DT-072 §6): a control starts
+ * visible, enabled, with its label and no caption; Key Focus is FALSE with no panel open (measured), and what is
+ * written to Visible, Disabled and Label.Text is kept for the Run.
+ */
+export function windowlessPanel() {
+  const states = new Map();
+  const stateOf = (link) => {
+    if (!states.has(link.nodo)) states.set(link.nodo, { Visible: true, Disabled: 0, "Label:Text": link.label });
+    return states.get(link.nodo);
+  };
+  return {
+    get(link, property) {
+      if (property === "Key Focus" || property === "Has Caption") return false;
+      if (property.startsWith("Caption")) return { error: NO_CAPTION_ERROR };
+      return stateOf(link)[property];
+    },
+    set(link, property, value) {
+      if (property.startsWith("Caption")) return { error: NO_CAPTION_ERROR };
+      if (property !== "Key Focus") stateOf(link)[property] = value;
+      return undefined;
+    },
+  };
+}
+
 /**
  * Runs the compiled VI. `valores` gives the value of each control by its node id; the caller may
  * change it while the VI runs, and what changed reaches the panel's memory at the start of the next
@@ -667,6 +696,41 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
       writesSeen[index] = writes;
     });
   };
+  // The panel as a Property Node sees it (DT-072 §6). Value is the control's or indicator's record: a write lands
+  // there, is shown, and waits until the caller has drawn it (`alDibujar`), as LabVIEW's Value does; with no
+  // caller to draw it (the command line) it does not wait. The rest of a control's properties are the panel's
+  // state, answered by the caller's `panel` (the editor) or, without one, by a panel with no window.
+  const panelEntryOf = (link) => (link.control ? controles : indicadores).find((entry) => entry.nodo === link.nodo);
+  function readPanelValue(link) {
+    const entry = panelEntryOf(link);
+    const locked = entry.tipo === "string" || entry.disposicion || entry.elemento;
+    if (locked) ex.read_lock(entry.record + PANEL_RECORD.lock);
+    const value = readValue(entry.record + PANEL_RECORD.value, entry);
+    if (locked) ex.read_unlock(entry.record + PANEL_RECORD.lock);
+    return value;
+  }
+  function writePanelValue(link, value) {
+    const entry = panelEntryOf(link);
+    writeControl(entry, value);
+    if (link.control) {
+      const index = controles.indexOf(entry);
+      valores[link.nodo] = value;
+      writtenToMemory[index] = value;
+      opciones.alEscribirControl?.(link.nodo, value);
+    } else Atomics.add(new Int32Array(memory.buffer), (entry.record + PANEL_RECORD.version) / 4, 1);
+    walkIndicators();
+    return opciones.alDibujar?.();
+  }
+  function runPanel() {
+    const windowless = windowlessPanel();
+    const states = opciones.panel ?? windowless;
+    return {
+      readValue: readPanelValue,
+      writeValue: writePanelValue,
+      get: (link, property) => states.get(link, property),
+      set: (link, property, value) => states.set(link, property, value),
+    };
+  }
   // Every clump runs, parks and is resumed by the module's own scheduler (DT-061, DT-063 §9): the
   // order is ours, never the host's. Here one thread runs the clumps, one per turn, and JavaScript
   // drives the turns, so the order is exactly the reference model's (scheduler.mjs). With a debugger
@@ -728,9 +792,10 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     walkIndicators();
     return whenAnswered(opciones.alDialogoError?.({ ...err, mensaje: texto }), writeOutputs);
   };
-  const visaFunctions = createVisaFunctions({ io: opciones.io, host: hostFunctions, memory, compilado });
+  const { instrSession, instrIo, ...visaFunctions } = createVisaFunctions({ io: opciones.io, host: hostFunctions, memory, compilado });
   const fileFunctions = createFileFunctions({ io: opciones.io, dialogs: opciones.dialogs, host: hostFunctions, memory, compilado, pathRules });
-  const externalWaits = { error_automatico: automaticErrorDialog, dialogo_error: errorHandlerDialog, ...visaFunctions, ...fileFunctions };
+  const propertyNodeFunction = createPropertyNodeFunction({ compilado, host: hostFunctions, memory, panel: runPanel(), instr: { session: instrSession, io: instrIo } });
+  const externalWaits = { error_automatico: automaticErrorDialog, dialogo_error: errorHandlerDialog, ...visaFunctions, ...fileFunctions, ...propertyNodeFunction };
   // Debugging (DT-047): the hooks the compiled VI calls while the debug flag is set.
   const readDebugValue = debugValueReader(compilado, { leerCadena, leerCluster, leerArray });
   const valorDepurado = (nodo, salida, valor) => {
@@ -754,7 +819,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     error_automatico: (...args) => parkOn(automaticErrorDialog(...args)),
     dialogo_error: (...args) => parkOn(errorHandlerDialog(...args)),
   };
-  const io = Object.fromEntries([...VISA_FUNCTION_NAMES, ...FILE_FUNCTION_NAMES].map((name) => [name, (...args) => parkOn(externalWaits[name](...args))]));
+  const io = Object.fromEntries([...VISA_FUNCTION_NAMES, ...FILE_FUNCTION_NAMES, ...PROPERTY_NODE_FUNCTION_NAMES].map((name) => [name, (...args) => parkOn(externalWaits[name](...args))]));
   const sharedMemory = { [SHARED_MEMORY_IMPORT.modulo]: { [SHARED_MEMORY_IMPORT.nombre]: memory } };
   const { instance } = await WebAssembly.instantiate(bytes, { ...sharedMemory, tiempo, cad, arr, dep, math, io, pth });
   ex = instance.exports;

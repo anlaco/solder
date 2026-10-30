@@ -3304,8 +3304,9 @@ editor, as LabVIEW's UI thread does.**
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| The run-time rules of §4 | Tests in `test/core/` against the measured cases | **Unverified** (to do, stage a) |
-| Value waits for the drawing and is seen by a later terminal read | A test on the virtual host | **Unverified** (stage a) |
+| The run-time rules of §4 (error in, a warning, a failing row, Ignore Errors, rows in order, the sources) | `test/core/property-node-run.test.mjs`, on one thread and on a pool | **Verified** (2026-10-30) |
+| Value is the panel's record, and a write waits for the drawing | `test/core/property-node-run.test.mjs` (a later row reads the write; the Run waits for `alDibujar`) | **Verified** (2026-10-30); a terminal read after the write is not tested yet |
+| Instr's rows (§5): auto-open, defaults, NSUP_ATTR on a socket, the timeout limit | `test/core/property-node-run.test.mjs` against the test instrument | **Verified** (2026-10-30); the serial rows' short names and types are unverified (`properties.json`) |
 | The panel rows of §6 | Tests against the panel's host | **Unverified** (stage b) |
 | The node's look and menus | Compared with LabVIEW's captures | **Unverified** (stage e) |
 | Long Names and No Names; whether the label above an implicit node follows a rename; Caption.Text on a control with no caption; a subOVI writing its own indicator with its panel closed; whether changes made at run time are saved | To measure in LabVIEW | **Unverified** |

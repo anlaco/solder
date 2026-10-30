@@ -86,6 +86,10 @@ export function createVisaFunctions({ io, host, memory, compilado }) {
   };
 
   return {
+    // Not an import: the live session of a resource name for VISA's Property Node (DT-072 §5), opened from the name
+    // when it has none, as Write and Read do (measured: the Property Node opens a never-opened or closed name).
+    instrSession: (resource, resourceOut) => sessionOf(requireIo(), resource, resourceOut),
+    instrIo: () => requireIo(),
     // Every Open gives a session of its own (measured: a new refnum each time), and its name out is the
     // resource as VISA writes it: an alias as typed, a resource with its keywords in capitals (DT-070 §2).
     visa_open: (resourceIn, timeoutMs, errorIn, resourceOut, errorOut, chainIndex) =>
