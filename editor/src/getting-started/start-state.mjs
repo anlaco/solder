@@ -15,9 +15,9 @@ export const MAX_RECENT_FILES = 30;
 export const CAROUSEL_PAGE_COUNT = 8;
 
 /** The filter of the Open Existing list, in LabVIEW's order. */
-export const RECENT_FILTERS = ["All Recent Files", "Recent Projects", "Recent VIs", "Other Recent Files"];
+export const RECENT_FILTERS = ["All Recent Files", "Recent Projects", "Recent OVIs", "Other Recent Files"];
 
-const VI_EXTENSIONS = [VI_EXTENSION, OLD_VI_EXTENSION];
+const OVI_EXTENSIONS = [VI_EXTENSION, OLD_VI_EXTENSION];
 const PROJECT_EXTENSIONS = [".sdproj"];
 
 export const emptyStartState = () => ({ recentFiles: [], carouselPage: 0 });
@@ -48,8 +48,8 @@ const hasExtension = (filePath, extensions) => extensions.some((extension) => fi
 
 /** The files the Open Existing list shows under `filter`, one of `RECENT_FILTERS`. */
 export function filterRecentFiles(files, filter) {
-  if (filter === "Recent VIs") return files.filter((file) => hasExtension(file, VI_EXTENSIONS));
+  if (filter === "Recent OVIs") return files.filter((file) => hasExtension(file, OVI_EXTENSIONS));
   if (filter === "Recent Projects") return files.filter((file) => hasExtension(file, PROJECT_EXTENSIONS));
-  if (filter === "Other Recent Files") return files.filter((file) => !hasExtension(file, [...VI_EXTENSIONS, ...PROJECT_EXTENSIONS]));
+  if (filter === "Other Recent Files") return files.filter((file) => !hasExtension(file, [...OVI_EXTENSIONS, ...PROJECT_EXTENSIONS]));
   return files;
 }

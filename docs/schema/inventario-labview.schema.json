@@ -78,7 +78,7 @@
       "properties": {
         "id": { "$ref": "#/$defs/idEntrada" },
         "etiqueta": {
-          "description": "El nombre tal como lo muestra LabVIEW.",
+          "description": "The name as the editor shows it: LabVIEW's, with OVI where LabVIEW says VI (DT-071). A LabVIEW file name such as `Trim Whitespace.vi` keeps its extension.",
           "$ref": "#/$defs/texto"
         },
         "estado": { "enum": ["built", "todo", "elsewhere", "never"] },

@@ -26,9 +26,9 @@ test("the carousel moves on one page each time the window is shown, wrapping fro
 
 test("the recent list filters as LabVIEW's combo does", () => {
   const files = ["/x/Main.sdg", "/x/old.qvi", "/x/plant.sdproj", "/x/notes.txt"];
-  assert.deepEqual(RECENT_FILTERS, ["All Recent Files", "Recent Projects", "Recent VIs", "Other Recent Files"]);
+  assert.deepEqual(RECENT_FILTERS, ["All Recent Files", "Recent Projects", "Recent OVIs", "Other Recent Files"]);
   assert.deepEqual(filterRecentFiles(files, "All Recent Files"), files);
-  assert.deepEqual(filterRecentFiles(files, "Recent VIs"), ["/x/Main.sdg", "/x/old.qvi"]);
+  assert.deepEqual(filterRecentFiles(files, "Recent OVIs"), ["/x/Main.sdg", "/x/old.qvi"]);
   assert.deepEqual(filterRecentFiles(files, "Recent Projects"), ["/x/plant.sdproj"]);
   assert.deepEqual(filterRecentFiles(files, "Other Recent Files"), ["/x/notes.txt"]);
 });

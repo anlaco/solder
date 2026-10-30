@@ -222,7 +222,7 @@ test("the right-click menu of an Express VI is the one measured", () => {
   // What the editor cannot do greys with its reason (DT-035): Open Front Panel says why, as every row without code.
   const frontPanel = INV.entrada(`${MENU}.open-front-panel`);
   assert.ok(esHueco(frontPanel));
-  assert.match(INV.explicacion(frontPanel).solder, /converting an Express VI to a standard subVI.*DT-069 §7/);
+  assert.match(INV.explicacion(frontPanel).solder, /converting an Express OVI to a standard subOVI.*DT-069 §7/);
   for (const row of ["help", "examples", "description-and-tip", "palette", "replace", "size-to-text", "remove-and-rewire", "visible-items.caption"]) assert.ok(esHueco(INV.entrada(`${MENU}.${row}`)), row);
   for (const row of ["add-breakpoint", "create", "properties", "view-as-icon"]) assert.ok(!esHueco(INV.entrada(`${MENU}.${row}`)), row);
   // Create ▸ Constant, Control and Indicator need a terminal and are greyed on the body.

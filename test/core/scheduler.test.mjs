@@ -109,7 +109,7 @@ test("a non-reentrant subVI serves one call at a time, in the order the calls ar
   const call = (name) => async (context) => {
     await context.acquire("Compute.vi");
     callsInside++;
-    assert.equal(callsInside, 1, "two calls inside a non-reentrant subVI at once");
+    assert.equal(callsInside, 1, "two calls inside a non-reentrant subOVI at once");
     inside.push(name);
     await context.yield();
     callsInside--;
@@ -225,7 +225,7 @@ test("a Run whose clumps can no longer be woken ends with an error naming them",
   ]);
   await assert.rejects(run, (error) => {
     assert.deepEqual(error.deadlock, ["caller"]);
-    assert.match(error.message, /caller waits for its turn at a non-reentrant subVI/);
+    assert.match(error.message, /caller waits for its turn at a non-reentrant subOVI/);
     return true;
   });
 });

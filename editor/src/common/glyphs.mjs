@@ -2554,7 +2554,7 @@ const FILE_IO_TILES = {
   "write-delimited-spreadsheet-vi": ["→SHT"], "read-delimited-spreadsheet-vi": ["SHT→"], "write-to-measurement-file": ["→MEAS"], "read-from-measurement-file": ["MEAS→"],
   "open-create-replace-file": ["OPEN"], "close-file": ["CLOSE"], "format-into-file": ["→FMT"], "scan-from-file": ["FMT→"],
   "write-to-text-file": ["→TXT"], "read-from-text-file": ["TXT→"], "write-to-binary-file": ["→BIN"], "read-from-binary-file": ["BIN→"],
-  "current-vis-path": ["VI"], "get-system-directory": ["SYS"], "not-a-refnum-constant": ["NaR"], "default-directory": ["DIR"], "default-data-directory": ["DATA"],
+  "current-vis-path": ["OVI"], "get-system-directory": ["SYS"], "not-a-refnum-constant": ["NaR"], "default-directory": ["DIR"], "default-data-directory": ["DATA"],
   "vi-library": ["LIB"], "application-directory": ["APP"], "temporary-directory": ["TMP"],
   "open-config-data-vi": ["OPEN"], "read-key-vi": ["READ"], "write-key-vi": ["WRITE"], "remove-key-vi": ["-KEY"], "remove-section-vi": ["-SEC"],
   "close-config-data-vi": ["CLOSE"], "get-key-names-vi": ["KEYS"], "get-section-names-vi": ["SECS"], "not-a-config-data-refnum-vi": ["NaR?"],

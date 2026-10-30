@@ -52,7 +52,7 @@ test("the filter has LabVIEW's four choices, checks the current one and filters 
   const list = draw(state);
   for (const filter of RECENT_FILTERS) assert.ok(list.includes(`data-filter="${filter}"`));
   assert.match(list, /item-menu marcado" data-filter="All Recent Files"/);
-  state = chooseFilter(state, "Recent VIs");
+  state = chooseFilter(state, "Recent OVIs");
   assert.equal(state.filterOpen, false);
   assert.deepEqual(visibleFiles(state), RECENT.slice(0, 2));
   assert.deepEqual(visibleFiles(chooseFilter(state, "Recent Projects")), [RECENT[3]]);
@@ -104,7 +104,7 @@ test("Getting Started greyed items explain themselves through the inventory", ()
 
 test("File menu rows run the commands of the window", () => {
   const rows = INV.hijos(`${PREFIX}.menu.file`);
-  assert.deepEqual(rows.map((row) => row.etiqueta), ["New VI", "New...", "Open...", "Create Project...", "Open Project...", "Recent Projects", "Recent Files", "Exit"]);
+  assert.deepEqual(rows.map((row) => row.etiqueta), ["New OVI", "New...", "Open...", "Create Project...", "Open Project...", "Recent Projects", "Recent Files", "Exit"]);
   assert.deepEqual(rows.filter((row) => row.separado).map((row) => row.etiqueta), ["Create Project...", "Recent Projects", "Exit"]);
   assert.deepEqual(rows.map((row) => row.atajo ?? null), ["Ctrl+N", null, "Ctrl+O", null, null, null, null, "Ctrl+Q"]);
   const built = rows.filter((row) => !esHueco(row)).map((row) => ultimo(row.id));

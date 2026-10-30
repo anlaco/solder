@@ -9,6 +9,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- The editor calls Solder's program unit an OVI, Open Virtual Instrument, where LabVIEW says VI (DT-071): File ▸ New
+  OVI, OVI Properties, Select an OVI..., subOVI and Express OVI in the menus, palettes and dialogs, Recent OVIs in the
+  Getting Started window, and the run and error messages. NI's own file names, such as `Trim Whitespace.vi`, keep
+  theirs.
 - VISA Open, Write, Read and Close talk over serial ports (DT-070): `ASRL<n>::INSTR` (on Windows `COM<n>`, also as
   the alias `COM<n>`), `ASRL<device>::INSTR` such as `ASRL/dev/ttyUSB0::INSTR`, and aliases kept in Solder's
   `visa-ports.conf`. A new serial session has LabVIEW's settings (9600 baud, 8 data bits, no parity, 1 stop bit,

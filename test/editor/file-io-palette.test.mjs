@@ -30,13 +30,13 @@ const GRIDS = [
     [1, 1, "Write Delimited Spreadsheet.vi"], [1, 2, "Read Delimited Spreadsheet.vi"], [1, 3, "Write To Measurement File"], [1, 4, "Read From Measurement File"],
     [2, 1, "Open/Create/Replace File"], [2, 2, "Close File"], [2, 3, "Format Into File"], [2, 4, "Scan From File"],
     [3, 1, "Write to Text File"], [3, 2, "Read from Text File"], [3, 3, "Write to Binary File"], [3, 4, "Read from Binary File"],
-    [4, 1, "Build Path"], [4, 2, "Strip Path"], [4, 3, "File Constants"], [4, 4, "Configuration File VIs"],
+    [4, 1, "Build Path"], [4, 2, "Strip Path"], [4, 3, "File Constants"], [4, 4, "Configuration File OVIs"],
     [5, 1, "TDM Streaming"], [5, 2, "Storage/DataPlugin"], [5, 3, "Zip"], [5, 4, "XML"],
     [6, 1, "Waveform File I/O"], [6, 4, "Advanced File Functions"]]],
   [`${ROOT}.file-constants`, 3, [
-    [1, 1, "Path Constant"], [1, 2, "Current VI's Path"], [1, 3, "Get System Directory"],
+    [1, 1, "Path Constant"], [1, 2, "Current OVI's Path"], [1, 3, "Get System Directory"],
     [2, 1, "Empty Path Constant"], [2, 2, "Not A Path Constant"], [2, 3, "Not a Refnum Constant"],
-    [3, 1, "Default Directory"], [3, 2, "Default Data Directory"], [3, 3, "VI Library"],
+    [3, 1, "Default Directory"], [3, 2, "Default Data Directory"], [3, 3, "OVI Library"],
     [4, 1, "Application Directory"], [4, 2, "Temporary Directory"]]],
   [`${ROOT}.configuration-file-vis`, 6, [
     [1, 1, "Open Config Data.vi"], [1, 2, "Read Key.vi"], [1, 3, "Write Key.vi"], [1, 4, "Remove Key.vi"], [1, 5, "Remove Section.vi"], [1, 6, "Close Config Data.vi"],

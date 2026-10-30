@@ -38,7 +38,7 @@ export function loadHierarchy(rootKey, baseCatalog, { resolvePath, loadVI }) {
     const g = loadVI(key, cat);
     if (!g) {
       loading.delete(key);
-      fail(callerKey ?? key, `The VI "${key}" cannot be found.`);
+      fail(callerKey ?? key, `The OVI "${key}" cannot be found.`);
       return null;
     }
     // Subvi nodes whose ports nobody asked for while reading (no wires) are loaded too.

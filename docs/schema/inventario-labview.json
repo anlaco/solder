@@ -128,7 +128,7 @@
   "referencia": "LabVIEW 2026Q3",
   "desbloqueos": {
     "editor-escritorio": {
-      "desc": "the desktop application, a web page in Electron (DT-037), with its full menus. The skeleton of the VI windows exists; the contents of the menus do not",
+      "desc": "the desktop application, a web page in Electron (DT-037), with its full menus. The skeleton of the OVI windows exists; the contents of the menus do not",
       "ref": "reference/history/00-provisional-plan.md §7, phase R1"
     },
     "leer-escribir-qvi": {
@@ -140,23 +140,23 @@
       "ref": "spec/02-syntax.md §8: pending the dependency model"
     },
     "modelo-de-dependencias": {
-      "desc": "a dependency model between VIs, libraries and projects",
+      "desc": "a dependency model between OVIs, libraries and projects",
       "ref": "spec/02-syntax.md §8: set by spec/03, not yet written"
     },
     "construir-distribuible": {
-      "desc": "building a distributable from a VI or a project (solder build)",
+      "desc": "building a distributable from an OVI or a project (solder build)",
       "ref": "reference/history/00-provisional-plan.md §9: undecided"
     },
     "panel-frontal": {
-      "desc": "drawing and editing a VI's panel: its controls and indicators",
+      "desc": "drawing and editing an OVI's panel: its controls and indicators",
       "ref": "reference/history/00-provisional-plan.md §7, phase R3"
     },
     "diagrama": {
-      "desc": "drawing and editing a VI's diagram: nodes, wires and structures",
+      "desc": "drawing and editing an OVI's diagram: nodes, wires and structures",
       "ref": "reference/history/00-provisional-plan.md §7, phases R1 and R2"
     },
     "ejecutar-vi": {
-      "desc": "compiling a VI to WebAssembly and running it from the editor",
+      "desc": "compiling an OVI to WebAssembly and running it from the editor",
       "ref": "reference/history/00-provisional-plan.md §7, phases R0 and R3"
     },
     "puntos-de-parada-en-estructuras": {
@@ -180,7 +180,7 @@
       "desc": "describing what is under the mouse, from the desc field of the block catalogue"
     },
     "icono-del-vi": {
-      "desc": "The VI's own icon: how it is stored in the .qvi and the icon editor that draws it. Postponed on 2026-10-08 by the developer: the icon editor is almost an application of its own, and until then every VI uses Solder's standard subVI icon"
+      "desc": "The OVI's own icon: how it is stored in the .qvi and the icon editor that draws it. Postponed on 2026-10-08 by the developer: the icon editor is almost an application of its own, and until then every OVI uses Solder's standard subOVI icon"
     },
     "bloques": {
       "desc": "declaring the category's blocks in the catalogue, with their terminals and icon, so they can be placed in the diagram. Compiling them is a separate piece: ejecutar-vi",
@@ -222,7 +222,7 @@
       "desc": "the properties dialog of a diagram node"
     },
     "definiciones-de-tipo": {
-      "desc": "type definitions saved in their own file and linked from the VIs"
+      "desc": "type definitions saved in their own file and linked from the OVIs"
     },
     "drivers-de-adquisicion": {
       "desc": "instrument I/O and acquisition blocks (VISA, serial, DAQ), each with its own gate",
@@ -249,22 +249,22 @@
       "desc": "controls that embed platform components, such as .NET and ActiveX on Windows. Undecided whether Solder will have an equivalent"
     },
     "varios-vis": {
-      "desc": "creating new VIs and closing or saving them all at once. The editor already has several VIs open (DT-045), but they are only opened with Open or as subVIs"
+      "desc": "creating new OVIs and closing or saving them all at once. The editor already has several OVIs open (DT-045), but they are only opened with Open or as subOVIs"
     },
     "versiones-del-formato": {
-      "desc": "saving a VI in an earlier version of the .qvi format. Today only version 1 exists"
+      "desc": "saving an OVI in an earlier version of the .qvi format. Today only version 1 exists"
     },
     "imprimir": {
-      "desc": "printing a VI: its documentation or its windows"
+      "desc": "printing an OVI: its documentation or its windows"
     },
     "propiedades-del-vi": {
-      "desc": "the VI properties dialog and where what it sets is saved in the .qvi"
+      "desc": "the OVI properties dialog and where what it sets is saved in the .qvi"
     },
     "recientes": {
-      "desc": "the list of recently opened VIs and projects"
+      "desc": "the list of recently opened OVIs and projects"
     },
     "sub-vis": {
-      "desc": "the VIs from LabVIEW's libraries that are used as subVIs (the ones the palette brings). Using your own VI as a subVI is already done (DT-045)",
+      "desc": "Solder's own copies of the functions of LabVIEW's libraries, in ovi.lib, used as subOVIs (the ones the palette brings). Using your own OVI as a subOVI is already done (DT-045)",
       "ref": "design/05-decisions.md DT-045"
     },
     "patrones-del-connector": {
@@ -272,15 +272,15 @@
       "ref": "spec/05-editor.md §12"
     },
     "clones-compartidos": {
-      "desc": "reentrancy with shared clones, which recursion needs, and the inlining of a subVI",
+      "desc": "reentrancy with shared clones, which recursion needs, and the inlining of a subOVI",
       "ref": "design/05-decisions.md DT-045 §4"
     },
     "jerarquia-de-vis": {
-      "desc": "what LabVIEW knows about VIs that call each other: Find All Instances, Show VI Hierarchy, Relink To SubVI and the rest of the commands of a subVI node",
+      "desc": "knowing which OVIs call each other, as LabVIEW does: Find All Instances, Show OVI Hierarchy, Relink To SubOVI and the rest of the commands of a subOVI node",
       "ref": "spec/05-editor.md §12"
     },
     "acciones-mecanicas": {
-      "desc": "the five missing mechanical actions (Switch When Released, Switch Until Released and the three Latch ones): when a Boolean control changes and when it returns by itself. The Latch ones depend on how a VI runs while it is running",
+      "desc": "the five missing mechanical actions (Switch When Released, Switch Until Released and the three Latch ones): when a Boolean control changes and when it returns by itself. The Latch ones depend on how an OVI runs while it is running",
       "ref": "design/labview-plan.md M2 and M4: execution decision pending"
     },
     "tipo-cluster": {
@@ -316,11 +316,11 @@
       "ref": "design/labview-plan.md: Controls ▸ String & Path and File I/O"
     },
     "express-vis": {
-      "desc": "Express VIs: nodes with a configuration dialog and dynamic signals",
+      "desc": "Express OVIs: nodes with a configuration dialog and dynamic signals",
       "ref": "design/05-decisions.md DT-069 (Time Delay and File Dialog first; dynamic data later)"
     },
     "vis-maleables": {
-      "desc": "malleable VIs (.vim) and the Type Specialization structure, which adapt the code to the wired type",
+      "desc": "malleable OVIs (LabVIEW's .vim) and the Type Specialization structure, which adapt the code to the wired type",
       "ref": "undecided: there is no plan"
     },
     "tipo-timestamp": {
@@ -358,19 +358,19 @@
       "desc": "channel wires and the Channel Writer and Channel Reader nodes"
     },
     "historial-de-revisiones": {
-      "desc": "The revision history of a VI and the run-time menu that the VI shows when it runs"
+      "desc": "The revision history of an OVI and the run-time menu that the OVI shows when it runs"
     },
     "instantaneas-de-vi": {
-      "desc": "VI snippets: the selection saved as a picture that carries its diagram"
+      "desc": "OVI snippets: the selection saved as a picture that carries its diagram"
     },
     "buscar-y-reemplazar": {
       "desc": "Find and Replace, and its list of search results"
     },
     "valores-por-defecto": {
-      "desc": "Make Current Value Default and Reinitialize to Default of a chart or a graph: the data it shows when the VI opens (controls and indicators have them, DT-053)"
+      "desc": "Make Current Value Default and Reinitialize to Default of a chart or a graph: the data it shows when the OVI opens (controls and indicators have them, DT-053)"
     },
     "crear-subvi": {
-      "desc": "Create SubVI: the selected nodes or wires become a new VI, replaced by a call to it"
+      "desc": "Create SubOVI: the selected nodes or wires become a new OVI, replaced by a call to it"
     },
     "crear-escalar": {
       "desc": "Create ▸ Scalar on an array terminal: the constant or control of the array's element type, not of the array"
@@ -463,7 +463,7 @@
       "ref": "design/05-decisions.md DT-065"
     },
     "puerto-serie-visa": {
-      "desc": "VISA Configure Serial Port, a polymorphic subVI built on the Property Node: Solder's VISA opens serial ports (ASRL) with a new session's settings, and configuring them waits for property nodes, Solder's vi.lib and polymorphic VIs",
+      "desc": "VISA Configure Serial Port, a polymorphic subOVI built on the Property Node: Solder's VISA opens serial ports (ASRL) with a new session's settings, and configuring them waits for property nodes, Solder's ovi.lib and polymorphic OVIs",
       "ref": "design/05-decisions.md DT-070"
     },
     "nodos-de-propiedades": {
@@ -486,11 +486,11 @@
       "ref": "design/05-decisions.md DT-067 §10 (d)"
     },
     "archivos-binarios-y-carpetas": {
-      "desc": "binary files, Format Into File and Scan From File, the Configuration File VIs, the folder and file-information functions and the path utilities: they come after the first four steps of File I/O",
+      "desc": "binary files, Format Into File and Scan From File, the Configuration File OVIs, the folder and file-information functions and the path utilities: they come after the first four steps of File I/O",
       "ref": "design/05-decisions.md DT-067 §10"
     },
     "rutas-del-sistema": {
-      "desc": "the paths of the system and of the running program: the VI's own path and the system, default, temporary, library and application directories",
+      "desc": "the paths of the system and of the running program: the OVI's own path and the system, default, temporary, library and application directories",
       "ref": "design/05-decisions.md DT-067 §10: after the folder functions"
     },
     "formatos-de-archivo": {
@@ -510,15 +510,15 @@
       "ref": "labview-captures/reports/2026-10-26-path-type.md §2"
     },
     "express-caption": {
-      "desc": "showing and hiding an Express VI node's caption (Visible Items ▸ Caption)",
+      "desc": "showing and hiding an Express OVI node's caption (Visible Items ▸ Caption)",
       "ref": "design/05-decisions.md DT-069 §5"
     },
     "express-nodo-ampliable": {
-      "desc": "Size To Text on an Express VI node",
+      "desc": "Size To Text on an Express OVI node",
       "ref": "design/05-decisions.md DT-069 §5"
     },
     "express-a-subvi": {
-      "desc": "converting an Express VI to a standard subVI (Open Front Panel), which needs a VI generated from its configuration",
+      "desc": "converting an Express OVI to a standard subOVI (Open Front Panel), which needs an OVI generated from its configuration",
       "ref": "design/05-decisions.md DT-069 §7"
     },
     "express-llb": {
@@ -850,7 +850,7 @@
     },
     {
       "id": "window.front-panel.menu.file.new-vi",
-      "etiqueta": "New VI",
+      "etiqueta": "New OVI",
       "estado": "built",
       "prueba": "test/editor/window-layout.test.mjs::Ctrl+N_is_New_VI_and_Ctrl+W_is_Close,_as_in_LabVIEW's_File_menu",
       "atajo": "Ctrl+N",
@@ -989,7 +989,7 @@
     },
     {
       "id": "window.front-panel.menu.file.vi-properties",
-      "etiqueta": "VI Properties",
+      "etiqueta": "OVI Properties",
       "estado": "built",
       "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
       "atajo": "Ctrl+I",
@@ -1162,7 +1162,7 @@
     },
     {
       "id": "window.front-panel.menu.edit.create-vi-snippet-from-selection",
-      "etiqueta": "Create VI Snippet from Selection",
+      "etiqueta": "Create OVI Snippet from Selection",
       "estado": "todo",
       "labview": "Saves the selection as a picture that carries its diagram. Greyed with nothing selected.",
       "necesita": "instantaneas-de-vi",
@@ -1170,7 +1170,7 @@
     },
     {
       "id": "window.front-panel.menu.edit.create-subvi",
-      "etiqueta": "Create SubVI",
+      "etiqueta": "Create SubOVI",
       "estado": "todo",
       "labview": "Turns the selection into a new VI and puts a call to it in its place. Greyed with nothing selected.",
       "necesita": "crear-subvi",
@@ -1214,7 +1214,7 @@
     },
     {
       "id": "window.front-panel.menu.edit.vi-revision-history",
-      "etiqueta": "VI Revision History...",
+      "etiqueta": "OVI Revision History...",
       "estado": "todo",
       "labview": "Opens the history of changes of the VI.",
       "necesita": "historial-de-revisiones",
@@ -1470,7 +1470,7 @@
     },
     {
       "id": "window.block-diagram.menu.file.new-vi",
-      "etiqueta": "New VI",
+      "etiqueta": "New OVI",
       "estado": "built",
       "prueba": "test/editor/window-layout.test.mjs::Ctrl+N_is_New_VI_and_Ctrl+W_is_Close,_as_in_LabVIEW's_File_menu",
       "atajo": "Ctrl+N",
@@ -1609,7 +1609,7 @@
     },
     {
       "id": "window.block-diagram.menu.file.vi-properties",
-      "etiqueta": "VI Properties",
+      "etiqueta": "OVI Properties",
       "estado": "built",
       "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
       "atajo": "Ctrl+I",
@@ -1781,7 +1781,7 @@
     },
     {
       "id": "window.block-diagram.menu.edit.create-vi-snippet-from-selection",
-      "etiqueta": "Create VI Snippet from Selection",
+      "etiqueta": "Create OVI Snippet from Selection",
       "estado": "todo",
       "labview": "Saves the selection as a picture that carries its diagram. Greyed with nothing selected.",
       "necesita": "instantaneas-de-vi",
@@ -1789,7 +1789,7 @@
     },
     {
       "id": "window.block-diagram.menu.edit.create-subvi",
-      "etiqueta": "Create SubVI",
+      "etiqueta": "Create SubOVI",
       "estado": "todo",
       "labview": "Turns the selection into a new VI and puts a call to it in its place. Greyed with nothing selected.",
       "necesita": "crear-subvi",
@@ -1833,7 +1833,7 @@
     },
     {
       "id": "window.block-diagram.menu.edit.vi-revision-history",
-      "etiqueta": "VI Revision History...",
+      "etiqueta": "OVI Revision History...",
       "estado": "todo",
       "labview": "Opens the history of changes of the VI.",
       "necesita": "historial-de-revisiones",
@@ -1967,7 +1967,7 @@
     },
     {
       "id": "window.block-diagram.menu.view.vi-hierarchy",
-      "etiqueta": "VI Hierarchy",
+      "etiqueta": "OVI Hierarchy",
       "estado": "todo",
       "labview": "Draws the tree of VIs that call each other.",
       "necesita": "editor-escritorio",
@@ -2000,7 +2000,7 @@
     },
     {
       "id": "window.block-diagram.menu.view.this-vi-in-project",
-      "etiqueta": "This VI in Project",
+      "etiqueta": "This OVI in Project",
       "estado": "todo",
       "labview": "Shows this VI in its project (greyed outside a project).",
       "necesita": "editor-escritorio",
@@ -5128,7 +5128,7 @@
     },
     {
       "id": "palette.functions.programming.file-io.file-constants.current-vis-path",
-      "etiqueta": "Current VI's Path",
+      "etiqueta": "Current OVI's Path",
       "estado": "todo",
       "labview": "Gives the path of the VI that is running.",
       "necesita": "rutas-del-sistema",
@@ -5184,7 +5184,7 @@
     },
     {
       "id": "palette.functions.programming.file-io.file-constants.vi-library",
-      "etiqueta": "VI Library",
+      "etiqueta": "OVI Library",
       "estado": "todo",
       "labview": "Gives the path of the folder where the libraries of VIs are installed.",
       "necesita": "rutas-del-sistema",
@@ -5208,7 +5208,7 @@
     },
     {
       "id": "palette.functions.programming.file-io.configuration-file-vis",
-      "etiqueta": "Configuration File VIs",
+      "etiqueta": "Configuration File OVIs",
       "estado": "todo",
       "labview": "Folder of the VIs that keep settings in a configuration file made of sections and keys.",
       "necesita": "archivos-binarios-y-carpetas",
@@ -7526,7 +7526,7 @@
     },
     {
       "id": "palette.functions.select-a-vi",
-      "etiqueta": "Select a VI...",
+      "etiqueta": "Select an OVI...",
       "estado": "built",
       "prueba": "test/editor/subvi-nodes.test.mjs::Select_a_VI_places_a_subVI_node_and_stores_its_path_relative_to_the_caller",
       "captura": "paletas/functions-programming.png"
@@ -8807,7 +8807,7 @@
     },
     {
       "id": "context.express-vi",
-      "etiqueta": "Express VI",
+      "etiqueta": "Express OVI",
       "estado": "built",
       "prueba": "test/editor/express-vi-nodes.test.mjs::the right-click menu of an Express VI is the one measured",
       "captura": "express-vi/td-menu2.png"
@@ -8979,7 +8979,7 @@
     },
     {
       "id": "context.express-vi-icon",
-      "etiqueta": "Express VI (icon view)",
+      "etiqueta": "Express OVI (icon view)",
       "estado": "built",
       "prueba": "test/editor/express-vi-nodes.test.mjs::in the icon view the menu has the measured rows in their order",
       "captura": "express-vi/td-menu2.png"
@@ -18851,14 +18851,14 @@
     },
     {
       "id": "context.connector-pane.vi-properties",
-      "etiqueta": "VI Properties",
+      "etiqueta": "OVI Properties",
       "estado": "built",
       "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
       "captura": "subvi/connector-menu.png"
     },
     {
       "id": "context.connector-pane.set-icon-to-vi-name",
-      "etiqueta": "Set Icon to VI Name",
+      "etiqueta": "Set Icon to OVI Name",
       "estado": "todo",
       "labview": "Writes the name of the VI as the text of its icon.",
       "necesita": "icono-del-vi",
@@ -19252,14 +19252,14 @@
     },
     {
       "id": "context.vi-icon",
-      "etiqueta": "VI Icon",
+      "etiqueta": "OVI Icon",
       "estado": "built",
       "prueba": "test/editor/connector-pane.test.mjs::the_menus_of_the_connector_pane_and_of_the_icon_are_declared_in_the_order_of_LabVIEW",
       "captura": "subvi/icon-menu.png"
     },
     {
       "id": "context.vi-icon.vi-properties",
-      "etiqueta": "VI Properties",
+      "etiqueta": "OVI Properties",
       "estado": "built",
       "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
       "captura": "subvi/icon-menu.png"
@@ -19274,7 +19274,7 @@
     },
     {
       "id": "context.vi-icon.set-icon-to-vi-name",
-      "etiqueta": "Set Icon to VI Name",
+      "etiqueta": "Set Icon to OVI Name",
       "estado": "todo",
       "labview": "Writes the name of the VI as the text of its icon.",
       "necesita": "icono-del-vi",
@@ -19291,7 +19291,7 @@
     },
     {
       "id": "context.subvi",
-      "etiqueta": "SubVI",
+      "etiqueta": "SubOVI",
       "estado": "built",
       "prueba": "test/editor/subvi-nodes.test.mjs::a_subVI_node_is_drawn_as_a_32_by_32_icon_and_its_menu_is_declared_in_the_order_of_LabVIEW",
       "captura": "subvi/subvi-node-menu.png"
@@ -19446,7 +19446,7 @@
     },
     {
       "id": "context.subvi.replace-with-subvi-contents",
-      "etiqueta": "Replace with SubVI Contents...",
+      "etiqueta": "Replace with SubOVI Contents...",
       "estado": "todo",
       "labview": "Puts the diagram of the subVI in the place of the node.",
       "necesita": "jerarquia-de-vis",
@@ -19454,7 +19454,7 @@
     },
     {
       "id": "context.subvi.relink-to-subvi",
-      "etiqueta": "Relink To SubVI",
+      "etiqueta": "Relink To SubOVI",
       "estado": "todo",
       "labview": "Points the node to another VI file; LabVIEW greys it out when the VI is found.",
       "necesita": "jerarquia-de-vis",
@@ -19463,7 +19463,7 @@
     },
     {
       "id": "context.subvi.subvi-node-setup",
-      "etiqueta": "SubVI Node Setup...",
+      "etiqueta": "SubOVI Node Setup...",
       "estado": "todo",
       "labview": "Sets what the VI does when the node calls it: open its panel, close it afterwards, suspend.",
       "necesita": "jerarquia-de-vis",
@@ -19503,7 +19503,7 @@
     },
     {
       "id": "context.subvi.show-vi-hierarchy",
-      "etiqueta": "Show VI Hierarchy",
+      "etiqueta": "Show OVI Hierarchy",
       "estado": "todo",
       "labview": "Opens the window with the tree of VIs that call and are called.",
       "necesita": "jerarquia-de-vis",
@@ -19632,7 +19632,7 @@
     },
     {
       "id": "context.wire.create.create-subvi-from-selected-wires",
-      "etiqueta": "Create SubVI from Selected Wires",
+      "etiqueta": "Create SubOVI from Selected Wires",
       "estado": "todo",
       "labview": "Makes a new VI out of the selected wires and what they join, and calls it.",
       "necesita": "crear-subvi"
@@ -19731,7 +19731,7 @@
     },
     {
       "id": "dialog.vi-properties",
-      "etiqueta": "VI Properties",
+      "etiqueta": "OVI Properties",
       "estado": "built",
       "prueba": "test/editor/vi-properties.test.mjs::VI_Properties_opens_on_Execution_with_the_reentrancy_of_the_VI_and_OK_writes_it_into_vi_execution",
       "captura": "subvi/vi-properties-execution-default.png"
@@ -19868,7 +19868,7 @@
     },
     {
       "id": "dialog.vi-properties.execution.inline-subvi-into-calling-vis",
-      "etiqueta": "Inline subVI into calling VIs",
+      "etiqueta": "Inline subOVI into calling OVIs",
       "estado": "todo",
       "labview": "Compiles the VI into its callers, with no call.",
       "necesita": "clones-compartidos",
@@ -19983,7 +19983,7 @@
     },
     {
       "id": "dialog.express-vi",
-      "etiqueta": "Configure Express VI",
+      "etiqueta": "Configure Express OVI",
       "estado": "built",
       "prueba": "test/editor/express-vi-nodes.test.mjs::the configuration dialog opens as Time Delay is dropped and Cancel keeps the node unconfigured",
       "captura": "express-vi/td-dlg.png"
@@ -20233,7 +20233,7 @@
     },
     {
       "id": "window.getting-started.menu.file.new-vi",
-      "etiqueta": "New VI",
+      "etiqueta": "New OVI",
       "estado": "built",
       "prueba": "test/editor/getting-started.test.mjs::File_menu_rows_run_the_commands_of_the_window",
       "atajo": "Ctrl+N",
@@ -20390,7 +20390,7 @@
     },
     {
       "id": "window.getting-started.menu.tools.vi-analyzer",
-      "etiqueta": "VI Analyzer",
+      "etiqueta": "OVI Analyzer",
       "estado": "todo",
       "labview": "A submenu to check VIs against a set of style rules.",
       "necesita": "editor-escritorio",
@@ -20440,7 +20440,7 @@
     },
     {
       "id": "window.getting-started.menu.tools.find-vis-on-disk",
-      "etiqueta": "Find VIs on Disk...",
+      "etiqueta": "Find OVIs on Disk...",
       "estado": "todo",
       "labview": "Searches the disk for VIs.",
       "necesita": "editor-escritorio",
@@ -20448,7 +20448,7 @@
     },
     {
       "id": "window.getting-started.menu.tools.prepare-example-vis-for-ni-example-finder",
-      "etiqueta": "Prepare Example VIs for NI Example Finder...",
+      "etiqueta": "Prepare Example OVIs for NI Example Finder...",
       "estado": "todo",
       "labview": "Prepares a folder of VIs to be found in the example finder.",
       "necesita": "ejemplos",

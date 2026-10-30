@@ -17,13 +17,13 @@
 // `currentContext()`. The hosts (`createRealHost`, `createVirtualHost`) are also the runtime's.
 
 /** The error a Run ends with when it is aborted: not a fault of the VI. */
-export const abortedError = () => Object.assign(new Error("The VI was aborted."), { abortado: true });
+export const abortedError = () => Object.assign(new Error("The OVI was aborted."), { abortado: true });
 
 /** Why a parked clump waits, for the deadlock message. */
 const PARK_REASONS = {
   yield: "yields its turn",
   timer: "waits for a timer",
-  lock: "waits for its turn at a non-reentrant subVI",
+  lock: "waits for its turn at a non-reentrant subOVI",
   join: "waits for the clumps it started",
   external: "waits for an answer from outside",
 };
@@ -270,7 +270,7 @@ export function createScheduler({ host, threadCount = 1, oneClumpAtATime = () =>
     const parked = [...parkedClumps];
     if (parked.some((clump) => clump.parkReason.kind === "external")) return;
     const who = parked.map((clump) => `${clump.name} ${PARK_REASONS[clump.parkReason.kind]}`).join("; ");
-    endRun(Object.assign(new Error(`The VI can no longer go on: ${who || "no clump can run"}.`), { deadlock: parked.map((clump) => clump.name) }));
+    endRun(Object.assign(new Error(`The OVI can no longer go on: ${who || "no clump can run"}.`), { deadlock: parked.map((clump) => clump.name) }));
   }
 
   function endRun(error) {

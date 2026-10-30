@@ -69,8 +69,8 @@ test("a subVI node is drawn as a 32 by 32 icon and its menu is declared in the o
 
   const rows = INV.hijos("context.subvi").filter((e) => !e.id.endsWith(".disable-breakpoint")).map((e) => `${e.separado ? "| " : ""}${e.etiqueta}`);
   assert.deepEqual(rows, [
-    "Visible Items", "Help", "Examples", "Description and Tip...", "| Add Breakpoint", "| Create", "| Replace", "Replace with SubVI Contents...",
-    "| Relink To SubVI", "SubVI Node Setup...", "Enable Database Access", "Call Setup...", "| Find All Instances", "Open Front Panel", "Show VI Hierarchy", "Explore...",
+    "Visible Items", "Help", "Examples", "Description and Tip...", "| Add Breakpoint", "| Create", "| Replace", "Replace with SubOVI Contents...",
+    "| Relink To SubOVI", "SubOVI Node Setup...", "Enable Database Access", "Call Setup...", "| Find All Instances", "Open Front Panel", "Show OVI Hierarchy", "Explore...",
     "| View As Icon", "| Remove and Rewire", "| Properties",
   ]);
   assert.deepEqual(INV.hijos("context.subvi.create").map((e) => `${e.separado ? "| " : ""}${e.etiqueta}`), ["Constant", "Control", "Indicator", "Scalar", "Channel Writer...", "| All Controls and Indicators", "All Constants"], "Scalar sits between Indicator and Channel Writer on an array terminal (create-paste/array-size-input-create-scalar-submenu.png)");

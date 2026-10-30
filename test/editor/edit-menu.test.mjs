@@ -19,18 +19,18 @@ test("the Edit menu has LabVIEW's rows in order on the diagram and on the panel"
     ...COMMON_START,
     "| Make Current Values Default", "Reinitialize Values to Default",
     "| Customize Control...", "Import Picture to Clipboard...", "Set Tabbing Order...",
-    "| Remove Broken Wires from Selection Ctrl+B", "Clean Up Selection Ctrl+U", "Remove Breakpoints from Hierarchy", "Create VI Snippet from Selection", "Create SubVI",
+    "| Remove Broken Wires from Selection Ctrl+B", "Clean Up Selection Ctrl+U", "Remove Breakpoints from Hierarchy", "Create OVI Snippet from Selection", "Create SubOVI",
     "| Enable Diagram Grid Alignment Ctrl+#", "Show Hidden Controls While Editing", "Align Items Ctrl+Shift+A", "Distribute Items Ctrl+Shift+D",
-    "| VI Revision History... Ctrl+Y", "Run-Time Menu...", "Adjust Pane Origin",
+    "| OVI Revision History... Ctrl+Y", "Run-Time Menu...", "Adjust Pane Origin",
     "| Find and Replace... Ctrl+F", "Show Search Results Ctrl+Shift+F",
   ]);
   assert.deepEqual(rows("front-panel"), [
     ...COMMON_START,
     "| Make Selected Values Default", "Reinitialize Selected Values to Default",
     "| Customize Control...", "Import Picture to Clipboard...", "Set Tabbing Order...",
-    "| Remove Broken Wires from Selection Ctrl+B", "Clean Up Panel Ctrl+U", "Remove Breakpoints from Hierarchy", "Create VI Snippet from Selection", "Create SubVI",
+    "| Remove Broken Wires from Selection Ctrl+B", "Clean Up Panel Ctrl+U", "Remove Breakpoints from Hierarchy", "Create OVI Snippet from Selection", "Create SubOVI",
     "| Disable Panel Grid Alignment Ctrl+#", "Show Hidden Controls While Editing", "Align Items Ctrl+Shift+A", "Distribute Items Ctrl+Shift+D",
-    "| VI Revision History... Ctrl+Y", "Run-Time Menu...", "Adjust Pane Origin",
+    "| OVI Revision History... Ctrl+Y", "Run-Time Menu...", "Adjust Pane Origin",
     "| Find and Replace... Ctrl+F", "Show Search Results Ctrl+Shift+F",
   ]);
   for (const windowName of ["block-diagram", "front-panel"]) {

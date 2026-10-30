@@ -370,7 +370,7 @@ export function closeProbesDialog(inv) {
   const id = `${DEBUG_WINDOW_ID}.close-dialog`;
   return `<div class="dw-velo"><div class="dw-dialogo" data-id="${id}">` +
     `<div class="dw-dialogo-titulo"><span class="dw-icono-app">${G.ICONO_APP}</span><span class="dw-cerrar" data-id="${id}.no">✕</span></div>` +
-    `<div class="dw-dialogo-texto">This operation will close all probes in VIs that are open outside of projects. Do you wish to continue?</div>` +
+    `<div class="dw-dialogo-texto">This operation will close all probes in OVIs that are open outside of projects. Do you wish to continue?</div>` +
     `<label class="dw-dialogo-casilla${holeClass(inv, `${id}.do-not-ask-again`)}" data-id="${id}.do-not-ask-again"><span class="pv-casilla"></span>Do not ask again</label>` +
     `<div class="dw-dialogo-botones"><span class="pv-boton defecto" data-id="${id}.yes">Yes</span><span class="pv-boton" data-id="${id}.no">No</span></div></div></div>`;
 }

@@ -962,7 +962,7 @@ export const sharedClock = () => performance.timeOrigin + performance.now();
 const PARK_REASONS = {
   [PARK_KIND.yield]: "yields its turn",
   [PARK_KIND.timer]: "waits for a timer",
-  [PARK_KIND.lock]: "waits for its turn at a non-reentrant subVI",
+  [PARK_KIND.lock]: "waits for its turn at a non-reentrant subOVI",
   [PARK_KIND.join]: "waits for the clumps it started",
   [PARK_KIND.external]: "waits for an answer from outside",
 };
@@ -975,5 +975,5 @@ function deadlockError(ex, compilado) {
   const parked = names.filter((_, id) => memory.getInt32(records + id * CLUMP_BYTES + CLUMP.state, true) === STATE.parked);
   const reasonOf = (name) => PARK_REASONS[memory.getInt32(records + names.indexOf(name) * CLUMP_BYTES + CLUMP.parkKind, true)];
   const who = parked.map((name) => `${name} ${reasonOf(name)}`).join("; ");
-  return Object.assign(new Error(`The VI can no longer go on: ${who || "no clump can run"}.`), { deadlock: parked });
+  return Object.assign(new Error(`The OVI can no longer go on: ${who || "no clump can run"}.`), { deadlock: parked });
 }

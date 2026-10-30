@@ -38,7 +38,7 @@ export const LAYOUT = {
 
 const CHECKBOXES = [
   { id: `${EXECUTION}.allow-debugging`, label: "Allow debugging", x: 30, y: 90, checked: true },
-  { id: `${EXECUTION}.inline-subvi-into-calling-vis`, label: "Inline subVI into calling VIs", x: 36, y: 320, checked: false },
+  { id: `${EXECUTION}.inline-subvi-into-calling-vis`, label: "Inline subOVI into calling OVIs", x: 36, y: 320, checked: false },
   { id: `${EXECUTION}.enable-automatic-error-handling`, label: "Enable automatic error handling", x: 349, y: 199, checked: true },
   { id: `${EXECUTION}.run-when-opened`, label: "Run when opened", x: 349, y: 223, checked: false },
   { id: `${EXECUTION}.suspend-when-called`, label: "Suspend when called", x: 349, y: 247, checked: false },
@@ -96,7 +96,7 @@ function reentrancyGroup(inv, dialog) {
     const selected = dialog.reentrancy === option.value;
     return `<div class="pv-radio${holeClass(inv, option.id)}${selected ? " marcada" : ""}" data-id="${esc(option.id)}" style="left:${px(R.optionX)};top:${px(R.firstOption + i * R.optionStep)}"><span class="pv-casilla redonda"></span><span class="pv-texto">${esc(option.label)}</span></div>`;
   }).join("");
-  const note = "Reentrancy decides whether several calls to this VI can run at the same time, and whether each call keeps a state of its own.";
+  const note = "Reentrancy decides whether several calls to this OVI can run at the same time, and whether each call keeps a state of its own.";
   return `<div class="pv-grupo" style="left:${px(R.x)};top:${px(R.y)};width:${px(R.width)};height:${px(R.height)}"><span class="pv-grupo-titulo">Reentrancy</span></div>${options}<div class="pv-nota" style="left:${px(R.optionX - 5)};top:${px(R.noteY)};width:${px(R.width - 20)}">${esc(note)}</div>`;
 }
 
@@ -116,7 +116,7 @@ export function view(inv, dialog) {
     .map(({ key, label, defaultButton }) => `<div class="pv-boton${defaultButton ? " defecto" : ""}${holeClass(inv, `${DIALOG_ID}.${key}`)}" data-id="${DIALOG_ID}.${key}" style="left:${px(L.button[key])};top:${px(L.button.y)};width:${px(L.button.width)};height:${px(L.button.height)}">${label}</div>`)
     .join("");
   return `<div class="pv-velo"><div class="pv-dialogo" style="width:${px(L.width)};height:${px(L.height)}">` +
-    `<div class="pv-titulo" style="height:${px(L.title.height)}"><span>VI Properties</span><span class="pv-cerrar" data-id="${DIALOG_ID}.cancel">✕</span></div>` +
+    `<div class="pv-titulo" style="height:${px(L.title.height)}"><span>OVI Properties</span><span class="pv-cerrar" data-id="${DIALOG_ID}.cancel">✕</span></div>` +
     `<div class="pv-etiqueta" style="left:${px(L.categoryLabel.x)};top:${px(L.categoryLabel.y)}">Category</div>` +
     `<div class="pv-combo categoria" data-id="${CATEGORIES_ID}" style="left:${px(box.x)};top:${px(box.y)};width:${px(box.width)};height:${px(box.height)}"><span class="pv-texto">Execution</span><span class="pv-flecha"></span></div>` +
     `<div class="pv-pagina" style="left:${px(L.page.x)};top:${px(L.page.y)};width:${px(L.page.width)};height:${px(L.page.height)}"></div>` +

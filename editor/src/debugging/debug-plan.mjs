@@ -14,7 +14,7 @@ const LOOP_KINDS = ["while-loop", "for-loop"];
 /** The name LabVIEW shows for a node: its own label, the palette's name for its block, or the block. */
 export function nodeDisplayName(node, inventory) {
   if (node.label?.text) return node.label.text;
-  if (isSubVI(node)) return withoutVIExtension(String(node.config?.vi ?? "SubVI").split("/").pop());
+  if (isSubVI(node)) return withoutVIExtension(String(node.config?.vi ?? "SubOVI").split("/").pop());
   const entry = inventory?.entradas.find((candidate) => candidate.bloque === node.tipo && candidate.id.startsWith("palette."));
   return entry?.etiqueta ?? node.tipo;
 }

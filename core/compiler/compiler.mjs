@@ -2166,7 +2166,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
   const calls = new Map(); // subvi node id → compiled instance
   for (const n of g.nodos.filter((x) => x.tipo === "subvi")) {
     const callee = cat.findSubVI?.(n.config?.vi);
-    if (!callee) return { errores: [{ nodo: n.id, motivo: `The subVI "${n.config?.vi}" is not loaded.` }] };
+    if (!callee) return { errores: [{ nodo: n.id, motivo: `The subOVI "${n.config?.vi}" is not loaded.` }] };
     const instance = subVIInstance(callee, n, module, instanceKey);
     if (instance.errores) return { errores: instance.errores };
     calls.set(n.id, instance);

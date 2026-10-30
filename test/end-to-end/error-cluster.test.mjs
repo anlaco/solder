@@ -100,7 +100,7 @@ test("manejo automatico de errores: el error out sin cablear para el vi y pregun
   const sinAuto = hacer(false);
   sinAuto.g = { ...sinAuto.g, vi: { "automatic-error-handling": false } };
   await correr(sinAuto, { alErrorAutomatico: continuar });
-  assert.equal(vistos.length, 0, "desactivado en VI Properties, tampoco");
+  assert.equal(vistos.length, 0, "desactivado en OVI Properties, tampoco");
 });
 
 // labview-errors.md §5: Simple Error Handler. Sin error no hay diálogo y `message` es «No Error»; con

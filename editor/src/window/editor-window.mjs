@@ -430,7 +430,7 @@ function acabar(data) {
   lanzado = false;
   canal.postMessage({ ejecutando: false });
   modoRun(false);
-  if (data.error) window.solder?.avisar("The VI stopped with an error.", data.error);
+  if (data.error) window.solder?.avisar("The OVI stopped with an error.", data.error);
 }
 
 async function ejecutarVI({ stepFirst = false } = {}) {
@@ -444,7 +444,7 @@ async function ejecutarVI({ stepFirst = false } = {}) {
   // A VI that cannot run opens the Error list, as the broken arrow does in LabVIEW (REPORT.md §5).
   if (errorRows().length) return openErrorList();
   const c = compilar(g, cat, { name: currentVIName() });
-  if (c.errores) return window.solder?.avisar("The VI cannot run.", c.errores.map((e) => e.motivo).join("\n"));
+  if (c.errores) return window.solder?.avisar("The OVI cannot run.", c.errores.map((e) => e.motivo).join("\n"));
   // A VI that talks to instruments gets a port to the I/O process for this Run (DT-065 §3).
   const ioPort = c.usesInstrumentIo ? await instrumentIoPort() : null;
   if (ejecutando) return ioPort?.close();

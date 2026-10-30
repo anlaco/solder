@@ -8,15 +8,15 @@ export const LINK_LABEL = "Read more";
 export const CAROUSEL_PAGES = [
   {
     heading: "Start with Solder",
-    body: "Solder is a free visual language: you draw a program as a diagram of blocks joined by wires, and the values flow along them. Press Ctrl+N to open a blank VI, place a control on its front panel and wire it on the block diagram.",
+    body: "Solder is a free visual language: you draw a program as a diagram of blocks joined by wires, and the values flow along them. Press Ctrl+N to open a blank OVI, place a control on its front panel and wire it on the block diagram.",
   },
   {
     heading: "Learn from the examples",
-    body: "The examples folder holds small VIs that each show one idea: arithmetic, loops, strings, arrays and subVIs. Open one with Open Existing, run it, then change a wire and run it again to see what moves.",
+    body: "The examples folder holds small OVIs that each show one idea: arithmetic, loops, strings, arrays and subOVIs. Open one with Open Existing, run it, then change a wire and run it again to see what moves.",
   },
   {
     heading: "What is new in this version",
-    body: "This release adds this window, the list of recent files and the Close and Close All commands. VIs are now saved as .sdg files, and the editor asks before it closes a VI that has unsaved changes.",
+    body: "This release adds this window, the list of recent files and the Close and Close All commands. OVIs are now saved as .sdg files, and the editor asks before it closes an OVI that has unsaved changes.",
   },
   {
     heading: "Think in dataflow",
@@ -24,24 +24,24 @@ export const CAROUSEL_PAGES = [
   },
   {
     heading: "Find a bug with the debugger",
-    body: "Turn on Highlight Execution to watch values travel along the wires, place a probe on a wire to read what passes through it, or set a breakpoint on a block to stop the VI right before it runs.",
+    body: "Turn on Highlight Execution to watch values travel along the wires, place a probe on a wire to read what passes through it, or set a breakpoint on a block to stop the OVI right before it runs.",
   },
   {
-    heading: "Build with subVIs",
-    body: "Any VI can be used as a block of another one. Give it a connector pane with its inputs and outputs, save it, and drop it on a diagram with Select a VI. Small VIs are easier to read and to test.",
+    heading: "Build with subOVIs",
+    body: "Any OVI can be used as a block of another one. Give it a connector pane with its inputs and outputs, save it, and drop it on a diagram with Select an OVI. Small OVIs are easier to read and to test.",
   },
   {
     heading: "Know the file formats",
-    body: "A VI is a text file with the extension .sdg that holds only the diagram, so it can be read, compared and kept under version control. Solder compiles it to WebAssembly when you run it.",
+    body: "An OVI is a text file with the extension .sdg that holds only the diagram, so it can be read, compared and kept under version control. Solder compiles it to WebAssembly when you run it.",
   },
   {
     heading: "Report a problem",
-    body: "If a VI behaves differently from what you expect, or the editor looks different from LabVIEW, tell us. Say which version you use and attach a small VI that shows the problem.",
+    body: "If an OVI behaves differently from what you expect, or the editor looks different from LabVIEW, tell us. Say which version you use and attach a small OVI that shows the problem.",
   },
 ];
 
 /** The two captions at the bottom of the window, left and middle. */
 export const CAPTIONS = [
   { heading: "Find Drivers and Add-ons", body: "Connect to devices and add libraries to Solder." },
-  { heading: "Community and Support", body: "Ask questions, share your VIs and report problems." },
+  { heading: "Community and Support", body: "Ask questions, share your OVIs and report problems." },
 ];

@@ -135,11 +135,11 @@ test("a deleted control or indicator leaves the connector", () => {
 
 test("the menus of the connector pane and of the icon are declared in the order of LabVIEW", () => {
   assert.deepEqual(filas("context.connector-pane"), [
-    "VI Properties", "Set Icon to VI Name", "Find All Instances", "Add Terminal |", "Remove Terminal", "Patterns", "Rotate 90 Degrees", "Flip Horizontal", "Flip Vertical",
+    "OVI Properties", "Set Icon to OVI Name", "Find All Instances", "Add Terminal |", "Remove Terminal", "Patterns", "Rotate 90 Degrees", "Flip Horizontal", "Flip Vertical",
     "Disconnect All Terminals", "Disconnect This Terminal |", "This Connection Is",
   ]);
   assert.deepEqual(filas("context.connector-pane.this-connection-is"), ["Required", "Recommended", "Optional"]);
-  assert.deepEqual(filas("context.vi-icon"), ["VI Properties", "Edit Icon...", "Set Icon to VI Name", "Find All Instances |"]);
+  assert.deepEqual(filas("context.vi-icon"), ["OVI Properties", "Edit Icon...", "Set Icon to OVI Name", "Find All Instances |"]);
   // What works is built; what needs the other patterns or the icon editor says why not.
   for (const id of ["vi-properties", "disconnect-all-terminals", "disconnect-this-terminal"]) assert.equal(INV.entrada(`context.connector-pane.${id}`).estado, "built");
   assert.equal(INV.entrada("context.connector-pane.patterns").estado, "built");

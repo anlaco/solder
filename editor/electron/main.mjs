@@ -172,7 +172,7 @@ const openVIs = new Map();
 /** Web contents id → the open VI whose window it is. */
 const viOfContents = new Map();
 // Both extensions open (DT-051); the dialogs list the new one first.
-const FILTERS = [{ name: "Solder VI", extensions: [VI_EXTENSION, OLD_VI_EXTENSION].map((extension) => extension.slice(1)) }];
+const FILTERS = [{ name: "Solder OVI", extensions: [VI_EXTENSION, OLD_VI_EXTENSION].map((extension) => extension.slice(1)) }];
 let quitting = false;
 /** What was last copied in any VI, as the text its window sent. */
 let sharedClipboard = null;
@@ -309,7 +309,7 @@ async function openPath(filePath, owner) {
   try {
     text = await readFile(filePath, "utf8");
   } catch (error) {
-    dialog.showMessageBox(owner, { type: "error", message: "The VI cannot be opened.", detail: error.message });
+    dialog.showMessageBox(owner, { type: "error", message: "The OVI cannot be opened.", detail: error.message });
     return;
   }
   const { entry } = registry.open({ path: filePath, initialText: text });
@@ -503,7 +503,7 @@ function handleRequests() {
   ipcMain.handle("vi:open-path", (event, key) => openPath(key, ownerOf(event)));
   // Select a VI...: the file dialog; returns the absolute path or nothing.
   ipcMain.handle("vi:choose-subvi", async (event) => {
-    const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select a VI", properties: ["openFile"], filters: FILTERS });
+    const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select an OVI", properties: ["openFile"], filters: FILTERS });
     return result.canceled || !result.filePaths.length ? null : pathKey(result.filePaths[0]);
   });
   // The browse button of a File Path Control: the file dialog (Browse Options are not offered yet: one existing file); returns the absolute path or nothing.
@@ -561,7 +561,7 @@ function handleRequests() {
     for (const window of BrowserWindow.getAllWindows()) window.webContents.send("error-list:show-warnings-changed", showWarnings);
   });
   ipcMain.on("vi:error", (event, message) => {
-    dialog.showMessageBox(ownerOf(event), { type: "error", message: "The VI cannot be opened.", detail: message });
+    dialog.showMessageBox(ownerOf(event), { type: "error", message: "The OVI cannot be opened.", detail: message });
   });
   ipcMain.on("vi:avisar", (event, message, detail) => {
     dialog.showMessageBox(ownerOf(event), { type: "warning", message, detail });

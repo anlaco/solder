@@ -246,7 +246,7 @@ test("closing the Debug Window removes the probes and asks first", () => {
   let state = DS.addBreakpoint(DS.initial(), { node: id.add });
   state = DS.addProbe(state, wires.c);
   const dialog = DV.closeProbesDialog(INV);
-  assert.match(dialog, /This operation will close all probes in VIs that are open outside of projects\. Do you wish to continue\?/);
+  assert.match(dialog, /This operation will close all probes in OVIs that are open outside of projects\. Do you wish to continue\?/);
   assert.match(dialog, /Yes/);
   const closed = DS.closeDebugWindow(state);
   assert.equal(closed.debugWindow.open, false);
@@ -430,6 +430,6 @@ test("the step buttons name what they do at the stops on a structure and at the 
   assert.deepEqual(tips(at({ kind: "frame", phase: "end" }, "Case Structure")), ["Finish Case Structure", "Finish Case Structure", "Finish Case Structure"]);
   assert.deepEqual(tips(at({ kind: "frame", phase: "frame-end" }, "Flat Sequence Structure")), ["Step to next frame", "Step to next frame", "Finish Flat Sequence Structure"]);
   const end = at({ kind: "diagram" }, "");
-  assert.deepEqual(tips(end), Array(3).fill('Finish VI "Frame Stops.vi"'));
+  assert.deepEqual(tips(end), Array(3).fill('Finish OVI "Frame Stops.vi"'));
   assert.deepEqual([end["step-into"].enabled, end["step-over"].enabled, end["step-out"].enabled], [false, false, true], "only Step Out at the end");
 });

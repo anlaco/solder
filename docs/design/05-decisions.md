@@ -3225,4 +3225,4 @@ editor's interface. "VI" is LabVIEW's word and is used only for LabVIEW's.**
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| The editor's interface says OVI where LabVIEW says VI | A test over the menus, windows and palettes' texts | **Unverified** (to do, its own step) |
+| The editor's interface says OVI where LabVIEW says VI | `test/editor/ovi-words.test.mjs`: no "VI" as a word in the inventory's names and reasons, nor in the string literals of `editor/` and `core/` (an allow-list for LabVIEW names that must keep it; NI's `.vi` file names pass) | Verified (2026-10-30) |

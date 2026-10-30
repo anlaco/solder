@@ -39,7 +39,7 @@ export const toggleRetain = (state) => ({ ...state, retain: !state.retain });
 /** The VI's phase as the toolbar sees it. */
 export const phaseOf = ({ running, run }) => (!running ? "edit" : run.paused ? "paused" : "running");
 
-const ALLOW_DEBUGGING_OFF = "Allow debugging is off (VI Properties ▸ Execution)";
+const ALLOW_DEBUGGING_OFF = "Allow debugging is off (OVI Properties ▸ Execution)";
 
 /**
  * Each debugging button of the toolbar: whether it is enabled, its tooltip and the variant of its
@@ -79,7 +79,7 @@ export function toolbarState(info) {
     "step-into": atStructure
       ? stepButton(atStructure.into, "step-into-enabled", atStructure.steps)
       : paused
-      ? { enabled: allowDebugging && !nodeIsSubVI, tooltip: nodeIsSubVI ? `Step into ${nodeName}: the subVI is not stepped into yet` : overLabel, glyph: "step-into-enabled" }
+      ? { enabled: allowDebugging && !nodeIsSubVI, tooltip: nodeIsSubVI ? `Step into ${nodeName}: the subOVI is not stepped into yet` : overLabel, glyph: "step-into-enabled" }
       : stepping("Start Single Stepping"),
     "step-over": atStructure ? stepButton(atStructure.over, "step-over-enabled", atStructure.steps) : paused ? { enabled: allowDebugging, tooltip: overLabel, glyph: "step-over-enabled" } : stepping("Start Single Stepping"),
     "step-out": atStructure ? stepButton(atStructure.out, "step-out-enabled") : paused ? { enabled: allowDebugging, tooltip: stepOutLabel, glyph: "step-out-enabled" } : { enabled: false, tooltip: allowDebugging ? "Step Out" : `Step Out: ${ALLOW_DEBUGGING_OFF}` },
@@ -95,7 +95,7 @@ export function toolbarState(info) {
 export function structureStopLabels({ stop, nodeName, parentName, viName }) {
   const finish = (name) => `Finish ${name}`;
   const finishParent = finish(parentName ?? "Block Diagram");
-  if (stop.kind === "diagram") return { into: finish(`VI "${viName}"`), over: finish(`VI "${viName}"`), out: finish(`VI "${viName}"`), steps: false };
+  if (stop.kind === "diagram") return { into: finish(`OVI "${viName}"`), over: finish(`OVI "${viName}"`), out: finish(`OVI "${viName}"`), steps: false };
   switch (stop.phase) {
     case "iteration":
       return { into: "Step to next iteration", over: "Step to next iteration", out: finish(nodeName), steps: true };
