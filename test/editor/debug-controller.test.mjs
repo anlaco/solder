@@ -84,26 +84,37 @@ function loopVI() {
   return { g, id };
 }
 
-/** Runs `vi` (`chainVI` by default) with a controller; `events` collects what the page would receive. */
+/**
+ * Runs `vi` (`chainVI` by default) with a controller; `events` collects what the page would receive.
+ * `nextPause()` resolves on the next `paused` event, so a test waits for the stop it asserts instead of a
+ * fixed time that a loaded machine can outlast (CLAUDE.md rule 6).
+ */
 function start({ configure = {}, sleepLog = null, vi = chainVI } = {}) {
   const { g, id } = vi();
   const compiled = compilar(g, CAT);
   assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
   const plan = buildDebugPlan(g, compiled.debugNodes, CONTEXT, INV);
   const events = [];
+  const pauseWaiters = [];
+  const receive = (message) => {
+    events.push(message.debug);
+    if (message.debug.paused) pauseWaiters.splice(0).forEach((wake) => wake(message.debug.paused));
+  };
+  const nextPause = () => new Promise((wake) => pauseWaiters.push(wake));
   const controller = createDebugController({
     debugNodes: compiled.debugNodes,
     plan,
-    send: (message) => events.push(message.debug),
+    send: receive,
     sleep: async (ms) => sleepLog?.push(ms),
   });
   controller.configure({ active: true, ...configure });
   // As the run worker does: the diagram's last stop comes after the VI has run.
   const run = ejecutar(compiled, {}, { depurador: controller.hooks }).then(() => controller.finishDiagram());
-  return { controller, events, run, id, plan, compiled };
+  return { controller, events, run, nextPause, id, plan, compiled };
 }
 
-const tick = () => new Promise((done) => setTimeout(done, 30));
+/** The next stop, or null when the VI ends first; arm it before the `resume` that leads to it. */
+const nextStopOrEnd = (nextPause, run) => Promise.race([nextPause(), run.then(() => null)]);
 const pausedNode = (events) => events.filter((event) => event.paused).at(-1)?.paused;
 
 test("the plan counts the wires between reporting nodes and their lengths", () => {
@@ -141,9 +152,10 @@ test("with Highlight Execution each node waits for its pace, and the first one f
 });
 
 test("a breakpoint on a node stops the VI before the node runs, when its inputs have arrived", async () => {
-  const { controller, events, run, id } = start({ configure: { nodeBreakpoints: {} } });
+  const { controller, events, run, nextPause, id } = start({ configure: { nodeBreakpoints: {} } });
+  const stop = nextPause();
   controller.configure({ nodeBreakpoints: { [id.add]: true } });
-  await tick();
+  await stop;
   assert.deepEqual(pausedNode(events), { node: id.add, kind: "before", wire: undefined, container: null, name: "Add" });
   const reportedBefore = events.flatMap((event) => event.values ?? []).map((entry) => entry.node);
   assert.ok(!reportedBefore.includes(id.add), "the Add has not run");
@@ -154,35 +166,40 @@ test("a breakpoint on a node stops the VI before the node runs, when its inputs 
 });
 
 test("a breakpoint on a constant stops right after it, which is the nearest to before", async () => {
-  const { controller, events, run, id } = start();
+  const { controller, events, run, nextPause, id } = start();
+  const stop = nextPause();
   controller.configure({ nodeBreakpoints: { [id.three]: true } });
-  await tick();
+  await stop;
   assert.equal(pausedNode(events).kind, "at");
   controller.resume("continue");
   await run;
 });
 
 test("Step Over runs the node and stops before the next one; Continue goes to the end", async () => {
-  const { controller, events, run, id } = start({ configure: { highlight: { on: true, speed: "very-fast" } } });
+  const { controller, events, run, nextPause, id } = start({ configure: { highlight: { on: true, speed: "very-fast" } } });
+  let stop = nextPause();
   controller.configure({ nodeBreakpoints: { [id.add]: true } });
-  await tick();
+  await stop;
   assert.equal(pausedNode(events).node, id.add);
+  stop = nextPause();
   controller.resume("over");
-  await tick();
+  await stop;
   assert.equal(pausedNode(events).node, id.negate, "the Add ran, the Negate is next");
   assert.ok(events.some((event) => event.ran === id.add));
+  stop = nextPause();
   controller.resume("over");
-  await tick();
+  await stop;
   assert.equal(pausedNode(events).kind, "diagram", "an indicator is not a stop: the end of the diagram is next");
   controller.resume("continue");
   await run;
 });
 
 test("Pause stops before the next node that is about to run", async () => {
-  const { controller, events, run, id } = start({ configure: { nodeBreakpoints: { } } });
+  const { controller, events, run, nextPause, id } = start({ configure: { nodeBreakpoints: { } } });
+  const stop = nextPause();
   controller.configure({ highlight: { on: true, speed: "very-fast" } });
   controller.requestPause();
-  await tick();
+  await stop;
   assert.ok(pausedNode(events), "paused");
   controller.resume("continue");
   await run;
@@ -195,8 +212,9 @@ test("a disabled breakpoint does not stop, and Abort frees a held VI", async () 
   await run;
   assert.equal(pausedNode(events), undefined);
   const second = start();
+  const stop = second.nextPause();
   second.controller.configure({ nodeBreakpoints: { [second.id.add]: true } });
-  await tick();
+  await stop;
   assert.ok(second.controller.isPaused());
   second.controller.release();
   await second.run;
@@ -230,14 +248,13 @@ test("the plan never waits for a border, and counts a tunnel that reports each i
 });
 
 test("single stepping through a loop stops before its nodes, never at a border", async () => {
-  const { controller, events, run, id } = start({ vi: loopVI });
+  const { controller, events, run, nextPause, id } = start({ vi: loopVI });
+  let stop = nextStopOrEnd(nextPause, run);
   controller.requestPause();
   const borders = new Set([id.tunnelIn, id.left, id.i, id.tunnelOut, id.right]);
-  let finished = false;
-  run.then(() => (finished = true));
-  for (let step = 0; step < 40 && !finished; step++) {
-    await tick();
-    if (controller.isPaused()) controller.resume("over");
+  while (await stop) {
+    stop = nextStopOrEnd(nextPause, run);
+    controller.resume("over");
   }
   await run;
   const stops = events.filter((event) => event.paused).map((event) => event.paused.node);
@@ -250,13 +267,13 @@ test("single stepping through a loop stops before its nodes, never at a border",
 
 /** Steps with `mode` until the VI ends, and gives each stop as "kind:phase" (frames) or "kind:name" (nodes). */
 async function stepThrough(vi, modes = () => "over", configure = {}) {
-  const { controller, events, run, id } = start({ vi, configure });
+  const { controller, events, run, nextPause, id } = start({ vi, configure });
+  let stop = nextStopOrEnd(nextPause, run);
   controller.requestPause();
-  let finished = false;
-  run.then(() => (finished = true));
-  for (let step = 0; step < 60 && !finished; step++) {
-    await tick();
-    if (controller.isPaused()) controller.resume(modes(pausedNode(events)));
+  let paused;
+  while ((paused = await stop)) {
+    stop = nextStopOrEnd(nextPause, run);
+    controller.resume(modes(paused));
   }
   await run;
   const names = Object.fromEntries(Object.entries(id).map(([name, node]) => [node, name]));
