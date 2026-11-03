@@ -287,10 +287,10 @@ export const MEDIDAS_TERMINAL_PANEL = { icono: { ancho: 38, alto: 38, flecha: 19
 export const MEDIDAS_TERMINAL_PATH = { icono: { ancho: 38, alto: 38, flecha: 19 }, compacto: { ancho: 32, alto: 16, flecha: 8 } };
 const isPathTerminal = (n) => n.tipo === "path-control" || n.tipo === "path-indicator";
 /**
- * The terminal of a control refnum, 35 × 38 (seen, reports/2026-11-03-control-references.md Q2). Its compact view was
- * not seen: it keeps the icon.
+ * The terminal of a control refnum, 38 × 38 (measured, reports/2026-11-03-control-reference-solder-compare.md 3a). Its
+ * compact view was not seen: it keeps the icon.
  */
-export const MEDIDAS_TERMINAL_REFNUM = { ancho: 35, alto: 38, flecha: 19 };
+export const MEDIDAS_TERMINAL_REFNUM = { ancho: 38, alto: 38, flecha: 19 };
 const isRefnumTerminal = (n) => n.tipo === "refnum-control" || n.tipo === "refnum-indicator";
 const esDelPanel = (n, ctx) => !!ctx.cat.bloque(n.tipo).panel;
 const medidasPanel = (n) => (isRefnumTerminal(n) ? MEDIDAS_TERMINAL_REFNUM : (isPathTerminal(n) ? MEDIDAS_TERMINAL_PATH : MEDIDAS_TERMINAL_PANEL)[n.vista?.compacto ? "compacto" : "icono"]);

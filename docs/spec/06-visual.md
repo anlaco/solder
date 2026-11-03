@@ -771,17 +771,21 @@ rules 115–119.
   3 × 7 points right at x (width − 5) on a read row and at x 2 on a write row.
 - **Explicit node of a control's class** (reports/2026-11-03-control-references.md Q4–Q6): the Instr header with the strict class
   name instead of "Instr", "DigNum (strict)" or "Bool (strict)", in the frame's colour (`#4C4C3D`), not the type's; the header text
-  sets the width (118 px for "DigNum (strict)", 96 for "Bool (strict)").
+  sets the width (118 px for "DigNum (strict)", 100 for "Bool (strict)", whose right edge was re-measured in
+  `2026-11-03-control-reference-solder-compare.md` 2g), its ink from x 28 and y 5.
 - **Control reference constant** (same report, Q1): 19 px tall, a 2 px frame in the control's type colour, the nodes' cream inside,
   a black curved arrow (the refnum glyph, about 7 × 10 at x 5) and the class's name in the type colour from x 14 ("Digital": 54 px
   wide; "Boolean": 62); the control's label above it; its terminal at the middle of the right edge. Its wire is `#007F7F`, 1 px,
   solid. Code: `editor/src/block-diagram/control-references.mjs`. **Unverified:** the glyph's exact drawing.
 - **Control refnum** (same report, Q2): on the panel a 36 × 48 grey page (`#B3B3B3`) with its top right corner folded and a
   `#595959` edge on the right and at the bottom, a miniature numeric control ("1.23") and a small red-orange star under it; it shows
-  no value, before or while running (`2026-11-03-control-reference-subvi.md` Q4). On the diagram a 35 × 38 terminal: a teal (`#007F7F`)
-  double frame, outer and inner 3 px apart, around a small page with a green dot, the arrow on the right for a control and on the left
-  for an indicator, its wire at y 19. Code: `editor/src/common/glyphs.mjs` (`refnumPageGlyph`, `terminalRefnum`). **Unverified:** the
-  drawings' details (drawn anew from crops, not compared by eye), the star's meaning, the compact terminal (the icon is kept).
+  no value, before or while running (`2026-11-03-control-reference-subvi.md` Q4). On the diagram a terminal: a teal (`#007F7F`)
+  double frame 38 × 38, outer and inner 3 px apart, around a light grey tile with a page on it (three short lines, a slider white over
+  blue, a green dot in a ring), a small page glyph in a notch cut into the bottom frame, the arrow on the right for a control and on
+  the left for an indicator, its wire at y 19 (`2026-11-03-control-reference-solder-compare.md` 3a–3h). On the panel the miniature is
+  31 × 13 at (2, 21) of the page, two stacked arrow boxes and a "1.23" box, and the star (8 × 7) is under its left end. Code:
+  `editor/src/common/glyphs.mjs` (`refnumPageGlyph`, `terminalRefnum`). **Unverified:** the glyphs' fine details, the star's meaning,
+  the compact terminal (the icon is kept).
 - **Terminals:** a row's on its right edge (read) or left edge (write), 7 px under the row's top inside pixel (y 17 on an implicit
   node's first row, y 26 on an Instr node's); error in and out at the header's middle (y 5 implicit, y 13 Instr), reference in and out
   at y 4. **Unverified:** the header terminals' exact spots (only their glyphs were measured), the Instr icon's drawing, and the font of

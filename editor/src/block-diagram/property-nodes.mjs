@@ -88,12 +88,17 @@ export function rowText(node, cat, row) {
  * "Bool (strict)", reports/2026-11-03-control-references.md Q4, Q6).
  */
 const headerText = (node) => (isControlClass(node) ? strictHeaderText(node.config?.class) : node.config?.class ?? "");
-/** The header's text starts at x 29, after the key, and leaves room for the glyphs on the right: "DigNum (strict)" makes the node 118 px, "Bool (strict)" 96. */
-const HEADER_TEXT = { left: 29, right: 12 };
+/**
+ * The header's text starts after the key ("Instr" at x 29, dz.png; a strict class's first pixel at x 28, a pixel higher)
+ * and leaves room for the glyphs on the right: "DigNum (strict)" makes the node 118 px and "Bool (strict)" 100
+ * (reports/2026-11-03-control-reference-solder-compare.md 2a, 2d, 2g, 2i).
+ */
+const HEADER_TEXT = { left: 29, baseline: 9 };
+const STRICT_HEADER_TEXT = { left: 27, baseline: 8, right: 14 };
 
 export function propertyNodeSize(node, cat, measure) {
   // An Instr node is 66 px with "Instr" (measured); a control class's header text sets its width.
-  const headerWidth = isControlClass(node) ? Math.ceil(HEADER_TEXT.left + measure(headerText(node)) + HEADER_TEXT.right) : 0;
+  const headerWidth = isControlClass(node) ? Math.ceil(STRICT_HEADER_TEXT.left + measure(headerText(node)) + STRICT_HEADER_TEXT.right) : 0;
   const minimum = isImplicit(node) ? IMPLICIT_MIN_WIDTH : Math.max(EXPLICIT_MIN_WIDTH, headerWidth);
   const widest = Math.max(0, ...rowsOf(node).map((_, row) => measure(rowText(node, cat, row))));
   return { ancho: Math.max(minimum, Math.ceil(widest) + 2 * TEXT_SIDE_ROOM), alto: headerHeight(node) + ROW_PITCH * rowsOf(node).length };
@@ -213,6 +218,11 @@ function implicitHeader(graph, cat, node, box) {
 /** An explicit header's glyphs (dz.png): the sheet over the error glyph at x 4 and 8 px in from the right, y 2 and 11. */
 const EXPLICIT_GLYPH_SPOT = { left: 4, fromRight: 8, referenceTop: 2, errorTop: 11 };
 
+function headerTextElement(node) {
+  const { left, baseline } = isControlClass(node) ? STRICT_HEADER_TEXT : HEADER_TEXT;
+  return `<text class="clase-nodo" x="${left}" y="${baseline}" fill="${isControlClass(node) ? FRAME_COLOR : CLASS_NAME_COLOR}">${escapeText(headerText(node))}</text>`;
+}
+
 function explicitHeader(node, box) {
   const { left, fromRight, referenceTop, errorTop } = EXPLICIT_GLYPH_SPOT;
   const right = box.ancho - fromRight;
@@ -220,7 +230,7 @@ function explicitHeader(node, box) {
     pixels(REFERENCE_GLYPH, left, referenceTop, GLYPH_COLOR) +
     pixels(ERROR_GLYPH, left, errorTop, GLYPH_COLOR) +
     pixels(KEY_GLYPH, 14, 5, GLYPH_COLOR) +
-    `<text class="clase-nodo" x="${HEADER_TEXT.left}" y="9" fill="${isControlClass(node) ? FRAME_COLOR : CLASS_NAME_COLOR}">${escapeText(headerText(node))}</text>` +
+    headerTextElement(node) +
     pixels(REFERENCE_GLYPH, right, referenceTop, GLYPH_COLOR) +
     pixels(ERROR_GLYPH, right, errorTop, GLYPH_COLOR)
   );

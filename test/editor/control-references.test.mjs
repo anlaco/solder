@@ -21,9 +21,9 @@ import { CAT, INV } from "../helpers.mjs";
 
 /**
  * Widths in the editor's font, as far as these tests need them: "Digital" makes the constant 54 px wide as LabVIEW's;
- * the strict class names make the explicit node 118 and 96 px (measured); other texts, roughly.
+ * the strict class names make the explicit node 118 and 100 px (measured); other texts, roughly.
  */
-const EDITOR_FONT_WIDTHS = { Value: 30, Visible: 30, Digital: 34, Boolean: 42, "DigNum (strict)": 77, "Bool (strict)": 55 };
+const EDITOR_FONT_WIDTHS = { Value: 30, Visible: 30, Digital: 34, Boolean: 42, "DigNum (strict)": 77, "Bool (strict)": 59 };
 const measure = (text) => EDITOR_FONT_WIDTHS[text] ?? [...text].length * 6.1;
 const CTX = contexto(CAT, glifosPorBloque(INV), ".", measure);
 const FONDO = { tipo: "fondo" };
@@ -106,8 +106,8 @@ test("the control reference constant looks as measured and its wire is teal", ()
   assert.deepEqual(shown(menuRows(menu)), ["Find", "Visible Items", "Help", "Examples", "Description and Tip...", "---", "Add Breakpoint", "---", "Application Control Palette", "---", "Create", "---", "Link to", "---", "Remove and Rewire", "---", "Properties"]);
   const create = menuRows(hover(menu, "context.control-reference.create"), "context.control-reference.create");
   assert.deepEqual(shown(create), ["Constant", "Control", "Indicator", "---", "Property for Digital (strict) Class", "Method for Digital (strict) Class", "Channel Writer...", "---", "All Controls and Indicators", "All Constants"]);
-  // Control and Indicator are not done: in LabVIEW they close the program.
-  assert.deepEqual(create.filter((r) => !r.greyed).map((r) => r.label), ["Property for Digital (strict) Class"]);
+  // Control and Indicator make a control refnum (in LabVIEW they close the program); Constant is not done.
+  assert.deepEqual(create.filter((r) => !r.greyed).map((r) => r.label), ["Control", "Indicator", "Property for Digital (strict) Class"]);
   // It is saved and opened with its class and link.
   const reopened = leer(aTexto(placed.g, CAT), CAT);
   assert.deepEqual(reopened.nodos.find((n) => n.tipo === "control-reference").config, reference.config);
@@ -124,9 +124,9 @@ test("its Create ▸ Property for a class makes an explicit node, unwired, with 
   const [node] = ofType(made, "property-node");
   assert.deepEqual(node.config, { class: "Numeric", link: null, rows: [{ property: "Value", write: false }], "ignore-errors": false });
   assert.equal(made.g.cables.length, 0, "LabVIEW does not wire it (Q4)");
-  // 118 x 35: the 18 px header with "DigNum (strict)" in the frame's colour; reference in and out.
+  // 118 x 35: the 18 px header with "DigNum (strict)" in the frame's colour, its ink from x 28 (solder-compare 2d); reference in and out.
   assert.deepEqual([caja(node, CTX).ancho, caja(node, CTX).alto], [118, 35]);
-  assert.match(PN.propertyNodeBody(made.g, CAT, node, caja(node, CTX)), /<text class="clase-nodo" x="29" y="9" fill="var\(--format-node-border\)">DigNum \(strict\)<\/text>/);
+  assert.match(PN.propertyNodeBody(made.g, CAT, node, caja(node, CTX)), /<text class="clase-nodo" x="27" y="8" fill="var\(--format-node-border\)">DigNum \(strict\)<\/text>/);
   assert.deepEqual(terminales(node, CTX).filter((t) => t.puerto.startsWith("reference")).map((t) => t.dir), ["in", "out"]);
   // Wired, its Value takes the control's type.
   const wired = { ...made, g: Gr.conectar(made.g, CAT, { nodo: reference.id, puerto: "reference", dir: "out" }, { nodo: node.id, puerto: "reference", dir: "in" }).g };
@@ -145,7 +145,7 @@ test("its Create ▸ Property for a class makes an explicit node, unwired, with 
     return placeAt(ED.orden(booleanMenu, `${list}.visible`, CTX), { x: 500, y: 300 });
   })();
   const booleanNode = ofType(booleanMade, "property-node")[0];
-  assert.equal(caja(booleanNode, CTX).ancho, 96);
+  assert.equal(caja(booleanNode, CTX).ancho, 100);
   assert.match(PN.propertyNodeBody(booleanMade.g, CAT, booleanNode, caja(booleanNode, CTX)), />Bool \(strict\)</);
 });
 
@@ -161,9 +161,10 @@ test("Disconnect From Control turns the implicit node into an explicit one in pl
   const after = nodeOf(disconnected, node.id);
   assert.deepEqual(after.config, { ...node.config, link: null });
   assert.equal(disconnected.g.nodos.length, placed.g.nodos.length, "no reference is made (Q5)");
-  // 96 x 35 with "Bool (strict)", the centre and the bottom edge kept (Q5: 38 x 26 at 679..716, 317..342 → 650..745, 308..342).
+  // 100 x 35 with "Bool (strict)", the centre and the bottom edge kept (Q5: 38 x 26 at 679..716, 317..342 → 650..749,
+  // 308..342, the right edge re-measured in reports/2026-11-03-control-reference-solder-compare.md 2g).
   const box = caja(after, CTX);
-  assert.deepEqual([box.ancho, box.alto], [96, 35]);
+  assert.deepEqual([box.ancho, box.alto], [100, 35]);
   assert.equal(box.x + box.ancho / 2, before.x + before.ancho / 2);
   assert.equal(box.y + box.alto, before.y + before.alto);
   assert.equal(PN.linkedLabel(disconnected.g, after), "", "the label above is gone");
@@ -196,9 +197,9 @@ test("Create Indicator on a node's reference out makes a refnum indicator: its p
   // On the panel, a 36 × 48 page that shows no value.
   assert.deepEqual([FP.caja(indicator).ancho, FP.caja(indicator).alto], [36, 48]);
   assert.match(FP.contenido({ ...FP.inicial(made.g) }, CTX), /sd-refnum[^-].*sd-refnum-page/s);
-  // On the diagram, a 35 × 38 terminal whose wire comes in at the middle of its left edge.
+  // On the diagram, a 38 × 38 terminal whose wire comes in at the middle of its left edge.
   const box = caja(indicator, CTX);
-  assert.deepEqual([box.ancho, box.alto], [35, 38]);
+  assert.deepEqual([box.ancho, box.alto], [38, 38]);
   const [terminal] = terminales(indicator, CTX);
   assert.deepEqual([terminal.dir, terminal.x - box.x, terminal.y - box.y], ["in", 0, 19]);
 });
@@ -208,13 +209,15 @@ test("Create ▸ Control and Indicator on the reference constant make a control 
   const { d, numeric } = panelDiagram();
   const placed = referenceOf(d, numeric);
   const reference = ofType(placed, "control-reference")[0];
-  const root = D.menuDe(reference, "reference", placed.g, false, CAT);
-  const create = menuRows(hover(openMenu(placed, reference.id, "reference"), `${root}.create`), `${root}.create`);
+  // Opened on its body, as a click on the constant does (reports/2026-11-03-control-reference-solder-compare.md: they were greyed).
+  const root = D.menuDe(reference, null, placed.g, false, CAT);
+  const create = menuRows(hover(openMenu(placed, reference.id), `${root}.create`), `${root}.create`);
   assert.deepEqual(create.filter((r) => ["Control", "Indicator"].includes(r.label)).map((r) => r.greyed), [false, false]);
-  const withIndicator = ED.orden(openMenu(placed, reference.id, "reference"), `${root}.create.indicator`, CTX);
+  const withIndicator = ED.orden(openMenu(placed, reference.id), `${root}.create.indicator`, CTX);
   const [indicator] = ofType(withIndicator, "refnum-indicator");
   assert.deepEqual(indicator.config.type, { refnum: "Numeric", of: "number" });
+  assert.equal(indicator.label.text, "Control Refnum", "the constant's terminal has no name to give it");
   assert.ok(withIndicator.g.cables.some((wire) => wire.de.nodo === reference.id && wire.a.nodo === indicator.id));
-  const withControl = ED.orden(openMenu(placed, reference.id, "reference"), `${root}.create.control`, CTX);
+  const withControl = ED.orden(openMenu(placed, reference.id), `${root}.create.control`, CTX);
   assert.equal(ofType(withControl, "refnum-control").length, 1);
 });

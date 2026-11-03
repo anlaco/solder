@@ -1453,7 +1453,7 @@ export function orden(d, id, ctx) {
   const createdAll = /\.create\.(all-controls-and-indicators|all-constants)$/.exec(id)?.[1];
   const menuClosed = (r) => ({ ...r, menu: null });
   if (d.menu.raiz === WIRE_MENU_ROOT && createdKind) return menuClosed(createOnWire(d, ctx, nodo, createdKind));
-  if (createdKind) return menuClosed(createOnTerminal(d, ctx, nodo, puerto, createdKind));
+  if (createdKind) return menuClosed(createOnTerminal(d, ctx, nodo, puerto ?? TC.bodyTerminalPort(nodoPor(d.g, nodo)), createdKind));
   // The border nodes of a loop have the rows directly in their menu (REPORT.md §5): their one terminal is the one meant.
   const loopTerminalKind = /\.create-(constant|control|indicator)$/.exec(id)?.[1];
   if (loopTerminalKind) return menuClosed(createOnTerminal(d, ctx, nodo, TC.borderTerminalPort(nodoPor(d.g, nodo), ctx), loopTerminalKind));
@@ -1731,9 +1731,10 @@ function createVariants(d, ctx) {
   const root = menu.raiz;
   const node = nodoPor(d.g, menu.nodo);
   if (!node) return {};
-  const desactivados = menu.puerto ? new Set() : new Set(CREATE_ROWS_THAT_NEED_A_TERMINAL.map((item) => `${root}.create.${item}`));
-  const terminal = menu.puerto && terminales(node, ctx).find((t) => t.puerto === menu.puerto);
-  const type = terminal && (terminal.dir === "in" ? Gr.tipos(d.g, ctx.cat).entradas : Gr.tipos(d.g, ctx.cat).salidas).get(`${menu.nodo}.${menu.puerto}`);
+  const port = menu.puerto ?? TC.bodyTerminalPort(node);
+  const desactivados = port ? new Set() : new Set(CREATE_ROWS_THAT_NEED_A_TERMINAL.map((item) => `${root}.create.${item}`));
+  const terminal = port && terminales(node, ctx).find((t) => t.puerto === port);
+  const type = terminal && (terminal.dir === "in" ? Gr.tipos(d.g, ctx.cat).entradas : Gr.tipos(d.g, ctx.cat).salidas).get(`${menu.nodo}.${port}`);
   const ocultos = esArray(type) ? new Set() : new Set([`${root}.create.scalar`]);
   return { desactivados, ocultos };
 }

@@ -91,6 +91,13 @@ export const LOOP_CONDITION_CONTROL = { configOverride: { style: "stop-button" }
 /** The only terminal of a loop's border node (condition, count or iteration): its Create rows have no terminal under the pointer to name it. */
 export const borderTerminalPort = (node, ctx) => (node.tipo.startsWith("loop-") ? terminales(node, ctx)[0]?.puerto : undefined);
 
+/**
+ * The terminal a Create row means when the menu was opened on a node's body: a control reference is all terminal, so
+ * its body is its one terminal (seen: its Create ▸ Constant, Control and Indicator are enabled, reports/2026-11-03-
+ * control-references.md Q3); other nodes have none.
+ */
+export const bodyTerminalPort = (node) => (node?.tipo === "control-reference" ? "reference" : undefined);
+
 /** The type that reaches or leaves a terminal, or undefined when it is not known yet. */
 const terminalType = (g, cat, terminal) => (terminal.dir === "in" ? Gr.tipos(g, cat).entradas : Gr.tipos(g, cat).salidas).get(`${terminal.nodo}.${terminal.puerto}`);
 
@@ -162,7 +169,9 @@ export function createForTerminal(g, ctx, { nodo, puerto, kind, panelSize, stack
   const special = kind === "control" && node.tipo === "loop-condition" ? LOOP_CONDITION_CONTROL : null;
   const slot = isPanelObject ? nextPanelSlot(g, { tipo: block.tipo, config: { ...block.config, ...special?.configOverride }, isControl: kind === "control", panelSize }) : {};
   const scope = scopeOfTerminal(g, ctx.cat, node, terminal);
-  const created = createOnTerminal(g, ctx.cat, { terminal: { nodo, puerto, dir: terminal.dir }, type, kind, x: 0, y: 0, panelX: slot.x, panelY: slot.y, label: special?.label ?? terminal.etiqueta, scope, configOverride: special?.configOverride });
+  // A terminal with no name (a control reference constant's) gives the object the label it is born with (unverified).
+  const label = special?.label ?? (terminal.etiqueta || CONTROLES[block.tipo]?.etiqueta);
+  const created = createOnTerminal(g, ctx.cat, { terminal: { nodo, puerto, dir: terminal.dir }, type, kind, x: 0, y: 0, panelX: slot.x, panelY: slot.y, label, scope, configOverride: special?.configOverride });
   if (created.motivo) return created;
   const size = caja(nodeOf(created.g, created.id), ctx);
   const gap = kind === "constant" ? (CONSTANT_GAP_BY_BLOCK[node.tipo] ?? DEFAULT_CONSTANT_GAP) : TERMINAL_GAP;

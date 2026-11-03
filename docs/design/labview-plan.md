@@ -613,6 +613,12 @@ array or string read by a local variable while another loop writes it is never t
       refnum and indicator on the panel from Create ▸ Control/Indicator, through a subOVI's connector
       (`test/core/control-reference-run.test.mjs`). 1152 tests green. Not yet: Link to on a reference, the Refnum palette,
       the refnum's menus, comparing its drawing by eye. Next: stage (e) for the explicit node and the refnum, then DT-070 §7.*
+      *Stage (e) for control references on 2026-11-03: compared by eye under Xvfb
+      ([`control-reference-solder-compare`](../../labview-captures/reports/2026-11-03-control-reference-solder-compare.md))
+      and corrected: the refnum terminal is 38 × 38 with LabVIEW's parts, the Boolean strict node 100 px (spec/06 §20
+      said 96), the glyphs redrawn, Create ▸ Control/Indicator work from the reference constant's body. Left: the strict
+      nodes are 2–4 px wider by the editor's font; a submenu taller than the window does not scroll. Next: DT-070 §7
+      (step 4b).*
    4b. **VISA Configure Serial Port and Bytes at Serial Port** (DT-070 §7): Configure as a polymorphic subOVI of
       Solder's own `vi.lib` built on the Property Node; greyed until then.
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the

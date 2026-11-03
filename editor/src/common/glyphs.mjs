@@ -2700,8 +2700,10 @@ const REFNUM_COLOR = PATH_COLOR;
 const REFNUM_PAGE = { fill: "#b3b3b3", edge: "#595959" };
 /** The small star under the miniature (seen red-orange; its meaning is not known). */
 const REFNUM_STAR = "#e8401c";
-/** The green dot in the terminal's page (seen). */
-const REFNUM_TERMINAL_DOT = "#00a000";
+/** The terminal's tile behind the page, and the page's two greys (seen). */
+const REFNUM_TERMINAL = { tile: "#e2e2e2", page: "#c4c4c4", fold: "#e6e6e6", dot: "#00a000", slider: "#0000ff" };
+/** The miniature numeric's grey (seen). */
+const MINIATURE_FILL = "#d6d6d6";
 
 /** A five-pointed star of radius `radius` centred on (x, y). */
 const star = (x, y, radius, color) => {
@@ -2713,35 +2715,57 @@ const star = (x, y, radius, color) => {
   return poligono(points, color, "none", 0);
 };
 
-/** A miniature numeric control: a white box with "1.23" and two arrows on its left. */
-const miniatureNumeric = (x, y, width, height) =>
-  lleno(x, y, x + width, y + height, "#ffffff") +
-  caja(x + 0.5, y + 0.5, x + width - 0.5, y + height - 0.5, "none", 1, REFNUM_PAGE.edge) +
-  poligono([[x + 2, y + height / 2 - 1], [x + 4, y + 1.5], [x + 6, y + height / 2 - 1]], INK, "none", 0) +
-  poligono([[x + 2, y + height / 2 + 1], [x + 4, y + height - 1.5], [x + 6, y + height / 2 + 1]], INK, "none", 0) +
-  `<text x="${x + width - 2}" y="${y + height / 2}" text-anchor="end" dominant-baseline="central" font-size="${height - 2}" fill="${INK}">1.23</text>`;
+/** One arrow box of the miniature's incrementer, `up` or down, its top left at (x, y). */
+const miniatureArrow = (x, y, up) => {
+  const tip = up ? [[x + 1.5, y + 4.5], [x + 4, y + 1.5], [x + 6.5, y + 4.5]] : [[x + 1.5, y + 1.5], [x + 4, y + 4.5], [x + 6.5, y + 1.5]];
+  return caja(x + 0.5, y + 0.5, x + 7.5, y + 5.5, MINIATURE_FILL, 1, INK) + poligono(tip, INK, "none", 0);
+};
 
 /**
- * The control refnum on the panel, 36 × 48: a grey page with its top right corner folded and a darker edge on the right
- * and at the bottom, a miniature numeric control and a small star under it. It shows no value (measured, Q4).
+ * A miniature numeric control, 31 × 13 from (x, y): two stacked arrow boxes on the left and a box with "1.23" (seen on
+ * refnum-panel-8x.png).
+ */
+const miniatureNumeric = (x, y) =>
+  miniatureArrow(x, y, true) + miniatureArrow(x, y + 7, false) +
+  caja(x + 9.5, y + 1.5, x + 30.5, y + 11.5, MINIATURE_FILL, 1, INK) +
+  `<text x="${x + 20}" y="${y + 6.8}" text-anchor="middle" dominant-baseline="central" font-size="9" fill="${INK}">1.23</text>`;
+
+/**
+ * The control refnum on the panel, 36 × 48: a grey page with its top right corner folded and a darker edge, 1 px on the
+ * left and at the top and 2 px on the right and at the bottom, a miniature numeric control and a small star under its
+ * left end. It shows no value (measured, Q4; reports/2026-11-03-control-reference-solder-compare.md 3e–3h).
  */
 export const refnumPageGlyph = () => {
   const [width, height, fold] = [36, 48, 9];
   const page = poligono([[0.5, 0.5], [width - fold, 0.5], [width - 1.5, fold - 1], [width - 1.5, height - 1.5], [0.5, height - 1.5]], REFNUM_PAGE.fill, REFNUM_PAGE.edge, 1);
   const edge = linea(width - 0.5, fold, width - 0.5, height - 0.5, 1, REFNUM_PAGE.edge) + linea(1, height - 0.5, width - 0.5, height - 0.5, 1, REFNUM_PAGE.edge);
   const foldedCorner = poligono([[width - fold, 0.5], [width - fold, fold - 1], [width - 1.5, fold - 1]], "#d9d9d9", REFNUM_PAGE.edge, 1);
-  return svg(page + edge + foldedCorner + miniatureNumeric(4, 16, 26, 9) + star(17, 34, 4, REFNUM_STAR), `0 0 ${width} ${height}`);
+  return svg(page + edge + foldedCorner + miniatureNumeric(2, 21) + star(7, 39.5, 4.6, REFNUM_STAR), `0 0 ${width} ${height}`);
 };
 
 /**
- * The terminal of a control refnum on the diagram, 35 × 38: a teal double frame around a small page with a green dot,
- * and the arrow on the side the wire meets: out on the right for a control, in on the left for an indicator (seen, Q2).
+ * The terminal of a control refnum on the diagram, 38 × 38 (measured, reports/2026-11-03-control-reference-solder-compare.md
+ * 3a–3c): a teal double frame, 3 px apart, around a light grey tile with a page on it; on the page, three short lines, a
+ * slider (white over blue) and a green dot in a ring; a small page glyph in a notch cut into the bottom frame; the arrow on
+ * the side the wire meets: out on the right for a control, in on the left for an indicator.
  */
 export function terminalRefnum(control) {
-  const [width, height] = [35, 38];
-  const frames = caja(0.5, 0.5, width - 0.5, height - 0.5, PAPER, 1, REFNUM_COLOR) + caja(3.5, 3.5, width - 3.5, height - 3.5, PAPER, 1, REFNUM_COLOR);
-  const page = poligono([[10.5, 8.5], [21.5, 8.5], [25.5, 12.5], [25.5, 29.5], [10.5, 29.5]], REFNUM_PAGE.fill, REFNUM_PAGE.edge, 1);
-  const dot = `<circle cx="18" cy="23" r="2.5" fill="${REFNUM_TERMINAL_DOT}"/>`;
-  const arrow = control ? `<path d="M29.5 14.5 V23.5 L33.5 19 Z" fill="${PAPER}" stroke="#000" stroke-width="1"/>` : `<path d="M1.5 14.5 V23.5 L5.5 19 Z" fill="${PAPER}" stroke="#000" stroke-width="1"/>`;
-  return svg(frames + page + miniatureNumeric(12, 14, 12, 5) + dot + arrow, `0 0 ${width} ${height}`);
+  const size = 38;
+  const T = REFNUM_TERMINAL;
+  const frames = caja(0.5, 0.5, size - 0.5, size - 0.5, PAPER, 1, REFNUM_COLOR) + caja(3.5, 3.5, size - 3.5, size - 3.5, T.tile, 1, REFNUM_COLOR);
+  // The page, with a darker edge on the right and at the bottom and its folded corner, as on the panel.
+  const page =
+    poligono([[8, 5], [24, 5], [30, 11], [30, 30], [8, 30]], T.page, "none", 0) +
+    linea(30.5, 11, 30.5, 31, 1, REFNUM_PAGE.edge) + linea(8, 30.5, 31, 30.5, 1, REFNUM_PAGE.edge) +
+    poligono([[24, 5], [24, 11], [30, 11]], T.fold, REFNUM_PAGE.edge, 1);
+  // Crisp 1 px ink: every line on a half pixel.
+  const lines = [14.5, 17.5, 20.5].map((y) => linea(10, y, 13, y, 1, INK)).join("");
+  const slider = lleno(14, 13, 19, 17, "#ffffff") + lleno(14, 17, 19, 22, T.slider) + caja(14.5, 13.5, 18.5, 21.5, "none", 1, INK);
+  const dot = `<circle cx="24.5" cy="17.5" r="3" fill="none" stroke="${INK}" stroke-width="1"/><circle cx="24.5" cy="17.5" r="2" fill="${T.dot}"/>`;
+  // The notch in the bottom frame holds a small folded page drawn in teal.
+  const notch =
+    lleno(12, 30, 26, size, PAPER) + caja(12.5, 30.5, 25.5, size - 0.5, "none", 1, REFNUM_COLOR) +
+    `<path d="M16.5 32.5H20.5L22.5 34.5V35.5H16.5Z M20.5 32.5V34.5H22.5" fill="none" stroke="${REFNUM_COLOR}" stroke-width="1"/>`;
+  const arrow = control ? `<path d="M32.5 14.5 V23.5 L36.5 19 Z" fill="#ffffff" stroke="${INK}" stroke-width="1"/>` : `<path d="M1.5 14.5 V23.5 L5.5 19 Z" fill="#ffffff" stroke="${INK}" stroke-width="1"/>`;
+  return svg(`<g shape-rendering="crispEdges">${frames}${page}${lines}${slider}</g>${dot}<g shape-rendering="crispEdges">${notch}</g>${arrow}`, `0 0 ${size} ${size}`);
 }

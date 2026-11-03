@@ -62,8 +62,15 @@ export function referenceTerminals(node, box) {
   return [{ puerto: "reference", etiqueta: "", dir: "out", x, y, zona: { x: x - 2 * half, y: box.y, ancho: 2 * half, alto: box.alto }, centro: { x, y } }];
 }
 
-/** The refnum glyph: a curved arrow pointing up and right, 7 x 10 (drawn anew). */
-const ARROW = `<path d="M${GLYPH.x + 1} ${GLYPH.y + 10}V${GLYPH.y + 6}Q${GLYPH.x + 1} ${GLYPH.y + 3} ${GLYPH.x + 4} ${GLYPH.y + 3}H${GLYPH.x + 5}" fill="none" stroke="${GLYPH_COLOR}" stroke-width="1.5"/><path d="M${GLYPH.x + 4} ${GLYPH.y}L${GLYPH.x + 7} ${GLYPH.y + 3}L${GLYPH.x + 4} ${GLYPH.y + 6}Z" fill="${GLYPH_COLOR}"/>`;
+/**
+ * The refnum glyph, 6 x 9 at (5, 5): a solid arrowhead at the top right and a thick tail that runs down to the left and
+ * bends down (drawn anew after reports/2026-11-03-control-reference-solder-compare.md 1c, 1d).
+ */
+const ARROW =
+  `<path d="M${GLYPH.x + 4.5} ${GLYPH.y + 1.5}L${GLYPH.x + 2.5} ${GLYPH.y + 3.5}Q${GLYPH.x + 1} ${GLYPH.y + 5} ${GLYPH.x + 1.5} ${GLYPH.y + 9}" fill="none" stroke="${GLYPH_COLOR}" stroke-width="2"/>` +
+  `<path d="M${GLYPH.x + 1.5} ${GLYPH.y}H${GLYPH.x + 6}V${GLYPH.y + 4.5}Z" fill="${GLYPH_COLOR}"/>`;
+/** The class's name sits a pixel above the middle (measured: its ink at y 5..14 of 19). */
+const TEXT_MIDDLE_RAISE = 1;
 
 /** The body: the type-coloured frame, the cream inside, the glyph and the class's name. */
 export function referenceBody(graph, cat, node, box) {
@@ -72,7 +79,7 @@ export function referenceBody(graph, cat, node, box) {
     `<svg class="formato" viewBox="0 0 ${box.ancho} ${box.alto}">` +
     `<rect x="${FRAME / 2}" y="${FRAME / 2}" width="${box.ancho - FRAME}" height="${box.alto - FRAME}" fill="var(--node-fill)" stroke="${color}" stroke-width="${FRAME}"/>` +
     ARROW +
-    `<text class="nombre-propiedad clase-referencia" x="${TEXT_LEFT}" y="${box.alto / 2}" fill="${color}">${escapeText(referenceText(referenceClass(node)))}</text></svg>`
+    `<text class="nombre-propiedad clase-referencia" x="${TEXT_LEFT}" y="${box.alto / 2 - TEXT_MIDDLE_RAISE}" fill="${color}">${escapeText(referenceText(referenceClass(node)))}</text></svg>`
   );
 }
 
