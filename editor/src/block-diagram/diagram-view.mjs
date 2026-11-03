@@ -19,6 +19,7 @@ import * as VN from "./visa-nodes.mjs";
 import * as FileNodes from "./file-nodes.mjs";
 import * as ExpressNodes from "./express-nodes.mjs";
 import * as SpreadsheetNodes from "./spreadsheet-nodes.mjs";
+import * as PN from "./property-nodes.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { EMPTY_PATH, hostPathRules, pathToText } from "../../../core/model/paths.mjs";
 import { brokenWireMarks, endPoint } from "./broken-wire.mjs";
@@ -530,6 +531,7 @@ export function caja(n, ctx, edicion) {
   if (FN.isFormatNode(n, ctx.cat)) return { x: n.x, y: n.y, ...FN.formatNodeSize(n, ctx.cat) };
   if (ExpressNodes.isExpressNode(n, ctx.cat)) return ExpressNodes.expressBox(n, ctx.cat);
   if (UN.isUnbundleByName(n)) return { x: n.x, y: n.y, ...UN.unbundleSize(n, ctx.cat, ctx.medir) };
+  if (PN.isPropertyNode(n)) return { x: n.x, y: n.y, ...PN.propertyNodeSize(n, ctx.cat, ctx.medir) };
   if (FileNodes.isFileNode(n)) return { x: n.x, y: n.y, ...FileNodes.fileNodeSize() };
   if (SpreadsheetNodes.isSpreadsheetNode(n)) return { x: n.x, y: n.y, ...SpreadsheetNodes.spreadsheetNodeSize() };
   if (esExpresion(n)) {
@@ -632,6 +634,7 @@ export function terminales(n, ctx, edicion) {
   if (ExpressNodes.isExpressNode(n, ctx.cat)) return ExpressNodes.expressTerminals(n, k, ctx.cat);
   if (UN.isUnbundleByName(n)) return UN.unbundleTerminals(n, k, ctx.cat);
   if (VN.isVisaNode(n)) return VN.visaTerminals(n, k, ctx.cat);
+  if (PN.isPropertyNode(n)) return PN.propertyNodeTerminals(n, k, ctx.cat);
   if (FileNodes.isFileNode(n)) return FileNodes.fileNodeTerminals(n, k, ctx.cat);
   if (SpreadsheetNodes.isSpreadsheetNode(n)) return SpreadsheetNodes.spreadsheetNodeTerminals(n, k, ctx.cat);
   const { in: ins, out: outs } = ctx.cat.puertos(n);
@@ -957,7 +960,7 @@ export function contenido(d0, ctx, resueltos) {
       fantasma = `<div class="rectangulo-estructura" style="left:${px(x)};top:${px(y)};width:${px(Math.abs(accion.x - accion.esquina.x))};height:${px(Math.abs(accion.y - accion.esquina.y))}"></div>`;
     }
   } else if (accion?.tipo === "colocar" && accion.x !== undefined) {
-    const n = { id: "fantasma", tipo: accion.bloque, x: accion.x, y: accion.y, ...(isSubVI({ tipo: accion.bloque }) ? { config: accion.config } : {}) };
+    const n = { id: "fantasma", tipo: accion.bloque, x: accion.x, y: accion.y, ...(isSubVI({ tipo: accion.bloque }) || PN.isPropertyNode({ tipo: accion.bloque }) ? { config: accion.config } : {}) };
     fantasma = `<div class="fantasma">${nodo(n, { g, seleccion: [] }, ctx, null, false)}</div>`;
   }
   const lista = d.lista ? listaAbierta(d, ctx, resueltos) : "";
@@ -1279,6 +1282,9 @@ function nodo(n, d, ctx, resueltos, elegido) {
     cuerpo = ExpressNodes.expressBody(n, k, ctx.cat, resueltos, ctx.medir);
   } else if (UN.isUnbundleByName(n)) {
     cuerpo = `<div class="glifo-formato">${UN.unbundleBody(n, k, ctx.cat, resueltos)}</div>${UN.nameRowZones(n, k, ctx.cat)}`;
+  } else if (PN.isPropertyNode(n)) {
+    const graph = d.completo ?? d.g;
+    cuerpo = `<div class="glifo-formato">${PN.propertyNodeBody(graph, ctx.cat, n, k)}</div>${PN.linkedLabel(graph, n)}${PN.rowZones(n, k)}`;
   } else if (esExpresion(n)) {
     cuerpo = expresion(n, k, ctx, resueltos, d.edicion);
   } else if (esCompuesto(n, ctx)) {
@@ -1637,6 +1643,8 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   if (UN.isUnbundleByName(n)) return UN.rowHasName(n, UN.rowOfPort(puerto)) ? UN.ROW_MENU : UN.BODY_MENU;
   // The VISA functions: the menu of the resource name terminal and the one of the rest of the node (reports/2026-10-26-visa-nodes.md Q4, visa-resource-name-look.md Q5).
   if (VN.isVisaNode(n)) return puerto === VN.RESOURCE_PORT ? VN.RESOURCE_TERMINAL_MENU : VN.BODY_MENU;
+  // The Property Node: one menu for its header and its rows, the rows of a row shown only on a row (DT-072 §7).
+  if (PN.isPropertyNode(n)) return PN.menuRoot(n);
   // Write to and Read from Text File have a menu of their own, with Convert EOL and Read Lines (file-io-behavior.md §2, §3); the other file functions' menus were not read.
   if (FileNodes.MENU_ROOTS[n.tipo]) return FileNodes.MENU_ROOTS[n.tipo];
   if (n.tipo === "format-into-string") return "context.format-into-string";
@@ -1682,7 +1690,7 @@ const MENU_COMPARISON = {
 };
 
 /** Filas que en LabVIEW abren un submenú aunque su contenido no esté declarado. Es disposición. */
-const CON_SUBMENU = ["visible-items", "palette", "numeric-palette", "boolean-palette", "array-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "select-item", "visa-palette", "file-i-o-palette", "synchronous-io-mode", "property-for-instr-class", "method-for-instr-class", "type-palette", "cluster-type-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
+const CON_SUBMENU = ["visible-items", "palette", "numeric-palette", "boolean-palette", "array-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "select-item", "visa-palette", "property-for-class", "method-for-class", "application-control-palette", "file-i-o-palette", "synchronous-io-mode", "property-for-instr-class", "method-for-instr-class", "type-palette", "cluster-type-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
   // The graphs (labview-captures/graphs/): rows whose submenus are not declared yet.
   "marker-spacing", "style", "property-node", "invoke-node", "run-time-shortcut-menu", "enabled-state", "update-mode", "export", "x-scale", "y-scale", "common-plots", "color", "line-style", "line-width", "bar-plots", "fill-base-line", "interpolation", "point-style",
   // The Getting Started window's menus (labview-captures/getting-started/).
@@ -1741,6 +1749,16 @@ const listWidth = (texts, ctx) => MEDIDAS_MENU.texto + Math.max(0, ...texts.map(
 
 /** Without the size of the window, a menu opens where it was asked for. */
 const NO_LIMITS = { width: Infinity, height: Infinity };
+
+/**
+ * How a menu of `height` px fits a window `limit` px tall: one that fits shows whole; a taller one shows the window's
+ * height (`visible`) from `offset`, which goes from 0 to `max`.
+ */
+export function menuScroll(height, limit, wanted = 0) {
+  if (!(height > limit)) return { offset: 0 };
+  const max = Math.ceil(height - limit);
+  return { offset: Math.min(max, Math.max(0, wanted)), max, visible: limit };
+}
 
 /**
  * Room LabVIEW leaves between a menu that was moved and the edge it would have crossed
@@ -1826,7 +1844,10 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
   const lista = (padre, x, y) => {
     if (ultimo(padre) in REJILLAS_MENU) return rejilla(padre, x, y);
     const ancho = anchoDe(padre);
-    let top = M.arriba;
+    // A menu taller than the window shows what fits and scrolls (Create ▸ Property Node ▸ is ~1000 px in LabVIEW,
+    // which scrolls it, reports/2026-10-30-panel-property-node.md Q1); `menu.desplazados` keeps each menu's offset.
+    const scroll = menuScroll(altoDe(padre), limites.height, menu.desplazados?.[padre]);
+    let top = M.arriba - scroll.offset;
     let filas = "";
     let sub = "";
     for (const e of hijos(padre)) {
@@ -1836,19 +1857,24 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
       }
       // A row that opens a window ends in "..." and has no arrow, though it shares its name with a submenu (the enum's Select Item... and Unbundle By Name's Select Item ▸).
       const conSub = inv.tieneContenido(e.id) || submenus.has(e.id) || (CON_SUBMENU.includes(ultimo(e.id)) && !e.etiqueta.endsWith("..."));
-      const abierto = menu.abierto === e.id;
+      // An open submenu stays open while one of its own submenus is (menu.abierto is the deepest one).
+      const abierto = menu.abierto === e.id || !!menu.abierto?.startsWith(`${e.id}.`);
       const hueco = esHueco(e) || redirigidos.has(e.id);
       const clases = `item-menu${hueco ? " hueco" : ""}${desactivados.has(e.id) ? " desactivado" : ""}${abierto ? " activo" : ""}${marcados.has(e.id) ? " marcado" : ""}`;
       const flecha = conSub ? `<span class="flecha-menu" style="right:${px(M.flecha)}">${G.FLECHA_CATEGORIA}</span>` : "";
       const atajo = e.atajo ? `<span class="atajo-menu" style="left:${px(M.texto + anchoTextos(padre) + M.antesAtajo)}">${esc(e.atajo)}</span>` : "";
-      filas += `<div class="${clases}" data-id="${esc(redirigidos.get(e.id) ?? e.id)}" style="top:${px(top)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(rotuloDe(e))}</span>${atajo}${flecha}</div>`;
+      // A row that explains itself with another entry keeps its own id for hovering (`data-row`).
+      const rowId = redirigidos.has(e.id) ? ` data-row="${esc(e.id)}"` : "";
+      filas += `<div class="${clases}" data-id="${esc(redirigidos.get(e.id) ?? e.id)}"${rowId} style="top:${px(top)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(rotuloDe(e))}</span>${atajo}${flecha}</div>`;
       if (abierto && (inv.tieneContenido(e.id) || submenus.has(e.id))) {
         const place = placeSubmenu({ x, y: y + top - M.arriba, width: ancho }, tamanoDe(e.id), limites, ultimo(e.id) in REJILLAS_MENU);
         sub = lista(e.id, place.x, place.y);
       }
       top += M.fila;
     }
-    return `<div class="menu-contextual" data-menu="${esc(padre)}" style="left:${px(x)};top:${px(y)};width:${px(ancho)};height:${px(top + M.arriba)}">${filas}</div>${sub}`;
+    const height = scroll.visible ?? top + M.arriba;
+    const scrolling = scroll.visible === undefined ? "" : ` data-scroll-max="${scroll.max}" data-scroll="${scroll.offset}"`;
+    return `<div class="menu-contextual${scrolling ? " desplazable" : ""}" data-menu="${esc(padre)}"${scrolling} style="left:${px(x)};top:${px(y)};width:${px(ancho)};height:${px(height)}">${filas}</div>${sub}`;
   };
   const place = placeMenu({ x: menu.x, y: menu.y }, tamanoDe(menu.raiz), limites);
   return lista(menu.raiz, place.x, place.y);

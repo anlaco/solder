@@ -124,8 +124,9 @@ test("VISA Open, Write, Read and Close are placed from the palettes, also from S
     d = ED.pulsar(ED.moverA(d, CTX, { x: 100, y: 100 }), CTX, { tipo: "fondo" }, { x: 100, y: 100 });
     assert.equal(d.g.nodos[0].tipo, block, id);
   }
+  // The VISA Property Node is an Instr Property Node (property-nodes.test.mjs).
+  const done = new Set([...PLACEABLE.map(([, id]) => id), `${ROOT}.visa.visa-advanced.visa-property-node`]);
   // Everything else of the palettes is greyed and says what is missing.
-  const done = new Set(PLACEABLE.map(([, id]) => id));
   const holes = INV.entradas.filter((e) => e.id.startsWith(`${ROOT}.`) && !done.has(e.id) && ultimo(e.id) !== "thumbtack" && INV.hijos(e.id).length === 0);
   assert.ok(holes.length > 60);
   for (const hole of holes) {
@@ -246,7 +247,8 @@ test("the resource terminal of a VISA node has its own menu with Create making t
   assert.deepEqual(INV.hijos(TERMINAL).filter((e) => e.separado).map((e) => e.etiqueta), ["Add Breakpoint", "VISA Palette", "Replace", "Synchronous I/O Mode", "Remove and Rewire", "Properties"]);
   assert.deepEqual(labels(`${TERMINAL}.create`), ["Constant", "Control", "Indicator", "Property for Instr Class", "Method for Instr Class", "Channel Writer...", "All Controls and Indicators", "All Constants"]);
   assert.deepEqual(INV.hijos(`${TERMINAL}.create`).filter((e) => e.separado).map((e) => e.etiqueta), ["Property for Instr Class", "All Controls and Indicators"]);
-  assert.deepEqual(INV.hijos(`${TERMINAL}.create`).filter((e) => esHueco(e)).map((e) => e.necesita), ["clases-visa", "clases-visa", "canales"]);
+  // Property for Instr Class is done (property-nodes.test.mjs); Method for Instr Class and Channel Writer are not.
+  assert.deepEqual(INV.hijos(`${TERMINAL}.create`).filter((e) => esHueco(e)).map((e) => e.necesita), ["clases-visa", "canales"]);
   for (const [kind, block] of [["constant", "visa-resource-constant"], ["control", "visa-control"], ["indicator", "visa-indicator"]]) {
     const read = Gr.crearNodo(Gr.nuevo(), CAT, "visa-read", 200, 100);
     const menu = ED.abrirMenu({ ...ED.inicial(), g: read.g }, TERMINAL, read.id, 0, 0, "resource", { x: 0, y: 0 });

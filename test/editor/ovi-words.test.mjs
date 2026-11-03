@@ -15,7 +15,10 @@ import { DATOS, RAIZ } from "../helpers.mjs";
 const VI_WORD = /\b(?:sub|Sub)?VI(?:s|'s)?\b/;
 
 /** Texts the editor shows that name a LabVIEW thing which is not Solder's unit, and so keep "VI". */
-const ALLOWED_TEXTS = new Set([]);
+const ALLOWED_TEXTS = new Set([
+  // A family of LabVIEW's own classes, under a Property Node's Select Class ▸ (property-node-panel/hm-sc.png).
+  "VI Server",
+]);
 
 const SOURCE_EXTENSIONS = [".mjs", ".cjs", ".js", ".html"];
 

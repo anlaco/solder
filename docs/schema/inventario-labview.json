@@ -524,6 +524,31 @@
     "express-llb": {
       "desc": "LLBs and packed project libraries, which Solder does not have",
       "ref": "design/05-decisions.md DT-069"
+    },
+    "propiedades-pendientes": {
+      "desc": "the properties of the Property Node not done yet; the first ones done are Value, Value (Signaling), Visible, Disabled, Key Focus, Label.Text, Caption.Text, Position, Bounds and the Instr attributes of DT-070",
+      "ref": "design/05-decisions.md DT-072 §8"
+    },
+    "referencias-de-control": {
+      "desc": "control references: Create ▸ Reference, control refnums, Disconnect From Control and linking to the pane itself, measured before they are built",
+      "ref": "design/05-decisions.md DT-072 §2 (stage d)"
+    },
+    "clases-de-referencias": {
+      "desc": "choosing another class of reference for a Property Node (the server classes, VISA, ActiveX, .NET, IVI, IMAQ, DataSocket) and downcasting it"
+    },
+    "nodos-de-metodos": {
+      "desc": "the Invoke Node, which calls the methods of a reference",
+      "ref": "design/labview-plan.md §3b step 4"
+    },
+    "formato-de-nombres": {
+      "desc": "the Long Names and No Names formats of a Property Node's rows, not measured yet",
+      "ref": "design/05-decisions.md DT-072 (unverified)"
+    },
+    "paleta-application-control-en-menu": {
+      "desc": "the Application Control palette opened from a right-click menu"
+    },
+    "utf8": {
+      "desc": "the UTF-8 versions of the text properties (Text Is UTF8?, UTF-8 Overrides)"
     }
   },
   "entradas": [
@@ -6786,10 +6811,21 @@
     {
       "id": "palette.functions.instrument-io.visa.visa-advanced.visa-property-node",
       "etiqueta": "VISA Property Node",
-      "estado": "todo",
-      "labview": "A node that reads and writes the attributes of a VISA session.",
-      "necesita": "nodos-de-propiedades",
-      "captura": "visa/functions-visa-advanced.png"
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
+      "captura": "visa/functions-visa-advanced.png",
+      "bloque": "property-node",
+      "config": {
+        "class": "Instr",
+        "link": null,
+        "rows": [
+          {
+            "property": "",
+            "write": false
+          }
+        ],
+        "ignore-errors": false
+      }
     },
     {
       "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific",
@@ -9911,6 +9947,633 @@
       "separado": true
     },
     {
+      "id": "context.property-node",
+      "etiqueta": "Property Node",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the node's header and row menus are the measured ones",
+      "captura": "property-node-panel/rm.png"
+    },
+    {
+      "id": "context.property-node.change-all-to-write",
+      "etiqueta": "Change All To Write",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Ignore Errors inside Node and Change All To Write toggle",
+      "captura": "property-node-panel/rm.png"
+    },
+    {
+      "id": "context.property-node.find",
+      "etiqueta": "Find",
+      "estado": "todo",
+      "labview": "Finds the linked control, its terminal or the other Property Nodes of the control.",
+      "necesita": "buscar-y-reemplazar",
+      "captura": "property-node-panel/hm-fd.png"
+    },
+    {
+      "id": "context.property-node.find.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Shows the control of the control the node is linked to.",
+      "necesita": "buscar-y-reemplazar",
+      "captura": "property-node-panel/hm-fd.png"
+    },
+    {
+      "id": "context.property-node.find.terminal",
+      "etiqueta": "Terminal",
+      "estado": "todo",
+      "labview": "Shows the terminal of the control the node is linked to.",
+      "necesita": "buscar-y-reemplazar",
+      "captura": "property-node-panel/hm-fd.png"
+    },
+    {
+      "id": "context.property-node.find.property-nodes",
+      "etiqueta": "Property Nodes",
+      "estado": "todo",
+      "labview": "Lists the other Property Nodes linked to the control (greyed in LabVIEW with one).",
+      "necesita": "buscar-y-reemplazar",
+      "captura": "property-node-panel/hm-fd.png"
+    },
+    {
+      "id": "context.property-node.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Shows or hides the node's label and its terminals.",
+      "necesita": "etiquetas",
+      "captura": "property-node-panel/rm.png"
+    },
+    {
+      "id": "context.property-node.help-for-property-node",
+      "etiqueta": "Help For Property Node",
+      "estado": "todo",
+      "labview": "Opens the help of the Property Node.",
+      "necesita": "ayuda-contextual",
+      "captura": "property-node-panel/rm.png"
+    },
+    {
+      "id": "context.property-node.help-for-property",
+      "etiqueta": "Help For Property",
+      "estado": "todo",
+      "labview": "Opens the help of the row's property.",
+      "necesita": "ayuda-contextual",
+      "captura": "property-node-panel/rm.png"
+    },
+    {
+      "id": "context.property-node.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Opens the examples of the Property Node (greyed in LabVIEW).",
+      "necesita": "ejemplos",
+      "captura": "property-node-panel/rm.png"
+    },
+    {
+      "id": "context.property-node.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the node's description and tip.",
+      "necesita": "descripciones",
+      "captura": "property-node-panel/rm.png"
+    },
+    {
+      "id": "context.property-node.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "property-node-panel/rm.png",
+      "separado": true
+    },
+    {
+      "id": "context.property-node.select-property",
+      "etiqueta": "Select Property",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Select Property, Change To Write, Add and Remove Element edit the rows, each one undo step",
+      "captura": "property-node-panel/rm.png",
+      "separado": true
+    },
+    {
+      "id": "context.property-node.change-to-write",
+      "etiqueta": "Change To Write",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Select Property, Change To Write, Add and Remove Element edit the rows, each one undo step",
+      "captura": "property-node-panel/rm.png",
+      "separado": true
+    },
+    {
+      "id": "context.property-node.add-element",
+      "etiqueta": "Add Element",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Select Property, Change To Write, Add and Remove Element edit the rows, each one undo step",
+      "captura": "property-node-panel/rm.png"
+    },
+    {
+      "id": "context.property-node.remove-element",
+      "etiqueta": "Remove Element",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Select Property, Change To Write, Add and Remove Element edit the rows, each one undo step",
+      "captura": "property-node-panel/rm.png"
+    },
+    {
+      "id": "context.property-node.application-control-palette",
+      "etiqueta": "Application Control Palette",
+      "estado": "todo",
+      "labview": "Opens the Application Control palette.",
+      "necesita": "paleta-application-control-en-menu",
+      "captura": "property-node-panel/rm.png"
+    },
+    {
+      "id": "context.property-node.type-palette",
+      "etiqueta": "Type Palette",
+      "estado": "todo",
+      "labview": "Opens the palette of the row's type (Numeric Palette).",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/rm.png"
+    },
+    {
+      "id": "context.property-node.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Indicator from a row makes a wired indicator",
+      "captura": "property-node-panel/cr.png"
+    },
+    {
+      "id": "context.property-node.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Indicator from a row makes a wired indicator",
+      "captura": "property-node-panel/cr.png"
+    },
+    {
+      "id": "context.property-node.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Indicator from a row makes a wired indicator",
+      "captura": "property-node-panel/cr.png"
+    },
+    {
+      "id": "context.property-node.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Indicator from a row makes a wired indicator",
+      "captura": "property-node-panel/cr.png"
+    },
+    {
+      "id": "context.property-node.create.property-for-class",
+      "etiqueta": "Property for Digital (strict) Class",
+      "estado": "todo",
+      "labview": "The properties of the class of the node's own reference.",
+      "necesita": "referencias-de-control",
+      "captura": "property-node-panel/cr.png",
+      "separado": true
+    },
+    {
+      "id": "context.property-node.create.method-for-class",
+      "etiqueta": "Method for Digital (strict) Class",
+      "estado": "todo",
+      "labview": "The methods of the class of the node's own reference.",
+      "necesita": "nodos-de-metodos",
+      "captura": "property-node-panel/cr.png"
+    },
+    {
+      "id": "context.property-node.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Creates a channel writer for the row's terminal.",
+      "necesita": "canales",
+      "captura": "property-node-panel/cr.png"
+    },
+    {
+      "id": "context.property-node.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "todo",
+      "labview": "Creates a control or indicator for every unwired terminal of the node.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/cr.png",
+      "separado": true
+    },
+    {
+      "id": "context.property-node.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "todo",
+      "labview": "Creates a constant for every unwired input of the node.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/hm-cr.png"
+    },
+    {
+      "id": "context.property-node.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the node with another one.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/rm.png",
+      "separado": true
+    },
+    {
+      "id": "context.property-node.select-class",
+      "etiqueta": "Select Class",
+      "estado": "todo",
+      "labview": "Chooses another class for the node (VI Server, VISA, ActiveX, .NET Framework, .NET Core, IVI, IMAQ, DataSocket), all greyed on a linked node.",
+      "necesita": "clases-de-referencias",
+      "captura": "property-node-panel/hm-sc.png",
+      "separado": true
+    },
+    {
+      "id": "context.property-node.select-class.vi-server",
+      "etiqueta": "VI Server",
+      "estado": "todo",
+      "labview": "The VI Server classes (greyed on a node linked to a control).",
+      "necesita": "clases-de-referencias",
+      "captura": "property-node-panel/hm-sc.png"
+    },
+    {
+      "id": "context.property-node.select-class.visa",
+      "etiqueta": "VISA",
+      "estado": "todo",
+      "labview": "The VISA classes (greyed on a node linked to a control).",
+      "necesita": "clases-de-referencias",
+      "captura": "property-node-panel/hm-sc.png"
+    },
+    {
+      "id": "context.property-node.select-class.activex",
+      "etiqueta": "ActiveX",
+      "estado": "todo",
+      "labview": "The ActiveX classes (greyed on a node linked to a control).",
+      "necesita": "clases-de-referencias",
+      "captura": "property-node-panel/hm-sc.png"
+    },
+    {
+      "id": "context.property-node.select-class.net-framework",
+      "etiqueta": ".NET Framework",
+      "estado": "todo",
+      "labview": "The .NET Framework classes (greyed on a node linked to a control).",
+      "necesita": "clases-de-referencias",
+      "captura": "property-node-panel/hm-sc.png"
+    },
+    {
+      "id": "context.property-node.select-class.net-core",
+      "etiqueta": ".NET Core",
+      "estado": "todo",
+      "labview": "The .NET Core classes (greyed on a node linked to a control).",
+      "necesita": "clases-de-referencias",
+      "captura": "property-node-panel/hm-sc.png"
+    },
+    {
+      "id": "context.property-node.select-class.ivi",
+      "etiqueta": "IVI",
+      "estado": "todo",
+      "labview": "The IVI classes (greyed on a node linked to a control).",
+      "necesita": "clases-de-referencias",
+      "captura": "property-node-panel/hm-sc.png"
+    },
+    {
+      "id": "context.property-node.select-class.imaq",
+      "etiqueta": "IMAQ",
+      "estado": "todo",
+      "labview": "The IMAQ classes (greyed on a node linked to a control).",
+      "necesita": "clases-de-referencias",
+      "captura": "property-node-panel/hm-sc.png"
+    },
+    {
+      "id": "context.property-node.select-class.datasocket",
+      "etiqueta": "DataSocket",
+      "estado": "todo",
+      "labview": "The DataSocket classes (greyed on a node linked to a control).",
+      "necesita": "clases-de-referencias",
+      "captura": "property-node-panel/hm-sc.png"
+    },
+    {
+      "id": "context.property-node.downcast-to-class",
+      "etiqueta": "Downcast to Class",
+      "estado": "todo",
+      "labview": "Narrows the node's class to a more specific one (greyed).",
+      "necesita": "clases-de-referencias",
+      "captura": "property-node-panel/rm.png"
+    },
+    {
+      "id": "context.property-node.name-format",
+      "etiqueta": "Name Format",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the node's header and row menus are the measured ones",
+      "captura": "property-node-panel/hm-nf.png"
+    },
+    {
+      "id": "context.property-node.name-format.no-names",
+      "etiqueta": "No Names",
+      "estado": "todo",
+      "labview": "The rows show no names, only their terminals (not measured).",
+      "necesita": "formato-de-nombres",
+      "captura": "property-node-panel/hm-nf.png"
+    },
+    {
+      "id": "context.property-node.name-format.short-names",
+      "etiqueta": "Short Names",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the node's header and row menus are the measured ones",
+      "captura": "property-node-panel/hm-nf.png"
+    },
+    {
+      "id": "context.property-node.name-format.long-names",
+      "etiqueta": "Long Names",
+      "estado": "todo",
+      "labview": "The rows show the properties' long names (not measured).",
+      "necesita": "formato-de-nombres",
+      "captura": "property-node-panel/hm-nf.png"
+    },
+    {
+      "id": "context.property-node.disconnect-from-control",
+      "etiqueta": "Disconnect From Control",
+      "estado": "todo",
+      "labview": "Turns the node into an explicit one, with a control reference to wire.",
+      "necesita": "referencias-de-control",
+      "captura": "property-node-panel/rm.png"
+    },
+    {
+      "id": "context.property-node.link-to",
+      "etiqueta": "Link to",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Link to ▸ Pane ▸ lists the panel's controls by label and relinks the node",
+      "captura": "property-node-panel/hm-lk.png"
+    },
+    {
+      "id": "context.property-node.link-to.pane",
+      "etiqueta": "Pane",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Link to ▸ Pane ▸ lists the panel's controls by label and relinks the node",
+      "captura": "property-node-panel/hm-pane.png"
+    },
+    {
+      "id": "context.property-node.link-to.pane.pane",
+      "etiqueta": "Pane",
+      "estado": "todo",
+      "labview": "Links the node to the pane itself, whose properties it then offers.",
+      "necesita": "referencias-de-control",
+      "captura": "property-node-panel/hm-pane.png"
+    },
+    {
+      "id": "context.property-node.ignore-errors-inside-node",
+      "etiqueta": "Ignore Errors inside Node",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Ignore Errors inside Node and Change All To Write toggle",
+      "captura": "property-node-panel/rm.png"
+    },
+    {
+      "id": "context.property-node.use-utf-8-overrides-when-available",
+      "etiqueta": "Use UTF-8 Overrides When Available",
+      "estado": "todo",
+      "labview": "Reads and writes the UTF-8 versions of the text properties.",
+      "necesita": "utf8",
+      "captura": "property-node-panel/rm.png",
+      "separado": true
+    },
+    {
+      "id": "context.property-node.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the node and wires through it.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/rm.png",
+      "separado": true
+    },
+    {
+      "id": "context.property-node.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the node's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "property-node-panel/rm.png",
+      "separado": true
+    },
+    {
+      "id": "context.instr-property-node",
+      "etiqueta": "VISA Property Node",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the node's header and row menus are the measured ones",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.change-all-to-write",
+      "etiqueta": "Change All To Write",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Ignore Errors inside Node and Change All To Write toggle",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Shows or hides the node's label and its terminals.",
+      "necesita": "etiquetas",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.help-for-property-node",
+      "etiqueta": "Help For Property Node",
+      "estado": "todo",
+      "labview": "Opens the help of the Property Node.",
+      "necesita": "ayuda-contextual",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.help-for-property",
+      "etiqueta": "Help For Property",
+      "estado": "todo",
+      "labview": "Opens the help of the row's property.",
+      "necesita": "ayuda-contextual",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Opens the examples of the Property Node (greyed in LabVIEW).",
+      "necesita": "ejemplos",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the node's description and tip.",
+      "necesita": "descripciones",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "visa-property-node/m1c.png",
+      "separado": true
+    },
+    {
+      "id": "context.instr-property-node.visa-palette",
+      "etiqueta": "VISA Palette",
+      "estado": "todo",
+      "labview": "Opens the VISA palette.",
+      "necesita": "paleta-visa-en-menu",
+      "captura": "visa-property-node/m1c.png",
+      "separado": true
+    },
+    {
+      "id": "context.instr-property-node.type-palette",
+      "etiqueta": "Type Palette",
+      "estado": "todo",
+      "labview": "Opens the palette of the row's type (Numeric Palette).",
+      "necesita": "menus-contextuales",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.select-property",
+      "etiqueta": "Select Property",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.change-to-write",
+      "etiqueta": "Change To Write",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
+      "captura": "visa-property-node/m1c.png",
+      "separado": true
+    },
+    {
+      "id": "context.instr-property-node.add-element",
+      "etiqueta": "Add Element",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.remove-element",
+      "etiqueta": "Remove Element",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Indicator from a row makes a wired indicator",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Indicator from a row makes a wired indicator",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Indicator from a row makes a wired indicator",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the node with another one.",
+      "necesita": "menus-contextuales",
+      "captura": "visa-property-node/m1c.png",
+      "separado": true
+    },
+    {
+      "id": "context.instr-property-node.select-class",
+      "etiqueta": "Select Class",
+      "estado": "todo",
+      "labview": "Chooses another class for the node (VI Server, VISA, ActiveX, .NET Framework, .NET Core, IVI, IMAQ, DataSocket), all greyed on a linked node.",
+      "necesita": "clases-de-referencias",
+      "captura": "visa-property-node/m1c.png",
+      "separado": true
+    },
+    {
+      "id": "context.instr-property-node.downcast-to-class",
+      "etiqueta": "Downcast to Class",
+      "estado": "todo",
+      "labview": "Narrows the node's class to a more specific one (greyed).",
+      "necesita": "clases-de-referencias",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.name-format",
+      "etiqueta": "Name Format",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.name-format.no-names",
+      "etiqueta": "No Names",
+      "estado": "todo",
+      "labview": "The rows show no names, only their terminals (not measured).",
+      "necesita": "formato-de-nombres",
+      "captura": "property-node-panel/hm-nf.png"
+    },
+    {
+      "id": "context.instr-property-node.name-format.short-names",
+      "etiqueta": "Short Names",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
+      "captura": "property-node-panel/hm-nf.png"
+    },
+    {
+      "id": "context.instr-property-node.name-format.long-names",
+      "etiqueta": "Long Names",
+      "estado": "todo",
+      "labview": "The rows show the properties' long names (not measured).",
+      "necesita": "formato-de-nombres",
+      "captura": "property-node-panel/hm-nf.png"
+    },
+    {
+      "id": "context.instr-property-node.link-to",
+      "etiqueta": "Link to",
+      "estado": "todo",
+      "labview": "Links the node to a panel object instead of the reference wired.",
+      "necesita": "referencias-de-control",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.ignore-errors-inside-node",
+      "etiqueta": "Ignore Errors inside Node",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Ignore Errors inside Node and Change All To Write toggle",
+      "captura": "visa-property-node/m1c.png"
+    },
+    {
+      "id": "context.instr-property-node.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the node and wires through it.",
+      "necesita": "menus-contextuales",
+      "captura": "visa-property-node/m1c.png",
+      "separado": true
+    },
+    {
+      "id": "context.instr-property-node.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the node's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "visa-property-node/m1c.png",
+      "separado": true
+    },
+    {
+      "id": "context.property-not-done",
+      "etiqueta": "Property",
+      "estado": "todo",
+      "labview": "A property of the class, read or written by a row of the node.",
+      "necesita": "propiedades-pendientes",
+      "captura": "property-node-panel/m4.png"
+    },
+    {
       "id": "context.unbundle-by-name.visible-items",
       "etiqueta": "Visible Items",
       "estado": "built",
@@ -12086,10 +12749,81 @@
     {
       "id": "context.numeric-control.create",
       "etiqueta": "Create",
-      "estado": "todo",
-      "labview": "Creates related objects: a local variable, a property node, a reference…",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Property Node ▸ lists the class's menu from the catalog, the holes greyed",
       "captura": "block-diagram/numeric-menu-control.png"
+    },
+    {
+      "id": "context.numeric-control.create.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Creates a constant wired to the terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/m2.png"
+    },
+    {
+      "id": "context.numeric-control.create.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Creates a control wired to the terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/m2.png"
+    },
+    {
+      "id": "context.numeric-control.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "todo",
+      "labview": "Creates a indicator wired to the terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/m2.png"
+    },
+    {
+      "id": "context.numeric-control.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "Creates a local variable of the control.",
+      "necesita": "variables-y-feedback",
+      "captura": "property-node-panel/m2.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-control.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "Creates a control reference to it.",
+      "necesita": "referencias-de-control",
+      "captura": "property-node-panel/m2.png"
+    },
+    {
+      "id": "context.numeric-control.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Property Node ▸ lists the class's menu from the catalog, the holes greyed",
+      "captura": "property-node-panel/m2.png"
+    },
+    {
+      "id": "context.numeric-control.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Creates an Invoke Node linked to the control.",
+      "necesita": "nodos-de-metodos",
+      "captura": "property-node-panel/m2.png"
+    },
+    {
+      "id": "context.numeric-control.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Creates a channel writer for the terminal.",
+      "necesita": "canales",
+      "captura": "property-node-panel/m2.png"
+    },
+    {
+      "id": "context.numeric-control.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Bundles the selected controls into a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "property-node-panel/m2.png"
     },
     {
       "id": "context.numeric-control.data-operations",
@@ -12373,10 +13107,81 @@
     {
       "id": "context.numeric-indicator.create",
       "etiqueta": "Create",
-      "estado": "todo",
-      "labview": "Creates related objects: a local variable, a property node, a reference…",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Property Node ▸ lists the class's menu from the catalog, the holes greyed",
       "captura": "block-diagram/numeric-menu-indicador.png"
+    },
+    {
+      "id": "context.numeric-indicator.create.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Creates a constant wired to the terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/ind-c.png"
+    },
+    {
+      "id": "context.numeric-indicator.create.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Creates a control wired to the terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/ind-c.png"
+    },
+    {
+      "id": "context.numeric-indicator.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "todo",
+      "labview": "Creates a indicator wired to the terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/ind-c.png"
+    },
+    {
+      "id": "context.numeric-indicator.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "Creates a local variable of the control.",
+      "necesita": "variables-y-feedback",
+      "captura": "property-node-panel/ind-c.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-indicator.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "Creates a control reference to it.",
+      "necesita": "referencias-de-control",
+      "captura": "property-node-panel/ind-c.png"
+    },
+    {
+      "id": "context.numeric-indicator.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Property Node ▸ lists the class's menu from the catalog, the holes greyed",
+      "captura": "property-node-panel/ind-c.png"
+    },
+    {
+      "id": "context.numeric-indicator.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Creates an Invoke Node linked to the control.",
+      "necesita": "nodos-de-metodos",
+      "captura": "property-node-panel/ind-c.png"
+    },
+    {
+      "id": "context.numeric-indicator.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Creates a channel writer for the terminal.",
+      "necesita": "canales",
+      "captura": "property-node-panel/ind-c.png"
+    },
+    {
+      "id": "context.numeric-indicator.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Bundles the selected controls into a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "property-node-panel/ind-c.png"
     },
     {
       "id": "context.numeric-indicator.data-operations",
@@ -12636,11 +13441,49 @@
     {
       "id": "context.boolean-control.create",
       "etiqueta": "Create",
-      "estado": "todo",
-      "labview": "Creates related objects: a local variable, a property node, a reference…",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::a panel object's Create ▸ Property Node puts the node beside its terminal",
       "captura": "front-panel/boolean-menu-control.png",
       "separado": true
+    },
+    {
+      "id": "context.boolean-control.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "Creates a local variable of the control.",
+      "necesita": "variables-y-feedback",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.boolean-control.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "Creates a control reference to it.",
+      "necesita": "referencias-de-control",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.boolean-control.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Property Node ▸ lists the class's menu from the catalog, the holes greyed",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.boolean-control.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Creates an Invoke Node linked to the control.",
+      "necesita": "nodos-de-metodos",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.boolean-control.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Bundles the selected controls into a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "property-node-panel/pc2.png"
     },
     {
       "id": "context.boolean-control.replace",
@@ -12868,10 +13711,81 @@
     {
       "id": "context.boolean-control-terminal.create",
       "etiqueta": "Create",
-      "estado": "todo",
-      "labview": "Creates related objects: a local variable, a property node, a reference…",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Property Node ▸ lists the class's menu from the catalog, the holes greyed",
       "captura": "block-diagram/boolean-menu-control.png"
+    },
+    {
+      "id": "context.boolean-control-terminal.create.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Creates a constant wired to the terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/bool-b.png"
+    },
+    {
+      "id": "context.boolean-control-terminal.create.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Creates a control wired to the terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/bool-b.png"
+    },
+    {
+      "id": "context.boolean-control-terminal.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "todo",
+      "labview": "Creates a indicator wired to the terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/bool-b.png"
+    },
+    {
+      "id": "context.boolean-control-terminal.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "Creates a local variable of the control.",
+      "necesita": "variables-y-feedback",
+      "captura": "property-node-panel/bool-b.png",
+      "separado": true
+    },
+    {
+      "id": "context.boolean-control-terminal.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "Creates a control reference to it.",
+      "necesita": "referencias-de-control",
+      "captura": "property-node-panel/bool-b.png"
+    },
+    {
+      "id": "context.boolean-control-terminal.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Property Node ▸ lists the class's menu from the catalog, the holes greyed",
+      "captura": "property-node-panel/bool-b.png"
+    },
+    {
+      "id": "context.boolean-control-terminal.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Creates an Invoke Node linked to the control.",
+      "necesita": "nodos-de-metodos",
+      "captura": "property-node-panel/bool-b.png"
+    },
+    {
+      "id": "context.boolean-control-terminal.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Creates a channel writer for the terminal.",
+      "necesita": "canales",
+      "captura": "property-node-panel/bool-b.png"
+    },
+    {
+      "id": "context.boolean-control-terminal.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Bundles the selected controls into a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "property-node-panel/bool-b.png"
     },
     {
       "id": "context.boolean-control-terminal.data-operations",
@@ -13058,11 +13972,49 @@
     {
       "id": "context.boolean-indicator.create",
       "etiqueta": "Create",
-      "estado": "todo",
-      "labview": "Creates related objects: a local variable, a property node, a reference…",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::a panel object's Create ▸ Property Node puts the node beside its terminal",
       "captura": "front-panel/boolean-menu-indicator.png",
       "separado": true
+    },
+    {
+      "id": "context.boolean-indicator.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "Creates a local variable of the control.",
+      "necesita": "variables-y-feedback",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.boolean-indicator.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "Creates a control reference to it.",
+      "necesita": "referencias-de-control",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.boolean-indicator.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::Create ▸ Property Node ▸ lists the class's menu from the catalog, the holes greyed",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.boolean-indicator.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Creates an Invoke Node linked to the control.",
+      "necesita": "nodos-de-metodos",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.boolean-indicator.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Bundles the selected controls into a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "property-node-panel/pc2.png"
     },
     {
       "id": "context.boolean-indicator.replace",
@@ -13158,6 +14110,184 @@
       "labview": "Opens the object's properties dialog.",
       "necesita": "propiedades",
       "captura": "front-panel/boolean-menu-indicator.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-panel-control",
+      "etiqueta": "Numeric Control",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::a panel object's Create ▸ Property Node puts the node beside its terminal",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Shows or hides the label, the caption, the increment arrows and the other parts of the control.",
+      "necesita": "panel-frontal",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns it into an indicator; wires that stop being valid break.",
+      "necesita": "panel-frontal",
+      "captura": "property-node-panel/pc2.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-panel-control.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Puts the control inside an array shell.",
+      "necesita": "tipo-array",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the control into a type definition.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "property-node-panel/pc2.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-panel-control.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the control's description and tip.",
+      "necesita": "descripciones",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.find",
+      "etiqueta": "Find",
+      "estado": "todo",
+      "labview": "Finds the control's terminal or its local variables on the diagram.",
+      "necesita": "buscar-y-reemplazar",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::a panel object's Create ▸ Property Node puts the node beside its terminal",
+      "captura": "property-node-panel/pc2.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-panel-control.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "Creates a local variable of the control.",
+      "necesita": "variables-y-feedback",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "Creates a control reference to it.",
+      "necesita": "referencias-de-control",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::a panel object's Create ▸ Property Node puts the node beside its terminal",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Creates an Invoke Node linked to the control.",
+      "necesita": "nodos-de-metodos",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Bundles the selected controls into a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the control with another one of the palette.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Copies, pastes and resets the control's data, and makes its value the default.",
+      "necesita": "valores-por-defecto",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Key navigation, synchronous display, customizing and the other advanced settings.",
+      "necesita": "menus-contextuales",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.fit-control-to-pane",
+      "etiqueta": "Fit Control to Pane",
+      "estado": "todo",
+      "labview": "Makes the control fill its pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.scale-object-with-pane",
+      "etiqueta": "Scale Object with Pane",
+      "estado": "todo",
+      "labview": "Resizes the control with its pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.representation",
+      "etiqueta": "Representation",
+      "estado": "todo",
+      "labview": "Chooses the numeric type of the control.",
+      "necesita": "tipos-numericos",
+      "captura": "property-node-panel/pc2.png",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-panel-control.data-entry",
+      "etiqueta": "Data Entry...",
+      "estado": "todo",
+      "labview": "Sets the limits and increment the control accepts.",
+      "necesita": "formato-de-presentacion",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.display-format",
+      "etiqueta": "Display Format...",
+      "estado": "todo",
+      "labview": "Sets how the number is shown.",
+      "necesita": "formato-de-presentacion",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the control's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "property-node-panel/pc2.png",
       "separado": true
     },
     {
@@ -20747,9 +21877,8 @@
     {
       "id": "context.visa-constant.create",
       "etiqueta": "Create",
-      "estado": "todo",
-      "labview": "Creates objects related to the resource name.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
       "captura": "visa/resource-name-cm-cr-z.png"
     },
     {
@@ -20779,9 +21908,8 @@
     {
       "id": "context.visa-constant.create.property-for-instr-class",
       "etiqueta": "Property for Instr Class",
-      "estado": "todo",
-      "labview": "A property node of the VISA class of the resource name.",
-      "necesita": "clases-visa",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
       "captura": "visa/resource-name-cm-cr-z.png",
       "separado": true
     },
@@ -21805,9 +22933,8 @@
     {
       "id": "context.visa-control-terminal.create",
       "etiqueta": "Create",
-      "estado": "todo",
-      "labview": "Creates objects related to the resource name.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
       "captura": "visa/resource-name-tm-cr-z2.png"
     },
     {
@@ -21870,9 +22997,8 @@
     {
       "id": "context.visa-control-terminal.create.property-for-instr-class",
       "etiqueta": "Property for Instr Class",
-      "estado": "todo",
-      "labview": "A property node of the VISA class of the resource name.",
-      "necesita": "clases-visa",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
       "captura": "visa/resource-name-tm-cr-z2.png",
       "separado": true
     },
@@ -22346,9 +23472,8 @@
     {
       "id": "context.visa-indicator-terminal.create",
       "etiqueta": "Create",
-      "estado": "todo",
-      "labview": "Creates objects related to the resource name.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
       "captura": "visa/resource-name-tm-cr-z2.png"
     },
     {
@@ -22411,9 +23536,8 @@
     {
       "id": "context.visa-indicator-terminal.create.property-for-instr-class",
       "etiqueta": "Property for Instr Class",
-      "estado": "todo",
-      "labview": "A property node of the VISA class of the resource name.",
-      "necesita": "clases-visa",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
       "captura": "visa/resource-name-tm-cr-z2.png",
       "separado": true
     },
@@ -23065,9 +24189,8 @@
     {
       "id": "context.visa-function-resource-terminal.create.property-for-instr-class",
       "etiqueta": "Property for Instr Class",
-      "estado": "todo",
-      "labview": "A property node of the VISA class of the resource name.",
-      "necesita": "clases-visa",
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::the Instr node comes from VISA Advanced and from Create ▸ Property for Instr Class",
       "captura": "visa/resource-name-m0z.png",
       "separado": true
     },

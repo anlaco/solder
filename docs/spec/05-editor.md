@@ -1586,3 +1586,70 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-26-file-io-palett
 >   the middle column of their 32 × 32 node (taken as the top); `max characters/row` with an offset inside a line; the ring's exact drawing and width; offsets beyond ASCII. Tested:
 >   `test/core/delimited-spreadsheet.test.mjs`, `test/core/spreadsheet.test.mjs`, `test/editor/delimited-spreadsheet-nodes.test.mjs`.
 
+
+
+## 23. The Property Node in the editor (2026-10-30, DT-072)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-30-panel-property-node.md` Q1–Q4 and
+`2026-10-26-visa-property-node.md` §1–§5; captures `labview-captures/property-node-panel/` and `visa-property-node/`). The look is in
+[`06-visual.md`](06-visual.md) §20. Code: `editor/src/block-diagram/property-nodes.mjs` (geometry, drawing, the menus of properties
+and the edits of the rows) and `property-node-menus.mjs` (the menus). Tests: `test/editor/property-nodes.test.mjs`.
+
+> **Rule 115 — Create ▸ Property Node ▸ comes from the catalog.** The Create ▸ of a numeric control's and indicator's terminal and of
+> a Boolean control's terminal has Constant, Control, Indicator, a separator, Local Variable, Reference, Property Node ▸, Invoke Node ▸,
+> Channel Writer... and Cluster from Selection (`m2`, `ind-c`); the Create ▸ of a numeric control's panel object (`pc2`, whose whole menu
+> is now declared) and of a Boolean's has Local Variable, Reference, Property Node ▸, Invoke Node ▸ and Cluster from Selection. Property
+> Node ▸ is `CAT.properties.menu(class)`, with the class of the panel block (`classOfPanelBlock`): GObject's groups, Control's, the
+> class's own, separated as LabVIEW separates them; Label ▸ and Caption ▸ are a Reference row and the Text class's menu; Position ▸ and
+> Bounds ▸ open with All Elements. A property the catalog has done can be picked; any other is greyed and explains itself with the
+> catalog's hole (`context.property-not-done`, DT-072 §8). A label's or a caption's Position and Bounds are not done (only their Text is).
+> The list is taller than most windows (~1000 px in LabVIEW, which scrolls it): any menu taller than the window shows the window's
+> height and scrolls with the wheel (`menuScroll`); LabVIEW's scroll arrow at the bottom is not drawn.
+> **Done:** Property Node ▸ on those menus; the rest of Create ▸ is greyed with its reason (`variables-y-feedback`,
+> `referencias-de-control`, `nodos-de-metodos`, `canales`, `tipo-cluster`). The string control's and indicator's terminals and the
+> numeric indicator's panel object have no captured menu: there, the node is reached by Link to ▸ Pane ▸. Tested.
+
+> **Rule 116 — Placing the node.** Picking a property on a terminal makes an implicit node, `{ class, link: <the control's node name>,
+> rows: [{ property, write: false }], ignore-errors: false }`, that hangs from the cursor by its centre and is placed at the next click,
+> as a palette node. On a panel object the node is put on the diagram 20 px right of the control's terminal. The link is the node name,
+> never the label, so renaming a label keeps it. A node pasted or Ctrl-dragged **with** its control is linked to the copy of the control;
+> pasted alone, to the original. **Unverified:** where LabVIEW's node hangs from the cursor and where a node made from the panel lands;
+> what a paste into another OVI does. Tested.
+
+> **Rule 117 — The node's menus.** An implicit node has `context.property-node`, an Instr node `context.instr-property-node`. On a row
+> (its strip or its terminal) the menu is the row's (`rm`, `m1c`); on the header or its terminals the rows of a row (Help For
+> <property>, Select Property ▸, Change To Write, Add Element, Remove Element and the type's palette) are hidden and Application Control
+> Palette ▸ starts a group (`hm`). Implicit, on a row: Change All To Write, Find ▸, Visible Items ▸, Help For Property Node, Help For
+> <property id>, Examples, Description and Tip..., a separator, Add Breakpoint, a separator, Select Property ▸, a separator, Change To
+> Write, Add Element, Remove Element, Application Control Palette ▸, <type> Palette ▸, Create ▸, a separator, Replace ▸, a separator,
+> Select Class ▸ (eight families, all greyed), Downcast to Class, Name Format ▸ (No Names, Short Names ticked, Long Names), Disconnect From
+> Control, Link to ▸ Pane ▸ (Pane, a separator and the panel's controls sorted by label, the linked one ticked), Ignore Errors inside Node,
+> a separator, Use UTF-8 Overrides When Available, a separator, Remove and Rewire, a separator and Properties. Instr, on a row: Change All
+> To Write, Visible Items ▸, Help For Property Node, Help For <property id>, Examples, Description and Tip..., a separator, Add
+> Breakpoint, a separator, VISA Palette ▸, <type> Palette ▸, Select Property ▸, a separator, Change To Write, Add Element, Remove
+> Element, Create ▸, a separator, Replace ▸, a separator, Select Class ▸, Downcast to Class, Name Format ▸, Link to ▸, Ignore Errors inside
+> Node, a separator, Remove and Rewire, a separator and Properties. Select Property ▸ is Browse... (greyed: its dialog is not done), a
+> separator and the class's menu, with the row's property and the submenus it is in ticked; on an Instr node it is the Instr tree of the
+> visa report §3. The row's Create ▸ is Constant, Control, Indicator, a separator, Property and Method for <class> Class ▸, Channel
+> Writer..., a separator, All Controls and Indicators and All Constants; the header's starts at Property for <class> Class (`hm-cr`).
+> **Done:** Change All To Write (Change All To Read when every row writes), Add Breakpoint, Select Property ▸, Change To Write (Change
+> To Read on a writing row; greyed when the property only reads or only writes), Add Element, Remove Element (greyed with one row), Create ▸
+> Constant, Control and Indicator (greyed on a row with no property), Name Format ▸ Short Names, Link to ▸ Pane ▸ a control, Ignore
+> Errors inside Node. Everything else is greyed with its reason (rule 54); **Long Names and No Names were not measured**, Disconnect From
+> Control waits for control references (stage d). **Unverified:** the Instr node's header menu (taken as its row menu without the rows
+> of a row), the Instr Create ▸ beyond Indicator, Property for <class> Class's class name on a Boolean or string node (Numeric's is
+> "Digital (strict)"). Tested.
+
+> **Rule 118 — Editing the rows.** Each command changes the graph once, so each is one step of undo. Select Property ▸ a property
+> sets the row's property; one that only reads or only writes turns the row so (Value (Signaling) writes). Change To Write and Change To
+> Read move the row's terminal to the other side and drop its wire; Add Element puts a copy of the row (property and direction) under it;
+> Remove Element takes the row and its wire; the wires of the rows below follow their rows. Link to ▸ Pane ▸ a control links the node to
+> it by its node name and gives the node that control's class; its rows stay. A change of width keeps the node's centre (visa report §3:
+> 66 to 72 px, x 567 to 564). **Unverified:** what LabVIEW does with a wire when a row changes direction, and with a row the new class
+> has not. Tested.
+
+> **Rule 119 — The Instr node.** Functions ▸ Instrument I/O ▸ VISA ▸ VISA Advanced ▸ VISA Property Node (row 2, column 2) puts an Instr
+> node with one read row and no property, which says "Property" and keeps the OVI from running until a property is chosen. Create ▸
+> Property for Instr Class ▸ on a VISA resource name's terminal, on its constant and on a VISA function's resource terminal is the Instr
+> tree without Browse...; picking a property makes an Instr node with that row, hanging from the cursor. **Unverified:** whether LabVIEW
+> wires the new node to the resource name (the report did not confirm it); Solder does not. Tested.

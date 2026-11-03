@@ -413,7 +413,9 @@ test("el menú de un control booleano cambia su acción mecánica", () => {
   const n = p.g.nodos[0];
   assert.equal(P.menuDe(n), "context.boolean-control");
   assert.equal(P.menuDe({ tipo: "bool-indicator" }), "context.boolean-indicator");
-  assert.equal(P.menuDe({ tipo: "control" }), null, "el de los numéricos aún no está capturado");
+  // The numeric control's was measured with the Property Node (property-node-panel/pc2.png); the indicator's was not.
+  assert.equal(P.menuDe({ tipo: "control" }), "context.numeric-panel-control");
+  assert.equal(P.menuDe({ tipo: "indicator" }), null, "the numeric indicator's is not captured yet");
   p = ED.abrirMenu(p, "context.boolean-control", n.id, 0, 0);
   const lista = D.menuContextual(INV, p.menu, ED.marcados(p));
   const filas = [...lista.matchAll(/class="item-menu[^"]*" data-id="context\.boolean-control\.([\w-]+)"[^>]*><span class="texto-menu"[^>]*>([^<]+)/g)].map((m) => m[2]);

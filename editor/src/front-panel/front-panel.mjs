@@ -741,6 +741,8 @@ export function menuDe(n, onElement = false) {
   if (n.tipo === "visa-control") return "context.visa-control";
   // A File Path Control and Indicator share a menu; the indicator's Change to Control is a variant (diagram-editing.mjs).
   if (n.tipo === "path-control" || n.tipo === "path-indicator") return "context.path-control";
+  // A numeric control, measured with its Create ▸ (property-node-panel/pc2.png); the indicator's was not read.
+  if (n.tipo === "control") return "context.numeric-panel-control";
   if (n.tipo === "bool-control") return "context.boolean-control";
   if (n.tipo === "bool-indicator") return "context.boolean-indicator";
   return null;

@@ -592,6 +592,13 @@ array or string read by a local variable while another loop writes it is never t
       write (`panel` messages), the window answers from `editor/src/front-panel/panel-properties.mjs` and shares the
       run state with the other window; the Front Panel hides an invisible object and its label, greys Disabled 2, and
       a disabled control is not operated; Position and Bounds run as clusters. Next: stage (c), the node in the editor.*
+      *Stage (c) done on 2026-10-30: Create ▸ Property Node ▸ on the numeric and Boolean terminals and panel objects and
+      Create ▸ Property for Instr Class ▸ on a VISA resource name, both from `properties.json` with its holes greyed; the
+      implicit node drawn as measured (8 px cream header, bar, label above, 16 px rows, arrows, width around the centre)
+      and the Instr one (18 px header, "Instr"); the header and row menus with Select Property, Change To Write/Read,
+      Change All, Add and Remove Element, Link to ▸ Pane ▸, Ignore Errors and Create from a row, each one undo step; VISA
+      Property Node in VISA Advanced; a pasted node follows its pasted control (spec/05 rules 115–119, spec/06 §20,
+      `editor/src/block-diagram/property-nodes.mjs`). Next: compare it with LabVIEW by eye (stage e), then stage (d).*
    4b. **VISA Configure Serial Port and Bytes at Serial Port** (DT-070 §7): Configure as a polymorphic subOVI of
       Solder's own `vi.lib` built on the Property Node; greyed until then.
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the

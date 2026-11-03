@@ -44,6 +44,16 @@ test("a property that is not done is found as a hole, and an unknown one is not 
   assert.equal(PROPERTIES.find("Numeric", "No Such Property"), undefined);
 });
 
+test("a label's or a caption's own text is done, but not the properties a text object takes from GObject", () => {
+  assert.equal(PROPERTIES.find("Numeric", "Label:Text").done, true);
+  assert.equal(PROPERTIES.find("Numeric", "Caption:Text").done, true);
+  // Position and Bounds are done for the control itself, not yet for its label (DT-072 §8).
+  assert.equal(PROPERTIES.find("Numeric", "Position").done, true);
+  for (const id of ["Label:Position", "Label:Bounds", "Caption:Position", "Caption:Bounds"]) assert.equal(PROPERTIES.find("Numeric", id).done, false, id);
+  // A row with no property chosen yet (the Instr node fresh from the palette) finds nothing and has no terminal.
+  assert.equal(PROPERTIES.find("Instr", ""), undefined);
+});
+
 test("a class's menu is its ancestors' groups and then its own, as LabVIEW lists them", () => {
   const firstNames = PROPERTIES.menu("Numeric").map((group) => group[0].name);
   assert.deepEqual(firstNames, ["Class ID", "Bounds", "Auto-Update From Typedef", "Adapt To Source", "Display Format"]);

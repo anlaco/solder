@@ -13,8 +13,15 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   control or indicator reads and writes Value, Visible, Disabled, Key Focus and Label.Text, and a VISA one reads and
   writes Timeout Value, the termination character and the serial settings, with LabVIEW's rules for errors (a
   failing row stops the node, Ignore Errors inside Node runs them all). In the editor's Run, Visible hides a control,
-  Disabled stops it (2 also greys it), and Position and Bounds read and move it. The editor does not place the node
-  yet.
+  Disabled stops it (2 also greys it), and Position and Bounds read and move it.
+- The Property Node in the editor (DT-072): Create ▸ Property Node ▸ on a numeric or Boolean control's terminal or
+  panel object lists the control's properties as LabVIEW does, the ones not done yet greyed, and the picked one hangs
+  from the cursor as an implicit node with LabVIEW's look (cream header, the control's label above, a row per
+  property in its type's colour). Its menus change a row's property, turn rows to write or read, add and remove
+  rows, relink the node to another control (Link to ▸ Pane ▸), set Ignore Errors inside Node and create a constant,
+  control or indicator wired to a row. The VISA Property Node is in Functions ▸ Instrument I/O ▸ VISA ▸ VISA
+  Advanced and in Create ▸ Property for Instr Class ▸ of a VISA resource name. A numeric control's panel object now
+  has its right-click menu.
 - The editor calls Solder's program unit an OVI, Open Virtual Instrument, where LabVIEW says VI (DT-071): File ▸ New
   OVI, OVI Properties, Select an OVI..., subOVI and Express OVI in the menus, palettes and dialogs, Recent OVIs in the
   Getting Started window, and the run and error messages. NI's own file names, such as `Trim Whitespace.vi`, keep

@@ -254,7 +254,8 @@ test("the VISA resource name constant has its own menu, measured", () => {
   assert.deepEqual(labels(`${root}.advanced`), ["Customize..."]);
   assert.deepEqual(INV.hijos(root).filter((e) => e.separado).map((e) => e.etiqueta), ["Make Type Def.", "Description and Tip...", "VISA Palette", "Select VISA Class", "Size To Text", "Select Item...", "Properties"]);
   assert.equal(D.menuDe(constantToRead().g.nodos[0], null, constantToRead().g), root);
-  assert.ok(INV.hijos(root).every((e) => esHueco(e)), "nothing of it is done yet, and each row says why");
+  // Only Create ▸ Property for Instr Class is done (property-nodes.test.mjs); the rest says why it is not.
+  assert.ok(INV.hijos(root).every((e) => esHueco(e) || ultimo(e.id) === "create"), "nothing else of it is done yet, and each row says why");
   const menu = ED.abrirMenu({ ...ED.inicial(), g: constantToRead().g }, root, constantToRead().constant, 0, 0);
   const marks = ED.marcados(menu, CTX);
   for (const mark of ["visible-items.menu-button", "size-to-text", "select-visa-class.i-o-session", "select-visa-class.i-o-session.instr"]) assert.ok(marks.has(`${root}.${mark}`), mark);
@@ -298,7 +299,7 @@ test("the terminals of a VISA resource name have their menus, measured", () => {
     const menu = ED.abrirMenu({ ...ED.inicial(), g }, root, id, 0, 0);
     assert.ok(ED.variantes(menu, CTX).desactivados.has(`${root}.advanced`), "Advanced is greyed in LabVIEW on the terminal");
     assert.deepEqual(labels(`${root}.create`), ["Constant", "Control", "Indicator", "Local Variable", "Reference", "Property Node", "Invoke Node", "Property for Instr Class", "Method for Instr Class", "Channel Writer...", "Cluster from Selection"]);
-    assert.ok(INV.hijos(root).filter((e) => !esHueco(e)).map((e) => ultimo(e.id)).join() === "data-operations,view-as-icon", "what is done: Data Operations and View As Icon");
+    assert.ok(INV.hijos(root).filter((e) => !esHueco(e)).map((e) => ultimo(e.id)).join() === "create,data-operations,view-as-icon", "what is done: Create (Property for Instr Class), Data Operations and View As Icon");
   }
 });
 

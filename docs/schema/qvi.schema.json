@@ -445,7 +445,7 @@
               "type": ["string", "null"]
             },
             "rows": {
-              "description": "For property-node: its rows top to bottom, each a property id (LabVIEW's long name, `Label:Text`) read or written.",
+              "description": "For property-node: its rows top to bottom, each a property id (LabVIEW's long name, `Label:Text`) read or written; an empty id is a row whose property is not chosen yet (the VISA Property Node fresh from the palette), which keeps the OVI from running.",
               "type": "array",
               "items": {
                 "type": "object", "required": ["property"], "additionalProperties": false,

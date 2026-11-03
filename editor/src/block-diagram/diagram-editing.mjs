@@ -31,6 +31,8 @@
 import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ARRAY_INDEFINIDA, MEDIDAS_ESTRUCTURA, PANEL_ARRAY_TERMINAL_MENU, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, borderFaceFor, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, ruta, terminales } from "./diagram-view.mjs";
 import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
+import * as PN from "./property-nodes.mjs";
+import * as PNM from "./property-node-menus.mjs";
 import * as EI from "./edit-items-dialog.mjs";
 import { endPoint } from "./broken-wire.mjs";
 import { sharedSegmentCount } from "./wire-tree.mjs";
@@ -60,7 +62,9 @@ const UMBRAL = 3;
 /** Un bloque cogido de la paleta cuelga del cursor por esta esquina. */
 const AGARRE = { x: 4, y: 4 };
 /** The point of a block that hangs from the cursor: Format Into String and Scan From String, their centre (format-scan/31-scan-placed.png). */
-const grabPoint = (block, ctx) => {
+const grabPoint = (block, ctx, config) => {
+  // A Property Node hangs by its centre, and its size is its rows' (DT-072 §7).
+  if (PN.isPropertyNode({ tipo: block }) && config) return PN.propertyNodeGrabPoint(config, ctx.cat, ctx.medir);
   if (FN.isFormatNode({ tipo: block }, ctx.cat)) return FN.formatNodeGrabPoint(block, ctx.cat);
   // An Express VI hangs by the middle of its node (DT-069).
   if (ExpressNodes.isExpressNode({ tipo: block }, ctx.cat)) return ExpressNodes.expressGrabPoint(block);
@@ -153,7 +157,7 @@ function pullElementOut(d, ctx, p) {
 }
 
 function colocar(d, ctx, p) {
-  const grab = grabPoint(d.accion.bloque, ctx);
+  const grab = grabPoint(d.accion.bloque, ctx, d.accion.config);
   let { g, id } = Gr.crearNodo(d.g, ctx.cat, d.accion.bloque, Math.round(p.x - grab.x), Math.round(p.y - grab.y));
   if (d.accion.config) g = Gr.fijarConfig(g, id, d.accion.config);
   // Dropped into an empty Array Constant, the constant types it instead of staying loose (DT-060).
@@ -946,7 +950,7 @@ export function moverA(d, ctx, p) {
     case "colocar":
       // Una estructura sigue al cursor con su rectángulo; «arrastrado» es que ya se ha alejado de la esquina.
       if (ctx.cat.bloque(accion.bloque).estructura) return { ...d, accion: { ...accion, x: p.x, y: p.y, arrastrado: accion.esquina ? lejos(accion.esquina, p) : true } };
-      return { ...d, accion: { ...accion, x: Math.round(p.x - grabPoint(accion.bloque, ctx).x), y: Math.round(p.y - grabPoint(accion.bloque, ctx).y), arrastrado: true } };
+      return { ...d, accion: { ...accion, x: Math.round(p.x - grabPoint(accion.bloque, ctx, accion.config).x), y: Math.round(p.y - grabPoint(accion.bloque, ctx, accion.config).y), arrastrado: true } };
     case "mover": {
       const [dx, dy] = [Math.round(p.x - accion.x), Math.round(p.y - accion.y)];
       if (!dx && !dy) return d;
@@ -1340,10 +1344,24 @@ export const VISA_DROPDOWN_MENU = "context.visa-dropdown";
  */
 export const abrirMenu = (d, raiz, nodo, x, y, puerto = null, en = null) => ({ ...d, menu: { raiz, nodo, puerto, x, y, en, abierto: null }, accion: null, edicion: null });
 
-/** Pasar por una fila con submenú lo abre; por otra, lo cierra. */
+/** The wheel over a menu taller than the window scrolls it by `delta` px, between 0 and `max`. */
+export function desplazarMenu(d, menuId, delta, max) {
+  if (!d.menu) return d;
+  const offset = Math.min(max, Math.max(0, (d.menu.desplazados?.[menuId] ?? 0) + delta));
+  return { ...d, menu: { ...d.menu, desplazados: { ...d.menu.desplazados, [menuId]: offset } } };
+}
+
+/**
+ * Hovering a row that has a submenu opens it; hovering another row closes what was open below that row's own menu,
+ * and keeps open the submenus that hold it (Create ▸ Property Node ▸ Label ▸ is three deep). A row's id is its
+ * menu's id and one more part.
+ */
 export const sobreMenu = (d, id, conSubmenu) => {
   if (!d.menu) return d;
-  const abierto = conSubmenu ? id : d.menu.abierto && id.startsWith(`${d.menu.abierto}.`) ? d.menu.abierto : null;
+  const parent = id.slice(0, id.lastIndexOf("."));
+  const open = d.menu.abierto;
+  const holdsRow = open && (open === parent || open.startsWith(`${parent}.`));
+  const abierto = conSubmenu ? id : holdsRow && parent !== d.menu.raiz ? parent : null;
   return abierto === d.menu.abierto ? d : { ...d, menu: { ...d.menu, abierto } };
 };
 
@@ -1368,6 +1386,9 @@ export function orden(d, id, ctx) {
   // Properties of an Express VI is its configuration dialog (DT-069 §3).
   if (ExpressNodes.isExpressMenu(d.menu.raiz) && id === `${d.menu.raiz}.properties`) return openConfiguration(d, ctx, nodo);
   const ultimo = id.slice(id.lastIndexOf(".") + 1);
+  // The Property Node's own menu, and Create ▸ Property Node ▸ or Property for Instr Class ▸ on a control (DT-072 §7).
+  const propertyNodeResult = PN.isPropertyNode(nodoPor(d.g, nodo)) ? PNM.nodeCommand(d, id, ctx) : PNM.createCommand(d, id, ctx, coger);
+  if (propertyNodeResult) return propertyNodeResult;
   const unbundleResult = unbundleCommand(d, id, ctx);
   if (unbundleResult) return unbundleResult;
   if (id.endsWith(".visible-items.terminals")) return cerrar(Gr.alternarTerminales(d.g, nodo));
@@ -1621,6 +1642,7 @@ function nodeVariants(d, ctx) {
   // Remove Parameter on the only row of Scan From String does nothing: there is always one.
   if (n?.tipo === "scan-from-string" && (n.config?.inputs ?? 1) <= 1) return { desactivados: new Set([`${r}.remove-parameter`]) };
   if (UN.isUnbundleByName(n)) return unbundleVariants(d, ctx, n);
+  if (PN.isPropertyNode(n) && ctx) return PNM.nodeVariants(d, ctx);
   // LabVIEW greys Advanced on the terminals of a VISA resource name (reports/2026-10-26-visa-resource-name-look.md Q5; why is unverified).
   if (r === "context.visa-control-terminal" || r === "context.visa-indicator-terminal") return { desactivados: new Set([`${r}.advanced`]) };
   if (n && PATH_INDICATOR_ROOTS.has(r) && n.tipo === "path-indicator") return pathIndicatorVariants(r);
@@ -1741,10 +1763,14 @@ const mergeVariants = (a, b) => ({
   ocultos: new Set([...(a.ocultos ?? []), ...(b.ocultos ?? [])]),
   desactivados: new Set([...(a.desactivados ?? []), ...(b.desactivados ?? [])]),
   rotulos: new Map([...(a.rotulos ?? []), ...(b.rotulos ?? [])]),
+  submenus: new Map([...(a.submenus ?? []), ...(b.submenus ?? [])]),
+  redirigidos: new Map([...(a.redirigidos ?? []), ...(b.redirigidos ?? [])]),
+  separadores: new Map([...(a.separadores ?? []), ...(b.separadores ?? [])]),
 });
 
 /** What changes in the rows of the open menu: the node's own variants and those of Create ▸. `ctx` is needed for the terminal's type. */
-export const variantes = (d, ctx) => (isGraphMenu(d) ? graphMenuVariants(d) : mergeVariants(mergeVariants(nodeVariants(d, ctx), createVariants(d, ctx)), wireMenuVariants(d, ctx)));
+export const variantes = (d, ctx) =>
+  isGraphMenu(d) ? graphMenuVariants(d) : [createVariants(d, ctx), wireMenuVariants(d, ctx), d.menu && ctx ? PNM.createVariants(d, ctx) : {}].reduce(mergeVariants, nodeVariants(d, ctx));
 
 /**
  * What LabVIEW ticks in the menus of a VISA resource name, by the menu's root (reports/2026-10-26-visa-resource-name-look.md
@@ -1786,6 +1812,7 @@ export function marcados(d, ctx) {
   if (r === ExpressNodes.EXPRESS_ICON_MENU) m.add(`${r}.view-as-icon`);
   for (const mark of VISA_MENU_MARKS[r] ?? []) m.add(`${r}.${mark}`);
   for (const mark of pathMenuMarks(r, n)) m.add(`${r}.${mark}`);
+  if (PN.isPropertyNode(n) && ctx) for (const mark of PNM.marks(d, ctx)) m.add(mark);
   if (n.config?.mode) m.add(`${r}.change-mode.${n.config.mode}`);
   if (n.config?.mechanical) m.add(`${r}.mechanical-action.${n.config.mechanical}`);
   const abrev = r.startsWith("context.numeric-") && NUMERICOS[n.config?.type ?? DBL]?.abrev;

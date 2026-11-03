@@ -266,6 +266,12 @@ svg { display: block; overflow: visible; }
 .glifo-formato .caja-tipo text { font: bold 6.5px Arial, "Liberation Sans", sans-serif; text-anchor: middle; dominant-baseline: central; }
 .fila-nombre { position: absolute; pointer-events: auto; cursor: default; }
 .glifo-formato .nombre-fila { font: var(--fuente) "Segoe UI", "Noto Sans", sans-serif; dominant-baseline: central; }
+/* The Property Node (DT-072): drawn by property-nodes.mjs, from property-node-panel/v3_z.png and visa-property-node/dz.png. */
+.glifo-formato .nombre-propiedad { font: var(--fuente) "Segoe UI", "Noto Sans", sans-serif; text-anchor: middle; dominant-baseline: central; }
+.glifo-formato .clase-nodo { font: var(--fuente) "Segoe UI", "Noto Sans", sans-serif; dominant-baseline: central; }
+.fila-propiedad { position: absolute; pointer-events: auto; cursor: default; }
+/* The linked control's label, drawn above an implicit node and not editable there (§Q2). */
+.etiqueta-enlace { position: absolute; left: 0; bottom: 100%; margin-bottom: 1px; padding: 0 1px; white-space: pre; font-size: var(--fuente); line-height: 15px; color: var(--canvas-text); pointer-events: none; }
 .glifo-formato .porciento { font: bold 10px Arial, "Liberation Sans", sans-serif; text-anchor: middle; }
 .constante {
   position: absolute; inset: 0; background: var(--constant-background); border: 2px solid;
@@ -312,6 +318,8 @@ svg { display: block; overflow: visible; }
   padding: 4px 6px; font-size: 12px;
 }
 /* Right-click menu, from numeric-menu-funcion.png: the Windows one. Border and separators measured at 1:1 (cluster/w13.png, w14.png). */
+/* A menu taller than the window is clipped and scrolled with the wheel (diagram-view.mjs `menuScroll`). */
+.menu-contextual.desplazable { overflow: hidden; }
 .menu-contextual {
   position: absolute; z-index: 25; background: var(--menu-background);
   border: 1px solid var(--menu-border); box-shadow: 2px 2px 3px var(--menu-shadow);

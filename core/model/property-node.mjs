@@ -62,21 +62,29 @@ export function loadProperties(data) {
    * A name may be in two groups (Instr has two General Settings ▸), so every item of that name is tried.
    */
   function find(className, id) {
+    if (!id) return undefined;
     const found = findIn(groups(className).flat(), id.split(ID_SEPARATOR), []);
     return found && { ...found, id };
   }
 
-  function findIn(items, path, shortParts) {
+  /**
+   * A text object's menu repeats GObject's properties (Label ▸ Bounds ▸), but only the Text class's own are done
+   * for a label or a caption (DT-072 §8: Label.Text, Caption.Text): `inherited` holds the items reached through a
+   * text object that belong to its ancestors, and `blocked` says the path went through one of them.
+   */
+  function findIn(items, path, shortParts, inherited = null, blocked = false) {
     const [name, ...rest] = path;
     for (const item of items.filter((candidate) => candidate.name === name && !candidate.separator)) {
       const children = childrenOf(item);
+      const notOwn = blocked || !!inherited?.has(item);
       if (!rest.length) {
         // A submenu named by its own id is its All Elements row (Position, Bounds).
         const property = item.done || !children.length ? item : children.find((child) => child.whole) ?? item;
-        if (!property.done) return { ...property, done: false };
+        if (!property.done || notOwn) return { ...property, done: false };
         return { ...property, short: [...shortParts, property.short].join(".") };
       }
-      const found = findIn(children, rest, item.of || item.short ? [...shortParts, item.short ?? item.name] : shortParts);
+      const textObjectAncestors = item.of && classEntry(item.of).parent ? new Set(groups(classEntry(item.of).parent).flat()) : inherited;
+      const found = findIn(children, rest, item.of || item.short ? [...shortParts, item.short ?? item.name] : shortParts, textObjectAncestors, notOwn);
       if (found) return found;
     }
     return undefined;

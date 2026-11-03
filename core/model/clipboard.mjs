@@ -4,6 +4,7 @@
 // A pure module: every operation returns new data.
 
 import { borrar, conContenido, etiquetaLibre } from "./graph.mjs";
+import { PROPERTY_NODE } from "./property-node.mjs";
 
 /**
  * The fragment that copying `ids` takes: those nodes with everything inside
@@ -59,6 +60,7 @@ export function pasteFragment(g, fragment, { dx = 0, dy = 0, panelDx = dx, panel
     }
     return node;
   });
+  relinkPastedPropertyNodes(fragment.nodes, pastedNodes);
   const shiftBends = (bends) => bends?.map((value, i) => value + (i % 2 === 0 ? dx : dy));
   const pastedWires = fragment.wires.map((c) => {
     const wire = { ...structuredClone(c), id: `c${next++}`, de: { ...c.de, nodo: newId.get(c.de.nodo) }, a: { ...c.a, nodo: newId.get(c.a.nodo) } };
@@ -69,6 +71,19 @@ export function pasteFragment(g, fragment, { dx = 0, dy = 0, panelDx = dx, panel
     g: { ...g, nodos: [...g.nodos, ...pastedNodes], cables: [...g.cables, ...pastedWires], siguiente: next },
     ids: fragment.nodes.filter(isTop).map((n) => newId.get(n.id)),
   };
+}
+
+/**
+ * A Property Node is linked to its control by the control's node name (DT-072 §1), and a pasted node gets a new
+ * name: a node pasted with its control follows the copy of the control; pasted alone, it stays linked to the
+ * original (unverified: LabVIEW's paste into another VI was not measured).
+ */
+function relinkPastedPropertyNodes(originals, pasted) {
+  const newName = new Map(originals.map((node, index) => [node.name, pasted[index].name]));
+  for (const node of pasted) {
+    const link = node.tipo === PROPERTY_NODE ? node.config?.link : undefined;
+    if (typeof link === "string" && newName.has(link)) node.config.link = newName.get(link);
+  }
 }
 
 /** "Numeric 2" → "Numeric": the label a copy is numbered from. */

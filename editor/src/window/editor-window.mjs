@@ -28,6 +28,7 @@ import * as D from "../block-diagram/diagram-view.mjs";
 import * as DC from "../block-diagram/diagram-clipboard.mjs";
 import * as ED from "../block-diagram/diagram-editing.mjs";
 import * as UN from "../block-diagram/unbundle-by-name.mjs";
+import * as PN from "../block-diagram/property-nodes.mjs";
 import * as EM from "./edit-menu.mjs";
 import * as Et from "../common/labels.mjs";
 import * as E from "./window-state.mjs";
@@ -1365,7 +1366,7 @@ function objetivo(el) {
   if (t) return { tipo: "terminal", nodo: t.dataset.nodo, puerto: t.dataset.puerto, dir: t.dataset.dir };
   const n = el.closest(".nodo");
   // Un nodo con celdas (la constante de error) dice sobre cuál se pulsó.
-  if (n && !n.closest(".fantasma")) return { tipo: "nodo", id: n.dataset.nodo, ...(el.closest(".celda-error") ? { campo: el.closest(".celda-error").dataset.campo } : {}), ...(el.closest(".fila-nombre") ? { fila: Number(el.closest(".fila-nombre").dataset.fila) } : {}), ...(el.closest(".anillo-instancia") ? { anillo: true } : {}), ...(el.closest(".celda-array, .celda-grid") ? { campo: addressFromText(el.closest(".celda-array, .celda-grid").dataset.campo) } : {}) };
+  if (n && !n.closest(".fantasma")) return { tipo: "nodo", id: n.dataset.nodo, ...(el.closest(".celda-error") ? { campo: el.closest(".celda-error").dataset.campo } : {}), ...(el.closest(".fila-nombre") ? { fila: Number(el.closest(".fila-nombre").dataset.fila) } : {}), ...(el.closest(".fila-propiedad") ? { filaPropiedad: Number(el.closest(".fila-propiedad").dataset.filaPropiedad) } : {}), ...(el.closest(".anillo-instancia") ? { anillo: true } : {}), ...(el.closest(".celda-array, .celda-grid") ? { campo: addressFromText(el.closest(".celda-array, .celda-grid").dataset.campo) } : {}) };
   const c = el.closest(".tramo-zona");
   if (c) return { tipo: "tramo", cable: c.dataset.cable, k: Number(c.dataset.tramo) };
   return { tipo: "fondo" };
@@ -1630,6 +1631,21 @@ function pulsarPanel(ev) {
   cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), ev.shiftKey, ev.ctrlKey || ev.metaKey));
 }
 
+// The wheel over a menu taller than the window scrolls it (diagram-view.mjs `menuScroll`).
+addEventListener(
+  "wheel",
+  (ev) => {
+    const list = ev.target.closest?.(".menu-contextual.desplazable");
+    if (!list) return;
+    ev.preventDefault();
+    const scroll = (state) => ED.desplazarMenu(state, list.dataset.menu, ev.deltaY, Number(list.dataset.scrollMax));
+    if (conDiagrama && dia.menu) dia = scroll(dia);
+    else if (pan.menu) pan = scroll(pan);
+    pintar();
+  },
+  { passive: false },
+);
+
 addEventListener("mousemove", (ev) => {
   if (debugUi.drag) return moveFloatingDrag(ev);
   mostrarTip(ev);
@@ -1638,7 +1654,7 @@ addEventListener("mousemove", (ev) => {
     // Pasar por una fila con submenú lo abre; por otra, lo cierra.
     const fila = pan.menu && ev.target.closest(".item-menu");
     if (fila) {
-      const nuevo = ED.sobreMenu(pan, fila.dataset.id, inv.tieneContenido(fila.dataset.id));
+      const nuevo = ED.sobreMenu(pan, fila.dataset.row ?? fila.dataset.id, ED.menuRowHasSubmenu(pan, ctx, inv, fila.dataset.id));
       if (nuevo !== pan) {
         pan = nuevo;
         pintar();
@@ -1654,7 +1670,7 @@ addEventListener("mousemove", (ev) => {
   }
   let nuevo = dia;
   const item = ev.target.closest(".item-menu");
-  if (nuevo.menu && item) nuevo = ED.sobreMenu(nuevo, item.dataset.id, ED.menuRowHasSubmenu(nuevo, ctx, inv, item.dataset.id));
+  if (nuevo.menu && item) nuevo = ED.sobreMenu(nuevo, item.dataset.row ?? item.dataset.id, ED.menuRowHasSubmenu(nuevo, ctx, inv, item.dataset.id));
   if (!nuevo.menu) nuevo = ED.sobrevolar(nuevo, objetivoEn(ev.clientX, ev.clientY));
   if (nuevo.accion) nuevo = ED.moverA(nuevo, ctx, punto(ev));
   if (nuevo !== dia) {
@@ -1747,7 +1763,7 @@ addEventListener("contextmenu", (ev) => {
   if (iconoVI) return menuDelIcono(ev, iconoVI);
   if (!ev.target.closest(".lienzo")) return;
   // On the panel the palette comes up over the background and an object's menu over any part of it
-  // (its box, arrows, elements or fields too). Plain numerics have no captured menu yet: nothing opens.
+  // (its box, arrows, elements or fields too). A numeric indicator has no captured menu yet: nothing opens.
   if (conPanel) {
     if (pan.edicion) cambiarPanel(P.confirmar(pan));
     const sobrePanel = objetivoPanel(ev.target);
@@ -1772,8 +1788,8 @@ addEventListener("contextmenu", (ev) => {
   }
   const id = nodoDe(o);
   const n = id && dia.g.nodos.find((k) => k.id === id);
-  // A name row of an Unbundle By Name has the menu of its output terminal.
-  const puerto = o?.tipo === "terminal" ? o.puerto : o?.fila !== undefined ? UN.portOfRow(o.fila) : null;
+  // A name row of an Unbundle By Name has the menu of its output terminal; a row of a Property Node, its row's menu.
+  const puerto = o?.tipo === "terminal" ? o.puerto : o?.fila !== undefined ? UN.portOfRow(o.fila) : o?.filaPropiedad !== undefined ? PN.portOfRow(o.filaPropiedad) : null;
   const raiz = n && D.menuDe(n, puerto, dia.g, o?.campo !== undefined, cat);
   if (raiz) {
     estado = { ...estado, paleta: null, abierta: null };

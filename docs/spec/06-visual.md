@@ -331,7 +331,7 @@ entry of the LabVIEW inventory when its area is broken down (DT-035):
 - Diagram decorations (free labels, comments, flat sequence)
 - Selection and highlight colors
 - Typography and text sizes *(resolved for the OVI windows: §10)*
-- Property Nodes and their expandable format
+- Property Nodes and their expandable format *(resolved: §20)*
 - Specific representations of each primitive (shapes of Add, Sub, Mul, etc.)
 - Cluster: brown wire + twisted pattern + field editor
 - Typedef: differentiated visual representation
@@ -750,10 +750,36 @@ section of `editor/src/common/glyphs.mjs`; `MEDIDAS_PATH_PANEL` in `editor/src/f
   Read Lines on, Read from Text File's icon changes. The icons are drawn anew (a sheet with a mark over it; a bigger sheet of text lines for
   Read Lines): their drawing is **unverified**. Code: `file-nodes.mjs` and the file section of `glyphs.mjs`. Tests: `test/editor/file-io-nodes.test.mjs`.
 
+## 20. The Property Node (2026-10-30, DT-072)
+
+Measured at 1:1 in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-30-panel-property-node.md` Q2 and Q4, `v3.png`, `n3_z.png`;
+`2026-10-26-visa-property-node.md` §2–§5, `dz.png`). The glyphs are drawn anew; only sizes, colours and the order of the parts are
+taken. Code: `editor/src/block-diagram/property-nodes.mjs`. Tests: `test/editor/property-nodes.test.mjs`. The menus are in the editor's
+rules 115–119.
+
+- **Frame and rows:** a 1 px frame in the nodes' border colour (`#4C4C3D` in Old School), white rows of 15 px with a 1 px line
+  between, 16 px apart. The width is the longest row's text plus 4 px each side for the arrows, at least 38 px (implicit) or 66 px
+  (Instr): 38 × 26 with "Value", 72 × 154 with nine rows. A change of width keeps the centre.
+- **Implicit header:** 8 px inside, in the nodes' cream (`#FFFFCC` in Old School), with the error glyph `?!` (5 × 6) at x 4 and 8 px
+  in from the right edge, from y 2, and a bar of the linked control's type colour (`#FF7F00` numeric, `#007F00` Boolean, `#FF00FF` string), 5 px tall at
+  (13, 2) and 26 px narrower than the node (12 px on a 38 px node), on a white backing as wide and 8 px tall (y 1..8). The control's label is drawn above the node, black, not editable
+  there.
+- **Instr header:** 17 px inside (18 with the frame), with the reference glyph (a sheet, 5 × 6, y 2) over the error glyph (y 11) at
+  x 4 and 8 px in from the right edge, a key of 11 × 6 at (14, 5) and "Instr" at x 29 in `#8D4C58`.
+- **Rows:** the property's short name centred, in the colour of its type as the wire's: numeric orange or blue, Boolean green, string
+  magenta, the Disabled enum `#0000FF`, Position and Bounds `#993300`; a row with no property says "Property" in black. A black arrow
+  3 × 7 points right at x (width − 5) on a read row and at x 2 on a write row.
+- **Terminals:** a row's on its right edge (read) or left edge (write), 7 px under the row's top inside pixel (y 17 on an implicit
+  node's first row, y 26 on an Instr node's); error in and out at the header's middle (y 5 implicit, y 13 Instr), reference in and out
+  at y 4. **Unverified:** the header terminals' exact spots (only their glyphs were measured), the Instr icon's drawing, and the font of
+  the rows (the editor's: "Value" is 30 px there, so 38 px with the 4 px margins, as compared under Xvfb on 2026-11-03; "Caption.Text"
+  at 72 px is not checked in the running editor).
+
 ## History
 
 | Date       | Change |
 |------------|--------|
+| 2026-10-30 | §20: the Property Node: frame, headers, rows, colours and terminals. |
 | 2026-10-26 | §4.2 and §19 corrected against LabVIEW: the 38 × 38 and 32 × 16 terminals, the path functions' icons, the constants' glyphs and width, the wire's 2 px phase, the panel's bevel, cell glyph, button and abbreviation. |
 | 2026-10-28 | §19: the file refnum's wire and the file functions' nodes, measured. |
 | 2026-10-26 | §4.2 and §19: the path: wire, terminals, constants, File Path Control and Indicator and the browse button. |
