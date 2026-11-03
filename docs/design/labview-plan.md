@@ -604,6 +604,14 @@ array or string read by a local variable while another loop writes it is never t
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the
       firmware (in parallel from step 3), and first served by a Crucible profile of it.
    6. **A DAQmx-like layer** over the ESP32, with its own DT after measuring DAQmx with a simulated NI device.
+      *Open before step 5 (talked over with the developer on 2026-11-03, nothing decided): **what Solder uses instead
+      of DAQmx**, its own name (DAQmx and NI-DAQ are NI's trademarks, as OVI stands for VI, DT-071) and its approach.
+      Ideas: DAQmx's programming model (tasks, named channels, hardware timing, triggers, waveforms) over engines
+      that can be swapped in `native/solder-io`: SCPI over VISA for our ESP32 and GateMate first, NI's NI-DAQmx C
+      library only when the user installs NI's driver (as Python's `nidaqmx` does), Comedi maybe never. Copy the
+      model, never NI's code, icons or texts; read the driver's licence before an NI engine. Step 5 may start with
+      an instrument driver (subOVIs in `ovi.lib` over VISA). The ESP32 speaks SCPI for control and IEEE 488.2 binary
+      blocks for data, read in blocks, with a binary streaming mode only if a measured need appears.*
    7. **The rest of OVI Server** (Open OVI Reference, the OVI and Application classes).
 
    Left over from VISA, to take up when they fit: finding VISA resources (the dropdown, Select Item, VISA Find
