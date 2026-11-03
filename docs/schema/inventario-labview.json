@@ -530,7 +530,7 @@
       "ref": "design/05-decisions.md DT-072 §8"
     },
     "referencias-de-control": {
-      "desc": "control references: Create ▸ Reference, control refnums, Disconnect From Control and linking to the pane itself, measured before they are built",
+      "desc": "the rest of control references: refnum controls and indicators on the panel, Link to on a reference, linking a node to the pane, and running a Property Node fed by a control reference, measured before they are built",
       "ref": "design/05-decisions.md DT-072 §2 (stage d)"
     },
     "clases-de-referencias": {
@@ -10279,9 +10279,8 @@
     {
       "id": "context.property-node.disconnect-from-control",
       "etiqueta": "Disconnect From Control",
-      "estado": "todo",
-      "labview": "Turns the node into an explicit one, with a control reference to wire.",
-      "necesita": "referencias-de-control",
+      "estado": "built",
+      "prueba": "test/editor/control-references.test.mjs::Disconnect From Control turns the implicit node into an explicit one in place",
       "captura": "property-node-panel/rm.png"
     },
     {
@@ -10563,6 +10562,170 @@
       "labview": "Opens the node's properties dialog.",
       "necesita": "propiedades",
       "captura": "visa-property-node/m1c.png",
+      "separado": true
+    },
+    {
+      "id": "context.control-reference",
+      "etiqueta": "Control Reference",
+      "estado": "built",
+      "prueba": "test/editor/control-references.test.mjs::its Create ▸ Property for a class makes an explicit node, unwired, with the strict class in its header",
+      "captura": "control-reference/rm.png"
+    },
+    {
+      "id": "context.control-reference.find",
+      "etiqueta": "Find",
+      "estado": "todo",
+      "labview": "Finds the control the reference points at, its terminal or its other references.",
+      "necesita": "buscar-y-reemplazar",
+      "captura": "control-reference/rm.png"
+    },
+    {
+      "id": "context.control-reference.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Shows or hides the label of the reference.",
+      "necesita": "etiquetas",
+      "captura": "control-reference/rm.png"
+    },
+    {
+      "id": "context.control-reference.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of the control reference.",
+      "necesita": "ayuda-contextual",
+      "captura": "control-reference/rm.png"
+    },
+    {
+      "id": "context.control-reference.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Opens the examples of control references.",
+      "necesita": "ejemplos",
+      "captura": "control-reference/rm.png"
+    },
+    {
+      "id": "context.control-reference.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the reference's description and tip.",
+      "necesita": "descripciones",
+      "captura": "control-reference/rm.png"
+    },
+    {
+      "id": "context.control-reference.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "control-reference/rm.png",
+      "separado": true
+    },
+    {
+      "id": "context.control-reference.application-control-palette",
+      "etiqueta": "Application Control Palette",
+      "estado": "todo",
+      "labview": "Opens the Application Control palette.",
+      "necesita": "paleta-application-control-en-menu",
+      "captura": "control-reference/rm.png",
+      "separado": true
+    },
+    {
+      "id": "context.control-reference.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/control-references.test.mjs::its Create ▸ Property for a class makes an explicit node, unwired, with the strict class in its header",
+      "captura": "control-reference/rm-cr.png",
+      "separado": true
+    },
+    {
+      "id": "context.control-reference.create.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Creates a constant of the reference's type, wired to it.",
+      "necesita": "referencias-de-control",
+      "captura": "control-reference/rm-cr.png"
+    },
+    {
+      "id": "context.control-reference.create.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Creates a control refnum on the panel, wired to it (it closes LabVIEW 2026 Q3 with an internal error).",
+      "necesita": "referencias-de-control",
+      "captura": "control-reference/rm-cr.png"
+    },
+    {
+      "id": "context.control-reference.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "todo",
+      "labview": "Creates a control refnum indicator on the panel, wired to it (it closes LabVIEW 2026 Q3 with an internal error).",
+      "necesita": "referencias-de-control",
+      "captura": "control-reference/rm-cr.png"
+    },
+    {
+      "id": "context.control-reference.create.property-for-class",
+      "etiqueta": "Property for Digital (strict) Class",
+      "estado": "built",
+      "prueba": "test/editor/control-references.test.mjs::its Create ▸ Property for a class makes an explicit node, unwired, with the strict class in its header",
+      "captura": "control-reference/rm-cr.png",
+      "separado": true
+    },
+    {
+      "id": "context.control-reference.create.method-for-class",
+      "etiqueta": "Method for Digital (strict) Class",
+      "estado": "todo",
+      "labview": "The methods of the control's class, as an Invoke Node fed by the reference.",
+      "necesita": "nodos-de-metodos",
+      "captura": "control-reference/rm-cr.png"
+    },
+    {
+      "id": "context.control-reference.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Creates a channel writer for the reference.",
+      "necesita": "canales",
+      "captura": "control-reference/rm-cr.png"
+    },
+    {
+      "id": "context.control-reference.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "todo",
+      "labview": "Creates a control or indicator for every unwired terminal.",
+      "necesita": "referencias-de-control",
+      "captura": "control-reference/rm-cr.png",
+      "separado": true
+    },
+    {
+      "id": "context.control-reference.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "todo",
+      "labview": "Creates a constant for every unwired input.",
+      "necesita": "referencias-de-control",
+      "captura": "control-reference/rm-cr.png"
+    },
+    {
+      "id": "context.control-reference.link-to",
+      "etiqueta": "Link to",
+      "estado": "todo",
+      "labview": "Links the reference to another panel object.",
+      "necesita": "referencias-de-control",
+      "captura": "control-reference/rm.png",
+      "separado": true
+    },
+    {
+      "id": "context.control-reference.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the reference and wires through it.",
+      "necesita": "menus-contextuales",
+      "captura": "control-reference/rm.png",
+      "separado": true
+    },
+    {
+      "id": "context.control-reference.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the reference's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "control-reference/rm.png",
       "separado": true
     },
     {
@@ -12789,9 +12952,8 @@
     {
       "id": "context.numeric-control.create.reference",
       "etiqueta": "Reference",
-      "estado": "todo",
-      "labview": "Creates a control reference to it.",
-      "necesita": "referencias-de-control",
+      "estado": "built",
+      "prueba": "test/editor/control-references.test.mjs::Create ▸ Reference hangs a control reference constant from the cursor, linked by node name",
       "captura": "property-node-panel/m2.png"
     },
     {
@@ -13147,9 +13309,8 @@
     {
       "id": "context.numeric-indicator.create.reference",
       "etiqueta": "Reference",
-      "estado": "todo",
-      "labview": "Creates a control reference to it.",
-      "necesita": "referencias-de-control",
+      "estado": "built",
+      "prueba": "test/editor/control-references.test.mjs::Create ▸ Reference hangs a control reference constant from the cursor, linked by node name",
       "captura": "property-node-panel/ind-c.png"
     },
     {
@@ -13457,9 +13618,8 @@
     {
       "id": "context.boolean-control.create.reference",
       "etiqueta": "Reference",
-      "estado": "todo",
-      "labview": "Creates a control reference to it.",
-      "necesita": "referencias-de-control",
+      "estado": "built",
+      "prueba": "test/editor/control-references.test.mjs::Create ▸ Reference hangs a control reference constant from the cursor, linked by node name",
       "captura": "property-node-panel/pc2.png"
     },
     {
@@ -13751,9 +13911,8 @@
     {
       "id": "context.boolean-control-terminal.create.reference",
       "etiqueta": "Reference",
-      "estado": "todo",
-      "labview": "Creates a control reference to it.",
-      "necesita": "referencias-de-control",
+      "estado": "built",
+      "prueba": "test/editor/control-references.test.mjs::Create ▸ Reference hangs a control reference constant from the cursor, linked by node name",
       "captura": "property-node-panel/bool-b.png"
     },
     {
@@ -13988,9 +14147,8 @@
     {
       "id": "context.boolean-indicator.create.reference",
       "etiqueta": "Reference",
-      "estado": "todo",
-      "labview": "Creates a control reference to it.",
-      "necesita": "referencias-de-control",
+      "estado": "built",
+      "prueba": "test/editor/control-references.test.mjs::Create ▸ Reference hangs a control reference constant from the cursor, linked by node name",
       "captura": "property-node-panel/pc2.png"
     },
     {
@@ -14188,9 +14346,8 @@
     {
       "id": "context.numeric-panel-control.create.reference",
       "etiqueta": "Reference",
-      "estado": "todo",
-      "labview": "Creates a control reference to it.",
-      "necesita": "referencias-de-control",
+      "estado": "built",
+      "prueba": "test/editor/control-references.test.mjs::Create ▸ Reference hangs a control reference constant from the cursor, linked by node name",
       "captura": "property-node-panel/pc2.png"
     },
     {

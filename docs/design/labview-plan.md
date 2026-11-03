@@ -599,6 +599,11 @@ array or string read by a local variable while another loop writes it is never t
       Change All, Add and Remove Element, Link to ▸ Pane ▸, Ignore Errors and Create from a row, each one undo step; VISA
       Property Node in VISA Advanced; a pasted node follows its pasted control (spec/05 rules 115–119, spec/06 §20,
       `editor/src/block-diagram/property-nodes.mjs`). Next: compare it with LabVIEW by eye (stage e), then stage (d).*
+      *Compared by eye on 2026-11-03 and corrected (glyphs, width, bar backing, menus that scroll). Stage (d), first
+      half, on 2026-11-03: control references measured (`reports/2026-11-03-control-references.md`) and built in the
+      editor: Create ▸ Reference makes a control reference constant, its Property for <class> Class ▸ an explicit node,
+      Disconnect From Control turns an implicit node explicit (spec/05 rule 120). Next: measure how a node fed by a
+      reference runs, then run it; the refnum control and indicator on the panel.*
    4b. **VISA Configure Serial Port and Bytes at Serial Port** (DT-070 §7): Configure as a polymorphic subOVI of
       Solder's own `vi.lib` built on the Property Node; greyed until then.
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the

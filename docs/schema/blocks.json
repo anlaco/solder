@@ -485,6 +485,10 @@
                                "rows": { "type": "propertyRows", "value": [] }, "ignore-errors": { "type": "boolean", "value": false } },
                    "side-effect": true },
 
+    "control-reference": { "cat": "application-control", "desc": "Control reference constant (DT-072 §2): a reference to the panel control it is linked to by node name, made by Create ▸ Reference; its type is the refnum of the control's class (labview-captures/reports/2026-11-03-control-references.md Q1). It does not run yet",
+                   "in": [], "out": [{ "name": "reference", "label": "", "type": { "var": "R" } }], "type-from": "config",
+                   "config": { "type": { "type": "dataType", "value": { "refnum": "Numeric" } }, "link": { "type": "string", "value": null } } },
+
     "path-control": { "cat": "file-io", "desc": "Terminal of a File Path Control: its value is a path, the empty path by default (DT-067)",
                    "in": [], "out": [{ "name": "result", "type": "path" }],
                    "config": { "default": { "type": "path", "value": { "kind": 0, "components": [] } } },

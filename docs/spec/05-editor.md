@@ -1635,8 +1635,8 @@ and the edits of the rows) and `property-node-menus.mjs` (the menus). Tests: `te
 > **Done:** Change All To Write (Change All To Read when every row writes), Add Breakpoint, Select Property ▸, Change To Write (Change
 > To Read on a writing row; greyed when the property only reads or only writes), Add Element, Remove Element (greyed with one row), Create ▸
 > Constant, Control and Indicator (greyed on a row with no property), Name Format ▸ Short Names, Link to ▸ Pane ▸ a control, Ignore
-> Errors inside Node. Everything else is greyed with its reason (rule 54); **Long Names and No Names were not measured**, Disconnect From
-> Control waits for control references (stage d). **Unverified:** the Instr node's header menu (taken as its row menu without the rows
+> Errors inside Node, Disconnect From Control (rule 120). Everything else is greyed with its reason (rule 54); **Long Names and No Names
+> were not measured**. **Unverified:** the Instr node's header menu (taken as its row menu without the rows
 > of a row), the Instr Create ▸ beyond Indicator, Property for <class> Class's class name on a Boolean or string node (Numeric's is
 > "Digital (strict)"). Tested.
 
@@ -1653,3 +1653,23 @@ and the edits of the rows) and `property-node-menus.mjs` (the menus). Tests: `te
 > Property for Instr Class ▸ on a VISA resource name's terminal, on its constant and on a VISA function's resource terminal is the Instr
 > tree without Browse...; picking a property makes an Instr node with that row, hanging from the cursor. **Unverified:** whether LabVIEW
 > wires the new node to the resource name (the report did not confirm it); Solder does not. Tested.
+
+> **Rule 120 — Control references (DT-072 §2, stage d).** Measured in `labview-captures/reports/2026-11-03-control-references.md`;
+> tests: `test/editor/control-references.test.mjs`. **Create ▸ Reference** on a numeric or Boolean control's terminal makes a control
+> reference constant (`control-reference`, `config: { type: { refnum: <class> }, link: <the control's node name> }`) that hangs from
+> the cursor by its centre and drops at the click; from a panel object it is put 20 px right of the terminal (unverified). Its type is
+> the refnum of the class, whose wire is teal (`#007F7F`), 1 px and solid. Its menu (`context.control-reference`): Find ▸, Visible
+> Items ▸, Help, Examples, Description and Tip..., a separator, Add Breakpoint, a separator, Application Control Palette ▸, a
+> separator, Create ▸, a separator, Link to ▸, a separator, Remove and Rewire, a separator and Properties; its Create ▸ is Constant,
+> Control, Indicator, a separator, Property for <class> Class ▸, Method for <class> Class ▸, Channel Writer..., a separator, All
+> Controls and Indicators and All Constants, with the class named as LabVIEW names it ("Digital (strict)"; "Boolean (strict)" and
+> the string's are unverified). **Property for <class> Class ▸** is the class's tree of properties: picking one makes an
+> **explicit** Property Node of that class (`link: null`) that hangs from the cursor and is **not wired** (as in LabVIEW); wired to the
+> reference, its Value takes the control's type. Its menu is the implicit node's without Find ▸ and Disconnect From Control, and
+> without Link to ▸ once a reference is wired in. **Disconnect From Control** on an implicit node turns it into an explicit one of the
+> same class, unwired and with no reference made; it keeps its centre and its bottom edge, and the label above goes; Link to ▸ stays,
+> with nothing ticked (picking a control makes the node implicit again: unverified). A reference pasted with its control follows the
+> copy. **Not done**, greyed with their reason: Create ▸ Constant, Control and Indicator on the reference (in LabVIEW 2026 Q3 Control
+> and Indicator close the program with an internal error, 3 times out of 3; Solder will not copy that), the refnum control and indicator
+> on the panel, Link to ▸ on the reference, Method for ▸, Property for ▸ on a Property Node, and running a node fed by a reference
+> (it is a compile error "cannot run yet" until its behavior is measured). Tested.

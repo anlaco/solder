@@ -149,8 +149,17 @@
         { "$ref": "#/$defs/scalarType" },
         { "$ref": "#/$defs/arrayType" },
         { "$ref": "#/$defs/clusterType" },
-        { "$ref": "#/$defs/enumType" }
+        { "$ref": "#/$defs/enumType" },
+        { "$ref": "#/$defs/refnumType" }
       ]
+    },
+
+    "refnumType": {
+      "description": "A refnum of a class of LabVIEW's hierarchy (DT-072 §2): `{ \"refnum\": \"Numeric\" }` is a reference to a numeric control, the type of a control reference constant.",
+      "type": "object",
+      "required": ["refnum"],
+      "additionalProperties": false,
+      "properties": { "refnum": { "type": "string" } }
     },
 
     "enumType": {
@@ -441,7 +450,7 @@
               "type": "string"
             },
             "link": {
-              "description": "For property-node: the name of the panel control an implicit node is linked to (never its label); null for a node with a reference wired.",
+              "description": "For property-node: the name of the panel control an implicit node is linked to (never its label); null for a node with a reference wired. For control-reference: the name of the panel control the reference points at.",
               "type": ["string", "null"]
             },
             "rows": {

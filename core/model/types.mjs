@@ -63,6 +63,9 @@ export const carriesUndefinedArray = (t) => isUndefinedArray(t) || (esCluster(t)
 
 export const esCluster = (t) => !!t && typeof t === "object" && Array.isArray(t.cluster);
 
+/** A refnum of a class of LabVIEW's hierarchy, `{ refnum: "Numeric" }` (DT-072 §2): a control reference. */
+export const esRefnum = (t) => !!t && typeof t === "object" && typeof t.refnum === "string";
+
 /**
  * El cluster de error de LabVIEW (DT-043): status, code y source, en ese orden.
  * En el catálogo, un puerto de tipo `"error"` es este cluster.
@@ -162,6 +165,8 @@ export function nombre(t) {
   if (t === PATH) return "path";
   // Unverified: the name LabVIEW gives this type in a broken wire's explanation.
   if (t === FILE_REFNUM) return "file refnum";
+  // Unverified, as the file refnum's.
+  if (esRefnum(t)) return `${t.refnum} refnum`;
   if (esArray(t)) return `${dimensionsOf(t) > 1 ? `${dimensionsOf(t)}D ` : ""}array of ${nombre(t.array)}`;
   if (typeof t === "string") return NUMERICOS[t]?.abrev ?? t;
   if (t && typeof t === "object" && "cluster" in t) return "cluster";
@@ -220,6 +225,8 @@ function colorEscalar(t) {
   if (t === PATH) return COLORES.path;
   // A file refnum is the path's teal, solid where the path is dashed (measured, reports/2026-10-28-file-nodes-look.md §2-3).
   if (t === FILE_REFNUM) return COLORES.path;
+  // A control reference's wire is the same teal, 1 px and solid (measured, reports/2026-11-03-control-references.md Q2).
+  if (esRefnum(t)) return COLORES.path;
   return COLORES.otro;
 }
 

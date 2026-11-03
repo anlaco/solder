@@ -17,6 +17,7 @@
 import { PROPERTY_NODE, isImplicit } from "../../../core/model/property-node.mjs";
 import { COLORES, aspecto, esCluster, esEnum } from "../../../core/model/types.mjs";
 import { fijarConfig, linkedControlType } from "../../../core/model/graph.mjs";
+import { strictHeaderText } from "./control-references.mjs";
 
 export { PROPERTY_NODE };
 
@@ -24,6 +25,9 @@ export const isPropertyNode = (node) => node?.tipo === PROPERTY_NODE;
 
 /** The class of a node fresh from Functions ▸ VISA Advanced, and of Create ▸ Property for Instr Class. */
 export const INSTR_CLASS = "Instr";
+
+/** Whether the node's class is a panel control's (implicit, or explicit with a control reference), not Instr. */
+export const isControlClass = (node) => node.config?.class !== INSTR_CLASS;
 
 /** A row whose property has not been chosen yet (the Instr node fresh from the palette) says "Property" (§2). */
 export const NO_PROPERTY = "";
@@ -79,8 +83,18 @@ export function rowText(node, cat, row) {
   return property.short ?? property.name;
 }
 
+/**
+ * What an explicit node's header says: "Instr", or the strict class of the control reference ("DigNum (strict)",
+ * "Bool (strict)", reports/2026-11-03-control-references.md Q4, Q6).
+ */
+const headerText = (node) => (isControlClass(node) ? strictHeaderText(node.config?.class) : node.config?.class ?? "");
+/** The header's text starts at x 29, after the key, and leaves room for the glyphs on the right: "DigNum (strict)" makes the node 118 px, "Bool (strict)" 96. */
+const HEADER_TEXT = { left: 29, right: 12 };
+
 export function propertyNodeSize(node, cat, measure) {
-  const minimum = isImplicit(node) ? IMPLICIT_MIN_WIDTH : EXPLICIT_MIN_WIDTH;
+  // An Instr node is 66 px with "Instr" (measured); a control class's header text sets its width.
+  const headerWidth = isControlClass(node) ? Math.ceil(HEADER_TEXT.left + measure(headerText(node)) + HEADER_TEXT.right) : 0;
+  const minimum = isImplicit(node) ? IMPLICIT_MIN_WIDTH : Math.max(EXPLICIT_MIN_WIDTH, headerWidth);
   const widest = Math.max(0, ...rowsOf(node).map((_, row) => measure(rowText(node, cat, row))));
   return { ancho: Math.max(minimum, Math.ceil(widest) + 2 * TEXT_SIDE_ROOM), alto: headerHeight(node) + ROW_PITCH * rowsOf(node).length };
 }
@@ -206,7 +220,7 @@ function explicitHeader(node, box) {
     pixels(REFERENCE_GLYPH, left, referenceTop, GLYPH_COLOR) +
     pixels(ERROR_GLYPH, left, errorTop, GLYPH_COLOR) +
     pixels(KEY_GLYPH, 14, 5, GLYPH_COLOR) +
-    `<text class="clase-nodo" x="29" y="9" fill="${CLASS_NAME_COLOR}">${escapeText(node.config?.class ?? "")}</text>` +
+    `<text class="clase-nodo" x="${HEADER_TEXT.left}" y="9" fill="${isControlClass(node) ? FRAME_COLOR : CLASS_NAME_COLOR}">${escapeText(headerText(node))}</text>` +
     pixels(REFERENCE_GLYPH, right, referenceTop, GLYPH_COLOR) +
     pixels(ERROR_GLYPH, right, errorTop, GLYPH_COLOR)
   );
@@ -231,9 +245,11 @@ export function propertyNodeBody(graph, cat, node, box) {
 }
 
 /** The label of the control an implicit node is linked to, drawn above the node (§Q2), or nothing. */
-export function linkedLabel(graph, node) {
-  if (!isImplicit(node)) return "";
-  const linked = graph.nodos.find((candidate) => candidate.name === node.config.link);
+export const linkedLabel = (graph, node) => (isImplicit(node) ? labelAbove(graph, node.config.link) : "");
+
+/** The label of the control `linkName`, drawn above a node that stands for it (an implicit node, a control reference). */
+export function labelAbove(graph, linkName) {
+  const linked = graph.nodos.find((candidate) => candidate.name === linkName);
   const text = linked?.label?.text;
   return text ? `<div class="etiqueta-enlace">${escapeText(text)}</div>` : "";
 }
@@ -252,7 +268,7 @@ const escapeText = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "
 /** The right-click menu of an implicit node (§Q2: `hm`, `rm`) and of an Instr node (visa report §3). */
 export const IMPLICIT_MENU = "context.property-node";
 export const INSTR_MENU = "context.instr-property-node";
-export const menuRoot = (node) => (isImplicit(node) ? IMPLICIT_MENU : INSTR_MENU);
+export const menuRoot = (node) => (isControlClass(node) ? IMPLICIT_MENU : INSTR_MENU);
 
 /** The inventory entry a property not done yet explains itself with: the catalog's hole (DT-072 §8). */
 export const PROPERTY_HOLE = "context.property-not-done";
@@ -324,6 +340,9 @@ export function propertyMenu(cat, className, parentId, { browse = false, current
 
 /** The configuration of the implicit node Create ▸ Property Node ▸ makes from a panel object, with one read row. */
 export const implicitConfig = (className, linkName, propertyId) => ({ class: className, link: linkName, rows: [{ property: propertyId, write: false }], "ignore-errors": false });
+
+/** The configuration of an explicit node of a control's class, as Create ▸ Property for <class> Class ▸ makes it. */
+export const explicitConfig = (className, propertyId) => ({ class: className, link: null, rows: [{ property: propertyId, write: false }], "ignore-errors": false });
 
 /** The configuration of an Instr node: from the palette with one row and no property, or with the one picked. */
 export const instrConfig = (propertyId = NO_PROPERTY) => ({ class: INSTR_CLASS, link: null, rows: [{ property: propertyId, write: false }], "ignore-errors": false });
@@ -413,6 +432,18 @@ export function removeRow(graph, nodeId, row) {
  * (unverified: what LabVIEW does with a row the new class has not).
  */
 export const linkTo = (graph, nodeId, linkName, className) => fijarConfig(graph, nodeId, { link: linkName, class: className });
+
+/**
+ * Disconnect From Control: the implicit node becomes an explicit one of the same class, unwired, in place; it keeps its
+ * centre and its bottom edge, so its taller header grows upwards (reports/2026-11-03-control-references.md Q5).
+ */
+export function disconnectFromControl(graph, cat, measure, nodeId) {
+  const before = nodeOf(graph, nodeId);
+  const after = { ...before, config: { ...before.config, link: null } };
+  const [oldSize, newSize] = [before, after].map((node) => propertyNodeSize(node, cat, measure));
+  const moved = { ...after, x: before.x - Math.round((newSize.ancho - oldSize.ancho) / 2), y: before.y - (newSize.alto - oldSize.alto) };
+  return { ...graph, nodos: graph.nodos.map((node) => (node.id === nodeId ? moved : node)) };
+}
 
 /** Ignore Errors inside Node, ticked or not. */
 export const toggleIgnoreErrors = (graph, nodeId) => fijarConfig(graph, nodeId, { "ignore-errors": !nodeOf(graph, nodeId).config?.["ignore-errors"] });

@@ -73,15 +73,18 @@ export function pasteFragment(g, fragment, { dx = 0, dy = 0, panelDx = dx, panel
   };
 }
 
+/** The blocks linked to a panel control by its node name: the Property Node and the control reference (DT-072). */
+const LINKED_BLOCKS = new Set([PROPERTY_NODE, "control-reference"]);
+
 /**
- * A Property Node is linked to its control by the control's node name (DT-072 §1), and a pasted node gets a new
- * name: a node pasted with its control follows the copy of the control; pasted alone, it stays linked to the
- * original (unverified: LabVIEW's paste into another VI was not measured).
+ * A Property Node or a control reference is linked to its control by the control's node name (DT-072 §1, §2), and a
+ * pasted node gets a new name: a node pasted with its control follows the copy of the control; pasted alone, it stays
+ * linked to the original (unverified: LabVIEW's paste into another VI was not measured).
  */
 function relinkPastedPropertyNodes(originals, pasted) {
   const newName = new Map(originals.map((node, index) => [node.name, pasted[index].name]));
   for (const node of pasted) {
-    const link = node.tipo === PROPERTY_NODE ? node.config?.link : undefined;
+    const link = LINKED_BLOCKS.has(node.tipo) ? node.config?.link : undefined;
     if (typeof link === "string" && newName.has(link)) node.config.link = newName.get(link);
   }
 }

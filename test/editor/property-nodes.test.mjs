@@ -184,8 +184,8 @@ test("the node's header and row menus are the measured ones", () => {
     "Ignore Errors inside Node", "---", "Use UTF-8 Overrides When Available", "---", "Remove and Rewire", "---", "Properties",
   ]);
   const greyed = Object.fromEntries(rows.map((r) => [r.label, r.greyed]));
-  for (const label of ["Examples", "Remove Element", "Downcast to Class", "Disconnect From Control", "Select Class"]) assert.ok(greyed[label], `${label} is greyed`);
-  for (const label of ["Change All To Write", "Add Breakpoint", "Select Property", "Change To Write", "Add Element", "Create", "Name Format", "Link to", "Ignore Errors inside Node"]) assert.equal(greyed[label], false, `${label} works`);
+  for (const label of ["Examples", "Remove Element", "Downcast to Class", "Select Class"]) assert.ok(greyed[label], `${label} is greyed`);
+  for (const label of ["Change All To Write", "Add Breakpoint", "Select Property", "Change To Write", "Add Element", "Create", "Name Format", "Disconnect From Control", "Link to", "Ignore Errors inside Node"]) assert.equal(greyed[label], false, `${label} works`);
   // Select Property ▸: Browse... greyed, the class's groups, the current property ticked (`sp`).
   const select = menuRows(hover(row, `${root}.select-property`), `${root}.select-property`);
   assert.deepEqual(select.slice(0, 2).map((r) => [r.label, r.greyed, r.separated]), [["Browse...", true, false], ["Class ID", true, true]]);

@@ -20,6 +20,7 @@ import * as FileNodes from "./file-nodes.mjs";
 import * as ExpressNodes from "./express-nodes.mjs";
 import * as SpreadsheetNodes from "./spreadsheet-nodes.mjs";
 import * as PN from "./property-nodes.mjs";
+import * as CR from "./control-references.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { EMPTY_PATH, hostPathRules, pathToText } from "../../../core/model/paths.mjs";
 import { brokenWireMarks, endPoint } from "./broken-wire.mjs";
@@ -532,6 +533,7 @@ export function caja(n, ctx, edicion) {
   if (ExpressNodes.isExpressNode(n, ctx.cat)) return ExpressNodes.expressBox(n, ctx.cat);
   if (UN.isUnbundleByName(n)) return { x: n.x, y: n.y, ...UN.unbundleSize(n, ctx.cat, ctx.medir) };
   if (PN.isPropertyNode(n)) return { x: n.x, y: n.y, ...PN.propertyNodeSize(n, ctx.cat, ctx.medir) };
+  if (CR.isControlReference(n)) return { x: n.x, y: n.y, ...CR.referenceSize(n, ctx.medir) };
   if (FileNodes.isFileNode(n)) return { x: n.x, y: n.y, ...FileNodes.fileNodeSize() };
   if (SpreadsheetNodes.isSpreadsheetNode(n)) return { x: n.x, y: n.y, ...SpreadsheetNodes.spreadsheetNodeSize() };
   if (esExpresion(n)) {
@@ -635,6 +637,7 @@ export function terminales(n, ctx, edicion) {
   if (UN.isUnbundleByName(n)) return UN.unbundleTerminals(n, k, ctx.cat);
   if (VN.isVisaNode(n)) return VN.visaTerminals(n, k, ctx.cat);
   if (PN.isPropertyNode(n)) return PN.propertyNodeTerminals(n, k, ctx.cat);
+  if (CR.isControlReference(n)) return CR.referenceTerminals(n, k);
   if (FileNodes.isFileNode(n)) return FileNodes.fileNodeTerminals(n, k, ctx.cat);
   if (SpreadsheetNodes.isSpreadsheetNode(n)) return SpreadsheetNodes.spreadsheetNodeTerminals(n, k, ctx.cat);
   const { in: ins, out: outs } = ctx.cat.puertos(n);
@@ -960,7 +963,7 @@ export function contenido(d0, ctx, resueltos) {
       fantasma = `<div class="rectangulo-estructura" style="left:${px(x)};top:${px(y)};width:${px(Math.abs(accion.x - accion.esquina.x))};height:${px(Math.abs(accion.y - accion.esquina.y))}"></div>`;
     }
   } else if (accion?.tipo === "colocar" && accion.x !== undefined) {
-    const n = { id: "fantasma", tipo: accion.bloque, x: accion.x, y: accion.y, ...(isSubVI({ tipo: accion.bloque }) || PN.isPropertyNode({ tipo: accion.bloque }) ? { config: accion.config } : {}) };
+    const n = { id: "fantasma", tipo: accion.bloque, x: accion.x, y: accion.y, ...(isSubVI({ tipo: accion.bloque }) || PN.isPropertyNode({ tipo: accion.bloque }) || CR.isControlReference({ tipo: accion.bloque }) ? { config: accion.config } : {}) };
     fantasma = `<div class="fantasma">${nodo(n, { g, seleccion: [] }, ctx, null, false)}</div>`;
   }
   const lista = d.lista ? listaAbierta(d, ctx, resueltos) : "";
@@ -1285,6 +1288,9 @@ function nodo(n, d, ctx, resueltos, elegido) {
   } else if (PN.isPropertyNode(n)) {
     const graph = d.completo ?? d.g;
     cuerpo = `<div class="glifo-formato">${PN.propertyNodeBody(graph, ctx.cat, n, k)}</div>${PN.linkedLabel(graph, n)}${PN.rowZones(n, k)}`;
+  } else if (CR.isControlReference(n)) {
+    const graph = d.completo ?? d.g;
+    cuerpo = `<div class="glifo-formato">${CR.referenceBody(graph, ctx.cat, n, k)}</div>${PN.labelAbove(graph, n.config?.link)}`;
   } else if (esExpresion(n)) {
     cuerpo = expresion(n, k, ctx, resueltos, d.edicion);
   } else if (esCompuesto(n, ctx)) {
@@ -1645,6 +1651,8 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   if (VN.isVisaNode(n)) return puerto === VN.RESOURCE_PORT ? VN.RESOURCE_TERMINAL_MENU : VN.BODY_MENU;
   // The Property Node: one menu for its header and its rows, the rows of a row shown only on a row (DT-072 §7).
   if (PN.isPropertyNode(n)) return PN.menuRoot(n);
+  // The control reference constant (reports/2026-11-03-control-references.md Q3).
+  if (CR.isControlReference(n)) return "context.control-reference";
   // Write to and Read from Text File have a menu of their own, with Convert EOL and Read Lines (file-io-behavior.md §2, §3); the other file functions' menus were not read.
   if (FileNodes.MENU_ROOTS[n.tipo]) return FileNodes.MENU_ROOTS[n.tipo];
   if (n.tipo === "format-into-string") return "context.format-into-string";

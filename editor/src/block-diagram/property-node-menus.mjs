@@ -12,6 +12,7 @@ import { crearNodo, fijarConfig, tipos } from "../../../core/model/graph.mjs";
 import { caja } from "./diagram-view.mjs";
 import * as PN from "./property-nodes.mjs";
 import { typePaletteLabel } from "./unbundle-by-name.mjs";
+import * as CR from "./control-references.mjs";
 
 const nodeOf = (graph, id) => graph.nodos.find((node) => node.id === id);
 
@@ -21,6 +22,9 @@ const nodeOf = (graph, id) => graph.nodos.find((node) => node.id === id);
 export const PANEL_OBJECT_ROOTS = new Set(["context.numeric-panel-control", "context.boolean-control", "context.boolean-indicator"]);
 const CREATE_PROPERTY_NODE = "create.property-node";
 const CREATE_INSTR_PROPERTY = "create.property-for-instr-class";
+/** The control reference constant's menu, whose Create ▸ Property for <class> Class ▸ makes an explicit node (Q3, Q4). */
+export const CONTROL_REFERENCE_MENU = "context.control-reference";
+const CREATE_CLASS_PROPERTY = "create.property-for-class";
 
 /** The class of the Property Node a menu's Create ▸ makes, by what the menu was opened on, or nothing. */
 function createdClass(root, node) {
@@ -33,6 +37,11 @@ function createdClass(root, node) {
 function createMenu(d, ctx) {
   const root = d.menu.raiz;
   const node = nodeOf(d.g, d.menu.nodo);
+  if (root === CONTROL_REFERENCE_MENU && ctx?.cat.properties) {
+    const parent = `${root}.${CREATE_CLASS_PROPERTY}`;
+    const className = CR.referenceClass(node);
+    return { parent, className, explicit: true, menu: PN.propertyMenu(ctx.cat, className, parent) };
+  }
   const className = createdClass(root, node);
   if (!className || !ctx?.cat.properties) return null;
   const parent = `${root}.${className === PN.INSTR_CLASS ? CREATE_INSTR_PROPERTY : CREATE_PROPERTY_NODE}`;
@@ -43,10 +52,23 @@ function createMenu(d, ctx) {
 const menuVariants = (menu) => ({ submenus: menu.submenus, redirigidos: new Map([...menu.holes].map((id) => [id, PN.PROPERTY_HOLE])) });
 
 export function createVariants(d, ctx) {
-  if (!d.menu || PN.isPropertyNode(nodeOf(d.g, d.menu.nodo))) return {};
+  const node = d.menu && nodeOf(d.g, d.menu.nodo);
+  if (!node) return {};
+  if (PN.isPropertyNode(node)) return {};
   const created = createMenu(d, ctx);
-  return created ? menuVariants(created.menu) : {};
+  if (!created) return {};
+  // Property for <class> Class names the class as LabVIEW does ("Digital (strict)" for a numeric, Q3).
+  const variants = menuVariants(created.menu);
+  if (created.explicit) variants.rotulos = classRowLabels(d.menu.raiz, created.className);
+  return variants;
 }
+
+/** The labels of Create ▸ Property and Method for <class> Class ▸ on a menu of a control of `className`. */
+const classRowLabels = (root, className) =>
+  new Map([
+    [`${root}.create.property-for-class`, `Property for ${CR.strictMenuName(className)} Class`],
+    [`${root}.create.method-for-class`, `Method for ${CR.strictMenuName(className)} Class`],
+  ]);
 
 /**
  * Picking a property in Create ▸ Property Node ▸: on a terminal, the node hangs from the cursor until it is placed
@@ -54,21 +76,36 @@ export function createVariants(d, ctx) {
  * puts it was not measured). Returns the new state, or null if `id` is not such a row.
  */
 export function createCommand(d, id, ctx, pickUp) {
+  const node = d.menu && nodeOf(d.g, d.menu.nodo);
+  if (!node) return null;
+  if (id === `${d.menu.raiz}.create.reference`) return createReference(d, ctx, node, pickUp);
   const created = createMenu(d, ctx);
   const propertyId = created?.menu.properties.get(id);
   if (!propertyId) return null;
-  const node = nodeOf(d.g, d.menu.nodo);
-  const config = created.className === PN.INSTR_CLASS ? PN.instrConfig(propertyId) : PN.implicitConfig(created.className, node.name, propertyId);
+  // From a reference, an explicit node with its class, unwired (Q4: LabVIEW does not wire it).
+  const config = created.explicit ? PN.explicitConfig(created.className, propertyId) : created.className === PN.INSTR_CLASS ? PN.instrConfig(propertyId) : PN.implicitConfig(created.className, node.name, propertyId);
   if (!PANEL_OBJECT_ROOTS.has(d.menu.raiz)) return pickUp({ ...d, menu: null }, PN.PROPERTY_NODE, config);
-  return { ...d, g: placedBesideTerminal(d.g, ctx, node, config), menu: null };
+  return { ...d, g: placedBesideTerminal(d.g, ctx, node, PN.PROPERTY_NODE, config), menu: null };
+}
+
+/**
+ * Create ▸ Reference on a panel control's terminal or panel object: a control reference constant of its class, linked
+ * to it by node name, hanging from the cursor until the next click (Q1); from the panel, beside the terminal.
+ */
+function createReference(d, ctx, node, pickUp) {
+  const className = classOfPanelBlock(node.tipo);
+  if (!className) return null;
+  const config = CR.referenceConfig(className, node.name);
+  if (!PANEL_OBJECT_ROOTS.has(d.menu.raiz)) return pickUp({ ...d, menu: null }, CR.CONTROL_REFERENCE, config);
+  return { ...d, g: placedBesideTerminal(d.g, ctx, node, CR.CONTROL_REFERENCE, config), menu: null };
 }
 
 /** How far right of the terminal's box a node made from the panel lands (unverified). */
 const BESIDE_TERMINAL = 20;
 
-function placedBesideTerminal(graph, ctx, terminal, config) {
+function placedBesideTerminal(graph, ctx, terminal, block, config) {
   const box = caja(terminal, ctx);
-  const created = crearNodo(graph, ctx.cat, PN.PROPERTY_NODE, box.x + box.ancho + BESIDE_TERMINAL, box.y);
+  const created = crearNodo(graph, ctx.cat, block, box.x + box.ancho + BESIDE_TERMINAL, box.y);
   return fijarConfig(created.g, created.id, config);
 }
 
@@ -115,11 +152,11 @@ export function nodeVariants(d, ctx) {
   if (PN.allWrite(node)) variants.rotulos.set(at("change-all-to-write"), "Change All To Read");
   if (row < 0) {
     PN.ROW_ONLY_ROWS.forEach((name) => variants.ocultos.add(at(name)));
-    variants.separadores.set(at(isImplicit(node) ? "application-control-palette" : "visa-palette"), true);
+    variants.separadores.set(at(PN.isControlClass(node) ? "application-control-palette" : "visa-palette"), true);
     variants.separadores.set(at("replace"), false);
     // The implicit header's Create ▸ has no rows for a terminal: it starts with Property for ... Class (`hm-cr`).
     // An Instr header's was not measured: its Constant, Control and Indicator are greyed, as on any node's body.
-    if (isImplicit(node)) {
+    if (PN.isControlClass(node)) {
       ["constant", "control", "indicator", "channel-writer"].forEach((name) => variants.ocultos.add(at(`create.${name}`)));
       variants.separadores.set(at("create.property-for-class"), false);
     }
@@ -139,9 +176,16 @@ export function nodeVariants(d, ctx) {
     for (const [parent, rows] of select.submenus) variants.submenus.set(parent, rows);
     for (const hole of select.holes) variants.redirigidos.set(hole, PN.PROPERTY_HOLE);
   }
-  if (isImplicit(node)) {
+  if (PN.isControlClass(node)) {
     const pane = paneMenu(d, node);
     variants.submenus.set(pane.parent, pane.rows);
+    for (const [rowId, label] of classRowLabels(root, node.config.class)) variants.rotulos.set(rowId, label);
+  }
+  // An explicit node of a control's class has no Find ▸ nor Disconnect From Control, and once a reference is wired in
+  // no Link to ▸ (reports/2026-11-03-control-references.md Q4).
+  if (PN.isControlClass(node) && !isImplicit(node)) {
+    ["find", "disconnect-from-control"].forEach((name) => variants.ocultos.add(at(name)));
+    if (d.g.cables.some((wire) => wire.a.nodo === node.id && wire.a.puerto === "reference")) variants.ocultos.add(at("link-to"));
   }
   return variants;
 }
@@ -172,6 +216,7 @@ export function nodeCommand(d, id, ctx) {
   const edited = (graph) => ({ ...d, g: PN.keepCentre(d.g, graph, ctx.cat, ctx.medir, node.id), menu: null });
   if (id === `${root}.change-all-to-write`) return edited(PN.flipAllRows(d.g, ctx.cat, node.id));
   if (id === `${root}.ignore-errors-inside-node`) return edited(PN.toggleIgnoreErrors(d.g, node.id));
+  if (id === `${root}.disconnect-from-control` && isImplicit(node)) return { ...d, g: PN.disconnectFromControl(d.g, ctx.cat, ctx.medir, node.id), menu: null };
   if (id.startsWith(`${root}.link-to.pane.`)) {
     const object = paneMenu(d, node).objects.find((candidate) => id === `${root}.link-to.pane.${candidate.name}`);
     return object ? edited(PN.linkTo(d.g, node.id, object.name, object.class)) : null;

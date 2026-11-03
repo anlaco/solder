@@ -33,6 +33,7 @@ import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
 import * as PN from "./property-nodes.mjs";
 import * as PNM from "./property-node-menus.mjs";
+import * as CR from "./control-references.mjs";
 import * as EI from "./edit-items-dialog.mjs";
 import { endPoint } from "./broken-wire.mjs";
 import { sharedSegmentCount } from "./wire-tree.mjs";
@@ -65,6 +66,8 @@ const AGARRE = { x: 4, y: 4 };
 const grabPoint = (block, ctx, config) => {
   // A Property Node hangs by its centre, and its size is its rows' (DT-072 §7).
   if (PN.isPropertyNode({ tipo: block }) && config) return PN.propertyNodeGrabPoint(config, ctx.cat, ctx.medir);
+  // A control reference hangs by its centre too (reports/2026-11-03-control-references.md Q1).
+  if (CR.isControlReference({ tipo: block }) && config) return CR.referenceGrabPoint(config, ctx.medir);
   if (FN.isFormatNode({ tipo: block }, ctx.cat)) return FN.formatNodeGrabPoint(block, ctx.cat);
   // An Express VI hangs by the middle of its node (DT-069).
   if (ExpressNodes.isExpressNode({ tipo: block }, ctx.cat)) return ExpressNodes.expressGrabPoint(block);

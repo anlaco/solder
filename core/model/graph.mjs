@@ -1034,14 +1034,24 @@ function ligar(declarado, llega, vars) {
  * Una variable numérica sin nada cableado queda en DBL, que es lo que enseña
  * LabVIEW en una función sin cablear.
  */
-/** The type of the panel object a Property Node is linked to, by its node name; undefined when there is none. */
+/**
+ * The type of the panel object a Property Node is linked to, by its node name, or that the control reference wired
+ * into it points at (DT-072 §2); undefined when there is none.
+ */
 export function linkedControlType(g, cat, node) {
-  const linked = g.nodos.find((candidate) => candidate.name === node.config?.link);
+  const linked = g.nodos.find((candidate) => candidate.name === (node.config?.link ?? referencedControlName(g, node)));
   if (!linked) return undefined;
   const block = cat.bloque(linked.tipo);
   if (block["type-from"] === "config") return linked.config?.type ?? block.config?.default?.type;
   const { in: inputs, out: outputs } = cat.puertos(linked);
   return [...outputs, ...inputs][0]?.type;
+}
+
+/** The node name of the control a control reference wired into `node`'s reference terminal points at, if any. */
+function referencedControlName(g, node) {
+  const wire = g.cables.find((candidate) => candidate.a.nodo === node.id && candidate.a.puerto === "reference");
+  const source = wire && g.nodos.find((candidate) => candidate.id === wire.de.nodo);
+  return source?.tipo === "control-reference" ? source.config?.link ?? undefined : undefined;
 }
 
 export function tipos(g, cat) {
