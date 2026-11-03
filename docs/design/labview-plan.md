@@ -604,6 +604,15 @@ array or string read by a local variable while another loop writes it is never t
       editor: Create ▸ Reference makes a control reference constant, its Property for <class> Class ▸ an explicit node,
       Disconnect From Control turns an implicit node explicit (spec/05 rule 120). Next: measure how a node fed by a
       reference runs, then run it; the refnum control and indicator on the panel.*
+      *Stage (d) done on 2026-11-03: measured how a node fed by a reference runs
+      ([`control-reference-run`](../../labview-captures/reports/2026-11-03-control-reference-run.md),
+      [`-errors`](../../labview-captures/reports/2026-11-03-control-reference-errors.md),
+      [`-subvi`](../../labview-captures/reports/2026-11-03-control-reference-subvi.md)) and decided the strict refnum with the
+      developer (DT-072, amendment of 2026-11-03): a reference is its control's index in the OVI's list, the node runs as
+      the implicit one, reference out passes on with an error in, 1055 for a refnum that names no control; the control
+      refnum and indicator on the panel from Create ▸ Control/Indicator, through a subOVI's connector
+      (`test/core/control-reference-run.test.mjs`). 1152 tests green. Not yet: Link to on a reference, the Refnum palette,
+      the refnum's menus, comparing its drawing by eye. Next: stage (e) for the explicit node and the refnum, then DT-070 §7.*
    4b. **VISA Configure Serial Port and Bytes at Serial Port** (DT-070 §7): Configure as a polymorphic subOVI of
       Solder's own `vi.lib` built on the Property Node; greyed until then.
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the

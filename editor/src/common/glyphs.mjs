@@ -2691,3 +2691,57 @@ Object.assign(SUBPALETAS, {
   "advanced-storage": fileFolder("DATA+"), zip: fileFolder("ZIP"), xml: fileFolder("XML"), "labview-schema": fileFolder("SCHEMA"), "waveform-file-i-o": fileFolder("WFM"),
   "advanced-file-functions": fileFolder("ADV"), datalog: fileFolder("LOG"), "packed-library": fileFolder("PKG"),
 });
+
+// ——— The control refnum (DT-072 §2), drawn anew after reports/2026-11-03-control-references.md Q2 ———
+
+/** A control reference's teal: its wire and terminal are a path's colour (measured). */
+const REFNUM_COLOR = PATH_COLOR;
+/** The refnum's page on the panel: grey, with a darker edge right and bottom (measured #b3b3b3 and #595959). */
+const REFNUM_PAGE = { fill: "#b3b3b3", edge: "#595959" };
+/** The small star under the miniature (seen red-orange; its meaning is not known). */
+const REFNUM_STAR = "#e8401c";
+/** The green dot in the terminal's page (seen). */
+const REFNUM_TERMINAL_DOT = "#00a000";
+
+/** A five-pointed star of radius `radius` centred on (x, y). */
+const star = (x, y, radius, color) => {
+  const points = Array.from({ length: 10 }, (_, k) => {
+    const angle = -Math.PI / 2 + (k * Math.PI) / 5;
+    const r = k % 2 ? radius * 0.45 : radius;
+    return [x + r * Math.cos(angle), y + r * Math.sin(angle)];
+  });
+  return poligono(points, color, "none", 0);
+};
+
+/** A miniature numeric control: a white box with "1.23" and two arrows on its left. */
+const miniatureNumeric = (x, y, width, height) =>
+  lleno(x, y, x + width, y + height, "#ffffff") +
+  caja(x + 0.5, y + 0.5, x + width - 0.5, y + height - 0.5, "none", 1, REFNUM_PAGE.edge) +
+  poligono([[x + 2, y + height / 2 - 1], [x + 4, y + 1.5], [x + 6, y + height / 2 - 1]], INK, "none", 0) +
+  poligono([[x + 2, y + height / 2 + 1], [x + 4, y + height - 1.5], [x + 6, y + height / 2 + 1]], INK, "none", 0) +
+  `<text x="${x + width - 2}" y="${y + height / 2}" text-anchor="end" dominant-baseline="central" font-size="${height - 2}" fill="${INK}">1.23</text>`;
+
+/**
+ * The control refnum on the panel, 36 × 48: a grey page with its top right corner folded and a darker edge on the right
+ * and at the bottom, a miniature numeric control and a small star under it. It shows no value (measured, Q4).
+ */
+export const refnumPageGlyph = () => {
+  const [width, height, fold] = [36, 48, 9];
+  const page = poligono([[0.5, 0.5], [width - fold, 0.5], [width - 1.5, fold - 1], [width - 1.5, height - 1.5], [0.5, height - 1.5]], REFNUM_PAGE.fill, REFNUM_PAGE.edge, 1);
+  const edge = linea(width - 0.5, fold, width - 0.5, height - 0.5, 1, REFNUM_PAGE.edge) + linea(1, height - 0.5, width - 0.5, height - 0.5, 1, REFNUM_PAGE.edge);
+  const foldedCorner = poligono([[width - fold, 0.5], [width - fold, fold - 1], [width - 1.5, fold - 1]], "#d9d9d9", REFNUM_PAGE.edge, 1);
+  return svg(page + edge + foldedCorner + miniatureNumeric(4, 16, 26, 9) + star(17, 34, 4, REFNUM_STAR), `0 0 ${width} ${height}`);
+};
+
+/**
+ * The terminal of a control refnum on the diagram, 35 × 38: a teal double frame around a small page with a green dot,
+ * and the arrow on the side the wire meets: out on the right for a control, in on the left for an indicator (seen, Q2).
+ */
+export function terminalRefnum(control) {
+  const [width, height] = [35, 38];
+  const frames = caja(0.5, 0.5, width - 0.5, height - 0.5, PAPER, 1, REFNUM_COLOR) + caja(3.5, 3.5, width - 3.5, height - 3.5, PAPER, 1, REFNUM_COLOR);
+  const page = poligono([[10.5, 8.5], [21.5, 8.5], [25.5, 12.5], [25.5, 29.5], [10.5, 29.5]], REFNUM_PAGE.fill, REFNUM_PAGE.edge, 1);
+  const dot = `<circle cx="18" cy="23" r="2.5" fill="${REFNUM_TERMINAL_DOT}"/>`;
+  const arrow = control ? `<path d="M29.5 14.5 V23.5 L33.5 19 Z" fill="${PAPER}" stroke="#000" stroke-width="1"/>` : `<path d="M1.5 14.5 V23.5 L5.5 19 Z" fill="${PAPER}" stroke="#000" stroke-width="1"/>`;
+  return svg(frames + page + miniatureNumeric(12, 14, 12, 5) + dot + arrow, `0 0 ${width} ${height}`);
+}

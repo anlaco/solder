@@ -1669,7 +1669,12 @@ and the edits of the rows) and `property-node-menus.mjs` (the menus). Tests: `te
 > without Link to ▸ once a reference is wired in. **Disconnect From Control** on an implicit node turns it into an explicit one of the
 > same class, unwired and with no reference made; it keeps its centre and its bottom edge, and the label above goes; Link to ▸ stays,
 > with nothing ticked (picking a control makes the node implicit again: unverified). A reference pasted with its control follows the
-> copy. **Not done**, greyed with their reason: Create ▸ Constant, Control and Indicator on the reference (in LabVIEW 2026 Q3 Control
-> and Indicator close the program with an internal error, 3 times out of 3; Solder will not copy that), the refnum control and indicator
-> on the panel, Link to ▸ on the reference, Method for ▸, Property for ▸ on a Property Node, and running a node fed by a reference
-> (it is a compile error "cannot run yet" until its behavior is measured). Tested.
+> copy. **Create ▸ Control and Indicator** on the reference, its wire or a node's reference terminal make a **control refnum**
+> (`refnum-control`, `refnum-indicator`) of the reference's strict type (`{ refnum, of }`, DT-072 amendment of 2026-11-03), wired, named
+> after the terminal ("reference out"), placed as any created control (`reports/2026-11-03-control-reference-subvi.md` Q1, Q4); in
+> LabVIEW 2026 Q3 the two rows on the constant close the program with an internal error (3 times out of 3), and Solder makes what they
+> name instead. **Running:** a node fed by a reference runs as the implicit node (DT-072 amendment, 1–4; `test/core/control-reference-run.test.mjs`);
+> one whose reference is unwired keeps the OVI from running. **Not done**, greyed with their reason: Create ▸ Constant on the reference,
+> Link to ▸ on the reference, Method for ▸, Property for ▸ on a Property Node, the Refnum palette and the menus of the refnum control
+> and its terminal (not measured: they open none). The Value row of a node fed through a chain of reference outs is drawn in the
+> numeric colour whatever the control's type (its type is right; only the colour is). Tested.

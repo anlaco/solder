@@ -24,7 +24,7 @@ import { connectorPorts, ejecutable, linkedControlType, nodesWithUndefinedInput,
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
 import { EMPTY_PATH, NOT_A_PATH, PATH_KIND, encodePath } from "../model/paths.mjs";
-import { ERROR, FILE_REFNUM, NUMERICOS, PATH, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esEntero, esEnum, esNumerico, flattenArrayValue, inMemory, limites, representacion } from "../model/types.mjs";
+import { ERROR, FILE_REFNUM, NUMERICOS, PATH, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esEntero, esEnum, esNumerico, esRefnum, flattenArrayValue, inMemory, limites, representacion } from "../model/types.mjs";
 import { codificar } from "./wasm-encoder.mjs";
 import { CELDAS, CIMA, EXPORTADAS, MEMORY_FUNCTION_NAMES, bloqueCadena, funcionesMemoria, i32 } from "./linear-memory.mjs";
 import { makeStackless } from "./stackless.mjs";
@@ -657,7 +657,6 @@ function scanFromString(e) {
 /** A Property Node: its read rows, in order, and its error out. */
 function propertyNode(e) {
   const { class: className, link = null, rows = [], "ignore-errors": ignoreErrors = false } = e.nodo.config ?? {};
-  if (link === null && className !== "Instr") throw new Error(`A Property Node of class ${className} with a reference wired cannot run yet.`);
   const { in: inputs, out: outputs } = e.cat.puertos(e.nodo);
   const buffer = e.bufer(Math.max(1, rows.length) * FORMAT_ROW_BYTES);
   const errorOut = e.bufer(disposicion(ERROR).tam);
@@ -682,14 +681,19 @@ function propertyNode(e) {
   const index = e.registerPropertyNode({ class: className, link, rows: hostRows, ignoreErrors });
   const errorIn = inputs.findIndex((port) => port.name === "error-in");
   const referenceIn = inputs.findIndex((port) => port.name === "reference");
-  const referenceOut = referenceIn >= 0 ? e.bufer(disposicion(VISA_RESOURCE_LAYOUT).tam) : 0;
+  // An Instr node's reference out is a VISA resource name the host fills; a control reference's is the refnum wired
+  // in, passed on as it came.
+  const isInstr = className === "Instr";
+  const referenceOut = referenceIn >= 0 && isInstr ? e.bufer(disposicion(VISA_RESOURCE_LAYOUT).tam) : 0;
+  const controlRefnum = referenceIn >= 0 && !isInstr ? e.temporal("i32") : null;
+  const reference = referenceIn < 0 ? [k32(0)] : controlRefnum === null ? e.entrada(referenceIn) : [...e.entrada(referenceIn), ins("local.tee", controlRefnum)];
   code.push(
-    k32(index), k32(buffer), ...(referenceIn >= 0 ? e.entrada(referenceIn) : [k32(0)]), ...e.entrada(errorIn), k32(referenceOut), k32(errorOut), k32(e.chainIndex),
+    k32(index), k32(buffer), ...reference, ...e.entrada(errorIn), k32(referenceOut), k32(errorOut), k32(e.chainIndex),
     ins("call", idImport("property_node")), ins("drop"),
   );
   const leaveOutput = (port) => {
     if (port.name === "error-out") return [k32(errorOut)];
-    if (port.name === "reference-out") return [k32(referenceOut)];
+    if (port.name === "reference-out") return controlRefnum === null ? [k32(referenceOut)] : [ins("local.get", controlRefnum)];
     const row = Number(port.name.slice("row-".length));
     if (esCluster(hostRows[row].tipo)) return [k32(rowRecord(row)), ins("i32.load", ROW_VALUE_OFFSET)];
     return readRow(hostRows[row].tipo, rowRecord(row));
@@ -889,6 +893,8 @@ const BLOQUES = {
   "visa-read": (e) => visaFunction(e, "visa_read", [0, 1], { resourceOut: true, buffer: true, count: true }),
   "visa-close": (e) => visaFunction(e, "visa_close", [0], {}),
   "property-node": (e) => propertyNode(e),
+  // A control reference is the refnum the host knows its control by (DT-072 §2).
+  "control-reference": (e) => [k32(e.registerControlReference(e.nodo.config?.link))],
   // The file functions (DT-067 §7), by the catalog's index. A wired prompt is the title of the dialog of an unwired path.
   "open-create-replace-file": (e) =>
     fileFunction(e, "file_open", [...optionalHandle(e, 0), ...(e.cableada(1) ? e.entrada(1) : [k32(0)]), k32(e.cableada(1) ? 1 : 0), ...e.entrada(2), ...e.entrada(3)], ["refnum", "boolean", "error"]),
@@ -1139,6 +1145,7 @@ const BLOQUES = {
   "str-control": (e) => readControl(e),
   "visa-control": (e) => readControl(e),
   "path-control": (e) => readControl(e),
+  "refnum-control": (e) => readControl(e),
   // Timing: el reloj de milisegundos de LabVIEW es un U32 que da la vuelta.
   "tick-count-ms": () => [ins("call", idImport("reloj"))],
   "wait-ms": (e) => [...e.entrada(0), ...convertir(e.tIn(0), "u32"), ins("f64.convert_i32_u"), callScheduler("wait")],
@@ -1258,7 +1265,8 @@ const BLOQUES = {
   "in-range-and-coerce": enRango,
   "not-a-number-path-refnum": (e) => {
     if (e.logicalTIn(0) === PATH) return [...e.entrada(0), ins("call", idImport("path_kind")), k32(PATH_KIND.NOT_A_PATH), ins("i32.eq")];
-    if (e.logicalTIn(0) === FILE_REFNUM) return [...e.entrada(0), ins("i32.eqz")];
+    // Not A Refnum is 0, a file's and a control reference's alike (measured, reports/2026-11-03-control-reference-run.md Q5).
+    if (e.logicalTIn(0) === FILE_REFNUM || esRefnum(e.logicalTIn(0))) return [...e.entrada(0), ins("i32.eqz")];
     if (!esFlotante(e.tIn(0))) return [ins("i32.const", 0)];
     const x = e.temporal(tipoWasm(e.tIn(0)));
     return [...e.entrada(0), ins("local.tee", x), ins("local.get", x), ins(`${tipoWasm(e.tIn(0))}.ne`)];
@@ -1506,7 +1514,7 @@ function juntarFilas(t, rowsCell, cell, temporal) {
   ];
 }
 
-const PANEL_CONTROLS = ["control", "bool-control", "str-control", "cluster-control", "arr-control", "visa-control", "path-control"];
+const PANEL_CONTROLS = ["control", "bool-control", "str-control", "cluster-control", "arr-control", "visa-control", "path-control", "refnum-control"];
 
 /**
  * The panel objects whose value the editor holds as a VISA resource name's text alone (DT-066): the runtime
@@ -2166,6 +2174,7 @@ function newModule() {
     debugNodes: [], // DT-047: the nodes that report to the debugger, by index: { vi, nodo, outputs }
     instances: new Map(), // instance key → compiled subVI instance
     propertyNodes: [], // DT-072: what the host needs to run each Property Node, by index
+    controlReferences: [], // DT-072 §2: the panel control each control reference names; a refnum is its index + 1
     // The VIs an error source names (spec/04 Rule 21k): by chain index, the VI's name and the cell
     // where each call to it writes the chain index of its caller; the top-level VI has no cell.
     callChain: [],
@@ -2387,22 +2396,26 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     return { record, slot };
   }
   /**
-   * Records what the host needs to run a Property Node and returns its index. An implicit node's control or
-   * indicator gets its record here; an unwired indicator is listed so that what the node writes reaches the panel.
+   * The panel control or indicator named `linkName`, as the host reaches it: a control gets its record here, and an
+   * unwired indicator is listed so that what a Property Node writes reaches the panel.
    */
+  function linkPanelObject(linkName) {
+    const node = g.nodos.find((candidate) => candidate.name === linkName);
+    if (!node) throw new Error(`The control "${linkName}" this Property Node is linked to is not on the panel.`);
+    if (asSubVI) throw new Error("A Property Node linked to a control of a subOVI cannot run yet.");
+    const type = inMemory(linkedControlType(g, cat, node));
+    const isControl = PANEL_CONTROLS.includes(node.tipo);
+    if (isControl) panelRecordOf(node.id, type);
+    else registerIndicator(node.id, type, linkedControlType(g, cat, node));
+    return { nodo: node.id, control: isControl, mecanica: mecanica(cat, node) ?? null, label: node.label?.text ?? "" };
+  }
+  /** Records what the host needs to run a Property Node and returns its index. */
   function registerPropertyNode(entry) {
-    const node = entry.link === null ? null : g.nodos.find((candidate) => candidate.name === entry.link);
-    if (entry.link !== null && !node) throw new Error(`The control "${entry.link}" this Property Node is linked to is not on the panel.`);
-    if (node && asSubVI) throw new Error("A Property Node linked to a control of a subOVI cannot run yet.");
-    let linked = null;
-    if (node) {
-      const type = inMemory(linkedControlType(g, cat, node));
-      const isControl = PANEL_CONTROLS.includes(node.tipo);
-      if (isControl) panelRecordOf(node.id, type);
-      else registerIndicator(node.id, type, linkedControlType(g, cat, node));
-      linked = { nodo: node.id, control: isControl, mecanica: mecanica(cat, node) ?? null, label: node.label?.text ?? "" };
-    }
-    return module.propertyNodes.push({ ...entry, link: linked }) - 1;
+    return module.propertyNodes.push({ ...entry, link: entry.link === null ? null : linkPanelObject(entry.link) }) - 1;
+  }
+  /** Records the panel control a control reference names and returns the reference's refnum, never 0 (Not A Refnum). */
+  function registerControlReference(linkName) {
+    return module.controlReferences.push(linkPanelObject(linkName));
   }
   // Allow Debugging (VI Properties ▸ Execution), on by default as in LabVIEW (DT-047).
   const allowDebugging = g.vi?.execution?.["allow-debugging"] !== false;
@@ -2522,7 +2535,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     const tiposNodo = [...entradas.map((_, i) => tIn(i)), ...salidas.map((_, j) => tOut(j))];
     if (tiposNodo.some((t) => !escalar(t))) return errores.push({ nodo: id, motivo: `"${nombre}" carries a type the compiler cannot emit yet.` });
     // Un indicador sin cable no se escribe: conserva su valor, como en LabVIEW.
-    if (["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator", "visa-indicator", "path-indicator", "waveform-chart", "waveform-graph", "xy-graph"].includes(n.tipo)) {
+    if (["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator", "visa-indicator", "path-indicator", "refnum-indicator", "waveform-chart", "waveform-graph", "xy-graph"].includes(n.tipo)) {
       if (!llegaA.has(`${id}.value`)) return;
       // In a subVI, a connector indicator leaves its value in its slot for the caller; any other one, nowhere.
       if (asSubVI) {
@@ -2540,7 +2553,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     if (VISA_FUNCTIONS.has(n.tipo) || FILE_FUNCTIONS.has(n.tipo) || (n.tipo === "property-node" && n.config?.class === "Instr")) module.usesInstrumentIo = true;
     const emitir = n.tipo === "subvi" ? (e) => callSubVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subVIControl(e, asSubVI.get(n.name)) : BLOQUES[n.tipo];
     if (!emitir) return errores.push({ nodo: id, motivo: `The compiler cannot emit "${nombre}" (${n.tipo}) yet.` });
-    const e = { nodo: n, cat, tIn, tOut, logicalTIn, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex, registerPropertyNode };
+    const e = { nodo: n, cat, tIn, tOut, logicalTIn, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex, registerPropertyNode, registerControlReference };
     if (!asSubVI && PANEL_CONTROLS.includes(n.tipo)) {
       e.controlRecord = panelRecordOf(id, tOut(0)).record;
       controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), record: e.controlRecord, ...panelDataOf(tOut(0), logicalTOut(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTOut(0) === PATH && { path: true }) });
@@ -3070,5 +3083,5 @@ function assemble(module, vi) {
     ],
   };
   const plan = (lista) => lista.map((k) => ({ deps: [...k.deps], largo: k.largo }));
-  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), disposicionVisa: disposicionCompleta(VISA_RESOURCE_LAYOUT), usesInstrumentIo: !!module.usesInstrumentIo, debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, propertyNodes: module.propertyNodes, frames };
+  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), disposicionVisa: disposicionCompleta(VISA_RESOURCE_LAYOUT), usesInstrumentIo: !!module.usesInstrumentIo, debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, propertyNodes: module.propertyNodes, controlReferences: module.controlReferences, frames };
 }

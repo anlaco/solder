@@ -5,7 +5,7 @@
 // LabVIEW); this module decides what is created and wires it.
 
 import { conectar, crearEnPanel, crearNodo, fijarConfig } from "./graph.mjs";
-import { PATH, VISA_RESOURCE, esArray, esCluster, esEnum, esError, esNumerico } from "./types.mjs";
+import { PATH, VISA_RESOURCE, esArray, esCluster, esEnum, esError, esNumerico, esRefnum } from "./types.mjs";
 
 /**
  * The block and configuration that Create ▸ `kind` ("constant", "control" or
@@ -40,6 +40,8 @@ function panelBlock(type, isControl) {
   if (type === "string") return { tipo: `str-${suffix}` };
   if (type === VISA_RESOURCE) return { tipo: `visa-${suffix}` };
   if (type === PATH) return { tipo: `path-${suffix}` };
+  // A control reference's terminal or wire makes a control refnum of its strict type (measured, reports/2026-11-03-control-reference-subvi.md Q1, Q4).
+  if (esRefnum(type)) return { tipo: `refnum-${suffix}`, config: { type } };
   if (esArray(type)) return { tipo: `arr-${suffix}`, config: { type } };
   if (esError(type)) return { tipo: `cluster-${suffix}`, config: { type, style: isControl ? "error-in" : "error-out" } };
   if (esCluster(type)) return { tipo: `cluster-${suffix}`, config: { type } };

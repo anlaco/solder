@@ -155,11 +155,11 @@
     },
 
     "refnumType": {
-      "description": "A refnum of a class of LabVIEW's hierarchy (DT-072 §2): `{ \"refnum\": \"Numeric\" }` is a reference to a numeric control, the type of a control reference constant.",
+      "description": "A refnum of a class of LabVIEW's hierarchy (DT-072 §2): `{ \"refnum\": \"Numeric\" }` is a reference to a numeric control, the type of a control reference constant. A strict one names the control's data type too, `{ \"refnum\": \"Numeric\", \"of\": \"i32\" }`, as a control refnum on the panel does (amendment of 2026-11-03).",
       "type": "object",
       "required": ["refnum"],
       "additionalProperties": false,
-      "properties": { "refnum": { "type": "string" } }
+      "properties": { "refnum": { "type": "string" }, "of": { "$ref": "#/$defs/dataType" } }
     },
 
     "enumType": {

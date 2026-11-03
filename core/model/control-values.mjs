@@ -9,10 +9,13 @@ import { EMPTY_PATH } from "./paths.mjs";
 /** The error cluster with no error: what an unwired `error in` carries. */
 export const NO_ERROR = Object.freeze({ status: false, code: 0, source: "" });
 
-// A VISA resource name control holds its resource string (DT-066); a path control, a path (DT-067).
-const EMPTY_VALUE_BY_CONTROL = { "str-control": "", "cluster-control": NO_ERROR, "arr-control": [], "visa-control": "", "path-control": EMPTY_PATH };
+/** Not A Refnum: what a control refnum holds until a reference is passed to it (DT-072 §2). */
+const NOT_A_REFNUM = 0;
 
-const CONTROL_TYPES = new Set(["control", "bool-control", "str-control", "cluster-control", "arr-control", "visa-control", "path-control"]);
+// A VISA resource name control holds its resource string (DT-066); a path control, a path (DT-067); a control refnum, a refnum.
+const EMPTY_VALUE_BY_CONTROL = { "str-control": "", "cluster-control": NO_ERROR, "arr-control": [], "visa-control": "", "path-control": EMPTY_PATH, "refnum-control": NOT_A_REFNUM };
+
+const CONTROL_TYPES = new Set(["control", "bool-control", "str-control", "cluster-control", "arr-control", "visa-control", "path-control", "refnum-control"]);
 
 /** Is this node a control of the front panel? */
 export const isControl = (node) => CONTROL_TYPES.has(node.tipo);

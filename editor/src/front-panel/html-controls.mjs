@@ -16,7 +16,7 @@
 // keyboard focus away from the editor; typing is drawn by the editor as in Old School.
 
 import { PATH } from "../../../core/model/types.mjs";
-import { browseFolderGlyph, pathCellGlyph, visaIoGlyph } from "../common/glyphs.mjs";
+import { browseFolderGlyph, pathCellGlyph, refnumPageGlyph, visaIoGlyph } from "../common/glyphs.mjs";
 
 /** Every kind of object an HTML panel draws: each one has rules in plain.css (DT-058 §3, a test checks it). */
 export const PLAIN_KINDS = ["numeric", "enum", "string", "visa", "path", "boolean", "error-cluster", "array", "waveform-chart", "waveform-graph", "xy-graph"];
@@ -86,6 +86,11 @@ export function visaHtml(frame, { valueHtml }) {
   const icon = `<span class="sd-visa-icon"><span class="sd-visa-glyph" aria-hidden="true">${visaIoGlyph()}</span></span>`;
   const dropdown = frame.isControl ? `<span class="sd-dropdown" role="button" aria-haspopup="menu" aria-label="VISA resources" data-visa-dropdown></span>` : "";
   return objectFrame({ ...frame, kind: "visa" }, icon + field(frame.id, valueHtml) + dropdown);
+}
+
+/** A control refnum: its page, which shows no value (DT-072 §2). */
+export function refnumHtml(frame) {
+  return objectFrame({ ...frame, kind: "refnum" }, `<span class="sd-refnum-page" aria-hidden="true">${refnumPageGlyph()}</span>`);
 }
 
 /**

@@ -59,6 +59,10 @@ export const CONTROLES = {
   // A path: File Path Control and Indicator. LabVIEW's default label is unverified ("Path" is the word on its terminal).
   "path-control": { etiqueta: "Path", incrementador: false, path: true },
   "path-indicator": { etiqueta: "Path", incrementador: false, path: true },
+  // A control refnum: a page that shows no value (reports/2026-11-03-control-references.md Q2). Made from a terminal it
+  // takes the terminal's label; the palette's own label is unverified.
+  "refnum-control": { etiqueta: "Control Refnum", incrementador: false, refnum: true },
+  "refnum-indicator": { etiqueta: "Control Refnum", incrementador: false, refnum: true },
   // Un cluster: de momento sólo los de error (Error In y Error Out), que se distinguen por `config.style`.
   "cluster-control": { etiqueta: "Cluster", incrementador: false, cluster: true },
   "cluster-indicator": { etiqueta: "Cluster", incrementador: false, cluster: true },
@@ -155,6 +159,9 @@ export const MEDIDAS_CADENA_PANEL = { ancho: 100, alto: 24 };
  * wide on a control, 86 on an indicator, 17 tall: the first row of the inside is a gap) and, on a control only, a 17 px
  * dropdown button.
  */
+/** The box of a control refnum, measured in LabVIEW 2026 Q3 (reports/2026-11-03-control-references.md Q2): 36 × 48. */
+export const MEDIDAS_REFNUM_PANEL = { ancho: 36, alto: 48 };
+
 export const MEDIDAS_VISA_PANEL = { ancho: 104, alto: 26, bisel: 4, iconoAncho: 9, hueco: 1, campoAlto: 17, botonAncho: 17 };
 
 /**
@@ -231,6 +238,7 @@ export function cajaObjeto(tipo, x, y, config) {
   const b = estiloDe(tipo, config);
   if (b) return { x, y, ancho: b.ancho, alto: b.alto, casilla: 0, separacion: SEPARACION_BOOLEANO };
   if (CONTROLES[tipo]?.path) return { x, y, ancho: MEDIDAS_PATH_PANEL.ancho, alto: MEDIDAS_PATH_PANEL.alto, casilla: 0, separacion: PATH_LABEL_GAP };
+  if (CONTROLES[tipo]?.refnum) return { x, y, ancho: MEDIDAS_REFNUM_PANEL.ancho, alto: MEDIDAS_REFNUM_PANEL.alto, casilla: 0 };
   if (CONTROLES[tipo]?.visa) return { x, y, ancho: MEDIDAS_VISA_PANEL.ancho, alto: MEDIDAS_VISA_PANEL.alto, casilla: 0 };
   if (CONTROLES[tipo]?.cadena) return { x, y, ancho: MEDIDAS_CADENA_PANEL.ancho, alto: MEDIDAS_CADENA_PANEL.alto, casilla: 0 };
   const casilla = inicioCasilla(tipo);
@@ -443,6 +451,7 @@ function panelObject(n, ctx, selected, p, resolvedTypes) {
     const value = valorError(n, p.valores);
     return HC.errorClusterHtml(frame, { status: !!value.status, fieldHtml: (field) => typedOrText(editing?.campo === field ? editing : null, value[field]) });
   }
+  if (control?.refnum) return HC.refnumHtml(frame);
   if (control?.booleano) return HC.booleanHtml(frame, { style: n.config?.style ?? "push-button", on: encendido(n, p.valores) });
   const valueHtml = typedOrText(editing, textoValor(n, ctx, p.valores));
   if (control?.path) return HC.pathHtml(frame, { valueHtml: typedOrText(editing, shownPathText(pathValueText(n, ctx, p.valores), ctx)), notAPath: isNotAPath(pathValueOf(n, p.valores)) });

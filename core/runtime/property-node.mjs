@@ -7,6 +7,8 @@
 // every row runs and the error is still given. A panel control's error names the row ("arg N", from 1) and the
 // property after "<APPEND>"; with Ignore Errors on, the source stops before it. An Instr row's error names only the
 // row (measured, 2026-10-26-visa-property-node-behavior.md), and its rows are VISA attributes of `native/solder-io`.
+// An explicit node of a control's class finds its control by the refnum wired in, a control reference's; it runs as
+// the implicit node does (measured, 2026-11-03-control-reference-run.md and -errors.md).
 
 /** The record of one row, as the compiler lays it out (compiler.mjs, FORMAT_ROW_BYTES). */
 const ROW_BYTES = 16;
@@ -20,6 +22,9 @@ const NO_ERROR = { status: false, code: 0, source: "" };
 
 /** LabVIEW's error for reading Value of a Boolean with a latch mechanical action (measured). */
 export const LATCH_VALUE_READ_ERROR = 1193;
+
+/** LabVIEW's error for a Property Node whose reference is not a valid refnum (measured on a null refnum). */
+export const INVALID_REFNUM_ERROR = 1055;
 
 /** VISA's codes for an attribute a session does not have and for a value it refuses (measured). */
 const VI_ERROR_NSUP_ATTR = -1073807331;
@@ -66,9 +71,9 @@ const defaultOf = (type) => {
 const isInteger = (type) => typeof type === "string" && /^[iu](8|16|32|64)$/.test(type);
 
 /**
- * The Property Node import of a Run, `property_node(index, rows, errorIn, errorOut, chainIndex)`. `panel` runs a
- * panel control's rows: `{ readValue(link), writeValue(link, value), get(link, property), set(link, property, value) }`,
- * each answering a value (a write, nothing) or `{ error }`, at once or by a promise.
+ * The Property Node import of a Run, `property_node(index, rows, referenceIn, errorIn, referenceOut, errorOut,
+ * chainIndex)`. `panel` runs a panel control's rows: `{ readValue(link), writeValue(link, value), get(link, property),
+ * set(link, property, value) }`, each answering a value (a write, nothing) or `{ error }`, at once or by a promise.
  */
 export function createPropertyNodeFunction({ compilado, host, memory, panel, instr }) {
   const { leerCluster, ponerCluster, leerCadena, ponerCadena, functionSource } = host;
@@ -119,6 +124,9 @@ export function createPropertyNodeFunction({ compilado, host, memory, panel, ins
     return status < 0 ? { error: status } : undefined;
   }
 
+  /** The panel control a control reference's refnum names, or null for Not A Refnum or an unknown one. */
+  const controlOfRefnum = (refnum) => compilado.controlReferences?.[refnum - 1] ?? null;
+
   const asResult = (answer) => (answer && typeof answer === "object" && "error" in answer ? answer : { value: answer });
   const errorSource = (row, rowNumber, chainIndex, { ignoreErrors, isInstr }) => {
     const source = functionSource(FUNCTION_NAME, chainIndex, rowNumber);
@@ -127,8 +135,10 @@ export function createPropertyNodeFunction({ compilado, host, memory, panel, ins
 
   return {
     property_node: async (index, rowsAddress, referenceIn, errorIn, referenceOut, errorOut, chainIndex) => {
-      const { link, rows, ignoreErrors } = compilado.propertyNodes[index];
-      const isInstr = link === null;
+      const { class: className, link: implicitLink, rows, ignoreErrors } = compilado.propertyNodes[index];
+      const isInstr = className === "Instr";
+      // An explicit node of a control's class reaches its control through the refnum wired in (DT-072 §2).
+      const link = implicitLink ?? (isInstr ? null : controlOfRefnum(referenceIn));
       const recordOf = (row) => rowsAddress + row * ROW_BYTES;
       const giveDefaults = (from) => rows.forEach((row, k) => k >= from && !row.write && writeRowValue(recordOf(k), row.tipo, defaultOf(row.tipo), row));
       const resource = isInstr ? leerCluster(referenceIn, compilado.disposicionVisa) : null;
@@ -149,6 +159,13 @@ export function createPropertyNodeFunction({ compilado, host, memory, panel, ins
           return ANSWERED;
         }
         session = opened.session;
+      }
+      // A refnum that names no control fails the whole node, whatever a warning in said, and with Ignore Errors on
+      // too; its source names no row (measured, reports/2026-11-03-control-reference-errors.md Q2, Q3, Q6).
+      if (!isInstr && link === null) {
+        giveDefaults(0);
+        ponerCluster(errorOut, errorLayout, { status: true, code: INVALID_REFNUM_ERROR, source: functionSource(FUNCTION_NAME, chainIndex) });
+        return ANSWERED;
       }
       const runRow = (row, value) => (isInstr ? runInstrRow(session, resource, row, value) : runPanelRow(link, row, value));
       let failure = null;

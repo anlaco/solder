@@ -67,6 +67,13 @@ export const esCluster = (t) => !!t && typeof t === "object" && Array.isArray(t.
 export const esRefnum = (t) => !!t && typeof t === "object" && typeof t.refnum === "string";
 
 /**
+ * A strict refnum: a control reference's class with the data type of the control it points at, `{ refnum: "Numeric",
+ * of: "i32" }`, as LabVIEW's "DigNum (strict)". It carries Value's type along wires, tunnels and reference outs to any
+ * Property Node it reaches (DT-072, amendment of 2026-11-03). With no data type known, it is the class alone.
+ */
+export const strictRefnum = (className, dataType) => ({ refnum: className, ...(dataType !== undefined && { of: dataType }) });
+
+/**
  * El cluster de error de LabVIEW (DT-043): status, code y source, en ese orden.
  * En el catálogo, un puerto de tipo `"error"` es este cluster.
  */
@@ -97,13 +104,13 @@ export const FILE_REFNUM = "file-refnum";
 
 /**
  * A type as the compiler lays it out in memory: a VISA resource name becomes its cluster, a path one
- * handle like a string's, whose block holds its kind and components (DT-067 §1), and a file refnum its
- * U32, inside arrays and clusters too; every other type is itself.
+ * handle like a string's, whose block holds its kind and components (DT-067 §1), and a file refnum or a control
+ * reference its U32, inside arrays and clusters too; every other type is itself.
  */
 export function inMemory(t) {
   if (t === VISA_RESOURCE) return VISA_RESOURCE_LAYOUT;
   if (t === PATH) return "string";
-  if (t === FILE_REFNUM) return "u32";
+  if (t === FILE_REFNUM || esRefnum(t)) return "u32";
   if (esArray(t)) return { ...t, array: inMemory(t.array) };
   if (esCluster(t)) return { ...t, cluster: t.cluster.map((field) => ({ ...field, type: inMemory(field.type) })) };
   return t;
@@ -142,6 +149,9 @@ export function iguales(a, b) {
   if (typeof a === "string" || typeof b === "string") return a === b;
   if (esArray(a) && esArray(b)) return dimensionsOf(a) === dimensionsOf(b) && iguales(a.array, b.array);
   if (esEnum(a) && esEnum(b)) return a.enum.length === b.enum.length && a.enum.every((x, i) => x === b.enum[i]);
+  // Two strict refnums are one type when their class and their data type are (measured: a DBL numeric's refnum wired
+  // to an I32's breaks, "Class conflict", reports/2026-11-03-control-reference-subvi.md Q3).
+  if (esRefnum(a) && esRefnum(b)) return a.refnum === b.refnum && (a.of === undefined) === (b.of === undefined) && (a.of === undefined || iguales(a.of, b.of));
   return JSON.stringify(a) === JSON.stringify(b);
 }
 

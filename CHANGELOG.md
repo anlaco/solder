@@ -24,8 +24,12 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   has its right-click menu.
 - Control references (DT-072): Create ▸ Reference on a numeric or Boolean control makes a control reference
   constant with LabVIEW's look and teal wire; its Create ▸ Property for <class> Class ▸ makes a Property Node fed
-  by a reference, and Disconnect From Control turns a control's Property Node into one. Such a node does not run
-  yet. A right-click menu taller than the window scrolls with the wheel.
+  by a reference, and Disconnect From Control turns a control's Property Node into one. A node fed by a reference
+  runs as a control's own Property Node does, passes the reference on through reference out (even after an error),
+  and gives error 1055 for a refnum that names no control, as LabVIEW. Create ▸ Control and Indicator on a reference
+  make a control refnum on the panel, which carries a reference into a subOVI; on the reference constant these two
+  rows work in Solder, where they close LabVIEW 2026 Q3. Not A Number/Path/Refnum? takes a control reference. A
+  right-click menu taller than the window scrolls with the wheel.
 - The editor calls Solder's program unit an OVI, Open Virtual Instrument, where LabVIEW says VI (DT-071): File ▸ New
   OVI, OVI Properties, Select an OVI..., subOVI and Express OVI in the menus, palettes and dialogs, Recent OVIs in the
   Getting Started window, and the run and error messages. NI's own file names, such as `Trim Whitespace.vi`, keep

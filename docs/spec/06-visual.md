@@ -776,6 +776,12 @@ rules 115–119.
   a black curved arrow (the refnum glyph, about 7 × 10 at x 5) and the class's name in the type colour from x 14 ("Digital": 54 px
   wide; "Boolean": 62); the control's label above it; its terminal at the middle of the right edge. Its wire is `#007F7F`, 1 px,
   solid. Code: `editor/src/block-diagram/control-references.mjs`. **Unverified:** the glyph's exact drawing.
+- **Control refnum** (same report, Q2): on the panel a 36 × 48 grey page (`#B3B3B3`) with its top right corner folded and a
+  `#595959` edge on the right and at the bottom, a miniature numeric control ("1.23") and a small red-orange star under it; it shows
+  no value, before or while running (`2026-11-03-control-reference-subvi.md` Q4). On the diagram a 35 × 38 terminal: a teal (`#007F7F`)
+  double frame, outer and inner 3 px apart, around a small page with a green dot, the arrow on the right for a control and on the left
+  for an indicator, its wire at y 19. Code: `editor/src/common/glyphs.mjs` (`refnumPageGlyph`, `terminalRefnum`). **Unverified:** the
+  drawings' details (drawn anew from crops, not compared by eye), the star's meaning, the compact terminal (the icon is kept).
 - **Terminals:** a row's on its right edge (read) or left edge (write), 7 px under the row's top inside pixel (y 17 on an implicit
   node's first row, y 26 on an Instr node's); error in and out at the header's middle (y 5 implicit, y 13 Instr), reference in and out
   at y 4. **Unverified:** the header terminals' exact spots (only their glyphs were measured), the Instr icon's drawing, and the font of
@@ -786,6 +792,7 @@ rules 115–119.
 
 | Date       | Change |
 |------------|--------|
+| 2026-11-03 | §20: the control refnum on the panel and its terminal. |
 | 2026-11-03 | §20: the control reference constant, its wire, and the explicit node of a control's class. |
 | 2026-10-30 | §20: the Property Node: frame, headers, rows, colours and terminals. |
 | 2026-10-26 | §4.2 and §19 corrected against LabVIEW: the 38 × 38 and 32 × 16 terminals, the path functions' icons, the constants' glyphs and width, the wire's 2 px phase, the panel's bevel, cell glyph, button and abbreviation. |

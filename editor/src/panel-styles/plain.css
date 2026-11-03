@@ -87,6 +87,11 @@
 .sd-panel .sd-string { display: flex; }
 .sd-panel .sd-string .sd-field { flex: 1; align-items: flex-start; padding-top: 4px; white-space: pre; line-height: 15px; }
 
+/* ——— Control refnum ——— */
+
+/* The refnum is its page: it shows no value in any style (DT-072 §2). */
+.sd-panel .sd-refnum-page, .sd-panel .sd-refnum-page svg { display: block; width: 100%; height: 100%; }
+
 /* ——— VISA resource name ——— */
 
 /* The icon cell says "I/O", the field holds the resource, and a control's button opens the list of resources. */

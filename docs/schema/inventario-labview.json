@@ -530,7 +530,7 @@
       "ref": "design/05-decisions.md DT-072 §8"
     },
     "referencias-de-control": {
-      "desc": "the rest of control references: refnum controls and indicators on the panel, Link to on a reference, linking a node to the pane, and running a Property Node fed by a control reference, measured before they are built",
+      "desc": "the rest of control references: the Refnum palette and the refnum control's own menus, Create ▸ Constant of a refnum, Link to on a reference, linking a node to the pane (running a node fed by a reference and the refnum control made from a terminal are done, 2026-11-03)",
       "ref": "design/05-decisions.md DT-072 §2 (stage d)"
     },
     "clases-de-referencias": {
@@ -10647,17 +10647,15 @@
     {
       "id": "context.control-reference.create.control",
       "etiqueta": "Control",
-      "estado": "todo",
-      "labview": "Creates a control refnum on the panel, wired to it (it closes LabVIEW 2026 Q3 with an internal error).",
-      "necesita": "referencias-de-control",
+      "estado": "built",
+      "prueba": "test/editor/control-references.test.mjs::Create ▸ Control and Indicator on the reference constant make a control refnum, as LabVIEW means to",
       "captura": "control-reference/rm-cr.png"
     },
     {
       "id": "context.control-reference.create.indicator",
       "etiqueta": "Indicator",
-      "estado": "todo",
-      "labview": "Creates a control refnum indicator on the panel, wired to it (it closes LabVIEW 2026 Q3 with an internal error).",
-      "necesita": "referencias-de-control",
+      "estado": "built",
+      "prueba": "test/editor/control-references.test.mjs::Create ▸ Control and Indicator on the reference constant make a control refnum, as LabVIEW means to",
       "captura": "control-reference/rm-cr.png"
     },
     {

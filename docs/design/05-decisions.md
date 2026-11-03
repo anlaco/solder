@@ -3300,6 +3300,32 @@ editor, as LabVIEW's UI thread does.**
    references, measured first; (e) compared with LabVIEW. Then DT-070 §7: VISA Configure Serial Port in `ovi.lib`
    and Bytes at Serial Port.
 
+### Amendment of 2026-11-03 (stage d: running a node fed by a control reference)
+
+Measured on 2026-11-03 (`labview-captures/reports/2026-11-03-control-reference-run.md`, `-errors.md`); point 1 decided
+by the developer ("strict refnum").
+
+1. **A control reference is a strict refnum**, `{ refnum: "<class>", of: <the control's data type> }`, as LabVIEW's
+   "DigNum (strict)": the data type is worked out when types are resolved (the `.sdg` keeps `{ refnum }` on the
+   constant) and travels along wires, tunnels and reference outs, so a node fed by any of them knows Value's type.
+2. **A refnum is the control's identifier**: the compiler lists the controls the OVI's references name and a
+   reference is its index plus one, a U32 in memory; 0 is Not A Refnum. Not A Number/Path/Refnum? takes it
+   (measured: FALSE on a constant, TRUE on a null refnum).
+3. **An explicit node runs as the implicit one** through its control: the same rows, Value waits for the drawing
+   (measured: ≈ 290 µs a write against ≈ 320 implicit, panel open), the same failing-row source with `<APPEND>`.
+   **reference out is the reference in, unchanged, even with an error in** (measured: a node not chained to the
+   error reads the control through it).
+4. **A refnum that names no control** gives error 1055 with the source `Property Node in <chain>` (no row, no
+   `<APPEND>`), all rows their defaults, with Ignore Errors on too, and it **replaces a warning in**; an error in
+   passes unchanged instead (measured). An unwired reference breaks the OVI (measured: "Contains unwired or bad
+   terminal").
+5. **The control refnum on the panel**, `refnum-control` and `refnum-indicator`, of a strict refnum type: made by
+   Create ▸ Control or Indicator on a reference's terminal or wire, a 36 × 48 page that shows no value, Not A Refnum by
+   default (measured: a node fed by it gives 1055). On a subOVI's connector it passes the caller's reference in
+   (measured: the subOVI writes the caller's control). Two strict refnums of different data types do not wire
+   (measured: "Class conflict"). **Create ▸ Control and Indicator on the reference constant work in Solder**, where
+   LabVIEW 2026 Q3 closes with an internal error: Solder does what the rows name instead of copying a crash.
+
 ### How it is verified
 
 | Statement | Mechanism | Status |
@@ -3310,5 +3336,7 @@ editor, as LabVIEW's UI thread does.**
 | The panel rows of §6 | `test/editor/panel-properties.test.mjs` (the editor's answers and drawing), `test/core/property-node-run.test.mjs` (Position and Bounds as clusters, the windowless panel) | **Verified** (2026-10-30) against the measurements; Disabled 2's shade is not measured, and what Label.Text and Position written while running do, nor whether the state outlives the Run, is **unverified** |
 | The editor (§7): Create ▸ Property Node ▸ and Property for Instr Class ▸ from the catalog, the look and terminals, the node's menus, the edits of the rows as one undo step each, the Instr node from VISA Advanced, the link through paste | `test/editor/property-nodes.test.mjs` against the measurements (spec/05 rules 115–119, spec/06 §20); `test/core/property-node.test.mjs` (a label's Position is not done) | **Verified** (2026-10-30) by test; where LabVIEW's node hangs from the cursor, where a node made from the panel lands, the Instr header menu and a paste into another OVI are **unverified** |
 | The node's look and menus by eye | Compared with LabVIEW's captures under Xvfb (`labview-captures/reports/2026-11-03-property-node-solder-compare.md`) | **Verified** (2026-11-03): size, glyphs, bar, header and row menus; the Old School theme not looked at |
-| Control references (§2), look and menus: Create ▸ Reference, the constant, its teal wire, Property for <class> Class ▸ and the explicit node, Disconnect From Control | `test/editor/control-references.test.mjs` against `labview-captures/reports/2026-11-03-control-references.md` (spec/05 rule 120, spec/06 §20) | **Verified** (2026-11-03) by test; the refnum control and indicator, Link to on a reference, the string class's names and running a node fed by a reference are **not built** (to measure: the run behavior) |
+| Control references (§2), look and menus: Create ▸ Reference, the constant, its teal wire, Property for <class> Class ▸ and the explicit node, Disconnect From Control | `test/editor/control-references.test.mjs` against `labview-captures/reports/2026-11-03-control-references.md` (spec/05 rule 120, spec/06 §20) | **Verified** (2026-11-03) by test; Link to on a reference and the string class's names are **not built** |
+| A node fed by a reference runs as the implicit one (amendment of 2026-11-03, 1–4): the rows, the wait for the drawing, reference out with an error in, the chain's types, 1055 and its source, a warning replaced, an unwired reference | `test/core/control-reference-run.test.mjs` against `reports/2026-11-03-control-reference-run.md` and `-errors.md` | **Verified** (2026-11-03) by test; whether every row "runs" with a null refnum and Ignore Errors is not observable in LabVIEW; Close Reference (no effect on a control reference, measured) is not built |
+| The control refnum (amendment, 5): Create ▸ Control/Indicator from a reference, its page and terminal, Not A Refnum by default, a subOVI writing the caller's control, the class conflict | `test/core/control-reference-run.test.mjs`, `test/editor/control-references.test.mjs` against `reports/2026-11-03-control-reference-subvi.md` and `-references.md` Q2 | **Verified** (2026-11-03) by test; the page's and terminal's drawing is **not compared by eye**, the compact terminal, the Refnum palette and the refnum's menus are **not built** |
 | Long Names and No Names; whether the label above an implicit node follows a rename; Caption.Text on a control with no caption; a subOVI writing its own indicator with its panel closed; whether changes made at run time are saved | To measure in LabVIEW | **Unverified** |

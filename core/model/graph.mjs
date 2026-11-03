@@ -12,8 +12,8 @@
 // A pure module with no mutation: every operation returns a new diagram.
 
 import { connectorTerminals } from "./connector.mjs";
-import { LINKED_CONTROL_TYPE, loadProperties } from "./property-node.mjs";
-import { DBL, ERROR, FILE_REFNUM, NUMERICOS, PATH, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, carriesUndefinedArray, isUndefinedArray, nombre, withoutOneDimension } from "./types.mjs";
+import { LINKED_CONTROL_TYPE, isImplicit, loadProperties } from "./property-node.mjs";
+import { DBL, ERROR, FILE_REFNUM, NUMERICOS, PATH, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, carriesUndefinedArray, isUndefinedArray, nombre, esRefnum, strictRefnum, withoutOneDimension } from "./types.mjs";
 
 /**
  * The catalog of blocks, `docs/schema/blocks.json`, and of the Property Node's properties,
@@ -970,8 +970,8 @@ function restringir(t, decl) {
 function ligar(declarado, llega, vars) {
   if (!declarado || typeof declarado !== "object" || llega === undefined) return;
   if ("num" in declarado) {
-    // Not A Number/Path/Refnum? takes a path or a file refnum as well as a number (DT-067).
-    if (declarado.orPath && (llega === PATH || llega === FILE_REFNUM)) {
+    // Not A Number/Path/Refnum? takes a path, a file refnum or a control reference as well as a number (DT-067, DT-072).
+    if (declarado.orPath && (llega === PATH || llega === FILE_REFNUM || esRefnum(llega))) {
       vars[declarado.num] ??= llega;
       return;
     }
@@ -1075,18 +1075,26 @@ function resolverTipos(g, cat, pistas) {
   const entradas = new Map();
   const llegaA = new Map(g.cables.filter(conectado).map((c) => [`${c.a.nodo}.${c.a.puerto}`, c]));
 
+  /** The data type the strict refnum wired into an explicit Property Node's reference carries, if any. */
+  const referencedDataType = (n) => {
+    const c = llegaA.get(`${n.id}.reference`);
+    const incoming = c && salidas.get(`${c.de.nodo}.${c.de.puerto}`);
+    return esRefnum(incoming) ? incoming.of : undefined;
+  };
   const resolverNodo = (n) => {
     const b = cat.bloque(n.tipo);
     const { in: ins, out: outs } = cat.puertos(n);
     const vars = {};
     // El tipo de un nodo que lo toma de su configuración: el suyo o, si no lo
     // tiene escrito, el que declara el catálogo (un control sin tocar es DBL).
-    const tipoConfig = b["type-from"] === "config" ? (n.config?.type ?? b.config?.default?.type) : undefined;
+    const configured = b["type-from"] === "config" ? (n.config?.type ?? b.config?.default?.type) : undefined;
+    // A control reference is strict: its refnum carries the data type of the control it points at.
+    const tipoConfig = n.tipo === "control-reference" && esRefnum(configured) ? strictRefnum(configured.refnum, linkedControlType(g, cat, n)) : configured;
     if (tipoConfig) {
       for (const p of [...outs, ...ins]) if (p.type?.var) vars[p.type.var] = tipoConfig;
     }
     // A Property Node linked to a control: its Value rows carry the control's type (DT-072).
-    if (b["type-from"] === "link") vars[LINKED_CONTROL_TYPE] = linkedControlType(g, cat, n);
+    if (b["type-from"] === "link") vars[LINKED_CONTROL_TYPE] = linkedControlType(g, cat, n) ?? referencedDataType(n);
     for (const p of ins) {
       const c = llegaA.get(`${n.id}.${p.name}`);
       if (c && !enCiclo.has(c.de.nodo)) ligar(p.type, salidas.get(`${c.de.nodo}.${c.de.puerto}`), vars);
@@ -1128,7 +1136,13 @@ function resolverTipos(g, cat, pistas) {
       salidas.set(`${n.id}.${outs[0].name}`, e === undefined ? undefined : arrayOf(e, construido.salida));
       return;
     }
-    for (const p of outs) salidas.set(`${n.id}.${p.name}`, tipoDeSalida(p.type, vars, n, ins, (puerto) => entradas.get(`${n.id}.${puerto}`), (puerto) => llegaA.has(`${n.id}.${puerto}`)));
+    // An explicit Property Node of a control's class takes the strict refnum it is wired and hands it on.
+    if (b["type-from"] === "link" && !isImplicit(n) && n.config?.class !== "Instr") {
+      const strict = strictRefnum(n.config?.class, vars[LINKED_CONTROL_TYPE]);
+      entradas.set(`${n.id}.reference`, strict);
+      salidas.set(`${n.id}.reference-out`, strict);
+    }
+    for (const p of outs) if (!salidas.has(`${n.id}.${p.name}`)) salidas.set(`${n.id}.${p.name}`, tipoDeSalida(p.type, vars, n, ins, (puerto) => entradas.get(`${n.id}.${puerto}`), (puerto) => llegaA.has(`${n.id}.${puerto}`)));
   };
   for (const id of ord) resolverNodo(nodoDe(g, id));
   for (const id of ciclo) resolverNodo(nodoDe(g, id));

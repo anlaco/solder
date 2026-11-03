@@ -10,6 +10,8 @@ import { caja, contexto, glifosPorBloque, terminales } from "../../editor/src/bl
 import * as ED from "../../editor/src/block-diagram/diagram-editing.mjs";
 import * as PN from "../../editor/src/block-diagram/property-nodes.mjs";
 import * as CR from "../../editor/src/block-diagram/control-references.mjs";
+import * as TC from "../../editor/src/block-diagram/terminal-creation.mjs";
+import * as FP from "../../editor/src/front-panel/front-panel.mjs";
 import { pasteAt } from "../../editor/src/block-diagram/diagram-clipboard.mjs";
 import { copyFragment } from "../../core/model/clipboard.mjs";
 import * as Gr from "../../core/model/graph.mjs";
@@ -93,10 +95,11 @@ test("the control reference constant looks as measured and its wire is teal", ()
   assert.match(PN.labelAbove(placed.g, reference.config.link), />Numeric</);
   const booleanReference = ofType(referenceOf(d, boolean), "control-reference")[0];
   assert.equal(caja(booleanReference, CTX).ancho, 62);
-  // Its one terminal is the reference, at the middle of the right edge; its type is the class's refnum, drawn teal.
+  // Its one terminal is the reference, at the middle of the right edge; its type is the class's strict refnum, which
+  // carries the control's data type, drawn teal.
   assert.deepEqual(terminales(reference, CTX).map((t) => [t.puerto, t.dir, t.x - reference.x, t.y - reference.y]), [["reference", "out", 54, 9.5]]);
   const type = Gr.tipos(placed.g, CAT).salidas.get(`${reference.id}.reference`);
-  assert.deepEqual(type, { refnum: "Numeric" });
+  assert.deepEqual(type, { refnum: "Numeric", of: "number" });
   assert.equal(aspecto(type).color, "#007f7f");
   // Its menu (Q3).
   const menu = openMenu(placed, reference.id);
@@ -175,4 +178,43 @@ test("Disconnect From Control turns the implicit node into an explicit one in pl
   const pasted = pasteAt(withReference, { ...CTX, panelSize: { width: 800, height: 600 } }, copyFragment(withReference.g, [boolean, reference.id]), { x: 500, y: 500 }, null).d;
   const copies = pasted.g.nodos.filter((n) => !withReference.g.nodos.some((old) => old.id === n.id));
   assert.equal(copies.find((n) => n.tipo === "control-reference").config.link, copies.find((n) => n.tipo === "bool-control").name);
+});
+
+test("Create Indicator on a node's reference out makes a refnum indicator: its page on the panel and its teal terminal (Q2)", () => {
+  const { d, numeric } = panelDiagram();
+  let g = referenceOf(d, numeric).g;
+  const reference = g.nodos.find(CR.isControlReference);
+  const explicit = Gr.crearNodo(g, CAT, "property-node", 400, 100);
+  g = Gr.fijarConfig(explicit.g, explicit.id, { class: "Numeric", link: null, rows: [{ property: "Value" }] });
+  g = Gr.conectar(g, CAT, { nodo: reference.id, puerto: "reference", dir: "out" }, { nodo: explicit.id, puerto: "reference", dir: "in" }).g;
+  const made = TC.createForTerminal(g, CTX, { nodo: explicit.id, puerto: "reference-out", kind: "indicator", panelSize: { width: 640, height: 480 } });
+  const indicator = made.g.nodos.find((n) => n.id === made.id);
+  assert.equal(indicator.tipo, "refnum-indicator");
+  assert.deepEqual(indicator.config.type, { refnum: "Numeric", of: "number" });
+  assert.equal(indicator.label.text, "reference out");
+  assert.ok(made.wired);
+  // On the panel, a 36 × 48 page that shows no value.
+  assert.deepEqual([FP.caja(indicator).ancho, FP.caja(indicator).alto], [36, 48]);
+  assert.match(FP.contenido({ ...FP.inicial(made.g) }, CTX), /sd-refnum[^-].*sd-refnum-page/s);
+  // On the diagram, a 35 × 38 terminal whose wire comes in at the middle of its left edge.
+  const box = caja(indicator, CTX);
+  assert.deepEqual([box.ancho, box.alto], [35, 38]);
+  const [terminal] = terminales(indicator, CTX);
+  assert.deepEqual([terminal.dir, terminal.x - box.x, terminal.y - box.y], ["in", 0, 19]);
+});
+
+test("Create ▸ Control and Indicator on the reference constant make a control refnum, as LabVIEW means to", () => {
+  // LabVIEW 2026 Q3 closes with an internal error here (Q2, 3 times out of 3); Solder makes what the rows name.
+  const { d, numeric } = panelDiagram();
+  const placed = referenceOf(d, numeric);
+  const reference = ofType(placed, "control-reference")[0];
+  const root = D.menuDe(reference, "reference", placed.g, false, CAT);
+  const create = menuRows(hover(openMenu(placed, reference.id, "reference"), `${root}.create`), `${root}.create`);
+  assert.deepEqual(create.filter((r) => ["Control", "Indicator"].includes(r.label)).map((r) => r.greyed), [false, false]);
+  const withIndicator = ED.orden(openMenu(placed, reference.id, "reference"), `${root}.create.indicator`, CTX);
+  const [indicator] = ofType(withIndicator, "refnum-indicator");
+  assert.deepEqual(indicator.config.type, { refnum: "Numeric", of: "number" });
+  assert.ok(withIndicator.g.cables.some((wire) => wire.de.nodo === reference.id && wire.a.nodo === indicator.id));
+  const withControl = ED.orden(openMenu(placed, reference.id, "reference"), `${root}.create.control`, CTX);
+  assert.equal(ofType(withControl, "refnum-control").length, 1);
 });
