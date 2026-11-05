@@ -13,7 +13,8 @@ When the developer says "keep going":
    (2026-10-25); continue with **"Then: hardware"** right after it (DT-064, which moved Core 1
    behind it), and keep in mind its list "Pending from the pool of threads". §4 gives the
    detail of each module. Its order was amended on 2026-10-26 (DT-064, "Amendment of
-   2026-10-26"): VISA over TCP is merged into `main`, and the next step is **File I/O**.
+   2026-10-26"). Steps 1 to 5 are done (step 5, the ESP32 DAQ, on 2026-11-05); the next one is
+   **step 6, the DAQ layer** (DT-076), which starts by measuring DAQmx with a simulated NI device.
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
    `win11 encender`, `tools/vm_control.py foto|clic|arrastrar|tecla|texto`.
@@ -41,6 +42,9 @@ When the developer says "keep going":
   organizes programs (subOVIs, projects, classes).
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
+
+*2026-11-05: a classic ESP32 is a DAQ that Solder drives over VISA serial, with an instrument driver and a Crucible
+profile of it (plan step 5, repository `esp32-daq`).*
 
 *2026-11-05: Solder has its own library of OVIs, `ovi.lib` (DT-073), and polymorphic OVIs that users can make
 themselves (DT-074); connector panes know LabVIEW's 36 patterns (DT-075, `.sdg` version 2); VISA Configure Serial Port
@@ -646,6 +650,19 @@ array or string read by a local variable while another loop writes it is never t
       connector pattern, an icon editor (Edit Icon... takes an SVG file), the windows tried only under Xvfb. Next: step 5.*
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the
       firmware (in parallel from step 3), and first served by a Crucible profile of it.
+      *Done on 2026-11-05, in its own repository `~/Proyectos/esp32-daq` (outside Solder, as a maker's instrument):
+      the SCPI command set, draft 0.1 in its `docs/scpi-commands.md`; the ESP-IDF firmware with a portable SCPI core
+      tested on the host, run on an ESP32-D0WD-V3 board over USB serial (Wi-Fi/TCP untried); a Crucible profile and a
+      bench that serves it on a pseudo-terminal (`crucible/`: no channel lists, digital lines or buffered acquisition,
+      which a profile cannot describe); an instrument driver for Solder (`solder/ESP32 DAQ/`: Initialize, Set LED,
+      Read Voltage, Set Output Voltage, Close, with the 4-2-2-4 connector), tested by Solder's runtime against that
+      profile (`solder/test/driver.test.mjs`) and tried on the board; and `ESP32 LED.sdg`, a button that switches the
+      board's LED. Learned: opening the port from Solder resets the board through DTR/RTS (Initialize waits 1.5 s
+      and drops the boot text). Left: the command set to review with the developer; `instr.lib`, so that instrument
+      drivers show in Instrument I/O ▸ Instrument Drivers (measure LabVIEW, then a DT); what NI-VISA does with DTR and
+      RTS on opening a serial port; `solder run` prints a string with commas wrong (it showed `1.0` for the whole
+      `*IDN?` reply); the width of a panel control is not saved (a VISA resource control cuts its text); every subOVI
+      shows the same icon until the icon editor. Next: step 6.*
    6. **A DAQmx-like layer** over the ESP32, with its own DT after measuring DAQmx with a simulated NI device.
       *Decided on 2026-11-05 in [DT-076](05-decisions.md#dt-076): the layer is called **DAQ**, clones DAQmx's API one
       to one (so that NI's VIs can be opened some day) and runs on a native engine in `native/solder-io` over drivers
