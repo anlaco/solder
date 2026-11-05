@@ -3539,6 +3539,7 @@ four months without a serious fault. A coverage figure is not a condition.**
 
 - **Status:** Accepted on 2026-11-05 by the developer, as proposed the same day except the time of the release
   candidates, raised from four weeks to **four months**.
+  Amended the same day: inplaceness is a condition (§8).
 - **Why:** a 1.0 is a promise about what is in it, not about what is missing. LabVIEW 1.0 (1986) ran only on the
   Macintosh and CATIA V1 (1981) was an add-on to CADAM; both shipped with known faults and far less than their later
   versions. What they promised worked well enough for their users to rely on it. Solder's users come from LabVIEW,
@@ -3575,6 +3576,12 @@ four months without a serious fault. A coverage figure is not a condition.**
    time, opening and compiling an OVI of a few hundred nodes, the time from Run to the first indicator, and an
    acquisition loop on the ESP32 that loses no samples at its nominal rate. The budgets are set after measuring
    LabVIEW doing the same. **Unverified** until then.
+   **Inplaceness ([DT-042](#dt-042) §5) is done before the candidate** (amendment of 2026-11-05): a node writes over
+   its input's buffer when it is the last one that uses it, as LabVIEW does, and a benchmark of large arrays (a
+   million elements through a loop with a shift register, Replace Array Subset, Build Array) is compared with LabVIEW.
+   Talked over that day: compiled to WebAssembly, Solder may be somewhat slower than LabVIEW's LLVM code on scalar
+   arithmetic, which a laboratory program hardly notices, but copying large arrays where LabVIEW does not would make
+   it many times slower, and that is the real risk to performance.
 9. **Legal and safety review.** No NI bitmap or text (rule 3), checked file by file; the trademarks Solder names
    (LabVIEW, DAQmx, NI) only as references; the licences of every dependency compatible with AGPL-3.0; Electron's
    hardening (context isolation, no remote content, no `nodeIntegration` in pages that show user data).
@@ -3605,3 +3612,4 @@ classes, the Actor Framework and Core 3, macOS, and the future textual language 
 | No blocker is open at release | `docs/known-issues.md`, reviewed for each candidate | **Not built** |
 | The installers work on clean machines | A checklist run on Windows and Linux per candidate | **Not built** |
 | Performance stays within its budgets | Tests per budget, after measuring LabVIEW | **Unverified** |
+| Large arrays are not copied where LabVIEW does not copy them | The large-array benchmark against LabVIEW, and tests of which nodes reuse their input's buffer | **Not built** |

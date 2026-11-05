@@ -688,9 +688,10 @@ array or string read by a local variable while another loop writes it is never t
 lesson of NI's Core 1 course can be done in Solder, the hardware lessons on the ESP32 and on simulated instruments.
 The outline is in `labview-captures/core-courses/README.md`; first, list which lessons Solder misses.
 
-**Postponed behind these five:** *inplaceness* (DT-042 §5), which changes memory
-and speed but not results; it will be done when a real program
-runs slowly.
+**Before 1.0:** *inplaceness* (DT-042 §5), which changes memory and speed but not
+results. It was postponed until a real program ran slowly; since 2026-11-05 it is a
+condition of 1.0 (DT-077 §8), done and compared with LabVIEW on large arrays before the
+first release candidate.
 
 **Pending from the pool of threads** (DT-063, left on 2026-10-25 when step 7 was merged):
 - Measure in LabVIEW how often the panel is redrawn while an OVI writes an indicator; Solder's coordinator passes
