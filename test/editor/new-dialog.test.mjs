@@ -24,6 +24,14 @@ test("the New dialog lists LabVIEW's tree and creates a blank OVI or a polymorph
   ]);
   for (const text of ["Create New", "Description", "Add to project", ">OK<", ">Cancel<", ">Help<"]) assert.ok(html.includes(text), text);
   assert.deepEqual([State.TREE[0].children.map((item) => item.label)], [["Blank OVI", "Malleable OVI", "Polymorphic OVI"]]);
+  // Each caption ends above its box, as on new2.png, and is not drawn over by it.
+  const pixels = (style, property) => Number(new RegExp(`${property}:(\\d+)px`).exec(style)[1]);
+  const styleOf = (marker) => new RegExp(`style="([^"]*)"[^>]*>${marker}`).exec(html)[1];
+  for (const [label, box] of [["Create New", 'class="nd-tree"'], ["Description", 'class="nd-description"']]) {
+    const captionStyle = styleOf(label);
+    const boxStyle = new RegExp(`${box} style="([^"]*)"`).exec(html)[1];
+    assert.ok(pixels(captionStyle, "top") + pixels(captionStyle, "line-height") <= pixels(boxStyle, "top"), `${label} ends above its box`);
+  }
 
   // Selecting Polymorphic OVI shows its description and lets OK create it; Blank OVI creates a blank one.
   const anchor = { x: 30, y: 90 };

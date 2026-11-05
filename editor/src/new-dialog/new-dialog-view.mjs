@@ -11,10 +11,14 @@ export const WINDOW_SIZE = Object.freeze({ width: 802, height: 632 });
 const ROW_HEIGHT = 17;
 const INDENT = 16;
 
+// A caption is a line of this height whose capitals start 3 px down: measured on new2.png, "Create New" and
+// "Description" have their capitals from y 51 to their baseline at 59, and their boxes start at 66.
+const CAPTION_LINE_HEIGHT = 14;
+
 const LAYOUT = Object.freeze({
-  treeLabel: { x: 18, y: 55 },
+  treeLabel: { x: 18, y: 48, height: CAPTION_LINE_HEIGHT },
   tree: { x: 18, y: 66, width: 448, height: 513 },
-  descriptionLabel: { x: 472, y: 55 },
+  descriptionLabel: { x: 472, y: 48, height: CAPTION_LINE_HEIGHT },
   description: { x: 472, y: 66, width: 294, height: 424 },
   addToProject: { x: 472, y: 517 },
   ok: { x: 547, y: 593, width: 76, height: 21 },
@@ -25,6 +29,7 @@ const LAYOUT = Object.freeze({
 const esc = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const px = (value) => `${value}px`;
 const holeClass = (inv, id) => (esHueco(inv.resolver(id) ?? { estado: "todo" }) ? " hueco" : "");
+const caption = ({ x, y, height }) => `left:${px(x)};top:${px(y - TITLE_BAR_HEIGHT)};line-height:${px(height)}`;
 const at = ({ x, y, width, height }) => `left:${px(x)};top:${px(y - TITLE_BAR_HEIGHT)}${width === undefined ? "" : `;width:${px(width)};height:${px(height)}`}`;
 
 /** The rows of the tree: each folder, expanded, then its items (a folder with nothing done in it is greyed). */
@@ -55,9 +60,9 @@ export function newDialog(inv, state) {
   const button = (key, label, box, enabled = true, isDefault = false) =>
     `<div class="pv-boton nd-button${isDefault ? " defecto" : ""}${enabled ? "" : " desactivado"}${holeClass(inv, `${PREFIX}.${key}`)}" data-id="${PREFIX}.${key}" style="${at(box)}">${label}</div>`;
   return `<div class="nd-window">
-  <div class="nd-text" style="${at(L.treeLabel)}">Create New</div>
+  <div class="nd-text" style="${caption(L.treeLabel)}">Create New</div>
   <div class="nd-tree" style="${at(L.tree)}">${tree(inv, state)}</div>
-  <div class="nd-text" style="${at(L.descriptionLabel)}">Description</div>
+  <div class="nd-text" style="${caption(L.descriptionLabel)}">Description</div>
   <div class="nd-description" style="${at(L.description)}">${esc(descriptionOf(state))}</div>
   <div class="nd-check${holeClass(inv, `${PREFIX}.add-to-project`)}" data-id="${PREFIX}.add-to-project" style="${at(L.addToProject)}"><span class="pv-casilla"></span><span>Add to project</span></div>
   ${button("ok", "OK", L.ok, acceptedCreation(state) !== null, true)}${button("cancel", "Cancel", L.cancel)}${button("help", "Help", L.help)}
