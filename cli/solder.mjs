@@ -26,6 +26,7 @@ import { formatear } from "../core/model/types.mjs";
 import { wat } from "../core/compiler/wasm-encoder.mjs";
 import { loadSolderIo } from "../native/solder-io-node/solder-io.mjs";
 import { isOviLibPath, resolveOviLibPath } from "../core/model/ovi-lib.mjs";
+import { readPolymorphic } from "../core/model/polymorphic.mjs";
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const readSchema = (name) => JSON.parse(readFileSync(path.join(AQUI, "../docs/schema", name), "utf8"));
@@ -68,7 +69,16 @@ const loadVI = (key, viCatalog) => {
     process.exit(1);
   }
 };
-const hierarchy = loadHierarchy(path.resolve(fichero), cat, { resolvePath, loadVI });
+const loadPolymorphic = (key) => {
+  try {
+    return readPolymorphic(readFileSync(key, "utf8"));
+  } catch (e) {
+    if (e.code === "ENOENT") return null;
+    console.error(`${key}: ${e.message}`);
+    process.exit(1);
+  }
+};
+const hierarchy = loadHierarchy(path.resolve(fichero), cat, { resolvePath, loadVI, loadPolymorphic });
 for (const e of hierarchy.errors) console.error(`${e.vi ?? fichero}: ${e.motivo}`);
 if (hierarchy.errors.length) process.exit(1);
 const { g, cat: rootCatalog } = hierarchy.vis.get(hierarchy.root);

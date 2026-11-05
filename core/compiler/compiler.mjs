@@ -1615,14 +1615,14 @@ function callSubVI(e, instance) {
   const code = waits ? [ins("i32.const", instance.plan), callScheduler("enter_subvi"), ins("drop")] : [];
   code.push(ins("i32.const", instance.callerCell), ins("i32.const", e.chainIndex), ins("i32.store"));
   inputs.forEach((port, i) => {
-    const slot = instance.slots.get(port.name);
+    const slot = instance.slots.get(port.calleeName ?? port.name);
     const value = e.cableada(i) ? e.entrada(i) : defaultValueCode(e, port.type, port.defaultValue);
     code.push(...storeInSlot(port.type, slot, value, e.temporal));
   });
   if (instance.direct !== null) code.push(ins("call", FIRST_COMPILED_FUNCTION + instance.direct));
   else code.push(ins("i32.const", instance.plan), callScheduler("run_plan"), ins("drop"));
   for (const port of outputs) {
-    const slot = instance.slots.get(port.name);
+    const slot = instance.slots.get(port.calleeName ?? port.name);
     if (!porReferencia(port.type)) {
       code.push(...loadFromSlot(port.type, slot));
       continue;
@@ -2228,7 +2228,8 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
   // The subVIs first, each into its own instance, before this VI claims the zero zone (DT-045).
   const calls = new Map(); // subvi node id → compiled instance
   for (const n of g.nodos.filter((x) => x.tipo === "subvi")) {
-    const callee = cat.findSubVI?.(n.config?.vi);
+    // A polymorphic OVI is called as the instance the node has chosen (DT-074 §2).
+    const callee = cat.calleeOf ? cat.calleeOf(n) : cat.findSubVI?.(n.config?.vi);
     if (!callee) return { errores: [{ nodo: n.id, motivo: `The subOVI "${n.config?.vi}" is not loaded.` }] };
     const instance = subVIInstance(callee, n, module, instanceKey);
     if (instance.errores) return { errores: instance.errores };

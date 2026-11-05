@@ -13,6 +13,7 @@
 
 import { connectorTerminals } from "./connector.mjs";
 import { LINKED_CONTROL_TYPE, isImplicit, loadProperties } from "./property-node.mjs";
+import { DIFFERENT_TYPES_MESSAGE, automaticChoice, isAutomatic, noInstanceFitsDetail, renamedByCell, selectedInstance } from "./polymorphic.mjs";
 import { DBL, ERROR, FILE_REFNUM, NUMERICOS, PATH, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, carriesUndefinedArray, isUndefinedArray, nombre, esRefnum, strictRefnum, withoutOneDimension } from "./types.mjs";
 
 /**
@@ -131,17 +132,29 @@ function withTypeOfConfig(port, nodo) {
  * it, a `subvi` node has no ports.
  */
 export function conSubVIs(cat, findSubVI) {
+  /** The OVI a `subvi` node calls: the VI, or for a polymorphic OVI the instance it calls now (DT-074); null if not loaded. */
+  const calleeOf = (nodo) => {
+    const callee = findSubVI(nodo.config?.vi);
+    if (!callee?.polymorphic) return callee ?? null;
+    return callee.instances[selectedInstance(nodo, callee.polymorphic)] ?? null;
+  };
+  /** The polymorphic OVI a node calls, as `{ key, polymorphic, instances }`, or null when it calls a plain VI. */
+  const polymorphicOf = (nodo) => {
+    const callee = nodo.tipo === "subvi" ? findSubVI(nodo.config?.vi) : null;
+    return callee?.polymorphic ? callee : null;
+  };
   const puertos = (nodo) => {
     if (nodo.tipo !== "subvi") return cat.puertos(nodo);
-    const callee = findSubVI(nodo.config?.vi);
-    return callee ? connectorPorts(callee) : { in: [], out: [] };
+    const callee = calleeOf(nodo);
+    if (!callee) return { in: [], out: [] };
+    return polymorphicOf(nodo) ? renamedByCell(connectorPorts(callee)) : connectorPorts(callee);
   };
   const puerto = (nodo, nombrePuerto, dir) => {
     const p = puertos(nodo)[dir].find((q) => q.name === nombrePuerto);
     if (!p) throw new Error(`"${nodo.tipo}" has no ${dir === "in" ? "input" : "output"} port "${nombrePuerto}"`);
     return p;
   };
-  return { ...cat, puertos, puerto, findSubVI };
+  return { ...cat, puertos, puerto, findSubVI, calleeOf, polymorphicOf };
 }
 
 const connectorPortsCache = new WeakMap();
@@ -1054,6 +1067,56 @@ function referencedControlName(g, node) {
   return source?.tipo === "control-reference" ? source.config?.link ?? undefined : undefined;
 }
 
+/**
+ * Why a wire into a polymorphic node is broken (DT-074 §5): LabVIEW's message, and what Solder adds to it. On
+ * Automatic, no instance takes what is wired: what came in and which instances there are. With an instance picked
+ * by hand, what that instance expects there. Null when the wire does not end on a polymorphic node.
+ */
+function polymorphicWireReason(g, cat, wire, outputTypes, expected) {
+  const node = nodoDe(g, wire.a.nodo);
+  const callee = cat.polymorphicOf?.(node);
+  if (!callee) return null;
+  const inputs = cat.puertos(node).in;
+  const labelOf = (portName) => inputs.find((port) => port.name === portName)?.label ?? portName;
+  if (!isAutomatic(node, callee.polymorphic)) {
+    const instance = callee.polymorphic.instances[selectedInstance(node, callee.polymorphic)];
+    return `${DIFFERENT_TYPES_MESSAGE} The instance "${instance.menuName}" expects ${nombre(expected)} at "${labelOf(wire.a.puerto)}" and the wire carries ${nombre(outputTypes.get(`${wire.de.nodo}.${wire.de.puerto}`))}.`;
+  }
+  const wired = g.cables.filter((other) => other.a.nodo === node.id && conectado(other));
+  const descriptions = wired.map((other) => `${nombre(outputTypes.get(`${other.de.nodo}.${other.de.puerto}`))} at "${labelOf(other.a.puerto)}"`);
+  return noInstanceFitsDetail(callee.polymorphic, descriptions);
+}
+
+/**
+ * Automatic (DT-074 §3): each polymorphic node on Automatic calls the instance that what is wired into it picks
+ * (core/model/polymorphic.mjs `automaticChoice`), written in its config as `selected`, as LabVIEW keeps Selected Type
+ * while Automatic is on. A node's choice changes the types it gives downstream, so it is repeated until nothing
+ * changes. Returns `g` itself when every node already calls its instance.
+ */
+export function adaptPolymorphicNodes(g, cat) {
+  const automaticNodes = g.nodos.filter((node) => {
+    const callee = cat.polymorphicOf?.(node);
+    return callee && isAutomatic(node, callee.polymorphic);
+  });
+  let adapted = g;
+  for (let pass = 0; pass <= automaticNodes.length; pass++) {
+    const resolved = tipos(adapted, cat);
+    let changed = false;
+    for (const { id } of automaticNodes) {
+      const node = nodoDe(adapted, id);
+      const callee = cat.polymorphicOf(node);
+      const instancePorts = callee.instances.map((instance) => (instance ? renamedByCell(connectorPorts(instance)) : null));
+      const wiredTypes = new Map(adapted.cables.filter((wire) => wire.a.nodo === id && conectado(wire)).map((wire) => [wire.a.puerto, resolved.salidas.get(`${wire.de.nodo}.${wire.de.puerto}`)]));
+      const choice = automaticChoice(instancePorts, wiredTypes);
+      if (choice === selectedInstance(node, callee.polymorphic)) continue;
+      adapted = fijarConfig(adapted, id, { selected: choice });
+      changed = true;
+    }
+    if (!changed) break;
+  }
+  return adapted;
+}
+
 export function tipos(g, cat) {
   const r = resolverTipos(g, cat, new Map());
   // Un shift register sin valor inicial cableado toma el tipo de lo que le entra
@@ -1165,7 +1228,7 @@ function resolverTipos(g, cat, pistas) {
     else if (puertoDestino(c)?.acepta && !graphAccepts(puertoDestino(c).acepta, desde)) roto = `This ${puertoDestino(c).acepta.replace("-", " ")} does not accept ${nombre(desde)}.`;
     else {
       const conv = conversion(desde, hacia);
-      if (!conv) roto = `Incompatible types: the terminal expects ${nombre(hacia)} and the wire carries ${nombre(desde)}.`;
+      if (!conv) roto = polymorphicWireReason(g, cat, c, salidas, hacia) ?? `Incompatible types: the terminal expects ${nombre(hacia)} and the wire carries ${nombre(desde)}.`;
       coercion = conv === "coercion";
     }
     cables.set(c.id, { tipo: desde, coercion, roto });

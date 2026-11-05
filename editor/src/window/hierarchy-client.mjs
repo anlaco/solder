@@ -7,6 +7,7 @@
 // connector of the VI it calls, and the errors that stop it from running.
 
 import { loadHierarchy } from "../../../core/model/hierarchy.mjs";
+import { readPolymorphic } from "../../../core/model/polymorphic.mjs";
 import { resolveRelative } from "../common/vi-paths.mjs";
 
 /**
@@ -30,7 +31,16 @@ export function buildHierarchy({ rootKey, rootGraph, rootText, texts, baseCatalo
       return null;
     }
   };
-  const hierarchy = loadHierarchy(rootKey, baseCatalog, { resolvePath: (callerKey, storedPath) => resolveRelative(callerKey, storedPath, oviLibRoot), loadVI });
+  const loadPolymorphic = (key) => {
+    if (!(key in texts)) return null;
+    try {
+      return readPolymorphic(texts[key]);
+    } catch (error) {
+      readErrors.push(`${key}: ${error.message}`);
+      return null;
+    }
+  };
+  const hierarchy = loadHierarchy(rootKey, baseCatalog, { resolvePath: (callerKey, storedPath) => resolveRelative(callerKey, storedPath, oviLibRoot), loadVI, loadPolymorphic });
   const errors = [...hierarchy.errors.map((error) => error.motivo), ...readErrors];
   const root = hierarchy.vis.get(rootKey);
   return { graph: root.g, catalog: root.cat, errors, keys: [...hierarchy.vis.keys()].filter((key) => key !== rootKey) };

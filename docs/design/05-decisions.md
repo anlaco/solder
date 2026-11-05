@@ -3418,8 +3418,28 @@ LabVIEW's selector and menus.**
    Configure Serial Port and (Serial Instr) is picked by hand; both behave alike on a serial port in Solder. Select VISA
    Class ▸ on the constant stays a hole with its reason.
 
+### Details fixed while building it (2026-11-05)
+
+- **The file** (`docs/schema/sdp.schema.json`, `core/model/polymorphic.mjs`): `solder-polymorphic` (version 1),
+  `instances` (`ovi`, a path relative to the `.sdp` or `<ovilib>/…`; `menu-name`, the file name when left out;
+  `selector-name`, the menu name when left out), `show-selector-by-default` (false), `adapt-to-data-type` (true),
+  `draw-icon` (`polymorphic` or `instance`) and `icon`, the 32 × 32 icon as the text of an SVG drawn anew, kept in the
+  file so that a polymorphic OVI is one file. It is drawn as an image, so nothing in it runs.
+- **The node's config:** `vi` (the `.sdp`), `instance` (null for Automatic, else the index picked), `selected` (the
+  instance Automatic picked, kept as LabVIEW keeps Selected Type while Automatic is on, so the file reads and
+  compiles without choosing again) and `selector`.
+- **Its terminals are named by connector cell** (`cell-5`): the instances share one connector, as in LabVIEW, and a
+  wire stays on its terminal when another instance is chosen whatever the instance calls its control. The compiler
+  writes the instance's own slots (`calleeName`).
+- **Automatic prefers an exact fit:** the first instance that takes every wired input as it comes, else the first
+  that takes them with a coercion, else the first, its wire broken. Measured: 2D DBL picks (DBL) though (I64) comes
+  first and would take it coerced; 1D I32 picks (I64). Only wired inputs count.
+- **The selector shows the selector name.** In both measured OVIs it equals the menu name ("Integer"; VISA's are
+  the VI names); where the two differ is **unverified**.
+
 ### How it is verified
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| The `.sdp` file, Automatic, Select Type and the selector | To write with VISA Configure Serial Port | **Not built** |
+| The `.sdp` file and its schema, the node's terminals by cell, Automatic (unwired, exact before coercion, none fits), an instance picked by hand, the broken wire's message with what came in and the instances, the call compiled as the chosen instance, the hierarchy read with the `.sdp` | `test/core/polymorphic.test.mjs` | **Verified** (2026-11-05) by test |
+| Select Type, the selector and the window | To write with steps 3 and 4 | **Not built** |

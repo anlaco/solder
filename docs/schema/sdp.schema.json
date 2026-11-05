@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solder.dev/schema/sdp-1.json",
+  "title": "Solder polymorphic OVI",
+  "description": "A polymorphic OVI (DT-074): the OVIs it groups, its instances, in order, and how a node that calls it looks and picks one. Normative: a .sdp file that does not validate against this schema is not conformant. Read and written by core/model/polymorphic.mjs.",
+  "type": "object",
+  "required": ["solder-polymorphic", "instances"],
+  "additionalProperties": false,
+  "properties": {
+    "solder-polymorphic": {
+      "description": "The version of the format. A reader MUST refuse a version newer than the one it knows.",
+      "type": "integer",
+      "const": 1
+    },
+    "instances": {
+      "description": "The instances in order, as the Polymorphic OVI window lists them: Automatic tries them in this order, Select Type ▸ lists them in it, and the first is the one an unwired node calls.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["ovi"],
+        "additionalProperties": false,
+        "properties": {
+          "ovi": {
+            "description": "The instance's OVI: a path relative to the .sdp, an absolute one, or a symbolic <ovilib>/… path (DT-073).",
+            "type": "string",
+            "minLength": 1
+          },
+          "menu-name": {
+            "description": "Its name in Select Type ▸ (LabVIEW's Menu Name). Left out, the OVI's file name without its extension.",
+            "type": "string"
+          },
+          "selector-name": {
+            "description": "The text of the Polymorphic VI Selector ring when this instance is called (LabVIEW's Selector Name). Left out, the menu name.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "show-selector-by-default": {
+      "description": "Show Selector by Default: a node placed from this polymorphic OVI shows its selector. Off by default (measured).",
+      "type": "boolean",
+      "default": false
+    },
+    "adapt-to-data-type": {
+      "description": "Allow Polymorphic OVI to Adapt to Data Type: whether Automatic is offered. On by default (measured).",
+      "type": "boolean",
+      "default": true
+    },
+    "draw-icon": {
+      "description": "Draw Polymorphic VI Icon (polymorphic) or Draw Instance VI Icon (instance): which icon a node draws.",
+      "enum": ["polymorphic", "instance"],
+      "default": "polymorphic"
+    },
+    "icon": {
+      "description": "The polymorphic OVI's own 32 × 32 icon, as the text of an SVG document drawn anew for Solder (rule 3). Left out, a generic polymorphic icon.",
+      "type": "string"
+    }
+  }
+}

@@ -10,6 +10,7 @@
 // rebase leaves alone: it does not depend on where the caller is.
 
 import { isOviLibPath, oviLibPathFor, resolveOviLibPath } from "../../../core/model/ovi-lib.mjs";
+import { isPolymorphicPath } from "../../../core/model/polymorphic.mjs";
 
 const WINDOWS_DRIVE = /^[A-Za-z]:\//;
 
@@ -192,7 +193,9 @@ export async function readHierarchyTexts(rootKey, rootText, readText, oviLibRoot
     } catch {
       continue;
     }
-    for (const stored of subVIPathsInFile(file)) {
+    // A polymorphic OVI (DT-074) reaches its instances, each stored relative to the `.sdp`.
+    const reached = isPolymorphicPath(key) ? (Array.isArray(file.instances) ? file.instances.map((instance) => instance?.ovi).filter((path) => typeof path === "string") : []) : subVIPathsInFile(file);
+    for (const stored of reached) {
       const calleeKey = resolveRelative(key, stored, oviLibRoot);
       if (visited.has(calleeKey)) continue;
       visited.add(calleeKey);
