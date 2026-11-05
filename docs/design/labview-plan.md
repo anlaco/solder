@@ -23,7 +23,8 @@ When the developer says "keep going":
    when green), and until 1.0 every beta is released from `main`: a feature raises MINOR, a
    fix raises PATCH (DT-062, which replaced the release branches of DT-057 on 2026-10-23).
    When closing a step: tests green (`npm test`), mark it here with
-   the date and update §2. Commit only when asked, without co-authorship.
+   the date, update §2, and tick what it brought in [`coverage.md`](coverage.md)
+   (then `node scripts/coverage.mjs`). Commit only when asked, without co-authorship.
 4. If the step needs a decision that is not written down, propose it and ask
    before going on: decisions are not made halfway through.
 
