@@ -2,59 +2,72 @@
 // indicator occupies, and how its terminal must be wired (DT-045, spec/02 §4.5).
 //
 // Pure functions over the graph. The connector lives in `g.vi.connector`, the
-// same object the `.qvi` stores; a terminal is the name of a panel element or
-// `{ name, cell, connection }`. Only LabVIEW's default pattern, 4-2-2-4, exists
-// so far (measured in labview-captures/subvi/connector-assigned-zoom8x.png).
+// same object the `.sdg` stores: its LabVIEW pattern number and its terminals,
+// each the name of a panel element or `{ name, cell, connection }`. A cell is
+// LabVIEW's connector index in that pattern (DT-075, core/model/connector-patterns.mjs).
 
-export const CONNECTOR_PATTERN = "4-2-2-4";
-export const CELL_COUNT = 12;
-/** The pane is a square of this side; its cells are multiples of CELL_UNIT. */
+import { DEFAULT_PATTERN, patternNumbered } from "./connector-patterns.mjs";
+
+export { DEFAULT_PATTERN };
+/** The pane is a square of this side. */
 export const PANE_SIZE = 32;
-const CELL_UNIT = 8;
 
 export const CONNECTIONS = ["required", "recommended", "optional"];
 /** A terminal that has just been assigned is Recommended (connector-menu.png, "This Connection Is"). */
 export const DEFAULT_CONNECTION = "recommended";
 
-const LEFT_COLUMN = [0, 1, 2, 3];
-const RIGHT_COLUMN = [8, 9, 10, 11];
-const MIDDLE_TOP = { 4: 8, 6: 16 };
-const MIDDLE_BOTTOM = { 5: 8, 7: 16 };
+/** The pattern a connector uses: the one it names, else LabVIEW's default. */
+export const connectorPattern = (connector) => connector?.pattern ?? DEFAULT_PATTERN;
 
-/** Where a cell is inside the pane, in pane pixels. Left and right columns have four cells; the middle ones, two tall cells each. */
-export function cellRect(cell) {
-  if (LEFT_COLUMN.includes(cell)) return { x: 0, y: cell * CELL_UNIT, width: CELL_UNIT, height: CELL_UNIT };
-  if (RIGHT_COLUMN.includes(cell)) return { x: PANE_SIZE - CELL_UNIT, y: (cell - 8) * CELL_UNIT, width: CELL_UNIT, height: CELL_UNIT };
-  const half = PANE_SIZE / 2;
-  if (cell in MIDDLE_TOP) return { x: MIDDLE_TOP[cell], y: 0, width: CELL_UNIT, height: half };
-  if (cell in MIDDLE_BOTTOM) return { x: MIDDLE_BOTTOM[cell], y: half, width: CELL_UNIT, height: half };
-  throw new Error(`The pattern ${CONNECTOR_PATTERN} has no cell ${cell}`);
+/** The pattern of a VI's connector pane. */
+export const patternOf = (g) => connectorPattern(g.vi?.connector);
+
+/** How many terminals a pattern has. */
+export const cellCount = (pattern = DEFAULT_PATTERN) => patternNumbered(pattern).terminals.length;
+
+/** Where a cell (a connector index) is inside the pane, in pane pixels. */
+export function cellRect(cell, pattern = DEFAULT_PATTERN) {
+  const rect = patternNumbered(pattern)?.terminals[cell];
+  if (!rect) throw new Error(`The pattern ${pattern} has no cell ${cell}`);
+  return rect;
 }
 
 /** The cell under a point of the pane, or `null` outside it. */
-export function cellAt(point) {
-  for (let cell = 0; cell < CELL_COUNT; cell++) {
-    const { x, y, width, height } = cellRect(cell);
-    if (point.x >= x && point.x < x + width && point.y >= y && point.y < y + height) return cell;
-  }
-  return null;
+export function cellAt(point, pattern = DEFAULT_PATTERN) {
+  const index = patternNumbered(pattern).terminals.findIndex(({ x, y, width, height }) => point.x >= x && point.x < x + width && point.y >= y && point.y < y + height);
+  return index < 0 ? null : index;
 }
 
 /**
  * Where the terminal of a cell sits on the edge of a subVI node, which is the
- * 32 × 32 icon: left and right cells on their own edge, the middle ones on the
- * top or bottom edge, at the centre of their column. The edge for the middle
- * cells is unverified (not measured in LabVIEW).
+ * 32 × 32 icon: a cell on the left or right edge on that edge, at its middle;
+ * a middle cell on the top or bottom edge, at the centre of its column. The
+ * edge for the middle cells, and the left edge for a cell as wide as the pane,
+ * are unverified (not measured in LabVIEW).
  */
-export function cellAnchor(cell) {
-  const { x, y, width, height } = cellRect(cell);
-  if (LEFT_COLUMN.includes(cell)) return { side: "left", x: 0, y: y + height / 2 };
-  if (RIGHT_COLUMN.includes(cell)) return { side: "right", x: PANE_SIZE, y: y + height / 2 };
-  return { side: cell in MIDDLE_TOP ? "top" : "bottom", x: x + width / 2, y: cell in MIDDLE_TOP ? 0 : PANE_SIZE };
+export function cellAnchor(cell, pattern = DEFAULT_PATTERN) {
+  const { x, y, width, height } = cellRect(cell, pattern);
+  const touchesLeft = x === 0;
+  const touchesRight = x + width === PANE_SIZE;
+  if (touchesLeft) return { side: "left", x: 0, y: y + height / 2 };
+  if (touchesRight) return { side: "right", x: PANE_SIZE, y: y + height / 2 };
+  return { side: y === 0 ? "top" : "bottom", x: x + width / 2, y: y === 0 ? 0 : PANE_SIZE };
 }
 
-const INPUT_CELL_ORDER = [0, 1, 2, 3, 4, 5, 6, 7];
-const OUTPUT_CELL_ORDER = [8, 9, 10, 11, 7, 6, 5, 4];
+/**
+ * The cells a terminal with no cell takes, in order (a `.sdg` written by hand): inputs from the left column down,
+ * outputs from the right column down. That default is ours, not LabVIEW's. For 4-2-2-4 it is the order Solder has
+ * always used; for any other pattern, cells sorted from the left (inputs) or from the right (outputs), then down.
+ */
+const DEFAULT_PATTERN_INPUT_ORDER = [11, 10, 9, 8, 7, 6, 5, 4];
+const DEFAULT_PATTERN_OUTPUT_ORDER = [3, 2, 1, 0, 4, 5, 6, 7];
+
+function defaultCellOrder(pattern, dir) {
+  if (pattern === DEFAULT_PATTERN) return dir === "in" ? DEFAULT_PATTERN_INPUT_ORDER : DEFAULT_PATTERN_OUTPUT_ORDER;
+  const cells = patternNumbered(pattern).terminals.map((rect, cell) => ({ ...rect, cell }));
+  const fromTheSide = dir === "in" ? (a, b) => a.x - b.x : (a, b) => b.x + b.width - (a.x + a.width);
+  return cells.sort((a, b) => fromTheSide(a, b) || a.y - b.y).map(({ cell }) => cell);
+}
 
 const asTerminal = (entry) => (typeof entry === "string" ? { name: entry } : entry);
 
@@ -65,6 +78,7 @@ const asTerminal = (entry) => (typeof entry === "string" ? { name: entry } : ent
  * That default is ours, not LabVIEW's.
  */
 export function connectorTerminals(connector) {
+  const pattern = connectorPattern(connector);
   const terminals = [];
   const taken = new Set();
   const all = [
@@ -73,7 +87,7 @@ export function connectorTerminals(connector) {
   ];
   for (const terminal of all) if (terminal.cell !== undefined) taken.add(terminal.cell);
   for (const terminal of all) {
-    const order = terminal.dir === "in" ? INPUT_CELL_ORDER : OUTPUT_CELL_ORDER;
+    const order = defaultCellOrder(pattern, terminal.dir);
     const cell = terminal.cell ?? order.find((candidate) => !taken.has(candidate));
     taken.add(cell);
     terminals.push({ name: terminal.name, dir: terminal.dir, cell, connection: terminal.connection ?? DEFAULT_CONNECTION });
@@ -93,9 +107,11 @@ function withTerminals(g, terminals) {
   const sorted = [...terminals].sort((a, b) => a.cell - b.cell);
   const inputs = sorted.filter((t) => t.dir === "in").map(entry);
   const outputs = sorted.filter((t) => t.dir === "out").map(entry);
+  const pattern = patternOf(g);
   const { connector: _removed, ...rest } = g.vi ?? {};
-  if (!terminals.length) return { ...g, vi: Object.keys(rest).length ? rest : undefined };
-  return { ...g, vi: { ...rest, connector: { pattern: CONNECTOR_PATTERN, inputs, outputs } } };
+  // A pane with nothing connected keeps a pattern of its own, as LabVIEW does; the default one needs no connector.
+  if (!terminals.length && pattern === DEFAULT_PATTERN) return { ...g, vi: Object.keys(rest).length ? rest : undefined };
+  return { ...g, vi: { ...rest, connector: { pattern, inputs, outputs } } };
 }
 
 /**

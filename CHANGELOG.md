@@ -9,6 +9,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Connector panes know LabVIEW's 36 patterns, numbered as LabVIEW numbers them (DT-075): an OVI's pane and its subOVI
+  node follow its own pattern. The `.sdg` format goes to version 2 (a terminal's cell is LabVIEW's connector index);
+  files of version 1 open as before, migrated. Choosing another pattern is not built yet.
+- ovi.lib, Solder's own library of OVIs (DT-073): a subOVI can be named by a symbolic `<ovilib>/…` path.
 - Polymorphic OVIs in the editor (DT-074): Select an OVI... takes a `.sdp`; its node shows the polymorphic OVI's icon, an
   optional selector ring (Visible Items), a menu with Select Type ▸ and Automatic that follows what is wired, and opens
   the instance it calls. The Polymorphic OVI window is not built yet.

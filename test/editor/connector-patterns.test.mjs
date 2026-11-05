@@ -11,7 +11,7 @@ import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
 import * as ED from "../../editor/src/block-diagram/diagram-editing.mjs";
 import * as P from "../../editor/src/front-panel/front-panel.mjs";
 import { cellRect } from "../../core/model/connector.mjs";
-import { CONNECTOR_PATTERNS, gridPosition, patternNamed } from "../../core/model/connector-patterns.mjs";
+import { CONNECTOR_PATTERNS, gridPosition, patternNamed, patternNumbered } from "../../core/model/connector-patterns.mjs";
 import { INV } from "../helpers.mjs";
 
 const PATTERNS_ROW = `${CP.MENU_ROOT}.patterns`;
@@ -47,7 +47,25 @@ test("the cells of every pattern tile its 32 × 32 thumbnail and those of 4-2-2-
   // The pane of 4-2-2-4 has its cells at multiples of 8 (cellRect): the thumbnail's lines are at the same places.
   const lines = new Set(patternNamed("4-2-2-4").cells.flatMap((cell) => [cell.left, cell.right]));
   assert.deepEqual([...lines].sort((a, b) => a - b), [0, 8, 16, 24, 31]);
-  assert.equal(cellRect(4).x, 8);
+  assert.equal(cellRect(7).x, 8, "LabVIEW's index 7 is the top of the left middle column");
+});
+
+// DT-075: the table of NI's Connector Pane Pattern Reference.vi (reports/2026-11-05-connector-4833.md).
+test("each pattern's terminals, by LabVIEW's connector index, cover its 32 × 32 pane once, and the known ones sit where measured", () => {
+  for (const pattern of CONNECTOR_PATTERNS) {
+    const covered = new Map();
+    pattern.terminals.forEach(({ x, y, width, height }, index) => {
+      for (let column = x; column < x + width; column++) for (let row = y; row < y + height; row++) covered.set(`${column},${row}`, (covered.get(`${column},${row}`) ?? 0) + 1);
+    });
+    assert.equal(covered.size, 32 * 32, `${pattern.number} covers the pane`);
+    assert.ok([...covered.values()].every((count) => count === 1), `${pattern.number}'s terminals do not overlap`);
+  }
+  assert.deepEqual(CONNECTOR_PATTERNS.map((pattern) => pattern.number).slice(30), [4814, 4829, 4815, 4833, 4834, 4835], "the last row of the grid");
+  const p4833 = patternNumbered(4833).terminals.map(({ x, y }) => [x, y]);
+  assert.deepEqual([0, 5, 7, 9, 11].map((index) => p4833[index]), [[0, 0], [0, 7], [0, 13], [0, 19], [0, 25]], "4833's left column, top to bottom");
+  assert.deepEqual([1, 2, 3].map((index) => p4833[index]), [[7, 0], [13, 0], [19, 0]], "its top middle cells");
+  assert.deepEqual([12, 13, 14].map((index) => p4833[index]), [[7, 16], [13, 16], [19, 16]], "its bottom middle cells");
+  assert.deepEqual([4, 6, 8, 10, 15].map((index) => p4833[index]), [[25, 0], [25, 7], [25, 13], [25, 19], [25, 25]], "its right column, top to bottom");
 });
 
 test("the Patterns row opens a 6 by 6 grid of 36 thumbnails and only 4-2-2-4 can be chosen", () => {
@@ -72,7 +90,7 @@ test("the Patterns row opens a 6 by 6 grid of 36 thumbnails and only 4-2-2-4 can
   assert.deepEqual(cells.filter((cell) => !cell[1].includes("hueco")).map((cell) => cell[2]), [CURRENT_ID], "the other 35 are greyed");
 
   // Choosing the current one closes the menu and changes nothing; a greyed one does nothing.
-  const chosen = ED.orden(panel, CP.CURRENT_PATTERN_ROW, {});
+  const chosen = ED.orden(panel, CP.currentPatternRow(panel.g), {});
   assert.equal(chosen.menu, null);
   assert.equal(chosen.g, panel.g);
   const other = ED.orden(panel, `${PATTERNS_ROW}.pattern-01`, {});

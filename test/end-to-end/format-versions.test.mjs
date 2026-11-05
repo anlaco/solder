@@ -1,4 +1,4 @@
-// The .sdg format is frozen as version 1 from 0.4.0-beta on (DT-055, spec/02 §4.1): every file a
+// The .sdg format is frozen from 0.4.0-beta on (DT-055, spec/02 §4.1; version 2 since DT-075): every file a
 // released Solder saved still opens. test/fixtures/released/<version>/ keeps the example VIs as each
 // release saved them; each top-level VI must load with its subVIs and compile, and a newer format
 // version must be refused, not read halfway.
@@ -42,4 +42,22 @@ test("a file of a newer format version is refused, and an older one is migrated 
   assert.throws(() => leer(newer, CAT), ErrorQvi);
   const steps = [(vi) => ({ ...vi, solder: 2, first: true }), (vi) => ({ ...vi, solder: 3, second: vi.first })];
   assert.deepEqual(migrar({ solder: 1 }, steps, 3), { solder: 3, first: true, second: true });
+});
+
+// DT-075: version 2 numbers a connector's cells by LabVIEW's connector index and names the pattern by its number.
+test("a version 1 connector is migrated to LabVIEW's indices of 4-2-2-4, and its terminals stay where they were drawn", async () => {
+  const { cellRect } = await import("../../core/model/connector.mjs");
+  const OLD_4_2_2_4_RECTS = { 1: { x: 0, y: 8 }, 9: { x: 24, y: 8 } };
+  const text = readFileSync(path.join(RELEASED, "0.4.0-beta", "temperature-monitor", "Read Sensor.sdg"), "utf8");
+  const original = JSON.parse(text);
+  assert.equal(original.solder, 1);
+  assert.deepEqual([original.connector.inputs[0].cell, original.connector.outputs[0].cell], [1, 9]);
+  const migrated = migrar(original);
+  assert.equal(migrated.connector.pattern, 4815);
+  assert.deepEqual([migrated.connector.inputs[0].cell, migrated.connector.outputs[0].cell], [10, 2], "Solder's cell n is LabVIEW's 11 − n");
+  for (const [oldCell, newCell] of [[1, 10], [9, 2]]) {
+    const { x, y } = cellRect(newCell, 4815);
+    assert.deepEqual({ x, y }, OLD_4_2_2_4_RECTS[oldCell], `cell ${oldCell} of version 1 is the same place as LabVIEW's ${newCell}`);
+  }
+  assert.throws(() => migrar({ solder: 1, connector: { pattern: "5-3-3-5", inputs: [], outputs: [] } }), ErrorQvi);
 });

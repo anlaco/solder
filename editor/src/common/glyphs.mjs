@@ -3,9 +3,9 @@
 // Se calca dónde está cada botón y qué hace, no su dibujo (DT-035 §1): los
 // iconos de LabVIEW son de NI. Cada glifo se dibuja en una rejilla de 16 × 16.
 
-import { cellRect } from "../../../core/model/connector.mjs";
+import { DEFAULT_PATTERN, cellRect } from "../../../core/model/connector.mjs";
 import { FILE_NODE_SIZE } from "../block-diagram/file-nodes.mjs";
-import { CONNECTOR_PATTERNS } from "../../../core/model/connector-patterns.mjs";
+import { CONNECTOR_PATTERNS, patternNumbered } from "../../../core/model/connector-patterns.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
 
 const INK = "var(--ink)";
@@ -192,27 +192,28 @@ export function flechasDobles(haciaArriba) {
 }
 
 /**
- * The connector pane with the pattern 4-2-2-4 (spec/06-visual.md §3.2), 32 × 32
- * px with its grid lines every 8 px. `terminals`: `{ cell, dir, color }` for
+ * The connector pane with its pattern (spec/06-visual.md §3.2; DT-075), 32 × 32
+ * px with a line between its cells. `terminals`: `{ cell, dir, color }` for
  * each assigned cell: an input fills its cell with the colour of its type; an
  * output is a black cell with a smaller square of that colour
  * (labview-captures/subvi/connector-assigned-zoom8x.png). `selectedCell` is the
  * cell waiting for a control or an indicator to be clicked: how LabVIEW marks
  * it was not captured, so it is drawn with a blue frame of our own.
  */
-export function conectorPane(terminals = [], selectedCell = null) {
+export function conectorPane(terminals = [], selectedCell = null, pattern = DEFAULT_PATTERN) {
   let c = lleno(0, 0, 32, 32, PAPER);
   for (const { cell, dir, color } of terminals) {
-    const { x, y, width, height } = cellRect(cell);
+    const { x, y, width, height } = cellRect(cell, pattern);
     c += dir === "in" ? lleno(x, y, x + width, y + height, color) : lleno(x, y, x + width, y + height, INK) + lleno(x + 2, y + 2, x + width - 2, y + height - 2, color);
   }
   c += caja(0.5, 0.5, 31.5, 31.5, "none", 1);
-  for (let i = 1; i < 4; i++) c += linea(i * 8, 0, i * 8, 32, 1);
-  [4, 2, 2, 4].forEach((filas, i) => {
-    for (let k = 1; k < filas; k++) c += linea(i * 8, (32 * k) / filas, i * 8 + 8, (32 * k) / filas, 1);
-  });
+  // Each cell draws its right and bottom edges inside the pane; the frame draws the rest.
+  for (const { x, y, width, height } of patternNumbered(pattern).terminals) {
+    if (x + width < 32) c += linea(x + width, y, x + width, y + height, 1);
+    if (y + height < 32) c += linea(x, y + height, x + width, y + height, 1);
+  }
   if (selectedCell !== null) {
-    const { x, y, width, height } = cellRect(selectedCell);
+    const { x, y, width, height } = cellRect(selectedCell, pattern);
     c += caja(x + 1, y + 1, x + width - 1, y + height - 1, "none", 1.5, CONNECTOR_SELECTED_CELL);
   }
   return svg(c, "0 0 32 32");

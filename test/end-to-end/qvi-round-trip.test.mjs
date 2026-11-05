@@ -118,7 +118,7 @@ test("un vi vacío se guarda y se abre", () => {
 });
 
 test("lo que no se sabe leer se rechaza con el motivo", () => {
-  assert.throws(() => leer({ solder: 2, "block-diagram": {} }, CAT), ErrorQvi);
+  assert.throws(() => leer({ solder: 3, "block-diagram": {} }, CAT), ErrorQvi);
   assert.throws(() => leer({ solder: 1, "block-diagram": { nodes: [{ name: "a", type: "no-existe" }] } }, CAT), /is not in the catalog/);
   assert.throws(() => leer({ solder: 1, "block-diagram": { structures: [{ name: "s", kind: "timed-loop" }] } }, CAT), /cannot be read yet/);
   const malCable = { solder: 1, "block-diagram": { nodes: [{ name: "s", type: "add" }], wires: [{ from: "s.result", to: "s.nada" }] } };
@@ -314,7 +314,7 @@ test("a hierarchy with a subVI is saved, validated and read back through its rel
   sub = r.g;
   for (const [a, pa, b, pb] of [[x, "result", r.id, "a"], [x, "result", r.id, "b"], [r.id, "result", doble, "value"]]) sub = Gr.conectar(sub, CAT, { nodo: a, puerto: pa, dir: "out" }, { nodo: b, puerto: pb, dir: "in" }).g;
   const nameOf = (id) => sub.nodos.find((n) => n.id === id).name;
-  sub = { ...sub, vi: { connector: { pattern: "4-2-2-4", inputs: [{ name: nameOf(x), cell: 0, connection: "required" }], outputs: [{ name: nameOf(doble), cell: 8, connection: "recommended" }] }, execution: { reentrancy: "preallocated" } } };
+  sub = { ...sub, vi: { connector: { pattern: 4815, inputs: [{ name: nameOf(x), cell: 11, connection: "required" }], outputs: [{ name: nameOf(doble), cell: 3, connection: "recommended" }] }, execution: { reentrancy: "preallocated" } } };
   const subText = aTexto(sub, CAT);
   assert.ok(validar(JSON.parse(subText)), errores());
 

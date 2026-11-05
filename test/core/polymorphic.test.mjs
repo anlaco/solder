@@ -26,7 +26,7 @@ const SDP_TEXT = Poly.writePolymorphic({
   ],
 });
 
-/** An instance: `x` (of `type`) into `step`, out to `result`; x in cell 0, result in cell 9 of both. */
+/** An instance: `x` (of `type`) into `step`, out to `result`; x in cell 9 (left edge), result in cell 2 (right edge), LabVIEW's indices of 4-2-2-4 of both. */
 const instance = (type, step) =>
   buildVI(CAT, (b) => {
     b.node("x", "control", { type });
@@ -34,7 +34,7 @@ const instance = (type, step) =>
     b.node("result", "indicator", { type });
     b.wire("x.result", "step.x");
     b.wire("step.result", "result.value");
-    b.connector([{ name: "x", cell: 0 }], [{ name: "result", cell: 9 }]);
+    b.connector([{ name: "x", cell: 9 }], [{ name: "result", cell: 2 }]);
   });
 // Integer adds one, Double takes one away: which one ran shows in the result.
 const FILES = { "/lib/Step (I64).sdg": instance("i64", "increment"), "/lib/Step (DBL).sdg": instance("number", "decrement") };
@@ -82,8 +82,8 @@ test("unwired, the node is on Automatic and calls the first instance, with its t
   assert.equal(node.config.instance, null);
   assert.equal(node.config.selected, 0);
   const ports = vi.cat.puertos(node);
-  assert.deepEqual(ports.in.map((port) => [port.name, port.type, port.calleeName]), [["cell-0", "i64", "control_1"]]);
-  assert.deepEqual(ports.out.map((port) => [port.name, port.type]), [["cell-9", "i64"]]);
+  assert.deepEqual(ports.in.map((port) => [port.name, port.type, port.calleeName]), [["cell-9", "i64", "control_1"]]);
+  assert.deepEqual(ports.out.map((port) => [port.name, port.type]), [["cell-2", "i64"]]);
   assert.equal(vi.cat.calleeOf(node), vi.cat.polymorphicOf(node).instances[0]);
 });
 
@@ -99,8 +99,8 @@ const wiredWith = (type) =>
     b.node("in", "control", { type });
     b.node("call", "subvi", CALL);
     b.node("shown", "indicator");
-    b.wire("in.result", "call.cell-0");
-    b.wire("call.cell-9", "shown.value");
+    b.wire("in.result", "call.cell-9");
+    b.wire("call.cell-2", "shown.value");
   });
 
 test("Automatic: I32 picks Integer, the first that takes it, and the call runs that instance", async () => {
@@ -132,8 +132,8 @@ test("an instance picked by hand stays, and a wire it does not take breaks with 
     b.node("in", "control", { type: "i32" });
     b.node("call", "subvi", { ...CALL, instance: 1 });
     b.node("shown", "indicator");
-    b.wire("in.result", "call.cell-0");
-    b.wire("call.cell-9", "shown.value");
+    b.wire("in.result", "call.cell-9");
+    b.wire("call.cell-2", "shown.value");
   });
   assert.deepEqual(picked.cat.puertos(callNode(picked)).in.map((port) => port.type), ["number"], "Double, though Automatic would pick Integer");
   assert.equal(await runResult(picked, { in: 3 }), 2);
@@ -141,7 +141,7 @@ test("an instance picked by hand stays, and a wire it does not take breaks with 
   const broken = callerOf((b) => {
     b.node("in", "str-control");
     b.node("call", "subvi", { ...CALL, instance: 0 });
-    b.wire("in.result", "call.cell-0");
+    b.wire("in.result", "call.cell-9");
   });
   const wire = broken.g.cables[0];
   assert.match(Gr.tipos(broken.g, broken.cat).cables.get(wire.id).roto, /^You have connected two terminals of different types\. The instance "Integer" expects .* and the wire carries string/);

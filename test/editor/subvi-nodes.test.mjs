@@ -19,11 +19,11 @@ import { CAT, INV, buildAdder } from "../helpers.mjs";
 const CALLER = "/vis/main.qvi";
 const ADDER = "/vis/lib/add2.qvi";
 
-/** The adder with `x` in cell 0, `y` in cell 2 and `sum` in cell 9, as text. */
+/** The adder with `x` in cell 11, `y` in cell 9 and `sum` in cell 2 (LabVIEW's indices of 4-2-2-4), as text. */
 function adderText(connectionOfX) {
   const { g, ids } = buildAdder();
   let withConnector = g;
-  for (const [id, cell] of [[ids.x, 0], [ids.y, 2], [ids.sum, 9]]) withConnector = assignPanelElement(withConnector, CAT, id, cell);
+  for (const [id, cell] of [[ids.x, 11], [ids.y, 9], [ids.sum, 2]]) withConnector = assignPanelElement(withConnector, CAT, id, cell);
   if (connectionOfX) withConnector = { ...withConnector, vi: { ...withConnector.vi, connector: { ...withConnector.vi.connector, inputs: withConnector.vi.connector.inputs.map((t, i) => (i === 0 ? { ...t, connection: connectionOfX } : t)) } } };
   return Q.aTexto(withConnector, CAT);
 }
@@ -47,7 +47,7 @@ test("a subVI node has the ports of the connector of the VI it calls, on the edg
   assert.deepEqual([box.ancho, box.alto], [32, 32], "the node is the 32 × 32 icon");
   const ports = Object.fromEntries(D.terminales(node, ctx).map((t) => [t.puerto, t]));
   assert.deepEqual(Object.keys(ports).sort(), ["control_1", "control_2", "indicator_1"], "named after the panel elements");
-  // x on cell 0 and y on cell 2, on the left edge; sum on cell 9, on the right edge, 8 px apart as the cells are.
+  // x on cell 11 and y on cell 9, on the left edge; sum on cell 2, on the right edge, 8 px apart as the cells are.
   assert.deepEqual([ports.control_1.x, ports.control_1.y], [100, 64]);
   assert.deepEqual([ports.control_2.x, ports.control_2.y], [100, 80]);
   assert.deepEqual([ports.indicator_1.x, ports.indicator_1.y], [132, 72]);

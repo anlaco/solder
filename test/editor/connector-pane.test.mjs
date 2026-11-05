@@ -16,29 +16,30 @@ import { CAT, INV, buildAdder } from "../helpers.mjs";
 
 const filas = (raiz) => INV.hijos(raiz).map((e) => `${e.etiqueta}${e.separado ? " |" : ""}`);
 
-/** The Front Panel state of the adder, with `x` in cell 0, `y` in cell 1 and `sum` in cell 8, as in connector-assigned-zoom8x.png. */
+/** The Front Panel state of the adder, with `x` in cell 11, `y` in cell 10 and `sum` in cell 3 (LabVIEW's indices), as in connector-assigned-zoom8x.png. */
 function connectedAdder() {
   const { g, ids } = buildAdder();
   let panel = P.inicial(g);
-  for (const [id, cell] of [[ids.x, 0], [ids.y, 1], [ids.sum, 8]]) {
+  for (const [id, cell] of [[ids.x, 11], [ids.y, 10], [ids.sum, 3]]) {
     panel = CP.selectCell(panel, cell);
     panel = CP.assignClicked(panel, CAT, id);
   }
   return { panel, ids };
 }
 
-test("the cells of the pattern 4-2-2-4 are the ones of the capture", () => {
-  assert.deepEqual(cellRect(0), { x: 0, y: 0, width: 8, height: 8 });
-  assert.deepEqual(cellRect(3), { x: 0, y: 24, width: 8, height: 8 });
-  assert.deepEqual(cellRect(4), { x: 8, y: 0, width: 8, height: 16 }, "the middle columns have two tall cells");
-  assert.deepEqual(cellRect(7), { x: 16, y: 16, width: 8, height: 16 });
-  assert.deepEqual(cellRect(11), { x: 24, y: 24, width: 8, height: 8 });
-  assert.equal(cellAt({ x: 4, y: 12 }), 1);
-  assert.equal(cellAt({ x: 12, y: 20 }), 5);
-  assert.equal(cellAt({ x: 28, y: 30 }), 11);
+// LabVIEW numbers 4-2-2-4 (4815) from the bottom right, up each column, right to left (reports/2026-11-05-connector-4833.md).
+test("the cells of the pattern 4-2-2-4 are the ones of the capture, numbered by LabVIEW's connector index", () => {
+  assert.deepEqual(cellRect(11), { x: 0, y: 0, width: 8, height: 8 }, "the top of the left column");
+  assert.deepEqual(cellRect(8), { x: 0, y: 24, width: 8, height: 8 });
+  assert.deepEqual(cellRect(7), { x: 8, y: 0, width: 8, height: 16 }, "the middle columns have two tall cells");
+  assert.deepEqual(cellRect(4), { x: 16, y: 16, width: 8, height: 16 });
+  assert.deepEqual(cellRect(0), { x: 24, y: 24, width: 8, height: 8 }, "index 0 is the bottom of the right column");
+  assert.equal(cellAt({ x: 4, y: 12 }), 10);
+  assert.equal(cellAt({ x: 12, y: 20 }), 6);
+  assert.equal(cellAt({ x: 28, y: 30 }), 0);
   assert.equal(cellAt({ x: 40, y: 4 }), null);
-  assert.deepEqual(cellAnchor(2), { side: "left", x: 0, y: 20 });
-  assert.deepEqual(cellAnchor(9), { side: "right", x: 32, y: 12 });
+  assert.deepEqual(cellAnchor(9), { side: "left", x: 0, y: 20 });
+  assert.deepEqual(cellAnchor(2), { side: "right", x: 32, y: 12 });
 });
 
 test("assigning a control and an indicator to cells writes the connector with its pattern cells and connections", () => {
@@ -47,21 +48,21 @@ test("assigning a control and an indicator to cells writes the connector with it
   const file = Q.escribir(panel.g, CAT);
   const nameOf = (id) => panel.g.nodos.find((n) => n.id === id).name;
   assert.deepEqual(file.connector, {
-    pattern: "4-2-2-4",
-    inputs: [{ name: nameOf(ids.x), cell: 0 }, { name: nameOf(ids.y), cell: 1 }],
-    outputs: [{ name: nameOf(ids.sum), cell: 8 }],
+    pattern: 4815,
+    inputs: [{ name: nameOf(ids.y), cell: 10 }, { name: nameOf(ids.x), cell: 11 }],
+    outputs: [{ name: nameOf(ids.sum), cell: 3 }],
   }, "a new terminal is Recommended, which is not written");
 
   // The file reads back the same and its ports sit on the cells (DT-045).
   const back = Q.leer(JSON.stringify(file), CAT);
-  assert.deepEqual(connectorTerminals(back.vi.connector).map((t) => [t.dir, t.cell, t.connection]), [["in", 0, "recommended"], ["in", 1, "recommended"], ["out", 8, "recommended"]]);
+  assert.deepEqual(connectorTerminals(back.vi.connector).map((t) => [t.dir, t.cell, t.connection]), [["in", 10, "recommended"], ["in", 11, "recommended"], ["out", 3, "recommended"]]);
 
   // Clicking an element that is already assigned moves it; clicking a cell that has one takes it over.
-  const moved = assignPanelElement(panel.g, CAT, ids.x, 3);
-  assert.deepEqual(connectorTerminals(moved.vi.connector).map((t) => [t.name === nameOf(ids.x), t.cell]).filter(([isX]) => isX), [[true, 3]]);
-  const taken = assignPanelElement(panel.g, CAT, ids.y, 0);
-  assert.deepEqual(connectorTerminals(taken.vi.connector).filter((t) => t.cell === 0).map((t) => t.name), [nameOf(ids.y)]);
-  assert.equal(connectorTerminals(taken.vi.connector).length, 2, "x lost its cell and y left cell 1");
+  const moved = assignPanelElement(panel.g, CAT, ids.x, 8);
+  assert.deepEqual(connectorTerminals(moved.vi.connector).map((t) => [t.name === nameOf(ids.x), t.cell]).filter(([isX]) => isX), [[true, 8]]);
+  const taken = assignPanelElement(panel.g, CAT, ids.y, 11);
+  assert.deepEqual(connectorTerminals(taken.vi.connector).filter((t) => t.cell === 11).map((t) => t.name), [nameOf(ids.y)]);
+  assert.equal(connectorTerminals(taken.vi.connector).length, 2, "x lost its cell and y left cell 10");
 
   // A click on the background only lets go of the selected cell.
   const waiting = CP.selectCell(P.inicial(buildAdder().g), 5);
@@ -75,20 +76,21 @@ test("disconnecting terminals and This Connection Is change the connector and an
   const open = (cell) => CP.openMenu(panel, CP.MENU_ROOT, 10, 10, cell);
   const nameOf = (id) => panel.g.nodos.find((n) => n.id === id).name;
 
-  let state = ED.orden(open(0), `${CP.MENU_ROOT}.this-connection-is.required`);
+  const inputAt = (g, cell) => g.vi.connector.inputs.find((terminal) => terminal.cell === cell);
+  let state = ED.orden(open(11), `${CP.MENU_ROOT}.this-connection-is.required`);
   assert.equal(state.menu, null, "the order closes the menu");
-  assert.deepEqual(state.g.vi.connector.inputs[0], { name: nameOf(ids.x), cell: 0, connection: "required" });
-  state = ED.orden(open(0), `${CP.MENU_ROOT}.this-connection-is.optional`);
-  assert.equal(state.g.vi.connector.inputs[0].connection, "optional");
-  state = ED.orden({ ...open(0), g: state.g }, `${CP.MENU_ROOT}.this-connection-is.recommended`);
-  assert.equal(state.g.vi.connector.inputs[0].connection, undefined, "Recommended is the default and is not written");
+  assert.deepEqual(inputAt(state.g, 11), { name: nameOf(ids.x), cell: 11, connection: "required" });
+  state = ED.orden(open(11), `${CP.MENU_ROOT}.this-connection-is.optional`);
+  assert.equal(inputAt(state.g, 11).connection, "optional");
+  state = ED.orden({ ...open(11), g: state.g }, `${CP.MENU_ROOT}.this-connection-is.recommended`);
+  assert.equal(inputAt(state.g, 11).connection, undefined, "Recommended is the default and is not written");
 
   // An output is never Required.
-  const attempt = ED.orden(open(8), `${CP.MENU_ROOT}.this-connection-is.required`);
+  const attempt = ED.orden(open(3), `${CP.MENU_ROOT}.this-connection-is.required`);
   assert.equal(attempt.g, panel.g);
 
-  state = ED.orden(open(1), `${CP.MENU_ROOT}.disconnect-this-terminal`);
-  assert.deepEqual(connectorTerminals(state.g.vi.connector).map((t) => t.cell), [0, 8]);
+  state = ED.orden(open(10), `${CP.MENU_ROOT}.disconnect-this-terminal`);
+  assert.deepEqual(connectorTerminals(state.g.vi.connector).map((t) => t.cell), [11, 3]);
   // Nothing under the cursor: the order does nothing.
   assert.equal(ED.orden(open(5), `${CP.MENU_ROOT}.disconnect-this-terminal`).g, panel.g);
 
@@ -100,11 +102,11 @@ test("the connector menu greys what needs a terminal under the cursor", () => {
   const { panel } = connectedAdder();
   const variants = (cell) => ED.variantes(CP.openMenu(panel, CP.MENU_ROOT, 0, 0, cell));
   assert.deepEqual([...variants(5).desactivados].sort(), [`${CP.MENU_ROOT}.disconnect-this-terminal`, `${CP.MENU_ROOT}.this-connection-is`]);
-  assert.deepEqual([...variants(0).desactivados], [], "an input: everything available");
-  assert.deepEqual([...variants(8).desactivados], [`${CP.MENU_ROOT}.this-connection-is.required`], "an output cannot be Required");
+  assert.deepEqual([...variants(11).desactivados], [], "an input: everything available");
+  assert.deepEqual([...variants(3).desactivados], [`${CP.MENU_ROOT}.this-connection-is.required`], "an output cannot be Required");
   const marks = (cell) => [...ED.marcados(CP.openMenu(panel, CP.MENU_ROOT, 0, 0, cell))];
-  assert.deepEqual(marks(0), [CP.CURRENT_PATTERN_ROW, `${CP.MENU_ROOT}.this-connection-is.recommended`], "Recommended is checked by default, and the pattern in use");
-  assert.deepEqual(marks(5), [CP.CURRENT_PATTERN_ROW]);
+  assert.deepEqual(marks(11), [CP.currentPatternRow(panel.g), `${CP.MENU_ROOT}.this-connection-is.recommended`], "Recommended is checked by default, and the pattern in use");
+  assert.deepEqual(marks(5), [CP.currentPatternRow(panel.g)]);
 
   const html = D.menuContextual(INV, CP.openMenu(panel, CP.MENU_ROOT, 0, 0, 5).menu, new Set(), undefined, variants(5));
   assert.match(html, /class="item-menu desactivado"[^>]*data-id="context\.connector-pane\.disconnect-this-terminal"/);
@@ -122,14 +124,14 @@ test("the connector pane is drawn with a cell per terminal in the colour of its 
   assert.match(CP.paneGlyph(panel.g, CAT, 6), /stroke="var\(--connector-selected-cell\)"/, "the selected cell is marked");
   assert.equal(oldSchoolToken("--connector-selected-cell"), "#0078d7");
   // Where a click falls: the pane is drawn at 32 × 32 and a click is scaled to it.
-  assert.equal(CP.cellUnderPointer({ left: 100, top: 50, width: 32 }, { clientX: 104, clientY: 62 }), 1);
+  assert.equal(CP.cellUnderPointer({ left: 100, top: 50, width: 32 }, { clientX: 104, clientY: 62 }), 10);
 });
 
 test("a deleted control or indicator leaves the connector", () => {
   const { panel, ids } = connectedAdder();
   const without = P.borrarSeleccion({ ...panel, seleccion: [ids.y] });
   const pruned = pruneConnector(without.g, CAT);
-  assert.deepEqual(connectorTerminals(pruned.vi.connector).map((t) => t.cell), [0, 8]);
+  assert.deepEqual(connectorTerminals(pruned.vi.connector).map((t) => t.cell), [11, 3]);
   assert.equal(pruneConnector(panel.g, CAT), panel.g, "nothing to drop: the same graph");
 });
 
@@ -147,4 +149,17 @@ test("the menus of the connector pane and of the icon are declared in the order 
   assert.equal(INV.entrada("context.vi-icon.edit-icon").necesita, "icono-del-vi");
   assert.equal(INV.entrada("window.front-panel.connector-pane").estado, "built");
   assert.equal(INV.entrada("window.block-diagram.icon").estado, "built");
+});
+
+// DT-075: an OVI whose connector names another pattern is drawn and clicked by that pattern.
+test("a pane with pattern 4833 is drawn with its 16 cells and a click finds LabVIEW's index there", () => {
+  const { g, ids } = buildAdder();
+  const nameOf = (id) => g.nodos.find((n) => n.id === id).name;
+  const with4833 = { ...g, vi: { connector: { pattern: 4833, inputs: [{ name: nameOf(ids.x), cell: 7 }], outputs: [{ name: nameOf(ids.sum), cell: 15 }] } } };
+  const glyph = CP.paneGlyph(with4833, CAT);
+  assert.equal((glyph.match(/<line/g) ?? []).length, 11 + 11, "the right edges of the 11 cells left of the right column, the bottom edges of the 11 cells above the bottom");
+  assert.equal(CP.cellUnderPointer({ left: 0, top: 0, width: 32 }, { clientX: 3, clientY: 15 }, 4833), 7, "the left column's third cell");
+  assert.equal(CP.cellUnderPointer({ left: 0, top: 0, width: 32 }, { clientX: 20, clientY: 20 }, 4833), 14);
+  assert.deepEqual(cellAnchor(15, 4833), { side: "right", x: 32, y: 28.5 });
+  assert.equal(CP.currentPatternRow(with4833), `${CP.MENU_ROOT}.patterns.pattern-34`, "4833 is the grid's 34th place");
 });

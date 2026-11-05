@@ -21,7 +21,7 @@ export const placedConfig = (storedPath, textOfFile) =>
 /** The ports of a subVI node with the place of each on the 32 × 32 icon, from its connector cell. */
 export const portsWithAnchors = (node, cat) => {
   const { in: inputs, out: outputs } = cat.puertos(node);
-  return [...inputs, ...outputs].map((port) => ({ ...port, anchor: cellAnchor(port.cell) }));
+  return [...inputs, ...outputs].map((port) => ({ ...port, anchor: cellAnchor(port.cell, port.pattern) }));
 };
 
 /**

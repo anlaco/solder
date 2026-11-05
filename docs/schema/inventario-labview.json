@@ -268,7 +268,7 @@
       "ref": "design/05-decisions.md DT-045"
     },
     "patrones-del-connector": {
-      "desc": "the other 35 connector pane patterns and the commands that change the pattern: Add and Remove Terminal, Rotate and Flip",
+      "desc": "changing an OVI's connector pattern and the commands that change it: Add and Remove Terminal, Rotate and Flip. Every pattern is read, drawn and called by LabVIEW's indices (DT-075); what LabVIEW does with the terminals already assigned when the pattern changes is not measured yet",
       "ref": "spec/05-editor.md §12"
     },
     "clones-compartidos": {

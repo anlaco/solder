@@ -11,7 +11,7 @@
 //
 // A pure module with no mutation: every operation returns a new diagram.
 
-import { connectorTerminals } from "./connector.mjs";
+import { connectorPattern, connectorTerminals } from "./connector.mjs";
 import { LINKED_CONTROL_TYPE, isImplicit, loadProperties } from "./property-node.mjs";
 import { DIFFERENT_TYPES_MESSAGE, automaticChoice, isAutomatic, noInstanceFitsDetail, renamedByCell, selectedInstance } from "./polymorphic.mjs";
 import { DBL, ERROR, FILE_REFNUM, NUMERICOS, PATH, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, carriesUndefinedArray, isUndefinedArray, nombre, esRefnum, strictRefnum, withoutOneDimension } from "./types.mjs";
@@ -177,8 +177,9 @@ export function connectorPorts({ g, cat }) {
     const own = cat.puertos(node)[dir === "in" ? "out" : "in"][0];
     const type = dir === "in" ? resolved.salidas.get(`${node.id}.${own.name}`) : resolved.entradas.get(`${node.id}.${own.name}`);
     const defaultValue = dir === "in" ? node.config?.value : undefined;
-    return { name, label: node.label?.text ?? name, type, dir, cell, connection, nodo: node.id, defaultValue, ...(dir === "in" && !required ? { optional: true } : {}) };
+    return { name, label: node.label?.text ?? name, type, dir, cell, pattern, connection, nodo: node.id, defaultValue, ...(dir === "in" && !required ? { optional: true } : {}) };
   };
+  const pattern = connectorPattern(g.vi?.connector);
   const terminals = connectorTerminals(g.vi?.connector);
   const ports = {
     in: terminals.filter((t) => t.dir === "in").map(port).filter(Boolean),

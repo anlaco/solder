@@ -118,10 +118,10 @@ entities: they are the two faces of one. That is why `layout` needs to separate 
 
 ### 4.1 `solder` *(required)*
 
-Format version. Its value is `1`. A reader **MUST** reject a value greater than the
+Format version. Its value is `2` (version 1 until DT-075). A reader **MUST** reject a value greater than the
 one it knows, instead of trying to read it halfway.
 
-**The format is frozen as version 1 from `0.4.0-beta` on** (DT-055). Any later change to it
+**The format is frozen from `0.4.0-beta` on** (DT-055). Any later change to it
 raises this number and comes with an **automatic migration** from the version before
 (`MIGRATIONS` in `core/model/qvi-format.mjs`): a reader brings an older file up to its own
 version, one migration after another, so every file a released Solder saved still opens.
@@ -192,16 +192,22 @@ and which as outputs, by their `name`:
 ```
 
 A terminal can also say which cell of the pattern it occupies and how it must
-be wired (DT-045); `pattern` is LabVIEW's default, `4-2-2-4`, whose twelve cells
-are numbered by columns, left to right and top to bottom:
+be wired (DT-045). `pattern` is LabVIEW's pattern number, 4800–4835 (DT-075); left out,
+LabVIEW's default 4815, the 4-2-2-4. A `cell` is LabVIEW's connector index in that pattern,
+as `core/model/connector-patterns.mjs` lists it from NI's table (measured): in 4815 the index
+runs from the bottom right up each column, right to left, so 11 is the top of the left column
+and 3 the top of the right one:
 
 ```json
 "connector": {
-  "pattern": "4-2-2-4",
-  "inputs": [{ "name": "a", "cell": 0, "connection": "required" }, "b"],
-  "outputs": [{ "name": "resultado", "cell": 8 }]
+  "pattern": 4815,
+  "inputs": [{ "name": "a", "cell": 11, "connection": "required" }, "b"],
+  "outputs": [{ "name": "resultado", "cell": 3 }]
 }
 ```
+
+Version 1 wrote `"pattern": "4-2-2-4"` and numbered the cells its own way (0–3 the left column
+down, 4–7 the middle, 8–11 the right column down); reading it migrates the cell n to 11 − n.
 
 A terminal without `cell` takes the first free cell on its side (inputs from the left column, outputs from the right one: our default, unverified in LabVIEW).
 

@@ -55,7 +55,7 @@ test("the hierarchy names an OVI of ovi.lib with (ovi.lib) after it, as LabVIEW 
 function libraryAdderText() {
   const { g, ids } = buildAdder();
   let withConnector = g;
-  for (const [id, cell] of [[ids.x, 0], [ids.y, 2], [ids.sum, 9]]) withConnector = assignPanelElement(withConnector, CAT, id, cell);
+  for (const [id, cell] of [[ids.x, 11], [ids.y, 9], [ids.sum, 2]]) withConnector = assignPanelElement(withConnector, CAT, id, cell);
   return Q.aTexto(withConnector, CAT);
 }
 
@@ -74,7 +74,7 @@ test("a caller of an ovi.lib OVI reads its files through the symbolic path and r
   assert.deepEqual(probe.errors, []);
   assert.deepEqual(probe.keys, [LIBRARY_OVI]);
   const callNode = caller.nodos[0];
-  assert.deepEqual(probe.catalog.puertos(callNode).in.map((port) => port.name), ["control_1", "control_2"]);
+  assert.deepEqual(probe.catalog.puertos(callNode).in.map((port) => port.name).sort(), ["control_1", "control_2"]);
 
   // Wired to two constants and an indicator, it runs.
   const wired = buildVI(probe.catalog, (b) => {

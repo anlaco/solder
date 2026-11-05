@@ -11,8 +11,8 @@
 //              under the cursor when it was opened (`null` outside every cell)
 // The connector itself is `g.vi.connector` (core/model/connector.mjs).
 
-import { CONNECTOR_PATTERN, assignPanelElement, cellAt, connectorTerminals, disconnectAll, disconnectCell, setConnection, terminalAt } from "../../../core/model/connector.mjs";
-import { patternNamed } from "../../../core/model/connector-patterns.mjs";
+import { assignPanelElement, cellAt, connectorTerminals, disconnectAll, disconnectCell, patternOf, setConnection, terminalAt } from "../../../core/model/connector.mjs";
+import { patternNumbered } from "../../../core/model/connector-patterns.mjs";
 import { connectorPorts } from "../../../core/model/graph.mjs";
 import { aspecto } from "../../../core/model/types.mjs";
 import { conectorPane } from "../common/glyphs.mjs";
@@ -30,13 +30,13 @@ const NEUTRAL_COLOR = "#808080";
 export function paneGlyph(g, cat, selectedCell = null) {
   const ports = connectorPorts({ g, cat });
   const cells = [...ports.in, ...ports.out].map((port) => ({ cell: port.cell, dir: port.dir, color: port.type ? aspecto(port.type).color : NEUTRAL_COLOR }));
-  return conectorPane(cells, selectedCell);
+  return conectorPane(cells, selectedCell, patternOf(g));
 }
 
-/** The cell under a click on the pane, given the pane's on-screen box and the click position. */
-export function cellUnderPointer(paneBox, pointer) {
+/** The cell of `pattern` under a click on the pane, given the pane's on-screen box and the click position. */
+export function cellUnderPointer(paneBox, pointer, pattern) {
   const scale = 32 / paneBox.width;
-  return cellAt({ x: (pointer.clientX - paneBox.left) * scale, y: (pointer.clientY - paneBox.top) * scale });
+  return cellAt({ x: (pointer.clientX - paneBox.left) * scale, y: (pointer.clientY - paneBox.top) * scale }, pattern);
 }
 
 // ——— Assigning ———
@@ -93,12 +93,12 @@ export function menuVariants(state) {
 }
 
 /** The row of the Patterns submenu of the pattern in use, the one outlined in blue (connector-menu-patterns.png). */
-export const CURRENT_PATTERN_ROW = `${MENU_ROOT}.patterns.${patternNamed(CONNECTOR_PATTERN).id}`;
+export const currentPatternRow = (g) => `${MENU_ROOT}.patterns.${patternNumbered(patternOf(g)).id}`;
 
 /** The rows with a check mark: the connection of the terminal under the cursor, and the pattern in use. */
 export function menuMarks(state) {
   const connection = connectionOf(state.g, state.menu.conector.celda ?? -1);
-  return new Set([CURRENT_PATTERN_ROW, ...(connection ? [`${MENU_ROOT}.this-connection-is.${connection}`] : [])]);
+  return new Set([currentPatternRow(state.g), ...(connection ? [`${MENU_ROOT}.this-connection-is.${connection}`] : [])]);
 }
 
 /** The orders of the connector menu that are done. A greyed row does nothing. */
@@ -107,8 +107,8 @@ export function runMenuCommand(state, rowId) {
   const close = (g) => ({ ...state, g, menu: null });
   const disabled = menuVariants(state).desactivados;
   if (disabled.has(rowId)) return state;
-  // Choosing the pattern already in use only closes the menu: it is the only one there is.
-  if (rowId === CURRENT_PATTERN_ROW) return close(state.g);
+  // Choosing the pattern already in use only closes the menu: changing it is not built yet (DT-075).
+  if (rowId === currentPatternRow(state.g)) return close(state.g);
   if (rowId === `${MENU_ROOT}.disconnect-all-terminals`) return close(disconnectAll(state.g));
   if (rowId === `${MENU_ROOT}.disconnect-this-terminal`) return close(disconnectCell(state.g, cell));
   const connection = /\.this-connection-is\.(required|recommended|optional)$/.exec(rowId)?.[1];

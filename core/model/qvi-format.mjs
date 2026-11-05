@@ -18,15 +18,33 @@
 // `bucle.condition` and `bucle.N` for the loop's terminals.
 
 import { ambitoDe, crearEstructura, crearNodo, esSuelto, marcoDe, nuevo } from "./graph.mjs";
+import { DEFAULT_PATTERN } from "./connector-patterns.mjs";
 
-export const VERSION = 1;
+export const VERSION = 2;
+
+/** Solder's own numbering of 4-2-2-4's cells in version 1: 0–3 the left column down, 4–7 the middle, 8–11 the right column down. */
+const VERSION_1_PATTERN = "4-2-2-4";
+const LAST_CELL_OF_4_2_2_4 = 11;
+
+/**
+ * Version 1 → 2 (DT-075): the connector names LabVIEW's pattern number and numbers its cells by LabVIEW's connector
+ * index. Version 1 had only 4-2-2-4 (4815), whose LabVIEW index runs from the bottom right up each column, right to
+ * left (measured): the cell Solder numbered n is LabVIEW's 11 − n.
+ */
+function connectorWithLabVIEWIndices(vi) {
+  if (!vi.connector) return { ...vi, solder: 2 };
+  const { pattern = VERSION_1_PATTERN, inputs = [], outputs = [] } = vi.connector;
+  if (pattern !== VERSION_1_PATTERN) throw new ErrorQvi(`format version 1 knows no connector pattern "${pattern}"`);
+  const renumbered = (entry) => (typeof entry === "string" || entry.cell === undefined ? entry : { ...entry, cell: LAST_CELL_OF_4_2_2_4 - entry.cell });
+  return { ...vi, solder: 2, connector: { pattern: DEFAULT_PATTERN, inputs: inputs.map(renumbered), outputs: outputs.map(renumbered) } };
+}
 
 /**
  * The format is frozen from 0.4.0-beta on (DT-055, spec/02 §4.1): a change to it raises VERSION and adds here the
  * function that turns a file of the version before into one of the new version, so every file a released Solder
- * saved still opens. `MIGRATIONS[n - 1]` migrates version n to n + 1; there are none yet.
+ * saved still opens. `MIGRATIONS[n - 1]` migrates version n to n + 1.
  */
-export const MIGRATIONS = [];
+export const MIGRATIONS = [connectorWithLabVIEWIndices];
 
 /** A file of an older version brought up to `version`, one migration after another. */
 export function migrar(vi, migrations = MIGRATIONS, version = VERSION) {

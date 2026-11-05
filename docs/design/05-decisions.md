@@ -3444,3 +3444,35 @@ LabVIEW's selector and menus.**
 | The `.sdp` file and its schema, the node's terminals by cell, Automatic (unwired, exact before coercion, none fits), an instance picked by hand, the broken wire's message with what came in and the instances, the call compiled as the chosen instance, the hierarchy read with the `.sdp` | `test/core/polymorphic.test.mjs` | **Verified** (2026-11-05) by test |
 | Select Type ▸, the selector ring and its geometry, the icon as a data-URI image, the node menu, Automatic kept up to date on every edit, double-click opening the instance | `test/editor/polymorphic-nodes.test.mjs` (spec rule 121) | **Verified** (2026-11-05) by test; what a click on the ring opens, the ring's text padding and its exact blue are **unverified** |
 | The Polymorphic OVI window | To write with the next step of plan step 4b | **Not built** |
+
+## DT-075
+
+**Connector panes: LabVIEW's 36 patterns by their number, and a terminal's cell is LabVIEW's connector index.**
+
+- **Status:** Accepted on 2026-11-05 by the developer ("all of them, with LabVIEW's indices"). VISA Configure Serial
+  Port ([DT-070](#dt-070) §7) uses pattern 4833, which Solder lacked.
+- **Why:** measured on 2026-11-05 (`labview-captures/reports/2026-11-05-connector-4833.md`) two ways that agree: the
+  table of NI's example `Connector Pane Pattern Reference.vi` (each pattern 4800–4835 with the rectangle of every
+  connector index) and VIs built by scripting with control tN on index N, found on a subVI node. The grid of the
+  Patterns submenu was matched thumbnail by thumbnail; a blank VI's current pattern is 4815, the 4-2-2-4. LabVIEW
+  numbers 4815 from the bottom right, up each column, right to left, while Solder had numbered it its own way.
+
+### Decision
+
+1. **Every pattern by LabVIEW's number** (`core/model/connector-patterns.mjs`): the rectangles of its terminals in the
+   order of the connector index, and the grid order of the Patterns submenu.
+2. **A terminal's `cell` is LabVIEW's connector index**; the `.sdg` names the pattern by its number (`4815`, the
+   default when left out). The format goes to **version 2**; a version 1 file is migrated on reading (cell n of
+   4-2-2-4 becomes 11 − n, `"4-2-2-4"` becomes 4815), so every released file still opens with its terminals where
+   they were.
+3. **An OVI's pane is drawn and its subOVI node's terminals placed by its own pattern.** Changing the pattern from
+   the Patterns submenu, Add/Remove Terminal, Rotate and Flip stay holes with their reason until what LabVIEW does with
+   the terminals already assigned is measured.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The 36 patterns cover their pane once each, the grid order, 4833's cells, 4815's indices | `test/editor/connector-patterns.test.mjs`, `test/editor/connector-pane.test.mjs` | **Verified** (2026-11-05) by test |
+| A version 1 connector migrates to LabVIEW's indices with its terminals in the same place | `test/end-to-end/format-versions.test.mjs` | **Verified** (2026-11-05) by test |
+| Where a terminal of a middle cell, or of a cell as wide as the pane, meets the subOVI icon | — | **Unverified** |

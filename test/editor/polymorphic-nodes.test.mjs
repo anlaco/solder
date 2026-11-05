@@ -35,7 +35,7 @@ const sdpText = (overrides = {}) =>
     ...overrides,
   });
 
-/** An instance: `x` (of `type`) into `step`, out to `result`; x in cell 0, result in cell 9. */
+/** An instance: `x` (of `type`) into `step`, out to `result`; x in cell 9 (left edge), result in cell 2 (right edge), LabVIEW's indices of 4-2-2-4. */
 const instance = (type, step) =>
   buildVI(CAT, (b) => {
     b.node("x", "control", { type });
@@ -43,7 +43,7 @@ const instance = (type, step) =>
     b.node("result", "indicator", { type });
     b.wire("x.result", "step.x");
     b.wire("step.result", "result.value");
-    b.connector([{ name: "x", cell: 0 }], [{ name: "result", cell: 9 }]);
+    b.connector([{ name: "x", cell: 9 }], [{ name: "result", cell: 2 }]);
   });
 const instanceTexts = () => ({
   "/lib/Step (I64).sdg": Q.aTexto(instance("i64", "increment").g, CAT),
@@ -53,7 +53,7 @@ const instanceTexts = () => ({
 const outputOnly = () =>
   buildVI(CAT, (b) => {
     b.node("result", "indicator", { type: "i64" });
-    b.connector([], [{ name: "result", cell: 9 }]);
+    b.connector([], [{ name: "result", cell: 2 }]);
   });
 
 /** A caller at /app/main.sdg whose graph `build(b)` makes, its hierarchy as the page builds it, Automatic already run. */
@@ -73,8 +73,8 @@ const wiredWith = (type, config = {}) =>
     b.node("in", "control", { type });
     b.node("call", "subvi", { ...CALL(), ...config });
     b.node("shown", "indicator");
-    b.wire("in.result", "call.cell-0");
-    b.wire("call.cell-9", "shown.value");
+    b.wire("in.result", "call.cell-9");
+    b.wire("call.cell-2", "shown.value");
   });
 
 const htmlOf = (vi, extra = {}) => D.contenido({ ...ED.inicial(), g: vi.g, ...extra }, vi.ctx, Gr.tipos(vi.g, vi.cat));
@@ -254,7 +254,7 @@ test("picking an instance in Select Type turns Automatic off, and a wire it does
   const broken = callerOf((b) => {
     b.node("in", "str-control");
     b.node("call", "subvi", CALL());
-    b.wire("in.result", "call.cell-0");
+    b.wire("in.result", "call.cell-9");
   });
   const brokenPicked = ED.orden(menuOf(broken), PN.instanceRow(0), broken.ctx);
   const wire = brokenPicked.g.cables[0];
@@ -274,12 +274,12 @@ test("a wire to a terminal the chosen instance lacks is loosened where the termi
   const vi = callerOf((b) => {
     b.node("in", "control", { type: "i32" });
     b.node("call", "subvi", CALL());
-    b.wire("in.result", "call.cell-0");
+    b.wire("in.result", "call.cell-9");
   }, { texts: FILES });
   const hand = ED.orden(menuOf(vi), PN.instanceRow(1), vi.ctx);
   const [wire] = hand.g.cables;
   assert.ok(Gr.esSuelto(wire.a), "the wire keeps its source and loses its sink");
-  assert.deepEqual(wire.a.suelto, [0, 4], "the loose end is where the terminal was, on the left edge of the icon");
+  assert.deepEqual(wire.a.suelto, [0, 20], "the loose end is where the terminal was, on the left edge of the icon at its cell's middle");
   assert.equal(Gr.tipos(hand.g, vi.cat).cables.get(wire.id).roto, Gr.LOOSE_WIRE_REASONS.looseEnd);
 });
 
@@ -302,7 +302,7 @@ test("every edit is settled: Automatic follows what is wired, and nothing change
     b.node("call", "subvi", CALL());
   });
   assert.equal(callNode(vi).config.selected, 0, "unwired, the first instance");
-  const wired = Gr.conectar(vi.g, vi.cat, { nodo: vi.id.in, puerto: "result", dir: "out" }, { nodo: vi.id.call, puerto: "cell-0", dir: "in" }).g;
+  const wired = Gr.conectar(vi.g, vi.cat, { nodo: vi.id.in, puerto: "result", dir: "out" }, { nodo: vi.id.call, puerto: "cell-9", dir: "in" }).g;
   const settled = PN.settlePolymorphicNodes(vi.g, wired, vi.cat, ED.terminalPlacer(vi.ctx));
   assert.equal(settled.nodos.find((n) => n.id === vi.id.call).config.selected, 1, "a DBL is wired: Double");
   assert.equal(PN.settlePolymorphicNodes(wired, settled, vi.cat, ED.terminalPlacer(vi.ctx)), settled, "settled again: the same graph, so no extra undo step");
