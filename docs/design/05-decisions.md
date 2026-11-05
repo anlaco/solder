@@ -3343,3 +3343,83 @@ by the developer ("strict refnum").
 | The control refnum (amendment, 5): Create ▸ Control/Indicator from a reference, its page and terminal, Not A Refnum by default, a subOVI writing the caller's control, the class conflict | `test/core/control-reference-run.test.mjs`, `test/editor/control-references.test.mjs` against `reports/2026-11-03-control-reference-subvi.md` and `-references.md` Q2 | **Verified** (2026-11-03) by test; the compact terminal, the Refnum palette and the refnum's menus are **not built** |
 | The control reference pieces by eye (stage e): the constant, the explicit node, Disconnect From Control, the refnum's terminal and page | Compared with LabVIEW's captures under Xvfb (`labview-captures/reports/2026-11-03-control-reference-solder-compare.md`, two passes) and corrected (the terminal is 38 × 38, the Boolean node 100 px, glyphs redrawn) | **Verified** (2026-11-03) within the editor's font (the strict nodes are 2–4 px wider, the font is not LabVIEW's); the last touches to the terminal's glyph are not re-captured |
 | Long Names and No Names; whether the label above an implicit node follows a rename; Caption.Text on a control with no caption; a subOVI writing its own indicator with its panel closed; whether changes made at run time are saved | To measure in LabVIEW | **Unverified** |
+
+## DT-073
+
+**`ovi.lib`, Solder's own library of OVIs: OVIs drawn anew that ship with Solder, referenced from a `.sdg` by a
+symbolic path and opened and edited as LabVIEW opens vi.lib's.**
+
+- **Status:** Accepted on 2026-11-05 by the developer (symbolic path; editable as LabVIEW). It is what [DT-070](#dt-070)
+  §7 waits for (VISA Configure Serial Port) and the library [DT-071](#dt-071) names.
+- **Why:** measured on 2026-11-05 (`labview-captures/reports/2026-11-05-vilib-and-type-polymorphic.md` §A): LabVIEW
+  stores a vi.lib subVI as `<vilib>\Utility\error.llb\Clear Errors.vi` and resolves it against the installation; its
+  hierarchy says "(vi.lib)"; the VI opens with no lock or warning, can be edited, and closing it asks Save, Defer
+  Decision or Cancel.
+
+### Decision
+
+1. **A folder `ovi.lib/`** in the repository, shipped inside the application, holds Solder's library OVIs as `.sdg`
+   files (and `.sdp`, [DT-074](#dt-074)) in folders like vi.lib's (`Instr/`, `Utility/`). Every one is drawn anew from
+   what was measured: never NI's diagrams, icons or help texts (rule 3).
+2. **A caller references one by a symbolic path**, `"vi": "<ovilib>/Instr/VISA Configure Serial Port (Instr).sdg"`,
+   resolved against the `ovi.lib` of the Solder that opens it; a user's subOVI keeps its path relative to the caller.
+   The hierarchy and the subOVI's tip say "(ovi.lib)".
+3. **It opens and edits like any OVI**, as LabVIEW's: double-click opens its panel, its diagram can be changed, and Save
+   writes into `ovi.lib` when the folder can be written (an installed application usually cannot: the system's error is
+   shown). The Defer Decision dialog comes when several OVIs share one in memory.
+4. **It compiles as any subOVI**: no special case in the core.
+5. **Palette entries** that LabVIEW fills with a vi.lib VI place the `ovi.lib` OVI (`bloque: "subvi"` with its path).
+   As LabVIEW's (measured, `labview-captures/reports/2026-11-05-palette-files.md`): its palettes are `.mnu` files that
+   name each entry by path (`serial.mnu` → `<vilib>\Instr\_visa.llb` and the names in it), so a VI added to vi.lib
+   does not reach a palette. Solder's inventory is that list: an OVI put in `ovi.lib` reaches a palette only through
+   its inventory entry.
+6. **Later, `user.lib` and `instr.lib`** with their own symbolic paths (`<userlib>`, `<instrlib>`): folders of the
+   user's, whose palettes (User Libraries, Instrument Drivers) are filled from what the folder holds, as NI documents
+   (the files on disk agree; LabVIEW's sync itself is unverified). A user drops an OVI there and finds it in the palette.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The symbolic path, its resolution and "(ovi.lib)" | To write with the first `ovi.lib` OVI | **Not built** |
+
+## DT-074
+
+**Polymorphic OVIs: a `.sdp` file listing its instances, a subOVI node that picks one by hand or by the types wired, and
+LabVIEW's selector and menus.**
+
+- **Status:** Accepted on 2026-11-05 by the developer (a `.sdp` file of its own; VISA classes later; users make their
+  own, so it must be easy to use). VISA Configure Serial Port ([DT-070](#dt-070) §7) is the first one.
+- **Why:** measured on 2026-11-05 (`labview-captures/reports/2026-11-05-polymorphic-vi.md`,
+  `2026-11-05-vilib-and-type-polymorphic.md` §B) on VISA Configure Serial Port and Write Delimited Spreadsheet.vi.
+
+### Decision
+
+1. **The file**, `.sdp` (*Solder Polymorphic*), JSON with its schema: the instances in order (each an OVI path, a menu
+   name and a selector name), Show Selector by Default, Allow Polymorphic OVI to Adapt to Data Type, and which icon the
+   node draws (the polymorphic OVI's or the instance's).
+2. **The node** is a subOVI whose `config` names the `.sdp`, `instance` (null for Automatic, else an index) and whether
+   the selector shows. Its terminals and behavior are the chosen instance's; it compiles as a call to that instance.
+3. **Automatic** (measured): unwired, the first instance; wired, the first instance in order whose connector takes every
+   wired input without breaking a wire; if none does, the first instance, its wire broken with the error of a wire of
+   different types. Select Type ▸ ticks only Automatic while it is on, whatever it picked; picking an instance ticks it
+   and turns Automatic off, and a wire that instance does not take breaks.
+4. **The look and menus as measured:** the polymorphic OVI's 32 × 32 icon, the selector hidden by default (Visible
+   Items ▸ Polymorphic VI Selector), a ring 1 px under the icon, centred on it, as wide as its text, showing the menu
+   name ("Integer") with a dropdown triangle; the node menu with Select Type ▸ and Open Polymorphic VI; double-click
+   opens the chosen instance.
+5. **Users make their own:** File ▸ New ▸ Polymorphic OVI and the Polymorphic OVI window (measured: Instance VIs with
+   VI Name, Menu Name and Selector Name; Add..., Remove, Edit Name..., Edit Icon..., Help and the reorder arrows; Draw
+   Polymorphic VI Icon or Draw Instance VI Icon; Show Selector by Default; Allow Polymorphic VI to Adapt to Data Type),
+   also reached by Open Polymorphic VI on a node, are built with the rest, not left greyed. Where LabVIEW only says "You
+   have connected two terminals of different types" naming the first instance's type, Solder says it too and adds what
+   came in and which instances there are, so a user can tell why none was picked.
+6. **VISA classes later:** Solder's VISA resource name has no VISA class yet, so Automatic picks (Instr) for VISA
+   Configure Serial Port and (Serial Instr) is picked by hand; both behave alike on a serial port in Solder. Select VISA
+   Class ▸ on the constant stays a hole with its reason.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The `.sdp` file, Automatic, Select Type and the selector | To write with VISA Configure Serial Port | **Not built** |

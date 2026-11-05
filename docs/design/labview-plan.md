@@ -626,6 +626,10 @@ array or string read by a local variable while another loop writes it is never t
       Node with the one read row "Bytes at Port", 72 × 35, placed from both Serial palettes (`test/editor/property-nodes.test.mjs`,
       `test/core/property-node-run.test.mjs`). Next: measure polymorphic VIs and vi.lib subVIs, then the DTs of `ovi.lib`
       and polymorphic OVIs, which VISA Configure Serial Port waits for.*
+      *Measured on 2026-11-05 ([`polymorphic-vi`](../../labview-captures/reports/2026-11-05-polymorphic-vi.md),
+      [`vilib-and-type-polymorphic`](../../labview-captures/reports/2026-11-05-vilib-and-type-polymorphic.md)) and
+      decided: DT-073 (`ovi.lib`, symbolic `<ovilib>` paths, editable as LabVIEW) and DT-074 (polymorphic OVIs in a
+      `.sdp` file, Automatic by the types wired, VISA classes later). Next: build them with VISA Configure Serial Port.*
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the
       firmware (in parallel from step 3), and first served by a Crucible profile of it.
    6. **A DAQmx-like layer** over the ESP32, with its own DT after measuring DAQmx with a simulated NI device.
