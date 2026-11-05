@@ -621,6 +621,11 @@ array or string read by a local variable while another loop writes it is never t
       (step 4b).*
    4b. **VISA Configure Serial Port and Bytes at Serial Port** (DT-070 §7): Configure as a polymorphic subOVI of
       Solder's own `vi.lib` built on the Property Node; greyed until then.
+      *VISA Bytes at Serial Port done on 2026-11-05: measured
+      ([`visa-bytes-at-port`](../../labview-captures/reports/2026-11-05-visa-bytes-at-port.md)), it is an Instr Property
+      Node with the one read row "Bytes at Port", 72 × 35, placed from both Serial palettes (`test/editor/property-nodes.test.mjs`,
+      `test/core/property-node-run.test.mjs`). Next: measure polymorphic VIs and vi.lib subVIs, then the DTs of `ovi.lib`
+      and polymorphic OVIs, which VISA Configure Serial Port waits for.*
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the
       firmware (in parallel from step 3), and first served by a Crucible profile of it.
    6. **A DAQmx-like layer** over the ESP32, with its own DT after measuring DAQmx with a simulated NI device.

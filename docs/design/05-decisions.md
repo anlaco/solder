@@ -3169,6 +3169,8 @@ Property Node and comes as a real polymorphic subVI; Crucible serves a serial po
    and its measured terminals and defaults (timeout 10000 U32, baud 9600 U32, data bits 8 U16, parity enum U16, stop
    bits ring U16, flow control ring U16, Enable Termination Char TRUE, termination char 0xA U8). Solder's `vi.lib`
    and polymorphic VIs each get their own DT then. Until then both stay greyed in the palettes, saying why.
+   *VISA Bytes at Serial Port is done (2026-11-05): an Instr Property Node with the row "Bytes at Port"
+   (`labview-captures/reports/2026-11-05-visa-bytes-at-port.md`).*
 8. **Crucible serves a serial port** (Crucible work, its own code too): its SCPI loop serves any stream of bytes, and
    a bench's `transporte` gains `tipo: serial` with `dispositivo:` (a real port, with its line settings) or `pty:` (a
    pseudo-terminal Crucible creates, with a link at that path, for runs without hardware). The VM's COM1 reaches it

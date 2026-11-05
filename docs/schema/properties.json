@@ -679,11 +679,11 @@
       "submenu": [
        {
         "name": "Number of Bytes at Serial Port",
-        "short": "Number of Bytes at Serial Port",
+        "short": "Bytes at Port",
         "access": "read",
         "type": "u32",
         "done": true,
-        "shortVerified": false,
+        "shortVerified": true,
         "typeVerified": false
        },
        {

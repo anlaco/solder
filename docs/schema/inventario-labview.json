@@ -7042,10 +7042,21 @@
     {
       "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.visa-bytes-at-serial-port",
       "etiqueta": "VISA Bytes at Serial Port",
-      "estado": "todo",
-      "labview": "A property node of the session that tells how many bytes wait in the serial port.",
-      "necesita": "nodos-de-propiedades",
-      "captura": "visa/functions-visa-bus-serial.png"
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::VISA Bytes at Serial Port places an Instr node reading Bytes at Port, from both Serial palettes",
+      "captura": "visa/functions-visa-bus-serial.png",
+      "bloque": "property-node",
+      "config": {
+        "class": "Instr",
+        "link": null,
+        "rows": [
+          {
+            "property": "Serial Settings:Number of Bytes at Serial Port",
+            "write": false
+          }
+        ],
+        "ignore-errors": false
+      }
     },
     {
       "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.visa-serial-break-vi",
@@ -7465,10 +7476,21 @@
     {
       "id": "palette.functions.instrument-io.serial.visa-bytes-at-serial-port",
       "etiqueta": "VISA Bytes at Serial Port",
-      "estado": "todo",
-      "labview": "A property node of the session that tells how many bytes wait in the serial port.",
-      "necesita": "nodos-de-propiedades",
-      "captura": "visa/functions-instrument-io-serial.png"
+      "estado": "built",
+      "prueba": "test/editor/property-nodes.test.mjs::VISA Bytes at Serial Port places an Instr node reading Bytes at Port, from both Serial palettes",
+      "captura": "visa/functions-instrument-io-serial.png",
+      "bloque": "property-node",
+      "config": {
+        "class": "Instr",
+        "link": null,
+        "rows": [
+          {
+            "property": "Serial Settings:Number of Bytes at Serial Port",
+            "write": false
+          }
+        ],
+        "ignore-errors": false
+      }
     },
     {
       "id": "palette.functions.instrument-io.serial.visa-serial-break-vi",

@@ -150,6 +150,9 @@ export function nodeVariants(d, ctx) {
   const at = (name) => `${root}.${name}`;
   const variants = { ocultos: new Set(), desactivados: new Set(), rotulos: new Map(), separadores: new Map(), submenus: new Map(), redirigidos: new Map() };
   if (PN.allWrite(node)) variants.rotulos.set(at("change-all-to-write"), "Change All To Read");
+  // With no row that can turn (a read-only property alone, reports/2026-11-05-visa-bytes-at-port.md), it is greyed;
+  // with some rows that cannot, unverified.
+  if (!PN.rowsOf(node).some((_, index) => PN.canFlip(node, ctx.cat, index))) variants.desactivados.add(at("change-all-to-write"));
   if (row < 0) {
     PN.ROW_ONLY_ROWS.forEach((name) => variants.ocultos.add(at(name)));
     variants.separadores.set(at(PN.isControlClass(node) ? "application-control-palette" : "visa-palette"), true);

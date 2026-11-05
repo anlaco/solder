@@ -15,13 +15,14 @@ import * as P from "../../editor/src/front-panel/front-panel.mjs";
 import { pasteAt } from "../../editor/src/block-diagram/diagram-clipboard.mjs";
 import { copyFragment } from "../../core/model/clipboard.mjs";
 import * as Gr from "../../core/model/graph.mjs";
+import { aspecto } from "../../core/model/types.mjs";
 import { CAT, INV } from "../helpers.mjs";
 
 /**
  * The width of a row's text in the editor's font, as far as these tests need it: "Value" leaves the node at its
  * least width (38 px) and "Caption.Text" makes it 72 px (measured); other texts, roughly.
  */
-const EDITOR_FONT_WIDTHS = { Value: 30, "Caption.Text": 64 };
+const EDITOR_FONT_WIDTHS = { Value: 30, "Caption.Text": 64, "Bytes at Port": 64 };
 const measure = (text) => EDITOR_FONT_WIDTHS[text] ?? [...text].length * 6.1;
 const CTX = contexto(CAT, glifosPorBloque(INV), ".", measure);
 const FONDO = { tipo: "fondo" };
@@ -376,4 +377,28 @@ test("the error glyphs sit where LabVIEW draws them and a menu taller than the w
   // Scrolled to the end, its last row is inside the window.
   const lastTop = Number([...draw(menu).split('data-menu="context.numeric-control.create.property-node"')[1].matchAll(/class="item-menu[^"]*" data-id="[^"]+"(?: data-row="[^"]+")? style="top:(-?[\d.]+)px/g)].at(-1)[1]);
   assert.ok(lastTop > 0 && lastTop < 600, `the last row at ${lastTop}`);
+});
+
+test("VISA Bytes at Serial Port places an Instr node reading Bytes at Port, from both Serial palettes", () => {
+  // reports/2026-11-05-visa-bytes-at-port.md: a plain Instr Property Node, one read row, 72 x 35, the row blue (U32).
+  for (const id of ["palette.functions.instrument-io.serial.visa-bytes-at-serial-port", "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.visa-bytes-at-serial-port"]) {
+    const entry = INV.entrada(id);
+    assert.equal(entry.estado, "built");
+    const picked = ED.coger(ED.inicial(), entry.bloque, entry.config);
+    const dropped = ED.pulsar(ED.moverA(picked, CTX, { x: 600, y: 300 }), CTX, FONDO, { x: 600, y: 300 });
+    const [node] = propertyNodes(dropped);
+    assert.deepEqual(node.config.rows, [{ property: "Serial Settings:Number of Bytes at Serial Port", write: false }]);
+    const box = caja(node, CTX);
+    assert.deepEqual([box.ancho, box.alto], [72, 35]);
+    // Centred on the click, as the reference constant (control-references.test.mjs: an odd height lands half a pixel up).
+    assert.deepEqual([box.x + box.ancho / 2, box.y + box.alto / 2], [600, 299.5]);
+    assert.equal(PN.rowText(node, CAT, 0), "Bytes at Port");
+    assert.equal(PN.rowColor(dropped.g, CAT, node, 0), aspecto("u32").color);
+    const outputs = terminales(node, CTX).filter((t) => t.dir === "out").map((t) => t.puerto);
+    assert.deepEqual(outputs, ["reference-out", "row-0", "error-out"]);
+    // Read only: its row menu greys Change To Write and Change All To Write.
+    const rows = menuRows(openMenu(dropped, node.id, "row-0"));
+    assert.ok(rows.find((r) => r.label === "Change To Write").greyed);
+    assert.ok(rows.find((r) => r.label === "Change All To Write").greyed);
+  }
 });

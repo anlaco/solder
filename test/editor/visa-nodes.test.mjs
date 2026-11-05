@@ -124,8 +124,9 @@ test("VISA Open, Write, Read and Close are placed from the palettes, also from S
     d = ED.pulsar(ED.moverA(d, CTX, { x: 100, y: 100 }), CTX, { tipo: "fondo" }, { x: 100, y: 100 });
     assert.equal(d.g.nodos[0].tipo, block, id);
   }
-  // The VISA Property Node is an Instr Property Node (property-nodes.test.mjs).
-  const done = new Set([...PLACEABLE.map(([, id]) => id), `${ROOT}.visa.visa-advanced.visa-property-node`]);
+  // The VISA Property Node and VISA Bytes at Serial Port are Instr Property Nodes (property-nodes.test.mjs).
+  const bytesAtSerialPort = [`${ROOT}.serial.visa-bytes-at-serial-port`, `${ROOT}.visa.visa-advanced.bus-interface-specific.serial.visa-bytes-at-serial-port`];
+  const done = new Set([...PLACEABLE.map(([, id]) => id), `${ROOT}.visa.visa-advanced.visa-property-node`, ...bytesAtSerialPort]);
   // Everything else of the palettes is greyed and says what is missing.
   const holes = INV.entradas.filter((e) => e.id.startsWith(`${ROOT}.`) && !done.has(e.id) && ultimo(e.id) !== "thumbtack" && INV.hijos(e.id).length === 0);
   assert.ok(holes.length > 60);

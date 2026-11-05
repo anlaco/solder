@@ -10,7 +10,7 @@ import { createNodePool } from "../../core/runtime/node-pool.mjs";
 import { LATCH_VALUE_READ_ERROR } from "../../core/runtime/property-node.mjs";
 import { ERROR } from "../../core/model/types.mjs";
 import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
-import { startInstrument } from "../instrument.mjs";
+import { HAS_SERIAL_TEST_INSTRUMENT, startInstrument, startSerialInstrument } from "../instrument.mjs";
 import { CAT, buildVI } from "../helpers.mjs";
 
 const THREADS = 2;
@@ -241,6 +241,23 @@ test("an Instr row's error names only the row, and the rows after it do not run"
     assert.match(shown.errorOut.source, /^Property Node \(arg 3\)/);
     assert.doesNotMatch(shown.errorOut.source, /<APPEND>/);
     assert.deepEqual([shown.timeoutAfter, shown.enabledAfter], [0, false], "skipped");
+  } finally {
+    instrument.stop();
+  }
+});
+
+// VISA Bytes at Serial Port is an Instr node with this one row (reports/2026-11-05-visa-bytes-at-port.md); a new
+// session has nothing waiting (measured on COM1, reports/2026-10-30-visa-serial-com1.md).
+(HAS_SERIAL_TEST_INSTRUMENT ? test : test.skip)("Bytes at Port reads how many bytes wait in a serial port: none on a new session", async () => {
+  const instrument = await startSerialInstrument();
+  try {
+    const vi = instrVI(instrument.resource, readRows("Serial Settings:Number of Bytes at Serial Port"), (b) => {
+      b.node("waiting", "indicator", { type: "u32" });
+      b.wire("node.row-0", "waiting.value");
+    });
+    const shown = await run(vi, {}, { io: loadSolderIo() });
+    assert.equal(shown.waiting, 0);
+    assert.deepEqual(shown.errorOut, NO_ERROR);
   } finally {
     instrument.stop();
   }

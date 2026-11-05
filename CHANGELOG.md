@@ -9,6 +9,9 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- VISA Bytes at Serial Port, in Instrument I/O ▸ Serial and VISA Advanced ▸ Bus/Interface Specific ▸ Serial: a VISA
+  Property Node that reads how many bytes wait in a serial port, as LabVIEW places it. A Property Node whose rows
+  are all read-only greys Change All To Write.
 - The Property Node runs (DT-072), so far from the command line: a node linked to a numeric, Boolean or string
   control or indicator reads and writes Value, Visible, Disabled, Key Focus and Label.Text, and a VISA one reads and
   writes Timeout Value, the termination character and the serial settings, with LabVIEW's rules for errors (a
