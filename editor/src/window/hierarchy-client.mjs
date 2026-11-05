@@ -13,11 +13,12 @@ import { resolveRelative } from "../common/vi-paths.mjs";
  * `rootKey`: the path of the VI, or its untitled key. The root is either
  * `rootGraph`, the graph being edited (it is not read again from text, so
  * unsaved changes count), or `rootText`, a file just opened. `texts` maps the
- * key of every other VI to its text; `readVI(text, catalog)` reads one.
+ * key of every other VI to its text; `readVI(text, catalog)` reads one;
+ * `oviLibRoot` is the ovi.lib folder that `<ovilib>` paths lead to (DT-073).
  * Returns `{ graph, catalog, errors, keys }`: the root VI, its catalog view,
  * the reasons the hierarchy cannot be compiled, and the keys of its subVIs.
  */
-export function buildHierarchy({ rootKey, rootGraph, rootText, texts, baseCatalog, readVI }) {
+export function buildHierarchy({ rootKey, rootGraph, rootText, texts, baseCatalog, readVI, oviLibRoot = "" }) {
   const readErrors = [];
   const loadVI = (key, viCatalog) => {
     if (key === rootKey) return rootGraph ?? readVI(rootText, viCatalog);
@@ -29,7 +30,7 @@ export function buildHierarchy({ rootKey, rootGraph, rootText, texts, baseCatalo
       return null;
     }
   };
-  const hierarchy = loadHierarchy(rootKey, baseCatalog, { resolvePath: resolveRelative, loadVI });
+  const hierarchy = loadHierarchy(rootKey, baseCatalog, { resolvePath: (callerKey, storedPath) => resolveRelative(callerKey, storedPath, oviLibRoot), loadVI });
   const errors = [...hierarchy.errors.map((error) => error.motivo), ...readErrors];
   const root = hierarchy.vis.get(rootKey);
   return { graph: root.g, catalog: root.cat, errors, keys: [...hierarchy.vis.keys()].filter((key) => key !== rootKey) };

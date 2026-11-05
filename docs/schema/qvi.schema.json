@@ -384,7 +384,7 @@
               "$ref": "#/$defs/dataType"
             },
             "vi": {
-              "description": "Para subvi: ruta relativa al .qvi invocado.",
+              "description": "For subvi: the path of the OVI it calls, relative to the caller's file (absolute while the caller has none), or a symbolic `<ovilib>/…` path into Solder's ovi.lib (DT-073).",
               "type": "string"
             },
             "mode": {

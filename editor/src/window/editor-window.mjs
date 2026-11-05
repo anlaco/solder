@@ -167,6 +167,8 @@ function quieto(g, stepName) {
 
 /** The path this VI is saved at, or the key of an untitled one (see common/vi-paths.mjs). */
 let viKey = viInfo.key;
+/** Where this Solder's ovi.lib is, which `<ovilib>/…` subOVI paths lead to (DT-073). */
+const oviLibRoot = viInfo.oviLibRoot ?? "";
 /** The text of every other VI of the hierarchy, by absolute path. */
 let subVITexts = {};
 /** Why the hierarchy cannot be compiled: a subVI that cannot be found, a recursive call… */
@@ -182,7 +184,7 @@ let hierarchyKeys = [];
  */
 function rebuildHierarchy(g) {
   const placeOfOldTerminal = ED.terminalPlacer(ctx);
-  const result = buildHierarchy({ rootKey: viKey, rootGraph: g, texts: subVITexts, baseCatalog, readVI: Q.leer });
+  const result = buildHierarchy({ rootKey: viKey, rootGraph: g, texts: subVITexts, baseCatalog, readVI: Q.leer, oviLibRoot });
   cat = result.catalog;
   ctx = D.contexto(cat, glifos, separador, medirMenu);
   hierarchyErrors = result.errors;
@@ -280,7 +282,7 @@ async function cargarTexto(text) {
   const { texts } = await window.solder.textosDeSubVIs(text);
   subVITexts = texts;
   try {
-    const result = buildHierarchy({ rootKey: viKey, rootText: text, texts, baseCatalog, readVI: Q.leer });
+    const result = buildHierarchy({ rootKey: viKey, rootText: text, texts, baseCatalog, readVI: Q.leer, oviLibRoot });
     cat = result.catalog;
     ctx = D.contexto(cat, glifos, separador, medirMenu);
     hierarchyErrors = result.errors;
@@ -946,7 +948,7 @@ function fragmentoParaEsteVI({ viKey: origen, fragment }) {
 async function conocerSubVIs(fragment) {
   const faltan = fragment.nodes.filter((n) => SN.isSubVI(n) && !cat.findSubVI?.(n.config.vi));
   for (const n of faltan) {
-    const { texts } = await window.solder.textosDeVI(Paths.resolveRelative(viKey, n.config.vi));
+    const { texts } = await window.solder.textosDeVI(Paths.resolveRelative(viKey, n.config.vi, oviLibRoot));
     subVITexts = { ...subVITexts, ...texts };
   }
   if (faltan.length) ponerGrafo(rebuildHierarchy(grafo()));
@@ -1148,14 +1150,14 @@ async function seleccionarVI() {
   const { texts } = await window.solder.textosDeVI(absolutePath);
   subVITexts = { ...subVITexts, ...texts };
   const g = rebuildHierarchy(dia.g);
-  dia = ED.coger({ ...dia, g }, "subvi", SN.subVIConfig(Paths.storedPathFor(viKey, absolutePath)));
+  dia = ED.coger({ ...dia, g }, "subvi", SN.subVIConfig(Paths.storedPathFor(viKey, absolutePath, oviLibRoot)));
   pintar();
 }
 
 /** Opens the windows of the VI that a `subvi` node calls (or brings them forward if they are open). */
 function abrirSubVI(nodeId) {
   const node = grafo().nodos.find((n) => n.id === nodeId);
-  if (node?.config?.vi) window.solder?.abrirRuta(Paths.resolveRelative(viKey, node.config.vi));
+  if (node?.config?.vi) window.solder?.abrirRuta(Paths.resolveRelative(viKey, node.config.vi, oviLibRoot));
 }
 
 /** The right-click menu of the connector pane (on a cell) or of the icon of the VI. */

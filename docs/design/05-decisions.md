@@ -3381,7 +3381,7 @@ symbolic path and opened and edited as LabVIEW opens vi.lib's.**
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| The symbolic path, its resolution and "(ovi.lib)" | To write with the first `ovi.lib` OVI | **Not built** |
+| The symbolic path, its resolution against the ovi.lib of the Solder that opens it, a path chosen in ovi.lib stored symbolically and never rebased, the hierarchy's "(ovi.lib)", the folder shipped outside the archive | `test/editor/ovi-lib.test.mjs` | **Verified** (2026-11-05) by test; no window shows the hierarchy or a subOVI's tip yet, so "(ovi.lib)" is only the name they will use; Save into an installed, read-only ovi.lib is **unverified** |
 
 ## DT-074
 

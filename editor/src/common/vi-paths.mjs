@@ -5,7 +5,11 @@
 // to, so it stores the absolute path and converts it when it is first saved.
 // Pure and independent of the system: it works on strings, with `/` as the
 // separator (a Windows path is read with its backslashes turned into `/`), so
-// the page and the main process share it.
+// the page and the main process share it. An OVI of ovi.lib is stored by its
+// symbolic `<ovilib>/…` path instead (DT-073, core/model/ovi-lib.mjs), which a
+// rebase leaves alone: it does not depend on where the caller is.
+
+import { isOviLibPath, oviLibPathFor, resolveOviLibPath } from "../../../core/model/ovi-lib.mjs";
 
 const WINDOWS_DRIVE = /^[A-Za-z]:\//;
 
@@ -77,8 +81,15 @@ export function directoryOf(key) {
   return joinPath({ root, segments: segments.slice(0, -1) });
 }
 
-/** The absolute path of the VI that a caller (saved or not) refers to with `storedPath`. */
-export function resolveRelative(callerKey, storedPath) {
+/**
+ * The absolute path of the VI that a caller (saved or not) refers to with `storedPath`; a `<ovilib>/…` path is
+ * resolved against `oviLibRoot`, the ovi.lib folder of this Solder.
+ */
+export function resolveRelative(callerKey, storedPath, oviLibRoot = "") {
+  if (isOviLibPath(storedPath)) {
+    const resolved = resolveOviLibPath(storedPath, oviLibRoot);
+    return isAbsolutePath(resolved) ? joinPath(collapse(splitPath(resolved))) : resolved;
+  }
   if (isAbsolutePath(storedPath)) return joinPath(collapse(splitPath(storedPath)));
   const base = splitPath(directoryOf(callerKey));
   return joinPath(collapse({ root: base.root, segments: [...base.segments, ...splitPath(storedPath).segments] }));
@@ -97,9 +108,15 @@ export function relativeBetween(directory, target) {
 
 /**
  * What a caller stores for a subVI the user has chosen at `absolutePath`: the
- * path relative to the caller if it has a file, and the absolute one if not.
+ * symbolic path if it is in ovi.lib (`oviLibRoot`), else the path relative to
+ * the caller if it has a file, and the absolute one if not.
  */
-export const storedPathFor = (callerKey, absolutePath) => (isSavedKey(callerKey) ? relativeBetween(directoryOf(callerKey), joinPath(collapse(splitPath(absolutePath)))) : joinPath(collapse(splitPath(absolutePath))));
+export function storedPathFor(callerKey, absolutePath, oviLibRoot = "") {
+  const absolute = joinPath(collapse(splitPath(absolutePath)));
+  const symbolic = oviLibPathFor(absolute, oviLibRoot);
+  if (symbolic) return symbolic;
+  return isSavedKey(callerKey) ? relativeBetween(directoryOf(callerKey), absolute) : absolute;
+}
 
 /**
  * The path a caller stored while it lived at `fromKey`, as it must be stored
@@ -107,7 +124,7 @@ export const storedPathFor = (callerKey, absolutePath) => (isSavedKey(callerKey)
  * VI it points to is the same one.
  */
 export function rebaseStoredPath(storedPath, fromKey, toKey) {
-  if (!isSavedKey(toKey)) return storedPath;
+  if (isOviLibPath(storedPath) || !isSavedKey(toKey)) return storedPath;
   if (!isSavedKey(fromKey) && !isAbsolutePath(storedPath)) return storedPath;
   return relativeBetween(directoryOf(toKey), resolveRelative(fromKey, storedPath));
 }
@@ -157,12 +174,12 @@ export function rebaseText(text, fromKey, toKey) {
 
 /**
  * Reads a VI and, one level after another, every subVI it calls: `readText(key)`
- * gives the text of a file or `null`. Returns `{ texts, missing }`, with the
+ * gives the text of a file or `null`; `oviLibRoot` is where `<ovilib>` paths lead. Returns `{ texts, missing }`, with the
  * text of each file that was found by its key (the absolute path) and the keys
  * that could not be read. Whoever opens the hierarchy in the page passes the
  * result to `loadHierarchy`, which cannot read the disk (core/model/hierarchy.mjs).
  */
-export async function readHierarchyTexts(rootKey, rootText, readText) {
+export async function readHierarchyTexts(rootKey, rootText, readText, oviLibRoot = "") {
   const texts = {};
   const missing = [];
   const visited = new Set([rootKey]);
@@ -176,7 +193,7 @@ export async function readHierarchyTexts(rootKey, rootText, readText) {
       continue;
     }
     for (const stored of subVIPathsInFile(file)) {
-      const calleeKey = resolveRelative(key, stored);
+      const calleeKey = resolveRelative(key, stored, oviLibRoot);
       if (visited.has(calleeKey)) continue;
       visited.add(calleeKey);
       const calleeText = await readText(calleeKey);

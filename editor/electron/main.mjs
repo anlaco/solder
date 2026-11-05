@@ -24,6 +24,9 @@ import { createInstrumentIoProcess } from "./instrument-io-process.mjs";
 import { chosenFileOf, chosenFilesOf, confirmationBoxFor, confirmedBy, fileDialogFor, folderAfter, systemDialogFor } from "./file-dialog-options.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
+// Solder's library of OVIs (DT-073): next to the repository's editor while developing, and among the application's
+// resources (outside the archive, so that it can be written where the installation allows it) once installed.
+const OVI_LIB_ROOT = pathKey(app.isPackaged ? path.join(process.resourcesPath, "ovi.lib") : path.join(HERE, "../../ovi.lib"));
 const EDITOR = path.resolve(HERE, "..");
 /** Solder's own icon (build/icon.svg, rasterized to build/icon.png); Windows takes it from the executable. */
 const APP_ICON = path.resolve(EDITOR, "../build/icon.png");
@@ -483,7 +486,7 @@ function handleRequests() {
 
   ipcMain.handle("vi:init", async (event) => {
     const { entry } = openOf(event);
-    return { ...describe(entry), windowStyle: await readWindowStyle(entry.path) };
+    return { ...describe(entry), windowStyle: await readWindowStyle(entry.path), oviLibRoot: OVI_LIB_ROOT };
   });
   ipcMain.on("vi:cambio", (event, text) => {
     const open = openOf(event);
@@ -542,13 +545,13 @@ function handleRequests() {
   // The text of every VI that a VI reaches, from the disk (not from the other open VIs: a caller sees a subVI when it is saved).
   ipcMain.handle("vi:subvi-texts", (event, text) => {
     const entry = openOf(event).entry;
-    return readHierarchyTexts(keyOf(entry), text, readTextOrNull);
+    return readHierarchyTexts(keyOf(entry), text, readTextOrNull, OVI_LIB_ROOT);
   });
   // The same for a VI that is about to be placed as a subVI: its own text and that of its subVIs.
   ipcMain.handle("vi:subvi-texts-of", async (_event, key) => {
     const text = await readTextOrNull(key);
     if (text === null) return { texts: {}, missing: [key] };
-    const { texts, missing } = await readHierarchyTexts(key, text, readTextOrNull);
+    const { texts, missing } = await readHierarchyTexts(key, text, readTextOrNull, OVI_LIB_ROOT);
     return { texts: { [key]: text, ...texts }, missing };
   });
   // One clipboard for all the open VIs, kept as text: what a window copies reaches every window (spec/05 rule 73).

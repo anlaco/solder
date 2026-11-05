@@ -37,6 +37,12 @@
       "build/icon.png",
       "native/solder-io-node/solder-io.mjs"
     ],
+    "extraResources": [
+      {
+        "from": "ovi.lib",
+        "to": "ovi.lib"
+      }
+    ],
     "linux": {
       "target": [
         "AppImage",

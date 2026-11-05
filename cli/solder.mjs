@@ -25,9 +25,11 @@ import { startValue } from "../core/model/control-values.mjs";
 import { formatear } from "../core/model/types.mjs";
 import { wat } from "../core/compiler/wasm-encoder.mjs";
 import { loadSolderIo } from "../native/solder-io-node/solder-io.mjs";
+import { isOviLibPath, resolveOviLibPath } from "../core/model/ovi-lib.mjs";
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const readSchema = (name) => JSON.parse(readFileSync(path.join(AQUI, "../docs/schema", name), "utf8"));
+const OVI_LIB_ROOT = path.join(AQUI, "../ovi.lib");
 const cat = cargarCatalogo(readSchema("blocks.json"), readSchema("properties.json"));
 
 /** An indicator's value as the panel would show it. */
@@ -54,8 +56,9 @@ if (!["run", "wat", "check"].includes(orden) || !fichero || !Number.isInteger(th
   process.exit(2);
 }
 
-// The VI and its subVIs, each read from the path its caller stores relative to itself (DT-045).
-const resolvePath = (caller, relative) => path.resolve(path.dirname(caller), relative);
+// The OVI and its subOVIs, each read from the path its caller stores relative to itself (DT-045), or from ovi.lib
+// for a `<ovilib>/…` path (DT-073).
+const resolvePath = (caller, stored) => (isOviLibPath(stored) ? path.resolve(resolveOviLibPath(stored, OVI_LIB_ROOT)) : path.resolve(path.dirname(caller), stored));
 const loadVI = (key, viCatalog) => {
   try {
     return leer(readFileSync(key, "utf8"), viCatalog);
