@@ -9,6 +9,14 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+## 0.8.0-beta — 2026-11-06
+
+Solder's program unit is now the OVI, and it grows as LabVIEW's VIs do: polymorphic OVIs and Solder's own
+`ovi.lib`, the Property Node and control references, VISA over serial ports, LabVIEW's 36 connector patterns,
+the first Express VIs and spreadsheet files; the canvases scroll and each OVI remembers its windows. The `.sdg`
+format goes to version 3: files of 0.4 to 0.7 open as before, migrated, but a file saved by 0.8 does not open
+in an older Solder.
+
 - The Front Panel and the Block Diagram scroll as LabVIEW's do: Windows 11 overlay scrollbars (a thin thumb that widens
   with its arrows under the pointer), a range a quarter of the view past the content that always includes the view,
   30 px per wheel notch, 32 px (panel) and 30 px (diagram) per arrow, a whole view per track click, arrows that repeat
