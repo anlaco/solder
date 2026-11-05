@@ -35,6 +35,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [068](#dt-068) | A wire with several sinks is a tree from its geometry: the junction dot is where routes part, never stored | Accepted · implemented |
 | [069](#dt-069) | An Express VI is a catalog node configured in its `config` and compiled to WebAssembly; lean: Time Delay and File Dialog first, reviewed with the community before 1.0 | Accepted · implemented (Time Delay, File Dialog) |
 | [076](#dt-076) | DAQ: Solder's own acquisition layer, DAQmx's API one to one under the name DAQ, a native engine in `solder-io` over swappable drivers | Accepted · not implemented |
+| [077](#dt-077) | When Solder is 1.0: what a LabVIEW developer certified on Core 1 and Core 2 does, reliably, with nothing lost; not a coverage figure | Accepted · not implemented |
 
 ## The 34 Red decisions
 
@@ -3529,3 +3530,78 @@ drivers that can be swapped.**
 |-----------|-----------|--------|
 | The DAQ palette, OVIs, connectors and Property Node classes are DAQmx's | Measurement of DAQmx with a simulated device, then tests per OVI | **Not built** |
 | A LabVIEW VI that uses DAQmx maps onto Solder node by node | — (opening NI's VIs is a future goal) | **Unverified** |
+
+## DT-077
+
+**Solder is 1.0 when a LabVIEW developer can do in it everything Core 1 and Core 2 teach, with LabVIEW's results,
+without losing work, on Windows and Linux; and when people outside the project have used a release candidate for
+four months without a serious fault. A coverage figure is not a condition.**
+
+- **Status:** Accepted on 2026-11-05 by the developer, as proposed the same day except the time of the release
+  candidates, raised from four weeks to **four months**.
+- **Why:** a 1.0 is a promise about what is in it, not about what is missing. LabVIEW 1.0 (1986) ran only on the
+  Macintosh and CATIA V1 (1981) was an add-on to CADAM; both shipped with known faults and far less than their later
+  versions. What they promised worked well enough for their users to rely on it. Solder's users come from LabVIEW,
+  so the yardstick is theirs: NI's first certification, the CLAD, covers Core 1 and Core 2. Below that line a LabVIEW
+  developer cannot write the programs they write at work (no Event Structure, no queues, no executable); above it
+  (Core 3, classes, frameworks) is what a 1.x can add without breaking anything.
+
+### Decision
+
+1. **Scope: Core 1 and Core 2, every lesson** ([DT-054](#dt-054) extended). Core 1 including its hardware lessons,
+   done on the ESP32 and on Crucible's instruments through VISA and DAQ ([DT-064](#dt-064), [DT-076](#dt-076));
+   Core 2 with the Event Structure, queues and channel wires, VI Server, configuration files, error handling and
+   building an executable and an installer. Each exercise is written anew (rule 3), built in LabVIEW and in Solder,
+   and a test compares their outputs value by value, as `test/end-to-end/examples.test.mjs` does today.
+2. **Everything else stays greyed and says why** ([DT-035](#dt-035)). [`coverage.md`](coverage.md) reports where
+   Solder is; no percentage of it is a condition for 1.0.
+3. **No work is lost.**
+   - The `.sdg` format of 1.0 is a promise: every 1.x opens every file saved by 1.0 or later, and every beta's file
+     through its migration ([DT-055](#dt-055)); a newer file is refused with a clear message, never opened wrong.
+   - A crash of the editor or of a Run leaves the unsaved OVIs recoverable on the next start, as LabVIEW's
+     recovery dialog does (to be measured).
+   - A valid file that cannot be opened is a blocker, whatever its cause.
+4. **No known blocker.** A public list of known issues (`docs/known-issues.md`). A blocker is a crash, a lost or
+   damaged file, a wrong result, or a Core 1 or Core 2 task that cannot be done; none is open at release. Every
+   other known fault is on the list, with its workaround if it has one.
+5. **Release candidates.** When 1 to 4 hold, `1.0.0-rc.1` is published and features are frozen: only fixes go in,
+   each with its test. 1.0.0 is tagged when **four months** pass after the last candidate without a new blocker,
+   and when **at least five people outside the project** have done some Core 1 or Core 2 exercises with it.
+6. **Platforms: Windows 10/11 and Linux (AppImage and deb)**, each installed, used and uninstalled on a clean machine
+   for every candidate. macOS waits for 1.x: there is no Mac to test it on.
+7. **Help.** The Context Help window, with a text of our own for every function, control and structure that is
+   built; Explain Error; and Find Examples with the Core 1 and Core 2 exercises as Solder's examples.
+8. **Performance, measured and written down before the candidate**, with a test for each where it can: start-up
+   time, opening and compiling an OVI of a few hundred nodes, the time from Run to the first indicator, and an
+   acquisition loop on the ESP32 that loses no samples at its nominal rate. The budgets are set after measuring
+   LabVIEW doing the same. **Unverified** until then.
+9. **Legal and safety review.** No NI bitmap or text (rule 3), checked file by file; the trademarks Solder names
+   (LabVIEW, DAQmx, NI) only as references; the licences of every dependency compatible with AGPL-3.0; Electron's
+   hardening (context isolation, no remote content, no `nodeIntegration` in pages that show user data).
+10. **After 1.0.** Semantic versioning: 1.x adds and fixes, never breaks an OVI or a file; anything that breaks waits
+    for 2.0. The release branches of [DT-057](#dt-057) come back ([DT-062](#dt-062) §6): the latest 1.x gets fixes;
+    a serious fix goes out at once.
+
+### What is not a condition
+
+The panel styles and themes beyond Old School and Solder, pixel-level differences from LabVIEW that do not change
+what a user can do, the palettes outside Modern (Silver, System, Classic), Mathematics and Signal Processing,
+classes, the Actor Framework and Core 3, macOS, and the future textual language (`.sdt`).
+
+### Answered on acceptance
+
+- **Core 2 is in 1.0**, not left to the 1.x versions.
+- **Five outside testers**, and **four months** without a new blocker after the last candidate (the developer's
+  change; the proposal said four weeks).
+- **Recovery after a crash is a condition** for 1.0.
+- **macOS is out of 1.0.**
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Every Core 1 and Core 2 exercise gives LabVIEW's results | One end-to-end test per exercise, like `examples.test.mjs` | **Not built** |
+| Every file of 1.0 or later, and of each beta, opens in every 1.x | `test/end-to-end/format-versions.test.mjs` with fixtures from every release | **Partly built** (betas) |
+| No blocker is open at release | `docs/known-issues.md`, reviewed for each candidate | **Not built** |
+| The installers work on clean machines | A checklist run on Windows and Linux per candidate | **Not built** |
+| Performance stays within its budgets | Tests per budget, after measuring LabVIEW | **Unverified** |
