@@ -34,6 +34,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [063](#dt-063) | A Run uses every core: a pool of workers over one shared memory; independent Runs keep separate memories | Accepted · not implemented |
 | [068](#dt-068) | A wire with several sinks is a tree from its geometry: the junction dot is where routes part, never stored | Accepted · implemented |
 | [069](#dt-069) | An Express VI is a catalog node configured in its `config` and compiled to WebAssembly; lean: Time Delay and File Dialog first, reviewed with the community before 1.0 | Accepted · implemented (Time Delay, File Dialog) |
+| [076](#dt-076) | DAQ: Solder's own acquisition layer, DAQmx's API one to one under the name DAQ, a native engine in `solder-io` over swappable drivers | Accepted · not implemented |
 
 ## The 34 Red decisions
 
@@ -3487,3 +3488,44 @@ LabVIEW's selector and menus.**
 | The 36 patterns cover their pane once each, the grid order, 4833's cells, 4815's indices | `test/editor/connector-patterns.test.mjs`, `test/editor/connector-pane.test.mjs` | **Verified** (2026-11-05) by test |
 | A version 1 connector migrates to LabVIEW's indices with its terminals in the same place | `test/end-to-end/format-versions.test.mjs` | **Verified** (2026-11-05) by test |
 | Where a terminal of a middle cell, or of a cell as wide as the pane, meets the subOVI icon | — | **Unverified** |
+
+## DT-076
+
+**DAQ: Solder's acquisition layer is called DAQ, clones DAQmx's API one to one, and runs on a native engine over
+drivers that can be swapped.**
+
+- **Status:** Accepted on 2026-11-05 by the developer, before plan step 5 (it was left open on 2026-11-03). Its details
+  wait for the measurement of DAQmx in LabVIEW with a simulated NI device ([DT-064](#dt-064)).
+- **Why:** NI-DAQmx is a driver, not a hardware family: one API (the DAQmx palette, its tasks and channels) over every
+  NI acquisition device. "NI-DAQ" and "DAQmx" are NI's names; "DAQ" (*data acquisition*) is the generic word, and the
+  clearest one for whoever comes from LabVIEW. "openDAQ" is an open SDK of Dewesoft and HBK, so a name like it would be
+  confused with theirs. The developer's goal is to **open National Instruments' VIs in Solder some day**: whatever a
+  LabVIEW diagram holds must exist in Solder, node for node, so the diagrams are identical. The reverse is not needed:
+  Solder may add functions LabVIEW lacks.
+
+### Decision
+
+1. **The name is DAQ.** Where LabVIEW says DAQmx, Solder says DAQ: the palette, the OVIs ("DAQmx Read" is "DAQ Read",
+   "DAQmx Create Virtual Channel" is "DAQ Create Virtual Channel"), the task and channel refnums, the Property Node
+   classes. Nothing else of NI's (code, icons, help texts) is copied (CLAUDE.md rule 3).
+2. **DAQmx's API one to one** ([DT-035](#dt-035)): the same OVIs, in the same palette places and order, with the same
+   polymorphic instances, terminals, connector indices ([DT-075](#dt-075)), defaults and errors; tasks as refnums;
+   the same Property Node classes and rows. A LabVIEW VI that uses DAQmx maps onto Solder node by node. That is the
+   base; Solder's own additions come after it and never change it.
+3. **One layer over every driver.** The engine (tasks, buffers, timing, triggers) is native, in `native/solder-io`,
+   and the nodes are catalog blocks, as VISA's are. Below it, drivers that can be swapped:
+   - **SCPI over VISA** first, for our own hardware (the classic ESP32 of plan step 5, the GateMate board later):
+     SCPI for control, IEEE 488.2 binary blocks for data.
+   - **Simulated**, served by Crucible, for the tests and for whoever has no hardware, as NI MAX's simulated devices.
+   - **NI-DAQmx**, calling NI's C library only when the user has installed NI's driver (as Python's `nidaqmx` does),
+     after reading its licence.
+   - **openDAQ** (Apache 2.0) and **Comedi** (Linux kernel drivers): ideas, without commitment.
+4. **Before building it**, DAQmx is measured in LabVIEW with a simulated NI device: the palette, the OVIs and their
+   connectors, the Property Node classes, the errors. Each part gets its rules in the spec then.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The DAQ palette, OVIs, connectors and Property Node classes are DAQmx's | Measurement of DAQmx with a simulated device, then tests per OVI | **Not built** |
+| A LabVIEW VI that uses DAQmx maps onto Solder node by node | — (opening NI's VIs is a future goal) | **Unverified** |

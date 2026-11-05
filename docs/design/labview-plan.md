@@ -647,6 +647,10 @@ array or string read by a local variable while another loop writes it is never t
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the
       firmware (in parallel from step 3), and first served by a Crucible profile of it.
    6. **A DAQmx-like layer** over the ESP32, with its own DT after measuring DAQmx with a simulated NI device.
+      *Decided on 2026-11-05 in [DT-076](05-decisions.md#dt-076): the layer is called **DAQ**, clones DAQmx's API one
+      to one (so that NI's VIs can be opened some day) and runs on a native engine in `native/solder-io` over drivers
+      that can be swapped: SCPI over VISA first, simulated by Crucible, NI-DAQmx when installed; openDAQ and Comedi as
+      ideas. The notes of 2026-11-03 follow.*
       *Open before step 5 (talked over with the developer on 2026-11-03, nothing decided): **what Solder uses instead
       of DAQmx**, its own name (DAQmx and NI-DAQ are NI's trademarks, as OVI stands for VI, DT-071) and its approach.
       Ideas: DAQmx's programming model (tasks, named channels, hardware timing, triggers, waveforms) over engines
