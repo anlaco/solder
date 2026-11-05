@@ -3613,3 +3613,32 @@ classes, the Actor Framework and Core 3, macOS, and the future textual language 
 | The installers work on clean machines | A checklist run on Windows and Linux per candidate | **Not built** |
 | Performance stays within its budgets | Tests per budget, after measuring LabVIEW | **Unverified** |
 | Large arrays are not copied where LabVIEW does not copy them | The large-array benchmark against LabVIEW, and tests of which nodes reuse their input's buffer | **Not built** |
+
+## DT-078
+
+**An OVI saves where its windows were and how far each canvas was scrolled, as LabVIEW does; the `.sdg` format goes to
+version 3.**
+
+- **Status:** Asked for by the developer on 2026-11-05 ("the size of the windows is saved when the VI is saved"),
+  measured that day (`labview-captures/reports/2026-11-05-scrollbars-and-window-bounds.md` §B).
+
+### Decision
+
+1. **What is saved:** in `layout.windows`, for the Front Panel and the Block Diagram, the outer bounds of the window
+   on the screen (`x`, `y`, `width`, `height`, unmaximized) and, when it was scrolled, its `origin`, the point of the
+   canvas at the top left of its visible area. A hidden Block Diagram saves its last bounds, as LabVIEW's does.
+2. **When:** on every Save, by the main process, which owns the windows (`editor/electron/saved-windows.mjs`).
+   Moving, resizing or scrolling a window **never makes the OVI modified** and closing does not ask about it; a
+   Save with nothing modified still writes them. Measured in LabVIEW.
+3. **Opening:** the windows open at the saved bounds while those still fall on a screen, and otherwise where a new
+   OVI's open; each canvas starts at its saved origin.
+4. **Format:** `layout` is presentation (spec/02 §2), so the compiler does not read it. The field is optional, but
+   the format is frozen ([DT-055](#dt-055)): it raises `solder` to 3, and the migration from 2 only changes the number.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The windows are read and written again unchanged, and satisfy the schema | `test/end-to-end/qvi-round-trip.test.mjs` | Built |
+| Moving or scrolling never marks the OVI modified; an edit does | `test/editor/saved-windows.test.mjs` | Built |
+| A window opens at its saved bounds only while they fall on a screen | `test/editor/saved-windows.test.mjs` | Built (what LabVIEW does off-screen is **unverified**) |

@@ -7,7 +7,7 @@ import { test } from "node:test";
 import Ajv2020 from "ajv/dist/2020.js";
 
 import * as Gr from "../../core/model/graph.mjs";
-import { ErrorQvi, aTexto, escribir, leer } from "../../core/model/qvi-format.mjs";
+import { ErrorQvi, VERSION, aTexto, escribir, leer } from "../../core/model/qvi-format.mjs";
 import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
 import * as ED from "../../editor/src/block-diagram/diagram-editing.mjs";
 import * as P from "../../editor/src/front-panel/front-panel.mjs";
@@ -117,8 +117,18 @@ test("un vi vacío se guarda y se abre", () => {
   assert.deepEqual(leer(texto, CAT).nodos, []);
 });
 
+test("the windows saved with an OVI are read and written again unchanged (DT-078)", () => {
+  const windows = { "front-panel": { x: 200, y: 150, width: 900, height: 550, origin: { x: 123, y: 77 } }, "block-diagram": { x: 300, y: 250, width: 900, height: 500 } };
+  const read = leer({ solder: VERSION, "block-diagram": { nodes: [] }, layout: { windows } }, CAT);
+  assert.deepEqual(read.windows, windows);
+  const text = aTexto(read, CAT);
+  assert.ok(validar(JSON.parse(text)), errores());
+  assert.deepEqual(JSON.parse(text).layout.windows, windows);
+  assert.equal(aTexto(leer(text, CAT), CAT), text);
+});
+
 test("lo que no se sabe leer se rechaza con el motivo", () => {
-  assert.throws(() => leer({ solder: 3, "block-diagram": {} }, CAT), ErrorQvi);
+  assert.throws(() => leer({ solder: VERSION + 1, "block-diagram": {} }, CAT), ErrorQvi);
   assert.throws(() => leer({ solder: 1, "block-diagram": { nodes: [{ name: "a", type: "no-existe" }] } }, CAT), /is not in the catalog/);
   assert.throws(() => leer({ solder: 1, "block-diagram": { structures: [{ name: "s", kind: "timed-loop" }] } }, CAT), /cannot be read yet/);
   const malCable = { solder: 1, "block-diagram": { nodes: [{ name: "s", type: "add" }], wires: [{ from: "s.result", to: "s.nada" }] } };

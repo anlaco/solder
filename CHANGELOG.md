@@ -9,6 +9,13 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- The Front Panel and the Block Diagram scroll as LabVIEW's do: Windows 11 overlay scrollbars (a thin thumb that widens
+  with its arrows under the pointer), a range a quarter of the view past the content that always includes the view,
+  30 px per wheel notch, 32 px (panel) and 30 px (diagram) per arrow, a whole view per track click, arrows that repeat
+  while held, and the canvas scrolls by itself when something is dragged out of it.
+- An OVI saves where its windows were and how far each was scrolled, and opens them there again, as LabVIEW does
+  (DT-078); moving or scrolling a window does not make it modified. The `.sdg` format goes to version 3; files of
+  version 2 open as before.
 - VISA Configure Serial Port, in Instrument I/O ▸ Serial and VISA Advanced ▸ Bus/Interface Specific ▸ Serial: a
   polymorphic OVI of ovi.lib, (Instr) and (Serial Instr), drawn anew from LabVIEW's, with its connector (pattern 4833),
   defaults and optional terminals. Stop bits and flow control are numeric controls until Solder has ring controls.

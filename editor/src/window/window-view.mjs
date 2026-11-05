@@ -268,16 +268,24 @@ function elementoBarra(inv, e, sitio, extra) {
   return `<div class="${clases(inv, e.id, "texto-barra")}" ${id} ${estilo}>${esc(rotulo(e))}</div>`;
 }
 
+const NO_SCROLL = { x: 0, y: 0 };
+
+/**
+ * What is drawn on a canvas, shifted by its scroll `origin` (scrolling.mjs). The layer is the frame every object of
+ * the canvas is placed in, so a point of the page minus the layer's corner is a point of the canvas.
+ */
+const scrolledLayer = (content, origin) => `<div class="capa-desplazada" style="transform:translate(${px(-origin.x)}, ${px(-origin.y)})">${content}</div>`;
+
 /**
  * Pinta una ventana entera. `extra`: `lienzo`, lo que va dentro del lienzo (el
  * diagrama); `encima`, lo que va sobre todo (un menú de clic derecho);
  * `runRoto`, si el VI no se puede ejecutar; `ejecutando`, si corre (modo Run),
  * `editandoTexto`, `conectorGlifo`, the connector pane drawn with its assigned cells,
  * `numeroVI`, the number on the VI's icon, `propiedades`, the VI Properties dialog, and `panelStyle`, the style
- * the Front Panel is drawn in.
+ * the Front Panel is drawn in, and `origin`, the point of the canvas at the top left of its visible area.
  */
 export function ventana(inv, nombre, estado, extra = {}) {
-  const { lienzo = "", encima = "" } = extra;
+  const { lienzo = "", encima = "", origin = NO_SCROLL } = extra;
   const pre = `window.${nombre}`;
   const zona = anchoZonaIconos(nombre);
   const M = MEDIDAS;
@@ -313,9 +321,9 @@ export function ventana(inv, nombre, estado, extra = {}) {
     <div class="borde-barra" style="top:${px(M.altoMenus + M.altoSurco + M.altoBarra)};height:${px(M.altoBordeBarra)}"></div>
     <div class="zona-iconos" style="width:${px(zona)};height:${px(M.altoMenus + M.altoSurco + M.altoBarra)}">${iconos.join("")}</div>
   </div>
-  <div class="lienzo lienzo-${nombre}${extra.resaltando ? " resaltando" : ""}${panelStyleClasses(extra.panelStyle)}" data-id="${pre}.workspace" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};right:${px(M.anchoCanalon)}">${lienzo}</div>
-  <div class="canalon" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};width:${px(M.anchoCanalon)}"></div>
-  <div class="barra-estado" style="height:${px(M.altoEstado)}">${estadoHTML}</div>
+  <div class="lienzo lienzo-${nombre}${extra.resaltando ? " resaltando" : ""}${panelStyleClasses(extra.panelStyle)}" data-id="${pre}.workspace" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};right:${px(M.anchoCanalon)};background-position:${px(-origin.x)} ${px(-origin.y)}">${scrolledLayer(lienzo, origin)}</div>
+  <div class="canalon" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};width:${px(M.anchoCanalon)}"><div class="barra-desplazamiento vertical" data-axis="y"></div></div>
+  <div class="barra-estado" style="height:${px(M.altoEstado)}">${estadoHTML}<div class="barra-desplazamiento horizontal" data-axis="x" style="left:${px(instancia ? M.anchoInstancia : 0)};right:${px(M.anchoCanalon)}"></div></div>
   ${estado.paleta ? paleta(inv, estado.paleta) + subpaletas(inv, estado.paleta) : ""}
   ${extra.propiedades ?? ""}
   ${extra.flotantes ?? ""}

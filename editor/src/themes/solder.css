@@ -28,6 +28,7 @@
   --placeholder-corner-light: #e3e6ec;
   --placeholder-corner-dark: #9aa0ab;
   --chrome-background: #ffffff;
+  --scrollbar-thumb: #9aa0aa; /* The overlay scrollbar's thumb and arrows (2026-11-05 report). */
   --status-instance-border: #2b2f36;
   --toolbar-box-border: #c9ced8;
   --run-arrow-fill: #ff7a1a;

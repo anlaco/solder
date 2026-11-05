@@ -31,6 +31,7 @@
   --placeholder-corner-light: #c8c8c8;
   --placeholder-corner-dark: #878787;
   --chrome-background: #f0f0f0; /* The window frame: menu bar, toolbar, status bar, gutters. */
+  --scrollbar-thumb: #858585; /* The overlay scrollbar's thumb and arrows (2026-11-05 report). */
   --status-instance-border: #2a2a2a;
   --toolbar-box-border: #7a7a7a;
   --run-arrow-fill: #fff; /* The Run arrow of the toolbar. */

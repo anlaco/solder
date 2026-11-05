@@ -12,6 +12,7 @@
 // is its saved version.
 
 import { basename } from "node:path";
+import { withoutWindows } from "./saved-windows.mjs";
 
 /** The two windows of a VI, in the order they are opened. */
 export const WINDOW_KINDS = ["front-panel", "block-diagram"];
@@ -56,7 +57,8 @@ export function createRegistry() {
   };
 }
 
-export const isDirty = (entry) => entry.saved !== null && entry.current !== entry.saved;
+/** Where the windows are is saved with the OVI but is never an unsaved change (DT-078). */
+export const isDirty = (entry) => entry.saved !== null && withoutWindows(entry.current) !== withoutWindows(entry.saved);
 
 /** The name LabVIEW gives the VI in its titles and dialogs: its file name, or «Untitled N». */
 export const viName = (entry) => (entry.path ? basename(entry.path) : `Untitled ${entry.untitledNumber}`);

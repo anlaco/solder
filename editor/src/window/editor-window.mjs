@@ -50,6 +50,7 @@ import * as PolymorphicNodes from "../block-diagram/polymorphic-nodes.mjs";
 import * as ExpressNodes from "../block-diagram/express-nodes.mjs";
 import { commandForCtrlKey } from "./shortcuts.mjs";
 import * as RV from "./run-values.mjs";
+import * as Scroll from "./scrolling.mjs";
 import * as Sync from "./graph-sync.mjs";
 import * as VP from "./vi-properties.mjs";
 import * as V from "./window-view.mjs";
@@ -275,6 +276,7 @@ function cargar(g) {
   historial = H.nuevo(g);
   dia = { ...ED.inicial(), g };
   pan = P.inicial(g);
+  scrollOrigin = g.windows?.[nombre]?.origin ?? { x: 0, y: 0 };
   pintar();
   avisar(g);
 }
@@ -1303,7 +1305,9 @@ function pintar() {
     const variantes = estado.menuBarra.id === EM.editMenuId(nombre) ? variantesDelMenuEdit() : {};
     extra.encima = (extra.encima ?? "") + D.menuContextual(inv, { raiz: estado.menuBarra.id, x: estado.menuBarra.x, y: estado.menuBarra.y }, marcasDelMenuBarra(estado.menuBarra.id), medirMenu, variantes, windowSize());
   }
+  extra.origin = scrollOrigin;
   morphInnerHtml(document.body, V.ventana(inv, nombre, estado, extra));
+  drawScrollbars();
   const ventana = document.querySelector(".ventana");
   ventana.classList.toggle("cableando", dia.accion?.tipo === "cablear");
   // Mientras se arrastra un control desde la paleta, el lienzo lleva un borde punteado.
@@ -1368,10 +1372,10 @@ function volver(r) {
   pintar();
 }
 
-/** El punto del evento en coordenadas del lienzo. */
+/** The point of the event in canvas coordinates: the page point plus how far the canvas is scrolled. */
 function punto(ev) {
   const r = document.querySelector(".lienzo").getBoundingClientRect();
-  return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+  return { x: ev.clientX - r.left + scrollOrigin.x, y: ev.clientY - r.top + scrollOrigin.y };
 }
 
 /**
@@ -1678,12 +1682,198 @@ function pulsarPanel(ev) {
   cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), ev.shiftKey, ev.ctrlKey || ev.metaKey));
 }
 
-// The wheel over a menu taller than the window scrolls it (diagram-view.mjs `menuScroll`).
+// ——— Scrolling the canvas (scrolling.mjs) ———
+
+/** The point of the canvas at the top left of its visible area; saved with the VI, never marking it modified. */
+let scrollOrigin = { x: 0, y: 0 };
+/** Per axis, what the bars were last drawn from: `{ range, visible, trackLength, thumb }`, or null when nothing scrolls. */
+const scrollAxes = { x: null, y: null };
+/** A press on a bar that is still held: an arrow repeating, or the thumb being dragged. */
+let barPress = null;
+/** The frame loop that scrolls while something is dragged outside the canvas. */
+let autoscroll = null;
+
+const AXIS_SIZE = { x: "width", y: "height" };
+const BAR_START = { x: "left", y: "top" };
+const POINTER_ALONG = { x: "clientX", y: "clientY" };
+const MILLISECONDS_PER_SECOND = 1000;
+
+/** Every box drawn on the canvas, in canvas coordinates: what the scroll range is measured from. */
+function canvasContentBoxes() {
+  const layer = document.querySelector(".capa-desplazada");
+  if (!layer) return [];
+  const corner = layer.getBoundingClientRect();
+  // The wires' layer covers the whole canvas: its paths are measured instead.
+  const drawn = [...layer.children].filter((element) => !element.matches("svg.cables"));
+  const wires = [...layer.querySelectorAll("svg.cables > *")];
+  return [...drawn, ...wires]
+    .map((element) => element.getBoundingClientRect())
+    .filter((box) => box.width > 0 || box.height > 0)
+    .map((box) => ({ left: box.left - corner.left, top: box.top - corner.top, right: box.right - corner.left, bottom: box.bottom - corner.top }));
+}
+
+/** Draws both bars from the canvas as it is now painted: the range is worked out again every time (no memory). */
+function drawScrollbars() {
+  const canvas = document.querySelector(".lienzo");
+  if (!canvas) return;
+  const boxes = canvasContentBoxes();
+  const visibleSize = canvas.getBoundingClientRect();
+  for (const axis of ["x", "y"]) {
+    const bar = document.querySelector(`.barra-desplazamiento[data-axis="${axis}"]`);
+    const visible = visibleSize[AXIS_SIZE[axis]];
+    const range = Scroll.scrollRange(Scroll.contentExtent(boxes, axis), scrollOrigin[axis], visible);
+    const trackLength = bar.getBoundingClientRect()[AXIS_SIZE[axis]] - 2 * Scroll.ARROW_BUTTON_LENGTH;
+    if (!Scroll.isScrollable(range) || trackLength <= 0) {
+      scrollAxes[axis] = null;
+      bar.innerHTML = "";
+      continue;
+    }
+    const thumb = Scroll.thumbOf(range, scrollOrigin[axis], visible, trackLength);
+    scrollAxes[axis] = { range, visible, trackLength, thumb };
+    bar.innerHTML = `<div class="flecha atras"></div><div class="pulgar" style="${BAR_START[axis]}:${Scroll.ARROW_BUTTON_LENGTH + thumb.start}px;${AXIS_SIZE[axis]}:${thumb.length}px"></div><div class="flecha adelante"></div>`;
+  }
+}
+
+/** Shows the canvas from `origin` and tells the main process, which saves it with the VI. */
+function scrollTo(origin) {
+  const rounded = { x: Math.round(origin.x), y: Math.round(origin.y) };
+  if (rounded.x === scrollOrigin.x && rounded.y === scrollOrigin.y) return;
+  scrollOrigin = rounded;
+  window.solder?.scrolled(scrollOrigin);
+  pintar();
+}
+
+const scrollBy = (axis, distance) => scrollTo({ ...scrollOrigin, [axis]: scrollOrigin[axis] + distance });
+
+/** One step of a press on a bar: an arrow moves by the window's step, the track by a whole view. */
+function stepBar(axis, part) {
+  const visible = scrollAxes[axis]?.visible ?? 0;
+  const steps = { "arrow-back": -Scroll.ARROW_STEP[nombre], "arrow-forward": Scroll.ARROW_STEP[nombre], "track-back": -visible, "track-forward": visible };
+  scrollBy(axis, steps[part]);
+}
+
+function pressBar(ev, bar) {
+  const axis = bar.dataset.axis;
+  const drawn = scrollAxes[axis];
+  ev.preventDefault();
+  ev.stopPropagation();
+  if (!drawn) return;
+  const position = ev[POINTER_ALONG[axis]] - bar.getBoundingClientRect()[BAR_START[axis]];
+  const part = Scroll.partOfBar(position, drawn.trackLength + 2 * Scroll.ARROW_BUTTON_LENGTH, drawn.thumb);
+  if (part === "thumb") {
+    barPress = { axis, thumbStart: drawn.thumb.start, pointerStart: ev[POINTER_ALONG[axis]], range: drawn.range };
+    return;
+  }
+  stepBar(axis, part);
+  // An arrow held down repeats (measured); a press on the track pages once (holding it was not measured).
+  if (!part.startsWith("arrow")) return;
+  const repeat = () => {
+    stepBar(axis, part);
+    barPress.timer = setTimeout(repeat, Scroll.ARROW_REPEAT.interval);
+  };
+  barPress = { axis, timer: setTimeout(repeat, Scroll.ARROW_REPEAT.firstDelay) };
+}
+
+function dragThumb(ev) {
+  const { axis, thumbStart, pointerStart, range } = barPress;
+  const drawn = scrollAxes[axis];
+  if (!drawn) return;
+  const moved = ev[POINTER_ALONG[axis]] - pointerStart;
+  scrollTo({ ...scrollOrigin, [axis]: Scroll.originAtThumb(thumbStart + moved, range, drawn.visible, drawn.trackLength) });
+}
+
+function releaseBar() {
+  clearTimeout(barPress?.timer);
+  barPress = null;
+}
+
+/** Whether something is being dragged on the canvas: what scrolls by itself when taken outside it. */
+function isDraggingOnCanvas() {
+  const action = conPanel ? pan.accion : dia.accion;
+  // A control chosen from the palette and placed by a click is not dragged until the button goes down.
+  return !!action && !(action.tipo === "colocar" && !action.arrastrado);
+}
+
+/** Starts or stops the autoscroll from where the pointer is while a drag goes on (measured on the Front Panel). */
+function followDragPointer(ev) {
+  const canvas = document.querySelector(".lienzo")?.getBoundingClientRect();
+  if (!canvas || !isDraggingOnCanvas()) return stopAutoscroll();
+  const outside = { x: Scroll.distanceOutside(ev.clientX, canvas.left, canvas.right), y: Scroll.distanceOutside(ev.clientY, canvas.top, canvas.bottom) };
+  if (!outside.x && !outside.y) return stopAutoscroll();
+  const pointer = { clientX: ev.clientX, clientY: ev.clientY };
+  if (autoscroll) return Object.assign(autoscroll, { outside, pointer });
+  autoscroll = { outside, pointer, lastTime: performance.now(), frame: requestAnimationFrame(autoscrollFrame) };
+}
+
+function autoscrollFrame(now) {
+  if (!autoscroll || !isDraggingOnCanvas()) return stopAutoscroll();
+  const seconds = (now - autoscroll.lastTime) / MILLISECONDS_PER_SECOND;
+  autoscroll.lastTime = now;
+  const advance = (distance) => Math.sign(distance) * Scroll.autoscrollSpeed(Math.abs(distance)) * seconds;
+  const { outside, pointer } = autoscroll;
+  autoscroll.carried = { x: (autoscroll.carried?.x ?? 0) + advance(outside.x), y: (autoscroll.carried?.y ?? 0) + advance(outside.y) };
+  // Whole pixels only; what is left over waits for the next frame.
+  const whole = { x: Math.trunc(autoscroll.carried.x), y: Math.trunc(autoscroll.carried.y) };
+  autoscroll.carried = { x: autoscroll.carried.x - whole.x, y: autoscroll.carried.y - whole.y };
+  if (whole.x || whole.y) {
+    scrollOrigin = { x: scrollOrigin.x + whole.x, y: scrollOrigin.y + whole.y };
+    window.solder?.scrolled(scrollOrigin);
+    // What is dragged stays under the pointer while the canvas moves under it.
+    if (conPanel) pan = P.moverA(pan, ctx, punto(pointer));
+    else dia = ED.moverA(dia, ctx, punto(pointer));
+    pintar();
+  }
+  autoscroll.frame = requestAnimationFrame(autoscrollFrame);
+}
+
+function stopAutoscroll() {
+  if (autoscroll) cancelAnimationFrame(autoscroll.frame);
+  autoscroll = null;
+}
+
+// A bigger or smaller window sees more or less of the canvas: the bars are drawn again.
+addEventListener("resize", drawScrollbars);
+addEventListener(
+  "mousedown",
+  (ev) => {
+    const bar = ev.button === 0 && ev.target.closest?.(".barra-desplazamiento");
+    if (bar) pressBar(ev, bar);
+  },
+  { capture: true },
+);
+addEventListener(
+  "mousemove",
+  (ev) => {
+    if (barPress?.thumbStart !== undefined) {
+      ev.stopPropagation();
+      return dragThumb(ev);
+    }
+    followDragPointer(ev);
+  },
+  { capture: true },
+);
+addEventListener(
+  "mouseup",
+  (ev) => {
+    stopAutoscroll();
+    if (!barPress) return;
+    releaseBar();
+    ev.stopPropagation();
+  },
+  { capture: true },
+);
+
+// The wheel over a menu taller than the window scrolls it (diagram-view.mjs `menuScroll`); over the canvas or its
+// bars, it scrolls the canvas vertically, also with Shift (measured), and Ctrl with the wheel does nothing.
 addEventListener(
   "wheel",
   (ev) => {
     const list = ev.target.closest?.(".menu-contextual.desplazable");
-    if (!list) return;
+    if (!list) {
+      if (ev.ctrlKey || !ev.target.closest?.(".lienzo, .barra-desplazamiento")) return;
+      ev.preventDefault();
+      return scrollBy("y", Scroll.wheelScroll(ev));
+    }
     ev.preventDefault();
     const scroll = (state) => ED.desplazarMenu(state, list.dataset.menu, ev.deltaY, Number(list.dataset.scrollMax));
     if (conDiagrama && dia.menu) dia = scroll(dia);

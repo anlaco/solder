@@ -31,6 +31,8 @@ contextBridge.exposeInMainWorld("solder", {
   textosDeSubVIs: (texto) => ipcRenderer.invoke("vi:subvi-texts", texto),
   /** The same for the VI at an absolute path, which is included. */
   textosDeVI: (ruta) => ipcRenderer.invoke("vi:subvi-texts-of", ruta),
+  /** This window's canvas was scrolled to `{ x, y }`: saved with the VI, without making it modified (DT-078). */
+  scrolled: (origin) => ipcRenderer.send("vi:scrolled", origin),
   /** The VI has become this: the main process decides whether there are unsaved changes. */
   cambio: (texto) => ipcRenderer.send("vi:cambio", texto),
   /** A file that could not be opened, with the reason. */

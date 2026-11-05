@@ -118,7 +118,7 @@ entities: they are the two faces of one. That is why `layout` needs to separate 
 
 ### 4.1 `solder` *(required)*
 
-Format version. Its value is `2` (version 1 until DT-075). A reader **MUST** reject a value greater than the
+Format version. Its value is `3` (version 1 until DT-075, 2 until DT-078). A reader **MUST** reject a value greater than the
 one it knows, instead of trying to read it halfway.
 
 **The format is frozen from `0.4.0-beta` on** (DT-055). Any later change to it
@@ -245,6 +245,9 @@ correct program that the editor will arrange as best it can.
   Terminals) and `view-as-icon: false` (the terminal of a control, compact).
 - `wires`: by destination (`name.port`, unique because an input receives a single
   wire), their bends in `bends`: a list that alternates x and y and starts and ends with x.
+- `windows` (DT-078): for `front-panel` and `block-diagram`, the outer bounds of the window when the OVI was last
+  saved (`x`, `y`, `width`, `height`, screen pixels) and, when it was scrolled, its `origin`, the point of the canvas at
+  the top left of its visible area. Moving or scrolling a window does not make the OVI modified.
 
 > **Normative requirement.** Writing an OVI, reading it and writing it again **MUST**
 > give the same text, and what is read **MUST** be drawn the same as what was saved. It is

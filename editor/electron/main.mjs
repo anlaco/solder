@@ -16,6 +16,7 @@ import { OLD_VI_EXTENSION, VI_EXTENSION, isVIFile, pathKey, polymorphicSavePathF
 import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
 import { newVIBounds, otherWindowKind, tiledBounds } from "./window-layout.mjs";
+import { restoredBounds, savedWindows, windowRecord, withWindows } from "./saved-windows.mjs";
 import { CHOSEN_THEME_ROUTE, THEMES, chosenThemeName } from "./theme.mjs";
 import { CHOSEN_PANEL_STYLE_ROUTE, PANEL_STYLES, chosenPanelStyleName } from "../src/front-panel/panel-style.mjs";
 import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from "../src/getting-started/start-state.mjs";
@@ -278,9 +279,27 @@ function openPolymorphicWindow(entry) {
 }
 
 /** Opens the windows of a VI the registry has just created. */
+/**
+ * Where the windows of an OVI open: where they were saved (DT-078), or, for a new OVI or one saved before, where a
+ * new VI's go. The captures for the comparisons always use the new VI's places.
+ */
+function boundsForOvi(entry) {
+  const newBounds = boundsForNewVI(openVIs.size);
+  const saved = savedWindows(entry.initialText);
+  if (!saved || CAPTURE_CLIENT_SIZE) return newBounds;
+  const workAreas = screen.getAllDisplays().map((display) => display.workArea);
+  return Object.fromEntries(WINDOW_KINDS.map((kind) => [kind, restoredBounds(saved[kind], workAreas, newBounds[kind])]));
+}
+
+/** What a Save writes of the windows: the bounds of each, hidden or not, unmaximized, and how far it is scrolled. */
+const windowsToSave = (open) =>
+  Object.fromEntries(WINDOW_KINDS.filter((kind) => !open.windows[kind].isDestroyed()).map((kind) => [kind, windowRecord(open.windows[kind].getNormalBounds(), open.origins[kind])]));
+
 function openOviWindows(entry) {
-  const bounds = boundsForNewVI(openVIs.size);
-  const open = { entry, windows: {}, closing: false };
+  const bounds = boundsForOvi(entry);
+  const saved = savedWindows(entry.initialText);
+  const origins = Object.fromEntries(WINDOW_KINDS.map((kind) => [kind, saved?.[kind]?.origin ?? null]));
+  const open = { entry, windows: {}, origins, closing: false };
   openVIs.set(entry.id, open);
   // The Block Diagram is created first so that the Front Panel is shown over it.
   for (const kind of [...WINDOW_KINDS].reverse()) {
@@ -495,7 +514,7 @@ async function writeVI(open, owner, text, saveAs) {
     if (result.canceled || !result.filePath) return null;
     target = polymorphic ? polymorphicSavePathFor(result.filePath) : savePathFor(result.filePath);
   }
-  const rebased = rebaseText(text, keyOf(entry), pathKey(target));
+  const rebased = rebaseText(polymorphic ? text : withWindows(text, windowsToSave(open)), keyOf(entry), pathKey(target));
   await writeFile(target, rebased);
   const moved = target !== entry.path;
   recordSave(entry, target, rebased);
@@ -595,6 +614,12 @@ function handleRequests() {
   ipcMain.handle("vi:init", async (event) => {
     const { entry } = openOf(event);
     return { ...describe(entry), windowStyle: await readWindowStyle(entry.path), oviLibRoot: OVI_LIB_ROOT };
+  });
+  // Scrolling is saved with the OVI and never marks it modified (DT-078).
+  ipcMain.on("vi:scrolled", (event, origin) => {
+    const open = openOf(event);
+    const kind = WINDOW_KINDS.find((candidate) => open.windows[candidate]?.webContents.id === event.sender.id);
+    if (kind) open.origins[kind] = origin;
   });
   ipcMain.on("vi:cambio", (event, text) => {
     const open = openOf(event);

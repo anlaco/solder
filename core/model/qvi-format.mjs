@@ -20,7 +20,7 @@
 import { ambitoDe, crearEstructura, crearNodo, esSuelto, marcoDe, nuevo } from "./graph.mjs";
 import { DEFAULT_PATTERN } from "./connector-patterns.mjs";
 
-export const VERSION = 2;
+export const VERSION = 3;
 
 /** Solder's own numbering of 4-2-2-4's cells in version 1: 0–3 the left column down, 4–7 the middle, 8–11 the right column down. */
 const VERSION_1_PATTERN = "4-2-2-4";
@@ -40,11 +40,17 @@ function connectorWithLabVIEWIndices(vi) {
 }
 
 /**
+ * Version 2 → 3 (DT-078): `layout.windows` may hold where each window of the OVI was and how far it was scrolled.
+ * It is optional, so a version 2 file only changes its number.
+ */
+const withWindowsVersion = (vi) => ({ ...vi, solder: 3 });
+
+/**
  * The format is frozen from 0.4.0-beta on (DT-055, spec/02 §4.1): a change to it raises VERSION and adds here the
  * function that turns a file of the version before into one of the new version, so every file a released Solder
  * saved still opens. `MIGRATIONS[n - 1]` migrates version n to n + 1.
  */
-export const MIGRATIONS = [connectorWithLabVIEWIndices];
+export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion];
 
 /** A file of an older version brought up to `version`, one migration after another. */
 export function migrar(vi, migrations = MIGRATIONS, version = VERSION) {
@@ -218,6 +224,7 @@ export function escribir(g, cat) {
     diagram: ordenado,
     panel: Object.keys(placPanel).length ? placPanel : undefined,
     wires: Object.keys(recorridos).length ? recorridos : undefined,
+    windows: g.windows,
   });
   const raiz = ambitos.get("");
   return limpio({
@@ -382,5 +389,7 @@ export function leer(datos, cat) {
   const extra = limpio({ meta: vi.meta, capabilities: vi.capabilities, connector: vi.connector, execution: vi.execution });
   g = { ...g, cables, siguiente: g.siguiente + cables.length };
   if (Object.keys(extra).length) g.vi = extra;
+  // The windows are the main process's (editor/electron/window-layout.mjs); the graph only carries them to the next save.
+  if (lay.windows) g.windows = lay.windows;
   return g;
 }
