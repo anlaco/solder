@@ -11,6 +11,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, dialog, ipcMain, Menu, MessageChannelMain, protocol, screen, utilityProcess } from "electron";
+import { POLYMORPHIC_EXTENSION } from "../../core/model/polymorphic.mjs";
 import { OLD_VI_EXTENSION, VI_EXTENSION, isVIFile, pathKey, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey } from "../src/common/vi-paths.mjs";
 import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
@@ -178,6 +179,8 @@ const openVIs = new Map();
 const viOfContents = new Map();
 // Both extensions open (DT-051); the dialogs list the new one first.
 const FILTERS = [{ name: "Solder OVI", extensions: [VI_EXTENSION, OLD_VI_EXTENSION].map((extension) => extension.slice(1)) }];
+// Select a VI... also takes a polymorphic OVI (DT-074), listed first so that the dialog shows both kinds.
+const SUBVI_FILTERS = [{ name: "Solder OVI and polymorphic OVI", extensions: [VI_EXTENSION, OLD_VI_EXTENSION, POLYMORPHIC_EXTENSION].map((extension) => extension.slice(1)) }, ...FILTERS];
 let quitting = false;
 /** What was last copied in any VI, as the text its window sent. */
 let sharedClipboard = null;
@@ -508,7 +511,7 @@ function handleRequests() {
   ipcMain.handle("vi:open-path", (event, key) => openPath(key, ownerOf(event)));
   // Select a VI...: the file dialog; returns the absolute path or nothing.
   ipcMain.handle("vi:choose-subvi", async (event) => {
-    const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select an OVI", properties: ["openFile"], filters: FILTERS });
+    const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select an OVI", properties: ["openFile"], filters: SUBVI_FILTERS });
     return result.canceled || !result.filePaths.length ? null : pathKey(result.filePaths[0]);
   });
   // The browse button of a File Path Control: the file dialog (Browse Options are not offered yet: one existing file); returns the absolute path or nothing.

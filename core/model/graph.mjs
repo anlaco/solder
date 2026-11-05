@@ -1098,6 +1098,8 @@ export function adaptPolymorphicNodes(g, cat) {
     const callee = cat.polymorphicOf?.(node);
     return callee && isAutomatic(node, callee.polymorphic);
   });
+  // Most diagrams call no polymorphic OVI: resolving every type for nothing would slow each edit.
+  if (!automaticNodes.length) return g;
   let adapted = g;
   for (let pass = 0; pass <= automaticNodes.length; pass++) {
     const resolved = tipos(adapted, cat);

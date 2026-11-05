@@ -242,6 +242,22 @@ export function iconoVI(numero) {
   );
 }
 
+/**
+ * The icon of a polymorphic OVI that brings none of its own (DT-074): the frame of an OVI icon with two overlapping
+ * cards of different colours, one per instance it chooses from. Drawn anew; the colours echo the terminal colours of
+ * the types a polymorphic OVI usually tells apart (numbers and text).
+ */
+export const polymorphicOviIcon = () =>
+  svg(
+    lleno(0, 0, 32, 32, PAPER) +
+      caja(0.5, 0.5, 31.5, 31.5, "none", 1) +
+      lleno(5, 6, 20, 20, "#1e5fc8", 1.5) +
+      lleno(12, 12, 27, 26, "#e8841c", 1.5) +
+      caja(5.5, 6.5, 19.5, 19.5, "none", 1, INK) +
+      caja(12.5, 12.5, 26.5, 25.5, "none", 1, INK),
+    "0 0 32 32",
+  );
+
 /** The icon of a subVI whose file cannot be found: the same frame, dashed and with a question mark. */
 export const ICONO_VI_FALTA = svg(
   lleno(0, 0, 32, 32, PAPER) +

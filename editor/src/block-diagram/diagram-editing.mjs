@@ -51,6 +51,7 @@ import { constantElementType, constantForElement, emptyArrayAgain, flipArrayKind
 import { CONSTANT_DIGITS, DBL, NUMERICOS, PATH, POR_ABREVIATURA, VISA_RESOURCE, convertirValor, esArray, isUndefinedArray, esEntero, esEnum, esError, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 import * as SI from "./select-item-dialog.mjs";
+import * as PolymorphicNodes from "./polymorphic-nodes.mjs";
 import { MAX_EDITOR_DIMENSIONS, addDimensionPatch, dimensionsOfNode, firstShown, readCell, removeDimensionPatch, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
 
 /** El valor de una constante de error: el suyo, con lo que falte a cero. */
@@ -841,6 +842,17 @@ function ajustarSelectores(g, ctx) {
 }
 
 /**
+ * A row of the list a polymorphic OVI's ring opens: the same choice as Select Type ▸. A row greyed there (Automatic
+ * on a polymorphic OVI that does not adapt to the data type) does nothing.
+ */
+function chooseTypeFromList(d, ctx, row) {
+  const node = nodoPor(d.g, row.nodo);
+  const greyed = PolymorphicNodes.menuVariants(node, ctx.cat).desactivados;
+  const chosen = PolymorphicNodes.choiceOfRow(row.fila);
+  return greyed?.has(row.fila) || !chosen ? d.g : PolymorphicNodes.setType(d.g, row.nodo, chosen.choice, ctx.cat, terminalPlacer(ctx));
+}
+
+/**
  * Case Insensitive Match (string selector only): toggles `config.caseInsensitive`,
  * which the compiler reads. Off is stored as absence, as the file does.
  */
@@ -897,7 +909,9 @@ export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
           ? { ...d, g: chooseUnbundleName(d, ctx, sobre.k), lista: null }
           : sobre.tipo === "fila-instancia"
             ? { ...d, g: ajustarSelectores(Gr.fijarConfig(d.g, sobre.nodo, { instance: sobre.instancia }), ctx), lista: null }
-            : { ...d, lista: null };
+            : sobre.tipo === "fila-tipo"
+              ? { ...d, g: chooseTypeFromList(d, ctx, sobre), lista: null }
+              : { ...d, lista: null };
   // Pulsar fuera de la constante en la que se escribe confirma lo escrito, y
   // nada más: es lo que se ve en el vídeo.
   const enLoQueSeEscribe = d.edicion?.marco ? sobre.tipo === "marco" && sobre.zona === "texto" && sobre.nodo === d.edicion.nodo : sobre.id === d.edicion?.nodo && sobre.tipo === (d.edicion?.etiqueta ? "etiqueta" : "nodo");
@@ -1388,6 +1402,11 @@ export function orden(d, id, ctx) {
   if (/^context\.enum-(constant|control|indicator)\.select-item$/.test(id)) return { ...d, menu: null, selectItemDialog: SI.open(nodoPor(d.g, nodo)) };
   // Properties of an Express VI is its configuration dialog (DT-069 §3).
   if (ExpressNodes.isExpressMenu(d.menu.raiz) && id === `${d.menu.raiz}.properties`) return openConfiguration(d, ctx, nodo);
+  // A polymorphic OVI node: Select Type ▸ and its selector (polymorphic-nodes.mjs).
+  if (d.menu.raiz === PolymorphicNodes.MENU_ROOT) {
+    const polymorphicGraph = PolymorphicNodes.menuCommand(d.g, nodo, id, ctx.cat, terminalPlacer(ctx));
+    if (polymorphicGraph) return cerrar(polymorphicGraph);
+  }
   const ultimo = id.slice(id.lastIndexOf(".") + 1);
   // The Property Node's own menu, and Create ▸ Property Node ▸ or Property for Instr Class ▸ on a control (DT-072 §7).
   const propertyNodeResult = PN.isPropertyNode(nodoPor(d.g, nodo)) ? PNM.nodeCommand(d, id, ctx) : PNM.createCommand(d, id, ctx, coger);
@@ -1646,6 +1665,7 @@ function nodeVariants(d, ctx) {
   if (n?.tipo === "scan-from-string" && (n.config?.inputs ?? 1) <= 1) return { desactivados: new Set([`${r}.remove-parameter`]) };
   if (UN.isUnbundleByName(n)) return unbundleVariants(d, ctx, n);
   if (PN.isPropertyNode(n) && ctx) return PNM.nodeVariants(d, ctx);
+  if (n && r === PolymorphicNodes.MENU_ROOT && ctx) return PolymorphicNodes.menuVariants(n, ctx.cat);
   // LabVIEW greys Advanced on the terminals of a VISA resource name (reports/2026-10-26-visa-resource-name-look.md Q5; why is unverified).
   if (r === "context.visa-control-terminal" || r === "context.visa-indicator-terminal") return { desactivados: new Set([`${r}.advanced`]) };
   if (n && PATH_INDICATOR_ROOTS.has(r) && n.tipo === "path-indicator") return pathIndicatorVariants(r);
@@ -1809,6 +1829,7 @@ export function marcados(d, ctx) {
   const r = d.menu.raiz;
   const m = new Set();
   if (n.vista?.terminales) m.add(`${r}.visible-items.terminals`);
+  if (r === PolymorphicNodes.MENU_ROOT && ctx) for (const row of PolymorphicNodes.menuMarks(n, ctx.cat)) m.add(row);
   if (!n.vista?.compacto && !ExpressNodes.isExpressMenu(r)) m.add(`${r}.view-as-icon`);
   // Caption is the one item of an Express VI's Visible Items, ticked (measured); in the icon view View As Icon is ticked instead
   // (the caption is not drawn there; whether Caption stays ticked is unverified).

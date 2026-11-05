@@ -46,6 +46,7 @@ import * as PC from "../front-panel/panel-clipboard.mjs";
 import * as Paths from "../common/vi-paths.mjs";
 import * as Q from "../../../core/model/qvi-format.mjs";
 import * as SN from "../block-diagram/subvi-nodes.mjs";
+import * as PolymorphicNodes from "../block-diagram/polymorphic-nodes.mjs";
 import * as ExpressNodes from "../block-diagram/express-nodes.mjs";
 import { commandForCtrlKey } from "./shortcuts.mjs";
 import * as RV from "./run-values.mjs";
@@ -189,7 +190,8 @@ function rebuildHierarchy(g) {
   ctx = D.contexto(cat, glifos, separador, medirMenu);
   hierarchyErrors = result.errors;
   hierarchyKeys = result.keys;
-  return Gr.aflojarCablesHuerfanos(g, cat, placeOfOldTerminal);
+  // A polymorphic node on Automatic follows what is wired, with the new hierarchy (DT-074).
+  return Gr.aflojarCablesHuerfanos(Gr.adaptPolymorphicNodes(g, cat), cat, placeOfOldTerminal);
 }
 
 /**
@@ -287,7 +289,7 @@ async function cargarTexto(text) {
     ctx = D.contexto(cat, glifos, separador, medirMenu);
     hierarchyErrors = result.errors;
     hierarchyKeys = result.keys;
-    cargar(result.graph);
+    cargar(Gr.adaptPolymorphicNodes(result.graph, cat));
   } catch (e) {
     window.solder.error(e.message);
     window.solder.cerrar();
@@ -1150,14 +1152,20 @@ async function seleccionarVI() {
   const { texts } = await window.solder.textosDeVI(absolutePath);
   subVITexts = { ...subVITexts, ...texts };
   const g = rebuildHierarchy(dia.g);
-  dia = ED.coger({ ...dia, g }, "subvi", SN.subVIConfig(Paths.storedPathFor(viKey, absolutePath, oviLibRoot)));
+  let config;
+  try {
+    config = SN.placedConfig(Paths.storedPathFor(viKey, absolutePath, oviLibRoot), texts[absolutePath]);
+  } catch (error) {
+    return window.solder.error(error.message);
+  }
+  dia = ED.coger({ ...dia, g }, "subvi", config);
   pintar();
 }
 
 /** Opens the windows of the VI that a `subvi` node calls (or brings them forward if they are open). */
 function abrirSubVI(nodeId) {
-  const node = grafo().nodos.find((n) => n.id === nodeId);
-  if (node?.config?.vi) window.solder?.abrirRuta(Paths.resolveRelative(viKey, node.config.vi, oviLibRoot));
+  const file = SN.fileToOpen(grafo().nodos.find((n) => n.id === nodeId), cat, viKey, oviLibRoot);
+  if (file) window.solder?.abrirRuta(file);
 }
 
 /** The right-click menu of the connector pane (on a cell) or of the icon of the VI. */
@@ -1294,9 +1302,15 @@ function cambiar(nuevo) {
   pintar();
 }
 
-/** A deleted control or indicator leaves the connector pane too: its terminal goes with it. */
-function sinTerminalesHuerfanos(view) {
-  const g = pruneConnector(view.g, cat);
+/**
+ * The one place where an edit is settled before it is drawn and kept: a deleted control or indicator leaves the
+ * connector pane too (its terminal goes with it), and a polymorphic node on Automatic calls the instance its wires
+ * pick, its wires to terminals the new instance lacks left loose (DT-074). The adaptation belongs to the edit that
+ * caused it, not to an undo step of its own. `before` is the view the edit started from.
+ */
+function settleEdit(before, view) {
+  const pruned = pruneConnector(view.g, cat);
+  const g = PolymorphicNodes.settlePolymorphicNodes(before.g, pruned, cat, ED.terminalPlacer(ctx));
   return g === view.g ? view : { ...view, g };
 }
 
@@ -1306,7 +1320,7 @@ function sinTerminalesHuerfanos(view) {
  */
 function cambiarDiagrama(nuevo, stepName) {
   if (nuevo === dia) return;
-  dia = sinTerminalesHuerfanos(nuevo);
+  dia = settleEdit(dia, nuevo);
   // What Create made is a step of undo before its value or label is typed: the typing is another one (REPORT.md §A).
   if (Et.graphAtRest(dia)) quieto(dia.g, stepName);
   pintar();
@@ -1315,7 +1329,7 @@ function cambiarDiagrama(nuevo, stepName) {
 /** Cambiar el panel. Como el diagrama: el paso se guarda cuando queda quieto. */
 function cambiarPanel(nuevo) {
   if (nuevo === pan) return;
-  pan = sinTerminalesHuerfanos(nuevo);
+  pan = settleEdit(pan, nuevo);
   if (Et.graphAtRest(pan)) quieto(pan.g);
   mandarControles(pan.g);
   pintar();
@@ -1355,6 +1369,8 @@ function objetivo(el) {
   const fila = el.closest(".item-marco");
   if (fila) return { tipo: "fila-marco", nodo: fila.dataset.nodo, k: Number(fila.dataset.marco) };
   // The rows of Read Delimited Spreadsheet's instance list.
+  const filaTipo = el.closest(".item-tipo");
+  if (filaTipo) return { tipo: "fila-tipo", nodo: filaTipo.dataset.nodo, fila: filaTipo.dataset.fila };
   const filaInstancia = el.closest(".item-instancia");
   if (filaInstancia) return { tipo: "fila-instancia", nodo: filaInstancia.dataset.nodo, instancia: filaInstancia.dataset.instancia };
   // The names in the list of an Unbundle By Name.

@@ -549,6 +549,10 @@
     },
     "utf8": {
       "desc": "the UTF-8 versions of the text properties (Text Is UTF8?, UTF-8 Overrides)"
+    },
+    "ventana-polimorfica": {
+      "desc": "the Polymorphic OVI window (File > New > Polymorphic OVI, and Open Polymorphic OVI on a node): the instance list and the icon and selector options of a .sdp",
+      "ref": "design/05-decisions.md DT-074 §5"
     }
   },
   "entradas": [
@@ -20844,6 +20848,278 @@
     },
     {
       "id": "context.subvi.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties dialog of the node.",
+      "necesita": "propiedades",
+      "captura": "subvi/subvi-node-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.polymorphic-subvi",
+      "etiqueta": "Polymorphic SubOVI",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-nodes.test.mjs::the_menu_of_a_polymorphic_subOVI_node_has_LabVIEW's_rows_in_its_order"
+    },
+    {
+      "id": "context.polymorphic-subvi.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-nodes.test.mjs::Visible_Items_Polymorphic_OVI_Selector_shows_the_ring_1_px_under_the_icon_centred_on_it_and_as_wide_as_its_text",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the label of the node.",
+      "necesita": "etiquetas",
+      "captura": "subvi/subvi-node-menu-visible-items.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.visible-items.polymorphic-ovi-selector",
+      "etiqueta": "Polymorphic OVI Selector",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-nodes.test.mjs::Visible_Items_Polymorphic_OVI_Selector_shows_the_ring_1_px_under_the_icon_centred_on_it_and_as_wide_as_its_text"
+    },
+    {
+      "id": "context.polymorphic-subvi.visible-items.terminals",
+      "etiqueta": "Terminals",
+      "estado": "todo",
+      "labview": "Shows the terminals of the node, each in the colour of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu-visible-items.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of the VI. LabVIEW greys it out when the VI has none.",
+      "necesita": "ayuda-contextual",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Looks for examples that use the VI. LabVIEW greys it out when there are none.",
+      "necesita": "ejemplos",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the description and the tip strip of the node.",
+      "necesita": "descripciones",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/72-wait-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.polymorphic-subvi.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "debugging/79b.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.numeric-palette",
+      "etiqueta": "Numeric Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the palettes the OVI's terminals come from. LabVIEW lists one per kind of terminal (VISA Configure Serial Port: Serial Palette and Numeric Palette); Solder's names and the order are unverified.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.polymorphic-subvi.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::the_Create_submenu_of_the_nodes_has_LabVIEW's_rows_in_its_order",
+      "captura": "create-paste/node-menu-add-create-submenu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Constant_from_the_node_menu_wires_a_constant_and_leaves_its_value_typed_in",
+      "captura": "create-paste/create-constant-on-and-x-input-result.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-control-on-x-diagram-result.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::Create_Control_and_Indicator_from_the_node_menu_make_the_panel_objects_and_leave_the_label_typed_in",
+      "captura": "create-paste/create-indicator-on-output-result.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.create.scalar",
+      "etiqueta": "Scalar",
+      "estado": "todo",
+      "labview": "On an array terminal: makes the constant or the control of one element of the array instead of the whole array. Only shown on array terminals.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.create.scalar.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Makes a constant of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.create.scalar.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Makes a control of the array's element type, wired to the array terminal.",
+      "necesita": "crear-escalar",
+      "captura": "create-paste/array-size-input-create-scalar-submenu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Makes a Channel Writer wired to the terminal under the cursor.",
+      "necesita": "canales",
+      "captura": "create-paste/menu-create-submenu-on-x-terminal.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-controls-and-indicators-result.png",
+      "separado": true
+    },
+    {
+      "id": "context.polymorphic-subvi.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/create-and-paste.test.mjs::All_Controls_and_Indicators_and_All_Constants_act_on_the_terminals_that_have_no_wire",
+      "captura": "create-paste/create-all-constants-result.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the node with another function or VI, keeping the wires that fit.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.polymorphic-subvi.replace-with-subvi-contents",
+      "etiqueta": "Replace with SubOVI Contents...",
+      "estado": "todo",
+      "labview": "Puts the diagram of the subVI in the place of the node.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.select-type",
+      "etiqueta": "Select Type",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-nodes.test.mjs::Select_Type_lists_Automatic_then_the_instances_and_ticks_only_Automatic_while_it_is_on",
+      "separado": true
+    },
+    {
+      "id": "context.polymorphic-subvi.relink-to-subvi",
+      "etiqueta": "Relink To SubOVI",
+      "estado": "todo",
+      "labview": "Points the node to another VI file; LabVIEW greys it out when the VI is found.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.subvi-node-setup",
+      "etiqueta": "SubOVI Node Setup...",
+      "estado": "todo",
+      "labview": "Sets what the VI does when the node calls it: open its panel, close it afterwards, suspend.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.call-setup",
+      "etiqueta": "Call Setup...",
+      "estado": "todo",
+      "labview": "Sets how the call is made: the priority and the execution system.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.find-all-instances",
+      "etiqueta": "Find All Instances",
+      "estado": "todo",
+      "labview": "Lists every place where the VI is used as a subVI.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.polymorphic-subvi.open-front-panel",
+      "etiqueta": "Open Front Panel",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-nodes.test.mjs::double-click_and_Open_Front_Panel_open_the_instance_the_node_calls,_not_the_sdp",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.open-polymorphic-ovi",
+      "etiqueta": "Open Polymorphic OVI",
+      "estado": "todo",
+      "labview": "Opens the Polymorphic OVI window: the list of instances with their menu and selector names, the icon options and Show Selector by Default.",
+      "necesita": "ventana-polimorfica"
+    },
+    {
+      "id": "context.polymorphic-subvi.show-vi-hierarchy",
+      "etiqueta": "Show OVI Hierarchy",
+      "estado": "todo",
+      "labview": "Opens the window with the tree of VIs that call and are called.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens a window with the VI and what it holds.",
+      "necesita": "jerarquia-de-vis",
+      "captura": "subvi/subvi-node-menu.png"
+    },
+    {
+      "id": "context.polymorphic-subvi.view-as-icon",
+      "etiqueta": "View As Icon",
+      "estado": "todo",
+      "labview": "Shows the node as its icon (checked) or expanded into rows, one per terminal.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu-view-as-icon-off.png",
+      "separado": true
+    },
+    {
+      "id": "context.polymorphic-subvi.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the node and joins the wires that entered with the ones that left.",
+      "necesita": "menus-contextuales",
+      "captura": "subvi/subvi-node-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.polymorphic-subvi.properties",
       "etiqueta": "Properties",
       "estado": "todo",
       "labview": "Opens the properties dialog of the node.",

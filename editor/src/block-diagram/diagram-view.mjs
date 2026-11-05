@@ -19,6 +19,7 @@ import * as VN from "./visa-nodes.mjs";
 import * as FileNodes from "./file-nodes.mjs";
 import * as ExpressNodes from "./express-nodes.mjs";
 import * as SpreadsheetNodes from "./spreadsheet-nodes.mjs";
+import * as PolymorphicNodes from "./polymorphic-nodes.mjs";
 import * as PN from "./property-nodes.mjs";
 import * as CR from "./control-references.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
@@ -1286,7 +1287,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
         : (n.vista?.compacto ? G.terminalPanelCompacto : G.terminalPanelIcono)(control, aspecto(tipo).color, nombre(tipo));
     cuerpo = `<div class="glifo-terminal-panel">${glifo}</div>`;
   } else if (isSubVI(n)) {
-    cuerpo = `<div class="glifo-subvi">${ctx.cat.findSubVI?.(n.config?.vi) ? G.iconoVI() : G.ICONO_VI_FALTA}</div>`;
+    cuerpo = `<div class="glifo-subvi">${subVIIcon(n, ctx.cat)}</div>`;
   } else if (FN.isFormatNode(n, ctx.cat)) {
     cuerpo = `<div class="glifo-formato">${FN.formatNodeBody(n, k, ctx.cat, resueltos)}</div>`;
   } else if (ExpressNodes.isExpressNode(n, ctx.cat)) {
@@ -1354,6 +1355,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
     .join("");
   const escribiendo = d.edicion?.nodo === n.id && !d.edicion.etiqueta;
   if (n.tipo === SpreadsheetNodes.READ_DELIMITED) zonas += instanceRing(n);
+  if (PolymorphicNodes.selectorShown(n, ctx.cat)) zonas += polymorphicSelector(n, ctx);
   return `<div class="nodo${elegido || escribiendo ? " seleccionado" : ""}${editable}${litByDebugger(d, n.id)}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${cuerpo}${circulos}${zonas}${asas}</div>`;
 }
 
@@ -1447,6 +1449,47 @@ function instanceRing(n) {
   return `<div class="anillo-instancia" data-nodo="${esc(n.id)}" style="left:${px(R.x)};top:${px(R.y)};width:${px(R.ancho)};height:${px(R.alto)}"><span class="texto-anillo">${esc(SpreadsheetNodes.instanceLabel(n))}</span><span class="flecha-anillo"></span></div>`;
 }
 
+/** The icon of a subOVI node: the polymorphic OVI's, the callee's, or the broken one when the file cannot be found. */
+function subVIIcon(node, cat) {
+  const polymorphic = cat.polymorphicOf?.(node);
+  if (polymorphic) return PolymorphicNodes.iconHtml(polymorphic.polymorphic);
+  return cat.findSubVI?.(node.config?.vi) ? G.iconoVI() : G.ICONO_VI_FALTA;
+}
+
+/**
+ * A polymorphic OVI node's selector ring (Visible Items ▸ Polymorphic OVI Selector): under the icon, centred on it,
+ * as wide as the selector name it shows, with the dropdown triangle. What a click on it opens was not measured:
+ * it opens the list of Select Type ▸ (unverified).
+ */
+function polymorphicSelector(node, ctx) {
+  const callee = ctx.cat.polymorphicOf(node);
+  const ring = PolymorphicNodes.selectorRing(PolymorphicNodes.selectorText(node, callee.polymorphic), ctx.medir);
+  return `<div class="anillo-instancia selector-polimorfico" data-nodo="${esc(node.id)}" style="left:${px(ring.x)};top:${px(ring.y)};width:${px(ring.ancho)};height:${px(ring.alto)}"><span class="texto-anillo">${esc(PolymorphicNodes.selectorText(node, callee.polymorphic))}</span><span class="flecha-anillo"></span></div>`;
+}
+
+/** The list a click on a polymorphic OVI's ring opens: the rows of Select Type ▸ with its ticks. */
+function listaTipos(d, ctx) {
+  const node = d.g.nodos.find((candidate) => candidate.id === d.lista.nodo);
+  const callee = node && ctx.cat.polymorphicOf?.(node);
+  if (!callee) return "";
+  const M = MEDIDAS_MENU;
+  const rows = PolymorphicNodes.selectTypeRows(callee.polymorphic);
+  const ticked = new Set(PolymorphicNodes.tickedRows(node, callee.polymorphic));
+  const greyed = PolymorphicNodes.menuVariants(node, ctx.cat).desactivados;
+  let top = M.arriba;
+  const rowHtml = (row) => {
+    const separator = row.separado ? `<div class="separador-menu" style="top:${px(top + M.separador / 2 - 0.5)}"></div>` : "";
+    if (row.separado) top += M.separador;
+    const marks = `${ticked.has(row.id) ? " marcado" : ""}${greyed.has(row.id) ? " desactivado" : ""}`;
+    const html = `${separator}<div class="item-menu item-tipo${marks}" data-nodo="${esc(node.id)}" data-fila="${esc(row.id)}" style="top:${px(top)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(row.etiqueta)}</span></div>`;
+    top += M.fila;
+    return html;
+  };
+  const html = rows.map(rowHtml).join("");
+  const width = listWidth(rows.map((row) => row.etiqueta), ctx);
+  return `<div class="menu-contextual lista-marcos" style="left:${px(d.lista.x)};top:${px(d.lista.y)};width:${px(width)};height:${px(top + M.arriba)}">${html}</div>`;
+}
+
 /** The list a click on Read Delimited Spreadsheet's ring opens, with the check mark on its instance (read-ring-menu.png). */
 function listaInstancias(d, ctx) {
   const n = d.g.nodos.find((k) => k.id === d.lista.nodo);
@@ -1482,6 +1525,7 @@ function listaAbierta(d, ctx, resueltos) {
   const tipo = d.g.nodos.find((n) => n.id === d.lista.nodo)?.tipo;
   if (tipo === UN.BLOCK) return listaElementos(d, ctx);
   if (tipo === SpreadsheetNodes.READ_DELIMITED) return listaInstancias(d, ctx);
+  if (tipo === "subvi") return listaTipos(d, ctx);
   return CONSTANTES[tipo]?.selector ? listaValores(d, ctx) : listaMarcos(d, ctx, resueltos);
 }
 
@@ -1606,6 +1650,14 @@ function vistaTerminales(n, k, g, ctx, resueltos) {
   return `<svg class="vista-terminales" viewBox="0 0 ${f2(w)} ${f2(h)}"><defs><clipPath id="${id}"><polygon points="${forma}"/></clipPath></defs><g clip-path="url(#${id})">${regiones}<g class="divisiones">${lineas}</g></g><polygon class="contorno" points="${forma}"/></svg>`;
 }
 
+/** What a rectangle must touch to select a node: its box, and for a polymorphic node showing its selector, the ring too. */
+function selectableBox(n, ctx) {
+  const box = caja(n, ctx);
+  if (!PolymorphicNodes.selectorShown(n, ctx.cat)) return box;
+  const bounds = PolymorphicNodes.nodeBounds(n, ctx.cat, ctx.medir);
+  return { x: box.x + bounds.x, y: box.y + bounds.y, ancho: bounds.ancho, alto: bounds.alto };
+}
+
 /** Los nodos que toca un rectángulo, para seleccionar arrastrando por el fondo. */
 export function dentroDe(g0, ctx, r) {
   const g = visibles(g0);
@@ -1613,7 +1665,7 @@ export function dentroDe(g0, ctx, r) {
   const [y0, y1] = [Math.min(r.y0, r.y1), Math.max(r.y0, r.y1)];
   return g.nodos
     .filter((n) => {
-      const k = caja(n, ctx);
+      const k = selectableBox(n, ctx);
       // Una estructura se elige rodeándola entera: tocar su interior es seleccionar lo que hay dentro.
       if (esEstructura(n, ctx)) return k.x >= x0 && k.x + k.ancho <= x1 && k.y >= y0 && k.y + k.alto <= y1;
       return k.x < x1 && k.x + k.ancho > x0 && k.y < y1 && k.y + k.alto > y0;
@@ -1626,6 +1678,7 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   // Un túnel de entrada de un Case tiene otro menú que el de un bucle (case-menu-tunel-entrada.png).
   if (n.tipo === "tunnel-in" && g?.nodos.find((k) => k.id === n.dentro)?.tipo === "case-structure") return "context.case-tunnel-input";
   if (n.tipo in MENU_ESTRUCTURA) return MENU_ESTRUCTURA[n.tipo];
+  if (PolymorphicNodes.isPolymorphicNode(n)) return PolymorphicNodes.MENU_ROOT;
   if (isSubVI(n)) return "context.subvi";
   // An Express VI has one menu for every one (DT-069 §6); its terminals keep the function's.
   if (!puerto && cat && ExpressNodes.isExpressNode(n, cat)) return ExpressNodes.isIconView(n) ? ExpressNodes.EXPRESS_ICON_MENU : ExpressNodes.EXPRESS_MENU;

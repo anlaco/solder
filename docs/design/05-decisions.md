@@ -3442,4 +3442,5 @@ LabVIEW's selector and menus.**
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
 | The `.sdp` file and its schema, the node's terminals by cell, Automatic (unwired, exact before coercion, none fits), an instance picked by hand, the broken wire's message with what came in and the instances, the call compiled as the chosen instance, the hierarchy read with the `.sdp` | `test/core/polymorphic.test.mjs` | **Verified** (2026-11-05) by test |
-| Select Type, the selector and the window | To write with steps 3 and 4 | **Not built** |
+| Select Type ▸, the selector ring and its geometry, the icon as a data-URI image, the node menu, Automatic kept up to date on every edit, double-click opening the instance | `test/editor/polymorphic-nodes.test.mjs` (spec rule 121) | **Verified** (2026-11-05) by test; what a click on the ring opens, the ring's text padding and its exact blue are **unverified** |
+| The Polymorphic OVI window | To write with the next step of plan step 4b | **Not built** |

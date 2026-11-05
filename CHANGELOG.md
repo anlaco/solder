@@ -9,6 +9,9 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Polymorphic OVIs in the editor (DT-074): Select an OVI... takes a `.sdp`; its node shows the polymorphic OVI's icon, an
+  optional selector ring (Visible Items), a menu with Select Type ▸ and Automatic that follows what is wired, and opens
+  the instance it calls. The Polymorphic OVI window is not built yet.
 - VISA Bytes at Serial Port, in Instrument I/O ▸ Serial and VISA Advanced ▸ Bus/Interface Specific ▸ Serial: a VISA
   Property Node that reads how many bytes wait in a serial port, as LabVIEW places it. A Property Node whose rows
   are all read-only greys Change All To Write.

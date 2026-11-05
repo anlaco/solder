@@ -1678,3 +1678,18 @@ and the edits of the rows) and `property-node-menus.mjs` (the menus). Tests: `te
 > Link to ▸ on the reference, Method for ▸, Property for ▸ on a Property Node, the Refnum palette and the menus of the refnum control
 > and its terminal (not measured: they open none). The Value row of a node fed through a chain of reference outs is drawn in the
 > numeric colour whatever the control's type (its type is right; only the colour is). Tested.
+
+> **Rule 121 — Polymorphic OVI node (DT-074, 2026-11-05).** Select an OVI... also takes a `.sdp`. The node is dropped on
+> Automatic, on the first instance, with a 32 × 32 icon (the `.sdp`'s own, drawn as an image from a `data:` URI so nothing in
+> it runs; a generic one when the file has none or asks for the instance's) and its selector hidden unless the file says Show
+> Selector by Default. Visible Items ▸ Polymorphic OVI Selector shows the ring 1 px under the icon, centred on it, as wide as
+> its text (the instance's selector name), with a blue border and dropdown triangle; the node's bounds with it are 190 × 54
+> for a ring 188 wide, and the icon does not move. The menu is the subOVI node's without Enable Database Access, with
+> Select Type ▸ (Automatic, a separator, each instance's menu name; with Automatic on only Automatic is ticked, whatever it
+> picked; picking an instance ticks it and turns Automatic off, and a wire it does not take breaks; Automatic is greyed when
+> the `.sdp` does not adapt to the data type) and Open Polymorphic OVI, which is greyed until the Polymorphic OVI window is
+> built. Whenever the diagram changes, is loaded or its hierarchy is rebuilt, every node on Automatic is adapted to what is
+> wired and the wires to terminals the new instance lacks become loose; the adaptation is part of the edit, not an undo
+> step. Double click and Open Front Panel open the instance the node calls, not the `.sdp`. **Unverified:** what a click on
+> the ring opens (ours: the list of Select Type), the ring's exact padding around its text and its blue, the name of the
+> palette row. Tested in `test/editor/polymorphic-nodes.test.mjs`.

@@ -373,6 +373,9 @@ svg { display: block; overflow: visible; }
 .anillo-instancia { position: absolute; box-sizing: border-box; border: 1px solid var(--menu-border); background: var(--menu-background); cursor: default; }
 .anillo-instancia .texto-anillo { position: absolute; left: 3px; top: 3px; font-family: "Segoe UI", "Noto Sans", sans-serif; font-size: var(--fuente); color: var(--canvas-text); white-space: nowrap; }
 .anillo-instancia .flecha-anillo { position: absolute; right: 3px; top: 8px; border-left: 3px solid transparent; border-right: 3px solid transparent; border-top: 4px solid var(--canvas-text); }
+/* A polymorphic OVI's selector: the border and the triangle are blue (labview-captures/reports/2026-11-05-polymorphic-vi.md). */
+.selector-polimorfico { border-color: var(--selector-border); box-shadow: 1px 1px 0 var(--menu-shadow); }
+.selector-polimorfico .flecha-anillo { border-top-color: var(--selector-border); }
 .invertida { position: absolute; width: 3.6px; height: 3.6px; border-radius: 50%; background: var(--invert-dot-fill); border: 1px solid var(--invert-dot-border); box-sizing: border-box; pointer-events: none; }
 /* En una subpaleta, el nombre de lo que está bajo el ratón, centrado bajo el título. */
 .nombre-sobre { position: absolute; left: 0; right: 0; transform: translateY(-50%); text-align: center; white-space: nowrap; }
@@ -549,6 +552,7 @@ svg { display: block; overflow: visible; }
 /* A subVI node: the icon of the VI it calls, 32 × 32 with a black border (labview-captures/subvi/subvi-placed-on-diagram.png). */
 .glifo-subvi { position: absolute; inset: 0; pointer-events: none; }
 .glifo-subvi svg { width: 100%; height: 100%; }
+.glifo-subvi img { width: 100%; height: 100%; display: block; }
 
 /* An Express VI node (DT-069), measured in LabVIEW 2026 Q3: a blue box with its icon, its caption, white rows for the terminals
    that leave the icon and a chevron. The positions are set by block-diagram/express-nodes.mjs. */

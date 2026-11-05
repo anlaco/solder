@@ -37,6 +37,11 @@
   --placeholder-text: #696969; /* Greyed placeholders (DT-035: what is not done yet looks the same, greyed). */
 }
 
+/* A polymorphic OVI's selector ring: a blue border and triangle (the shade is unverified: only "blue" was noted). */
+:root {
+  --selector-border: #3b6ed6;
+}
+
 /* Menus: Menu bar titles and the pop-up menus (right-click, drop-downs). */
 :root {
   --menu-background: #f0f0f0;
