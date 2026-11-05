@@ -1,0 +1,14 @@
+/* The New dialog, from labview-captures/polymorphic-window/new2.png (positions are set by new-dialog-view.mjs). */
+
+body.new-dialog { background: var(--polymorphic-window-background); color: var(--polymorphic-window-text); margin: 0; overflow: hidden; font-size: var(--fuente); }
+.nd-window { position: absolute; inset: 0; }
+.nd-window > * { position: absolute; }
+.nd-tree, .nd-description { box-sizing: border-box; border: 1px solid var(--polymorphic-window-list-border); background: var(--polymorphic-window-list-background); }
+.nd-description { padding: 6px; line-height: 16px; border-color: var(--polymorphic-window-disabled-border); }
+.nd-row { position: absolute; left: 0; right: 0; }
+.nd-label { position: absolute; top: 0; line-height: 17px; padding: 0 3px; white-space: nowrap; }
+.nd-row.seleccionada { background: var(--polymorphic-window-selected-background); color: var(--polymorphic-window-selected-text); }
+.nd-row.hueco .nd-label, .nd-check.hueco { font-style: italic; color: var(--placeholder-text); }
+.nd-check { display: flex; align-items: center; gap: 5px; }
+.nd-button { box-sizing: border-box; }
+.nd-button.desactivado { color: var(--placeholder-text); border-color: var(--polymorphic-window-disabled-border); background: var(--polymorphic-window-disabled-background); }

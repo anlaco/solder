@@ -126,7 +126,9 @@ test("VISA Open, Write, Read and Close are placed from the palettes, also from S
   }
   // The VISA Property Node and VISA Bytes at Serial Port are Instr Property Nodes (property-nodes.test.mjs).
   const bytesAtSerialPort = [`${ROOT}.serial.visa-bytes-at-serial-port`, `${ROOT}.visa.visa-advanced.bus-interface-specific.serial.visa-bytes-at-serial-port`];
-  const done = new Set([...PLACEABLE.map(([, id]) => id), `${ROOT}.visa.visa-advanced.visa-property-node`, ...bytesAtSerialPort]);
+  // VISA Configure Serial Port is a polymorphic OVI of ovi.lib (test/core/visa-configure-serial-port.test.mjs).
+  const configureSerialPort = [`${ROOT}.serial.visa-configure-serial-port`, `${ROOT}.visa.visa-advanced.bus-interface-specific.serial.visa-configure-serial-port`];
+  const done = new Set([...PLACEABLE.map(([, id]) => id), `${ROOT}.visa.visa-advanced.visa-property-node`, ...bytesAtSerialPort, ...configureSerialPort]);
   // Everything else of the palettes is greyed and says what is missing.
   const holes = INV.entradas.filter((e) => e.id.startsWith(`${ROOT}.`) && !done.has(e.id) && ultimo(e.id) !== "thumbtack" && INV.hijos(e.id).length === 0);
   assert.ok(holes.length > 60);

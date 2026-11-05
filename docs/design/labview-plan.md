@@ -42,6 +42,10 @@ When the developer says "keep going":
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
 
+*2026-11-05: Solder has its own library of OVIs, `ovi.lib` (DT-073), and polymorphic OVIs that users can make
+themselves (DT-074); connector panes know LabVIEW's 36 patterns (DT-075, `.sdg` version 2); VISA Configure Serial Port
+and VISA Bytes at Serial Port are done (plan step 4b).*
+
 **The full circuit works:** an OVI is built, saved to `.qvi`, opened the same way,
 and Run compiles it to WebAssembly and executes it **by dataflow, like
 LabVIEW** (DT-040): independent branches run at the same time, each indicator is
@@ -630,6 +634,16 @@ array or string read by a local variable while another loop writes it is never t
       [`vilib-and-type-polymorphic`](../../labview-captures/reports/2026-11-05-vilib-and-type-polymorphic.md)) and
       decided: DT-073 (`ovi.lib`, symbolic `<ovilib>` paths, editable as LabVIEW) and DT-074 (polymorphic OVIs in a
       `.sdp` file, Automatic by the types wired, VISA classes later). Next: build them with VISA Configure Serial Port.*
+      *Step 4b done on 2026-11-05 (branch `feature/polymorphic-ovis`): `ovi.lib` with symbolic `<ovilib>` paths (DT-073,
+      `test/editor/ovi-lib.test.mjs`); polymorphic OVIs in `.sdp` files with Automatic, Select Type ▸, the selector ring,
+      the node menu, File ▸ New... and the Polymorphic OVI window (DT-074, `test/core/polymorphic.test.mjs`,
+      `test/editor/polymorphic-nodes.test.mjs`, `test/editor/polymorphic-window.test.mjs`, `test/editor/new-dialog.test.mjs`);
+      LabVIEW's 36 connector patterns by their indices, the `.sdg` at version 2 with its migration (DT-075); and VISA
+      Configure Serial Port in `ovi.lib/Instr/`, measured
+      ([`visa-configure-serial-port`](../../labview-captures/reports/2026-11-05-visa-configure-serial-port.md)), placed from
+      both Serial palettes and run against the serial test instrument (`test/core/visa-configure-serial-port.test.mjs`).
+      Left: ring controls on the panel (stop bits and flow control are numeric controls), VISA classes, choosing a
+      connector pattern, an icon editor (Edit Icon... takes an SVG file), the windows tried only under Xvfb. Next: step 5.*
    5. **A classic ESP32 as a DAQ by SCPI:** its command set written down with the developer, who writes the
       firmware (in parallel from step 3), and first served by a Crucible profile of it.
    6. **A DAQmx-like layer** over the ESP32, with its own DT after measuring DAQmx with a simulated NI device.

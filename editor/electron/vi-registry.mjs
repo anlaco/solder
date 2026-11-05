@@ -15,7 +15,21 @@ import { basename } from "node:path";
 
 /** The two windows of a VI, in the order they are opened. */
 export const WINDOW_KINDS = ["front-panel", "block-diagram"];
-const WINDOW_TITLES = { "front-panel": "Front Panel", "block-diagram": "Block Diagram" };
+
+/**
+ * What an open entry is: an OVI with its two windows, or a polymorphic OVI (DT-074) with the one window that edits its
+ * `.sdp`. Both are numbered "Untitled N" from the same count, as LabVIEW does (measured: a Polymorphic VI opened after
+ * Untitled 1 is "Untitled 2 Polymorphic VI").
+ */
+export const ENTRY_KINDS = Object.freeze({ OVI: "ovi", POLYMORPHIC: "polymorphic" });
+export const POLYMORPHIC_WINDOW_KIND = "polymorphic";
+const WINDOW_TITLES = { "front-panel": "Front Panel", "block-diagram": "Block Diagram", [POLYMORPHIC_WINDOW_KIND]: "Polymorphic OVI" };
+
+/** The windows an entry has, in the order they are opened. */
+export const windowKindsOf = (entry) => (entry.kind === ENTRY_KINDS.POLYMORPHIC ? [POLYMORPHIC_WINDOW_KIND] : WINDOW_KINDS);
+
+/** The window that stands for the entry: closing it closes the entry, and dialogs about the entry open over it. */
+export const primaryWindowKind = (entry) => windowKindsOf(entry)[0];
 
 export function createRegistry() {
   const entries = new Map();
@@ -26,12 +40,12 @@ export function createRegistry() {
     /**
      * Opens a VI. With a path that is already open it gives that VI back, so
      * the caller brings its windows to the front instead of opening a second
-     * copy. `initialText` is what the windows load; none for a new VI.
+     * copy. `initialText` is what the windows load; none for a new VI. `kind` is an `ENTRY_KINDS`.
      */
-    open({ path = null, initialText = null } = {}) {
+    open({ path = null, initialText = null, kind = ENTRY_KINDS.OVI } = {}) {
       const existing = path && [...entries.values()].find((entry) => entry.path === path);
       if (existing) return { entry: existing, alreadyOpen: true };
-      const entry = { id: String(++lastId), path, untitledNumber: path ? null : ++lastUntitled, initialText, saved: null, current: null };
+      const entry = { id: String(++lastId), kind, path, untitledNumber: path ? null : ++lastUntitled, initialText, saved: null, current: null };
       entries.set(entry.id, entry);
       return { entry, alreadyOpen: false };
     },

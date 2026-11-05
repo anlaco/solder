@@ -549,6 +549,7 @@ const ORDENES_MENU = {
   "save-as": () => guardarVI(true),
   open: abrirVI,
   "new-vi": () => window.solder?.nuevoVI(),
+  new: () => window.solder?.nuevo(),
   close: () => (confirmarEscritura(), window.solder?.cerrarVentana()),
   "close-all": () => (confirmarEscritura(), window.solder?.cerrarTodos()),
   exit: () => (confirmarEscritura(), window.solder?.salir()),
@@ -576,7 +577,7 @@ const ORDENES_MENU = {
 };
 
 /** The orders of the context menus (subVI node, connector pane, icon) that act on the window and not on the graph; they receive the node the menu was opened on. */
-const ORDENES_CONTEXTUALES = { "vi-properties": () => abrirPropiedades(), "open-front-panel": (nodeId) => abrirSubVI(nodeId), "list-errors": (wireId) => openErrorList(`wire.${wireId}`) };
+const ORDENES_CONTEXTUALES = { "vi-properties": () => abrirPropiedades(), "open-front-panel": (nodeId) => abrirSubVI(nodeId), "open-polymorphic-ovi": (nodeId) => abrirPolimorfico(nodeId), "list-errors": (wireId) => openErrorList(`wire.${wireId}`) };
 
 // ——— Debugging (DT-047) ———
 //
@@ -1150,8 +1151,7 @@ async function seleccionarVI() {
   const absolutePath = await window.solder?.elegirVI();
   if (!absolutePath) return;
   const { texts } = await window.solder.textosDeVI(absolutePath);
-  subVITexts = { ...subVITexts, ...texts };
-  const g = rebuildHierarchy(dia.g);
+  const g = learnCallee(texts);
   let config;
   try {
     config = SN.placedConfig(Paths.storedPathFor(viKey, absolutePath, oviLibRoot), texts[absolutePath]);
@@ -1160,6 +1160,30 @@ async function seleccionarVI() {
   }
   dia = ED.coger({ ...dia, g }, "subvi", config);
   pintar();
+}
+
+/** Adds the texts of a callee (and of what it reaches) to the hierarchy and rebuilds it; returns the diagram's graph over it. */
+function learnCallee(texts) {
+  subVITexts = { ...subVITexts, ...texts };
+  return rebuildHierarchy(dia.g);
+}
+
+/**
+ * A palette element that places a subOVI (`bloque: "subvi"` with its `config.vi`, as VISA Configure Serial Port's): the callee's texts
+ * are read first, as Select a VI... does, so that the node is drawn with its icon and its terminals at once.
+ */
+async function carrySubVIFromPalette(entry, where) {
+  const { texts } = await window.solder.textosDeVI(Paths.resolveRelative(viKey, entry.config.vi, oviLibRoot));
+  const g = learnCallee(texts);
+  dia = ED.moverA(ED.coger({ ...dia, g }, entry.bloque, entry.config), ctx, where);
+  dia = { ...dia, accion: { ...dia.accion, arrastrado: false } };
+  pintar();
+}
+
+/** Open Polymorphic OVI: the window that edits the `.sdp` the node calls. */
+function abrirPolimorfico(nodeId) {
+  const polymorphic = cat.polymorphicOf?.(grafo().nodos.find((n) => n.id === nodeId));
+  if (polymorphic) window.solder?.abrirRuta(polymorphic.key);
 }
 
 /** Opens the windows of the VI that a `subvi` node calls (or brings them forward if they are open). */
@@ -1514,6 +1538,11 @@ addEventListener("mousedown", (ev) => {
   if (e && !esHueco(e) && e.bloque && !!cat.bloque(e.bloque).panel === conPanel) {
     ev.preventDefault();
     estado = { ...estado, paleta: null, abierta: null };
+    // A subOVI (a polymorphic OVI of ovi.lib, say) is carried once its file has been read, so that it is drawn with its icon.
+    if (conDiagrama && e.bloque === "subvi") {
+      carrySubVIFromPalette(e, punto(ev));
+      return pintar();
+    }
     if (conDiagrama) {
       dia = ED.moverA(ED.coger(dia, e.bloque, e.config), ctx, punto(ev));
       dia = { ...dia, accion: { ...dia.accion, arrastrado: false } };

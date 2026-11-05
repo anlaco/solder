@@ -1,0 +1,35 @@
+/* The Polymorphic OVI window, from labview-captures/reports/2026-11-05-polymorphic-window.md (positions are set by
+ * polymorphic-window-view.mjs). Colours are tokens of the theme; the shades are read off the capture, not measured. */
+
+body.polymorphic-window { background: var(--polymorphic-window-background); color: var(--polymorphic-window-text); margin: 0; overflow: hidden; }
+.po-window { position: absolute; inset: 0; background: var(--polymorphic-window-background); font-size: var(--fuente); }
+.po-menubar { z-index: 30; }
+.po-client { position: absolute; inset: 0; z-index: 1; }
+.po-client > * { position: absolute; }
+.po-label { white-space: nowrap; }
+.po-icon img, .po-icon svg { display: block; width: 32px; height: 32px; }
+.po-empty-marker svg { display: block; }
+
+.po-button { box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid var(--button-border); background: var(--dialog-button-background); cursor: default; }
+.po-button.desactivado, .po-arrow-button.desactivado { color: var(--placeholder-text); border-color: var(--polymorphic-window-disabled-border); background: var(--polymorphic-window-disabled-background); }
+.po-button.hueco { font-style: italic; color: var(--placeholder-text); }
+.po-arrow-button { box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px solid var(--button-border); background: var(--dialog-button-background); cursor: default; }
+.po-arrow-button.desactivado .po-arrow { opacity: 0.35; }
+.po-arrow { fill: var(--polymorphic-window-arrow); stroke: var(--polymorphic-window-arrow-border); stroke-width: 0.8; }
+
+.po-list { box-sizing: border-box; border: 1px solid var(--polymorphic-window-list-border); background: var(--polymorphic-window-list-background); overflow: hidden; }
+.po-header { position: absolute; left: 0; right: 0; top: 0; background: var(--polymorphic-window-header-background); border-bottom: 1px solid var(--polymorphic-window-row-line); }
+.po-row { position: absolute; left: 0; right: 0; border-bottom: 1px solid var(--polymorphic-window-row-line); box-sizing: border-box; }
+.po-row.seleccionada { background: var(--polymorphic-window-selected-background); color: var(--polymorphic-window-selected-text); }
+.po-cell { position: absolute; top: 0; bottom: 0; line-height: 17px; padding-left: 2px; white-space: nowrap; overflow: hidden; box-sizing: border-box; }
+.po-header .po-cell { border-left: 1px solid var(--polymorphic-window-row-line); }
+.po-header .po-cell:first-child { border-left: 0; }
+
+.po-choice { display: flex; align-items: center; gap: 5px; white-space: nowrap; line-height: 16px; cursor: default; }
+.po-choice.marcada .pv-casilla { background: var(--checkbox-checked); border-color: var(--checkbox-checked); box-shadow: inset 0 0 0 2px var(--checkbox-checked-inset); }
+.po-choice.po-radio.marcada .pv-casilla { box-shadow: inset 0 0 0 3px var(--checkbox-checked-inset); }
+.po-choice.hueco .po-choice-text { font-style: italic; color: var(--placeholder-text); }
+
+.po-name-dialog { font-size: var(--fuente); }
+.po-field { position: absolute; }
+.po-field .caret { display: inline-block; width: 1px; height: 14px; background: var(--caret); margin-left: 1px; }

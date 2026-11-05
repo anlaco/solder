@@ -3171,6 +3171,17 @@ Property Node and comes as a real polymorphic subVI; Crucible serves a serial po
    and polymorphic VIs each get their own DT then. Until then both stay greyed in the palettes, saying why.
    *VISA Bytes at Serial Port is done (2026-11-05): an Instr Property Node with the row "Bytes at Port"
    (`labview-captures/reports/2026-11-05-visa-bytes-at-port.md`).*
+   *VISA Configure Serial Port is done (2026-11-05): `ovi.lib/Instr/VISA Configure Serial Port.sdp` ([DT-073](#dt-073),
+   [DT-074](#dt-074)) with its two instances drawn anew from the measurement
+   (`labview-captures/reports/2026-11-05-visa-configure-serial-port.md`). Measured since: End Mode for Reads comes from
+   a Case Structure on Enable Termination Char (False: 0 None, True: 2 TermChar), not a Select; the rows' short names
+   are Timeout, Baud, Data Bits, Stop Bits, Parity, TermChar En, TermChar, Flow Cntrl, ASRL End In; the connector is
+   pattern 4833 ([DT-075](#dt-075)) with timeout, termination char, Enable Termination Char and stop bits Optional and
+   the rest Recommended (none looks Required: an unwired caller runs; read from Context Help, not as text). parity is
+   an enum (None, Odd, Even, Mark, Space); stop bits (1.0 10, 1.5 15, 2.0 20) and flow control (None 0, XON/XOFF 1,
+   RTS/CTS 2, XON/XOFF & RTS/CTS 3, DTR/DSR 4, XON/XOFF & DTR/DSR 5) are rings, which Solder's panel does not have yet:
+   they are U16 numeric controls until it does. Both instances use an Instr node, as Solder's VISA resource name has no
+   VISA class yet (DT-074 §6).*
 8. **Crucible serves a serial port** (Crucible work, its own code too): its SCPI loop serves any stream of bytes, and
    a bench's `transporte` gains `tipo: serial` with `dispositivo:` (a real port, with its line settings) or `pty:` (a
    pseudo-terminal Crucible creates, with a link at that path, for runs without hardware). The VM's COM1 reaches it
@@ -3443,7 +3454,7 @@ LabVIEW's selector and menus.**
 |-----------|-----------|--------|
 | The `.sdp` file and its schema, the node's terminals by cell, Automatic (unwired, exact before coercion, none fits), an instance picked by hand, the broken wire's message with what came in and the instances, the call compiled as the chosen instance, the hierarchy read with the `.sdp` | `test/core/polymorphic.test.mjs` | **Verified** (2026-11-05) by test |
 | Select Type ▸, the selector ring and its geometry, the icon as a data-URI image, the node menu, Automatic kept up to date on every edit, double-click opening the instance | `test/editor/polymorphic-nodes.test.mjs` (spec rule 121) | **Verified** (2026-11-05) by test; what a click on the ring opens, the ring's text padding and its exact blue are **unverified** |
-| The Polymorphic OVI window | To write with the next step of plan step 4b | **Not built** |
+| File ▸ New... and the Polymorphic OVI window: its controls at the measured rectangles, the list, Add... / Remove / Move / Edit Name..., the options, Edit Icon..., the title and menu bar, Save as a `.sdp`, File ▸ Open, Open Polymorphic OVI, refreshing the callers | `test/editor/polymorphic-window.test.mjs`, `test/editor/new-dialog.test.mjs` (spec rules 122 to 124) | **Verified** (2026-11-05) by test; Edit Icon... takes an SVG file until there is an icon editor (a deviation); the rows of the menus but File's, colours, fonts, resizing and what Remove selects are **unverified** |
 
 ## DT-075
 

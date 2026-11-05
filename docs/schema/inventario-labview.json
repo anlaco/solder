@@ -462,10 +462,6 @@
       "desc": "the VISA functions beyond Open, Write, Read and Close (clearing, the status byte, triggers, timeouts, locks, buffers, events, registers and the calls of each bus): Solder's own VISA opens sockets and moves bytes, and nothing more yet",
       "ref": "design/05-decisions.md DT-065"
     },
-    "puerto-serie-visa": {
-      "desc": "VISA Configure Serial Port, a polymorphic subOVI built on the Property Node: Solder's VISA opens serial ports (ASRL) with a new session's settings, and configuring them waits for property nodes, Solder's ovi.lib and polymorphic OVIs",
-      "ref": "design/05-decisions.md DT-070"
-    },
     "nodos-de-propiedades": {
       "desc": "property nodes, which read and write the attributes of a reference, among them the VISA Property Node"
     },
@@ -550,8 +546,16 @@
     "utf8": {
       "desc": "the UTF-8 versions of the text properties (Text Is UTF8?, UTF-8 Overrides)"
     },
-    "ventana-polimorfica": {
-      "desc": "the Polymorphic OVI window (File > New > Polymorphic OVI, and Open Polymorphic OVI on a node): the instance list and the icon and selector options of a .sdp",
+    "menus-de-la-ventana-polimorfica": {
+      "desc": "the rows of the menus of the Polymorphic OVI window other than File's, which were not measured: only the eight titles were",
+      "ref": "design/05-decisions.md DT-074 §5"
+    },
+    "ovis-maleables": {
+      "desc": "malleable OVIs, whose terminals take any type: the New dialog lists them and they were not measured",
+      "ref": "design/05-decisions.md DT-074 §5"
+    },
+    "plantillas-de-ovi": {
+      "desc": "OVI templates and the other kinds of file of the New dialog's tree: From Template and Other Files",
       "ref": "design/05-decisions.md DT-074 §5"
     }
   },
@@ -888,9 +892,8 @@
     {
       "id": "window.front-panel.menu.file.new",
       "etiqueta": "New...",
-      "estado": "todo",
-      "labview": "Opens the dialog to create a VI, a project or another file from a template.",
-      "necesita": "varios-vis",
+      "estado": "built",
+      "prueba": "test/editor/new-dialog.test.mjs::the_New_dialog_lists_LabVIEW's_tree_and_creates_a_blank_OVI_or_a_polymorphic_OVI,_and_explains_what_is_not_done",
       "captura": "front-panel/menu-file.png"
     },
     {
@@ -7014,10 +7017,16 @@
     {
       "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.visa-configure-serial-port",
       "etiqueta": "VISA Configure Serial Port",
-      "estado": "todo",
-      "labview": "A polymorphic VI that sets the baud rate, the data bits, the parity, the stop bits and the flow control of a serial port.",
-      "necesita": "puerto-serie-visa",
-      "captura": "visa/functions-visa-bus-serial.png"
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-nodes.test.mjs::a_palette_element_of_a_subOVI_places_a_polymorphic_node_from_both_Serial_palettes_on_Automatic_with_the_selector_hidden,_its_file_read_first",
+      "captura": "visa/functions-visa-bus-serial.png",
+      "bloque": "subvi",
+      "config": {
+        "vi": "<ovilib>/Instr/VISA Configure Serial Port.sdp",
+        "instance": null,
+        "selected": 0,
+        "selector": false
+      }
     },
     {
       "id": "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.visa-write",
@@ -7448,10 +7457,16 @@
     {
       "id": "palette.functions.instrument-io.serial.visa-configure-serial-port",
       "etiqueta": "VISA Configure Serial Port",
-      "estado": "todo",
-      "labview": "A polymorphic VI that sets the baud rate, the data bits, the parity, the stop bits and the flow control of a serial port.",
-      "necesita": "puerto-serie-visa",
-      "captura": "visa/functions-instrument-io-serial.png"
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-nodes.test.mjs::a_palette_element_of_a_subOVI_places_a_polymorphic_node_from_both_Serial_palettes_on_Automatic_with_the_selector_hidden,_its_file_read_first",
+      "captura": "visa/functions-instrument-io-serial.png",
+      "bloque": "subvi",
+      "config": {
+        "vi": "<ovilib>/Instr/VISA Configure Serial Port.sdp",
+        "instance": null,
+        "selected": 0,
+        "selector": false
+      }
     },
     {
       "id": "palette.functions.instrument-io.serial.visa-write",
@@ -21080,9 +21095,8 @@
     {
       "id": "context.polymorphic-subvi.open-polymorphic-ovi",
       "etiqueta": "Open Polymorphic OVI",
-      "estado": "todo",
-      "labview": "Opens the Polymorphic OVI window: the list of instances with their menu and selector names, the icon options and Show Selector by Default.",
-      "necesita": "ventana-polimorfica"
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::File_Open_takes_a_sdp_and_Open_Polymorphic_OVI_on_a_node_opens_its_window"
     },
     {
       "id": "context.polymorphic-subvi.show-vi-hierarchy",
@@ -21825,9 +21839,8 @@
     {
       "id": "window.getting-started.menu.file.new",
       "etiqueta": "New...",
-      "estado": "todo",
-      "labview": "Opens the dialog to create a VI, a project or another file from a template.",
-      "necesita": "varios-vis",
+      "estado": "built",
+      "prueba": "test/editor/new-dialog.test.mjs::the_New_dialog_lists_LabVIEW's_tree_and_creates_a_blank_OVI_or_a_polymorphic_OVI,_and_explains_what_is_not_done",
       "captura": "getting-started/menu_File.png"
     },
     {
@@ -26234,6 +26247,457 @@
       "labview": "The object's properties dialog.",
       "necesita": "propiedades",
       "separado": true
+    },
+    {
+      "id": "window.polymorphic-ovi",
+      "etiqueta": "Polymorphic OVI",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_Polymorphic_OVI_window_has_its_controls_at_the_measured_rectangles_and_opens_empty_with_LabVIEW's_options",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu",
+      "etiqueta": "Menu bar",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file",
+      "etiqueta": "File",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.new-vi",
+      "etiqueta": "New OVI",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands",
+      "atajo": "Ctrl+N"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.new",
+      "etiqueta": "New...",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.open",
+      "etiqueta": "Open...",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands",
+      "atajo": "Ctrl+O"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.close",
+      "etiqueta": "Close",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands",
+      "atajo": "Ctrl+W"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.close-all",
+      "etiqueta": "Close All",
+      "estado": "todo",
+      "labview": "The same row as the File menu of the OVI windows; the Polymorphic OVI window does not have it yet.",
+      "necesita": "menus-de-la-ventana-polimorfica"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.save",
+      "etiqueta": "Save",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands",
+      "atajo": "Ctrl+S"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.save-as",
+      "etiqueta": "Save As...",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.save-all",
+      "etiqueta": "Save All",
+      "estado": "todo",
+      "labview": "Saves all open VIs that have changes.",
+      "necesita": "varios-vis",
+      "atajo": "Ctrl+Shift+S"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.save-for-previous-version",
+      "etiqueta": "Save for Previous Version...",
+      "estado": "todo",
+      "labview": "Saves a copy of the VI in the format of an earlier LabVIEW version.",
+      "necesita": "versiones-del-formato"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.revert",
+      "etiqueta": "Revert...",
+      "estado": "todo",
+      "labview": "Discards the changes and goes back to the last saved version. With no changes, it is greyed out.",
+      "necesita": "leer-escribir-qvi"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.create-project",
+      "etiqueta": "Create Project...",
+      "estado": "todo",
+      "labview": "Creates a new project.",
+      "necesita": "formato-sdproj"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.open-project",
+      "etiqueta": "Open Project...",
+      "estado": "todo",
+      "labview": "Opens a project.",
+      "necesita": "formato-sdproj"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.save-project",
+      "etiqueta": "Save Project",
+      "estado": "todo",
+      "labview": "Saves the project the VI belongs to.",
+      "necesita": "formato-sdproj"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.close-project",
+      "etiqueta": "Close Project",
+      "estado": "todo",
+      "labview": "Closes the project the VI belongs to.",
+      "necesita": "formato-sdproj"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.page-setup",
+      "etiqueta": "Page Setup...",
+      "estado": "todo",
+      "labview": "Sets up the page for printing.",
+      "necesita": "imprimir"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.print",
+      "etiqueta": "Print...",
+      "estado": "todo",
+      "labview": "Prints the VI's documentation.",
+      "necesita": "imprimir"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.print-window",
+      "etiqueta": "Print Window...",
+      "estado": "todo",
+      "labview": "Prints the window as it looks.",
+      "necesita": "imprimir",
+      "atajo": "Ctrl+P"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.vi-properties",
+      "etiqueta": "OVI Properties",
+      "estado": "todo",
+      "labview": "The same row as the File menu of the OVI windows; the Polymorphic OVI window does not have it yet.",
+      "necesita": "menus-de-la-ventana-polimorfica",
+      "atajo": "Ctrl+I"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.recent-projects",
+      "etiqueta": "Recent Projects",
+      "estado": "todo",
+      "labview": "Recently opened projects. With none, it is greyed out.",
+      "necesita": "recientes"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.recent-files",
+      "etiqueta": "Recent Files",
+      "estado": "todo",
+      "labview": "Recently opened VIs. With none, it is greyed out.",
+      "necesita": "recientes"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.file.exit",
+      "etiqueta": "Exit",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands",
+      "atajo": "Ctrl+Q"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.edit",
+      "etiqueta": "Edit",
+      "estado": "todo",
+      "labview": "The Edit menu of the Polymorphic OVI window; only its title was measured, not its rows.",
+      "necesita": "menus-de-la-ventana-polimorfica",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.view",
+      "etiqueta": "View",
+      "estado": "todo",
+      "labview": "The View menu of the Polymorphic OVI window; only its title was measured, not its rows.",
+      "necesita": "menus-de-la-ventana-polimorfica",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.project",
+      "etiqueta": "Project",
+      "estado": "todo",
+      "labview": "The Project menu of the Polymorphic OVI window; only its title was measured, not its rows.",
+      "necesita": "menus-de-la-ventana-polimorfica",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.operate",
+      "etiqueta": "Operate",
+      "estado": "todo",
+      "labview": "The Operate menu of the Polymorphic OVI window; only its title was measured, not its rows.",
+      "necesita": "menus-de-la-ventana-polimorfica",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.tools",
+      "etiqueta": "Tools",
+      "estado": "todo",
+      "labview": "The Tools menu of the Polymorphic OVI window; only its title was measured, not its rows.",
+      "necesita": "menus-de-la-ventana-polimorfica",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.window",
+      "etiqueta": "Window",
+      "estado": "todo",
+      "labview": "The Window menu of the Polymorphic OVI window; only its title was measured, not its rows.",
+      "necesita": "menus-de-la-ventana-polimorfica",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.menu.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "The Help menu of the Polymorphic OVI window; only its title was measured, not its rows.",
+      "necesita": "menus-de-la-ventana-polimorfica",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.empty-marker",
+      "etiqueta": "Empty list marker",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_Polymorphic_OVI_window_has_its_controls_at_the_measured_rectangles_and_opens_empty_with_LabVIEW's_options",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.edit-icon",
+      "etiqueta": "Edit Icon...",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_options_and_Edit_Icon_write_the_sdp,_whose_text_reads_back_the_same",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.icon",
+      "etiqueta": "Icon",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_options_and_Edit_Icon_write_the_sdp,_whose_text_reads_back_the_same",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.instances",
+      "etiqueta": "Instance OVIs",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_instance_list_shows_the_file_name_with_its_extension,_empty_names_for_the_defaults,_and_selects_a_row",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.move-up",
+      "etiqueta": "Move Up",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::Add_appends_the_instance_selected,_Remove,_Move_Up_and_Move_Down_follow_the_selection_and_stop_at_the_ends",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.move-down",
+      "etiqueta": "Move Down",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::Add_appends_the_instance_selected,_Remove,_Move_Up_and_Move_Down_follow_the_selection_and_stop_at_the_ends",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.add",
+      "etiqueta": "Add...",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::Add_appends_the_instance_selected,_Remove,_Move_Up_and_Move_Down_follow_the_selection_and_stop_at_the_ends",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.remove",
+      "etiqueta": "Remove",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::Add_appends_the_instance_selected,_Remove,_Move_Up_and_Move_Down_follow_the_selection_and_stop_at_the_ends",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.edit-name",
+      "etiqueta": "Edit Name...",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::Edit_Name_opens_the_dialog_over_the_selected_row_and_an_empty_name_goes_back_to_its_default",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.draw-polymorphic-icon",
+      "etiqueta": "Draw Polymorphic OVI Icon",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_options_and_Edit_Icon_write_the_sdp,_whose_text_reads_back_the_same",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.draw-instance-icon",
+      "etiqueta": "Draw Instance OVI Icon",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_options_and_Edit_Icon_write_the_sdp,_whose_text_reads_back_the_same",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.show-selector-by-default",
+      "etiqueta": "Show Selector by Default",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_options_and_Edit_Icon_write_the_sdp,_whose_text_reads_back_the_same",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.allow-adapt",
+      "etiqueta": "Allow Polymorphic OVI to Adapt to Data Type",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::the_options_and_Edit_Icon_write_the_sdp,_whose_text_reads_back_the_same",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "window.polymorphic-ovi.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of this window.",
+      "necesita": "ayuda-contextual",
+      "captura": "polymorphic-window/p1.png"
+    },
+    {
+      "id": "dialog.edit-instance-name",
+      "etiqueta": "Edit Instance Name",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::Edit_Name_opens_the_dialog_over_the_selected_row_and_an_empty_name_goes_back_to_its_default",
+      "captura": "polymorphic-window/en1.png"
+    },
+    {
+      "id": "dialog.edit-instance-name.ok",
+      "etiqueta": "OK",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::Edit_Name_opens_the_dialog_over_the_selected_row_and_an_empty_name_goes_back_to_its_default",
+      "captura": "polymorphic-window/en1.png"
+    },
+    {
+      "id": "dialog.edit-instance-name.cancel",
+      "etiqueta": "Cancel",
+      "estado": "built",
+      "prueba": "test/editor/polymorphic-window.test.mjs::Edit_Name_opens_the_dialog_over_the_selected_row_and_an_empty_name_goes_back_to_its_default",
+      "captura": "polymorphic-window/en1.png"
+    },
+    {
+      "id": "dialog.edit-instance-name.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of this dialog.",
+      "necesita": "ayuda-contextual",
+      "captura": "polymorphic-window/en1.png"
+    },
+    {
+      "id": "dialog.new",
+      "etiqueta": "New",
+      "estado": "built",
+      "prueba": "test/editor/new-dialog.test.mjs::the_New_dialog_lists_LabVIEW's_tree_and_creates_a_blank_OVI_or_a_polymorphic_OVI,_and_explains_what_is_not_done",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.ovi",
+      "etiqueta": "OVI",
+      "estado": "built",
+      "prueba": "test/editor/new-dialog.test.mjs::the_New_dialog_lists_LabVIEW's_tree_and_creates_a_blank_OVI_or_a_polymorphic_OVI,_and_explains_what_is_not_done",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.blank-ovi",
+      "etiqueta": "Blank OVI",
+      "estado": "built",
+      "prueba": "test/editor/new-dialog.test.mjs::the_New_dialog_lists_LabVIEW's_tree_and_creates_a_blank_OVI_or_a_polymorphic_OVI,_and_explains_what_is_not_done",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.malleable-ovi",
+      "etiqueta": "Malleable OVI",
+      "estado": "todo",
+      "labview": "Creates a new malleable OVI, whose terminals take any type.",
+      "necesita": "ovis-maleables",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.polymorphic-ovi",
+      "etiqueta": "Polymorphic OVI",
+      "estado": "built",
+      "prueba": "test/editor/new-dialog.test.mjs::the_New_dialog_lists_LabVIEW's_tree_and_creates_a_blank_OVI_or_a_polymorphic_OVI,_and_explains_what_is_not_done",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.from-template",
+      "etiqueta": "From Template",
+      "estado": "todo",
+      "labview": "Lists the templates an OVI can start from, in folders.",
+      "necesita": "plantillas-de-ovi",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.project",
+      "etiqueta": "Project",
+      "estado": "todo",
+      "labview": "Creates a project: here, Empty Project.",
+      "necesita": "formato-sdproj",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.empty-project",
+      "etiqueta": "Empty Project",
+      "estado": "todo",
+      "labview": "Creates a new project with nothing in it.",
+      "necesita": "formato-sdproj",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.other-files",
+      "etiqueta": "Other Files",
+      "estado": "todo",
+      "labview": "Lists the other kinds of file that can be created.",
+      "necesita": "plantillas-de-ovi",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.add-to-project",
+      "etiqueta": "Add to project",
+      "estado": "todo",
+      "labview": "Adds what is created to the open project; greyed while there is no project.",
+      "necesita": "formato-sdproj",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.ok",
+      "etiqueta": "OK",
+      "estado": "built",
+      "prueba": "test/editor/new-dialog.test.mjs::the_New_dialog_lists_LabVIEW's_tree_and_creates_a_blank_OVI_or_a_polymorphic_OVI,_and_explains_what_is_not_done",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.cancel",
+      "etiqueta": "Cancel",
+      "estado": "built",
+      "prueba": "test/editor/new-dialog.test.mjs::the_New_dialog_lists_LabVIEW's_tree_and_creates_a_blank_OVI_or_a_polymorphic_OVI,_and_explains_what_is_not_done",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of this dialog.",
+      "necesita": "ayuda-contextual",
+      "captura": "polymorphic-window/new2.png"
     }
   ]
 }

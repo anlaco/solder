@@ -3,35 +3,15 @@
 // (the menu bar and the explanation of a greyed item, rule 53), as the VI windows do.
 
 import { atajo, cargarInventario, esHueco, pulsa, ultimo } from "../common/labview-inventory.mjs";
+import { installPageFont } from "../common/page-font.mjs";
 import * as E from "../window/window-state.mjs";
 import * as State from "./getting-started-state.mjs";
 import { gettingStartedWindow } from "./getting-started-view.mjs";
 
 const PREFIX = "window.getting-started";
 const RECENT_FILE_ROW = /\.recent-files\.file-(\d+)$/;
-const FULL_SIZE_FONT = "12px";
-const SUBSTITUTE_FONT = "11.3px";
-
-/** Whether a font is installed: `document.fonts.check` does not work for system fonts. */
-function isInstalled(font) {
-  const context = document.createElement("canvas").getContext("2d");
-  const widthIn = (family) => {
-    context.font = `72px ${family}`;
-    return context.measureText("Solder abcdefghij 0123456789").width;
-  };
-  return widthIn(`"${font}", monospace`) !== widthIn("monospace");
-}
-// Segoe UI at 12 px, LabVIEW's font; otherwise Noto Sans at 11.3 px, which matches its widths (spec/06-visual.md §10).
-const hasSegoe = isInstalled("Segoe UI");
-document.documentElement.style.setProperty("--fuente", hasSegoe ? FULL_SIZE_FONT : SUBSTITUTE_FONT);
-document.body.style.setProperty("--escala", hasSegoe ? "1" : String(11.3 / 12));
+const measure = installPageFont();
 document.title = "Solder";
-
-const measureCanvas = document.createElement("canvas").getContext("2d");
-const measure = (text) => {
-  measureCanvas.font = `${getComputedStyle(document.documentElement).getPropertyValue("--fuente")} "Segoe UI", "Noto Sans", sans-serif`;
-  return measureCanvas.measureText(text).width;
-};
 const windowSize = () => ({ width: innerWidth, height: innerHeight });
 
 const inventory = await fetch("/inventario.json").then((response) => response.json()).then(cargarInventario);
@@ -55,6 +35,7 @@ const anchorBelow = (element) => {
 /** What the built rows of the menu bar do: each one asks the main process, which owns the windows. */
 const COMMANDS = {
   newVI: () => solder?.nuevoVI(),
+  newDialog: () => solder?.nuevo(),
   open: () => solder?.abrir(),
   exit: () => solder?.salir(),
 };

@@ -37,6 +37,23 @@
   --placeholder-text: #696969; /* Greyed placeholders (DT-035: what is not done yet looks the same, greyed). */
 }
 
+/* The Polymorphic OVI window (shades read off labview-captures/polymorphic-window/p1.png, not measured). */
+:root {
+  --polymorphic-window-background: #f0f0f0;
+  --polymorphic-window-text: #000;
+  --polymorphic-window-marker: #c8281e;
+  --polymorphic-window-arrow: #f2cf2c;
+  --polymorphic-window-arrow-border: #8a7410;
+  --polymorphic-window-list-border: #828790;
+  --polymorphic-window-list-background: #fff;
+  --polymorphic-window-header-background: #fff;
+  --polymorphic-window-row-line: #e4e4e4;
+  --polymorphic-window-selected-background: #0078d7;
+  --polymorphic-window-selected-text: #fff;
+  --polymorphic-window-disabled-border: #bfbfbf;
+  --polymorphic-window-disabled-background: #f4f4f4;
+}
+
 /* A polymorphic OVI's selector ring: a blue border and triangle (the shade is unverified: only "blue" was noted). */
 :root {
   --selector-border: #3b6ed6;

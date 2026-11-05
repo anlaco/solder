@@ -11,15 +11,15 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, dialog, ipcMain, Menu, MessageChannelMain, protocol, screen, utilityProcess } from "electron";
-import { POLYMORPHIC_EXTENSION } from "../../core/model/polymorphic.mjs";
-import { OLD_VI_EXTENSION, VI_EXTENSION, isVIFile, pathKey, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey } from "../src/common/vi-paths.mjs";
+import { POLYMORPHIC_EXTENSION, isPolymorphicPath } from "../../core/model/polymorphic.mjs";
+import { OLD_VI_EXTENSION, VI_EXTENSION, isVIFile, pathKey, polymorphicSavePathFor, polymorphicSaveProposal, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey } from "../src/common/vi-paths.mjs";
 import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
 import { newVIBounds, otherWindowKind, tiledBounds } from "./window-layout.mjs";
 import { CHOSEN_THEME_ROUTE, THEMES, chosenThemeName } from "./theme.mjs";
 import { CHOSEN_PANEL_STYLE_ROUTE, PANEL_STYLES, chosenPanelStyleName } from "../src/front-panel/panel-style.mjs";
 import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from "../src/getting-started/start-state.mjs";
-import { WINDOW_KINDS, createRegistry, isDirty, recordChange, recordSave, viName, windowTitle } from "./vi-registry.mjs";
+import { ENTRY_KINDS, POLYMORPHIC_WINDOW_KIND, WINDOW_KINDS, createRegistry, isDirty, primaryWindowKind, recordChange, recordSave, viName, windowTitle } from "./vi-registry.mjs";
 import { readWindowStyle, watchWindowStyle } from "./window-style.mjs";
 import { createInstrumentIoProcess } from "./instrument-io-process.mjs";
 import { chosenFileOf, chosenFilesOf, confirmationBoxFor, confirmedBy, fileDialogFor, folderAfter, systemDialogFor } from "./file-dialog-options.mjs";
@@ -179,8 +179,14 @@ const openVIs = new Map();
 const viOfContents = new Map();
 // Both extensions open (DT-051); the dialogs list the new one first.
 const FILTERS = [{ name: "Solder OVI", extensions: [VI_EXTENSION, OLD_VI_EXTENSION].map((extension) => extension.slice(1)) }];
-// Select a VI... also takes a polymorphic OVI (DT-074), listed first so that the dialog shows both kinds.
-const SUBVI_FILTERS = [{ name: "Solder OVI and polymorphic OVI", extensions: [VI_EXTENSION, OLD_VI_EXTENSION, POLYMORPHIC_EXTENSION].map((extension) => extension.slice(1)) }, ...FILTERS];
+// Open and Select a VI... also take a polymorphic OVI (DT-074), listed first so that the dialog shows both kinds.
+const OVI_AND_POLYMORPHIC_FILTERS = [{ name: "Solder OVI and polymorphic OVI", extensions: [VI_EXTENSION, OLD_VI_EXTENSION, POLYMORPHIC_EXTENSION].map((extension) => extension.slice(1)) }, ...FILTERS];
+/** What Save As offers for a polymorphic OVI, which LabVIEW saves as a `.vi` and Solder as a file of its own (DT-074). */
+const POLYMORPHIC_FILTERS = [{ name: "Solder polymorphic OVI", extensions: [POLYMORPHIC_EXTENSION.slice(1)] }];
+const ICON_FILTERS = [{ name: "SVG icon", extensions: ["svg"] }];
+/** The size of the Polymorphic OVI window's page and of the New dialog's, in pixels (measured; spec rules 122 and 124). */
+const POLYMORPHIC_WINDOW_SIZE = { width: 482, height: 391 - 33 };
+const NEW_DIALOG_SIZE = { width: 802, height: 632 - 33 };
 let quitting = false;
 /** What was last copied in any VI, as the text its window sent. */
 let sharedClipboard = null;
@@ -221,8 +227,58 @@ function watchStyleOf(open) {
   });
 }
 
-/** Opens the windows of a VI the registry has just created. */
+/** Opens the windows of an entry the registry has just created: an OVI's two, or a polymorphic OVI's one. */
 function openWindows(entry) {
+  return entry.kind === ENTRY_KINDS.POLYMORPHIC ? openPolymorphicWindow(entry) : openOviWindows(entry);
+}
+
+/** Where a new window of the polymorphic kind opens: cascaded as the OVIs' are, from the work area's corner. */
+const polymorphicWindowPosition = (index) => {
+  const { x, y } = screen.getPrimaryDisplay().workArea;
+  return { x: x + 40 + 24 * (index % 8), y: y + 40 + 24 * (index % 8) };
+};
+
+/**
+ * The Polymorphic OVI window (DT-074 §5): one window, 482 x 391 with its title bar, that stands for the entry. Closing it
+ * closes the entry, asking first if it has unsaved changes, as the Front Panel does.
+ */
+function openPolymorphicWindow(entry) {
+  const window = new BrowserWindow({
+    ...polymorphicWindowPosition(openVIs.size),
+    ...POLYMORPHIC_WINDOW_SIZE,
+    useContentSize: true,
+    title: windowTitle(entry, POLYMORPHIC_WINDOW_KIND),
+    backgroundColor: THEME.windowBackground.color,
+    icon: APP_ICON,
+    show: false,
+    webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(HERE, "preload.cjs") },
+  });
+  window.on("page-title-updated", (event) => event.preventDefault());
+  window.loadURL(`solder://editor/polymorphic.html?vi=${entry.id}`);
+  const open = { entry, windows: { [POLYMORPHIC_WINDOW_KIND]: window }, closing: false };
+  openVIs.set(entry.id, open);
+  viOfContents.set(window.webContents.id, open);
+  window.once("ready-to-show", () => {
+    window.show();
+    gettingStarted?.hide();
+  });
+  window.on("close", (event) => {
+    if (open.closing || process.env.SOLDER_CAPTURAS) return;
+    event.preventDefault();
+    closeVI(open);
+  });
+  window.on("closed", () => {
+    registry.close(entry.id);
+    openVIs.delete(entry.id);
+    if (openVIs.size) return;
+    if (quitting || process.env.SOLDER_CAPTURAS) app.quit();
+    else showGettingStarted();
+  });
+  return open;
+}
+
+/** Opens the windows of a VI the registry has just created. */
+function openOviWindows(entry) {
   const bounds = boundsForNewVI(openVIs.size);
   const open = { entry, windows: {}, closing: false };
   openVIs.set(entry.id, open);
@@ -267,8 +323,11 @@ function openWindows(entry) {
   return open;
 }
 
+/** The window that stands for an open entry: the Front Panel of an OVI, the only window of a polymorphic OVI. */
+const primaryWindow = (open) => open.windows[primaryWindowKind(open.entry)];
+
 function focusPanel(open) {
-  const panel = open.windows["front-panel"];
+  const panel = primaryWindow(open);
   if (panel.isMinimized()) panel.restore();
   panel.show();
   panel.focus();
@@ -302,12 +361,15 @@ async function exitApplication() {
     const { response } = await dialog.showMessageBox(owner, { type: "question", title, message, detail, buttons: EXIT_BUTTONS, defaultId: 0, cancelId: EXIT_BUTTONS.length - 1 });
     return EXIT_BUTTON_ANSWERS[response] ?? EXIT_ANSWERS.cancel;
   };
-  const save = async (open) => (await writeVI(open, open.windows["front-panel"], open.entry.current, false)) !== null;
+  const save = async (open) => (await writeVI(open, primaryWindow(open), open.entry.current, false)) !== null;
   if (!(await confirmExit([...openVIs.values()], { isDirty: (open) => isDirty(open.entry), ask, save }))) return;
   quitting = true;
   for (const open of openVIs.values()) open.closing = true;
   app.quit();
 }
+
+/** What a file opens as: a `.sdp` is a polymorphic OVI, anything else an OVI. */
+const kindOfFile = (filePath) => (isPolymorphicPath(filePath) ? ENTRY_KINDS.POLYMORPHIC : ENTRY_KINDS.OVI);
 
 /** Opens a VI from disk in its own windows, or brings its windows forward if it is already open. */
 async function openPath(filePath, owner) {
@@ -320,13 +382,13 @@ async function openPath(filePath, owner) {
     dialog.showMessageBox(owner, { type: "error", message: "The OVI cannot be opened.", detail: error.message });
     return;
   }
-  const { entry } = registry.open({ path: filePath, initialText: text });
+  const { entry } = registry.open({ path: filePath, initialText: text, kind: kindOfFile(filePath) });
   rememberRecentFile(filePath);
   openWindows(entry);
 }
 
 async function openFirstFile(filePath) {
-  const { entry } = registry.open({ path: filePath, initialText: await readFile(filePath, "utf8") });
+  const { entry } = registry.open({ path: filePath, initialText: await readFile(filePath, "utf8"), kind: kindOfFile(filePath) });
   rememberRecentFile(filePath);
   return openWindows(entry);
 }
@@ -334,6 +396,47 @@ async function openFirstFile(filePath) {
 function openNewVI() {
   const { entry } = registry.open();
   return openWindows(entry);
+}
+
+/** File ▸ New... ▸ Polymorphic OVI: an empty polymorphic OVI, numbered after every Untitled before it (measured). */
+function openNewPolymorphic() {
+  const { entry } = registry.open({ kind: ENTRY_KINDS.POLYMORPHIC });
+  return openWindows(entry);
+}
+
+// ——— The New dialog (File ▸ New...) ———
+
+/** What each creation of the New dialog opens. */
+const NEW_DIALOG_CREATIONS = { "blank-ovi": openNewVI, "polymorphic-ovi": openNewPolymorphic };
+let newDialogWindow = null;
+
+/** The New dialog: a window of its own, modal over the one that asked, which gives its choice back through `new-dialog:accept`. */
+function showNewDialog(owner) {
+  if (newDialogWindow && !newDialogWindow.isDestroyed()) return newDialogWindow.focus();
+  newDialogWindow = new BrowserWindow({
+    ...NEW_DIALOG_SIZE,
+    useContentSize: true,
+    parent: owner ?? undefined,
+    modal: !!owner,
+    resizable: false,
+    minimizable: false,
+    title: "New",
+    backgroundColor: THEME.windowBackground.color,
+    icon: APP_ICON,
+    show: false,
+    webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(HERE, "preload.cjs") },
+  });
+  newDialogWindow.setMenuBarVisibility(false);
+  newDialogWindow.on("page-title-updated", (event) => event.preventDefault());
+  newDialogWindow.once("ready-to-show", () => newDialogWindow.show());
+  newDialogWindow.on("closed", () => {
+    newDialogWindow = null;
+  });
+  newDialogWindow.loadURL("solder://editor/new-dialog.html");
+}
+
+function closeNewDialog() {
+  if (newDialogWindow && !newDialogWindow.isDestroyed()) newDialogWindow.close();
 }
 
 /** The VI has unsaved changes: LabVIEW's Close dialog (Save, Don't Save, Cancel). Returns whether to go on. */
@@ -349,7 +452,7 @@ async function canDiscard(open, owner) {
 
 /** Closes a VI and its windows, after asking about unsaved changes unless `force`. Returns whether it closed. */
 async function closeVI(open, { force = false } = {}) {
-  if (!force && !(await canDiscard(open, open.windows["front-panel"]))) return false;
+  if (!force && !(await canDiscard(open, primaryWindow(open)))) return false;
   open.closing = true;
   for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.close();
   return true;
@@ -370,7 +473,7 @@ async function closeAllVIs(owner) {
     });
     return { answer: CLOSE_BUTTON_ANSWERS[response] ?? CLOSE_ANSWERS.cancel, applyToRemaining: !!checkboxLabel && checkboxChecked };
   };
-  const save = async (open) => (await writeVI(open, open.windows["front-panel"], open.entry.current, false)) !== null;
+  const save = async (open) => (await writeVI(open, primaryWindow(open), open.entry.current, false)) !== null;
   const order = closeAllOrder(openVIs.values(), (open) => Number(open.entry.id));
   if (!(await confirmCloseAll(order, { isDirty: (open) => isDirty(open.entry), ask, save }))) return;
   for (const open of order) await closeVI(open, { force: true });
@@ -384,18 +487,20 @@ async function closeAllVIs(owner) {
  */
 async function writeVI(open, owner, text, saveAs) {
   const { entry } = open;
+  const polymorphic = entry.kind === ENTRY_KINDS.POLYMORPHIC;
   let target = entry.path;
   if (!target || saveAs) {
-    const result = await dialog.showSaveDialog(owner, { title: "Save As", defaultPath: saveAsProposal(target, viName(entry)), filters: FILTERS });
+    const defaultPath = polymorphic ? polymorphicSaveProposal(target, viName(entry)) : saveAsProposal(target, viName(entry));
+    const result = await dialog.showSaveDialog(owner, { title: "Save As", defaultPath, filters: polymorphic ? POLYMORPHIC_FILTERS : FILTERS });
     if (result.canceled || !result.filePath) return null;
-    target = savePathFor(result.filePath);
+    target = polymorphic ? polymorphicSavePathFor(result.filePath) : savePathFor(result.filePath);
   }
   const rebased = rebaseText(text, keyOf(entry), pathKey(target));
   await writeFile(target, rebased);
   const moved = target !== entry.path;
   recordSave(entry, target, rebased);
   // Saved somewhere else, the VI takes the style that is next to its new file.
-  if (moved) await restyle(open);
+  if (moved && !polymorphic) await restyle(open);
   rememberRecentFile(target);
   setTitles(open);
   // The callers of this VI that are open must see its new connector.
@@ -473,7 +578,7 @@ function showGettingStarted() {
 }
 
 /** What a page learns about its VI when it starts. */
-const describe = (entry) => ({ id: entry.id, text: entry.initialText, key: keyOf(entry), name: viName(entry), untitledNumber: entry.untitledNumber });
+const describe = (entry) => ({ id: entry.id, kind: entry.kind, text: entry.initialText, key: keyOf(entry), name: viName(entry), untitledNumber: entry.untitledNumber });
 
 async function readTextOrNull(key) {
   try {
@@ -504,14 +609,14 @@ function handleRequests() {
   // File ▸ Open: another VI, in its own windows.
   ipcMain.handle("vi:abrir", async (event) => {
     const owner = ownerOf(event);
-    const result = await dialog.showOpenDialog(owner, { title: "Open", properties: ["openFile"], filters: FILTERS });
+    const result = await dialog.showOpenDialog(owner, { title: "Open", properties: ["openFile"], filters: OVI_AND_POLYMORPHIC_FILTERS });
     if (!result.canceled && result.filePaths.length) await openPath(result.filePaths[0], owner);
   });
   // A subVI opened by double click or Open Front Panel; `key` is its absolute path.
   ipcMain.handle("vi:open-path", (event, key) => openPath(key, ownerOf(event)));
   // Select a VI...: the file dialog; returns the absolute path or nothing.
   ipcMain.handle("vi:choose-subvi", async (event) => {
-    const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select an OVI", properties: ["openFile"], filters: SUBVI_FILTERS });
+    const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select an OVI", properties: ["openFile"], filters: OVI_AND_POLYMORPHIC_FILTERS });
     return result.canceled || !result.filePaths.length ? null : pathKey(result.filePaths[0]);
   });
   // The browse button of a File Path Control: the file dialog (Browse Options are not offered yet: one existing file); returns the absolute path or nothing.
@@ -583,8 +688,25 @@ function handleRequests() {
   // File ▸ Close (Ctrl+W): on the Front Panel the whole VI leaves memory; on the Block Diagram only that window hides.
   ipcMain.on("vi:close-window", (event) => {
     const open = openOf(event);
-    if (open.windows["block-diagram"].webContents.id === event.sender.id) return open.windows["block-diagram"].hide();
+    if (open.windows["block-diagram"]?.webContents.id === event.sender.id) return open.windows["block-diagram"].hide();
     closeVI(open);
+  });
+  // File ▸ New...: the New dialog; its OK opens what was chosen and Cancel only closes it.
+  ipcMain.on("vi:new-dialog", (event) => showNewDialog(ownerOf(event)));
+  ipcMain.on("new-dialog:accept", (_event, creation) => {
+    closeNewDialog();
+    NEW_DIALOG_CREATIONS[creation]?.();
+  });
+  ipcMain.on("new-dialog:cancel", () => closeNewDialog());
+  // The Polymorphic OVI window's Add...: LabVIEW's dialog is titled "Select the VI to Open" (measured); ours says OVI.
+  ipcMain.handle("polymorphic:choose-instance", async (event) => {
+    const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select the OVI to Open", properties: ["openFile"], filters: FILTERS });
+    return result.canceled || !result.filePaths.length ? null : pathKey(result.filePaths[0]);
+  });
+  // Its Edit Icon...: until Solder has an icon editor, an SVG file is the icon (a deviation from LabVIEW, spec rule 123).
+  ipcMain.handle("polymorphic:choose-icon", async (event) => {
+    const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select an SVG icon", properties: ["openFile"], filters: ICON_FILTERS });
+    return result.canceled || !result.filePaths.length ? null : readTextOrNull(result.filePaths[0]);
   });
   // File ▸ Close All.
   ipcMain.on("vi:close-all", (event) => closeAllVIs(ownerOf(event)));
@@ -616,7 +738,7 @@ const instrumentIo = createInstrumentIoProcess({
 });
 
 /** The VI file named on the command line: a double click on a file in the system's file manager starts Solder with it. */
-const viFileInArguments = (argv) => argv.slice(1).find((argument) => isVIFile(argument) && !argument.startsWith("-"));
+const viFileInArguments = (argv) => argv.slice(1).find((argument) => (isVIFile(argument) || isPolymorphicPath(argument)) && !argument.startsWith("-"));
 
 // One Solder at a time: opening a VI file while it runs opens it in the running one.
 if (!app.requestSingleInstanceLock()) app.quit();

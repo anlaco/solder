@@ -1450,8 +1450,9 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-25-visa-palettes.
 > the third cell of the first row empty), VISA USB (4 × 1, third cell empty), Event Handling (4 × 2), Register Access (8 × 3) and Low
 > Level Register Access (4 × 3) have the names and cells of the report; Serial (4 × 2) is the same palette under Instrument I/O and under
 > Bus/Interface Specific. **Done:** VISA Open, VISA Write, VISA Read and VISA Close, wherever they are (VISA Write, Read and Close also
-> in both Serial palettes): each puts its block. Everything else is greyed with its reason (`funciones-visa-restantes`,
-> `puerto-serie-visa`, `nodos-de-propiedades`, `sub-vis`). The thumbtack of each subpalette is greyed (`paletas-fijas`). Tested.
+> in both Serial palettes): each puts its block. VISA Bytes at Serial Port puts an Instr Property Node, and VISA Configure Serial
+> Port the polymorphic OVI `<ovilib>/Instr/VISA Configure Serial Port.sdp` (DT-073, DT-074). Everything else is greyed with its reason
+> (`funciones-visa-restantes`, `nodos-de-propiedades`, `sub-vis`). The thumbtack of each subpalette is greyed (`paletas-fijas`). Tested.
 
 > **Rule 109 — The nodes are 32 × 32 and their terminals sit where LabVIEW has them.** VISA Open, Write, Read and Close are tiles of
 > 32 × 32 px. Their terminals are not spread over the edge as those of other functions are: they are 6 × 6 dots on rows 8 px apart (y 1,
@@ -1693,3 +1694,39 @@ and the edits of the rows) and `property-node-menus.mjs` (the menus). Tests: `te
 > step. Double click and Open Front Panel open the instance the node calls, not the `.sdp`. **Unverified:** what a click on
 > the ring opens (ours: the list of Select Type), the ring's exact padding around its text and its blue, the name of the
 > palette row. Tested in `test/editor/polymorphic-nodes.test.mjs`.
+
+> **Rule 122 — Polymorphic OVI window (DT-074 §5, 2026-11-05).** File ▸ New... ▸ Polymorphic OVI, File ▸ Open of a `.sdp` and
+> Open Polymorphic OVI on a node open one window, 482 × 391 with its title bar, titled "Untitled N Polymorphic OVI" (the
+> next Untitled number, shared with the OVIs; " *" after an edit; a saved one "Step.sdp Polymorphic OVI") with the menu bar
+> File, Edit, View, Project, Operate, Tools, Window, Help and no toolbar. Its controls sit at the measured rectangles
+> (`editor/src/polymorphic-window/polymorphic-window-view.mjs`): the empty-list marker, Edit Icon..., the 32 × 32 icon, the
+> "Instance OVIs" list (columns OVI Name / Menu Name / Selector Name, a 17 px header and 18 px rows), Move Up / Move Down
+> (greyed at the ends), Add..., Remove and Edit Name... (greyed with nothing selected), "Block Diagram Appearance:" with
+> Draw Polymorphic OVI Icon (on) and Draw Instance OVI Icon, Show Selector by Default (off), Allow Polymorphic OVI to Adapt to
+> Data Type (on) and Help. Add... opens the system dialog "Select the OVI to Open"; the row shows the file name with its
+> extension, empty Menu and Selector names (an empty name is the default and stores nothing, and the selector name follows
+> the menu name), and is appended and selected. Edit Name... opens "Edit Instance Name" (353 × 237). The window is saved as
+> a `.sdp` (Solder's own extension; LabVIEW saves a `.vi`), its instances stored relative to it or as `<ovilib>/…` and
+> rebased when it moves; closing a modified one asks Save, Don't Save, Cancel; a saved `.sdp` refreshes the callers that
+> have it open as a saved subOVI does. **Not done**, greyed with their reason: the rows of every menu but File (only the
+> titles were measured; File's are the OVI windows', unverified here) and Help. **Unverified:** colours and fonts,
+> resizing, Remove and the selection after it, adding the same OVI twice, incompatible connectors on Add..., uniqueness of
+> names, the row icon. Tested in `test/editor/polymorphic-window.test.mjs`.
+
+> **Rule 123 — Edit Icon... (a Solder deviation).** LabVIEW opens its Icon Editor from Edit Icon...; Solder has none yet, so
+> Edit Icon... opens a file dialog for an SVG document (up to 64 KB) whose text becomes the `.sdp`'s `icon`, drawn as an
+> image from a `data:` URI so that nothing in it runs. Anything that is not an SVG document is refused with a notice. The
+> deviation ends when the icon editor of the OVIs exists; the file format does not change. Tested in
+> `test/editor/polymorphic-window.test.mjs`.
+
+> **Rule 124 — File ▸ New... (the New dialog).** A window of its own, modal over the one that asked, with the tree OVI ▸
+> Blank OVI, Malleable OVI, Polymorphic OVI, then From Template, Project ▸ Empty Project and Other Files, a Description
+> pane, Add to project, OK, Cancel and Help. OK creates a blank OVI or a polymorphic OVI; what is not done does not take
+> the selection and explains why. The descriptions are Solder's own; the sizes of the boxes are read off the capture, not
+> measured. The same row is in the File menu of the OVI windows, of Getting Started and of the Polymorphic OVI window.
+> Tested in `test/editor/new-dialog.test.mjs`.
+
+> **Rule 125 — A palette element of a subOVI.** A palette entry that places `bloque: "subvi"` with its `config.vi` (VISA
+> Configure Serial Port, from both Serial palettes) reads the callee's file and what it reaches before the node is carried,
+> as Select a VI... does, so the node is drawn with its icon and its terminals at once; a polymorphic one is Automatic, on its
+> first instance, with the selector hidden. Tested in `test/editor/polymorphic-nodes.test.mjs`.

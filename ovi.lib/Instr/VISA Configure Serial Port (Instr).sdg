@@ -1,0 +1,602 @@
+{
+  "solder": 2,
+  "connector": {
+    "pattern": 4833,
+    "inputs": [
+      {
+        "name": "visa-control_1",
+        "cell": 0
+      },
+      {
+        "name": "control_1",
+        "cell": 1,
+        "connection": "optional"
+      },
+      {
+        "name": "control_6",
+        "cell": 2,
+        "connection": "optional"
+      },
+      {
+        "name": "bool-control_1",
+        "cell": 3,
+        "connection": "optional"
+      },
+      {
+        "name": "control_2",
+        "cell": 5
+      },
+      {
+        "name": "control_3",
+        "cell": 7
+      },
+      {
+        "name": "control_5",
+        "cell": 9
+      },
+      {
+        "name": "cluster-control_1",
+        "cell": 11
+      },
+      {
+        "name": "control_4",
+        "cell": 12,
+        "connection": "optional"
+      },
+      {
+        "name": "control_7",
+        "cell": 13
+      }
+    ],
+    "outputs": [
+      {
+        "name": "visa-indicator_1",
+        "cell": 4
+      },
+      {
+        "name": "cluster-indicator_1",
+        "cell": 15
+      }
+    ]
+  },
+  "front-panel": [
+    {
+      "name": "visa-control_1",
+      "role": "control",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "control_1",
+      "role": "control",
+      "type": "u32",
+      "default": 10000
+    },
+    {
+      "name": "control_2",
+      "role": "control",
+      "type": "u32",
+      "default": 9600
+    },
+    {
+      "name": "control_3",
+      "role": "control",
+      "type": "u16",
+      "default": 8
+    },
+    {
+      "name": "control_4",
+      "role": "control",
+      "type": "u16",
+      "default": 10
+    },
+    {
+      "name": "control_5",
+      "role": "control",
+      "type": {
+        "enum": [
+          "None",
+          "Odd",
+          "Even",
+          "Mark",
+          "Space"
+        ]
+      },
+      "default": 0
+    },
+    {
+      "name": "bool-control_1",
+      "role": "control",
+      "type": "boolean",
+      "default": true,
+      "style": "push-button",
+      "mechanical-action": "switch-when-pressed"
+    },
+    {
+      "name": "control_6",
+      "role": "control",
+      "type": "u8",
+      "default": 10
+    },
+    {
+      "name": "control_7",
+      "role": "control",
+      "type": "u16",
+      "default": 0
+    },
+    {
+      "name": "cluster-control_1",
+      "role": "control",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "style": "error-in"
+    },
+    {
+      "name": "visa-indicator_1",
+      "role": "indicator",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "cluster-indicator_1",
+      "role": "indicator",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "style": "error-out"
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      {
+        "name": "visa-control_1",
+        "type": "visa-control"
+      },
+      {
+        "name": "control_1",
+        "type": "control"
+      },
+      {
+        "name": "control_2",
+        "type": "control"
+      },
+      {
+        "name": "control_3",
+        "type": "control"
+      },
+      {
+        "name": "control_4",
+        "type": "control"
+      },
+      {
+        "name": "control_5",
+        "type": "control"
+      },
+      {
+        "name": "bool-control_1",
+        "type": "bool-control"
+      },
+      {
+        "name": "control_6",
+        "type": "control"
+      },
+      {
+        "name": "control_7",
+        "type": "control"
+      },
+      {
+        "name": "cluster-control_1",
+        "type": "cluster-control"
+      },
+      {
+        "name": "visa-indicator_1",
+        "type": "visa-indicator"
+      },
+      {
+        "name": "cluster-indicator_1",
+        "type": "cluster-indicator"
+      },
+      {
+        "name": "property-node_1",
+        "type": "property-node",
+        "config": {
+          "class": "Instr",
+          "link": null,
+          "rows": [
+            {
+              "property": "General Settings:Timeout Value",
+              "write": true
+            },
+            {
+              "property": "Serial Settings:Baud Rate",
+              "write": true
+            },
+            {
+              "property": "Serial Settings:Data Bits",
+              "write": true
+            },
+            {
+              "property": "Serial Settings:Stop Bits",
+              "write": true
+            },
+            {
+              "property": "Serial Settings:Parity",
+              "write": true
+            },
+            {
+              "property": "Message Based Settings:Termination Character Enable",
+              "write": true
+            },
+            {
+              "property": "Message Based Settings:Termination Character",
+              "write": true
+            },
+            {
+              "property": "Serial Settings:Flow Control",
+              "write": true
+            },
+            {
+              "property": "Serial Settings:End Mode for Reads",
+              "write": true
+            }
+          ],
+          "ignore-errors": false
+        }
+      }
+    ],
+    "wires": [
+      {
+        "from": "visa-control_1.result",
+        "to": "property-node_1.reference"
+      },
+      {
+        "from": "cluster-control_1.result",
+        "to": "property-node_1.error-in"
+      },
+      {
+        "from": "control_1.result",
+        "to": "property-node_1.row-0"
+      },
+      {
+        "from": "control_2.result",
+        "to": "property-node_1.row-1"
+      },
+      {
+        "from": "control_3.result",
+        "to": "property-node_1.row-2"
+      },
+      {
+        "from": "control_4.result",
+        "to": "property-node_1.row-3"
+      },
+      {
+        "from": "control_5.result",
+        "to": "property-node_1.row-4"
+      },
+      {
+        "from": "bool-control_1.result",
+        "to": "property-node_1.row-5"
+      },
+      {
+        "from": "control_6.result",
+        "to": "property-node_1.row-6"
+      },
+      {
+        "from": "control_7.result",
+        "to": "property-node_1.row-7"
+      },
+      {
+        "from": "bool-control_1.result",
+        "to": "case-structure_1.selector"
+      },
+      {
+        "from": "case-structure_1.case-tunnel-out_1",
+        "to": "property-node_1.row-8"
+      },
+      {
+        "from": "property-node_1.reference-out",
+        "to": "visa-indicator_1.value"
+      },
+      {
+        "from": "property-node_1.error-out",
+        "to": "cluster-indicator_1.value"
+      }
+    ],
+    "structures": [
+      {
+        "name": "case-structure_1",
+        "kind": "case-structure",
+        "tunnels": [
+          {
+            "name": "case-tunnel-out_1",
+            "dir": "out"
+          }
+        ],
+        "frames": [
+          {
+            "match": [
+              false
+            ],
+            "body": {
+              "nodes": [
+                {
+                  "name": "ring-const_1",
+                  "type": "ring-const",
+                  "config": {
+                    "items": [
+                      "None",
+                      "LastBit",
+                      "TermChar"
+                    ],
+                    "default": 0
+                  }
+                }
+              ],
+              "wires": [
+                {
+                  "from": "ring-const_1.result",
+                  "to": "case-structure_1.case-tunnel-out_1"
+                }
+              ]
+            }
+          },
+          {
+            "match": [
+              true
+            ],
+            "body": {
+              "nodes": [
+                {
+                  "name": "ring-const_2",
+                  "type": "ring-const",
+                  "config": {
+                    "items": [
+                      "None",
+                      "LastBit",
+                      "TermChar"
+                    ],
+                    "default": 2
+                  }
+                }
+              ],
+              "wires": [
+                {
+                  "from": "ring-const_2.result",
+                  "to": "case-structure_1.case-tunnel-out_1"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "visa-control_1": {
+        "x": 40,
+        "y": 30,
+        "label": {
+          "text": "VISA resource name"
+        }
+      },
+      "control_1": {
+        "x": 40,
+        "y": 80,
+        "label": {
+          "text": "timeout (10sec)"
+        }
+      },
+      "control_2": {
+        "x": 40,
+        "y": 120,
+        "label": {
+          "text": "baud rate (9600)"
+        }
+      },
+      "control_3": {
+        "x": 40,
+        "y": 160,
+        "label": {
+          "text": "data bits (8)"
+        }
+      },
+      "control_4": {
+        "x": 40,
+        "y": 200,
+        "label": {
+          "text": "stop bits (10: 1 bit)"
+        }
+      },
+      "control_5": {
+        "x": 40,
+        "y": 240,
+        "label": {
+          "text": "parity (0:none)"
+        }
+      },
+      "bool-control_1": {
+        "x": 40,
+        "y": 280,
+        "label": {
+          "text": "Enable Termination Char (T)"
+        }
+      },
+      "control_6": {
+        "x": 40,
+        "y": 330,
+        "label": {
+          "text": "termination char (0xA = '\\n' = LF)"
+        }
+      },
+      "control_7": {
+        "x": 40,
+        "y": 370,
+        "label": {
+          "text": "flow control (0:none)"
+        }
+      },
+      "cluster-control_1": {
+        "x": 40,
+        "y": 420,
+        "label": {
+          "text": "error in (no error)"
+        }
+      },
+      "visa-indicator_1": {
+        "x": 560,
+        "y": 30,
+        "label": {
+          "text": "VISA resource name out"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 560,
+        "y": 420,
+        "label": {
+          "text": "error out"
+        }
+      },
+      "property-node_1": {
+        "x": 400,
+        "y": 40
+      },
+      "case-structure_1": {
+        "x": 180,
+        "y": 300,
+        "w": 140,
+        "h": 90,
+        "active-frame": 1
+      },
+      "case-structure_1.selector": {
+        "x": 180,
+        "y": 345
+      },
+      "case-tunnel-out_1": {
+        "x": 320,
+        "y": 340
+      },
+      "ring-const_1": {
+        "x": 220,
+        "y": 330
+      },
+      "ring-const_2": {
+        "x": 220,
+        "y": 330
+      }
+    },
+    "panel": {
+      "visa-control_1": {
+        "x": 20,
+        "y": 20,
+        "label": {
+          "text": "VISA resource name"
+        }
+      },
+      "control_1": {
+        "x": 20,
+        "y": 80,
+        "label": {
+          "text": "timeout (10sec)"
+        }
+      },
+      "control_2": {
+        "x": 20,
+        "y": 130,
+        "label": {
+          "text": "baud rate (9600)"
+        }
+      },
+      "control_3": {
+        "x": 20,
+        "y": 180,
+        "label": {
+          "text": "data bits (8)"
+        }
+      },
+      "control_4": {
+        "x": 20,
+        "y": 230,
+        "label": {
+          "text": "stop bits (10: 1 bit)"
+        }
+      },
+      "control_5": {
+        "x": 20,
+        "y": 280,
+        "label": {
+          "text": "parity (0:none)"
+        }
+      },
+      "bool-control_1": {
+        "x": 220,
+        "y": 80,
+        "label": {
+          "text": "Enable Termination Char (T)"
+        }
+      },
+      "control_6": {
+        "x": 220,
+        "y": 130,
+        "label": {
+          "text": "termination char (0xA = '\\n' = LF)"
+        }
+      },
+      "control_7": {
+        "x": 220,
+        "y": 180,
+        "label": {
+          "text": "flow control (0:none)"
+        }
+      },
+      "cluster-control_1": {
+        "x": 220,
+        "y": 230,
+        "label": {
+          "text": "error in (no error)"
+        }
+      },
+      "visa-indicator_1": {
+        "x": 420,
+        "y": 20,
+        "label": {
+          "text": "VISA resource name out"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 420,
+        "y": 230,
+        "label": {
+          "text": "error out"
+        }
+      }
+    }
+  }
+}

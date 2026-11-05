@@ -10,7 +10,7 @@
 // rebase leaves alone: it does not depend on where the caller is.
 
 import { isOviLibPath, oviLibPathFor, resolveOviLibPath } from "../../../core/model/ovi-lib.mjs";
-import { isPolymorphicPath } from "../../../core/model/polymorphic.mjs";
+import { POLYMORPHIC_EXTENSION, isPolymorphicPath } from "../../../core/model/polymorphic.mjs";
 
 const WINDOWS_DRIVE = /^[A-Za-z]:\//;
 
@@ -31,6 +31,15 @@ export const withoutVIExtension = (name) => VI_EXTENSIONS.reduce((rest, extensio
 
 /** Where Save As writes the path the user chose: as it is if it already names a VI file, with `.sdg` added if not. */
 export const savePathFor = (chosen) => (isVIFile(chosen) ? chosen : `${chosen}${VI_EXTENSION}`);
+
+/**
+ * Where Save As writes a polymorphic OVI (DT-074): the path the user chose, with `.sdp` added if it does not end so.
+ * LabVIEW writes a `.vi`; Solder's polymorphic OVI is a file of its own.
+ */
+export const polymorphicSavePathFor = (chosen) => (isPolymorphicPath(chosen) ? chosen : `${chosen}${POLYMORPHIC_EXTENSION}`);
+
+/** What Save As proposes for a polymorphic OVI: its name with `.sdp`. */
+export const polymorphicSaveProposal = (currentPath, name) => `${(currentPath ?? name).replace(/\.[^./\\]+$/, "")}${POLYMORPHIC_EXTENSION}`;
 
 /** The stylesheet that goes with a VI file (DT-058 §2): the same name with `.css`, next to it. */
 export const companionStylesheetPath = (viPath) => `${withoutVIExtension(viPath)}.css`;
@@ -163,6 +172,7 @@ export function subVIPathsInFile(file) {
 /** The text of a `.qvi` with its subVI paths rebased, formatted as the writer does (core/model/qvi-format.mjs). */
 export function rebaseText(text, fromKey, toKey) {
   const file = JSON.parse(text);
+  if (file["solder-polymorphic"] !== undefined) return rebasePolymorphicText(file, text, fromKey, toKey);
   let changed = false;
   eachFileSubVINode(file["block-diagram"], (node) => {
     const vi = rebaseStoredPath(node.config.vi, fromKey, toKey);
@@ -170,6 +180,19 @@ export function rebaseText(text, fromKey, toKey) {
     node.config.vi = vi;
     changed = true;
   });
+  return changed ? `${JSON.stringify(file, null, 2)}\n` : text;
+}
+
+/** A `.sdp` with the paths of its instances rebased (they are stored relative to the `.sdp`, like a caller's subOVIs). */
+function rebasePolymorphicText(file, text, fromKey, toKey) {
+  let changed = false;
+  for (const instance of file.instances ?? []) {
+    if (typeof instance?.ovi !== "string") continue;
+    const rebased = rebaseStoredPath(instance.ovi, fromKey, toKey);
+    if (rebased === instance.ovi) continue;
+    instance.ovi = rebased;
+    changed = true;
+  }
   return changed ? `${JSON.stringify(file, null, 2)}\n` : text;
 }
 

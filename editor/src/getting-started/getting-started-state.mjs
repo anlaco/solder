@@ -54,4 +54,4 @@ export const recentFileRows = (recentFiles) =>
   recentFiles.map((filePath, index) => ({ id: `window.getting-started.menu.file.recent-files.file-${index}`, etiqueta: fileName(filePath), estado: "built", filePath }));
 
 /** What each built row of the menu bar does, by the last segment of its id; the page runs it through window.solder. */
-export const MENU_COMMANDS = { "new-vi": "newVI", open: "open", exit: "exit" };
+export const MENU_COMMANDS = { "new-vi": "newVI", new: "newDialog", open: "open", exit: "exit" };

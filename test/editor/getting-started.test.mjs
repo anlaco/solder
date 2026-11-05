@@ -108,8 +108,8 @@ test("File menu rows run the commands of the window", () => {
   assert.deepEqual(rows.filter((row) => row.separado).map((row) => row.etiqueta), ["Create Project...", "Recent Projects", "Exit"]);
   assert.deepEqual(rows.map((row) => row.atajo ?? null), ["Ctrl+N", null, "Ctrl+O", null, null, null, null, "Ctrl+Q"]);
   const built = rows.filter((row) => !esHueco(row)).map((row) => ultimo(row.id));
-  assert.deepEqual(built, ["new-vi", "open", "recent-files", "exit"]);
-  assert.deepEqual(Object.keys(MENU_COMMANDS).sort(), ["exit", "new-vi", "open"], "every built row except Recent Files has a command");
+  assert.deepEqual(built, ["new-vi", "new", "open", "recent-files", "exit"]);
+  assert.deepEqual(Object.keys(MENU_COMMANDS).sort(), ["exit", "new", "new-vi", "open"], "every built row except Recent Files has a command");
   assert.deepEqual(INV.hijos(`${PREFIX}.menu`).map((menu) => menu.etiqueta), ["File", "Operate", "Tools", "Help"]);
   // The open menu draws every row, in order, with its shortcut.
   const state = E.abrirMenuBarra(start(), INV, `${PREFIX}.menu.file`, { x: 0, y: 20 });

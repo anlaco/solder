@@ -688,11 +688,11 @@
        },
        {
         "name": "Baud Rate",
-        "short": "Baud Rate",
+        "short": "Baud",
         "access": "read-write",
         "type": "u32",
         "done": true,
-        "shortVerified": false,
+        "shortVerified": true,
         "typeVerified": false
        },
        {
@@ -701,7 +701,7 @@
         "access": "read-write",
         "type": "u16",
         "done": true,
-        "shortVerified": false,
+        "shortVerified": true,
         "typeVerified": false
        },
        {
@@ -710,7 +710,7 @@
         "access": "read-write",
         "type": "u16",
         "done": true,
-        "shortVerified": false,
+        "shortVerified": true,
         "typeVerified": false
        },
        {
@@ -719,25 +719,25 @@
         "access": "read-write",
         "type": "u16",
         "done": true,
-        "shortVerified": false,
+        "shortVerified": true,
         "typeVerified": false
        },
        {
         "name": "Flow Control",
-        "short": "Flow Control",
+        "short": "Flow Cntrl",
         "access": "read-write",
         "type": "u16",
         "done": true,
-        "shortVerified": false,
+        "shortVerified": true,
         "typeVerified": false
        },
        {
         "name": "End Mode for Reads",
-        "short": "End Mode for Reads",
+        "short": "ASRL End In",
         "access": "read-write",
         "type": "u16",
         "done": true,
-        "shortVerified": false,
+        "shortVerified": true,
         "typeVerified": false
        },
        {

@@ -95,8 +95,8 @@ const ticked = (rows) => rows.filter(([, , classes]) => classes.includes("marcad
 
 test("Select a VI accepts a .sdp and a placed one is Automatic, on its first instance, with the selector as the file says", () => {
   const main = readFileSync(path.join(RAIZ, "editor/electron/main.mjs"), "utf8");
-  assert.match(main, /SUBVI_FILTERS = \[\{ name: "[^"]+", extensions: \[VI_EXTENSION, OLD_VI_EXTENSION, POLYMORPHIC_EXTENSION\]/, "the dialog lists .sdp");
-  assert.match(main, /title: "Select an OVI"[^)]*filters: SUBVI_FILTERS/);
+  assert.match(main, /OVI_AND_POLYMORPHIC_FILTERS = \[\{ name: "[^"]+", extensions: \[VI_EXTENSION, OLD_VI_EXTENSION, POLYMORPHIC_EXTENSION\]/, "the dialog lists .sdp");
+  assert.match(main, /title: "Select an OVI"[^)]*filters: OVI_AND_POLYMORPHIC_FILTERS/);
 
   const placed = SN.placedConfig(STORED_SDP, sdpText());
   assert.deepEqual(placed, { vi: STORED_SDP, instance: null, selected: 0, selector: false }, "measured: Automatic, the first instance, the selector hidden");
@@ -211,13 +211,11 @@ test("the menu of a polymorphic subOVI node has LabVIEW's rows in its order", ()
   assert.deepEqual(INV.hijos("context.subvi").map((entry) => entry.etiqueta).filter((label) => /Select Type|Polymorphic/.test(label)), []);
 
   // What is done and what is greyed with its reason (rule 1).
-  assert.deepEqual(INV.hijos(PN.MENU_ROOT).filter((entry) => entry.estado === "built").map((entry) => entry.etiqueta), ["Visible Items", "Add Breakpoint", "Disable Breakpoint", "Create", "Select Type", "Open Front Panel"]);
-  const polymorphicWindow = INV.entrada(`${PN.MENU_ROOT}.open-polymorphic-ovi`);
-  assert.equal(polymorphicWindow.estado, "todo");
-  assert.equal(polymorphicWindow.necesita, "ventana-polimorfica", "greyed: the Polymorphic OVI window is the next step of plan step 4b");
-  assert.match(polymorphicWindow.labview, /Polymorphic OVI window/);
+  assert.deepEqual(INV.hijos(PN.MENU_ROOT).filter((entry) => entry.estado === "built").map((entry) => entry.etiqueta), ["Visible Items", "Add Breakpoint", "Disable Breakpoint", "Create", "Select Type", "Open Front Panel", "Open Polymorphic OVI"]);
+  // Open Polymorphic OVI opens the window that edits the .sdp (spec rule 122; tested in polymorphic-window.test.mjs).
+  assert.equal(INV.entrada(`${PN.MENU_ROOT}.open-polymorphic-ovi`).estado, "built");
   const drawn = drawnRows(vi, menuOf(vi)).map(([id, label, classes]) => [label, classes.includes("hueco")]);
-  assert.deepEqual(drawn.find(([label]) => label === "Open Polymorphic OVI"), ["Open Polymorphic OVI", true], "drawn as a hole");
+  assert.deepEqual(drawn.find(([label]) => label === "Open Polymorphic OVI"), ["Open Polymorphic OVI", false], "done");
   assert.deepEqual(drawn.find(([label]) => label === "Select Type"), ["Select Type", false]);
   assert.deepEqual(drawn.find(([label]) => label === "Relink To SubOVI"), ["Relink To SubOVI", true], "measured grey, and not done");
   assert.deepEqual(drawn.find(([label]) => label === "Call Setup..."), ["Call Setup...", true]);
@@ -343,4 +341,55 @@ test("a saved caller reopens with its polymorphic node on the instance Automatic
   const reopened = buildHierarchy({ rootKey: CALLER, rootText: text, texts: { [SDP]: sdpText(), ...instanceTexts() }, baseCatalog: CAT, readVI: Q.leer });
   assert.deepEqual(reopened.errors, []);
   assert.equal(reopened.graph.nodos.find((n) => n.tipo === "subvi").config.selected, 1);
+});
+
+// ——— The palette ———
+
+const SERIAL_PALETTE_ENTRIES = [
+  "palette.functions.instrument-io.serial.visa-configure-serial-port",
+  "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial.visa-configure-serial-port",
+];
+
+test("a palette element of a subOVI places a polymorphic node from both Serial palettes on Automatic with the selector hidden, its file read first", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const Paths = await import("../../editor/src/common/vi-paths.mjs");
+  const oviLibRoot = path.join(RAIZ, "ovi.lib").replaceAll("\\", "/");
+  const readText = (key) => readFile(key, "utf8").catch(() => null);
+
+  for (const id of SERIAL_PALETTE_ENTRIES) {
+    const entry = INV.resolver(id);
+    assert.equal(entry.bloque, "subvi", id);
+    assert.equal(entry.config.vi, "<ovilib>/Instr/VISA Configure Serial Port.sdp", "named by the symbolic path of ovi.lib");
+    // Measured: dropped from the palette it is Automatic, on the first instance, with the selector hidden.
+    const absolute = Paths.resolveRelative(CALLER, entry.config.vi, oviLibRoot);
+    const sdpText = await readText(absolute);
+    assert.ok(sdpText, `${absolute} is shipped`);
+    assert.deepEqual(entry.config, Poly.polymorphicNodeConfig(entry.config.vi, Poly.readPolymorphic(sdpText)), `${id} is what Select a VI... would place`);
+    assert.deepEqual([entry.config.instance, entry.config.selected, entry.config.selector], [null, 0, false]);
+
+    // The page reads the callee's texts before the node is carried, so it is drawn with its icon and its terminals at once.
+    const { texts } = await Paths.readHierarchyTexts(absolute, sdpText, readText, oviLibRoot);
+    const allTexts = { ...texts, [absolute]: sdpText };
+    const empty = buildHierarchy({ rootKey: CALLER, rootGraph: Gr.nuevo(), texts: allTexts, baseCatalog: CAT, readVI: Q.leer, oviLibRoot });
+    const ctx = D.contexto(empty.catalog, D.glifosPorBloque(INV), ".", measure);
+    let d = ED.moverA(ED.coger({ ...ED.inicial(), g: empty.graph }, entry.bloque, entry.config), ctx, { x: 204, y: 104 });
+    d = ED.pulsar(d, ctx, { tipo: "fondo" }, { x: 204, y: 104 });
+    const [node] = d.g.nodos;
+    assert.deepEqual([node.tipo, node.config], ["subvi", entry.config]);
+    const placed = buildHierarchy({ rootKey: CALLER, rootGraph: d.g, texts: allTexts, baseCatalog: CAT, readVI: Q.leer, oviLibRoot });
+    assert.deepEqual(placed.errors, []);
+    assert.ok(placed.catalog.polymorphicOf(node), "a polymorphic node");
+    const ports = placed.catalog.puertos(node);
+    assert.ok(ports.in.length + ports.out.length > 0, "it has its terminals");
+    assert.ok(ports.in.every((port) => port.name.startsWith("cell-")), "named by connector cell");
+    const html = D.contenido(d, D.contexto(placed.catalog, D.glifosPorBloque(INV), ".", measure), Gr.tipos(d.g, placed.catalog));
+    assert.match(html, /class="glifo-subvi"/);
+    assert.doesNotMatch(html, /selector-polimorfico/, "the selector is hidden");
+    assert.doesNotMatch(html, /stroke-dasharray="3 2"/, "not the broken icon of a file that was not found");
+  }
+
+  // Both entries go through the one function that reads the file before the node is carried.
+  const page = readFileSync(path.join(RAIZ, "editor/src/window/editor-window.mjs"), "utf8");
+  assert.match(page, /if \(conDiagrama && e\.bloque === "subvi"\) \{\n\s+carrySubVIFromPalette\(e, punto\(ev\)\);/);
+  assert.match(page, /textosDeVI\(Paths\.resolveRelative\(viKey, entry\.config\.vi, oviLibRoot\)\)/);
 });

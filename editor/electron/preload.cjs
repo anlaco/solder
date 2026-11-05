@@ -41,6 +41,17 @@ contextBridge.exposeInMainWorld("solder", {
   cerrar: () => ipcRenderer.send("vi:close"),
   /** File ▸ New VI: a blank VI in its own windows. */
   nuevoVI: () => ipcRenderer.send("vi:new"),
+  /** File ▸ New...: the New dialog, over this window; its OK opens a blank OVI or a polymorphic OVI. */
+  nuevo: () => ipcRenderer.send("vi:new-dialog"),
+  /** The New dialog's own buttons: OK with what was chosen, or Cancel. */
+  dialogoNuevo: {
+    aceptar: (creation) => ipcRenderer.send("new-dialog:accept", creation),
+    cancelar: () => ipcRenderer.send("new-dialog:cancel"),
+  },
+  /** The Polymorphic OVI window's Add...: the file dialog "Select the OVI to Open"; the absolute path chosen, or nothing. */
+  elegirInstancia: () => ipcRenderer.invoke("polymorphic:choose-instance"),
+  /** Its Edit Icon...: the file dialog for an SVG icon; the text of the file, or nothing (a Solder deviation: LabVIEW opens its Icon Editor). */
+  elegirIcono: () => ipcRenderer.invoke("polymorphic:choose-icon"),
   /** File ▸ Close: the whole VI from its Front Panel, only the window from its Block Diagram. */
   cerrarVentana: () => ipcRenderer.send("vi:close-window"),
   /** File ▸ Close All. */

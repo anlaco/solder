@@ -9,13 +9,20 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- VISA Configure Serial Port, in Instrument I/O ▸ Serial and VISA Advanced ▸ Bus/Interface Specific ▸ Serial: a
+  polymorphic OVI of ovi.lib, (Instr) and (Serial Instr), drawn anew from LabVIEW's, with its connector (pattern 4833),
+  defaults and optional terminals. Stop bits and flow control are numeric controls until Solder has ring controls.
 - Connector panes know LabVIEW's 36 patterns, numbered as LabVIEW numbers them (DT-075): an OVI's pane and its subOVI
   node follow its own pattern. The `.sdg` format goes to version 2 (a terminal's cell is LabVIEW's connector index);
   files of version 1 open as before, migrated. Choosing another pattern is not built yet.
 - ovi.lib, Solder's own library of OVIs (DT-073): a subOVI can be named by a symbolic `<ovilib>/…` path.
 - Polymorphic OVIs in the editor (DT-074): Select an OVI... takes a `.sdp`; its node shows the polymorphic OVI's icon, an
   optional selector ring (Visible Items), a menu with Select Type ▸ and Automatic that follows what is wired, and opens
-  the instance it calls. The Polymorphic OVI window is not built yet.
+  the instance it calls.
+- File ▸ New... opens the New dialog (OVI ▸ Blank OVI, Polymorphic OVI), and the Polymorphic OVI window edits a `.sdp`: its
+  list of instance OVIs with their menu and selector names, the icon and selector options, saved as a `.sdp` that File ▸
+  Open takes and Open Polymorphic OVI on a node opens. Edit Icon... takes an SVG file until there is an icon editor. VISA
+  Configure Serial Port is placed from both Serial palettes with its terminals at once.
 - VISA Bytes at Serial Port, in Instrument I/O ▸ Serial and VISA Advanced ▸ Bus/Interface Specific ▸ Serial: a VISA
   Property Node that reads how many bytes wait in a serial port, as LabVIEW places it. A Property Node whose rows
   are all read-only greys Change All To Write.
