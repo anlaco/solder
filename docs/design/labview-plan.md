@@ -669,6 +669,15 @@ array or string read by a local variable while another loop writes it is never t
       to one (so that NI's VIs can be opened some day) and runs on a native engine in `native/solder-io` over drivers
       that can be swapped: SCPI over VISA first, simulated by Crucible, NI-DAQmx when installed; openDAQ and Comedi as
       ideas. The notes of 2026-11-03 follow.*
+      *Measured on 2026-11-06 with NI-DAQmx 2026 Q4 in the VM (a LabVIEW add-on in `C:\Program Files\NI\LVAddons\nidaqmx`)
+      and simulated Dev1 = USB-6001 and Dev2 = PCIe-6361: the palette and its direct subpalettes
+      ([`daqmx-palette`](../../labview-captures/reports/2026-11-06-daqmx-palette.md)) and the basic flow, all on connector
+      4833 ([`daqmx-create-channel`](../../labview-captures/reports/2026-11-06-daqmx-create-channel.md),
+      [`daqmx-timing-trigger`](../../labview-captures/reports/2026-11-06-daqmx-timing-trigger.md),
+      [`daqmx-read-write`](../../labview-captures/reports/2026-11-06-daqmx-read-write.md)): instances, terminals, defaults,
+      errors and the simulated signal. Details decided the same day (DT-076, amendment of 2026-11-06: the `daq-task` and
+      `daq-name` types, polymorphic OVIs in `ovi.lib/DAQ/` over primitives, the engine and its simulated driver in
+      `solder-io`, stage A). Next: measure the look of the task and name wires, constants and dropdowns, then stage A.*
       *Open before step 5 (talked over with the developer on 2026-11-03, nothing decided): **what Solder uses instead
       of DAQmx**, its own name (DAQmx and NI-DAQ are NI's trademarks, as OVI stands for VI, DT-071) and its approach.
       Ideas: DAQmx's programming model (tasks, named channels, hardware timing, triggers, waveforms) over engines

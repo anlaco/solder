@@ -3497,6 +3497,7 @@ drivers that can be swapped.**
 
 - **Status:** Accepted on 2026-11-05 by the developer, before plan step 5 (it was left open on 2026-11-03). Its details
   wait for the measurement of DAQmx in LabVIEW with a simulated NI device ([DT-064](#dt-064)).
+  Amended on 2026-11-06 with those details (§5–§10), which replace §3's simulated driver served by Crucible.
 - **Why:** NI-DAQmx is a driver, not a hardware family: one API (the DAQmx palette, its tasks and channels) over every
   NI acquisition device. "NI-DAQ" and "DAQmx" are NI's names; "DAQ" (*data acquisition*) is the generic word, and the
   clearest one for whoever comes from LabVIEW. "openDAQ" is an open SDK of Dewesoft and HBK, so a name like it would be
@@ -3530,6 +3531,50 @@ drivers that can be swapped.**
 |-----------|-----------|--------|
 | The DAQ palette, OVIs, connectors and Property Node classes are DAQmx's | Measurement of DAQmx with a simulated device, then tests per OVI | **Not built** |
 | A LabVIEW VI that uses DAQmx maps onto Solder node by node | — (opening NI's VIs is a future goal) | **Unverified** |
+
+### Amendment of 2026-11-06 (the details, after measuring DAQmx)
+
+Accepted on 2026-11-06 by the developer, as proposed the same day after DAQmx was measured with NI-DAQmx 2026 Q4 and
+two simulated devices: the palette (`labview-captures/reports/2026-11-06-daqmx-palette.md`) and the basic flow
+(`2026-11-06-daqmx-create-channel.md`, `-timing-trigger.md`, `-read-write.md`).
+
+5. **Two types.** `"daq-task"` is a type of its own, laid out by the compiler as `{ name: string, task: U32 }`, as a
+   VISA resource name is ([DT-066](#dt-066) §1), because LabVIEW shows a task as `["", 0]`; its constant is the
+   palette's Task Const. `"daq-name"` covers physical channels, terminals, scales and devices: one type with a `kind`
+   (`physical-channel`, `terminal`, `scale`, `device`, …) that says which names it offers, laid out as a string, as
+   LabVIEW's single DAQmxName class with its I/O name filter; Channel Const and Terminal Const are this type. Their
+   wires, constants, the dropdown's lists and whether a string coerces into a name are measured before they are built.
+6. **The nodes are polymorphic OVIs of `ovi.lib` over a few primitives** ([DT-073](#dt-073), [DT-074](#dt-074)):
+   `ovi.lib/DAQ/` holds `DAQ Read.sdp`, `DAQ Create Virtual Channel.sdp` and the rest, whose instances are OVIs with
+   LabVIEW's instance names, menu paths, ring texts, connector 4833, indices and defaults (`DAQ Read (Analog 1D DBL
+   1Chan NSamp).sdg`, …). Inside, each instance calls a primitive block (`daq-create-channel`, `daq-timing`, `daq-read`,
+   …) compiled as an external wait answered by the I/O process, as VISA's are ([DT-066](#dt-066) §3). So a LabVIEW
+   diagram that names "DAQmx Read.vi" with an instance maps onto one Solder node, and the core keeps few primitives.
+   Errors carry DAQmx's codes (-200220, -200077, -200284, …) with messages written anew.
+7. **The engine** in `native/solder-io` keeps tasks through their states (created, verified, running, stopped,
+   cleared), with their channels, timing, trigger, a ring buffer and a read position, over drivers behind one trait
+   whose capabilities (channels, ranges, maximum rate) are data, so errors such as a rate above the maximum come from
+   them. Devices are named in a configuration file, `daq-devices.conf` (as `visa-ports.conf` names serial ports), as
+   MAX does: `Dev1 = simulated:<profile>`, `Dev2 = scpi:ASRL3::INSTR`. The profiles are Solder's own, not NI's models.
+8. **The simulated driver lives in `solder-io`**, not in Crucible (this replaces §3's "served by Crucible"): NI's
+   simulated devices live in the driver, with no other process, and the tests stay deterministic. It reproduces what
+   was measured, quirks included: a sine of about 4.8 V with about 0.09 V rms of noise, one cycle per finite
+   acquisition, and a read of more samples than a finite task holds returns what it holds with no error. The real
+   drivers behave as their hardware does. Crucible keeps serving the SCPI driver's tests.
+9. **The SCPI driver** reaches the ESP32 of plan step 5 over VISA, first with on-demand reads and writes only: its
+   firmware has no buffered acquisition yet.
+10. **Stage A:** Create Virtual Channel (AI Voltage, AO Voltage, Digital Input, Digital Output); Timing (Sample Clock);
+    Trigger (Start None, Start Digital Edge); Start, Stop, Clear and Wait Until Done; Read (Analog DBL 1Chan 1Samp, 1D DBL
+    1Chan NSamp, 1D DBL NChan 1Samp, 2D DBL NChan NSamp, Digital Bool 1Line 1Point, Digital U32 1Chan 1Samp); Write
+    (Analog DBL 1Chan 1Samp, 1D DBL 1Chan NSamp, 2D DBL NChan NSamp, Digital Bool 1Line 1Point); the whole DAQ palette,
+    what is not done greyed with its reason, in the palette and in each ring's menu. **Stage B**, in order: the waveform
+    and timestamp types (their own DT; Solder has neither, and LabVIEW's are native), which open the Waveform instances;
+    counters; DAQ Property Nodes ([DT-072](#dt-072)); buffered acquisition on the ESP32 (firmware and SCPI commands).
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The basic flow's instances, connectors, defaults and errors are DAQmx's | The 2026-11-06 reports, then tests per instance | **Measured, not built** |
+| The simulated driver gives what NI's simulated device gives | Tests against the 2026-11-06 measurements | **Not built** |
 
 ## DT-077
 
