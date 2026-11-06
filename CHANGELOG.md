@@ -9,6 +9,11 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+## 0.9.0-beta — 2026-11-06
+
+Solder updates itself: from this version on, each new beta is offered when Solder starts. This one is still
+installed by hand.
+
 - When it starts, Solder looks for a newer beta and, if there is one, offers it; once accepted, it is downloaded and
   installed when Solder closes, on Windows, AppImage and `.deb` (DT-082). The update replaces `ovi.lib`, and the
   message says so. Updating to this version is still by hand; the next ones arrive by themselves.
