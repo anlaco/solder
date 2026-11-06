@@ -1,4 +1,4 @@
-// Unbundle By Name as a node of the Block Diagram.
+// Unbundle By Name and Bundle By Name as nodes of the Block Diagram.
 //
 // A box with a yellow arrow cell on the left and one row per element picked from the cluster wired
 // in; the rows grow by stretching the node by its bottom handle. Measured at 1:1 in LabVIEW 2026 Q3
@@ -11,12 +11,18 @@
 //   - each name has the colour of the type of its element; one output terminal per named row.
 //   - the handle is 6 x 6 at the middle of the bottom edge, its top 3 px above it.
 //
+// Bundle By Name is its mirror (labview-captures/reports/2026-11-06-bundle-by-name.md): the same sizes,
+// names and menus, with the names on the left, an input per row on the left edge, two 7 px yellow cells
+// on the right (the input cluster enters the first from the top, the second holds the arrow) and the
+// output cluster at the middle of the right edge.
+//
 // Pure geometry, drawing and the choices of its menus, like diagram-view.mjs: no DOM.
 
 import { esCluster, esError, aspecto, esArray, esNumerico } from "../../../core/model/types.mjs";
 import { resizeUnbundleRows, tipos } from "../../../core/model/graph.mjs";
 
 export const BLOCK = "unbundle-by-name";
+export const BUNDLE_BLOCK = "bundle-by-name";
 
 /** Fresh and unwired, the node is this wide and one row tall (stage 1, d1.png). */
 const UNWIRED_WIDTH = 30;
@@ -47,9 +53,18 @@ const HANDLE_OVERHANG = 3;
 const f2 = (value) => Number(value.toFixed(2));
 
 export const isUnbundleByName = (node) => node?.tipo === BLOCK;
+export const isBundleByName = (node) => node?.tipo === BUNDLE_BLOCK;
+/** Either node: both name their rows after the elements of the cluster wired in. */
+export const isByName = (node) => isUnbundleByName(node) || isBundleByName(node);
+
+/** Bundle By Name's right part: a divider, a 7 px cell, a divider and the 7 px arrow cell, border included (measured, g3.png). */
+const BUNDLE_RIGHT_PART_WIDTH = 17;
+/** The input cluster enters Bundle By Name from the top at the middle of its first yellow cell, this far from the right edge (Q1). */
+const BUNDLE_CLUSTER_INSET = 12;
+const BUNDLE_CELL_WIDTH = 7;
 
 /** The name every row shows, or `null` for a row that has none yet. */
-export const rowNames = (node, cat) => node.config?.items ?? cat.bloque(BLOCK).config.items.value;
+export const rowNames = (node, cat) => node.config?.items ?? cat.bloque(node.tipo).config.items.value;
 
 /** Whether any row has a name: a node that still has none looks as fresh from the palette. */
 const hasNames = (node, cat) => rowNames(node, cat).some((name) => name !== null);
@@ -77,20 +92,33 @@ export function unbundleSize(node, cat, measure) {
 }
 
 /** The point of the node that hangs from the cursor when it is picked from the palette: its centre, as LabVIEW drops it (d1.png). */
-export function grabPoint(cat, measure) {
-  const { ancho, alto } = unbundleSize({ tipo: BLOCK }, cat, measure);
+export function grabPoint(cat, measure, block = BLOCK) {
+  const { ancho, alto } = unbundleSize({ tipo: block }, cat, measure);
   return { x: Math.round(ancho / 2), y: Math.round(alto / 2) };
 }
 
 const rowCenter = (row) => ROW_STEP * row + ROW_STEP / 2 + 0.5;
 
-/** The terminals as the editor wants them (see `terminales` in diagram-view.mjs): the input at the middle of the left edge, one output per named row on the right edge. */
+/**
+ * The terminals as the editor wants them (see `terminales` in diagram-view.mjs). Unbundle By Name: the
+ * input at the middle of the left edge, one output per named row on the right edge. Bundle By Name: the
+ * input cluster on the top edge, one input per named row on the left edge, the output at the middle of
+ * the right edge.
+ */
 export function unbundleTerminals(node, box, cat) {
   const half = TERMINAL_ZONE / 2;
   const { in: inputs, out: outputs } = cat.puertos(node);
+  const bundle = isBundleByName(node);
+  const pointOf = (port, dir) => {
+    const row = rowOfPort(port.name);
+    if (bundle && row < 0 && dir === "in") return { x: box.ancho - BUNDLE_CLUSTER_INSET, y: 0 };
+    if (bundle) return dir === "in" ? { x: 0, y: rowCenter(row) } : { x: box.ancho, y: box.alto / 2 };
+    return dir === "in" ? { x: 0, y: box.alto / 2 } : { x: box.ancho, y: rowCenter(row) };
+  };
   const place = (port, dir) => {
-    const x = box.x + (dir === "in" ? 0 : box.ancho);
-    const y = box.y + (dir === "in" ? box.alto / 2 : rowCenter(rowOfPort(port.name)));
+    const point = pointOf(port, dir);
+    const x = box.x + point.x;
+    const y = box.y + point.y;
     return { puerto: port.name, etiqueta: port.label ?? port.name, dir, x, y, zona: { x: x - half, y: y - half, ancho: TERMINAL_ZONE, alto: TERMINAL_ZONE }, centro: { x, y } };
   };
   return [...inputs.map((port) => place(port, "in")), ...outputs.map((port) => place(port, "out"))];
@@ -115,8 +143,11 @@ export function clusterElementNames(graph, cat, nodeId) {
 
 // ——— Drawing ———
 
-/** The type of the element of a row, from the resolved types of the diagram. */
-const rowType = (node, resolved, row) => resolved?.salidas.get(`${node.id}.${portOfRow(row)}`);
+/** The type of the element a row names, looked up in the cluster wired in (resolved types of the diagram). */
+function rowType(node, resolved, row) {
+  const wired = resolved?.entradas.get(`${node.id}.cluster`);
+  return esCluster(wired) ? wired.cluster.find((field) => field.name === node.config?.items?.[row])?.type : undefined;
+}
 
 /** The black arrow of the arrow cell, centred on the node (drawn anew). */
 function arrow(height) {
@@ -129,6 +160,7 @@ function arrow(height) {
  * divider, the dividers between rows and each name in the colour of the type of its element.
  */
 export function unbundleBody(node, box, cat, resolved) {
+  if (isBundleByName(node)) return bundleBody(node, box, cat, resolved);
   const names = rowNames(node, cat);
   const named = hasNames(node, cat);
   let lines = "";
@@ -150,12 +182,46 @@ export function unbundleBody(node, box, cat, resolved) {
   );
 }
 
+/** The colour of a row's name: that of the type of its element, or black with no type. */
+const nameColor = (node, resolved, row) => {
+  const type = rowType(node, resolved, row);
+  return type === undefined ? UNTYPED_NAME_COLOR : aspecto(type).color;
+};
+
+/**
+ * Bundle By Name's body: the names on the left, then a divider, the yellow cell the input cluster enters
+ * (a small dark mark at its middle) and the yellow arrow cell. Fresh, the name part is a plain white cell.
+ */
+function bundleBody(node, box, cat, resolved) {
+  const names = rowNames(node, cat);
+  const rightPart = box.ancho - BUNDLE_RIGHT_PART_WIDTH;
+  const arrowCell = rightPart + 1 + BUNDLE_CELL_WIDTH;
+  let lines = "";
+  let texts = "";
+  names.forEach((name, row) => {
+    if (row > 0) lines += `<line x1="1" y1="${ROW_STEP * row + 0.5}" x2="${rightPart}" y2="${ROW_STEP * row + 0.5}"/>`;
+    if (name !== null) texts += `<text class="nombre-fila" x="${NAME_PADDING.left}" y="${rowCenter(row)}" fill="${nameColor(node, resolved, row)}">${escapeText(name)}</text>`;
+  });
+  const middle = f2(box.alto / 2);
+  const mark = `<rect x="${rightPart + 2.5}" y="${f2(box.alto / 2 - 2)}" width="4" height="4" fill="${BORDER_COLOR}" stroke="${BORDER_COLOR}" stroke-width="1"/>`;
+  const arrowShape = `<path d="M${arrowCell} ${middle}H${arrowCell + 6}M${arrowCell + 3.5} ${f2(box.alto / 2 - 2.5)}L${arrowCell + 7} ${middle}L${arrowCell + 3.5} ${f2(box.alto / 2 + 2.5)}Z" fill="#000" stroke="#000" stroke-width="1" stroke-linejoin="round"/>`;
+  return (
+    `<svg class="formato" viewBox="0 0 ${f2(box.ancho)} ${f2(box.alto)}">` +
+    `<rect x="0.5" y="0.5" width="${f2(box.ancho - 1)}" height="${f2(box.alto - 1)}" fill="var(--paper)" stroke="${BORDER_COLOR}" stroke-width="1"/>` +
+    `<rect x="${rightPart + 1}" y="1" width="${BUNDLE_RIGHT_PART_WIDTH - 2}" height="${f2(box.alto - 2)}" fill="${ARROW_CELL_COLOR}"/>` +
+    `${mark}${arrowShape}` +
+    `<g stroke="${DIVIDER_COLOR}" stroke-width="1"><line x1="${rightPart + 0.5}" y1="1" x2="${rightPart + 0.5}" y2="${f2(box.alto - 1)}"/><line x1="${arrowCell - 0.5}" y1="1" x2="${arrowCell - 0.5}" y2="${f2(box.alto - 1)}"/>${lines}</g>${texts}</svg>`
+  );
+}
+
 const escapeText = (text) => text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 /** The clickable strip of every named row (a click on it drops the list of names); coordinates relative to the node. */
 export function nameRowZones(node, box, cat) {
+  const left = isBundleByName(node) ? 1 : ARROW_CELL_WIDTH + DIVIDER_WIDTH;
+  const width = isBundleByName(node) ? box.ancho - BUNDLE_RIGHT_PART_WIDTH - 1 : box.ancho - ARROW_CELL_WIDTH - DIVIDER_WIDTH;
   return rowNames(node, cat)
-    .map((name, row) => (name === null ? "" : `<div class="fila-nombre" data-nodo="${node.id}" data-fila="${row}" style="left:${ARROW_CELL_WIDTH + DIVIDER_WIDTH}px;top:${ROW_STEP * row + 1}px;width:${f2(box.ancho - ARROW_CELL_WIDTH - DIVIDER_WIDTH)}px;height:${ROW_STEP - 1}px"></div>`))
+    .map((name, row) => (name === null ? "" : `<div class="fila-nombre" data-nodo="${node.id}" data-fila="${row}" style="left:${left}px;top:${ROW_STEP * row + 1}px;width:${f2(width)}px;height:${ROW_STEP - 1}px"></div>`))
     .join("");
 }
 
@@ -183,8 +249,8 @@ export function typePaletteLabel(type) {
  */
 export const bodyPaletteLabel = (wiredCluster) => (esError(wiredCluster) ? "Dialog & User Interface Palette" : null);
 
-/** The type of the element a row shows, from the resolved types of the diagram. */
-export const elementTypeOfRow = (graph, cat, nodeId, row) => tipos(graph, cat).salidas.get(`${nodeId}.${portOfRow(row)}`);
+/** The type of the element a row shows, looked up by name in the cluster wired in. */
+export const elementTypeOfRow = (graph, cat, nodeId, row) => rowType(graph.nodos.find((node) => node.id === nodeId), tipos(graph, cat), row);
 
 /** The cluster wired into the node, from the resolved types of the diagram. */
 export const wiredCluster = (graph, cat, nodeId) => {

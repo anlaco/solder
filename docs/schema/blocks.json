@@ -289,6 +289,10 @@
                   "in": [{ "name": "cluster", "label": "cluster of named", "type": { "clusterOf": "C" } }], "out": "dynamic:named-fields",
                   "dynamic-ports": true, "config": { "items": { "type": "fieldNames", "value": [null] } } },
 
+    "bundle-by-name": { "cat": "cluster", "desc": "Bundle By Name: the cluster wired to input cluster, with the element each row names replaced by the value wired to that row; elements without a row pass through. Mirror of Unbundle By Name: the names are stored, the types come from the cluster wired in (DT-083). Both input cluster and every named row are required (labview-captures/reports/2026-11-06-bundle-by-name.md)",
+                  "in": "dynamic:named-field-inputs", "out": [{ "name": "output-cluster", "label": "output cluster", "type": { "clusterOf": "C" } }],
+                  "dynamic-ports": true, "config": { "items": { "type": "fieldNames", "value": [null] } } },
+
     "error-cluster-constant": { "cat": "error", "desc": "Constante de error: status, code y source (DT-043)", "in": [], "out": [{ "name": "result", "label": "", "type": "error" }],
                   "config": { "default": { "type": "error", "value": { "status": false, "code": 0, "source": "" } } } },
     "clear-errors": { "cat": "error", "desc": "Deja el error a cero: status FALSE, code 0, source vacío. Con un código en «specific error code to clear», sólo borra ese (sin comprobar en LabVIEW)",

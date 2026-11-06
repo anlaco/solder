@@ -20,12 +20,13 @@
 // enters, like LabVIEW's coercion dot. Whatever the compiler cannot emit yet is
 // returned as an error, with its node; nothing is emitted halfway.
 
-import { connectorPorts, ejecutable, linkedControlType, nodesWithUndefinedInput, orden, requerido, tipos, undefinedArrayNodes } from "../model/graph.mjs";
+import { connectorPorts, ejecutable, nodesWithUndefinedInput, orden, panelObjectType, requerido, tipos, undefinedArrayNodes } from "../model/graph.mjs";
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { callLibraryConfig, whyCallLibraryCannotRun } from "../model/call-library.mjs";
+import { coversEveryError, isErrorFrameValue } from "../model/error-case.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
 import { EMPTY_PATH, NOT_A_PATH, PATH_KIND, encodePath } from "../model/paths.mjs";
-import { ERROR, FILE_REFNUM, NUMERICOS, PATH, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esEntero, esEnum, esNumerico, esRefnum, flattenArrayValue, inMemory, limites, representacion } from "../model/types.mjs";
+import { ERROR, FILE_REFNUM, NUMERICOS, PATH, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esEntero, esEnum, esError, esNumerico, esRefnum, flattenArrayValue, inMemory, limites, representacion } from "../model/types.mjs";
 import { codificar } from "./wasm-encoder.mjs";
 import { CELDAS, CIMA, EXPORTADAS, MEMORY_FUNCTION_NAMES, bloqueCadena, funcionesMemoria, i32 } from "./linear-memory.mjs";
 import { makeStackless } from "./stackless.mjs";
@@ -901,6 +902,20 @@ const BLOQUES = {
     return [...r, ins("i32.const", b)];
   },
   unbundle: (e) => readClusterFields(e, disposicion(e.tIn(0)).campos),
+  // Bundle By Name: a copy of the input cluster with each named row's element written over (DT-083).
+  "bundle-by-name": (e) => {
+    const layout = disposicion(e.tIn(0));
+    const buffer = e.bufer(layout.tam);
+    const code = copiarValor(e.tIn(0), e.entrada(0), buffer, e.temporal);
+    const rows = (e.nodo.config?.items ?? []).filter((field) => field !== null);
+    rows.forEach((name, row) => {
+      const field = layout.campos.find((c) => c.nombre === name);
+      const input = row + 1;
+      if (porReferencia(field.tipo)) code.push(...copiarValor(field.tipo, e.entrada(input), buffer + field.off, e.temporal));
+      else code.push(ins("i32.const", buffer + field.off), ...e.entrada(input), ins(`${tipoWasm(field.tipo)}.store`));
+    });
+    return [...code, ins("i32.const", buffer)];
+  },
   // Unbundle By Name: the same reads, only the named rows and in their order (DT-050).
   "unbundle-by-name": (e) => {
     const fields = disposicion(e.tIn(0)).campos;
@@ -2475,10 +2490,12 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     const node = g.nodos.find((candidate) => candidate.name === linkName);
     if (!node) throw new Error(`The control "${linkName}" this Property Node is linked to is not on the panel.`);
     if (asSubVI) throw new Error("A Property Node linked to a control of a subOVI cannot run yet.");
-    const type = inMemory(linkedControlType(g, cat, node));
+    // The object's own type: linkedControlType answers for a Property Node, not for the object it links to.
+    const logicalType = panelObjectType(cat, node);
+    const type = inMemory(logicalType);
     const isControl = PANEL_CONTROLS.includes(node.tipo);
     if (isControl) panelRecordOf(node.id, type);
-    else registerIndicator(node.id, type, linkedControlType(g, cat, node));
+    else registerIndicator(node.id, type, logicalType);
     return { nodo: node.id, control: isControl, mecanica: mecanica(cat, node) ?? null, label: node.label?.text ?? "" };
   }
   /** Records what the host needs to run a Property Node and returns its index. */
@@ -2868,6 +2885,9 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     let stringSelector = false;
     // An enum selector travels as its item index (U16) and names its frames by item (DT-049).
     let enumSelector = null;
+    // An error cluster selector keeps its code in `sel` and its status here.
+    let errorSelector = false;
+    const errorStatus = L("i32");
     // Lo que rompe la flecha de Run en LabVIEW: un selector numérico sin Default,
     // uno booleano sin sus dos marcos, o un valor en dos marcos.
     const nombre = s.label?.text ?? s.name;
@@ -2882,13 +2902,23 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     for (const id of deAqui.filter((x) => porId.get(x).tipo === "case-selector")) {
       const x = contexto(id, k);
       const t = x.tIn(0);
+      // An error cluster selects by its status and code (DT-083): No Error when status is F, a warning
+      // included, and otherwise the frame whose codes hold the code ("Error 7", "Error .." for any code).
+      errorSelector = esError(t);
+      if (esCluster(t) && !errorSelector) errores.push({ nodo: sid, motivo: `The selector of "${nombre}" is a cluster: only an error cluster can select a frame.` });
+      if (errorSelector && marcos.some((m) => (m.valores ?? []).some((v) => !isErrorFrameValue(v)))) errores.push({ nodo: sid, motivo: "Case Structure: Selector values have wrong type" });
+      if (errorSelector && !marcos.some((m) => m.default) && !coversEveryError(marcos)) errores.push({ nodo: sid, motivo: "Case Structure: No case for some selector values" });
       if (t === "boolean" && !(vistos.has("true") && vistos.has("false")) && !marcos.some((m) => m.default)) errores.push({ nodo: sid, motivo: `"${nombre}" needs a True frame and a False frame.` });
-      if (t !== "boolean" && !marcos.some((m) => m.default) && !(esEnum(t) && coversEveryItem(t, marcos))) errores.push({ nodo: sid, motivo: `"${nombre}" needs a Default frame: some selector values have no frame.` });
+      if (t !== "boolean" && !errorSelector && !marcos.some((m) => m.default) && !(esEnum(t) && coversEveryItem(t, marcos))) errores.push({ nodo: sid, motivo: `"${nombre}" needs a Default frame: some selector values have no frame.` });
       if (t === "string" && marcos.some((m) => !m.default && !m.valores?.length)) errores.push({ nodo: sid, motivo: `In "${nombre}", a frame has no selector value.` });
       stringSelector = t === "string";
       enumSelector = esEnum(t) ? t : null;
       c.push(...x.entrada(0));
-      if (t !== "boolean" && !stringSelector) c.push(...convertir(t, "i32"));
+      if (errorSelector) {
+        const cluster = L("i32");
+        c.push(ins("local.tee", cluster), ins("i32.load", ERR.status), ins("local.set", errorStatus), ins("local.get", cluster), ins("i32.load", ERR.code));
+      }
+      else if (t !== "boolean" && !stringSelector && !esCluster(t)) c.push(...convertir(t, "i32"));
       c.push(ins("local.set", sel));
     }
     // A frame value that no longer names an item — a stale name left by deleting the item in
@@ -2946,6 +2976,17 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
       }
       return [];
     };
+    // An integer value or range over the code, held only when the status is T; No Error, only when it is F.
+    const errorCondition = (v) => {
+      if (v?.noError) return [ins("local.get", errorStatus), ins("i32.eqz")];
+      const partes = [];
+      if (v && typeof v === "object") {
+        if (v.min !== undefined && v.min !== null) partes.push([ins("local.get", sel), ins("i32.const", v.min), ins("i32.ge_s")]);
+        if (v.max !== undefined && v.max !== null) partes.push([ins("local.get", sel), ins("i32.const", v.max), ins("i32.le_s")]);
+      } else partes.push([ins("local.get", sel), ins("i32.const", valorI32(v)), ins("i32.eq")]);
+      partes.push([ins("local.get", errorStatus), ins("i32.const", 0), ins("i32.ne")]);
+      return [...partes.flat(), ...partes.slice(1).map(() => ins("i32.and"))];
+    };
     const condicion = (valores) => {
       // Each value leaves one boolean on the stack, joined with or; a value that matches
       // nothing (a stale enum name) contributes none.
@@ -2953,6 +2994,7 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
         .map((v) => {
           if (stringSelector) return stringCondition(v);
           if (enumSelector) return enumCondition(v);
+          if (errorSelector) return errorCondition(v);
           if (v && typeof v === "object") {
             const partes = [];
             if (v.min !== undefined && v.min !== null) partes.push([ins("local.get", sel), ins("i32.const", v.min), ins("i32.ge_s")]);

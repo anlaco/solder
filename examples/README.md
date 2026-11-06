@@ -83,3 +83,20 @@ wire); `Equal?` (next state, `Done`) OR `Stop` → loop condition; Wait (ms) 100
 | Iterations | 66: Init 1, Heat 27, Hold 20, Cool 18 |
 | Chart | 20, 21.5, 23 … 60.5; twenty times 60.5; 58.5 … 24.5. Y autoscale shows 20 to 70 |
 | At the end | State `Done`, Heater FALSE, Fan TRUE |
+
+## ErrorNoError (one to one with a LabVIEW VI)
+
+Not one of the three yardsticks: a copy of `ErrorNoError.vi`, a small VI built in LabVIEW 2026 Q3 on the virtual
+machine's desktop, read object by object and rebuilt in Solder (DT-083). Two implicit Property Nodes write FALSE to the
+LEDs `No Error` and `Error`; Bundle By Name writes the `Boolean` switch into the error's `status`; a Case with an error
+selector lights `No Error` (through Not) in its No Error frame and `Error` in its Error .. frame; the error goes out.
+
+| Run (in a row) | Boolean | error in | No Error | Error | error out |
+|----------------|---------|----------|----------|-------|-----------|
+| 1 | F | F, 5, "warn" | T | F | F, 5, "warn" |
+| 2 | T | no error | F | T | T, 0, "" |
+| 3 | F | T, 7, "boom" | T | T (kept) | F, 7, "boom" |
+| 4 | T | T, 7, "boom" | T (kept) | T | T, 7, "boom" |
+
+With an error in, the Property Nodes write nothing, so an LED keeps the previous run's value.
+`test/end-to-end/error-no-error.test.mjs` checks the table.

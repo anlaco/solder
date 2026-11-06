@@ -171,3 +171,57 @@ test("un case de enum ofrece añadir un marco por cada valor", () => {
   // Remove Empty Cases is not implemented: greyed with its reason.
   assert.equal(INV.resolver("context.case-structure.remove-empty-cases").estado, "todo");
 });
+
+// ——— An error cluster on the selector (DT-083, labview-captures/reports/2026-11-06-case-error-selector.md) ———
+
+const errorCase = () => caseWith("error-cluster-constant", {});
+const activeLabel = (d) => labels(d)[caseNode(d).config.activo ?? 0];
+
+test("an error cluster wired to a new Case gives the frames No Error and Error ..", () => {
+  const d = errorCase();
+  assert.equal(kindOf(d), D.ERROR_SELECTOR);
+  assert.deepEqual(labels(d), ["No Error", "Error .."]);
+});
+
+test("the frame that was True stays in view as No Error", () => {
+  let d = caseWith("bool-const", { value: true });
+  const trueFrame = frames(d).findIndex((frame) => frame.valores.includes(true));
+  d = { ...d, g: Gr.fijarConfig(d.g, caseNode(d).id, { activo: trueFrame }) };
+  d = place(d, "error-cluster-constant", { x: 700, y: 600 });
+  if (d.edicion) d = ED.confirmar(d, CTX);
+  const [constant] = d.seleccion;
+  d = wire(d, terminalOf(d, constant, "result"), terminalOf(d, selectorOf(d).id, "selector"));
+  assert.equal(activeLabel(d), "No Error");
+});
+
+test("an error Case of two frames names the other one in its menu and keeps Default and Radix", () => {
+  const d = errorCase();
+  const variants = ED.variantes(menuOf(d), CTX);
+  assert.equal(variants.rotulos.get("context.case-structure.show-case-other"), "Show Case Error ..");
+  assert.equal(variants.rotulos.get("context.case-structure.make-this-case-other"), "Make This Case Error ..");
+  for (const row of ["show-case", "rearrange-cases", "remove-empty-cases", "add-case-for-every-value"]) assert.ok(variants.ocultos.has(`context.case-structure.${row}`), row);
+  for (const row of ["radix", "make-this-the-default-case", "show-case-other"]) assert.ok(!variants.ocultos.has(`context.case-structure.${row}`), row);
+  assert.equal(activeLabel(run(d, "show-case-other")), "Error ..");
+});
+
+test("typing codes in an error frame names them after Error; a word becomes a string", () => {
+  assert.deepEqual(labels(setFrame(errorCase(), "Error 7")), ["Error 7", "Error .."]);
+  assert.deepEqual(labels(setFrame(errorCase(), "Error 1..5, Default")), ["Error 1..5, Default", "Error .."]);
+  assert.deepEqual(labels(setFrame(errorCase(), "Foo")), ['"Foo"', "Error .."]);
+});
+
+test("Add Case After on an error Case adds Error 1, and Error .. becomes the Default (stage 2, Q2)", () => {
+  const fromError = run(run(errorCase(), "show-case-other"), "add-case-after");
+  assert.deepEqual(labels(fromError), ["No Error", "Default", "Error 1"]);
+  assert.equal(activeLabel(fromError), "Error 1");
+  const fromNoError = run(errorCase(), "add-case-after");
+  assert.deepEqual(labels(fromNoError), ["No Error", "Error 1", "Default"]);
+});
+
+test("the border of an error Case is hatched green in No Error and red in the other frames (stage 2, Q1)", () => {
+  const d = errorCase();
+  const html = (diagram) => D.contenido(diagram, CTX, Gr.tipos(diagram.g, CAT));
+  assert.match(html(d), /trama-case-no-error.*fill="#b2ffb2".*fill="#7f7f7f"/s);
+  assert.match(html(run(d, "show-case-other")), /trama-case-error.*fill="#ff7f7f".*fill="#ffffff"/s);
+  assert.doesNotMatch(html(caseWith("bool-const", { value: true })), /trama-case-(no-)?error/);
+});

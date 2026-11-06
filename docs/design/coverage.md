@@ -32,7 +32,7 @@
 | Debugging | 8 / 16 (50 %) | `█████░░░░░` |
 | Files | 5 / 15 (33 %) | `███░░░░░░░` |
 | Instruments and communication | 4 / 19 (21 %) | `██░░░░░░░░` |
-| Functions palette | 209 / 538 (39 %) | `████░░░░░░` |
+| Functions palette | 210 / 538 (39 %) | `████░░░░░░` |
 | Controls palette | 24 / 86 (28 %) | `███░░░░░░░` |
 | Windows and dialogs | 141 / 398 (35 %) | `████░░░░░░` |
 | Right-click menus | 462 / 1872 (25 %) | `██░░░░░░░░` |
@@ -54,7 +54,7 @@
 - [x] Arrays of one and two dimensions
 - [ ] Arrays of three or more dimensions
 - [x] The error cluster
-- [ ] Clusters made by the user (cluster control and constant, Bundle, Unbundle, Bundle By Name; only Unbundle By Name exists)
+- [ ] Clusters made by the user (cluster control and constant, Bundle, Unbundle; Unbundle By Name and Bundle By Name exist)
 - [x] Path
 - [x] File refnum
 - [x] VISA resource name
@@ -79,7 +79,7 @@
 - [x] Tunnels, Last Value
 - [x] Auto-indexing tunnels
 - [ ] Concatenating tunnels and conditional tunnels
-- [x] Case Structure with Boolean, numeric, string and enum selectors (Add Case, Delete, Default; no Duplicate Case, Rearrange)
+- [x] Case Structure with Boolean, numeric, string, enum and error cluster selectors (Add Case, Delete, Default; no Duplicate Case, Rearrange)
 - [x] Flat Sequence
 - [x] Stacked Sequence, with sequence locals
 - [x] Expression Node
@@ -262,7 +262,7 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 |------------|---------|---|
 | Programming ▸ Structures | 4 / 16 (25 %) | `███░░░░░░░` |
 | Programming ▸ Array | 17 / 34 (50 %) | `█████░░░░░` |
-| Programming ▸ Cluster, Class, & Variant | 1 / 19 (5 %) | `█░░░░░░░░░` |
+| Programming ▸ Cluster, Class, & Variant | 2 / 19 (11 %) | `█░░░░░░░░░` |
 | Programming ▸ Numeric | 71 / 92 (77 %) | `████████░░` |
 | Programming ▸ Boolean | 16 / 16 (100 %) | `██████████` |
 | Programming ▸ String | 35 / 66 (53 %) | `█████░░░░░` |

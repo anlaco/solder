@@ -3107,10 +3107,10 @@
     {
       "id": "palette.functions.programming.cluster-class-and-variant.bundle-by-name",
       "etiqueta": "Bundle By Name",
-      "estado": "todo",
-      "labview": "Replaces the elements of a cluster picked by their names and returns the cluster with the new values.",
-      "necesita": "tipo-cluster",
-      "captura": "cluster/s4.png"
+      "estado": "built",
+      "prueba": "test/editor/bundle-by-name.test.mjs::Bundle_By_Name_is_placed_from_the_palette_with_its_terminals",
+      "captura": "cluster/s4.png",
+      "bloque": "bundle-by-name"
     },
     {
       "id": "palette.functions.programming.cluster-class-and-variant.unbundle",

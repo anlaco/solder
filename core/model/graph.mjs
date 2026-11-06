@@ -50,6 +50,12 @@ export function cargarCatalogo(datos, propertiesData) {
         const rows = nodo.config?.items ?? b.config.items.value;
         return rows.flatMap((field, row) => (field === null ? [] : [{ name: `element-${row}`, label: field, type: { fieldOf: "C", field }, dir }]));
       }
+      // Bundle By Name: input cluster, then one input per named row; a row not named yet has no terminal (DT-083).
+      if (b[dir] === "dynamic:named-field-inputs") {
+        const rows = nodo.config?.items ?? b.config.items.value;
+        const cluster = { name: "cluster", label: "input cluster", type: { clusterOf: "C" }, dir };
+        return [cluster, ...rows.flatMap((field, row) => (field === null ? [] : [{ name: `element-${row}`, label: field, type: { fieldOf: "C", field }, dir }]))];
+      }
       // El túnel de salida de un Case: una entrada por marco, de ese marco (DT-041).
       if (b[dir] === "dynamic:case-frames") {
         const n = nodo.config?.marcos ?? b.config.marcos.value;
@@ -747,16 +753,23 @@ export function conectar(g, cat, t1, t2, codos) {
   return { g: nameUnbundleRows(ajustarIndices(conCable, cat, a), cat, a), id };
 }
 
+/** The nodes whose rows name elements of the cluster wired in: Unbundle By Name (DT-050) and Bundle By Name (DT-083). */
+const NAMED_ROW_BLOCKS = new Set(["unbundle-by-name", "bundle-by-name"]);
+export const hasNamedRows = (node) => NAMED_ROW_BLOCKS.has(node?.tipo);
+
+/** A row's terminal: an output of Unbundle By Name, an input of Bundle By Name. */
+const rowWireEnd = (node) => (node.tipo === "bundle-by-name" ? "a" : "de");
+
 /**
- * Unbundle By Name gives each row that has no name yet the element after the
- * row above it (the first row, the first element; past the last element, the
- * last again), as LabVIEW does when a cluster is wired or the node grows
- * (labview-captures/reports/2026-10-15-unbundle-by-name.md, Q1 and Q2). Rows
- * that already have a name keep it (DT-050).
+ * Unbundle By Name and Bundle By Name give each row that has no name yet the
+ * element after the row above it (the first row, the first element; past the
+ * last element, the last again), as LabVIEW does when a cluster is wired or the
+ * node grows (labview-captures/reports/2026-10-15-unbundle-by-name.md, Q1 and Q2;
+ * 2026-11-06-bundle-by-name.md, Q2). Rows that already have a name keep it (DT-050).
  */
 function nameUnbundleRows(g, cat, destino) {
   const node = nodoDe(g, destino.nodo);
-  if (node.tipo !== "unbundle-by-name") return g;
+  if (!hasNamedRows(node)) return g;
   const fields = unbundleInput(g, cat, node.id)?.cluster.map((f) => f.name);
   if (!fields?.length) return g;
   const rows = node.config?.items ?? cat.bloque(node.tipo).config.items.value;
@@ -769,7 +782,7 @@ function nameUnbundleRows(g, cat, destino) {
   return cambiarNodo(g, node.id, (n) => ({ ...n, config: { ...n.config, items: named } }));
 }
 
-/** The cluster wired into an Unbundle By Name, or undefined when nothing is wired. */
+/** The cluster wired into an Unbundle By Name or a Bundle By Name, or undefined when nothing is wired. */
 function unbundleInput(g, cat, nodeId) {
   const wire = g.cables.find((c) => c.a.nodo === nodeId && c.a.puerto === "cluster" && conectado(c));
   const type = wire && tipos(g, cat).salidas.get(`${wire.de.nodo}.${wire.de.puerto}`);
@@ -777,7 +790,7 @@ function unbundleInput(g, cat, nodeId) {
 }
 
 /**
- * Grows or shrinks an Unbundle By Name to `count` rows, as dragging its bottom
+ * Grows or shrinks an Unbundle By Name or a Bundle By Name to `count` rows, as dragging its bottom
  * handle does: new rows are named after the row above them (measured), and the
  * wires of the rows that go away are deleted (shrinking is unverified in LabVIEW).
  */
@@ -786,8 +799,10 @@ export function resizeUnbundleRows(g, cat, nodeId, count) {
   const rows = node.config?.items ?? cat.bloque(node.tipo).config.items.value;
   const items = count > rows.length ? [...rows, ...Array(count - rows.length).fill(null)] : rows.slice(0, Math.max(1, count));
   const resized = cambiarNodo(g, nodeId, (n) => ({ ...n, config: { ...n.config, items } }));
-  const kept = new Set(cat.puertos(nodoDe(resized, nodeId)).out.map((p) => p.name));
-  const pruned = { ...resized, cables: resized.cables.filter((c) => c.de.nodo !== nodeId || kept.has(c.de.puerto)) };
+  const end = rowWireEnd(node);
+  const ports = cat.puertos(nodoDe(resized, nodeId));
+  const kept = new Set((end === "a" ? ports.in : ports.out).map((p) => p.name));
+  const pruned = { ...resized, cables: resized.cables.filter((c) => c[end].nodo !== nodeId || kept.has(c[end].puerto)) };
   return nameUnbundleRows(pruned, cat, { nodo: nodeId });
 }
 
@@ -806,12 +821,11 @@ export function removeUnbundleRow(g, cat, nodeId, row) {
   const rows = node.config?.items ?? cat.bloque(node.tipo).config.items.value;
   if (rows.length <= 1) return g;
   const port = (k) => `element-${k}`;
+  const end = rowWireEnd(node);
+  const rowOf = (c) => (c[end].nodo === nodeId && c[end].puerto.startsWith("element-") ? Number(c[end].puerto.slice("element-".length)) : -1);
   const cables = g.cables
-    .filter((c) => !(c.de.nodo === nodeId && c.de.puerto === port(row)))
-    .map((c) => {
-      const k = c.de.nodo === nodeId ? Number(c.de.puerto.slice("element-".length)) : -1;
-      return k > row ? { ...c, de: { ...c.de, puerto: port(k - 1) } } : c;
-    });
+    .filter((c) => rowOf(c) !== row)
+    .map((c) => (rowOf(c) > row ? { ...c, [end]: { ...c[end], puerto: port(rowOf(c) - 1) } } : c));
   return cambiarNodo({ ...g, cables }, nodeId, (n) => ({ ...n, config: { ...n.config, items: rows.filter((_, k) => k !== row) } }));
 }
 
@@ -1057,10 +1071,14 @@ function ligar(declarado, llega, vars) {
  */
 export function linkedControlType(g, cat, node) {
   const linked = g.nodos.find((candidate) => candidate.name === (node.config?.link ?? referencedControlName(g, node)));
-  if (!linked) return undefined;
-  const block = cat.bloque(linked.tipo);
-  if (block["type-from"] === "config") return linked.config?.type ?? block.config?.default?.type;
-  const { in: inputs, out: outputs } = cat.puertos(linked);
+  return linked && panelObjectType(cat, linked);
+}
+
+/** The type of the value a panel control or indicator holds. */
+export function panelObjectType(cat, panelObject) {
+  const block = cat.bloque(panelObject.tipo);
+  if (block["type-from"] === "config") return panelObject.config?.type ?? block.config?.default?.type;
+  const { in: inputs, out: outputs } = cat.puertos(panelObject);
   return [...outputs, ...inputs][0]?.type;
 }
 

@@ -1,0 +1,402 @@
+{
+  "solder": 3,
+  "front-panel": [
+    {
+      "name": "cluster-control_1",
+      "role": "control",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "style": "error-in"
+    },
+    {
+      "name": "bool-control_1",
+      "role": "control",
+      "type": "boolean",
+      "default": false,
+      "style": "vertical-toggle-switch",
+      "mechanical-action": "switch-when-pressed"
+    },
+    {
+      "name": "cluster-indicator_1",
+      "role": "indicator",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "style": "error-out"
+    },
+    {
+      "name": "bool-indicator_1",
+      "role": "indicator",
+      "type": "boolean",
+      "default": false,
+      "style": "round-led"
+    },
+    {
+      "name": "bool-indicator_2",
+      "role": "indicator",
+      "type": "boolean",
+      "default": false,
+      "style": "round-led"
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      {
+        "name": "cluster-control_1",
+        "type": "cluster-control"
+      },
+      {
+        "name": "bool-control_1",
+        "type": "bool-control"
+      },
+      {
+        "name": "cluster-indicator_1",
+        "type": "cluster-indicator"
+      },
+      {
+        "name": "property-node_1",
+        "type": "property-node",
+        "config": {
+          "class": "Boolean",
+          "link": "bool-indicator_1",
+          "rows": [
+            {
+              "property": "Value",
+              "write": true
+            }
+          ],
+          "ignore-errors": false
+        }
+      },
+      {
+        "name": "property-node_2",
+        "type": "property-node",
+        "config": {
+          "class": "Boolean",
+          "link": "bool-indicator_2",
+          "rows": [
+            {
+              "property": "Value",
+              "write": true
+            }
+          ],
+          "ignore-errors": false
+        }
+      },
+      {
+        "name": "bool-const_1",
+        "type": "bool-const",
+        "config": {
+          "default": false
+        }
+      },
+      {
+        "name": "bool-const_2",
+        "type": "bool-const",
+        "config": {
+          "default": false
+        }
+      },
+      {
+        "name": "bundle-by-name_1",
+        "type": "bundle-by-name",
+        "config": {
+          "items": [
+            "status"
+          ]
+        }
+      }
+    ],
+    "wires": [
+      {
+        "from": "cluster-control_1.result",
+        "to": "property-node_1.error-in"
+      },
+      {
+        "from": "bool-const_1.result",
+        "to": "property-node_1.row-0"
+      },
+      {
+        "from": "property-node_1.error-out",
+        "to": "property-node_2.error-in"
+      },
+      {
+        "from": "bool-const_2.result",
+        "to": "property-node_2.row-0"
+      },
+      {
+        "from": "property-node_2.error-out",
+        "to": "bundle-by-name_1.cluster"
+      },
+      {
+        "from": "bool-control_1.result",
+        "to": "bundle-by-name_1.element-0"
+      },
+      {
+        "from": "bundle-by-name_1.output-cluster",
+        "to": "case-structure_1.selector"
+      },
+      {
+        "from": "bundle-by-name_1.output-cluster",
+        "to": "case-structure_1.tunnel-in_1"
+      },
+      {
+        "from": "case-structure_1.case-tunnel-out_1",
+        "to": "cluster-indicator_1.value"
+      }
+    ],
+    "structures": [
+      {
+        "name": "case-structure_1",
+        "kind": "case-structure",
+        "tunnels": [
+          {
+            "name": "tunnel-in_1",
+            "dir": "in"
+          },
+          {
+            "name": "case-tunnel-out_1",
+            "dir": "out"
+          }
+        ],
+        "frames": [
+          {
+            "match": [
+              {
+                "noError": true
+              }
+            ],
+            "body": {
+              "nodes": [
+                {
+                  "name": "bool-indicator_1",
+                  "type": "bool-indicator"
+                },
+                {
+                  "name": "unbundle-by-name_1",
+                  "type": "unbundle-by-name",
+                  "config": {
+                    "items": [
+                      "status"
+                    ]
+                  }
+                },
+                {
+                  "name": "not-op_1",
+                  "type": "not-op"
+                }
+              ],
+              "wires": [
+                {
+                  "from": "case-structure_1.tunnel-in_1",
+                  "to": "unbundle-by-name_1.cluster"
+                },
+                {
+                  "from": "case-structure_1.tunnel-in_1",
+                  "to": "case-structure_1.case-tunnel-out_1"
+                },
+                {
+                  "from": "unbundle-by-name_1.element-0",
+                  "to": "not-op_1.x"
+                },
+                {
+                  "from": "not-op_1.result",
+                  "to": "bool-indicator_1.value"
+                }
+              ]
+            }
+          },
+          {
+            "match": [
+              {}
+            ],
+            "body": {
+              "nodes": [
+                {
+                  "name": "bool-indicator_2",
+                  "type": "bool-indicator"
+                },
+                {
+                  "name": "unbundle-by-name_2",
+                  "type": "unbundle-by-name",
+                  "config": {
+                    "items": [
+                      "status"
+                    ]
+                  }
+                }
+              ],
+              "wires": [
+                {
+                  "from": "case-structure_1.tunnel-in_1",
+                  "to": "unbundle-by-name_2.cluster"
+                },
+                {
+                  "from": "case-structure_1.tunnel-in_1",
+                  "to": "case-structure_1.case-tunnel-out_1"
+                },
+                {
+                  "from": "unbundle-by-name_2.element-0",
+                  "to": "bool-indicator_2.value"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "cluster-control_1": {
+        "x": 167,
+        "y": 166,
+        "label": {
+          "text": "error in (no error)"
+        }
+      },
+      "bool-control_1": {
+        "x": 167,
+        "y": 243,
+        "label": {
+          "text": "Boolean"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 749,
+        "y": 158,
+        "label": {
+          "text": "error out"
+        }
+      },
+      "property-node_1": {
+        "x": 230,
+        "y": 180
+      },
+      "property-node_2": {
+        "x": 302,
+        "y": 180
+      },
+      "bool-const_1": {
+        "x": 189,
+        "y": 214
+      },
+      "bool-const_2": {
+        "x": 260,
+        "y": 217
+      },
+      "bundle-by-name_1": {
+        "x": 365,
+        "y": 203
+      },
+      "case-structure_1": {
+        "x": 444,
+        "y": 156,
+        "w": 275,
+        "h": 97
+      },
+      "case-structure_1.selector": {
+        "x": 444,
+        "y": 204.5
+      },
+      "tunnel-in_1": {
+        "x": 444,
+        "y": 207
+      },
+      "case-tunnel-out_1": {
+        "x": 719,
+        "y": 173
+      },
+      "bool-indicator_1": {
+        "x": 601,
+        "y": 192,
+        "label": {
+          "text": "No Error"
+        }
+      },
+      "unbundle-by-name_1": {
+        "x": 477,
+        "y": 203
+      },
+      "not-op_1": {
+        "x": 556,
+        "y": 203
+      },
+      "bool-indicator_2": {
+        "x": 601,
+        "y": 192,
+        "label": {
+          "text": "Error"
+        }
+      },
+      "unbundle-by-name_2": {
+        "x": 477,
+        "y": 203
+      }
+    },
+    "panel": {
+      "cluster-control_1": {
+        "x": 109,
+        "y": 305,
+        "label": {
+          "text": "error in (no error)"
+        }
+      },
+      "bool-control_1": {
+        "x": 144,
+        "y": 137,
+        "label": {
+          "text": "Boolean"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 648,
+        "y": 306,
+        "label": {
+          "text": "error out"
+        }
+      },
+      "bool-indicator_1": {
+        "x": 557,
+        "y": 122,
+        "label": {
+          "text": "No Error"
+        }
+      },
+      "bool-indicator_2": {
+        "x": 557,
+        "y": 211,
+        "label": {
+          "text": "Error"
+        }
+      }
+    }
+  }
+}

@@ -1632,14 +1632,30 @@ export const tunel = (color, modo = "lleno", indexado = false) =>
 const TRAMA_CASE = [[0, 3], [1, 2], [0, 2], [1, 3]];
 
 /**
- * El marco de un Case de `w` × `h` px: la línea negra de 1 px por fuera y 5 px
- * de trama, que empieza en (1, 1) y sigue igual por los cuatro lados.
+ * The hatch of an error Case's border, by the frame in view (labview-captures/reports/2026-11-06-case-error-selector-2.md,
+ * Q1): along a row, 3 px of the first colour and 1 px of the second, on a 45° diagonal. Green and grey in No Error; red
+ * and white in Error .., Default and the frames of codes. Which way the diagonal leans is unverified.
  */
-export function marcoCase(w, h) {
+const ERROR_CASE_HATCH = {
+  "no-error": { fill: "#b2ffb2", line: "#7f7f7f" },
+  error: { fill: "#ff7f7f", line: "#ffffff" },
+};
+const HATCH_TILE = 4;
+
+/**
+ * El marco de un Case de `w` × `h` px: la línea negra de 1 px por fuera y 5 px
+ * de trama, que empieza en (1, 1) y sigue igual por los cuatro lados. An error
+ * Case (`errorFrame` "no-error" or "error") has its coloured hatch instead.
+ */
+export function marcoCase(w, h, errorFrame) {
+  const hatch = ERROR_CASE_HATCH[errorFrame];
   const baldosa = TRAMA_CASE.flatMap((xs, y) => xs.map((x) => `M${x},${y}h1v1h-1z`)).join("");
-  const trama = `<pattern id="trama-case" patternUnits="userSpaceOnUse" x="1" y="1" width="4" height="4"><path d="${baldosa}" fill="${STRUCTURE_LINE}"/></pattern>`;
+  const diagonal = Array.from({ length: HATCH_TILE }, (_, y) => `M${HATCH_TILE - 1 - y},${y}h1v1h-1z`).join("");
+  const trama = hatch
+    ? `<pattern id="trama-case-${errorFrame}" patternUnits="userSpaceOnUse" x="1" y="1" width="${HATCH_TILE}" height="${HATCH_TILE}"><rect width="${HATCH_TILE}" height="${HATCH_TILE}" fill="${hatch.fill}"/><path d="${diagonal}" fill="${hatch.line}"/></pattern>`
+    : `<pattern id="trama-case" patternUnits="userSpaceOnUse" x="1" y="1" width="4" height="4"><path d="${baldosa}" fill="${STRUCTURE_LINE}"/></pattern>`;
   const banda = `M1,1 H${w - 1} V${h - 1} H1 Z M6,6 V${h - 6} H${w - 6} V6 Z`;
-  return fijo(w, h, `<defs>${trama}</defs><path d="${banda}" fill="url(#trama-case)" fill-rule="evenodd"/><rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" fill="none" stroke="${STRUCTURE_LINE}" stroke-width="1"/>`, "marco-bucle");
+  return fijo(w, h, `<defs>${trama}</defs><path d="${banda}" fill="url(#trama-case${hatch ? `-${errorFrame}` : ""})" fill-rule="evenodd"/><rect x="0.5" y="0.5" width="${w - 1}" height="${h - 1}" fill="none" stroke="${STRUCTURE_LINE}" stroke-width="1"/>`, "marco-bucle");
 }
 
 /** Medidas del selector de marcos: alto, ancho de cada botón y de lo que sobra por los lados del texto. */

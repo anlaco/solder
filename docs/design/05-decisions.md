@@ -3868,4 +3868,53 @@ later.**
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
 | No check unpackaged or with the opt-outs; the user is asked before downloading; the install waits for closing | `test/editor/update-check.test.mjs` with a fake updater | **Built** |
-| A packaged beta finds, downloads and installs the next release on Windows, AppImage and `.deb` | By hand with two test releases | **Unverified** |
+| A packaged beta finds, downloads and installs the next release on Windows, AppImage and `.deb` | By hand: 0.9.0-beta updated itself to 0.10.0-beta on Windows (2026-11-06, the developer); on Linux, a packaged build found and downloaded a release and started installing it on closing (2026-11-06) | **Verified** on Windows; the AppImage and `.deb` install **unverified** |
+
+## DT-083
+
+**A Case with an error cluster on its selector selects by status and code, and its frames are stored as codes after a
+No Error value. Bundle By Name is the mirror of Unbundle By Name (DT-050): it stores the names of its rows and takes
+their types from the cluster wired to input cluster.**
+
+- **Status:** Accepted on 2026-11-06 by the developer (the error Case "complete", with frames by code; Bundle By Name
+  "a mirror of DT-050"). Brought in by ErrorNoError.vi, built in Solder one to one
+  (`examples/error-no-error/ErrorNoError.sdg`).
+- **Complements:** [DT-041](#dt-041) (structures), [DT-043](#dt-043) (the error cluster), [DT-050](#dt-050).
+- **Measured:** [`labview-captures/reports/2026-11-06-case-error-selector.md`](../../labview-captures/reports/2026-11-06-case-error-selector.md)
+  (frames, menus, conversions, the runs of ErrorNoError.vi),
+  [`2026-11-06-case-error-selector-2.md`](../../labview-captures/reports/2026-11-06-case-error-selector-2.md)
+  (the hatched border, Add Case, frames of codes at run time) and
+  [`labview-captures/reports/2026-11-06-bundle-by-name.md`](../../labview-captures/reports/2026-11-06-bundle-by-name.md).
+
+### Decision
+
+1. **The error Case's frames.** LabVIEW names them `No Error` and `Error ..`, and a numeric Case converted to an error
+   one keeps its numbers as `Error 0`, `Error 1, Default`, `Error 2`: the codes are written as in a numeric Case after
+   the word "Error". So `match` holds `{ "noError": true }` for No Error and, for the rest, integers and ranges
+   `{ min, max }` of codes; `Error ..` is the range with neither end, `{}`. `core/model/error-case.mjs` holds the
+   rules for the compiler and the editor.
+2. **What runs:** No Error when the status is F, a warning included (measured: a warning with code 7 runs No Error,
+   not `Error 7`); otherwise the frame whose codes hold the code, and the Default if none does (measured: T 7 runs
+   `Error 7`, T 8 and T 0 the Default). `Error ..` never sits beside a frame of codes: Add Case and Duplicate Case
+   make the new frame `Error 1` and turn `Error ..` into the Default (measured), which stays so.
+3. **Breaking the OVI:** a value that is not No Error or a code (a word typed in the label becomes a string, measured)
+   gives "Case Structure: Selector values have wrong type"; no Default and not both No Error and `Error ..` gives
+   "Case Structure: No case for some selector values"; another cluster on the selector breaks it.
+4. **Conversion:** wiring an error cluster to a Boolean Case turns True into No Error and False into `Error ..`, No
+   Error listed first and the frame in view kept in view (measured). A numeric Case keeps its numbers as codes.
+   Unwiring keeps the error frames (measured).
+5. **Bundle By Name** keeps `config.items` like Unbundle By Name; its ports are `cluster` (input cluster), one
+   `element-N` input per named row and `output-cluster`. Input cluster and every named row are required (measured:
+   "Contains unwired or bad terminal"); the elements without a row pass through (measured: `[F, 0, "abc"]` with
+   status T and code 42 gives `[T, 42, "abc"]`). Its menus are Unbundle By Name's (measured identical).
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| No Error runs with no error and with a warning, `Error ..` with any error; code frames and Default | `test/core/error-case.test.mjs` | **Verified** (2026-11-06) |
+| Add Case gives `Error 1` and makes `Error ..` the Default; the border is hatched green (No Error) or red | `test/editor/case-selector-kinds.test.mjs` | **Verified** (2026-11-06); the lean of the hatch's diagonal **unverified** |
+| Labels, Boolean conversion, the two-frame menu, typing in the label | `test/editor/case-selector-kinds.test.mjs` | **Verified** (2026-11-06) |
+| Bundle By Name: naming, growth, pass-through, required inputs, round trip | `test/core/bundle-by-name.test.mjs` | **Verified** (2026-11-06) |
+| Bundle By Name in the editor: 30 × 17 fresh, 55/58 wide, terminals, names, menus, stretching | `test/editor/bundle-by-name.test.mjs` | **Verified** (2026-11-06) |
+| ErrorNoError.sdg gives LabVIEW's four runs in a row | `test/end-to-end/error-no-error.test.mjs` | **Verified** (2026-11-06) |

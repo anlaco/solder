@@ -299,3 +299,13 @@ test("Position and Bounds go as clusters: the caller's panel answers them, and a
   assert.deepEqual(asked.at(-1), ["set", "Position", { Left: 300, Top: 40 }]);
   assert.deepEqual(shown.errorOut, NO_ERROR);
 });
+
+test("Value written to an unwired Boolean indicator reaches the panel as a Boolean", async () => {
+  // A regression: the indicator was registered with no type, so its record was read as a number (1.4e-45).
+  const vi = propertyVI({ target: "bool-indicator", className: "Boolean", rows: [{ property: "Value", write: true }] }, (b) => {
+    b.node("on", "bool-const", { value: true });
+    b.wire("on.result", "node.row-0");
+  });
+  const shown = await run(vi);
+  assert.equal(shown.target, true);
+});

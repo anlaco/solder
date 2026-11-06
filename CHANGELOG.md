@@ -9,6 +9,13 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- A Case Structure takes an error cluster on its selector (DT-083), as in LabVIEW: frames No Error and Error .., and
+  frames by code (Error 7, Error 1..5); a warning runs No Error. Wiring an error cluster to a Boolean Case turns True
+  into No Error and False into Error ...
+- Bundle By Name (DT-083), the mirror of Unbundle By Name: replaces the elements its rows name and passes the rest.
+- examples/error-no-error/ErrorNoError.sdg, built one to one from a LabVIEW VI, gives LabVIEW's results run after run.
+- Fixed: a Property Node writing Value to an unwired Boolean indicator showed a number instead of TRUE or FALSE.
+
 ## 0.10.0-beta — 2026-11-06
 
 Solder can call native libraries, as LabVIEW does with the Call Library Function Node. This is the first beta that

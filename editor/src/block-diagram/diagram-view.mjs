@@ -28,6 +28,7 @@ import { EMPTY_PATH, hostPathRules, pathToText } from "../../../core/model/paths
 import { brokenWireMarks, endPoint } from "./broken-wire.mjs";
 import { junctionPoints } from "./wire-tree.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
+import { isErrorFrameValue, isNoError } from "../../../core/model/error-case.mjs";
 import { COLORES, CONSTANT_DIGITS, PATH, VISA_RESOURCE, aspecto, isUndefinedArray, esArray, esCluster, esEntero, esEnum, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
 import { GRAPH_KINDS, labelShown } from "../front-panel/graph-state.mjs";
 import { elementMenuRoot } from "../common/array-typing.mjs";
@@ -335,16 +336,26 @@ export const activoDe = (n) => Math.min(n.config?.activo ?? 0, Math.max(0, marco
 /** ¿Los marcos del Case son de un selector booleano (False y True)? */
 export const esBooleano = (n) => marcosDe(n).some((m) => (m.valores ?? []).some((v) => typeof v === "boolean"));
 
+/** The kind of a Case whose selector is an error cluster: its frames are No Error and frames of codes (DT-083). */
+export const ERROR_SELECTOR = "error";
+
+/** How an error Case's border is hatched: "no-error" while No Error is in view, "error" for any other frame; undefined for other Cases. */
+function errorFrameInView(caseNode, d, resolved) {
+  if (selectorKind(d.completo ?? d.g, caseNode, resolved) !== ERROR_SELECTOR) return undefined;
+  return (marcosDe(caseNode)[activoDe(caseNode)]?.valores ?? []).some(isNoError) ? "no-error" : "error";
+}
+
 /**
  * What a Case selector carries, as far as its frames are concerned: `"string"`,
- * an enum type (`{ enum: [...] }`) or `undefined` for a Boolean or a number. Read
- * from the wire into the selector terminal, from `resolved` (the types of the
- * graph, `Gr.tipos`).
+ * an enum type (`{ enum: [...] }`), `ERROR_SELECTOR` for an error cluster or
+ * `undefined` for a Boolean or a number. Read from the wire into the selector
+ * terminal, from `resolved` (the types of the graph, `Gr.tipos`).
  */
 export function selectorKind(graph, caseNode, resolved) {
   const selector = graph.nodos.find((n) => n.dentro === caseNode.id && n.tipo === "case-selector");
   const wire = selector && graph.cables.find((c) => c.a.nodo === selector.id);
   const type = wire && resolved?.cables.get(wire.id)?.tipo;
+  if (esError(type)) return ERROR_SELECTOR;
   return type === "string" || esEnum(type) ? type : undefined;
 }
 
@@ -356,6 +367,9 @@ const quoted = (text) => `"${text}"`;
  */
 function labelOfValue(value, kind) {
   const bound = (v) => (v === undefined || v === null ? "" : typeof v === "string" ? quoted(v) : String(v));
+  // An error frame says its codes as a numeric one does, after "Error"; a string typed in it stays quoted (DT-083).
+  if (kind === ERROR_SELECTOR && isNoError(value)) return "No Error";
+  if (kind === ERROR_SELECTOR && isErrorFrameValue(value)) return `Error ${labelOfValue(value)}`;
   if (typeof value === "boolean") return value ? "True" : "False";
   if (value && typeof value === "object") {
     // LabVIEW shows two adjacent enum items as a list, not as a range (enum report, point 5).
@@ -539,7 +553,7 @@ export function caja(n, ctx, edicion) {
   if (isSubVI(n)) return { x: n.x, y: n.y, ancho: PANE_SIZE, alto: PANE_SIZE };
   if (FN.isFormatNode(n, ctx.cat)) return { x: n.x, y: n.y, ...FN.formatNodeSize(n, ctx.cat) };
   if (ExpressNodes.isExpressNode(n, ctx.cat)) return ExpressNodes.expressBox(n, ctx.cat);
-  if (UN.isUnbundleByName(n)) return { x: n.x, y: n.y, ...UN.unbundleSize(n, ctx.cat, ctx.medir) };
+  if (UN.isByName(n)) return { x: n.x, y: n.y, ...UN.unbundleSize(n, ctx.cat, ctx.medir) };
   if (PN.isPropertyNode(n)) return { x: n.x, y: n.y, ...PN.propertyNodeSize(n, ctx.cat, ctx.medir) };
   if (CL.isCallLibraryNode(n)) return { x: n.x, y: n.y, ...CL.callLibrarySize(n) };
   if (CR.isControlReference(n)) return { x: n.x, y: n.y, ...CR.referenceSize(n, ctx.medir) };
@@ -643,7 +657,7 @@ export function terminales(n, ctx, edicion) {
   if (isSubVI(n)) return terminalesSubVI(n, k, ctx);
   if (FN.isFormatNode(n, ctx.cat)) return FN.formatNodeTerminals(n, k, ctx.cat);
   if (ExpressNodes.isExpressNode(n, ctx.cat)) return ExpressNodes.expressTerminals(n, k, ctx.cat);
-  if (UN.isUnbundleByName(n)) return UN.unbundleTerminals(n, k, ctx.cat);
+  if (UN.isByName(n)) return UN.unbundleTerminals(n, k, ctx.cat);
   if (VN.isVisaNode(n)) return VN.visaTerminals(n, k, ctx.cat);
   if (PN.isPropertyNode(n)) return PN.propertyNodeTerminals(n, k, ctx.cat);
   if (CL.isCallLibraryNode(n)) return CL.callLibraryTerminals(n, k);
@@ -1295,7 +1309,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
     cuerpo = `<div class="glifo-formato">${FN.formatNodeBody(n, k, ctx.cat, resueltos)}</div>`;
   } else if (ExpressNodes.isExpressNode(n, ctx.cat)) {
     cuerpo = ExpressNodes.expressBody(n, k, ctx.cat, resueltos, ctx.medir);
-  } else if (UN.isUnbundleByName(n)) {
+  } else if (UN.isByName(n)) {
     cuerpo = `<div class="glifo-formato">${UN.unbundleBody(n, k, ctx.cat, resueltos)}</div>${UN.nameRowZones(n, k, ctx.cat)}`;
   } else if (PN.isPropertyNode(n)) {
     const graph = d.completo ?? d.g;
@@ -1343,7 +1357,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
     asas = `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(handle.x)};top:${px(handle.y)}"></div>`;
   }
   // Unbundle By Name is stretched downwards by a handle of 6 x 6 px to add rows (cluster palette, stage 2, Q2).
-  if (UN.isUnbundleByName(n)) {
+  if (UN.isByName(n)) {
     const handle = UN.unbundleHandle(k);
     asas = `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(handle.x)};top:${px(handle.y)};width:${px(UN.HANDLE_SIZE)};height:${px(UN.HANDLE_SIZE)}"></div>`;
   }
@@ -1395,7 +1409,7 @@ function estructura(n, ctx, elegido, d, resueltos) {
     // Seleccionada, el interior de cada marco se tiñe (secuencia-seleccion.png).
     if (elegido) tinte = xs.map((x, i) => `<div class="tinte-estructura" style="left:${px(x + 1)};top:${px(S.banda + 1)};width:${px(as[i] - 2)};height:${px(k.alto - 2 * S.banda - 2)}"></div>`).join("");
   } else {
-    marco = caso ? G.marcoCase(k.ancho, k.alto) : esFor ? G.marcoFor(k.ancho, k.alto) : G.marcoWhile(k.ancho, k.alto);
+    marco = caso ? G.marcoCase(k.ancho, k.alto, errorFrameInView(n, d, resueltos)) : esFor ? G.marcoFor(k.ancho, k.alto) : G.marcoWhile(k.ancho, k.alto);
     bandas = banda("b-n", 0, 0, k.ancho, M.borde) + banda("b-s", 0, k.alto - M.borde, k.ancho, M.borde) + banda("b-w", 0, 0, M.borde, k.alto) + banda("b-e", k.ancho - M.borde, 0, M.borde, k.alto);
     const [ancho, alto] = esFor ? [k.ancho - 4, k.alto - 4] : [k.ancho, k.alto];
     const dentro = esFor ? 1 : M.borde;
@@ -1525,10 +1539,10 @@ function listaValores(d, ctx) {
   return `<div class="menu-contextual lista-marcos" style="left:${px(d.lista.x)};top:${px(d.lista.y)};width:${px(ancho)};height:${px(M.arriba * 2 + items.length * M.fila)}">${filas}</div>`;
 }
 
-/** The drop-down list that is open: the names of an Unbundle By Name, the items of an enum or ring constant, or the frames of a Case. */
+/** The drop-down list that is open: the names of an Unbundle or Bundle By Name, the items of an enum or ring constant, or the frames of a Case. */
 function listaAbierta(d, ctx, resueltos) {
   const tipo = d.g.nodos.find((n) => n.id === d.lista.nodo)?.tipo;
-  if (tipo === UN.BLOCK) return listaElementos(d, ctx);
+  if (tipo === UN.BLOCK || tipo === UN.BUNDLE_BLOCK) return listaElementos(d, ctx);
   if (tipo === SpreadsheetNodes.READ_DELIMITED) return listaInstancias(d, ctx);
   if (tipo === "subvi") return listaTipos(d, ctx);
   return CONSTANTES[tipo]?.selector ? listaValores(d, ctx) : listaMarcos(d, ctx, resueltos);
@@ -1712,7 +1726,7 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return PANEL_ARRAY_TERMINAL_MENU;
   // The right-click menu of the terminal of a graph was not captured.
   if (GRAPH_KINDS.includes(n.tipo)) return null;
-  if (UN.isUnbundleByName(n)) return UN.rowHasName(n, UN.rowOfPort(puerto)) ? UN.ROW_MENU : UN.BODY_MENU;
+  if (UN.isByName(n)) return UN.rowHasName(n, UN.rowOfPort(puerto)) ? UN.ROW_MENU : UN.BODY_MENU;
   // The VISA functions: the menu of the resource name terminal and the one of the rest of the node (reports/2026-10-26-visa-nodes.md Q4, visa-resource-name-look.md Q5).
   if (VN.isVisaNode(n)) return puerto === VN.RESOURCE_PORT ? VN.RESOURCE_TERMINAL_MENU : VN.BODY_MENU;
   // The Property Node: one menu for its header and its rows, the rows of a row shown only on a row (DT-072 §7).

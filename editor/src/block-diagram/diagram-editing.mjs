@@ -28,9 +28,10 @@
 //              node or one of its terminals; `en`, the canvas point where it was opened
 //   aviso      why the last action could not be done (spec/05 rule 31)
 
-import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ARRAY_INDEFINIDA, MEDIDAS_ESTRUCTURA, PANEL_ARRAY_TERMINAL_MENU, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, activoDe, anchoSecuencia, anchosMarcos, borderFaceFor, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, ruta, terminales } from "./diagram-view.mjs";
+import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ARRAY_INDEFINIDA, MEDIDAS_ESTRUCTURA, PANEL_ARRAY_TERMINAL_MENU, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, ERROR_SELECTOR, activoDe, anchoSecuencia, anchosMarcos, borderFaceFor, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, ruta, terminales } from "./diagram-view.mjs";
 import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
+import { ANY_ERROR, NO_ERROR, errorValuesFromBoolean, isAnyErrorValue, isNoError } from "../../../core/model/error-case.mjs";
 import * as PN from "./property-nodes.mjs";
 import * as PNM from "./property-node-menus.mjs";
 import * as CR from "./control-references.mjs";
@@ -77,7 +78,7 @@ const grabPoint = (block, ctx, config) => {
   // An Express VI hangs by the middle of its node (DT-069).
   if (ExpressNodes.isExpressNode({ tipo: block }, ctx.cat)) return ExpressNodes.expressGrabPoint(block);
   // Unbundle By Name hangs by its centre too (cluster palette, stage 1: dropped at the click, centred).
-  return block === UN.BLOCK ? UN.grabPoint(ctx.cat, ctx.medir) : AGARRE;
+  return block === UN.BLOCK || block === UN.BUNDLE_BLOCK ? UN.grabPoint(ctx.cat, ctx.medir, block) : AGARRE;
 };
 
 const lejos = (a, p) => Math.abs(p.x - a.x) > UMBRAL || Math.abs(p.y - a.y) > UMBRAL;
@@ -604,12 +605,28 @@ function valorNuevo(marcos, anterior) {
  */
 function valuesOfNewFrame(caseNode, frames, previous, kind) {
   if (kind === "string" || (!kind && esBooleano(caseNode))) return [];
+  if (kind === ERROR_SELECTOR) return [firstFreeErrorCode(frames)];
   if (esEnum(kind)) {
     const first = uncoveredItems(caseNode, kind)[0];
     return first !== undefined ? [kind.enum[first]] : [];
   }
   return [valorNuevo(frames, previous)];
 }
+
+/** The code of a frame added to an error Case: the first from 1 up that no frame has (measured "Error 1"; above it, unverified). */
+function firstFreeErrorCode(frames) {
+  const codes = new Set(frames.flatMap((frame) => frame.valores ?? []).filter(Number.isInteger));
+  let code = 1;
+  while (codes.has(code)) code++;
+  return code;
+}
+
+/**
+ * Once an error Case has a frame of codes, its "Error .." frame is the Default (measured after Add Case and
+ * Duplicate Case: "Error .." becomes "Default", and stays so if the new frame goes).
+ */
+const anyErrorBecomesDefault = (frames) =>
+  frames.some((frame) => frame.default) ? frames : frames.map((frame) => ((frame.valores ?? []).some((value) => isAnyErrorValue(value)) ? { ...frame, valores: frame.valores.filter((value) => !isAnyErrorValue(value)), default: true } : frame));
 
 /**
  * Add Case After y Before: un marco nuevo junto al que se ve, que pasa a verse.
@@ -621,10 +638,11 @@ export function anadirMarco(g, ctx, id, despues, x) {
   if (esSecuencia(s)) return anadirMarcoSecuencia(g, ctx, id, despues, x);
   const marcos = marcosDe(s);
   const pos = activoDe(s) + (despues ? 1 : 0);
-  const nuevo = { valores: valuesOfNewFrame(s, marcos, marcos[pos - 1], kindOf(g, ctx, s)) };
+  const kind = kindOf(g, ctx, s);
+  const nuevo = { valores: valuesOfNewFrame(s, marcos, marcos[pos - 1], kind) };
   const lista = conOrigen(s);
   lista.splice(pos, 0, nuevo);
-  return Gr.fijarConfig(Gr.fijarMarcos(g, ctx.cat, id, lista), id, { activo: pos });
+  return Gr.fijarConfig(Gr.fijarMarcos(g, ctx.cat, id, kind === ERROR_SELECTOR ? anyErrorBecomesDefault(lista) : lista), id, { activo: pos });
 }
 
 /** Delete This Case: quita el marco que se ve y todo lo suyo; con uno solo, no se puede. */
@@ -714,12 +732,11 @@ export function fijarPredeterminado(g, ctx, id, si) {
   return Gr.fijarMarcos(g, ctx.cat, id, conOrigen(s).map(({ default: _, ...m }, i) => (si && i === k ? { ...m, default: true } : m)));
 }
 
-/** Show Case True/False: pasa al otro marco de un Case booleano. */
+/** Show Case <other>: shows the other frame of a Case of two frames (Boolean or error). */
 function mostrarOtroMarco(g, id) {
   const s = nodoPor(g, id);
-  const ahora = marcosDe(s)[activoDe(s)]?.valores?.includes(true);
-  const k = marcosDe(s).findIndex((m) => m.valores?.includes(!ahora));
-  return k < 0 ? g : Gr.fijarConfig(g, id, { activo: k });
+  // Only a Case of two frames, Boolean or error, names the other one in its menu.
+  return marcosDe(s).length === 2 ? Gr.fijarConfig(g, id, { activo: 1 - activoDe(s) }) : g;
 }
 
 /**
@@ -730,6 +747,7 @@ function mostrarOtroMarco(g, id) {
  * of that kind: see `readStringFrame` and `readEnumFrame`.
  */
 export function leerMarco(texto, kind) {
+  if (kind === ERROR_SELECTOR) return readErrorFrame(texto);
   if (kind === "string") return readFrameOfTokens(texto, parseStringBound, kind);
   if (esEnum(kind)) return readFrameOfTokens(texto, (token) => parseEnumBound(token, kind), kind);
   const valores = [];
@@ -744,6 +762,29 @@ export function leerMarco(texto, kind) {
     else return null;
   }
   return { valores, ...(predeterminado && { default: true }) };
+}
+
+/**
+ * What is typed in the selector of an error Case: No Error, codes after "Error" as in a numeric Case
+ * ("Error 7", "Error 1..5", "Error .."), and Default. Anything else becomes a string, which breaks the
+ * VI, as LabVIEW does with `Foo` (case-error-selector report, Q4). A bare number taken as a code is
+ * unverified.
+ */
+function readErrorFrame(text) {
+  const values = [];
+  let isDefault = false;
+  for (const part of splitOutsideQuotes(text, ",").map((piece) => piece.trim()).filter(Boolean)) {
+    const codes = /^(?:error\s*)?(.*)$/i.exec(part)[1].trim();
+    if (/^default$/i.test(part)) isDefault = true;
+    else if (/^no\s+error$/i.test(part)) values.push(NO_ERROR);
+    else if (/^error$/i.test(part) || codes === "..") values.push(ANY_ERROR);
+    else {
+      const asCodes = leerMarco(codes, undefined);
+      const isCodes = asCodes && !asCodes.default && asCodes.valores.length === 1 && typeof asCodes.valores[0] !== "boolean";
+      values.push(isCodes ? asCodes.valores[0] : parseStringBound(part) ?? part);
+    }
+  }
+  return { valores: values, ...(isDefault && { default: true }) };
 }
 
 /** Splits `text` at every `separator` that is outside double quotes. */
@@ -845,6 +886,12 @@ function ajustarSelectores(g, ctx) {
     const selector = g.nodos.find((n) => n.dentro === s.id && n.tipo === "case-selector");
     const wire = selector && g.cables.find((k) => k.a.nodo === selector.id);
     const tipo = wire && types.cables.get(wire.id)?.tipo;
+    if (esError(tipo)) {
+      // The frame in view stays in view: True, shown, becomes No Error, shown (Q1).
+      const frames = errorFramesFromBoolean(conOrigen(s));
+      g = Gr.fijarConfig(Gr.fijarMarcos(g, ctx.cat, s.id, frames), s.id, { activo: frames.findIndex((frame) => frame.de === activoDe(s)) });
+      continue;
+    }
     const asString = tipo === "string";
     if (!asString && !esNumerico(tipo)) continue;
     // An enum names its frames by item (DT-049): False and True become the items 0 and 1.
@@ -853,6 +900,16 @@ function ajustarSelectores(g, ctx) {
     g = Gr.fijarMarcos(g, ctx.cat, s.id, marcos);
   }
   return g;
+}
+
+/**
+ * The frames of a Boolean Case once an error cluster is wired to it: True becomes No Error and False
+ * "Error ..", and No Error is listed first, as LabVIEW lists them (case-error-selector report, Q1 and Q3).
+ */
+function errorFramesFromBoolean(frames) {
+  const converted = frames.map(({ valores = [], ...frame }) => ({ ...frame, valores: errorValuesFromBoolean(valores) }));
+  const hasNoError = (frame) => frame.valores.some(isNoError);
+  return [...converted.filter(hasNoError), ...converted.filter((frame) => !hasNoError(frame))];
 }
 
 /**
@@ -954,7 +1011,7 @@ export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
     // ítems; seleccionada, el clic sólo la vuelve a elegir (medido, herramienta automática).
     const pulsado = d.g.nodos.find((n) => n.id === sobre.id);
     // A click on a name row of an Unbundle By Name drops the list of the names of the cluster wired in; unwired, there is none.
-    if (UN.isUnbundleByName(pulsado) && sobre.fila !== undefined && UN.clusterElementNames(d.g, ctx.cat, pulsado.id).length) return { ...d0, seleccion: elegir(sobre.id), lista: { nodo: sobre.id, x: p.x, y: p.y, fila: sobre.fila } };
+    if (UN.isByName(pulsado) && sobre.fila !== undefined && UN.clusterElementNames(d.g, ctx.cat, pulsado.id).length) return { ...d0, seleccion: elegir(sobre.id), lista: { nodo: sobre.id, x: p.x, y: p.y, fila: sobre.fila } };
     // Read Delimited Spreadsheet's ring opens its instances (read-ring-menu.png).
     if (sobre.anillo) return { ...d0, seleccion: elegir(sobre.id), lista: { nodo: sobre.id, x: p.x, y: p.y } };
     if (CONSTANTES[pulsado?.tipo]?.selector && !d.seleccion.includes(sobre.id)) return { ...d0, seleccion: elegir(sobre.id), lista: { nodo: sobre.id, x: p.x, y: p.y } };
@@ -1021,7 +1078,7 @@ export function moverA(d, ctx, p) {
       if (arr?.tipo === "initialize-array") return { ...d, g: stretchedInitializeArray(accion, p, ctx) };
       if (esEstructura(accion.g0.nodos.find((k) => k.id === accion.nodo), ctx)) return { ...d, g: estirarEstructura(accion, p, ctx) };
       if (arr && ExpressNodes.isExpressNode(arr, ctx.cat)) return { ...d, g: ExpressNodes.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / ExpressNodes.ROW_PITCH)) };
-      if (UN.isUnbundleByName(arr)) return { ...d, g: UN.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / UN.ROW_STEP)) };
+      if (UN.isByName(arr)) return { ...d, g: UN.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / UN.ROW_STEP)) };
       if (arr && FN.isFormatNode(arr, ctx.cat)) return { ...d, g: FN.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / FN.FORMAT_ROW_STEP)) };
       // Cada celda que se estira es una entrada más; por arriba, las nuevas
       // entran encima y las que había conservan sus cables.
@@ -1658,10 +1715,17 @@ function nodeVariants(d, ctx) {
       return { ocultos: fila("show-case", "swap-diagram-with-case", "shift-diagram-to-case", "rearrange-cases", "make-this-the-default-case", "remove-default", "radix", "case-insensitive-match", "add-case-for-every-value"), rotulos: new Map([[`${r}.show-case-other`, `Show Case ${otro}`], [`${r}.make-this-case-other`, `Make This Case ${otro}`]]) };
     }
     const kind = kindOf(d.g, ctx, n);
-    const hidden = fila("show-case-other", "make-this-case-other", m?.default ? "make-this-the-default-case" : "remove-default");
+    const defaultRow = m?.default ? "make-this-the-default-case" : "remove-default";
+    // An error Case of two frames names the other one, as a Boolean Case does, and keeps the Default and
+    // Radix rows; with more frames its menu is a numeric one's (case-error-selector report, Q2).
+    if (kind === ERROR_SELECTOR && ms.length === 2) {
+      const other = `${etiquetaMarco(ms[1 - activoDe(n)], kind)}`;
+      return { ocultos: fila("show-case", "swap-diagram-with-case", "shift-diagram-to-case", "rearrange-cases", "remove-empty-cases", "case-insensitive-match", "add-case-for-every-value", defaultRow), rotulos: new Map([[`${r}.show-case-other`, `Show Case ${other}`], [`${r}.make-this-case-other`, `Make This Case ${other}`]]) };
+    }
+    const hidden = fila("show-case-other", "make-this-case-other", defaultRow);
     // A string selector has Case Insensitive Match; an enum one has neither it nor Radix, and the two rows for the items without a frame (string and enum reports).
     if (kind !== "string") hidden.add(`${r}.case-insensitive-match`);
-    if (kind) hidden.add(`${r}.radix`);
+    if (kind && kind !== ERROR_SELECTOR) hidden.add(`${r}.radix`);
     if (!esEnum(kind) || !uncoveredItems(n, kind).length) {
       hidden.add(`${r}.add-case-for-every-value`);
       if (esEnum(kind)) hidden.add(`${r}.remove-empty-cases`);
@@ -1679,7 +1743,7 @@ function nodeVariants(d, ctx) {
   if (n && ["arr-const", "arr-control", "arr-indicator"].includes(n.tipo)) return arrayVariants(n, r);
   // Remove Parameter on the only row of Scan From String does nothing: there is always one.
   if (n?.tipo === "scan-from-string" && (n.config?.inputs ?? 1) <= 1) return { desactivados: new Set([`${r}.remove-parameter`]) };
-  if (UN.isUnbundleByName(n)) return unbundleVariants(d, ctx, n);
+  if (UN.isByName(n)) return unbundleVariants(d, ctx, n);
   if (PN.isPropertyNode(n) && ctx) return PNM.nodeVariants(d, ctx);
   if (n && r === PolymorphicNodes.MENU_ROOT && ctx) return PolymorphicNodes.menuVariants(n, ctx.cat);
   // LabVIEW greys Advanced on the terminals of a VISA resource name (reports/2026-10-26-visa-resource-name-look.md Q5; why is unverified).
