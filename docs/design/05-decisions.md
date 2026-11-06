@@ -3742,3 +3742,48 @@ Function Node and an add-ons folder, both native. DAQ waits for them and becomes
 |-----------|-----------|--------|
 | LabVIEW's Mathematics is a library of VIs over `lvanlys.dll`, with its own palette files | `labview_inspect_vi` of `Mean (DBL).vi` and the VM's folders, 2026-11-06 | **Measured** |
 | A library can be written and installed without changing Solder | A library (DAQ) built on the two doors, installed from the add-ons folder | **Not built** |
+
+## DT-080
+
+**The Call Library Function Node is LabVIEW's, one to one; behind it a library is either native (`.dll`, `.so`,
+`.dylib`), loaded and called by the I/O process, or a WebAssembly module (`.wasm`), loaded into the Run itself.**
+
+- **Status:** Accepted on 2026-11-06 by the developer, as proposed the same day after measuring the node
+  (`labview-captures/reports/2026-11-06-clfn.md`, `2026-11-06-clfn-run.md`). It is the first of [DT-079](#dt-079) §3's
+  two doors.
+- **Why:** LabVIEW's libraries wrap compiled code through this node (`Mean (DBL).vi` over `lvanlys.*`, DAQmx over
+  `nicaiu.dll`). Solder compiles to WebAssembly ([DT-039](#dt-039)) and already runs native code in a separate I/O
+  process ([DT-065](#dt-065)): a native library goes there, which also keeps a fault in it from closing Solder; code
+  that only computes can be compiled to WebAssembly, which runs in the Run at full speed, on every platform from one
+  file, and cannot touch anything outside it.
+
+### Decision
+
+1. **The node, its dialog and its behaviour are LabVIEW's** (measured on 2026-11-06): Functions ▸ Connectivity ▸
+   Libraries & Executables; the 40 × 27 node with a row per parameter and the return value, error in/out always and
+   path in/out with Specify path on diagram; header #ffaf00 for Run in UI thread and #ffffcc for Run in any thread; the
+   dialog "Call Library Function" with Function, Parameters, Callbacks and Error Checking, the same types, data types,
+   formats and live C prototype; a library named in the dialog that cannot load breaks the OVI, while a path wired on
+   the diagram fails at run time with 7 (not found), 12 (not a library) or 15 (no such function); a fault inside the
+   code is error 1097.
+2. **Native libraries** are loaded and called by the I/O process through a foreign function interface (in Rust,
+   `libloading` and `libffi`), and the node is an external wait ([DT-066](#dt-066) §3). A fault there ends only the I/O
+   process, which is restarted, and the node gives 1097, **even with Error Checking Disabled**, where LabVIEW itself
+   crashes: Solder departs here on the safe side. Each call crosses processes and copies its arrays, so a tight loop of
+   tiny calls is slow; that is the price of the safety.
+3. **WebAssembly modules** are instantiated in the Run, sharing its memory, and called directly: for libraries that
+   compute (mathematics, signal processing). They cannot reach the operating system or hardware.
+4. **LabVIEW's platform wildcard** (`lvanlys.*`) picks each platform's file; a `.wasm` next to them is preferred,
+   since it serves every platform.
+5. **Threads:** Run in UI thread is one dedicated thread of the I/O process; Run in any thread, a pool. The Reserve,
+   Unreserve and Abort callbacks join Solder's Abort.
+6. **Open, for its own step:** Adapt to Type hands the data in Solder's own memory layout ([DT-042](#dt-042)), which is
+   then documented as public for library authors (LabVIEW hands its handles); a wizard that makes OVIs from a C header,
+   as LabVIEW's "Consider using a wizard instead...", comes later.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The node, dialog and errors are LabVIEW's | The 2026-11-06 reports, then tests per case | **Measured, not built** |
+| A native fault gives 1097 and Solder keeps running | A test that calls a faulting function | **Not built** |
