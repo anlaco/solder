@@ -3787,3 +3787,47 @@ Function Node and an add-ons folder, both native. DAQ waits for them and becomes
 |-----------|-----------|--------|
 | The node, dialog and errors are LabVIEW's | The 2026-11-06 reports, then tests per case | **Measured, not built** |
 | A native fault gives 1097 and Solder keeps running | A test that calls a faulting function | **Not built** |
+
+## DT-081
+
+**Libraries are installed as add-ons, laid out as LabVIEW's `LVAddons`: one folder per add-on and API version, a
+manifest, its OVIs, palettes, help, examples and compiled code, with the native parts split by platform; Solder reads
+a system folder and a user folder at start-up, and an add-on's OVIs are named by symbolic `<ovilib>` paths.**
+
+- **Status:** Accepted on 2026-11-06 by the developer, as proposed the same day after measuring LabVIEW's add-ons
+  (`labview-captures/reports/2026-11-06-addons.md`). It is the second of [DT-079](#dt-079) §3's two doors.
+- **Why:** LabVIEW keeps each add-on in `C:\Program Files\NI\LVAddons\<name>\<N>\` with a `lvaddoninfo.json`
+  (`AddonName`, `ApiVersion` = "v" + the folder's name, `MinimumSupportedLVVersion`, `SupportedBitness` on the
+  bitness parts), its `vi.lib`, `menus`, `help`, `examples` and `resource`; versions sit side by side (`lvai\1`,
+  `lvai\26.3`); the parts that differ by bitness go in `<name>32` and `<name>64` under the same `AddonName`; the
+  folder's path is a registry value shared by every LabVIEW version; the add-on's `menus` is overlaid on LabVIEW's at
+  the same relative path, where NI's own parent palette already names it; NI Packages install it by copying. Solder's
+  native code differs by platform rather than bitness, and its `.sdg` files must open on other machines.
+
+### Decision
+
+1. **Layout:** `<addons>/<name>/<api>/sdaddoninfo.json` with `AddonName`, `ApiVersion` ("v" + the folder's name, so
+   several API versions coexist) and `MinimumSupportedSolderVersion`; beside it `ovi.lib/`, `menus/`, `help/`,
+   `examples/` and `resource/`.
+2. **Platforms instead of bitness:** the common part in `<name>`, native binaries in `<name>-<os>-<arch>`
+   (`daq-windows-x64`, `daq-linux-x64`, …) under the same `AddonName`, with `SupportedPlatform` in their manifest.
+   WebAssembly modules ([DT-080](#dt-080) §3) go in the common part.
+3. **Two folders,** read at start-up: the system's (`C:\Program Files\Solder\Addons\` on Windows,
+   `/usr/share/solder/addons` on Linux) and the user's (`~/.local/share/solder/addons` on Linux, the user's
+   application data on Windows), so that a user can install without administrator rights, which LabVIEW does not offer.
+4. **Symbolic paths:** an add-on's OVIs are named `<ovilib>\…` as `ovi.lib`'s are ([DT-073](#dt-073)), resolved over
+   `ovi.lib` and every add-on's `ovi.lib/`, so an `.sdg` opens on another machine wherever the add-on is installed.
+   LabVIEW reports add-on VIs by absolute path; Solder departs here on purpose.
+5. **Palettes:** an add-on's `menus/` is overlaid at the same relative path, as LabVIEW's; Solder's own palettes name
+   in advance the places of the libraries Solder knows (DAQ in Measurement I/O, as NI's do), and a third party's
+   manifest may say under which palette its entry goes.
+6. **Installing** is copying the folder for now; a package format and a manager, as NI Package Manager or VIPM, get
+   their own DT.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| LabVIEW's add-on layout, manifest and palette overlay are as described | The 2026-11-06 report | **Measured** |
+| An add-on copied into either folder shows its palettes and its OVIs open by `<ovilib>` path | Editor tests with a test add-on | **Not built** |
+| Whether LabVIEW needs a restart to see a new add-on | — | **Unverified** |

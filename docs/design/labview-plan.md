@@ -687,8 +687,10 @@ array or string read by a local variable while another loop writes it is never t
       stage A is built on them as the first library.
       *The Call Library Function Node measured on 2026-11-06
       ([`clfn`](../../labview-captures/reports/2026-11-06-clfn.md), [`clfn-run`](../../labview-captures/reports/2026-11-06-clfn-run.md))
-      and decided in DT-080: LabVIEW's node and dialog, native libraries called by the I/O process, `.wasm` modules in the Run.
-      Next: measure the add-ons folder (how `LVAddons` is found, what an add-on holds, how it is installed), then its DT.*
+      and decided in DT-080: LabVIEW's node and dialog, native libraries called by the I/O process, `.wasm` modules in the Run.*
+      *The add-ons folder measured the same day ([`addons`](../../labview-captures/reports/2026-11-06-addons.md)) and decided
+      in DT-081. Next, to build: the Call Library Function Node (core and native calls, then the editor; `.wasm` may wait
+      until after DAQ), the add-ons folder, then DAQ's stage A as the first add-on.*
       *Open before step 5 (talked over with the developer on 2026-11-03, nothing decided): **what Solder uses instead
       of DAQmx**, its own name (DAQmx and NI-DAQ are NI's trademarks, as OVI stands for VI, DT-071) and its approach.
       Ideas: DAQmx's programming model (tasks, named channels, hardware timing, triggers, waveforms) over engines
