@@ -9,6 +9,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- When it starts, Solder looks for a newer beta and, if there is one, offers it; once accepted, it is downloaded and
+  installed when Solder closes, on Windows, AppImage and `.deb` (DT-082). The update replaces `ovi.lib`, and the
+  message says so. Updating to this version is still by hand; the next ones arrive by themselves.
+
 ## 0.8.0-beta — 2026-11-06
 
 Solder's program unit is now the OVI, and it grows as LabVIEW's VIs do: polymorphic OVIs and Solder's own

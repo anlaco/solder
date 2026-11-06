@@ -3831,3 +3831,39 @@ a system folder and a user folder at start-up, and an add-on's OVIs are named by
 | LabVIEW's add-on layout, manifest and palette overlay are as described | The 2026-11-06 report | **Measured** |
 | An add-on copied into either folder shows its palettes and its OVIs open by `<ovilib>` path | Editor tests with a test add-on | **Not built** |
 | Whether LabVIEW needs a restart to see a new add-on | — | **Unverified** |
+
+## DT-082
+
+**During the beta, a packaged Solder looks for a newer release when it starts and, if there is one, offers it in a
+message; if the user accepts, it is downloaded and installed when Solder closes. Help ▸ Check for Updates comes
+later.**
+
+- **Status:** Accepted on 2026-11-06 by the developer ("for now only the message when the app starts; Check for
+  Updates later; it is only for the beta; for ovi.lib a warning is enough").
+- **Why:** each release had to be downloaded and installed by hand. electron-builder already writes the update
+  metadata (`dist/latest.yml`, `dist/latest-linux.yml`), and `electron-updater` 6.8 updates the three packages Solder
+  ships: the NSIS installer on Windows (it runs the new installer), the AppImage (it replaces the file) and the `.deb`
+  (it installs it with `dpkg`, asking for the administrator's password through `pkexec` or `sudo`). Since Solder's
+  version carries `-beta`, it accepts GitHub pre-releases, which is how betas are published. LabVIEW has Help ▸ Check
+  for Updates (`docs/schema/inventario-labview.json`, Getting Started's Help menu), whose behaviour is not measured yet.
+
+### Decision
+
+1. **When:** once, when a packaged Solder starts, against the GitHub releases of `anlaco/solder`. Not from the source
+   tree, the tests or the captures (`SOLDER_CAPTURAS`), and never when `SOLDER_NO_UPDATE_CHECK` is set.
+2. **What the user sees:** a message naming the new version, warning that `ovi.lib` is replaced by the new one (an
+   edited OVI of `ovi.lib` is lost, [DT-073](#dt-073)), with Download and Later. Nothing is downloaded without that
+   answer. When the download ends, a second message says that the update is installed when Solder closes; Solder never
+   restarts by itself, so no unsaved OVI is put at risk. A failed check or download is only logged.
+3. **Releases** upload `latest.yml`, `latest-linux.yml` and the AppImage's `.blockmap` next to the packages; without
+   them the check finds nothing.
+4. **Not signed:** a download is checked against the SHA-512 in the metadata, which catches a damaged file, not a
+   forged release; signing the Windows executable is its own decision.
+5. **Help ▸ Check for Updates** stays greyed until it is measured in LabVIEW and built.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| No check unpackaged or with the opt-outs; the user is asked before downloading; the install waits for closing | `test/editor/update-check.test.mjs` with a fake updater | **Built** |
+| A packaged beta finds, downloads and installs the next release on Windows, AppImage and `.deb` | By hand with two test releases | **Unverified** |

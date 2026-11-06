@@ -27,6 +27,14 @@
     "directories": {
       "output": "dist"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "anlaco",
+        "repo": "solder",
+        "releaseType": "prerelease"
+      }
+    ],
     "files": [
       "package.json",
       "editor/**/*",
@@ -98,5 +106,8 @@
       "native/**/*.node"
     ]
   },
-  "desktopName": "solder.desktop"
+  "desktopName": "solder.desktop",
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  }
 }

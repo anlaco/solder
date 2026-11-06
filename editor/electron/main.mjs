@@ -24,6 +24,7 @@ import { ENTRY_KINDS, POLYMORPHIC_WINDOW_KIND, WINDOW_KINDS, createRegistry, isD
 import { readWindowStyle, watchWindowStyle } from "./window-style.mjs";
 import { createInstrumentIoProcess } from "./instrument-io-process.mjs";
 import { chosenFileOf, chosenFilesOf, confirmationBoxFor, confirmedBy, fileDialogFor, folderAfter, systemDialogFor } from "./file-dialog-options.mjs";
+import { UPDATE_BUTTONS, UPDATE_BUTTON_ANSWERS, checkForUpdatesAtStart, shouldCheckForUpdates } from "./update-check.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // Solder's library of OVIs (DT-073): next to the repository's editor while developing, and among the application's
@@ -772,6 +773,27 @@ app.on("second-instance", (_event, argv) => {
   if (file) openPath(path.resolve(file));
 });
 
+/** A message box over the window in front, or on its own when none is. */
+const showMessageBoxInFront = (options) => {
+  const owner = BrowserWindow.getFocusedWindow();
+  return owner ? dialog.showMessageBox(owner, options) : dialog.showMessageBox(options);
+};
+
+/** The beta's update at start-up (DT-082). electron-updater is loaded only when it is used. */
+async function offerUpdate() {
+  if (!shouldCheckForUpdates({ isPackaged: app.isPackaged, env: process.env })) return;
+  const { autoUpdater } = (await import("electron-updater")).default;
+  await checkForUpdatesAtStart(autoUpdater, {
+    currentVersion: app.getVersion(),
+    ask: async ({ title, message, detail }) => {
+      const { response } = await showMessageBoxInFront({ type: "info", title, message, detail, buttons: UPDATE_BUTTONS, defaultId: 0, cancelId: UPDATE_BUTTONS.length - 1 });
+      return UPDATE_BUTTON_ANSWERS[response];
+    },
+    tell: ({ title, message, detail }) => showMessageBoxInFront({ type: "info", title, message, detail }),
+    log: (message) => console.warn(message),
+  });
+}
+
 app.whenReady().then(async () => {
   // The menu bar is LabVIEW's, painted in the page.
   Menu.setApplicationMenu(null);
@@ -791,6 +813,7 @@ app.whenReady().then(async () => {
     if (process.env.SOLDER_CAPTURAS) capture(first.windows, process.env.SOLDER_CAPTURAS);
   } else if (process.env.SOLDER_CAPTURAS) capture(openNewVI().windows, process.env.SOLDER_CAPTURAS);
   else showGettingStarted();
+  offerUpdate();
 });
 
 app.on("window-all-closed", () => app.quit());
