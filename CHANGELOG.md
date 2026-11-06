@@ -9,6 +9,11 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+## 0.10.0-beta — 2026-11-06
+
+Solder can call native libraries, as LabVIEW does with the Call Library Function Node. This is the first beta that
+arrives by itself to whoever has 0.9.
+
 - An OVI can call functions of native libraries with the Call Library Function Node (DT-080), as in LabVIEW: numbers by
   value or by pointer, strings and arrays by their address, the return value, and LabVIEW's errors 7, 12 and 15 when the
   library or the function is missing. The library runs in Solder's I/O process, so a fault in it is error 1097 and
