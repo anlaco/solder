@@ -13,8 +13,10 @@ When the developer says "keep going":
    (2026-10-25); continue with **"Then: hardware"** right after it (DT-064, which moved Core 1
    behind it), and keep in mind its list "Pending from the pool of threads". §4 gives the
    detail of each module. Its order was amended on 2026-10-26 (DT-064, "Amendment of
-   2026-10-26"). Steps 1 to 5 are done (step 5, the ESP32 DAQ, on 2026-11-05); the next one is
-   **step 6, the DAQ layer** (DT-076), which starts by measuring DAQmx with a simulated NI device.
+   2026-10-26"). Steps 1 to 5 are done (step 5, the ESP32 DAQ, on 2026-11-05). Step 6, the DAQ layer
+   (DT-076), is measured and waits for its own step **6a, the two doors for libraries** (DT-079, 2026-11-06):
+   the Call Library Function Node and the add-ons folder, each measured in LabVIEW and decided in its own DT,
+   then DAQ as the first library built on them. After Core 1, everything native, then Core 2 (DT-079 §1).
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
    `win11 encender`, `tools/vm_control.py foto|clic|arrastrar|tecla|texto`.
@@ -675,9 +677,14 @@ array or string read by a local variable while another loop writes it is never t
       4833 ([`daqmx-create-channel`](../../labview-captures/reports/2026-11-06-daqmx-create-channel.md),
       [`daqmx-timing-trigger`](../../labview-captures/reports/2026-11-06-daqmx-timing-trigger.md),
       [`daqmx-read-write`](../../labview-captures/reports/2026-11-06-daqmx-read-write.md)): instances, terminals, defaults,
-      errors and the simulated signal. Details decided the same day (DT-076, amendment of 2026-11-06: the `daq-task` and
-      `daq-name` types, polymorphic OVIs in `ovi.lib/DAQ/` over primitives, the engine and its simulated driver in
-      `solder-io`, stage A). Next: measure the look of the task and name wires, constants and dropdowns, then stage A.*
+      errors and the simulated signal. Details decided the same day (DT-076, amendment of 2026-11-06: one `daq-name`
+      type with kinds, the task among them, as measured the same day; the engine and its simulated driver in `solder-io`;
+      stage A). The same day DT-079 made the nodes OVIs that call a compiled `solder-daq` through a Call Library Function
+      Node, so DAQ waits for step 6a.*
+   6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
+      everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
+      compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's
+      stage A is built on them as the first library.
       *Open before step 5 (talked over with the developer on 2026-11-03, nothing decided): **what Solder uses instead
       of DAQmx**, its own name (DAQmx and NI-DAQ are NI's trademarks, as OVI stands for VI, DT-071) and its approach.
       Ideas: DAQmx's programming model (tasks, named channels, hardware timing, triggers, waveforms) over engines

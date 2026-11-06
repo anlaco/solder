@@ -3497,7 +3497,7 @@ drivers that can be swapped.**
 
 - **Status:** Accepted on 2026-11-05 by the developer, before plan step 5 (it was left open on 2026-11-03). Its details
   wait for the measurement of DAQmx in LabVIEW with a simulated NI device ([DT-064](#dt-064)).
-  Amended on 2026-11-06 with those details (§5–§10), which replace §3's simulated driver served by Crucible.
+  Amended on 2026-11-06 with those details (§5–§10), which replace §3's simulated driver served by Crucible; §6 replaced the same day by [DT-079](#dt-079) §5.
 - **Why:** NI-DAQmx is a driver, not a hardware family: one API (the DAQmx palette, its tasks and channels) over every
   NI acquisition device. "NI-DAQ" and "DAQmx" are NI's names; "DAQ" (*data acquisition*) is the generic word, and the
   clearest one for whoever comes from LabVIEW. "openDAQ" is an open SDK of Dewesoft and HBK, so a name like it would be
@@ -3538,13 +3538,17 @@ Accepted on 2026-11-06 by the developer, as proposed the same day after DAQmx wa
 two simulated devices: the palette (`labview-captures/reports/2026-11-06-daqmx-palette.md`) and the basic flow
 (`2026-11-06-daqmx-create-channel.md`, `-timing-trigger.md`, `-read-write.md`).
 
-5. **Two types.** `"daq-task"` is a type of its own, laid out by the compiler as `{ name: string, task: U32 }`, as a
-   VISA resource name is ([DT-066](#dt-066) §1), because LabVIEW shows a task as `["", 0]`; its constant is the
-   palette's Task Const. `"daq-name"` covers physical channels, terminals, scales and devices: one type with a `kind`
-   (`physical-channel`, `terminal`, `scale`, `device`, …) that says which names it offers, laid out as a string, as
-   LabVIEW's single DAQmxName class with its I/O name filter; Channel Const and Terminal Const are this type. Their
-   wires, constants, the dropdown's lists and whether a string coerces into a name are measured before they are built.
-6. **The nodes are polymorphic OVIs of `ovi.lib` over a few primitives** ([DT-073](#dt-073), [DT-074](#dt-074)):
+5. **One type, `"daq-name"`, with a kind**, as LabVIEW's single DAQmxName class (control) and DAQmxNameConstant
+   (constant), measured on 2026-11-06 (`labview-captures/reports/2026-11-06-daqmx-types.md`; this corrects the two
+   types proposed the same day). The kinds are LabVIEW's: `task`, `global-channel`, `physical-channel`, `terminal`,
+   `scale`, `device`, `switch`. A task is laid out by the compiler as `{ name: string, task: U32 }`, as a VISA resource
+   name is ([DT-066](#dt-066) §1), because LabVIEW shows it as `["", 0]`; the other kinds are strings. Every kind has
+   the same #7f007f wire and constant (with the I/O glyph and the dropdown); kinds do not connect to each other, every
+   kind coerces to a string and a string to every name input, with a coercion dot. The name filter (I/O Name
+   Filtering…: I/O type, port/line filtering, internal channels, advanced terminals) is part of the constant and the
+   control. A task is released when its top-level OVI stops, without Clear Task.
+6. *(Its primitives are replaced by a Call Library Function Node into `solder-daq`: [DT-079](#dt-079) §5.)*
+   **The nodes are polymorphic OVIs of `ovi.lib` over a few primitives** ([DT-073](#dt-073), [DT-074](#dt-074)):
    `ovi.lib/DAQ/` holds `DAQ Read.sdp`, `DAQ Create Virtual Channel.sdp` and the rest, whose instances are OVIs with
    LabVIEW's instance names, menu paths, ring texts, connector 4833, indices and defaults (`DAQ Read (Analog 1D DBL
    1Chan NSamp).sdg`, …). Inside, each instance calls a primitive block (`daq-create-channel`, `daq-timing`, `daq-read`,
@@ -3687,3 +3691,54 @@ version 3.**
 | The windows are read and written again unchanged, and satisfy the schema | `test/end-to-end/qvi-round-trip.test.mjs` | Built |
 | Moving or scrolling never marks the OVI modified; an edit does | `test/editor/saved-windows.test.mjs` | Built |
 | A window opens at its saved bounds only while they fall on a screen | `test/editor/saved-windows.test.mjs` | Built (what LabVIEW does off-screen is **unverified**) |
+
+## DT-079
+
+**Solder is the language and its GUI; libraries are made on it as LabVIEW's are, by whoever wants to. After Core 1,
+everything native is completed, then Core 2. The language offers libraries LabVIEW's two doors: a Call Library
+Function Node and an add-ons folder, both native. DAQ waits for them and becomes the first library built on them.**
+
+- **Status:** Accepted on 2026-11-06 by the developer, who proposed it ("the libraries can be treated apart: we give
+  them the idea, and specialized groups do them, so we focus on the language and the GUI") and chose to build the two
+  doors before DAQ, "because there may be groups that can help".
+- **Why:** measured in the VM on 2026-11-06, LabVIEW's Mathematics palette is not native: its `.mnu` files are in
+  `menus\Categories\Mathematics\`, its functions are 1411 ordinary VIs in `vi.lib\Analysis\*.llb`, and `Mean (DBL).vi`
+  is a Call Library Function Node into `resource\lvanlys.dll` (`labview_inspect_vi`); `Mean.vi` is polymorphic over
+  `Mean (DBL).vi` and `Mean (CDB).vi`. DAQmx is the same (VIs over `nicaiu.dll`, installed as an add-on in
+  `C:\Program Files\NI\LVAddons\nidaqmx`), and so are third-party libraries (`LVAddons\jki-dragon`). Anyone writes a
+  library for LabVIEW as VIs in G, or VIs that wrap compiled code through the Call Library Function Node, with `.mnu`
+  palette files, installed as a package; LabVIEW itself is not touched. Solder has the first half (OVIs, `ovi.lib`,
+  polymorphic OVIs, palette entries: [DT-073](#dt-073), [DT-074](#dt-074)) but not the second: today compiled code
+  must go into `native/solder-io` and the core's primitives, so nobody can write a driver or a math library without
+  changing Solder.
+
+### Decision
+
+1. **Order of work** (amends [DT-064](#dt-064)'s road; [DT-077](#dt-077)'s 1.0 is unchanged): Core 1 shapes the
+   structure (primitives, `ovi.lib`, libraries); after it, **everything native** is completed; then Core 2's lessons
+   are checked one by one (most of what Core 2 teaches is native: the Event Structure, queues and notifiers, VI Server,
+   configuration files, building executables).
+2. **Native** is what LabVIEW has inside itself: the primitives of Programming and Data Communication, VISA's
+   primitives, the structures, the types (waveform and timestamp among them), the editor and its GUI, debugging,
+   projects and the compiler; and the two doors of §3. **Libraries** are what LabVIEW installs as VIs: Mathematics,
+   Signal Processing, DAQ, instrument drivers, IVI and the rest.
+3. **The two doors are native**, each with its own DT after measuring LabVIEW:
+   - **The Call Library Function Node**, so that an OVI calls compiled code. How it is done when everything compiles
+     to WebAssembly ([DT-039](#dt-039)) — a native library called by the I/O process as VISA is today
+     ([DT-065](#dt-065)), a WebAssembly module, or both — is decided then.
+   - **An add-ons folder**, as `LVAddons`: a library brings its OVIs, palette files, help and compiled code, and is
+     installed as a package without touching Solder.
+4. **Libraries are made as LabVIEW's are**, by Solder's developers or by groups that specialize in one, on the same
+   doors as anyone else. Solder's developers give each library its idea and its first measurements; the libraries
+   that ship with Solder stay to LabVIEW's names and API ([DT-035](#dt-035), [DT-071](#dt-071)).
+5. **DAQ waits for the two doors** and is then the first library built on them, as an example of how a library is
+   made: its instances are OVIs that call a compiled `solder-daq` library through the Call Library Function Node, as
+   DAQmx's call `nicaiu.dll`. This replaces [DT-076](#dt-076) §6's primitives in the core; DT-076's measurements,
+   types (§5), engine (§7), drivers (§8, §9) and stages (§10) stand. The `daq-name` type is native (§2).
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| LabVIEW's Mathematics is a library of VIs over `lvanlys.dll`, with its own palette files | `labview_inspect_vi` of `Mean (DBL).vi` and the VM's folders, 2026-11-06 | **Measured** |
+| A library can be written and installed without changing Solder | A library (DAQ) built on the two doors, installed from the add-ons folder | **Not built** |
