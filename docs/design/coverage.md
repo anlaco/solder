@@ -31,11 +31,11 @@
 | SubOVIs, libraries and projects | 7 / 21 (33 %) | `███░░░░░░░` |
 | Debugging | 8 / 16 (50 %) | `█████░░░░░` |
 | Files | 5 / 15 (33 %) | `███░░░░░░░` |
-| Instruments and communication | 3 / 19 (16 %) | `██░░░░░░░░` |
-| Functions palette | 208 / 526 (40 %) | `████░░░░░░` |
+| Instruments and communication | 4 / 19 (21 %) | `██░░░░░░░░` |
+| Functions palette | 209 / 538 (39 %) | `████░░░░░░` |
 | Controls palette | 24 / 86 (28 %) | `███░░░░░░░` |
-| Windows and dialogs | 139 / 389 (36 %) | `████░░░░░░` |
-| Right-click menus | 458 / 1858 (25 %) | `██░░░░░░░░` |
+| Windows and dialogs | 141 / 398 (35 %) | `████░░░░░░` |
+| Right-click menus | 462 / 1872 (25 %) | `██░░░░░░░░` |
 <!-- /coverage:summary -->
 
 ## Features
@@ -244,7 +244,7 @@
 - [ ] Channel wires
 - [ ] Network streams and shared variables
 - [ ] HTTP client and web services
-- [ ] Call Library Function Node (shared libraries)
+- [x] Call Library Function Node (shared libraries), DT-080 (2026-11-06; `.wasm` modules later)
 - [ ] .NET and ActiveX
 - [ ] OVI Server (Open OVI Reference, the OVI and Application classes)
 - [ ] Dialogs for the user (One/Two Button Dialog, Prompt User for Input)
@@ -284,7 +284,7 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 | Mathematics | not captured yet | |
 | Signal Processing | not captured yet | |
 | Data Communication | not captured yet | |
-| Connectivity | not captured yet | |
+| Connectivity | 1 / 12 (8 %) | `█░░░░░░░░░` |
 | Express | not captured yet | |
 | Addons | not captured yet | |
 | Favorites | not captured yet | |
@@ -334,10 +334,11 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 | Polymorphic OVI | 20 / 42 (48 %) | `█████░░░░░` |
 | Edit Instance Name | 2 / 3 (67 %) | `███████░░░` |
 | New | 5 / 12 (42 %) | `████░░░░░░` |
+| Call Library Function | 2 / 9 (22 %) | `██░░░░░░░░` |
 
 ### Right-click menus
 
 | Menus | Covered | |
 |-------|---------|---|
-| Every right-click menu captured | 458 / 1858 (25 %) | `██░░░░░░░░` |
+| Every right-click menu captured | 462 / 1872 (25 %) | `██░░░░░░░░` |
 <!-- /coverage:inventory -->

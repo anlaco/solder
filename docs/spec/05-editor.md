@@ -1730,3 +1730,55 @@ and the edits of the rows) and `property-node-menus.mjs` (the menus). Tests: `te
 > Configure Serial Port, from both Serial palettes) reads the callee's file and what it reaches before the node is carried,
 > as Select a VI... does, so the node is drawn with its icon and its terminals at once; a polymorphic one is Automatic, on its
 > first instance, with the selector hidden. Tested in `test/editor/polymorphic-nodes.test.mjs`.
+
+## 24. The Call Library Function Node in the editor (2026-11-06, DT-080)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-11-06-clfn.md`, `2026-11-06-clfn-run.md` and
+`2026-11-06-connectivity-palette.md`; captures `labview-captures/clfn/` and `connectivity-palette/`). The look is in
+[`06-visual.md`](06-visual.md) §21. Code: `editor/src/block-diagram/call-library-nodes.mjs` (geometry, drawing, terminals),
+`call-library-dialog.mjs` (the dialog) and, for the palettes, `window-view.mjs` and the inventory. Tests:
+`test/editor/call-library-nodes.test.mjs`.
+
+> **Rule 126 — Functions ▸ Connectivity.** The category unfolds in four columns, every cell a folder with its label under the icon
+> and its whole name as the hover name: Libraries & Executables, Source Control, a gap, Web Services; .NET, Input Device Control,
+> ActiveX, Windows Registry Access OVIs (its label clipped: "Windows Registry Acces…"); Python, MATLAB(R), Database, a gap; a gap,
+> DataFinder, two gaps (the gaps are Advanced Memory, Internet and DIAdem, which LabVIEW lists without a palette). Libraries &
+> Executables opens a subpalette of one row: Call Library Function Node, which is placed, and System Exec.vi, greyed
+> (`ejecutar-procesos`). The other folders are greyed: only Libraries & Executables was opened in LabVIEW
+> (`contenido-no-capturado`). **Not matched:** the subpalette's width (166 px measured, with its title clipped; here it follows its
+> two cells) and the folders' icons, which are drawn anew with a short word. Tested in the first two tests of the file.
+
+> **Rule 127 — The node.** The Call Library Function Node is dropped from the palette unconfigured (no dialog opens; unverified in
+> LabVIEW), is 40 px wide and 18 + 8 × (1 + parameters) + 1 px tall (27 empty, 51 for Mean (DBL)'s three parameters), and does not
+> grow with the path pins, which are in its header. Its terminals are wired at the measured places: path in and out at y 0 (only
+> with Specify path on diagram), error in and out at y 9, then the return value's row at y 18 (an output only) and one row of 8 px
+> per parameter, an input on the left and an output on the right; the wire attaches at the outline pixel of the edge. A parameter
+> of a kind Solder does not pass yet keeps its row and has no terminals. The node's menu is Visible Items ▸ (Label), Help, Examples,
+> Description and Tip..., a separator, Libraries & Executables Palette ▸, Replace ▸, a separator, Name Format ▸ (No Names ticked,
+> Names), Configure..., Create C File, a separator, Remove and Rewire, Create ▸ (All Controls and Indicators, All Constants), a
+> separator, Properties. Done: Configure..., Name Format's tick and Create ▸ All...; the rest is greyed with its reason. Tested in
+> `test/editor/call-library-nodes.test.mjs`.
+
+> **Rule 128 — The configuration dialog.** A double click on the node and Configure... open "Call Library Function" (677 × 458),
+> modal, with the tabs Function, Parameters, Callbacks and Error Checking, the read-only "Function prototype" (live, from the
+> draft: `void  funcName(void );` for a new node), the link "Consider using a wizard instead..." greyed (`clfn-asistente`) and OK
+> (the default button), Cancel and Help (greyed, `ayuda-contextual`). Function: the library name or path with a browse button (the
+> system's file dialog; shared libraries, WebAssembly modules and every file), Specify path on diagram, the function name (a box
+> with a drop-down greyed, `clfn-lista-de-funciones`), Thread (Run in UI thread, the default, or any thread) and Calling convention
+> (stdcall (WINAPI) or C, the default). Parameters: the list starting with `return type` and the buttons + (adds `arg<n>`,
+> Numeric, Signed 32-bit Integer, by value), X, up and down (the return row has no X and does not move), and Name, Type, Constant
+> and the fields of the type, each ring listing what LabVIEW lists in its order (return Type: Void, Numeric, String; parameter
+> Type: the nine kinds; Data type: twelve; Pass; Array format; String format; Minimum size: <None> and the other parameters, kept
+> by name; Data format), Dimensions a spin box. A kind that Solder does not pass yet is selectable and the dialog says the node
+> cannot run. Callbacks: Reserve, Unreserve and Abort greyed (`clfn-callbacks`) and the prototype `MgErr Proc(InstanceDataPtr
+> *instanceState);`. Error Checking: Maximum, Default (selected) and Disabled with their descriptions, written anew. **Unverified,
+> decided here:** the Callbacks tab's positions, whether the library box greys with Specify path on diagram, Waveform's fresh
+> default (Double, one dimension), the greatest number of dimensions (8), the ActiveX items (a greyed ring, `clfn-activex`) and the
+> fields' keyboard behaviour (a typed key goes at the end of the field that was clicked). Tested in
+> `test/editor/call-library-nodes.test.mjs`.
+
+> **Rule 129 — OK, Cancel and the wires.** The dialog works on a draft: nothing reaches the OVI until OK, and Cancel, the close box
+> and Escape (which first close an open ring) leave the node and its wires as they were. OK writes the whole configuration as
+> **one** step of undo named "Change Attribute", as an Express OVI's does, and an OK that changes nothing is no step. The wires
+> follow their parameters through additions, moves and deletions (a parameter's wires go with it; the path wires go when Specify
+> path on diagram is unticked). Enter accepts. Tested in `test/editor/call-library-nodes.test.mjs`.

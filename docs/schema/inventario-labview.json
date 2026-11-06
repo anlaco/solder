@@ -466,8 +466,8 @@
       "desc": "property nodes, which read and write the attributes of a reference, among them the VISA Property Node"
     },
     "contenido-no-capturado": {
-      "desc": "the contents of a palette that has not been opened in LabVIEW yet (Instrument Drivers and GPIB)",
-      "ref": "labview-captures/reports/2026-10-25-visa-palettes.md"
+      "desc": "the contents of a palette that has not been opened in LabVIEW yet (Instrument Drivers, GPIB and the folders of Functions ▸ Connectivity other than Libraries & Executables)",
+      "ref": "labview-captures/reports/2026-10-25-visa-palettes.md; labview-captures/reports/2026-11-06-connectivity-palette.md"
     },
     "modo-de-e-s-sincrono": {
       "desc": "the Synchronous I/O Mode submenu of the VISA functions, which says how a call waits for the instrument: its rows were not captured, and Solder's VISA runs every call as a wait of its own I/O process",
@@ -557,6 +557,37 @@
     "plantillas-de-ovi": {
       "desc": "OVI templates and the other kinds of file of the New dialog's tree: From Template and Other Files",
       "ref": "design/05-decisions.md DT-074 §5"
+    },
+    "ejecutar-procesos": {
+      "desc": "running a command line of the operating system and collecting what it writes (System Exec.vi)",
+      "ref": "labview-captures/reports/2026-11-06-connectivity-palette.md"
+    },
+    "paleta-bibliotecas-en-menu": {
+      "desc": "the Libraries & Executables Palette submenu of the Call Library Function Node's right-click menu, which opens the two functions of that palette"
+    },
+    "clfn-lista-de-funciones": {
+      "desc": "listing the functions a library exports, which the Function name drop-down of the Call Library Function Node's dialog shows",
+      "ref": "design/05-decisions.md DT-080"
+    },
+    "clfn-asistente": {
+      "desc": "the wizard that makes OVIs from a C header, which the link \"Consider using a wizard instead...\" of the Call Library Function Node's dialog opens",
+      "ref": "design/05-decisions.md DT-080 §6"
+    },
+    "clfn-callbacks": {
+      "desc": "the Reserve, Unreserve and Abort callbacks of the Call Library Function Node, which join Solder's Abort",
+      "ref": "design/05-decisions.md DT-080 §5"
+    },
+    "clfn-activex": {
+      "desc": "the ActiveX data types of a parameter of the Call Library Function Node, whose items were not measured",
+      "ref": "labview-captures/reports/2026-11-06-clfn.md"
+    },
+    "clfn-crear-archivo-c": {
+      "desc": "Create C File of the Call Library Function Node, which writes the C source of the function's prototype (not measured)",
+      "ref": "labview-captures/reports/2026-11-06-clfn.md"
+    },
+    "clfn-formato-de-nombres": {
+      "desc": "the Names format of the Call Library Function Node's rows, whose effect was not measured",
+      "ref": "labview-captures/reports/2026-11-06-clfn.md"
     }
   },
   "entradas": [
@@ -7562,10 +7593,113 @@
     {
       "id": "palette.functions.connectivity",
       "etiqueta": "Connectivity",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::Functions ▸ Connectivity unfolds in four columns with the measured cells and labels",
+      "captura": "connectivity-palette/p2d.png"
+    },
+    {
+      "id": "palette.functions.connectivity.libraries-executables",
+      "etiqueta": "Libraries & Executables",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::Libraries & Executables opens with the Call Library Function Node placeable and System Exec.vi greyed",
+      "captura": "connectivity-palette/p2d.png"
+    },
+    {
+      "id": "palette.functions.connectivity.libraries-executables.call-library-function-node",
+      "etiqueta": "Call Library Function Node",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::Libraries & Executables opens with the Call Library Function Node placeable and System Exec.vi greyed",
+      "captura": "connectivity-palette/le.png",
+      "bloque": "call-library"
+    },
+    {
+      "id": "palette.functions.connectivity.libraries-executables.system-exec-vi",
+      "etiqueta": "System Exec.vi",
       "estado": "todo",
-      "labview": "Connecting to other environments and technologies, such as .NET, ActiveX or external libraries.",
-      "necesita": "bloques",
-      "captura": "paletas/functions-programming.png"
+      "labview": "Runs a command line of the operating system and gives back what it wrote, its standard output and its standard error.",
+      "necesita": "ejecutar-procesos",
+      "captura": "connectivity-palette/le.png"
+    },
+    {
+      "id": "palette.functions.connectivity.source-control",
+      "etiqueta": "Source Control",
+      "estado": "todo",
+      "labview": "Folder of LabVIEW's source control functions. Its contents were not opened in LabVIEW.",
+      "necesita": "contenido-no-capturado",
+      "captura": "connectivity-palette/p2d.png"
+    },
+    {
+      "id": "palette.functions.connectivity.web-services",
+      "etiqueta": "Web Services",
+      "estado": "todo",
+      "labview": "Folder of the functions of web services. Its contents were not opened in LabVIEW.",
+      "necesita": "contenido-no-capturado",
+      "captura": "connectivity-palette/p2d.png"
+    },
+    {
+      "id": "palette.functions.connectivity.dot-net",
+      "etiqueta": ".NET",
+      "estado": "todo",
+      "labview": "Folder of the functions that call .NET assemblies. Its contents were not opened in LabVIEW.",
+      "necesita": "contenido-no-capturado",
+      "captura": "connectivity-palette/p2d.png"
+    },
+    {
+      "id": "palette.functions.connectivity.input-device-control",
+      "etiqueta": "Input Device Control",
+      "estado": "todo",
+      "labview": "Folder of the functions that read joysticks and other input devices. Its contents were not opened in LabVIEW.",
+      "necesita": "contenido-no-capturado",
+      "captura": "connectivity-palette/p2d.png"
+    },
+    {
+      "id": "palette.functions.connectivity.activex",
+      "etiqueta": "ActiveX",
+      "estado": "todo",
+      "labview": "Folder of the functions that call ActiveX objects. Its contents were not opened in LabVIEW.",
+      "necesita": "contenido-no-capturado",
+      "captura": "connectivity-palette/p2d.png"
+    },
+    {
+      "id": "palette.functions.connectivity.windows-registry-access-ovis",
+      "etiqueta": "Windows Registry Access OVIs",
+      "estado": "todo",
+      "labview": "Folder of the functions that read and write the Windows registry. Its contents were not opened in LabVIEW.",
+      "necesita": "contenido-no-capturado",
+      "captura": "connectivity-palette/p2d.png",
+      "muestra": "Windows Registry Acces…"
+    },
+    {
+      "id": "palette.functions.connectivity.python",
+      "etiqueta": "Python",
+      "estado": "todo",
+      "labview": "Folder of the functions that run Python code. Its contents were not opened in LabVIEW.",
+      "necesita": "contenido-no-capturado",
+      "captura": "connectivity-palette/p2d.png"
+    },
+    {
+      "id": "palette.functions.connectivity.matlab",
+      "etiqueta": "MATLAB(R)",
+      "estado": "todo",
+      "labview": "Folder of the functions that run MATLAB scripts. Its contents were not opened in LabVIEW.",
+      "necesita": "contenido-no-capturado",
+      "captura": "connectivity-palette/p2d.png"
+    },
+    {
+      "id": "palette.functions.connectivity.database",
+      "etiqueta": "Database",
+      "estado": "todo",
+      "labview": "Folder of the functions that talk to databases. Its contents were not opened in LabVIEW.",
+      "necesita": "contenido-no-capturado",
+      "captura": "connectivity-palette/p2d.png"
+    },
+    {
+      "id": "palette.functions.connectivity.datafinder",
+      "etiqueta": "DataFinder",
+      "estado": "todo",
+      "labview": "Folder of the functions that search measurement files. Its contents were not opened in LabVIEW.",
+      "necesita": "contenido-no-capturado",
+      "captura": "connectivity-palette/p2d.png"
     },
     {
       "id": "palette.functions.express",
@@ -26698,6 +26832,224 @@
       "labview": "Opens the help of this dialog.",
       "necesita": "ayuda-contextual",
       "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "context.call-library",
+      "etiqueta": "Call Library Function Node",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::the right-click menu of the node is the measured one",
+      "captura": "clfn/g2.png"
+    },
+    {
+      "id": "context.call-library.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Shows or hides the node's label.",
+      "necesita": "etiquetas",
+      "captura": "clfn/g2.png"
+    },
+    {
+      "id": "context.call-library.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the node's label.",
+      "necesita": "etiquetas",
+      "captura": "clfn/g2.png"
+    },
+    {
+      "id": "context.call-library.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the node's help.",
+      "necesita": "ayuda-contextual",
+      "captura": "clfn/g2.png"
+    },
+    {
+      "id": "context.call-library.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Looks for examples that use the node.",
+      "necesita": "ejemplos",
+      "captura": "clfn/g2.png"
+    },
+    {
+      "id": "context.call-library.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the node's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "clfn/g2.png"
+    },
+    {
+      "id": "context.call-library.libraries-executables-palette",
+      "etiqueta": "Libraries & Executables Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the two functions of the Libraries & Executables palette.",
+      "necesita": "paleta-bibliotecas-en-menu",
+      "captura": "clfn/g2.png",
+      "separado": true
+    },
+    {
+      "id": "context.call-library.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the node with another function, keeping the wires that fit.",
+      "necesita": "menus-contextuales",
+      "captura": "clfn/g2.png"
+    },
+    {
+      "id": "context.call-library.name-format",
+      "etiqueta": "Name Format",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::the right-click menu of the node is the measured one",
+      "captura": "clfn/g2.png",
+      "separado": true
+    },
+    {
+      "id": "context.call-library.name-format.no-names",
+      "etiqueta": "No Names",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::the right-click menu of the node is the measured one",
+      "captura": "clfn/g2.png"
+    },
+    {
+      "id": "context.call-library.name-format.names",
+      "etiqueta": "Names",
+      "estado": "todo",
+      "labview": "Shows the names of the parameters on the node's rows (not measured).",
+      "necesita": "clfn-formato-de-nombres",
+      "captura": "clfn/g2.png"
+    },
+    {
+      "id": "context.call-library.configure",
+      "etiqueta": "Configure...",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::Configure... and a double click open the dialog with the node's configuration",
+      "captura": "clfn/g2.png"
+    },
+    {
+      "id": "context.call-library.create-c-file",
+      "etiqueta": "Create C File",
+      "estado": "todo",
+      "labview": "Writes a C source file with the function's prototype (not measured).",
+      "necesita": "clfn-crear-archivo-c",
+      "captura": "clfn/g2.png"
+    },
+    {
+      "id": "context.call-library.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the node and joins the wires that went in to the ones that came out.",
+      "necesita": "menus-contextuales",
+      "captura": "clfn/g2.png",
+      "separado": true
+    },
+    {
+      "id": "context.call-library.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::the right-click menu of the node is the measured one",
+      "captura": "clfn/g2.png"
+    },
+    {
+      "id": "context.call-library.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::the right-click menu of the node is the measured one",
+      "captura": "clfn/g2.png"
+    },
+    {
+      "id": "context.call-library.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::the right-click menu of the node is the measured one",
+      "captura": "clfn/g2.png"
+    },
+    {
+      "id": "context.call-library.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the node's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "clfn/g2.png",
+      "separado": true
+    },
+    {
+      "id": "dialog.call-library",
+      "etiqueta": "Call Library Function",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::the dialog opens with the measured tabs, rings and defaults",
+      "captura": "clfn/e1.png"
+    },
+    {
+      "id": "dialog.call-library.ok",
+      "etiqueta": "OK",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::OK applies the whole configuration as one undo step and the wires follow their parameters",
+      "captura": "clfn/e1.png"
+    },
+    {
+      "id": "dialog.call-library.cancel",
+      "etiqueta": "Cancel",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::Cancel and Escape leave the node unchanged",
+      "captura": "clfn/e1.png"
+    },
+    {
+      "id": "dialog.call-library.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of the Call Library Function dialog.",
+      "necesita": "ayuda-contextual",
+      "captura": "clfn/e1.png"
+    },
+    {
+      "id": "dialog.call-library.function-name-list",
+      "etiqueta": "Function name list",
+      "estado": "todo",
+      "labview": "Lists the functions the library exports, to pick one.",
+      "necesita": "clfn-lista-de-funciones",
+      "captura": "clfn/e1.png"
+    },
+    {
+      "id": "dialog.call-library.wizard",
+      "etiqueta": "Consider using a wizard instead...",
+      "estado": "todo",
+      "labview": "Opens a wizard that makes OVIs from a C header, instead of configuring the node by hand.",
+      "necesita": "clfn-asistente",
+      "captura": "clfn/e1.png"
+    },
+    {
+      "id": "dialog.call-library.callback-reserve",
+      "etiqueta": "Reserve",
+      "estado": "todo",
+      "labview": "Names the procedure the library offers to reserve its resources before a run.",
+      "necesita": "clfn-callbacks",
+      "captura": "clfn/e3.png"
+    },
+    {
+      "id": "dialog.call-library.callback-unreserve",
+      "etiqueta": "Unreserve",
+      "estado": "todo",
+      "labview": "Names the procedure the library offers to release its resources after a run.",
+      "necesita": "clfn-callbacks",
+      "captura": "clfn/e3.png"
+    },
+    {
+      "id": "dialog.call-library.callback-abort",
+      "etiqueta": "Abort",
+      "estado": "todo",
+      "labview": "Names the procedure the library offers to stop a call when the OVI is aborted.",
+      "necesita": "clfn-callbacks",
+      "captura": "clfn/e3.png"
+    },
+    {
+      "id": "dialog.call-library.activex-data-type",
+      "etiqueta": "ActiveX data type",
+      "estado": "todo",
+      "labview": "Chooses the ActiveX type of a parameter (not measured).",
+      "necesita": "clfn-activex",
+      "captura": "clfn/e2.png"
     }
   ]
 }

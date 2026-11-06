@@ -16,6 +16,7 @@ import { isSubVI, portsWithAnchors } from "./subvi-nodes.mjs";
 import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
 import * as VN from "./visa-nodes.mjs";
+import * as CL from "./call-library-nodes.mjs";
 import * as FileNodes from "./file-nodes.mjs";
 import * as ExpressNodes from "./express-nodes.mjs";
 import * as SpreadsheetNodes from "./spreadsheet-nodes.mjs";
@@ -540,6 +541,7 @@ export function caja(n, ctx, edicion) {
   if (ExpressNodes.isExpressNode(n, ctx.cat)) return ExpressNodes.expressBox(n, ctx.cat);
   if (UN.isUnbundleByName(n)) return { x: n.x, y: n.y, ...UN.unbundleSize(n, ctx.cat, ctx.medir) };
   if (PN.isPropertyNode(n)) return { x: n.x, y: n.y, ...PN.propertyNodeSize(n, ctx.cat, ctx.medir) };
+  if (CL.isCallLibraryNode(n)) return { x: n.x, y: n.y, ...CL.callLibrarySize(n) };
   if (CR.isControlReference(n)) return { x: n.x, y: n.y, ...CR.referenceSize(n, ctx.medir) };
   if (FileNodes.isFileNode(n)) return { x: n.x, y: n.y, ...FileNodes.fileNodeSize() };
   if (SpreadsheetNodes.isSpreadsheetNode(n)) return { x: n.x, y: n.y, ...SpreadsheetNodes.spreadsheetNodeSize() };
@@ -644,6 +646,7 @@ export function terminales(n, ctx, edicion) {
   if (UN.isUnbundleByName(n)) return UN.unbundleTerminals(n, k, ctx.cat);
   if (VN.isVisaNode(n)) return VN.visaTerminals(n, k, ctx.cat);
   if (PN.isPropertyNode(n)) return PN.propertyNodeTerminals(n, k, ctx.cat);
+  if (CL.isCallLibraryNode(n)) return CL.callLibraryTerminals(n, k);
   if (CR.isControlReference(n)) return CR.referenceTerminals(n, k);
   if (FileNodes.isFileNode(n)) return FileNodes.fileNodeTerminals(n, k, ctx.cat);
   if (SpreadsheetNodes.isSpreadsheetNode(n)) return SpreadsheetNodes.spreadsheetNodeTerminals(n, k, ctx.cat);
@@ -1297,6 +1300,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
   } else if (PN.isPropertyNode(n)) {
     const graph = d.completo ?? d.g;
     cuerpo = `<div class="glifo-formato">${PN.propertyNodeBody(graph, ctx.cat, n, k)}</div>${PN.linkedLabel(graph, n)}${PN.rowZones(n, k)}`;
+  } else if (CL.isCallLibraryNode(n)) {
+    cuerpo = `<div class="glifo-formato">${CL.callLibraryBody(n, k)}</div>`;
   } else if (CR.isControlReference(n)) {
     const graph = d.completo ?? d.g;
     cuerpo = `<div class="glifo-formato">${CR.referenceBody(graph, ctx.cat, n, k)}</div>${PN.labelAbove(graph, n.config?.link)}`;
@@ -1712,6 +1717,8 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   if (VN.isVisaNode(n)) return puerto === VN.RESOURCE_PORT ? VN.RESOURCE_TERMINAL_MENU : VN.BODY_MENU;
   // The Property Node: one menu for its header and its rows, the rows of a row shown only on a row (DT-072 §7).
   if (PN.isPropertyNode(n)) return PN.menuRoot(n);
+  // The Call Library Function Node has one menu for the whole node (reports/2026-11-06-clfn.md "Right-click").
+  if (CL.isCallLibraryNode(n)) return CL.MENU_ROOT;
   // The control reference constant (reports/2026-11-03-control-references.md Q3).
   if (CR.isControlReference(n)) return "context.control-reference";
   // Write to and Read from Text File have a menu of their own, with Convert EOL and Read Lines (file-io-behavior.md §2, §3); the other file functions' menus were not read.
@@ -1759,7 +1766,7 @@ const MENU_COMPARISON = {
 };
 
 /** Filas que en LabVIEW abren un submenú aunque su contenido no esté declarado. Es disposición. */
-const CON_SUBMENU = ["visible-items", "palette", "numeric-palette", "boolean-palette", "array-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "select-item", "visa-palette", "property-for-class", "method-for-class", "application-control-palette", "file-i-o-palette", "synchronous-io-mode", "property-for-instr-class", "method-for-instr-class", "type-palette", "cluster-type-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
+const CON_SUBMENU = ["visible-items", "palette", "numeric-palette", "boolean-palette", "array-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "select-item", "visa-palette", "libraries-executables-palette", "property-for-class", "method-for-class", "application-control-palette", "file-i-o-palette", "synchronous-io-mode", "property-for-instr-class", "method-for-instr-class", "type-palette", "cluster-type-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
   // The graphs (labview-captures/graphs/): rows whose submenus are not declared yet.
   "marker-spacing", "style", "property-node", "invoke-node", "run-time-shortcut-menu", "enabled-state", "update-mode", "export", "x-scale", "y-scale", "common-plots", "color", "line-style", "line-width", "bar-plots", "fill-base-line", "interpolation", "point-style",
   // The Getting Started window's menus (labview-captures/getting-started/).

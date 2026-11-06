@@ -792,10 +792,32 @@ rules 115–119.
   the rows (the editor's: "Value" is 30 px there, so 38 px with the 4 px margins, as compared under Xvfb on 2026-11-03; "Caption.Text"
   at 72 px is not checked in the running editor).
 
+## 21. The Call Library Function Node (2026-11-06, DT-080)
+
+Measured at 1:1 in LabVIEW 2026 Q3 (`labview-captures/reports/2026-11-06-clfn.md`, `2026-11-06-clfn-run.md`; crops in
+`labview-captures/clfn/` and `connectivity-palette/`). The books glyph, the icons and the dialog are drawn anew; only sizes, colours and
+the order of the parts are taken. Code: `editor/src/block-diagram/call-library-nodes.mjs`, `call-library-dialog.mjs`. Tests:
+`test/editor/call-library-nodes.test.mjs`. The rules are the editor's 126–129.
+
+- **Frame and header:** a 1 px frame in the nodes' border colour; an 18 px header, 40 px wide, in two bands of 9 px: the path pins' (only
+  with Specify path on diagram) and the error pins' (`?!` at both ends, always). The books glyph is drawn in the middle of the header.
+  **The header's colour is the thread:** orange `#FFAF00` for Run in UI thread, pale yellow `#FFFFCC` for Run in any thread
+  (`--call-library-ui-thread-fill`, `--call-library-any-thread-fill`; the Solder theme keeps the orange and makes the other white).
+- **Rows:** 8 px each, the return value's first, then one per parameter, each of two cells with a 2 px black divider; a cell is white
+  with the glyph of its type (I32 blue, DBL orange, `[]` the element's colour, `abc` pink), and the cells of a void return are grey
+  (`#CCCCCC`, `--call-library-void-cell-fill`). Empty node 40 × 27; Mean (DBL) 40 × 51.
+- **Terminals:** 13 × 9 pins at the edges: path y 0, error y 9, rows from y 18; the wire at the middle of the band or the row.
+  **Unverified:** the wire's exact spot, the width of the hot zone, the glyph of a type Solder does not pass (`?`) and of Adapt to
+  Type (`*`).
+- **Dialog:** 677 × 458 with its title bar; the parts are placed from `clfn/e1.png`, `e2.png` and `e4.png`. The Callbacks tab and the
+  fields under the third of the Parameters tab are placed by analogy (unmeasured).
+- **Palette icon:** the node itself, drawn anew; System Exec.vi's, a console window. The Connectivity folders carry a short word.
+
 ## History
 
 | Date       | Change |
 |------------|--------|
+| 2026-11-06 | §21: the Call Library Function Node: frame, header by thread, rows, cells, terminals and dialog. |
 | 2026-11-03 | §20: the control refnum on the panel and its terminal. |
 | 2026-11-03 | §20: the control reference constant, its wire, and the explicit node of a control's class. |
 | 2026-10-30 | §20: the Property Node: frame, headers, rows, colours and terminals. |

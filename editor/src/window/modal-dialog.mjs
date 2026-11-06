@@ -12,6 +12,7 @@
 // dialog and then accepts it (a double click that picks a row).
 
 import * as CH from "../front-panel/chart-history-dialog.mjs";
+import * as CLD from "../block-diagram/call-library-dialog.mjs";
 import * as EI from "../block-diagram/edit-items-dialog.mjs";
 import * as XD from "../block-diagram/express-dialog.mjs";
 import * as SI from "../block-diagram/select-item-dialog.mjs";
@@ -26,6 +27,7 @@ export const DIALOGS = [
   { field: "itemsDialog", side: "panel", mod: EI },
   { field: "graphDialog", side: "panel", mod: CH },
   { field: "expressDialog", side: "diagram", mod: XD },
+  { field: "callLibraryDialog", side: "diagram", mod: CLD },
   { field: "selectItemDialog", side: "diagram", mod: SI },
   { field: "selectItemDialog", side: "panel", mod: SI },
 ];

@@ -13,6 +13,7 @@
 
 import { connectorPattern, connectorTerminals } from "./connector.mjs";
 import { LINKED_CONTROL_TYPE, isImplicit, loadProperties } from "./property-node.mjs";
+import { callLibraryPorts } from "./call-library.mjs";
 import { DIFFERENT_TYPES_MESSAGE, automaticChoice, isAutomatic, noInstanceFitsDetail, renamedByCell, selectedInstance } from "./polymorphic.mjs";
 import { DBL, ERROR, FILE_REFNUM, NUMERICOS, PATH, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, carriesUndefinedArray, isUndefinedArray, nombre, esRefnum, strictRefnum, withoutOneDimension } from "./types.mjs";
 
@@ -37,6 +38,8 @@ export function cargarCatalogo(datos, propertiesData) {
     const lista = (dir) => {
       // The Property Node: its reference, error and one terminal per row (DT-072).
       if (b[dir] === "dynamic:property-rows") return (properties?.ports(nodo) ?? { in: [{ name: "error-in", label: "error in (no error)", type: "error", default: 0 }], out: [{ name: "error-out", label: "error out", type: "error" }] })[dir].map((p) => ({ ...p, dir }));
+      // The Call Library Function Node: path, error, the return value and a row per parameter (DT-080).
+      if (b[dir] === "dynamic:call-library") return callLibraryPorts(nodo)[dir].map((p) => ({ ...p, dir }));
       // Bundle y Unbundle: un puerto por campo del cluster de `config.type`.
       if (b[dir] === "dynamic:cluster-fields") {
         const campos = nodo.config?.type?.cluster ?? [];

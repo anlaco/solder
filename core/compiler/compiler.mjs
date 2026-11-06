@@ -22,6 +22,7 @@
 
 import { connectorPorts, ejecutable, linkedControlType, nodesWithUndefinedInput, orden, requerido, tipos, undefinedArrayNodes } from "../model/graph.mjs";
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
+import { callLibraryConfig, whyCallLibraryCannotRun } from "../model/call-library.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
 import { EMPTY_PATH, NOT_A_PATH, PATH_KIND, encodePath } from "../model/paths.mjs";
 import { ERROR, FILE_REFNUM, NUMERICOS, PATH, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esEntero, esEnum, esNumerico, esRefnum, flattenArrayValue, inMemory, limites, representacion } from "../model/types.mjs";
@@ -134,6 +135,10 @@ const IMPORTACIONES = [
   // node), the error in, the reference out's and the error out's places and the call chain's index. The host runs
   // the rows top to bottom and writes what they read.
   { modulo: "io", nombre: "property_node", params: Array(7).fill("i32"), results: ["i32"] },
+  // The Call Library Function Node (DT-080): its index in `callLibraries`, its records (the return value's, then one
+  // per parameter), the path in (0 without Specify path on diagram), the error in, the error out's place and the
+  // call chain's index. The host calls the library and writes what it gave back.
+  { modulo: "io", nombre: "call_library", params: Array(6).fill("i32"), results: ["i32"] },
   // The path functions (DT-067): the host reads each path's block, applies the rules of the system it runs
   // on (core/model/paths.mjs) and writes the result into its cell. The first parameters are the output cells.
   { modulo: "pth", nombre: "build_path", params: ["i32", "i32", "i32", "i32"], results: [] },
@@ -163,10 +168,10 @@ const VISA_FUNCTIONS = new Set(["visa-open", "visa-write", "visa-read", "visa-cl
 /** The file functions (DT-067): each waits for the disk, served by the same I/O as VISA. */
 const FILE_FUNCTIONS = new Set(["open-create-replace-file", "close-file", "write-to-text-file", "read-from-text-file", "get-file-size", "delete", "write-delimited-spreadsheet-vi", "read-delimited-spreadsheet-vi", "file-dialog"]);
 /** The nodes that take time: each runs in its own clump and yields while it waits. */
-export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "time-delay", "simple-error-handler", "property-node", ...VISA_FUNCTIONS, ...FILE_FUNCTIONS]);
+export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "time-delay", "simple-error-handler", "property-node", "call-library", ...VISA_FUNCTIONS, ...FILE_FUNCTIONS]);
 const idImport = (nombre) => IMPORTACIONES.findIndex((i) => i.nombre === nombre);
 /** The imports that may park the clump that calls them (DT-063 §8): the dialogs, the debugger, VISA and files, which wait for the outside. */
-const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error", "visa_open", "visa_write", "visa_read", "visa_close", "file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete", "file_write_spreadsheet", "file_read_spreadsheet", "file_dialog", "property_node"].map(idImport);
+const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error", "visa_open", "visa_write", "visa_read", "visa_close", "file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete", "file_write_spreadsheet", "file_read_spreadsheet", "file_dialog", "property_node", "call_library"].map(idImport);
 
 const ins = (op, arg) => (arg === undefined ? { op } : { op, arg });
 
@@ -701,6 +706,70 @@ function propertyNode(e) {
   return [...code, ...outputs.flatMap(leaveOutput)];
 }
 
+// The Call Library Function Node (DT-080): an external wait whose host calls the library (core/runtime/call-library.mjs).
+// Record 0 is the return value's and record n the n-th parameter's, laid out as a Property Node's rows: a number in
+// the value word, written before the call and read after it; a string's or an array's handle in the value word and
+// the cell its output goes to in the bits word.
+
+/** A Call Library Function Node: its return value, each parameter's output, the path out and the error out. */
+function callLibrary(e) {
+  const config = callLibraryConfig(e.nodo.config);
+  const why = whyCallLibraryCannotRun(config);
+  if (why) throw new Error(why);
+  const { in: inputs, out: outputs } = e.cat.puertos(e.nodo);
+  const records = e.bufer((config.parameters.length + 1) * FORMAT_ROW_BYTES);
+  const recordAt = (slot) => records + slot * FORMAT_ROW_BYTES;
+  const code = [];
+  const outputCell = (record) => [k32(record), k32(e.celda()), ins("i32.store", ROW_BITS_OFFSET)];
+  const hostParameters = config.parameters.map((parameter, index) => {
+    const input = inputs.findIndex((port) => port.name === `arg-${index}-in`);
+    const type = e.tIn(input);
+    const record = recordAt(index + 1);
+    const minimumSize = parameter["minimum-size"] ? config.parameters.findIndex((other) => other.name === parameter["minimum-size"]) : -1;
+    const described = { type: parameter.type, dataType: parameter["data-type"] ?? "i32", pass: parameter.pass ?? "value", minimumSize, tipo: type };
+    if (parameter.type === "string") {
+      code.push(k32(record), ...e.entrada(input), ins("i32.store", ROW_VALUE_OFFSET), ...outputCell(record));
+      return described;
+    }
+    if (esArray(type)) {
+      code.push(k32(record), ...e.entrada(input), ins("i32.store", ROW_VALUE_OFFSET), ...outputCell(record));
+      return { ...described, array: datosDePanel(type) };
+    }
+    code.push(...writeRow(type, record, e.entrada(input)));
+    return described;
+  });
+  const returnValue = config["return-type"];
+  const returnKind = returnValue.type === "string" ? "cstring" : returnValue.type === "numeric" ? returnValue["data-type"] ?? "i32" : "void";
+  if (returnKind === "cstring") code.push(...outputCell(recordAt(0)));
+  const index = e.registerCallLibrary({
+    library: config.library,
+    specifyPathOnDiagram: config["specify-path-on-diagram"],
+    function: config.function,
+    uiThread: config.thread === "ui",
+    returnKind,
+    parameters: hostParameters,
+  });
+  const pathIn = inputs.findIndex((port) => port.name === "path-in");
+  const errorIn = inputs.findIndex((port) => port.name === "error-in");
+  const errorOut = e.bufer(disposicion(ERROR).tam);
+  const path = pathIn >= 0 ? e.temporal("i32") : null;
+  code.push(
+    k32(index), k32(records), ...(path === null ? [k32(0)] : [...e.entrada(pathIn), ins("local.tee", path)]), ...e.entrada(errorIn), k32(errorOut), k32(e.chainIndex),
+    ins("call", idImport("call_library")), ins("drop"),
+  );
+  const leaveOutput = (port) => {
+    if (port.name === "error-out") return [k32(errorOut)];
+    if (port.name === "path-out") return [ins("local.get", path)];
+    if (port.name === "return") return returnKind === "cstring" ? [k32(recordAt(0)), ins("i32.load", ROW_BITS_OFFSET)] : readRow(port.type, recordAt(0));
+    const parameterIndex = Number(port.name.split("-")[1]);
+    const parameter = hostParameters[parameterIndex];
+    const record = recordAt(parameterIndex + 1);
+    if (parameter.type === "string" || parameter.array) return [k32(record), ins("i32.load", ROW_BITS_OFFSET)];
+    return readRow(parameter.tipo, record);
+  };
+  return [...code, ...outputs.flatMap(leaveOutput)];
+}
+
 /** Number To Decimal/Hexadecimal/Octal String: número (f64) y width. */
 function numeroACadena(e, nombre) {
   const celda = e.celda();
@@ -893,6 +962,7 @@ const BLOQUES = {
   "visa-read": (e) => visaFunction(e, "visa_read", [0, 1], { resourceOut: true, buffer: true, count: true }),
   "visa-close": (e) => visaFunction(e, "visa_close", [0], {}),
   "property-node": (e) => propertyNode(e),
+  "call-library": (e) => callLibrary(e),
   // A control reference is the refnum the host knows its control by (DT-072 §2).
   "control-reference": (e) => [k32(e.registerControlReference(e.nodo.config?.link))],
   // The file functions (DT-067 §7), by the catalog's index. A wired prompt is the title of the dialog of an unwired path.
@@ -2174,6 +2244,7 @@ function newModule() {
     debugNodes: [], // DT-047: the nodes that report to the debugger, by index: { vi, nodo, outputs }
     instances: new Map(), // instance key → compiled subVI instance
     propertyNodes: [], // DT-072: what the host needs to run each Property Node, by index
+    callLibraries: [], // DT-080: what the host needs to make each Call Library Function Node's call, by index
     controlReferences: [], // DT-072 §2: the panel control each control reference names; a refnum is its index + 1
     // The VIs an error source names (spec/04 Rule 21k): by chain index, the VI's name and the cell
     // where each call to it writes the chain index of its caller; the top-level VI has no cell.
@@ -2414,6 +2485,10 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
   function registerPropertyNode(entry) {
     return module.propertyNodes.push({ ...entry, link: entry.link === null ? null : linkPanelObject(entry.link) }) - 1;
   }
+  /** Records what the host needs to make a Call Library Function Node's call and returns its index. */
+  function registerCallLibrary(entry) {
+    return module.callLibraries.push(entry) - 1;
+  }
   /** Records the panel control a control reference names and returns the reference's refnum, never 0 (Not A Refnum). */
   function registerControlReference(linkName) {
     return module.controlReferences.push(linkPanelObject(linkName));
@@ -2551,10 +2626,10 @@ function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
     }
     // VISA and the file functions are served by the same I/O (the editor's I/O process).
     // VISA's Property Node too (DT-072 §5).
-    if (VISA_FUNCTIONS.has(n.tipo) || FILE_FUNCTIONS.has(n.tipo) || (n.tipo === "property-node" && n.config?.class === "Instr")) module.usesInstrumentIo = true;
+    if (VISA_FUNCTIONS.has(n.tipo) || FILE_FUNCTIONS.has(n.tipo) || (n.tipo === "property-node" && n.config?.class === "Instr") || n.tipo === "call-library") module.usesInstrumentIo = true;
     const emitir = n.tipo === "subvi" ? (e) => callSubVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subVIControl(e, asSubVI.get(n.name)) : BLOQUES[n.tipo];
     if (!emitir) return errores.push({ nodo: id, motivo: `The compiler cannot emit "${nombre}" (${n.tipo}) yet.` });
-    const e = { nodo: n, cat, tIn, tOut, logicalTIn, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex, registerPropertyNode, registerControlReference };
+    const e = { nodo: n, cat, tIn, tOut, logicalTIn, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex, registerPropertyNode, registerCallLibrary, registerControlReference };
     if (!asSubVI && PANEL_CONTROLS.includes(n.tipo)) {
       e.controlRecord = panelRecordOf(id, tOut(0)).record;
       controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), record: e.controlRecord, ...panelDataOf(tOut(0), logicalTOut(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTOut(0) === PATH && { path: true }) });
@@ -3084,5 +3159,5 @@ function assemble(module, vi) {
     ],
   };
   const plan = (lista) => lista.map((k) => ({ deps: [...k.deps], largo: k.largo }));
-  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), disposicionVisa: disposicionCompleta(VISA_RESOURCE_LAYOUT), usesInstrumentIo: !!module.usesInstrumentIo, debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, propertyNodes: module.propertyNodes, controlReferences: module.controlReferences, frames };
+  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), disposicionVisa: disposicionCompleta(VISA_RESOURCE_LAYOUT), usesInstrumentIo: !!module.usesInstrumentIo, debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, propertyNodes: module.propertyNodes, callLibraries: module.callLibraries, controlReferences: module.controlReferences, frames };
 }

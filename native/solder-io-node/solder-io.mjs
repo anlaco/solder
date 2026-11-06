@@ -9,7 +9,8 @@
 // fileRead(refnum, count, convertEol) → { text, error }, fileReadLine(refnum, convertEol) → { text, error },
 // fileReadLines(refnum, count) → { lines, error }, fileSize(refnum) → { size, error }, fileMoveToEnd(refnum) → error,
 // fileDelete(name, entireHierarchy) → error, and, at once,
-// fileName(refnum).
+// fileName(refnum). callLibrary({ library, function, returnKind, arguments: [{ kind, bytes }], uiThread }) →
+// { status, returned, arguments } calls a native library for the Call Library Function Node (DT-080).
 
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
@@ -34,6 +35,12 @@ export function loadSolderIo() {
     write: (session, bytes) => addon.write(session, asBuffer(bytes)),
     fileWrite: (refnum, bytes, convertEol) => addon.fileWrite(refnum, asBuffer(bytes), convertEol),
     fileWriteLines: (refnum, lines, convertEol) => addon.fileWriteLines(refnum, lines.map(asBuffer), convertEol),
+    callLibrary: async (request) => {
+      const arguments_ = request.arguments.map((argument) => ({ kind: argument.kind, bytes: asBuffer(argument.bytes) }));
+      const answer = await addon.callLibrary({ ...request, arguments: arguments_ });
+      const asBytes = (buffer) => new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength).slice();
+      return { status: answer.status, returned: asBytes(answer.returned), arguments: answer.arguments.map(asBytes) };
+    },
   };
   return solderIo;
 }

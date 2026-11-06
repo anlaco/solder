@@ -207,6 +207,9 @@
   --express-chevron: #8496a5;
   --express-black: #000000; /* The icon's frame and the triangles of the rows: pure black, measured. */
   --express-icon-bar: #0000ff;
+  --call-library-ui-thread-fill: #ffaf00; /* The Call Library Function Node's header: Run in UI thread (measured in LabVIEW 2026 Q3, DT-080). */
+  --call-library-any-thread-fill: #ffffcc; /* Run in any thread. */
+  --call-library-void-cell-fill: #cccccc; /* The cells of the node that carry nothing: the return row of a void function. */
   --format-node-border: #4c4c3d;
   --path-node-border: #4c4c3d;
   --structure-terminal-fill: #ffffcc;

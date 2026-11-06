@@ -185,6 +185,8 @@ const FILTERS = [{ name: "Solder OVI", extensions: [VI_EXTENSION, OLD_VI_EXTENSI
 const OVI_AND_POLYMORPHIC_FILTERS = [{ name: "Solder OVI and polymorphic OVI", extensions: [VI_EXTENSION, OLD_VI_EXTENSION, POLYMORPHIC_EXTENSION].map((extension) => extension.slice(1)) }, ...FILTERS];
 /** What Save As offers for a polymorphic OVI, which LabVIEW saves as a `.vi` and Solder as a file of its own (DT-074). */
 const POLYMORPHIC_FILTERS = [{ name: "Solder polymorphic OVI", extensions: [POLYMORPHIC_EXTENSION.slice(1)] }];
+/** The Call Library Function Node's browse dialog: shared libraries first (LabVIEW's "Shared Libraries (*.dll)"), then WebAssembly modules (DT-080 §3) and every file. */
+const LIBRARY_FILTERS = [{ name: "Shared Libraries", extensions: ["dll", "so", "dylib"] }, { name: "WebAssembly modules", extensions: ["wasm"] }, { name: "All files", extensions: ["*"] }];
 const ICON_FILTERS = [{ name: "SVG icon", extensions: ["svg"] }];
 /** The size of the Polymorphic OVI window's page and of the New dialog's, in pixels (measured; spec rules 122 and 124). */
 const POLYMORPHIC_WINDOW_SIZE = { width: 482, height: 391 - 33 };
@@ -648,6 +650,11 @@ function handleRequests() {
   // The browse button of a File Path Control: the file dialog (Browse Options are not offered yet: one existing file); returns the absolute path or nothing.
   ipcMain.handle("path:choose", async (event) => {
     const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select a file", properties: ["openFile"] });
+    return result.canceled || !result.filePaths.length ? null : result.filePaths[0];
+  });
+  // The browse button of the Call Library Function Node (DT-080): shared libraries first, as LabVIEW's filter; returns the absolute path or nothing.
+  ipcMain.handle("library:choose", async (event) => {
+    const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select a library", properties: ["openFile"], filters: LIBRARY_FILTERS });
     return result.canceled || !result.filePaths.length ? null : result.filePaths[0];
   });
   // A Run's file dialog (DT-067, amendment of 2026-10-29): the system's own, in the folder of the last file chosen;

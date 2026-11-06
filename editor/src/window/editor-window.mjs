@@ -48,6 +48,8 @@ import * as Q from "../../../core/model/qvi-format.mjs";
 import * as SN from "../block-diagram/subvi-nodes.mjs";
 import * as PolymorphicNodes from "../block-diagram/polymorphic-nodes.mjs";
 import * as ExpressNodes from "../block-diagram/express-nodes.mjs";
+import * as CallLibraryNodes from "../block-diagram/call-library-nodes.mjs";
+import * as CallLibraryDialog from "../block-diagram/call-library-dialog.mjs";
 import { commandForCtrlKey } from "./shortcuts.mjs";
 import * as RV from "./run-values.mjs";
 import * as Scroll from "./scrolling.mjs";
@@ -1140,7 +1142,17 @@ function clicEnDialogo(ev, abierto) {
   const intent = MD.clickIntent(abierto, elemento?.dataset.id, ev.detail);
   // The veil and the parts without an id are not a click on anything.
   if (intent?.explain) return cambiar(E.clic(estado, inv, elemento.dataset.id, ancla(elemento)));
+  if (intent?.browse) return browseForLibrary();
   return aplicarEnDialogo(intent, abierto);
+}
+
+/**
+ * The browse button of the Call Library Function Node's dialog opens the system's file dialog, and the library chosen becomes
+ * the text of its library box. Without the Electron bridge (a plain browser) there is no dialog and the button does nothing.
+ */
+async function browseForLibrary() {
+  const chosen = await window.solder?.elegirBiblioteca?.();
+  if (chosen && dia.callLibraryDialog) cambiarDiagrama({ ...dia, callLibraryDialog: CallLibraryDialog.withLibrary(dia.callLibraryDialog, chosen) });
 }
 
 // ——— SubVIs: placing one, opening its Front Panel ———
@@ -1587,6 +1599,8 @@ addEventListener("mousedown", (ev) => {
   // A double click on an Express VI opens its configuration dialog (DT-069 §3).
   const doubleClicked = ev.detail >= 2 && sobreDiagrama.tipo === "nodo" && dia.g.nodos.find((n) => n.id === sobreDiagrama.id);
   if (doubleClicked && ExpressNodes.isExpressNode(doubleClicked, cat)) return cambiarDiagrama(ED.openConfiguration(dia, ctx, doubleClicked.id));
+  // A double click on a Call Library Function Node opens its configuration dialog (DT-080).
+  if (doubleClicked && CallLibraryNodes.isCallLibraryNode(doubleClicked)) return cambiarDiagrama(ED.openCallLibraryConfiguration(dia, doubleClicked.id));
   const id = ev.detail >= 2 && nodoDe(sobreDiagrama);
   if (id && (D.CONSTANTES[dia.g.nodos.find((n) => n.id === id)?.tipo]?.editable || dia.g.nodos.find((n) => n.id === id)?.tipo === "expression-node")) return cambiarDiagrama(ED.editar(dia, ctx, id, sobreDiagrama.campo));
   cambiarDiagrama(ED.pulsar(dia, ctx, sobreDiagrama, punto(ev), ev.shiftKey, ev.ctrlKey || ev.metaKey));

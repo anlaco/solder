@@ -26,6 +26,7 @@ import { PANEL_RECORD } from "../compiler/panel-memory.mjs";
 import { VISA_FUNCTION_NAMES, createVisaFunctions } from "./instrument-io.mjs";
 import { FILE_FUNCTION_NAMES, createFileFunctions } from "./file-io.mjs";
 import { PROPERTY_NODE_FUNCTION_NAMES, createPropertyNodeFunction } from "./property-node.mjs";
+import { CALL_LIBRARY_FUNCTION_NAMES, createCallLibraryFunction } from "./call-library.mjs";
 
 /** The size of one row record of Format Into String and Scan From String in memory (the compiler's FORMAT_ROW_BYTES). */
 const FORMAT_ROW_BYTES = 16;
@@ -795,7 +796,8 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   const { instrSession, instrIo, ...visaFunctions } = createVisaFunctions({ io: opciones.io, host: hostFunctions, memory, compilado });
   const fileFunctions = createFileFunctions({ io: opciones.io, dialogs: opciones.dialogs, host: hostFunctions, memory, compilado, pathRules });
   const propertyNodeFunction = createPropertyNodeFunction({ compilado, host: hostFunctions, memory, panel: runPanel(), instr: { session: instrSession, io: instrIo } });
-  const externalWaits = { error_automatico: automaticErrorDialog, dialogo_error: errorHandlerDialog, ...visaFunctions, ...fileFunctions, ...propertyNodeFunction };
+  const callLibraryFunction = createCallLibraryFunction({ io: opciones.io, host: hostFunctions, memory, compilado, pathRules });
+  const externalWaits = { error_automatico: automaticErrorDialog, dialogo_error: errorHandlerDialog, ...visaFunctions, ...fileFunctions, ...propertyNodeFunction, ...callLibraryFunction };
   // Debugging (DT-047): the hooks the compiled VI calls while the debug flag is set.
   const readDebugValue = debugValueReader(compilado, { leerCadena, leerCluster, leerArray });
   const valorDepurado = (nodo, salida, valor) => {
@@ -819,7 +821,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     error_automatico: (...args) => parkOn(automaticErrorDialog(...args)),
     dialogo_error: (...args) => parkOn(errorHandlerDialog(...args)),
   };
-  const io = Object.fromEntries([...VISA_FUNCTION_NAMES, ...FILE_FUNCTION_NAMES, ...PROPERTY_NODE_FUNCTION_NAMES].map((name) => [name, (...args) => parkOn(externalWaits[name](...args))]));
+  const io = Object.fromEntries([...VISA_FUNCTION_NAMES, ...FILE_FUNCTION_NAMES, ...PROPERTY_NODE_FUNCTION_NAMES, ...CALL_LIBRARY_FUNCTION_NAMES].map((name) => [name, (...args) => parkOn(externalWaits[name](...args))]));
   const sharedMemory = { [SHARED_MEMORY_IMPORT.modulo]: { [SHARED_MEMORY_IMPORT.nombre]: memory } };
   const { instance } = await WebAssembly.instantiate(bytes, { ...sharedMemory, tiempo, cad, arr, dep, math, io, pth });
   ex = instance.exports;

@@ -485,6 +485,15 @@
                                "rows": { "type": "propertyRows", "value": [] }, "ignore-errors": { "type": "boolean", "value": false } },
                    "side-effect": true },
 
+    "call-library": { "cat": "libraries-executables", "desc": "Call Library Function Node (DT-080): calls a function of a native library (.dll, .so, .dylib) through the I/O process, or of a WebAssembly module. Its configuration names the library, the function, the thread, the calling convention, the error checking, the return value and the parameters; its terminals are path in/out (with Specify path on diagram), error in/out always, the return value and an input and an output per parameter (labview-captures/reports/2026-11-06-clfn.md). A library named in the dialog that cannot load breaks the OVI; a path wired on the diagram fails at run time with 7, 12 or 15; a fault in the code is 1097 (2026-11-06-clfn-run.md)",
+                   "in": "dynamic:call-library", "out": "dynamic:call-library", "dynamic-ports": true,
+                   "config": { "library": { "type": "string", "value": "" }, "specify-path-on-diagram": { "type": "boolean", "value": false },
+                               "function": { "type": "string", "value": "" }, "thread": { "type": "string", "value": "ui" },
+                               "calling-convention": { "type": "string", "value": "c" }, "error-checking": { "type": "string", "value": "default" },
+                               "return-type": { "type": "callLibraryReturn", "value": { "type": "void" } },
+                               "parameters": { "type": "callLibraryParameters", "value": [] } },
+                   "side-effect": true },
+
     "control-reference": { "cat": "application-control", "desc": "Control reference constant (DT-072 §2): a reference to the panel control it is linked to by node name, made by Create ▸ Reference; its type is the strict refnum of the control's class, which carries the control's data type (labview-captures/reports/2026-11-03-control-references.md Q1). At run time it is the control's refnum, never Not A Refnum (2026-11-03-control-reference-run.md Q5)",
                    "in": [], "out": [{ "name": "reference", "label": "", "type": { "var": "R" } }], "type-from": "config",
                    "config": { "type": { "type": "dataType", "value": { "refnum": "Numeric" } }, "link": { "type": "string", "value": null } } },

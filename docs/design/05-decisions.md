@@ -3785,8 +3785,10 @@ Function Node and an add-ons folder, both native. DAQ waits for them and becomes
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| The node, dialog and errors are LabVIEW's | The 2026-11-06 reports, then tests per case | **Measured, not built** |
-| A native fault gives 1097 and Solder keeps running | A test that calls a faulting function | **Not built** |
+| The node's terminals, prototype and saved configuration are LabVIEW's | `test/core/call-library.test.mjs` | **Built** |
+| Numbers, pointers, strings and arrays reach the function and come back; errors 7 and 15 | `test/core/call-library-run.test.mjs` against Linux's C library; `cargo test` in `native/solder-io` (Linux, and kernel32 on Windows) | **Built** |
+| A fault that ends the I/O process gives 1097 and the Run goes on | `test/core/call-library-run.test.mjs` with an I/O whose call fails; a real fault in the editor's I/O process | **Built** (the real fault **unverified**; the command line loads the library in its own process, which the fault ends) |
+| The palette, the node drawn, its menu and the dialog in the editor, OK as one undo step | `test/editor/call-library-nodes.test.mjs` | **Built** (not compared by eye with LabVIEW yet) |
 
 ## DT-081
 

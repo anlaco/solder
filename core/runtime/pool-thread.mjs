@@ -11,6 +11,7 @@ import { SHARED_MEMORY_IMPORT } from "../compiler/compiler.mjs";
 import { VISA_FUNCTION_NAMES } from "./instrument-io.mjs";
 import { FILE_FUNCTION_NAMES } from "./file-io.mjs";
 import { PROPERTY_NODE_FUNCTION_NAMES } from "./property-node.mjs";
+import { CALL_LIBRARY_FUNCTION_NAMES } from "./call-library.mjs";
 
 const BLOCKING = 1;
 
@@ -57,7 +58,7 @@ function runThread({ module, memory, thread, compilado, separador, pathRules }, 
     if (value !== NO_DEBUG_VALUE) port.postMessage({ debugValue: [nodo, salida, value] });
   };
   const dep = { valor_i32: sendDebugValue, valor_i64: sendDebugValue, valor_f32: sendDebugValue, valor_f64: sendDebugValue, nodo: askCoordinator("debugger_node") };
-  const io = Object.fromEntries([...VISA_FUNCTION_NAMES, ...FILE_FUNCTION_NAMES, ...PROPERTY_NODE_FUNCTION_NAMES].map((name) => [name, askCoordinator(name)]));
+  const io = Object.fromEntries([...VISA_FUNCTION_NAMES, ...FILE_FUNCTION_NAMES, ...PROPERTY_NODE_FUNCTION_NAMES, ...CALL_LIBRARY_FUNCTION_NAMES].map((name) => [name, askCoordinator(name)]));
   const sharedMemory = { [SHARED_MEMORY_IMPORT.modulo]: { [SHARED_MEMORY_IMPORT.nombre]: memory } };
   try {
     exports = new WebAssembly.Instance(module, { ...sharedMemory, tiempo, cad, arr, math, dep, io, pth }).exports;

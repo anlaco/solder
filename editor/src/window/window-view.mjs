@@ -65,6 +65,8 @@ export const MEDIDAS_PALETA = {
   columnas: 4,
   altoFlechas: 18, // el centro de las flechas dobles, 13,5 px bajo la última fila
   altoEnlace: 31 / 1.5,
+  /** A grid whose folders carry their label (Connectivity's) is this much taller per row, for the label under each icon. */
+  altoEtiqueta: 20,
   altoPie: 6.5 / 1.5,
 };
 
@@ -145,6 +147,11 @@ const REJILLAS = {
   "palette.functions.instrument-io.visa.visa-advanced.register-access.low-level-register-access": { columnas: 4, celdas: { "visa-peek-8": [1, 0], "visa-poke-8": [2, 0] } },
   "palette.functions.instrument-io.visa.visa-advanced.bus-interface-specific.serial": { columnas: 4, celdas: {} },
   "palette.functions.instrument-io.serial": { columnas: 4, celdas: {} },
+  // Functions ▸ Connectivity, from labview-captures/connectivity-palette/p2d.png (reports/2026-11-06-connectivity-palette.md): 4 columns, every
+  // cell a folder with its label under the icon; the gaps are the entries that LabVIEW's folder lists without a palette of their own
+  // (Advanced Memory, Internet, DIAdem). Libraries & Executables is one row of two cells.
+  "palette.functions.connectivity": { columnas: 4, etiquetas: true, celdas: { "web-services": [0, 3], datafinder: [3, 1] } },
+  "palette.functions.connectivity.libraries-executables": { columnas: 2, celdas: {} },
   // Functions ▸ Programming ▸ File I/O and its subpalettes, from labview-captures/file-io/ (reports/2026-10-26-file-io-palette.md §1-2).
   // The top level is 6 rows of 4: Waveform File I/O alone at the start of the last row and Advanced File Functions at its end.
   "palette.functions.programming.file-io": { columnas: 4, celdas: { "waveform-file-i-o": [5, 0], "advanced-file-functions": [5, 3] } },
@@ -384,11 +391,14 @@ const glifoCarpeta = (id) => (id.startsWith("palette.controls.") ? G.CARPETAS_CO
 const glifoIcono = (id) => (id.startsWith("palette.controls.") ? G.CONTROLES : G.FUNCIONES)[ultimo(id)];
 
 /** Una carpeta de una rejilla; la abierta lleva el marco de LabVIEW. */
-function carpeta(inv, e, left, top, abierta) {
+function carpeta(inv, e, left, top, abierta, conEtiqueta = false) {
   const glifo = glifoCarpeta(e.id) ?? "";
   const P = MEDIDAS_PALETA;
   const marco = abierta ? `<div class="marco"></div>` : "";
-  return `<div class="${clases(inv, e.id, `carpeta${abierta ? " abierta" : ""}`)}" data-id="${esc(e.id)}" style="left:${px(left)};top:${px(top)};width:${px(P.anchoCarpeta)};height:${px(P.altoCarpeta)}">${marco}<div class="pestana"></div><div class="lomo"></div><div class="caja-carpeta">${glifo}</div></div>`;
+  // The hover name of a labelled folder is its whole name; under the icon goes the label LabVIEW shows, which may be clipped.
+  const etiqueta = conEtiqueta ? `<div class="etiqueta-carpeta" style="top:${px(P.altoCarpeta + 1)};height:${px(P.altoEtiqueta - 2)}">${esc(rotulo(e))}</div>` : "";
+  const nombre = conEtiqueta ? ` title="${esc(e.etiqueta)}"` : "";
+  return `<div class="${clases(inv, e.id, `carpeta${abierta ? " abierta" : ""}`)}" data-id="${esc(e.id)}"${nombre} style="left:${px(left)};top:${px(top)};width:${px(P.anchoCarpeta)};height:${px(P.altoCarpeta)}">${marco}<div class="pestana"></div><div class="lomo"></div><div class="caja-carpeta">${glifo}</div>${etiqueta}</div>`;
 }
 
 function rejilla(inv, categoria, abierta) {
@@ -403,11 +413,13 @@ function rejilla(inv, categoria, abierta) {
     return siguiente++;
   });
   const filas = Math.floor(Math.max(0, ...sitios) / P.columnas) + 1;
-  const alto = P.sobreRejilla + (filas - 1) * P.pasoIcono + P.altoCarpeta + P.bajoRejilla;
+  const conEtiquetas = Boolean(REJILLAS[categoria]?.etiquetas);
+  const paso = P.pasoIcono + (conEtiquetas ? P.altoEtiqueta : 0);
+  const alto = P.sobreRejilla + (filas - 1) * paso + P.altoCarpeta + (conEtiquetas ? P.altoEtiqueta : 0) + P.bajoRejilla;
   const carpetas = hijos
     .map((e, i) => {
       const [f, c] = [Math.floor(sitios[i] / P.columnas), sitios[i] % P.columnas];
-      return carpeta(inv, e, P.margenRejilla + c * P.pasoIcono, P.sobreRejilla + f * P.pasoIcono, e.id === abierta);
+      return carpeta(inv, e, P.margenRejilla + c * P.pasoIcono, P.sobreRejilla + f * paso, e.id === abierta, conEtiquetas);
     })
     .join("");
   return `<div class="rejilla" style="height:${px(alto)}">${carpetas}</div>`;

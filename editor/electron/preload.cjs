@@ -21,6 +21,8 @@ contextBridge.exposeInMainWorld("solder", {
   elegirVI: () => ipcRenderer.invoke("vi:choose-subvi"),
   /** The file dialog of a File Path Control's browse button: the absolute path chosen, or nothing. */
   elegirRuta: () => ipcRenderer.invoke("path:choose"),
+  /** The file dialog of the Call Library Function Node's browse button: the absolute path of the library chosen, or nothing. */
+  elegirBiblioteca: () => ipcRenderer.invoke("library:choose"),
   /** A Run's file dialog `{ title, mode }` (DT-067, amendment of 2026-10-29): the system's name of the file chosen, or nothing. */
   chooseRunFile: (request) => ipcRenderer.invoke("run:choose-file", request),
   /** File Dialog's request (DT-069): `{ paths, exists }`, or nothing for Cancel. */

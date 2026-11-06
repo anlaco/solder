@@ -691,6 +691,12 @@ array or string read by a local variable while another loop writes it is never t
       *The add-ons folder measured the same day ([`addons`](../../labview-captures/reports/2026-11-06-addons.md)) and decided
       in DT-081. Next, to build: the Call Library Function Node (core and native calls, then the editor; `.wasm` may wait
       until after DAQ), the add-ons folder, then DAQ's stage A as the first add-on.*
+      *The Call Library Function Node built on 2026-11-06 (branch `feature/clfn`): the core and its native calls
+      (`native/solder-io/src/library.rs`, libffi; Linux and Windows), the external wait, error 1097 when the I/O process
+      ends, and in the editor Functions ▸ Connectivity, the node, its menu and its dialog (spec/04 Rule 21m, spec/05 §24
+      rules 126–129, spec/06 §21). Left: comparing it by eye with LabVIEW; `.wasm` modules; a library named in the dialog
+      that cannot load breaks the OVI in LabVIEW (a run-time 7 in Solder); the error in's behaviour; the Libraries &
+      Executables subpalette is narrower than the measured 166 px. Next: the add-ons folder.*
       *Open before step 5 (talked over with the developer on 2026-11-03, nothing decided): **what Solder uses instead
       of DAQmx**, its own name (DAQmx and NI-DAQ are NI's trademarks, as OVI stands for VI, DT-071) and its approach.
       Ideas: DAQmx's programming model (tasks, named channels, hardware timing, triggers, waveforms) over engines

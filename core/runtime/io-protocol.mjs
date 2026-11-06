@@ -1,4 +1,4 @@
-// Solder's VISA and files over a message port (DT-065 §3): the editor's I/O process serves it, and a Run's
+// Solder's VISA, files and library calls over a message port (DT-065 §3): the editor's I/O process serves it, and a Run's
 // coordinator, in the run worker, is its client. Every operation is a request with an id that answers
 // once; the bytes travel as Uint8Array.
 //
@@ -9,6 +9,7 @@
 export const IO_OPERATIONS = [
   "open", "write", "read", "close", "attributes", "changeAttributes", "bytesAtPort",
   "fileOpen", "fileClose", "fileWrite", "fileWriteLines", "fileRead", "fileReadLine", "fileReadLines", "fileSize", "fileMoveToEnd", "fileDelete", "fileName",
+  "callLibrary",
 ];
 
 /**

@@ -507,10 +507,60 @@
             "ignore-errors": {
               "description": "For property-node: Ignore Errors inside Node; every row runs and the error is still given (measured).",
               "type": "boolean"
+            },
+            "library": {
+              "description": "For call-library (DT-080): the library name or path of the dialog's Function tab; `.*` stands for each platform's extension (LabVIEW's `lvanlys.*`).",
+              "type": "string"
+            },
+            "specify-path-on-diagram": {
+              "description": "For call-library: the library comes from the path in terminal, and a library that cannot load fails at run time (7, 12, 15) instead of breaking the OVI.",
+              "type": "boolean"
+            },
+            "function": { "description": "For call-library: the function name; empty, the OVI is broken (No function specified).", "type": "string" },
+            "thread": { "description": "For call-library: Run in UI thread or Run in any thread.", "enum": ["ui", "any"] },
+            "calling-convention": { "description": "For call-library: stdcall (WINAPI) or C.", "enum": ["c", "stdcall"] },
+            "error-checking": { "description": "For call-library: the Error Checking tab's level.", "enum": ["maximum", "default", "disabled"] },
+            "return-type": {
+              "description": "For call-library: the return value, Void, Numeric (with its data type) or String (with its format).",
+              "type": "object", "required": ["type"], "additionalProperties": false,
+              "properties": {
+                "type": { "enum": ["void", "numeric", "string"] },
+                "data-type": { "$ref": "#/$defs/callLibraryDataType" },
+                "string-format": { "$ref": "#/$defs/callLibraryStringFormat" }
+              }
+            },
+            "parameters": {
+              "description": "For call-library: the parameters in order, as the Parameters tab lists them.",
+              "type": "array",
+              "items": {
+                "type": "object", "required": ["name", "type"], "additionalProperties": false,
+                "properties": {
+                  "name": { "type": "string" },
+                  "type": { "enum": ["numeric", "array", "string", "waveform", "digital-waveform", "digital-data", "activex", "adapt-to-type", "instance-data-pointer"] },
+                  "constant": { "type": "boolean" },
+                  "data-type": { "$ref": "#/$defs/callLibraryDataType" },
+                  "pass": { "enum": ["value", "pointer"] },
+                  "dimensions": { "type": "integer", "minimum": 1 },
+                  "array-format": { "enum": ["array-data-pointer", "array-handle", "array-handle-pointer"] },
+                  "string-format": { "$ref": "#/$defs/callLibraryStringFormat" },
+                  "minimum-size": { "description": "The name of the parameter that gives the buffer's size, or absent for <None>.", "type": "string" },
+                  "data-format": { "enum": ["handles-by-value", "pointers-to-handles", "array-data-pointer", "interface-to-data"] }
+                }
+              }
             }
           }
         }
       }
+    },
+
+    "callLibraryDataType": {
+      "description": "A numeric data type of the Call Library Function Node's dialog (DT-080).",
+      "enum": ["i8", "i16", "i32", "i64", "iptr", "u8", "u16", "u32", "u64", "uptr", "sgl", "dbl"]
+    },
+
+    "callLibraryStringFormat": {
+      "description": "How the Call Library Function Node passes a string (DT-080).",
+      "enum": ["c-string-pointer", "pascal-string-pointer", "string-handle", "string-handle-pointer"]
     },
 
     "wire": {

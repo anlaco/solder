@@ -46,6 +46,8 @@ import * as TC from "./terminal-creation.mjs";
 import * as FileNodes from "./file-nodes.mjs";
 import * as ExpressNodes from "./express-nodes.mjs";
 import * as ExpressDialog from "./express-dialog.mjs";
+import * as CL from "./call-library-nodes.mjs";
+import * as CallLibraryDialog from "./call-library-dialog.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { constantElementType, constantForElement, emptyArrayAgain, flipArrayKind, isEmptyArrayShell, setArrayRepresentation, typeEmptyArray } from "../common/array-typing.mjs";
 import { CONSTANT_DIGITS, DBL, NUMERICOS, PATH, POR_ABREVIATURA, VISA_RESOURCE, convertirValor, esArray, isUndefinedArray, esEntero, esEnum, esError, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
@@ -67,6 +69,8 @@ const AGARRE = { x: 4, y: 4 };
 const grabPoint = (block, ctx, config) => {
   // A Property Node hangs by its centre, and its size is its rows' (DT-072 §7).
   if (PN.isPropertyNode({ tipo: block }) && config) return PN.propertyNodeGrabPoint(config, ctx.cat, ctx.medir);
+  // The Call Library Function Node hangs by its middle (unverified, as the Property Node's).
+  if (block === CL.CALL_LIBRARY) return CL.callLibraryGrabPoint({ tipo: block, config });
   // A control reference hangs by its centre too (reports/2026-11-03-control-references.md Q1).
   if (CR.isControlReference({ tipo: block }) && config) return CR.referenceGrabPoint(config, ctx.medir);
   if (FN.isFormatNode({ tipo: block }, ctx.cat)) return FN.formatNodeGrabPoint(block, ctx.cat);
@@ -188,6 +192,16 @@ export function openConfiguration(d, ctx, id) {
   const node = nodoPor(d.g, id);
   if (!node || !ExpressNodes.isExpressNode(node, ctx.cat) || !ExpressDialog.hasDialog(node.tipo)) return d;
   return { ...d, menu: null, accion: null, edicion: null, seleccion: [id], expressDialog: ExpressDialog.open(node, ctx.cat) };
+}
+
+/**
+ * Opens the configuration dialog of a Call Library Function Node: on a double click and from Configure... (DT-080). Anything
+ * else leaves the state as it was.
+ */
+export function openCallLibraryConfiguration(d, id) {
+  const node = nodoPor(d.g, id);
+  if (!CL.isCallLibraryNode(node)) return d;
+  return { ...d, menu: null, accion: null, edicion: null, seleccion: [id], callLibraryDialog: CallLibraryDialog.open(node) };
 }
 
 /**
@@ -1402,6 +1416,8 @@ export function orden(d, id, ctx) {
   if (/^context\.enum-(constant|control|indicator)\.select-item$/.test(id)) return { ...d, menu: null, selectItemDialog: SI.open(nodoPor(d.g, nodo)) };
   // Properties of an Express VI is its configuration dialog (DT-069 §3).
   if (ExpressNodes.isExpressMenu(d.menu.raiz) && id === `${d.menu.raiz}.properties`) return openConfiguration(d, ctx, nodo);
+  // Configure... of a Call Library Function Node opens its dialog (DT-080).
+  if (d.menu.raiz === CL.MENU_ROOT && id === `${CL.MENU_ROOT}.configure`) return openCallLibraryConfiguration(d, nodo);
   // A polymorphic OVI node: Select Type ▸ and its selector (polymorphic-nodes.mjs).
   if (d.menu.raiz === PolymorphicNodes.MENU_ROOT) {
     const polymorphicGraph = PolymorphicNodes.menuCommand(d.g, nodo, id, ctx.cat, terminalPlacer(ctx));
@@ -1838,6 +1854,7 @@ export function marcados(d, ctx) {
   for (const mark of VISA_MENU_MARKS[r] ?? []) m.add(`${r}.${mark}`);
   for (const mark of pathMenuMarks(r, n)) m.add(`${r}.${mark}`);
   if (PN.isPropertyNode(n) && ctx) for (const mark of PNM.marks(d, ctx)) m.add(mark);
+  if (CL.isCallLibraryNode(n)) for (const mark of CL.NAME_FORMAT_MARKS) m.add(mark);
   if (n.config?.mode) m.add(`${r}.change-mode.${n.config.mode}`);
   if (n.config?.mechanical) m.add(`${r}.mechanical-action.${n.config.mechanical}`);
   const abrev = r.startsWith("context.numeric-") && NUMERICOS[n.config?.type ?? DBL]?.abrev;

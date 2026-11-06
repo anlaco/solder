@@ -650,6 +650,44 @@ svg { display: block; overflow: visible; }
 .dialogo-express .pv-spin-up::after, .dialogo-express .pv-spin-down::after { content: ""; position: absolute; left: 50%; top: 50%; margin-left: -3px; border-left: 3px solid transparent; border-right: 3px solid transparent; }
 .dialogo-express .pv-spin-up::after { margin-top: -2px; border-bottom: 3px solid var(--checkbox-border); }
 .dialogo-express .pv-spin-down::after { margin-top: -1px; border-top: 3px solid var(--checkbox-border); }
+/* The Call Library Function Node's dialog, from labview-captures/clfn/e1.png, e2.png and e4.png (block-diagram/call-library-dialog.mjs
+   sets the positions). */
+.pv-dialogo.dialogo-clfn { font-size: var(--fuente); }
+.dialogo-clfn .pv-check, .dialogo-clfn .pv-radio, .dialogo-clfn .pv-campo, .dialogo-clfn .pv-grupo, .dialogo-clfn .pv-combo { position: absolute; }
+.dialogo-clfn .clfn-campo { padding: 3px 4px; align-items: flex-start; overflow: hidden; }
+.dialogo-clfn .clfn-campo:not(.multilinea) { align-items: center; padding-right: 22px; }
+.dialogo-clfn .clfn-campo.multilinea .clfn-texto { white-space: pre-wrap; word-break: break-all; }
+.dialogo-clfn .clfn-campo.desactivada, .dialogo-clfn .pv-check.desactivada, .dialogo-clfn .pv-radio.desactivada { color: var(--placeholder-text); }
+.dialogo-clfn .clfn-flecha-campo { position: absolute; right: 0; top: 0; bottom: 0; border-left: 1px solid var(--field-border); }
+.dialogo-clfn .clfn-flecha-campo::after { content: ""; position: absolute; left: 50%; top: 50%; margin: -4px 0 0 -3px; width: 5px; height: 5px; border-right: 1px solid var(--checkbox-border); border-bottom: 1px solid var(--checkbox-border); transform: rotate(45deg); }
+.dialogo-clfn .clfn-etiqueta { position: absolute; }
+.dialogo-clfn .clfn-etiqueta.derecha { text-align: right; }
+.dialogo-clfn .clfn-ficha { position: absolute; border: 1px solid var(--dialog-page-border); border-bottom: none; background: var(--dialog-background); box-sizing: border-box; }
+.dialogo-clfn .clfn-ficha.activa { background: var(--dialog-page-background); }
+.dialogo-clfn .clfn-pagina { box-sizing: border-box; }
+.dialogo-clfn .clfn-lista { position: absolute; }
+.dialogo-clfn .clfn-fila { position: absolute; padding: 0 2px; white-space: nowrap; }
+.dialogo-clfn .clfn-fila.elegida { background: var(--list-selection-background); color: var(--list-selection-text); }
+.dialogo-clfn .clfn-boton-lista { position: absolute; font-weight: 700; }
+.dialogo-clfn .clfn-boton-lista.desactivado { color: var(--placeholder-text); }
+.dialogo-clfn .clfn-examinar { position: absolute; }
+.dialogo-clfn .clfn-carpeta { width: 14px; height: 9px; border: 1px solid var(--checkbox-border); border-radius: 1px; display: inline-block; box-sizing: border-box; }
+.dialogo-clfn .clfn-opciones { position: absolute; z-index: 2; box-sizing: border-box; background: var(--list-background); border: 1px solid var(--list-border); max-height: 220px; overflow: hidden; }
+.dialogo-clfn .clfn-opcion { padding: 2px 6px; white-space: nowrap; }
+.dialogo-clfn .clfn-opcion.elegida { background: var(--list-selection-background); color: var(--list-selection-text); }
+.dialogo-clfn .clfn-prototipo { position: absolute; box-sizing: border-box; border: 1px solid var(--field-border); background: var(--dialog-page-background); padding: 6px; }
+.dialogo-clfn .clfn-prototipo-callbacks { position: absolute; }
+.dialogo-clfn .clfn-enlace { position: absolute; color: var(--link-text); text-decoration: underline; cursor: default; }
+.dialogo-clfn .clfn-enlace.hueco { color: var(--placeholder-text); font-style: italic; }
+.dialogo-clfn .clfn-descripcion { position: absolute; }
+.dialogo-clfn .clfn-aviso { position: absolute; color: var(--placeholder-text); }
+.dialogo-clfn .pv-spin { position: absolute; right: 1px; top: 1px; bottom: 1px; width: 15px; display: flex; flex-direction: column; border-left: 1px solid var(--field-border); }
+.dialogo-clfn .pv-spin > div { flex: 1; position: relative; }
+.dialogo-clfn .pv-spin-up::after, .dialogo-clfn .pv-spin-down::after { content: ""; position: absolute; left: 50%; top: 50%; margin-left: -3px; border-left: 3px solid transparent; border-right: 3px solid transparent; }
+.dialogo-clfn .pv-spin-up::after { margin-top: -2px; border-bottom: 3px solid var(--checkbox-border); }
+.dialogo-clfn .pv-spin-down::after { margin-top: -1px; border-top: 3px solid var(--checkbox-border); }
+/* The node's cells carry the glyph of the type of their parameter. */
+.glifo-formato .glifo-celda { font: bold 6px Arial, "Liberation Sans", sans-serif; text-anchor: middle; dominant-baseline: central; }
 /* Select Item… of an enum, from labview-captures/select-item/a1.png (select-item-dialog.mjs sets the positions):
    the field keeps the focus border, and the highlight hugs the item's text instead of the whole row. */
 .pv-dialogo.dialogo-seleccion-item { font-size: var(--fuente); border-color: var(--select-item-dialog-border); }
@@ -766,3 +804,6 @@ svg { display: block; overflow: visible; }
 .sd-grayed {
   opacity: 0.5;
 }
+
+/* The label under a folder of Functions ▸ Connectivity: two lines at most, clipped as LabVIEW clips "Windows Registry Acces…". */
+.etiqueta-carpeta { position: absolute; left: -4px; width: 48px; font-size: 8px; line-height: 9px; text-align: center; overflow: hidden; pointer-events: none; }

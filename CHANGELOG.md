@@ -9,6 +9,17 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- An OVI can call functions of native libraries with the Call Library Function Node (DT-080), as in LabVIEW: numbers by
+  value or by pointer, strings and arrays by their address, the return value, and LabVIEW's errors 7, 12 and 15 when the
+  library or the function is missing. The library runs in Solder's I/O process, so a fault in it is error 1097 and
+  Solder keeps running, where LabVIEW with Error Checking Disabled crashes. Works on Linux and Windows.
+- The Call Library Function Node has its editor (DT-080): Functions ▸ Connectivity ▸ Libraries & Executables places it; the node is
+  drawn as LabVIEW's (40 × 27 empty, a row per parameter and for the return value, header orange for Run in UI thread and pale
+  yellow for any thread, path pins with Specify path on diagram); its dialog "Call Library Function" (Function, Parameters,
+  Callbacks, Error Checking, with the live C prototype) opens by double click and Configure..., and OK applies it as one step of
+  undo with the wires following their parameters. The function list, the callbacks, the wizard, Create C File and System Exec.vi
+  are greyed with their reason.
+
 ## 0.9.0-beta — 2026-11-06
 
 Solder updates itself: from this version on, each new beta is offered when Solder starts. This one is still

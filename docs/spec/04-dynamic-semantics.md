@@ -522,6 +522,22 @@ Measured in LabVIEW 2026 Q3 by running each case (`labview-captures/format-scan/
 > error raised in the top-level OVI, which Solder writes `… in Top.sdg`, and the other functions that raise
 > errors.)*
 
+### 6.6 Call Library Function Node (DT-080, 2026-11-06)
+
+> **Rule 21m — Calling a library.** Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-11-06-clfn-run.md`).
+> The node calls its function with each parameter as C takes it: a Numeric by value, or by its address with Pointer
+> to Value; an Array by its data's address; a String as a C string with its ending zero, in a buffer of at least the
+> size its Minimum size parameter gives. After the call each parameter's output carries what the function left: a
+> pointer's number, the array's elements, the string up to its first zero; a number by value comes out as it went
+> in. An unwired Numeric goes as 0; an unwired String breaks the OVI ("Contains unwired or bad terminal"). With a path
+> wired on the diagram, a library that is not found is error **7**, a file that is not a library **12** and a library
+> without the function **15**, each with the source `Call Library Function Node in <OVI>` and a return value of 0;
+> an empty path calls nothing and gives no error. A fault inside the library's code is error **1097** and the OVI goes
+> on: in LabVIEW with Error Checking at Default or Maximum (Disabled crashes LabVIEW); in Solder always, because the
+> library runs in the I/O process, which the fault ends. **Unverified:** what the node does with an error in (Solder
+> calls nothing and passes the error), and a library named in the dialog that cannot load, which breaks the OVI in
+> LabVIEW and is a run-time error 7 in Solder until the editor checks it.
+
 ## 7. Blocking operations
 
 The blocks marked `blocking` —today only `tcp-read`— can take seconds.

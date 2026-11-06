@@ -2786,3 +2786,41 @@ export function terminalRefnum(control) {
   const arrow = control ? `<path d="M32.5 14.5 V23.5 L36.5 19 Z" fill="#ffffff" stroke="${INK}" stroke-width="1"/>` : `<path d="M1.5 14.5 V23.5 L5.5 19 Z" fill="#ffffff" stroke="${INK}" stroke-width="1"/>`;
   return svg(`<g shape-rendering="crispEdges">${frames}${page}${lines}${slider}</g>${dot}<g shape-rendering="crispEdges">${notch}</g>${arrow}`, `0 0 ${size} ${size}`);
 }
+
+// ——— Functions ▸ Connectivity (reports/2026-11-06-connectivity-palette.md, 2026-11-06-clfn.md), drawn anew ———
+
+/** The Call Library Function Node's icon: the node itself, a header with three books standing and "?!" on each side, and two cells under it. */
+const callLibraryBooks = (x, y) =>
+  caja(x, y + 2, x + 2.4, y + 9, "none", 1, INK) + caja(x + 3.4, y, x + 6, y + 9, "none", 1, INK) + caja(x + 7, y + 3, x + 9.4, y + 9, "none", 1, INK);
+Object.assign(FUNCIONES, {
+  "call-library-function-node": svg48(
+    caja(6, 9, 42, 39, NODE_FILL, 1.5, NODE_BORDER) +
+      lleno(7, 10, 41, 25, NODE_FILL) +
+      callLibraryBooks(19.3, 13) +
+      texto48(11.5, 20.5, "?!", 6.5, INK, 700) + texto48(36.5, 20.5, "?!", 6.5, INK, 700) +
+      lleno(7, 28, 22, 38, "var(--call-library-void-cell-fill)") + lleno(26, 28, 41, 38, "var(--call-library-void-cell-fill)") + lleno(22, 28, 26, 38, INK),
+  ),
+  // System Exec.vi: a console window with the prompt's marks.
+  "system-exec-vi": svg48(
+    caja(5, 7, 43, 41, "var(--call-library-void-cell-fill)", 1.5, INK) + lleno(6, 8, 42, 14, INK) + lleno(8, 17, 40, 39, INK) +
+      texto48(15, 26, ">>", 9, PAPER, 700) + lleno(22, 30, 30, 32, PAPER),
+  ),
+});
+CAJAS["call-library-function-node"] = [6, 9, 42, 39];
+CAJAS["system-exec-vi"] = [5, 7, 43, 41];
+
+/** The folders of Functions ▸ Connectivity: a small tile with the word of what is inside, as Instrument I/O's. */
+const connectivityFolder = (word, size = 4.4) => svg(caja(1.5, 2.5, 14.5, 13.5, NODE_FILL, 1, NODE_BORDER) + texto(8, 8.1, word, size, INK, 700));
+Object.assign(SUBPALETAS, {
+  "libraries-executables": connectivityFolder("LIB"),
+  "source-control": connectivityFolder("SCC"),
+  "web-services": connectivityFolder("WEB"),
+  "dot-net": connectivityFolder(".NET"),
+  "input-device-control": connectivityFolder("HID"),
+  activex: connectivityFolder("AX"),
+  "windows-registry-access-ovis": connectivityFolder("REG"),
+  python: connectivityFolder("PY"),
+  matlab: connectivityFolder("MAT"),
+  database: connectivityFolder("DB"),
+  datafinder: connectivityFolder("DF"),
+});

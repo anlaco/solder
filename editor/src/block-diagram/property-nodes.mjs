@@ -164,14 +164,14 @@ const BAR = { x: 13, y: 2, alto: 5, narrower: 26 };
 const BAR_BACKING = { y: 1, alto: 8, color: "#ffffff" };
 
 /** Draws a small picture given as rows of `#` (drawn anew, not NI's bitmaps) as one path of 1 px squares. */
-function pixels(rows, x0, y0, color) {
+export function pixels(rows, x0, y0, color) {
   let path = "";
   rows.forEach((line, y) => [...line].forEach((cell, x) => (cell === "#" ? (path += `M${x0 + x} ${y0 + y}h1v1h-1z`) : null)));
   return `<path d="${path}" fill="${color}"/>`;
 }
 
 /** The error glyph, a question mark and an exclamation mark, 5 x 6 (read on v3_z.png at x 4..8, y 2..7). */
-const ERROR_GLYPH = ["##.##", ".#.##", "##.##", "#..##", ".....", "#..##"];
+export const ERROR_GLYPH = ["##.##", ".#.##", "##.##", "#..##", ".....", "#..##"];
 /** The reference glyph of an explicit node: a sheet with a folded corner, 5 x 6 (dz.png). */
 const REFERENCE_GLYPH = ["###..", "#.##.", "#.###", "#...#", "#...#", "#####"];
 /** The instrument glyph before "Instr": a key, 11 x 6 at (14, 5) (dz.png). */
