@@ -3819,7 +3819,10 @@ a system folder and a user folder at start-up, and an add-on's OVIs are named by
    application data on Windows), so that a user can install without administrator rights, which LabVIEW does not offer.
 4. **Symbolic paths:** an add-on's OVIs are named `<ovilib>\…` as `ovi.lib`'s are ([DT-073](#dt-073)), resolved over
    `ovi.lib` and every add-on's `ovi.lib/`, so an `.sdg` opens on another machine wherever the add-on is installed.
-   LabVIEW reports add-on VIs by absolute path; Solder departs here on purpose.
+   LabVIEW reports add-on VIs by absolute path; Solder departs here on purpose. If two folders hold a file with the
+   same relative path, ovi.lib's wins, then the add-ons' in the order found (decided 2026-11-07 by the developer); an
+   add-on keeps its OVIs under a folder of its own (`DAQ/…`, as NI's `vi.lib\DAQmx`). The main process reads the folders
+   once at start-up and hands the page an index of which folder holds each file, because the page cannot ask the disk.
 5. **Palettes:** an add-on's `menus/` is overlaid at the same relative path, as LabVIEW's; Solder's own palettes name
    in advance the places of the libraries Solder knows (DAQ in Measurement I/O, as NI's do), and a third party's
    manifest may say under which palette its entry goes.
@@ -3834,7 +3837,9 @@ a system folder and a user folder at start-up, and an add-on's OVIs are named by
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
 | LabVIEW's add-on layout, manifest and palette overlay are as described | The 2026-11-06 report | **Measured** |
-| An add-on copied into either folder shows its palettes and its OVIs open by `<ovilib>` path | Editor tests with a test add-on | **Not built** |
+| The manifest, the platform and version filters, and the user's copy winning | `test/core/addons.test.mjs` | **Verified** (2026-11-07) |
+| A `<ovilib>` path leads into an add-on's `ovi.lib/`, ovi.lib's own file wins a clash, and nothing changes with no add-on | `test/core/ovi-lib-addons.test.mjs`, `test/editor/installed-addons.test.mjs` (real temporary folders) | **Verified** (2026-11-07) |
+| An add-on's palettes appear in the editor | Editor tests with a test add-on | **Not built** |
 | Whether LabVIEW needs a restart to see a new add-on | — | **Unverified** |
 
 ## DT-082

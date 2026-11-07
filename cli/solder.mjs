@@ -11,7 +11,7 @@
 // Controls take their default value from the panel.
 
 import { readFileSync } from "node:fs";
-import { availableParallelism } from "node:os";
+import { availableParallelism, homedir } from "node:os";
 import { parseArgs } from "node:util";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -27,10 +27,20 @@ import { wat } from "../core/compiler/wasm-encoder.mjs";
 import { loadSolderIo } from "../native/solder-io-node/solder-io.mjs";
 import { isOviLibPath, resolveOviLibPath } from "../core/model/ovi-lib.mjs";
 import { readPolymorphic } from "../core/model/polymorphic.mjs";
+import { loadInstalledAddons } from "../editor/electron/installed-addons.mjs";
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
-const readSchema = (name) => JSON.parse(readFileSync(path.join(AQUI, "../docs/schema", name), "utf8"));
-const OVI_LIB_ROOT = path.join(AQUI, "../ovi.lib");
+const readJson = (relativePath) => JSON.parse(readFileSync(path.join(AQUI, relativePath), "utf8"));
+const readSchema = (name) => readJson(`../docs/schema/${name}`);
+// ovi.lib and the add-ons installed on this machine (DT-081), found as the editor finds them.
+const { oviLib: OVI_LIB } = loadInstalledAddons({
+  oviLibRoot: path.join(AQUI, "../ovi.lib"),
+  nodePlatform: process.platform,
+  architecture: process.arch,
+  homeDirectory: homedir(),
+  environment: process.env,
+  solderVersion: readJson("../package.json").version,
+});
 const cat = cargarCatalogo(readSchema("blocks.json"), readSchema("properties.json"));
 
 /** An indicator's value as the panel would show it. */
@@ -59,7 +69,7 @@ if (!["run", "wat", "check"].includes(orden) || !fichero || !Number.isInteger(th
 
 // The OVI and its subOVIs, each read from the path its caller stores relative to itself (DT-045), or from ovi.lib
 // for a `<ovilib>/…` path (DT-073).
-const resolvePath = (caller, stored) => (isOviLibPath(stored) ? path.resolve(resolveOviLibPath(stored, OVI_LIB_ROOT)) : path.resolve(path.dirname(caller), stored));
+const resolvePath = (caller, stored) => (isOviLibPath(stored) ? path.resolve(resolveOviLibPath(stored, OVI_LIB)) : path.resolve(path.dirname(caller), stored));
 const loadVI = (key, viCatalog) => {
   try {
     return leer(readFileSync(key, "utf8"), viCatalog);

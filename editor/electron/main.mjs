@@ -25,11 +25,25 @@ import { readWindowStyle, watchWindowStyle } from "./window-style.mjs";
 import { createInstrumentIoProcess } from "./instrument-io-process.mjs";
 import { chosenFileOf, chosenFilesOf, confirmationBoxFor, confirmedBy, fileDialogFor, folderAfter, systemDialogFor } from "./file-dialog-options.mjs";
 import { UPDATE_BUTTONS, UPDATE_BUTTON_ANSWERS, checkForUpdatesAtStart, shouldCheckForUpdates } from "./update-check.mjs";
+import { loadInstalledAddons } from "./installed-addons.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // Solder's library of OVIs (DT-073): next to the repository's editor while developing, and among the application's
 // resources (outside the archive, so that it can be written where the installation allows it) once installed.
 const OVI_LIB_ROOT = pathKey(app.isPackaged ? path.join(process.resourcesPath, "ovi.lib") : path.join(HERE, "../../ovi.lib"));
+// What `<ovilib>/…` paths are resolved with (DT-081): ovi.lib alone, or a locator over ovi.lib and the ovi.lib folder of
+// every add-on installed. Read once at start-up, so a newly installed add-on appears after restarting Solder.
+const INSTALLED_ADDONS = loadInstalledAddons({
+  oviLibRoot: OVI_LIB_ROOT,
+  nodePlatform: process.platform,
+  architecture: process.arch,
+  homeDirectory: os.homedir(),
+  environment: process.env,
+  solderVersion: app.getVersion(),
+  normalizePath: pathKey,
+});
+for (const { folder, problem } of INSTALLED_ADDONS.problems) console.warn(`Add-on skipped (${folder}): ${problem}`);
+const OVI_LIB = INSTALLED_ADDONS.oviLib;
 const EDITOR = path.resolve(HERE, "..");
 /** Solder's own icon (build/icon.svg, rasterized to build/icon.png); Windows takes it from the executable. */
 const APP_ICON = path.resolve(EDITOR, "../build/icon.png");
@@ -616,7 +630,7 @@ function handleRequests() {
 
   ipcMain.handle("vi:init", async (event) => {
     const { entry } = openOf(event);
-    return { ...describe(entry), windowStyle: await readWindowStyle(entry.path), oviLibRoot: OVI_LIB_ROOT };
+    return { ...describe(entry), windowStyle: await readWindowStyle(entry.path), oviLibRoot: OVI_LIB };
   });
   // Scrolling is saved with the OVI and never marks it modified (DT-078).
   ipcMain.on("vi:scrolled", (event, origin) => {
@@ -686,13 +700,13 @@ function handleRequests() {
   // The text of every VI that a VI reaches, from the disk (not from the other open VIs: a caller sees a subVI when it is saved).
   ipcMain.handle("vi:subvi-texts", (event, text) => {
     const entry = openOf(event).entry;
-    return readHierarchyTexts(keyOf(entry), text, readTextOrNull, OVI_LIB_ROOT);
+    return readHierarchyTexts(keyOf(entry), text, readTextOrNull, OVI_LIB);
   });
   // The same for a VI that is about to be placed as a subVI: its own text and that of its subVIs.
   ipcMain.handle("vi:subvi-texts-of", async (_event, key) => {
     const text = await readTextOrNull(key);
     if (text === null) return { texts: {}, missing: [key] };
-    const { texts, missing } = await readHierarchyTexts(key, text, readTextOrNull, OVI_LIB_ROOT);
+    const { texts, missing } = await readHierarchyTexts(key, text, readTextOrNull, OVI_LIB);
     return { texts: { [key]: text, ...texts }, missing };
   });
   // One clipboard for all the open VIs, kept as text: what a window copies reaches every window (spec/05 rule 73).

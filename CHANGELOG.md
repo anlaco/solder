@@ -9,6 +9,11 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Add-ons (DT-081), first part: Solder reads the add-ons folders at start-up, the system's and the user's
+  (`~/.local/share/solder/addons` on Linux, `%APPDATA%\Solder\Addons` on Windows), and an OVI of an add-on is found
+  by its symbolic `<ovilib>/…` path, so a `.sdg` that uses it opens wherever the add-on is installed. A broken
+  add-on is logged and skipped. A copy in the user's folder wins over the system's. A new add-on appears after
+  restarting Solder. Add-on palettes are not read yet.
 - Free labels (DT-085), as in LabVIEW: a double click on empty space of the panel or the diagram writes a comment
   there. Enter starts a line, Ctrl+Enter or a click away confirms, Escape cancels; they move, resize by their handles
   (the text then wraps), copy and delete as any object, move with the structure they sit in, and have LabVIEW's
