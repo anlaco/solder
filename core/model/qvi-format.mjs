@@ -19,8 +19,13 @@
 
 import { ambitoDe, crearEstructura, crearNodo, esSuelto, marcoDe, nuevo } from "./graph.mjs";
 import { DEFAULT_PATTERN } from "./connector-patterns.mjs";
+import { FREE_LABEL, isFreeLabel } from "./free-label.mjs";
 
-export const VERSION = 3;
+/** A free label in the file: where it is, its text, its structure and frame, and its size once it was resized. */
+const freeLabelToFile = (n, place, inside, frame) => limpio({ x: place.x, y: place.y, text: n.label?.text ?? "", inside, frame, width: n.tam?.ancho, height: n.tam?.alto });
+const freeLabelSize = (label) => (label.width === undefined ? undefined : limpio({ ancho: label.width, alto: label.height }));
+
+export const VERSION = 4;
 
 /** Solder's own numbering of 4-2-2-4's cells in version 1: 0–3 the left column down, 4–7 the middle, 8–11 the right column down. */
 const VERSION_1_PATTERN = "4-2-2-4";
@@ -45,12 +50,15 @@ function connectorWithLabVIEWIndices(vi) {
  */
 const withWindowsVersion = (vi) => ({ ...vi, solder: 3 });
 
+/** Version 3 → 4 (DT-085): `layout.free-labels` may hold the free labels of the panel and the diagram. Optional too. */
+const withFreeLabelsVersion = (vi) => ({ ...vi, solder: 4 });
+
 /**
  * The format is frozen from 0.4.0-beta on (DT-055, spec/02 §4.1): a change to it raises VERSION and adds here the
  * function that turns a file of the version before into one of the new version, so every file a released Solder
  * saved still opens. `MIGRATIONS[n - 1]` migrates version n to n + 1.
  */
-export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion];
+export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion, withFreeLabelsVersion];
 
 /** A file of an older version brought up to `version`, one migration after another. */
 export function migrar(vi, migrations = MIGRATIONS, version = VERSION) {
@@ -115,7 +123,13 @@ export function escribir(g, cat) {
     return ambitos.get(clave);
   };
   const TERMINAL = { "loop-iteration": "i", "loop-condition": "condition", "loop-count": "N", "case-selector": "selector" };
+  const freeLabels = { diagram: [], panel: [] };
   for (const n of g.nodos) {
+    if (isFreeLabel(n)) {
+      if (n.panel) freeLabels.panel.push(freeLabelToFile(n, n.panel));
+      else freeLabels.diagram.push(freeLabelToFile(n, n, porId.get(n.dentro)?.name, n.marco));
+      continue;
+    }
     const b = cat.bloque(n.tipo);
     const etiqueta = n.label ? { text: n.label.text } : undefined;
     if (BORDE.has(n.tipo)) {
@@ -224,6 +238,7 @@ export function escribir(g, cat) {
     diagram: ordenado,
     panel: Object.keys(placPanel).length ? placPanel : undefined,
     wires: Object.keys(recorridos).length ? recorridos : undefined,
+    "free-labels": freeLabels.diagram.length || freeLabels.panel.length ? limpio({ diagram: freeLabels.diagram.length ? freeLabels.diagram : undefined, panel: freeLabels.panel.length ? freeLabels.panel : undefined }) : undefined,
     windows: g.windows,
   });
   const raiz = ambitos.get("");
@@ -348,6 +363,16 @@ export function leer(datos, cat) {
     for (const w of a.wires ?? []) cablesPendientes.push({ ...w, marco });
   }
   leerAmbito(bd, undefined);
+  for (const label of lay["free-labels"]?.diagram ?? []) {
+    const inside = label.inside === undefined ? undefined : estructuras.get(label.inside);
+    if (label.inside !== undefined && !inside) throw new ErrorQvi(`a free label is inside "${label.inside}", which is not in the diagram`);
+    g = crearNodo(g, cat, FREE_LABEL, label.x, label.y).g;
+    retocar((n) => limpio({ ...n, name: undefined, label: { text: label.text }, dentro: inside?.id, marco: label.frame, tam: freeLabelSize(label) }));
+  }
+  for (const label of lay["free-labels"]?.panel ?? []) {
+    g = crearNodo(g, cat, FREE_LABEL, undefined, undefined).g;
+    retocar((n) => limpio({ ...n, name: undefined, x: undefined, y: undefined, label: { text: label.text }, panel: { x: label.x, y: label.y }, tam: freeLabelSize(label) }));
+  }
 
   const porId = new Map(g.nodos.map((n) => [n.id, n]));
   /** De una referencia del fichero al puerto del grafo, según vaya de salida (`from`) o de entrada (`to`). */

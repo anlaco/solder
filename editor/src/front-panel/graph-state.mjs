@@ -6,6 +6,7 @@
 //
 // Pure functions: the window holds `charts` and the VI's last `valores`.
 
+import { isFreeLabel } from "../../../core/model/free-label.mjs";
 import { AXIS_MIN_SPACING, DEFAULT_CHART_HISTORY, DEFAULT_SCALES, autoscale, chartAppend, chartPlots, emptyHistory, graphPlots, stripXScale, xyPlots } from "./plot-data.mjs";
 
 export const GRAPH_KINDS = ["waveform-chart", "waveform-graph", "xy-graph"];
@@ -36,7 +37,8 @@ export function graphSettings(node) {
 export const isShown = (node, item) => !graphSettings(node).hidden.has(item);
 
 /** Visible Items ▸ Label of a graph hides its label, on both canvases; every other object always shows it. */
-export const labelShown = (node) => !isGraph(node) || isShown(node, "label");
+/** Whether an object's own label is drawn. A free label is its own text and has no label apart from it (DT-085). */
+export const labelShown = (node) => !isFreeLabel(node) && (!isGraph(node) || isShown(node, "label"));
 
 /** The patch for `fijarConfig` that shows or hides `item`. */
 export function toggledItem(node, item) {

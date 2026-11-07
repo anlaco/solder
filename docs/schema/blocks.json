@@ -44,6 +44,7 @@
                      "in": [], "out": [{ "name": "result", "type": "number" }],
                      "config": { "default": { "type": "number", "value": 0.0 } } },
 
+    "free-label":  { "cat": "decoration", "desc": "Free label: a comment on the panel or the diagram, kept in the layout and never compiled (DT-085)", "in": [], "out": [], "decoracion": true },
     "str-const":   { "cat": "input",  "desc": "Constante de cadena",
                      "in": [], "out": [{ "name": "result", "type": "string" }],
                      "config": { "default": { "type": "string", "value": "" } } },

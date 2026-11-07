@@ -458,6 +458,36 @@ svg { display: block; overflow: visible; }
     repeating-linear-gradient(180deg, var(--structure-selection-dash) 0 2px, var(--structure-selection-gap) 2px 6px, var(--structure-selection-dash) 6px 8px) left / 1px 100% no-repeat,
     repeating-linear-gradient(180deg, var(--structure-selection-dash) 0 1px, var(--structure-selection-gap) 1px 5px, var(--structure-selection-dash) 5px 8px) right / 1px 100% no-repeat;
 }
+/* Free labels (DT-085, reports/2026-11-07-free-labels-look.md). On the diagram: a 1 px border and a pale fill, 1 px
+   of padding at the sides of the text. Selected: the structures' 4 px dashes, 1 px outside the box. */
+.nodo.etiqueta-libre { box-sizing: border-box; border: 1px solid var(--free-label-border); background: var(--free-label-fill); }
+.nodo.etiqueta-libre.seleccionado::before, .objeto-panel.etiqueta-libre.seleccionado::before { display: none; }
+/* 1 px outside the box on the diagram, 2 px outside it on the panel (measured). The inset counts from inside the
+   diagram box's 1 px border, so -2px is 1 px outside it there and 2 px outside the borderless panel box. */
+.etiqueta-libre.seleccionado::after {
+  content: ""; position: absolute; inset: -2px; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, var(--structure-selection-dash) 0 4px, var(--structure-selection-gap) 4px 8px) top / 100% 1px no-repeat,
+    repeating-linear-gradient(90deg, var(--structure-selection-dash) 0 4px, var(--structure-selection-gap) 4px 8px) bottom / 100% 1px no-repeat,
+    repeating-linear-gradient(180deg, var(--structure-selection-dash) 0 4px, var(--structure-selection-gap) 4px 8px) left / 1px 100% no-repeat,
+    repeating-linear-gradient(180deg, var(--structure-selection-dash) 0 4px, var(--structure-selection-gap) 4px 8px) right / 1px 100% no-repeat;
+}
+.texto-etiqueta-libre {
+  position: absolute; inset: 0; padding: 0 2px 0 0; font-size: var(--fuente); line-height: 15px; white-space: pre;
+  color: var(--free-label-text); cursor: default;
+}
+/* The ink starts at the box's edge on the panel and 2 px in on the diagram (measured); the rest of the width is at the right. */
+.nodo.etiqueta-libre .texto-etiqueta-libre { padding: 0 3px 0 1px; }
+.texto-etiqueta-libre.editando { cursor: text; }
+/* Resized, the text wraps inside the box, at words or inside a word that does not fit, and what does not fit is cut. */
+.texto-etiqueta-libre.con-tamano { white-space: pre-wrap; overflow-wrap: anywhere; overflow: hidden; }
+.asa-estructura[data-asa-libre="nw"], .asa-estructura[data-asa-libre="se"] { cursor: nwse-resize; }
+.asa-estructura[data-asa-libre="ne"], .asa-estructura[data-asa-libre="sw"] { cursor: nesw-resize; }
+.asa-estructura[data-asa-libre="n"], .asa-estructura[data-asa-libre="s"] { cursor: ns-resize; }
+.asa-estructura[data-asa-libre="e"], .asa-estructura[data-asa-libre="w"] { cursor: ew-resize; }
+.texto-etiqueta-libre .caret { display: inline-block; vertical-align: -2px; }
+/* On the panel: no border, white while typed and only the text once confirmed. */
+.objeto-panel.etiqueta-libre .texto-etiqueta-libre.editando { background: var(--free-label-typing-fill); }
 .asa-estructura { width: 6px; height: 6px; background: var(--structure-handle); box-shadow: 0 0 0 1px var(--structure-handle-halo); pointer-events: auto; z-index: auto; }
 .asa-estructura.oculta { background: transparent; box-shadow: none; }
 .asa-estructura[data-asa="nw"], .asa-estructura[data-asa="se"] { cursor: nwse-resize; }

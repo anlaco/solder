@@ -9,6 +9,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Free labels (DT-085), as in LabVIEW: a double click on empty space of the panel or the diagram writes a comment
+  there. Enter starts a line, Ctrl+Enter or a click away confirms, Escape cancels; they move, resize by their handles
+  (the text then wraps), copy and delete as any object, move with the structure they sit in, and have LabVIEW's
+  right-click menu with Size To Text. The compiler ignores them. The `.sdg` format goes to version 4.
 ## 0.11.0-beta — 2026-11-07
 
 Solder talks to LAN instruments by the resource name NI MAX gives them, and the Case Structure takes an error cluster.

@@ -19871,6 +19871,222 @@
       "separado": true
     },
     {
+      "id": "context.diagram-free-label",
+      "etiqueta": "Free Label",
+      "estado": "built",
+      "prueba": "test/editor/free-labels-menu.test.mjs::the_free_labels_menus_have_LabVIEW's_rows_in_order",
+      "captura": "free-labels/s2-bd-menu-crop.png"
+    },
+    {
+      "id": "context.diagram-free-label.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the free label are shown.",
+      "necesita": "etiquetas",
+      "captura": "free-labels/s2-bd-menu-crop.png"
+    },
+    {
+      "id": "context.diagram-free-label.visible-items.vertical-scrollbar",
+      "etiqueta": "Vertical Scrollbar",
+      "estado": "todo",
+      "labview": "Shows a vertical scrollbar in the free label, for text taller than its box.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-bd-sub-va-crop.png"
+    },
+    {
+      "id": "context.diagram-free-label.quick-change",
+      "etiqueta": "Quick Change...",
+      "estado": "todo",
+      "labview": "Opens a gallery of ready-made styles for the free label.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-bd-menu-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.diagram-free-label.size-to-text",
+      "etiqueta": "Size To Text",
+      "estado": "built",
+      "prueba": "test/editor/free-labels-menu.test.mjs::Size_To_Text_is_ticked_until_the_label_is_resized,_and_fits_it_to_its_text_again",
+      "captura": "free-labels/s2-bd-menu-crop.png"
+    },
+    {
+      "id": "context.diagram-free-label.vertical-arrangement",
+      "etiqueta": "Vertical Arrangement",
+      "estado": "todo",
+      "labview": "Writes the text horizontally, stacked letter under letter, or rotated.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-bd-menu-crop.png"
+    },
+    {
+      "id": "context.diagram-free-label.vertical-arrangement.none",
+      "etiqueta": "None",
+      "estado": "todo",
+      "labview": "One of the ways the text is arranged; None is ticked by default.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-bd-sub-va-crop.png"
+    },
+    {
+      "id": "context.diagram-free-label.vertical-arrangement.stacked",
+      "etiqueta": "Stacked",
+      "estado": "todo",
+      "labview": "One of the ways the text is arranged; None is ticked by default.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-bd-sub-va-crop.png"
+    },
+    {
+      "id": "context.diagram-free-label.vertical-arrangement.clockwise",
+      "etiqueta": "Clockwise",
+      "estado": "todo",
+      "labview": "One of the ways the text is arranged; None is ticked by default.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-bd-sub-va-crop.png"
+    },
+    {
+      "id": "context.diagram-free-label.vertical-arrangement.counterclockwise",
+      "etiqueta": "Counterclockwise",
+      "estado": "todo",
+      "labview": "One of the ways the text is arranged; None is ticked by default.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-bd-sub-va-crop.png"
+    },
+    {
+      "id": "context.diagram-free-label.attach-label-to-object",
+      "etiqueta": "Attach Label To Object",
+      "estado": "todo",
+      "labview": "Makes the free label the label of the object it is dropped on.",
+      "necesita": "etiquetas",
+      "captura": "free-labels/s2-bd-menu-crop.png"
+    },
+    {
+      "id": "context.diagram-free-label.text-representation",
+      "etiqueta": "Representation",
+      "estado": "todo",
+      "labview": "The encoding the text is kept in.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-bd-menu-crop.png"
+    },
+    {
+      "id": "context.diagram-free-label.text-representation.utf-8-encoding",
+      "etiqueta": "UTF-8 Encoding",
+      "estado": "todo",
+      "labview": "One of the encodings; System Encoding is ticked by default.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-bd-sub-rep-crop.png"
+    },
+    {
+      "id": "context.diagram-free-label.text-representation.system-encoding",
+      "etiqueta": "System Encoding",
+      "estado": "todo",
+      "labview": "One of the encodings; System Encoding is ticked by default.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-bd-sub-rep-crop.png"
+    },
+    {
+      "id": "context.diagram-free-label.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties dialog of the free label.",
+      "necesita": "propiedades",
+      "captura": "free-labels/s2-bd-menu-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-free-label",
+      "etiqueta": "Free Label",
+      "estado": "built",
+      "prueba": "test/editor/free-labels-menu.test.mjs::the_free_labels_menus_have_LabVIEW's_rows_in_order",
+      "captura": "free-labels/s2-fp-menu-crop.png"
+    },
+    {
+      "id": "context.panel-free-label.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the free label are shown.",
+      "necesita": "etiquetas",
+      "captura": "free-labels/s2-fp-menu-crop.png"
+    },
+    {
+      "id": "context.panel-free-label.visible-items.vertical-scrollbar",
+      "etiqueta": "Vertical Scrollbar",
+      "estado": "todo",
+      "labview": "Shows a vertical scrollbar in the free label, for text taller than its box.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-fp-sub2-crop.png"
+    },
+    {
+      "id": "context.panel-free-label.quick-change",
+      "etiqueta": "Quick Change...",
+      "estado": "todo",
+      "labview": "Opens a gallery of ready-made styles for the free label.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-fp-menu-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.panel-free-label.size-to-text",
+      "etiqueta": "Size To Text",
+      "estado": "built",
+      "prueba": "test/editor/free-labels-menu.test.mjs::Size_To_Text_is_ticked_until_the_label_is_resized,_and_fits_it_to_its_text_again",
+      "captura": "free-labels/s2-fp-menu-crop.png"
+    },
+    {
+      "id": "context.panel-free-label.enable-hyperlinks",
+      "etiqueta": "Enable Hyperlinks",
+      "estado": "todo",
+      "labview": "Makes the web addresses in the text open in the browser when clicked. Ticked by default.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-fp-menu-crop.png"
+    },
+    {
+      "id": "context.panel-free-label.vertical-arrangement",
+      "etiqueta": "Vertical Arrangement",
+      "estado": "todo",
+      "labview": "Writes the text horizontally, stacked letter under letter, or rotated.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-fp-menu-crop.png"
+    },
+    {
+      "id": "context.panel-free-label.vertical-arrangement.none",
+      "etiqueta": "None",
+      "estado": "todo",
+      "labview": "One of the ways the text is arranged; None is ticked by default.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-fp-sub2-crop.png"
+    },
+    {
+      "id": "context.panel-free-label.vertical-arrangement.stacked",
+      "etiqueta": "Stacked",
+      "estado": "todo",
+      "labview": "One of the ways the text is arranged; None is ticked by default.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-fp-sub2-crop.png"
+    },
+    {
+      "id": "context.panel-free-label.vertical-arrangement.clockwise",
+      "etiqueta": "Clockwise",
+      "estado": "todo",
+      "labview": "One of the ways the text is arranged; None is ticked by default.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-fp-sub2-crop.png"
+    },
+    {
+      "id": "context.panel-free-label.vertical-arrangement.counterclockwise",
+      "etiqueta": "Counterclockwise",
+      "estado": "todo",
+      "labview": "One of the ways the text is arranged; None is ticked by default.",
+      "necesita": "formato-de-texto",
+      "captura": "free-labels/s2-fp-sub2-crop.png"
+    },
+    {
+      "id": "context.panel-free-label.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties dialog of the free label.",
+      "necesita": "propiedades",
+      "captura": "free-labels/s2-fp-menu-crop.png",
+      "separado": true
+    },
+    {
       "id": "context.run-chart",
       "etiqueta": "Waveform Chart",
       "estado": "built",

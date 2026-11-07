@@ -3962,3 +3962,65 @@ VXI-11 specification in `native/solder-io`, with no NI-VISA and no RPC library.*
 | The user's `.sdg`, unchanged, runs from the command line against a VXI-11 instrument at 192.168.1.36 in a network namespace | By hand (`unshare -rn`), 2026-11-07 | **Verified** once; no automatic test |
 | Against a real instrument | — | **Unverified** |
 | NI-VISA's defaults on a TCPIP INSTR session, its status for each way Open can fail, the code when END and the count come together, how long a refused Open takes | Measurement in the VM against a VXI-11 instrument, pending | **Unverified** |
+
+## DT-085
+
+**Free labels are nodes of the graph with no ports, of the block `free-label`: on the panel (a `panel` place) or on
+the diagram (`x`, `y`, and the structure and frame they sit in). The compiler skips them, and the `.sdg` keeps them in
+`layout.free-labels`, which raises the format to version 4.**
+
+- **Status:** Accepted on 2026-11-07 by the developer ("implement it properly"), after a user found that a double
+  click on empty space did nothing although `coverage.md` had free labels ticked.
+- **Complements:** [DT-022](#dt-022) (owned labels), [DT-041](#dt-041) (structures), [DT-055](#dt-055) (the frozen
+  format), [DT-078](#dt-078) (the last version raised).
+- **Measured:** [`labview-captures/reports/2026-11-07-free-labels-look.md`](../../labview-captures/reports/2026-11-07-free-labels-look.md)
+  (creation, typing, look) and [`2026-11-07-free-labels-behaviour.md`](../../labview-captures/reports/2026-11-07-free-labels-behaviour.md)
+  (menus, resizing, moving, structures, saving).
+
+### Decision
+
+1. **Model.** A free label is a node like any other, so selecting, moving, deleting, copying, undoing and entering or
+   leaving a structure work as for any object. It keeps its text in `label.text` and, once resized, its size in
+   `tam`. `core/model/free-label.mjs` tells the panel's from the diagram's; the diagram hides the panel's and the
+   panel shows only objects with a `panel` place.
+2. **Compiling.** A block with `decoracion` in `blocks.json` is taken out of the graph before compiling: a free label
+   changes nothing in the module (tested byte for byte).
+3. **File.** `layout.free-labels` = `{ diagram: [ { x, y, text, inside?, frame?, width?, height? } ], panel: [ … ] }`.
+   It is presentation (spec/02 §2). The field is optional, but the format is frozen (DT-055): `solder` goes to 4 and
+   the migration from 3 only changes the number.
+4. **Creating and typing** (measured). A double click on empty space starts one, typed into at once: on the diagram
+   its corner is 7 px above the click, on the panel 1 px right and 6 px above. Enter and Shift+Enter start a line;
+   Ctrl+Enter, a click away and Enter Text confirm; Escape cancels the whole new label. Confirmed empty, it vanishes.
+   A new label cancelled or left empty leaves no step of undo: the graph before it is given back as it was. A double
+   click on a free label types into it again with all its text selected.
+5. **Look** (measured). Diagram: a 1 px border and a pale yellow fill, typed and confirmed; one line 17 high, and 6 px
+   wider than its text. Panel: no border; white while typed, only the text once confirmed; one line 15 high and 2 px
+   wider than its text. Empty, 11 × 17 and 7 × 15. Selected: the structures' dashes of 4 px, 1 px outside the box on the
+   diagram and 2 px on the panel. The colours are theme tokens (`--free-label-*`).
+6. **Resizing** (measured). Eight handles of 6 × 6 px inside the box resize it; from then on it keeps its size
+   (`tam`, saved as `width` and `height`), Size To Text is cleared, the text wraps inside it (at words, or inside a
+   word that does not fit) and what does not fit is cut. It is never smaller than an empty label. A label that was
+   not resized never wraps.
+7. **Menus** (measured). Diagram: Visible Items ▸, Quick Change..., Size To Text, Vertical Arrangement ▸, Attach Label
+   To Object, Representation ▸, Properties. Panel: the same without Attach Label To Object and Representation ▸, with
+   Enable Hyperlinks. Size To Text is done (ticked until a resize; clicking it on a resized label fits it to its text
+   again, keeping its corner); the other rows are greyed with their reason (DT-035).
+8. **Copy and paste** go through the clipboard as any node does; a free label keeps its text (a control's label is
+   numbered to stay unique, a free label's is not) and a panel label gets no diagram place.
+9. **Not yet:** a double click on a label selects all its text, where LabVIEW selects the word under the click:
+   Solder's text editing has no caret position yet, for any label. The Decorations palette's "Label" (Dialog Font on
+   a raised grey box) is a separate object, not done.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Round trip, schema, `inside`, the refused unknown structure, version 3 → 4 | `test/core/free-labels.test.mjs` | **Verified** (2026-11-07) |
+| A free label does not change the compiled module | `test/core/free-labels.test.mjs` | **Verified** (2026-11-07) |
+| Diagram: place for a click, measured sizes, Enter, confirm, empty and Escape leave no undo step, one undo removes it, editing again, inside a loop, not shown or selected from the panel | `test/editor/free-labels-diagram.test.mjs` | **Verified** (2026-11-07) |
+| Panel: place, sizes, white while typed and text only after, empty and Escape, editing again, the diagram's not shown | `test/editor/free-labels-panel.test.mjs` | **Verified** (2026-11-07) |
+| Menus, ticks, Size To Text, resizing by the handles on both canvases, the smallest box, wrapping class | `test/editor/free-labels-menu.test.mjs` | **Verified** (2026-11-07) |
+| The font is LabVIEW's App Font 15 (read through VI Server); Solder draws it in the editor's font | — | **Verified** for LabVIEW; the editor's widths differ from LabVIEW's by the font |
+| In the real editor: creating, typing, cancelling, undo, Ctrl+Enter, look, handles, menus, Size To Text, moving with a loop, save and reopen, Run | By hand under Xvfb ([`2026-11-07-free-labels-solder-editor.md`](../../labview-captures/reports/2026-11-07-free-labels-solder-editor.md)); the marquee inset by `test/editor/free-labels-menu.test.mjs` | **Verified** once (2026-11-07) |
+| Pasting places the copy as for any node; LabVIEW's diagram copy lands at (−8, −2) and then +8, +8 | — | **Unverified** against Solder's paste rule; LabVIEW's panel Ctrl+C/V pasted nothing visible |
+| Scrolling a resized label to keep the caret in view while typed (LabVIEW shows the last lines) | — | **Not done** |

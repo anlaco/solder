@@ -12,7 +12,7 @@
       "description": "Versión del formato. Un lector DEBE rechazar una versión mayor que la que conoce.",
       "type": "integer",
       "minimum": 1,
-      "maximum": 3
+      "maximum": 4
     },
 
     "meta": {
@@ -104,6 +104,15 @@
             }
           }
         },
+        "free-labels": {
+          "description": "Free labels (DT-085): text comments on the panel and the diagram, as LabVIEW's. Presentation only: the compiler does not read them.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "diagram": { "type": "array", "items": { "$ref": "#/$defs/freeLabel" } },
+            "panel": { "type": "array", "items": { "$ref": "#/$defs/freeLabel" } }
+          }
+        },
         "windows": {
           "description": "Where each window of the OVI was when it was last saved and how far its canvas was scrolled (DT-078), as LabVIEW saves them with a VI. Written on every save; moving or scrolling a window does not make the OVI modified.",
           "type": "object",
@@ -118,6 +127,22 @@
   },
 
   "$defs": {
+
+    "freeLabel": {
+      "description": "One free label: the top-left corner of its box, its text (lines split by \\n) and, on the diagram, the structure and frame it sits in. `width` and `height` only once it was resized; otherwise it fits its text.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "text"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "text": { "type": "string" },
+        "inside": { "$ref": "#/$defs/name", "description": "The structure it sits in (diagram only)." },
+        "frame": { "type": "integer", "minimum": 0, "description": "The frame of that structure, for a Case or a sequence." },
+        "width": { "type": "number", "exclusiveMinimum": 0 },
+        "height": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
 
     "window": {
       "description": "The outer bounds of a window on the screen, title bar included, in screen pixels, and `origin`: the point of the canvas at the top left of its visible area.",

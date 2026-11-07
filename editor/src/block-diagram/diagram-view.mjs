@@ -8,6 +8,8 @@
 // de la pantalla a 150 %, entre 1,5.
 
 import * as Et from "../common/labels.mjs";
+import * as FL from "../common/free-labels.mjs";
+import { isFreeLabel, isPanelFreeLabel } from "../../../core/model/free-label.mjs";
 import * as G from "../common/glyphs.mjs";
 import { esHueco, ultimo } from "../common/labview-inventory.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
@@ -451,6 +453,8 @@ export function textosMarcos(n, kind) {
 
 /** ¿Está el nodo en un marco de un Case o una Stacked que no es el que se ve? Entonces no se pinta ni se pulsa. */
 export function oculto(g, n) {
+  // A free label of the panel is not on the diagram at all (DT-085).
+  if (isPanelFreeLabel(n)) return true;
   for (let k = n; ; ) {
     const p = k.dentro && g.nodos.find((x) => x.id === k.dentro);
     if (!p) return false;
@@ -538,12 +542,14 @@ function etiquetaPorDefecto(n, ctx) {
 
 /** La caja de la etiqueta de un nodo en el diagrama, o nada si no tiene. */
 export function cajaEtiqueta(n, ctx, edicion) {
-  if (!n.label) return null;
+  // A free label is its own text: it has no label apart from it (DT-085).
+  if (!n.label || isFreeLabel(n)) return null;
   return Et.caja(n, "diagrama", caja(n, ctx, edicion), etiquetaPorDefecto(n, ctx), ctx.medir, edicion);
 }
 
 /** La caja de un nodo: su posición es la esquina de la tinta de su icono. */
 export function caja(n, ctx, edicion) {
+  if (isFreeLabel(n)) return FL.box(n, "diagrama", ctx.medir, edicion);
   if (esEstructura(n, ctx)) return { x: n.x, y: n.y, ancho: n.tam.ancho, alto: n.tam.alto };
   if (esBorde(n)) return { x: n.x, y: n.y, ancho: TAM_BORDE[n.tipo][0], alto: TAM_BORDE[n.tipo][1] };
   if (esDelPanel(n, ctx)) {
@@ -971,7 +977,7 @@ export function contenido(d0, ctx, resueltos) {
     .join("");
   const nodos = g.nodos.filter((n) => !esEstructura(n, ctx)).map((n) => nodo(n, d, ctx, resueltos, elegidos.has(n.id))).join("");
   const etiquetas = g.nodos
-    .filter((n) => n.label && labelShown(n))
+    .filter((n) => n.label && !isFreeLabel(n) && labelShown(n))
     .map((n) => Et.pintar(n, cajaEtiqueta(n, ctx, edicion), { edicion, elegida: elegidos.has(`${n.id}#etiqueta`) }))
     .join("");
   let rect = "";
@@ -1259,7 +1265,9 @@ function nodo(n, d, ctx, resueltos, elegido) {
   const k = caja(n, ctx, d.edicion);
   const c = CONSTANTES[n.tipo];
   let cuerpo;
-  if (esBorde(n)) {
+  if (isFreeLabel(n)) {
+    cuerpo = `<div class="${FL.textClass(n, d.edicion)}">${FL.contentHtml(n, d.edicion)}</div>`;
+  } else if (esBorde(n)) {
     cuerpo = `<div class="glifo-borde">${glifoBorde(n, resueltos, d.completo ?? d.g)}</div>`;
   } else if (c?.error) {
     cuerpo = constanteError(n, d.edicion);
@@ -1344,6 +1352,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
   const handleClass = showsStretchHandles(n, d, elegido) ? "asa" : "asa oculta";
   let asas = "";
   if (c?.array && !isUndefinedArray(n.config?.type)) asas = asasArray(n, k, ctx, d.edicion, handleClass);
+  // A free label's 1 px border shifts what it holds: its handles are put back on the box's corners.
+  if (isFreeLabel(n)) asas = FL.handlesHtml(n, k, { shown: structureShowsStretchHandles(n, d, elegido), inset: 1 });
   // Initialize Array is stretched downwards to add a dimension size (array-2d/initializearray-contexthelp.png).
   if (n.tipo === "initialize-array") asas = `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(k.ancho / 2 - 3)};top:${px(k.alto - 3)}"></div>`;
   // Format Into String and Scan From String are stretched downwards to add rows (format-scan/16-node-stretched.png).
@@ -1375,7 +1385,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
   const escribiendo = d.edicion?.nodo === n.id && !d.edicion.etiqueta;
   if (n.tipo === SpreadsheetNodes.READ_DELIMITED) zonas += instanceRing(n);
   if (PolymorphicNodes.selectorShown(n, ctx.cat)) zonas += polymorphicSelector(n, ctx);
-  return `<div class="nodo${elegido || escribiendo ? " seleccionado" : ""}${editable}${litByDebugger(d, n.id)}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${cuerpo}${circulos}${zonas}${asas}</div>`;
+  const freeLabelClass = isFreeLabel(n) ? " etiqueta-libre" : "";
+  return `<div class="nodo${freeLabelClass}${elegido || escribiendo ? " seleccionado" : ""}${editable}${litByDebugger(d, n.id)}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${cuerpo}${circulos}${zonas}${asas}</div>`;
 }
 
 /** While Highlight Execution dims the diagram, the nodes that already ran in this iteration keep their colors (debugging/debug-view.mjs). */
@@ -1696,6 +1707,7 @@ export function dentroDe(g0, ctx, r) {
 export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   // Un túnel de entrada de un Case tiene otro menú que el de un bucle (case-menu-tunel-entrada.png).
   if (n.tipo === "tunnel-in" && g?.nodos.find((k) => k.id === n.dentro)?.tipo === "case-structure") return "context.case-tunnel-input";
+  if (isFreeLabel(n)) return FL.DIAGRAM_MENU_ROOT;
   if (n.tipo in MENU_ESTRUCTURA) return MENU_ESTRUCTURA[n.tipo];
   if (PolymorphicNodes.isPolymorphicNode(n)) return PolymorphicNodes.MENU_ROOT;
   if (isSubVI(n)) return "context.subvi";

@@ -224,6 +224,10 @@
   --structure-tint: #f5f5fc;
   --structure-selection-dash: #4386b9;
   --structure-selection-gap: #bfdbf1;
+  --free-label-fill: #ffffd7;
+  --free-label-border: #000;
+  --free-label-text: #000;
+  --free-label-typing-fill: #fff;
   --structure-handle: #0078d4;
   --structure-handle-halo: #fff;
   --structure-placement-border: #666;

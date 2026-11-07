@@ -184,6 +184,10 @@
   --structure-tint: rgba(43, 47, 54, 0.025);
   --structure-selection-dash: #ff7a1a;
   --structure-selection-gap: #ffe3cc;
+  --free-label-fill: #fff8d6;
+  --free-label-border: #2b2f36;
+  --free-label-text: #2b2f36;
+  --free-label-typing-fill: #fff;
   --structure-handle: #ff7a1a;
   --structure-placement-border: #2b2f36;
   --while-frame: #2b2f36;

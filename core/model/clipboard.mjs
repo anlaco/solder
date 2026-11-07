@@ -4,6 +4,7 @@
 // A pure module: every operation returns new data.
 
 import { borrar, conContenido, etiquetaLibre } from "./graph.mjs";
+import { isFreeLabel } from "./free-label.mjs";
 import { PROPERTY_NODE } from "./property-node.mjs";
 
 /**
@@ -44,7 +45,9 @@ export function pasteFragment(g, fragment, { dx = 0, dy = 0, panelDx = dx, panel
   const isTop = (n) => !newId.has(n.dentro);
   let labelled = g;
   const pastedNodes = fragment.nodes.map((n) => {
-    const node = { ...structuredClone(n), id: newId.get(n.id), name: freeName(n.tipo), x: n.x + dx, y: n.y + dy };
+    const node = { ...structuredClone(n), id: newId.get(n.id), name: freeName(n.tipo) };
+    // A free label of the panel has no place on the diagram to shift (DT-085).
+    if (n.x !== undefined) Object.assign(node, { x: n.x + dx, y: n.y + dy });
     if (isTop(n)) {
       if (scope === undefined) delete node.dentro;
       else node.dentro = scope;
@@ -53,7 +56,8 @@ export function pasteFragment(g, fragment, { dx = 0, dy = 0, panelDx = dx, panel
     if (node.config?.par) node.config.par = newId.get(node.config.par);
     if (node.panel) {
       node.panel = { ...node.panel, x: node.panel.x + panelDx, y: node.panel.y + panelDy };
-      if (node.label?.text !== undefined) {
+      // A free label keeps its text: only a control's label is numbered to stay unique.
+      if (node.label?.text !== undefined && !isFreeLabel(node)) {
         node.label = { ...node.label, text: etiquetaLibre(labelled, baseLabel(node.label.text)) };
         labelled = { ...labelled, nodos: [...labelled.nodos, node] };
       }

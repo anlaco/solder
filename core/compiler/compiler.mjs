@@ -2289,7 +2289,9 @@ function laidOutInMemory(resolved) {
  * connector control and indicator to its slot in the data space, through which
  * the caller passes inputs and reads outputs (DT-045).
  */
-function compileVI(g, cat, module, asSubVI, instanceKey, chainIndex) {
+function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainIndex) {
+  // Free labels and other decorations (DT-085) are presentation: they have no ports and nothing to emit.
+  const g = { ...withDecorations, nodos: withDecorations.nodos.filter((n) => !cat.bloque(n.tipo).decoracion) };
   // A path is laid out as a string's handle, so the functions that take a path or a string, and the
   // panel, look at the types as the graph has them.
   const logicalTypes = tipos(g, cat);

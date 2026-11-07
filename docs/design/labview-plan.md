@@ -46,6 +46,10 @@ When the developer says "keep going":
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
 
+*2026-11-07: free labels on the panel and the diagram (DT-085), measured in LabVIEW and done the same day, after a user
+found that a double click on an empty spot did nothing (`coverage.md` had them ticked by mistake); the `.sdg` format is
+at version 4. Left: selecting the word under a double click (needs a caret in text editing), the Decorations "Label".*
+
 *2026-11-07: VISA opens LAN instruments over VXI-11, `TCPIP::host::INSTR` (DT-084), because a user's OVI needed it.
 Pending: measure NI-VISA's TCPIP INSTR session in the VM against a VXI-11 instrument (the points DT-084 marks
 unverified).*

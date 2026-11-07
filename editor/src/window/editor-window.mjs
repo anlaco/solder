@@ -34,6 +34,7 @@ import * as Et from "../common/labels.mjs";
 import * as E from "./window-state.mjs";
 import * as G from "../common/glyphs.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
+import { isFreeLabel } from "../../../core/model/free-label.mjs";
 import * as H from "../block-diagram/undo-history.mjs";
 import { cargarInventario, esHueco, ultimo } from "../common/labview-inventory.mjs";
 import { addressFromText } from "../common/array-grid.mjs";
@@ -1442,6 +1443,8 @@ function objetivoPanel(el) {
   if (etiqueta) return { tipo: "etiqueta", id: etiqueta.dataset.etiqueta };
   const campo = el.closest("[data-campo]");
   if (campo) return { tipo: "campo", id: objectOf(campo), campo: campo.dataset.campo };
+  const freeLabelHandle = el.closest("[data-asa-libre]");
+  if (freeLabelHandle) return { tipo: "asa-libre", id: freeLabelHandle.dataset.nodo, lado: freeLabelHandle.dataset.asaLibre };
   const asaArray = el.closest("[data-asa-array]");
   if (asaArray) return { tipo: "asa-array", id: objectOf(asaArray), lado: asaArray.dataset.lado };
   const elem = el.closest("[data-k]");
@@ -1601,6 +1604,9 @@ addEventListener("mousedown", (ev) => {
   if (doubleClicked && ExpressNodes.isExpressNode(doubleClicked, cat)) return cambiarDiagrama(ED.openConfiguration(dia, ctx, doubleClicked.id));
   // A double click on a Call Library Function Node opens its configuration dialog (DT-080).
   if (doubleClicked && CallLibraryNodes.isCallLibraryNode(doubleClicked)) return cambiarDiagrama(ED.openCallLibraryConfiguration(dia, doubleClicked.id));
+  // A double click on empty space starts a free label; on a free label, types into it again (DT-085).
+  if (ev.detail >= 2 && sobreDiagrama.tipo === "fondo" && !dia.accion?.tipo?.startsWith("colocar")) return cambiarDiagrama(ED.startFreeLabel(dia, ctx, punto(ev)));
+  if (doubleClicked && isFreeLabel(doubleClicked) && !dia.edicion) return cambiarDiagrama(ED.editFreeLabel(dia, doubleClicked.id));
   const id = ev.detail >= 2 && nodoDe(sobreDiagrama);
   if (id && (D.CONSTANTES[dia.g.nodos.find((n) => n.id === id)?.tipo]?.editable || dia.g.nodos.find((n) => n.id === id)?.tipo === "expression-node")) return cambiarDiagrama(ED.editar(dia, ctx, id, sobreDiagrama.campo));
   cambiarDiagrama(ED.pulsar(dia, ctx, sobreDiagrama, punto(ev), ev.shiftKey, ev.ctrlKey || ev.metaKey));
@@ -1689,6 +1695,9 @@ function pulsarPanel(ev) {
   // A cell of the connector pane is waiting for a control or an indicator: this click gives it one.
   if (pan.conector) return cambiarPanel(CP.assignClicked(pan, cat, CONECTABLES.includes(sobre.tipo) ? sobre.id : null));
   if (ev.detail >= 2 && sobre.tipo === "etiqueta") return cambiarPanel(P.editar(pan, sobre.id));
+  // A double click on empty space starts a free label; on a free label, types into it again (DT-085).
+  if (ev.detail >= 2 && sobre.tipo === "fondo" && pan.accion?.tipo !== "colocar") return cambiarPanel(P.startFreeLabel(pan, ctx, punto(ev)));
+  if (ev.detail >= 2 && sobre.tipo === "objeto" && !pan.edicion && isFreeLabel(pan.g.nodos.find((n) => n.id === sobre.id))) return cambiarPanel(P.editFreeLabel(pan, sobre.id));
   // Doble clic en la casilla de un control: todo el valor seleccionado.
   if (ev.detail >= 2 && sobre.tipo === "casilla" && (pan.edicion?.valor || P.doubleClickTypes(pan, sobre, punto(ev)))) return cambiarPanel(P.editarValor(pan, ctx, sobre.id, true));
   if (ev.detail >= 2 && sobre.tipo === "elem" && pan.edicion?.elem === sobre.k) return cambiarPanel(P.editarElemento(pan, ctx, sobre.id, sobre.k, true));
@@ -2079,6 +2088,11 @@ addEventListener("keydown", (ev) => {
   if (conPanel && pan.edicion?.campo === "source" && ctrl && ev.key === "Enter") {
     ev.preventDefault();
     return cambiarPanel(P.confirmar(pan));
+  }
+  // Ctrl+Enter confirms a free label, where Enter starts another line (measured, DT-085).
+  if (ctrl && ev.key === "Enter" && (conDiagrama ? dia.edicion?.libre : conPanel && pan.edicion?.libre)) {
+    ev.preventDefault();
+    return conDiagrama ? cambiarDiagrama(ED.confirmar(dia, ctx)) : cambiarPanel(P.confirmar(pan));
   }
   // Ctrl+A while a text is being typed selects all of it (LabVIEW: click in the box, then Ctrl+A).
   if (ctrl && !ev.shiftKey && !ev.altKey && ev.key.toLowerCase() === "a" && (conDiagrama ? dia.edicion : conPanel && pan.edicion)) {

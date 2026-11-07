@@ -41,6 +41,8 @@ import { sharedSegmentCount } from "./wire-tree.mjs";
 import * as CP from "../front-panel/connector-pane.mjs";
 import { graphCommand, graphMenuMarks, graphMenuVariants, isGraphMenu } from "../front-panel/graph-menus.mjs";
 import * as Et from "../common/labels.mjs";
+import * as FL from "../common/free-labels.mjs";
+import { FREE_LABEL, isFreeLabel } from "../../../core/model/free-label.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { pathFromText } from "../../../core/model/paths.mjs";
 import * as TC from "./terminal-creation.mjs";
@@ -985,7 +987,8 @@ export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
               : { ...d, lista: null };
   // Pulsar fuera de la constante en la que se escribe confirma lo escrito, y
   // nada más: es lo que se ve en el vídeo.
-  const enLoQueSeEscribe = d.edicion?.marco ? sobre.tipo === "marco" && sobre.zona === "texto" && sobre.nodo === d.edicion.nodo : sobre.id === d.edicion?.nodo && sobre.tipo === (d.edicion?.etiqueta ? "etiqueta" : "nodo");
+  const typedTargetKind = d.edicion?.etiqueta && !d.edicion.libre ? "etiqueta" : "nodo";
+  const enLoQueSeEscribe = d.edicion?.marco ? sobre.tipo === "marco" && sobre.zona === "texto" && sobre.nodo === d.edicion.nodo : sobre.id === d.edicion?.nodo && sobre.tipo === typedTargetKind;
   if (d.edicion && !enLoQueSeEscribe) return confirmar(d, ctx);
   if (d.edicion) return d;
   const { accion } = d;
@@ -1076,6 +1079,10 @@ export function moverA(d, ctx, p) {
       const arr = accion.g0.nodos.find((k) => k.id === accion.nodo);
       if (arr?.tipo === "arr-const") return { ...d, g: Gr.fijarConfig(accion.g0, accion.nodo, stretchedArrayConstant(arr, ctx, accion, p)) };
       if (arr?.tipo === "initialize-array") return { ...d, g: stretchedInitializeArray(accion, p, ctx) };
+      if (isFreeLabel(arr)) {
+        const stretched = FL.resized(arr, "diagrama", caja(arr, ctx), accion.lado, p.x - accion.x0, p.y - accion.y0);
+        return { ...d, g: { ...accion.g0, nodos: accion.g0.nodos.map((n) => (n.id === arr.id ? stretched : n)) } };
+      }
       if (esEstructura(accion.g0.nodos.find((k) => k.id === accion.nodo), ctx)) return { ...d, g: estirarEstructura(accion, p, ctx) };
       if (arr && ExpressNodes.isExpressNode(arr, ctx.cat)) return { ...d, g: ExpressNodes.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / ExpressNodes.ROW_PITCH)) };
       if (UN.isByName(arr)) return { ...d, g: UN.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / UN.ROW_STEP)) };
@@ -1335,6 +1342,29 @@ export function editar(d, ctx, id, campo) {
   return { ...d, edicion: { nodo: id, texto: CONSTANTES[n.tipo].texto(n, ctx), todo: true, ...(CONSTANTES[n.tipo].cadena ? { cadena: true } : {}) }, seleccion: [id], accion: null, menu: null };
 }
 
+/**
+ * A double click on empty diagram space starts a free label there (DT-085): it is typed into at once, with nothing
+ * selected. The graph before it is kept, so cancelling it or confirming it empty leaves no step of undo (measured).
+ */
+export function startFreeLabel(d, ctx, point) {
+  const corner = FL.cornerForClick("diagrama", point);
+  const created = Gr.crearNodo(d.g, ctx.cat, FREE_LABEL, corner.x, corner.y);
+  const g = alojar(Gr.fijarEtiqueta(created.g, created.id, ""), ctx, [created.id]);
+  return { ...d, g, seleccion: [], accion: null, menu: null, edicion: { nodo: created.id, etiqueta: true, libre: true, texto: "", todo: false, graphBefore: d.g } };
+}
+
+/** A double click on a free label types into it again, with all its text selected, as into an owned label. */
+export function editFreeLabel(d, id) {
+  const node = d.g.nodos.find((candidate) => candidate.id === id);
+  return isFreeLabel(node) ? { ...d, edicion: { ...Et.editar(node), libre: true }, seleccion: [], accion: null, menu: null } : d;
+}
+
+/** What confirming a free label leaves: its text, or, empty, no label at all (measured: it vanishes). */
+function commitFreeLabel(d, typing) {
+  if (typing.texto !== "") return { ...d, g: Gr.fijarEtiqueta(d.g, typing.nodo, typing.texto), edicion: null };
+  return { ...d, g: typing.graphBefore ?? Gr.borrar(d.g, [typing.nodo]), edicion: null, seleccion: [] };
+}
+
 /** Doble clic en la etiqueta de un nodo: se escribe en ella, con todo su texto seleccionado. */
 export function editarEtiqueta(d, id) {
   const n = d.g.nodos.find((k) => k.id === id);
@@ -1381,6 +1411,7 @@ function keepRightEdge(before, after, ctx) {
 function commitTyping(d, ctx) {
   const e = d.edicion;
   if (!e) return d;
+  if (e.libre) return commitFreeLabel(d, e);
   if (e.etiqueta) return { ...d, g: Gr.fijarEtiqueta(d.g, e.nodo, e.texto), edicion: null };
   if (e.marco) return { ...d, g: escribirMarco(d.g, ctx, e.nodo, e.texto), edicion: null };
   // The name of an item of an enum constant, written where the constant is (DT-049): a
@@ -1466,6 +1497,7 @@ export function orden(d, id, ctx) {
   if (graphResult) return graphResult;
   const { nodo, puerto } = d.menu;
   const cerrar = (g) => ({ ...d, g, menu: null });
+  if (id.endsWith(".size-to-text") && isFreeLabel(nodoPor(d.g, nodo))) return cerrar(FL.toggleSizeToText(d.g, nodo, ctx.medir, FL.canvasOf(nodoPor(d.g, nodo))));
   // Edit Items… opens the enum's Properties dialog on its Edit Items tab (DT-049); the
   // window draws it and keeps it modal.
   if (id.endsWith(".edit-items")) return { ...d, menu: null, itemsDialog: EI.open(nodoPor(d.g, nodo)) };
@@ -1907,6 +1939,7 @@ export function marcados(d, ctx) {
   const n = d.menu && d.g.nodos.find((k) => k.id === d.menu.nodo);
   if (!n) return new Set();
   const r = d.menu.raiz;
+  if (isFreeLabel(n)) return FL.menuMarks(r, n);
   const m = new Set();
   if (n.vista?.terminales) m.add(`${r}.visible-items.terminals`);
   if (r === PolymorphicNodes.MENU_ROOT && ctx) for (const row of PolymorphicNodes.menuMarks(n, ctx.cat)) m.add(row);
@@ -2024,6 +2057,8 @@ export function createOnWire(d, ctx, cable, kind) {
 export function escape(d) {
   if (d.menu) return { ...d, menu: null };
   if (d.lista) return { ...d, lista: null };
+  // Escape cancels a free label just started, the whole of it (measured); typing into one already there, only the typing.
+  if (d.edicion?.graphBefore) return { ...d, g: d.edicion.graphBefore, edicion: null };
   if (d.edicion) return { ...d, edicion: null };
   if (d.accion || d.aviso) return { ...d, accion: null, aviso: null };
   return { ...d, seleccion: [] };

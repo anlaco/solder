@@ -24,6 +24,8 @@
 
 import * as CV from "../../../core/model/control-values.mjs";
 import * as Et from "../common/labels.mjs";
+import * as FL from "../common/free-labels.mjs";
+import { FREE_LABEL, isFreeLabel } from "../../../core/model/free-label.mjs";
 import { BOOLEANOS } from "../common/glyphs.mjs";
 import { isUndefinedArray } from "../../../core/model/types.mjs";
 import { controlForElement, elementMenuRoot, emptyArrayAgain, isEmptyArrayShell, panelArrayFromElement, typeEmptyArray } from "../common/array-typing.mjs";
@@ -245,7 +247,8 @@ export function cajaObjeto(tipo, x, y, config) {
   return { x, y, ancho: casilla + (esEnum(config?.type) ? CASILLA_ENUM : M.casilla), alto: M.alto, casilla };
 }
 
-export const caja = (n) => cajaObjeto(n.tipo, n.panel.x, n.panel.y, n.config);
+/** An object's box on the panel. A free label's follows its text: `measure` and `edicion` say how wide it is drawn. */
+export const caja = (n, measure, edicion) => (isFreeLabel(n) ? { ...FL.box(n, "panel", measure, edicion), casilla: 0 } : cajaObjeto(n.tipo, n.panel.x, n.panel.y, n.config));
 
 /** How deep inside a numeric or string control's edge a press moves it instead of typing (2026-10-17-panel-move-zones.md). */
 const MOVE_BAND_PX = 4;
@@ -438,7 +441,16 @@ function arrayObject(n, ctx, frame, editing, valores, elementSelected) {
 }
 
 /** One object of the panel; a graph's legend and plot swatch are parts of it (`data-parte`) with menus of their own. */
+/** A free label on the panel (DT-085): a box with no border, white while it is typed and only its text after. */
+function freeLabelObject(n, ctx, selected, p) {
+  const box = caja(n, ctx.medir, p.edicion);
+  const classes = `objeto-panel etiqueta-libre${selected ? " seleccionado" : ""}`;
+  const handles = FL.handlesHtml(n, box, { shown: selected, attribute: "data-asa-libre" });
+  return `<div class="${classes}" data-nodo="${FL.esc(n.id)}" style="left:${FL.px(box.x)};top:${FL.px(box.y)};width:${FL.px(box.ancho)};height:${FL.px(box.alto)}"><div class="${FL.textClass(n, p.edicion)}">${FL.contentHtml(n, p.edicion)}</div>${handles}</div>`;
+}
+
 function panelObject(n, ctx, selected, p, resolvedTypes) {
+  if (isFreeLabel(n)) return freeLabelObject(n, ctx, selected, p);
   const editing = p.edicion?.valor && p.edicion.nodo === n.id ? p.edicion : null;
   const frame = { id: n.id, box: caja(n), label: n.label?.text ?? "", selected, editing: !!editing, isControl: isControlNode(n), classes: disabledClasses(p.runProps, n.id) };
   const control = CONTROLES[n.tipo];
@@ -550,7 +562,7 @@ function colocar(p, ctx, pt) {
 export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
   // Pulsar fuera de la etiqueta en la que se escribe confirma lo escrito, y
   // nada más.
-  const enLoQueSeEscribe = sobre.id === p.edicion?.nodo && (p.edicion?.valor ? (sobre.tipo === "elem" && sobre.k === p.edicion.elem) || (sobre.tipo === "casilla" && !p.edicion.campo && p.edicion.elem === undefined) || (sobre.tipo === "campo" && sobre.campo === p.edicion.campo) : sobre.tipo === "etiqueta");
+  const enLoQueSeEscribe = sobre.id === p.edicion?.nodo && (p.edicion?.libre ? sobre.tipo === "objeto" : p.edicion?.valor ? (sobre.tipo === "elem" && sobre.k === p.edicion.elem) || (sobre.tipo === "casilla" && !p.edicion.campo && p.edicion.elem === undefined) || (sobre.tipo === "campo" && sobre.campo === p.edicion.campo) : sobre.tipo === "etiqueta");
   // Pulsar fuera de lo que se escribe lo confirma, y nada más, como en el vídeo.
   if (p.edicion && !enLoQueSeEscribe) return confirmar(p);
   if (p.edicion) return p;
@@ -577,6 +589,11 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
     const grabsElement = !CONTROLES[nodo.tipo]?.control || p.seleccion.includes(elementSelectionId(nodo.id)) || isInMoveBand(elementBox(nodo, sobre.k), pt);
     if (!grabsElement) return editarElemento(p, ctx, sobre.id, sobre.k, false);
     return { ...p, seleccion: [elementSelectionId(nodo.id)], accion: { tipo: "sacar-elemento", nodo: nodo.id, k: sobre.k, x0: pt.x, y0: pt.y, x: pt.x, y: pt.y, movido: false } };
+  }
+  // A handle of a free label resizes it (DT-085).
+  if (sobre.tipo === "asa-libre") {
+    const node = p.g.nodos.find((m) => m.id === sobre.id);
+    return { ...p, seleccion: [sobre.id], accion: { tipo: "estirar-libre", nodo: sobre.id, lado: sobre.lado, x0: pt.x, y0: pt.y, g0: p.g, box0: caja(node, ctx.medir) } };
   }
   if (sobre.tipo === "asa-array") {
     const nodo = p.g.nodos.find((m) => m.id === sobre.id);
@@ -627,6 +644,11 @@ export function moverA(p, ctx, pt) {
       return pt.x === accion.x && pt.y === accion.y ? p : { ...p, accion: { ...accion, x: pt.x, y: pt.y, movido: true } };
     case "estirar-array":
       return { ...p, g: Gr.fijarConfig(p.g, accion.nodo, estirarArray(p.g.nodos.find((m) => m.id === accion.nodo), accion, pt)) };
+    case "estirar-libre": {
+      const node = accion.g0.nodos.find((m) => m.id === accion.nodo);
+      const stretched = FL.resized(node, "panel", accion.box0, accion.lado, pt.x - accion.x0, pt.y - accion.y0);
+      return { ...p, g: { ...accion.g0, nodos: accion.g0.nodos.map((m) => (m.id === node.id ? stretched : m)) } };
+    }
     default:
       return p;
   }
@@ -738,6 +760,7 @@ const alternar = (g, n) => CV.setCurrentValue(g, n.id, !valorActual(n));
 
 /** El menú de clic derecho de un objeto del panel, en el inventario; los numéricos aún no están capturados. */
 export function menuDe(n, onElement = false) {
+  if (isFreeLabel(n)) return FL.PANEL_MENU_ROOT;
   // An array control (labview-captures/array-2d/panel-array-menu-index.png), the same for the indicator (measured, array-typing/). Its typed
   // ELEMENT has a menu of its own; the index and the margin of the shell keep the array's.
   if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return (onElement && elementMenuRoot(n)) || "context.panel-array";
@@ -760,6 +783,25 @@ export function menuDe(n, onElement = false) {
 // ——— Escribir en una etiqueta ———
 
 /** Doble clic en una etiqueta: se escribe en ella, con todo el texto seleccionado. */
+/**
+ * A double click on empty panel space starts a free label there (DT-085), typed into at once. As on the diagram, the
+ * graph before it is kept: cancelled or confirmed empty, it leaves no step of undo (measured).
+ */
+export function startFreeLabel(p, ctx, point) {
+  const corner = FL.cornerForClick("panel", point);
+  const created = Gr.crearNodo(p.g, ctx.cat, FREE_LABEL, undefined, undefined);
+  // A free label of the panel has no place on the diagram.
+  const onThePanel = ({ x: _x, y: _y, ...rest }) => ({ ...rest, panel: { x: corner.x, y: corner.y }, label: { text: "" } });
+  const g = { ...created.g, nodos: created.g.nodos.map((n) => (n.id === created.id ? onThePanel(n) : n)) };
+  return { ...p, g, seleccion: [], accion: null, menu: null, edicion: { nodo: created.id, etiqueta: true, libre: true, texto: "", todo: false, graphBefore: p.g } };
+}
+
+/** A double click on a free label types into it again, with all its text selected. */
+export function editFreeLabel(p, id) {
+  const node = p.g.nodos.find((candidate) => candidate.id === id);
+  return isFreeLabel(node) ? { ...p, edicion: { ...Et.editar(node), libre: true }, seleccion: [], accion: null } : p;
+}
+
 export function editar(p, id) {
   const n = p.g.nodos.find((m) => m.id === id);
   return n ? { ...p, edicion: Et.editar(n), seleccion: [], accion: null } : p;
@@ -853,6 +895,8 @@ function pasoValor(g, id, paso) {
 export function confirmar(p) {
   const e = p.edicion;
   if (!e) return p;
+  // A free label confirmed empty vanishes (measured).
+  if (e.libre && e.texto === "") return { ...p, g: e.graphBefore ?? Gr.borrar(p.g, [e.nodo]), edicion: null, seleccion: [] };
   if (!e.valor) return { ...p, g: Gr.fijarEtiqueta(p.g, e.nodo, e.texto), edicion: null };
   // A control shows 6 significant digits: reading back the text it showed would round its value.
   if (e.texto === e.shown) return { ...p, edicion: null };
@@ -896,6 +940,8 @@ export function confirmar(p) {
 /** Esc deja la etiqueta como estaba o lo que está a medias; si no hay nada, vacía la selección. */
 export function escape(p) {
   if (p.menu) return { ...p, menu: null };
+  // Escape cancels a free label just started, the whole of it (measured).
+  if (p.edicion?.graphBefore) return { ...p, g: p.edicion.graphBefore, edicion: null };
   if (p.edicion) return { ...p, edicion: null };
   if (p.accion) return { ...p, accion: null };
   return { ...p, seleccion: [] };

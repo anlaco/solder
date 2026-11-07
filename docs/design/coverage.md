@@ -26,7 +26,7 @@
 | Language and types | 13 / 25 (52 %) | `█████░░░░░` |
 | Structures | 9 / 22 (41 %) | `████░░░░░░` |
 | Execution | 8 / 15 (53 %) | `█████░░░░░` |
-| Diagram editing | 12 / 29 (41 %) | `████░░░░░░` |
+| Diagram editing | 13 / 30 (43 %) | `████░░░░░░` |
 | Front panel editing | 9 / 22 (41 %) | `████░░░░░░` |
 | SubOVIs, libraries and projects | 7 / 21 (33 %) | `███░░░░░░░` |
 | Debugging | 8 / 16 (50 %) | `█████░░░░░` |
@@ -35,7 +35,7 @@
 | Functions palette | 210 / 538 (39 %) | `████░░░░░░` |
 | Controls palette | 24 / 86 (28 %) | `███░░░░░░░` |
 | Windows and dialogs | 141 / 398 (35 %) | `████░░░░░░` |
-| Right-click menus | 462 / 1872 (25 %) | `██░░░░░░░░` |
+| Right-click menus | 464 / 1892 (25 %) | `██░░░░░░░░` |
 <!-- /coverage:summary -->
 
 ## Features
@@ -120,7 +120,8 @@
 - [x] Cut, Copy and Paste, also between OVIs, and Ctrl+drag
 - [x] Create ▸ Constant, Control and Indicator on terminals and wires (no Scalar ▸, no Channel Writer)
 - [x] Constants edited in place
-- [x] Free labels and owned labels
+- [x] Owned labels
+- [x] Free labels (comments on the panel and the diagram)
 - [x] View As Icon
 - [x] Remove Broken Wires (Ctrl+B)
 - [x] Replace ▸ between Flat and Stacked Sequence
@@ -342,5 +343,5 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Menus | Covered | |
 |-------|---------|---|
-| Every right-click menu captured | 462 / 1872 (25 %) | `██░░░░░░░░` |
+| Every right-click menu captured | 464 / 1892 (25 %) | `██░░░░░░░░` |
 <!-- /coverage:inventory -->
