@@ -9,6 +9,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+## 0.11.0-beta — 2026-11-07
+
+Solder talks to LAN instruments by the resource name NI MAX gives them, and the Case Structure takes an error cluster.
+
 - A Case Structure takes an error cluster on its selector (DT-083), as in LabVIEW: frames No Error and Error .., and
   frames by code (Error 7, Error 1..5); a warning runs No Error. Wiring an error cluster to a Boolean Case turns True
   into No Error and False into Error ...
