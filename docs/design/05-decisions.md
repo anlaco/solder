@@ -3823,6 +3823,9 @@ a system folder and a user folder at start-up, and an add-on's OVIs are named by
 5. **Palettes:** an add-on's `menus/` is overlaid at the same relative path, as LabVIEW's; Solder's own palettes name
    in advance the places of the libraries Solder knows (DAQ in Measurement I/O, as NI's do), and a third party's
    manifest may say under which palette its entry goes.
+5b. **The same add-on in both folders** (decided 2026-11-07 by the developer): the user's copy is used, because the
+   user put it there on purpose. LabVIEW has a single add-ons folder, so it has no such case (its report
+   `2026-11-06-addons.md` shows one folder and one registry path); this is a departure of Solder's, like the user folder.
 6. **Installing** is copying the folder for now; a package format and a manager, as NI Package Manager or VIPM, get
    their own DT.
 
