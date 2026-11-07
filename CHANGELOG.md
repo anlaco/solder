@@ -14,6 +14,8 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   into No Error and False into Error ...
 - Bundle By Name (DT-083), the mirror of Unbundle By Name: replaces the elements its rows name and passes the rest.
 - examples/error-no-error/ErrorNoError.sdg, built one to one from a LabVIEW VI, gives LabVIEW's results run after run.
+- VISA opens LAN instruments by their `TCPIP::host::INSTR` resource (DT-084): Solder speaks VXI-11 itself, so
+  `TCPIP0::192.168.1.36::inst0::INSTR` works as NI MAX writes it, with no NI-VISA. HiSLIP is not spoken yet.
 - Fixed: a Property Node writing Value to an unwired Boolean indicator showed a number instead of TRUE or FALSE.
 
 ## 0.10.0-beta — 2026-11-06

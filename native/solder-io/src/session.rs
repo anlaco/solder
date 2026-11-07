@@ -10,11 +10,13 @@ use crate::serial::{
     parity_from_visa, stop_bits_from_visa,
 };
 use crate::status::Status;
+use crate::vxi11::Vxi11Link;
 
 /// A session as VISA hands it out: a number that names it until it is closed.
 pub type SessionId = u32;
 
-/// Timeout Value of a new session (measured: 2000 ms on a SOCKET resource and on ASRL1).
+/// Timeout Value of a new session (measured: 2000 ms on a SOCKET resource and on ASRL1; on a VXI-11 INSTR
+/// unverified).
 const DEFAULT_TIMEOUT: Duration = Duration::from_millis(2000);
 /// Termination Character of a new session (measured: 10, a line feed).
 const DEFAULT_TERMINATION_CHARACTER: u8 = b'\n';
@@ -115,6 +117,8 @@ fn lock(port: &SharedPort) -> std::sync::MutexGuard<'_, SerialPort> {
 enum Connection {
     Socket(TcpStream),
     Serial { port: SharedPort, id: SessionId },
+    /// A VXI-11 link: message based, so its reads and writes are the device's own and `received` stays empty.
+    LanInstrument(Vxi11Link),
 }
 
 pub(crate) struct Session {
@@ -151,6 +155,12 @@ impl Session {
         Ok(Session::with(Connection::Socket(stream)))
     }
 
+    /// A session to a VXI-11 instrument (DT-084), with the defaults of a socket session (unverified in LabVIEW).
+    pub(crate) fn open_lan_instrument(host: &str, device_name: &str, portmapper_port: u16) -> Result<Session, Status> {
+        let link = Vxi11Link::open(host, device_name, portmapper_port, DEFAULT_TIMEOUT)?;
+        Ok(Session::with(Connection::LanInstrument(link)))
+    }
+
     /// A session `id` on a serial port, which it shares with the sessions already open on it.
     pub(crate) fn open_serial(port: SharedPort, id: SessionId) -> Session {
         lock(&port).sessions.push(id);
@@ -159,7 +169,7 @@ impl Session {
 
     pub(crate) fn attributes(&self) -> Attributes {
         let serial = match &self.connection {
-            Connection::Socket(_) => None,
+            Connection::Socket(_) | Connection::LanInstrument(_) => None,
             Connection::Serial { port, .. } => Some(SerialAttributes { line: lock(port).line, end_mode_for_reads: self.end_mode_for_reads }),
         };
         Attributes {
@@ -252,6 +262,10 @@ impl Session {
     }
 
     pub(crate) fn write(&mut self, data: &[u8]) -> WriteResult {
+        if let Connection::LanInstrument(link) = &mut self.connection {
+            let written = link.write(data, self.timeout);
+            return WriteResult { count: written.count, status: written.status };
+        }
         let deadline = Instant::now() + self.timeout;
         let mut sent = 0;
         while sent < data.len() {
@@ -279,12 +293,18 @@ impl Session {
                 }
             }
             Connection::Serial { port, .. } => lock(port).device.send(data, patience.min(SERIAL_SLICE)),
+            Connection::LanInstrument(_) => unreachable!("a VXI-11 write goes through its link"),
         }
     }
 
     /// Reads until `count` bytes, the termination character, or the timeout, whichever comes first. A
     /// timeout of 0 still takes what has already arrived (measured: `XYZ` and the timeout at once).
     pub(crate) fn read(&mut self, count: usize) -> ReadResult {
+        if let Connection::LanInstrument(link) = &mut self.connection {
+            let stop_at = self.termination_character_enabled.then_some(self.termination_character);
+            let read = link.read(count, stop_at, self.timeout);
+            return ReadResult { data: read.data, status: read.status };
+        }
         let deadline = Instant::now() + self.timeout;
         loop {
             if let Some(result) = self.take_complete_read(count) {
@@ -350,6 +370,7 @@ impl Session {
                 }
                 shared.device.receive(&mut chunk, patience)?
             }
+            Connection::LanInstrument(_) => unreachable!("a VXI-11 read goes through its link"),
         };
         self.received.extend_from_slice(&chunk[..length]);
         Ok(length > 0)

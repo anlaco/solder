@@ -46,6 +46,10 @@ When the developer says "keep going":
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
 
+*2026-11-07: VISA opens LAN instruments over VXI-11, `TCPIP::host::INSTR` (DT-084), because a user's OVI needed it.
+Pending: measure NI-VISA's TCPIP INSTR session in the VM against a VXI-11 instrument (the points DT-084 marks
+unverified).*
+
 *2026-11-05: a classic ESP32 is a DAQ that Solder drives over VISA serial, with an instrument driver and a Crucible
 profile of it (plan step 5, repository `esp32-daq`).*
 

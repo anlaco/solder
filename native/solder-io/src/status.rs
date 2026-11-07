@@ -16,6 +16,8 @@ impl Status {
     /// Nothing answers at the resource, or the string is not one (measured: -1073807343, a socket with nothing
     /// listening, and `COM1`, `ASRL1` or `ASRL::INSTR` with no port).
     pub const ERROR_RESOURCE_NOT_FOUND: Status = Status(0xBFFF_0011_u32 as i32);
+    /// Another session holds a lock on the device (VI_ERROR_RSRC_LOCKED; unverified in LabVIEW).
+    pub const ERROR_RESOURCE_LOCKED: Status = Status(0xBFFF_000F_u32 as i32);
     /// The session's transport has no such attribute (measured: -1073807331, Baud Rate on a TCP socket).
     pub const ERROR_ATTRIBUTE_NOT_SUPPORTED: Status = Status(0xBFFF_001D_u32 as i32);
     /// The attribute does not take that value (measured: -1073807330, a baud rate of 0 or 3 data bits).

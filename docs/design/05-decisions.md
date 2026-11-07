@@ -3918,3 +3918,47 @@ their types from the cluster wired to input cluster.**
 | Bundle By Name: naming, growth, pass-through, required inputs, round trip | `test/core/bundle-by-name.test.mjs` | **Verified** (2026-11-06) |
 | Bundle By Name in the editor: 30 × 17 fresh, 55/58 wide, terminals, names, menus, stretching | `test/editor/bundle-by-name.test.mjs` | **Verified** (2026-11-06) |
 | ErrorNoError.sdg gives LabVIEW's four runs in a row | `test/end-to-end/error-no-error.test.mjs` | **Verified** (2026-11-06) |
+
+## DT-084
+
+**Solder's VISA opens `TCPIP[board]::host[::LAN device name]::INSTR` resources by speaking VXI-11 itself: the
+portmapper, then `create_link`, `device_write`, `device_read` and `destroy_link` over ONC RPC, written from the
+VXI-11 specification in `native/solder-io`, with no NI-VISA and no RPC library.**
+
+- **Status:** Accepted on 2026-11-07 by the developer ("users first": a user's OVI that asked a LAN instrument
+  `TCPIP0::192.168.1.36::inst0::INSTR` for `*IDN?` failed at VISA Open, and it has to work).
+- **Complements:** [DT-065](#dt-065) (Solder's own VISA), [DT-066](#dt-066) (the VISA functions), [DT-070](#dt-070)
+  (resources and the port table).
+- **Why:** most LAN instruments (oscilloscopes, supplies, meters) are found by NI MAX and written in examples as
+  `TCPIP::host::INSTR`, which is VXI-11; the raw socket (`::5025::SOCKET`) is not always open, and it changes the
+  OVI. Until now the string was not a resource for Solder and Open gave VI_ERROR_RSRC_NFOUND (VI_ERROR_INV_RSRC_NAME
+  before 0.8).
+
+### Decision
+
+1. **Resources.** `TCPIP[n]::host::INSTR` and `TCPIP[n]::host::<device>::INSTR`, keywords in any case. With no device
+   name the device is `inst0`, as VISA documents. Resource name out writes `TCPIP0::host::<device>::INSTR`, as it
+   writes a socket back with `TCPIP0`.
+2. **Protocol** (`src/vxi11.rs`). ONC RPC version 2 with AUTH_NONE and record marking over TCP; XDR by hand. Open asks
+   the portmapper on port 111 for program 0x0607AF version 1 over TCP, connects to that port and creates a link
+   without a lock; any failure on the way is VI_ERROR_RSRC_NFOUND. Write goes in chunks of the device's
+   `maxRecvSize` with END on the last one (VISA's Send End Enable, true by default), so no line feed is added.
+   Read asks for the count left and stops on END (VI_SUCCESS), on the termination character when Termination
+   Character Enable is true (VI_SUCCESS_TERM_CHAR) or on the count (VI_SUCCESS_MAX_COUNT). Device error 15 is
+   VI_ERROR_TMO, 11 VI_ERROR_RSRC_LOCKED, the rest VI_ERROR_IO. Close sends `destroy_link` and lets go.
+3. **Attributes.** A new session has a socket's: Timeout Value 2000 ms, Termination Character 10, Termination
+   Character Enable false; it has no serial settings, which are refused as on a socket.
+4. **Not yet:** HiSLIP (`hislip0` device names, its own protocol on port 4880) gives VI_ERROR_RSRC_NFOUND; the abort
+   channel, locks, service requests and VXI-11 over UDP are not used.
+5. **Tests.** `ResourceManager::with_portmapper_port` lets a test instrument listen on free ports; the production
+   manager always asks port 111.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The resource forms, the default `inst0`, the canonical name, HiSLIP and empty parts refused | `native/solder-io/src/resource.rs` (tests) | **Verified** (2026-11-07) |
+| Open through the portmapper, Write `*IDN?\n` and Read 128 end at END with the answer, Close destroys the link; chunks; count; timeout; no portmapper or unknown device is RSRC_NFOUND | `native/solder-io/tests/lan_instrument_session.rs`, against a VXI-11 instrument written apart from the client | **Verified** (2026-11-07) |
+| The user's `.sdg`, unchanged, runs from the command line against a VXI-11 instrument at 192.168.1.36 in a network namespace | By hand (`unshare -rn`), 2026-11-07 | **Verified** once; no automatic test |
+| Against a real instrument | — | **Unverified** |
+| NI-VISA's defaults on a TCPIP INSTR session, its status for each way Open can fail, the code when END and the count come together, how long a refused Open takes | Measurement in the VM against a VXI-11 instrument, pending | **Unverified** |

@@ -106,7 +106,7 @@ impl PortTable {
                 self.number_new_ports();
                 self.known_device(*number).ok_or(Status::ERROR_RESOURCE_NOT_FOUND)
             }
-            ResourceAddress::TcpSocket { .. } => Err(Status::ERROR_RESOURCE_NOT_FOUND),
+            ResourceAddress::TcpSocket { .. } | ResourceAddress::LanInstrument { .. } => Err(Status::ERROR_RESOURCE_NOT_FOUND),
         }
     }
 

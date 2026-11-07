@@ -31,7 +31,7 @@
 | SubOVIs, libraries and projects | 7 / 21 (33 %) | `███░░░░░░░` |
 | Debugging | 8 / 16 (50 %) | `█████░░░░░` |
 | Files | 5 / 15 (33 %) | `███░░░░░░░` |
-| Instruments and communication | 4 / 19 (21 %) | `██░░░░░░░░` |
+| Instruments and communication | 5 / 21 (24 %) | `██░░░░░░░░` |
 | Functions palette | 210 / 538 (39 %) | `████░░░░░░` |
 | Controls palette | 24 / 86 (28 %) | `███░░░░░░░` |
 | Windows and dialogs | 141 / 398 (35 %) | `████░░░░░░` |
@@ -232,6 +232,8 @@
 ### Instruments and communication
 
 - [x] VISA over TCP sockets (Open, Read, Write, Close)
+- [x] VISA over LAN instruments, VXI-11 (`TCPIP::host::INSTR`)
+- [ ] VISA over HiSLIP
 - [x] VISA over serial ports (Configure Serial Port, Bytes at Serial Port)
 - [x] VISA Property Node (class Instr)
 - [ ] VISA over USB and GPIB

@@ -9,6 +9,7 @@ use crate::port_table::PortTable;
 use crate::resource::ResourceAddress;
 use crate::session::{Attributes, AttributesChange, ReadResult, SerialPort, Session, SessionId, WriteResult};
 use crate::status::Status;
+use crate::vxi11::PORTMAPPER_PORT;
 
 /// Sessions are numbered from 1, so that 0 stays "no session", as an unwired VISA refnum.
 const FIRST_SESSION: SessionId = 1;
@@ -27,6 +28,8 @@ pub struct ResourceManager {
     /// sessions on ASRL1 both open, which Windows allows only through one handle).
     serial_ports: Mutex<HashMap<String, Weak<Mutex<SerialPort>>>>,
     port_table: Mutex<PortTable>,
+    /// Where VXI-11's portmapper is asked: 111, or a free port a test's instrument listens on.
+    portmapper_port: u16,
 }
 
 impl Default for ResourceManager {
@@ -50,7 +53,14 @@ impl ResourceManager {
             next_session: AtomicU32::new(FIRST_SESSION),
             serial_ports: Mutex::new(HashMap::new()),
             port_table: Mutex::new(port_table),
+            portmapper_port: PORTMAPPER_PORT,
         }
+    }
+
+    /// The same manager, asking VXI-11's portmapper on `port` instead of 111.
+    pub fn with_portmapper_port(mut self, port: u16) -> Self {
+        self.portmapper_port = port;
+        self
     }
 
     /// VISA Open: a resource string or an alias.
@@ -59,6 +69,7 @@ impl ResourceManager {
         let id = self.next_session.fetch_add(1, Ordering::Relaxed);
         let session = match &resolved.address {
             ResourceAddress::TcpSocket { host, port } => Session::open_socket(host, *port)?,
+            ResourceAddress::LanInstrument { host, device_name } => Session::open_lan_instrument(host, device_name, self.portmapper_port)?,
             serial => {
                 let device = locked(&self.port_table).device_of(serial)?;
                 Session::open_serial(self.serial_port(&device)?, id)
