@@ -53,8 +53,8 @@ const ERROR_LEVELS = [
   ["default", "Default", "Enables a minimum level of error checking for the node. It costs the call very little."],
   ["disabled", "Disabled", "Turns every check of the node off, for the fastest call. A fault in the library is then not reported as an error."],
 ];
-/** Unverified: LabVIEW's greatest number of dimensions of an array parameter. */
-const MAX_DIMENSIONS = 8;
+/** LabVIEW's greatest number of dimensions of an array parameter (measured 2026-11-08: 63; 0 becomes 1). */
+const MAX_DIMENSIONS = 63;
 const CALLBACK_PROTOTYPE = "MgErr Proc(InstanceDataPtr *instanceState);";
 
 // ——— The state ———
@@ -119,15 +119,32 @@ function renamedParameter(dialog, name) {
 
 // ——— What each kind of parameter asks for ———
 
+/**
+ * Minimum size, the buffer a library writes into, exists only for a C string pointer and for an array data pointer of
+ * one dimension: the handle formats and the Pascal string carry their own size (measured 2026-11-08, DT-088).
+ */
+function allowsMinimumSize(entry) {
+  if (entry.type === "string") return (entry["string-format"] ?? "c-string-pointer") === "c-string-pointer";
+  if (entry.type === "array") return (entry["array-format"] ?? "array-data-pointer") === "array-data-pointer" && (entry.dimensions ?? 1) === 1;
+  return false;
+}
+
+/** The entry without a Minimum size that it can no longer have, so that no stale reference is saved. */
+function withoutStaleMinimumSize(entry) {
+  if (entry["minimum-size"] === undefined || allowsMinimumSize(entry)) return entry;
+  const { "minimum-size": _stale, ...rest } = entry;
+  return rest;
+}
+
 /** The fields a kind of value has under Type, in order: `{ ring }` or `{ spin }` (dimensions); Constant and Name are always there. */
 function fieldsOf(entry, isReturn) {
   switch (entry.type) {
     case "numeric":
       return isReturn ? [{ ring: "data-type" }] : [{ ring: "data-type" }, { ring: "pass" }];
     case "array":
-      return [{ ring: "data-type" }, { spin: "dimensions" }, { ring: "array-format" }, { ring: "minimum-size" }];
+      return [{ ring: "data-type" }, { spin: "dimensions" }, { ring: "array-format" }, ...(allowsMinimumSize(entry) ? [{ ring: "minimum-size" }] : [])];
     case "string":
-      return isReturn ? [{ ring: "string-format" }] : [{ ring: "string-format" }, { ring: "minimum-size" }];
+      return isReturn ? [{ ring: "string-format" }] : [{ ring: "string-format" }, ...(allowsMinimumSize(entry) ? [{ ring: "minimum-size" }] : [])];
     case "waveform":
       return [{ ring: "data-type" }, { spin: "dimensions" }];
     case "digital-waveform":
@@ -178,7 +195,8 @@ function ringOptions(dialog, ring) {
     case "data-type": return DATA_TYPE_OPTIONS;
     case "pass": return PASS_OPTIONS;
     case "array-format": return ARRAY_FORMAT_OPTIONS;
-    case "string-format": return STRING_FORMAT_OPTIONS;
+    // A returned string is a C or a Pascal string pointer; LabVIEW greys the two handle items out for it (measured).
+    case "string-format": return isReturnRow(dialog) ? STRING_FORMAT_OPTIONS.slice(0, 2) : STRING_FORMAT_OPTIONS;
     case "data-format": return DATA_FORMAT_OPTIONS;
     case "minimum-size":
       return [[NONE_OPTION, NONE_LABEL], ...dialog.config.parameters.flatMap((parameter, index) => (index === dialog.current - 1 ? [] : [[String(index), parameter.name]]))];
@@ -206,7 +224,7 @@ function chosen(dialog, ring, value) {
     const name = value === NONE_OPTION ? undefined : dialog.config.parameters[Number(value)]?.name;
     return withCurrent(dialog, name === undefined ? rest : { ...rest, "minimum-size": name });
   }
-  return withCurrent(dialog, { ...entry, [ring]: value });
+  return withCurrent(dialog, withoutStaleMinimumSize({ ...entry, [ring]: value }));
 }
 
 // ——— Keys and clicks ———
@@ -293,7 +311,7 @@ function clickOnSetting(dialog, part) {
   if (spin) {
     const entry = currentEntry(dialog);
     const dimensions = Math.min(MAX_DIMENSIONS, Math.max(1, (entry.dimensions ?? 1) + (spin === "up" ? 1 : -1)));
-    return { dialog: withCurrent(dialog, { ...entry, dimensions }) };
+    return { dialog: withCurrent(dialog, withoutStaleMinimumSize({ ...entry, dimensions })) };
   }
   return NO_CHANGE;
 }

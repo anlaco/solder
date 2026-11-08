@@ -357,6 +357,33 @@ test("the rings of the Parameters tab list what LabVIEW lists, in its order", ()
   assert.deepEqual(options(second, "minimum-size"), [["none", "<None>"], ["1", "arg2"]], "on the array, the other parameters are listed: arg2");
 });
 
+test("Minimum size exists only for a C string pointer and for a one-dimensional array data pointer (measured 2026-11-08)", () => {
+  const labels = (current) => [...view(current).matchAll(/class="pv-etiqueta clfn-etiqueta derecha"[^>]*>([^<]*)</g)].map((m) => m[1]);
+  const { d } = dialogOf({ parameters: [{ name: "s", type: "string", "string-format": "c-string-pointer", "minimum-size": "n" }, { name: "n", type: "numeric", "data-type": "u32", pass: "value" }] });
+  const onString = clickParts(d, "tab-parameters", "parameter-1");
+  assert.deepEqual(labels(onString), ["Name", "Type", "String format", "Minimum size"]);
+  for (const format of ["pascal-string-pointer", "string-handle", "string-handle-pointer"]) {
+    const changed = clickParts(onString, "ring-string-format", `option-string-format-${format}`);
+    assert.deepEqual(labels(changed), ["Name", "Type", "String format"], `${format} has no Minimum size`);
+    assert.equal(changed.callLibraryDialog.config.parameters[0]["minimum-size"], undefined, "and the one it had is not kept");
+  }
+  const onArray = clickParts(clickParts(onString, "ring-type", "option-type-array"), "ring-array-format");
+  assert.deepEqual(labels(clickParts(onArray, "option-array-format-array-handle")), ["Name", "Type", "Data type", "Dimensions", "Array format"], "a handle has none");
+  assert.deepEqual(labels(clickParts(onArray, "option-array-format-array-handle-pointer")), ["Name", "Type", "Data type", "Dimensions", "Array format"], "nor a pointer to a handle");
+  const twoDimensions = clickParts(clickParts(onString, "ring-type", "option-type-array"), "dimensions-up");
+  assert.deepEqual(labels(twoDimensions), ["Name", "Type", "Data type", "Dimensions", "Array format"], "a data pointer of two dimensions has none");
+  assert.deepEqual(labels(clickParts(twoDimensions, "dimensions-down")), ["Name", "Type", "Data type", "Dimensions", "Array format", "Minimum size"], "back to one dimension it has it again");
+});
+
+test("a returned string is a C or a Pascal string pointer: the handle formats are not offered", () => {
+  const { d } = dialogOf({});
+  const onReturn = clickParts(d, "tab-parameters", "ring-type", "option-type-string");
+  const opened = clickPart(onReturn, "ring-string-format").d;
+  const choices = [...view(opened).matchAll(/option-string-format-([^"]+)">([^<]*)</g)].map((m) => [m[1], m[2]]);
+  assert.deepEqual(choices, [["c-string-pointer", "C String Pointer"], ["pascal-string-pointer", "Pascal String Pointer"]]);
+  assert.equal(callLibraryPrototype(clickParts(opened, "option-string-format-pascal-string-pointer").callLibraryDialog.config), "PStr funcName(void );");
+});
+
 test("Minimum size lists the other parameters and stores the one chosen by name", () => {
   const { d } = dialogOf({ parameters: [{ name: "buffer", type: "string", "string-format": "c-string-pointer" }, { name: "size", type: "numeric", "data-type": "u32", pass: "pointer" }] });
   const onBuffer = clickParts(d, "tab-parameters", "parameter-1");

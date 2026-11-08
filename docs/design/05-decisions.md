@@ -4159,3 +4159,55 @@ once Solder can compile libraries, it will be written in Solder with the same ex
 | The driver exports the 20 `nilvaiu` functions and a node calls them | Tests of the library and of the plugin's instances | **Not built** |
 | NI's VIs run against the driver unchanged | — (opening NI's VIs is a future goal) | **Unverified** |
 
+## DT-088
+
+**The Call Library Function Node offers LabVIEW's string and array formats and passes handles as LabVIEW does; Solder
+gives the libraries it loads LabVIEW's handle-memory functions under their own names.**
+
+- **Status:** Accepted on 2026-11-08 by the developer, who chose to export the memory functions with LabVIEW's names
+  ("A") after it was explained to them. It is needed by [DT-087](#dt-087): the 20 `nilvaiu.dll` functions of DAQ's stage A
+  take `LStrHandle` and `Array1DDouble **`.
+- **Complements:** [DT-080](#dt-080) §6 (Adapt to Type and handles were left open) and [DT-042](#dt-042) (Solder's own
+  memory).
+- **Measured:** [`labview-captures/reports/2026-11-08-clfn-formats.md`](../../labview-captures/reports/2026-11-08-clfn-formats.md)
+  and [`2026-11-08-daq-clfn-api.md`](../../labview-captures/reports/2026-11-08-daq-clfn-api.md).
+
+### Decision
+
+1. **The formats are LabVIEW's, with its prototype texts.** A String parameter has four: C String Pointer (`CStr`), Pascal
+   String Pointer (`PStr`), String Handle (`LStrHandle`) and String Handle Pointer (`LStrHandle *`), each with its
+   `const` form; a String return value only the first two. An Array parameter has three: Array Data Pointer (`T *`,
+   dimensions ignored), Array Handle (`Array<N>D<TT> **`) and Array Handle Pointer (`Array<N>D<TT> ***`), with `<TT>` as
+   measured (`Double`, `Int32_t`, `Uint8_t`, `Float`, …) and dimensions from 1 to 63. Minimum size exists for C String
+   Pointer and for Array Data Pointer of one dimension, and names a numeric parameter. Adapt to Type has four formats
+   (Handles by Value, Pointers to Handles, Array Data Pointer, Interface to Data with its Allow Resize); LabVIEW's file
+   does not keep them apart, Solder stores the one chosen.
+2. **What runs, in order:** String Handle and Array Handle first, because DAQ needs them; then Pascal strings; then the
+   handle pointers; then Adapt to Type's formats. C strings and data pointers run already. What does not run yet is
+   configured and saved, and keeps the node from running, as the kinds Solder does not run yet do today.
+3. **A handle** is what LabVIEW's `extcode.h` says: a pointer to a pointer to a block, `{ int32 length; bytes }` for a
+   string and `{ int32 dimension sizes[N]; elements }` for an array. That layout comes from general knowledge of the
+   header and is checked against LabVIEW's own functions (`DSGetHandleSize`, `MoveBlock`, which the node reaches by naming
+   the library `LabVIEW`) in a later stage of the measurement.
+4. **Memory functions.** A library that fills a handle asks LabVIEW to resize it. The process that loads libraries
+   exports those functions under LabVIEW's names, a handful at first (`DSNewHandle`, `DSNewHClr`, `DSSetHandleSize`,
+   `DSGetHandleSize`, `DSDisposeHandle`, `NumericArrayResize`, `MoveBlock`), more when a library needs them, so that a
+   library built for LabVIEW that uses only those runs in Solder unchanged. How they are exported on each platform is
+   settled when it is built.
+5. **File.** The formats are fields of a parameter that the `.sdg` format already holds (`array-format`, `string-format`,
+   `data-format`, `minimum-size`, from the node's first step), so the file changes nothing and the version stays. A
+   configuration that names none reads as C String Pointer and Array Data Pointer, as before.
+6. **The dialog follows what was measured:** Minimum size only for a C string pointer and for a one-dimensional array data
+   pointer (and it is dropped when a change makes it impossible); a returned string offers only C and Pascal; the most
+   dimensions is 63. Allow Resize of Interface to Data is not built (its effect on a call was not measured).
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The formats, their prototypes (strings, arrays of every element type and dimension, Adapt to Type, the return string, two of nilvaiu's functions) are LabVIEW's | `test/core/call-library.test.mjs` | **Verified** (2026-11-08) |
+| The dialog offers them with Minimum size where LabVIEW has it, the return string only C and Pascal, 63 dimensions | `test/editor/call-library-nodes.test.mjs` | **Verified** (2026-11-08); Allow Resize **not built** |
+| A string and an array reach a function as handles and come back, resized by the library | `cargo test` in `native/solder-io` with a test library | **Not built** |
+| A library calls the memory functions and they work | The same | **Not built** |
+| LabVIEW's handle layout is as `extcode.h` says | `DSGetHandleSize` and `MoveBlock` run from a CLFN in LabVIEW | **Unverified** |
+

@@ -27,22 +27,23 @@ export const PARAMETER_TYPES = Object.freeze([
 export const RETURN_TYPES = Object.freeze(["void", "numeric", "string"]);
 
 /**
- * The numeric data types of the dialog's Data type ring, in its order, with the C name the prototype prints and
- * the Solder type a terminal carries. A pointer-sized integer is 64 bits wide: Solder runs on 64-bit systems only.
+ * The numeric data types of the dialog's Data type ring, in its order, with the C name the prototype prints, the name
+ * it takes inside the type of an array handle (`Array1D<arrayName>`, measured 2026-11-08) and the Solder type a terminal
+ * carries. A pointer-sized integer is 64 bits wide: Solder runs on 64-bit systems only.
  */
 export const DATA_TYPES = Object.freeze({
-  i8: { label: "Signed 8-bit Integer", c: "int8_t", type: "i8" },
-  i16: { label: "Signed 16-bit Integer", c: "int16_t", type: "i16" },
-  i32: { label: "Signed 32-bit Integer", c: "int32_t", type: "i32" },
-  i64: { label: "Signed 64-bit Integer", c: "int64_t", type: "i64" },
-  iptr: { label: "Signed Pointer-sized Integer", c: "intptr_t", type: "i64" },
-  u8: { label: "Unsigned 8-bit Integer", c: "uint8_t", type: "u8" },
-  u16: { label: "Unsigned 16-bit Integer", c: "uint16_t", type: "u16" },
-  u32: { label: "Unsigned 32-bit Integer", c: "uint32_t", type: "u32" },
-  u64: { label: "Unsigned 64-bit Integer", c: "uint64_t", type: "u64" },
-  uptr: { label: "Unsigned Pointer-sized Integer", c: "uintptr_t", type: "u64" },
-  sgl: { label: "4-byte Single", c: "float", type: "sgl" },
-  dbl: { label: "8-byte Double", c: "double", type: "number" },
+  i8: { label: "Signed 8-bit Integer", c: "int8_t", type: "i8", arrayName: "Int8_t" },
+  i16: { label: "Signed 16-bit Integer", c: "int16_t", type: "i16", arrayName: "Int16_t" },
+  i32: { label: "Signed 32-bit Integer", c: "int32_t", type: "i32", arrayName: "Int32_t" },
+  i64: { label: "Signed 64-bit Integer", c: "int64_t", type: "i64", arrayName: "Int64_t" },
+  iptr: { label: "Signed Pointer-sized Integer", c: "intptr_t", type: "i64", arrayName: "Intptr_t" },
+  u8: { label: "Unsigned 8-bit Integer", c: "uint8_t", type: "u8", arrayName: "Uint8_t" },
+  u16: { label: "Unsigned 16-bit Integer", c: "uint16_t", type: "u16", arrayName: "Uint16_t" },
+  u32: { label: "Unsigned 32-bit Integer", c: "uint32_t", type: "u32", arrayName: "Uint32_t" },
+  u64: { label: "Unsigned 64-bit Integer", c: "uint64_t", type: "u64", arrayName: "Uint64_t" },
+  uptr: { label: "Unsigned Pointer-sized Integer", c: "uintptr_t", type: "u64", arrayName: "Uintptr_t" },
+  sgl: { label: "4-byte Single", c: "float", type: "sgl", arrayName: "Float" },
+  dbl: { label: "8-byte Double", c: "double", type: "number", arrayName: "Double" },
 });
 
 /** The kinds of parameter Solder runs so far; the others are configured and saved, and keep the node from running. */
@@ -121,17 +122,39 @@ export function callLibraryPorts(node) {
   return { in: inputs, out: outputs };
 }
 
+/** How a string is written in a prototype, by its format (measured 2026-11-08, DT-088). */
+const STRING_FORMAT_TEXT = Object.freeze({
+  "c-string-pointer": "CStr",
+  "pascal-string-pointer": "PStr",
+  "string-handle": "LStrHandle",
+  "string-handle-pointer": "LStrHandle *",
+});
+
+/** The `*` that follow the type of an array, by its format: a data pointer, a handle, a pointer to a handle. */
+const ARRAY_FORMAT_STARS = Object.freeze({ "array-data-pointer": "*", "array-handle": "**", "array-handle-pointer": "***" });
+
 /** The C text of a parameter, as the prototype prints it. */
 function parameterText(parameter) {
   const constant = parameter.constant ? "const " : "";
-  const cType = DATA_TYPES[parameter["data-type"] ?? "i32"]?.c ?? "int32_t";
+  const dataType = DATA_TYPES[parameter["data-type"] ?? "i32"];
+  const cType = dataType?.c ?? "int32_t";
   switch (parameter.type) {
     case "numeric":
       return parameter.pass === "pointer" ? `${constant}${cType} *${parameter.name}` : `${constant}${cType} ${parameter.name}`;
-    case "array":
-      return `${constant}${cType} *${parameter.name}`;
-    case "string":
-      return `${constant}CStr ${parameter.name}`;
+    case "array": {
+      const format = parameter["array-format"] ?? "array-data-pointer";
+      // A data pointer is the element's own pointer whatever the dimensions; the handle forms name the array's type.
+      const elementType = format === "array-data-pointer" ? cType : `Array${parameter.dimensions ?? 1}D${dataType?.arrayName ?? "Int32_t"}`;
+      return `${constant}${elementType} ${ARRAY_FORMAT_STARS[format]}${parameter.name}`;
+    }
+    case "string": {
+      const text = STRING_FORMAT_TEXT[parameter["string-format"] ?? "c-string-pointer"];
+      // The `*` of a pointer to a handle sticks to the name, as LabVIEW prints it.
+      return `${constant}${text}${text.endsWith("*") ? "" : " "}${parameter.name}`;
+    }
+    case "adapt-to-type":
+      // Interface to Data is a handle to LabVIEW's own data; the other three formats are all `void *` (measured).
+      return parameter["data-format"] === "interface-to-data" ? `${constant}ILVData **${parameter.name}` : `${constant}void *${parameter.name}`;
     default:
       return `${constant}void *${parameter.name}`;
   }
@@ -140,7 +163,8 @@ function parameterText(parameter) {
 /** The C text of the return value; void is followed by a second space, as LabVIEW prints it. */
 function returnText(returnValue) {
   if (returnValue.type === "numeric") return DATA_TYPES[returnValue["data-type"] ?? "i32"].c;
-  if (returnValue.type === "string") return "CStr";
+  // A returned string is a C or a Pascal string pointer; the two handle formats are greyed out for it (measured).
+  if (returnValue.type === "string") return returnValue["string-format"] === "pascal-string-pointer" ? "PStr" : "CStr";
   return "void ";
 }
 
