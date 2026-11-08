@@ -16,7 +16,8 @@ import {
   whyCallLibraryCannotRun,
 } from "../../core/model/call-library.mjs";
 import { aTexto, leer } from "../../core/model/qvi-format.mjs";
-import { CAT, leer as leerJson } from "../helpers.mjs";
+import { compilar } from "../../core/compiler/compiler.mjs";
+import { CAT, buildVI, leer as leerJson } from "../helpers.mjs";
 
 /** A graph with one Call Library Function Node configured with `config`. */
 function nodeWith(config) {
@@ -221,4 +222,27 @@ test("the prototypes of two of nilvaiu's functions, which DAQmx's VIs call, come
     }),
     "int32_t DAQCfgSampClkTiming(uintptr_t taskID, const LStrHandle source, const double rate, const int32_t activeEdge, const int32_t sampleMode, const uint64_t samplesPerChannel, LStrHandle extendedErrorInfo);",
   );
+});
+
+test("a parameter that is an array of two dimensions accepts a wire of a 2D array, and one of one dimension does not", () => {
+  const parameters = [{ name: "data", type: "array", "data-type": "dbl", dimensions: 2, "array-format": "array-handle" }];
+  const wiredFrom = (constant) =>
+    buildVI(CAT, (b) => {
+      b.node("values", "arr-const", constant);
+      b.node("call", "call-library", { ...defaultCallLibraryConfig(), library: "x", function: "f", parameters });
+      b.wire("values.result", "call.arg-0-in");
+    });
+  assert.equal(compilar(wiredFrom({ type: { array: "number", dims: 2 }, value: [[1, 2], [3, 4]] }).g, CAT).errores, undefined, "a 2D wire fits a 2D parameter");
+  assert.match(compilar(wiredFrom({ type: { array: "number" }, value: [1, 2] }).g, CAT).errores[0].motivo, /Incompatible types/, "a 1D wire does not");
+});
+
+test("a node that passes a format Solder does not run yet cannot run, and one with a handle or an address can (DT-088 §2)", () => {
+  const withParameter = (parameter) => whyCallLibraryCannotRun({ function: "f", parameters: [parameter] });
+  for (const format of ["c-string-pointer", "string-handle"]) assert.equal(withParameter({ name: "s", type: "string", "string-format": format }), undefined, format);
+  for (const format of ["pascal-string-pointer", "string-handle-pointer"]) assert.match(withParameter({ name: "s", type: "string", "string-format": format }), /"s".*format/, format);
+  for (const format of ["array-data-pointer", "array-handle"]) assert.equal(withParameter({ name: "a", type: "array", "data-type": "dbl", "array-format": format }), undefined, format);
+  assert.match(withParameter({ name: "a", type: "array", "data-type": "dbl", "array-format": "array-handle-pointer" }), /"a".*format/);
+  assert.equal(withParameter({ name: "s", type: "string" }), undefined, "no format is the C string, as before");
+  assert.match(whyCallLibraryCannotRun({ function: "f", "return-type": { type: "string", "string-format": "pascal-string-pointer" } }), /Pascal/);
+  assert.equal(whyCallLibraryCannotRun({ function: "f", "return-type": { type: "string", "string-format": "c-string-pointer" } }), undefined);
 });

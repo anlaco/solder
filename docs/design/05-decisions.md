@@ -4207,7 +4207,9 @@ gives the libraries it loads LabVIEW's handle-memory functions under their own n
 |-----------|-----------|--------|
 | The formats, their prototypes (strings, arrays of every element type and dimension, Adapt to Type, the return string, two of nilvaiu's functions) are LabVIEW's | `test/core/call-library.test.mjs` | **Verified** (2026-11-08) |
 | The dialog offers them with Minimum size where LabVIEW has it, the return string only C and Pascal, 63 dimensions | `test/editor/call-library-nodes.test.mjs` | **Verified** (2026-11-08); Allow Resize **not built** |
-| A string and an array reach a function as handles and come back, resized by the library | `cargo test` in `native/solder-io` with a test library | **Not built** |
-| A library calls the memory functions and they work | The same | **Not built** |
+| A string and an array reach a function as handles, in place, and what it leaves in them comes back (a string, 1D and 2D arrays) | `native/solder-io/tests/handle_library.rs` (a library compiled with `rustc`), `test/core/call-library-handles.test.mjs` (the blocks) and `test/core/call-library-handles-run.test.mjs` (an OVI through the Run, the addon and the Rust) | **Verified** (2026-11-08) |
+| A library resizes a handle's block and the host reads it back resized | The same, with the memory functions | **Not built** (slice 2c) |
+| A format that does not run yet keeps the node from running | `test/core/call-library.test.mjs` | **Verified** (2026-11-08) |
+| A library calls the memory functions and they work | The same | **Not built** (the table of handles that they will answer for, `solder-io/src/handles.rs`, is built and tested) |
 | LabVIEW's handle layout is as `extcode.h` says | `DSGetHandleSize` and `MoveBlock` run from a CLFN in LabVIEW | **Unverified** |
 

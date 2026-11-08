@@ -49,6 +49,13 @@ export const DATA_TYPES = Object.freeze({
 /** The kinds of parameter Solder runs so far; the others are configured and saved, and keep the node from running. */
 export const RUNNABLE_PARAMETER_TYPES = new Set(["numeric", "array", "string"]);
 
+/**
+ * The formats Solder passes so far (DT-088 §2): a C string and a string handle, an array's data pointer and an array
+ * handle. The Pascal string and the pointers to handles are configured and saved, and keep the node from running.
+ */
+export const RUNNABLE_STRING_FORMATS = new Set(["c-string-pointer", "string-handle"]);
+export const RUNNABLE_ARRAY_FORMATS = new Set(["array-data-pointer", "array-handle"]);
+
 /** The function name the dialog shows while none is given (measured: `void  funcName(void );`). */
 export const PLACEHOLDER_FUNCTION_NAME = "funcName";
 
@@ -188,5 +195,13 @@ export function whyCallLibraryCannotRun(config) {
   if (!functionName) return "No function specified.";
   const notRunnable = parameters.find((parameter) => !RUNNABLE_PARAMETER_TYPES.has(parameter.type));
   if (notRunnable) return `The parameter "${notRunnable.name}" is of a type Solder does not pass to a library yet.`;
+  const unsupportedFormat = parameters.find(
+    (parameter) =>
+      (parameter.type === "string" && !RUNNABLE_STRING_FORMATS.has(parameter["string-format"] ?? "c-string-pointer")) ||
+      (parameter.type === "array" && !RUNNABLE_ARRAY_FORMATS.has(parameter["array-format"] ?? "array-data-pointer")),
+  );
+  if (unsupportedFormat) return `The parameter "${unsupportedFormat.name}" is passed in a format Solder does not pass to a library yet.`;
+  const returned = callLibraryConfig(config)["return-type"];
+  if (returned.type === "string" && returned["string-format"] === "pascal-string-pointer") return "A returned Pascal string is not read by Solder yet.";
   return undefined;
 }

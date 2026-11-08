@@ -9,6 +9,13 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- The Call Library Function Node passes strings and arrays as LabVIEW's handles (DT-088): String Handle and Array Handle,
+  of any element type and number of dimensions, reach the library with their length or sizes in front and come back as
+  the library left them. Its prototypes follow LabVIEW's formats (C and Pascal strings, handles and pointers to handles,
+  `Array1DDouble **`), its dialog offers Minimum size only where LabVIEW does and a returned string only C or Pascal,
+  and the most dimensions is 63. The Pascal string and the pointers to handles are configured and saved but do not run yet.
+- Fixed: a Call Library Function Node parameter that is an array of two or more dimensions refused a wire of that array,
+  expecting a 1D one.
 - Add-ons (DT-081), first part: Solder reads the add-ons folders at start-up, the system's and the user's
   (`~/.local/share/solder/addons` on Linux, `%APPDATA%\Solder\Addons` on Windows), and an OVI of an add-on is found
   by its symbolic `<ovilib>/…` path, so a `.sdg` that uses it opens wherever the add-on is installed. A broken

@@ -694,6 +694,11 @@ array or string read by a local variable while another loop writes it is never t
       simulated devices and a virtual clock, 14 tests. DT-087: the VIs call `nilvaiu.dll`, not `nicaiu.dll` (20 functions
       for stage A, measured), and the driver imitates it. Next: the node with LabVIEW's handles (measure first), the
       facade, the plugin's OVIs built in the editor as a user, the palette and the ESP32.*
+      *DAQ, stage A, slice 2 (DT-088) on `feature/daq`: the Call Library Function Node follows LabVIEW's string and array
+      formats (prototypes and dialog, measured) and passes String Handle and Array Handle at run time (`native/solder-io/src/handles.rs`,
+      a library compiled by the tests). Left: 2c, the memory functions a library calls to resize a handle (exported under
+      LabVIEW's names), then the pointers to handles and the Pascal string. Found on the way: a 2D array parameter of the
+      node refused a 2D wire (fixed).*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

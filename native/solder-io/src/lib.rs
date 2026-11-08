@@ -6,6 +6,7 @@
 //! for the Call Library Function Node (DT-080).
 
 mod files;
+pub mod handles;
 mod library;
 mod manager;
 mod port_table;

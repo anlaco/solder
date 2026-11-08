@@ -32,7 +32,8 @@ static UI_THREAD: LazyLock<Mutex<Sender<Job>>> = LazyLock::new(|| {
 });
 
 /// One argument as JavaScript hands it: `kind` is a data type (`i32`, `u64`, `f64`, …) for a number by value,
-/// or `"buffer"` for a buffer passed by its address; `bytes` are its bytes as C sees them.
+/// `"buffer"` for a buffer passed by its address, or `"handle"` for a LabVIEW handle (DT-088) whose block is `bytes`;
+/// `bytes` are its bytes as C sees them.
 #[napi(object)]
 pub struct LibraryArgument {
     pub kind: String,
@@ -86,6 +87,9 @@ fn return_kind(name: &str) -> napi::Result<ReturnKind> {
 fn argument(argument: &LibraryArgument) -> napi::Result<Argument> {
     if argument.kind == "buffer" {
         return Ok(Argument::Buffer(argument.bytes.to_vec()));
+    }
+    if argument.kind == "handle" {
+        return Ok(Argument::Handle(argument.bytes.to_vec()));
     }
     let kind = number_kind(&argument.kind).ok_or_else(|| napi::Error::from_reason(format!("unknown argument kind {}", argument.kind)))?;
     Ok(Argument::Value { kind, bytes: argument.bytes.to_vec() })

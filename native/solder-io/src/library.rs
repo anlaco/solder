@@ -1,7 +1,7 @@
 //! Calling a function of a native library for the Call Library Function Node (DT-080). The library is loaded
 //! once and kept, the function is found by name and called through libffi with the arguments as C sees them:
-//! numbers by value, and buffers (a number by pointer, an array's data, a C string) by their address, which the
-//! function may write into. The node's errors are LabVIEW's, measured with a path wired on the diagram
+//! numbers by value, buffers (a number by pointer, an array's data, a C string) by their address, which the
+//! function may write into, and LabVIEW's handles (DT-088). The node's errors are LabVIEW's, measured with a path wired on the diagram
 //! (`labview-captures/reports/2026-11-06-clfn-run.md`): 7 when the library is not found, 12 when the file is
 //! not a library, 15 when the library has no such function.
 //!
@@ -14,6 +14,8 @@ use std::sync::{Arc, Mutex};
 
 use libffi::middle::{Arg, Cif, CodePtr, Ret, Type};
 use libloading::Library;
+
+use crate::handles::{self, Handle};
 
 /// The extension `.*` stands for, as LabVIEW's `lvanlys.*` names each platform's file.
 #[cfg(windows)]
@@ -72,6 +74,9 @@ pub enum Argument {
     Value { kind: NumberKind, bytes: Vec<u8> },
     /// A buffer passed by its address: a number by pointer, an array's data, a C string with its ending zero.
     Buffer(Vec<u8>),
+    /// A handle (DT-088): the bytes are the block it holds, a string's length and letters or an array's dimension sizes
+    /// and elements. The function receives the handle, and what is left in the block, resized or not, comes back.
+    Handle(Vec<u8>),
 }
 
 /// What the function returns.
@@ -98,7 +103,8 @@ pub struct Call {
 pub struct CallResult {
     /// The return value's bytes: a number's, little-endian, or a C string's without its ending zero.
     pub returned: Vec<u8>,
-    /// Each argument's bytes after the call, so what the function wrote into a buffer comes back.
+    /// Each argument's bytes after the call, so what the function wrote into a buffer comes back; for a handle, the
+    /// block it holds then.
     pub arguments: Vec<Vec<u8>>,
 }
 
@@ -234,16 +240,21 @@ impl LibraryCaller {
         let code = CodePtr(*function);
 
         let mut buffers: Vec<Vec<u8>> = call.arguments.iter().map(|argument| match argument {
-            Argument::Value { bytes, .. } => bytes.clone(),
-            Argument::Buffer(bytes) => bytes.clone(),
+            Argument::Value { bytes, .. } | Argument::Buffer(bytes) | Argument::Handle(bytes) => bytes.clone(),
+        }).collect();
+        // A handle is made for the call, with its block holding what came in, and disposed of after it.
+        let handles: Vec<Option<Handle>> = call.arguments.iter().map(|argument| match argument {
+            Argument::Handle(bytes) => Some(handles::new_with(bytes)),
+            _ => None,
         }).collect();
         let slots: Vec<Slot> = call
             .arguments
             .iter()
-            .zip(buffers.iter_mut())
-            .map(|(argument, buffer)| match argument {
+            .zip(buffers.iter_mut().zip(&handles))
+            .map(|(argument, (buffer, handle))| match argument {
                 Argument::Value { kind, bytes } => value_slot(*kind, bytes),
                 Argument::Buffer(_) => Slot::Pointer(buffer.as_mut_ptr().cast()),
+                Argument::Handle(_) => Slot::Pointer(handle.expect("a handle was made for it").as_pointer().cast()),
             })
             .collect();
         let argument_types: Vec<Type> = call
@@ -251,7 +262,7 @@ impl LibraryCaller {
             .iter()
             .map(|argument| match argument {
                 Argument::Value { kind, .. } => kind.ffi_type(),
-                Argument::Buffer(_) => Type::pointer(),
+                Argument::Buffer(_) | Argument::Handle(_) => Type::pointer(),
             })
             .collect();
         let return_type = match call.return_kind {
@@ -280,6 +291,13 @@ impl LibraryCaller {
             }
         };
         drop(slots);
+        // What a library left in a handle's block, which it may have resized, comes back; then the handle goes.
+        for (buffer, handle) in buffers.iter_mut().zip(handles) {
+            if let Some(handle) = handle {
+                *buffer = handles::content(handle).unwrap_or_default();
+                handles::dispose(handle);
+            }
+        }
         Ok(CallResult { returned, arguments: buffers })
     }
 }

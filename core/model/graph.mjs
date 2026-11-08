@@ -911,7 +911,9 @@ function sustituir(t, vars) {
     if ("fieldOf" in t) return vars[t.fieldOf]?.cluster.find((f) => f.name === t.field)?.type;
     if ("array" in t) {
       const e = sustituir(t.array, vars);
-      return e === undefined ? undefined : arrayOf(e);
+      // A dimension count written as a number stays: a Call Library parameter of a 2D array is a 2D array, not a 1D one.
+      // Blocks also write `dims` as a word ("any", "config") that other code reads; those are left to it.
+      return e === undefined ? undefined : arrayOf(e, Number.isInteger(t.dims) ? t.dims : 1);
     }
   }
   return t;

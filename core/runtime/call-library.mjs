@@ -68,6 +68,73 @@ const untilZero = (bytes) => {
   return end < 0 ? bytes : bytes.subarray(0, end);
 };
 
+/**
+ * A string's handle block (DT-088), as LabVIEW's `LStr` is: its length as a 32-bit integer, then its bytes. A library
+ * that fills the string resizes the block and changes the length.
+ */
+export function stringBlock(text) {
+  const block = new Uint8Array(4 + text.length);
+  new DataView(block.buffer).setInt32(0, text.length, true);
+  block.set(text, 4);
+  return block;
+}
+
+/**
+ * The text a string's block holds after a call: the bytes its length says, and no more than the block has, since a
+ * library may leave a length that its block does not back; a negative length is none.
+ */
+export function textOfStringBlock(block) {
+  if (block.length < 4) return new Uint8Array(0);
+  const declared = new DataView(block.buffer, block.byteOffset, block.byteLength).getInt32(0, true);
+  return block.subarray(4, 4 + Math.max(0, Math.min(declared, block.length - 4)));
+}
+
+/** An array's handle block: its dimension sizes, each a 32-bit integer, then its elements in C's bytes, row by row. */
+export function arrayBlock(dimensions, values, dataType) {
+  const elements = bytesOf(values, dataType);
+  const headerBytes = 4 * dimensions.length;
+  const block = new Uint8Array(headerBytes + elements.length);
+  const view = new DataView(block.buffer);
+  dimensions.forEach((size, index) => view.setInt32(4 * index, size, true));
+  block.set(elements, headerBytes);
+  return block;
+}
+
+/**
+ * The dimension sizes and the values an array's block holds after a call. Elements that the block does not back are
+ * left out: the first dimension shrinks to the rows there are, as a library that resized the block smaller leaves it.
+ */
+export function arrayOfBlock(block, dataType, dimensionCount) {
+  const headerBytes = 4 * dimensionCount;
+  if (block.length < headerBytes) return { dimensions: Array(dimensionCount).fill(0), values: [] };
+  const view = new DataView(block.buffer, block.byteOffset, block.byteLength);
+  const dimensions = Array.from({ length: dimensionCount }, (_, index) => Math.max(0, view.getInt32(4 * index, true)));
+  const elementSize = DATA_TYPE_ACCESS[dataType].size;
+  const available = Math.floor((block.length - headerBytes) / elementSize);
+  const rowSize = dimensions.slice(1).reduce((product, size) => product * size, 1);
+  const rows = rowSize > 0 ? Math.min(dimensions[0], Math.floor(available / rowSize)) : 0;
+  const count = rows * rowSize;
+  return { dimensions: [rows, ...dimensions.slice(1)], values: valuesOf(block.subarray(headerBytes, headerBytes + count * elementSize), dataType) };
+}
+
+/** The dimension sizes of a nested array: the length at each level, zero where there is nothing to measure. */
+export function dimensionsOf(nested, dimensionCount) {
+  const sizes = [];
+  let level = nested;
+  for (let index = 0; index < dimensionCount; index++) {
+    sizes.push(Array.isArray(level) ? level.length : 0);
+    level = Array.isArray(level) && level.length ? level[0] : [];
+  }
+  return sizes;
+}
+
+/** A flat list nested again by dimension sizes, row by row. */
+export function nestByDimensions(flat, dimensions) {
+  if (dimensions.length <= 1) return flat;
+  const rowSize = dimensions.slice(1).reduce((product, size) => product * size, 1);
+  return Array.from({ length: dimensions[0] }, (_, row) => nestByDimensions(flat.slice(row * rowSize, (row + 1) * rowSize), dimensions.slice(1)));
+}
+
 /** A flat list of elements laid out again in the sizes of a nested array (rows of a 2D array). */
 function nestLike(elements, shape) {
   if (!Array.isArray(shape[0])) return elements;
@@ -113,6 +180,9 @@ export function createCallLibraryFunction({ io, host, memory, compilado, pathRul
         const bytes = bytesOf([readNumber(record, parameter.dataType)], parameter.dataType);
         return { kind: parameter.pass === "pointer" ? "buffer" : parameter.dataType, bytes };
       }
+      if (parameter.type === "string" && parameter.format === "string-handle") {
+        return { kind: "handle", bytes: stringBlock(readBytes(handleIn(record))) };
+      }
       if (parameter.type === "string") {
         const text = readBytes(handleIn(record));
         const minimumSize = parameter.minimumSize >= 0 ? Number(readNumber(recordAt(records, parameter.minimumSize + 1), node.parameters[parameter.minimumSize].dataType)) : 0;
@@ -120,8 +190,11 @@ export function createCallLibraryFunction({ io, host, memory, compilado, pathRul
         bytes.set(text);
         return { kind: "buffer", bytes };
       }
-      const elements = leerArray(handleIn(record), parameter.array.elemento, parameter.array.dims).flat(Infinity);
-      return { kind: "buffer", bytes: bytesOf(elements, parameter.dataType) };
+      const nested = leerArray(handleIn(record), parameter.array.elemento, parameter.array.dims);
+      if (parameter.format === "array-handle") {
+        return { kind: "handle", bytes: arrayBlock(dimensionsOf(nested, parameter.array.dims), nested.flat(Infinity), parameter.dataType) };
+      }
+      return { kind: "buffer", bytes: bytesOf(nested.flat(Infinity), parameter.dataType) };
     });
 
   /** Writes what the call gave back: the return value, and what the function wrote into each buffer. */
@@ -134,8 +207,12 @@ export function createCallLibraryFunction({ io, host, memory, compilado, pathRul
       const bytes = answer.arguments[index];
       if (parameter.type === "numeric") {
         if (parameter.pass === "pointer") writeNumber(record, parameter.dataType, valuesOf(bytes, parameter.dataType)[0]);
-      } else if (parameter.type === "string") putBytes(cellOut(record), untilZero(bytes));
-      else {
+      } else if (parameter.type === "string") putBytes(cellOut(record), parameter.format === "string-handle" ? textOfStringBlock(bytes) : untilZero(bytes));
+      else if (parameter.format === "array-handle") {
+        // The library may have resized the array: its dimensions are read from the block, not from what went in.
+        const { dimensions, values } = arrayOfBlock(bytes, parameter.dataType, parameter.array.dims);
+        ponerArray(cellOut(record), parameter.array.elemento, nestByDimensions(values, dimensions), parameter.array.dims);
+      } else {
         const shape = leerArray(handleIn(record), parameter.array.elemento, parameter.array.dims);
         ponerArray(cellOut(record), parameter.array.elemento, nestLike(valuesOf(bytes, parameter.dataType), shape), parameter.array.dims);
       }

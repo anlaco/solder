@@ -727,7 +727,9 @@ function callLibrary(e) {
     const type = e.tIn(input);
     const record = recordAt(index + 1);
     const minimumSize = parameter["minimum-size"] ? config.parameters.findIndex((other) => other.name === parameter["minimum-size"]) : -1;
-    const described = { type: parameter.type, dataType: parameter["data-type"] ?? "i32", pass: parameter.pass ?? "value", minimumSize, tipo: type };
+    // How a string or an array is passed (a handle or an address, DT-088); the host reads it to build and read the block.
+    const format = parameter.type === "string" ? parameter["string-format"] : parameter.type === "array" ? parameter["array-format"] : undefined;
+    const described = { type: parameter.type, dataType: parameter["data-type"] ?? "i32", pass: parameter.pass ?? "value", minimumSize, tipo: type, format };
     if (parameter.type === "string") {
       code.push(k32(record), ...e.entrada(input), ins("i32.store", ROW_VALUE_OFFSET), ...outputCell(record));
       return described;
