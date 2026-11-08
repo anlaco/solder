@@ -89,13 +89,29 @@ export function textOfStringBlock(block) {
   return block.subarray(4, 4 + Math.max(0, Math.min(declared, block.length - 4)));
 }
 
-/** An array's handle block: its dimension sizes, each a 32-bit integer, then its elements in C's bytes, row by row. */
+/** The bytes of one dimension size in an array's block: LabVIEW's `int32`. */
+const DIMENSION_SIZE_BYTES = 4;
+
+/**
+ * Where an array's elements start in its block: after its dimension sizes, padded to the elements' alignment, which on a
+ * 64-bit system is their size, since `extcode.h` packs to one byte only on 32-bit Windows (read on 2026-11-08,
+ * `labview-captures/reports/2026-11-08-labview-memory-manager-imports.md`).
+ */
+function elementsOffset(dimensionCount, dataType) {
+  const alignment = DATA_TYPE_ACCESS[dataType].size;
+  return Math.ceil((DIMENSION_SIZE_BYTES * dimensionCount) / alignment) * alignment;
+}
+
+/**
+ * An array's handle block: its dimension sizes, each a 32-bit integer, then, where their alignment puts them, its
+ * elements in C's bytes, row by row.
+ */
 export function arrayBlock(dimensions, values, dataType) {
   const elements = bytesOf(values, dataType);
-  const headerBytes = 4 * dimensions.length;
+  const headerBytes = elementsOffset(dimensions.length, dataType);
   const block = new Uint8Array(headerBytes + elements.length);
   const view = new DataView(block.buffer);
-  dimensions.forEach((size, index) => view.setInt32(4 * index, size, true));
+  dimensions.forEach((size, index) => view.setInt32(DIMENSION_SIZE_BYTES * index, size, true));
   block.set(elements, headerBytes);
   return block;
 }
@@ -105,10 +121,10 @@ export function arrayBlock(dimensions, values, dataType) {
  * left out: the first dimension shrinks to the rows there are, as a library that resized the block smaller leaves it.
  */
 export function arrayOfBlock(block, dataType, dimensionCount) {
-  const headerBytes = 4 * dimensionCount;
+  const headerBytes = elementsOffset(dimensionCount, dataType);
   if (block.length < headerBytes) return { dimensions: Array(dimensionCount).fill(0), values: [] };
   const view = new DataView(block.buffer, block.byteOffset, block.byteLength);
-  const dimensions = Array.from({ length: dimensionCount }, (_, index) => Math.max(0, view.getInt32(4 * index, true)));
+  const dimensions = Array.from({ length: dimensionCount }, (_, index) => Math.max(0, view.getInt32(DIMENSION_SIZE_BYTES * index, true)));
   const elementSize = DATA_TYPE_ACCESS[dataType].size;
   const available = Math.floor((block.length - headerBytes) / elementSize);
   const rowSize = dimensions.slice(1).reduce((product, size) => product * size, 1);

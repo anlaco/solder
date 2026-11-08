@@ -2,38 +2,43 @@
 // `--release` builds it optimized, as `npm run dist` needs; without it, the debug build of the tests.
 
 import { spawnSync } from "node:child_process";
-import { copyFileSync, existsSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync } from "node:fs";
+import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ADDON_PATH, addonFileName } from "../native/solder-io-node/solder-io.mjs";
+import { ADDON_PATH, MEMORY_BRIDGE_PATH, addonFileName, memoryBridgeRelativePath } from "../native/solder-io-node/solder-io.mjs";
 
 const REPOSITORY_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const ADDON_CRATE = "solder-io-node";
+/** The library that offers LabVIEW's memory functions to the libraries the addon loads (DT-088 §4). */
+const MEMORY_BRIDGE_CRATE = "solder-memory-bridge";
 
-/** The file name Cargo gives a `cdylib` on each operating system. */
-const LIBRARY_FILE_NAME = {
-  linux: "libsolder_io_node.so",
-  darwin: "libsolder_io_node.dylib",
-  win32: "solder_io_node.dll",
-};
+/** The file name Cargo gives a crate's `cdylib` on each operating system. */
+function cargoLibraryFileName(crate, platform = process.platform) {
+  const stem = crate.replaceAll("-", "_");
+  const fileName = { linux: `lib${stem}.so`, darwin: `lib${stem}.dylib`, win32: `${stem}.dll` }[platform];
+  if (!fileName) throw new Error(`no library file name known for ${platform}`);
+  return fileName;
+}
 
 export function buildNative({ release = false } = {}) {
   const profileArguments = release ? ["--release"] : [];
-  const { status } = spawnSync("cargo", ["build", "--quiet", "-p", ADDON_CRATE, ...profileArguments], {
+  const { status } = spawnSync("cargo", ["build", "--quiet", "-p", ADDON_CRATE, "-p", MEMORY_BRIDGE_CRATE, ...profileArguments], {
     cwd: REPOSITORY_ROOT,
     stdio: "inherit",
   });
-  if (status !== 0) throw new Error(`cargo build -p ${ADDON_CRATE} failed`);
-  const profileDirectory = release ? "release" : "debug";
-  const libraryFileName = LIBRARY_FILE_NAME[process.platform];
-  if (!libraryFileName) throw new Error(`no addon file name known for ${process.platform}`);
-  copyFileSync(new URL(`target/${profileDirectory}/${libraryFileName}`, `file://${REPOSITORY_ROOT}`), ADDON_PATH);
+  if (status !== 0) throw new Error(`cargo build -p ${ADDON_CRATE} -p ${MEMORY_BRIDGE_CRATE} failed`);
+  const built = (crate) => new URL(`target/${release ? "release" : "debug"}/${cargoLibraryFileName(crate)}`, `file://${REPOSITORY_ROOT}`);
+  copyFileSync(built(ADDON_CRATE), ADDON_PATH);
+  mkdirSync(path.dirname(MEMORY_BRIDGE_PATH), { recursive: true });
+  copyFileSync(built(MEMORY_BRIDGE_CRATE), MEMORY_BRIDGE_PATH);
 }
 
 /**
  * The addons a release packs that this machine does not build (DT-062): Windows' is built in the Windows virtual
- * machine (`cargo build --release -p solder-io-node`) and its `solder_io_node.dll` copied here under this name.
+ * machine (`cargo build --release -p solder-io-node -p solder-memory-bridge`) and its `solder_io_node.dll` and
+ * `solder_memory_bridge.dll` copied here as `solder-io-win32-x64.node` and `memory-bridge/win32-x64/lvrt.dll`.
  */
-const ADDONS_BUILT_ELSEWHERE = [addonFileName("win32", "x64")];
+const ADDONS_BUILT_ELSEWHERE = [addonFileName("win32", "x64"), memoryBridgeRelativePath("win32", "x64")];
 
 /** Fails when an addon the release packs is missing, since electron-builder would leave it out without a word. */
 export function requireReleaseAddons() {

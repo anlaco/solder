@@ -696,9 +696,12 @@ array or string read by a local variable while another loop writes it is never t
       facade, the plugin's OVIs built in the editor as a user, the palette and the ESP32.*
       *DAQ, stage A, slice 2 (DT-088) on `feature/daq`: the Call Library Function Node follows LabVIEW's string and array
       formats (prototypes and dialog, measured) and passes String Handle and Array Handle at run time (`native/solder-io/src/handles.rs`,
-      a library compiled by the tests). Left: 2c, the memory functions a library calls to resize a handle (exported under
-      LabVIEW's names), then the pointers to handles and the Pascal string. Found on the way: a 2D array parameter of the
-      node refused a 2D wire (fixed).*
+      a library compiled by the tests). Found on the way: a 2D array parameter of the node refused a 2D wire (fixed).
+      2c, the memory functions under LabVIEW's names, built on Linux on 2026-11-08 (`native/solder-memory-bridge`, loaded
+      with `RTLD_GLOBAL`); measured the same day that on Windows a LabVIEW DLL looks them up in `lvrt.dll` at run time.
+      On Windows the bridge is `lvrt.dll` (decided the same day), and a library linked with LabVIEW's own `labview.lib`
+      found its functions there in the VM. Array elements are now aligned as `extcode.h` lays them on 64 bits (fixed).
+      Left: the pointers to handles and the Pascal string.*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

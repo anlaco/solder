@@ -9,6 +9,7 @@ mod files;
 pub mod handles;
 mod library;
 mod manager;
+mod memory_manager;
 mod port_table;
 mod resource;
 mod serial;
@@ -17,6 +18,7 @@ mod status;
 mod vxi11;
 
 pub use manager::{Opened, ResourceManager};
+pub use memory_manager::install_memory_bridge;
 pub use port_table::{PortTable, Resolved};
 pub use resource::ResourceAddress;
 pub use serial::{EndMode, FlowControl, LineSettings, Parity, StopBits};

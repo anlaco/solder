@@ -14,6 +14,12 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   the library left them. Its prototypes follow LabVIEW's formats (C and Pascal strings, handles and pointers to handles,
   `Array1DDouble **`), its dialog offers Minimum size only where LabVIEW does and a returned string only C or Pascal,
   and the most dimensions is 63. The Pascal string and the pointers to handles are configured and saved but do not run yet.
+  A library can resize the handles it is given with LabVIEW's memory functions, which Solder offers under
+  their own names (`DSNewHandle`, `DSNewHClr`, `DSSetHandleSize`, `DSGetHandleSize`, `DSDisposeHandle`,
+  `NumericArrayResize`, `MoveBlock`), so it can return a string or an array longer than it was given; on Windows they are offered as `lvrt.dll`, where a
+  library built with LabVIEW's `labview.lib` looks them up. An array handle
+  lays its elements out as LabVIEW's `extcode.h` does on a 64-bit system, aligned after the dimension sizes (the first
+  double of a 1D array at byte 8).
 - Fixed: a Call Library Function Node parameter that is an array of two or more dimensions refused a wire of that array,
   expecting a 1D one.
 - Add-ons (DT-081), first part: Solder reads the add-ons folders at start-up, the system's and the user's

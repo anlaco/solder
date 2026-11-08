@@ -1,0 +1,11 @@
+[package]
+name = "solder-memory-bridge"
+version = "0.1.0"
+description = "LabVIEW's memory functions under their own names, for the libraries Solder loads (DT-088 §4)."
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+# A library of its own, with no dependencies, so the tests can compile its one file with rustc.
+[lib]
+crate-type = ["cdylib"]

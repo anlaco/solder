@@ -4186,14 +4186,38 @@ gives the libraries it loads LabVIEW's handle-memory functions under their own n
    handle pointers; then Adapt to Type's formats. C strings and data pointers run already. What does not run yet is
    configured and saved, and keeps the node from running, as the kinds Solder does not run yet do today.
 3. **A handle** is what LabVIEW's `extcode.h` says: a pointer to a pointer to a block, `{ int32 length; bytes }` for a
-   string and `{ int32 dimension sizes[N]; elements }` for an array. That layout comes from general knowledge of the
-   header and is checked against LabVIEW's own functions (`DSGetHandleSize`, `MoveBlock`, which the node reaches by naming
-   the library `LabVIEW`) in a later stage of the measurement.
+   string and `{ int32 dimension sizes[N]; elements }` for an array. The header (read on 2026-11-08) packs its structs to
+   one byte only on 32-bit Windows; everywhere else, 64-bit Windows and Linux included, it keeps the compiler's
+   alignment, so an array's elements start after its dimension sizes padded to the elements' alignment: a 1D array of
+   doubles has four bytes of padding and its first double at byte 8, a 3D one at byte 16, while 32-bit numbers follow the
+   sizes directly. (Until that day Solder put every element right after the sizes, which a library compiled with the
+   header would have read wrongly for 8-byte elements.) The layout is still to be checked against LabVIEW's own functions
+   (`DSGetHandleSize`, `MoveBlock`, which the node reaches by naming the library `LabVIEW`) in a later stage of the
+   measurement.
 4. **Memory functions.** A library that fills a handle asks LabVIEW to resize it. The process that loads libraries
    exports those functions under LabVIEW's names, a handful at first (`DSNewHandle`, `DSNewHClr`, `DSSetHandleSize`,
    `DSGetHandleSize`, `DSDisposeHandle`, `NumericArrayResize`, `MoveBlock`), more when a library needs them, so that a
-   library built for LabVIEW that uses only those runs in Solder unchanged. How they are exported on each platform is
-   settled when it is built.
+   library built for LabVIEW that uses only those runs in Solder unchanged. Their signatures, error codes (`mgArgErr` 1,
+   `mFullErr` 2, `mZoneErr` 3) and numeric type codes (`iB` 1 … `cX` 14) are those of LabVIEW 2026's `extcode.h`, read on
+   2026-11-08 ([`2026-11-08-labview-memory-manager-imports.md`](../../labview-captures/reports/2026-11-08-labview-memory-manager-imports.md));
+   `DSGetHandleSize` answers a `size_t`.
+   - **A bridge library** exports them (`native/solder-memory-bridge`, no dependencies and no state): the I/O process
+     loads it before any library and gives it its own functions, so the one table of handles is the host's
+     (`solder-io/src/memory_manager.rs`); `MoveBlock` needs nothing of the host and is the bridge's own. A handle the
+     host did not make is refused with `mZoneErr` (LabVIEW's answer for one was not measured). Its file sits next to
+     the addon (`solder-memory-bridge-<platform>-<arch>`), built by `scripts/build-native.mjs` and packed with it.
+   - **Linux** (built 2026-11-08): a library leaves the names unresolved and the system looks for them in the process'
+     global scope, which the bridge joins by being loaded with `RTLD_GLOBAL`. A library built with LabVIEW's Linux
+     tools was not examined.
+   - **Windows** (measured): a DLL built with cintools' `labview.lib` or `labviewv.lib` imports none of these names.
+     Both are static stubs linked into the DLL that look each function up when it is first called, with
+     `GetModuleHandleA` and `GetProcAddress`, in a module named `lvrt.dll` (or `lvffrt.dll`); `nilvaiu.dll` and
+     `lvanlys.dll` do the same. The stubs also export `SetLVRTModule`. The exact order of the lookup was not
+     disassembled. **Decided on 2026-11-08** (proposed and accepted by the developer): on Windows the bridge's file is
+     `lvrt.dll`, in Solder's own folder, loaded by its full path before any library, so that the stub's lookup finds it
+     among the modules already loaded; a library that asks it for a function it lacks gets the stub's own error, and
+     functions are added as libraries need them. Solder's own `nilvaiu` looks its memory functions up the same way, so
+     it can also run inside LabVIEW.
 5. **File.** The formats are fields of a parameter that the `.sdg` format already holds (`array-format`, `string-format`,
    `data-format`, `minimum-size`, from the node's first step), so the file changes nothing and the version stays. A
    configuration that names none reads as C String Pointer and Array Data Pointer, as before.
@@ -4208,8 +4232,11 @@ gives the libraries it loads LabVIEW's handle-memory functions under their own n
 | The formats, their prototypes (strings, arrays of every element type and dimension, Adapt to Type, the return string, two of nilvaiu's functions) are LabVIEW's | `test/core/call-library.test.mjs` | **Verified** (2026-11-08) |
 | The dialog offers them with Minimum size where LabVIEW has it, the return string only C and Pascal, 63 dimensions | `test/editor/call-library-nodes.test.mjs` | **Verified** (2026-11-08); Allow Resize **not built** |
 | A string and an array reach a function as handles, in place, and what it leaves in them comes back (a string, 1D and 2D arrays) | `native/solder-io/tests/handle_library.rs` (a library compiled with `rustc`), `test/core/call-library-handles.test.mjs` (the blocks) and `test/core/call-library-handles-run.test.mjs` (an OVI through the Run, the addon and the Rust) | **Verified** (2026-11-08) |
-| A library resizes a handle's block and the host reads it back resized | The same, with the memory functions | **Not built** (slice 2c) |
+| A library resizes a handle's block and the host reads it back resized | `native/solder-io/tests/handle_library.rs` (`DSSetHandleSize` on a string, `NumericArrayResize` on an array of doubles) and `test/core/call-library-handles-run.test.mjs` (an OVI gets the longer string and the filled array) | **Verified** on Linux and, in Rust, on Windows (2026-11-08); an OVI on Windows **not run** |
 | A format that does not run yet keeps the node from running | `test/core/call-library.test.mjs` | **Verified** (2026-11-08) |
-| A library calls the memory functions and they work | The same | **Not built** (the table of handles that they will answer for, `solder-io/src/handles.rs`, is built and tested) |
+| A library calls the memory functions and they work: new, cleared, measured, resized, copied with `MoveBlock`, disposed of, a handle disposed of twice or never made refused | `native/solder-io/tests/handle_library.rs`, `solder-io/src/memory_manager.rs` (its tests) | **Verified** on Linux (2026-11-08) |
+| The signatures, error codes and type codes are `extcode.h`'s | Read in LabVIEW 2026's cintools (report above) | **Measured** (2026-11-08) |
+| A DLL built with cintools' `labview.lib` finds the bridge on Windows | `native/solder-io/tests/handle_library.rs` (the fixture linked with LabVIEW 2026's `labview.lib` and `user32`, where cintools is installed), run in the Windows VM: [`2026-11-08-memory-bridge-windows.md`](../../labview-captures/reports/2026-11-08-memory-bridge-windows.md) | **Verified** on Windows (2026-11-08) |
+| An array's elements start where the compiler's alignment puts them, as in `extcode.h` on a 64-bit system | `test/core/call-library-handles.test.mjs`, `solder-io/src/memory_manager.rs` (its tests) and the fixture of `handle_library.rs`, whose arrays are `#[repr(C)]` structs laid out by the compiler | **Verified** against the compiler (2026-11-08) |
 | LabVIEW's handle layout is as `extcode.h` says | `DSGetHandleSize` and `MoveBlock` run from a CLFN in LabVIEW | **Unverified** |
 

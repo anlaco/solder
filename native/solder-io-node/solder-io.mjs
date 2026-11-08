@@ -10,8 +10,10 @@
 // fileReadLines(refnum, count) → { lines, error }, fileSize(refnum) → { size, error }, fileMoveToEnd(refnum) → error,
 // fileDelete(name, entireHierarchy) → error, and, at once,
 // fileName(refnum). callLibrary({ library, function, returnKind, arguments: [{ kind, bytes }], uiThread }) →
-// { status, returned, arguments } calls a native library for the Call Library Function Node (DT-080).
+// { status, returned, arguments } calls a native library for the Call Library Function Node (DT-080). The memory
+// bridge next to the addon is installed as it loads (DT-088 §4).
 
+import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
@@ -19,6 +21,18 @@ import { fileURLToPath } from "node:url";
 export const addonFileName = (platform = process.platform, arch = process.arch) => `solder-io-${platform}-${arch}.node`;
 
 export const ADDON_PATH = fileURLToPath(new URL(`./${addonFileName()}`, import.meta.url));
+
+/**
+ * The memory bridge's file on each system (DT-088 §4): the library that offers LabVIEW's memory functions, by LabVIEW's
+ * names, to the libraries the Call Library Function Node loads. On Windows it is `lvrt.dll`, the module a library built
+ * with LabVIEW's `labview.lib` looks them up in (measured, 2026-11-08).
+ */
+const MEMORY_BRIDGE_FILE = { linux: "libsolder_memory_bridge.so", darwin: "libsolder_memory_bridge.dylib", win32: "lvrt.dll" };
+
+/** Where the memory bridge of a system and processor sits, beside the addon: a folder of its own, since its name is fixed. */
+export const memoryBridgeRelativePath = (platform = process.platform, arch = process.arch) => `memory-bridge/${platform}-${arch}/${MEMORY_BRIDGE_FILE[platform]}`;
+
+export const MEMORY_BRIDGE_PATH = fileURLToPath(new URL(`./${memoryBridgeRelativePath()}`, import.meta.url));
 
 let solderIo = null;
 
@@ -29,6 +43,9 @@ let solderIo = null;
 export function loadSolderIo() {
   if (solderIo) return solderIo;
   const addon = createRequire(import.meta.url)(ADDON_PATH);
+  // Before any library is loaded, so that a library that resizes handles finds the functions it calls. Without the
+  // bridge, such a library does not load (error 12), as it would not outside LabVIEW; the others still run.
+  if (existsSync(MEMORY_BRIDGE_PATH)) addon.installMemoryBridge(MEMORY_BRIDGE_PATH);
   const asBuffer = (bytes) => Buffer.from(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   solderIo = {
     ...addon,

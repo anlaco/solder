@@ -62,7 +62,8 @@
       "executableName": "solder",
       "syncDesktopName": true,
       "files": [
-        "native/solder-io-node/solder-io-linux-x64.node"
+        "native/solder-io-node/solder-io-linux-x64.node",
+        "native/solder-io-node/memory-bridge/linux-x64/**"
       ]
     },
     "win": {
@@ -72,7 +73,8 @@
       "icon": "build/icon.ico",
       "executableName": "Solder",
       "files": [
-        "native/solder-io-node/solder-io-win32-x64.node"
+        "native/solder-io-node/solder-io-win32-x64.node",
+        "native/solder-io-node/memory-bridge/win32-x64/**"
       ]
     },
     "nsis": {
@@ -103,7 +105,8 @@
       }
     ],
     "asarUnpack": [
-      "native/**/*.node"
+      "native/**/*.node",
+      "native/solder-io-node/memory-bridge/**"
     ]
   },
   "desktopName": "solder.desktop",

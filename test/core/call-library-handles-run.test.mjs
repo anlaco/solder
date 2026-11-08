@@ -101,3 +101,47 @@ test("a two-dimensional array handle carries both sizes", { skip: !ON_LINUX }, a
   const shown = await run(vi);
   assert.deepEqual([shown.rows, shown.columns], [2, 3]);
 });
+
+// The library resizes the handles with LabVIEW's memory functions (DT-088 §4), which Solder's I/O process offers by
+// LabVIEW's names through its memory bridge.
+
+test("a library that grows a string handle with DSSetHandleSize gives the OVI the longer string", { skip: !ON_LINUX }, async () => {
+  const vi = buildVI(CAT, (b) => {
+    b.node("text", "str-const", { value: "ab" });
+    b.node("letter", "const", { value: 122, type: "u8" });
+    b.node("count", "const", { value: 7, type: "i32" });
+    b.node("repeat", "call-library", configured({
+      function: "fixture_string_repeat",
+      "return-type": { type: "numeric", "data-type": "i32" },
+      parameters: [stringHandle, numeric("letter", "u8"), numeric("count", "i32")],
+    }));
+    b.node("shown", "str-indicator", {});
+    b.node("error", "indicator", { type: "i32" });
+    b.wire("text.result", "repeat.arg-0-in");
+    b.wire("letter.result", "repeat.arg-1-in");
+    b.wire("count.result", "repeat.arg-2-in");
+    b.wire("repeat.arg-0-out", "shown.value");
+    b.wire("repeat.return", "error.value");
+  });
+  const shown = await run(vi);
+  assert.equal(shown.error, 0);
+  assert.equal(shown.shown, "zzzzzzz");
+});
+
+test("a library that fills an empty array with NumericArrayResize gives the OVI every element", { skip: !ON_LINUX }, async () => {
+  const vi = buildVI(CAT, (b) => {
+    b.node("values", "arr-const", { type: { array: "number" }, value: [] });
+    b.node("count", "const", { value: 500, type: "i32" });
+    b.node("ramp", "call-library", configured({
+      function: "fixture_array_ramp_f64",
+      "return-type": { type: "numeric", "data-type": "i32" },
+      parameters: [doubleHandle(1), numeric("count", "i32")],
+    }));
+    b.node("filled", "arr-indicator", { type: { array: "number" } });
+    b.wire("values.result", "ramp.arg-0-in");
+    b.wire("count.result", "ramp.arg-1-in");
+    b.wire("ramp.arg-0-out", "filled.value");
+  });
+  const shown = await run(vi);
+  assert.deepEqual(shown.filled, Array.from({ length: 500 }, (_, index) => index));
+});

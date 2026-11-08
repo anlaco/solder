@@ -137,3 +137,9 @@ pub fn call_library(request: LibraryCallRequest) -> napi::Result<AsyncTask<CallT
     };
     Ok(AsyncTask::new(CallTask { call, ui_thread: request.ui_thread }))
 }
+
+/// Offers LabVIEW's memory functions to the libraries loaded from now on (DT-088 §4), from the bridge library at `path`.
+#[napi]
+pub fn install_memory_bridge(path: String) -> napi::Result<()> {
+    solder_io::install_memory_bridge(std::path::Path::new(&path)).map_err(napi::Error::from_reason)
+}

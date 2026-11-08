@@ -1,6 +1,8 @@
 // LabVIEW's handles in the Call Library Function Node (DT-088): the block a string or an array is packed into for a
 // handle, and read back from after the call. The layout is `extcode.h`'s: a string is `{ int32 length; bytes }` and an
-// array `{ int32 dimension sizes[N]; elements }`, all little-endian.
+// array `{ int32 dimension sizes[N]; elements }`, all little-endian. On a 64-bit system `extcode.h` keeps the compiler's
+// alignment (it packs to one byte only on 32-bit Windows), so the elements start where their own size aligns them:
+// `labview-captures/reports/2026-11-08-labview-memory-manager-imports.md`.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -54,4 +56,15 @@ test("a flat list is nested again by dimension sizes, row by row", () => {
   assert.deepEqual(nestByDimensions([1, 2, 3, 4, 5, 6], [2, 3]), [[1, 2, 3], [4, 5, 6]]);
   assert.deepEqual(nestByDimensions([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2]), [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]);
   assert.deepEqual(nestByDimensions([], [0]), []);
+});
+
+test("on a 64-bit system an array's elements start where their size aligns them, after padding the dimension sizes", () => {
+  const doubles = arrayBlock([3], [1.5, 2.5, 3], "dbl");
+  assert.equal(doubles.byteLength, 8 + 3 * 8, "four bytes of padding after the one dimension size");
+  assert.equal(new DataView(doubles.buffer).getFloat64(8, true), 1.5);
+  assert.equal(arrayBlock([2], [1, 2], "i32").byteLength, 4 + 2 * 4, "a 32-bit element needs no padding");
+  assert.equal(arrayBlock([1, 1, 1], [7], "dbl").byteLength, 16 + 8, "three sizes are twelve bytes, padded to sixteen");
+  assert.equal(arrayBlock([1, 1, 1], [7], "i16").byteLength, 12 + 2);
+  assert.equal(arrayBlock([2], [1n, 2n], "u64").byteLength, 8 + 2 * 8);
+  assert.deepEqual(arrayOfBlock(arrayBlock([1, 1, 1], [7], "dbl"), "dbl", 3), { dimensions: [1, 1, 1], values: [7] });
 });
