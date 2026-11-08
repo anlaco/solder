@@ -26,6 +26,7 @@ import { createInstrumentIoProcess } from "./instrument-io-process.mjs";
 import { chosenFileOf, chosenFilesOf, confirmationBoxFor, confirmedBy, fileDialogFor, folderAfter, systemDialogFor } from "./file-dialog-options.mjs";
 import { UPDATE_BUTTONS, UPDATE_BUTTON_ANSWERS, checkForUpdatesAtStart, shouldCheckForUpdates } from "./update-check.mjs";
 import { loadInstalledAddons } from "./installed-addons.mjs";
+import { mergeAddonPalettes } from "../../core/model/palette.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // Solder's library of OVIs (DT-073): next to the repository's editor while developing, and among the application's
@@ -96,11 +97,23 @@ function serve() {
     }
     try {
       const type = MEDIA_TYPES[path.extname(file)] ?? "application/octet-stream";
-      return editorResponse(await readFile(file), { type });
+      return editorResponse(route === "/inventario.json" ? await inventoryWithAddonPalettes() : await readFile(file), { type });
     } catch {
       return editorResponse("not found", { status: 404 });
     }
   });
+}
+
+/**
+ * The inventory with the palettes that add-ons bring (DT-086): the hole that names a palette file is filled when an
+ * add-on provides it, so the page draws it with the code it already has. The file as it is when there are none.
+ */
+async function inventoryWithAddonPalettes() {
+  const text = await readFile(INVENTORY, "utf8");
+  if (Object.keys(INSTALLED_ADDONS.menuFiles).length === 0) return text;
+  const { inventory, problems } = mergeAddonPalettes(JSON.parse(text), INSTALLED_ADDONS.menuFiles);
+  for (const { file, problem } of problems) console.warn(`Add-on palette skipped (${file}): ${problem}`);
+  return JSON.stringify(inventory);
 }
 
 /** The sheet of the chosen theme, served after old-school.css; Old School has none and gets an empty one. */

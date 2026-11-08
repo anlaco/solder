@@ -6712,7 +6712,8 @@
       "estado": "todo",
       "labview": "Data acquisition with the installed measurement hardware (DAQ, among others).",
       "necesita": "drivers-de-adquisicion",
-      "captura": "paletas/functions-programming.png"
+      "captura": "paletas/functions-programming.png",
+      "menu": "Categories/Measurement/daq.json"
     },
     {
       "id": "palette.functions.instrument-io",

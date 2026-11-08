@@ -711,6 +711,10 @@ array or string read by a local variable while another loop writes it is never t
       *Palettes decided on 2026-11-08 (DT-086), in two steps: (1) palettes read from JSON files that reproduce LabVIEW's
       `.mnu` structure, add-ons first (`.mnu` reader later); (2) palettes that show only what the files name, with no greyed
       entries, as LabVIEW's. Measured in [`mnu-format`](../../labview-captures/reports/2026-11-08-mnu-format.md).*
+      *Step 1 built on 2026-11-08 (`core/model/palette.mjs`, `editor/electron/installed-addons.mjs`): Measurement I/O names
+      `Categories/Measurement/daq.json` (`menu` in the inventory) and an add-on that brings it fills the palette. Left:
+      the other hooks (FPGA, the entries of `root.mnu`), spacers, the `.mnu` reader, then step 2 (nothing greyed), which
+      touches every palette and deserves its own plan; then DAQ's stage A as the first add-on.*
       *Open before step 5 (talked over with the developer on 2026-11-03, nothing decided): **what Solder uses instead
       of DAQmx**, its own name (DAQmx and NI-DAQ are NI's trademarks, as OVI stands for VI, DT-071) and its approach.
       Ideas: DAQmx's programming model (tasks, named channels, hardware timing, triggers, waveforms) over engines

@@ -13,7 +13,12 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   (`~/.local/share/solder/addons` on Linux, `%APPDATA%\Solder\Addons` on Windows), and an OVI of an add-on is found
   by its symbolic `<ovilib>/…` path, so a `.sdg` that uses it opens wherever the add-on is installed. A broken
   add-on is logged and skipped. A copy in the user's folder wins over the system's. A new add-on appears after
-  restarting Solder. Add-on palettes are not read yet.
+  restarting Solder.
+- Add-on palettes (DT-086, step 1): an add-on can fill the palette Measurement I/O, which stays grey until one does. It
+  brings `menus/Categories/Measurement/daq.json`, a JSON file with the structure of LabVIEW's `.mnu` (a title and an
+  ordered list of items, sub-palettes and spacers), and its functions place the OVIs it ships by their `<ovilib>/…`
+  paths. As in LabVIEW, the parent names the file ahead of time and a missing one is skipped silently. A broken file is
+  logged and the palette stays grey. Spacers are not drawn yet.
 - Free labels (DT-085), as in LabVIEW: a double click on empty space of the panel or the diagram writes a comment
   there. Enter starts a line, Ctrl+Enter or a click away confirms, Escape cancels; they move, resize by their handles
   (the text then wraps), copy and delete as any object, move with the structure they sit in, and have LabVIEW's

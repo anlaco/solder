@@ -4081,7 +4081,12 @@ files do not name is not shown in a palette (it is no longer shown greyed).**
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
 | LabVIEW names modules' palettes ahead of time and skips a missing target; the `.mnu` layout | The 2026-11-08 report | **Measured** |
-| The model, the JSON files, relative paths without regard to case, a missing child skipped | Tests of `core/model/palette.mjs` | **Not built** |
-| An add-on's palette appears in the editor and a broken one is skipped | Editor tests with a test add-on | **Not built** |
+| The model, the JSON files, relative paths without regard to case, a missing child skipped, a broken file or a cycle reported and the hole kept | `test/core/palette.test.mjs` | **Verified** (2026-11-08) |
+| The add-ons' palette files are read from their `menus/` folders, the user's replacing the system's | `test/editor/installed-addons.test.mjs` | **Verified** (2026-11-08) |
+| An add-on's palette fills Measurement I/O, its sub-palette opens and its function is placeable; without it the hole is unchanged | `test/editor/addon-palettes.test.mjs` | **Verified** (2026-11-08); also in the running editor under Xvfb (`labview-captures/reports/2026-11-08-addon-palettes-editor.md`): the folder unfolds, the sub-palette opens, the function places a subOVI that opens the add-on's OVI; without the add-on Measurement I/O is grey as before. Trying it showed that a function with no icon of its own was invisible, so it takes the standard OVI icon |
+| An add-on's folder in a grid has no icon of its own and no name until opened (the hover opens the sub-palette; no tip) | — | **Known gap**: a palette file will carry its icon, as a `.mnu` does |
+| The "(ovi.lib)" label of an add-on's OVI in the hierarchy; saving and reloading an OVI that uses it; running it | — | **Unverified** (Show OVI Hierarchy is greyed for a node placed this way) |
+| Spacers (the empty cells of LabVIEW's grids) | — | **Not built**: step 1 skips them |
+| Hooks other than Measurement I/O (`Categories/FPGA/…`, `root.mnu`'s) | — | **Not built**: only Measurement I/O names a file so far |
 | Palettes show only what the files name | Editor tests | **Not built** (step 2) |
 | Where a real FPGA module installs its palette files; what LabVIEW does when a folder's `dir.mnu` is missing | — | **Unverified** |

@@ -390,6 +390,13 @@ const glifoCarpeta = (id) => (id.startsWith("palette.controls.") ? G.CARPETAS_CO
 /** El glifo de un elemento de una subpaleta: una función o un control. */
 const glifoIcono = (id) => (id.startsWith("palette.controls.") ? G.CONTROLES : G.FUNCIONES)[ultimo(id)];
 
+/**
+ * What an element that places an OVI and has no icon of its own looks like: the standard OVI icon, as every OVI has
+ * until the icon editor exists. An add-on's palette cannot add to the table of icons above, so without this its
+ * elements would be invisible (found trying it in the running editor).
+ */
+const iconoDeOVI = (entrada) => (entrada.bloque === "subvi" ? G.iconoVI() : "");
+
 /** Una carpeta de una rejilla; la abierta lleva el marco de LabVIEW. */
 function carpeta(inv, e, left, top, abierta, conEtiqueta = false) {
   const glifo = glifoCarpeta(e.id) ?? "";
@@ -529,7 +536,7 @@ export function subpaletas(inv, estado) {
           const P = MEDIDAS_PALETA;
           html += carpeta(inv, hijo, cx - P.anchoCarpeta / 2, cy - P.altoCarpeta / 2 - S.subeCarpeta, hijo.id === abierta || hijo.id === estado.sobre);
         } else {
-          html += `<div class="${clases(inv, hijo.id, "icono-funcion")}" data-id="${esc(hijo.id)}" style="left:${px(cx - S.lado / 2)};top:${px(cy - S.lado / 2)};width:${px(S.lado)};height:${px(S.lado)}">${hijo.id === estado.sobre ? `<div class="marco marco-funcion"></div>` : ""}${glifoIcono(hijo.id) ?? ""}</div>`;
+          html += `<div class="${clases(inv, hijo.id, "icono-funcion")}" data-id="${esc(hijo.id)}" style="left:${px(cx - S.lado / 2)};top:${px(cy - S.lado / 2)};width:${px(S.lado)};height:${px(S.lado)}">${hijo.id === estado.sobre ? `<div class="marco marco-funcion"></div>` : ""}${glifoIcono(hijo.id) ?? iconoDeOVI(hijo)}</div>`;
         }
       }
       return `${html}</div></div>`;

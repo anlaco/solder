@@ -125,6 +125,11 @@
           "type": "string",
           "pattern": "^[A-Za-z0-9._/-]+\\.(png|jpe?g|webp)$"
         },
+        "menu": {
+          "description": "El archivo de paleta que llena este hueco, si un add-on lo trae (DT-086): como el dir.mnu de LabVIEW nombra daqmx.mnu antes de que exista. Ruta relativa a la carpeta menus/ del add-on, con barras, sin distinguir mayúsculas. Si el archivo no existe el hueco sigue como está.",
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_ ./-]+\\.json$"
+        },
         "oculto": {
           "description": "LabVIEW no lo enseña hasta que se piden las categorías ocultas (las flechas dobles del pie de una paleta).",
           "const": true

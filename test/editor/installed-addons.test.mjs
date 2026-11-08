@@ -59,3 +59,17 @@ test("a broken add-on is reported and the others still load", () => withTemporar
   assert.deepEqual(result.addons.map((addon) => addon.name), ["daq"]);
   assert.equal(result.problems.length, 1);
 }));
+
+test("the palette files of the add-ons are read, the user's replacing the system's of the same name", () => withTemporaryFolder((folder) => {
+  const system = path.join(folder, "system");
+  const user = path.join(folder, "user");
+  writeFiles(system, { "daq/1/sdaddoninfo.json": manifest, "daq/1/menus/Categories/Measurement/daq.json": "system copy", "daq/1/menus/readme.txt": "not a palette" });
+  writeFiles(user, { "daq/1/sdaddoninfo.json": manifest, "daq/1/menus/categories/measurement/DAQ.json": "user copy", "daq/1/menus/Categories/Measurement/_daq/advanced.json": "advanced" });
+  const result = load([system, user], "/opt/solder/ovi.lib");
+  assert.deepEqual(Object.values(result.menuFiles).sort(), ["advanced", "user copy"]);
+  assert.deepEqual(Object.keys(result.menuFiles).map((key) => key.toLowerCase()).sort(), ["categories/measurement/_daq/advanced.json", "categories/measurement/daq.json"]);
+}));
+
+test("with no add-on there are no palette files", () => withTemporaryFolder((folder) => {
+  assert.deepEqual(load([path.join(folder, "none")], "/opt/solder/ovi.lib").menuFiles, {});
+}));

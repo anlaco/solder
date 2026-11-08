@@ -6,6 +6,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 import { findAddons, oviLibRoots } from "../../core/model/addons.mjs";
 import { buildOviLibLocator } from "../../core/model/ovi-lib.mjs";
+import { paletteFileKey } from "../../core/model/palette.mjs";
 
 /** Solder's name for a platform, as an add-on's `SupportedPlatform` writes it: `linux-x64`, `windows-x64`. */
 export const platformName = (nodePlatform, architecture) => `${nodePlatform === "win32" ? "windows" : nodePlatform}-${architecture}`;
@@ -56,10 +57,32 @@ export function listRelativeFiles(root, relativeFolder = "") {
   });
 }
 
+/** The folder of an add-on part where its palette files lie, overlaid on Solder's own at the same relative path. */
+const ADDON_MENUS_FOLDER = "menus";
+
+/**
+ * The palette files (`.json`) that add-ons bring, as `{ relative path inside menus/: text }` (DT-086). Parts are read in
+ * the order `addons` gives them, so a later one (the user's) replaces an earlier one with the same name, without regard
+ * to case. A file that cannot be read is left out.
+ */
+export function readAddonMenuFiles(addons) {
+  const byKey = new Map();
+  for (const addon of addons) {
+    for (const folder of addon.folders) {
+      const menusFolder = path.join(folder, ADDON_MENUS_FOLDER);
+      for (const relativePath of listRelativeFiles(menusFolder).filter((file) => file.toLowerCase().endsWith(".json"))) {
+        const text = readTextOrNull(path.join(menusFolder, relativePath));
+        if (text !== null) byKey.set(paletteFileKey(relativePath), { relativePath, text });
+      }
+    }
+  }
+  return Object.fromEntries([...byKey.values()].map(({ relativePath, text }) => [relativePath, text]));
+}
+
 /**
  * What `<ovilib>` paths are resolved with: Solder's own ovi.lib folder, as it has always been, when no add-on is
  * installed, so that nothing changes for whoever has none; otherwise a locator over ovi.lib and every add-on's
- * `ovi.lib/`. `folders` is where to look (the two of `addonsFolders` unless a test says otherwise). Also returns the add-ons found and the problems with the ones that were skipped, for the log.
+ * `ovi.lib/`. `folders` is where to look (the two of `addonsFolders` unless a test says otherwise). Also returns the add-ons found, the problems with the ones that were skipped (for the log) and the palette files they bring.
  */
 export function loadInstalledAddons({ oviLibRoot, nodePlatform, architecture, homeDirectory, environment, solderVersion, folders = addonsFolders({ nodePlatform, homeDirectory, environment }), normalizePath = (folder) => folder }) {
   const { addons, problems } = findAddons({
@@ -68,7 +91,7 @@ export function loadInstalledAddons({ oviLibRoot, nodePlatform, architecture, ho
     platform: platformName(nodePlatform, architecture),
     solderVersion,
   });
-  if (addons.length === 0) return { oviLib: oviLibRoot, addons, problems };
+  if (addons.length === 0) return { oviLib: oviLibRoot, addons, problems, menuFiles: {} };
   const roots = oviLibRoots(oviLibRoot, addons).map(normalizePath);
-  return { oviLib: buildOviLibLocator(roots, listRelativeFiles), addons, problems };
+  return { oviLib: buildOviLibLocator(roots, listRelativeFiles), addons, problems, menuFiles: readAddonMenuFiles(addons) };
 }
