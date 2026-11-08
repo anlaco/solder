@@ -689,6 +689,11 @@ array or string read by a local variable while another loop writes it is never t
       type with kinds, the task among them, as measured the same day; the engine and its simulated driver in `solder-io`;
       stage A). The same day DT-079 made the nodes OVIs that call a compiled `solder-daq` through a Call Library Function
       Node, so DAQ waits for step 6a.*
+      *DAQ, stage A, slice 1 built on 2026-11-08 on `feature/daq` (DT-087): `native/solder-daq`, the engine apart from any
+      facade, with the analog-input path (tasks, channels, Timing, Start, Stop, Clear, Wait Until Done, Read) over the
+      simulated devices and a virtual clock, 14 tests. DT-087: the VIs call `nilvaiu.dll`, not `nicaiu.dll` (20 functions
+      for stage A, measured), and the driver imitates it. Next: the node with LabVIEW's handles (measure first), the
+      facade, the plugin's OVIs built in the editor as a user, the palette and the ESP32.*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

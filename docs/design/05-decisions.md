@@ -4153,6 +4153,9 @@ once Solder can compile libraries, it will be written in Solder with the same ex
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
 | DAQmx's VIs call these functions of `nilvaiu.dll` with these signatures | Inspection of the stage A VIs in LabVIEW | **Measured** (2026-11-08); the value passed as `taskID` and nilvaiu's relation to nicaiu **unverified** |
-| The driver exports those functions and a node calls them | Tests of the library and of the plugin's instances | **Not built** |
+| The engine reproduces DAQmx's analog-input path on a simulated device: names, the errors -200220, -200170, -200077 (rate at Timing, range at Start), -200479, -200278, -200284 and -200560, finite and continuous reads, waits, the sine with noise | `native/solder-daq/tests/ai_voltage.rs` (`cargo test`, on a virtual clock) | **Verified** (2026-11-08, slice 1) |
+| The engine's unmeasured parts: Dev2's profile, the channel count of Dev1 (eight), the continuous sine's period, the codes -200088 and -200478, Wait Until Done's duration, a continuous wait with no timeout, a read on a stopped task, a rate below the minimum | — | **Unverified**, marked where they are used |
+| Analog output, digital lines, the triggers, the other reads and writes | — | **Not built** (next slices) |
+| The driver exports the 20 `nilvaiu` functions and a node calls them | Tests of the library and of the plugin's instances | **Not built** |
 | NI's VIs run against the driver unchanged | — (opening NI's VIs is a future goal) | **Unverified** |
 

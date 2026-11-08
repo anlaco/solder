@@ -1,0 +1,7 @@
+[package]
+name = "solder-daq"
+version = "0.1.0"
+description = "Solder's DAQ engine: tasks, channels, timing and data, over simulated devices (DT-087). It knows nothing of LabVIEW; a facade translates."
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
