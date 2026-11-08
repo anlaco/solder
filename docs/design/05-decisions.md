@@ -4093,3 +4093,66 @@ files do not name is not shown in a palette (it is no longer shown greyed).**
 | Hooks other than Measurement I/O (`Categories/FPGA/…`, `root.mnu`'s) | — | **Not built**: only Measurement I/O names a file so far |
 | Palettes show only what the files name | Editor tests | **Not built** (step 2) |
 | Where a real FPGA module installs its palette files; what LabVIEW does when a folder's `dir.mnu` is missing | — | **Unverified** |
+
+## DT-087
+
+**DAQ's driver is a native library that stands in, function for function, for the library DAQmx's VIs call: the OVIs of
+the DAQ plugin call it through the Call Library Function Node, as DAQmx's VIs call NI's. It is written in Rust now and,
+once Solder can compile libraries, it will be written in Solder with the same exports. Which library is imitated
+(`nilvaiu.dll`, which the VIs call, or `nicaiu.dll`'s public DAQmx C API) is open: see the measurement below.**
+
+- **Status:** Accepted on 2026-11-08 by the developer, from their words ("the idea is that it replaces NI's one to one, with
+  the same API, a `.dll`: replace NI's driver with anlaco's and that is it; now a DLL in Rust and in the future the
+  same in Solder"). Measured the same day, which changed §2: the VIs call `nilvaiu.dll`, not `nicaiu.dll`. The developer then chose to imitate nilvaiu "with C in mind" (§2).
+- **Amends:** [DT-076](#dt-076) §3, §6, §7 (the engine and the drivers) and [DT-079](#dt-079) §5; they stand where this
+  does not say otherwise. DT-076's measurements, the `daq-name` type (§5), the simulated driver (§8) and the stages
+  (§10) stand.
+- **Measured:** [`labview-captures/reports/2026-11-08-daq-clfn-api.md`](../../labview-captures/reports/2026-11-08-daq-clfn-api.md).
+  Every Call Library Function Node of the stage A VIs calls **`nilvaiu.dll`** ("NI LabVIEW DAQ interface", 1209 exports),
+  never `nicaiu.dll` (3598 exports, the public `DAQmx*` C API); 20 distinct `DAQ*` functions, one node per instance, calling
+  convention C, return `int32`. They take **LabVIEW handles** (`LStrHandle`, `Array1DDouble **`, `Array2DDouble **`),
+  a task as `uintptr_t` and, to create one, a `void *` pointer to the refnum plus the application reference. Whether
+  nilvaiu sits on top of nicaiu was not traced.
+- **Why:** in LabVIEW, DAQmx is two stacked things: the VIs of the palette, which are ordinary diagrams, and a compiled
+  library under them that holds the tasks, the clock and the data; the VIs measure nothing, they call its functions. If
+  Solder offers the same functions with the same signatures, the day it opens NI's VIs ([DT-076](#dt-076) "Why") they
+  run against Solder's driver unchanged.
+
+### Decision
+
+1. **Three layers.** (1) The plugin: the OVIs a user sees, named DAQ as in [DT-076](#dt-076) §1, whose instances hold
+   Call Library Function Nodes. (2) The driver: a shared library exporting NI's functions. (3) What it talks to: SCPI
+   over VISA (the ESP32 first) and a simulated device, behind the driver ([DT-076](#dt-076) §3, §8, §9).
+2. **The contract is what stage A's VIs call** ([DT-076](#dt-076) §10): function names, parameter types and directions,
+   return value and error codes, **measured** from the Call Library Function Nodes inside DAQmx's VIs in LabVIEW
+   (library, function, calling convention, each parameter), not written from memory. That is `nilvaiu.dll`'s 20
+   functions (the report). **Solder imitates nilvaiu** (decided 2026-11-08): only that lets NI's VIs run unchanged. It
+   needs the Call Library Function Node to pass LabVIEW's handles (DT-080 §6 hands strings and arrays by address and
+   leaves Adapt to Type open), which is its own step. **With a second façade in mind:** the library has two parts, an
+   **engine** (tasks, channels, timing, buffers and the backends below, knowing nothing of LabVIEW) and a **façade** of
+   exports that only translates (the 20 `DAQ*` functions and LabVIEW's handles into calls to the engine). A façade of
+   `nicaiu`'s public `DAQmx*` C API, for programs in C or Python, can later be added over the same engine without touching
+   it; it is not built now. The signatures are
+   written from that measurement; no NI header, code or text is copied (CLAUDE.md rule 3), and NI's header licence is
+   read before anything is taken from it.
+3. **Names.** What a user sees is DAQ (OVIs, palette, refnums, Property Node classes). The functions the driver exports
+   keep NI's names, because a library that stands in for NI's must be called as NI's is. How a node that names
+   `nicaiu.dll` is redirected to Solder's library is decided when NI's VIs can be opened.
+4. **Now Rust, later Solder.** The driver is a Rust shared library in `native/`, loaded by the I/O process like any
+   library ([DT-080](#dt-080)). When Solder can compile shared libraries it is rewritten in Solder with the same
+   exports; nothing above it changes, because the plugin already calls a library.
+5. **Branch.** It is built on `feature/daq`, merged into `main` when it works ([DT-062](#dt-062)).
+6. **The plugin's OVIs are built in the editor, as a user would** (asked by the developer on 2026-11-08), not written
+   as files and not generated: placing the Call Library Function Node, filling its dialog, wiring, making the polymorphic
+   OVIs, saving. It is the test of the editor and of the node: every difficulty, missing option or surprise is written
+   down as a finding, as `real-programs-0.2.md` did, and fixed before or beside the plugin. As all GUI work, it goes
+   through the `labview` skill (a Sonnet subagent drives the editor under Xvfb); the findings come back as text.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| DAQmx's VIs call these functions of `nilvaiu.dll` with these signatures | Inspection of the stage A VIs in LabVIEW | **Measured** (2026-11-08); the value passed as `taskID` and nilvaiu's relation to nicaiu **unverified** |
+| The driver exports those functions and a node calls them | Tests of the library and of the plugin's instances | **Not built** |
+| NI's VIs run against the driver unchanged | — (opening NI's VIs is a future goal) | **Unverified** |
+
