@@ -391,9 +391,10 @@ const glifoCarpeta = (id) => (id.startsWith("palette.controls.") ? G.CARPETAS_CO
 const glifoIcono = (id) => (id.startsWith("palette.controls.") ? G.CONTROLES : G.FUNCIONES)[ultimo(id)];
 
 /**
- * What an element that places an OVI and has no icon of its own looks like: the standard OVI icon, as every OVI has
- * until the icon editor exists. An add-on's palette cannot add to the table of icons above, so without this its
- * elements would be invisible (found trying it in the running editor).
+ * The icon of a palette element that places an OVI is the OVI's own, as in LabVIEW, never one the palette stores. An OVI
+ * keeps no icon in its file yet (the icon editor is postponed), so it is the standard one, the same that the node shows
+ * on the diagram (`subVIIcon`); when OVIs carry their icons, both read them from the OVI. Found by trying an add-on's
+ * palette in the running editor: without this its elements were invisible.
  */
 const iconoDeOVI = (entrada) => (entrada.bloque === "subvi" ? G.iconoVI() : "");
 

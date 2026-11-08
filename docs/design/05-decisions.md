@@ -4066,7 +4066,10 @@ files do not name is not shown in a palette (it is no longer shown greyed).**
 3. **The parent names the child ahead of time.** Solder's base palettes name the places of the modules it knows, with
    LabVIEW's own relative names (`Categories/FPGA/dir`, …), and a target that does not exist is skipped silently
    (measured). An add-on provides only the child; it cannot replace a base file (none of LabVIEW's 166 does).
-4. **Paths** in a palette use root tokens as LabVIEW's: `<menus>` and, for an OVI, `<ovilib>` (DT-073); a path into
+4. **Icons.** A palette file stores the icon of a palette (a sub-palette's folder), as a `.mnu`'s `ICON` block does, and
+   never that of an item: the icon of a function that places an OVI is the OVI's own, read from the OVI (today the
+   standard OVI icon, since an OVI keeps none in its file yet; decided 2026-11-08 by the developer).
+   **Paths** in a palette use root tokens as LabVIEW's: `<menus>` and, for an OVI, `<ovilib>` (DT-073); a path into
    `<vilib>` names a `.vi`, which cannot be placed until Solder reads `.vi`.
 5. **A reader of `.mnu`** that turns a real file into the model is a later step; it is the only part that knows the
    bytes. Its icons are NI's: whether to draw them or to draw Solder's own is decided then (rule 3 forbids copying NI's
@@ -4083,8 +4086,8 @@ files do not name is not shown in a palette (it is no longer shown greyed).**
 | LabVIEW names modules' palettes ahead of time and skips a missing target; the `.mnu` layout | The 2026-11-08 report | **Measured** |
 | The model, the JSON files, relative paths without regard to case, a missing child skipped, a broken file or a cycle reported and the hole kept | `test/core/palette.test.mjs` | **Verified** (2026-11-08) |
 | The add-ons' palette files are read from their `menus/` folders, the user's replacing the system's | `test/editor/installed-addons.test.mjs` | **Verified** (2026-11-08) |
-| An add-on's palette fills Measurement I/O, its sub-palette opens and its function is placeable; without it the hole is unchanged | `test/editor/addon-palettes.test.mjs` | **Verified** (2026-11-08); also in the running editor under Xvfb (`labview-captures/reports/2026-11-08-addon-palettes-editor.md`): the folder unfolds, the sub-palette opens, the function places a subOVI that opens the add-on's OVI; without the add-on Measurement I/O is grey as before. Trying it showed that a function with no icon of its own was invisible, so it takes the standard OVI icon |
-| An add-on's folder in a grid has no icon of its own and no name until opened (the hover opens the sub-palette; no tip) | — | **Known gap**: a palette file will carry its icon, as a `.mnu` does |
+| An add-on's palette fills Measurement I/O, its sub-palette opens and its function is placeable; without it the hole is unchanged | `test/editor/addon-palettes.test.mjs` | **Verified** (2026-11-08); also in the running editor under Xvfb (`labview-captures/reports/2026-11-08-addon-palettes-editor.md`): the folder unfolds, the sub-palette opens, the function places a subOVI that opens the add-on's OVI; without the add-on Measurement I/O is grey as before. Trying it showed that the function was invisible, so it takes its OVI's icon, today the standard one |
+| An add-on's folder in a grid has no icon of its own and no name until opened (the hover opens the sub-palette; no tip) | — | **Known gap**: only a palette's folder will carry its icon in the palette file (§4); the OVIs' icons are their own |
 | The "(ovi.lib)" label of an add-on's OVI in the hierarchy; saving and reloading an OVI that uses it; running it | — | **Unverified** (Show OVI Hierarchy is greyed for a node placed this way) |
 | Spacers (the empty cells of LabVIEW's grids) | — | **Not built**: step 1 skips them |
 | Hooks other than Measurement I/O (`Categories/FPGA/…`, `root.mnu`'s) | — | **Not built**: only Measurement I/O names a file so far |
