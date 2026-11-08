@@ -3823,7 +3823,7 @@ a system folder and a user folder at start-up, and an add-on's OVIs are named by
    same relative path, ovi.lib's wins, then the add-ons' in the order found (decided 2026-11-07 by the developer); an
    add-on keeps its OVIs under a folder of its own (`DAQ/…`, as NI's `vi.lib\DAQmx`). The main process reads the folders
    once at start-up and hands the page an index of which folder holds each file, because the page cannot ask the disk.
-5. **Palettes:** an add-on's `menus/` is overlaid at the same relative path, as LabVIEW's; Solder's own palettes name
+5. **Palettes** (the form is superseded by [DT-086](#dt-086), 2026-11-08): an add-on's `menus/` is overlaid at the same relative path, as LabVIEW's; Solder's own palettes name
    in advance the places of the libraries Solder knows (DAQ in Measurement I/O, as NI's do), and a third party's
    manifest may say under which palette its entry goes.
 5b. **The same add-on in both folders** (decided 2026-11-07 by the developer): the user's copy is used, because the
@@ -4032,3 +4032,56 @@ the diagram (`x`, `y`, and the structure and frame they sit in). The compiler sk
 | In the real editor: creating, typing, cancelling, undo, Ctrl+Enter, look, handles, menus, Size To Text, moving with a loop, save and reopen, Run | By hand under Xvfb ([`2026-11-07-free-labels-solder-editor.md`](../../labview-captures/reports/2026-11-07-free-labels-solder-editor.md)); the marquee inset by `test/editor/free-labels-menu.test.mjs` | **Verified** once (2026-11-07) |
 | Pasting places the copy as for any node; LabVIEW's diagram copy lands at (−8, −2) and then +8, +8 | — | **Unverified** against Solder's paste rule; LabVIEW's panel Ctrl+C/V pasted nothing visible |
 | Scrolling a resized label to keep the caret in view while typed (LabVIEW shows the last lines) | — | **Not done** |
+
+## DT-086
+
+**Palettes are read from files, not from the inventory: a palette file is JSON that reproduces the structure of
+LabVIEW's `.mnu`, a reader of real `.mnu` files will produce the same structure later, and, as a second step, what the
+files do not name is not shown in a palette (it is no longer shown greyed).**
+
+- **Status:** Accepted on 2026-11-08 by the developer, in two steps: (1) palettes from files, with add-ons as the
+  first user; (2) palettes that show only what the files name, as LabVIEW's. It amends the greyed-out part of
+  [DT-035](#dt-035) and of rule 1 of CLAUDE.md for palettes, **when step 2 lands** (until then the rule stands).
+- **Complements:** [DT-073](#dt-073) §5 (palette entries and `.mnu`), [DT-081](#dt-081) §5 (the add-on's `menus/`).
+- **Measured:** [`labview-captures/reports/2026-11-08-mnu-format.md`](../../labview-captures/reports/2026-11-08-mnu-format.md)
+  and [`2026-11-05-palette-files.md`](../../labview-captures/reports/2026-11-05-palette-files.md): a palette is a
+  binary `.mnu` (RSRC, type `LMNU`); the parent names the child ahead of time and LabVIEW skips a missing target
+  silently, so `root.mnu` already names the FPGA, Real-Time and Robotics palettes of modules that are not installed;
+  toolkits are also named through a `.lvlib` that carries the license and the display name.
+- **Why:** the developer's principle: *Solder copies LabVIEW but is not LabVIEW*. The tools translate from LabVIEW to
+  Solder; whether the way back exists is left open. Keeping the palette model apart from the `.mnu` bytes means that,
+  if NI changes the format in a later LabVIEW, only the reader changes. A plugin of LabVIEW could one day be installed
+  in Solder directly, once Solder reads `.vi`.
+
+### Decision
+
+1. **One palette model.** A palette is `{ title, entries }`; each entry, in order, is a slot of one kind: a function
+   or control (display name, path with a root token, class), a sub-palette (the path of its file), or a spacer. These
+   are the contents of the `.mnu` blocks `CPST` (entry names), `LPTH` (paths), `PLM2` (the kind of each slot) and
+   `STR#` (display names), in a form of Solder's. Only a pure module (`core/model/palette.mjs`) knows it; the editor
+   draws what the model says.
+2. **Palette files are JSON of that model**, named like LabVIEW's (`menus/Categories/Measurement/daq.json` for
+   `…/daqmx.mnu`), found by the same relative path and compared **without regard to case** (measured: DFDT's folder is
+   `categories`).
+3. **The parent names the child ahead of time.** Solder's base palettes name the places of the modules it knows, with
+   LabVIEW's own relative names (`Categories/FPGA/dir`, …), and a target that does not exist is skipped silently
+   (measured). An add-on provides only the child; it cannot replace a base file (none of LabVIEW's 166 does).
+4. **Paths** in a palette use root tokens as LabVIEW's: `<menus>` and, for an OVI, `<ovilib>` (DT-073); a path into
+   `<vilib>` names a `.vi`, which cannot be placed until Solder reads `.vi`.
+5. **A reader of `.mnu`** that turns a real file into the model is a later step; it is the only part that knows the
+   bytes. Its icons are NI's: whether to draw them or to draw Solder's own is decided then (rule 3 forbids copying NI's
+   bitmaps into the repository).
+6. **Second step: nothing greyed.** Once the palettes are read from files, an entry that no file names does not appear,
+   as in LabVIEW. The inventory (`docs/schema/inventario-labview.json`) stays as the record of what is done and what is
+   not (`coverage.md`), no longer as the source of what a palette shows. Solder's own palette files, shipped with it,
+   list only what is built. When this step lands, rule 1 of CLAUDE.md and DT-035 are amended to say so.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| LabVIEW names modules' palettes ahead of time and skips a missing target; the `.mnu` layout | The 2026-11-08 report | **Measured** |
+| The model, the JSON files, relative paths without regard to case, a missing child skipped | Tests of `core/model/palette.mjs` | **Not built** |
+| An add-on's palette appears in the editor and a broken one is skipped | Editor tests with a test add-on | **Not built** |
+| Palettes show only what the files name | Editor tests | **Not built** (step 2) |
+| Where a real FPGA module installs its palette files; what LabVIEW does when a folder's `dir.mnu` is missing | — | **Unverified** |

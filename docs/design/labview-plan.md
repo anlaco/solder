@@ -707,7 +707,10 @@ array or string read by a local variable while another loop writes it is never t
       Executables subpalette is narrower than the measured 166 px. Next: the add-ons folder.*
       *The add-ons folder, first part, built on 2026-11-07 (DT-081 §1 to §4): the manifest, the two folders read at
       start-up and `<ovilib>` paths over ovi.lib and each add-on's `ovi.lib/` (`core/model/addons.mjs`,
-      `editor/electron/installed-addons.mjs`). Left: the add-ons' palettes (§5), then DAQ's stage A as the first add-on.*
+      `editor/electron/installed-addons.mjs`). Left: the add-ons' palettes, then DAQ's stage A as the first add-on.*
+      *Palettes decided on 2026-11-08 (DT-086), in two steps: (1) palettes read from JSON files that reproduce LabVIEW's
+      `.mnu` structure, add-ons first (`.mnu` reader later); (2) palettes that show only what the files name, with no greyed
+      entries, as LabVIEW's. Measured in [`mnu-format`](../../labview-captures/reports/2026-11-08-mnu-format.md).*
       *Open before step 5 (talked over with the developer on 2026-11-03, nothing decided): **what Solder uses instead
       of DAQmx**, its own name (DAQmx and NI-DAQ are NI's trademarks, as OVI stands for VI, DT-071) and its approach.
       Ideas: DAQmx's programming model (tasks, named channels, hardware timing, triggers, waveforms) over engines
