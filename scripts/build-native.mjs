@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isRunDirectly } from "./entry-point.mjs";
 import { ADDON_PATH, MEMORY_BRIDGE_PATH, addonFileName, memoryBridgeRelativePath } from "../native/solder-io-node/solder-io.mjs";
 
 const REPOSITORY_ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -46,7 +47,7 @@ export function requireReleaseAddons() {
   if (missing.length) throw new Error(`The release needs ${missing.join(", ")} in native/solder-io-node/ (built in the Windows virtual machine).`);
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isRunDirectly(import.meta.url)) {
   buildNative({ release: process.argv.includes("--release") });
   if (process.argv.includes("--for-release")) requireReleaseAddons();
 }

@@ -20,6 +20,8 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   library built with LabVIEW's `labview.lib` looks them up. An array handle
   lays its elements out as LabVIEW's `extcode.h` does on a 64-bit system, aligned after the dimension sizes (the first
   double of a 1D array at byte 8).
+- Fixed: `node scripts/build-native.mjs` built nothing on Windows, without a word, so a Windows build or release step
+  silently kept old native files; it now recognises that it was run directly there too.
 - Fixed: a Call Library Function Node parameter that is an array of two or more dimensions refused a wire of that array,
   expecting a 1D one.
 - Add-ons (DT-081), first part: Solder reads the add-ons folders at start-up, the system's and the user's
