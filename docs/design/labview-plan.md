@@ -701,7 +701,8 @@ array or string read by a local variable while another loop writes it is never t
       with `RTLD_GLOBAL`); measured the same day that on Windows a LabVIEW DLL looks them up in `lvrt.dll` at run time.
       On Windows the bridge is `lvrt.dll` (decided the same day), and a library linked with LabVIEW's own `labview.lib`
       found its functions there in the VM. Array elements are now aligned as `extcode.h` lays them on 64 bits (fixed).
-      Left: the pointers to handles and the Pascal string.*
+      The Pascal string measured and built on 2026-11-12 (DT-088 §7: always 256 bytes, so a library cannot overrun it).
+      Found on the way: `scripts/build-native.mjs` built nothing on Windows (fixed). Left: the pointers to handles.*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

@@ -241,3 +241,9 @@ fn a_library_linked_with_labviews_own_labview_lib_finds_the_memory_functions_in_
     assert_eq!(result.returned, 0i32.to_le_bytes(), "no error");
     assert_eq!(doubles_in(&result.arguments[0], 1), [0.0, 1.0, 2.0, 3.0]);
 }
+
+#[test]
+fn a_returned_pascal_string_is_read_by_its_unsigned_length_byte() {
+    let result = call("fixture_pascal_return_long", ReturnKind::PascalString, vec![]);
+    assert_eq!(result.returned, vec![b'x'; 200]);
+}

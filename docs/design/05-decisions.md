@@ -4225,6 +4225,15 @@ gives the libraries it loads LabVIEW's handle-memory functions under their own n
 6. **The dialog follows what was measured:** Minimum size only for a C string pointer and for a one-dimensional array data
    pointer (and it is dropped when a change makes it impossible); a returned string offers only C and Pascal; the most
    dimensions is 63. Allow Resize of Interface to Data is not built (its effect on a call was not measured).
+7. **A Pascal string** (measured on 2026-11-12,
+   [`2026-11-12-clfn-pascal-string.md`](../../labview-captures/reports/2026-11-12-clfn-pascal-string.md)) goes as a
+   pointer to its length byte, `min(length, 255)`, with the letters right after it and no ending zero: LabVIEW cuts a
+   longer string to 255 letters. After the call the length byte says how many letters come back, more than went in if
+   the library wrote more. A returned one is read the same way. LabVIEW gives the library only about the room the
+   string came with, so a library that writes a longer one overruns it (LabVIEW crashed at 160 letters written over a
+   3-letter input). **Decided on 2026-11-12** (proposed and chosen by the developer): Solder always gives a Pascal
+   string 256 bytes, the most one can hold, so a library never writes past it; where LabVIEW does not crash the result
+   is the same.
 
 ### How it is verified
 
@@ -4234,6 +4243,7 @@ gives the libraries it loads LabVIEW's handle-memory functions under their own n
 | The dialog offers them with Minimum size where LabVIEW has it, the return string only C and Pascal, 63 dimensions | `test/editor/call-library-nodes.test.mjs` | **Verified** (2026-11-08); Allow Resize **not built** |
 | A string and an array reach a function as handles, in place, and what it leaves in them comes back (a string, 1D and 2D arrays) | `native/solder-io/tests/handle_library.rs` (a library compiled with `rustc`), `test/core/call-library-handles.test.mjs` (the blocks) and `test/core/call-library-handles-run.test.mjs` (an OVI through the Run, the addon and the Rust) | **Verified** (2026-11-08) |
 | A library resizes a handle's block and the host reads it back resized | `native/solder-io/tests/handle_library.rs` (`DSSetHandleSize` on a string, `NumericArrayResize` on an array of doubles) and `test/core/call-library-handles-run.test.mjs` (an OVI gets the longer string and the filled array) | **Verified** on Linux and, in Rust, on Windows (2026-11-08); an OVI on Windows **not run** |
+| A Pascal string goes as its length byte and letters cut to 255, in 256 bytes, comes back by its length byte, and is read as a return value | `test/core/call-library-handles.test.mjs`, `test/core/call-library-handles-run.test.mjs` (an OVI), `native/solder-io/tests/handle_library.rs` (the return) | **Verified** on Linux (2026-11-12) |
 | A format that does not run yet keeps the node from running | `test/core/call-library.test.mjs` | **Verified** (2026-11-08) |
 | A library calls the memory functions and they work: new, cleared, measured, resized, copied with `MoveBlock`, disposed of, a handle disposed of twice or never made refused | `native/solder-io/tests/handle_library.rs`, `solder-io/src/memory_manager.rs` (its tests) | **Verified** on Linux (2026-11-08) |
 | The signatures, error codes and type codes are `extcode.h`'s | Read in LabVIEW 2026's cintools (report above) | **Measured** (2026-11-08) |

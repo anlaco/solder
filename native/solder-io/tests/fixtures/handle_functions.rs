@@ -165,3 +165,29 @@ pub unsafe extern "C" fn fixture_resize_a_stranger() -> MgErr {
     let mut cell: *mut u8 = block.as_mut_ptr();
     unsafe { DSSetHandleSize(&raw mut cell, 64) }
 }
+
+/// `int32_t pascal_length(PStr)`: the length byte of a Pascal string.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn fixture_pascal_length(text: *const u8) -> i32 {
+    unsafe { i32::from(*text) }
+}
+
+/// `void pascal_set(PStr, uint8_t count, uint8_t letter)`: leaves `count` letters in the string, as many as it likes.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn fixture_pascal_set(text: *mut u8, count: u8, letter: u8) {
+    unsafe {
+        *text = count;
+        std::ptr::write_bytes(text.add(1), letter, usize::from(count));
+    }
+}
+
+/// `PStr pascal_return_long(void)`: a Pascal string of 200 letters, longer than a signed length byte holds.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn fixture_pascal_return_long() -> *const u8 {
+    static LONG: [u8; 201] = {
+        let mut text = [b'x'; 201];
+        text[0] = 200;
+        text
+    };
+    LONG.as_ptr()
+}

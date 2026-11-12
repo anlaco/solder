@@ -50,10 +50,10 @@ export const DATA_TYPES = Object.freeze({
 export const RUNNABLE_PARAMETER_TYPES = new Set(["numeric", "array", "string"]);
 
 /**
- * The formats Solder passes so far (DT-088 §2): a C string and a string handle, an array's data pointer and an array
- * handle. The Pascal string and the pointers to handles are configured and saved, and keep the node from running.
+ * The formats Solder passes so far (DT-088 §2, §7): a C string, a Pascal string and a string handle, an array's data
+ * pointer and an array handle. The pointers to handles are configured and saved, and keep the node from running.
  */
-export const RUNNABLE_STRING_FORMATS = new Set(["c-string-pointer", "string-handle"]);
+export const RUNNABLE_STRING_FORMATS = new Set(["c-string-pointer", "pascal-string-pointer", "string-handle"]);
 export const RUNNABLE_ARRAY_FORMATS = new Set(["array-data-pointer", "array-handle"]);
 
 /** The function name the dialog shows while none is given (measured: `void  funcName(void );`). */
@@ -201,7 +201,17 @@ export function whyCallLibraryCannotRun(config) {
       (parameter.type === "array" && !RUNNABLE_ARRAY_FORMATS.has(parameter["array-format"] ?? "array-data-pointer")),
   );
   if (unsupportedFormat) return `The parameter "${unsupportedFormat.name}" is passed in a format Solder does not pass to a library yet.`;
-  const returned = callLibraryConfig(config)["return-type"];
-  if (returned.type === "string" && returned["string-format"] === "pascal-string-pointer") return "A returned Pascal string is not read by Solder yet.";
   return undefined;
 }
+
+/**
+ * How the I/O reads a call's return value: `void`, a data type, `cstring` (up to its ending zero) or `pstring` (a
+ * Pascal string, by its length byte, DT-088 §7).
+ */
+export function callLibraryReturnKind(returnValue) {
+  if (returnValue.type === "string") return returnValue["string-format"] === "pascal-string-pointer" ? "pstring" : "cstring";
+  return returnValue.type === "numeric" ? returnValue["data-type"] ?? "i32" : "void";
+}
+
+/** Whether a return kind is a string, which comes out of the node as text. */
+export const returnsString = (returnKind) => returnKind === "cstring" || returnKind === "pstring";

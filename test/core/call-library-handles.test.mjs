@@ -7,7 +7,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { arrayBlock, arrayOfBlock, dimensionsOf, nestByDimensions, stringBlock, textOfStringBlock } from "../../core/runtime/call-library.mjs";
+import { arrayBlock, arrayOfBlock, dimensionsOf, nestByDimensions, pascalStringBuffer, stringBlock, textOfPascalString, textOfStringBlock } from "../../core/runtime/call-library.mjs";
 
 const bytes = (...values) => Uint8Array.from(values);
 
@@ -67,4 +67,26 @@ test("on a 64-bit system an array's elements start where their size aligns them,
   assert.equal(arrayBlock([1, 1, 1], [7], "i16").byteLength, 12 + 2);
   assert.equal(arrayBlock([2], [1n, 2n], "u64").byteLength, 8 + 2 * 8);
   assert.deepEqual(arrayOfBlock(arrayBlock([1, 1, 1], [7], "dbl"), "dbl", 3), { dimensions: [1, 1, 1], values: [7] });
+});
+
+// A Pascal string (DT-088 §7, measured 2026-11-12): its length byte, then its letters, in 256 bytes always.
+
+test("a Pascal string is its length byte and its letters, in 256 bytes so a library never writes past it", () => {
+  const buffer = pascalStringBuffer(bytes(104, 105));
+  assert.equal(buffer.length, 256);
+  assert.deepEqual(buffer.subarray(0, 3), bytes(2, 104, 105));
+  assert.equal(pascalStringBuffer(bytes()).length, 256, "an empty one too");
+});
+
+test("a Pascal string longer than 255 letters is cut to 255, as LabVIEW cuts it", () => {
+  const buffer = pascalStringBuffer(new Uint8Array(300).fill(97));
+  assert.equal(buffer[0], 255);
+  assert.deepEqual(buffer.subarray(1), new Uint8Array(255).fill(97));
+});
+
+test("the text of a Pascal string is the letters its length byte says, unsigned, and no more than there are", () => {
+  assert.deepEqual(textOfPascalString(bytes(2, 104, 105, 33)), bytes(104, 105));
+  assert.equal(textOfPascalString(Uint8Array.from([200, ...new Uint8Array(200).fill(120)])).length, 200, "a length over 127");
+  assert.deepEqual(textOfPascalString(bytes(9, 104)), bytes(104), "a length the bytes do not back");
+  assert.deepEqual(textOfPascalString(bytes()), bytes());
 });

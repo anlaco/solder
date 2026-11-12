@@ -13,7 +13,9 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   of any element type and number of dimensions, reach the library with their length or sizes in front and come back as
   the library left them. Its prototypes follow LabVIEW's formats (C and Pascal strings, handles and pointers to handles,
   `Array1DDouble **`), its dialog offers Minimum size only where LabVIEW does and a returned string only C or Pascal,
-  and the most dimensions is 63. The Pascal string and the pointers to handles are configured and saved but do not run yet.
+  and the most dimensions is 63. The pointers to handles are configured and saved but do not run yet. A Pascal string
+  runs, as a parameter and as the return value, as measured in LabVIEW: its length byte and its letters, cut to 255; the
+  library always gets 256 bytes, so one that writes a longer string than it was given does not overrun it.
   A library can resize the handles it is given with LabVIEW's memory functions, which Solder offers under
   their own names (`DSNewHandle`, `DSNewHClr`, `DSSetHandleSize`, `DSGetHandleSize`, `DSDisposeHandle`,
   `NumericArrayResize`, `MoveBlock`), so it can return a string or an array longer than it was given; on Windows they are offered as `lvrt.dll`, where a

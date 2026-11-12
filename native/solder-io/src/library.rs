@@ -86,6 +86,8 @@ pub enum ReturnKind {
     Number(NumberKind),
     /// A C string, copied up to its ending zero; a null pointer gives an empty string.
     CString,
+    /// A Pascal string (DT-088 §7): as many letters as its first byte says, unsigned; a null pointer gives an empty string.
+    PascalString,
 }
 
 /// A call to make.
@@ -268,7 +270,7 @@ impl LibraryCaller {
         let return_type = match call.return_kind {
             ReturnKind::Void => Type::void(),
             ReturnKind::Number(kind) => kind.ffi_type(),
-            ReturnKind::CString => Type::pointer(),
+            ReturnKind::CString | ReturnKind::PascalString => Type::pointer(),
         };
         let cif = Cif::new(argument_types, return_type);
         let arguments: Vec<Arg<'_>> = slots.iter().map(Slot::arg).collect();
@@ -287,6 +289,15 @@ impl LibraryCaller {
                 } else {
                     // SAFETY: the function returns a C string, the node's promise.
                     unsafe { CStr::from_ptr(pointer) }.to_bytes().to_vec()
+                }
+            }
+            ReturnKind::PascalString => {
+                let pointer = returned_word as usize as *const u8;
+                if pointer.is_null() {
+                    Vec::new()
+                } else {
+                    // SAFETY: the function returns a Pascal string, the node's promise: its length byte and that many letters.
+                    unsafe { std::slice::from_raw_parts(pointer.add(1), usize::from(*pointer)) }.to_vec()
                 }
             }
         };

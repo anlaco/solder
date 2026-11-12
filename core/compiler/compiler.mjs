@@ -22,7 +22,7 @@
 
 import { connectorPorts, ejecutable, nodesWithUndefinedInput, orden, panelObjectType, requerido, tipos, undefinedArrayNodes } from "../model/graph.mjs";
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
-import { callLibraryConfig, whyCallLibraryCannotRun } from "../model/call-library.mjs";
+import { callLibraryConfig, callLibraryReturnKind, returnsString, whyCallLibraryCannotRun } from "../model/call-library.mjs";
 import { coversEveryError, isErrorFrameValue } from "../model/error-case.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
 import { EMPTY_PATH, NOT_A_PATH, PATH_KIND, encodePath } from "../model/paths.mjs";
@@ -742,8 +742,8 @@ function callLibrary(e) {
     return described;
   });
   const returnValue = config["return-type"];
-  const returnKind = returnValue.type === "string" ? "cstring" : returnValue.type === "numeric" ? returnValue["data-type"] ?? "i32" : "void";
-  if (returnKind === "cstring") code.push(...outputCell(recordAt(0)));
+  const returnKind = callLibraryReturnKind(returnValue);
+  if (returnsString(returnKind)) code.push(...outputCell(recordAt(0)));
   const index = e.registerCallLibrary({
     library: config.library,
     specifyPathOnDiagram: config["specify-path-on-diagram"],
@@ -763,7 +763,7 @@ function callLibrary(e) {
   const leaveOutput = (port) => {
     if (port.name === "error-out") return [k32(errorOut)];
     if (port.name === "path-out") return [ins("local.get", path)];
-    if (port.name === "return") return returnKind === "cstring" ? [k32(recordAt(0)), ins("i32.load", ROW_BITS_OFFSET)] : readRow(port.type, recordAt(0));
+    if (port.name === "return") return returnsString(returnKind) ? [k32(recordAt(0)), ins("i32.load", ROW_BITS_OFFSET)] : readRow(port.type, recordAt(0));
     const parameterIndex = Number(port.name.split("-")[1]);
     const parameter = hostParameters[parameterIndex];
     const record = recordAt(parameterIndex + 1);

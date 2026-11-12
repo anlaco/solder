@@ -145,3 +145,45 @@ test("a library that fills an empty array with NumericArrayResize gives the OVI 
   const shown = await run(vi);
   assert.deepEqual(shown.filled, Array.from({ length: 500 }, (_, index) => index));
 });
+
+// Pascal strings (DT-088 §7): a length byte and the letters, in 256 bytes, cut to 255 letters as LabVIEW cuts them.
+const pascal = { name: "text", type: "string", "string-format": "pascal-string-pointer" };
+
+test("a Pascal string reaches the library with its length byte, cut to 255 letters", { skip: !ON_LINUX }, async () => {
+  const vi = buildVI(CAT, (b) => {
+    b.node("text", "str-const", { value: "a".repeat(300) });
+    b.node("length", "call-library", configured({ function: "fixture_pascal_length", "return-type": { type: "numeric", "data-type": "i32" }, parameters: [pascal] }));
+    b.node("count", "indicator", { type: "i32" });
+    b.node("shown", "str-indicator", {});
+    b.wire("text.result", "length.arg-0-in");
+    b.wire("length.return", "count.value");
+    b.wire("length.arg-0-out", "shown.value");
+  });
+  const shown = await run(vi);
+  assert.equal(shown.count, 255);
+  assert.equal(shown.shown, "a".repeat(255));
+});
+
+test("a library may leave a longer Pascal string than it was given, up to 255 letters, and the OVI gets it", { skip: !ON_LINUX }, async () => {
+  const vi = buildVI(CAT, (b) => {
+    b.node("text", "str-const", { value: "abc" });
+    b.node("count", "const", { value: 200, type: "u8" });
+    b.node("letter", "const", { value: 122, type: "u8" });
+    b.node("set", "call-library", configured({ function: "fixture_pascal_set", parameters: [pascal, numeric("count", "u8"), numeric("letter", "u8")] }));
+    b.node("shown", "str-indicator", {});
+    b.wire("text.result", "set.arg-0-in");
+    b.wire("count.result", "set.arg-1-in");
+    b.wire("letter.result", "set.arg-2-in");
+    b.wire("set.arg-0-out", "shown.value");
+  });
+  assert.equal((await run(vi)).shown, "z".repeat(200));
+});
+
+test("a returned Pascal string comes out whole", { skip: !ON_LINUX }, async () => {
+  const vi = buildVI(CAT, (b) => {
+    b.node("long", "call-library", configured({ function: "fixture_pascal_return_long", "return-type": { type: "string", "string-format": "pascal-string-pointer" }, parameters: [] }));
+    b.node("shown", "str-indicator", {});
+    b.wire("long.return", "shown.value");
+  });
+  assert.equal((await run(vi)).shown, "x".repeat(200));
+});

@@ -238,11 +238,11 @@ test("a parameter that is an array of two dimensions accepts a wire of a 2D arra
 
 test("a node that passes a format Solder does not run yet cannot run, and one with a handle or an address can (DT-088 §2)", () => {
   const withParameter = (parameter) => whyCallLibraryCannotRun({ function: "f", parameters: [parameter] });
-  for (const format of ["c-string-pointer", "string-handle"]) assert.equal(withParameter({ name: "s", type: "string", "string-format": format }), undefined, format);
-  for (const format of ["pascal-string-pointer", "string-handle-pointer"]) assert.match(withParameter({ name: "s", type: "string", "string-format": format }), /"s".*format/, format);
+  for (const format of ["c-string-pointer", "pascal-string-pointer", "string-handle"]) assert.equal(withParameter({ name: "s", type: "string", "string-format": format }), undefined, format);
+  assert.match(withParameter({ name: "s", type: "string", "string-format": "string-handle-pointer" }), /"s".*format/);
   for (const format of ["array-data-pointer", "array-handle"]) assert.equal(withParameter({ name: "a", type: "array", "data-type": "dbl", "array-format": format }), undefined, format);
   assert.match(withParameter({ name: "a", type: "array", "data-type": "dbl", "array-format": "array-handle-pointer" }), /"a".*format/);
   assert.equal(withParameter({ name: "s", type: "string" }), undefined, "no format is the C string, as before");
-  assert.match(whyCallLibraryCannotRun({ function: "f", "return-type": { type: "string", "string-format": "pascal-string-pointer" } }), /Pascal/);
+  assert.equal(whyCallLibraryCannotRun({ function: "f", "return-type": { type: "string", "string-format": "pascal-string-pointer" } }), undefined, "a returned Pascal string is read");
   assert.equal(whyCallLibraryCannotRun({ function: "f", "return-type": { type: "string", "string-format": "c-string-pointer" } }), undefined);
 });

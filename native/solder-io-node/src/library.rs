@@ -44,7 +44,7 @@ pub struct LibraryArgument {
 pub struct LibraryCallRequest {
     pub library: String,
     pub function: String,
-    /// `void`, `cstring`, or a data type.
+    /// `void`, `cstring`, `pstring` (a Pascal string), or a data type.
     pub return_kind: String,
     pub arguments: Vec<LibraryArgument>,
     /// Run in UI thread (true) or Run in any thread.
@@ -80,6 +80,7 @@ fn return_kind(name: &str) -> napi::Result<ReturnKind> {
     match name {
         "void" => Ok(ReturnKind::Void),
         "cstring" => Ok(ReturnKind::CString),
+        "pstring" => Ok(ReturnKind::PascalString),
         other => number_kind(other).map(ReturnKind::Number).ok_or_else(|| napi::Error::from_reason(format!("unknown return kind {other}"))),
     }
 }

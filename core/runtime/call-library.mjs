@@ -11,6 +11,7 @@
 // is 7, a file that is not one 12, a library without the function 15, all with the source "Call Library
 // Function Node in <OVI>" and a return value of 0; an empty path calls nothing and gives no error.
 
+import { returnsString } from "../model/call-library.mjs";
 import { NOT_A_PATH, PATH_KIND, isEmptyPath, isNotAPath, pathToText } from "../model/paths.mjs";
 
 /** The record of one value, as the compiler lays it out (compiler.mjs, FORMAT_ROW_BYTES). */
@@ -62,11 +63,40 @@ function valuesOf(bytes, dataType) {
   return Array.from({ length: Math.floor(bytes.byteLength / access.size) }, (_, index) => view[access.get](index * access.size, true));
 }
 
+/** The text a string argument holds after a call, read as its format lays it out. */
+function textOfStringArgument(format, bytes) {
+  if (format === "string-handle") return textOfStringBlock(bytes);
+  if (format === "pascal-string-pointer") return textOfPascalString(bytes);
+  return untilZero(bytes);
+}
+
 /** The text of a C string: the bytes up to its first zero. */
 const untilZero = (bytes) => {
   const end = bytes.indexOf(0);
   return end < 0 ? bytes : bytes.subarray(0, end);
 };
+
+/** The most letters a Pascal string's length byte counts. */
+const PASCAL_STRING_MOST_LETTERS = 255;
+
+/**
+ * A Pascal string as a library receives it (DT-088 §7, measured 2026-11-12): its length byte, then its letters, cut to
+ * 255 as LabVIEW cuts them. It always gets 256 bytes, the most a Pascal string holds, so a library that writes a longer
+ * string than it was given stays inside it, where LabVIEW gives only the room the string came with.
+ */
+export function pascalStringBuffer(text) {
+  const letters = text.subarray(0, PASCAL_STRING_MOST_LETTERS);
+  const buffer = new Uint8Array(1 + PASCAL_STRING_MOST_LETTERS);
+  buffer[0] = letters.length;
+  buffer.set(letters, 1);
+  return buffer;
+}
+
+/** The letters a Pascal string holds: as many as its length byte says, and no more than the bytes have. */
+export function textOfPascalString(bytes) {
+  if (bytes.length === 0) return new Uint8Array(0);
+  return bytes.subarray(1, 1 + Math.min(bytes[0], bytes.length - 1));
+}
 
 /**
  * A string's handle block (DT-088), as LabVIEW's `LStr` is: its length as a 32-bit integer, then its bytes. A library
@@ -199,6 +229,9 @@ export function createCallLibraryFunction({ io, host, memory, compilado, pathRul
       if (parameter.type === "string" && parameter.format === "string-handle") {
         return { kind: "handle", bytes: stringBlock(readBytes(handleIn(record))) };
       }
+      if (parameter.type === "string" && parameter.format === "pascal-string-pointer") {
+        return { kind: "buffer", bytes: pascalStringBuffer(readBytes(handleIn(record))) };
+      }
       if (parameter.type === "string") {
         const text = readBytes(handleIn(record));
         const minimumSize = parameter.minimumSize >= 0 ? Number(readNumber(recordAt(records, parameter.minimumSize + 1), node.parameters[parameter.minimumSize].dataType)) : 0;
@@ -216,14 +249,14 @@ export function createCallLibraryFunction({ io, host, memory, compilado, pathRul
   /** Writes what the call gave back: the return value, and what the function wrote into each buffer. */
   const writeOutputs = (node, records, answer) => {
     const returnRecord = recordAt(records, 0);
-    if (node.returnKind === "cstring") putBytes(cellOut(returnRecord), answer.returned);
+    if (returnsString(node.returnKind)) putBytes(cellOut(returnRecord), answer.returned);
     else if (node.returnKind !== "void") writeNumber(returnRecord, node.returnKind, valuesOf(answer.returned, node.returnKind)[0]);
     node.parameters.forEach((parameter, index) => {
       const record = recordAt(records, index + 1);
       const bytes = answer.arguments[index];
       if (parameter.type === "numeric") {
         if (parameter.pass === "pointer") writeNumber(record, parameter.dataType, valuesOf(bytes, parameter.dataType)[0]);
-      } else if (parameter.type === "string") putBytes(cellOut(record), parameter.format === "string-handle" ? textOfStringBlock(bytes) : untilZero(bytes));
+      } else if (parameter.type === "string") putBytes(cellOut(record), textOfStringArgument(parameter.format, bytes));
       else if (parameter.format === "array-handle") {
         // The library may have resized the array: its dimensions are read from the block, not from what went in.
         const { dimensions, values } = arrayOfBlock(bytes, parameter.dataType, parameter.array.dims);
@@ -238,7 +271,7 @@ export function createCallLibraryFunction({ io, host, memory, compilado, pathRul
   /** The outputs when no call is made: the return value 0, and each buffer's output what came in. */
   const writeUntouched = (node, records) => {
     const returnRecord = recordAt(records, 0);
-    if (node.returnKind === "cstring") putBytes(cellOut(returnRecord), new Uint8Array(0));
+    if (returnsString(node.returnKind)) putBytes(cellOut(returnRecord), new Uint8Array(0));
     else if (node.returnKind !== "void") writeNumber(returnRecord, node.returnKind, 0);
     node.parameters.forEach((parameter, index) => {
       const record = recordAt(records, index + 1);
