@@ -105,6 +105,42 @@ pub fn dispose(handle: Handle) -> bool {
     true
 }
 
+/// A cell that holds a handle, or a null one: what a library receives for a pointer to a handle, `LStrHandle *` or
+/// `Array1DDouble ***` (DT-088 §8). The library may resize the handle, put another one in the cell (its own, made with
+/// the memory functions) or leave the cell null, and the host takes what is there after the call.
+pub struct HandleCell(Box<*mut *mut u8>);
+
+impl HandleCell {
+    /// A cell holding a new handle with `content`, or a null handle for no bytes at all, as LabVIEW passes an empty
+    /// string or array from the diagram (measured 2026-11-12,
+    /// `labview-captures/reports/2026-11-12-clfn-handle-pointers.md`).
+    pub fn holding(content: &[u8]) -> Self {
+        let handle = if content.is_empty() { std::ptr::null_mut() } else { new_with(content).as_pointer() };
+        HandleCell(Box::new(handle))
+    }
+
+    /// The cell as a library receives it: the address of the handle.
+    pub fn as_pointer(&mut self) -> *mut *mut *mut u8 {
+        &raw mut *self.0
+    }
+
+    /// What the cell holds after the call: no bytes for a null handle (an empty value, measured), or the block of the
+    /// handle there, which is then disposed of. `None` for an address the host did not make, which is not read.
+    ///
+    /// A handle the library took out of the cell is left alone, not disposed of: a library built for LabVIEW may keep
+    /// it for a later call, and LabVIEW does not dispose of it either (measured: replacing it never failed).
+    pub fn take_content(self) -> Option<Vec<u8>> {
+        let pointer = *self.0;
+        if pointer.is_null() {
+            return Some(Vec::new());
+        }
+        let handle = Handle::from_pointer(pointer)?;
+        let block = content(handle);
+        dispose(handle);
+        block
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -160,5 +196,37 @@ mod tests {
         assert!(!resize(handle, 10));
         assert_eq!(content(handle), None);
         assert_eq!(Handle::from_pointer(handle.as_pointer()), None);
+    }
+
+    #[test]
+    fn a_cell_with_no_bytes_holds_a_null_handle_and_gives_back_no_bytes() {
+        let mut cell = HandleCell::holding(&[]);
+        // SAFETY: the cell is live; reading it as a library would.
+        assert!(unsafe { *cell.as_pointer() }.is_null());
+        assert_eq!(cell.take_content(), Some(Vec::new()));
+    }
+
+    #[test]
+    fn a_cell_gives_back_the_handle_a_library_put_in_it_and_leaves_the_one_it_took_out() {
+        let mut cell = HandleCell::holding(b"abc");
+        // SAFETY: the cell is live; replacing its handle as a library would.
+        let taken = Handle(unsafe { *cell.as_pointer() });
+        let replacement = new_with(b"new");
+        unsafe { *cell.as_pointer() = replacement.as_pointer() };
+        assert_eq!(cell.take_content().as_deref(), Some(&b"new"[..]));
+        assert_eq!(size_of(replacement), None, "the handle read is disposed of");
+        assert_eq!(content(taken).as_deref(), Some(&b"abc"[..]), "the one taken out stays the library's");
+        dispose(taken);
+    }
+
+    #[test]
+    fn a_cell_left_holding_an_address_the_host_did_not_make_is_not_read() {
+        let mut cell = HandleCell::holding(b"abc");
+        // SAFETY: the cell is live; a library leaving a stranger's address in it.
+        let given = Handle(unsafe { *cell.as_pointer() });
+        let mut stranger: *mut u8 = std::ptr::null_mut();
+        unsafe { *cell.as_pointer() = &raw mut stranger };
+        assert_eq!(cell.take_content(), None);
+        dispose(given);
     }
 }

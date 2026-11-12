@@ -247,3 +247,49 @@ fn a_returned_pascal_string_is_read_by_its_unsigned_length_byte() {
     let result = call("fixture_pascal_return_long", ReturnKind::PascalString, vec![]);
     assert_eq!(result.returned, vec![b'x'; 200]);
 }
+
+#[test]
+fn an_empty_value_reaches_a_pointer_to_a_handle_as_a_null_handle_and_comes_back_empty() {
+    let result = call("fixture_handle_pointer_is_null", ReturnKind::Number(NumberKind::I32), vec![Argument::HandlePointer(Vec::new())]);
+    assert_eq!(result.returned, 1i32.to_le_bytes());
+    assert_eq!(result.arguments[0], Vec::<u8>::new());
+    let result = call("fixture_handle_pointer_is_null", ReturnKind::Number(NumberKind::I32), vec![Argument::HandlePointer(string_block("abc"))]);
+    assert_eq!(result.returned, 0i32.to_le_bytes());
+    assert_eq!(result.arguments[0], string_block("abc"));
+}
+
+#[test]
+fn a_library_that_replaces_the_handle_in_the_cell_gives_back_its_own_string() {
+    for given in [string_block("abc"), Vec::new()] {
+        let letter = number(NumberKind::U8, &[b'n']);
+        let result = call("fixture_string_pointer_replace", ReturnKind::Number(NumberKind::I32), vec![Argument::HandlePointer(given), letter, number(NumberKind::I32, &5i32.to_le_bytes())]);
+        assert_eq!(result.returned, 0i32.to_le_bytes(), "no error");
+        assert_eq!(result.arguments[0], string_block("nnnnn"));
+    }
+}
+
+#[test]
+fn a_library_makes_an_array_where_the_cell_held_none() {
+    let result = call("fixture_array_pointer_ramp_f64", ReturnKind::Number(NumberKind::I32), vec![Argument::HandlePointer(Vec::new()), number(NumberKind::I32, &3i32.to_le_bytes())]);
+    assert_eq!(result.returned, 0i32.to_le_bytes(), "no error");
+    assert_eq!(doubles_in(&result.arguments[0], 1), [0.0, 1.0, 2.0]);
+}
+
+#[test]
+fn a_cell_the_library_leaves_null_comes_back_empty() {
+    let result = call("fixture_handle_pointer_clear", ReturnKind::Void, vec![Argument::HandlePointer(string_block("abc"))]);
+    assert_eq!(result.arguments[0], Vec::<u8>::new());
+}
+
+#[test]
+fn an_address_left_in_the_cell_that_is_not_a_handle_fails_the_call_with_1097() {
+    install_memory_bridge();
+    let call = Call {
+        library: fixture_library().to_string(),
+        function: "fixture_handle_pointer_stranger".into(),
+        return_kind: ReturnKind::Void,
+        arguments: vec![Argument::HandlePointer(string_block("abc"))],
+    };
+    let error = LibraryCaller::new().call(call).expect_err("the address is not read");
+    assert_eq!(error.code(), 1097);
+}

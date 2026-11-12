@@ -32,7 +32,8 @@ static UI_THREAD: LazyLock<Mutex<Sender<Job>>> = LazyLock::new(|| {
 });
 
 /// One argument as JavaScript hands it: `kind` is a data type (`i32`, `u64`, `f64`, …) for a number by value,
-/// `"buffer"` for a buffer passed by its address, or `"handle"` for a LabVIEW handle (DT-088) whose block is `bytes`;
+/// `"buffer"` for a buffer passed by its address, `"handle"` for a LabVIEW handle (DT-088) whose block is `bytes`, or
+/// `"handle-pointer"` for a pointer to one (DT-088 §8), no bytes standing for a null handle;
 /// `bytes` are its bytes as C sees them.
 #[napi(object)]
 pub struct LibraryArgument {
@@ -53,7 +54,7 @@ pub struct LibraryCallRequest {
 
 #[napi(object)]
 pub struct LibraryCallAnswer {
-    /// 0, or LabVIEW's code: 7 not found, 12 not a library, 15 no such function.
+    /// 0, or LabVIEW's code: 7 not found, 12 not a library, 15 no such function, 1097 not a handle left in a pointer to one.
     pub status: i32,
     pub returned: Buffer,
     pub arguments: Vec<Buffer>,
@@ -91,6 +92,9 @@ fn argument(argument: &LibraryArgument) -> napi::Result<Argument> {
     }
     if argument.kind == "handle" {
         return Ok(Argument::Handle(argument.bytes.to_vec()));
+    }
+    if argument.kind == "handle-pointer" {
+        return Ok(Argument::HandlePointer(argument.bytes.to_vec()));
     }
     let kind = number_kind(&argument.kind).ok_or_else(|| napi::Error::from_reason(format!("unknown argument kind {}", argument.kind)))?;
     Ok(Argument::Value { kind, bytes: argument.bytes.to_vec() })

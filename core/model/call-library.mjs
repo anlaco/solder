@@ -50,11 +50,11 @@ export const DATA_TYPES = Object.freeze({
 export const RUNNABLE_PARAMETER_TYPES = new Set(["numeric", "array", "string"]);
 
 /**
- * The formats Solder passes so far (DT-088 §2, §7): a C string, a Pascal string and a string handle, an array's data
- * pointer and an array handle. The pointers to handles are configured and saved, and keep the node from running.
+ * The formats Solder passes (DT-088 §2, §7, §8): a C string, a Pascal string, a string handle and a pointer to one, an
+ * array's data pointer, an array handle and a pointer to one.
  */
-export const RUNNABLE_STRING_FORMATS = new Set(["c-string-pointer", "pascal-string-pointer", "string-handle"]);
-export const RUNNABLE_ARRAY_FORMATS = new Set(["array-data-pointer", "array-handle"]);
+export const RUNNABLE_STRING_FORMATS = new Set(["c-string-pointer", "pascal-string-pointer", "string-handle", "string-handle-pointer"]);
+export const RUNNABLE_ARRAY_FORMATS = new Set(["array-data-pointer", "array-handle", "array-handle-pointer"]);
 
 /** The function name the dialog shows while none is given (measured: `void  funcName(void );`). */
 export const PLACEHOLDER_FUNCTION_NAME = "funcName";

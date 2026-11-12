@@ -11,6 +11,7 @@ import { after, before, test } from "node:test";
 
 import { compilar } from "../../core/compiler/compiler.mjs";
 import { defaultCallLibraryConfig } from "../../core/model/call-library.mjs";
+import { ERROR } from "../../core/model/types.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
 import { CAT, buildVI } from "../helpers.mjs";
@@ -186,4 +187,70 @@ test("a returned Pascal string comes out whole", { skip: !ON_LINUX }, async () =
     b.wire("long.return", "shown.value");
   });
   assert.equal((await run(vi)).shown, "x".repeat(200));
+});
+
+// Pointers to handles (DT-088 §8, measured 2026-11-12, labview-captures/reports/2026-11-12-clfn-handle-pointers.md): an
+// empty value is a null handle, and the library may replace the handle or leave the cell null.
+const stringHandlePointer = { name: "text", type: "string", "string-format": "string-handle-pointer" };
+
+/** An OVI that passes `text` to `functionName` through a pointer to a string handle, with the string and error out shown. */
+const throughStringHandlePointer = (text, functionName, extraParameters = [], extraConstants = []) =>
+  buildVI(CAT, (b) => {
+    b.node("text", "str-const", { value: text });
+    b.node("call", "call-library", configured({ function: functionName, "return-type": { type: "numeric", "data-type": "i32" }, parameters: [stringHandlePointer, ...extraParameters] }));
+    b.node("shown", "str-indicator", {});
+    b.node("returned", "indicator", { type: "i32" });
+    b.node("error", "cluster-indicator", { type: ERROR, style: "error-out" });
+    b.wire("text.result", "call.arg-0-in");
+    extraConstants.forEach(([value, type], index) => {
+      b.node(`extra${index}`, "const", { value, type });
+      b.wire(`extra${index}.result`, `call.arg-${index + 1}-in`);
+    });
+    b.wire("call.arg-0-out", "shown.value");
+    b.wire("call.return", "returned.value");
+    b.wire("call.error-out", "error.value");
+  });
+
+test("an empty string reaches a pointer to a string handle as a null handle, and a full one as a handle", { skip: !ON_LINUX }, async () => {
+  assert.equal((await run(throughStringHandlePointer("", "fixture_handle_pointer_is_null"))).returned, 1);
+  const shown = await run(throughStringHandlePointer("abc", "fixture_handle_pointer_is_null"));
+  assert.equal(shown.returned, 0);
+  assert.equal(shown.shown, "abc");
+});
+
+test("a library that puts a new handle in the cell gives the OVI its string, whether the cell held one or not", { skip: !ON_LINUX }, async () => {
+  const letterAndCount = [numeric("letter", "u8"), numeric("count", "i32")];
+  for (const text of ["abc", ""]) {
+    const shown = await run(throughStringHandlePointer(text, "fixture_string_pointer_replace", letterAndCount, [[110, "u8"], [3, "i32"]]));
+    assert.equal(shown.shown, "nnn", JSON.stringify(text));
+  }
+});
+
+test("a cell the library leaves null gives the OVI an empty string, with no error", { skip: !ON_LINUX }, async () => {
+  const shown = await run(throughStringHandlePointer("abc", "fixture_handle_pointer_clear"));
+  assert.equal(shown.shown, "");
+  assert.equal(shown.error.status, false);
+});
+
+test("an address left in the cell that is not a handle is not read, and the node gives error 1097", { skip: !ON_LINUX }, async () => {
+  const shown = await run(throughStringHandlePointer("abc", "fixture_handle_pointer_stranger"));
+  assert.equal(shown.error.status, true);
+  assert.equal(shown.error.code, 1097);
+});
+
+test("a library makes an array in a pointer to an array handle that came empty", { skip: !ON_LINUX }, async () => {
+  const vi = buildVI(CAT, (b) => {
+    b.node("values", "arr-const", { type: { array: "number" }, value: [] });
+    b.node("count", "const", { value: 4, type: "i32" });
+    b.node("ramp", "call-library", configured({
+      function: "fixture_array_pointer_ramp_f64",
+      "return-type": { type: "numeric", "data-type": "i32" },
+      parameters: [{ ...doubleHandle(1), "array-format": "array-handle-pointer" }, numeric("count", "i32")],
+    }));
+    b.node("filled", "arr-indicator", { type: { array: "number" } });
+    b.wire("values.result", "ramp.arg-0-in");
+    b.wire("count.result", "ramp.arg-1-in");
+    b.wire("ramp.arg-0-out", "filled.value");
+  });
+  assert.deepEqual((await run(vi)).filled, [0, 1, 2, 3]);
 });

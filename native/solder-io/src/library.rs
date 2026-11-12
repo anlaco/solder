@@ -3,7 +3,8 @@
 //! numbers by value, buffers (a number by pointer, an array's data, a C string) by their address, which the
 //! function may write into, and LabVIEW's handles (DT-088). The node's errors are LabVIEW's, measured with a path wired on the diagram
 //! (`labview-captures/reports/2026-11-06-clfn-run.md`): 7 when the library is not found, 12 when the file is
-//! not a library, 15 when the library has no such function.
+//! not a library, 15 when the library has no such function; and 1097, Solder's choice, when it leaves in a pointer to a
+//! handle an address that is not a handle (DT-088 §8).
 //!
 //! On 64-bit systems there is one calling convention, so the node's stdcall and C both call the same way.
 
@@ -15,7 +16,7 @@ use std::sync::{Arc, Mutex};
 use libffi::middle::{Arg, Cif, CodePtr, Ret, Type};
 use libloading::Library;
 
-use crate::handles::{self, Handle};
+use crate::handles::{self, Handle, HandleCell};
 
 /// The extension `.*` stands for, as LabVIEW's `lvanlys.*` names each platform's file.
 #[cfg(windows)]
@@ -77,6 +78,10 @@ pub enum Argument {
     /// A handle (DT-088): the bytes are the block it holds, a string's length and letters or an array's dimension sizes
     /// and elements. The function receives the handle, and what is left in the block, resized or not, comes back.
     Handle(Vec<u8>),
+    /// A pointer to a handle (DT-088 §8): the bytes are the block, and no bytes stand for a null handle, as LabVIEW passes
+    /// an empty value. The function may resize the handle, replace it or leave it null, and what is there comes back, no
+    /// bytes for a null one.
+    HandlePointer(Vec<u8>),
 }
 
 /// What the function returns.
@@ -119,6 +124,9 @@ pub enum LibraryError {
     NotALibrary,
     /// The library has no function of that name: 15.
     NoSuchFunction,
+    /// The library left in a pointer to a handle an address the host's memory functions did not make, which Solder does
+    /// not read (DT-088 §8): 1097, LabVIEW's "an exception occurred within the external code".
+    NotAHandle,
 }
 
 impl LibraryError {
@@ -128,6 +136,7 @@ impl LibraryError {
             LibraryError::NotFound => 7,
             LibraryError::NotALibrary => 12,
             LibraryError::NoSuchFunction => 15,
+            LibraryError::NotAHandle => 1097,
         }
     }
 }
@@ -241,76 +250,101 @@ impl LibraryCaller {
             unsafe { library.get(call.function.as_bytes()) }.map_err(|_| LibraryError::NoSuchFunction)?;
         let code = CodePtr(*function);
 
-        let mut buffers: Vec<Vec<u8>> = call.arguments.iter().map(|argument| match argument {
-            Argument::Value { bytes, .. } | Argument::Buffer(bytes) | Argument::Handle(bytes) => bytes.clone(),
-        }).collect();
-        // A handle is made for the call, with its block holding what came in, and disposed of after it.
+        let mut buffers: Vec<Vec<u8>> = call.arguments.iter().map(Argument::bytes).collect();
+        // A handle is made for the call, with its block holding what came in, and disposed of after it; a pointer to a
+        // handle gets a cell holding one, or a null one for an empty value (DT-088 §8).
         let handles: Vec<Option<Handle>> = call.arguments.iter().map(|argument| match argument {
             Argument::Handle(bytes) => Some(handles::new_with(bytes)),
+            _ => None,
+        }).collect();
+        let mut cells: Vec<Option<HandleCell>> = call.arguments.iter().map(|argument| match argument {
+            Argument::HandlePointer(bytes) => Some(HandleCell::holding(bytes)),
             _ => None,
         }).collect();
         let slots: Vec<Slot> = call
             .arguments
             .iter()
-            .zip(buffers.iter_mut().zip(&handles))
-            .map(|(argument, (buffer, handle))| match argument {
+            .zip(buffers.iter_mut())
+            .zip(handles.iter().zip(cells.iter_mut()))
+            .map(|((argument, buffer), (handle, cell))| match argument {
                 Argument::Value { kind, bytes } => value_slot(*kind, bytes),
                 Argument::Buffer(_) => Slot::Pointer(buffer.as_mut_ptr().cast()),
                 Argument::Handle(_) => Slot::Pointer(handle.expect("a handle was made for it").as_pointer().cast()),
+                Argument::HandlePointer(_) => Slot::Pointer(cell.as_mut().expect("a cell was made for it").as_pointer().cast()),
             })
             .collect();
-        let argument_types: Vec<Type> = call
-            .arguments
-            .iter()
-            .map(|argument| match argument {
-                Argument::Value { kind, .. } => kind.ffi_type(),
-                Argument::Buffer(_) | Argument::Handle(_) => Type::pointer(),
-            })
-            .collect();
-        let return_type = match call.return_kind {
-            ReturnKind::Void => Type::void(),
-            ReturnKind::Number(kind) => kind.ffi_type(),
-            ReturnKind::CString | ReturnKind::PascalString => Type::pointer(),
-        };
-        let cif = Cif::new(argument_types, return_type);
+        let argument_types: Vec<Type> = call.arguments.iter().map(Argument::ffi_type).collect();
+        let cif = Cif::new(argument_types, call.return_kind.ffi_type());
         let arguments: Vec<Arg<'_>> = slots.iter().map(Slot::arg).collect();
         // libffi widens a small integer return to a full register, so eight bytes hold any return value.
         let mut returned_word = 0u64;
         // SAFETY: the signature is the node's; a wrong one is the user's mistake, as in LabVIEW.
         unsafe { cif.call_return_into(code, &arguments, Ret::new(&mut returned_word)) };
-
-        let returned = match call.return_kind {
-            ReturnKind::Void => Vec::new(),
-            ReturnKind::Number(kind) => returned_word.to_le_bytes()[..kind.size()].to_vec(),
-            ReturnKind::CString => {
-                let pointer = returned_word as usize as *const c_char;
-                if pointer.is_null() {
-                    Vec::new()
-                } else {
-                    // SAFETY: the function returns a C string, the node's promise.
-                    unsafe { CStr::from_ptr(pointer) }.to_bytes().to_vec()
-                }
-            }
-            ReturnKind::PascalString => {
-                let pointer = returned_word as usize as *const u8;
-                if pointer.is_null() {
-                    Vec::new()
-                } else {
-                    // SAFETY: the function returns a Pascal string, the node's promise: its length byte and that many letters.
-                    unsafe { std::slice::from_raw_parts(pointer.add(1), usize::from(*pointer)) }.to_vec()
-                }
-            }
-        };
         drop(slots);
-        // What a library left in a handle's block, which it may have resized, comes back; then the handle goes.
-        for (buffer, handle) in buffers.iter_mut().zip(handles) {
-            if let Some(handle) = handle {
-                *buffer = handles::content(handle).unwrap_or_default();
-                handles::dispose(handle);
-            }
-        }
+        let returned = returned_bytes(call.return_kind, returned_word);
+        take_back(&mut buffers, handles, cells)?;
         Ok(CallResult { returned, arguments: buffers })
     }
+}
+
+impl Argument {
+    /// The bytes the argument comes with, which the call gives back as they are left.
+    fn bytes(&self) -> Vec<u8> {
+        match self {
+            Argument::Value { bytes, .. } | Argument::Buffer(bytes) | Argument::Handle(bytes) | Argument::HandlePointer(bytes) => bytes.clone(),
+        }
+    }
+
+    fn ffi_type(&self) -> Type {
+        match self {
+            Argument::Value { kind, .. } => kind.ffi_type(),
+            Argument::Buffer(_) | Argument::Handle(_) | Argument::HandlePointer(_) => Type::pointer(),
+        }
+    }
+}
+
+impl ReturnKind {
+    fn ffi_type(self) -> Type {
+        match self {
+            ReturnKind::Void => Type::void(),
+            ReturnKind::Number(kind) => kind.ffi_type(),
+            ReturnKind::CString | ReturnKind::PascalString => Type::pointer(),
+        }
+    }
+}
+
+/// The return value's bytes, read from the register libffi filled as the return kind says.
+fn returned_bytes(return_kind: ReturnKind, returned_word: u64) -> Vec<u8> {
+    let pointer = returned_word as usize as *const u8;
+    match return_kind {
+        ReturnKind::Void => Vec::new(),
+        ReturnKind::Number(kind) => returned_word.to_le_bytes()[..kind.size()].to_vec(),
+        _ if pointer.is_null() => Vec::new(),
+        // SAFETY: the function returns a C string, the node's promise.
+        ReturnKind::CString => unsafe { CStr::from_ptr(pointer.cast::<c_char>()) }.to_bytes().to_vec(),
+        // SAFETY: the function returns a Pascal string, the node's promise: its length byte and that many letters.
+        ReturnKind::PascalString => unsafe { std::slice::from_raw_parts(pointer.add(1), usize::from(*pointer)) }.to_vec(),
+    }
+}
+
+/// What the library left comes back into each argument's bytes: a handle's block, which it may have resized, and then
+/// the handle goes; the handle in a cell, which it may have replaced or left null. An address in a cell that the host
+/// did not make is not read, and the call fails with 1097 (DT-088 §8).
+fn take_back(buffers: &mut [Vec<u8>], handles: Vec<Option<Handle>>, cells: Vec<Option<HandleCell>>) -> Result<(), LibraryError> {
+    let mut outcome = Ok(());
+    for ((buffer, handle), cell) in buffers.iter_mut().zip(handles).zip(cells) {
+        if let Some(handle) = handle {
+            *buffer = handles::content(handle).unwrap_or_default();
+            handles::dispose(handle);
+        }
+        if let Some(cell) = cell {
+            match cell.take_content() {
+                Some(block) => *buffer = block,
+                None => outcome = Err(LibraryError::NotAHandle),
+            }
+        }
+    }
+    outcome
 }
 
 #[cfg(test)]

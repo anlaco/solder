@@ -7,7 +7,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { arrayBlock, arrayOfBlock, dimensionsOf, nestByDimensions, pascalStringBuffer, stringBlock, textOfPascalString, textOfStringBlock } from "../../core/runtime/call-library.mjs";
+import { arrayBlock, arrayOfBlock, dimensionsOf, handlePointerBlock, nestByDimensions, pascalStringBuffer, stringBlock, textOfPascalString, textOfStringBlock } from "../../core/runtime/call-library.mjs";
 
 const bytes = (...values) => Uint8Array.from(values);
 
@@ -89,4 +89,12 @@ test("the text of a Pascal string is the letters its length byte says, unsigned,
   assert.equal(textOfPascalString(Uint8Array.from([200, ...new Uint8Array(200).fill(120)])).length, 200, "a length over 127");
   assert.deepEqual(textOfPascalString(bytes(9, 104)), bytes(104), "a length the bytes do not back");
   assert.deepEqual(textOfPascalString(bytes()), bytes());
+});
+
+test("a pointer to a handle carries no bytes for an empty value, its null handle, and comes back empty from none (DT-088 §8)", () => {
+  assert.deepEqual(handlePointerBlock(stringBlock(bytes()), 0), bytes(), "an empty string");
+  assert.deepEqual(handlePointerBlock(stringBlock(bytes(72)), 1), bytes(1, 0, 0, 0, 72));
+  assert.deepEqual(handlePointerBlock(arrayBlock([0], [], "dbl"), 0), bytes(), "an empty array");
+  assert.deepEqual(textOfStringBlock(bytes()), bytes(), "a null handle back is an empty string");
+  assert.deepEqual(arrayOfBlock(bytes(), "dbl", 2), { dimensions: [0, 0], values: [] }, "and an empty array");
 });

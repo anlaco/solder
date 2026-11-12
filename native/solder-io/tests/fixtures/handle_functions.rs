@@ -191,3 +191,57 @@ pub unsafe extern "C" fn fixture_pascal_return_long() -> *const u8 {
     };
     LONG.as_ptr()
 }
+
+/// `int32_t handle_pointer_is_null(LStrHandle *)`: 1 when the cell holds a null handle, as for an empty value.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn fixture_handle_pointer_is_null(cell: *const UHandle) -> i32 {
+    unsafe { i32::from((*cell).is_null()) }
+}
+
+/// `MgErr string_pointer_replace(LStrHandle *, uint8_t letter, int32_t count)`: disposes of the handle in the cell, if
+/// any, and leaves there a new one with `count` letters, as a library that makes its own string does.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn fixture_string_pointer_replace(cell: *mut UHandle, letter: u8, count: i32) -> MgErr {
+    unsafe {
+        if !(*cell).is_null() {
+            DSDisposeHandle(*cell);
+        }
+        let handle = DSNewHandle(4 + count as usize);
+        let block = *handle;
+        block.cast::<i32>().write_unaligned(count);
+        std::ptr::write_bytes(block.add(4), letter, count as usize);
+        *cell = handle;
+        0
+    }
+}
+
+/// `MgErr array_pointer_ramp(Array1DDouble ***, int32_t count)`: leaves 0, 1, … count − 1 in the array, making it with
+/// `NumericArrayResize` when the cell holds none.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn fixture_array_pointer_ramp_f64(cell: *mut UHandle, count: i32) -> MgErr {
+    unsafe {
+        let error = NumericArrayResize(DOUBLE_TYPE_CODE, 1, cell, count as usize);
+        if error != 0 {
+            return error;
+        }
+        let block = **cell;
+        block.cast::<i32>().write_unaligned(count);
+        for index in 0..count as usize {
+            first_double(block).add(index).write(index as f64);
+        }
+        0
+    }
+}
+
+/// `void handle_pointer_clear(LStrHandle *)`: leaves the cell null, keeping the handle that was there.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn fixture_handle_pointer_clear(cell: *mut UHandle) {
+    unsafe { *cell = std::ptr::null_mut() };
+}
+
+/// `void handle_pointer_stranger(LStrHandle *)`: leaves in the cell an address the host did not make.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn fixture_handle_pointer_stranger(cell: *mut UHandle) {
+    static mut STRANGER: *mut u8 = std::ptr::null_mut();
+    unsafe { *cell = &raw mut STRANGER };
+}

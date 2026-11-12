@@ -4234,6 +4234,20 @@ gives the libraries it loads LabVIEW's handle-memory functions under their own n
    3-letter input). **Decided on 2026-11-12** (proposed and chosen by the developer): Solder always gives a Pascal
    string 256 bytes, the most one can hold, so a library never writes past it; where LabVIEW does not crash the result
    is the same.
+8. **The pointers to handles**, String Handle Pointer (`LStrHandle *`) and Array Handle Pointer (`Array<N>D<TT> ***`)
+   (measured on 2026-11-12,
+   [`2026-11-12-clfn-handle-pointers.md`](../../labview-captures/reports/2026-11-12-clfn-handle-pointers.md)): the
+   library gets the address of a cell that holds the handle. An empty string or array from the diagram (a constant, an
+   unwired terminal, a control never set) is a **null handle** in the cell; a full one, a handle as in §2. The library may
+   resize the handle, put another one in the cell (made with `DSNewHandle` or `NumericArrayResize`, which makes one from a
+   null handle) or leave the cell null, and the node gives what the cell holds then: a null cell is an empty string or
+   array, with no error. The Constant box changes the prototype (`const LStrHandle *`) and nothing observable at run time.
+   **Decided on 2026-11-12** (proposed and chosen by the developer, on the condition that no library built for LabVIEW
+   breaks): an address left in the cell that Solder's memory functions did not make is not read, and the node gives error
+   1097 with its outputs as they came in; LabVIEW reads it blindly, but a handle not made by LabVIEW's memory manager is
+   already a fault there. A handle the library took out of the cell is not disposed of, since a library may keep it for a
+   later call, as LabVIEW lets it. Solder sends a null handle for an empty value always (LabVIEW sends a handle of size 0
+   for a value set through ActiveX, which Solder has not); an array with no elements but a size, 0 × 3, unverified.
 
 ### How it is verified
 
@@ -4244,7 +4258,8 @@ gives the libraries it loads LabVIEW's handle-memory functions under their own n
 | A string and an array reach a function as handles, in place, and what it leaves in them comes back (a string, 1D and 2D arrays) | `native/solder-io/tests/handle_library.rs` (a library compiled with `rustc`), `test/core/call-library-handles.test.mjs` (the blocks) and `test/core/call-library-handles-run.test.mjs` (an OVI through the Run, the addon and the Rust) | **Verified** (2026-11-08) |
 | A library resizes a handle's block and the host reads it back resized | `native/solder-io/tests/handle_library.rs` (`DSSetHandleSize` on a string, `NumericArrayResize` on an array of doubles) and `test/core/call-library-handles-run.test.mjs` (an OVI gets the longer string and the filled array) | **Verified** on Linux and, in Rust, on Windows (2026-11-08); an OVI on Windows **not run** |
 | A Pascal string goes as its length byte and letters cut to 255, in 256 bytes, comes back by its length byte, and is read as a return value | `test/core/call-library-handles.test.mjs`, `test/core/call-library-handles-run.test.mjs` (an OVI), `native/solder-io/tests/handle_library.rs` (the return) | **Verified** on Linux (2026-11-12) |
-| A format that does not run yet keeps the node from running | `test/core/call-library.test.mjs` | **Verified** (2026-11-08) |
+| A pointer to a handle: an empty value is a null handle, the library replaces the handle or leaves the cell null and the OVI gets it, an address that is not a handle gives 1097 | `native/solder-io/src/handles.rs` (its tests), `native/solder-io/tests/handle_library.rs`, `test/core/call-library-handles-run.test.mjs` (an OVI) | **Verified** on Linux (2026-11-12); Windows **not run** |
+| A format Solder does not know keeps the node from running; every format of LabVIEW's runs | `test/core/call-library.test.mjs` | **Verified** (2026-11-08, every format 2026-11-12) |
 | A library calls the memory functions and they work: new, cleared, measured, resized, copied with `MoveBlock`, disposed of, a handle disposed of twice or never made refused | `native/solder-io/tests/handle_library.rs`, `solder-io/src/memory_manager.rs` (its tests) | **Verified** on Linux (2026-11-08) |
 | The signatures, error codes and type codes are `extcode.h`'s | Read in LabVIEW 2026's cintools (report above) | **Measured** (2026-11-08) |
 | A DLL built with cintools' `labview.lib` finds the bridge on Windows | `native/solder-io/tests/handle_library.rs` (the fixture linked with LabVIEW 2026's `labview.lib` and `user32`, where cintools is installed), run in the Windows VM: [`2026-11-08-memory-bridge-windows.md`](../../labview-captures/reports/2026-11-08-memory-bridge-windows.md) | **Verified** on Windows (2026-11-08) |

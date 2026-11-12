@@ -65,7 +65,7 @@ function valuesOf(bytes, dataType) {
 
 /** The text a string argument holds after a call, read as its format lays it out. */
 function textOfStringArgument(format, bytes) {
-  if (format === "string-handle") return textOfStringBlock(bytes);
+  if (format === "string-handle" || format === "string-handle-pointer") return textOfStringBlock(bytes);
   if (format === "pascal-string-pointer") return textOfPascalString(bytes);
   return untilZero(bytes);
 }
@@ -118,6 +118,14 @@ export function textOfStringBlock(block) {
   const declared = new DataView(block.buffer, block.byteOffset, block.byteLength).getInt32(0, true);
   return block.subarray(4, 4 + Math.max(0, Math.min(declared, block.length - 4)));
 }
+
+/**
+ * What a pointer to a handle carries (DT-088 §8): the block, or no bytes for an empty value, which the library receives
+ * as a null handle, as LabVIEW passes an empty string or array from the diagram (measured 2026-11-12,
+ * `labview-captures/reports/2026-11-12-clfn-handle-pointers.md`; an array with no elements but a size, 0 × 3, unverified).
+ * What comes back the same way, no bytes for a null handle, is read as an empty value by the block readers.
+ */
+export const handlePointerBlock = (block, itemCount) => (itemCount === 0 ? new Uint8Array(0) : block);
 
 /** The bytes of one dimension size in an array's block: LabVIEW's `int32`. */
 const DIMENSION_SIZE_BYTES = 4;
@@ -229,6 +237,10 @@ export function createCallLibraryFunction({ io, host, memory, compilado, pathRul
       if (parameter.type === "string" && parameter.format === "string-handle") {
         return { kind: "handle", bytes: stringBlock(readBytes(handleIn(record))) };
       }
+      if (parameter.type === "string" && parameter.format === "string-handle-pointer") {
+        const text = readBytes(handleIn(record));
+        return { kind: "handle-pointer", bytes: handlePointerBlock(stringBlock(text), text.length) };
+      }
       if (parameter.type === "string" && parameter.format === "pascal-string-pointer") {
         return { kind: "buffer", bytes: pascalStringBuffer(readBytes(handleIn(record))) };
       }
@@ -240,8 +252,10 @@ export function createCallLibraryFunction({ io, host, memory, compilado, pathRul
         return { kind: "buffer", bytes };
       }
       const nested = leerArray(handleIn(record), parameter.array.elemento, parameter.array.dims);
-      if (parameter.format === "array-handle") {
-        return { kind: "handle", bytes: arrayBlock(dimensionsOf(nested, parameter.array.dims), nested.flat(Infinity), parameter.dataType) };
+      if (parameter.format === "array-handle" || parameter.format === "array-handle-pointer") {
+        const elements = nested.flat(Infinity);
+        const block = arrayBlock(dimensionsOf(nested, parameter.array.dims), elements, parameter.dataType);
+        return parameter.format === "array-handle" ? { kind: "handle", bytes: block } : { kind: "handle-pointer", bytes: handlePointerBlock(block, elements.length) };
       }
       return { kind: "buffer", bytes: bytesOf(nested.flat(Infinity), parameter.dataType) };
     });
@@ -257,7 +271,7 @@ export function createCallLibraryFunction({ io, host, memory, compilado, pathRul
       if (parameter.type === "numeric") {
         if (parameter.pass === "pointer") writeNumber(record, parameter.dataType, valuesOf(bytes, parameter.dataType)[0]);
       } else if (parameter.type === "string") putBytes(cellOut(record), textOfStringArgument(parameter.format, bytes));
-      else if (parameter.format === "array-handle") {
+      else if (parameter.format === "array-handle" || parameter.format === "array-handle-pointer") {
         // The library may have resized the array: its dimensions are read from the block, not from what went in.
         const { dimensions, values } = arrayOfBlock(bytes, parameter.dataType, parameter.array.dims);
         ponerArray(cellOut(record), parameter.array.elemento, nestByDimensions(values, dimensions), parameter.array.dims);

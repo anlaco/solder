@@ -702,7 +702,10 @@ array or string read by a local variable while another loop writes it is never t
       On Windows the bridge is `lvrt.dll` (decided the same day), and a library linked with LabVIEW's own `labview.lib`
       found its functions there in the VM. Array elements are now aligned as `extcode.h` lays them on 64 bits (fixed).
       The Pascal string measured and built on 2026-11-12 (DT-088 §7: always 256 bytes, so a library cannot overrun it).
-      Found on the way: `scripts/build-native.mjs` built nothing on Windows (fixed). Left: the pointers to handles.*
+      Found on the way: `scripts/build-native.mjs` built nothing on Windows (fixed). The pointers to handles measured and
+      built the same day (DT-088 §8): an empty value is a null handle, the library may replace it or leave it null, an
+      address that is not a handle gives 1097. Every string and array format of the node now runs. Next: the facade, the
+      plugin's OVIs built in the editor as a user, the palette and the ESP32.*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's
