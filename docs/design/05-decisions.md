@@ -36,6 +36,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [069](#dt-069) | An Express VI is a catalog node configured in its `config` and compiled to WebAssembly; lean: Time Delay and File Dialog first, reviewed with the community before 1.0 | Accepted · implemented (Time Delay, File Dialog) |
 | [076](#dt-076) | DAQ: Solder's own acquisition layer, DAQmx's API one to one under the name DAQ, a native engine in `solder-io` over swappable drivers | Accepted · not implemented |
 | [077](#dt-077) | When Solder is 1.0: what a LabVIEW developer certified on Core 1 and Core 2 does, reliably, with nothing lost; not a coverage figure | Accepted · not implemented |
+| [089](#dt-089) | The compiler is split into modules of one responsibility each, after everything native and before 1.0 | Proposed · not implemented |
 
 ## The 34 Red decisions
 
@@ -4240,3 +4241,48 @@ gives the libraries it loads LabVIEW's handle-memory functions under their own n
 | An array's elements start where the compiler's alignment puts them, as in `extcode.h` on a 64-bit system | `test/core/call-library-handles.test.mjs`, `solder-io/src/memory_manager.rs` (its tests) and the fixture of `handle_library.rs`, whose arrays are `#[repr(C)]` structs laid out by the compiler | **Verified** against the compiler (2026-11-08) |
 | LabVIEW's handle layout is as `extcode.h` says | `DSGetHandleSize` and `MoveBlock` run from a CLFN in LabVIEW | **Unverified** |
 
+## DT-089
+
+**`core/compiler/compiler.mjs` is split into modules that each do one thing, none longer than about 400 lines, with no
+function longer than about 30. It is done once the native compiler is more or less complete and before 1.0, as a step of
+its own that moves code without changing what it compiles.**
+
+- **Status:** Proposed on 2026-11-12; the developer asked for it and chose when ("when we finish the current plan, before
+  version 1, but after the compiler is more or less finished"). The split below is a first outline, settled when the step
+  starts.
+- **Why:** on 2026-11-12 `compiler.mjs` had 3,209 lines, more than the other six files of `core/compiler/` together
+  (1,926). It holds about twenty unrelated families of node emitters (numeric, bits, strings, 2D arrays, clusters, VISA,
+  files, spreadsheet, Property Node, Call Library, subOVIs), the type and memory helpers, the `BLOQUES` table (about 560
+  lines, with code written inline), the ordering of clumps and `compileVI`, a single function of about 840 lines. It grew
+  one plan step at a time, each adding its family where the others were; no step made it large on its own. Names in
+  Spanish and English are mixed, and many are single letters (`e`, `g`, `t`, `cat`). It is hard to read for anyone
+  who did not write it, which works against the goal that others can help (DT-079).
+- **References:** Robert C. Martin, *Clean Code* (files of about 200 lines, rarely over 500; small functions that do one
+  thing); ESLint's `max-lines` default of 300. CLAUDE.md rule 9.
+
+### Decision
+
+1. **When.** After the "everything native" stage of [DT-079](#dt-079) §1 has left the compiler more or less complete, and
+   before 1.0 ([DT-077](#dt-077)). If it comes before *inplaceness* (DT-042 §5, a condition of 1.0), that change is
+   made in the smaller modules. Until then the file is not reorganised; new code follows the Boy Scout rule as usual.
+2. **What, as a first outline.** `core/compiler/` becomes:
+   - `types.mjs`: Solder's types in WebAssembly, conversions, layouts (`tipoWasm`, `convertir`, `disposicion`).
+   - `memory-ops.mjs`: copies, reservations, handles, atomic loads and stores.
+   - `nodes/<family>.mjs`, one per family of nodes (numeric, bits, strings, arrays, clusters, comparison, Boolean,
+     VISA, files, spreadsheet, Property Node, Call Library, subOVIs, timing…), each exporting its emitters.
+   - `node-table.mjs`: the table from node kind to emitter, which only points to named functions.
+   - `compile-vi.mjs`: `compileVI`, split into small functions (structures, loops, the panel, subOVI calls, clumps).
+   - `compiler.mjs`: the entry point only (`compilar`, `assemble`, the module).
+3. **How.** Only moves and renames, never a change of behaviour: one module at a time, `npm test` green after each, and
+   the WebAssembly the examples compile to the same before and after (compared byte for byte). Names that are moved are
+   rewritten in English (CLAUDE.md "Language") and without single letters (rule 9).
+4. **Limits afterwards.** No file of `core/compiler/` over about 400 lines, data tables excepted; no function over about
+   30 lines, or 50 with a reason written beside it. A new family of nodes gets its own module.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The split changes nothing the compiler emits | The examples and the test OVIs compiled before and after, compared byte for byte | **Not built** |
+| No file of `core/compiler/` grows past the limit | A test that counts the lines of `core/compiler/**/*.mjs` (tables listed as exceptions) | **Not built** |
+| No function grows past the limit | ESLint's `max-lines-per-function`, or the same test | **Not built** |

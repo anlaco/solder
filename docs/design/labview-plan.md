@@ -747,6 +747,10 @@ array or string read by a local variable while another loop writes it is never t
 lesson of NI's Core 1 course can be done in Solder, the hardware lessons on the ESP32 and on simulated instruments.
 The outline is in `labview-captures/core-courses/README.md`; first, list which lessons Solder misses.
 
+**Before 1.0, once the native compiler is more or less complete:** split `core/compiler/compiler.mjs` (3,209
+lines on 2026-11-12) into modules of one responsibility each, moving code without changing what it emits (DT-089).
+Preferably before *inplaceness*, so that change is made in the smaller modules.
+
 **Before 1.0:** *inplaceness* (DT-042 §5), which changes memory and speed but not
 results. It was postponed until a real program ran slowly; since 2026-11-05 it is a
 condition of 1.0 (DT-077 §8), done and compared with LabVIEW on large arrays before the

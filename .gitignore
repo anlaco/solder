@@ -38,6 +38,9 @@ dist/
 # Local scratch work, never part of the project
 temp/
 
+# Reference books (Clean Code and the like): copyrighted, kept for local reading only
+books/
+
 # Solder's own VISA, built by scripts/build-native.mjs (DT-065)
 *.node
 # The memory bridge (DT-088 §4), built next to the addon by scripts/build-native.mjs.
