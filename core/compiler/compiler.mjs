@@ -22,6 +22,7 @@
 
 import { connectorPorts, ejecutable, nodesWithUndefinedInput, orden, panelObjectType, requerido, tipos, undefinedArrayNodes } from "../model/graph.mjs";
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
+import { DAQ_TASK_LAYOUT, isDaqTask } from "../model/daq-name.mjs";
 import { callLibraryConfig, callLibraryReturnKind, returnsString, whyCallLibraryCannotRun } from "../model/call-library.mjs";
 import { coversEveryError, isErrorFrameValue } from "../model/error-case.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
@@ -730,6 +731,16 @@ function callLibrary(e) {
     // How a string or an array is passed (a handle or an address, DT-088); the host reads it to build and read the block.
     const format = parameter.type === "string" ? parameter["string-format"] : parameter.type === "array" ? parameter["array-format"] : undefined;
     const described = { type: parameter.type, dataType: parameter["data-type"] ?? "i32", pass: parameter.pass ?? "value", minimumSize, tipo: type, format };
+    if (parameter.type === "adapt-to-type" && !isDaqTask(e.logicalTIn(input))) {
+      throw new Error(`The parameter "${parameter.name}" adapts to a type Solder does not pass to a library yet: only a DAQ task.`);
+    }
+    if (isDaqTask(e.logicalTIn(input))) {
+      code.push(k32(record), ...e.entrada(input), ins("i32.store", ROW_VALUE_OFFSET));
+      // Adapt to Type gets a cell with the record and the I/O writes the task it holds afterwards into the output's
+      // buffer; a pointer-sized integer gets the task object and passes the wire on (DT-087 §7).
+      if (parameter.type === "adapt-to-type") code.push(k32(record), k32(e.bufer(disposicion(DAQ_TASK_LAYOUT).tam)), ins("i32.store", ROW_BITS_OFFSET));
+      return { ...described, task: parameter.type === "adapt-to-type" ? "record-cell" : "object", disposicion: disposicionCompleta(DAQ_TASK_LAYOUT) };
+    }
     if (parameter.type === "string") {
       code.push(k32(record), ...e.entrada(input), ins("i32.store", ROW_VALUE_OFFSET), ...outputCell(record));
       return described;
@@ -767,7 +778,8 @@ function callLibrary(e) {
     const parameterIndex = Number(port.name.split("-")[1]);
     const parameter = hostParameters[parameterIndex];
     const record = recordAt(parameterIndex + 1);
-    if (parameter.type === "string" || parameter.array) return [k32(record), ins("i32.load", ROW_BITS_OFFSET)];
+    if (parameter.type === "string" || parameter.array || parameter.task === "record-cell") return [k32(record), ins("i32.load", ROW_BITS_OFFSET)];
+    if (parameter.task === "object") return [k32(record), ins("i32.load", ROW_VALUE_OFFSET)];
     return readRow(parameter.tipo, record);
   };
   return [...code, ...outputs.flatMap(leaveOutput)];
@@ -973,6 +985,11 @@ const BLOQUES = {
       ins("i32.const", b),
     ];
   },
+  // A DAQ task constant has a name and no record yet; the other kinds are their text (DT-076 §5, DT-087 §7).
+  "daq-name-constant": (e) =>
+    isDaqTask(e.logicalTOut(0))
+      ? [ins("i32.const", e.clusterConstante(DAQ_TASK_LAYOUT, { name: e.nodo.config?.value ?? "", number: 0, record: 0 }))]
+      : [ins("i32.const", e.cadena(e.nodo.config?.value ?? ""))],
   "visa-resource-constant": (e) => [ins("i32.const", e.clusterConstante(VISA_RESOURCE_LAYOUT, { "resource name": e.nodo.config?.value ?? "", session: 0 }))],
   "visa-open": (e) => visaFunction(e, "visa_open", [0, 1], { resourceOut: true }),
   "visa-write": (e) => visaFunction(e, "visa_write", [0, 1], { resourceOut: true, count: true }),
@@ -2076,6 +2093,20 @@ function panelDataOf(t, logical) {
   return esArray(logical) && logical.array === PATH ? { ...data, elemento: { ...data.elemento, path: true } } : data;
 }
 
+/** Where a task's name lies in its memory (DT-087 §7). */
+const daqTaskNameOffset = () => disposicion(DAQ_TASK_LAYOUT).campos.find((field) => field.nombre === "name").off;
+
+/**
+ * The coercion dot between a DAQ task and a string (measured, reports/2026-11-06-daqmx-types.md), or null for any other
+ * pair: a task gives its name, the string field of its cluster. A string into a task, which LabVIEW looks up among the
+ * tasks saved in MAX, is not built: no terminal takes a task yet but the DAQ plugin's.
+ */
+function daqTaskCoercion(from, to, read) {
+  if (isDaqTask(from) && to === "string") return [...read, ins("i32.const", daqTaskNameOffset()), ins("i32.add")];
+  if (from === "string" && isDaqTask(to)) throw new Error("A string wired to a DAQ task cannot run yet: Solder has no saved tasks to look it up in.");
+  return null;
+}
+
 /** La disposición de un cluster con la de sus clusters de dentro, para que el anfitrión lo lea y lo escriba. */
 function disposicionCompleta(t) {
   const d = disposicion(t);
@@ -2577,7 +2608,8 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
       // Un array con otro tipo de elemento se convierte entero en un búfer propio:
       // el punto de coerción de LabVIEW (DT-042).
       if (esArray(t) && esArray(tIn(i)) && JSON.stringify(t.array) !== JSON.stringify(tIn(i).array)) return convertirArray(t, tIn(i), leer);
-      return [...leer, ...convertir(t, tIn(i))];
+      const daqCoercion = daqTaskCoercion(logicalTypes.salidas.get(`${c.de.nodo}.${c.de.puerto}`), logicalTIn(i), leer);
+      return daqCoercion ?? [...leer, ...convertir(t, tIn(i))];
     };
     /** Copia el array que deja `origen` a una celda nueva, convirtiendo cada elemento de `desde.array` a `hacia.array`. */
     const convertirArray = (desde, hacia, origen) => {
@@ -2650,7 +2682,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     if (VISA_FUNCTIONS.has(n.tipo) || FILE_FUNCTIONS.has(n.tipo) || (n.tipo === "property-node" && n.config?.class === "Instr") || n.tipo === "call-library") module.usesInstrumentIo = true;
     const emitir = n.tipo === "subvi" ? (e) => callSubVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subVIControl(e, asSubVI.get(n.name)) : BLOQUES[n.tipo];
     if (!emitir) return errores.push({ nodo: id, motivo: `The compiler cannot emit "${nombre}" (${n.tipo}) yet.` });
-    const e = { nodo: n, cat, tIn, tOut, logicalTIn, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex, registerPropertyNode, registerCallLibrary, registerControlReference };
+    const e = { nodo: n, cat, tIn, tOut, logicalTIn, logicalTOut, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex, registerPropertyNode, registerCallLibrary, registerControlReference };
     if (!asSubVI && PANEL_CONTROLS.includes(n.tipo)) {
       e.controlRecord = panelRecordOf(id, tOut(0)).record;
       controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), record: e.controlRecord, ...panelDataOf(tOut(0), logicalTOut(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTOut(0) === PATH && { path: true }) });

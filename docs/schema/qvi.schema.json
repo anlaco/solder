@@ -205,8 +205,17 @@
         { "$ref": "#/$defs/arrayType" },
         { "$ref": "#/$defs/clusterType" },
         { "$ref": "#/$defs/enumType" },
-        { "$ref": "#/$defs/refnumType" }
+        { "$ref": "#/$defs/refnumType" },
+        { "$ref": "#/$defs/daqNameType" }
       ]
+    },
+
+    "daqNameType": {
+      "description": "A DAQ name (DT-076 §5): one type with LabVIEW's kinds, as its DAQmxName class. Kinds do not connect to each other. A task is laid out as { name, number, record } (DT-087, amendment of 2026-11-13 §7); the other kinds are strings.",
+      "type": "object",
+      "required": ["daq-name"],
+      "additionalProperties": false,
+      "properties": { "daq-name": { "enum": ["task", "global-channel", "physical-channel", "terminal", "scale", "device", "switch"] } }
     },
 
     "refnumType": {

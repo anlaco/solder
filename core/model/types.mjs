@@ -9,6 +9,8 @@
 // DBL de LabVIEW, el f64: se conserva el nombre que ya usaban el esquema y el
 // corpus.
 
+import { daqNameConversion, daqNameInMemory, daqNameText, isDaqName } from "./daq-name.mjs";
+
 /** Las representaciones numéricas de LabVIEW que tiene Solder. */
 export const NUMERICOS = {
   i8: { bits: 8, entero: true, signo: true, abrev: "I8" },
@@ -109,6 +111,7 @@ export const FILE_REFNUM = "file-refnum";
  */
 export function inMemory(t) {
   if (t === VISA_RESOURCE) return VISA_RESOURCE_LAYOUT;
+  if (isDaqName(t)) return daqNameInMemory(t);
   if (t === PATH) return "string";
   if (t === FILE_REFNUM || esRefnum(t)) return "u32";
   if (esArray(t)) return { ...t, array: inMemory(t.array) };
@@ -165,13 +168,14 @@ export function conversion(desde, hacia) {
   if (iguales(desde, hacia)) return "igual";
   if (esNumerico(desde) && esNumerico(hacia)) return "coercion";
   if (esArray(desde) && esArray(hacia)) return dimensionsOf(desde) === dimensionsOf(hacia) && conversion(desde.array, hacia.array) ? "coercion" : null;
-  return null;
+  return daqNameConversion(desde, hacia);
 }
 
 /** How a type is named when explaining a broken wire: "DBL", "array of I32", "2D array of DBL". */
 export function nombre(t) {
   if (esEnum(t)) return "enum";
   if (t === VISA_RESOURCE) return "VISA resource name";
+  if (isDaqName(t)) return daqNameText(t);
   if (t === PATH) return "path";
   // Unverified: the name LabVIEW gives this type in a broken wire's explanation.
   if (t === FILE_REFNUM) return "file refnum";
@@ -191,6 +195,8 @@ export function nombre(t) {
 export function aspecto(t) {
   // A VISA resource name: purple, 2 px, drawn as a squiggle (measured, labview-captures/reports/2026-10-26-visa-resource-name-look.md Q2).
   if (t === VISA_RESOURCE) return { color: COLORES.visa, dimension: 0, squiggle: true };
+  // Every kind of DAQ name: the same purple and the same two-row zigzag (measured, reports/2026-11-06-daqmx-types.md).
+  if (isDaqName(t)) return { color: COLORES.visa, dimension: 0, squiggle: true };
   // El cluster de error: oliva, con trazos amarillos y negros (docs/reference/labview-errors.md §1).
   if (esError(t)) return { color: COLORES.error, dimension: 0, error: true };
   const dimension = dimensionsOf(t);
@@ -221,7 +227,7 @@ export const COLORES = {
   otro: "#7f3f00",
   /** El borde de un cable de error y de su terminal y su constante: #7f7f00, medido en LabVIEW 2026 Q3. */
   error: "#7f7f00",
-  /** The wire, terminals and constant of a VISA resource name: #7f007f, measured in LabVIEW 2026 Q3 (reports/2026-10-26-visa-resource-name-look.md Q1-Q3). */
+  /** The wire, terminals and constant of a VISA resource name and of every DAQ name: #7f007f, measured in LabVIEW 2026 Q3 (reports/2026-10-26-visa-resource-name-look.md Q1-Q3, 2026-11-06-daqmx-types.md). */
   visa: "#7f007f",
   /** The wire, terminals and constants of a path: teal #007f7f, measured in LabVIEW 2026 Q3 (reports/2026-10-26-path-type.md §2). */
   path: "#007f7f",
@@ -231,7 +237,7 @@ function colorEscalar(t) {
   if (esNumerico(t)) return esEntero(t) ? COLORES.entero : COLORES.flotante;
   if (t === "boolean") return COLORES.booleano;
   if (t === "string") return COLORES.cadena;
-  if (t === VISA_RESOURCE) return COLORES.visa;
+  if (t === VISA_RESOURCE || isDaqName(t)) return COLORES.visa;
   if (t === PATH) return COLORES.path;
   // A file refnum is the path's teal, solid where the path is dashed (measured, reports/2026-10-28-file-nodes-look.md §2-3).
   if (t === FILE_REFNUM) return COLORES.path;

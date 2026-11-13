@@ -202,6 +202,29 @@ function nestLike(elements, shape) {
 }
 
 /**
+ * A DAQ task as the I/O takes it (DT-087, amendment of 2026-11-13 §7): its record's address, which the I/O puts in a cell
+ * for an Adapt to Type parameter, or reads the library's task object through for a pointer-sized integer.
+ */
+function taskArgument(parameter, task) {
+  const record = bytesOf([task.record], "u64");
+  return { kind: parameter.task === "record-cell" ? "task-record-cell" : "task-object", bytes: record };
+}
+
+/**
+ * The bytes of a task the I/O answers after a call (native/solder-io, `task_answer`): the record in the cell as a 64-bit
+ * address, the record's number as a 32-bit integer, then its name's bytes.
+ */
+const TASK_ANSWER_NUMBER_OFFSET = 8;
+const TASK_ANSWER_NAME_OFFSET = 12;
+
+/** The task an Adapt to Type parameter holds after a call, from the I/O's answer: a record of 0 is an empty task. */
+export function taskOfAnswer(bytes) {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const record = Number(view.getBigUint64(0, true));
+  return { record, number: view.getUint32(TASK_ANSWER_NUMBER_OFFSET, true), name: new TextDecoder().decode(bytes.subarray(TASK_ANSWER_NAME_OFFSET)) };
+}
+
+/**
  * The node's import, `call_library(index, records, path, errorIn, errorOut, chainIndex) → ANSWERED | Promise`.
  * `compilado.callLibraries[index]` describes the node; `host` is the Run's createHostFunctions over `memory`;
  * `pathRules` turns a path wired on the diagram into the system's name. Without `io` the Run fails.
@@ -230,6 +253,7 @@ export function createCallLibraryFunction({ io, host, memory, compilado, pathRul
   const argumentsOf = (node, records) =>
     node.parameters.map((parameter, index) => {
       const record = recordAt(records, index + 1);
+      if (parameter.task) return taskArgument(parameter, leerCluster(handleIn(record), parameter.disposicion));
       if (parameter.type === "numeric") {
         const bytes = bytesOf([readNumber(record, parameter.dataType)], parameter.dataType);
         return { kind: parameter.pass === "pointer" ? "buffer" : parameter.dataType, bytes };
@@ -268,7 +292,10 @@ export function createCallLibraryFunction({ io, host, memory, compilado, pathRul
     node.parameters.forEach((parameter, index) => {
       const record = recordAt(records, index + 1);
       const bytes = answer.arguments[index];
-      if (parameter.type === "numeric") {
+      // A task given as its task object leaves the node as it came in, so it is not written.
+      if (parameter.task === "record-cell") ponerCluster(cellOut(record), parameter.disposicion, taskOfAnswer(bytes));
+      else if (parameter.task) return;
+      else if (parameter.type === "numeric") {
         if (parameter.pass === "pointer") writeNumber(record, parameter.dataType, valuesOf(bytes, parameter.dataType)[0]);
       } else if (parameter.type === "string") putBytes(cellOut(record), textOfStringArgument(parameter.format, bytes));
       else if (parameter.format === "array-handle" || parameter.format === "array-handle-pointer") {
@@ -289,7 +316,8 @@ export function createCallLibraryFunction({ io, host, memory, compilado, pathRul
     else if (node.returnKind !== "void") writeNumber(returnRecord, node.returnKind, 0);
     node.parameters.forEach((parameter, index) => {
       const record = recordAt(records, index + 1);
-      if (parameter.type === "string") putBytes(cellOut(record), readBytes(handleIn(record)));
+      if (parameter.task === "record-cell") ponerCluster(cellOut(record), parameter.disposicion, leerCluster(handleIn(record), parameter.disposicion));
+      else if (parameter.type === "string") putBytes(cellOut(record), readBytes(handleIn(record)));
       else if (parameter.type === "array") ponerArray(cellOut(record), parameter.array.elemento, leerArray(handleIn(record), parameter.array.elemento, parameter.array.dims), parameter.array.dims);
     });
   };

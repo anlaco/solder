@@ -107,7 +107,8 @@ test("each parameter is an input and an output of its type, and the return value
     ["arg-0-in", "arg1", "string"],
     ["arg-1-in", "arg2", "u32"],
     ["arg-2-in", "arg3", { array: "number" }],
-    ["arg-3-in", "arg4", "u64"],
+    // A pointer-sized integer by value is a U64, or the DAQ task wired to it (DT-087, amendment of 2026-11-13 §7).
+    ["arg-3-in", "arg4", { numberOrTask: "A3", number: "u64" }],
   ]);
   assert.deepEqual(ports.out[0].name, "error-out");
   assert.deepEqual(ports.out.slice(1).map((port) => [port.name, port.type]), [
@@ -115,7 +116,7 @@ test("each parameter is an input and an output of its type, and the return value
     ["arg-0-out", "string"],
     ["arg-1-out", "u32"],
     ["arg-2-out", { array: "number" }],
-    ["arg-3-out", "u64"],
+    ["arg-3-out", { numberOrTask: "A3", number: "u64" }],
   ]);
 });
 

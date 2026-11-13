@@ -14,6 +14,7 @@
 import { connectorPattern, connectorTerminals } from "./connector.mjs";
 import { LINKED_CONTROL_TYPE, isImplicit, loadProperties } from "./property-node.mjs";
 import { callLibraryPorts } from "./call-library.mjs";
+import { isDaqTask } from "./daq-name.mjs";
 import { DIFFERENT_TYPES_MESSAGE, automaticChoice, isAutomatic, noInstanceFitsDetail, renamedByCell, selectedInstance } from "./polymorphic.mjs";
 import { DBL, ERROR, FILE_REFNUM, NUMERICOS, PATH, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, carriesUndefinedArray, isUndefinedArray, nombre, esRefnum, strictRefnum, withoutOneDimension } from "./types.mjs";
 
@@ -897,6 +898,8 @@ function sustituir(t, vars) {
     if ("pathOrString" in t) return vars[t.pathOrString] ?? t.defecto ?? PATH;
     // A file function's `file`: a path or a file refnum; with nothing wired, a path (the dialog).
     if ("pathOrRefnum" in t) return vars[t.pathOrRefnum] ?? PATH;
+    // A Call Library Function Node's pointer-sized integer: a number, or the DAQ task wired to it.
+    if ("numberOrTask" in t) return vars[t.numberOrTask] ?? t.number;
     // Write to Text File's text: a string, or a 1D array of strings written as lines; a string unwired.
     if ("textOrLines" in t) return vars[t.textOrLines] ?? "string";
     // The spreadsheet functions' array: one or two dimensions of numbers or strings; unwired, its default (DT-067).
@@ -1028,6 +1031,8 @@ function ligar(declarado, llega, vars) {
     if (vars[declarado.texto] === undefined) vars[declarado.texto] = llega;
   } else if ("pathOrString" in declarado) {
     if ((llega === PATH || llega === "string") && vars[declarado.pathOrString] === undefined) vars[declarado.pathOrString] = llega;
+  } else if ("numberOrTask" in declarado) {
+    if (isDaqTask(llega) && vars[declarado.numberOrTask] === undefined) vars[declarado.numberOrTask] = llega;
   } else if ("pathOrRefnum" in declarado) {
     if ((llega === PATH || llega === FILE_REFNUM) && vars[declarado.pathOrRefnum] === undefined) vars[declarado.pathOrRefnum] = llega;
   } else if ("marksWired" in declarado) {

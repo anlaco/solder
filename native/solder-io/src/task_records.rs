@@ -74,3 +74,23 @@ pub(crate) unsafe extern "C" fn bridge_dispose_record(address: usize) -> i32 {
 pub(crate) unsafe extern "C" fn bridge_task_object_of(address: usize) -> usize {
     task_object_of(address).unwrap_or(0)
 }
+
+/// What a task wire passes and gets back through a Call Library Function Node (DT-087, amendment of 2026-11-13 §7):
+/// Solder's memory keeps the record's address, and the node needs the task object or a cell with the record in it.
+pub mod node {
+    use super::{name_and_number_of, task_object_of};
+
+    /// The `uintptr_t` a task gives a pointer-sized parameter: its task object, read through the record, and 0 for an
+    /// empty task or an address that is not a record, which the driver refuses with -200088 (measured).
+    pub fn task_object_for(record: usize) -> usize {
+        task_object_of(record).unwrap_or(0)
+    }
+
+    /// What the node answers for a task cell after a call: the record now in the cell, then its number as a 32-bit
+    /// integer and its name, both empty for an address that is not a record. `core/runtime/call-library.mjs` reads it.
+    pub fn task_answer(cell: &[u8]) -> Vec<u8> {
+        let record = cell.get(..8).and_then(|bytes| bytes.try_into().ok()).map_or(0, usize::from_le_bytes);
+        let (name, number) = name_and_number_of(record).unwrap_or_default();
+        [&(record as u64).to_le_bytes()[..], &number.to_le_bytes(), name.as_bytes()].concat()
+    }
+}

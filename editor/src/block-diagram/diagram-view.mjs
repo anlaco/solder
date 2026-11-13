@@ -103,6 +103,9 @@ export const CONSTANTES = {
   // A VISA resource name: a box in the type's colour with an I/O glyph, the resource's text, a divider and a dropdown
   // arrow (labview-captures/reports/2026-10-26-visa-resource-name-look.md Q1). One line only.
   "visa-resource-constant": { editable: true, visa: true, growsRight: true, texto: (n) => n.config?.value ?? "" },
+  // A DAQ name constant looks as a VISA resource name's, frame, I/O glyph, divider and arrow (measured,
+  // reports/2026-11-06-daqmx-types.md); its dropdown, menus and name filter are not built.
+  "daq-name-constant": { editable: true, visa: true, growsRight: true, texto: (n) => n.config?.value ?? "" },
   // A path (DT-067): a teal box with the path glyph and, when it has a value, its text as the host system writes it.
   // Typing parses the text as String To Path does. The empty path and Not A Path have constants of their own, which are not typed into.
   "path-constant": { editable: true, path: true, growsRight: true, texto: (n, ctx) => pathToText(n.config?.value ?? EMPTY_PATH, ctx.pathRules) },

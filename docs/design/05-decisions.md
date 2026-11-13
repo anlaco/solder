@@ -3543,7 +3543,8 @@ two simulated devices: the palette (`labview-captures/reports/2026-11-06-daqmx-p
    (constant), measured on 2026-11-06 (`labview-captures/reports/2026-11-06-daqmx-types.md`; this corrects the two
    types proposed the same day). The kinds are LabVIEW's: `task`, `global-channel`, `physical-channel`, `terminal`,
    `scale`, `device`, `switch`. A task is laid out by the compiler as `{ name: string, task: U32 }`, as a VISA resource
-   name is ([DT-066](#dt-066) §1), because LabVIEW shows it as `["", 0]`; the other kinds are strings. Every kind has
+   name is ([DT-066](#dt-066) §1), because LabVIEW shows it as `["", 0]` (*amended by [DT-087](#dt-087), 2026-11-13 §7:
+   `{ name, number: U32, record: U64 }`*); the other kinds are strings. Every kind has
    the same #7f007f wire and constant (with the I/O glyph and the dropdown); kinds do not connect to each other, every
    kind coerces to a string and a string to every name input, with a coercion dot. The name filter (I/O Name
    Filtering…: I/O type, port/line filtering, internal channels, advanced terminals) is part of the constant and the
@@ -4191,10 +4192,21 @@ no channels; the error text begins `<append>`. Decided with the developer the sa
    sentences written anew ([DT-076](#dt-076) §6). `lvAppReference` is not used.
 6. **A wait does not block other tasks:** the engine says how long a read or Wait Until Done must wait, the façade waits
    without holding the engine, and then takes the result.
+7. **A task wire in Solder's memory is `{ name: string, number: U32, record: U64 }`** (decided with the developer the
+   same day; it amends [DT-076](#dt-076) §5's `{ name, task: U32 }`). LabVIEW keeps only the record's address, with the
+   name inside the record; in Solder the record lives in the I/O process, whose memory WebAssembly cannot read, so the
+   wire keeps a copy of the name and of the number LabVIEW shows beside it (`["p1", n]`), and the probe, the panel and a
+   coercion to a string read them without asking. `record` is the record's address in the I/O process, 0 for an empty
+   task. The node passes the wire as LabVIEW does: to an Adapt to Type parameter, Handles by Value, a pointer to a cell
+   holding `record`, after which the I/O process answers the record now in the cell with its name and number; to a
+   pointer-sized integer by value, the address of the library's task object, which the I/O process reads through the
+   record (0 for an empty task or a record it did not make). The other kinds of `daq-name` are strings.
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
 | A task travels as measured: Create writes the record's address, the other functions get the task object's address, 0 and unknown addresses give -200088, Start with no channels gives -200478 | `native/nilvaiu/tests/facade.rs`, `native/solder-daq/tests/ai_voltage.rs` | **Verified** (2026-11-13); built on Linux, the Windows build (`lvrt.dll` imports) **unverified** |
+| A task wire is `{ name, number, record }`; the node passes it to Adapt to Type as a cell holding the record and gets back the task it then holds, and to a pointer-sized integer as the task object, 0 for an empty task (§7) | `test/core/daq-task-run.test.mjs` (an OVI against `nilvaiu`), `native/solder-io/tests/task_records.rs` | **Verified** (2026-11-13) |
+| Every DAQ name kind coerces to a string, a string to every kind, two kinds never meet | `test/core/daq-task-run.test.mjs` (the rule); a task's name read by a string indicator | **Verified** for the rule and task → string; a string into a task **not built** |
 | LabVIEW's record layout and its other fields | — | **Unverified** (Solder's record is its own) |
 
 ## DT-088

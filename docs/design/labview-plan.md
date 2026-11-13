@@ -717,6 +717,17 @@ array or string read by a local variable while another loop writes it is never t
       `daq-name` type in the core (a task wire passes the record to an Adapt to Type parameter and the task object to a
       `uintptr_t` one), packaging `nilvaiu` in the DAQ add-on and loading it by its full path, then the plugin's OVIs built
       in the editor as a user, the palette and the ESP32.*
+      *DAQ, stage A, slice 4 (DT-087 §7, decided 2026-11-13) on `feature/daq`: the `daq-name` type in the core
+      (`core/model/daq-name.mjs`), one type with LabVIEW's kinds, purple and zigzag as measured; a task is laid out as
+      `{ name, number, record }`, the other kinds as strings; every kind coerces to a string. The DAQ name constant, drawn
+      as the VISA one. The Call Library Function Node passes a task wire as LabVIEW does: to Adapt to Type (Handles by
+      Value) a cell with the record, answered by the I/O with the task it then holds; to a pointer-sized integer the task
+      object (`native/solder-io/src/task_records.rs`, `node`). An OVI creates a task in Solder's `nilvaiu`, starts it and
+      destroys it through the wire (`test/core/daq-task-run.test.mjs`). Not built: a string into a task (LabVIEW looks
+      it up in MAX), the constant's dropdown, menus and name filter, the task control and indicator, Adapt to Type for
+      anything but a task, and releasing a task when its top-level OVI stops. Left: the Windows build of `nilvaiu`. Next:
+      packaging `nilvaiu` in the DAQ add-on and loading it by its full path, then the plugin's OVIs built in the editor as
+      a user, the palette and the ESP32.*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

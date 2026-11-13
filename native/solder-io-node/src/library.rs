@@ -10,6 +10,7 @@ use std::thread;
 use napi::bindgen_prelude::{AsyncTask, Buffer};
 use napi::{Env, Task};
 use napi_derive::napi;
+use solder_io::task_records::node::{task_answer, task_object_for};
 use solder_io::{Argument, Call, CallResult, LibraryCaller, LibraryError, NumberKind, ReturnKind};
 
 /// Every library loaded by the process, shared by both threads' calls.
@@ -33,8 +34,9 @@ static UI_THREAD: LazyLock<Mutex<Sender<Job>>> = LazyLock::new(|| {
 
 /// One argument as JavaScript hands it: `kind` is a data type (`i32`, `u64`, `f64`, …) for a number by value,
 /// `"buffer"` for a buffer passed by its address, `"handle"` for a LabVIEW handle (DT-088) whose block is `bytes`, or
-/// `"handle-pointer"` for a pointer to one (DT-088 §8), no bytes standing for a null handle;
-/// `bytes` are its bytes as C sees them.
+/// `"handle-pointer"` for a pointer to one (DT-088 §8), no bytes standing for a null handle, and for a DAQ task, whose
+/// bytes are its record's address (DT-087 §7), `"task-object"` for the task object it links to or `"task-record-cell"` for
+/// a cell holding the record; `bytes` are its bytes as C sees them.
 #[napi(object)]
 pub struct LibraryArgument {
     pub kind: String,
@@ -86,8 +88,15 @@ fn return_kind(name: &str) -> napi::Result<ReturnKind> {
     }
 }
 
+/// The kind of a task's argument given as a cell, whose answer is the task it holds afterwards.
+const TASK_RECORD_CELL: &str = "task-record-cell";
+
 fn argument(argument: &LibraryArgument) -> napi::Result<Argument> {
-    if argument.kind == "buffer" {
+    if argument.kind == "task-object" {
+        let record = record_of(&argument.bytes)?;
+        return Ok(Argument::Value { kind: NumberKind::U64, bytes: (task_object_for(record) as u64).to_le_bytes().to_vec() });
+    }
+    if argument.kind == "buffer" || argument.kind == TASK_RECORD_CELL {
         return Ok(Argument::Buffer(argument.bytes.to_vec()));
     }
     if argument.kind == "handle" {
@@ -100,9 +109,17 @@ fn argument(argument: &LibraryArgument) -> napi::Result<Argument> {
     Ok(Argument::Value { kind, bytes: argument.bytes.to_vec() })
 }
 
+/// A task's record address, from its eight bytes.
+fn record_of(bytes: &[u8]) -> napi::Result<usize> {
+    let bytes: [u8; 8] = bytes.try_into().map_err(|_| napi::Error::from_reason("a task is passed as its record's eight bytes"))?;
+    Ok(u64::from_le_bytes(bytes) as usize)
+}
+
 pub struct CallTask {
     call: Call,
     ui_thread: bool,
+    /// Which arguments are task cells, whose bytes are answered as [`task_answer`].
+    task_cells: Vec<bool>,
 }
 
 impl Task for CallTask {
@@ -124,7 +141,12 @@ impl Task for CallTask {
             Ok(result) => LibraryCallAnswer {
                 status: 0,
                 returned: result.returned.into(),
-                arguments: result.arguments.into_iter().map(Buffer::from).collect(),
+                arguments: result
+                    .arguments
+                    .into_iter()
+                    .zip(&self.task_cells)
+                    .map(|(bytes, is_task_cell)| Buffer::from(if *is_task_cell { task_answer(&bytes) } else { bytes }))
+                    .collect(),
             },
             Err(error) => LibraryCallAnswer { status: error.code(), returned: Vec::new().into(), arguments: Vec::new() },
         })
@@ -140,7 +162,8 @@ pub fn call_library(request: LibraryCallRequest) -> napi::Result<AsyncTask<CallT
         return_kind: return_kind(&request.return_kind)?,
         arguments: request.arguments.iter().map(argument).collect::<napi::Result<_>>()?,
     };
-    Ok(AsyncTask::new(CallTask { call, ui_thread: request.ui_thread }))
+    let task_cells = request.arguments.iter().map(|argument| argument.kind == TASK_RECORD_CELL).collect();
+    Ok(AsyncTask::new(CallTask { call, ui_thread: request.ui_thread, task_cells }))
 }
 
 /// Offers LabVIEW's memory functions to the libraries loaded from now on (DT-088 §4), from the bridge library at `path`.

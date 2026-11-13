@@ -17,6 +17,12 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   work; analog output, digital lines, the digital start trigger and the writes answer -1 with a text saying they are not
   built in Solder yet. Errors leave their details in `extendedErrorInfo` after `<append>`, as DAQmx does. Start on a task
   with no channels is now -200478, as measured. One task's read or wait no longer holds up the others.
+- DAQ names in the diagram (DT-076 §5, DT-087 §7): one type with LabVIEW's kinds (task, global channel, physical
+  channel, terminal, scale, device, switch), in DAQ's purple with the zigzag wire, and a DAQ name constant. Every kind
+  coerces to a string with a coercion dot, and two different kinds do not connect. The Call Library Function Node passes
+  a task wire as LabVIEW does: to an Adapt to Type parameter (Handles by Value) as a cell holding the task's record, whose
+  task comes back on the output, and to a pointer-sized integer as the driver's task object, 0 for an empty task. So an
+  OVI can create a task in `nilvaiu`, use it and destroy it through its wire.
 - The Call Library Function Node passes strings and arrays as LabVIEW's handles (DT-088): String Handle and Array Handle,
   of any element type and number of dimensions, reach the library with their length or sizes in front and come back as
   the library left them. Its prototypes follow LabVIEW's formats (C and Pascal strings, handles and pointers to handles,

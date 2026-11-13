@@ -47,7 +47,16 @@ export const DATA_TYPES = Object.freeze({
 });
 
 /** The kinds of parameter Solder runs so far; the others are configured and saved, and keep the node from running. */
-export const RUNNABLE_PARAMETER_TYPES = new Set(["numeric", "array", "string"]);
+export const RUNNABLE_PARAMETER_TYPES = new Set(["numeric", "array", "string", "adapt-to-type"]);
+
+/**
+ * The one Adapt to Type format Solder passes, and only for a DAQ task (DT-087, amendment of 2026-11-13 §7): Handles by
+ * Value, the dialog's default, a pointer to the wire's data. What else it passes is not built.
+ */
+export const RUNNABLE_ADAPT_FORMATS = new Set(["handles-by-value"]);
+
+/** The pointer-sized integers, which take a refnum's wire, a DAQ task's among them (measured 2026-11-13). */
+const POINTER_SIZED = new Set(["iptr", "uptr"]);
 
 /**
  * The formats Solder passes (DT-088 §2, §7, §8): a C string, a Pascal string, a string handle and a pointer to one, an
@@ -82,7 +91,8 @@ function parameterType(parameter, index) {
   const element = DATA_TYPES[parameter["data-type"] ?? "i32"]?.type ?? "i32";
   switch (parameter.type) {
     case "numeric":
-      return element;
+      // A DAQ task wired by value gives the library its task object (reports/2026-11-13-daq-taskid.md Q1).
+      return POINTER_SIZED.has(parameter["data-type"]) && (parameter.pass ?? "value") === "value" ? { numberOrTask: `A${index}`, number: element } : element;
     case "array":
       return arrayOf(element, parameter.dimensions ?? 1);
     case "string":
@@ -198,7 +208,8 @@ export function whyCallLibraryCannotRun(config) {
   const unsupportedFormat = parameters.find(
     (parameter) =>
       (parameter.type === "string" && !RUNNABLE_STRING_FORMATS.has(parameter["string-format"] ?? "c-string-pointer")) ||
-      (parameter.type === "array" && !RUNNABLE_ARRAY_FORMATS.has(parameter["array-format"] ?? "array-data-pointer")),
+      (parameter.type === "array" && !RUNNABLE_ARRAY_FORMATS.has(parameter["array-format"] ?? "array-data-pointer")) ||
+      (parameter.type === "adapt-to-type" && !RUNNABLE_ADAPT_FORMATS.has(parameter["data-format"] ?? "handles-by-value")),
   );
   if (unsupportedFormat) return `The parameter "${unsupportedFormat.name}" is passed in a format Solder does not pass to a library yet.`;
   return undefined;
