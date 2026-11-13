@@ -2,6 +2,7 @@
 // Electron dialog that behaves as LabVIEW's, with its title, "OK", every file and the last folder.
 
 import assert from "node:assert/strict";
+import path from "node:path";
 import { test } from "node:test";
 
 import { chosenFileOf, chosenFilesOf, confirmationBoxFor, confirmedBy, fileDialogFor, folderAfter, systemDialogFor } from "../../editor/electron/file-dialog-options.mjs";
@@ -51,7 +52,7 @@ test("File Dialog's title, button, proposed name and filters reach the system's 
   const { options } = fileDialogFor(requestOf({}, { prompt: "Pick", buttonLabel: "Pick it", pattern: "*.txt", patternLabel: "Text" }), FOLDER, "proposal.txt");
   assert.equal(options.title, "Pick");
   assert.equal(options.buttonLabel, "Pick it");
-  assert.equal(options.defaultPath, `${FOLDER}/proposal.txt`);
+  assert.equal(options.defaultPath, path.join(FOLDER, "proposal.txt"), "with the system's own separator");
   assert.deepEqual(options.filters, [{ name: "Text (*.txt)", extensions: ["txt"] }, { name: "All Files", extensions: ["*"] }]);
   assert.deepEqual(chosenFilesOf("open", { canceled: false, filePaths: ["/a", "/b"] }), ["/a", "/b"]);
   assert.equal(chosenFilesOf("save", { canceled: true }), null);

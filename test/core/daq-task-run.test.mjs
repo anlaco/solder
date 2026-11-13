@@ -136,6 +136,11 @@ test("a node naming NI's nilvaiu.* loads the DAQ add-on's copy by its full path"
     assert.equal(shown.started, TASK_HAS_NO_CHANNELS);
     assert.equal(shown.destroyed, 0);
   } finally {
-    rmSync(addonsFolder, { recursive: true, force: true });
+    // Windows keeps a loaded library's file locked until the process ends, so there the folder stays behind.
+    try {
+      rmSync(addonsFolder, { recursive: true, force: true });
+    } catch (error) {
+      if (error.code !== "EPERM" && error.code !== "EBUSY") throw error;
+    }
   }
 });

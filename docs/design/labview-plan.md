@@ -734,7 +734,10 @@ array or string read by a local variable while another loop writes it is never t
       add-on's copy by its full path (`core/model/addons.mjs`, `editor/electron/installed-addons.mjs`), in the editor's
       I/O process and on the command line; with none, the system searches as before. Found on the way: the façade's tests
       dropped their library after each call and so unloaded its tasks, failing at random (fixed in the tests; the I/O
-      process always kept one). Left: the Windows build of `nilvaiu`, and packing the add-on for download. Next: the
+      process always kept one). The Windows build checked in the VM the same day: `nilvaiu.dll` builds with its `lvrt.dll`
+      imports, the façade's tests and the OVI that loads it from the add-on pass, and `npm test` is green there (fixed: the
+      handle tests now link their library with `lvrt` and run on Windows, two tests expected `/` in paths, and the I/O
+      process's Electron check imported its modules by a Windows path and hung). Left: packing the add-on for download. Next: the
       plugin's OVIs built in the editor as a user, the palette and the ESP32.*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and

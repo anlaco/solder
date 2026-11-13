@@ -49,7 +49,8 @@ test("an OVI inside an installed add-on resolves to the add-on's folder, and ovi
   writeFiles(user, { "daq/1/sdaddoninfo.json": manifest, "daq/1/ovi.lib/DAQ/Start Task.sdg": "{}", "daq/1/ovi.lib/DAQ/Read.sdg": "{}" });
   const result = load([path.join(folder, "none"), user], "/opt/solder/ovi.lib");
   assert.equal(result.addons.length, 1);
-  assert.equal(resolveOviLibPath("<ovilib>/DAQ/Read.sdg", result.oviLib), `${user}/daq/1/ovi.lib/DAQ/Read.sdg`);
+  // The locator writes every path with `/` (core/model/addons.mjs), which Windows reads too.
+  assert.equal(resolveOviLibPath("<ovilib>/DAQ/Read.sdg", result.oviLib), `${user.replaceAll("\\", "/")}/daq/1/ovi.lib/DAQ/Read.sdg`);
   assert.equal(resolveOviLibPath("<ovilib>/Instr/Other.sdg", result.oviLib), "/opt/solder/ovi.lib/Instr/Other.sdg");
 }));
 
