@@ -2,9 +2,9 @@
 // locator that `<ovilib>/…` paths are resolved with. The rules live in core/model/addons.mjs and core/model/ovi-lib.mjs;
 // this file is only the part that touches the file system, kept apart from main.mjs so that it can be tested.
 
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
-import { findAddons, oviLibRoots } from "../../core/model/addons.mjs";
+import { addonLibraryFolders, findAddonLibrary, findAddons, oviLibRoots } from "../../core/model/addons.mjs";
 import { buildOviLibLocator } from "../../core/model/ovi-lib.mjs";
 import { paletteFileKey } from "../../core/model/palette.mjs";
 
@@ -82,7 +82,8 @@ export function readAddonMenuFiles(addons) {
 /**
  * What `<ovilib>` paths are resolved with: Solder's own ovi.lib folder, as it has always been, when no add-on is
  * installed, so that nothing changes for whoever has none; otherwise a locator over ovi.lib and every add-on's
- * `ovi.lib/`. `folders` is where to look (the two of `addonsFolders` unless a test says otherwise). Also returns the add-ons found, the problems with the ones that were skipped (for the log) and the palette files they bring.
+ * `ovi.lib/`. `folders` is where to look (the two of `addonsFolders` unless a test says otherwise). Also returns the add-ons found, the problems with the ones that were skipped (for the log), the palette files they bring
+ * and the `resource/` folders where their libraries are looked for (`libraryFolders`).
  */
 export function loadInstalledAddons({ oviLibRoot, nodePlatform, architecture, homeDirectory, environment, solderVersion, folders = addonsFolders({ nodePlatform, homeDirectory, environment }), normalizePath = (folder) => folder }) {
   const { addons, problems } = findAddons({
@@ -91,7 +92,35 @@ export function loadInstalledAddons({ oviLibRoot, nodePlatform, architecture, ho
     platform: platformName(nodePlatform, architecture),
     solderVersion,
   });
-  if (addons.length === 0) return { oviLib: oviLibRoot, addons, problems, menuFiles: {} };
+  const libraryFolders = addonLibraryFolders(addons).map(normalizePath);
+  if (addons.length === 0) return { oviLib: oviLibRoot, addons, problems, menuFiles: {}, libraryFolders };
   const roots = oviLibRoots(oviLibRoot, addons).map(normalizePath);
-  return { oviLib: buildOviLibLocator(roots, listRelativeFiles), addons, problems, menuFiles: readAddonMenuFiles(addons) };
+  return { oviLib: buildOviLibLocator(roots, listRelativeFiles), addons, problems, menuFiles: readAddonMenuFiles(addons), libraryFolders };
+}
+
+function isFile(file) {
+  try {
+    return statSync(file).isFile();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * What a Call Library Function Node's library name becomes: the full path of the add-on's file when one of
+ * `libraryFolders` has it (DT-087, amendment of 2026-11-13 §8), otherwise the name as it was, for the system to search.
+ */
+export const addonLibraryLocator = (libraryFolders, nodePlatform = process.platform) => (name) => findAddonLibrary(name, libraryFolders, nodePlatform, isFile) ?? name;
+
+/** How the main process hands the I/O process the add-ons' library folders, which it reads once at start-up. */
+export const ADDON_LIBRARY_FOLDERS_VARIABLE = "SOLDER_ADDON_LIBRARY_FOLDERS";
+
+/** The folders the main process handed over in `environment`, none if it handed none. */
+export function handedLibraryFolders(environment) {
+  try {
+    const folders = JSON.parse(environment[ADDON_LIBRARY_FOLDERS_VARIABLE] ?? "[]");
+    return Array.isArray(folders) ? folders.filter((folder) => typeof folder === "string") : [];
+  } catch {
+    return [];
+  }
 }

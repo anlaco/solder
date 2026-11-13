@@ -4201,12 +4201,25 @@ no channels; the error text begins `<append>`. Decided with the developer the sa
    holding `record`, after which the I/O process answers the record now in the cell with its name and number; to a
    pointer-sized integer by value, the address of the library's task object, which the I/O process reads through the
    record (0 for an empty task or a record it did not make). The other kinds of `daq-name` are strings.
+8. **Where Solder finds the add-on's `nilvaiu`** (decided with the developer the same day): a Call Library Function
+   Node that names a library without a folder, as NI's DAQ VIs name `nilvaiu.*` (measured,
+   [`daq-clfn-api`](../../labview-captures/reports/2026-11-08-daq-clfn-api.md)), is looked for first in the `resource/`
+   folder of every installed add-on part ([DT-081](#dt-081)), where NI keeps the binaries of each bitness
+   (`nidaqmx64\1\resource\`, measured in [`addons`](../../labview-captures/reports/2026-11-06-addons.md)); the first one
+   found, in the order the add-ons were found, is loaded by its full path, and with none the system searches for the name
+   as before. `.*` is the platform's extension, and outside Windows the file may carry the `lib` prefix
+   (`libnilvaiu.so`). A path is loaded where it says. LabVIEW does not look in an add-on's `resource\` for a library
+   name (its `nilvaiu.dll` is in `System32`): this is Solder's, so that a node naming NI's file loads Solder's without the
+   add-on writing anything else. The DAQ add-on's source is `addons/daq/` and `addons/daq-<os>-<arch>/`;
+   `scripts/build-native.mjs` builds `nilvaiu` into the platform part's `resource/`. The editor's main process reads
+   the folders at start-up and hands them to the I/O process, which turns the name into the path before the call.
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
 | A task travels as measured: Create writes the record's address, the other functions get the task object's address, 0 and unknown addresses give -200088, Start with no channels gives -200478 | `native/nilvaiu/tests/facade.rs`, `native/solder-daq/tests/ai_voltage.rs` | **Verified** (2026-11-13); built on Linux, the Windows build (`lvrt.dll` imports) **unverified** |
 | A task wire is `{ name, number, record }`; the node passes it to Adapt to Type as a cell holding the record and gets back the task it then holds, and to a pointer-sized integer as the task object, 0 for an empty task (§7) | `test/core/daq-task-run.test.mjs` (an OVI against `nilvaiu`), `native/solder-io/tests/task_records.rs` | **Verified** (2026-11-13) |
 | Every DAQ name kind coerces to a string, a string to every kind, two kinds never meet | `test/core/daq-task-run.test.mjs` (the rule); a task's name read by a string indicator | **Verified** for the rule and task → string; a string into a task **not built** |
+| A library named without a folder is looked for in the add-ons' `resource/` folders, in order, with `.*` and `lib` as above, and a node naming `nilvaiu.*` runs the DAQ add-on's copy (§8) | `test/core/addons.test.mjs`, `test/core/daq-task-run.test.mjs` (the repository's add-on copied into a folder, as installing it) | **Verified** (2026-11-13) on Linux; Windows **unverified** |
 | LabVIEW's record layout and its other fields | — | **Unverified** (Solder's record is its own) |
 
 ## DT-088

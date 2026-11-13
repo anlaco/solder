@@ -1,0 +1,5 @@
+{
+  "AddonName": "DAQ",
+  "ApiVersion": "v1",
+  "MinimumSupportedSolderVersion": "0.11.0-beta"
+}

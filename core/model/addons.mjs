@@ -111,3 +111,46 @@ export function findAddons({ addonsFolders, fileSystem, platform, solderVersion 
 export function oviLibRoots(oviLibRoot, addons) {
   return [oviLibRoot, ...addons.flatMap((addon) => addon.folders.map((folder) => joinPath(folder, ADDON_OVI_LIB_FOLDER)))];
 }
+
+/**
+ * The folder of an add-on part where its compiled libraries lie, as NI keeps the binaries of each bitness in
+ * `nidaqmx64\1\resource\` (measured, labview-captures/reports/2026-11-06-addons.md).
+ */
+export const ADDON_RESOURCE_FOLDER = "resource";
+
+/** The `resource/` folder of every add-on part, in the order the add-ons were found. */
+export const addonLibraryFolders = (addons) => addons.flatMap((addon) => addon.folders.map((folder) => joinPath(folder, ADDON_RESOURCE_FOLDER)));
+
+/** The extension `.*` stands for, as `native/solder-io/src/library.rs` replaces it. */
+const LIBRARY_EXTENSION = { linux: "so", darwin: "dylib", win32: "dll" };
+
+const isLibraryPath = (name) => name.includes("/") || name.includes("\\");
+
+/**
+ * The files a library name may be in an add-on's `resource/`: `.*` becomes the platform's extension, and outside
+ * Windows the name may also carry the `lib` prefix every library built there has (`libnilvaiu.so`). A path names no file
+ * here: it is loaded where it says.
+ */
+export function libraryFileNames(name, nodePlatform) {
+  if (isLibraryPath(name)) return [];
+  const fileName = name.endsWith(".*") ? `${name.slice(0, -2)}.${LIBRARY_EXTENSION[nodePlatform]}` : name;
+  return nodePlatform === "win32" ? [fileName] : [fileName, `lib${fileName}`];
+}
+
+/**
+ * The full path of the library a Call Library Function Node names, when an add-on brings it (DT-087, amendment of
+ * 2026-11-13 §8): a name with no folder is looked for first in the add-ons' `resource/` folders, the first found winning,
+ * so that a node naming NI's `nilvaiu.*` loads the DAQ add-on's; null when none has it, and the system searches for it
+ * as before. `isFile(path)` asks the disk.
+ */
+export function findAddonLibrary(name, libraryFolders, nodePlatform, isFile) {
+  const fileNames = libraryFileNames(name, nodePlatform);
+  for (const folder of libraryFolders) {
+    for (const fileName of fileNames) {
+      const candidate = joinPath(folder, fileName);
+      // Windows' LoadLibrary asks for backslashes in a path.
+      if (isFile(candidate)) return nodePlatform === "win32" ? candidate.replaceAll("/", "\\") : candidate;
+    }
+  }
+  return null;
+}

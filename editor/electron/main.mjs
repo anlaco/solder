@@ -25,7 +25,7 @@ import { readWindowStyle, watchWindowStyle } from "./window-style.mjs";
 import { createInstrumentIoProcess } from "./instrument-io-process.mjs";
 import { chosenFileOf, chosenFilesOf, confirmationBoxFor, confirmedBy, fileDialogFor, folderAfter, systemDialogFor } from "./file-dialog-options.mjs";
 import { UPDATE_BUTTONS, UPDATE_BUTTON_ANSWERS, checkForUpdatesAtStart, shouldCheckForUpdates } from "./update-check.mjs";
-import { loadInstalledAddons } from "./installed-addons.mjs";
+import { ADDON_LIBRARY_FOLDERS_VARIABLE, loadInstalledAddons } from "./installed-addons.mjs";
 import { mergeAddonPalettes } from "../../core/model/palette.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -789,7 +789,11 @@ function handleRequests() {
 // Solder's VISA runs in a process of its own, so that a fault of its native code does not end the editor.
 // When it ends, every window is told: a Run waiting for an instrument fails instead of hanging.
 const instrumentIo = createInstrumentIoProcess({
-  fork: () => utilityProcess.fork(path.join(HERE, "io-process.mjs"), [], { serviceName: "Solder instrument I/O" }),
+  fork: () =>
+    utilityProcess.fork(path.join(HERE, "io-process.mjs"), [], {
+      serviceName: "Solder instrument I/O",
+      env: { ...process.env, [ADDON_LIBRARY_FOLDERS_VARIABLE]: JSON.stringify(INSTALLED_ADDONS.libraryFolders) },
+    }),
   createChannel: () => new MessageChannelMain(),
   onExit: () => {
     if (quitting) return;

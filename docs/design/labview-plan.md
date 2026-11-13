@@ -728,6 +728,14 @@ array or string read by a local variable while another loop writes it is never t
       anything but a task, and releasing a task when its top-level OVI stops. Left: the Windows build of `nilvaiu`. Next:
       packaging `nilvaiu` in the DAQ add-on and loading it by its full path, then the plugin's OVIs built in the editor as
       a user, the palette and the ESP32.*
+      *DAQ, stage A, slice 5 (DT-087 §8, decided 2026-11-13) on `feature/daq`: the DAQ add-on's source in `addons/daq/`
+      and `addons/daq-<os>-<arch>/`, with `nilvaiu` built into the platform part's `resource/` by
+      `scripts/build-native.mjs`. A node naming a library without a folder (`nilvaiu.*`, as NI's VIs) loads the first
+      add-on's copy by its full path (`core/model/addons.mjs`, `editor/electron/installed-addons.mjs`), in the editor's
+      I/O process and on the command line; with none, the system searches as before. Found on the way: the façade's tests
+      dropped their library after each call and so unloaded its tasks, failing at random (fixed in the tests; the I/O
+      process always kept one). Left: the Windows build of `nilvaiu`, and packing the add-on for download. Next: the
+      plugin's OVIs built in the editor as a user, the palette and the ESP32.*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

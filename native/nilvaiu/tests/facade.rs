@@ -5,7 +5,7 @@
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::sync::OnceLock;
+use std::sync::{Mutex, MutexGuard, OnceLock};
 
 use solder_io::{Argument, Call, CallResult, LibraryCaller, NumberKind, ReturnKind, task_records};
 
@@ -69,10 +69,24 @@ fn compile_bridge(source: &Path, crate_name: &str, output: &Path) {
     assert!(status.success(), "the bridge compiles");
 }
 
+/// Each test runs alone: a destroyed task's freed address may be given to a task another test creates at the same moment,
+/// and then "a destroyed task is no longer one" would find that other, live task.
+fn alone() -> MutexGuard<'static, ()> {
+    static TURN: Mutex<()> = Mutex::new(());
+    TURN.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+/// One caller for every test, as the I/O process keeps one: a caller dropped unloads the library, and with it the
+/// library's table of live tasks, so a task created through one caller would be unknown to the next.
+fn caller() -> &'static LibraryCaller {
+    static CALLER: OnceLock<LibraryCaller> = OnceLock::new();
+    CALLER.get_or_init(LibraryCaller::new)
+}
+
 fn call(function: &str, arguments: Vec<Argument>) -> CallResult {
     install_memory_bridge();
     let call = Call { library: library().to_string(), function: function.to_string(), return_kind: ReturnKind::Number(NumberKind::I32), arguments };
-    LibraryCaller::new().call(call).expect("the call is made")
+    caller().call(call).expect("the call is made")
 }
 
 fn code_of(result: &CallResult) -> i32 {
@@ -159,6 +173,7 @@ fn dimensions_and_doubles(block: &[u8], dimension_count: usize) -> (Vec<i32>, Ve
 
 #[test]
 fn create_writes_a_record_of_the_task_whose_task_object_the_other_functions_are_given() {
+    let _alone = alone();
     let record = create_task("p1");
     assert_eq!(task_records::name_and_number_of(record).map(|(name, _)| name).as_deref(), Some("p1"));
     let result = control(task_id(record), START);
@@ -169,6 +184,7 @@ fn create_writes_a_record_of_the_task_whose_task_object_the_other_functions_are_
 
 #[test]
 fn a_task_id_of_zero_or_an_address_that_is_not_a_task_is_error_200088() {
+    let _alone = alone();
     let record = create_task("not a task id");
     for task_id in [0, record] {
         let result = control(task_id, START);
@@ -179,6 +195,7 @@ fn a_task_id_of_zero_or_an_address_that_is_not_a_task_is_error_200088() {
 
 #[test]
 fn two_tasks_have_different_records_and_task_objects() {
+    let _alone = alone();
     let (first, second) = (create_task("one"), create_task("two"));
     assert_ne!(first, second);
     assert_ne!(task_id(first), task_id(second));
@@ -188,6 +205,7 @@ fn two_tasks_have_different_records_and_task_objects() {
 
 #[test]
 fn a_finite_acquisition_reads_its_samples_and_a_destroyed_task_is_no_longer_one() {
+    let _alone = alone();
     let record = create_task("finite");
     let added = add_channels(record, "Dev1/ai0");
     assert_eq!((code_of(&added), text_of(&added.arguments[9])), (0, "Dev1/ai0".to_string()));
@@ -206,6 +224,7 @@ fn a_finite_acquisition_reads_its_samples_and_a_destroyed_task_is_no_longer_one(
 
 #[test]
 fn adding_a_channel_with_no_task_creates_one_and_writes_its_record() {
+    let _alone = alone();
     let added = add_channels(0, "Dev1/ai1");
     assert_eq!(code_of(&added), 0);
     let record = record_in(&added.arguments[1]);
@@ -216,6 +235,7 @@ fn adding_a_channel_with_no_task_creates_one_and_writes_its_record() {
 
 #[test]
 fn an_on_demand_read_of_one_sample_needs_no_timing() {
+    let _alone = alone();
     let record = create_task("on demand");
     add_channels(record, "Dev1/ai0");
     let read = call("DAQRead1Chan1SampF64", vec![address(task_id(record)), number(NumberKind::F64, 10.0), Argument::Buffer(vec![0; 8]), string("")]);
@@ -227,6 +247,7 @@ fn an_on_demand_read_of_one_sample_needs_no_timing() {
 
 #[test]
 fn a_two_dimensional_read_has_a_row_per_channel() {
+    let _alone = alone();
     let record = create_task("two channels");
     add_channels(record, "Dev1/ai0:1");
     time_finite(task_id(record), 10);
@@ -239,6 +260,7 @@ fn a_two_dimensional_read_has_a_row_per_channel() {
 
 #[test]
 fn a_device_that_does_not_exist_names_it_and_the_devices_present() {
+    let _alone = alone();
     let record = create_task("bad device");
     let added = add_channels(record, "Dev9/ai0");
     assert_eq!(code_of(&added), DEVICE_NOT_VALID);
@@ -249,6 +271,7 @@ fn a_device_that_does_not_exist_names_it_and_the_devices_present() {
 
 #[test]
 fn a_function_not_built_yet_is_found_and_says_so_with_solders_code() {
+    let _alone = alone();
     let result = call("DAQCfgDigEdgeStartTrig", vec![address(0), string(""), number(NumberKind::I32, RISING), string("")]);
     assert_eq!(code_of(&result), NOT_BUILT_IN_SOLDER);
     assert_eq!(text_of(&result.arguments[3]), "<append>\nSolder's DAQ driver does not do a digital edge start trigger yet.");

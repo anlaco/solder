@@ -5,6 +5,8 @@
 
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { cpSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { before, test } from "node:test";
 
@@ -13,7 +15,8 @@ import { defaultCallLibraryConfig } from "../../core/model/call-library.mjs";
 import { DAQ_TASK, daqName } from "../../core/model/daq-name.mjs";
 import { conversion, inMemory, nombre } from "../../core/model/types.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
-import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
+import { addonLibraryLocator, loadInstalledAddons } from "../../editor/electron/installed-addons.mjs";
+import { loadSolderIo, withLibraryLocator } from "../../native/solder-io-node/solder-io.mjs";
 import { CAT, buildVI } from "../helpers.mjs";
 
 const INVALID_TASK = -200088;
@@ -28,6 +31,8 @@ before(() => {
 });
 
 const configured = (config) => ({ ...defaultCallLibraryConfig(), thread: "any", library, "return-type": { type: "numeric", "data-type": "i32" }, ...config });
+/** The node as NI's DAQ OVIs name their library (measured, labview-captures/reports/2026-11-08-daq-clfn-api.md). */
+const namingNi = (config) => ({ ...config, library: "nilvaiu.*" });
 const numeric = (name, dataType) => ({ name, type: "numeric", "data-type": dataType, pass: "value" });
 const stringHandle = (name) => ({ name, type: "string", "string-format": "string-handle" });
 const taskCell = (name) => ({ name, type: "adapt-to-type", "data-format": "handles-by-value" });
@@ -40,23 +45,26 @@ const CREATE_TASK = configured({
 const CONTROL = configured({ function: "DAQControl", parameters: [numeric("taskID", "uptr"), numeric("mode", "u32"), stringHandle("extendedErrorInfo")] });
 const DESTROY_TASK = configured({ function: "DAQDestroyTask110", parameters: [taskCell("taskRefObjPtr"), stringHandle("errorInfo")] });
 
-async function run(vi) {
+async function run(vi, io = loadSolderIo()) {
   const compiled = compilar(vi.g, CAT);
   assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
   const byId = Object.fromEntries(Object.entries(vi.id).map(([name, nodeId]) => [nodeId, name]));
-  const written = await ejecutar(compiled, {}, { io: loadSolderIo() });
+  const written = await ejecutar(compiled, {}, { io });
   return Object.fromEntries(Object.entries(written).map(([nodeId, value]) => [byId[nodeId], value]));
 }
 
-/** Create Task "p1" from an empty task constant, then Start (no channels) and Destroy through the wire it gives. */
-const createStartDestroy = () =>
+/**
+ * Create Task "p1" from an empty task constant, then Start (no channels) and Destroy through the wire it gives.
+ * `name(config)` gives each node its library.
+ */
+const createStartDestroy = (name = (config) => config) =>
   buildVI(CAT, (b) => {
     b.node("empty", "daq-name-constant", { type: DAQ_TASK, value: "" });
     b.node("name", "str-const", { value: "p1" });
     b.node("nothing", "str-const", { value: "" });
-    b.node("create", "call-library", CREATE_TASK);
-    b.node("control", "call-library", CONTROL);
-    b.node("destroy", "call-library", DESTROY_TASK);
+    b.node("create", "call-library", name(CREATE_TASK));
+    b.node("control", "call-library", name(CONTROL));
+    b.node("destroy", "call-library", name(DESTROY_TASK));
     b.node("created", "indicator", { type: "i32" });
     b.node("started", "indicator", { type: "i32" });
     b.node("destroyed", "indicator", { type: "i32" });
@@ -115,3 +123,19 @@ test("an empty task constant gives a pointer-sized integer 0, which the library 
   assert.equal((await run(vi)).started, INVALID_TASK);
 });
 
+test("a node naming NI's nilvaiu.* loads the DAQ add-on's copy by its full path", async () => {
+  // The repository's DAQ add-on, installed by copying it as a user would (DT-081 §6), with the library just built.
+  const addonsFolder = mkdtempSync(path.join(tmpdir(), "solder-addons-"));
+  try {
+    const platformPart = `daq-${process.platform === "win32" ? "windows" : process.platform}-${process.arch}`;
+    for (const part of ["daq", platformPart]) cpSync(path.resolve("addons", part), path.join(addonsFolder, part), { recursive: true });
+    cpSync(library, path.join(addonsFolder, platformPart, "1", "resource", LIBRARY_FILE));
+    const { libraryFolders } = loadInstalledAddons({ oviLibRoot: path.resolve("ovi.lib"), nodePlatform: process.platform, architecture: process.arch, homeDirectory: tmpdir(), environment: {}, solderVersion: "0.11.0-beta", folders: [addonsFolder] });
+    const shown = await run(createStartDestroy(namingNi), withLibraryLocator(loadSolderIo(), addonLibraryLocator(libraryFolders)));
+    assert.equal(shown.created, 0);
+    assert.equal(shown.started, TASK_HAS_NO_CHANNELS);
+    assert.equal(shown.destroyed, 0);
+  } finally {
+    rmSync(addonsFolder, { recursive: true, force: true });
+  }
+});

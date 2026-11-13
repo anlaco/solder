@@ -79,3 +79,25 @@ test("<ovilib> paths are looked for in ovi.lib first and then in each add-on's o
   assert.deepEqual(Addons.oviLibRoots("/opt/solder/ovi.lib", addons), ["/opt/solder/ovi.lib", "/a/daq/1/ovi.lib", "/a/daq-linux-x64/1/ovi.lib"]);
   assert.deepEqual(Addons.oviLibRoots("/opt/solder/ovi.lib", []), ["/opt/solder/ovi.lib"], "with no add-ons, only Solder's own");
 });
+
+test("a library named without a folder is looked for in each add-on part's resource folder, the first found winning", () => {
+  const addons = [
+    { name: "daq", apiVersion: "v1", folders: ["/a/daq/1", "/a/daq-linux-x64/1"] },
+    { name: "other", apiVersion: "v1", folders: ["/a/other-linux-x64/1"] },
+  ];
+  const folders = Addons.addonLibraryFolders(addons);
+  assert.deepEqual(folders, ["/a/daq/1/resource", "/a/daq-linux-x64/1/resource", "/a/other-linux-x64/1/resource"]);
+  const onDisk = new Set(["/a/daq-linux-x64/1/resource/libnilvaiu.so", "/a/other-linux-x64/1/resource/nilvaiu.so"]);
+  const find = (name, platform = "linux") => Addons.findAddonLibrary(name, folders, platform, (file) => onDisk.has(file));
+  assert.equal(find("nilvaiu.*"), "/a/daq-linux-x64/1/resource/libnilvaiu.so", "`.*` is the platform's extension, with or without lib");
+  assert.equal(find("nilvaiu.so"), "/a/daq-linux-x64/1/resource/libnilvaiu.so", "the add-ons are searched in order, the first found winning");
+  assert.equal(find("missing.*"), null, "the system searches for it as before");
+  assert.equal(find("/usr/lib/libnilvaiu.so"), null, "a path is loaded where it says");
+});
+
+test("on Windows a library has no lib prefix, and its full path has backslashes", () => {
+  const folders = Addons.addonLibraryFolders([{ name: "daq", apiVersion: "v1", folders: ["C:\\Program Files\\Solder\\Addons\\daq-windows-x64\\1"] }]);
+  assert.deepEqual(Addons.libraryFileNames("nilvaiu.*", "win32"), ["nilvaiu.dll"]);
+  const found = Addons.findAddonLibrary("nilvaiu.*", folders, "win32", (file) => file.endsWith("/resource/nilvaiu.dll"));
+  assert.equal(found, "C:\\Program Files\\Solder\\Addons\\daq-windows-x64\\1\\resource\\nilvaiu.dll");
+});

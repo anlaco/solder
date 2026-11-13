@@ -61,3 +61,12 @@ export function loadSolderIo() {
   };
   return solderIo;
 }
+
+/**
+ * Solder's I/O whose Call Library Function Node loads a library by the name `locateLibrary(name)` gives: the add-ons'
+ * copy by its full path (DT-087, amendment of 2026-11-13 §8; `editor/electron/installed-addons.mjs`).
+ */
+export const withLibraryLocator = (io, locateLibrary) => ({
+  ...io,
+  callLibrary: (request) => io.callLibrary({ ...request, library: locateLibrary(request.library) }),
+});

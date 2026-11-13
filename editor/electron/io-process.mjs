@@ -4,12 +4,14 @@
 // (core/runtime/io-protocol.mjs). One resource manager serves every Run, as VISA's default one does.
 
 import { IO_OPERATIONS, serveSolderIo } from "../../core/runtime/io-protocol.mjs";
-import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
+import { loadSolderIo, withLibraryLocator } from "../../native/solder-io-node/solder-io.mjs";
+import { addonLibraryLocator, handedLibraryFolders } from "./installed-addons.mjs";
 
 /** Solder's VISA and files, or, when this build has no addon, operations that each say so. */
 function solderIoOrMissing() {
   try {
-    return loadSolderIo();
+    // A library an add-on brings is loaded by its full path (DT-087, amendment of 2026-11-13 §8).
+    return withLibraryLocator(loadSolderIo(), addonLibraryLocator(handedLibraryFolders(process.env)));
   } catch (error) {
     const missing = () => Promise.reject(new Error(`Solder's I/O could not be loaded: ${error.message}`));
     // Every operation the protocol serves, the file ones included, so that none of them fails with "not a function".

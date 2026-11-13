@@ -45,3 +45,5 @@ books/
 *.node
 # The memory bridge (DT-088 §4), built next to the addon by scripts/build-native.mjs.
 native/solder-io-node/memory-bridge/
+# The add-ons' compiled libraries, built into their resource/ folders by scripts/build-native.mjs (DT-087 §8).
+addons/*/*/resource/

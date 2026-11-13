@@ -24,16 +24,16 @@ import { leer } from "../core/model/qvi-format.mjs";
 import { startValue } from "../core/model/control-values.mjs";
 import { formatear } from "../core/model/types.mjs";
 import { wat } from "../core/compiler/wasm-encoder.mjs";
-import { loadSolderIo } from "../native/solder-io-node/solder-io.mjs";
+import { loadSolderIo, withLibraryLocator } from "../native/solder-io-node/solder-io.mjs";
 import { isOviLibPath, resolveOviLibPath } from "../core/model/ovi-lib.mjs";
 import { readPolymorphic } from "../core/model/polymorphic.mjs";
-import { loadInstalledAddons } from "../editor/electron/installed-addons.mjs";
+import { addonLibraryLocator, loadInstalledAddons } from "../editor/electron/installed-addons.mjs";
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
 const readJson = (relativePath) => JSON.parse(readFileSync(path.join(AQUI, relativePath), "utf8"));
 const readSchema = (name) => readJson(`../docs/schema/${name}`);
 // ovi.lib and the add-ons installed on this machine (DT-081), found as the editor finds them.
-const { oviLib: OVI_LIB } = loadInstalledAddons({
+const { oviLib: OVI_LIB, libraryFolders: ADDON_LIBRARY_FOLDERS } = loadInstalledAddons({
   oviLibRoot: path.join(AQUI, "../ovi.lib"),
   nodePlatform: process.platform,
   architecture: process.arch,
@@ -120,7 +120,7 @@ if (orden === "check") {
  */
 function instrumentIo() {
   try {
-    return loadSolderIo();
+    return withLibraryLocator(loadSolderIo(), addonLibraryLocator(ADDON_LIBRARY_FOLDERS));
   } catch {
     return undefined;
   }

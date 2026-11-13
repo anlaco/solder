@@ -23,6 +23,9 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   a task wire as LabVIEW does: to an Adapt to Type parameter (Handles by Value) as a cell holding the task's record, whose
   task comes back on the output, and to a pointer-sized integer as the driver's task object, 0 for an empty task. So an
   OVI can create a task in `nilvaiu`, use it and destroy it through its wire.
+- The DAQ add-on (DT-087 §8): its folders in `addons/`, with Solder's `nilvaiu` built into them. A Call Library Function
+  Node that names a library without a folder, as DAQmx's VIs name `nilvaiu.*`, now loads the copy an installed add-on
+  brings in its `resource/` folder, by its full path, before the system searches for it.
 - The Call Library Function Node passes strings and arrays as LabVIEW's handles (DT-088): String Handle and Array Handle,
   of any element type and number of dimensions, reach the library with their length or sizes in front and come back as
   the library left them. Its prototypes follow LabVIEW's formats (C and Pascal strings, handles and pointers to handles,
