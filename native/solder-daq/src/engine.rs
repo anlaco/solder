@@ -35,6 +35,20 @@ pub enum SamplesRequested {
     Count(usize),
 }
 
+/// A wait the caller must make on the engine's clock before the outcome holds: the engine does not wait itself, so
+/// that whoever shares it between threads can wait without holding it.
+#[derive(Debug)]
+pub struct Wait<T> {
+    pub duration: Duration,
+    pub outcome: Result<T, DaqError>,
+}
+
+impl<T> Wait<T> {
+    fn none(outcome: Result<T, DaqError>) -> Self {
+        Self { duration: Duration::ZERO, outcome }
+    }
+}
+
 struct AnalogInput {
     name: String,
     device: String,
@@ -155,7 +169,11 @@ impl Engine {
         let now = self.clock.now();
         let task_data = self.task(task)?;
         if task_data.started_at.is_some() {
-            return Err(DaqError::new(codes::TASK_ALREADY_RUNNING, ErrorDetails { task_name: Some(task_data.name.clone()), ..Default::default() }));
+            return Err(Self::task_error(task_data, codes::TASK_ALREADY_RUNNING));
+        }
+        // Measured (`labview-captures/reports/2026-11-13-daq-create-task.md`): Start on a task with no channels.
+        if task_data.channels.is_empty() {
+            return Err(Self::task_error(task_data, codes::TASK_HAS_NO_CHANNELS));
         }
         for channel in &task_data.channels {
             let Some((_, profile)) = self.devices.find(&channel.device) else { continue };
@@ -194,47 +212,72 @@ impl Engine {
     /// times out (measured: -200560 after the timeout). `None` is no timeout; for a continuous task that would wait
     /// for ever, so it fails at once instead (UNVERIFIED: DAQmx would hang).
     pub fn wait_until_done(&mut self, task: TaskId, timeout: Option<Duration>) -> Result<(), DaqError> {
+        let wait = self.prepare_wait_until_done(task, timeout)?;
+        self.clock.wait(wait.duration);
+        wait.outcome
+    }
+
+    /// What [`Engine::wait_until_done`] waits for, without waiting: whoever shares the engine waits without holding it.
+    pub fn prepare_wait_until_done(&self, task: TaskId, timeout: Option<Duration>) -> Result<Wait<()>, DaqError> {
         let task_data = self.task(task)?;
         let (Some(started_at), Some(timing)) = (task_data.started_at, &task_data.timing) else {
-            return Ok(()); // nothing is running, so there is nothing to wait for (UNVERIFIED)
+            return Ok(Wait::none(Ok(()))); // nothing is running, so there is nothing to wait for (UNVERIFIED)
         };
-        let timed_out = || DaqError::new(codes::WAIT_TIMED_OUT, ErrorDetails { task_name: Some(task_data.name.clone()), ..Default::default() });
+        let timed_out = || Err(DaqError::new(codes::WAIT_TIMED_OUT, ErrorDetails { task_name: Some(task_data.name.clone()), ..Default::default() }));
         if timing.mode == SampleMode::ContinuousSamples {
-            let Some(timeout) = timeout else { return Err(timed_out()) };
-            self.clock.wait(timeout);
-            return Err(timed_out());
+            return Ok(match timeout {
+                Some(timeout) => Wait { duration: timeout, outcome: timed_out() },
+                None => Wait::none(timed_out()),
+            });
         }
         let done_at = started_at + Duration::from_secs_f64(timing.samples_per_channel as f64 / timing.rate);
         let remaining = done_at.saturating_sub(self.clock.now());
-        match timeout {
-            Some(timeout) if timeout < remaining => {
-                self.clock.wait(timeout);
-                Err(timed_out())
-            }
-            _ => {
-                self.clock.wait(remaining);
-                Ok(())
-            }
-        }
+        Ok(match timeout {
+            Some(timeout) if timeout < remaining => Wait { duration: timeout, outcome: timed_out() },
+            _ => Wait { duration: remaining, outcome: Ok(()) },
+        })
     }
 
     /// Reads samples of every channel, as `[channel][sample]`. A task that is not running is started first (measured:
     /// a read with no Start works). `timeout` of `None` is no timeout.
     pub fn read_f64(&mut self, task: TaskId, requested: SamplesRequested, timeout: Option<Duration>) -> Result<Vec<Vec<f64>>, DaqError> {
+        let wait = self.prepare_read(task, requested, timeout)?;
+        self.clock.wait(wait.duration);
+        wait.outcome?;
+        self.take_samples(task, requested)
+    }
+
+    /// How long a read must wait before [`Engine::take_samples`] can give what it asks for, starting the task if it is
+    /// not running; a read that would wait longer than its timeout waits the timeout and then fails.
+    pub fn prepare_read(&mut self, task: TaskId, requested: SamplesRequested, timeout: Option<Duration>) -> Result<Wait<()>, DaqError> {
         if self.task(task)?.started_at.is_none() {
             self.start(task)?;
         }
         let task_data = self.task(task)?;
-        let started_at = task_data.started_at.expect("the task was started just above");
-        let error = |code| DaqError::new(code, ErrorDetails { task_name: Some(task_data.name.clone()), ..Default::default() });
+        let still_needed = match (&task_data.timing, requested) {
+            (Some(timing), SamplesRequested::Count(wanted)) if timing.mode == SampleMode::ContinuousSamples => {
+                let available = self.acquired(task_data, timing).saturating_sub(task_data.consumed);
+                Duration::from_secs_f64((wanted as u64).saturating_sub(available) as f64 / timing.rate)
+            }
+            // A finite task, no timing or "whatever is there" never wait (measured).
+            _ => Duration::ZERO,
+        };
+        Ok(match timeout {
+            Some(timeout) if timeout < still_needed => Wait { duration: timeout, outcome: Err(Self::task_error(task_data, codes::SAMPLES_NOT_YET_ACQUIRED)) },
+            _ => Wait { duration: still_needed, outcome: Ok(()) },
+        })
+    }
 
+    /// The samples a read asks for, once [`Engine::prepare_read`]'s wait is over.
+    pub fn take_samples(&mut self, task: TaskId, requested: SamplesRequested) -> Result<Vec<Vec<f64>>, DaqError> {
+        let task_data = self.task(task)?;
         let (count, period) = match &task_data.timing {
             // No timing: one sample, on demand (measured: no Timing and no Start give one value, with no error).
             None => (1, CONTINUOUS_PERIOD_SAMPLES),
             Some(timing) if timing.mode == SampleMode::FiniteSamples => {
                 let remaining = timing.samples_per_channel.saturating_sub(task_data.consumed);
                 if remaining == 0 {
-                    return Err(error(codes::READ_BEYOND_FINAL_SAMPLE));
+                    return Err(Self::task_error(task_data, codes::READ_BEYOND_FINAL_SAMPLE));
                 }
                 // Measured: a read of more than a finite task holds gives what it holds, with no error and no wait.
                 let count = match requested {
@@ -244,22 +287,9 @@ impl Engine {
                 (count, timing.samples_per_channel)
             }
             Some(timing) => {
-                let acquired = |clock: &dyn Clock| ((clock.now() - started_at).as_secs_f64() * timing.rate + 1e-6).floor() as u64;
-                let available = acquired(self.clock.as_ref()).saturating_sub(task_data.consumed);
                 let count = match requested {
-                    SamplesRequested::Available => available,
-                    SamplesRequested::Count(wanted) if wanted as u64 <= available => wanted as u64,
-                    SamplesRequested::Count(wanted) => {
-                        let still_needed = Duration::from_secs_f64((wanted as u64 - available) as f64 / timing.rate);
-                        match timeout {
-                            Some(timeout) if timeout < still_needed => {
-                                self.clock.wait(timeout);
-                                return Err(error(codes::SAMPLES_NOT_YET_ACQUIRED));
-                            }
-                            _ => self.clock.wait(still_needed),
-                        }
-                        wanted as u64
-                    }
+                    SamplesRequested::Available => self.acquired(task_data, timing).saturating_sub(task_data.consumed),
+                    SamplesRequested::Count(wanted) => wanted as u64,
                 };
                 (count, CONTINUOUS_PERIOD_SAMPLES)
             }
@@ -276,6 +306,22 @@ impl Engine {
             .collect();
         self.task_mut(task)?.consumed += count;
         Ok(data)
+    }
+
+    /// The clock the engine runs on, for whoever waits outside it.
+    pub fn clock(&self) -> Arc<dyn Clock> {
+        Arc::clone(&self.clock)
+    }
+
+    /// Samples per channel acquired since a running task started; the small addition keeps a whole number of samples
+    /// from rounding down to one less.
+    fn acquired(&self, task_data: &Task, timing: &Timing) -> u64 {
+        let started_at = task_data.started_at.expect("only a running task has acquired samples");
+        ((self.clock.now() - started_at).as_secs_f64() * timing.rate + 1e-6).floor() as u64
+    }
+
+    fn task_error(task_data: &Task, code: i32) -> DaqError {
+        DaqError::new(code, ErrorDetails { task_name: Some(task_data.name.clone()), ..Default::default() })
     }
 
     fn task(&self, task: TaskId) -> Result<&Task, DaqError> {

@@ -1,6 +1,7 @@
 //! LabVIEW's memory functions under LabVIEW's names (DT-088 §4), for a library built for LabVIEW that resizes the
-//! handles it is given. A library like that calls `DSSetHandleSize` or `NumericArrayResize` by name and expects the
-//! process that loaded it to have them; this library is what has them in Solder's I/O process.
+//! handles it is given, and the task records the DAQ driver asks for, under Solder's names (DT-087). A library like
+//! that calls `DSSetHandleSize` or `NumericArrayResize` by name and expects the process that loaded it to have them;
+//! this library is what has them in Solder's I/O process.
 //!
 //! It holds no handles and knows nothing of them: the host (`solder-io`'s `memory_manager`) gives it its own functions
 //! when it loads it, and every export but `MoveBlock` calls one of them, so the one table of handles is the host's.
@@ -15,7 +16,7 @@ type MgErr = i32;
 type UHandle = *mut *mut u8;
 
 /// The version of [`HostFunctions`]; the host refuses a bridge that answers another.
-const BRIDGE_VERSION: u32 = 1;
+const BRIDGE_VERSION: u32 = 2;
 
 /// LabVIEW's `mFullErr`, answered while no host has installed its functions: nothing can be allocated.
 const MEMORY_FULL_ERROR: MgErr = 2;
@@ -28,6 +29,10 @@ pub struct HostFunctions {
     pub get_handle_size: unsafe extern "C" fn(handle: UHandle) -> usize,
     pub dispose_handle: unsafe extern "C" fn(handle: UHandle) -> MgErr,
     pub numeric_array_resize: unsafe extern "C" fn(type_code: i32, dimension_count: i32, handle_address: *mut UHandle, element_count: usize) -> MgErr,
+    // Since version 2: the DAQ driver's task records (DT-087, amendment of 2026-11-13).
+    pub new_task_record: unsafe extern "C" fn(name: *const u8, length: usize, task_object: usize) -> usize,
+    pub dispose_task_record: unsafe extern "C" fn(address: usize) -> MgErr,
+    pub task_object_of_record: unsafe extern "C" fn(address: usize) -> usize,
 }
 
 static HOST: AtomicPtr<HostFunctions> = AtomicPtr::new(std::ptr::null_mut());
@@ -85,4 +90,25 @@ pub unsafe extern "C" fn NumericArrayResize(type_code: i32, dimension_count: i32
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn MoveBlock(source: *const u8, destination: *mut u8, size: usize) {
     unsafe { std::ptr::copy(source, destination, size) }
+}
+
+/// `uintptr_t SolderNewTaskRecord(const char *name, size_t length, uintptr_t taskObject)`: Solder's, not LabVIEW's. A
+/// record the host keeps for a DAQ task, as LabVIEW keeps one (DT-087, amendment of 2026-11-13), and its address; 0
+/// while no host has installed its functions.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn SolderNewTaskRecord(name: *const u8, length: usize, task_object: usize) -> usize {
+    host().map_or(0, |host| unsafe { (host.new_task_record)(name, length, task_object) })
+}
+
+/// `MgErr SolderDisposeTaskRecord(uintptr_t record)`: Solder's. Disposes of a task's record.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn SolderDisposeTaskRecord(address: usize) -> MgErr {
+    host().map_or(MEMORY_FULL_ERROR, |host| unsafe { (host.dispose_task_record)(address) })
+}
+
+/// `uintptr_t SolderTaskObjectOfRecord(uintptr_t record)`: Solder's. The driver's task object a record links to, 0 for
+/// an address that is not a record.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn SolderTaskObjectOfRecord(address: usize) -> usize {
+    host().map_or(0, |host| unsafe { (host.task_object_of_record)(address) })
 }

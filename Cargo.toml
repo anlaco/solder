@@ -1,6 +1,6 @@
 # The hardware host (DT-039 e, DT-065): our own VISA in Rust, and its binding for Node.
 [workspace]
-members = ["native/solder-io", "native/solder-io-node", "native/solder-daq", "native/solder-memory-bridge"]
+members = ["native/solder-io", "native/solder-io-node", "native/solder-daq", "native/solder-memory-bridge", "native/nilvaiu"]
 resolver = "3"
 
 [workspace.package]

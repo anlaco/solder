@@ -15,6 +15,7 @@ mod resource;
 mod serial;
 mod session;
 mod status;
+pub mod task_records;
 mod vxi11;
 
 pub use manager::{Opened, ResourceManager};

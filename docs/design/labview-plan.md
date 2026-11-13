@@ -706,6 +706,17 @@ array or string read by a local variable while another loop writes it is never t
       built the same day (DT-088 §8): an empty value is a null handle, the library may replace it or leave it null, an
       address that is not a handle gives 1097. Every string and array format of the node now runs. Next: the facade, the
       plugin's OVIs built in the editor as a user, the palette and the ESP32.*
+      *DAQ, stage A, slice 3 (DT-087, amendment of 2026-11-13) on `feature/daq`: measured the same day how a task travels
+      ([`daq-taskid`](../../labview-captures/reports/2026-11-13-daq-taskid.md),
+      [`daq-create-task`](../../labview-captures/reports/2026-11-13-daq-create-task.md)): Create writes the address of a
+      task record LabVIEW keeps, and `taskID` is the address of the driver's own task object. Built the facade,
+      `native/nilvaiu` (Solder's `nilvaiu`, its 20 exports; the analog-input path works, the rest answers -1, "not built in
+      Solder yet"), the task records in the I/O process (`native/solder-io/src/task_records.rs`, offered through the memory
+      bridge, version 2), and the engine's waits made outside its lock; 9 tests through `LibraryCaller`. -200088 and
+      -200478 are now measured. Left: the Windows build of `nilvaiu` (its `lvrt.dll` imports) in the VM. Next: the
+      `daq-name` type in the core (a task wire passes the record to an Adapt to Type parameter and the task object to a
+      `uintptr_t` one), packaging `nilvaiu` in the DAQ add-on and loading it by its full path, then the plugin's OVIs built
+      in the editor as a user, the palette and the ESP32.*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

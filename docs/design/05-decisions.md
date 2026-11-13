@@ -4155,10 +4155,47 @@ once Solder can compile libraries, it will be written in Solder with the same ex
 |-----------|-----------|--------|
 | DAQmx's VIs call these functions of `nilvaiu.dll` with these signatures | Inspection of the stage A VIs in LabVIEW | **Measured** (2026-11-08); the value passed as `taskID` and nilvaiu's relation to nicaiu **unverified** |
 | The engine reproduces DAQmx's analog-input path on a simulated device: names, the errors -200220, -200170, -200077 (rate at Timing, range at Start), -200479, -200278, -200284 and -200560, finite and continuous reads, waits, the sine with noise | `native/solder-daq/tests/ai_voltage.rs` (`cargo test`, on a virtual clock) | **Verified** (2026-11-08, slice 1) |
-| The engine's unmeasured parts: Dev2's profile, the channel count of Dev1 (eight), the continuous sine's period, the codes -200088 and -200478, Wait Until Done's duration, a continuous wait with no timeout, a read on a stopped task, a rate below the minimum | — | **Unverified**, marked where they are used |
+| The engine's unmeasured parts: Dev2's profile, the channel count of Dev1 (eight), the continuous sine's period, -200088 for a cleared task and -200478 at Timing (both measured elsewhere on 2026-11-13), Wait Until Done's duration, a continuous wait with no timeout, a read on a stopped task, a rate below the minimum | — | **Unverified**, marked where they are used |
 | Analog output, digital lines, the triggers, the other reads and writes | — | **Not built** (next slices) |
-| The driver exports the 20 `nilvaiu` functions and a node calls them | Tests of the library and of the plugin's instances | **Not built** |
+| The driver exports the 20 `nilvaiu` functions and a node calls them | `native/nilvaiu/tests/facade.rs` (the library through `solder-io`'s `LibraryCaller`); the plugin's instances: not built | **Verified** for the library (2026-11-13); the plugin **not built** |
 | NI's VIs run against the driver unchanged | — (opening NI's VIs is a future goal) | **Unverified** |
+
+### Amendment of 2026-11-13: the façade and the task's identity
+
+Measured the same day ([`daq-taskid`](../../labview-captures/reports/2026-11-13-daq-taskid.md),
+[`daq-create-task`](../../labview-captures/reports/2026-11-13-daq-create-task.md)): the data of a DAQmx Task Name wire
+is one pointer to a **task record** that LabVIEW keeps (the name's string handle, the number the value shows beside the
+name, and a link to the library's own task object). `DAQCreateTask140` writes only that record's address, 8 bytes,
+through `taskRefObjectPtr` (Adapt to Type, Handles by Value); `DAQDestroyTask110` is given the same. When the wire goes
+to a `uintptr_t` parameter, LabVIEW passes the **address of the library's task object**, read through the record, and 0
+for an empty task. `DAQControl` gives -200088 for 0 or for an address that is not a task, and -200478 when Start finds
+no channels; the error text begins `<append>`. Decided with the developer the same day, after it was explained to them:
+
+1. **The library is called `nilvaiu`**, as NI's (`nilvaiu.dll`, `libnilvaiu.so`), so that a node naming NI's file finds
+   Solder's. It is installed with the DAQ add-on, never in a system folder, and **Solder loads it by its full path** from
+   there; LabVIEW, a process apart, keeps finding NI's in `System32`. NI's own `nilvaiu` cannot serve Solder: it needs
+   LabVIEW's internal functions (`MGApp`…, [`solder-calls-real-nilvaiu`](../../labview-captures/reports/2026-11-08-solder-calls-real-nilvaiu.md));
+   NI hardware will be reached later by an engine backend over `nicaiu`, NI's public C API ([DT-076](#dt-076) §3).
+2. **`taskID` is the address of the library's own task object**, as in LabVIEW. Every address is checked against the
+   library's table of live tasks before it is used, so a wrong one gives -200088 instead of a crash.
+3. **The task record lives in the I/O process**, which plays LabVIEW's part: the library asks the host for a record
+   (name and task object) through the memory bridge ([DT-088](#dt-088) §4) and writes its address through
+   `taskRefObjectPtr`; destroying the task disposes of it. How LabVIEW builds its record and the meaning of its other
+   fields were not seen: Solder's record is its own layout, **not LabVIEW's**. Passing a DAQ task wire to a node (the
+   record to an Adapt to Type parameter, the task object to a `uintptr_t` one) is the core's part, built with the
+   `daq-name` type.
+4. **All 20 functions are exported.** Those the engine cannot do yet (analog output, digital lines, the digital start
+   trigger, the writes) return **-1**, Solder's code for "not built in Solder yet" (no LabVIEW code says that; the
+   developer chose an own code over leaving them out), with a text that says so.
+5. **Errors:** the `int32` return is the code; `extendedErrorInfo` gets `<append>` and the fields the engine knows, with
+   sentences written anew ([DT-076](#dt-076) §6). `lvAppReference` is not used.
+6. **A wait does not block other tasks:** the engine says how long a read or Wait Until Done must wait, the façade waits
+   without holding the engine, and then takes the result.
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| A task travels as measured: Create writes the record's address, the other functions get the task object's address, 0 and unknown addresses give -200088, Start with no channels gives -200478 | `native/nilvaiu/tests/facade.rs`, `native/solder-daq/tests/ai_voltage.rs` | **Verified** (2026-11-13); built on Linux, the Windows build (`lvrt.dll` imports) **unverified** |
+| LabVIEW's record layout and its other fields | — | **Unverified** (Solder's record is its own) |
 
 ## DT-088
 

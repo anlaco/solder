@@ -12,6 +12,7 @@ use std::sync::OnceLock;
 use libloading::Library;
 
 use crate::handles::{self, Handle};
+use crate::task_records;
 
 type MgErr = i32;
 type UHandle = *mut *mut u8;
@@ -25,7 +26,7 @@ const MEMORY_FULL_ERROR: MgErr = 2;
 const UNKNOWN_HANDLE_ERROR: MgErr = 3;
 
 /// The version of the bridge's table this host speaks.
-const BRIDGE_VERSION: u32 = 1;
+const BRIDGE_VERSION: u32 = 2;
 /// The bridge's function that receives the host's functions.
 const BRIDGE_INSTALL_FUNCTION: &[u8] = b"solder_memory_bridge_install";
 
@@ -37,9 +38,22 @@ struct HostFunctions {
     get_handle_size: unsafe extern "C" fn(handle: UHandle) -> usize,
     dispose_handle: unsafe extern "C" fn(handle: UHandle) -> MgErr,
     numeric_array_resize: unsafe extern "C" fn(type_code: i32, dimension_count: i32, handle_address: *mut UHandle, element_count: usize) -> MgErr,
+    // Since version 2: the DAQ driver's task records (DT-087, amendment of 2026-11-13).
+    new_task_record: unsafe extern "C" fn(name: *const u8, length: usize, task_object: usize) -> usize,
+    dispose_task_record: unsafe extern "C" fn(address: usize) -> MgErr,
+    task_object_of_record: unsafe extern "C" fn(address: usize) -> usize,
 }
 
-static HOST_FUNCTIONS: HostFunctions = HostFunctions { new_handle, set_handle_size, get_handle_size, dispose_handle, numeric_array_resize };
+static HOST_FUNCTIONS: HostFunctions = HostFunctions {
+    new_handle,
+    set_handle_size,
+    get_handle_size,
+    dispose_handle,
+    numeric_array_resize,
+    new_task_record: task_records::bridge_new_record,
+    dispose_task_record: task_records::bridge_dispose_record,
+    task_object_of_record: task_records::bridge_task_object_of,
+};
 
 /// The bridge, kept loaded for the life of the process once installed.
 static BRIDGE: OnceLock<Library> = OnceLock::new();

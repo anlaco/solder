@@ -210,3 +210,29 @@ fn wait_until_done_returns_for_a_finite_task_and_times_out_for_a_continuous_one(
     assert_eq!(engine.wait_until_done(continuous, Some(Duration::from_millis(500))).unwrap_err().code, codes::WAIT_TIMED_OUT);
     assert_eq!(clock.now() - before, Duration::from_millis(500));
 }
+
+#[test]
+fn start_with_no_channels_is_error_200478_and_a_task_that_does_not_exist_is_error_200088() {
+    let (mut engine, _) = engine();
+    let task = engine.create_task("p1");
+    let error = engine.start(task).unwrap_err();
+    assert_eq!((error.code, error.details.task_name.as_deref()), (codes::TASK_HAS_NO_CHANNELS, Some("p1")));
+    engine.clear(task).unwrap();
+    assert_eq!(engine.start(task).unwrap_err().code, codes::INVALID_TASK);
+}
+
+#[test]
+fn a_continuous_read_says_how_long_to_wait_and_takes_the_samples_once_the_wait_is_made_outside() {
+    let (mut engine, clock) = engine();
+    let task = task_with_channel(&mut engine);
+    engine.configure_sample_clock(task, 1000.0, SampleMode::ContinuousSamples, 1000).unwrap();
+    let wait = engine.prepare_read(task, SamplesRequested::Count(250), TEN_SECONDS).unwrap();
+    assert_eq!(wait.duration, Duration::from_millis(250));
+    assert!(wait.outcome.is_ok());
+    clock.wait(wait.duration);
+    assert_eq!(engine.take_samples(task, SamplesRequested::Count(250)).unwrap()[0].len(), 250);
+
+    let short = engine.prepare_read(task, SamplesRequested::Count(250), Some(Duration::from_millis(100))).unwrap();
+    assert_eq!(short.duration, Duration::from_millis(100));
+    assert_eq!(short.outcome.unwrap_err().code, codes::SAMPLES_NOT_YET_ACQUIRED);
+}

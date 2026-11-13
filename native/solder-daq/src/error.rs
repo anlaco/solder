@@ -17,10 +17,14 @@ pub mod codes {
     pub const SAMPLES_NOT_YET_ACQUIRED: i32 = -200284;
     /// Wait Until Done timed out (measured).
     pub const WAIT_TIMED_OUT: i32 = -200560;
-    /// The task does not exist, or was cleared. UNVERIFIED: the code is from general knowledge, not measured.
+    /// The task does not exist: `taskID` 0, or an address that is not a task (measured,
+    /// `labview-captures/reports/2026-11-13-daq-create-task.md`). For a task that was cleared, UNVERIFIED.
     pub const INVALID_TASK: i32 = -200088;
-    /// An operation that needs channels on a task that has none. UNVERIFIED: a placeholder, DAQmx's code was not measured.
+    /// Start on a task that has no channels (measured, same report). Given also at Timing, where it is UNVERIFIED.
     pub const TASK_HAS_NO_CHANNELS: i32 = -200478;
+    /// A function of the driver that Solder has not built yet: Solder's own code, not DAQmx's, since no DAQmx code
+    /// says so (DT-087, amendment of 2026-11-13).
+    pub const NOT_BUILT_IN_SOLDER: i32 = -1;
 }
 
 /// What a message about an error can say; each field is filled only when it applies.

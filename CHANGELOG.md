@@ -9,6 +9,14 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- DAQ's driver, `nilvaiu` (DT-087): Solder's own library with the 20 functions DAQmx's VIs call in LabVIEW, under NI's
+  names and with the parameters measured on them, over Solder's DAQ engine and its simulated devices. A task travels as
+  measured in LabVIEW: Create writes the address of a task record the I/O process keeps, and the other functions get the
+  address of the driver's own task object, checked before use (0 or any other address gives -200088). Creating tasks and
+  analog-input voltage channels, sample-clock timing, Start, Stop, Wait Until Done and the four analog reads of doubles
+  work; analog output, digital lines, the digital start trigger and the writes answer -1 with a text saying they are not
+  built in Solder yet. Errors leave their details in `extendedErrorInfo` after `<append>`, as DAQmx does. Start on a task
+  with no channels is now -200478, as measured. One task's read or wait no longer holds up the others.
 - The Call Library Function Node passes strings and arrays as LabVIEW's handles (DT-088): String Handle and Array Handle,
   of any element type and number of dimensions, reach the library with their length or sizes in front and come back as
   the library left them. Its prototypes follow LabVIEW's formats (C and Pascal strings, handles and pointers to handles,
