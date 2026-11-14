@@ -242,14 +242,22 @@ test("abort para un bucle infinito sin esperas", async () => {
     b.cable("no.result", "w:stop.stop");
     b.cable("w:i.i", "i.value");
   });
+  // The abort comes once the panel has shown the loop past PASSES_BEFORE_ABORT, not after a fixed time, so a loaded
+  // machine that draws late cannot fail it (CLAUDE.md rule 6). The panel shows the last value at each pass, skipping
+  // the ones in between (DT-063 §10): "i" says how far the loop went.
+  const PASSES_BEFORE_ABORT = 1000;
+  const STOPS_AT_ONCE_MS = 200;
   const parar = new AbortController();
-  const vistos = [];
-  setTimeout(() => parar.abort(), 60);
-  const t0 = performance.now();
-  await assert.rejects(ejecutar(compilar(v.g, CAT), {}, { senal: parar.signal, alEscribir: (_, x) => vistos.push(x) }), (e) => e.abortado);
-  assert.ok(performance.now() - t0 < 200, "para en el acto");
-  // The panel shows the last value at each pass, skipping the ones in between (DT-063 §10): "i" says how far the loop went.
-  assert.ok(vistos.at(-1) > 1000, `and meanwhile the loop went round (${vistos.at(-1)} times)`);
+  let abortedAt;
+  const showValue = (_, value) => {
+    if (value > PASSES_BEFORE_ABORT && abortedAt === undefined) {
+      abortedAt = performance.now();
+      parar.abort();
+    }
+  };
+  await assert.rejects(ejecutar(compilar(v.g, CAT), {}, { senal: parar.signal, alEscribir: showValue }), (e) => e.abortado);
+  assert.ok(abortedAt !== undefined, "the loop went round while it ran");
+  assert.ok(performance.now() - abortedAt < STOPS_AT_ONCE_MS, "para en el acto");
 });
 
 test("un cable no cruza el borde de una estructura: conectar cruzando pone los tuneles", () => {

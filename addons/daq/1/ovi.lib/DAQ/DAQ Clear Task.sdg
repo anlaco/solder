@@ -102,7 +102,7 @@
           "library": "nilvaiu.*",
           "specify-path-on-diagram": false,
           "function": "DAQDestroyTask110",
-          "thread": "ui",
+          "thread": "any",
           "calling-convention": "c",
           "error-checking": "default",
           "return-type": {
@@ -264,16 +264,16 @@
     },
     "windows": {
       "front-panel": {
-        "x": 555,
-        "y": 198,
-        "width": 1090,
-        "height": 696
+        "x": 585,
+        "y": 228,
+        "width": 1800,
+        "height": 960
       },
       "block-diagram": {
-        "x": 506,
-        "y": 168,
-        "width": 1090,
-        "height": 696
+        "x": 536,
+        "y": 198,
+        "width": 1800,
+        "height": 960
       }
     }
   }

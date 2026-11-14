@@ -172,7 +172,7 @@
                     "library": "nilvaiu.*",
                     "specify-path-on-diagram": false,
                     "function": "DAQControl",
-                    "thread": "ui",
+                    "thread": "any",
                     "calling-convention": "c",
                     "error-checking": "default",
                     "return-type": {
@@ -315,8 +315,7 @@
         "x": 200,
         "y": 103,
         "w": 700,
-        "h": 430,
-        "active-frame": 1
+        "h": 430
       },
       "case-structure_1.selector": {
         "x": 200,
@@ -421,6 +420,11 @@
           216
         ]
       },
+      "case-structure_1.case-tunnel-out_2": {
+        "bends": [
+          216
+        ]
+      },
       "case-structure_1.selector": {
         "bends": [
           68
@@ -430,25 +434,20 @@
         "bends": [
           61
         ]
-      },
-      "case-structure_1.case-tunnel-out_2": {
-        "bends": [
-          216
-        ]
       }
     },
     "windows": {
       "front-panel": {
         "x": 555,
         "y": 198,
-        "width": 1090,
-        "height": 696
+        "width": 1800,
+        "height": 960
       },
       "block-diagram": {
         "x": 506,
         "y": 168,
-        "width": 1090,
-        "height": 696
+        "width": 1800,
+        "height": 960
       }
     }
   }

@@ -4270,8 +4270,8 @@ imitating LabVIEW so that we see how close we can come in design"), after the sh
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| The plugin's OVIs are built by hand in the editor, with the measured shape, and every difficulty is written down | `daq-plugin-findings.md`, the saved `.sdg` files | **In progress**: Fill In Error Info, Create Task, Create Virtual Channel (AI Voltage), Start, Stop and Clear Task (2026-11-14) |
-| A built instance calls Solder's `nilvaiu` and gives LabVIEW's errors | `test/core/daq-plugin-ovis.test.mjs` (the saved OVIs as subOVIs against the add-on's `nilvaiu`: Create Task → Create Virtual Channel → Start → Stop → Clear; -200220, -200170, -200088, -200478) | **Verified** (2026-11-14) for those; what NI's Clear answers for an empty task **unverified** |
+| The plugin's OVIs are built by hand in the editor, with the measured shape, and every difficulty is written down | `daq-plugin-findings.md`, the saved `.sdg` files | **In progress**: Fill In Error Info, Create Task, Create Virtual Channel (AI Voltage), Timing (Sample Clock), Start, Wait Until Done, Stop and Clear Task (2026-11-14) |
+| A built instance calls Solder's `nilvaiu` and gives LabVIEW's errors | `test/core/daq-plugin-ovis.test.mjs` (the saved OVIs as subOVIs against the add-on's `nilvaiu`: Create Task → Create Virtual Channel → Timing → Start → Wait Until Done → Stop → Clear; -200220, -200170, -200077, -200088, -200478; Stop given an error still stops) | **Verified** (2026-11-14) for those; what NI's Clear answers for an empty task **unverified** |
 | `lvAppReference` is wired from This Application, as NI's (§3 amended by [DT-090](#dt-090)) | the saved Create Task and Create Virtual Channel | **Verified** (2026-11-14) |
 
 ## DT-088

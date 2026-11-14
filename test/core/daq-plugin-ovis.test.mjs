@@ -260,3 +260,63 @@ test("Create Task passes an error in through and gives an empty task, and refuse
   assert.deepEqual([shown["copying error"].status, shown["copying error"].code], [true, NOT_BUILT_IN_SOLDER]);
   assert.match(shown["copying error"].source, /^<append>[\s\S]*copying a task/);
 });
+
+const TIMING_OVI = "DAQ Timing (Sample Clock).sdg";
+const INVALID_PROPERTY_VALUE = -200077;
+/** Few samples, so that Wait Until Done waits a tenth of a second at the default 1 kHz. */
+const SHORT_ACQUISITION = 100;
+
+/**
+ * The plugin's chain from Create Virtual Channel on Dev1/ai0, through Timing with `rate` (and SHORT_ACQUISITION
+ * samples), Start, Wait Until Done, Stop and Clear; each step's error out shown as `<step> error`.
+ */
+const timedAcquisition = (rate) =>
+  buildVI(PLUGIN, (b) => {
+    createAiVoltage(b, "create", "Dev1/ai0");
+    b.node("rate", "const", { value: rate, type: "dbl" });
+    b.node("samples", "const", { value: SHORT_ACQUISITION, type: "i32" });
+    let task = "create.daq-name-indicator_1";
+    let error = "create.cluster-indicator_1";
+    for (const [name, file] of [["timing", TIMING_OVI], ["start", "DAQ Start Task.sdg"], ["wait", "DAQ Wait Until Done.sdg"], ["stop", "DAQ Stop Task.sdg"], ["clear", "DAQ Clear Task.sdg"]]) {
+      callPlugin(b, name, file, task, error);
+      error = `${name}.cluster-indicator_1`;
+      showError(b, `${name} error`, error);
+      if (name !== "clear") task = `${name}.daq-name-indicator_1`;
+    }
+    // Timing's rate is its control_1 and samples per channel its control_4, as the saved connector names them.
+    b.wire("rate.result", "timing.control_1");
+    b.wire("samples.result", "timing.control_4");
+  });
+
+test("Timing, Start, Wait Until Done, Stop and Clear: a finite acquisition at 1 kHz ends without an error", async () => {
+  const shown = await run(timedAcquisition(1000));
+  for (const name of ["timing", "start", "wait", "stop", "clear"]) assert.deepEqual(shown[`${name} error`], NO_ERROR, name);
+});
+
+test("a rate the device cannot reach is -200077 at Timing, as measured, and the error passes down the chain", async () => {
+  // Measured: 1 MHz on the simulated USB-6001, whose maximum is 20 kHz (reports/2026-11-06-daqmx-timing-trigger.md).
+  const shown = await run(timedAcquisition(1e6));
+  assert.deepEqual([shown["timing error"].status, shown["timing error"].code], [true, INVALID_PROPERTY_VALUE]);
+  assert.match(shown["timing error"].source, /^<append>/);
+  for (const name of ["start", "wait", "stop", "clear"]) assert.equal(shown[`${name} error`].code, INVALID_PROPERTY_VALUE, name);
+});
+
+test("Stop Task stops the task even with an error in, which it passes on, as NI's does", async () => {
+  // Measured: NI's Stop Task's node has no error in, so it always stops; without the stop a second Start is -200479
+  // (labview-captures/reports/2026-11-14-clfn-error-in.md).
+  const vi = buildVI(PLUGIN, (b) => {
+    createAiVoltage(b, "create", "Dev1/ai0");
+    b.node("incoming", "error-cluster-constant", { value: { status: true, code: 5, source: "orig" } });
+    callPlugin(b, "start", "DAQ Start Task.sdg", "create.daq-name-indicator_1", "create.cluster-indicator_1");
+    callPlugin(b, "stop", "DAQ Stop Task.sdg", "start.daq-name-indicator_1", "incoming.result");
+    callPlugin(b, "start again", "DAQ Start Task.sdg", "stop.daq-name-indicator_1", "start.cluster-indicator_1");
+    callPlugin(b, "clear", "DAQ Clear Task.sdg", "start again.daq-name-indicator_1", "start again.cluster-indicator_1");
+    showError(b, "stop error", "stop.cluster-indicator_1");
+    showError(b, "start again error", "start again.cluster-indicator_1");
+    showError(b, "clear error", "clear.cluster-indicator_1");
+  });
+  const shown = await run(vi);
+  assert.deepEqual(shown["stop error"], { status: true, code: 5, source: "orig" });
+  assert.deepEqual(shown["start again error"], NO_ERROR, "the task was stopped, so it starts again");
+  assert.deepEqual(shown["clear error"], NO_ERROR);
+});

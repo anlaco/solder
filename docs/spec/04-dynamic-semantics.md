@@ -534,8 +534,10 @@ Measured in LabVIEW 2026 Q3 by running each case (`labview-captures/format-scan/
 > without the function **15**, each with the source `Call Library Function Node in <OVI>` and a return value of 0;
 > an empty path calls nothing and gives no error. A fault inside the library's code is error **1097** and the OVI goes
 > on: in LabVIEW with Error Checking at Default or Maximum (Disabled crashes LabVIEW); in Solder always, because the
-> library runs in the I/O process, which the fault ends. **Unverified:** what the node does with an error in (Solder
-> calls nothing and passes the error), and a library named in the dialog that cannot load, which breaks the OVI in
+> library runs in the I/O process, which the fault ends. With an error in (status TRUE) nothing is called, the return
+> is 0, every output is its input and the error passes unchanged; a warning in calls the function and passes too
+> (measured, `labview-captures/reports/2026-11-14-clfn-error-in.md`; `test/core/call-library-run.test.mjs`).
+> **Unverified:** a library named in the dialog that cannot load, which breaks the OVI in
 > LabVIEW and is a run-time error 7 in Solder until the editor checks it.
 
 ## 7. Blocking operations

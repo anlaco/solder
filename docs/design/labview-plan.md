@@ -772,6 +772,15 @@ array or string read by a local variable while another loop writes it is never t
       so `daq-name` stays in the core. Findings S4-#n, S5-#n; the rings with free values (S4-#2) and the DAQ constants'
       palette (S5-#1) are open. Next: Timing, Read and Wait Until Done, then the DAQ palette (`daq.json`). `feature/daq` is
       merged into `main` once those are done and a whole acquisition is tried by hand (the developer, 2026-11-14), not before.*
+      *Stages 6 and 7 the same day ([`stage6`](../../labview-captures/reports/2026-11-14-daq-plugin-stage6.md),
+      [`stage7`](../../labview-captures/reports/2026-11-14-daq-plugin-stage7.md)): DAQ Timing (Sample Clock) and DAQ Wait
+      Until Done built by hand; a finite acquisition (Create Virtual Channel → Timing at 1 kHz → Start → Wait Until Done →
+      Stop → Clear) runs, and 1 MHz is -200077 at Timing. Read from `walk.json`: only the create OVIs, Start Task and
+      Wait Until Done have a Case on error in; the others leave it to the node. Measured what the node does with an error
+      in ([`clfn-error-in`](../../labview-captures/reports/2026-11-14-clfn-error-in.md)): it calls nothing, returns 0 and
+      passes its inputs, as Solder's did (now tested, spec/04 amended); but NI's Stop Task leaves its node's error in
+      unwired and so stops the task anyway: Solder's was rewired to match (a test that failed before). Start and Clear
+      now run in any thread, as NI's. Next: the four analog reads of doubles, then the DAQ palette (`daq.json`).*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

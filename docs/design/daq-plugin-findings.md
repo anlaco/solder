@@ -178,3 +178,43 @@ Virtual Channel → Start → Stop → Clear runs without an error against the a
   "Untitled Project 1/My Computer" in the status bar.
 - Fine: the OVI Server Reference from Application Control and Link to ▸ This Application on the first try; the
   prototype as LabVIEW's; Boolean To (0,1) into a U8 parameter; reopening and running.
+
+Stage 6, 2026-11-14 ([report](../../labview-captures/reports/2026-11-14-daq-plugin-stage6.md)): DAQ Timing (Sample
+Clock) and DAQ Wait Until Done built by hand, and DAQ Stop Task rebuilt. Read from `walk.json` before it: only Create
+Task, the Create Channel instances, Start Task and Wait Until Done have a Case on error in; Timing, the triggers, Stop,
+Clear and every Read and Write leave it to the node's own error in. Solder's Stop Task had the Case (it was a Save As of
+Start Task), so it was rebuilt without it, and Timing was built without it. A finite acquisition (Create Virtual Channel →
+Timing at 1 kHz → Start → Wait Until Done → Stop → Clear) runs without an error, and 1 MHz is -200077 at Timing, as
+measured (`test/core/daq-plugin-ovis.test.mjs`). Numbered S6-#n.
+
+- **S6-#0 The OVIs without a Case rely on what the node does with an error in**, which was unverified in Solder
+  (spec/04: "calls nothing and passes the error"). *Measured the same day
+  ([`clfn-error-in`](../../labview-captures/reports/2026-11-14-clfn-error-in.md)): LabVIEW's node does exactly that
+  (nothing called, return 0, outputs equal to inputs, the error unchanged; a warning calls), as Solder's did; now
+  tested. But NI's Stop Task stops the task even with an error in: its node's error in is left unwired and the panel's
+  error in goes to Fill In Error Info. Solder's Stop Task had wired it to the node, so with an error in the task kept
+  running (a second Start was -200479). Rewired by hand; Timing keeps its node's error in wired, as NI's
+  (measured: with an error in it configures nothing).*
+- S6-#1 There is no way to remove a structure and keep its contents (LabVIEW has Remove Case Structure on the border's
+  menu, not measured here): the contents were moved out and the Case deleted, and the tunnel wires redone.
+- S6-#2, S6-#3 Reconfiguring the node keeps the old slots' wires (S4-#11), so a constant ended on the wrong parameter;
+  the dialog's "+" only appends a parameter, and moving one needs the arrow button once per row.
+- S6-#6 Typing a label right after dropping a DAQ Terminal control did not take (it did for numerics).
+- S6-#7, S6-#8 Numerics arrive as DBL and Representation is only on the diagram terminal (S4-#4); new terminals land
+  inside the Case (S4-#6).
+- S6-#9 The error cluster's green tick is False and its red cross True: easy to misread.
+- **S6-#10 Start Task's and Clear Task's nodes run in the UI thread**; NI's run in any thread (measured, `daq-clfn-api`).
+  To fix by hand in the editor.
+- S6-#4, S6-#5 tooling notes (window ids after Save As, palette offsets); S6-#11 the narrow 7-parameter node.
+- Fine: the prototypes as NI's, an I32 into a U64 parameter, a DAQ Terminal name into a String Handle.
+
+Stage 7, 2026-11-14 ([report](../../labview-captures/reports/2026-11-14-daq-plugin-stage7.md)): Stop Task rewired as
+NI's (its node's error in unwired, the panel's error in into Fill In Error Info), so given an error it still stops the
+task (`test/core/daq-plugin-ovis.test.mjs`, which failed before with -200479 at a second Start); Start and Clear Task's
+nodes moved to any thread (S6-#10). Numbered S7-#n.
+
+- **S7-#2 A failed wire drag gives no feedback** (medium): a drag that starts a few pixels off a terminal's centre, or
+  ends off the target's, makes nothing and says nothing; the agent could not tell a lost drag from a wrong target.
+- S7-#4 Saving stores the session's window size and the Case's frame shown (layout lines change with no edit).
+- S7-#1, S7-#5, S7-#6 tooling: drag from a terminal's centre; the dialog's fixed positions; stepping the Case to reach
+  the node.

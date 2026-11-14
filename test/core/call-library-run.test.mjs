@@ -136,11 +136,42 @@ test("a library that is not found is error 7, and one without the function error
   assert.deepEqual([noFunction.error.status, noFunction.error.code], [true, 15]);
 });
 
-test("with an error in, nothing is called and the error passes", { skip: !ON_LINUX }, async () => {
+// Measured (labview-captures/reports/2026-11-14-clfn-error-in.md): with an error in, LabVIEW calls nothing, the return
+// is 0, each output is its input and the error passes unchanged; a warning in calls the function and passes too.
+test("with an error in, nothing is called: the return is 0 and the error passes unchanged", { skip: !ON_LINUX }, async () => {
   const errorIn = { status: true, code: 5000, source: "upstream" };
   const shown = await run(strlenOf("hello", { errorIn }));
   assert.equal(shown.length, 0);
   assert.deepEqual(shown.error, errorIn);
+});
+
+test("with an error in, a parameter passed by pointer comes out as it went in", { skip: !ON_LINUX }, async () => {
+  const vi = buildVI(CAT, (b) => {
+    b.node("x", "const", { value: 8, type: "number" });
+    b.node("seven", "const", { value: 7, type: "i32" });
+    b.node("incoming", "error-cluster-constant", { value: { status: true, code: 5, source: "orig" } });
+    b.node("call", "call-library", configured({
+      library: MATH_LIBRARY,
+      function: "frexp",
+      "return-type": { type: "numeric", "data-type": "dbl" },
+      parameters: [numeric("x", "dbl"), numeric("exponent", "i32", "pointer")],
+    }));
+    b.node("exponent", "indicator", { type: "i32" });
+    b.wire("x.result", "call.arg-0-in");
+    b.wire("seven.result", "call.arg-1-in");
+    b.wire("incoming.result", "call.error-in");
+    b.wire("call.arg-1-out", "exponent.value");
+    b.node("error", "cluster-indicator", { type: ERROR, style: "error-out" });
+    b.wire("call.error-out", "error.value");
+  });
+  assert.equal((await run(vi)).exponent, 7, "frexp would have written 4");
+});
+
+test("a warning in calls the function and passes unchanged", { skip: !ON_LINUX }, async () => {
+  const warning = { status: false, code: 5, source: "warn" };
+  const shown = await run(strlenOf("hello", { errorIn: warning }));
+  assert.equal(shown.length, 5);
+  assert.deepEqual(shown.error, warning);
 });
 
 test("a node with no function does not compile, nor one with an unwired string", () => {
