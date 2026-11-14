@@ -135,6 +135,43 @@ export const disconnectCell = (g, cell) => withTerminals(g, connectorTerminals(g
 
 export const disconnectAll = (g) => withTerminals(g, []);
 
+const cellCentre = ({ x, y, width, height }) => ({ x: x + width / 2, y: y + height / 2 });
+
+/**
+ * Every pairing of an assigned terminal with a cell of the new pattern, nearest first. Ties go to the lower new cell,
+ * then to the lower old one: the simplest order that reproduces every measured change, not one seen to decide a tie.
+ */
+function pairingsByDistance(terminals, oldPattern, newPattern) {
+  const newCells = patternNumbered(newPattern).terminals.map(cellCentre);
+  const pairings = terminals.flatMap((terminal) => {
+    const from = cellCentre(cellRect(terminal.cell, oldPattern));
+    return newCells.map((to, cell) => ({ terminal, cell, distance: Math.hypot(to.x - from.x, to.y - from.y) }));
+  });
+  return pairings.sort((a, b) => a.distance - b.distance || a.cell - b.cell || a.terminal.cell - b.terminal.cell);
+}
+
+/**
+ * Patterns ▸ <a pattern>: the pane takes the new pattern and every assigned terminal moves to the cell of the new
+ * pattern nearest to where it was, nearest pairs first, one terminal per cell; those left without a cell are dropped
+ * and their panel objects stay. LabVIEW does it with no dialog (measured, reports/2026-11-13-connector-pattern-change.md
+ * §1–2: eleven changes from 4-2-2-4 with five terminals, and one terminal on each of its twelve cells into three
+ * patterns).
+ */
+export function changePattern(g, newPattern) {
+  const oldPattern = patternOf(g);
+  if (newPattern === oldPattern || !patternNumbered(newPattern)) return g;
+  const terminals = connectorTerminals(g.vi?.connector);
+  const moved = new Map();
+  const takenCells = new Set();
+  for (const { terminal, cell } of pairingsByDistance(terminals, oldPattern, newPattern)) {
+    if (moved.has(terminal) || takenCells.has(cell)) continue;
+    moved.set(terminal, cell);
+    takenCells.add(cell);
+  }
+  const withPattern = { ...g, vi: { ...g.vi, connector: { ...g.vi?.connector, pattern: newPattern } } };
+  return withTerminals(withPattern, [...moved].map(([terminal, cell]) => ({ ...terminal, cell })));
+}
+
 /** This Connection Is ▸ Required, Recommended or Optional; an output cannot be Required (measured: it is greyed). */
 export function setConnection(g, cell, connection) {
   const terminals = connectorTerminals(g.vi?.connector);

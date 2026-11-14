@@ -644,7 +644,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   const releasesSeen = controles.map(() => 0);
   const writeControl = (control, shownValue) => {
     const { record, tipo, elemento, dims, disposicion } = control;
-    const value = control.resourceName ? resourceNameValue(shownValue) : shownValue;
+    const value = control.resourceName ? resourceNameValue(shownValue) : control.task ? emptyTaskNamed(shownValue) : shownValue;
     const address = record + PANEL_RECORD.value;
     if (tipo !== "string" && !elemento && !disposicion) return storeAtomicScalar(memory, address, tipoWasm(tipo), aWasm(value, tipo));
     ex.write_lock(record + PANEL_RECORD.lock);
@@ -690,7 +690,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
         }
       } else {
         const value = readValue(record + PANEL_RECORD.value, indicator);
-        escritos[nodo] = indicator.resourceName ? value["resource name"] : value;
+        escritos[nodo] = indicator.resourceName ? value["resource name"] : indicator.task ? value.name : value;
         alEscribir?.(nodo, escritos[nodo]);
       }
       if (locked) ex.read_unlock(record + PANEL_RECORD.lock);
@@ -871,6 +871,9 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
  * first VISA function that uses it opens one from the name, as LabVIEW does.
  */
 const resourceNameValue = (text) => ({ "resource name": text ?? "", session: 0 });
+
+/** A DAQ task from the name a control shows, with no record yet (DT-087 §7): the empty task when the name is empty. */
+const emptyTaskNamed = (text) => ({ name: text ?? "", number: 0, record: 0 });
 
 /** The scalar of WebAssembly type `wasmType` at `address`, read in one atomic load (a thread may be writing it). */
 function atomicScalar(memory, address, wasmType) {

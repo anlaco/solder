@@ -3491,6 +3491,28 @@ LabVIEW's selector and menus.**
 | A version 1 connector migrates to LabVIEW's indices with its terminals in the same place | `test/end-to-end/format-versions.test.mjs` | **Verified** (2026-11-05) by test |
 | Where a terminal of a middle cell, or of a cell as wide as the pane, meets the subOVI icon | — | **Unverified** |
 
+### Amendment of 2026-11-13: choosing a pattern
+
+Measured the same day ([`connector-pattern-change`](../../labview-captures/reports/2026-11-13-connector-pattern-change.md)),
+which opens the first of §3's holes:
+
+1. **Patterns ▸ changes the pattern and moves the terminals by position**, not by index or side: each assigned terminal
+   goes to the cell of the new pattern whose centre is nearest to its old cell's, the nearest pairs first, one terminal
+   per cell; a terminal left without a cell is dropped and its control stays. No dialog. Ties go to the lower new
+   index, then the lower old one (the simplest order that fits; no measured case tells it apart). Built in
+   `core/model/connector.mjs` (`changePattern`).
+2. **Add and Remove Terminal, Rotate and Flip stay holes.** LabVIEW keeps a turn or a flip of the pane apart from the
+   pattern number (the Patterns grid still outlines 4815 after Rotate 90 Degrees, and Remove Terminal from 4815 gives a
+   turned 4829), which Solder's connector, a pattern number alone, does not hold; their own decision comes when they are
+   needed. The measured ladders of Add and Remove are in the report.
+3. **Callers.** LabVIEW marks every caller broken when a subVI's pattern changes, even if the wired terminals survive;
+   Solder does not yet (not built).
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Patterns ▸ moves each terminal to the nearest cell and drops what is left, as in eleven changes from 4815 with five terminals and 36 with one | `test/editor/connector-patterns.test.mjs` | **Verified** (2026-11-13) |
+| The tie order | — | **Unverified** |
+
 ## DT-076
 
 **DAQ: Solder's acquisition layer is called DAQ, clones DAQmx's API one to one, and runs on a native engine over
@@ -4221,6 +4243,34 @@ no channels; the error text begins `<append>`. Decided with the developer the sa
 | Every DAQ name kind coerces to a string, a string to every kind, two kinds never meet | `test/core/daq-task-run.test.mjs` (the rule); a task's name read by a string indicator | **Verified** for the rule and task → string; a string into a task **not built** |
 | A library named without a folder is looked for in the add-ons' `resource/` folders, in order, with `.*` and `lib` as above, and a node naming `nilvaiu.*` runs the DAQ add-on's copy (§8) | `test/core/addons.test.mjs`, `test/core/daq-task-run.test.mjs` (the repository's add-on copied into a folder, as installing it) | **Verified** (2026-11-13) on Linux and on Windows in the VM (`nilvaiu.dll` from the add-on's `resource\`) |
 | LabVIEW's record layout and its other fields | — | **Unverified** (Solder's record is its own) |
+
+### Amendment of 2026-11-13: what the plugin's OVIs hold inside
+
+Decided by the developer the same day ("a diagram of Solder's own, built by hand to see the UX and what is missing, but
+imitating LabVIEW so that we see how close we can come in design"), after the shape of the stage A VIs was read from
+[`daq-clfn-api`](../../labview-captures/reports/2026-11-08-daq-clfn-api.md)'s `walk.json`:
+
+1. **The outside is LabVIEW's, one to one:** name (DAQ for DAQmx, [DT-076](#dt-076) §1), connector 4833, terminals,
+   defaults, errors, and the Call Library Function Node with the measured library, function and parameters (§2).
+2. **The inside is Solder's own diagram, drawn anew in the editor, but imitating the layout LabVIEW's has**: an outer
+   Case on `error in` (No Error / Error); in No Error, the node, with an empty string constant into its
+   `extendedErrorInfo`, and an inner Case on the node's return that, on an error, calls a subOVI of the plugin, **DAQ
+   Fill In Error Info**, to build `error out`; in Error, the error passes through. Nothing is copied from NI's diagrams
+   (no node-for-node transcription, CLAUDE.md rule 3): the shape is the guide, and how close the drawing comes to
+   LabVIEW's (sizes, positions, wire routes, labels) is itself something the work measures.
+3. **What Solder lacks to draw it is a finding, not a reason to change the shape.** LabVIEW's VIs use **This
+   Application** (into `lvAppReference`) and **Call Chain** (inside Fill In Error Info, for the source); Solder has
+   neither. Until they exist `lvAppReference` stays unwired (§5: it is not used), and DAQ Fill In Error Info names the
+   source with what Solder has; each such gap is written down as a finding (as
+   [`real-programs-0.2.md`](real-programs-0.2.md) did) in [`daq-plugin-findings.md`](daq-plugin-findings.md), with
+   whether it is fixed before the plugin, beside it or later.
+4. **Order:** first DAQ Fill In Error Info and DAQ Start Task (one stage), then the rest of stage A, one family of
+   instances per stage. They are saved in `addons/daq/1/ovi.lib/DAQ/`.
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The plugin's OVIs are built by hand in the editor, with the measured shape, and every difficulty is written down | `daq-plugin-findings.md`, the saved `.sdg` files | **In progress**: Fill In Error Info, Start, Stop and Clear Task (2026-11-14) |
+| A built instance calls Solder's `nilvaiu` and gives LabVIEW's errors | `test/core/daq-plugin-ovis.test.mjs` (the saved Start, Stop and Clear Task as subOVIs against the add-on's `nilvaiu`) | **Verified** (2026-11-14) for those three; what NI's Clear answers for an empty task **unverified** |
 
 ## DT-088
 

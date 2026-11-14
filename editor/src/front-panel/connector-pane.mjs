@@ -11,8 +11,8 @@
 //              under the cursor when it was opened (`null` outside every cell)
 // The connector itself is `g.vi.connector` (core/model/connector.mjs).
 
-import { assignPanelElement, cellAt, connectorTerminals, disconnectAll, disconnectCell, patternOf, setConnection, terminalAt } from "../../../core/model/connector.mjs";
-import { patternNumbered } from "../../../core/model/connector-patterns.mjs";
+import { assignPanelElement, cellAt, changePattern, connectorTerminals, disconnectAll, disconnectCell, patternOf, setConnection, terminalAt } from "../../../core/model/connector.mjs";
+import { CONNECTOR_PATTERNS, patternNumbered } from "../../../core/model/connector-patterns.mjs";
 import { connectorPorts } from "../../../core/model/graph.mjs";
 import { aspecto } from "../../../core/model/types.mjs";
 import { conectorPane } from "../common/glyphs.mjs";
@@ -107,8 +107,8 @@ export function runMenuCommand(state, rowId) {
   const close = (g) => ({ ...state, g, menu: null });
   const disabled = menuVariants(state).desactivados;
   if (disabled.has(rowId)) return state;
-  // Choosing the pattern already in use only closes the menu: changing it is not built yet (DT-075).
-  if (rowId === currentPatternRow(state.g)) return close(state.g);
+  const chosenPattern = CONNECTOR_PATTERNS.find((pattern) => rowId === `${MENU_ROOT}.patterns.${pattern.id}`);
+  if (chosenPattern) return close(changePattern(state.g, chosenPattern.number));
   if (rowId === `${MENU_ROOT}.disconnect-all-terminals`) return close(disconnectAll(state.g));
   if (rowId === `${MENU_ROOT}.disconnect-this-terminal`) return close(disconnectCell(state.g, cell));
   const connection = /\.this-connection-is\.(required|recommended|optional)$/.exec(rowId)?.[1];

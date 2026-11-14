@@ -271,7 +271,7 @@ const clickParts = (d, ...parts) => parts.reduce((current, part) => clickPart(cu
 function typeKeys(d, ...keys) {
   let current = d;
   for (const key of keys) {
-    const intent = MD.keyIntent(MD.openDialog(current, null), { key });
+    const intent = MD.keyIntent(MD.openDialog(current, null), typeof key === "string" ? { key } : key);
     if (intent?.dialog) current = { ...current, callLibraryDialog: intent.dialog };
   }
   return current;
@@ -523,8 +523,22 @@ test("the text fields take keys and the list moves, deletes and keeps the return
   // The library box and the browse button.
   const library = typeKeys(clickParts(d, "library"), "l", "i", "b", "m", ".", "*");
   assert.equal(library.callLibraryDialog.config.library, "libm.*");
-  // A key with Ctrl goes to the window, not the dialog.
-  assert.equal(MD.keyIntent(MD.openDialog(library, null), { key: "a", ctrlKey: true }), null);
+  // A key with Ctrl other than Ctrl+A goes to the window, not the dialog.
+  assert.equal(MD.keyIntent(MD.openDialog(library, null), { key: "c", ctrlKey: true }), null);
+});
+
+// Found building the DAQ plugin by hand (docs/design/daq-plugin-findings.md #20): Ctrl+A did not select a name, so
+// typing appended to "arg1".
+test("Ctrl+A in a text field of the dialog selects its text, and the next key replaces or erases it", () => {
+  const { d } = dialogOf({ parameters: [{ name: "arg1", type: "numeric", "data-type": "i32", pass: "value" }] });
+  const onName = clickParts(d, "tab-parameters", "parameter-1", "name");
+  const selectAll = (state) => typeKeys(state, { key: "a", ctrlKey: true });
+  assert.match(view(selectAll(onName)), /clfn-texto texto-elegido">arg1</, "the selected text is drawn selected, with no caret");
+  assert.equal(typeKeys(selectAll(onName), "t", "a", "s", "k", "I", "D").callLibraryDialog.config.parameters[0].name, "taskID");
+  for (const eraser of ["Backspace", "Delete"]) assert.equal(typeKeys(selectAll(onName), eraser).callLibraryDialog.config.parameters[0].name, "", eraser);
+  assert.equal(typeKeys(onName, "Delete").callLibraryDialog.config.parameters[0].name, "arg1", "Delete with the caret at the end erases nothing");
+  // A click in the field drops the selection: the caret goes back to the end.
+  assert.equal(typeKeys(clickParts(selectAll(onName), "name"), "x").callLibraryDialog.config.parameters[0].name, "arg1x");
 });
 
 test("the spec rules and the schema agree with the inventory of the dialog and the menu", () => {

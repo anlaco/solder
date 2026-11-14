@@ -5,6 +5,7 @@
 // LabVIEW); this module decides what is created and wires it.
 
 import { conectar, crearEnPanel, crearNodo, fijarConfig } from "./graph.mjs";
+import { isDaqName } from "./daq-name.mjs";
 import { PATH, VISA_RESOURCE, esArray, esCluster, esEnum, esError, esNumerico, esRefnum } from "./types.mjs";
 
 /**
@@ -25,6 +26,7 @@ function constantBlock(type) {
   if (type === "string") return { tipo: "str-const", config: { value: "" } };
   if (esError(type)) return { tipo: "error-cluster-constant" };
   if (type === VISA_RESOURCE) return { tipo: "visa-resource-constant", config: { value: "" } };
+  if (isDaqName(type)) return { tipo: "daq-name-constant", config: { type, value: "" } };
   if (type === PATH) return { tipo: "path-constant" };
   if (esArray(type)) return { tipo: "arr-const", config: { type, value: [] } };
   return null;
@@ -39,6 +41,8 @@ function panelBlock(type, isControl) {
   if (type === "boolean") return { tipo: `bool-${suffix}` };
   if (type === "string") return { tipo: `str-${suffix}` };
   if (type === VISA_RESOURCE) return { tipo: `visa-${suffix}` };
+  // A DAQ name of any kind makes the control or indicator of the same kind (DT-076 §5).
+  if (isDaqName(type)) return { tipo: `daq-name-${suffix}`, config: { type } };
   if (type === PATH) return { tipo: `path-${suffix}` };
   // A control reference's terminal or wire makes a control refnum of its strict type (measured, reports/2026-11-03-control-reference-subvi.md Q1, Q4).
   if (esRefnum(type)) return { tipo: `refnum-${suffix}`, config: { type } };

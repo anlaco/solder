@@ -1886,6 +1886,21 @@ test("a terminal lying under a wire takes the mouse before the wire", () => {
   assert.equal(ED.preferTerminalUnderWire([]), null);
 });
 
+test("a wire leaving a tunnel starts at the pixel where the tunnel's hit zone still reaches (S3-#2)", () => {
+  // The wire's own hit zone starts at the glyph's edge; a press just past a 9 px tunnel grabbed the wire's first
+  // segment and dragging it left a stub instead of starting a wire. Each face reaches 3 px toward its wire.
+  for (const [type, face, dir] of [["tunnel-in", "y", "out"], ["tunnel-in", "x", "in"]]) {
+    const tunnel = { id: "t1", tipo: type, x: 100, y: 50, dentro: "case" };
+    const zone = terminales(tunnel, CTX).find((terminal) => terminal.puerto === face && terminal.dir === dir).zona;
+    const wireSide = dir === "out" ? tunnel.x + 9 + 2.5 : tunnel.x - 2.5;
+    assert.ok(wireSide >= zone.x && wireSide < zone.x + zone.ancho, `${face} face reaches ${wireSide}`);
+    const glyphSide = dir === "out" ? tunnel.x + 9 - 1 : tunnel.x + 1;
+    assert.ok(glyphSide >= zone.x && glyphSide < zone.x + zone.ancho);
+    const awayFromTunnel = dir === "out" ? tunnel.x + 9 + 4 : tunnel.x - 4;
+    assert.ok(awayFromTunnel < zone.x || awayFromTunnel >= zone.x + zone.ancho, "the wire away from the tunnel stays the wire's");
+  }
+});
+
 test("a tunnel made by a wire does not land on top of a shift register", () => {
   // real-programs-0.3.md B5: the tunnel hid the shift register's terminal and did not move when its source did.
   const loop = Gr.crearEstructura(Gr.nuevo(), CAT, "while-loop", 100, 100, 300, 240);

@@ -10,7 +10,8 @@ import * as CP from "../../editor/src/front-panel/connector-pane.mjs";
 import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
 import * as ED from "../../editor/src/block-diagram/diagram-editing.mjs";
 import * as P from "../../editor/src/front-panel/front-panel.mjs";
-import { cellRect } from "../../core/model/connector.mjs";
+import { cellRect, connectorTerminals } from "../../core/model/connector.mjs";
+import * as Gr from "../../core/model/graph.mjs";
 import { CONNECTOR_PATTERNS, gridPosition, patternNamed, patternNumbered } from "../../core/model/connector-patterns.mjs";
 import { INV } from "../helpers.mjs";
 
@@ -68,7 +69,7 @@ test("each pattern's terminals, by LabVIEW's connector index, cover its 32 × 32
   assert.deepEqual([4, 6, 8, 10, 15].map((index) => p4833[index]), [[25, 0], [25, 7], [25, 13], [25, 19], [25, 25]], "its right column, top to bottom");
 });
 
-test("the Patterns row opens a 6 by 6 grid of 36 thumbnails and only 4-2-2-4 can be chosen", () => {
+test("the Patterns row opens a 6 by 6 grid of 36 thumbnails and the current one is outlined", () => {
   const { panel, html } = submenuHtml();
   assert.equal(panel.menu.abierto, PATTERNS_ROW, "hovering Patterns opens the submenu");
   assert.equal(INV.resolver(PATTERNS_ROW).estado, "built");
@@ -87,20 +88,66 @@ test("the Patterns row opens a 6 by 6 grid of 36 thumbnails and only 4-2-2-4 can
   assert.deepEqual([0, 6, 12, 18, 24, 30].map((i) => Number(cells[i][4])), [9, 57, 105, 153, 201, 249]);
 
   assert.deepEqual(cells.filter((cell) => cell[1].includes("marcado")).map((cell) => cell[2]), [CURRENT_ID], "the current one is outlined");
-  assert.deepEqual(cells.filter((cell) => !cell[1].includes("hueco")).map((cell) => cell[2]), [CURRENT_ID], "the other 35 are greyed");
+  assert.equal(cells.filter((cell) => cell[1].includes("hueco")).length, 0, "every pattern can be chosen");
 
-  // Choosing the current one closes the menu and changes nothing; a greyed one does nothing.
+  // Choosing the current one closes the menu and changes nothing.
   const chosen = ED.orden(panel, CP.currentPatternRow(panel.g), {});
   assert.equal(chosen.menu, null);
   assert.equal(chosen.g, panel.g);
-  const other = ED.orden(panel, `${PATTERNS_ROW}.pattern-01`, {});
-  assert.equal(other.g, panel.g);
 });
 
-test("a greyed pattern says why it cannot be chosen", () => {
-  const entry = INV.resolver(`${PATTERNS_ROW}.pattern-01`);
-  assert.equal(entry.estado, "todo");
-  assert.equal(entry.necesita, "patrones-del-connector");
-  assert.ok(INV.explicacion(entry).solder.length > 0);
-  for (const row of INV.hijos(PATTERNS_ROW)) assert.equal(row.estado === "built", row.id.endsWith(CURRENT_ID));
+// Measured in LabVIEW 2026 Q3 (reports/2026-11-13-connector-pattern-change.md §1): a 4-2-2-4 pane with controls on
+// indices 0, 3, 8 and 11 and an indicator on 4, changed from Patterns; each result is `index: name` after the change.
+const FIVE_TERMINALS = { 0: "c0", 3: "c3", 4: "i4", 8: "c8", 11: "c11" };
+const MEASURED_FROM_4815 = {
+  4833: { 0: "c11", 4: "c3", 11: "c8", 14: "i4", 15: "c0" },
+  4835: { 0: "c11", 6: "c8", 15: "i4", 20: "c3", 26: "c0" },
+  4834: { 0: "c11", 5: "c8", 11: "i4", 14: "c3", 19: "c0" },
+  4816: { 0: "c11", 1: "c3", 3: "c8", 4: "i4", 5: "c0" },
+  4800: { 0: "i4" },
+  4806: { 0: "i4", 1: "c0", 2: "c11", 3: "c3" },
+  4801: { 0: "i4", 1: "c8" },
+  4803: { 0: "i4", 1: "c0", 2: "c3" },
+  4805: { 0: "i4", 1: "c3", 2: "c8", 3: "c11" },
+  4830: { 0: "c0", 1: "i4", 2: "c8", 3: "c11" },
+  4804: { 0: "i4", 1: "c8", 2: "c0", 3: "c11" },
+};
+// The same report, §2: one control on each index 0–11 of 4-2-2-4 in turn, and the index it ends on.
+const MEASURED_SINGLE_FROM_4815 = {
+  4806: [0, 1, 2, 3, 0, 2, 0, 2, 0, 1, 2, 3],
+  4801: [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+  4830: [0, 0, 0, 0, 1, 1, 2, 3, 2, 2, 3, 3],
+};
+
+const paneWith = (byCell) => ({
+  ...Gr.nuevo(),
+  vi: { connector: { pattern: 4815, inputs: Object.entries(byCell).filter(([, name]) => name.startsWith("c")).map(([cell, name]) => ({ name, cell: Number(cell) })), outputs: Object.entries(byCell).filter(([, name]) => name.startsWith("i")).map(([cell, name]) => ({ name, cell: Number(cell) })) } },
 });
+const cellsByName = (g) => Object.fromEntries(connectorTerminals(g.vi.connector).map((terminal) => [terminal.cell, terminal.name]));
+const choosePattern = (g, number) => {
+  const menu = CP.openMenu({ ...P.inicial(), g }, CP.MENU_ROOT, 100, 50, null);
+  return ED.orden(menu, `${PATTERNS_ROW}.${patternNumbered(number).id}`, {});
+};
+
+test("choosing a pattern moves each terminal to the nearest cell as LabVIEW does", () => {
+  for (const [number, expected] of Object.entries(MEASURED_FROM_4815)) {
+    const chosen = choosePattern(paneWith(FIVE_TERMINALS), Number(number));
+    assert.equal(chosen.menu, null);
+    assert.equal(chosen.g.vi.connector.pattern, Number(number));
+    assert.deepEqual(cellsByName(chosen.g), expected, `4815 → ${number}`);
+  }
+  for (const [number, ends] of Object.entries(MEASURED_SINGLE_FROM_4815)) {
+    const landed = ends.map((_, cell) => Number(Object.keys(cellsByName(choosePattern(paneWith({ [cell]: "c" }), Number(number)).g))[0]));
+    assert.deepEqual(landed, ends, `one control on each cell of 4815 → ${number}`);
+  }
+});
+
+test("a terminal that loses its cell keeps its role elsewhere and its panel object", () => {
+  const chosen = choosePattern(paneWith(FIVE_TERMINALS), 4800);
+  assert.deepEqual(connectorTerminals(chosen.g.vi.connector).map(({ name, dir }) => [name, dir]), [["i4", "out"]]);
+  // An empty pane keeps a pattern of its own, as LabVIEW does.
+  const empty = choosePattern(Gr.nuevo(), 4833);
+  assert.equal(empty.g.vi.connector.pattern, 4833);
+  assert.deepEqual(connectorTerminals(empty.g.vi.connector), []);
+});
+

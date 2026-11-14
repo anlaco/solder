@@ -1,5 +1,5 @@
 // What a window remembers about its last paste, to shift the next one: pasting
-// again without moving the pointer puts each copy 8 px down and to the right of
+// again with no click in between puts each copy 8 px down and to the right of
 // the previous one (labview-captures/create-paste/paste-second-offset-8-8.png).
 
 /** How far each repeated paste moves, down and to the right. */

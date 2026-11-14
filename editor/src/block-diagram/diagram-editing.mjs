@@ -1380,6 +1380,8 @@ export function teclear(d, tecla) {
   if (!e) return d;
   if (e.etiqueta || e.cadena) return { ...d, edicion: Et.teclear(e, tecla) };
   if (tecla === "Backspace") return { ...d, edicion: { ...e, texto: e.todo ? "" : e.texto.slice(0, -1), todo: false } };
+  // Delete erases what is selected; the caret is always at the end, so there is nothing after it to erase.
+  if (tecla === "Delete") return e.todo ? { ...d, edicion: { ...e, texto: "", todo: false } } : d;
   if (tecla.length !== 1) return d;
   return { ...d, edicion: { ...e, texto: e.todo ? tecla : e.texto + tecla, todo: false } };
 }
@@ -1532,7 +1534,7 @@ export function orden(d, id, ctx) {
     return cerrar(retype(d.g, nodo, POR_ABREVIATURA[ultimo]));
   }
   // LabVIEW flips the whole panel array from its own menu or from the one of its element.
-  if (/\.change-to-(indicator|control)$/.test(id) && PANEL_ARRAY_KINDS.includes(nodoPor(d.g, nodo)?.tipo)) return cerrar(flipArrayKind(d.g, nodo));
+  if (/\.change-to-(indicator|control)$/.test(id) && FLIPPABLE_PANEL_KINDS.includes(nodoPor(d.g, nodo)?.tipo)) return cerrar(flipArrayKind(d.g, nodo));
   if (id.includes(".mechanical-action.")) return cerrar(Gr.fijarConfig(d.g, nodo, { mechanical: ultimo }));
   // Data Operations of a panel object or its terminal (DT-053): its current value becomes its default, or the other way round.
   if (id.endsWith(".data-operations.make-current-value-default")) return cerrar(CV.makeCurrentValuesDefault(d.g, [nodo]));
@@ -1639,6 +1641,8 @@ const condicionDe = (g, id) => {
 };
 
 const PANEL_ARRAY_KINDS = ["arr-control", "arr-indicator"];
+/** The panel objects whose terminal Change to Control and Change to Indicator flip: the arrays and the DAQ names (DT-076 §5). */
+const FLIPPABLE_PANEL_KINDS = [...PANEL_ARRAY_KINDS, "daq-name-control", "daq-name-indicator"];
 const NUMERIC_ELEMENT_ROOT = "context.panel-array-element";
 const isArrayNode = (node) => node?.tipo === "arr-const" || PANEL_ARRAY_KINDS.includes(node?.tipo);
 

@@ -75,6 +75,10 @@
 }
 .sd-panel .sd-visa .sd-dropdown::before { position: absolute; left: 5px; top: 7px; border-top-color: #000; }
 .sd-panel .sd-visa .sd-dropdown:hover::before { border-top-color: #000; }
+/* A DAQ name's control is 168 wide (reports/2026-11-06-daqmx-types.md, "Panel"), 64 more than a VISA resource name's:
+   the extra width goes to the field and the button moves right by as much; the indicator, 104 wide, is the same. */
+.sd-panel .sd-daq-name.sd-control .sd-field { width: 133px; }
+.sd-panel .sd-daq-name .sd-dropdown { left: 147px; }
 
 /* ——— File path ———
    Measured (reports/2026-10-26-path-type.md §1): a 100 × 25 box with a 4 px bevel round the same #e2e2e2 inside as the

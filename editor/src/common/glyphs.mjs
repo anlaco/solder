@@ -2335,22 +2335,25 @@ export const visaDropdownArrow = (color = "currentColor") =>
 /**
  * The picture of a VISA resource name control inside its terminal in the diagram (View As Icon on): the text field
  * with "VISA" and a grey button with a black arrow, on the grey of the terminal. The terminal itself (frame, type tab
- * and arrow) is `terminalPanelIcono`; this is its `dibujo`.
+ * and arrow) is `terminalPanelIcono`; this is its `dibujo`. A DAQ name's terminal has the same picture with its own caption.
  */
-export const dibujoVisa = () =>
+export const dibujoVisa = (caption = "VISA") =>
   `<rect x="2" y="7" width="26" height="1.4" fill="#a8a8a8"/><rect x="2" y="8.4" width="26" height="13" fill="#9a9a9a"/>` +
-  `<rect x="3" y="9" width="17.5" height="11.5" fill="${PAPER}"/>${texto(11.7, 15, "VISA", 6, "#000", 700)}` +
+  `<rect x="3" y="9" width="17.5" height="11.5" fill="${PAPER}"/>${texto(11.7, 15, caption, 6, "#000", 700)}` +
   `<rect x="20.5" y="9" width="7.5" height="11.5" fill="#aaaaaa"/><path d="M22.5 13.2H26.5L24.5 16.4Z" fill="#000"/>` +
   `<rect x="2" y="21.5" width="26" height="1.4" fill="#cfcfcf"/>`;
 
 /** The light patch at the data end of the compact terminal: the colour mixed with white (#d8b2d8, edge #a54ca5), measured. */
 export const VISA_PATCH = Object.freeze({ fill: "#d8b2d8", edge: "#a54ca5" });
 
-/** The terminal of a VISA resource name control or indicator: View As Icon on (38 × 38) or off (32 × 16). */
-export const terminalVisa = (control, compact) =>
+/**
+ * The terminal of a VISA resource name control or indicator: View As Icon on (38 × 38) or off (32 × 16). A DAQ name's
+ * is the same in the same purple (measured: both are #7f007f); `caption` says which one it is in the picture.
+ */
+export const terminalVisa = (control, compact, caption = "VISA") =>
   compact
     ? terminalPanelCompacto(control, VISA_COLOR, "I/0", VISA_PATCH)
-    : terminalPanelIcono(control, VISA_COLOR, "I/O", dibujoVisa());
+    : terminalPanelIcono(control, VISA_COLOR, "I/O", dibujoVisa(caption));
 
 // ——— The VISA functions (reports/2026-10-25-visa-palettes.md §1–3, 2026-10-26-visa-nodes.md Q3) ———
 //
@@ -2439,12 +2442,25 @@ Object.assign(SUBPALETAS, {
 // letters of what each one names. Only VISA resource name is done.
 const ioBox = (label, size = 9) => svg48(ampliar(1.3, caja(5, 18, 43, 30, PAPER, 1.2, "#7a7a7a") + texto48(24, 24.3, label, size, INK, 600)));
 const waveformPath = (points, color) => `<polyline points="${points}" fill="none" stroke="${color}" stroke-width="1.6"/>`;
+/**
+ * The seven DAQ name controls of Controls ▸ Modern ▸ I/O ▸ DAQ Name Controls, drawn anew: the grey cap with the I/O
+ * glyph, the white field and the grey arrow button of the panel's control (reports/2026-11-06-daqmx-types.md, "Panel"),
+ * with the short name of the kind in the field. Their names are told by the hover name, not by the picture.
+ */
+const DAQ_NAME_ICON_TEXT = { "task-name": "Task", "global-channel": "Glob", "physical-channel": "Phys", terminal: "Term", "scale-name": "Scale", "device-name": "Dev", switch: "Sw" };
+const daqNameIcon = (text) =>
+  svg48(ampliar(1.3,
+    caja(5, 17, 43, 31, "#c2c2c2", 1.2, "#7a7a7a") + lleno(6, 18, 12, 30, "#b3b3b3") +
+      `<g transform="translate(7.2 19.5) scale(0.7)">${visaIoGlyph("#000")}</g>` +
+      lleno(13, 18, 31, 30, PAPER) + texto48(22, 24.3, text, 6.5, INK, 600) + lleno(31, 18, 42, 30, "#b3b3b3") + poligono([[34, 22.5], [39, 22.5], [36.5, 26]], "#000")));
+const daqNameIcons = () => Object.fromEntries(Object.entries(DAQ_NAME_ICON_TEXT).map(([id, text]) => [id, daqNameIcon(text)]));
 Object.assign(CONTROLES, {
   waveform: svg48(ampliar(1.2, caja(6, 10, 42, 38, PAPER, 1.2, "#7a7a7a") + waveformPath("9,24 14,14 19,34 24,14 29,34 34,14 39,24", "#00a000"))),
   "digital-waveform": svg48(ampliar(1.2, caja(6, 10, 42, 38, PAPER, 1.2, "#7a7a7a") + waveformPath("9,32 9,16 17,16 17,32 25,32 25,16 33,16 33,32 39,32", "#0000ff"))),
   "digital-data": svg48(ampliar(1.3, caja(5, 14, 43, 34, PAPER, 1.2, "#7a7a7a") + texto48(24, 24.3, "0101", 11, "#0000ff", 700))),
   "traditional-daq-channel": ioBox("DAQ"),
   datafinder: ioBox("DF", 10),
+  ...daqNameIcons(),
   "visa-resource-name": svg48(ampliar(1.3,
     caja(5, 17, 43, 31, "#c2c2c2", 1.2, "#7a7a7a") + lleno(6, 18, 12, 30, "#b3b3b3") +
       `<g transform="translate(7.2 19.5) scale(0.7)">${visaIoGlyph("#000")}</g>` +
@@ -2457,7 +2473,7 @@ Object.assign(CONTROLES, {
   "shared-variable-control": ioBox("SV", 10),
 });
 Object.assign(CARPETAS_CONTROLES, {
-  "daqmx-name-controls": svg(caja(1.5, 3.5, 14.5, 12.5, PAPER, 0.8) + texto(8, 8.2, "DAQmx", 3.8)),
+  "daqmx-name-controls": svg(caja(1.5, 3.5, 14.5, 12.5, PAPER, 0.8) + texto(8, 8.2, "DAQ", 3.8)),
 });
 
 // ——— Path (DT-067) ———

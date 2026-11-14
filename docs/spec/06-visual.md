@@ -669,6 +669,10 @@ Measured at 1:1 in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-26-visa-re
   its box has only the Refresh row, greyed, which says why when it is clicked.
 - **Palette (Controls ▸ Modern ▸ I/O):** 3 columns and 13 elements, in the order of `labview-captures/visa/controls-modern-io.png`;
   VISA resource name at (row 3, column 1). Its icon, like the other twelve, is drawn anew.
+- **DAQ names (2026-11-13, `labview-captures/reports/2026-11-06-daqmx-types.md`, "Panel"):** the same box, cells and colours
+  (`#B3B3B3` cap with the black I/O glyph, white field, `#B3B3B3` arrow button) at 168 × 26 on a control and 104 × 26 on an indicator.
+  Old School keeps the 4 px bevel and the 17 px button: the field takes the 64 px more width and the button sits at x = 147. The
+  terminal is the VISA one in `#7f007f` with "DAQ" in its picture (unverified: the DAQ terminal's own picture was not captured).
 
 ## 18. The VISA functions (2026-10-26, DT-065, DT-066)
 

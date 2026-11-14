@@ -918,7 +918,10 @@ function moveFloatingDrag(ev) {
 
 /** The last thing copied or cut in this window (`{ viKey, fragment }`), and where the last paste was done. */
 let portapapeles = { paquete: null, memoria: null };
-/** The last point of the canvas the pointer was over: where Ctrl+V and Edit ▸ Paste paste. */
+/**
+ * The last point of the canvas that was clicked: where Ctrl+V and Edit ▸ Paste centre what they paste. LabVIEW pastes
+ * on the last click in the window, not where the pointer is (measured, reports/2026-11-14-editing-fixes.md §1).
+ */
 let punteroEnLienzo = null;
 
 /** The size of this window's canvas: the best guess for the other window's, which this window cannot see. */
@@ -927,7 +930,7 @@ function tamanoDelLienzo() {
   return rect ? { width: Math.round(rect.width), height: Math.round(rect.height) } : undefined;
 }
 
-/** Where to paste: the pointer, or the middle of the canvas if it has not been over it yet. */
+/** Where to paste: the last click on the canvas, or its middle if it has not been clicked yet. */
 function dondePegar() {
   if (punteroEnLienzo) return punteroEnLienzo;
   const tam = tamanoDelLienzo() ?? { width: 600, height: 400 };
@@ -1516,6 +1519,7 @@ async function browseForPath(ev, button) {
 
 addEventListener("mousedown", (ev) => {
   if (ev.button !== 0) return;
+  if (ev.target.closest?.(".lienzo")) punteroEnLienzo = punto(ev);
   // Press and hold on Highlight Execution opens its speed menu (REPORT.md §1).
   const bulb = ev.target.closest?.(`[data-id="${HIGHLIGHT_BUTTON_ID}"]`);
   if (bulb && !bulb.classList.contains("desactivado")) debugUi.speedMenuTimer = setTimeout(() => openSpeedMenu(bulb), DS.SPEED_MENU_HOLD_MS);
@@ -1634,7 +1638,7 @@ function pulsarEnRun(ev) {
   // A control a Property Node disabled cannot be operated (DT-072 §6, measured for Disabled 1 and 2).
   if (!PP.isOperable(pan.runProps, sobre.id)) return;
   const n = pan.g.nodos.find((k) => k.id === sobre.id);
-  if ((sobre.tipo === "casilla" || sobre.tipo === "paso") && (n?.tipo === "control" || n?.tipo === "str-control" || n?.tipo === "visa-control" || n?.tipo === "path-control")) return cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), false));
+  if ((sobre.tipo === "casilla" || sobre.tipo === "paso") && (n?.tipo === "control" || n?.tipo === "str-control" || n?.tipo === "visa-control" || n?.tipo === "daq-name-control" || n?.tipo === "path-control")) return cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), false));
   // Un array se acciona como parado: se escribe en sus elementos y su índice se mueve (también el de un indicador).
   if ((sobre.tipo === "elem" && n?.tipo === "arr-control") || (sobre.tipo === "paso" && (n?.tipo === "arr-control" || n?.tipo === "arr-indicator"))) return cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), false));
   // Un control de error se acciona como parado: el status alterna y code y source se escriben.
@@ -1909,7 +1913,6 @@ addEventListener(
 addEventListener("mousemove", (ev) => {
   if (debugUi.drag) return moveFloatingDrag(ev);
   mostrarTip(ev);
-  if (ev.target.closest?.(".lienzo")) punteroEnLienzo = punto(ev);
   if (conPanel) {
     // Pasar por una fila con submenú lo abre; por otra, lo cierra.
     const fila = pan.menu && ev.target.closest(".item-menu");

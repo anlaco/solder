@@ -457,3 +457,15 @@ test("Ctrl+A while typing in a control's box or a constant selects all its text;
   const afterClick = { ...constantTyping, edicion: { ...constantTyping.edicion, todo: false } };
   assert.equal(ED.teclear(ED.seleccionarTodoTexto(afterClick), "X").edicion.texto, "X", "a constant on the diagram");
 });
+
+// Found building the DAQ plugin by hand (docs/design/daq-plugin-findings.md S3-#7): after Ctrl+A, Delete erased nothing.
+test("after Ctrl+A, Delete erases the selected text as Backspace does; with the caret at the end it erases nothing", () => {
+  const string = placed(P.inicial(), "str-control", { x: 100, y: 200 });
+  let typing = P.editarValor(string, WINDOWS, string.g.nodos[0].id, false);
+  for (const key of "orig") typing = P.teclear(typing, key);
+  assert.equal(P.teclear(P.seleccionarTodoTexto(typing), "Delete").edicion.texto, "");
+  assert.equal(P.teclear(typing, "Delete").edicion.texto, "orig");
+  const { g, id } = place("path-constant", 0, 0, fileOn("windows"));
+  const constantTyping = ED.editar({ ...ED.inicial(), g }, WINDOWS, id);
+  assert.equal(ED.teclear(ED.seleccionarTodoTexto(constantTyping), "Delete").edicion.texto, "", "a constant on the diagram");
+});

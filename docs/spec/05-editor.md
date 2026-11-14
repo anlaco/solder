@@ -947,11 +947,15 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/subvi/`).
 > small square of that colour. Right-click: Disconnect All Terminals, Disconnect This Terminal and This
 > Connection Is ▸ Required / Recommended (default, checked) / Optional work; the last two are greyed without a
 > terminal under the cursor, and Required is greyed for an output. Add/Remove Terminal, Rotate and Flip
-> are placeholders (only 4-2-2-4 exists). Patterns ▸ opens, on hover, a grid of 36 icon-only thumbnails (6 × 6,
-> `connector-menu-patterns.png`) with the pattern in use outlined in blue; only 4-2-2-4 can be chosen (choosing it
-> only closes the menu) and the other 35 are greyed, and hovering one says why. The shapes are in
-> `core/model/connector-patterns.mjs`. Unverified: LabVIEW's names for the 35 other patterns, and what choosing
-> one does to the terminals already assigned. A deleted control leaves the connector. Written as `vi.connector`.
+> are placeholders (LabVIEW keeps a turn or flip apart from the pattern number). Patterns ▸ opens, on hover, a grid of
+> 36 icon-only thumbnails (6 × 6, `connector-menu-patterns.png`) with the pattern in use outlined in blue; choosing
+> another one changes the pane's pattern with no dialog, and each assigned terminal moves to the new cell nearest
+> (centre to centre) to where it was, nearest pairs first, one per cell; a terminal left without a cell is dropped and
+> its control stays on the panel (measured, `reports/2026-11-13-connector-pattern-change.md`; ties go to the lower
+> new index, then the lower old one, unverified). Choosing the pattern in use only closes the menu. The shapes are in
+> `core/model/connector-patterns.mjs`. Unverified: LabVIEW's names for the 35 other patterns. Not built: LabVIEW
+> marks every caller of the OVI broken after its pattern changes, even when the wired terminals survive. A deleted
+> control leaves the connector. Written as `vi.connector`.
 > Unverified: how LabVIEW marks the cell that waits for an element (ours: blue frame); the edge of the icon for the
 > middle cells (ours: top for 4 and 6, bottom for 5 and 7); the default cell of a terminal written without one.
 > Tested in `test/editor/connector-pane.test.mjs` and `test/editor/connector-patterns.test.mjs`.
@@ -1023,12 +1027,13 @@ unverified is unverified here too.
 > control, a string control and a constant). Copy takes the selected nodes with everything inside
 > a structure among them and the wires whose two ends are in the copy; the wires to what is left out are not copied
 > (`core/model/clipboard.mjs`). Cut removes the nodes and their wires (no broken wire is left; Delete, in contrast, leaves them
-> broken: rule 91) and one undo brings them back. Paste puts the copy centred on the pointer (the last place it was over the canvas; Edit ▸ Paste uses the same;
-> unverified: LabVIEW's place for the menu), selects the copy, makes every pasted node a new id and name, and puts
-> each copy of a structure's contents in the structure it fell in (rule 26). Pasting again without moving the pointer
-> shifts the copy 8 px down and to the right each time (LabVIEW sometimes lands on the place the selection was made:
-> the cause is unverified and not reproduced). A pasted control gets its panel object in the first free place of the
-> panel's left column, with a numbered label ("x 5"); pasted on the panel, a control is centred on the pointer, numbered,
+> broken: rule 91) and one undo brings them back. Paste puts the copy, by the centre of its box with the labels, on the last click on the canvas (its middle before any
+> click), not where the pointer is now (measured, `reports/2026-11-14-editing-fixes.md` §1; Edit ▸ Paste uses the
+> same; unverified: LabVIEW's place for the menu), selects only the copy, makes every pasted node a new id and name, and
+> puts each copy of a structure's contents in the structure it fell in (rule 26). Pasting again with no click in
+> between shifts the copy 8 px down and to the right each time (measured the same day; this explains what an earlier
+> capture took for landing on the place the selection was made: that was the last click). A pasted control gets its panel object in the first free place of the
+> panel's left column, with a numbered label ("x 5"); pasted on the panel, a control is centred on the last click, numbered,
 > and gets its terminal on the diagram, unwired, 8 px down and to the right of the original's (unverified); a
 > diagram-only fragment pasted on the panel takes just its controls and indicators. One paste is one step of undo. The
 > clipboard is shared by every open OVI through the main process (`clipboard:write` and `clipboard:read`; it is kept as
@@ -1429,7 +1434,7 @@ The look is in [`06-visual.md`](06-visual.md) §17. Tests: `test/editor/visa-res
 > terminal's own Create ▸ list (it is the indicator terminal's).
 
 > **Rule 107 — Controls ▸ Modern ▸ I/O.** The subpalette has 3 columns and 13 elements in the measured order: Waveform, Digital Waveform,
-> Digital Data, Traditional DAQ Channel, DAQmx Name Controls (a subpalette, not opened in LabVIEW either), DataFinder, **VISA resource
+> Digital Data, Traditional DAQ Channel, DAQ Name Controls (DAQmx Name Controls in LabVIEW; a subpalette, rule 130), DataFinder, **VISA resource
 > name** (row 3, column 1; done: it puts a `visa-control` on the panel, labelled "VISA resource name", with its terminal), IVI Logical Name,
 > FieldPoint IO Point, IMAQ Session, Motion Resource, System Configuration and Shared Variable Control. The other twelve are greyed with
 > their reason (`tipo-waveform`, `drivers-de-adquisicion`, `variables-y-feedback`). The VISA resource name indicator is not in the
@@ -1782,3 +1787,41 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-11-06-clfn.md`, `202
 > **one** step of undo named "Change Attribute", as an Express OVI's does, and an OK that changes nothing is no step. The wires
 > follow their parameters through additions, moves and deletions (a parameter's wires go with it; the path wires go when Specify
 > path on diagram is unticked). Enter accepts. Tested in `test/editor/call-library-nodes.test.mjs`.
+
+## 25. DAQ names on the panel (2026-11-13, DT-076 §5, DT-087 §7)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-11-06-daqmx-types.md`, "Panel", "Dropdowns, menus", "Coercion", "Values").
+Tests: `test/editor/daq-name-controls.test.mjs`.
+
+> **Rule 130 — Controls ▸ Modern ▸ I/O ▸ DAQ Name Controls.** The folder (DAQmx Name Controls in LabVIEW, DAQ for DAQmx, DT-076 §1)
+> opens in three columns with seven controls in the measured order: Task Name and Global Channel; Physical Channel, Terminal and Scale
+> Name; Device Name and Switch. Each puts the same block, `daq-name-control`, whose `config.type` is `{ "daq-name": <kind> }`, with the
+> label of its kind ("DAQ Task Name", "DAQ Global Channel", "DAQ Physical Channel", "DAQ Terminal", "DAQ Scale Name", "DAQ Device
+> Name", "DAQ Switch"; LabVIEW's with DAQ for DAQmx). The indicator, `daq-name-indicator`, is not in the palette: it comes from Change
+> to Indicator or Create ▸ Indicator. The picture of each palette entry is drawn anew. Tested.
+
+> **Rule 131 — The panel.** A DAQ name is a VISA resource name's picture (rule 104, `06-visual.md` §17): a bevelled box, a grey cap
+> (#b3b3b3) with the black I/O glyph, a white text field and, on a control, a grey arrow button; the indicator has no button. The
+> control is 168 × 26 px and the indicator 104 × 26 (measured for a task in, the physical channels and the task out). **Not done:** the
+> custom scale name's 132 × 26 (every kind takes 168), and what the arrow button opens, a list of the tasks, channels and the like
+> that NI-DAQ knows (`nombres-daq`): it is drawn and opens nothing. The value typed in the field is the control's text on one line,
+> as a VISA resource name's. Tested.
+
+> **Rule 132 — What the control gives and the indicator shows.** The control of a kind other than a task is its text, a string (measured:
+> it reads as a string). A **task** control gives the task wire `{ name, number, record }` (DT-087 §7): the name typed on the panel,
+> `number` 0 and `record` 0, so an empty field is the empty task, which LabVIEW shows as `["", 0]`; a task held in the I/O process
+> is made by a DAQ function (Create Task), never by the panel. In a subOVI the control receives the caller's task wire unchanged, and
+> an unwired input is the empty task. A task **indicator** shows the task's name, not LabVIEW's `["name", n]`: its field is one line of
+> text, and the number is the I/O process's own and says nothing to the user (a Property Node's Value still reads the whole wire).
+> A string wired to a task stays "not built" (no saved tasks to look it up). Tested in `daq-name-controls.test.mjs`.
+
+> **Rule 133 — The terminals and the menus.** The terminals are a VISA resource name's (38 × 38 with View As Icon, 32 × 16 without, in
+> #7f007f), the picture saying DAQ. Create ▸ Constant, Control and Indicator on any DAQ name terminal, or on the constant's body, make
+> the DAQ name constant, control or indicator **of the same kind**, wired when the sides fit (`core/model/create-on-terminal.mjs`):
+> this is how the constant is reached. Change to Indicator and Change to Control on a terminal flip it, keeping its wires (a wire left
+> facing the wrong way is broken). The constant's menu (`context.daq-name-constant`) has the rows measured on a channel and a
+> terminal constant; the terminals' (`context.daq-name-control-terminal`, `…-indicator-terminal`) are the VISA resource name's
+> terminal menus with DAQ in place of VISA, **unverified** (the DAQ terminal's was not opened). Done: Create ▸ Constant, Control and
+> Indicator, Change to Indicator / Control on a terminal, View As Icon and Data Operations ▸ Make Current Value Default and
+> Reinitialize. Everything else is greyed with its reason (rule 54), among it Change to Control / Indicator on the constant and the
+> panel's own right-click menus. Tested.

@@ -339,7 +339,7 @@ test("the VISA resource name control is placed from Controls Modern I/O with its
   assert.equal(columnas, 3);
   assert.deepEqual(sitios.map((s) => [s.fila + 1, s.columna + 1, s.e.etiqueta]), [
     [1, 1, "Waveform"], [1, 2, "Digital Waveform"], [1, 3, "Digital Data"],
-    [2, 1, "Traditional DAQ Channel"], [2, 2, "DAQmx Name Controls"], [2, 3, "DataFinder"],
+    [2, 1, "Traditional DAQ Channel"], [2, 2, "DAQ Name Controls"], [2, 3, "DataFinder"],
     [3, 1, "VISA resource name"], [3, 2, "IVI Logical Name"], [3, 3, "FieldPoint IO Point"],
     [4, 1, "IMAQ Session"], [4, 2, "Motion Resource"], [4, 3, "System Configuration"],
     [5, 1, "Shared Variable Control"],
@@ -350,7 +350,7 @@ test("the VISA resource name control is placed from Controls Modern I/O with its
     assert.ok(esHueco(hole), hole.id);
     if (ultimo(hole.id) !== "thumbtack") assert.match(html, new RegExp(`class="icono-funcion hueco" data-id="${hole.id.replaceAll(".", "\\.")}"`), `${hole.etiqueta} is greyed`);
   }
-  assert.match(html, /class="carpeta hueco" data-id="palette\.controls\.modern\.io\.daqmx-name-controls"/, "DAQmx Name Controls is a greyed subpalette");
+  assert.match(html, /class="carpeta" data-id="palette\.controls\.modern\.io\.daqmx-name-controls"/, "DAQ Name Controls is a subpalette, done (daq-name-controls.test.mjs)");
   const entry = INV.entrada(`${id}.visa-resource-name`);
   assert.equal(entry.bloque, "visa-control");
   // Placing it puts the control on the panel with its terminal on the diagram.

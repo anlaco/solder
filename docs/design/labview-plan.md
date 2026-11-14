@@ -739,6 +739,28 @@ array or string read by a local variable while another loop writes it is never t
       handle tests now link their library with `lvrt` and run on Windows, two tests expected `/` in paths, and the I/O
       process's Electron check imported its modules by a Windows path and hung). Left: packing the add-on for download. Next: the
       plugin's OVIs built in the editor as a user, the palette and the ESP32.*
+      *DAQ, the plugin's OVIs, stage 1 (DT-087, amendment of 2026-11-13: Solder's own diagram, drawn by hand in the shape
+      of LabVIEW's) on `feature/daq`: DAQ Fill In Error Info works; DAQ Start Task has its diagram but U64 stand-ins for
+      the task and pattern 4815, in `addons/daq/1/ovi.lib/DAQ/`. 29 findings in
+      [`daq-plugin-findings.md`](daq-plugin-findings.md); blocking: the connector pattern cannot be changed (#8) and
+      there is no DAQ task control, indicator or reachable constant (#16); lost: a constant's U32 is saved as I32 (#24).
+      Next: fix the blocking and lost findings, then rebuild Start Task and go on with the rest of stage A.*
+      *The same day: #16 built (DAQ name controls and indicators, Create ▸ on DAQ terminals reaches the constant); #8
+      fixed for Patterns ▸ after measuring LabVIEW ([`connector-pattern-change`](../../labview-captures/reports/2026-11-13-connector-pattern-change.md),
+      DT-075 amendment: terminals move to the nearest cell); #24 not reproduced (a missed click). Next: rebuild DAQ Start
+      Task by hand with its task terminals and 4833, run it against the add-on's `nilvaiu`, then the rest of stage A.*
+      *Stage 2 the same day: DAQ Start Task rebuilt by hand with the DAQ task control and indicator and 4833, run against
+      the add-on's `nilvaiu` (empty task: -200088 `<append>`; an incoming error passes through). Found and fixed: a Case
+      output tunnel refused DAQ names, VISA names and arrays. Left: the DAQ control's panel menu, redrawing the task
+      through the Case. Next: the rest of stage A (Create Task, Create Virtual Channel, Timing, Read, Stop, Clear, Wait
+      Until Done), one family per stage, and the DAQ palette (`daq.json`).*
+      *Stage 3 on 2026-11-14: Start Task's task through the Case, Stop Task and Clear Task built by hand; the three run as
+      subOVIs against the add-on's `nilvaiu` (`test/core/daq-plugin-ovis.test.mjs`). Findings S3-#n in
+      `daq-plugin-findings.md` (Ctrl+A in text fields, seen three times; paste position; wire direction from a tunnel).
+      Next: Create Task and Create Virtual Channel (AI Voltage), which need `lvAppReference`.*
+      *Fixes the same day, measured in LabVIEW first ([`editing-fixes`](../../labview-captures/reports/2026-11-14-editing-fixes.md)):
+      Ctrl+A in the node's dialog and Delete on a selected text; paste centred on the last click (LabVIEW's rule, not
+      the pointer); a press just past a wired tunnel starts a wire. Next: Create Task and Create Virtual Channel.*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

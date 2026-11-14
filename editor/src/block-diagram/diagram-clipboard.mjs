@@ -37,8 +37,9 @@ function fragmentCentre(fragment, ctx) {
 }
 
 /**
- * Ctrl+V: the fragment, centred on `pointer`; a second paste with the pointer
- * where it was shifts the copy by 8 px more down and to the right each time.
+ * Ctrl+V: the fragment, centred on `pointer`, the last click on the canvas (measured,
+ * reports/2026-11-14-editing-fixes.md §1); a second paste with no click in between
+ * shifts the copy by 8 px more down and to the right each time.
  * The copies are selected, enter the structure they fall in, and the controls
  * among them get a new object on the panel. `memory` is what the last paste
  * left (or null); the new one is returned to keep for the next. One paste is

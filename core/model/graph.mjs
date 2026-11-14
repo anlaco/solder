@@ -16,6 +16,9 @@ import { LINKED_CONTROL_TYPE, isImplicit, loadProperties } from "./property-node
 import { callLibraryPorts } from "./call-library.mjs";
 import { isDaqTask } from "./daq-name.mjs";
 import { DIFFERENT_TYPES_MESSAGE, automaticChoice, isAutomatic, noInstanceFitsDetail, renamedByCell, selectedInstance } from "./polymorphic.mjs";
+
+/** The type of every frame's side of a Case output tunnel and of its outside: one type for all, of any class. */
+const CASE_TUNNEL_TYPE = Object.freeze({ escalar: "C", anyType: true });
 import { DBL, ERROR, FILE_REFNUM, NUMERICOS, PATH, arrayOf, comun, convertirValor, conversion, dimensionsOf, esArray, esCluster, esEntero, esNumerico, graphAccepts, carriesUndefinedArray, isUndefinedArray, nombre, esRefnum, strictRefnum, withoutOneDimension } from "./types.mjs";
 
 /**
@@ -61,7 +64,7 @@ export function cargarCatalogo(datos, propertiesData) {
       if (b[dir] === "dynamic:case-frames") {
         const n = nodo.config?.marcos ?? b.config.marcos.value;
         const conDefecto = nodo.config?.["use-default"] ? { default: 0 } : {};
-        return Array.from({ length: n }, (_, i) => ({ name: `x-${i}`, label: "", type: { escalar: "C" }, lado: "dentro", marco: i, dir, ...conDefecto }));
+        return Array.from({ length: n }, (_, i) => ({ name: `x-${i}`, label: "", type: CASE_TUNNEL_TYPE, lado: "dentro", marco: i, dir, ...conDefecto }));
       }
       if (b[dir] === "dynamic:compound-inputs") {
         const { prefijo, label, type } = b.entradas;
@@ -1023,7 +1026,8 @@ function ligar(declarado, llega, vars) {
     // Comprobado en LabVIEW 2026 Q3 (docs/reference/labview-errors.md §8): un túnel
     // de Case y Select aceptan clusters y cadenas; I32 con DBL da DBL; cadena con número rompe el cable.
     // A path is compared too (DT-067), never mixed with a string: the second wire breaks.
-    if (llega !== "boolean" && llega !== "string" && llega !== PATH && !esNumerico(llega) && !esCluster(llega)) return;
+    // A Case tunnel takes any type (`anyType`): a VISA resource name or a DAQ task passes through it as in LabVIEW.
+    if (!declarado.anyType && llega !== "boolean" && llega !== "string" && llega !== PATH && !esNumerico(llega) && !esCluster(llega)) return;
     const v = vars[declarado.escalar];
     vars[declarado.escalar] = v === undefined ? llega : !esNumerico(v) || !esNumerico(llega) ? v : comun(v, llega);
   } else if ("texto" in declarado) {

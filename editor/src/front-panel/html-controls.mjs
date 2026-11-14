@@ -77,15 +77,19 @@ export function numericHtml(frame, { valueHtml, withIncrementer, isEnum }) {
 /** A string control or indicator: its text, with the lines it has. */
 export const stringHtml = (frame, { valueHtml }) => objectFrame({ ...frame, kind: "string" }, field(frame.id, valueHtml));
 
+/** The parts of a VISA resource name's HTML that a DAQ name changes: a class, and a button with no menu behind it yet. */
+export const DAQ_NAME_VARIANT = Object.freeze({ extraClass: "sd-daq-name", dropdown: `<span class="sd-dropdown" role="button" aria-haspopup="menu" aria-label="DAQ names"></span>` });
+
 /**
  * A VISA resource name control or indicator: the icon cell, the text field with its resource string and, on a control,
  * the dropdown button that lists the VISA resources (`data-visa-dropdown`, which the window answers). The I/O glyph is
- * ornament: Plain writes "I/O" in the cell and Old School draws the glyph.
+ * ornament: Plain writes "I/O" in the cell and Old School draws the glyph. A DAQ name (`DAQ_NAME_VARIANT`) is the
+ * same, wider, and its button does not open anything yet.
  */
-export function visaHtml(frame, { valueHtml }) {
+export function visaHtml(frame, { valueHtml, extraClass, dropdown = `<span class="sd-dropdown" role="button" aria-haspopup="menu" aria-label="VISA resources" data-visa-dropdown></span>` }) {
   const icon = `<span class="sd-visa-icon"><span class="sd-visa-glyph" aria-hidden="true">${visaIoGlyph()}</span></span>`;
-  const dropdown = frame.isControl ? `<span class="sd-dropdown" role="button" aria-haspopup="menu" aria-label="VISA resources" data-visa-dropdown></span>` : "";
-  return objectFrame({ ...frame, kind: "visa" }, icon + field(frame.id, valueHtml) + dropdown);
+  const classes = [...(frame.classes ?? []), ...(extraClass ? [extraClass] : [])];
+  return objectFrame({ ...frame, kind: "visa", classes }, icon + field(frame.id, valueHtml) + (frame.isControl ? dropdown : ""));
 }
 
 /** A control refnum: its page, which shows no value (DT-072 §2). */

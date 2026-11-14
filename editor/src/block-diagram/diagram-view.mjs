@@ -644,6 +644,15 @@ function terminalZoneWidth(n, k, ctx, ins, outs) {
 }
 
 /**
+ * How far a border node's faces reach past the glyph, toward the wire. The wire's own hit zone (stroke-width
+ * 6 in styles.css, half of it each side) starts right at the glyph's edge, so a press on the pixel just past a
+ * 9 px tunnel would grab the wire's first segment, not the tunnel: it reaches that far so that a press on either
+ * half of a wired tunnel starts a wire, as LabVIEW does (reports/2026-11-14-editing-fixes.md §4; S3-#2 of
+ * daq-plugin-findings.md). How far LabVIEW's own hot spot reaches past the glyph is unverified.
+ */
+const BORDER_FACE_REACH = 3;
+
+/**
  * Nodes whose terminals are not spread evenly over their edges, measured in LabVIEW 2026 Q3 (path-diagram-compare.md): Path Type's
  * input is at row 9-10 of its left edge and its output at row 10 of the tip, `fromRight` px in from the box's right edge; a
  * Path Constant's output leaves at row 8-9. `y` is the wire's centre, from the node's top.
@@ -685,7 +694,8 @@ export function terminales(n, ctx, edicion) {
       const fija = dir === "in" && tieneDosDimensiones(n);
       const alto = fija ? PASO_ENTRADAS_DOS_DIMENSIONES : k.alto / cuantos;
       const arriba = fija ? k.y + ENTRADAS_DOS_DIMENSIONES[i] - alto / 2 : k.y + alto * i;
-      const zona = { x: dir === "in" ? k.x : k.x + k.ancho - anchoZona, y: arriba, ancho: anchoZona, alto };
+      const faceZone = { x: dir === "in" ? k.x : k.x + k.ancho - anchoZona, y: arriba, ancho: anchoZona, alto };
+      const zona = esBorde(n) ? widenTowardWire(faceZone, dir) : faceZone;
       return {
         puerto: p.name,
         // Una constante no tiene nombre en su terminal: LabVIEW no enseña tip.
@@ -694,10 +704,17 @@ export function terminales(n, ctx, edicion) {
         x: dir === "in" ? k.x : k.x + k.ancho - (rows?.[dir]?.fromRight ?? 0),
         y: rows?.[dir] ? k.y + rows[dir].y : flecha !== null ? k.y + flecha : fija ? k.y + ENTRADAS_DOS_DIMENSIONES[i] : k.y + alto * (i + 0.5),
         zona,
-        centro: { x: zona.x + zona.ancho / 2, y: zona.y + zona.alto / 2 },
+        centro: { x: faceZone.x + faceZone.ancho / 2, y: faceZone.y + faceZone.alto / 2 },
       };
     });
   return [...reparte(ins, "in"), ...reparte(outs, "out")];
+}
+
+/** A face's zone grown by `BORDER_FACE_REACH` on the side the wire leaves or arrives from. */
+export function widenTowardWire(zone, dir) {
+  return dir === "in"
+    ? { ...zone, x: zone.x - BORDER_FACE_REACH, ancho: zone.ancho + BORDER_FACE_REACH }
+    : { ...zone, ancho: zone.ancho + BORDER_FACE_REACH };
 }
 
 /**
@@ -1250,6 +1267,9 @@ function pathConstant(n, ctx, edicion) {
 /** Is this the terminal of a VISA resource name control or indicator? */
 const isVisaTerminal = (n) => n.tipo === "visa-control" || n.tipo === "visa-indicator";
 
+/** Is this the terminal of a DAQ name control or indicator? It is drawn as a VISA resource name's, in the same purple. */
+const isDaqNameTerminal = (n) => n.tipo === "daq-name-control" || n.tipo === "daq-name-indicator";
+
 /**
  * The constant of a VISA resource name: the I/O glyph, the text (being typed, when it is), the divider and the
  * dropdown arrow, which opens the menu of the VISA resources (`data-visa-dropdown`, handled by the window).
@@ -1300,6 +1320,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
       ? G.terminalPath(control, !!n.vista?.compacto)
       : isVisaTerminal(n)
       ? G.terminalVisa(control, !!n.vista?.compacto)
+      : isDaqNameTerminal(n)
+      ? G.terminalVisa(control, !!n.vista?.compacto, "DAQ")
       : GRAPH_KINDS.includes(n.tipo)
       ? G.graphTerminal(n.tipo, n.tipo === "xy-graph" || esCluster(tipo), !!n.vista?.compacto)
       : isUndefinedArray(tipo)
@@ -1724,6 +1746,10 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   if (n.tipo === "visa-resource-constant") return "context.visa-constant";
   if (n.tipo === "visa-control") return "context.visa-control-terminal";
   if (n.tipo === "visa-indicator") return "context.visa-indicator-terminal";
+  // The menus of a DAQ name: the constant's was measured (reports/2026-11-06-daqmx-types.md, "Dropdowns, menus"); the terminals' follow the VISA ones (unverified).
+  if (n.tipo === "daq-name-constant") return "context.daq-name-constant";
+  if (n.tipo === "daq-name-control") return "context.daq-name-control-terminal";
+  if (n.tipo === "daq-name-indicator") return "context.daq-name-indicator-terminal";
   // The menus of a path, measured (reports/2026-10-26-path-type.md §2). The Not A Path Constant's was not read: it has the Empty one's rows.
   if (isPathTerminal(n)) return "context.path-control-terminal";
   if (CONSTANTES[n.tipo]?.path) return `context.${n.tipo}`;

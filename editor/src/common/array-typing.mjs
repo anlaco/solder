@@ -41,11 +41,11 @@ export function constantElementType(node) {
 /** Whether the node is an Array or Array Constant that is still undefined. */
 export const isEmptyArrayShell = (node) => (node?.tipo === "arr-const" || node?.tipo === "arr-control" || node?.tipo === "arr-indicator") && isUndefinedArray(node.config?.type);
 
-const PORT_AFTER_FLIP = { "arr-indicator": "value", "arr-control": "result" };
-const FLIPPED_KIND = { "arr-control": "arr-indicator", "arr-indicator": "arr-control" };
+const PORT_AFTER_FLIP = { "arr-indicator": "value", "arr-control": "result", "daq-name-indicator": "value", "daq-name-control": "result" };
+const FLIPPED_KIND = { "arr-control": "arr-indicator", "arr-indicator": "arr-control", "daq-name-control": "daq-name-indicator", "daq-name-indicator": "daq-name-control" };
 
 /**
- * Turns the panel array `id` from a control into an indicator or the other way round. Its terminal flips and its
+ * Turns the panel array `id` (or DAQ name) from a control into an indicator or the other way round. Its terminal flips and its
  * wires keep their node, with the port renamed (a wire left facing the wrong way is broken, as in LabVIEW).
  */
 export function flipArrayKind(graph, id) {

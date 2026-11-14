@@ -1248,6 +1248,7 @@ const BLOQUES = {
   "cluster-control": (e) => readControl(e),
   "str-control": (e) => readControl(e),
   "visa-control": (e) => readControl(e),
+  "daq-name-control": (e) => readControl(e),
   "path-control": (e) => readControl(e),
   "refnum-control": (e) => readControl(e),
   // Timing: el reloj de milisegundos de LabVIEW es un U32 que da la vuelta.
@@ -1618,7 +1619,7 @@ function juntarFilas(t, rowsCell, cell, temporal) {
   ];
 }
 
-const PANEL_CONTROLS = ["control", "bool-control", "str-control", "cluster-control", "arr-control", "visa-control", "path-control", "refnum-control"];
+const PANEL_CONTROLS = ["control", "bool-control", "str-control", "cluster-control", "arr-control", "visa-control", "path-control", "refnum-control", "daq-name-control"];
 
 /**
  * The panel objects whose value the editor holds as a VISA resource name's text alone (DT-066): the runtime
@@ -2093,6 +2094,13 @@ function panelDataOf(t, logical) {
   return esArray(logical) && logical.array === PATH ? { ...data, elemento: { ...data.elemento, path: true } } : data;
 }
 
+/**
+ * What the host needs to know of a DAQ task control or indicator (DT-087 §7): the editor holds a task on the panel as
+ * its name alone, so the host writes a control's text as a task with no record (record 0) and reads an indicator's
+ * name out of the task wire.
+ */
+const taskPanelData = (logicalType) => (isDaqTask(logicalType) ? { task: true } : {});
+
 /** Where a task's name lies in its memory (DT-087 §7). */
 const daqTaskNameOffset = () => disposicion(DAQ_TASK_LAYOUT).campos.find((field) => field.nombre === "name").off;
 
@@ -2513,7 +2521,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     const { record, slot } = panelRecordOf(id, type, historyLength);
     if (!indicadores.some((indicator) => indicator.nodo === id)) {
       const n = porId.get(id);
-      indicadores.push({ nodo: id, name: n.name, tipo: type, record, ...(historyLength && { historyLength, slot }), ...panelDataOf(type, logicalType), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalType === PATH && { path: true }) });
+      indicadores.push({ nodo: id, name: n.name, tipo: type, record, ...(historyLength && { historyLength, slot }), ...panelDataOf(type, logicalType), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalType === PATH && { path: true }), ...taskPanelData(logicalType) });
     }
     return { record, slot };
   }
@@ -2664,7 +2672,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     const tiposNodo = [...entradas.map((_, i) => tIn(i)), ...salidas.map((_, j) => tOut(j))];
     if (tiposNodo.some((t) => !escalar(t))) return errores.push({ nodo: id, motivo: `"${nombre}" carries a type the compiler cannot emit yet.` });
     // Un indicador sin cable no se escribe: conserva su valor, como en LabVIEW.
-    if (["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator", "visa-indicator", "path-indicator", "refnum-indicator", "waveform-chart", "waveform-graph", "xy-graph"].includes(n.tipo)) {
+    if (["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator", "visa-indicator", "path-indicator", "refnum-indicator", "daq-name-indicator", "waveform-chart", "waveform-graph", "xy-graph"].includes(n.tipo)) {
       if (!llegaA.has(`${id}.value`)) return;
       // In a subVI, a connector indicator leaves its value in its slot for the caller; any other one, nowhere.
       if (asSubVI) {
@@ -2685,7 +2693,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     const e = { nodo: n, cat, tIn, tOut, logicalTIn, logicalTOut, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex, registerPropertyNode, registerCallLibrary, registerControlReference };
     if (!asSubVI && PANEL_CONTROLS.includes(n.tipo)) {
       e.controlRecord = panelRecordOf(id, tOut(0)).record;
-      controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), record: e.controlRecord, ...panelDataOf(tOut(0), logicalTOut(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTOut(0) === PATH && { path: true }) });
+      controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), record: e.controlRecord, ...panelDataOf(tOut(0), logicalTOut(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTOut(0) === PATH && { path: true }), ...taskPanelData(logicalTOut(0)) });
     }
     try {
       const b = cat.bloque(n.tipo);

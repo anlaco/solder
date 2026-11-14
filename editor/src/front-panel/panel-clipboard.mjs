@@ -59,7 +59,7 @@ function fragmentCentre(nodes) {
  * Ctrl+V on the panel: the controls and indicators of the fragment, centred on
  * `pointer`, with the labels numbered and their terminals made on the diagram,
  * unwired, a little down and to the right of where they were (where LabVIEW puts
- * them is unverified). Pasting again without moving the pointer shifts the copy
+ * them is unverified). Pasting again with no click in between shifts the copy
  * by 8 px more each time. Returns `{ p, memory }`, or `{ p }` untouched when
  * the fragment has no panel object.
  */

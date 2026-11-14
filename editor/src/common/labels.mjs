@@ -54,6 +54,8 @@ export const graphAtRest = (view) => !view.accion && (!view.edicion || view.edic
  */
 export function teclear(e, tecla) {
   if (tecla === "Backspace") return { ...e, texto: e.todo ? "" : e.texto.slice(0, -1), todo: false };
+  // Delete erases what is selected; with the caret at the end, as it always is here, there is nothing after it.
+  if (tecla === "Delete") return e.todo ? { ...e, texto: "", todo: false } : e;
   const c = tecla === "Enter" ? "\n" : tecla;
   if (c.length !== 1) return e;
   return { ...e, texto: e.todo ? c : e.texto + c, todo: false };

@@ -12,10 +12,10 @@ export const NO_ERROR = Object.freeze({ status: false, code: 0, source: "" });
 /** Not A Refnum: what a control refnum holds until a reference is passed to it (DT-072 §2). */
 const NOT_A_REFNUM = 0;
 
-// A VISA resource name control holds its resource string (DT-066); a path control, a path (DT-067); a control refnum, a refnum.
-const EMPTY_VALUE_BY_CONTROL = { "str-control": "", "cluster-control": NO_ERROR, "arr-control": [], "visa-control": "", "path-control": EMPTY_PATH, "refnum-control": NOT_A_REFNUM };
+// A VISA resource name control holds its resource string (DT-066); a path control, a path (DT-067); a control refnum, a refnum; a DAQ name control, the text of its name (DT-076 §5).
+const EMPTY_VALUE_BY_CONTROL = { "str-control": "", "cluster-control": NO_ERROR, "arr-control": [], "visa-control": "", "path-control": EMPTY_PATH, "refnum-control": NOT_A_REFNUM, "daq-name-control": "" };
 
-const CONTROL_TYPES = new Set(["control", "bool-control", "str-control", "cluster-control", "arr-control", "visa-control", "path-control", "refnum-control"]);
+const CONTROL_TYPES = new Set(["control", "bool-control", "str-control", "cluster-control", "arr-control", "visa-control", "path-control", "refnum-control", "daq-name-control"]);
 
 /** Is this node a control of the front panel? */
 export const isControl = (node) => CONTROL_TYPES.has(node.tipo);

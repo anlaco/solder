@@ -28,14 +28,14 @@
 | Execution | 8 / 15 (53 %) | `█████░░░░░` |
 | Diagram editing | 13 / 30 (43 %) | `████░░░░░░` |
 | Front panel editing | 9 / 22 (41 %) | `████░░░░░░` |
-| SubOVIs, libraries and projects | 7 / 21 (33 %) | `███░░░░░░░` |
+| SubOVIs, libraries and projects | 8 / 22 (36 %) | `████░░░░░░` |
 | Debugging | 8 / 16 (50 %) | `█████░░░░░` |
 | Files | 5 / 15 (33 %) | `███░░░░░░░` |
-| Instruments and communication | 5 / 21 (24 %) | `██░░░░░░░░` |
+| Instruments and communication | 6 / 22 (27 %) | `███░░░░░░░` |
 | Functions palette | 210 / 538 (39 %) | `████░░░░░░` |
-| Controls palette | 24 / 86 (28 %) | `███░░░░░░░` |
+| Controls palette | 31 / 92 (34 %) | `███░░░░░░░` |
 | Windows and dialogs | 141 / 398 (35 %) | `████░░░░░░` |
-| Right-click menus | 464 / 1892 (25 %) | `██░░░░░░░░` |
+| Right-click menus | 516 / 1964 (26 %) | `███░░░░░░░` |
 <!-- /coverage:summary -->
 
 ## Features
@@ -173,7 +173,8 @@
 
 - [x] SubOVIs with a connector pane, wired and called
 - [x] LabVIEW's 36 connector patterns known in the file
-- [ ] Choosing a connector pattern in the editor (Patterns ▸, Add/Remove Terminal, Rotate, Flip)
+- [x] Choosing a connector pattern in the editor (Patterns ▸)
+- [ ] Add/Remove Terminal, Rotate and Flip on the connector pane
 - [ ] Icon Editor (Edit Icon… takes an SVG file)
 - [x] OVI Properties, Execution page (the other pages are missing)
 - [x] Polymorphic OVIs, with their window and Select Type ▸
@@ -241,6 +242,7 @@
 - [ ] VISA events, locks and Find Resource
 - [ ] The VISA resource name's dropdown of resources
 - [ ] DAQmx (Solder's DAQ layer, DT-076)
+- [x] DAQ name controls and indicators on the panel (the seven kinds)
 - [ ] TCP functions (in the catalog; not compiled yet)
 - [ ] UDP
 - [ ] Queues, notifiers, semaphores and rendezvous
@@ -305,7 +307,7 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 | Modern ▸ Graph | 3 / 21 (14 %) | `█░░░░░░░░░` |
 | Modern ▸ Ring & Enum | 1 / 5 (20 %) | `██░░░░░░░░` |
 | Modern ▸ Layout | not captured yet | |
-| Modern ▸ I/O | 1 / 13 (8 %) | `█░░░░░░░░░` |
+| Modern ▸ I/O | 8 / 19 (42 %) | `████░░░░░░` |
 | Modern ▸ Variant & Class | not captured yet | |
 | Modern ▸ Decorations | not captured yet | |
 | Modern ▸ Refnum | not captured yet | |
@@ -343,5 +345,5 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Menus | Covered | |
 |-------|---------|---|
-| Every right-click menu captured | 464 / 1892 (25 %) | `██░░░░░░░░` |
+| Every right-click menu captured | 516 / 1964 (26 %) | `███░░░░░░░` |
 <!-- /coverage:inventory -->

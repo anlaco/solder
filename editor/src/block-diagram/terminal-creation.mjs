@@ -12,6 +12,7 @@ import { ALTO_LINEA } from "../common/labels.mjs";
 import { CONTROLES, MEDIDAS_PANEL, cajaObjeto, caja as panelBox } from "../front-panel/front-panel.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { blockForTerminal, createOnTerminal } from "../../../core/model/create-on-terminal.mjs";
+import { daqNameText, isDaqName } from "../../../core/model/daq-name.mjs";
 
 /**
  * Gap in px between a new constant and the node it is wired to (from the right
@@ -94,9 +95,11 @@ export const borderTerminalPort = (node, ctx) => (node.tipo.startsWith("loop-") 
 /**
  * The terminal a Create row means when the menu was opened on a node's body: a control reference is all terminal, so
  * its body is its one terminal (seen: its Create ▸ Constant, Control and Indicator are enabled, reports/2026-11-03-
- * control-references.md Q3); other nodes have none.
+ * control-references.md Q3); so is a DAQ name constant's, whose menu has Create ▸ (reports/2026-11-06-daqmx-types.md); other
+ * nodes have none.
  */
-export const bodyTerminalPort = (node) => (node?.tipo === "control-reference" ? "reference" : undefined);
+export const bodyTerminalPort = (node) => BODY_TERMINAL[node?.tipo];
+const BODY_TERMINAL = { "control-reference": "reference", "daq-name-constant": "result" };
 
 /** The type that reaches or leaves a terminal, or undefined when it is not known yet. */
 const terminalType = (g, cat, terminal) => (terminal.dir === "in" ? Gr.tipos(g, cat).entradas : Gr.tipos(g, cat).salidas).get(`${terminal.nodo}.${terminal.puerto}`);
@@ -153,6 +156,9 @@ function unwiredBox(size, nodeBox, kind) {
 /** Moves a diagram node (not its panel object) so that its box starts at (x, y). */
 const moveTo = (g, id, x, y) => ({ ...g, nodos: g.nodos.map((n) => (n.id === id ? { ...n, x, y } : n)) });
 
+/** The label a new panel object is born with: the kind's name for a DAQ name, otherwise its block's. */
+const defaultLabel = (block) => (isDaqName(block.config?.type) ? daqNameText(block.config.type) : CONTROLES[block.tipo]?.etiqueta);
+
 /**
  * Create ▸ `kind` ("constant", "control" or "indicator") on one terminal of a
  * node. Returns `{ g, id, wired }` or `{ g, motivo }` when nothing can be made.
@@ -170,7 +176,7 @@ export function createForTerminal(g, ctx, { nodo, puerto, kind, panelSize, stack
   const slot = isPanelObject ? nextPanelSlot(g, { tipo: block.tipo, config: { ...block.config, ...special?.configOverride }, isControl: kind === "control", panelSize }) : {};
   const scope = scopeOfTerminal(g, ctx.cat, node, terminal);
   // A terminal with no name (a control reference constant's) gives the object the label it is born with (unverified).
-  const label = special?.label ?? (terminal.etiqueta || CONTROLES[block.tipo]?.etiqueta);
+  const label = special?.label ?? (terminal.etiqueta || defaultLabel(block));
   const created = createOnTerminal(g, ctx.cat, { terminal: { nodo, puerto, dir: terminal.dir }, type, kind, x: 0, y: 0, panelX: slot.x, panelY: slot.y, label, scope, configOverride: special?.configOverride });
   if (created.motivo) return created;
   const size = caja(nodeOf(created.g, created.id), ctx);
@@ -241,7 +247,7 @@ export function createOnWire(g, ctx, { cable, kind, point, panelSize }) {
   const slot = kind === "constant" ? {} : nextPanelSlot(g, { tipo: block.tipo, config: block.config, isControl: kind === "control", panelSize });
   const source = nodeOf(g, wire.de.nodo);
   const sourceName = ctx.cat.puertos(source).out.find((p) => p.name === wire.de.puerto)?.label;
-  const label = sourceName || (CONTROLES[block.tipo]?.etiqueta ?? "Numeric");
+  const label = sourceName || (defaultLabel(block) ?? "Numeric");
   // The wire's source output: an indicator fits it and is wired; a constant or a control does not and is left unwired.
   const terminal = { nodo: wire.de.nodo, puerto: wire.de.puerto, dir: "out" };
   const created = createOnTerminal(g, ctx.cat, { terminal, type, kind, x: 0, y: 0, panelX: slot.x, panelY: slot.y, label, scope: { dentro: source.dentro, marco: source.marco } });

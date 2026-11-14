@@ -28,6 +28,7 @@ import * as FL from "../common/free-labels.mjs";
 import { FREE_LABEL, isFreeLabel } from "../../../core/model/free-label.mjs";
 import { BOOLEANOS } from "../common/glyphs.mjs";
 import { isUndefinedArray } from "../../../core/model/types.mjs";
+import { daqNameText, isDaqName } from "../../../core/model/daq-name.mjs";
 import { controlForElement, elementMenuRoot, emptyArrayAgain, isEmptyArrayShell, panelArrayFromElement, typeEmptyArray } from "../common/array-typing.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { REPEATED_PASTE_STEP } from "../common/paste-memory.mjs";
@@ -58,6 +59,9 @@ export const CONTROLES = {
   // A VISA resource name: a one-line text with its resource string, labelled as LabVIEW does (labview-captures/visa/resource-name-p0.png).
   "visa-control": { etiqueta: "VISA resource name", incrementador: false, cadena: true, visa: true },
   "visa-indicator": { etiqueta: "VISA resource name", incrementador: false, cadena: true, visa: true },
+  // A DAQ name of any kind (DT-076 §5): a VISA resource name's picture and text, wider, with the label of its kind (`etiquetaNueva`).
+  "daq-name-control": { etiqueta: "DAQ Task Name", incrementador: false, cadena: true, visa: true, daq: true },
+  "daq-name-indicator": { etiqueta: "DAQ Task Name", incrementador: false, cadena: true, visa: true, daq: true },
   // A path: File Path Control and Indicator. LabVIEW's default label is unverified ("Path" is the word on its terminal).
   "path-control": { etiqueta: "Path", incrementador: false, path: true },
   "path-indicator": { etiqueta: "Path", incrementador: false, path: true },
@@ -167,6 +171,13 @@ export const MEDIDAS_REFNUM_PANEL = { ancho: 36, alto: 48 };
 export const MEDIDAS_VISA_PANEL = { ancho: 104, alto: 26, bisel: 4, iconoAncho: 9, hueco: 1, campoAlto: 17, botonAncho: 17 };
 
 /**
+ * The box of a DAQ name, the same bevel, cells and button as a VISA resource name's but wider on a control: measured in
+ * LabVIEW 2026 Q3 (reports/2026-11-06-daqmx-types.md, "Panel"), 168 × 26 for a task in and the physical channels, 104 × 26
+ * for the task out indicator. A custom scale name measured 132 × 26: not drawn yet, every kind takes the 168.
+ */
+export const MEDIDAS_DAQ_NAME_PANEL = { anchoControl: 168, anchoIndicador: 104, alto: 26 };
+
+/**
  * The box of a File Path Control and Indicator, measured in LabVIEW 2026 Q3 (reports/2026-10-26-path-type.md §1): 100 × 25
  * px of a 4 px bevel, the type cell (8 px), a 1 px divider and the text area, which starts 2 px in. The control's browse
  * button is 28 × 17 px, outside the box and 2 px to its right. The vertical bevel and the button's height above the box
@@ -185,7 +196,7 @@ const pathTextWidth = (M = MEDIDAS_PATH_PANEL) => M.ancho - 2 * M.bisel - M.celd
 export const estiloDe = (tipo, config) => (CONTROLES[tipo]?.booleano ? BOOLEANOS[config?.style] ?? BOOLEANOS["push-button"] : null);
 
 /** La etiqueta con que nace un control: la de su clase si es booleano o un enum, o la del bloque. */
-const etiquetaNueva = (tipo, config) => claseError(tipo, config)?.etiqueta ?? estiloDe(tipo, config)?.etiqueta ?? (esEnum(config?.type) ? "Enum" : CONTROLES[tipo]?.etiqueta) ?? "";
+const etiquetaNueva = (tipo, config) => claseError(tipo, config)?.etiqueta ?? estiloDe(tipo, config)?.etiqueta ?? (isDaqName(config?.type) ? daqNameText(config.type) : esEnum(config?.type) ? "Enum" : CONTROLES[tipo]?.etiqueta) ?? "";
 
 /**
  * Medidas de un control numérico, de numeric-panel.png: la casilla mide
@@ -241,6 +252,7 @@ export function cajaObjeto(tipo, x, y, config) {
   if (b) return { x, y, ancho: b.ancho, alto: b.alto, casilla: 0, separacion: SEPARACION_BOOLEANO };
   if (CONTROLES[tipo]?.path) return { x, y, ancho: MEDIDAS_PATH_PANEL.ancho, alto: MEDIDAS_PATH_PANEL.alto, casilla: 0, separacion: PATH_LABEL_GAP };
   if (CONTROLES[tipo]?.refnum) return { x, y, ancho: MEDIDAS_REFNUM_PANEL.ancho, alto: MEDIDAS_REFNUM_PANEL.alto, casilla: 0 };
+  if (CONTROLES[tipo]?.daq) return { x, y, ancho: tipo === "daq-name-control" ? MEDIDAS_DAQ_NAME_PANEL.anchoControl : MEDIDAS_DAQ_NAME_PANEL.anchoIndicador, alto: MEDIDAS_DAQ_NAME_PANEL.alto, casilla: 0 };
   if (CONTROLES[tipo]?.visa) return { x, y, ancho: MEDIDAS_VISA_PANEL.ancho, alto: MEDIDAS_VISA_PANEL.alto, casilla: 0 };
   if (CONTROLES[tipo]?.cadena) return { x, y, ancho: MEDIDAS_CADENA_PANEL.ancho, alto: MEDIDAS_CADENA_PANEL.alto, casilla: 0 };
   const casilla = inicioCasilla(tipo);
@@ -264,7 +276,7 @@ function isInMoveBand(box, point) {
 }
 
 /** Whether a press in the node's value box types in it: numeric controls with an incrementer, and string controls. */
-const typesInValueBox = (n) => (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control" || n?.tipo === "visa-control" || n?.tipo === "path-control") && !esEnum(n?.config?.type);
+const typesInValueBox = (n) => (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control" || n?.tipo === "visa-control" || n?.tipo === "daq-name-control" || n?.tipo === "path-control") && !esEnum(n?.config?.type);
 
 /**
  * The edit-mode pointer over a panel object, as LabVIEW's automatic tool shows it
@@ -467,7 +479,7 @@ function panelObject(n, ctx, selected, p, resolvedTypes) {
   if (control?.booleano) return HC.booleanHtml(frame, { style: n.config?.style ?? "push-button", on: encendido(n, p.valores) });
   const valueHtml = typedOrText(editing, textoValor(n, ctx, p.valores));
   if (control?.path) return HC.pathHtml(frame, { valueHtml: typedOrText(editing, shownPathText(pathValueText(n, ctx, p.valores), ctx)), notAPath: isNotAPath(pathValueOf(n, p.valores)) });
-  if (control?.visa) return HC.visaHtml(frame, { valueHtml });
+  if (control?.visa) return HC.visaHtml(frame, { valueHtml, ...(control.daq && HC.DAQ_NAME_VARIANT) });
   if (control?.cadena) return HC.stringHtml(frame, { valueHtml });
   return HC.numericHtml(frame, { valueHtml, withIncrementer: !!control?.incrementador, isEnum: esEnum(tipoDe(n)) });
 }

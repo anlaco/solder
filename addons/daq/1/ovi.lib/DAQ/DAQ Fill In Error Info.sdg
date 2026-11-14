@@ -1,0 +1,544 @@
+{
+  "solder": 4,
+  "connector": {
+    "pattern": 4815,
+    "inputs": [
+      {
+        "name": "cluster-control_1",
+        "cell": 8
+      },
+      {
+        "name": "str-control_1",
+        "cell": 9
+      },
+      {
+        "name": "control_2",
+        "cell": 10
+      },
+      {
+        "name": "control_1",
+        "cell": 11
+      }
+    ],
+    "outputs": [
+      {
+        "name": "cluster-indicator_1",
+        "cell": 0
+      }
+    ]
+  },
+  "front-panel": [
+    {
+      "name": "control_1",
+      "role": "control",
+      "type": "i32",
+      "default": 1
+    },
+    {
+      "name": "str-control_1",
+      "role": "control",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "control_2",
+      "role": "control",
+      "type": "i32",
+      "default": 0
+    },
+    {
+      "name": "cluster-control_1",
+      "role": "control",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "default": {
+        "status": false,
+        "code": 0,
+        "source": ""
+      },
+      "style": "error-in"
+    },
+    {
+      "name": "cluster-indicator_1",
+      "role": "indicator",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "default": {
+        "status": false,
+        "code": 0,
+        "source": ""
+      },
+      "style": "error-out"
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      {
+        "name": "control_1",
+        "type": "control"
+      },
+      {
+        "name": "str-control_1",
+        "type": "str-control"
+      },
+      {
+        "name": "control_2",
+        "type": "control"
+      },
+      {
+        "name": "cluster-control_1",
+        "type": "cluster-control"
+      },
+      {
+        "name": "cluster-indicator_1",
+        "type": "cluster-indicator"
+      },
+      {
+        "name": "unbundle-by-name_1",
+        "type": "unbundle-by-name",
+        "config": {
+          "items": [
+            "status",
+            "code"
+          ]
+        }
+      },
+      {
+        "name": "equal-to-0_1",
+        "type": "equal-to-0"
+      },
+      {
+        "name": "not-equal-to-0_1",
+        "type": "not-equal-to-0"
+      },
+      {
+        "name": "less-than-0_1",
+        "type": "less-than-0"
+      },
+      {
+        "name": "not-op_1",
+        "type": "not-op"
+      },
+      {
+        "name": "and-op_1",
+        "type": "and-op"
+      },
+      {
+        "name": "and-op_2",
+        "type": "and-op"
+      },
+      {
+        "name": "or-op_1",
+        "type": "or-op"
+      }
+    ],
+    "wires": [
+      {
+        "from": "cluster-control_1.result",
+        "to": "unbundle-by-name_1.cluster"
+      },
+      {
+        "from": "control_2.result",
+        "to": "not-equal-to-0_1.x"
+      },
+      {
+        "from": "control_2.result",
+        "to": "less-than-0_1.x"
+      },
+      {
+        "from": "unbundle-by-name_1.element-1",
+        "to": "equal-to-0_1.x"
+      },
+      {
+        "from": "unbundle-by-name_1.element-0",
+        "to": "not-op_1.x"
+      },
+      {
+        "from": "not-equal-to-0_1.result",
+        "to": "and-op_1.x"
+      },
+      {
+        "from": "equal-to-0_1.result",
+        "to": "and-op_1.y"
+      },
+      {
+        "from": "not-op_1.result",
+        "to": "and-op_2.x"
+      },
+      {
+        "from": "less-than-0_1.result",
+        "to": "and-op_2.y"
+      },
+      {
+        "from": "and-op_1.result",
+        "to": "or-op_1.x"
+      },
+      {
+        "from": "and-op_2.result",
+        "to": "or-op_1.y"
+      },
+      {
+        "from": "or-op_1.result",
+        "to": "case-structure_1.selector"
+      },
+      {
+        "from": "cluster-control_1.result",
+        "to": "case-structure_1.tunnel-in_1"
+      },
+      {
+        "from": "control_2.result",
+        "to": "case-structure_1.tunnel-in_2"
+      },
+      {
+        "from": "str-control_1.result",
+        "to": "case-structure_1.tunnel-in_3"
+      },
+      {
+        "from": "case-structure_1.case-tunnel-out_1",
+        "to": "cluster-indicator_1.value"
+      },
+      {
+        "from": "less-than-0_1.result",
+        "to": "case-structure_1.tunnel-in_4"
+      }
+    ],
+    "structures": [
+      {
+        "name": "case-structure_1",
+        "kind": "case-structure",
+        "tunnels": [
+          {
+            "name": "tunnel-in_1",
+            "dir": "in"
+          },
+          {
+            "name": "tunnel-in_2",
+            "dir": "in"
+          },
+          {
+            "name": "tunnel-in_3",
+            "dir": "in"
+          },
+          {
+            "name": "case-tunnel-out_1",
+            "dir": "out"
+          },
+          {
+            "name": "tunnel-in_4",
+            "dir": "in"
+          }
+        ],
+        "frames": [
+          {
+            "match": [
+              false
+            ],
+            "body": {
+              "wires": [
+                {
+                  "from": "case-structure_1.tunnel-in_1",
+                  "to": "case-structure_1.case-tunnel-out_1"
+                }
+              ]
+            }
+          },
+          {
+            "match": [
+              true
+            ],
+            "body": {
+              "nodes": [
+                {
+                  "name": "bundle-by-name_1",
+                  "type": "bundle-by-name",
+                  "config": {
+                    "items": [
+                      "status",
+                      "code",
+                      "source"
+                    ]
+                  }
+                }
+              ],
+              "wires": [
+                {
+                  "from": "case-structure_1.tunnel-in_1",
+                  "to": "bundle-by-name_1.cluster"
+                },
+                {
+                  "from": "case-structure_1.tunnel-in_2",
+                  "to": "bundle-by-name_1.element-1"
+                },
+                {
+                  "from": "case-structure_1.tunnel-in_3",
+                  "to": "bundle-by-name_1.element-2"
+                },
+                {
+                  "from": "bundle-by-name_1.output-cluster",
+                  "to": "case-structure_1.case-tunnel-out_1"
+                },
+                {
+                  "from": "case-structure_1.tunnel-in_4",
+                  "to": "bundle-by-name_1.element-0"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "control_1": {
+        "x": 61,
+        "y": 41,
+        "label": {
+          "text": "depth\n"
+        }
+      },
+      "str-control_1": {
+        "x": 50,
+        "y": 116,
+        "label": {
+          "text": "extended error info\n"
+        }
+      },
+      "control_2": {
+        "x": 61,
+        "y": 191,
+        "label": {
+          "text": "status code\n"
+        }
+      },
+      "cluster-control_1": {
+        "x": 23,
+        "y": 223,
+        "label": {
+          "text": "error in\n"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 973,
+        "y": 223,
+        "label": {
+          "text": "error out\n"
+        }
+      },
+      "unbundle-by-name_1": {
+        "x": 135,
+        "y": 284
+      },
+      "equal-to-0_1": {
+        "x": 256,
+        "y": 349
+      },
+      "not-equal-to-0_1": {
+        "x": 256,
+        "y": 419
+      },
+      "less-than-0_1": {
+        "x": 256,
+        "y": 489
+      },
+      "not-op_1": {
+        "x": 256,
+        "y": 279
+      },
+      "and-op_1": {
+        "x": 366,
+        "y": 389
+      },
+      "and-op_2": {
+        "x": 366,
+        "y": 469
+      },
+      "or-op_1": {
+        "x": 466,
+        "y": 429
+      },
+      "case-structure_1": {
+        "x": 560,
+        "y": 53,
+        "w": 340,
+        "h": 380
+      },
+      "case-structure_1.selector": {
+        "x": 560,
+        "y": 231
+      },
+      "tunnel-in_1": {
+        "x": 560,
+        "y": 245
+      },
+      "tunnel-in_2": {
+        "x": 560,
+        "y": 297
+      },
+      "tunnel-in_3": {
+        "x": 560,
+        "y": 313
+      },
+      "case-tunnel-out_1": {
+        "x": 891,
+        "y": 297
+      },
+      "tunnel-in_4": {
+        "x": 560,
+        "y": 281
+      },
+      "bundle-by-name_1": {
+        "x": 705,
+        "y": 277
+      }
+    },
+    "panel": {
+      "control_1": {
+        "x": 61,
+        "y": 41,
+        "label": {
+          "text": "depth\n"
+        }
+      },
+      "str-control_1": {
+        "x": 50,
+        "y": 116,
+        "label": {
+          "text": "extended error info\n"
+        }
+      },
+      "control_2": {
+        "x": 61,
+        "y": 191,
+        "label": {
+          "text": "status code\n"
+        }
+      },
+      "cluster-control_1": {
+        "x": 353,
+        "y": 223,
+        "label": {
+          "text": "error in\n"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 623,
+        "y": 223,
+        "label": {
+          "text": "error out\n"
+        }
+      }
+    },
+    "wires": {
+      "unbundle-by-name_1.cluster": {
+        "bends": [
+          68
+        ]
+      },
+      "not-equal-to-0_1.x": {
+        "bends": [
+          106
+        ]
+      },
+      "less-than-0_1.x": {
+        "bends": [
+          106
+        ]
+      },
+      "equal-to-0_1.x": {
+        "bends": [
+          197
+        ]
+      },
+      "not-op_1.x": {
+        "bends": [
+          197
+        ]
+      },
+      "and-op_1.x": {
+        "bends": [
+          282
+        ]
+      },
+      "and-op_1.y": {
+        "bends": [
+          282
+        ]
+      },
+      "and-op_2.x": {
+        "bends": [
+          284.3333333333333
+        ]
+      },
+      "and-op_2.y": {
+        "bends": [
+          283,
+          284,
+          282
+        ]
+      },
+      "or-op_1.x": {
+        "bends": [
+          397
+        ]
+      },
+      "or-op_1.y": {
+        "bends": [
+          397
+        ]
+      },
+      "case-structure_1.selector": {
+        "bends": [
+          495
+        ]
+      },
+      "case-structure_1.case-tunnel-out_1": {
+        "bends": [
+          576
+        ]
+      }
+    },
+    "windows": {
+      "front-panel": {
+        "x": 525,
+        "y": 168,
+        "width": 1090,
+        "height": 696
+      },
+      "block-diagram": {
+        "x": 476,
+        "y": 138,
+        "width": 1090,
+        "height": 696
+      }
+    }
+  }
+}

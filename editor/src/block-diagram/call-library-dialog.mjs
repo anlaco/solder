@@ -76,6 +76,7 @@ export function open(node) {
     tab: "function",
     current: 0,
     focus: null,
+    selectedField: null,
     openRing: null,
   };
 }
@@ -233,13 +234,28 @@ const NO_CHANGE = null;
 
 /** Enter accepts and Escape closes an open ring first, then cancels; a key typed goes to the field with the focus. */
 export function key(dialog, event) {
+  if (isSelectAll(event)) return dialog.focus ? { dialog: { ...dialog, selectedField: dialog.focus } } : NO_CHANGE;
   if (event.ctrlKey || event.metaKey || event.altKey) return NO_CHANGE;
   if (event.key === "Escape") return dialog.openRing ? { dialog: { ...dialog, openRing: null } } : { cancel: true };
   if (event.key === "Enter") return { accept: true };
   if (!dialog.focus) return NO_CHANGE;
-  const text = focusedText(dialog);
-  if (event.key === "Backspace") return text ? { dialog: withFocusedText(dialog, text.slice(0, -1)) } : NO_CHANGE;
-  return event.key.length === 1 ? { dialog: withFocusedText(dialog, text + event.key) } : NO_CHANGE;
+  return typedInField(dialog, event.key);
+}
+
+const isSelectAll = (event) => (event.ctrlKey || event.metaKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "a";
+
+/** Whether the whole text of the field with the focus is selected (after Ctrl+A), so that the next key replaces it. */
+const wholeTextSelected = (dialog) => dialog.focus !== null && dialog.selectedField === dialog.focus;
+
+/** A key typed in the field with the focus: a character is added, or replaces the selected text; Backspace and Delete erase. */
+function typedInField(dialog, pressed) {
+  const selected = wholeTextSelected(dialog);
+  const text = selected ? "" : focusedText(dialog);
+  const erases = pressed === "Backspace" || pressed === "Delete";
+  if (!erases && pressed.length !== 1) return NO_CHANGE;
+  if (erases && !selected && (pressed === "Delete" || !text)) return NO_CHANGE; // the caret is always at the end
+  const typed = erases ? (selected ? "" : text.slice(0, -1)) : text + pressed;
+  return { dialog: { ...withFocusedText(dialog, typed), selectedField: null } };
 }
 
 /** The parts that are greyed with a reason: the inventory's `dialog.call-library.<part>` entries say it. */
@@ -286,7 +302,7 @@ export function click(dialog, id) {
   const settled = { ...dialog, openRing: null };
   const tab = /^tab-(.+)$/.exec(part)?.[1];
   if (tab) return { dialog: { ...settled, tab, focus: null } };
-  if (part in FIELD_FOCUSES) return part === "name" && isReturnRow(dialog) ? NO_CHANGE : { dialog: { ...settled, focus: FIELD_FOCUSES[part] } };
+  if (part in FIELD_FOCUSES) return part === "name" && isReturnRow(dialog) ? NO_CHANGE : { dialog: { ...settled, focus: FIELD_FOCUSES[part], selectedField: null } };
   const option = OPTION_PATTERN.exec(part);
   if (option) return { dialog: { ...chosen(settled, option[1], option[2]), openRing: null } };
   const ring = /^ring-(.+)$/.exec(part)?.[1];
@@ -396,9 +412,9 @@ const LAYOUT = {
 const group = ({ x, y, width, height, title }) => `<div class="pv-grupo" style="${box({ x, y, width, height })}"><span class="pv-grupo-titulo">${esc(title)}</span></div>`;
 const label = (text, x, y, extra = "") => `<div class="pv-etiqueta clfn-etiqueta${extra}" style="left:${px(x)};top:${px(y)}">${esc(text)}</div>`;
 
-function textField(part, text, rect, { focused = false, disabled = false, multiline = false, arrow = 0 } = {}) {
-  const caret = focused ? `<span class="caret"></span>` : "";
-  return `<div class="pv-campo clfn-campo${multiline ? " multilinea" : ""}${disabled ? " desactivada" : ""}" data-id="${partId(part)}" style="${box(rect)}"><span class="clfn-texto">${esc(text)}</span>${caret}${arrow ? `<span class="clfn-flecha-campo" style="width:${px(arrow)}"></span>` : ""}</div>`;
+function textField(part, text, rect, { focused = false, selected = false, disabled = false, multiline = false, arrow = 0 } = {}) {
+  const caret = focused && !selected ? `<span class="caret"></span>` : "";
+  return `<div class="pv-campo clfn-campo${multiline ? " multilinea" : ""}${disabled ? " desactivada" : ""}" data-id="${partId(part)}" style="${box(rect)}"><span class="clfn-texto${selected ? " texto-elegido" : ""}">${esc(text)}</span>${caret}${arrow ? `<span class="clfn-flecha-campo" style="width:${px(arrow)}"></span>` : ""}</div>`;
 }
 
 function check(inv, part, text, checked, at, disabled = false) {
@@ -445,11 +461,11 @@ function functionTab(inv, dialog) {
   const L = LAYOUT;
   const { config } = dialog;
   return label("Library name or path", L.library.labelX, L.library.labelY) +
-    textField("library", config.library, L.library.box, { focused: dialog.focus === "library", multiline: true }) +
+    textField("library", config.library, L.library.box, { focused: dialog.focus === "library", selected: wholeTextSelected(dialog) && dialog.focus === "library", multiline: true }) +
     `<div class="pv-boton clfn-examinar" data-id="${partId("browse")}" style="${box(L.library.browse)}"><span class="clfn-carpeta"></span></div>` +
     check(inv, "specify-path", "Specify path on diagram", config["specify-path-on-diagram"], L.specifyPath) +
     label("Function name", L.functionName.labelX, L.functionName.labelY) +
-    textField("function-name", config.function || "", L.functionName.box, { focused: dialog.focus === "function", arrow: L.functionName.arrowWidth }) +
+    textField("function-name", config.function || "", L.functionName.box, { focused: dialog.focus === "function", selected: wholeTextSelected(dialog) && dialog.focus === "function", arrow: L.functionName.arrowWidth }) +
     group(L.thread.group) + radio("thread-ui", "Run in UI thread", config.thread === "ui", L.thread.ui) + radio("thread-any", "Run in any thread", config.thread === "any", L.thread.any) +
     group(L.convention.group) + radio("convention-stdcall", "stdcall (WINAPI)", config["calling-convention"] === "stdcall", L.convention.stdcall) + radio("convention-c", "C", config["calling-convention"] === "c", L.convention.c);
 }
@@ -475,7 +491,7 @@ function parametersTab(inv, dialog) {
   const C = L.current;
   const place = (row) => ({ x: C.fieldX, y: C.firstY + row * C.step, width: C.fieldWidth, height: C.fieldHeight });
   const rowLabel = (text, row) => label(text, C.labelRight - 8 * text.length, C.firstY + row * C.step + 5, " derecha");
-  let body = group(C.group) + rowLabel("Name", 0) + textField("name", isReturn ? RETURN_ROW_LABEL : entry.name, place(0), { focused: dialog.focus === "name", disabled: isReturn }) +
+  let body = group(C.group) + rowLabel("Name", 0) + textField("name", isReturn ? RETURN_ROW_LABEL : entry.name, place(0), { focused: dialog.focus === "name", selected: wholeTextSelected(dialog) && dialog.focus === "name", disabled: isReturn }) +
     rowLabel("Type", 1) + ring(inv, dialog, "type", place(1)) +
     check(inv, "constant", "Constant", Boolean(entry.constant), { x: C.fieldX, y: C.firstY + 2 * C.step + 4 }, isReturn);
   let row = 3;

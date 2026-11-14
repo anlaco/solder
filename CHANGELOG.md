@@ -9,6 +9,23 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Fixed: Ctrl+A in a text field of the Call Library Function Node's dialog selects its text, and Delete erases a text
+  selected with Ctrl+A on the panel and the diagram, as Backspace did.
+- Fixed: Paste centres the copy on the last click on the canvas, as LabVIEW does, not on where the pointer last was.
+- Fixed: dragging a wire from the inner half of a wired Case tunnel (just past the glyph) starts a wire from the tunnel
+  and makes the output tunnel, instead of dragging the wire's first segment and leaving a stub.
+- The DAQ add-on's first OVIs, built in the editor (DT-087): DAQ Start Task, DAQ Stop Task, DAQ Clear Task and DAQ Fill
+  In Error Info, with LabVIEW's connector (4833) and terminals, calling the add-on's `nilvaiu`.
+- Fixed: a Case structure's output tunnel refused a VISA resource name, a DAQ name or an array (a broken wire); it now
+  takes any type, as in LabVIEW.
+- Connector pane, Patterns ▸ (DT-075): every one of the 36 patterns can be chosen. Each assigned terminal moves to the
+  nearest cell of the new pattern, as LabVIEW does, and those left without a cell are dropped (their controls stay).
+- DAQ name controls and indicators (DT-076 §5): Controls ▸ Modern ▸ I/O ▸ DAQ Name Controls (DAQmx Name Controls in LabVIEW)
+  holds the seven kinds as measured, each putting a control with its terminal; the indicator comes from Change to Indicator
+  or Create ▸ Indicator. They look as a VISA resource name's, wider on a control (168 × 26, 104 × 26 the indicator). A task
+  control gives the empty task, or the caller's task in a subOVI, and a task indicator shows its name. Create ▸ Constant, Control
+  and Indicator on any DAQ name terminal make the object of the same kind, which also reaches the DAQ name constant, and Change
+  to Control / Indicator flip a terminal. The dropdown of names and the menus' other rows are greyed.
 - DAQ's driver, `nilvaiu` (DT-087): Solder's own library with the 20 functions DAQmx's VIs call in LabVIEW, under NI's
   names and with the parameters measured on them, over Solder's DAQ engine and its simulated devices. A task travels as
   measured in LabVIEW: Create writes the address of a task record the I/O process keeps, and the other functions get the

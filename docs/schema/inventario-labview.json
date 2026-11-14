@@ -268,7 +268,7 @@
       "ref": "design/05-decisions.md DT-045"
     },
     "patrones-del-connector": {
-      "desc": "changing an OVI's connector pattern and the commands that change it: Add and Remove Terminal, Rotate and Flip. Every pattern is read, drawn and called by LabVIEW's indices (DT-075); what LabVIEW does with the terminals already assigned when the pattern changes is not measured yet",
+      "desc": "Add and Remove Terminal, Rotate 90 Degrees and Flip: LabVIEW keeps a turn or a flip of the pane apart from its pattern number (Remove Terminal from 4-2-2-4 gives a turned 4829), which Solder's connector does not hold yet; choosing a pattern from Patterns is done (DT-075, amendment of 2026-11-13)",
       "ref": "spec/05-editor.md §12"
     },
     "clones-compartidos": {
@@ -588,6 +588,12 @@
     "clfn-formato-de-nombres": {
       "desc": "the Names format of the Call Library Function Node's rows, whose effect was not measured",
       "ref": "labview-captures/reports/2026-11-06-clfn.md"
+    },
+    "paleta-daq-en-menu": {
+      "desc": "the DAQ - Data Acquisition palette from the right-click menus of the DAQ names and functions: the Functions palette does not have Measurement I/O yet"
+    },
+    "nombres-daq": {
+      "desc": "the names NI-DAQ offers (tasks, channels, terminals, scales, devices, switches) for a DAQ name's dropdown, Select Item... and I/O Name Filtering...: Solder has no list of them yet"
     }
   },
   "entradas": [
@@ -8637,11 +8643,101 @@
     },
     {
       "id": "palette.controls.modern.io.daqmx-name-controls",
-      "etiqueta": "DAQmx Name Controls",
-      "estado": "todo",
-      "labview": "A subpalette of controls that name DAQmx tasks, channels, devices and the like.",
-      "necesita": "drivers-de-adquisicion",
-      "captura": "visa/controls-modern-io.png"
+      "etiqueta": "DAQ Name Controls",
+      "estado": "built",
+      "captura": "daqmx-types/ctlpal.png",
+      "prueba": "test/editor/daq-name-controls.test.mjs::the_DAQ_name_controls_are_placed_from_Controls_Modern_I/O_DAQ_Name_Controls_with_their_terminals"
+    },
+    {
+      "id": "palette.controls.modern.io.daqmx-name-controls.task-name",
+      "etiqueta": "Task Name",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::the_DAQ_name_controls_are_placed_from_Controls_Modern_I/O_DAQ_Name_Controls_with_their_terminals",
+      "captura": "daqmx-types/ctlpal.png",
+      "bloque": "daq-name-control",
+      "config": {
+        "type": {
+          "daq-name": "task"
+        }
+      }
+    },
+    {
+      "id": "palette.controls.modern.io.daqmx-name-controls.global-channel",
+      "etiqueta": "Global Channel",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::the_DAQ_name_controls_are_placed_from_Controls_Modern_I/O_DAQ_Name_Controls_with_their_terminals",
+      "captura": "daqmx-types/ctlpal.png",
+      "bloque": "daq-name-control",
+      "config": {
+        "type": {
+          "daq-name": "global-channel"
+        }
+      }
+    },
+    {
+      "id": "palette.controls.modern.io.daqmx-name-controls.physical-channel",
+      "etiqueta": "Physical Channel",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::the_DAQ_name_controls_are_placed_from_Controls_Modern_I/O_DAQ_Name_Controls_with_their_terminals",
+      "captura": "daqmx-types/ctlpal.png",
+      "bloque": "daq-name-control",
+      "config": {
+        "type": {
+          "daq-name": "physical-channel"
+        }
+      }
+    },
+    {
+      "id": "palette.controls.modern.io.daqmx-name-controls.terminal",
+      "etiqueta": "Terminal",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::the_DAQ_name_controls_are_placed_from_Controls_Modern_I/O_DAQ_Name_Controls_with_their_terminals",
+      "captura": "daqmx-types/ctlpal.png",
+      "bloque": "daq-name-control",
+      "config": {
+        "type": {
+          "daq-name": "terminal"
+        }
+      }
+    },
+    {
+      "id": "palette.controls.modern.io.daqmx-name-controls.scale-name",
+      "etiqueta": "Scale Name",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::the_DAQ_name_controls_are_placed_from_Controls_Modern_I/O_DAQ_Name_Controls_with_their_terminals",
+      "captura": "daqmx-types/ctlpal.png",
+      "bloque": "daq-name-control",
+      "config": {
+        "type": {
+          "daq-name": "scale"
+        }
+      }
+    },
+    {
+      "id": "palette.controls.modern.io.daqmx-name-controls.device-name",
+      "etiqueta": "Device Name",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::the_DAQ_name_controls_are_placed_from_Controls_Modern_I/O_DAQ_Name_Controls_with_their_terminals",
+      "captura": "daqmx-types/ctlpal.png",
+      "bloque": "daq-name-control",
+      "config": {
+        "type": {
+          "daq-name": "device"
+        }
+      }
+    },
+    {
+      "id": "palette.controls.modern.io.daqmx-name-controls.switch",
+      "etiqueta": "Switch",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::the_DAQ_name_controls_are_placed_from_Controls_Modern_I/O_DAQ_Name_Controls_with_their_terminals",
+      "captura": "daqmx-types/ctlpal.png",
+      "bloque": "daq-name-control",
+      "config": {
+        "type": {
+          "daq-name": "switch"
+        }
+      }
     },
     {
       "id": "palette.controls.modern.io.datafinder",
@@ -20570,294 +20666,259 @@
       "id": "context.connector-pane.patterns",
       "etiqueta": "Patterns",
       "estado": "built",
-      "prueba": "test/editor/connector-patterns.test.mjs::the_Patterns_row_opens_a_6_by_6_grid_of_36_thumbnails_and_only_4-2-2-4_can_be_chosen",
+      "prueba": "test/editor/connector-patterns.test.mjs::the_Patterns_row_opens_a_6_by_6_grid_of_36_thumbnails_and_the_current_one_is_outlined",
       "captura": "subvi/connector-patterns-grid-zoom2x.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-01",
       "etiqueta": "Pattern 1",
-      "estado": "todo",
-      "labview": "A connector pattern of 1 cell, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-02",
       "etiqueta": "Pattern 2",
-      "estado": "todo",
-      "labview": "A connector pattern of 3 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-03",
       "etiqueta": "Pattern 3",
-      "estado": "todo",
-      "labview": "A connector pattern of 4 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-04",
       "etiqueta": "Pattern 4",
-      "estado": "todo",
-      "labview": "A connector pattern of 2 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-05",
       "etiqueta": "Pattern 5",
-      "estado": "todo",
-      "labview": "A connector pattern of 3 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-06",
       "etiqueta": "Pattern 6",
-      "estado": "todo",
-      "labview": "A connector pattern of 4 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-07",
       "etiqueta": "Pattern 7",
-      "estado": "todo",
-      "labview": "A connector pattern of 4 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-08",
       "etiqueta": "Pattern 8",
-      "estado": "todo",
-      "labview": "A connector pattern of 4 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-09",
       "etiqueta": "Pattern 9",
-      "estado": "todo",
-      "labview": "A connector pattern of 5 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-10",
       "etiqueta": "Pattern 10",
-      "estado": "todo",
-      "labview": "A connector pattern of 5 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-11",
       "etiqueta": "Pattern 11",
-      "estado": "todo",
-      "labview": "A connector pattern of 6 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-12",
       "etiqueta": "Pattern 12",
-      "estado": "todo",
-      "labview": "A connector pattern of 6 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-13",
       "etiqueta": "Pattern 13",
-      "estado": "todo",
-      "labview": "A connector pattern of 5 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-14",
       "etiqueta": "Pattern 14",
-      "estado": "todo",
-      "labview": "A connector pattern of 6 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-15",
       "etiqueta": "Pattern 15",
-      "estado": "todo",
-      "labview": "A connector pattern of 7 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-16",
       "etiqueta": "Pattern 16",
-      "estado": "todo",
-      "labview": "A connector pattern of 8 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-17",
       "etiqueta": "Pattern 17",
-      "estado": "todo",
-      "labview": "A connector pattern of 6 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-18",
       "etiqueta": "Pattern 18",
-      "estado": "todo",
-      "labview": "A connector pattern of 6 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-19",
       "etiqueta": "Pattern 19",
-      "estado": "todo",
-      "labview": "A connector pattern of 7 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-20",
       "etiqueta": "Pattern 20",
-      "estado": "todo",
-      "labview": "A connector pattern of 7 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-21",
       "etiqueta": "Pattern 21",
-      "estado": "todo",
-      "labview": "A connector pattern of 8 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-22",
       "etiqueta": "Pattern 22",
-      "estado": "todo",
-      "labview": "A connector pattern of 8 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-23",
       "etiqueta": "Pattern 23",
-      "estado": "todo",
-      "labview": "A connector pattern of 9 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-24",
       "etiqueta": "Pattern 24",
-      "estado": "todo",
-      "labview": "A connector pattern of 9 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-25",
       "etiqueta": "Pattern 25",
-      "estado": "todo",
-      "labview": "A connector pattern of 10 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-26",
       "etiqueta": "Pattern 26",
-      "estado": "todo",
-      "labview": "A connector pattern of 10 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-27",
       "etiqueta": "Pattern 27",
-      "estado": "todo",
-      "labview": "A connector pattern of 11 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-28",
       "etiqueta": "Pattern 28",
-      "estado": "todo",
-      "labview": "A connector pattern of 7 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-29",
       "etiqueta": "Pattern 29",
-      "estado": "todo",
-      "labview": "A connector pattern of 8 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-30",
       "etiqueta": "Pattern 30",
-      "estado": "todo",
-      "labview": "A connector pattern of 9 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-31",
       "etiqueta": "Pattern 31",
-      "estado": "todo",
-      "labview": "A connector pattern of 10 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-32",
       "etiqueta": "Pattern 32",
-      "estado": "todo",
-      "labview": "A connector pattern of 11 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-33",
       "etiqueta": "4-2-2-4",
       "estado": "built",
-      "prueba": "test/editor/connector-patterns.test.mjs::the_Patterns_row_opens_a_6_by_6_grid_of_36_thumbnails_and_only_4-2-2-4_can_be_chosen",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-34",
       "etiqueta": "Pattern 34",
-      "estado": "todo",
-      "labview": "A connector pattern of 16 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-35",
       "etiqueta": "Pattern 35",
-      "estado": "todo",
-      "labview": "A connector pattern of 20 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
       "id": "context.connector-pane.patterns.pattern-36",
       "etiqueta": "Pattern 36",
-      "estado": "todo",
-      "labview": "A connector pattern of 28 cells, shown as an icon with no label. Choosing it replaces the pattern of the connector pane.",
-      "necesita": "patrones-del-connector",
+      "estado": "built",
+      "prueba": "test/editor/connector-patterns.test.mjs::choosing_a_pattern_moves_each_terminal_to_the_nearest_cell_as_LabVIEW_does",
       "captura": "subvi/connector-menu-patterns.png"
     },
     {
@@ -24733,6 +24794,668 @@
       "labview": "The object's properties dialog.",
       "necesita": "propiedades",
       "captura": "visa/resource-name-tm0z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control-terminal",
+      "etiqueta": "DAQ Name Control",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::the_terminals_of_a_DAQ_name_have_their_menus",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown (the rows of this menu are those of the VISA resource name's terminal with DAQ for VISA: unverified, the DAQ terminal's was not opened).",
+      "necesita": "etiquetas",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the label.",
+      "necesita": "etiquetas",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.find-control",
+      "etiqueta": "Find Control",
+      "estado": "todo",
+      "labview": "Points out the control on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control-terminal.hide-control",
+      "etiqueta": "Hide Control",
+      "estado": "todo",
+      "labview": "Hides the control on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control-terminal.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Change_to_Indicator_and_Change_to_Control_flip_the_terminal_of_a_DAQ_name_and_keep_its_wire",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the object into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.change-to-constant",
+      "etiqueta": "Change to Constant",
+      "estado": "todo",
+      "labview": "Turns the terminal into a constant.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Opens the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.daq-palette",
+      "etiqueta": "DAQ Palette",
+      "estado": "todo",
+      "labview": "The DAQ - Data Acquisition palette, from the right-click menu.",
+      "necesita": "paleta-daq-en-menu",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control-terminal.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Create_on_a_DAQ_name_makes_its_constant,_control_and_indicator_of_the_same_kind,_wired",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Create_on_a_DAQ_name_makes_its_constant,_control_and_indicator_of_the_same_kind,_wired",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Create_on_a_DAQ_name_makes_its_constant,_control_and_indicator_of_the_same_kind,_wired",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Create_on_a_DAQ_name_makes_its_constant,_control_and_indicator_of_the_same_kind,_wired",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "Makes a local variable of the object.",
+      "necesita": "variables-y-feedback",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control-terminal.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "Makes a reference to the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "Makes a Property Node of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Makes an Invoke Node of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Makes a cluster from the selected objects.",
+      "necesita": "tipo-cluster",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Data_Operations_of_a_DAQ_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Data_Operations_of_a_DAQ_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Data_Operations_of_a_DAQ_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the object's data.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control-terminal.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the object's data.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes data into the object.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-control-terminal.view-as-icon",
+      "etiqueta": "View As Icon",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::View_As_Icon_of_the_terminal_of_a_DAQ_name_switches_between_38_x_38_and_32_x_16",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control-terminal.select-item",
+      "etiqueta": "Select Item...",
+      "estado": "todo",
+      "labview": "Opens a list of the names the object can take.",
+      "necesita": "nombres-daq",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control-terminal.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the object's properties.",
+      "necesita": "propiedades",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-indicator-terminal",
+      "etiqueta": "DAQ Name Indicator",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::the_terminals_of_a_DAQ_name_have_their_menus",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown (the rows of this menu are those of the VISA resource name's terminal with DAQ for VISA: unverified, the DAQ terminal's was not opened).",
+      "necesita": "etiquetas",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the label.",
+      "necesita": "etiquetas",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.find-indicator",
+      "etiqueta": "Find Indicator",
+      "estado": "todo",
+      "labview": "Points out the indicator on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.hide-indicator",
+      "etiqueta": "Hide Indicator",
+      "estado": "todo",
+      "labview": "Hides the indicator on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Change_to_Indicator_and_Change_to_Control_flip_the_terminal_of_a_DAQ_name_and_keep_its_wire",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the object into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.change-to-constant",
+      "etiqueta": "Change to Constant",
+      "estado": "todo",
+      "labview": "Turns the terminal into a constant.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Opens the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.daq-palette",
+      "etiqueta": "DAQ Palette",
+      "estado": "todo",
+      "labview": "The DAQ - Data Acquisition palette, from the right-click menu.",
+      "necesita": "paleta-daq-en-menu",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Create_on_a_DAQ_name_makes_its_constant,_control_and_indicator_of_the_same_kind,_wired",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Create_on_a_DAQ_name_makes_its_constant,_control_and_indicator_of_the_same_kind,_wired",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Create_on_a_DAQ_name_makes_its_constant,_control_and_indicator_of_the_same_kind,_wired",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Create_on_a_DAQ_name_makes_its_constant,_control_and_indicator_of_the_same_kind,_wired",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "Makes a local variable of the object.",
+      "necesita": "variables-y-feedback",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "Makes a reference to the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "Makes a Property Node of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Makes an Invoke Node of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Makes a cluster from the selected objects.",
+      "necesita": "tipo-cluster",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Data_Operations_of_a_DAQ_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Data_Operations_of_a_DAQ_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Data_Operations_of_a_DAQ_name_makes_its_current_value_its_default",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the object's data.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the object's data.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes data into the object.",
+      "necesita": "copiar-datos",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "visa/resource-name-tm2z.png"
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.view-as-icon",
+      "etiqueta": "View As Icon",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::View_As_Icon_of_the_terminal_of_a_DAQ_name_switches_between_38_x_38_and_32_x_16",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.select-item",
+      "etiqueta": "Select Item...",
+      "estado": "todo",
+      "labview": "Opens a list of the names the object can take.",
+      "necesita": "nombres-daq",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-indicator-terminal.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the object's properties.",
+      "necesita": "propiedades",
+      "captura": "visa/resource-name-tm2z.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-constant",
+      "etiqueta": "DAQ Name Constant",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::the_DAQ_name_constant_has_its_own_menu,_measured",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Turns the constant into a control.",
+      "necesita": "panel-frontal",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns the constant into an indicator.",
+      "necesita": "panel-frontal",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the object into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "daqmx-types/m1.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-constant.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Opens the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "daqmx-types/m1.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-constant.daq-palette",
+      "etiqueta": "DAQ Palette",
+      "estado": "todo",
+      "labview": "The DAQ - Data Acquisition palette, from the right-click menu.",
+      "necesita": "paleta-daq-en-menu",
+      "captura": "daqmx-types/m1.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-constant.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Create_on_a_DAQ_name_makes_its_constant,_control_and_indicator_of_the_same_kind,_wired",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Create_on_a_DAQ_name_makes_its_constant,_control_and_indicator_of_the_same_kind,_wired",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Create_on_a_DAQ_name_makes_its_constant,_control_and_indicator_of_the_same_kind,_wired",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-controls.test.mjs::Create_on_a_DAQ_name_makes_its_constant,_control_and_indicator_of_the_same_kind,_wired",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Makes a cluster from the selected objects.",
+      "necesita": "tipo-cluster",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the object with another of its kind.",
+      "necesita": "menus-contextuales",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Cut, copy and paste of the object's data.",
+      "necesita": "copiar-datos",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the object's data.",
+      "necesita": "copiar-datos",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the object's data.",
+      "necesita": "copiar-datos",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes data into the object.",
+      "necesita": "copiar-datos",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "daqmx-types/m1.png"
+    },
+    {
+      "id": "context.daq-name-constant.size-to-text",
+      "etiqueta": "Size To Text",
+      "estado": "todo",
+      "labview": "Makes the constant as wide as its text.",
+      "necesita": "menus-contextuales",
+      "captura": "daqmx-types/m1.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-constant.io-name-filtering",
+      "etiqueta": "I/O Name Filtering...",
+      "estado": "todo",
+      "labview": "Chooses which names the dropdown and the browser offer.",
+      "necesita": "nombres-daq",
+      "captura": "daqmx-types/m1.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-constant.select-item",
+      "etiqueta": "Select Item...",
+      "estado": "todo",
+      "labview": "Opens a list of the names the object can take.",
+      "necesita": "nombres-daq",
+      "captura": "daqmx-types/m1.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-constant.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the object's properties.",
+      "necesita": "propiedades",
+      "captura": "daqmx-types/m1.png",
       "separado": true
     },
     {
