@@ -1,0 +1,455 @@
+{
+  "solder": 4,
+  "connector": {
+    "pattern": 4833,
+    "inputs": [
+      {
+        "name": "daq-name-control_1",
+        "cell": 0
+      },
+      {
+        "name": "control_2",
+        "cell": 7
+      },
+      {
+        "name": "control_1",
+        "cell": 9
+      },
+      {
+        "name": "cluster-control_1",
+        "cell": 11
+      }
+    ],
+    "outputs": [
+      {
+        "name": "daq-name-indicator_1",
+        "cell": 4
+      },
+      {
+        "name": "arr-control_1",
+        "cell": 6
+      },
+      {
+        "name": "cluster-indicator_1",
+        "cell": 15
+      }
+    ]
+  },
+  "front-panel": [
+    {
+      "name": "cluster-control_1",
+      "role": "control",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "default": {
+        "status": false,
+        "code": 0,
+        "source": ""
+      },
+      "style": "error-in"
+    },
+    {
+      "name": "cluster-indicator_1",
+      "role": "indicator",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "default": {
+        "status": false,
+        "code": 0,
+        "source": ""
+      },
+      "style": "error-out"
+    },
+    {
+      "name": "daq-name-control_1",
+      "role": "control",
+      "type": {
+        "daq-name": "task"
+      },
+      "default": ""
+    },
+    {
+      "name": "daq-name-indicator_1",
+      "role": "indicator",
+      "type": {
+        "daq-name": "task"
+      },
+      "default": ""
+    },
+    {
+      "name": "control_1",
+      "role": "control",
+      "type": "number",
+      "default": 10
+    },
+    {
+      "name": "arr-control_1",
+      "role": "indicator",
+      "type": {
+        "array": "number"
+      },
+      "default": []
+    },
+    {
+      "name": "control_2",
+      "role": "control",
+      "type": "i32",
+      "default": -1
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      {
+        "name": "cluster-control_1",
+        "type": "cluster-control"
+      },
+      {
+        "name": "cluster-indicator_1",
+        "type": "cluster-indicator"
+      },
+      {
+        "name": "daq-name-control_1",
+        "type": "daq-name-control"
+      },
+      {
+        "name": "daq-name-indicator_1",
+        "type": "daq-name-indicator"
+      },
+      {
+        "name": "call-library_1",
+        "type": "call-library",
+        "config": {
+          "library": "nilvaiu.*",
+          "specify-path-on-diagram": false,
+          "function": "DAQRead1ChanNSamp1DF64",
+          "thread": "any",
+          "calling-convention": "c",
+          "error-checking": "default",
+          "return-type": {
+            "type": "numeric",
+            "data-type": "i32"
+          },
+          "parameters": [
+            {
+              "name": "taskID",
+              "type": "numeric",
+              "data-type": "uptr",
+              "pass": "value"
+            },
+            {
+              "name": "numberOfSamples",
+              "type": "numeric",
+              "data-type": "i32",
+              "pass": "value",
+              "constant": false
+            },
+            {
+              "name": "timeout",
+              "type": "numeric",
+              "data-type": "dbl",
+              "pass": "value"
+            },
+            {
+              "name": "data",
+              "type": "array",
+              "data-type": "dbl",
+              "dimensions": 1,
+              "array-format": "array-handle"
+            },
+            {
+              "name": "extendedErrorInfo",
+              "type": "string",
+              "string-format": "string-handle"
+            }
+          ]
+        }
+      },
+      {
+        "name": "empty-string-constant_1",
+        "type": "empty-string-constant"
+      },
+      {
+        "name": "subvi_1",
+        "type": "subvi",
+        "config": {
+          "vi": "DAQ Fill In Error Info.sdg"
+        }
+      },
+      {
+        "name": "control_1",
+        "type": "control"
+      },
+      {
+        "name": "arr-control_1",
+        "type": "arr-indicator"
+      },
+      {
+        "name": "control_2",
+        "type": "control"
+      }
+    ],
+    "wires": [
+      {
+        "from": "call-library_1.return",
+        "to": "subvi_1.control_2"
+      },
+      {
+        "from": "call-library_1.error-out",
+        "to": "subvi_1.cluster-control_1"
+      },
+      {
+        "from": "cluster-control_1.result",
+        "to": "call-library_1.error-in"
+      },
+      {
+        "from": "daq-name-control_1.result",
+        "to": "call-library_1.arg-0-in"
+      },
+      {
+        "from": "subvi_1.cluster-indicator_1",
+        "to": "cluster-indicator_1.value"
+      },
+      {
+        "from": "daq-name-control_1.result",
+        "to": "daq-name-indicator_1.value"
+      },
+      {
+        "from": "empty-string-constant_1.result",
+        "to": "call-library_1.arg-4-in"
+      },
+      {
+        "from": "call-library_1.arg-4-out",
+        "to": "subvi_1.str-control_1"
+      },
+      {
+        "from": "control_1.result",
+        "to": "call-library_1.arg-2-in"
+      },
+      {
+        "from": "control_2.result",
+        "to": "call-library_1.arg-1-in"
+      },
+      {
+        "from": "call-library_1.arg-3-out",
+        "to": "arr-control_1.value"
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "cluster-control_1": {
+        "x": 23,
+        "y": 223,
+        "label": {
+          "text": "error in\n"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 975,
+        "y": 223,
+        "label": {
+          "text": "error out\n"
+        }
+      },
+      "daq-name-control_1": {
+        "x": 16,
+        "y": 50,
+        "label": {
+          "text": "task/channels in\n"
+        }
+      },
+      "daq-name-indicator_1": {
+        "x": 934,
+        "y": 51,
+        "label": {
+          "text": "task out\n"
+        }
+      },
+      "call-library_1": {
+        "x": 360,
+        "y": 639
+      },
+      "empty-string-constant_1": {
+        "x": 276,
+        "y": 749
+      },
+      "subvi_1": {
+        "x": 646,
+        "y": 689
+      },
+      "control_1": {
+        "x": 291,
+        "y": 391,
+        "label": {
+          "text": "timeout\n"
+        }
+      },
+      "arr-control_1": {
+        "x": 460,
+        "y": 42,
+        "label": {
+          "text": "data\n"
+        }
+      },
+      "control_2": {
+        "x": 441,
+        "y": 411,
+        "label": {
+          "text": "number of samples per channel\n"
+        }
+      }
+    },
+    "panel": {
+      "cluster-control_1": {
+        "x": 23,
+        "y": 223,
+        "label": {
+          "text": "error in\n"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 623,
+        "y": 223,
+        "label": {
+          "text": "error out\n"
+        }
+      },
+      "daq-name-control_1": {
+        "x": 16,
+        "y": 50,
+        "label": {
+          "text": "task/channels in\n"
+        }
+      },
+      "daq-name-indicator_1": {
+        "x": 337,
+        "y": 51,
+        "label": {
+          "text": "task out\n"
+        }
+      },
+      "control_1": {
+        "x": 291,
+        "y": 391,
+        "label": {
+          "text": "timeout\n"
+        }
+      },
+      "arr-control_1": {
+        "x": 460,
+        "y": 42,
+        "label": {
+          "text": "data\n"
+        }
+      },
+      "control_2": {
+        "x": 441,
+        "y": 411,
+        "label": {
+          "text": "number of samples per channel\n"
+        }
+      }
+    },
+    "wires": {
+      "subvi_1.control_2": {
+        "bends": [
+          406
+        ]
+      },
+      "subvi_1.cluster-control_1": {
+        "bends": [
+          650
+        ]
+      },
+      "call-library_1.error-in": {
+        "bends": [
+          68
+        ]
+      },
+      "call-library_1.arg-0-in": {
+        "bends": [
+          61
+        ]
+      },
+      "cluster-indicator_1.value": {
+        "bends": [
+          685
+        ]
+      },
+      "daq-name-indicator_1.value": {
+        "bends": [
+          61
+        ]
+      },
+      "call-library_1.arg-4-in": {
+        "bends": [
+          298
+        ]
+      },
+      "subvi_1.str-control_1": {
+        "bends": [
+          406
+        ]
+      },
+      "call-library_1.arg-2-in": {
+        "bends": [
+          336
+        ]
+      },
+      "call-library_1.arg-1-in": {
+        "bends": [
+          487,
+          553.75,
+          352
+        ]
+      },
+      "arr-control_1.value": {
+        "bends": [
+          406
+        ]
+      }
+    },
+    "windows": {
+      "front-panel": {
+        "x": 525,
+        "y": 168,
+        "width": 1800,
+        "height": 960
+      },
+      "block-diagram": {
+        "x": 476,
+        "y": 138,
+        "width": 1800,
+        "height": 960
+      }
+    }
+  }
+}

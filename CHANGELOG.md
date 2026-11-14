@@ -19,10 +19,13 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 - Fixed: dragging a wire from the inner half of a wired Case tunnel (just past the glyph) starts a wire from the tunnel
   and makes the output tunnel, instead of dragging the wire's first segment and leaving a stub.
 - The DAQ add-on's first OVIs, built in the editor (DT-087): DAQ Create Task, DAQ Create Virtual Channel (AI Voltage),
-  DAQ Timing (Sample Clock), DAQ Start Task, DAQ Wait Until Done, DAQ Stop Task, DAQ Clear Task and DAQ Fill In Error Info, with LabVIEW's connector (4833) and terminals,
+  DAQ Timing (Sample Clock), DAQ Start Task, DAQ Read (the four analog reads of doubles), DAQ Wait Until Done, DAQ Stop
+  Task, DAQ Clear Task and DAQ Fill In Error Info, with LabVIEW's connector (4833) and terminals,
   calling the add-on's `nilvaiu`; a whole finite analog-input acquisition runs on the simulated device with LabVIEW's
   error codes. As in LabVIEW, Stop Task and Clear Task do their work even when given an error, and pass it on.
   The ring controls of Create Virtual Channel are I32 controls until Solder has rings with free values.
+- Fixed: a Call Library Function Node with an array parameter left unwired broke the OVI; it now passes an empty array,
+  as LabVIEW does (NI's DAQmx reads leave theirs unwired).
 - A refnum wired into an Adapt to Type parameter of the Call Library Function Node is passed as the address of its
   value, as LabVIEW does (DT-090), so This Application goes into DAQmx's `lvAppReference`.
 - Fixed: a Case structure's output tunnel refused a VISA resource name, a DAQ name or an array (a broken wire); it now

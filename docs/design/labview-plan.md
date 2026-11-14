@@ -781,6 +781,11 @@ array or string read by a local variable while another loop writes it is never t
       passes its inputs, as Solder's did (now tested, spec/04 amended); but NI's Stop Task leaves its node's error in
       unwired and so stops the task anyway: Solder's was rewired to match (a test that failed before). Start and Clear
       now run in any thread, as NI's. Next: the four analog reads of doubles, then the DAQ palette (`daq.json`).*
+      *Stage 8 the same day ([`stage8`](../../labview-captures/reports/2026-11-14-daq-plugin-stage8.md)): the four
+      analog reads of doubles built by hand, without a Case as NI's; they run as LabVIEW measured (a lone read starts the
+      task, a finite read of -1 gives every sample, a second is -200278, two channels give a value or a row each). Fixed
+      on the way: an unwired array parameter broke the node, where NI's reads leave theirs unwired. Next: the DAQ palette
+      (`daq.json`), then a whole acquisition tried by hand, then the merge into `main`.*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

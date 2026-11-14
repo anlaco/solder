@@ -181,6 +181,21 @@ test("a node with no function does not compile, nor one with an unwired string",
   assert.match(JSON.stringify(compilar(unwired.g, CAT).errores), /missing a wire on its input \\"arg1\\"/);
 });
 
+// Seen: NI's DAQmx Read (Analog 1D DBL 1Chan NSamp) leaves its array input unwired and runs (labview-captures/daq-api/walk.json).
+test("an unwired array goes as an empty one, and what the function writes into it comes out", { skip: !ON_LINUX }, async () => {
+  const vi = buildVI(CAT, (b) => {
+    b.node("call", "call-library", configured({
+      library: C_LIBRARY,
+      function: "memset",
+      parameters: [{ name: "s", type: "array", "data-type": "u8" }, numeric("c", "i32"), numeric("n", "uptr")],
+    }));
+    b.node("filled", "arr-indicator", { type: { array: "u8" } });
+    b.wire("call.arg-0-out", "filled.value");
+  });
+  // memset of 0 bytes writes nothing; the empty array passes the node.
+  assert.deepEqual((await run(vi)).filled, []);
+});
+
 test("a fault in the library's code, which ends the I/O process, is error 1097 and the Run goes on", async () => {
   const faultingIo = { callLibrary: () => Promise.reject(new Error("The instrument I/O process ended.")) };
   const shown = await run(strlenOf("hello"), { io: faultingIo });

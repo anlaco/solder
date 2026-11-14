@@ -131,8 +131,10 @@ export function callLibraryPorts(node) {
   config.parameters.forEach((parameter, index) => {
     const type = parameterType(parameter, index);
     if (!type) return;
-    // An unwired number goes as 0; an unwired string breaks the OVI (measured: "Contains unwired or bad terminal").
-    const unwiredDefault = parameter.type === "numeric" ? { default: 0 } : {};
+    // An unwired number goes as 0 and an unwired array as an empty one: NI's DAQmx Read (Analog 1D DBL …) leaves its
+    // array input unwired and runs (seen, labview-captures/daq-api/walk.json). An unwired string breaks the OVI
+    // (measured: "Contains unwired or bad terminal").
+    const unwiredDefault = parameter.type === "numeric" ? { default: 0 } : parameter.type === "array" ? { default: [] } : {};
     inputs.push({ name: `arg-${index}-in`, label: parameter.name, type, ...unwiredDefault });
     outputs.push({ name: `arg-${index}-out`, label: parameter.name, type });
   });

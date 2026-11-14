@@ -320,3 +320,77 @@ test("Stop Task stops the task even with an error in, which it passes on, as NI'
   assert.deepEqual(shown["start again error"], NO_ERROR, "the task was stopped, so it starts again");
   assert.deepEqual(shown["clear error"], NO_ERROR);
 });
+
+// ——— The reads (measured, labview-captures/reports/2026-11-06-daqmx-read-write.md "Behaviour on Dev1") ———
+
+const READ_1CHAN_1SAMP = "DAQ Read (Analog DBL 1Chan 1Samp).sdg";
+const READ_1CHAN_NSAMP = "DAQ Read (Analog 1D DBL 1Chan NSamp).sdg";
+const READ_NCHAN_1SAMP = "DAQ Read (Analog 1D DBL NChan 1Samp).sdg";
+const READ_NCHAN_NSAMP = "DAQ Read (Analog 2D DBL NChan NSamp).sdg";
+const READ_BEYOND_FINAL_SAMPLE = -200278;
+/** The simulated input's range, ±5 V as Create Virtual Channel's default (its sine is about 4.84 V, measured). */
+const AI_RANGE = 5;
+
+/**
+ * A chain on `channels`: Create Virtual Channel, then Timing (finite, SHORT_ACQUISITION samples at 1 kHz) unless
+ * `onDemand`, then the steps `reads` names (OVI files, each read's data shown as `<name> data`), then Clear.
+ */
+function readingChain(b, channels, reads, { onDemand = false, samplesPerRead } = {}) {
+  createAiVoltage(b, "create", channels);
+  let task = "create.daq-name-indicator_1";
+  let error = "create.cluster-indicator_1";
+  const step = (name, file) => {
+    callPlugin(b, name, file, task, error);
+    task = `${name}.daq-name-indicator_1`;
+    error = `${name}.cluster-indicator_1`;
+    showError(b, `${name} error`, error);
+  };
+  if (!onDemand) {
+    b.node("rate", "const", { value: 1000, type: "dbl" });
+    b.node("samples", "const", { value: SHORT_ACQUISITION, type: "i32" });
+    step("timing", TIMING_OVI);
+    b.wire("rate.result", "timing.control_1");
+    b.wire("samples.result", "timing.control_4");
+  }
+  for (const [name, file, dataType] of reads) {
+    step(name, file);
+    b.node(`${name} data`, dataType === "number" ? "indicator" : "arr-indicator", { type: dataType });
+    // A read's data is its indicator_1 (one sample) or arr-control_1 (an array indicator), as its saved connector names them.
+    b.wire(`${name}.${dataType === "number" ? "indicator_1" : "arr-control_1"}`, `${name} data.value`);
+    if (samplesPerRead !== undefined && file !== READ_1CHAN_1SAMP && file !== READ_NCHAN_1SAMP) {
+      b.node(`${name} count`, "const", { value: samplesPerRead, type: "i32" });
+      b.wire(`${name} count.result`, `${name}.control_2`);
+    }
+  }
+  callPlugin(b, "clear", "DAQ Clear Task.sdg", task, error);
+  showError(b, "clear error", "clear.cluster-indicator_1");
+}
+
+const ONE_DBL = "number";
+const DBL_1D = { array: "number" };
+const DBL_2D = { array: "number", dims: 2 };
+
+test("a single read with no Timing nor Start starts the task itself and gives one value in range, as LabVIEW's", async () => {
+  const shown = await run(buildVI(PLUGIN, (b) => readingChain(b, "Dev1/ai0", [["read", READ_1CHAN_1SAMP, ONE_DBL]], { onDemand: true })));
+  assert.deepEqual(shown["read error"], NO_ERROR);
+  assert.ok(Math.abs(shown["read data"]) <= AI_RANGE, `${shown["read data"]} is within ±5 V`);
+});
+
+test("a finite acquisition read with -1 gives every sample, and a second read is -200278", async () => {
+  const shown = await run(buildVI(PLUGIN, (b) =>
+    readingChain(b, "Dev1/ai0", [["first", READ_1CHAN_NSAMP, DBL_1D], ["second", READ_1CHAN_NSAMP, DBL_1D]], { samplesPerRead: -1 })));
+  assert.deepEqual(shown["first error"], NO_ERROR);
+  assert.equal(shown["first data"].length, SHORT_ACQUISITION);
+  assert.ok(shown["first data"].every((value) => Math.abs(value) <= AI_RANGE));
+  assert.deepEqual([shown["second error"].status, shown["second error"].code], [true, READ_BEYOND_FINAL_SAMPLE]);
+  assert.match(shown["second error"].source, /^<append>/);
+});
+
+test("two channels read one sample each, or every sample of each as a row", async () => {
+  const single = await run(buildVI(PLUGIN, (b) => readingChain(b, "Dev1/ai0:1", [["read", READ_NCHAN_1SAMP, DBL_1D]], { onDemand: true })));
+  assert.deepEqual(single["read error"], NO_ERROR);
+  assert.equal(single["read data"].length, 2, "one value per channel");
+  const all = await run(buildVI(PLUGIN, (b) => readingChain(b, "Dev1/ai0:1", [["read", READ_NCHAN_NSAMP, DBL_2D]], { samplesPerRead: -1 })));
+  assert.deepEqual(all["read error"], NO_ERROR);
+  assert.deepEqual(all["read data"].map((row) => row.length), [SHORT_ACQUISITION, SHORT_ACQUISITION], "a row per channel");
+});

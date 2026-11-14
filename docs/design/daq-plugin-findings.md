@@ -218,3 +218,24 @@ nodes moved to any thread (S6-#10). Numbered S7-#n.
 - S7-#4 Saving stores the session's window size and the Case's frame shown (layout lines change with no edit).
 - S7-#1, S7-#5, S7-#6 tooling: drag from a terminal's centre; the dialog's fixed positions; stepping the Case to reach
   the node.
+
+Stage 8, 2026-11-14 ([report](../../labview-captures/reports/2026-11-14-daq-plugin-stage8.md)): the four analog reads
+of doubles built by hand (1Chan 1Samp, 1D 1Chan NSamp, 1D NChan 1Samp, 2D NChan NSamp), without a Case as NI's. Found
+before building them, in `walk.json`: NI's array reads leave the node's array input unwired, which Solder refused
+("missing a wire"); *fixed: an unwired array goes as an empty one* (`core/model/call-library.mjs`; a test in
+`call-library-run.test.mjs` that failed before). Run as LabVIEW measured (`daq-plugin-ovis.test.mjs`): a single read
+with no Timing nor Start starts the task itself; a finite acquisition read with -1 gives every sample and a second read is
+-200278; two channels give a value each, or a row each. Numbered S8-#n.
+
+- **S8-#5 Nothing flags a node whose function is not the one meant** (medium): a name left from a copied node gave
+  another function's prototype, silently; the run's error had an empty source. LabVIEW does not check either (it cannot
+  know the library's signature); the prototype line is the only guard.
+- **S8-#3 A numeric indicator on the panel has no right-click menu**, though a control has one (medium); S8-#2 a numeric
+  on the panel selects only by its border.
+- S8-#4 An array indicator is reached only through Data Containers ▸ Array (Change to Indicator, then an element);
+  it keeps the name `arr-control_1`; Add Dimension only from the shell's edges.
+- S8-#6 In the node's dialog, a click right after × is often lost, so a second × deletes the wrong row.
+- S8-#7, S8-#8 Reconfiguring keeps the old slots' wires (S6-#2); dropdowns drawn past the dialog; a new Array starts as
+  I32 Array Data Pointer; Dimensions changes only by the spinner.
+- S8-#9 Create ▸ on the node has only the All items, so one input's constant comes from the palette.
+- S8-#11 Labels are saved with a trailing newline (all OVIs). S8-#1, S8-#10, S8-#12–#14 tooling and earlier notes.

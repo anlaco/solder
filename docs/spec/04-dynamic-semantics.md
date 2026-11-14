@@ -537,6 +537,8 @@ Measured in LabVIEW 2026 Q3 by running each case (`labview-captures/format-scan/
 > library runs in the I/O process, which the fault ends. With an error in (status TRUE) nothing is called, the return
 > is 0, every output is its input and the error passes unchanged; a warning in calls the function and passes too
 > (measured, `labview-captures/reports/2026-11-14-clfn-error-in.md`; `test/core/call-library-run.test.mjs`).
+> An unwired number goes as 0 and an unwired array as an empty one (seen: NI's DAQmx Read (Analog 1D DBL …) leaves its
+> array unwired and runs); an unwired string or Adapt to Type breaks the OVI (measured).
 > **Unverified:** a library named in the dialog that cannot load, which breaks the OVI in
 > LabVIEW and is a run-time error 7 in Solder until the editor checks it.
 
