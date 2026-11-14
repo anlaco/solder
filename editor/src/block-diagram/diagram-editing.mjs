@@ -35,6 +35,7 @@ import { ANY_ERROR, NO_ERROR, errorValuesFromBoolean, isAnyErrorValue, isNoError
 import * as PN from "./property-nodes.mjs";
 import * as PNM from "./property-node-menus.mjs";
 import * as CR from "./control-references.mjs";
+import * as VSR from "./vi-server-references.mjs";
 import * as EI from "./edit-items-dialog.mjs";
 import { endPoint } from "./broken-wire.mjs";
 import { sharedSegmentCount } from "./wire-tree.mjs";
@@ -76,6 +77,8 @@ const grabPoint = (block, ctx, config) => {
   if (block === CL.CALL_LIBRARY) return CL.callLibraryGrabPoint({ tipo: block, config });
   // A control reference hangs by its centre too (reports/2026-11-03-control-references.md Q1).
   if (CR.isControlReference({ tipo: block }) && config) return CR.referenceGrabPoint(config, ctx.medir);
+  // So does the VI Server Reference constant (reports/2026-11-14-vi-server-reference.md "Placed"; unverified how it hangs).
+  if (VSR.isViServerReference({ tipo: block })) return VSR.grabPoint(config, ctx.medir);
   if (FN.isFormatNode({ tipo: block }, ctx.cat)) return FN.formatNodeGrabPoint(block, ctx.cat);
   // An Express VI hangs by the middle of its node (DT-069).
   if (ExpressNodes.isExpressNode({ tipo: block }, ctx.cat)) return ExpressNodes.expressGrabPoint(block);
@@ -1515,6 +1518,9 @@ export function orden(d, id, ctx) {
     if (polymorphicGraph) return cerrar(polymorphicGraph);
   }
   const ultimo = id.slice(id.lastIndexOf(".") + 1);
+  // Link to ▸ of a VI Server Reference constant changes its class.
+  const linked = VSR.isViServerReference(nodoPor(d.g, nodo)) ? VSR.menuCommand(d, id, ctx.medir) : null;
+  if (linked) return linked;
   // The Property Node's own menu, and Create ▸ Property Node ▸ or Property for Instr Class ▸ on a control (DT-072 §7).
   const propertyNodeResult = PN.isPropertyNode(nodoPor(d.g, nodo)) ? PNM.nodeCommand(d, id, ctx) : PNM.createCommand(d, id, ctx, coger);
   if (propertyNodeResult) return propertyNodeResult;
@@ -1781,6 +1787,7 @@ function nodeVariants(d, ctx) {
   if (n?.tipo === "scan-from-string" && (n.config?.inputs ?? 1) <= 1) return { desactivados: new Set([`${r}.remove-parameter`]) };
   if (UN.isByName(n)) return unbundleVariants(d, ctx, n);
   if (PN.isPropertyNode(n) && ctx) return PNM.nodeVariants(d, ctx);
+  if (VSR.isViServerReference(n)) return VSR.menuVariants(n);
   if (n && r === PolymorphicNodes.MENU_ROOT && ctx) return PolymorphicNodes.menuVariants(n, ctx.cat);
   // LabVIEW greys Advanced on the terminals of a VISA resource name (reports/2026-10-26-visa-resource-name-look.md Q5; why is unverified).
   if (r === "context.visa-control-terminal" || r === "context.visa-indicator-terminal") return { desactivados: new Set([`${r}.advanced`]) };
@@ -1956,6 +1963,7 @@ export function marcados(d, ctx) {
   for (const mark of pathMenuMarks(r, n)) m.add(`${r}.${mark}`);
   if (PN.isPropertyNode(n) && ctx) for (const mark of PNM.marks(d, ctx)) m.add(mark);
   if (CL.isCallLibraryNode(n)) for (const mark of CL.NAME_FORMAT_MARKS) m.add(mark);
+  if (VSR.isViServerReference(n)) for (const mark of VSR.menuMarks(n)) m.add(mark);
   if (n.config?.mode) m.add(`${r}.change-mode.${n.config.mode}`);
   if (n.config?.mechanical) m.add(`${r}.mechanical-action.${n.config.mechanical}`);
   const abrev = r.startsWith("context.numeric-") && NUMERICOS[n.config?.type ?? DBL]?.abrev;

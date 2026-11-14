@@ -121,3 +121,60 @@ through Start Task, -200478 with its name, and Clear releases it). Numbered S3-#
 - Fine: the Adapt to Type options (Handles by Value, Pointers to Handles, Array Data Pointer, Interface to Data;
   Handles by Value the default) and the prototype `int32_t DAQDestroyTask110(void *taskRefObjPtr, LStrHandle
   errorInfo);`; Save As to make Stop Task from Start Task; a DAQ wire through a Case's output tunnel in both frames.
+
+Stage 4, 2026-11-14 ([report](../../labview-captures/reports/2026-11-14-daq-plugin-stage4.md)): DAQ Create Virtual
+Channel (AI Voltage) built by hand, from Save As of Start Task; run against the add-on's `nilvaiu` with LabVIEW's codes
+(-200220 for Dev9/ai0, -200170 for Dev1/ai99) in the editor and in `test/core/daq-plugin-ovis.test.mjs` (Create → Start
+→ Stop → Clear without an error). Numbered S4-#n. Measured beside it: the DAQmxName class and its Controls palette are
+LabVIEW's own, not the add-on's ([`daqmx-name-origin`](../../labview-captures/reports/2026-11-14-daqmx-name-origin.md)),
+so the `daq-name` type stays in the core (DT-076 §5); a DAQ name into a String Handle parameter has a coercion dot in
+LabVIEW and passes its name, which Solder already did (`test/core/daq-task-run.test.mjs`).
+
+- **S4-#1 `lvAppRef` cannot be left unwired** (blocking): an unwired Adapt to Type input breaks the OVI, in LabVIEW as in
+  Solder ("Contains unwired or bad terminal", measured in [`clfn`](../../labview-captures/reports/2026-11-06-clfn.md)),
+  and NI wires a This Application constant there. The agent wired `task in` into it as a stand-in. *Decided the same
+  day (DT-090): Solder gets the VI Server Reference constant with This OVI and This Application, and a refnum goes into
+  Adapt to Type as the address of its 4 bytes (measured).*
+- **S4-#2 No ring with free values** (medium): Text Ring and Menu Ring are "not yet"; an enum's values are sequential.
+  `input terminal configuration` (-1, 10083, 10078, 10106, 12529) and `units` (10348, 10065) are I32 controls with the
+  default value. Later: the rings (their own step).
+- S4-#3 Values typed and saved are lost on reopening; only Make Current Values Default keeps them (as LabVIEW saves
+  defaults, unverified here).
+- S4-#4 Representation only from the diagram terminal (stage 1 #6).
+- S4-#5 A terminal's right half starts a wire: drags must take its left half.
+- S4-#6 New controls' terminals land at their panel coordinates, inside the Case.
+- S4-#7 A second wire from `task in` made a duplicate tunnel; deleting its wire left a stale DBL tunnel, removed only by
+  a rubber band and Delete (stage 2 #6).
+- S4-#8 Save As gave `….sdg.sdg`: the GTK dialog selects only the name's stem, so typing the full name over it keeps the
+  extension. GTK's behaviour, not Solder's; nothing to fix.
+- S4-#9, S4-#10, S4-#11 The 11-parameter node is a tall narrow box with 8-px spacing (#22); deleting nodes leaves stubs
+  (Ctrl+B); the node's dialog: End + Backspace in the name fields, dropdown lists drawn partly outside the dialog,
+  reconfiguring a node keeps the old slots' wires.
+- S4-#12 `task out` carries `_unnamedTask<n>` when the node returned an error; LabVIEW's not measured.
+- Fine: the prototype read back exactly as LabVIEW's; DAQ physical channel and scale wires into String Handle
+  parameters; the connector 4833 cells; reopening and running again.
+
+Stage 5, 2026-11-14 ([report](../../labview-captures/reports/2026-11-14-daq-plugin-stage5.md)): Create Virtual Channel's
+`lvAppRef` rewired to a This Application constant (DT-090, built the same day), and DAQ Create Task built by hand from
+Save As of it, with LabVIEW's 4833 cells (measured that day: 1, 2, 4, 5, 7, 11, 15). The whole setup Create Task → Create
+Virtual Channel → Start → Stop → Clear runs without an error against the add-on's `nilvaiu`
+(`test/core/daq-plugin-ovis.test.mjs`). Numbered S5-#n.
+
+- **S5-#1 The DAQ Task Name constant is hard to reach** (medium; worked around): the agent saw Create ▸ Constant greyed
+  on a DAQ Task Name control's and indicator's terminals, though the inventory has both as built and
+  `daq-name-controls.test.mjs` makes a constant from the indicator's terminal: to check by hand. Create ▸ All Constants on
+  an unwired Adapt to Type input says its type is not known yet (LabVIEW's answer not measured). The constant is in no
+  palette Solder has: LabVIEW's Functions-side DAQmx constants come with the add-on's Measurement I/O ▸ DAQmx palette
+  (`ioconstants.mnu`, not dumped), which is the DAQ palette still to build (`daq.json`). Done by Create ▸ Constant on a
+  DAQ wire, then copy and paste.
+- S5-#2 Change to Control is greyed on a Round LED, so auto cleanup is a toggle switch; LabVIEW's is a lit LED control.
+- S5-#3 Operate ▸ is "not yet"; Make Current Value Default is per control; a click on a Boolean in edit mode toggles it.
+- S5-#4, S5-#5 New terminals land inside the Case (S4-#6); a drag from a terminal's arrow moved it instead of wiring.
+- S5-#6 (tooling) `editor.mjs terms` centres are up to 9 px off the drawn rows of the node.
+- S5-#7 After Save As, deleting the node left tunnels, stubs and old wires; an unused empty string constant stays in
+  Create Task's file.
+- S5-#8 The node's menu has Create ▸ now (stage 3 #9 is outdated). S5-#9 the GTK Save As is invisible under Xvfb.
+- S5-#10..#13 Look: the node's dialog fields; palettes open at the click; overlapping selected wires; Save As leaves
+  "Untitled Project 1/My Computer" in the status bar.
+- Fine: the OVI Server Reference from Application Control and Link to ▸ This Application on the first try; the
+  prototype as LabVIEW's; Boolean To (0,1) into a U8 parameter; reopening and running.

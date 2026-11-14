@@ -25,6 +25,7 @@ import * as SpreadsheetNodes from "./spreadsheet-nodes.mjs";
 import * as PolymorphicNodes from "./polymorphic-nodes.mjs";
 import * as PN from "./property-nodes.mjs";
 import * as CR from "./control-references.mjs";
+import * as VSR from "./vi-server-references.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { EMPTY_PATH, hostPathRules, pathToText } from "../../../core/model/paths.mjs";
 import { brokenWireMarks, endPoint } from "./broken-wire.mjs";
@@ -566,6 +567,7 @@ export function caja(n, ctx, edicion) {
   if (PN.isPropertyNode(n)) return { x: n.x, y: n.y, ...PN.propertyNodeSize(n, ctx.cat, ctx.medir) };
   if (CL.isCallLibraryNode(n)) return { x: n.x, y: n.y, ...CL.callLibrarySize(n) };
   if (CR.isControlReference(n)) return { x: n.x, y: n.y, ...CR.referenceSize(n, ctx.medir) };
+  if (VSR.isViServerReference(n)) return { x: n.x, y: n.y, ...VSR.size(n, ctx.medir) };
   if (FileNodes.isFileNode(n)) return { x: n.x, y: n.y, ...FileNodes.fileNodeSize() };
   if (SpreadsheetNodes.isSpreadsheetNode(n)) return { x: n.x, y: n.y, ...SpreadsheetNodes.spreadsheetNodeSize() };
   if (esExpresion(n)) {
@@ -680,6 +682,7 @@ export function terminales(n, ctx, edicion) {
   if (PN.isPropertyNode(n)) return PN.propertyNodeTerminals(n, k, ctx.cat);
   if (CL.isCallLibraryNode(n)) return CL.callLibraryTerminals(n, k);
   if (CR.isControlReference(n)) return CR.referenceTerminals(n, k);
+  if (VSR.isViServerReference(n)) return VSR.terminals(n, k);
   if (FileNodes.isFileNode(n)) return FileNodes.fileNodeTerminals(n, k, ctx.cat);
   if (SpreadsheetNodes.isSpreadsheetNode(n)) return SpreadsheetNodes.spreadsheetNodeTerminals(n, k, ctx.cat);
   const { in: ins, out: outs } = ctx.cat.puertos(n);
@@ -1013,7 +1016,7 @@ export function contenido(d0, ctx, resueltos) {
       fantasma = `<div class="rectangulo-estructura" style="left:${px(x)};top:${px(y)};width:${px(Math.abs(accion.x - accion.esquina.x))};height:${px(Math.abs(accion.y - accion.esquina.y))}"></div>`;
     }
   } else if (accion?.tipo === "colocar" && accion.x !== undefined) {
-    const n = { id: "fantasma", tipo: accion.bloque, x: accion.x, y: accion.y, ...(isSubVI({ tipo: accion.bloque }) || PN.isPropertyNode({ tipo: accion.bloque }) || CR.isControlReference({ tipo: accion.bloque }) ? { config: accion.config } : {}) };
+    const n = { id: "fantasma", tipo: accion.bloque, x: accion.x, y: accion.y, ...(isSubVI({ tipo: accion.bloque }) || PN.isPropertyNode({ tipo: accion.bloque }) || CR.isControlReference({ tipo: accion.bloque }) || VSR.isViServerReference({ tipo: accion.bloque }) ? { config: accion.config } : {}) };
     fantasma = `<div class="fantasma">${nodo(n, { g, seleccion: [] }, ctx, null, false)}</div>`;
   }
   const lista = d.lista ? listaAbierta(d, ctx, resueltos) : "";
@@ -1352,6 +1355,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
   } else if (CR.isControlReference(n)) {
     const graph = d.completo ?? d.g;
     cuerpo = `<div class="glifo-formato">${CR.referenceBody(graph, ctx.cat, n, k)}</div>${PN.labelAbove(graph, n.config?.link)}`;
+  } else if (VSR.isViServerReference(n)) {
+    cuerpo = `<div class="glifo-formato">${VSR.body(n, k)}</div>${VSR.label(n)}`;
   } else if (esExpresion(n)) {
     cuerpo = expresion(n, k, ctx, resueltos, d.edicion);
   } else if (esCompuesto(n, ctx)) {
@@ -1776,6 +1781,8 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   if (CL.isCallLibraryNode(n)) return CL.MENU_ROOT;
   // The control reference constant (reports/2026-11-03-control-references.md Q3).
   if (CR.isControlReference(n)) return "context.control-reference";
+  // The VI Server Reference constant (reports/2026-11-14-vi-server-reference.md "Menu").
+  if (VSR.isViServerReference(n)) return VSR.MENU_ROOT;
   // Write to and Read from Text File have a menu of their own, with Convert EOL and Read Lines (file-io-behavior.md §2, §3); the other file functions' menus were not read.
   if (FileNodes.MENU_ROOTS[n.tipo]) return FileNodes.MENU_ROOTS[n.tipo];
   if (n.tipo === "format-into-string") return "context.format-into-string";

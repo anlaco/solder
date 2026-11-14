@@ -134,6 +134,9 @@ const REJILLAS = {
   "palette.controls.modern.io": { columnas: 3, celdas: {} },
   // DAQ Name Controls, from labview-captures/daqmx-types/ctlpal.png (reports/2026-11-06-daqmx-types.md, "Panel"): rows of 2, 3 and 2.
   "palette.controls.modern.io.daqmx-name-controls": { columnas: 3, celdas: { "physical-channel": [1, 0], "device-name": [2, 0] } },
+  // Application Control: 5 columns and 5 rows, every cell filled; the last row is the five subpalettes
+  // (labview-captures/reports/2026-11-14-application-control-palette.md).
+  "palette.functions.programming.application-control": { columnas: 5, celdas: {} },
   // Functions ▸ Instrument I/O and below, from labview-captures/visa/functions-*.png (reports/2026-10-25-visa-palettes.md §1–3).
   // Instrument I/O is a category of the palette, so it unfolds in the palette's four columns; its cells are the measured ones
   // (the window of LabVIEW is three columns wide: Instr Drivers alone on the first row, VISA, GPIB and Serial on the second).

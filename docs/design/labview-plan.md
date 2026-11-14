@@ -761,6 +761,17 @@ array or string read by a local variable while another loop writes it is never t
       *Fixes the same day, measured in LabVIEW first ([`editing-fixes`](../../labview-captures/reports/2026-11-14-editing-fixes.md)):
       Ctrl+A in the node's dialog and Delete on a selected text; paste centred on the last click (LabVIEW's rule, not
       the pointer); a press just past a wired tunnel starts a wire. Next: Create Task and Create Virtual Channel.*
+      *Stages 4 and 5 on 2026-11-14: DAQ Create Virtual Channel (AI Voltage) and DAQ Create Task built by hand
+      ([`stage4`](../../labview-captures/reports/2026-11-14-daq-plugin-stage4.md),
+      [`stage5`](../../labview-captures/reports/2026-11-14-daq-plugin-stage5.md)); the whole setup Create Task → Create
+      Virtual Channel → Start → Stop → Clear runs against the add-on's `nilvaiu` with LabVIEW's codes
+      (`test/core/daq-plugin-ovis.test.mjs`). `lvAppReference` could not stay unwired (LabVIEW breaks an unwired Adapt to
+      Type too), so the OVI Server Reference constant was measured and built, This OVI and This Application only, with
+      the Application Control palette's layout (DT-090). Measured beside it: the DAQmxName class and its Controls palette
+      are LabVIEW's, not the add-on's ([`daqmx-name-origin`](../../labview-captures/reports/2026-11-14-daqmx-name-origin.md)),
+      so `daq-name` stays in the core. Findings S4-#n, S5-#n; the rings with free values (S4-#2) and the DAQ constants'
+      palette (S5-#1) are open. Next: Timing, Read and Wait Until Done, then the DAQ palette (`daq.json`). `feature/daq` is
+      merged into `main` once those are done and a whole acquisition is tried by hand (the developer, 2026-11-14), not before.*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

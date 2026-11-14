@@ -144,3 +144,33 @@ test("a node naming NI's nilvaiu.* loads the DAQ add-on's copy by its full path"
     }
   }
 });
+
+test("a task wire into a String Handle parameter passes the task's name, as LabVIEW's coercion dot does", async () => {
+  // Measured: NI's Create Task wires `task to copy` into taskToCopy, a String Handle, with a coercion dot
+  // (labview-captures/reports/2026-11-14-daqmx-name-origin.md); the library then reads a name, not a task object.
+  const vi = buildVI(CAT, (b) => {
+    b.node("empty", "daq-name-constant", { type: DAQ_TASK, value: "" });
+    b.node("name", "str-const", { value: "p1" });
+    b.node("copyName", "str-const", { value: "p2" });
+    b.node("nothing", "str-const", { value: "" });
+    b.node("create", "call-library", CREATE_TASK);
+    b.node("copy", "call-library", CREATE_TASK);
+    b.node("copied", "indicator", { type: "i32" });
+    b.node("copyText", "str-indicator", {});
+    b.wire("empty.result", "create.arg-1-in");
+    b.wire("name.result", "create.arg-2-in");
+    for (const index of [3, 5, 6]) b.wire("nothing.result", `create.arg-${index}-in`);
+    b.wire("empty.result", "copy.arg-1-in");
+    b.wire("copyName.result", "copy.arg-2-in");
+    b.wire("create.arg-1-out", "copy.arg-3-in");
+    for (const index of [5, 6]) b.wire("nothing.result", `copy.arg-${index}-in`);
+    b.wire("copy.return", "copied.value");
+    b.wire("copy.arg-6-out", "copyText.value");
+  });
+  const compiled = compilar(vi.g, CAT);
+  assert.equal(compiled.callLibraries.find((entry) => entry.parameters[3].type === "string" && entry.parameters[3].task), undefined, "taskToCopy is a string");
+  const shown = await run(vi);
+  // Solder's library does not copy tasks yet (DT-087 §4: -1, "not built in Solder yet"): it saw a name.
+  assert.equal(shown.copied, -1);
+  assert.match(shown.copyText, /copying a task/);
+});

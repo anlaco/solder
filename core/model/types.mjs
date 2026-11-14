@@ -10,6 +10,7 @@
 // corpus.
 
 import { daqNameConversion, daqNameInMemory, daqNameText, isDaqName } from "./daq-name.mjs";
+import { viServerTypeName } from "./vi-server-reference.mjs";
 
 /** Las representaciones numéricas de LabVIEW que tiene Solder. */
 export const NUMERICOS = {
@@ -179,8 +180,8 @@ export function nombre(t) {
   if (t === PATH) return "path";
   // Unverified: the name LabVIEW gives this type in a broken wire's explanation.
   if (t === FILE_REFNUM) return "file refnum";
-  // Unverified, as the file refnum's.
-  if (esRefnum(t)) return `${t.refnum} refnum`;
+  // A VI Server reference is named as LabVIEW's Context Help names its wire (measured, DT-090); the rest unverified.
+  if (esRefnum(t)) return viServerTypeName(t.refnum) ?? `${t.refnum} refnum`;
   if (esArray(t)) return `${dimensionsOf(t) > 1 ? `${dimensionsOf(t)}D ` : ""}array of ${nombre(t.array)}`;
   if (typeof t === "string") return NUMERICOS[t]?.abrev ?? t;
   if (t && typeof t === "object" && "cluster" in t) return "cluster";

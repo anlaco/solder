@@ -781,6 +781,11 @@ rules 115–119.
   a black curved arrow (the refnum glyph, about 7 × 10 at x 5) and the class's name in the type colour from x 14 ("Digital": 54 px
   wide; "Boolean": 62); the control's label above it; its terminal at the middle of the right edge. Its wire is `#007F7F`, 1 px,
   solid. Code: `editor/src/block-diagram/control-references.mjs`. **Unverified:** the glyph's exact drawing.
+- **OVI Server Reference constant** (`2026-11-14-vi-server-reference.md` "Placed"; DT-090): drawn as the control reference constant, 19 px
+  tall, but the frame (2 px) and the text in the refnums' teal `#007F7F`, the cream inside; "This VI" is 52 px wide and "This Application" 102,
+  growing about its centre when the text changes; its label above it shows the same text; its terminal is at the middle of the right
+  edge and its wire is `#007F7F`, 1 px, solid. Solder's first reads "This OVI" (DT-071). Code:
+  `editor/src/block-diagram/vi-server-references.mjs`. **Unverified:** the width of "This OVI" (a letter wider than the measured text).
 - **Control refnum** (same report, Q2): on the panel a 36 × 48 grey page (`#B3B3B3`) with its top right corner folded and a
   `#595959` edge on the right and at the bottom, a miniature numeric control ("1.23") and a small red-orange star under it; it shows
   no value, before or while running (`2026-11-03-control-reference-subvi.md` Q4). On the diagram a terminal: a teal (`#007F7F`)
@@ -821,6 +826,7 @@ the order of the parts are taken. Code: `editor/src/block-diagram/call-library-n
 
 | Date       | Change |
 |------------|--------|
+| 2026-11-14 | §20: the OVI Server Reference constant (This OVI, This Application). |
 | 2026-11-06 | §21: the Call Library Function Node: frame, header by thread, rows, cells, terminals and dialog. |
 | 2026-11-03 | §20: the control refnum on the panel and its terminal. |
 | 2026-11-03 | §20: the control reference constant, its wire, and the explicit node of a control's class. |

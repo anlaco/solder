@@ -260,9 +260,11 @@ export const linkedLabel = (graph, node) => (isImplicit(node) ? labelAbove(graph
 /** The label of the control `linkName`, drawn above a node that stands for it (an implicit node, a control reference). */
 export function labelAbove(graph, linkName) {
   const linked = graph.nodos.find((candidate) => candidate.name === linkName);
-  const text = linked?.label?.text;
-  return text ? `<div class="etiqueta-enlace">${escapeText(text)}</div>` : "";
+  return labelWithText(linked?.label?.text);
 }
+
+/** A label drawn above a node, or nothing for an empty text. */
+export const labelWithText = (text) => (text ? `<div class="etiqueta-enlace">${escapeText(text)}</div>` : "");
 
 /** The strip of every row, whose right-click is the row's menu; coordinates relative to the node. */
 export function rowZones(node, box) {

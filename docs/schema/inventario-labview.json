@@ -594,6 +594,14 @@
     },
     "nombres-daq": {
       "desc": "the names NI-DAQ offers (tasks, channels, terminals, scales, devices, switches) for a DAQ name's dropdown, Select Item... and I/O Name Filtering...: Solder has no list of them yet"
+    },
+    "ovi-server": {
+      "desc": "the rest of OVI Server: references to applications and OVIs, calling by reference, asynchronous calls, classes, quitting and the palettes of scripting and application building. Only the constant of This OVI and This Application is done",
+      "ref": "design/05-decisions.md DT-090"
+    },
+    "crear-desde-referencia-ovi": {
+      "desc": "Create ▸ Control and Indicator on an OVI Server Reference constant: LabVIEW closed with a fatal internal error there, so what it makes was not measured",
+      "ref": "labview-captures/reports/2026-11-14-vi-server-reference.md"
     }
   },
   "entradas": [
@@ -6699,10 +6707,217 @@
     {
       "id": "palette.functions.programming.application-control",
       "etiqueta": "Application Control",
-      "estado": "todo",
-      "labview": "Controlling VIs and LabVIEW applications programmatically, locally or over a network.",
-      "necesita": "bloques",
+      "estado": "built",
+      "prueba": "test/editor/vi-server-reference.test.mjs::the Application Control palette has LabVIEW's 5 x 5 grid and places the OVI Server Reference",
       "captura": "paletas/functions-programming.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.thumbtack",
+      "etiqueta": "Thumbtack",
+      "estado": "todo",
+      "labview": "Pins the subpalette: it stops being temporary and becomes a window that remembers its position and size.",
+      "necesita": "paletas-fijas",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.open-application-reference",
+      "etiqueta": "Open Application Reference",
+      "estado": "todo",
+      "labview": "Gets a reference to a running application, local or remote.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.open-ovi-reference",
+      "etiqueta": "Open OVI Reference",
+      "estado": "todo",
+      "labview": "Gets a reference to an VI, to run it or to read and change it.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.static-ovi-reference",
+      "etiqueta": "Static OVI Reference",
+      "estado": "todo",
+      "labview": "A reference to an VI chosen while editing.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.close-reference",
+      "etiqueta": "Close Reference",
+      "estado": "todo",
+      "labview": "Closes a reference that was opened.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.get-command-line-arguments-vi",
+      "etiqueta": "Get Command Line Arguments.vi",
+      "estado": "todo",
+      "labview": "An VI that returns the arguments the application was started with.",
+      "necesita": "sub-vis",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "Reads and writes properties of a reference's class, picked from a list.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Calls a method of a reference's class.",
+      "necesita": "nodos-de-metodos",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.call-by-reference",
+      "etiqueta": "Call By Reference",
+      "estado": "todo",
+      "labview": "Runs the VI a reference points at, with the terminals of its connector pane.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.start-asynchronous-call",
+      "etiqueta": "Start Asynchronous Call",
+      "estado": "todo",
+      "labview": "Starts an VI without waiting for it to finish.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.wait-on-asynchronous-call",
+      "etiqueta": "Wait On Asynchronous Call",
+      "estado": "todo",
+      "labview": "Waits for an VI started asynchronously and gets its results.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.to-more-specific-class",
+      "etiqueta": "To More Specific Class",
+      "estado": "todo",
+      "labview": "Casts a reference to a class lower in the hierarchy.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.to-more-generic-class",
+      "etiqueta": "To More Generic Class",
+      "estado": "todo",
+      "labview": "Casts a reference to a class higher in the hierarchy.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.class-specifier-constant",
+      "etiqueta": "Class Specifier Constant",
+      "estado": "todo",
+      "labview": "A constant that names a class, to give a reference its type.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.ovi-server-reference",
+      "etiqueta": "OVI Server Reference",
+      "estado": "built",
+      "prueba": "test/editor/vi-server-reference.test.mjs::the Application Control palette has LabVIEW's 5 x 5 grid and places the OVI Server Reference",
+      "bloque": "vi-server-reference",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.call-chain",
+      "etiqueta": "Call Chain",
+      "estado": "todo",
+      "labview": "Lists the VIs that called this one, from the nearest outwards.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.get-drag-drop-data",
+      "etiqueta": "Get Drag Drop Data",
+      "estado": "todo",
+      "labview": "Reads what the user is dragging over a control.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.stop",
+      "etiqueta": "Stop",
+      "estado": "todo",
+      "labview": "Stops the running VI, as the Stop button does.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.quit-labview",
+      "etiqueta": "Quit LabVIEW",
+      "estado": "todo",
+      "labview": "Closes the application.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.set-control-values-by-index",
+      "etiqueta": "Set Control Values by Index",
+      "estado": "todo",
+      "labview": "Writes the controls of an VI by their order.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.get-control-values-by-index",
+      "etiqueta": "Get Control Values by Index",
+      "estado": "todo",
+      "labview": "Reads the controls of an VI by their order.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.palette-editing",
+      "etiqueta": "Palette Editing",
+      "estado": "todo",
+      "labview": "The functions that read and edit the palettes.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.cpu-information",
+      "etiqueta": "CPU Information",
+      "estado": "todo",
+      "labview": "The functions that report on the processors.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.memory-control",
+      "etiqueta": "Memory Control",
+      "estado": "todo",
+      "labview": "The functions that read and change how memory is used.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.ovi-scripting",
+      "etiqueta": "OVI Scripting",
+      "estado": "todo",
+      "labview": "The functions that build and edit VIs from code.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
+    },
+    {
+      "id": "palette.functions.programming.application-control.application-builder",
+      "etiqueta": "Application Builder",
+      "estado": "todo",
+      "labview": "The functions that build applications and installers.",
+      "necesita": "ovi-server",
+      "captura": "appref/palette-full.png"
     },
     {
       "id": "palette.functions.programming.report-generation",
@@ -10996,6 +11211,192 @@
       "labview": "Opens the reference's properties dialog.",
       "necesita": "propiedades",
       "captura": "control-reference/rm.png",
+      "separado": true
+    },
+    {
+      "id": "context.vi-server-reference",
+      "etiqueta": "OVI Server Reference",
+      "estado": "built",
+      "prueba": "test/editor/vi-server-reference.test.mjs::its menu has LabVIEW's rows in order, with the ones not done greyed",
+      "captura": "appref/menu-main.png"
+    },
+    {
+      "id": "context.vi-server-reference.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/vi-server-reference.test.mjs::its menu has LabVIEW's rows in order, with the ones not done greyed",
+      "captura": "appref/menu-visible-items.png"
+    },
+    {
+      "id": "context.vi-server-reference.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the label above the constant.",
+      "necesita": "etiquetas",
+      "captura": "appref/menu-visible-items.png"
+    },
+    {
+      "id": "context.vi-server-reference.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of the constant.",
+      "necesita": "ayuda-contextual",
+      "captura": "appref/menu-main.png"
+    },
+    {
+      "id": "context.vi-server-reference.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Opens the examples of the constant.",
+      "necesita": "ejemplos",
+      "captura": "appref/menu-main.png"
+    },
+    {
+      "id": "context.vi-server-reference.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the constant's description and tip.",
+      "necesita": "descripciones",
+      "captura": "appref/menu-main.png"
+    },
+    {
+      "id": "context.vi-server-reference.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a_breakpoint_is_added_to_a_node_or_a_wire_and_its_menu_offers_Remove_and_Disable",
+      "captura": "appref/menu-main.png",
+      "separado": true
+    },
+    {
+      "id": "context.vi-server-reference.application-control-palette",
+      "etiqueta": "Application Control Palette",
+      "estado": "todo",
+      "labview": "Opens the Application Control palette.",
+      "necesita": "paleta-application-control-en-menu",
+      "captura": "appref/menu-main.png",
+      "separado": true
+    },
+    {
+      "id": "context.vi-server-reference.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/vi-server-reference.test.mjs::its menu has LabVIEW's rows in order, with the ones not done greyed",
+      "captura": "appref/menu-create.png",
+      "separado": true
+    },
+    {
+      "id": "context.vi-server-reference.create.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Creates a constant of the reference's type, wired to it.",
+      "necesita": "ovi-server",
+      "captura": "appref/menu-create.png"
+    },
+    {
+      "id": "context.vi-server-reference.create.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Creates a control of the reference's type, wired to it. LabVIEW closed with a fatal internal error when Create ▸ Indicator was tried on this constant, so what it makes was not measured.",
+      "necesita": "crear-desde-referencia-ovi",
+      "captura": "appref/menu-create.png"
+    },
+    {
+      "id": "context.vi-server-reference.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "todo",
+      "labview": "Creates an indicator of the reference's type, wired to it. LabVIEW closed with a fatal internal error here (measured), so what it makes was not measured.",
+      "necesita": "crear-desde-referencia-ovi",
+      "captura": "appref/menu-create.png"
+    },
+    {
+      "id": "context.vi-server-reference.create.property-for-class",
+      "etiqueta": "Property for OVI Class",
+      "estado": "todo",
+      "labview": "The properties of the reference's class, as a Property Node fed by the reference.",
+      "necesita": "ovi-server",
+      "captura": "appref/menu-create.png",
+      "separado": true
+    },
+    {
+      "id": "context.vi-server-reference.create.method-for-class",
+      "etiqueta": "Method for OVI Class",
+      "estado": "todo",
+      "labview": "The methods of the reference's class, as an Invoke Node fed by the reference.",
+      "necesita": "nodos-de-metodos",
+      "captura": "appref/menu-create.png"
+    },
+    {
+      "id": "context.vi-server-reference.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Creates a channel writer for the reference.",
+      "necesita": "canales",
+      "captura": "appref/menu-create.png"
+    },
+    {
+      "id": "context.vi-server-reference.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "todo",
+      "labview": "Creates a control or indicator for every unwired terminal.",
+      "necesita": "ovi-server",
+      "captura": "appref/menu-create.png",
+      "separado": true
+    },
+    {
+      "id": "context.vi-server-reference.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "todo",
+      "labview": "Creates a constant for every unwired input.",
+      "necesita": "ovi-server",
+      "captura": "appref/menu-create.png"
+    },
+    {
+      "id": "context.vi-server-reference.link-to",
+      "etiqueta": "Link to",
+      "estado": "built",
+      "prueba": "test/editor/vi-server-reference.test.mjs::Link to ▸ This Application changes its type and its text, and grows it about its centre",
+      "captura": "appref/menu-linkto.png",
+      "separado": true
+    },
+    {
+      "id": "context.vi-server-reference.link-to.this-application",
+      "etiqueta": "This Application",
+      "estado": "built",
+      "prueba": "test/editor/vi-server-reference.test.mjs::Link to ▸ This Application changes its type and its text, and grows it about its centre",
+      "captura": "appref/menu-linkto.png"
+    },
+    {
+      "id": "context.vi-server-reference.link-to.this-ovi",
+      "etiqueta": "This OVI",
+      "estado": "built",
+      "prueba": "test/editor/vi-server-reference.test.mjs::Link to ▸ This Application changes its type and its text, and grows it about its centre",
+      "captura": "appref/menu-linkto.png"
+    },
+    {
+      "id": "context.vi-server-reference.link-to.pane",
+      "etiqueta": "Pane",
+      "estado": "todo",
+      "labview": "Links the reference to the pane of this VI or to one of its controls.",
+      "necesita": "ovi-server",
+      "captura": "appref/menu-linkto-pane.png",
+      "separado": true
+    },
+    {
+      "id": "context.vi-server-reference.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the constant and wires through it.",
+      "necesita": "menus-contextuales",
+      "captura": "appref/menu-main.png",
+      "separado": true
+    },
+    {
+      "id": "context.vi-server-reference.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the constant's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "appref/menu-main.png",
       "separado": true
     },
     {

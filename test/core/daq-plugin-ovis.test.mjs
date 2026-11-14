@@ -67,7 +67,7 @@ async function run(vi) {
   return Object.fromEntries(Object.entries(written).map(([nodeId, value]) => [byId[nodeId], value]));
 }
 
-/** `DAQCreateTask140`, as the test of the task wire configures it: the plugin's Create Task is not built yet. */
+/** `DAQCreateTask140` called directly, as the test of the task wire configures it, so that Start Task is tried on its own. */
 const CREATE_TASK = {
   ...defaultCallLibraryConfig(),
   thread: "any",
@@ -145,4 +145,118 @@ test("an error in passes through Start Task without calling the library", async 
     b.wire("start.cluster-indicator_1", "start error.value");
   });
   assert.deepEqual((await run(vi))["start error"], { status: true, code: 5, source: "orig" });
+});
+
+const NO_ERROR = { status: false, code: 0, source: "" };
+const DEVICE_NOT_VALID = -200220;
+const PHYSICAL_CHANNEL_DOES_NOT_EXIST = -200170;
+const CREATE_AI_VOLTAGE = "DAQ Create Virtual Channel (AI Voltage).sdg";
+
+/** The plugin's Create Virtual Channel (AI Voltage) on `physicalChannels`, with no task in: it creates one (measured). */
+function createAiVoltage(b, name, physicalChannels) {
+  b.node(`${name} channels`, "str-const", { value: physicalChannels });
+  b.node(`${name} empty`, "daq-name-constant", { type: DAQ_TASK, value: "" });
+  b.node(`${name} no error`, "error-cluster-constant");
+  callPlugin(b, name, CREATE_AI_VOLTAGE, `${name} empty.result`, `${name} no error.result`);
+  b.wire(`${name} channels.result`, `${name}.daq-name-control_2`);
+}
+
+/** An error out indicator `name` showing `output`. */
+function showError(b, name, output) {
+  b.node(name, "cluster-indicator", { type: ERROR, style: "error-out" });
+  b.wire(output, `${name}.value`);
+}
+
+test("Create Virtual Channel, Start, Stop and Clear Task run a task on the simulated device without an error", async () => {
+  const vi = buildVI(PLUGIN, (b) => {
+    createAiVoltage(b, "create", "Dev1/ai0");
+    let task = "create.daq-name-indicator_1";
+    let error = "create.cluster-indicator_1";
+    showError(b, "create error", error);
+    b.node("task name", "daq-name-indicator", { type: DAQ_TASK });
+    b.wire(task, "task name.value");
+    for (const [name, file] of [["start", "DAQ Start Task.sdg"], ["stop", "DAQ Stop Task.sdg"], ["clear", "DAQ Clear Task.sdg"]]) {
+      callPlugin(b, name, file, task, error);
+      error = `${name}.cluster-indicator_1`;
+      showError(b, `${name} error`, error);
+      if (name !== "clear") task = `${name}.daq-name-indicator_1`;
+    }
+  });
+  const shown = await run(vi);
+  // LabVIEW names a task it creates for a channel `_unnamedTask<n>` (measured, reports/2026-11-06-daqmx-create-channel.md).
+  assert.match(shown["task name"], /^_unnamedTask<\d+>$/);
+  for (const name of ["create", "start", "stop", "clear"]) assert.deepEqual(shown[`${name} error`], NO_ERROR, name);
+});
+
+test("Create Virtual Channel gives LabVIEW's codes for a device or a channel that does not exist", async () => {
+  const vi = buildVI(PLUGIN, (b) => {
+    for (const [name, channels] of [["no device", "Dev9/ai0"], ["no channel", "Dev1/ai99"]]) {
+      createAiVoltage(b, name, channels);
+      showError(b, `${name} error`, `${name}.cluster-indicator_1`);
+      // Each failed Create still made its task, which Clear releases.
+      callPlugin(b, `${name} clear`, "DAQ Clear Task.sdg", `${name}.daq-name-indicator_1`, `${name}.cluster-indicator_1`);
+    }
+  });
+  const shown = await run(vi);
+  assert.deepEqual([shown["no device error"].status, shown["no device error"].code], [true, DEVICE_NOT_VALID]);
+  assert.match(shown["no device error"].source, /^<append>[\s\S]*Dev9/);
+  assert.deepEqual([shown["no channel error"].status, shown["no channel error"].code], [true, PHYSICAL_CHANNEL_DOES_NOT_EXIST]);
+  assert.match(shown["no channel error"].source, /Dev1\/ai99/);
+});
+
+const CREATE_TASK_OVI = "DAQ Create Task.sdg";
+/** Solder's code for what its library does not do yet (DT-087 §4). */
+const NOT_BUILT_IN_SOLDER = -1;
+
+/** The plugin's Create Task as node `name`, with `taskName` as new task name and no error in. */
+function createTask(b, name, taskName) {
+  b.node(`${name} name`, "str-const", { value: taskName });
+  b.node(`${name} no error`, "error-cluster-constant");
+  b.node(name, "subvi", { vi: CREATE_TASK_OVI });
+  b.wire(`${name} name.result`, `${name}.str-control_1`);
+  b.wire(`${name} no error.result`, `${name}.cluster-control_1`);
+}
+
+test("Create Task, Create Virtual Channel, Start, Stop and Clear Task: LabVIEW's whole analog-input setup", async () => {
+  const vi = buildVI(PLUGIN, (b) => {
+    createTask(b, "create task", "p1");
+    b.node("channels", "str-const", { value: "Dev1/ai0" });
+    callPlugin(b, "create channel", CREATE_AI_VOLTAGE, "create task.daq-name-indicator_1", "create task.cluster-indicator_1");
+    b.wire("channels.result", "create channel.daq-name-control_2");
+    let task = "create channel.daq-name-indicator_1";
+    let error = "create channel.cluster-indicator_1";
+    showError(b, "create task error", "create task.cluster-indicator_1");
+    showError(b, "create channel error", error);
+    b.node("task name", "daq-name-indicator", { type: DAQ_TASK });
+    b.wire(task, "task name.value");
+    for (const [name, file] of [["start", "DAQ Start Task.sdg"], ["stop", "DAQ Stop Task.sdg"], ["clear", "DAQ Clear Task.sdg"]]) {
+      callPlugin(b, name, file, task, error);
+      error = `${name}.cluster-indicator_1`;
+      showError(b, `${name} error`, error);
+      if (name !== "clear") task = `${name}.daq-name-indicator_1`;
+    }
+  });
+  const shown = await run(vi);
+  assert.equal(shown["task name"], "p1", "the channel went into the task Create Task made");
+  for (const name of ["create task", "create channel", "start", "stop", "clear"]) assert.deepEqual(shown[`${name} error`], NO_ERROR, name);
+});
+
+test("Create Task passes an error in through and gives an empty task, and refuses to copy a task, which Solder does not do yet", async () => {
+  const vi = buildVI(PLUGIN, (b) => {
+    b.node("incoming", "error-cluster-constant", { value: { status: true, code: 5, source: "orig" } });
+    b.node("passing", "subvi", { vi: CREATE_TASK_OVI });
+    b.wire("incoming.result", "passing.cluster-control_1");
+    showError(b, "passing error", "passing.cluster-indicator_1");
+    b.node("passing task", "daq-name-indicator", { type: DAQ_TASK });
+    b.wire("passing.daq-name-indicator_1", "passing task.value");
+    createTask(b, "copying", "p2");
+    b.node("to copy", "daq-name-constant", { type: DAQ_TASK, value: "p1" });
+    b.wire("to copy.result", "copying.daq-name-control_1");
+    showError(b, "copying error", "copying.cluster-indicator_1");
+  });
+  const shown = await run(vi);
+  assert.deepEqual(shown["passing error"], { status: true, code: 5, source: "orig" });
+  assert.equal(shown["passing task"], "");
+  assert.deepEqual([shown["copying error"].status, shown["copying error"].code], [true, NOT_BUILT_IN_SOLDER]);
+  assert.match(shown["copying error"].source, /^<append>[\s\S]*copying a task/);
 });

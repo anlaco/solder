@@ -1825,3 +1825,25 @@ Tests: `test/editor/daq-name-controls.test.mjs`.
 > Indicator, Change to Indicator / Control on a terminal, View As Icon and Data Operations ▸ Make Current Value Default and
 > Reinitialize. Everything else is greyed with its reason (rule 54), among it Change to Control / Indicator on the constant and the
 > panel's own right-click menus. Tested.
+
+> **Rule 134 — The OVI Server Reference constant (DT-090, 2026-11-14).** Measured in
+> `labview-captures/reports/2026-11-14-vi-server-reference.md` (the constant, its menu, its type) and
+> `2026-11-14-application-control-palette.md` (the palette); tests: `test/editor/vi-server-reference.test.mjs`. **Functions ▸ Programming ▸
+> Application Control** is a 5 × 5 grid (row 1: Open Application Reference, Open OVI Reference, Static OVI Reference, Close
+> Reference, Get Command Line Arguments.vi; row 2: Property Node, Invoke Node, Call By Reference, Start Asynchronous Call, Wait On
+> Asynchronous Call; row 3: To More Specific Class, To More Generic Class, Class Specifier Constant, OVI Server Reference, Call Chain;
+> row 4: Get Drag Drop Data, Stop, Quit LabVIEW, Set Control Values by Index, Get Control Values by Index; row 5: the subpalettes Palette
+> Editing, CPU Information, Memory Control, OVI Scripting, Application Builder; LabVIEW's VI is OVI, DT-071). Only the **OVI Server
+> Reference** (row 3, column 4) is done; every other cell is greyed with its reason. Placed it is the constant **This OVI**
+> (`vi-server-reference`, `config: { type: { refnum: "OVI" } }`), drawn as the control reference constant (rule 120) with a teal
+> (`#007F7F`) frame and text, 19 px tall, its width from its text (52 px "This VI", 102 px "This Application" in LabVIEW), its label above it
+> showing the same text and its terminal at the middle of the right edge; the wire is the refnums' teal, 1 px. Its menu
+> (`context.vi-server-reference`): Visible Items ▸ (Label, ticked), Help, Examples, Description and Tip..., a separator, Add Breakpoint, a
+> separator, Application Control Palette ▸, a separator, Create ▸ (Constant, Control, Indicator, a separator, Property for OVI Class ▸,
+> Method for OVI Class ▸, Channel Writer..., a separator, All Controls and Indicators, All Constants), a separator, Link to ▸ (This
+> Application, This OVI, a separator, Pane), a separator, Remove and Rewire, a separator and Properties. **Link to ▸ This Application / This
+> OVI** change the class (one step of undo) and the node grows or shrinks about its centre; the check follows the class. Done: those two
+> rows, Add Breakpoint and the menu's layout; everything else is greyed with its reason (Create ▸ Control and Indicator because LabVIEW
+> closed with an internal error on Indicator and what they make was not measured). **Unverified:** how the node hangs from the cursor
+> while it is placed (centred, as the control reference's), the rows' names on This Application (the menu was measured on This VI), and the
+> width of "This OVI", which is a letter wider than the measured "This VI". Tested.

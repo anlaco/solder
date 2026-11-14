@@ -2856,3 +2856,30 @@ Object.assign(SUBPALETAS, {
   database: connectivityFolder("DB"),
   datafinder: connectivityFolder("DF"),
 });
+
+// Functions ▸ Programming ▸ Application Control (reports/2026-11-14-application-control-palette.md): the five subpalettes
+// are the small folders of the other palettes with a word of what is inside; the functions not done yet are the same tile
+// with a short word; the OVI Server Reference constant is drawn as the constant is on the diagram (a teal frame, the
+// cream inside, the refnum arrow and the word of its default, This OVI). Drawn anew: only their places and names are measured.
+const APPLICATION_CONTROL_TEAL = "#007f7f";
+const applicationControlTile = (word) => svg48(caja(0.75, 0.75, 47.25, 47.25, NODE_FILL, 1.5, NODE_BORDER) + texto48(24, 24, word, word.length <= 3 ? 14 : 9));
+const APPLICATION_CONTROL_WORDS = {
+  "open-application-reference": "APP", "open-ovi-reference": "OPEN", "static-ovi-reference": "STAT", "close-reference": "CLOSE",
+  "get-command-line-arguments-vi": "ARGS", "property-node": "PROP", "invoke-node": "INV", "call-by-reference": "CALL",
+  "start-asynchronous-call": "START", "wait-on-asynchronous-call": "WAIT", "to-more-specific-class": "SPEC", "to-more-generic-class": "GEN",
+  "class-specifier-constant": "CLS", "call-chain": "CHAIN", "get-drag-drop-data": "DRAG", stop: "STOP", "quit-labview": "QUIT",
+  "set-control-values-by-index": "SET", "get-control-values-by-index": "GET",
+};
+for (const [slug, word] of Object.entries(APPLICATION_CONTROL_WORDS)) FUNCIONES[slug] ??= applicationControlTile(word);
+FUNCIONES["ovi-server-reference"] = svg48(
+  caja(4, 15, 44, 33, NODE_FILL, 2.5, APPLICATION_CONTROL_TEAL) +
+    `<path d="M12 28Q11 22 14 20L17 17" fill="none" stroke="#000" stroke-width="2.4"/>` + poligono([[15, 16], [21, 16], [21, 22]], "#000") +
+    texto48(31, 24, "OVI", 9, APPLICATION_CONTROL_TEAL, 600),
+);
+Object.assign(SUBPALETAS, {
+  "palette-editing": connectivityFolder("PAL"),
+  "cpu-information": connectivityFolder("CPU"),
+  "memory-control": connectivityFolder("MEM"),
+  "ovi-scripting": connectivityFolder("SCR"),
+  "application-builder": connectivityFolder("APP"),
+});

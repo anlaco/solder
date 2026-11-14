@@ -4259,8 +4259,9 @@ imitating LabVIEW so that we see how close we can come in design"), after the sh
    (no node-for-node transcription, CLAUDE.md rule 3): the shape is the guide, and how close the drawing comes to
    LabVIEW's (sizes, positions, wire routes, labels) is itself something the work measures.
 3. **What Solder lacks to draw it is a finding, not a reason to change the shape.** LabVIEW's VIs use **This
-   Application** (into `lvAppReference`) and **Call Chain** (inside Fill In Error Info, for the source); Solder has
-   neither. Until they exist `lvAppReference` stays unwired (§5: it is not used), and DAQ Fill In Error Info names the
+   Application** (into `lvAppReference`) and **Call Chain** (inside Fill In Error Info, for the source); Solder had
+   neither. *`lvAppReference` could not stay unwired, which breaks the OVI in LabVIEW too; This Application was built for
+   it on 2026-11-14 ([DT-090](#dt-090)).* Call Chain is still missing, and DAQ Fill In Error Info names the
    source with what Solder has; each such gap is written down as a finding (as
    [`real-programs-0.2.md`](real-programs-0.2.md) did) in [`daq-plugin-findings.md`](daq-plugin-findings.md), with
    whether it is fixed before the plugin, beside it or later.
@@ -4269,8 +4270,9 @@ imitating LabVIEW so that we see how close we can come in design"), after the sh
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| The plugin's OVIs are built by hand in the editor, with the measured shape, and every difficulty is written down | `daq-plugin-findings.md`, the saved `.sdg` files | **In progress**: Fill In Error Info, Start, Stop and Clear Task (2026-11-14) |
-| A built instance calls Solder's `nilvaiu` and gives LabVIEW's errors | `test/core/daq-plugin-ovis.test.mjs` (the saved Start, Stop and Clear Task as subOVIs against the add-on's `nilvaiu`) | **Verified** (2026-11-14) for those three; what NI's Clear answers for an empty task **unverified** |
+| The plugin's OVIs are built by hand in the editor, with the measured shape, and every difficulty is written down | `daq-plugin-findings.md`, the saved `.sdg` files | **In progress**: Fill In Error Info, Create Task, Create Virtual Channel (AI Voltage), Start, Stop and Clear Task (2026-11-14) |
+| A built instance calls Solder's `nilvaiu` and gives LabVIEW's errors | `test/core/daq-plugin-ovis.test.mjs` (the saved OVIs as subOVIs against the add-on's `nilvaiu`: Create Task → Create Virtual Channel → Start → Stop → Clear; -200220, -200170, -200088, -200478) | **Verified** (2026-11-14) for those; what NI's Clear answers for an empty task **unverified** |
+| `lvAppReference` is wired from This Application, as NI's (§3 amended by [DT-090](#dt-090)) | the saved Create Task and Create Virtual Channel | **Verified** (2026-11-14) |
 
 ## DT-088
 
@@ -4423,3 +4425,47 @@ its own that moves code without changing what it compiles.**
 | The split changes nothing the compiler emits | The examples and the test OVIs compiled before and after, compared byte for byte | **Not built** |
 | No file of `core/compiler/` grows past the limit | A test that counts the lines of `core/compiler/**/*.mjs` (tables listed as exceptions) | **Not built** |
 | No function grows past the limit | ESLint's `max-lines-per-function`, or the same test | **Not built** |
+
+## DT-090
+
+**The VI Server Reference constant, This OVI and This Application only, so that the DAQ plugin's create OVIs wire
+`lvAppReference` as NI's do; its refnum goes into an Adapt to Type parameter as the address of its 4 bytes.**
+
+- **Status:** Accepted on 2026-11-14 by the developer, who chose "a minimal This Application" over a numeric stand-in or
+  an unwired parameter, after being told that LabVIEW breaks a VI with an unwired Adapt to Type input ("Contains unwired
+  or bad terminal", [`clfn`](../../labview-captures/reports/2026-11-06-clfn.md)) and that NI's DAQmx VIs wire a This
+  Application constant there. It is a first piece of the plan's step 7 (the rest of OVI Server).
+- **Amends:** [DT-087](#dt-087) amendment "what the plugin's OVIs hold inside" §3 (`lvAppReference` was to stay unwired
+  until This Application existed) and [DT-072](#dt-072) §2 (two more refnum classes).
+- **Measured:** [`vi-server-reference`](../../labview-captures/reports/2026-11-14-vi-server-reference.md),
+  [`daqmx-name-origin`](../../labview-captures/reports/2026-11-14-daqmx-name-origin.md) Q5–Q6.
+
+### Decision
+
+1. **A block `vi-server-reference`**, LabVIEW's VI Server Reference of Functions ▸ Programming ▸ Application Control
+   (row 3, column 4), whose type is its configuration: `{ refnum: "OVI" }` (LabVIEW's VI class, which Solder calls the
+   OVI class, [DT-071](#dt-071)) by default, as LabVIEW places it showing This VI, or `{ refnum: "Application" }` after
+   Link to ▸ This Application. The class is the only thing saved; the text it shows ("This OVI", "This Application") and
+   its label, visible by default and equal to the text, follow from it.
+2. **Its value** is a fixed refnum of its class, never 0 (Not A Refnum), as LabVIEW's is never Not A Refnum. LabVIEW's
+   numbers belong to its session (0xEFE00000, 0xFBF00026 measured); Solder's are its own and nothing reads them yet.
+   Wired to nothing it does not break the OVI (measured).
+3. **Into a Call Library Function Node's Adapt to Type parameter**, a refnum is passed as the address of its 4-byte
+   value, in-place, for Handles by Value, Pointers to Handles and Array Data Pointer (measured: the same bytes in the
+   three); Interface to Data stays unrunnable. The wire has no coercion dot (measured).
+4. **Wire names** in an explanation, from LabVIEW's Context Help over the wire: "LabVIEW Application Reference",
+   "Generic OVI Reference". The wire is the refnums' teal, 1 px.
+5. **What is not built**, greyed and saying why ([DT-035](#dt-035)): Link to ▸ Pane, Create ▸ Property for VI Class ▸,
+   Method for VI Class ▸ and Channel Writer…, and the rest of the Application Control palette. Create ▸ Indicator on it
+   crashed LabVIEW (measured), so what Solder makes there is not copied from LabVIEW yet.
+6. **The DAQ plugin** wires a This Application constant into `lvAppReference` of Create Task and Create Virtual Channel,
+   as NI's VIs do; Solder's `nilvaiu` does not read it ([DT-087](#dt-087) §5).
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Placed as This OVI; the wires named as LabVIEW's Context Help names them | `test/core/vi-server-reference.test.mjs` | **Verified** (2026-11-14) |
+| Wired to nothing it does not break the OVI; never Not A Refnum | `test/core/vi-server-reference.test.mjs` | **Verified** (2026-11-14) |
+| Into Adapt to Type it is the address of a U32; `DAQCreateTask140` takes the call | `test/core/vi-server-reference.test.mjs` | **Verified** (2026-11-14); the bytes the library reads are not checked by a library that echoes them |
+| Its look, menu and palette place as LabVIEW's | `test/editor/vi-server-reference.test.mjs` | **Verified** (2026-11-14) against the report's numbers; not compared by eye with LabVIEW. Unverified: "This OVI" is wider than LabVIEW's "This VI"; the Create ▸ rows' names on This Application |

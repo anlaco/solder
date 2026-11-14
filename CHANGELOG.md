@@ -9,13 +9,21 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- The OVI Server Reference constant (DT-090): Functions ▸ Programming ▸ Application Control opens with LabVIEW's 5 x 5 grid
+  (the other 24 cells greyed with their reason), and its OVI Server Reference places a teal constant "This OVI" with its label,
+  whose Link to ▸ This Application / This OVI changes its class. Its right-click menu has LabVIEW's rows; Create, Help and the
+  rest are greyed.
 - Fixed: Ctrl+A in a text field of the Call Library Function Node's dialog selects its text, and Delete erases a text
   selected with Ctrl+A on the panel and the diagram, as Backspace did.
 - Fixed: Paste centres the copy on the last click on the canvas, as LabVIEW does, not on where the pointer last was.
 - Fixed: dragging a wire from the inner half of a wired Case tunnel (just past the glyph) starts a wire from the tunnel
   and makes the output tunnel, instead of dragging the wire's first segment and leaving a stub.
-- The DAQ add-on's first OVIs, built in the editor (DT-087): DAQ Start Task, DAQ Stop Task, DAQ Clear Task and DAQ Fill
-  In Error Info, with LabVIEW's connector (4833) and terminals, calling the add-on's `nilvaiu`.
+- The DAQ add-on's first OVIs, built in the editor (DT-087): DAQ Create Task, DAQ Create Virtual Channel (AI Voltage),
+  DAQ Start Task, DAQ Stop Task, DAQ Clear Task and DAQ Fill In Error Info, with LabVIEW's connector (4833) and terminals,
+  calling the add-on's `nilvaiu`; a whole analog-input setup runs on the simulated device with LabVIEW's error codes.
+  The ring controls of Create Virtual Channel are I32 controls until Solder has rings with free values.
+- A refnum wired into an Adapt to Type parameter of the Call Library Function Node is passed as the address of its
+  value, as LabVIEW does (DT-090), so This Application goes into DAQmx's `lvAppReference`.
 - Fixed: a Case structure's output tunnel refused a VISA resource name, a DAQ name or an array (a broken wire); it now
   takes any type, as in LabVIEW.
 - Connector pane, Patterns ▸ (DT-075): every one of the 36 patterns can be chosen. Each assigned terminal moves to the

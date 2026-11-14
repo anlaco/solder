@@ -45,18 +45,21 @@ const TEXT_RIGHT = 6;
 const GLYPH = { x: 5, y: 5 };
 const GLYPH_COLOR = "#000000";
 
-export function referenceSize(node, measure) {
-  return { ancho: Math.ceil(TEXT_LEFT + measure(referenceText(referenceClass(node))) + TEXT_RIGHT), alto: HEIGHT };
-}
+// ——— The constant's picture, shared with the VI Server Reference constant (vi-server-references.mjs) ———
+
+/** The width of a reference constant showing `text`: the glyph, the text and the margin on the right. */
+export const constantWidth = (text, measure) => Math.ceil(TEXT_LEFT + measure(text) + TEXT_RIGHT);
+
+export const constantSize = (text, measure) => ({ ancho: constantWidth(text, measure), alto: HEIGHT });
 
 /** The point it hangs from while placed: its centre, as measured (dropped centred on the click). */
-export function referenceGrabPoint(config, measure) {
-  const { ancho, alto } = referenceSize({ tipo: CONTROL_REFERENCE, config }, measure);
+export function constantGrabPoint(text, measure) {
+  const { ancho, alto } = constantSize(text, measure);
   return { x: Math.round(ancho / 2), y: Math.round(alto / 2) };
 }
 
 /** Its one terminal: the reference, at the middle of the right edge. */
-export function referenceTerminals(node, box) {
+export function constantTerminals(box) {
   const [x, y] = [box.x + box.ancho, box.y + box.alto / 2];
   const half = 4;
   return [{ puerto: "reference", etiqueta: "", dir: "out", x, y, zona: { x: x - 2 * half, y: box.y, ancho: 2 * half, alto: box.alto }, centro: { x, y } }];
@@ -69,18 +72,31 @@ export function referenceTerminals(node, box) {
 const ARROW =
   `<path d="M${GLYPH.x + 4.5} ${GLYPH.y + 1.5}L${GLYPH.x + 2.5} ${GLYPH.y + 3.5}Q${GLYPH.x + 1} ${GLYPH.y + 5} ${GLYPH.x + 1.5} ${GLYPH.y + 9}" fill="none" stroke="${GLYPH_COLOR}" stroke-width="2"/>` +
   `<path d="M${GLYPH.x + 1.5} ${GLYPH.y}H${GLYPH.x + 6}V${GLYPH.y + 4.5}Z" fill="${GLYPH_COLOR}"/>`;
-/** The class's name sits a pixel above the middle (measured: its ink at y 5..14 of 19). */
+/** The text sits a pixel above the middle (measured: its ink at y 5..14 of 19). */
 const TEXT_MIDDLE_RAISE = 1;
 
-/** The body: the type-coloured frame, the cream inside, the glyph and the class's name. */
-export function referenceBody(graph, cat, node, box) {
-  const color = aspecto(linkedControlType(graph, cat, node) ?? "number").color;
+/** The body: the frame and the text in `color`, the cream inside and the glyph. */
+export function constantBody(box, color, text) {
   return (
     `<svg class="formato" viewBox="0 0 ${box.ancho} ${box.alto}">` +
     `<rect x="${FRAME / 2}" y="${FRAME / 2}" width="${box.ancho - FRAME}" height="${box.alto - FRAME}" fill="var(--node-fill)" stroke="${color}" stroke-width="${FRAME}"/>` +
     ARROW +
-    `<text class="nombre-propiedad clase-referencia" x="${TEXT_LEFT}" y="${box.alto / 2 - TEXT_MIDDLE_RAISE}" fill="${color}">${escapeText(referenceText(referenceClass(node)))}</text></svg>`
+    `<text class="nombre-propiedad clase-referencia" x="${TEXT_LEFT}" y="${box.alto / 2 - TEXT_MIDDLE_RAISE}" fill="${color}">${escapeText(text)}</text></svg>`
   );
 }
 
-const escapeText = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+// ——— The control reference constant ———
+
+export const referenceSize = (node, measure) => constantSize(referenceText(referenceClass(node)), measure);
+
+export const referenceGrabPoint = (config, measure) => constantGrabPoint(referenceText(config.type.refnum), measure);
+
+export const referenceTerminals = (node, box) => constantTerminals(box);
+
+/** The body: the frame in the type colour of the control it points at. */
+export function referenceBody(graph, cat, node, box) {
+  const color = aspecto(linkedControlType(graph, cat, node) ?? "number").color;
+  return constantBody(box, color, referenceText(referenceClass(node)));
+}
+
+export const escapeText = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

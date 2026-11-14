@@ -23,6 +23,7 @@
 import { connectorPorts, ejecutable, nodesWithUndefinedInput, orden, panelObjectType, requerido, tipos, undefinedArrayNodes } from "../model/graph.mjs";
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { DAQ_TASK_LAYOUT, isDaqTask } from "../model/daq-name.mjs";
+import { OVI_CLASS, refnumOfClass } from "../model/vi-server-reference.mjs";
 import { callLibraryConfig, callLibraryReturnKind, returnsString, whyCallLibraryCannotRun } from "../model/call-library.mjs";
 import { coversEveryError, isErrorFrameValue } from "../model/error-case.mjs";
 import { FUNCIONES, analizar } from "./expression-parser.mjs";
@@ -713,6 +714,9 @@ function propertyNode(e) {
 // the value word, written before the call and read after it; a string's or an array's handle in the value word and
 // the cell its output goes to in the bits word.
 
+/** A refnum lives in memory as a U32 (DT-072, amendment of 2026-11-03 §2). */
+const REFNUM_IN_MEMORY = "u32";
+
 /** A Call Library Function Node: its return value, each parameter's output, the path out and the error out. */
 function callLibrary(e) {
   const config = callLibraryConfig(e.nodo.config);
@@ -731,8 +735,14 @@ function callLibrary(e) {
     // How a string or an array is passed (a handle or an address, DT-088); the host reads it to build and read the block.
     const format = parameter.type === "string" ? parameter["string-format"] : parameter.type === "array" ? parameter["array-format"] : undefined;
     const described = { type: parameter.type, dataType: parameter["data-type"] ?? "i32", pass: parameter.pass ?? "value", minimumSize, tipo: type, format };
+    if (parameter.type === "adapt-to-type" && esRefnum(e.logicalTIn(input))) {
+      // A refnum, as the This Application LabVIEW's DAQ VIs wire into lvAppRef: the library gets the address of its
+      // 4-byte value, in every format but Interface to Data (measured, reports/2026-11-14-vi-server-reference.md; DT-090).
+      code.push(...writeRow(REFNUM_IN_MEMORY, record, e.entrada(input)));
+      return { ...described, type: "numeric", dataType: REFNUM_IN_MEMORY, pass: "pointer", tipo: REFNUM_IN_MEMORY };
+    }
     if (parameter.type === "adapt-to-type" && !isDaqTask(e.logicalTIn(input))) {
-      throw new Error(`The parameter "${parameter.name}" adapts to a type Solder does not pass to a library yet: only a DAQ task.`);
+      throw new Error(`The parameter "${parameter.name}" adapts to a type Solder does not pass to a library yet: only a DAQ task or a refnum.`);
     }
     if (isDaqTask(e.logicalTIn(input))) {
       code.push(k32(record), ...e.entrada(input), ins("i32.store", ROW_VALUE_OFFSET));
@@ -999,6 +1009,8 @@ const BLOQUES = {
   "call-library": (e) => callLibrary(e),
   // A control reference is the refnum the host knows its control by (DT-072 §2).
   "control-reference": (e) => [k32(e.registerControlReference(e.nodo.config?.link))],
+  // This OVI or This Application: a fixed refnum of its class, never Not A Refnum (DT-090).
+  "vi-server-reference": (e) => [k32(refnumOfClass(e.nodo.config?.type?.refnum ?? OVI_CLASS))],
   // The file functions (DT-067 §7), by the catalog's index. A wired prompt is the title of the dialog of an unwired path.
   "open-create-replace-file": (e) =>
     fileFunction(e, "file_open", [...optionalHandle(e, 0), ...(e.cableada(1) ? e.entrada(1) : [k32(0)]), k32(e.cableada(1) ? 1 : 0), ...e.entrada(2), ...e.entrada(3)], ["refnum", "boolean", "error"]),

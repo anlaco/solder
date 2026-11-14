@@ -514,6 +514,9 @@
                    "in": [], "out": [{ "name": "reference", "label": "", "type": { "var": "R" } }], "type-from": "config",
                    "config": { "type": { "type": "dataType", "value": { "refnum": "Numeric" } }, "link": { "type": "string", "value": null } } },
 
+    "vi-server-reference": { "cat": "application-control", "desc": "VI Server Reference constant (DT-090): a static reference to This OVI (the default, as LabVIEW's) or, by Link to ▸, This Application. Its type is the refnum of its class; it is never Not A Refnum and wired to nothing it does not break the OVI (labview-captures/reports/2026-11-14-vi-server-reference.md)",
+                   "in": [], "out": [{ "name": "reference", "label": "", "type": { "var": "R" } }], "type-from": "config",
+                   "config": { "type": { "type": "dataType", "value": { "refnum": "OVI" } } } },
     "refnum-control": { "cat": "application-control", "desc": "Terminal of a control refnum (DT-072 §2): a strict reference to a panel control of its class and data type, Not A Refnum by default (labview-captures/reports/2026-11-03-control-reference-subvi.md Q1; a Property Node fed by it gives 1055)",
                    "in": [], "out": [{ "name": "result", "type": { "var": "R" } }], "type-from": "config",
                    "config": { "default": { "type": { "refnum": "Numeric", "of": "number" }, "value": 0 } },

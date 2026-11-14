@@ -31,11 +31,11 @@
 | SubOVIs, libraries and projects | 8 / 22 (36 %) | `████░░░░░░` |
 | Debugging | 8 / 16 (50 %) | `█████░░░░░` |
 | Files | 5 / 15 (33 %) | `███░░░░░░░` |
-| Instruments and communication | 6 / 22 (27 %) | `███░░░░░░░` |
-| Functions palette | 210 / 538 (39 %) | `████░░░░░░` |
+| Instruments and communication | 8 / 24 (33 %) | `███░░░░░░░` |
+| Functions palette | 211 / 563 (37 %) | `████░░░░░░` |
 | Controls palette | 31 / 92 (34 %) | `███░░░░░░░` |
 | Windows and dialogs | 141 / 398 (35 %) | `████░░░░░░` |
-| Right-click menus | 516 / 1964 (26 %) | `███░░░░░░░` |
+| Right-click menus | 519 / 1983 (26 %) | `███░░░░░░░` |
 <!-- /coverage:summary -->
 
 ## Features
@@ -243,6 +243,7 @@
 - [ ] The VISA resource name's dropdown of resources
 - [ ] DAQmx (Solder's DAQ layer, DT-076)
 - [x] DAQ name controls and indicators on the panel (the seven kinds)
+- [x] DAQ plugin OVIs, analog input setup: Create Task, Create Virtual Channel (AI Voltage), Start, Stop, Clear Task (DT-087, 2026-11-14)
 - [ ] TCP functions (in the catalog; not compiled yet)
 - [ ] UDP
 - [ ] Queues, notifiers, semaphores and rendezvous
@@ -252,6 +253,7 @@
 - [x] Call Library Function Node (shared libraries), DT-080 (2026-11-06; `.wasm` modules later)
 - [ ] .NET and ActiveX
 - [ ] OVI Server (Open OVI Reference, the OVI and Application classes)
+- [x] OVI Server Reference constant (This OVI, This Application) and the Application Control palette's layout, DT-090 (2026-11-14)
 - [ ] Dialogs for the user (One/Two Button Dialog, Prompt User for Input)
 - [ ] Report Generation
 - [ ] Date and time functions
@@ -279,7 +281,7 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 | Programming ▸ Dialog & User Interface | 5 / 23 (22 %) | `██░░░░░░░░` |
 | Programming ▸ Synchronization | not captured yet | |
 | Programming ▸ Graphics & Sound | not captured yet | |
-| Programming ▸ Application Control | not captured yet | |
+| Programming ▸ Application Control | 1 / 25 (4 %) | `░░░░░░░░░░` |
 | Programming ▸ Report Generation | not captured yet | |
 | Measurement I/O | not captured yet | |
 | Instrument I/O ▸ Instrument Drivers | not captured yet | |
@@ -345,5 +347,5 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Menus | Covered | |
 |-------|---------|---|
-| Every right-click menu captured | 516 / 1964 (26 %) | `███░░░░░░░` |
+| Every right-click menu captured | 519 / 1983 (26 %) | `███░░░░░░░` |
 <!-- /coverage:inventory -->
