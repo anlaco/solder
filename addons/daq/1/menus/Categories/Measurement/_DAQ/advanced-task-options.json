@@ -1,0 +1,78 @@
+{
+  "palette": 1,
+  "title": "DAQ Advanced Task Options",
+  "columns": 4,
+  "entries": [
+    {
+      "kind": "item",
+      "name": "DAQ Create Task",
+      "block": "subvi",
+      "config": {
+        "vi": "<ovilib>/DAQ/DAQ Create Task.sdg"
+      }
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Control Task",
+      "missing": "DAQ's task states beyond start and stop",
+      "labview": "Moves a task through its states (verify, reserve, commit, unreserve…)."
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Is Task Done",
+      "missing": "asking a task whether it has finished",
+      "labview": "Tells whether the task has finished."
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Wait for Valid Timestamp",
+      "missing": "the DAQ timestamps",
+      "labview": "Waits until the task has a valid timestamp and gives it."
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Configure Input Buffer",
+      "missing": "DAQ's buffer settings",
+      "labview": "Sets the size of the input buffer."
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Configure Output Buffer",
+      "missing": "DAQ's buffer settings",
+      "labview": "Sets the size of the output buffer."
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Configure Logging",
+      "missing": "logging DAQ data to a file",
+      "labview": "Logs the task's data to a file as it acquires."
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Start New File",
+      "missing": "logging DAQ data to a file",
+      "labview": "Starts a new log file."
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Task Property Node",
+      "missing": "the DAQ Property Nodes (DAQ's classes in the Property Node)",
+      "labview": "Reads and writes the task's properties."
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Buffer Property Node",
+      "missing": "the DAQ Property Nodes (DAQ's classes in the Property Node)",
+      "labview": "Reads and writes the buffer's properties."
+    },
+    {
+      "kind": "spacer"
+    },
+    {
+      "kind": "palette",
+      "name": "DAQ Signals",
+      "missing": "exporting and routing DAQ signals",
+      "labview": "Exports a task's signals to terminals."
+    }
+  ]
+}

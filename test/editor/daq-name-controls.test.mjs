@@ -352,3 +352,16 @@ test("a DAQ task and a VISA resource name pass through a Case's output tunnel", 
   const shown = [await run(vi, CAT, { pick: false }), await run(vi, CAT, { pick: true })];
   assert.deepEqual(shown.map((values) => [values["task out"], values["resource out"]]).sort(), [["", ""], ["p1", "ASRL1::INSTR"]]);
 });
+
+test("typing a name into a DAQ name constant keeps it as its text, as a VISA resource name's", () => {
+  // Found building an acquisition by hand (daq-plugin-findings.md S10-#1): the text was lost on Enter.
+  const placed = Gr.crearNodo(Gr.nuevo(), CAT, "daq-name-constant", 0, 0);
+  const g = Gr.fijarConfig(placed.g, placed.id, { type: daqName("physical-channel"), value: "" });
+  let d = ED.editar({ ...ED.inicial(), g }, CTX, placed.id);
+  for (const key of "Dev1/ai0") d = ED.teclear(d, key);
+  const confirmed = ED.confirmar(d, CTX);
+  const constant = confirmed.g.nodos.find((n) => n.id === placed.id);
+  assert.equal(constant.config.value, "Dev1/ai0");
+  assert.deepEqual(constant.config.type, daqName("physical-channel"), "it keeps its kind");
+  assert.equal(confirmed.edicion, null);
+});

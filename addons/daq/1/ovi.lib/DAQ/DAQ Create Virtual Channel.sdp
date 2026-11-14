@@ -1,0 +1,13 @@
+{
+  "solder-polymorphic": 1,
+  "instances": [
+    {
+      "ovi": "DAQ Create Virtual Channel (AI Voltage).sdg",
+      "menu-name": "Analog Input:Voltage",
+      "selector-name": "AI Voltage"
+    }
+  ],
+  "show-selector-by-default": true,
+  "adapt-to-data-type": true,
+  "draw-icon": "polymorphic"
+}

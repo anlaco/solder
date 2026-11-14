@@ -4113,10 +4113,22 @@ files do not name is not shown in a palette (it is no longer shown greyed).**
 | An add-on's palette fills Measurement I/O, its sub-palette opens and its function is placeable; without it the hole is unchanged | `test/editor/addon-palettes.test.mjs` | **Verified** (2026-11-08); also in the running editor under Xvfb (`labview-captures/reports/2026-11-08-addon-palettes-editor.md`): the folder unfolds, the sub-palette opens, the function places a subOVI that opens the add-on's OVI; without the add-on Measurement I/O is grey as before. Trying it showed that the function was invisible, so it takes its OVI's icon, today the standard one |
 | An add-on's folder in a grid has no icon of its own and no name until opened (the hover opens the sub-palette; no tip) | — | **Known gap**: only a palette's folder will carry its icon in the palette file (§4); the OVIs' icons are their own |
 | The "(ovi.lib)" label of an add-on's OVI in the hierarchy; saving and reloading an OVI that uses it; running it | — | **Unverified** (Show OVI Hierarchy is greyed for a node placed this way) |
-| Spacers (the empty cells of LabVIEW's grids) | — | **Not built**: step 1 skips them |
+| Spacers (the empty cells of LabVIEW's grids) | `test/core/palette.test.mjs`, `test/editor/daq-palette.test.mjs` | **Verified** (2026-11-14, amendment below) |
 | Hooks other than Measurement I/O (`Categories/FPGA/…`, `root.mnu`'s) | — | **Not built**: only Measurement I/O names a file so far |
 | Palettes show only what the files name | Editor tests | **Not built** (step 2) |
 | Where a real FPGA module installs its palette files; what LabVIEW does when a folder's `dir.mnu` is missing | — | **Unverified** |
+
+### Amendment of 2026-11-14: grids, constants and what is not built, in a palette file
+
+Asked by the developer the same day for the DAQ palette ("as LabVIEW does" for the cells Solder does not have, and the
+polymorphic OVIs in the palette as LabVIEW's): a palette file may give its grid's `columns`, and a **spacer** is an empty
+cell of it, so the entries keep LabVIEW's places (measured for DAQmx - Data Acquisition: 6 × 4 with three empty cells,
+[`daqmx-palette`](../../labview-captures/reports/2026-11-06-daqmx-palette.md)); an item may place a **block** of the
+catalog by its name and configuration (a constant, as a `.mnu` names a built-in object), or an OVI with a configuration
+(a polymorphic OVI with its selector shown); and an item or a sub-palette with **`missing`** is a cell Solder does not
+have yet, shown greyed with that reason and a `labview` sentence written anew. Greying is what CLAUDE.md rule 1 asks until
+§6 (nothing greyed) lands; then such entries are dropped from the files. `core/model/palette.mjs`;
+`test/core/palette.test.mjs`, `test/editor/daq-palette.test.mjs` (the DAQ add-on's own files).
 
 ## DT-087
 

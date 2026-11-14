@@ -1,0 +1,13 @@
+{
+  "solder-polymorphic": 1,
+  "instances": [
+    {
+      "ovi": "DAQ Timing (Sample Clock).sdg",
+      "menu-name": "Sample Clock (Analog/Counter/Digital)",
+      "selector-name": "Sample Clock"
+    }
+  ],
+  "show-selector-by-default": true,
+  "adapt-to-data-type": true,
+  "draw-icon": "polymorphic"
+}

@@ -93,3 +93,21 @@ test("the input is not changed", () => {
   Palette.mergeAddonPalettes(original, { "categories/measurement/daq.json": daqPalette([startTask]) });
   assert.deepEqual(original, inventory());
 });
+
+test("a grid's columns pin what follows a spacer to its cell; an item may place a block or be missing, a folder too", () => {
+  const file = JSON.stringify({ palette: 1, title: "DAQ", columns: 3, entries: [
+    { kind: "item", name: "DAQ Task Name", block: "daq-name-constant", config: { value: "" } },
+    { kind: "spacer" },
+    startTask,
+    { kind: "item", name: "DAQ Write", missing: "the writes", labview: "Writes samples." },
+    { kind: "palette", name: "DAQ Advanced", missing: "the advanced functions" },
+  ] });
+  const { inventory: merged, problems } = Palette.mergeAddonPalettes(inventory(), { "categories/measurement/daq.json": file });
+  assert.deepEqual(problems, []);
+  const byName = Object.fromEntries(merged.entradas.map((entry) => [entry.etiqueta, entry]));
+  assert.deepEqual(byName["Measurement I/O"].rejilla, { columnas: 3, celdas: { "daq-start-task": [0, 2] } }, "Start Task after the empty cell");
+  assert.deepEqual([byName["DAQ Task Name"].bloque, byName["DAQ Task Name"].config], ["daq-name-constant", { value: "" }]);
+  assert.deepEqual([byName["DAQ Write"].estado, byName["DAQ Write"].necesita, byName["DAQ Write"].labview], ["todo", "the writes", "Writes samples."]);
+  assert.equal(byName["DAQ Advanced"].estado, "todo");
+  assert.match(Palette.parsePalette(JSON.stringify({ palette: 1, title: "x", columns: 0, entries: [] })).problem, /columns/);
+});

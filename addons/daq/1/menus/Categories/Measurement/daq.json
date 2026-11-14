@@ -1,0 +1,11 @@
+{
+  "palette": 1,
+  "title": "Measurement I/O",
+  "entries": [
+    {
+      "kind": "palette",
+      "name": "DAQ - Data Acquisition",
+      "path": "_DAQ/daq.json"
+    }
+  ]
+}

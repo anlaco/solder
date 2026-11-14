@@ -239,3 +239,42 @@ with no Timing nor Start starts the task itself; a finite acquisition read with 
   I32 Array Data Pointer; Dimensions changes only by the spinner.
 - S8-#9 Create ▸ on the node has only the All items, so one input's constant comes from the palette.
 - S8-#11 Labels are saved with a trailing newline (all OVIs). S8-#1, S8-#10, S8-#12–#14 tooling and earlier notes.
+
+Stage 9, 2026-11-14 ([report](../../labview-captures/reports/2026-11-14-daq-plugin-stage9.md)): DAQ Create Virtual
+Channel, DAQ Read and DAQ Timing built by hand as polymorphic OVIs, the selector shown by default as LabVIEW's; placed,
+DAQ Read's selector swaps the instance. Then the add-on's palette files, written as data (a palette file is not an OVI):
+LabVIEW's 6 × 4 grid with its empty cells, which needed columns, spacers, constants and greyed cells in the palette format
+(DT-086 amendment). Numbered S9-#n.
+
+- **S9-#2 Edit Name… appends to the old text** (high): the caret lands at the end and Ctrl+A did not select, so
+  retyping a name doubled it. **S9-#3** typing after Enter had committed the dialog removed an instance row (high, cause
+  uncertain). To check by hand.
+- **S9-#1 A selector name cannot hold a line break** (medium): LabVIEW's DAQmx short names have one ("Analog DBL\n1Chan
+  1Samp"); Solder's are on one line.
+- S9 (seen) The selector's dropdown lists the menu names flat; LabVIEW's turns ":" into submenus (Analog ▸ Single
+  Channel ▸ …, measured in `daqmx-read-write`). Medium.
+- S9-#4 Show Selector by Default starts unticked; S9-#5 added instances go last, Move Up one row per click; S9-#6 the
+  list truncates long names; S9-#8 the polymorphic window's File menu positions differ.
+- S9-#10 The polymorphic OVIs show the generic polymorphic icon (no icon of their own, as every OVI today).
+- The Global Channel constant's hover name ("DAQ Global Channel") is unverified: only the task constant's
+  ("DAQmx Task Name") was read in LabVIEW.
+
+Stage 10, 2026-11-14 ([report](../../labview-captures/reports/2026-11-14-daq-plugin-stage10.md)): a whole finite
+acquisition built by a user from the DAQ palette only (Create Virtual Channel → Timing → Start → Read 1D → Clear): 100
+values, one cycle of a noisy sine of about 4.9 V, as LabVIEW's simulated device gives; Dev9/ai0 is -200220 from Create;
+the same after saving and reopening. The palette as seen matches LabVIEW's grid and empty cells. Numbered S10-#n.
+
+- **S10-#1 A DAQ name constant did not keep a typed name** (blocking): Enter left it empty, so the task had no
+  channels (-200478). *Fixed the same day:* confirming the edit kept the text only for string and VISA constants
+  (`diagram-editing.mjs`, `TEXT_CONSTANTS`; a test in `daq-name-controls.test.mjs` that failed before).
+- **S10-#8 The command line does not find the add-on's OVIs** (medium): `cli/solder.mjs run` resolves `<ovilib>` only
+  against the repository's `ovi.lib`, not the installed add-ons', as the editor does.
+- S10-#2 A control's typed value is not saved, only its default (as LabVIEW saves defaults, unverified here).
+- S10-#3 Deleting a constant left an unselectable broken stub (Undo restored it).
+- S10-#4 A double click on the panel's empty space, or on an array's index, makes a free label that then takes the typing.
+- S10-#5 Ctrl+A in a panel control's text does not select (as S9-#2), so typing appends.
+- S10-#6 An array indicator's index takes no typing nor the wheel, only its arrows: reading 100 values is slow.
+- S10-#7 In Run mode a control did not take typing.
+- S10-#10..#15 Look: blank icons for Measurement I/O's folder and the two constants; the palette closes after each
+  placement; the panel opens scrolled; the error source shows LabVIEW's `<B>` markup (as LabVIEW's indicator does,
+  unverified) and is cut; the saved polymorphic node stores `instance: 1, selected: 0`.

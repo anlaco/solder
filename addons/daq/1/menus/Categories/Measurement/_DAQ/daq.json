@@ -1,0 +1,174 @@
+{
+  "palette": 1,
+  "title": "DAQ - Data Acquisition",
+  "columns": 6,
+  "entries": [
+    {
+      "kind": "item",
+      "name": "DAQ Task Name",
+      "block": "daq-name-constant",
+      "config": {
+        "type": {
+          "daq-name": "task"
+        },
+        "value": ""
+      }
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Global Channel",
+      "block": "daq-name-constant",
+      "config": {
+        "type": {
+          "daq-name": "global-channel"
+        },
+        "value": ""
+      }
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Create Virtual Channel",
+      "block": "subvi",
+      "config": {
+        "vi": "<ovilib>/DAQ/DAQ Create Virtual Channel.sdp",
+        "instance": null,
+        "selected": 0,
+        "selector": true
+      }
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Read",
+      "block": "subvi",
+      "config": {
+        "vi": "<ovilib>/DAQ/DAQ Read.sdp",
+        "instance": null,
+        "selected": 0,
+        "selector": true
+      }
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Write",
+      "missing": "the DAQ writes (Solder's driver answers -1 for them, DT-087 §4)",
+      "labview": "Writes samples to the task's output channels."
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Wait Until Done",
+      "block": "subvi",
+      "config": {
+        "vi": "<ovilib>/DAQ/DAQ Wait Until Done.sdg"
+      }
+    },
+    {
+      "kind": "spacer"
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Timing",
+      "block": "subvi",
+      "config": {
+        "vi": "<ovilib>/DAQ/DAQ Timing.sdp",
+        "instance": null,
+        "selected": 0,
+        "selector": true
+      }
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Trigger",
+      "missing": "the DAQ triggers",
+      "labview": "Configures how the task starts or takes its reference: on a digital edge, an analog level and others."
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Start Task",
+      "block": "subvi",
+      "config": {
+        "vi": "<ovilib>/DAQ/DAQ Start Task.sdg"
+      }
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Stop Task",
+      "block": "subvi",
+      "config": {
+        "vi": "<ovilib>/DAQ/DAQ Stop Task.sdg"
+      }
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Clear Task",
+      "block": "subvi",
+      "config": {
+        "vi": "<ovilib>/DAQ/DAQ Clear Task.sdg"
+      }
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Channel Property Node",
+      "missing": "the DAQ Property Nodes (DAQ's classes in the Property Node)",
+      "labview": "Reads and writes the properties of the task's channels."
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Timing Property Node",
+      "missing": "the DAQ Property Nodes (DAQ's classes in the Property Node)",
+      "labview": "Reads and writes the task's timing properties."
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Trigger Property Node",
+      "missing": "the DAQ Property Nodes (DAQ's classes in the Property Node)",
+      "labview": "Reads and writes the task's trigger properties."
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Read Property Node",
+      "missing": "the DAQ Property Nodes (DAQ's classes in the Property Node)",
+      "labview": "Reads and writes how the task reads."
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Write Property Node",
+      "missing": "the DAQ Property Nodes (DAQ's classes in the Property Node)",
+      "labview": "Reads and writes how the task writes."
+    },
+    {
+      "kind": "spacer"
+    },
+    {
+      "kind": "item",
+      "name": "DAQ Assistant",
+      "missing": "the DAQ Assistant (an Express OVI that configures a task in a dialog)",
+      "labview": "Configures a measurement in a dialog and runs it, as an Express VI."
+    },
+    {
+      "kind": "palette",
+      "name": "DAQ Real-Time",
+      "missing": "DAQ's real-time functions",
+      "labview": "Functions for tasks on real-time targets."
+    },
+    {
+      "kind": "spacer"
+    },
+    {
+      "kind": "palette",
+      "name": "DAQ Device Configuration",
+      "missing": "DAQ's device functions (reset, self-test, watchdog)",
+      "labview": "Resets and tests devices."
+    },
+    {
+      "kind": "palette",
+      "name": "DAQ Advanced Task Options",
+      "path": "advanced-task-options.json"
+    },
+    {
+      "kind": "palette",
+      "name": "DAQ Advanced",
+      "missing": "DAQ's advanced functions (routing, calibration, scales, constants)",
+      "labview": "Signal routing, calibration, system and scale setup, constants, TEDS, utilities and events."
+    }
+  ]
+}

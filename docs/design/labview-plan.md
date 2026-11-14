@@ -786,6 +786,16 @@ array or string read by a local variable while another loop writes it is never t
       task, a finite read of -1 gives every sample, a second is -200278, two channels give a value or a row each). Fixed
       on the way: an unwired array parameter broke the node, where NI's reads leave theirs unwired. Next: the DAQ palette
       (`daq.json`), then a whole acquisition tried by hand, then the merge into `main`.*
+      *Stage 9 and the palette the same day ([`stage9`](../../labview-captures/reports/2026-11-14-daq-plugin-stage9.md)):
+      DAQ Create Virtual Channel, DAQ Read and DAQ Timing built by hand as polymorphic OVIs; the add-on's palette files
+      (`addons/daq/1/menus/`) give Measurement I/O ▸ DAQ - Data Acquisition with LabVIEW's 6 × 4 grid, its empty cells,
+      the two DAQ name constants and the rest greyed (DT-086 amendment: columns, spacers, blocks, `missing`). Next: a
+      whole acquisition tried by hand from the palette, then the merge into `main`.*
+      *Stage 10 the same day ([`stage10`](../../labview-captures/reports/2026-11-14-daq-plugin-stage10.md)): a whole
+      finite acquisition built by a user from the DAQ palette alone runs (100 values, one cycle of the simulated sine;
+      Dev9/ai0 is -200220), after fixing a DAQ name constant that lost its typed name (S10-#1). Open, not blocking: the
+      command line does not find the add-on's OVIs (S10-#8), the rings, the selector's submenus and line breaks, Write,
+      triggers and the Property Nodes. Next: the merge of `feature/daq` into `main` (asked of the developer).*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

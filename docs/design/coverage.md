@@ -31,7 +31,7 @@
 | SubOVIs, libraries and projects | 8 / 22 (36 %) | `████░░░░░░` |
 | Debugging | 8 / 16 (50 %) | `█████░░░░░` |
 | Files | 5 / 15 (33 %) | `███░░░░░░░` |
-| Instruments and communication | 8 / 24 (33 %) | `███░░░░░░░` |
+| Instruments and communication | 9 / 25 (36 %) | `████░░░░░░` |
 | Functions palette | 211 / 563 (37 %) | `████░░░░░░` |
 | Controls palette | 31 / 92 (34 %) | `███░░░░░░░` |
 | Windows and dialogs | 141 / 398 (35 %) | `████░░░░░░` |
@@ -243,6 +243,7 @@
 - [ ] The VISA resource name's dropdown of resources
 - [ ] DAQmx (Solder's DAQ layer, DT-076)
 - [x] DAQ name controls and indicators on the panel (the seven kinds)
+- [x] DAQ palette (Measurement I/O ▸ DAQ - Data Acquisition) with the polymorphic Create Virtual Channel, Read and Timing (DT-086, 2026-11-14)
 - [x] DAQ plugin OVIs, analog input setup: Create Task, Create Virtual Channel (AI Voltage), Timing (Sample Clock), Start, the four DBL reads, Wait Until Done, Stop, Clear Task (DT-087, 2026-11-14)
 - [ ] TCP functions (in the catalog; not compiled yet)
 - [ ] UDP

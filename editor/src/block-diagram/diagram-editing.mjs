@@ -1389,6 +1389,9 @@ export function teclear(d, tecla) {
   return { ...d, edicion: { ...e, texto: e.todo ? tecla : e.texto + tecla, todo: false } };
 }
 
+/** Constants whose typed text is their value as it is: a string, a VISA resource name and a DAQ name. */
+const TEXT_CONSTANTS = new Set(["str-const", "visa-resource-constant", "daq-name-constant"]);
+
 /**
  * Confirmar lo escrito (Intro, el botón Enter Text o un clic fuera). Un número
  * con decimales en una constante entera la vuelve DBL, como en LabVIEW; lo que
@@ -1444,9 +1447,9 @@ function commitTyping(d, ctx) {
   }
   // Una expresión se guarda tal cual: si no vale, la dirá el compilador.
   if (n.tipo === "expression-node") return { ...d, g: Gr.fijarConfig(d.g, n.id, { expression: e.texto }), edicion: null };
-  // Una cadena se guarda tal cual, con sus saltos de línea.
-  // The same goes for a VISA resource name, which is a string that carries no newline (Enter confirms).
-  if (n.tipo === "str-const" || n.tipo === "visa-resource-constant") return { ...d, g: Gr.fijarValor(d.g, n.id, e.texto), edicion: null };
+  // A string is kept as typed, with its newlines; so are a VISA resource name and a DAQ name, which carry none (Enter
+  // confirms).
+  if (TEXT_CONSTANTS.has(n.tipo)) return { ...d, g: Gr.fijarValor(d.g, n.id, e.texto), edicion: null };
   // A path is read from the text as String To Path reads it, with the rules of the host: every text is a path (DT-067).
   if (n.tipo === "path-constant") return { ...d, g: Gr.fijarValor(d.g, n.id, pathFromText(e.texto, ctx.pathRules)), edicion: null };
   const b = ctx.cat.bloque(n.tipo);

@@ -18,12 +18,18 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 - Fixed: Paste centres the copy on the last click on the canvas, as LabVIEW does, not on where the pointer last was.
 - Fixed: dragging a wire from the inner half of a wired Case tunnel (just past the glyph) starts a wire from the tunnel
   and makes the output tunnel, instead of dragging the wire's first segment and leaving a stub.
+- Measurement I/O ▸ DAQ - Data Acquisition, the DAQ add-on's palette (DT-086, DT-087): LabVIEW's DAQmx palette with DAQ for
+  DAQmx, its 6 × 4 grid and empty cells as measured. DAQ Create Virtual Channel, DAQ Read and DAQ Timing are polymorphic
+  OVIs with their selector shown, as LabVIEW's; the DAQ Task Name and Global Channel constants, Wait Until Done, Start,
+  Stop and Clear Task place what they say; Create Task is under DAQ Advanced Task Options; the rest is greyed with its
+  reason. Add-on palette files can now give their grid's columns, empty cells, constants and greyed entries.
 - The DAQ add-on's first OVIs, built in the editor (DT-087): DAQ Create Task, DAQ Create Virtual Channel (AI Voltage),
   DAQ Timing (Sample Clock), DAQ Start Task, DAQ Read (the four analog reads of doubles), DAQ Wait Until Done, DAQ Stop
   Task, DAQ Clear Task and DAQ Fill In Error Info, with LabVIEW's connector (4833) and terminals,
   calling the add-on's `nilvaiu`; a whole finite analog-input acquisition runs on the simulated device with LabVIEW's
   error codes. As in LabVIEW, Stop Task and Clear Task do their work even when given an error, and pass it on.
   The ring controls of Create Virtual Channel are I32 controls until Solder has rings with free values.
+- Fixed: a name typed into a DAQ name constant was lost on Enter; it is kept, as a VISA resource name's.
 - Fixed: a Call Library Function Node with an array parameter left unwired broke the OVI; it now passes an empty array,
   as LabVIEW does (NI's DAQmx reads leave theirs unwired).
 - A refnum wired into an Adapt to Type parameter of the Call Library Function Node is passed as the address of its

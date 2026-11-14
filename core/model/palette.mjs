@@ -3,10 +3,18 @@
 // (the file that holds it) or a spacer. A reader of real `.mnu` files will produce the same structure later, so a
 // change of NI's format touches only that reader (DT-086 §5).
 //
-//   { "palette": 1, "title": "DAQ", "entries": [
+//   { "palette": 1, "title": "DAQ", "columns": 6, "entries": [
 //       { "kind": "item",    "name": "DAQ Start Task", "path": "<ovilib>/DAQ/Start Task.sdg" },
+//       { "kind": "item",    "name": "DAQ Task Name",  "block": "daq-name-constant", "config": { … } },
+//       { "kind": "item",    "name": "DAQ Write",      "missing": "the writes", "labview": "Writes samples…" },
 //       { "kind": "spacer" },
 //       { "kind": "palette", "name": "Advanced",       "path": "_daq/advanced.json" } ] }
+//
+// `columns` is the grid's width, and a spacer is an empty cell of it, as LabVIEW's grids have, so what follows keeps
+// its place. An item places an OVI by its `path`, or a block of the catalog by its name (`block`, as the `.mnu` names
+// a built-in object such as a constant). An item with `missing` is not built in Solder yet: it is shown greyed with
+// that reason (DT-035, until DT-086's second step) and `labview` says what LabVIEW's does, written anew; a sub-palette
+// with `missing` is a greyed folder.
 //
 // The parent names where its child goes (LabVIEW's `dir.mnu` names `daqmx.mnu` before it exists, measured
 // labview-captures/reports/2026-11-08-mnu-format.md): an inventory entry with a `menu` field names the file, and an
@@ -31,6 +39,7 @@ function entryProblem(entry, position) {
   if (!ENTRY_KINDS.includes(entry?.kind)) return `${label} has an unknown kind`;
   if (entry.kind === "spacer") return null;
   if (!isText(entry.name)) return `${label} has no name`;
+  if (isText(entry.missing) || (entry.kind === "item" && isText(entry.block))) return null;
   if (!isText(entry.path)) return `${label} has no path`;
   if (entry.kind === "palette" && !staysInside(entry.path)) return `${label} has a path that leaves its folder`;
   return null;
@@ -47,6 +56,7 @@ export function parsePalette(text) {
   if (palette?.palette !== PALETTE_FORMAT_VERSION) return { problem: `the palette file has an unknown version (expected ${PALETTE_FORMAT_VERSION})` };
   if (!isText(palette.title)) return { problem: "the palette file has no title" };
   if (!Array.isArray(palette.entries)) return { problem: "the palette file has no entries" };
+  if (palette.columns !== undefined && !(Number.isInteger(palette.columns) && palette.columns > 0)) return { problem: "the palette file's columns is not a positive whole number" };
   for (const [index, entry] of palette.entries.entries()) {
     const problem = entryProblem(entry, index + 1);
     if (problem) return { problem };
@@ -63,7 +73,18 @@ function idFragment(name) {
   return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "entry";
 }
 
-/** The inventory entries of one palette file and of the sub-palettes it names, in the file's order. */
+/** The inventory entry of an item: an OVI by its path, a block by its name, or a hole with its reason. */
+function itemEntry(id, entry, filePath) {
+  if (isText(entry.missing)) return { id, etiqueta: entry.name, estado: "todo", necesita: entry.missing, ...(isText(entry.labview) && { labview: entry.labview }) };
+  const placed = isText(entry.block) ? { bloque: entry.block, ...(entry.config && { config: entry.config }) } : { bloque: "subvi", config: { vi: entry.path } };
+  return { id, etiqueta: entry.name, estado: "built", prueba: `add-on palette file ${filePath}`, ...placed };
+}
+
+/**
+ * The inventory entries of one palette file and of the sub-palettes it names, in the file's order, and the grid of
+ * that file (`{ columnas, celdas }` as the editor's measured grids, or null without `columns`): an entry that follows
+ * a spacer is pinned to its cell, so the ones after it follow on from there.
+ */
 function expandPalette({ parentId, filePath, files, ancestors }) {
   const key = paletteFileKey(filePath);
   if (ancestors.includes(key)) throw new PaletteProblem(`${filePath} names itself, directly or through its sub-palettes`);
@@ -82,26 +103,35 @@ function expandPalette({ parentId, filePath, files, ancestors }) {
   };
 
   const entries = [];
-  for (const entry of palette.entries) {
-    if (entry.kind === "spacer") continue; // a gap in the grid; the inventory has no such thing yet
-    const id = uniqueId(entry.name);
-    if (entry.kind === "item") {
-      entries.push({ id, etiqueta: entry.name, estado: "built", prueba: `add-on palette file ${filePath}`, bloque: "subvi", config: { vi: entry.path } });
+  const celdas = {};
+  let afterSpacer = false;
+  for (const [cell, entry] of palette.entries.entries()) {
+    if (entry.kind === "spacer") {
+      afterSpacer = true;
       continue;
     }
-    entries.push({ id, etiqueta: entry.name, estado: "built", prueba: `add-on palette file ${filePath}` });
-    const childPath = joinPaths(folderOf(filePath), entry.path);
-    if (files.has(paletteFileKey(childPath))) {
-      entries.push(...expandPalette({ parentId: id, filePath: childPath, files, ancestors: [...ancestors, key] }));
+    const id = uniqueId(entry.name);
+    if (afterSpacer && palette.columns) celdas[id.slice(parentId.length + 1)] = [Math.floor(cell / palette.columns), cell % palette.columns];
+    afterSpacer = false;
+    if (entry.kind === "item" || isText(entry.missing)) {
+      entries.push(itemEntry(id, entry, filePath));
+      continue;
     }
+    const childPath = joinPaths(folderOf(filePath), entry.path);
+    if (!files.has(paletteFileKey(childPath))) {
+      entries.push({ id, etiqueta: entry.name, estado: "built", prueba: `add-on palette file ${filePath}` });
+      continue;
+    }
+    const child = expandPalette({ parentId: id, filePath: childPath, files, ancestors: [...ancestors, key] });
+    entries.push({ id, etiqueta: entry.name, estado: "built", prueba: `add-on palette file ${filePath}`, ...(child.grid && { rejilla: child.grid }) }, ...child.entries);
   }
-  return entries;
+  return { entries, grid: palette.columns ? { columnas: palette.columns, celdas } : null };
 }
 
 /** The entry that names a child file, as it is once the child exists: done, and no longer explained as a hole. */
-function filledHole(entry) {
+function filledHole(entry, grid) {
   const { labview, necesita, solder, porque, ...rest } = entry;
-  return { ...rest, estado: "built", prueba: `add-on palette file ${entry.menu}` };
+  return { ...rest, estado: "built", prueba: `add-on palette file ${entry.menu}`, ...(grid && { rejilla: grid }) };
 }
 
 /**
@@ -120,8 +150,8 @@ export function mergeAddonPalettes(inventoryData, menuFiles) {
       continue;
     }
     try {
-      const children = expandPalette({ parentId: entry.id, filePath: entry.menu, files, ancestors: [] });
-      entradas.push(filledHole(entry), ...children);
+      const { entries, grid } = expandPalette({ parentId: entry.id, filePath: entry.menu, files, ancestors: [] });
+      entradas.push(filledHole(entry, grid), ...entries);
     } catch (error) {
       if (!(error instanceof PaletteProblem)) throw error;
       problems.push({ file: entry.menu, problem: error.message });

@@ -414,11 +414,14 @@ function carpeta(inv, e, left, top, abierta, conEtiqueta = false) {
   return `<div class="${clases(inv, e.id, `carpeta${abierta ? " abierta" : ""}`)}" data-id="${esc(e.id)}"${nombre} style="left:${px(left)};top:${px(top)};width:${px(P.anchoCarpeta)};height:${px(P.altoCarpeta)}">${marco}<div class="pestana"></div><div class="lomo"></div><div class="caja-carpeta">${glifo}</div>${etiqueta}</div>`;
 }
 
+/** A palette's measured grid, or the one an add-on's palette file gives (`columns` and spacers, core/model/palette.mjs). */
+const gridOf = (inv, id) => REJILLAS[id] ?? inv.entrada(id)?.rejilla;
+
 function rejilla(inv, categoria, abierta) {
   const P = MEDIDAS_PALETA;
   const hijos = inv.hijos(categoria).filter((e) => !e.oculto);
   // A category whose cells are measured skips the ones LabVIEW leaves empty (`celdas` of REJILLAS); the others fill in order.
-  const fijas = REJILLAS[categoria]?.celdas ?? {};
+  const fijas = gridOf(inv, categoria)?.celdas ?? {};
   let siguiente = 0;
   const sitios = hijos.map((e) => {
     const fija = fijas[ultimo(e.id)];
@@ -426,7 +429,7 @@ function rejilla(inv, categoria, abierta) {
     return siguiente++;
   });
   const filas = Math.floor(Math.max(0, ...sitios) / P.columnas) + 1;
-  const conEtiquetas = Boolean(REJILLAS[categoria]?.etiquetas);
+  const conEtiquetas = Boolean(gridOf(inv, categoria)?.etiquetas);
   const paso = P.pasoIcono + (conEtiquetas ? P.altoEtiqueta : 0);
   const alto = P.sobreRejilla + (filas - 1) * paso + P.altoCarpeta + (conEtiquetas ? P.altoEtiqueta : 0) + P.bajoRejilla;
   const carpetas = hijos
@@ -489,7 +492,7 @@ export function placeSubpalette(anchor, folderLeft, size, room) {
 
 /** Dónde cae cada elemento de una subpaleta: fila y columna de su celda. */
 export function celdasSubpaleta(inv, id) {
-  const { columnas, celdas } = REJILLAS[id] ?? REJILLA_POR_DEFECTO;
+  const { columnas, celdas } = gridOf(inv, id) ?? REJILLA_POR_DEFECTO;
   const elementos = inv.hijos(id).filter((e) => !EN_TITULO.includes(ultimo(e.id)) && !e.oculto);
   const sitios = [];
   let i = 0;
