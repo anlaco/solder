@@ -8,4 +8,6 @@ version, the common part in `<name>/` and the compiled code of each platform in 
   `nilvaiu.*` loads that copy by its full path (DT-087, amendment of 2026-11-13 §8).
 
 Installing is copying these folders into an add-ons folder Solder reads (`~/.local/share/solder/addons` on Linux,
-`%APPDATA%\Solder\Addons` on Windows), with the libraries built.
+`%APPDATA%\Solder\Addons` on Windows), with the libraries built. A release carries them packed, one zip per platform
+(`Solder-DAQ-<version>-linux-x64.zip`, `…-windows-x64.zip`, made by `node scripts/pack-addons.mjs` within `npm run
+dist`): unzip it into that folder and restart Solder.

@@ -9,6 +9,13 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+## 0.12.0-beta — 2026-11-14
+
+Solder's DAQ add-on acquires: Measurement I/O ▸ DAQ - Data Acquisition places LabVIEW's DAQmx analog-input OVIs, built in
+Solder, which run against Solder's own `nilvaiu` and its simulated devices with LabVIEW's error codes. The add-on is a
+download of its own, `Solder-DAQ-0.12.0-beta-<platform>.zip`: unzip it into `~/.local/share/solder/addons` on Linux or
+`%APPDATA%\Solder\Addons` on Windows and restart Solder.
+
 - The OVI Server Reference constant (DT-090): Functions ▸ Programming ▸ Application Control opens with LabVIEW's 5 x 5 grid
   (the other 24 cells greyed with their reason), and its OVI Server Reference places a teal constant "This OVI" with its label,
   whose Link to ▸ This Application / This OVI changes its class. Its right-click menu has LabVIEW's rows; Create, Help and the

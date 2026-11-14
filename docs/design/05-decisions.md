@@ -3866,6 +3866,16 @@ a system folder and a user folder at start-up, and an add-on's OVIs are named by
 | An add-on's palettes appear in the editor | Editor tests with a test add-on | **Not built** |
 | Whether LabVIEW needs a restart to see a new add-on | — | **Unverified** |
 
+### Amendment of 2026-11-14: a release carries each add-on packed
+
+Decided by the developer for 0.12.0-beta, the first release with an add-on: an add-on ships apart from the installers, as
+DAQmx ships apart from LabVIEW, one zip per platform with the common part and that platform's part at its top
+(`Solder-DAQ-0.12.0-beta-linux-x64.zip`), attached to the GitHub release. Installing is unzipping it into the user's
+add-ons folder (§3) and restarting Solder, as §6's copying. `scripts/pack-addons.mjs`, run by `npm run dist`, leaves out a
+platform part whose library is not built, and with `--for-release` refuses to go on without every one.
+`test/scripts/pack-addons.test.mjs` (packing and, unzipped, read as installed). A package format and a manager remain
+§6's own DT.
+
 ## DT-082
 
 **During the beta, a packaged Solder looks for a newer release when it starts and, if there is one, offers it in a

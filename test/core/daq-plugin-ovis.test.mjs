@@ -46,7 +46,7 @@ before(() => {
   addonsFolder = mkdtempSync(path.join(tmpdir(), "solder-addons-"));
   for (const part of ["daq", PLATFORM_PART]) cpSync(path.resolve("addons", part), path.join(addonsFolder, part), { recursive: true });
   cpSync(path.resolve("target/debug", LIBRARY_FILE), path.join(addonsFolder, PLATFORM_PART, "1", "resource", LIBRARY_FILE));
-  const { libraryFolders } = loadInstalledAddons({ oviLibRoot: path.resolve("ovi.lib"), nodePlatform: process.platform, architecture: process.arch, homeDirectory: tmpdir(), environment: {}, solderVersion: "0.11.0-beta", folders: [addonsFolder] });
+  const { libraryFolders } = loadInstalledAddons({ oviLibRoot: path.resolve("ovi.lib"), nodePlatform: process.platform, architecture: process.arch, homeDirectory: tmpdir(), environment: {}, solderVersion: "0.12.0-beta", folders: [addonsFolder] });
   io = withLibraryLocator(loadSolderIo(), addonLibraryLocator(libraryFolders));
 });
 

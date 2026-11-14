@@ -1,6 +1,6 @@
 {
   "AddonName": "DAQ",
   "ApiVersion": "v1",
-  "MinimumSupportedSolderVersion": "0.11.0-beta",
+  "MinimumSupportedSolderVersion": "0.12.0-beta",
   "SupportedPlatform": "windows-x64"
 }

@@ -130,7 +130,7 @@ test("a node naming NI's nilvaiu.* loads the DAQ add-on's copy by its full path"
     const platformPart = `daq-${process.platform === "win32" ? "windows" : process.platform}-${process.arch}`;
     for (const part of ["daq", platformPart]) cpSync(path.resolve("addons", part), path.join(addonsFolder, part), { recursive: true });
     cpSync(library, path.join(addonsFolder, platformPart, "1", "resource", LIBRARY_FILE));
-    const { libraryFolders } = loadInstalledAddons({ oviLibRoot: path.resolve("ovi.lib"), nodePlatform: process.platform, architecture: process.arch, homeDirectory: tmpdir(), environment: {}, solderVersion: "0.11.0-beta", folders: [addonsFolder] });
+    const { libraryFolders } = loadInstalledAddons({ oviLibRoot: path.resolve("ovi.lib"), nodePlatform: process.platform, architecture: process.arch, homeDirectory: tmpdir(), environment: {}, solderVersion: "0.12.0-beta", folders: [addonsFolder] });
     const shown = await run(createStartDestroy(namingNi), withLibraryLocator(loadSolderIo(), addonLibraryLocator(libraryFolders)));
     assert.equal(shown.created, 0);
     assert.equal(shown.started, TASK_HAS_NO_CHANNELS);

@@ -796,6 +796,10 @@ array or string read by a local variable while another loop writes it is never t
       Dev9/ai0 is -200220), after fixing a DAQ name constant that lost its typed name (S10-#1). Open, not blocking: the
       command line does not find the add-on's OVIs (S10-#8), the rings, the selector's submenus and line breaks, Write,
       triggers and the Property Nodes. Next: the merge of `feature/daq` into `main` (asked of the developer).*
+      *Merged into `main` and released as 0.12.0-beta on 2026-11-14, the DAQ add-on as a download of its own per platform
+      (DT-081 amendment; `scripts/pack-addons.mjs`), its Windows `nilvaiu.dll` and the I/O addon built in the VM
+      ([`windows-build-0.12`](../../labview-captures/reports/2026-11-14-windows-build-0.12.md)). Next: the open findings
+      above, then Write, the triggers and the rings.*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

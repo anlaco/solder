@@ -1,7 +1,7 @@
 {
   "name": "@solder/editor",
   "productName": "Solder",
-  "version": "0.11.0-beta",
+  "version": "0.12.0-beta",
   "private": true,
   "type": "module",
   "description": "Solder: a free visual programming language that clones LabVIEW.",
@@ -12,7 +12,7 @@
   "scripts": {
     "app": "node scripts/start-editor.mjs",
     "test": "node scripts/run-tests.mjs",
-    "dist": "node scripts/build-native.mjs --release --for-release && electron-builder --linux AppImage deb --win nsis --publish never"
+    "dist": "node scripts/build-native.mjs --release --for-release && node scripts/pack-addons.mjs --for-release && electron-builder --linux AppImage deb --win nsis --publish never"
   },
   "devDependencies": {
     "@xmldom/xmldom": "^0.8.15",
