@@ -79,6 +79,25 @@ pub unsafe fn write_doubles(mut handle: Handle, dimension_sizes: &[usize], value
     Ok(())
 }
 
+/// The dimension sizes and the doubles of an array handle, row after row; no values for a null handle or block.
+///
+/// # Safety
+/// `handle` is null or an array handle of doubles with `dimension_count` dimensions.
+pub unsafe fn read_doubles(handle: Handle, dimension_count: usize) -> (Vec<usize>, Vec<f64>) {
+    // SAFETY: the block holds the dimension sizes and then their product of doubles, aligned as `write_doubles` puts them.
+    unsafe {
+        if handle.is_null() || (*handle).is_null() {
+            return (vec![0; dimension_count], Vec::new());
+        }
+        let block = *handle;
+        let sizes: Vec<usize> = (0..dimension_count).map(|index| block.add(index * LENGTH_BYTES).cast::<i32>().read_unaligned().max(0) as usize).collect();
+        let count = sizes.iter().product();
+        let doubles = block.add((dimension_count * LENGTH_BYTES).next_multiple_of(DOUBLES_ALIGNMENT)).cast::<f64>();
+        let values = (0..count).map(|index| doubles.add(index).read_unaligned()).collect();
+        (sizes, values)
+    }
+}
+
 fn check(error: MgErr) -> Result<(), MgErr> {
     if error == 0 { Ok(()) } else { Err(error) }
 }

@@ -24,7 +24,7 @@ function panelObject(block, kind) {
   return { g: created.g, id: created.g.nodos[0].id, node: created.g.nodos[0] };
 }
 
-const openPanelMenu = ({ g, id, node }) => ED.abrirMenu({ ...ED.inicial(), g }, P.menuDe(node), id, 0, 0);
+const openPanelMenu = ({ g, id, node }) => ED.abrirMenuDelPanel({ ...ED.inicial(), g }, P.menuDe(node), id, 0, 0);
 
 // Q1: Task Name control (173 x 400), Physical Channel control (173 x 343), Task Name indicator (173 x 381).
 const COMMON_TOP = ["Visible Items", "Find Terminal", "Change to Indicator", "Change to Array", "---", "Make Type Def.", "---", "Description and Tip...", "---", "Create", "Replace", "Data Operations", "Advanced",

@@ -22,6 +22,60 @@ pub mod codes {
     pub const INVALID_TASK: i32 = -200088;
     /// Start on a task that has no channels (measured, same report). Given also at Timing, where it is UNVERIFIED.
     pub const TASK_HAS_NO_CHANNELS: i32 = -200478;
+    /// A value to write is outside what the channel takes (measured: 15 on a +-10 V channel, at Write).
+    pub const DATA_OUTSIDE_RANGE: i32 = -200561;
+    /// A write with auto start off to a task that is not running and has no timing (measured).
+    pub const WRITE_NEEDS_RUNNING_TASK: i32 = -200846;
+    /// A write to a finite generation that has ended and was not stopped, or to a stopped continuous one (measured).
+    pub const WRITE_BEYOND_FINAL_SAMPLE: i32 = -200288;
+    /// The data has a row for a different number of channels than the task has (measured: 1 or 3 rows for 2 channels).
+    pub const CHANNEL_COUNT_MISMATCH: i32 = -200524;
+    /// A timed generation started before anything was written, on a device that refuses it (measured on Dev1).
+    pub const OUTPUT_BUFFER_EMPTY: i32 = -200462;
+    /// A channel's minimum is not below its maximum (measured: at Start or at an auto-started Write, not at Create).
+    pub const MINIMUM_NOT_BELOW_MAXIMUM: i32 = -200082;
+    /// A write to a task that has input channels only (measured).
+    pub const NO_OUTPUT_CHANNELS: i32 = -200459;
+    /// A read from a task that has output channels only (measured).
+    pub const NO_INPUT_CHANNELS: i32 = -200460;
+    /// A write to a task that has no channels at all (measured).
+    pub const NO_DEVICES_IN_TASK: i32 = -200477;
+    /// Grouping a whole port into one channel per line (measured: `Dev1/port0` with one channel for each line).
+    pub const PORT_NEEDS_ONE_CHANNEL: i32 = -200376;
+    /// A channel of that name is already in the task (measured: the same line twice, one channel for each line).
+    pub const CHANNEL_ALREADY_IN_TASK: i32 = -200489;
+    /// A line given twice in one channel of all its lines (measured).
+    pub const LINE_TWICE_IN_DIGITAL_TASK: i32 = -200014;
+    /// A one-line read or write on a channel of several lines (measured: a read; a write gives -200562).
+    pub const LINE_COUNT_MISMATCH: i32 = -200463;
+    /// A one-channel read on a task of several channels (measured).
+    pub const READ_NEEDS_ONE_CHANNEL: i32 = -200523;
+    /// A one-line Boolean written to a channel of several lines (measured: the VI passes one byte, the driver reads more).
+    pub const DIGITAL_DATA_NOT_SUPPORTED: i32 = -200562;
+    /// A read of another kind of channel than the task's (measured: a digital read of an analog-input task).
+    pub const READ_TYPE_MISMATCH: i32 = -200525;
+    /// A write of another kind of channel than the task's (measured: a digital write to an analog-output task).
+    pub const WRITE_TYPE_MISMATCH: i32 = -200526;
+    /// A channel of another type than those already in the task (measured: every pair of AI, AO, DI and DO).
+    pub const CHANNEL_TYPE_MIXED: i32 = -200559;
+    /// A digital line is held by another task that was started (measured: only an explicit Start holds lines).
+    pub const LINES_RESERVED: i32 = -200587;
+    /// A digital task with lines of two devices, at Start (measured).
+    pub const MULTIDEVICE_TASK_NOT_SUPPORTED: i32 = -201426;
+    /// A start trigger on a task with no sample clock, at Start or at a read that starts it (measured).
+    pub const TRIGGER_NEEDS_SAMPLE_CLOCK: i32 = -200262;
+    /// A property the device does not have for this task (measured: a trigger on Dev1's untimed digital task).
+    pub const PROPERTY_NOT_SUPPORTED: i32 = -200452;
+    /// A property set while the task runs, or after a finite task ended without a Stop (measured: the triggers).
+    pub const PROPERTY_NOT_SETTABLE_WHILE_RUNNING: i32 = -200557;
+    /// A trigger whose source is empty, at Start (measured).
+    pub const EMPTY_TERMINAL_NAME: i32 = -200797;
+    /// A trigger source the device does not have, at Start (measured: `/Dev1/PFI2`, `Dev1/PFI0` with no slash).
+    pub const TERMINAL_NOT_FOUND: i32 = -89120;
+    /// A trigger source that is a device and no terminal (measured: `/Dev1`).
+    pub const INVALID_TERMINAL: i32 = -89129;
+    /// A trigger source that is the trigger itself (measured: `/Dev1/ai/StartTrigger` on an input task).
+    pub const ROUTE_TO_ITSELF: i32 = -89131;
     /// A function of the driver that Solder has not built yet: Solder's own code, not DAQmx's, since no DAQmx code
     /// says so (DT-087, amendment of 2026-11-13).
     pub const NOT_BUILT_IN_SOLDER: i32 = -1;
@@ -40,6 +94,14 @@ pub struct ErrorDetails {
     pub requested: Option<f64>,
     pub maximum: Option<f64>,
     pub minimum: Option<f64>,
+    /// For `CHANNEL_COUNT_MISMATCH` and `READ_NEEDS_ONE_CHANNEL`: the channels of the task and the channels the data has.
+    pub channel_counts: Option<(usize, usize)>,
+    /// For `LINE_COUNT_MISMATCH`: the lines of the channel and the lines the data has.
+    pub line_counts: Option<(usize, usize)>,
+    /// For a property whose values are names, not numbers: what was asked for and what the device takes
+    /// (`SampTimingType`: Sample Clock, and On Demand).
+    pub requested_name: Option<&'static str>,
+    pub possible_names: Option<&'static str>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

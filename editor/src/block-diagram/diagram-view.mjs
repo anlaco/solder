@@ -40,6 +40,7 @@ import { elementMenuRoot } from "../common/array-typing.mjs";
 import { MAX_EDITOR_DIMENSIONS, cellAddress, dimensionsOfNode, firstShown, isDefined, readCell, visibleGrid } from "../common/array-grid.mjs";
 import { ringItems, ringText } from "../../../core/model/ring.mjs";
 import { isRingConstant, ringMenuRoot } from "../common/ring-editing.mjs";
+import { panelTerminalZone } from "./panel-terminal-zone.mjs";
 
 const esNumericoNoEntero = (t) => typeof t === "string" && esNumerico(t) && !esEntero(t);
 
@@ -702,7 +703,7 @@ export function terminales(n, ctx, edicion) {
       const fija = dir === "in" && tieneDosDimensiones(n);
       const alto = fija ? PASO_ENTRADAS_DOS_DIMENSIONES : k.alto / cuantos;
       const arriba = fija ? k.y + ENTRADAS_DOS_DIMENSIONES[i] - alto / 2 : k.y + alto * i;
-      const faceZone = { x: dir === "in" ? k.x : k.x + k.ancho - anchoZona, y: arriba, ancho: anchoZona, alto };
+      const faceZone = flecha !== null ? panelTerminalZone(k, dir, flecha) : { x: dir === "in" ? k.x : k.x + k.ancho - anchoZona, y: arriba, ancho: anchoZona, alto };
       const zona = esBorde(n) ? widenTowardWire(faceZone, dir) : faceZone;
       return {
         puerto: p.name,
@@ -1376,7 +1377,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
     cuerpo = `<div class="glifo-nodo" style="left:${px(-k.dx)};top:${px(-k.dy)}${gw ? `;width:${px(gw)};height:${px(gh)}` : ""}">${glifo}</div>`;
   }
   let zonas = terminales(n, ctx, d.edicion)
-    .filter((t) => terminalVisible(n, t, d.g))
+    .filter((t) => terminalVisible(n, t, d.g) && !(elegido && esDelPanel(n, ctx)))
     .map(
       (t) =>
         `<div class="terminal" data-nodo="${esc(n.id)}" data-puerto="${esc(t.puerto)}" data-dir="${t.dir}"${t.etiqueta ? ` data-tip="${esc(t.etiqueta)}"` : ""} style="left:${px(t.zona.x - k.x)};top:${px(t.zona.y - k.y)};width:${px(t.zona.ancho)};height:${px(t.zona.alto)}"></div>`,

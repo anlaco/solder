@@ -1564,9 +1564,8 @@
     {
       "id": "window.block-diagram.menu.file.new",
       "etiqueta": "New...",
-      "estado": "todo",
-      "labview": "Opens the dialog to create a VI, a project or another file from a template.",
-      "necesita": "varios-vis",
+      "estado": "built",
+      "prueba": "test/editor/new-dialog.test.mjs::the_New_dialog_lists_LabVIEW's_tree_and_creates_a_blank_OVI_or_a_polymorphic_OVI,_and_explains_what_is_not_done",
       "captura": "block-diagram/menu-file.png"
     },
     {
@@ -13145,9 +13144,8 @@
     {
       "id": "context.enum-control.replace",
       "etiqueta": "Replace",
-      "estado": "todo",
-      "labview": "Swaps the control for another object.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/panel-replace.test.mjs::replacing_keeps_the_node_and_its_wire,_the_label,_the_representation_and_the_value;_a_Text_Ring_shows_<n>_when_no_item_has_it",
       "captura": "enum-edit/30-ctrl-menu.png"
     },
     {
@@ -13362,9 +13360,8 @@
     {
       "id": "context.enum-indicator.replace",
       "etiqueta": "Replace",
-      "estado": "todo",
-      "labview": "Swaps the indicator for another object.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/panel-replace.test.mjs::replacing_keeps_the_node_and_its_wire,_the_label,_the_representation_and_the_value;_a_Text_Ring_shows_<n>_when_no_item_has_it",
       "captura": "enum-edit/32-ind-menu.png"
     },
     {
@@ -13623,9 +13620,8 @@
     {
       "id": "context.ring-control.replace",
       "etiqueta": "Replace",
-      "estado": "todo",
-      "labview": "Swaps the control for another object.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/panel-replace.test.mjs::replacing_keeps_the_node_and_its_wire,_the_label,_the_representation_and_the_value;_a_Text_Ring_shows_<n>_when_no_item_has_it",
       "captura": "rings/03-textring-menu-x2.png"
     },
     {
@@ -13985,9 +13981,8 @@
     {
       "id": "context.ring-indicator.replace",
       "etiqueta": "Replace",
-      "estado": "todo",
-      "labview": "Swaps the indicator for another object.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/panel-replace.test.mjs::replacing_keeps_the_node_and_its_wire,_the_label,_the_representation_and_the_value;_a_Text_Ring_shows_<n>_when_no_item_has_it",
       "captura": "rings/51-crop.png"
     },
     {
@@ -15335,9 +15330,8 @@
     {
       "id": "context.boolean-control.replace",
       "etiqueta": "Replace",
-      "estado": "todo",
-      "labview": "Swaps the control for another from the palette, keeping its terminal.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/panel-replace.test.mjs::replacing_keeps_the_node_and_its_wire,_the_label,_the_representation_and_the_value;_a_Text_Ring_shows_<n>_when_no_item_has_it",
       "captura": "front-panel/boolean-menu-control.png"
     },
     {
@@ -15864,9 +15858,8 @@
     {
       "id": "context.boolean-indicator.replace",
       "etiqueta": "Replace",
-      "estado": "todo",
-      "labview": "Swaps the indicator for another from the palette, keeping its terminal.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/panel-replace.test.mjs::replacing_keeps_the_node_and_its_wire,_the_label,_the_representation_and_the_value;_a_Text_Ring_shows_<n>_when_no_item_has_it",
       "captura": "front-panel/boolean-menu-indicator.png"
     },
     {
@@ -16063,9 +16056,8 @@
     {
       "id": "context.numeric-panel-control.replace",
       "etiqueta": "Replace",
-      "estado": "todo",
-      "labview": "Replaces the control with another one of the palette.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/panel-replace.test.mjs::replacing_keeps_the_node_and_its_wire,_the_label,_the_representation_and_the_value;_a_Text_Ring_shows_<n>_when_no_item_has_it",
       "captura": "property-node-panel/pc2.png"
     },
     {
@@ -24727,9 +24719,8 @@
     {
       "id": "context.visa-control.replace",
       "etiqueta": "Replace",
-      "estado": "todo",
-      "labview": "Swaps the control for another one.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/panel-replace.test.mjs::replacing_keeps_the_node_and_its_wire,_the_label,_the_representation_and_the_value;_a_Text_Ring_shows_<n>_when_no_item_has_it",
       "captura": "visa/resource-name-pm0z.png"
     },
     {
@@ -26828,9 +26819,8 @@
     {
       "id": "context.daq-task-name-control.replace",
       "etiqueta": "Replace",
-      "estado": "todo",
-      "labview": "Swaps the control for another one.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/panel-replace.test.mjs::replacing_keeps_the_node_and_its_wire,_the_label,_the_representation_and_the_value;_a_Text_Ring_shows_<n>_when_no_item_has_it",
       "captura": "daqname-menus/m1.png"
     },
     {
@@ -27151,9 +27141,8 @@
     {
       "id": "context.daq-name-control.replace",
       "etiqueta": "Replace",
-      "estado": "todo",
-      "labview": "Swaps the control for another one.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/panel-replace.test.mjs::replacing_keeps_the_node_and_its_wire,_the_label,_the_representation_and_the_value;_a_Text_Ring_shows_<n>_when_no_item_has_it",
       "captura": "daqname-menus/m2.png"
     },
     {
@@ -28737,9 +28726,8 @@
     {
       "id": "context.path-control.replace",
       "etiqueta": "Replace",
-      "estado": "todo",
-      "labview": "Swaps the control for another one.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/panel-replace.test.mjs::replacing_keeps_the_node_and_its_wire,_the_label,_the_representation_and_the_value;_a_Text_Ring_shows_<n>_when_no_item_has_it",
       "captura": "file-io/path/menu-ctl-replace.png"
     },
     {

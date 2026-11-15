@@ -1,7 +1,9 @@
-//! Timing, the start trigger, starting and stopping, and waiting for a task to end. These take the task by its
+//! Timing, the start triggers, starting and stopping, and waiting for a task to end. These take the task by its
 //! `taskID`, the address of the library's task object (measured).
 
 use solder_daq::engine::SampleMode;
+use solder_daq::error::{codes, DaqError, ErrorDetails};
+use solder_daq::trigger::Edge;
 
 use crate::create::finish_not_built;
 use crate::host::{self, Handle};
@@ -43,12 +45,39 @@ pub unsafe extern "C" fn DAQCfgSampClkTiming(
     }
 }
 
-/// `int32_t DAQDisableStartTrig(uintptr_t taskID, LStrHandle extendedErrorIndo)`: Start Trigger (None). A task of the
-/// engine has no trigger to begin with, so only the task is checked.
+/// `int32_t DAQDisableStartTrig(uintptr_t taskID, LStrHandle extendedErrorIndo)`: Start Trigger (None).
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn DAQDisableStartTrig(task_id: usize, extended_error_info: Handle) -> i32 {
+    let result = tasks::from_task_id(task_id).and_then(|task| tasks::engine().disable_start_trigger(task));
     // SAFETY: the function's string handle.
-    unsafe { finish(tasks::from_task_id(task_id).map(|_| ()), extended_error_info) }
+    unsafe { finish(result, extended_error_info) }
+}
+
+/// DAQmx's edge ring (measured, `labview-captures/reports/2026-11-06-daqmx-timing-trigger.md`).
+const RISING: i32 = 10280;
+const FALLING: i32 = 10171;
+
+/// `int32_t DAQCfgDigEdgeStartTrig(uintptr_t taskID, const LStrHandle source, const int32_t edge, LStrHandle
+/// extendedErrorIndo)`: Start Trigger (Digital Edge). Any other edge is -200077 at this call, once the task is one a
+/// trigger can be set on (measured, `2026-11-15-daqmx-trigger.md` §4; which comes first, UNVERIFIED).
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn DAQCfgDigEdgeStartTrig(task_id: usize, source: Handle, edge: i32, extended_error_info: Handle) -> i32 {
+    // SAFETY: the source is a LabVIEW string, as the node passes it.
+    let source = unsafe { host::read_string(source) };
+    let result = tasks::from_task_id(task_id).and_then(|task| {
+        let mut engine = tasks::engine();
+        let edge = match edge {
+            RISING => Edge::Rising,
+            FALLING => Edge::Falling,
+            _ => {
+                engine.check_trigger_can_be_set(task)?;
+                return Err(DaqError::new(codes::UNSUPPORTED_PROPERTY_VALUE, ErrorDetails { property: Some("DigEdge.Edge"), requested: Some(f64::from(edge)), ..Default::default() }));
+            }
+        };
+        engine.configure_digital_edge_start_trigger(task, &source, edge)
+    });
+    // SAFETY: the function's string handle.
+    unsafe { finish(result, extended_error_info) }
 }
 
 /// `int32_t DAQControl(uintptr_t taskID, uint32_t mode, LStrHandle extendedErrorInfo)`: Start Task and Stop Task.

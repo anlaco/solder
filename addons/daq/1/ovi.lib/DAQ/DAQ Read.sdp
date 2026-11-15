@@ -20,6 +20,16 @@
       "ovi": "DAQ Read (Analog 2D DBL NChan NSamp).sdg",
       "menu-name": "Analog:Multiple Channels:Multiple Samples:2D DBL",
       "selector-name": "Analog 2D DBL\nNChan NSamp"
+    },
+    {
+      "ovi": "DAQ Read (Digital Bool 1Line 1Point).sdg",
+      "menu-name": "Digital:Single Channel:Single Sample:Boolean (1 Line)",
+      "selector-name": "Digital Bool\n1Line 1Point"
+    },
+    {
+      "ovi": "DAQ Read (Digital U32 1Chan 1Samp).sdg",
+      "menu-name": "Digital:Single Channel:Single Sample:U32 (port format)",
+      "selector-name": "Digital U32\n1Chan 1Samp"
     }
   ],
   "show-selector-by-default": true,

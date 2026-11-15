@@ -9,6 +9,26 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Replace ▸ on a front-panel object (DT-092): the row opens the Controls palette as a submenu and picking an item
+  replaces the object in place, keeping its terminal and wires, label, representation, value and its role of control
+  or indicator (what Solder lacks is greyed, as in the palette); a change of data type leaves the wires that no longer
+  fit broken. A control's or indicator's terminal on the diagram wires only by a 16 x 12 px patch at its data side, 6 px
+  of it outside the icon, as LabVIEW does, and a selected terminal has no wiring zone.
+- DAQ digital lines and start triggers, closing DAQ's stage A (DT-076 §10): Create Virtual Channel (Digital Input,
+  Digital Output), DAQ Read (Digital Bool 1Line 1Point, Digital U32 1Chan 1Samp), DAQ Write (Digital Bool 1Line 1Point)
+  and a polymorphic DAQ Trigger (Start None, Start Digital Edge), now on the DAQ palette. Solder's DAQ driver gives the
+  simulated devices' measured ports and lines, line groupings and channel names, the simulated counter a read gives,
+  lines held by a started task, timing on digital tasks and the trigger's checks at Start, with LabVIEW's error codes. A
+  task now refuses a channel of another kind (an analog input beside an output is -200559, as in LabVIEW).
+- Delete after a single click on a control's or indicator's terminal on the diagram now removes the terminal and its
+  panel object (the click used to begin a wire: a control or indicator terminal wires only by its arrow, the rest of
+  its icon selects it). Deleting a node inside a structure removes the wire from an input tunnel to it, as LabVIEW
+  does; the wire to an output tunnel stays broken, and tunnels stay.
+- DAQ Write: Create Virtual Channel (AO Voltage) and DAQ Write (Analog DBL 1Chan 1Samp, 1D DBL 1Chan NSamp, 2D DBL NChan
+  NSamp), polymorphic and on the DAQ palette, over analog outputs in Solder's DAQ driver with the simulated devices'
+  measured behaviour (ranges, auto start, finite and continuous generation, LabVIEW's error codes).
+- Numpad Enter and Ctrl+Enter end the editing of a control's or terminal's label, as in LabVIEW (the main Enter still
+  types a new line). File ▸ New... works from the block diagram's menu too.
 - `.sdg` format version 5 (DT-091): a ring's items are saved as text–value pairs; a ring constant of an older file opens
   with its items numbered by position, as before. A file saved by this version does not open in 0.12 or older.
 - DAQ Create Virtual Channel (AI Voltage) takes `input terminal configuration` and `units` as I32 Text Rings with the

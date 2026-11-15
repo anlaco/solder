@@ -68,6 +68,37 @@ pub unsafe extern "C" fn DAQCreateAIVoltageChan(
     }
 }
 
+/// `int32_t DAQCreateAOVoltageChan(...)`: the same parameters as `DAQCreateAIVoltageChan`, measured
+/// (`labview-captures/reports/2026-11-08-daq-clfn-api.md`), and the same rules for what is not built.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn DAQCreateAOVoltageChan(
+    _application: *mut c_void,
+    task_record_cell: *mut usize,
+    physical_channel_name: Handle,
+    channel_name_in: Handle,
+    _terminal_config: i32,
+    minimum: f64,
+    maximum: f64,
+    units: i32,
+    custom_scale_name: Handle,
+    channel_names_out: Handle,
+    extended_error_info: Handle,
+) -> i32 {
+    // SAFETY: as above.
+    unsafe {
+        if !read_text(channel_name_in).is_empty() || !read_text(custom_scale_name).is_empty() || units != VOLTS {
+            return finish_not_built("naming channels or custom scales", extended_error_info);
+        }
+        let physical_channels = read_text(physical_channel_name);
+        let result = task_of_cell(task_record_cell)
+            .and_then(|task| tasks::engine().add_ao_voltage_channels(task, &physical_channels, minimum, maximum))
+            .map(|names| {
+                let _ = host::write_string(channel_names_out, &names.join(", "));
+            });
+        finish(result, extended_error_info)
+    }
+}
+
 /// DAQmx's units ring, Volts (measured, `labview-captures/reports/2026-11-06-daqmx-create-channel.md`).
 const VOLTS: i32 = 10348;
 
@@ -82,7 +113,7 @@ pub unsafe extern "C" fn DAQDestroyTask110(task_record_cell: *mut usize, error_i
 }
 
 /// The task a cell's record stands for; an empty cell gets a new task, whose record is written into it.
-unsafe fn task_of_cell(task_record_cell: *mut usize) -> Result<TaskId, DaqError> {
+pub(crate) unsafe fn task_of_cell(task_record_cell: *mut usize) -> Result<TaskId, DaqError> {
     // SAFETY: the cell has room for an address, as the node passes it.
     unsafe {
         let record = task_record_cell.read_unaligned();

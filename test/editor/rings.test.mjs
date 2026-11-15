@@ -70,7 +70,7 @@ function menuRows(d, parent = d.menu.raiz) {
 const shown = (rows) => rows.flatMap((row) => (row.separated ? ["---", row.label] : [row.label]));
 const hover = (d, ...ids) => ids.reduce((menu, id) => ED.sobreMenu(menu, id, true), d);
 const openMenu = (d, id) => ED.abrirMenu(d, D.menuDe(nodeOf(d, id), null, d.g, false, CAT), id, 0, 0);
-const panelMenu = (d, p, id) => ED.abrirMenu(d, P.menuDe(nodeOf(p, id)), id, 0, 0);
+const panelMenu = (d, p, id) => ED.abrirMenuDelPanel(d, P.menuDe(nodeOf(p, id)), id, 0, 0);
 
 test("the Text Ring and the Menu Ring of Controls Ring & Enum are placed on the panel as numerics with one empty item", () => {
   for (const [entry, label, style] of [[TEXT_RING, "Ring", "text-ring"], [MENU_RING, "Menu Ring", "menu-ring"]]) {
@@ -153,7 +153,7 @@ test("the ring menus show LabVIEW's rows in its order for the control, the indic
   assert.deepEqual(shown(menuRows(constantMenu)), ["Visible Items", "Change to Control", "Change to Indicator", "Change to Array", "---", "Make Type Def.", "---", "Description and Tip...", "---", "Numeric Palette", "Create", "Replace", "Data Operations", "Advanced", "---", "Representation", "Display Format...", "---", "Allow Undefined Values", "---", "Edit Items...", "Select Item...", "Disable Item", "---", "Properties"]);
 
   // What is not done is greyed and says what is missing (DT-035); what is done is not.
-  const built = ["change-to-indicator", "create", "data-operations", "representation", "allow-undefined", "select-item", "edit-items"];
+  const built = ["change-to-indicator", "create", "replace", "data-operations", "representation", "allow-undefined", "select-item", "edit-items"];
   for (const row of menuRows(controlMenu)) {
     const name = row.id.slice(row.id.lastIndexOf(".") + 1);
     assert.equal(row.greyed, !built.includes(name), `${name}: greyed unless built`);

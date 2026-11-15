@@ -45,6 +45,7 @@ import { isPanelRing, isRing, isRingConstant, isRingMenu, toggledAllowUndefined,
 import { endPoint } from "./broken-wire.mjs";
 import { sharedSegmentCount } from "./wire-tree.mjs";
 import * as CP from "../front-panel/connector-pane.mjs";
+import * as PanelReplace from "../common/panel-replace.mjs";
 import { graphCommand, graphMenuMarks, graphMenuVariants, isGraphMenu } from "../front-panel/graph-menus.mjs";
 import * as Et from "../common/labels.mjs";
 import * as FL from "../common/free-labels.mjs";
@@ -1472,6 +1473,12 @@ export const VISA_DROPDOWN_MENU = "context.visa-dropdown";
  */
 export const abrirMenu = (d, raiz, nodo, x, y, puerto = null, en = null) => ({ ...d, menu: { raiz, nodo, puerto, x, y, en, abierto: null }, accion: null, edicion: null });
 
+/** The menu of a front-panel object: the same, marked as the panel's, because only it has Replace ▸ (DT-092). */
+export const abrirMenuDelPanel = (d, raiz, nodo, x, y) => {
+  const opened = abrirMenu(d, raiz, nodo, x, y);
+  return { ...opened, menu: { ...opened.menu, canvas: "panel" } };
+};
+
 /** The wheel over a menu taller than the window scrolls it by `delta` px, between 0 and `max`. */
 export function desplazarMenu(d, menuId, delta, max) {
   if (!d.menu) return d;
@@ -1497,8 +1504,13 @@ export const sobreMenu = (d, id, conSubmenu) => {
  * Las órdenes hechas de los menús. Las demás son huecos y sólo se explican.
  * `ctx` hace falta para las que crean nodos.
  */
-export function orden(d, id, ctx) {
+export function orden(d, id, ctx, inv) {
   if (!d.menu) return d;
+  // An item of Replace ▸ on a panel object replaces it (panel-replace.mjs).
+  if (inv && PanelReplace.isReplacePick(d.menu.raiz, id)) {
+    const replaced = PanelReplace.replacedObject(d.g, d.menu.nodo, d.menu.raiz, id, ctx, inv);
+    return replaced ? { ...d, g: replaced, menu: null } : d;
+  }
   // The connector pane's menu belongs to the panel's state and changes the VI's connector.
   if (id.startsWith(`${CP.MENU_ROOT}.`)) return CP.runMenuCommand(d, id);
   // The menus of the graphs on the panel (graph-menus.mjs).
@@ -1850,7 +1862,7 @@ function unbundleVariants(d, ctx, node) {
 }
 
 /** Whether the row `id` of the open menu opens a submenu: one declared in the inventory, or one the diagram fills in (Select Item). */
-export const menuRowHasSubmenu = (d, ctx, inv, id) => inv.tieneContenido(id) || !!variantes(d, ctx).submenus?.has(id);
+export const menuRowHasSubmenu = (d, ctx, inv, id) => inv.tieneContenido(id) || !!variantes(d, ctx, inv).submenus?.has(id);
 
 /**
  * The entry of a row of the open menu: the inventory's, or for a row the diagram fills in (the names
@@ -1860,7 +1872,7 @@ export const menuRowHasSubmenu = (d, ctx, inv, id) => inv.tieneContenido(id) || 
 export function menuRowEntry(d, ctx, inv, id) {
   const declared = inv.resolver(id);
   if (declared) return declared;
-  for (const rows of variantes(d, ctx).submenus?.values() ?? []) {
+  for (const rows of variantes(d, ctx, inv).submenus?.values() ?? []) {
     const generated = rows.find((row) => row.id === id);
     if (generated) return generated;
   }
@@ -1923,9 +1935,11 @@ const mergeVariants = (a, b) => ({
   separadores: new Map([...(a.separadores ?? []), ...(b.separadores ?? [])]),
 });
 
-/** What changes in the rows of the open menu: the node's own variants and those of Create ▸. `ctx` is needed for the terminal's type. */
-export const variantes = (d, ctx) =>
-  isGraphMenu(d) ? graphMenuVariants(d) : [createVariants(d, ctx), wireMenuVariants(d, ctx), d.menu && ctx ? PNM.createVariants(d, ctx) : {}].reduce(mergeVariants, nodeVariants(d, ctx));
+/** What changes in the rows of the open menu: the node's own variants and those of Create ▸. `ctx` is needed for the terminal's type, `inv` for the submenu of Replace ▸. */
+export const variantes = (d, ctx, inv) =>
+  isGraphMenu(d)
+    ? graphMenuVariants(d)
+    : [createVariants(d, ctx), wireMenuVariants(d, ctx), d.menu && ctx ? PNM.createVariants(d, ctx) : {}, PanelReplace.replaceVariants(d, inv, ctx)].reduce(mergeVariants, nodeVariants(d, ctx));
 
 /**
  * What LabVIEW ticks in the menus of a VISA resource name, by the menu's root (reports/2026-10-26-visa-resource-name-look.md

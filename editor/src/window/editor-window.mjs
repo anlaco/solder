@@ -1308,13 +1308,13 @@ function pintar() {
   const extra = { toolbar: toolbarButtons(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, conAvisos: !ejecutando && EL.showsWarningButton(listRows(), errorList.showWarnings), dialogo: dialogoError, numeroVI: viInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
   if (conDiagrama) {
     extra.lienzo = D.contenido({ ...dia, debug: DV.canvasView(debug, dia.g, ejecutando) }, ctx, resueltos) + DV.overlay(debug, dia.g, ctx, resueltos, { now: Date.now(), separator: separador, running: ejecutando, pausedAt: debug.run.paused, errorFocus });
-    extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia, ctx), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx), DV.menuVariants(debug, dia.g, resueltos, dia.menu)), windowSize()) : "") + floating.popup;
+    extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia, ctx), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx, inv), DV.menuVariants(debug, dia.g, resueltos, dia.menu)), windowSize()) : "") + floating.popup;
     extra.editandoTexto = !!dia.edicion;
   } else {
     extra.lienzo = P.contenido(pan, ctx, resueltos);
     extra.panelStyle = panelStyle;
     extra.conectorGlifo = CP.paneGlyph(pan.g, cat, pan.conector?.celda ?? null);
-    extra.encima = pan.menu ? D.menuContextual(inv, pan.menu, ED.marcados(pan, ctx), medirMenu, ED.variantes(pan, ctx), windowSize()) : "";
+    extra.encima = pan.menu ? D.menuContextual(inv, pan.menu, ED.marcados(pan, ctx), medirMenu, ED.variantes(pan, ctx, inv), windowSize()) : "";
     extra.editandoTexto = !!pan.edicion;
   }
   // El menú de la barra que está abierto, bajo su título.
@@ -2018,7 +2018,7 @@ addEventListener("click", (ev) => {
         cambiarActual({ ...actual, menu: null });
         return orden(actual.menu.nodo, actual.menu);
       }
-      return cambiarActual(ED.orden(actual, id, ctx));
+      return cambiarActual(ED.orden(actual, id, ctx, inv));
     }
     const donde = ancla(fila);
     if (conDiagrama) dia = { ...dia, menu: null };
@@ -2055,7 +2055,7 @@ addEventListener("contextmenu", (ev) => {
       const raizPanel = sobrePanel.parte ? PART_MENUS[sobrePanel.parte] : P.menuDe(pan.g.nodos.find((k) => k.id === sobrePanel.id), sobrePanel.tipo === "elem");
       if (raizPanel) {
         estado = { ...estado, paleta: null, abierta: null };
-        return cambiarPanel(ED.abrirMenu(pan, raizPanel, sobrePanel.id, ev.clientX, ev.clientY));
+        return cambiarPanel(ED.abrirMenuDelPanel(pan, raizPanel, sobrePanel.id, ev.clientX, ev.clientY));
       }
     }
     if (sobrePanel?.tipo !== "fondo") return cambiarPanel(pan);
@@ -2113,8 +2113,9 @@ addEventListener("keydown", (ev) => {
     ev.preventDefault();
     return cambiarPanel(P.confirmar(pan));
   }
-  // Ctrl+Enter confirms a free label, where Enter starts another line (measured, DT-085).
-  if (ctrl && ev.key === "Enter" && (conDiagrama ? dia.edicion?.libre : conPanel && pan.edicion?.libre)) {
+  // Numpad Enter and Ctrl+Enter end the editing of a label, owned or free, where Enter starts another line (measured,
+  // DT-085, labview-captures/reports/2026-11-15-label-enter.md).
+  if (Et.endsLabelEdit(ev) && (conDiagrama ? dia.edicion?.etiqueta : conPanel && pan.edicion?.etiqueta)) {
     ev.preventDefault();
     return conDiagrama ? cambiarDiagrama(ED.confirmar(dia, ctx)) : cambiarPanel(P.confirmar(pan));
   }

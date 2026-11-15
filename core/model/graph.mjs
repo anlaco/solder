@@ -235,8 +235,11 @@ export const conectado = (c) => !esSuelto(c.de) && !esSuelto(c.a);
 export function borrarDejandoCables(g, ids, placeOf = (n) => [n.x ?? 0, n.y ?? 0]) {
   const fuera = conContenido(g, ids);
   const loosen = (extremo) => (fuera.has(extremo.nodo) ? { suelto: placeOf(nodoDe(g, extremo.nodo), extremo.puerto) } : extremo);
+  // An input tunnel's wire to a node that goes disappears with it; the tunnel stays, unwired (measured in
+  // LabVIEW 2026 Q3, 2026-11-15-delete-replace.md §B). The wire from a node to an output tunnel stays broken.
+  const feedsDeletedNode = (c) => fuera.has(c.a.nodo) && !fuera.has(c.de.nodo) && nodoDe(g, c.de.nodo)?.tipo === "tunnel-in";
   const cables = g.cables
-    .filter((c) => !(fuera.has(c.de.nodo) && fuera.has(c.a.nodo)))
+    .filter((c) => !(fuera.has(c.de.nodo) && fuera.has(c.a.nodo)) && !feedsDeletedNode(c))
     .map((c) => ({ ...c, de: loosen(c.de), a: loosen(c.a) }))
     .filter((c) => !(esSuelto(c.de) && esSuelto(c.a)));
   return { ...g, nodos: g.nodos.filter((n) => !fuera.has(n.id)), cables };

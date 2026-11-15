@@ -27,7 +27,7 @@ function panelObject(block) {
 }
 const panelMenu = (block, root) => {
   const { g, id } = panelObject(block);
-  return { g, id, menu: ED.abrirMenu({ ...P.inicial(), g }, root, id, 0, 0) };
+  return { g, id, menu: ED.abrirMenuDelPanel({ ...P.inicial(), g }, root, id, 0, 0) };
 };
 const diagramMenu = (block, root) => {
   const placed = Gr.crearNodo(Gr.nuevo(), CAT, block, 0, 0);

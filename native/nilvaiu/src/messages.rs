@@ -24,7 +24,21 @@ pub fn extended_error_info(error: &DaqError) -> String {
     if let Some(channel) = &details.channel {
         field("Physical Channel", channel);
     }
+    if let Some(requested) = details.requested_name {
+        field("Requested Value", requested);
+    }
+    if let Some(possible) = details.possible_names {
+        field("Possible Values", possible);
+    }
     push_numbers(details, &mut field);
+    if let Some((in_task, in_data)) = details.channel_counts {
+        field("Number of Channels in Task", &in_task.to_string());
+        field("Number of Channels in Data", &in_data.to_string());
+    }
+    if let Some((in_channel, in_data)) = details.line_counts {
+        field("Number of Lines in Channel", &in_channel.to_string());
+        field("Number of Lines in Data", &in_data.to_string());
+    }
     if let Some(task_name) = &details.task_name {
         field("Task Name", task_name);
     }

@@ -5,6 +5,19 @@
       "ovi": "DAQ Create Virtual Channel (AI Voltage).sdg",
       "menu-name": "Analog Input:Voltage",
       "selector-name": "AI Voltage"
+    },
+    {
+      "ovi": "DAQ Create Virtual Channel (AO Voltage).sdg",
+      "menu-name": "Analog Output:Voltage",
+      "selector-name": "AO Voltage"
+    },
+    {
+      "ovi": "DAQ Create Virtual Channel (Digital Input).sdg",
+      "menu-name": "Digital Input"
+    },
+    {
+      "ovi": "DAQ Create Virtual Channel (Digital Output).sdg",
+      "menu-name": "Digital Output"
     }
   ],
   "show-selector-by-default": true,

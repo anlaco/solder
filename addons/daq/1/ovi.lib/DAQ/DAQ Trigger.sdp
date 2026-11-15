@@ -1,0 +1,18 @@
+{
+  "solder-polymorphic": 1,
+  "instances": [
+    {
+      "ovi": "DAQ Start Trigger (None).sdg",
+      "menu-name": "Start:None",
+      "selector-name": "Start\nNone"
+    },
+    {
+      "ovi": "DAQ Start Trigger (Digital Edge).sdg",
+      "menu-name": "Start:Digital Edge",
+      "selector-name": "Start\nDigital Edge"
+    }
+  ],
+  "show-selector-by-default": true,
+  "adapt-to-data-type": true,
+  "draw-icon": "polymorphic"
+}

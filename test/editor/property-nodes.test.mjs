@@ -322,7 +322,7 @@ test("the Instr node comes from VISA Advanced and from Create ▸ Property for I
 test("a panel object's Create ▸ Property Node puts the node beside its terminal", () => {
   const { d, boolean, numeric } = panelDiagram();
   const root = "context.boolean-control";
-  const menu = ED.abrirMenu(d, root, boolean, 0, 0);
+  const menu = ED.abrirMenuDelPanel(d, root, boolean, 0, 0);
   assert.deepEqual(shown(menuRows(hover(menu, `${root}.create`), `${root}.create`)), ["Local Variable", "Reference", "Property Node", "Invoke Node", "Cluster from Selection"]);
   const made = ED.orden(hover(menu, `${root}.create`, `${root}.create.property-node`), `${root}.create.property-node.visible`, CTX);
   const [node] = propertyNodes(made);
@@ -332,7 +332,7 @@ test("a panel object's Create ▸ Property Node puts the node beside its termina
   // A numeric control's panel menu (pc2) has the same Create ▸.
   const numericRoot = "context.numeric-panel-control";
   assert.equal(P.menuDe(nodeOf(d, numeric)), numericRoot);
-  const numericMenu = ED.abrirMenu(d, numericRoot, numeric, 0, 0);
+  const numericMenu = ED.abrirMenuDelPanel(d, numericRoot, numeric, 0, 0);
   assert.deepEqual(shown(menuRows(numericMenu)), ["Visible Items", "---", "Change to Indicator", "Change to Array", "---", "Make Type Def.", "Description and Tip...", "Find", "---", "Create", "Replace", "Data Operations", "Advanced", "Fit Control to Pane", "Scale Object with Pane", "---", "Representation", "Data Entry...", "Display Format...", "---", "Properties"]);
   const value = ED.orden(numericMenu, `${numericRoot}.create.property-node.value`, CTX);
   assert.equal(propertyNodes(value)[0].config.link, nodeOf(d, numeric).name);

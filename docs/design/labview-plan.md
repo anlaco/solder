@@ -14,9 +14,8 @@ When the developer says "keep going":
    behind it), and keep in mind its list "Pending from the pool of threads". §4 gives the
    detail of each module. Its order was amended on 2026-10-26 (DT-064, "Amendment of
    2026-10-26"). Steps 1 to 5 are done (step 5, the ESP32 DAQ, on 2026-11-05). Step 6, the DAQ layer
-   (DT-076), is measured and waits for its own step **6a, the two doors for libraries** (DT-079, 2026-11-06):
-   the Call Library Function Node and the add-ons folder, each measured in LabVIEW and decided in its own DT,
-   then DAQ as the first library built on them. After Core 1, everything native, then Core 2 (DT-079 §1).
+   (DT-076), has its stage A done (2026-11-15), built on step **6a, the two doors for libraries** (DT-079): the Call
+   Library Function Node and the add-ons folder. Next is its stage B (DT-076 §10). After Core 1, everything native, then Core 2 (DT-079 §1).
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
    `win11 encender`, `tools/vm_control.py foto|clic|arrastrar|tecla|texto`.
@@ -46,9 +45,13 @@ When the developer says "keep going":
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
 
+*2026-11-15: DAQ's stage A closed: digital lines (Create Virtual Channel Digital Input and Output, the Bool and U32
+reads, the Bool write) and the start triggers (None, Digital Edge) on the simulated devices, on the palette; Delete on a
+click-selected terminal and Replace ▸ on panel objects (DT-092). Next: DAQ's stage B.*
+
 *2026-11-15: rings with free values (Text Ring, Menu Ring, Ring Constant; DT-091, `.sdg` version 5), the polymorphic
 selector's submenus and two-line names, and the DAQ name controls' panel menus; the DAQ plugin's open findings of 0.12
-closed. Next: DAQ Write, the triggers and the Property Nodes.*
+closed. The same day, DAQ Write: analog output on the simulated devices. Next: the triggers and the Property Nodes.*
 
 *2026-11-07: free labels on the panel and the diagram (DT-085), measured in LabVIEW and done the same day, after a user
 found that a double click on an empty spot did nothing (`coverage.md` had them ticked by mistake); the `.sdg` format is
@@ -811,6 +814,29 @@ array or string read by a local variable while another loop writes it is never t
       DT-074 amendment); the DAQ name controls' panel menus and arrow list, and Create ▸ on a Call Library Function
       Node's parameter ([`daqname-menus`](../../labview-captures/reports/2026-11-15-daqname-menus.md), closing S5-#1);
       S10-#8 not reproduced and kept by a test. Next: DAQ Write, the triggers and the Property Nodes.*
+      *DAQ Write the same day: analog output measured on both simulated devices
+      ([`daqmx-ao`](../../labview-captures/reports/2026-11-15-daqmx-ao.md)) and built in the engine (`native/solder-daq`,
+      split into `engine`, `input` and `output`) and in `nilvaiu`; Create Virtual Channel (AO Voltage) and the three DBL
+      writes built by hand in a polymorphic DAQ Write on the palette ([`stage12`](../../labview-captures/reports/2026-11-15-daq-plugin-stage12.md),
+      [`stage13`](../../labview-captures/reports/2026-11-15-daq-plugin-stage13.md)). Next: the triggers, then the Property
+      Nodes; the Windows `nilvaiu.dll` is rebuilt in the VM at the next release.*
+      *Stage A closed on 2026-11-15 (DT-076 §10): the digital lines and the start triggers measured on both simulated
+      devices ([`daqmx-dio`](../../labview-captures/reports/2026-11-15-daqmx-dio.md),
+      [`daqmx-trigger`](../../labview-captures/reports/2026-11-15-daqmx-trigger.md),
+      [`daq-poly-names`](../../labview-captures/reports/2026-11-15-daq-poly-names.md)) and built in the engine
+      (`native/solder-daq`: `digital`, `digital_io`, `trigger`; ports, PFI lines and digital clocks as device data) and in
+      `nilvaiu` (`unbuilt.rs` is gone: every stage A function runs). Create Virtual Channel (Digital Input, Digital
+      Output), the digital Bool and U32 reads, the digital Bool write and a polymorphic DAQ Trigger (Start None, Start
+      Digital Edge) built by hand ([`stage14`](../../labview-captures/reports/2026-11-15-daq-plugin-stage14.md),
+      [`stage15`](../../labview-captures/reports/2026-11-15-daq-plugin-stage15.md),
+      [`stage16`](../../labview-captures/reports/2026-11-15-daq-plugin-stage16.md)); DAQ Trigger is no longer greyed on
+      the palette. Then the editing findings that most got in the way, measured first
+      ([`delete-replace`](../../labview-captures/reports/2026-11-15-delete-replace.md),
+      [`terminal-hot-zones`](../../labview-captures/reports/2026-11-15-terminal-hot-zones.md)): Delete on a terminal
+      selected by a click (S13-#3), the input tunnel's wire to a deleted node (S13-#4; the rest, and S11-#7, as LabVIEW),
+      Replace ▸ on panel objects (S11-#1, DT-092). Open: S15-#1 (the Polymorphic OVI window does not scroll), S14-#13
+      (no input marked Required), S16-#9 (Timing's active edge not a ring). Left: the Windows `nilvaiu.dll` in the VM,
+      at the next release. Next: stage B, from the waveform and timestamp types (DT-076 §10).*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

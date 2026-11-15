@@ -270,9 +270,144 @@ fn a_device_that_does_not_exist_names_it_and_the_devices_present() {
 }
 
 #[test]
-fn a_function_not_built_yet_is_found_and_says_so_with_solders_code() {
+fn a_part_not_built_yet_is_found_and_says_so_with_solders_code() {
     let _alone = alone();
-    let result = call("DAQCfgDigEdgeStartTrig", vec![address(0), string(""), number(NumberKind::I32, RISING), string("")]);
+    let record = create_task("external clock");
+    assert_eq!(code_of(&add_channels(record, "Dev1/ai0")), 0);
+    let samples = Argument::Value { kind: NumberKind::U64, bytes: 100u64.to_le_bytes().to_vec() };
+    let result = call("DAQCfgSampClkTiming", vec![address(task_id(record)), string("/Dev1/PFI0"), number(NumberKind::F64, 1000.0), number(NumberKind::I32, RISING), number(NumberKind::I32, FINITE_SAMPLES), samples, string("")]);
     assert_eq!(code_of(&result), NOT_BUILT_IN_SOLDER);
-    assert_eq!(text_of(&result.arguments[3]), "<append>\nSolder's DAQ driver does not do a digital edge start trigger yet.");
+    assert_eq!(text_of(&result.arguments[6]), "<append>\nSolder's DAQ driver does not do a sample clock source other than the device's own yet.");
+    destroy(record);
+}
+
+const DATA_OUTSIDE_RANGE: i32 = -200561;
+const CHANNEL_COUNT_MISMATCH: i32 = -200524;
+
+fn add_outputs(record: usize, physical_channels: &str) -> CallResult {
+    call(
+        "DAQCreateAOVoltageChan",
+        vec![address(0), record_cell(record), string(physical_channels), string(""), number(NumberKind::I32, -1), number(NumberKind::F64, -10.0), number(NumberKind::F64, 10.0), number(NumberKind::I32, VOLTS), string(""), string(""), string("")],
+    )
+}
+
+/// A 2D array handle of doubles, a row per channel.
+fn doubles_2d(rows: &[Vec<f64>]) -> Argument {
+    let columns = rows.first().map_or(0, Vec::len);
+    let mut block = [(rows.len() as i32).to_le_bytes(), (columns as i32).to_le_bytes()].concat();
+    for value in rows.iter().flatten() {
+        block.extend_from_slice(&value.to_le_bytes());
+    }
+    Argument::Handle(block)
+}
+
+fn samples_written(result: &CallResult, index: usize) -> u32 {
+    u32::from_le_bytes(result.arguments[index].clone().try_into().expect("a U32"))
+}
+
+/// labview-captures/reports/2026-11-15-daqmx-ao.md §4: 1 written, also beside -200561.
+#[test]
+fn a_single_sample_write_reports_one_sample_written_even_out_of_range() {
+    let _alone = alone();
+    let added = add_outputs(0, "Dev1/ao0");
+    assert_eq!((code_of(&added), text_of(&added.arguments[9])), (0, "Dev1/ao0".to_string()));
+    let record = record_in(&added.arguments[1]);
+    let write = |value: f64| call("DAQWrite1Chan1SampF64", vec![address(task_id(record)), number(NumberKind::F64, 10.0), number(NumberKind::U8, 1), Argument::Buffer(value.to_le_bytes().to_vec()), Argument::Buffer(vec![0; 4]), string("")]);
+    let fine = write(3.0);
+    assert_eq!((code_of(&fine), samples_written(&fine, 4)), (0, 1));
+    let outside = write(15.0);
+    assert_eq!((code_of(&outside), samples_written(&outside, 4)), (DATA_OUTSIDE_RANGE, 1));
+    assert!(text_of(&outside.arguments[5]).contains("Dev1/ao0"));
+    destroy(record);
+}
+
+/// Same report §7: a row per channel, and -200524 with the counts when the rows do not match.
+#[test]
+fn a_two_dimensional_write_takes_a_row_per_channel() {
+    let _alone = alone();
+    let record = create_task("two outputs");
+    assert_eq!(code_of(&add_outputs(record, "Dev1/ao0:1")), 0);
+    time_finite(task_id(record), 100);
+    let write = |rows: &[Vec<f64>]| call("DAQWriteNChanNSamp2DF64", vec![address(task_id(record)), number(NumberKind::F64, 10.0), number(NumberKind::U8, 0), doubles_2d(rows), Argument::Buffer(vec![0; 4]), string("")]);
+    let fine = write(&[vec![1.0; 100], vec![-1.0; 100]]);
+    assert_eq!((code_of(&fine), samples_written(&fine, 4)), (0, 100));
+    let one_row = write(&[vec![1.0; 100]]);
+    assert_eq!((code_of(&one_row), samples_written(&one_row, 4)), (CHANNEL_COUNT_MISMATCH, 0));
+    let text = text_of(&one_row.arguments[5]);
+    assert!(text.contains("Channels in Task: </B>2") && text.contains("Channels in Data: </B>1"), "{text}");
+    destroy(record);
+}
+
+const ONE_CHANNEL_FOR_EACH_LINE: i32 = 0;
+const ONE_CHANNEL_FOR_ALL_LINES: i32 = 1;
+const LINE_COUNT_MISMATCH: i32 = -200463;
+const LINES_RESERVED: i32 = -200587;
+const TRIGGER_NEEDS_SAMPLE_CLOCK: i32 = -200262;
+const TERMINAL_NOT_FOUND: i32 = -89120;
+const UNSUPPORTED_PROPERTY_VALUE: i32 = -200077;
+
+fn add_lines(function: &str, record: usize, lines: &str, grouping: i32) -> CallResult {
+    call(function, vec![address(0), record_cell(record), string(lines), string(""), number(NumberKind::I32, grouping), string(""), string("")])
+}
+
+fn read_line(task_id: usize) -> CallResult {
+    call("DAQRead1Chan1Samp1LineBool", vec![address(task_id), number(NumberKind::F64, 10.0), Argument::Buffer(vec![0xAA]), string("")])
+}
+
+/// labview-captures/reports/2026-11-15-daqmx-dio.md §2, §3: the channels' names, and a line that reads the task's
+/// counter as 0 or 1, left stopped.
+#[test]
+fn a_digital_input_reads_its_line_as_a_byte_of_zero_or_one() {
+    let _alone = alone();
+    let added = add_lines("DAQCreateDIChan", 0, "Dev1/port0/line0:1", ONE_CHANNEL_FOR_EACH_LINE);
+    assert_eq!((code_of(&added), text_of(&added.arguments[5])), (0, "Dev1/port0/line0, Dev1/port0/line1".to_string()));
+    destroy(record_in(&added.arguments[1]));
+    let record = record_in(&add_lines("DAQCreateDIChan", 0, "Dev1/port0/line0", ONE_CHANNEL_FOR_EACH_LINE).arguments[1]);
+    let values: Vec<u8> = (0..3).map(|_| read_line(task_id(record))).map(|result| { assert_eq!(code_of(&result), 0); result.arguments[2][0] }).collect();
+    assert_eq!(values, [0, 1, 0]);
+    assert_eq!(code_of(&control(task_id(record), START)), 0, "§3: the read left it stopped");
+    destroy(record);
+    let port = record_in(&add_lines("DAQCreateDIChan", 0, "Dev1/port0", ONE_CHANNEL_FOR_ALL_LINES).arguments[1]);
+    let too_wide = read_line(task_id(port));
+    assert_eq!(code_of(&too_wide), LINE_COUNT_MISMATCH, "§3");
+    assert!(text_of(&too_wide.arguments[3]).contains("Lines in Channel: </B>8"));
+    let read_port = |task_id: usize| call("DAQRead1Chan1SampU32Port", vec![address(task_id), number(NumberKind::F64, 10.0), Argument::Buffer(vec![0; 4]), string("")]);
+    let values: Vec<u32> = (0..3).map(|_| u32::from_le_bytes(read_port(task_id(port)).arguments[2].clone().try_into().unwrap())).collect();
+    assert_eq!(values, [0, 1, 2], "§4");
+    destroy(port);
+}
+
+/// Same report §5, §6: a write with auto start, and a line held by a task that was started.
+#[test]
+fn a_digital_output_writes_a_line_unless_another_started_task_holds_it() {
+    let _alone = alone();
+    let output = record_in(&add_lines("DAQCreateDOChan", 0, "Dev2/port1/line3", ONE_CHANNEL_FOR_EACH_LINE).arguments[1]);
+    let input = record_in(&add_lines("DAQCreateDIChan", 0, "Dev2/port1/line3", ONE_CHANNEL_FOR_EACH_LINE).arguments[1]);
+    let write = |value: u8| call("DAQWrite1Chan1Samp1LineBool", vec![address(task_id(output)), number(NumberKind::F64, 10.0), number(NumberKind::U8, 1), Argument::Buffer(vec![value]), Argument::Buffer(vec![0; 4]), string("")]);
+    let fine = write(1);
+    assert_eq!((code_of(&fine), samples_written(&fine, 4)), (0, 1));
+    assert_eq!(code_of(&control(task_id(input), START)), 0);
+    let held = write(0);
+    assert_eq!((code_of(&held), samples_written(&held, 4)), (LINES_RESERVED, 0));
+    destroy(input);
+    assert_eq!(code_of(&write(0)), 0, "freed by Clear");
+    destroy(output);
+}
+
+/// labview-captures/reports/2026-11-15-daqmx-trigger.md §2, §3, §4, §5.
+#[test]
+fn a_digital_edge_start_trigger_is_checked_at_start_and_none_removes_it() {
+    let _alone = alone();
+    let record = create_task("triggered");
+    assert_eq!(code_of(&add_channels(record, "Dev1/ai0")), 0);
+    let trigger = |source: &str, edge: i32| code_of(&call("DAQCfgDigEdgeStartTrig", vec![address(task_id(record)), string(source), number(NumberKind::I32, edge), string("")]));
+    assert_eq!(trigger("/Dev1/PFI0", RISING), 0);
+    assert_eq!(code_of(&control(task_id(record), START)), TRIGGER_NEEDS_SAMPLE_CLOCK, "§3: no sample clock");
+    time_finite(task_id(record), 100);
+    assert_eq!(trigger("/Dev1/PFI7", RISING), 0, "§2: any source is taken here");
+    assert_eq!(code_of(&control(task_id(record), START)), TERMINAL_NOT_FOUND, "§2: and checked at Start");
+    assert_eq!(trigger("/Dev1/PFI0", 5), UNSUPPORTED_PROPERTY_VALUE, "§4: an edge DAQmx does not know");
+    assert_eq!(code_of(&call("DAQDisableStartTrig", vec![address(task_id(record)), string("")])), 0);
+    assert_eq!(code_of(&control(task_id(record), START)), 0, "§5: None removed it");
+    destroy(record);
 }

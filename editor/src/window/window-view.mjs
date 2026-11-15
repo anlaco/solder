@@ -10,6 +10,7 @@
 
 import * as G from "../common/glyphs.mjs";
 import { esHueco, nombreVeredicto, ultimo } from "../common/labview-inventory.mjs";
+import { PALETTE_FOOT_ENTRIES, PALETTE_TITLE_ENTRIES, paletteElements } from "../common/palette-elements.mjs";
 import { CODIGOS, explicar } from "../../../core/runtime/error-codes.mjs";
 
 /** The classes that make a Front Panel's canvas the root of its panel style (DT-058), whichever it is. */
@@ -193,8 +194,8 @@ const AL_EDITAR = ["text-settings", "align-objects", "distribute-objects", "resi
 /** Elementos de la barra que sólo aparecen mientras se escribe, a la izquierda de Run. */
 const AL_ESCRIBIR = ["enter-text", "list-warnings"];
 /** De la paleta: lo que va en su barra de título o en su pie. */
-const EN_TITULO = ["thumbtack", "search"];
-const EN_PIE = ["double-arrows", "change-visible-palettes"];
+const EN_TITULO = PALETTE_TITLE_ENTRIES;
+const EN_PIE = PALETTE_FOOT_ENTRIES;
 /** Filas que son órdenes y no llevan a una subpaleta: sin flecha. */
 const ORDENES = ["select-a-vi", "select-a-control"];
 
@@ -493,7 +494,7 @@ export function placeSubpalette(anchor, folderLeft, size, room) {
 /** Dónde cae cada elemento de una subpaleta: fila y columna de su celda. */
 export function celdasSubpaleta(inv, id) {
   const { columnas, celdas } = gridOf(inv, id) ?? REJILLA_POR_DEFECTO;
-  const elementos = inv.hijos(id).filter((e) => !EN_TITULO.includes(ultimo(e.id)) && !e.oculto);
+  const elementos = paletteElements(inv, id);
   const sitios = [];
   let i = 0;
   for (const e of elementos) {

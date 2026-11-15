@@ -50,8 +50,13 @@
     {
       "kind": "item",
       "name": "DAQ Write",
-      "missing": "the DAQ writes (Solder's driver answers -1 for them, DT-087 §4)",
-      "labview": "Writes samples to the task's output channels."
+      "block": "subvi",
+      "config": {
+        "vi": "<ovilib>/DAQ/DAQ Write.sdp",
+        "instance": null,
+        "selected": 0,
+        "selector": true
+      }
     },
     {
       "kind": "item",
@@ -78,8 +83,13 @@
     {
       "kind": "item",
       "name": "DAQ Trigger",
-      "missing": "the DAQ triggers",
-      "labview": "Configures how the task starts or takes its reference: on a digital edge, an analog level and others."
+      "block": "subvi",
+      "config": {
+        "vi": "<ovilib>/DAQ/DAQ Trigger.sdp",
+        "instance": null,
+        "selected": 0,
+        "selector": true
+      }
     },
     {
       "kind": "item",

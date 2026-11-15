@@ -43,10 +43,10 @@ test("DAQ - Data Acquisition has LabVIEW's 6 × 4 grid: its cells in place, its 
     "DAQ Global Channel": [0, 1, "built"],
     "DAQ Create Virtual Channel": [0, 2, "built"],
     "DAQ Read": [0, 3, "built"],
-    "DAQ Write": [0, 4, "greyed"],
+    "DAQ Write": [0, 4, "built"],
     "DAQ Wait Until Done": [0, 5, "built"],
     "DAQ Timing": [1, 1, "built"],
-    "DAQ Trigger": [1, 2, "greyed"],
+    "DAQ Trigger": [1, 2, "built"],
     "DAQ Start Task": [1, 3, "built"],
     "DAQ Stop Task": [1, 4, "built"],
     "DAQ Clear Task": [1, 5, "built"],
@@ -65,9 +65,9 @@ test("DAQ - Data Acquisition has LabVIEW's 6 × 4 grid: its cells in place, its 
 
 test("a greyed cell says what it needs, and Create Task is in Advanced Task Options, 4 columns, as LabVIEW's", () => {
   const inventory = withDaqAddon();
-  const write = inventory.hijos(DAQ_PALETTE).find((entry) => entry.etiqueta === "DAQ Write");
-  assert.match(inventory.explicacion(write).solder, /^Missing: the DAQ writes/);
-  assert.ok(inventory.explicacion(write).labview);
+  const propertyNode = inventory.hijos(DAQ_PALETTE).find((entry) => entry.etiqueta === "DAQ Trigger Property Node");
+  assert.match(inventory.explicacion(propertyNode).solder, /^Missing: /);
+  assert.ok(inventory.explicacion(propertyNode).labview);
   assert.equal(celdasSubpaleta(inventory, ADVANCED_TASK_OPTIONS).columnas, 4);
   const cells = cellsOf(inventory, ADVANCED_TASK_OPTIONS);
   assert.deepEqual(cells["DAQ Create Task"], [0, 0, "built"]);
@@ -78,6 +78,8 @@ test("each built cell places the plugin's OVI, polymorphic with its selector sho
   const inventory = withDaqAddon();
   const byName = Object.fromEntries(inventory.hijos(DAQ_PALETTE).map((entry) => [entry.etiqueta, entry]));
   assert.deepEqual([byName["DAQ Read"].bloque, byName["DAQ Read"].config.vi, byName["DAQ Read"].config.selector], ["subvi", "<ovilib>/DAQ/DAQ Read.sdp", true]);
+  assert.deepEqual([byName["DAQ Write"].bloque, byName["DAQ Write"].config.vi, byName["DAQ Write"].config.selector], ["subvi", "<ovilib>/DAQ/DAQ Write.sdp", true]);
+  assert.deepEqual([byName["DAQ Trigger"].bloque, byName["DAQ Trigger"].config.vi, byName["DAQ Trigger"].config.selector], ["subvi", "<ovilib>/DAQ/DAQ Trigger.sdp", true]);
   assert.deepEqual(byName["DAQ Task Name"].config, { type: { "daq-name": "task" }, value: "" });
   assert.equal(byName["DAQ Global Channel"].config.type["daq-name"], "global-channel");
   for (const entry of inventory.hijos(DAQ_PALETTE).filter((candidate) => candidate.bloque === "subvi")) {

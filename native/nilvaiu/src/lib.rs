@@ -4,18 +4,19 @@
 //! (`labview-captures/reports/2026-11-13-daq-taskid.md`, `-daq-create-task.md`). No NI code, header or text is used.
 //!
 //! Every function returns DAQmx's error code, 0 when there is none, and leaves the details in its last parameter, the
-//! `extendedErrorInfo` string. The functions the engine cannot do yet answer Solder's code -1 with a text that says so
-//! (DT-087, amendment of 2026-11-13).
+//! `extendedErrorInfo` string. The parts of a function the engine cannot do yet answer Solder's code -1 with a text that
+//! says so (DT-087, amendment of 2026-11-13).
 
 #![allow(non_snake_case, clippy::missing_safety_doc, clippy::too_many_arguments)]
 
 mod control;
 mod create;
+mod digital;
 mod host;
 mod messages;
 mod read;
 mod tasks;
-mod unbuilt;
+mod write;
 
 use std::time::Duration;
 

@@ -9,6 +9,11 @@
 
 pub mod clock;
 pub mod device;
+pub mod digital;
+pub mod digital_io;
 pub mod engine;
 pub mod error;
+pub mod input;
+pub mod output;
 pub mod signal;
+pub mod trigger;

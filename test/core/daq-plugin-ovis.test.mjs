@@ -4,68 +4,18 @@
 // are those measured in LabVIEW with NI's library (labview-captures/reports/2026-11-13-daq-create-task.md).
 
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { cpSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
-import { after, before, test } from "node:test";
+import { test } from "node:test";
 
-import { compilar } from "../../core/compiler/compiler.mjs";
 import { defaultCallLibraryConfig } from "../../core/model/call-library.mjs";
 import { DAQ_TASK } from "../../core/model/daq-name.mjs";
-import * as Gr from "../../core/model/graph.mjs";
-import { leer } from "../../core/model/qvi-format.mjs";
 import { ERROR } from "../../core/model/types.mjs";
-import { ejecutar } from "../../core/runtime/runtime.mjs";
-import { addonLibraryLocator, loadInstalledAddons } from "../../editor/electron/installed-addons.mjs";
-import { loadSolderIo, withLibraryLocator } from "../../native/solder-io-node/solder-io.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { buildVI } from "../helpers.mjs";
+import { NO_ERROR, PLUGIN, callPlugin, installAddonForTheseTests, run, showError } from "./daq-plugin-harness.mjs";
 
 const INVALID_TASK = -200088;
 const TASK_HAS_NO_CHANNELS = -200478;
-const PLUGIN_FOLDER = path.resolve("addons/daq/1/ovi.lib/DAQ");
-const LIBRARY_FILE = { linux: "libnilvaiu.so", darwin: "libnilvaiu.dylib", win32: "nilvaiu.dll" }[process.platform];
-const PLATFORM_PART = `daq-${process.platform === "win32" ? "windows" : process.platform}-${process.arch}`;
 
-/** The plugin's OVIs by file name, read as the editor reads a subOVI; each finds its own subOVIs (Fill In Error Info) the same way. */
-const PLUGIN = Gr.conSubVIs(CAT, (file) => {
-  try {
-    return { key: file, g: leer(JSON.parse(readFileSync(path.join(PLUGIN_FOLDER, file), "utf8")), PLUGIN), cat: PLUGIN };
-  } catch {
-    return null;
-  }
-});
-
-let addonsFolder;
-let io;
-
-before(() => {
-  const built = spawnSync("cargo", ["build", "-q", "-p", "nilvaiu"], { stdio: "inherit" });
-  assert.equal(built.status, 0, "nilvaiu builds");
-  // The repository's DAQ add-on installed by copying it, with the library just built (as daq-task-run.test.mjs does).
-  addonsFolder = mkdtempSync(path.join(tmpdir(), "solder-addons-"));
-  for (const part of ["daq", PLATFORM_PART]) cpSync(path.resolve("addons", part), path.join(addonsFolder, part), { recursive: true });
-  cpSync(path.resolve("target/debug", LIBRARY_FILE), path.join(addonsFolder, PLATFORM_PART, "1", "resource", LIBRARY_FILE));
-  const { libraryFolders } = loadInstalledAddons({ oviLibRoot: path.resolve("ovi.lib"), nodePlatform: process.platform, architecture: process.arch, homeDirectory: tmpdir(), environment: {}, solderVersion: "0.12.0-beta", folders: [addonsFolder] });
-  io = withLibraryLocator(loadSolderIo(), addonLibraryLocator(libraryFolders));
-});
-
-after(() => {
-  // Windows keeps a loaded library's file locked until the process ends, so there the folder stays behind.
-  try {
-    rmSync(addonsFolder, { recursive: true, force: true });
-  } catch (error) {
-    if (error.code !== "EPERM" && error.code !== "EBUSY") throw error;
-  }
-});
-
-async function run(vi) {
-  const compiled = compilar(vi.g, PLUGIN);
-  assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
-  const byId = Object.fromEntries(Object.entries(vi.id).map(([name, nodeId]) => [nodeId, name]));
-  const written = await ejecutar(compiled, {}, { io });
-  return Object.fromEntries(Object.entries(written).map(([nodeId, value]) => [byId[nodeId], value]));
-}
+installAddonForTheseTests();
 
 /** `DAQCreateTask140` called directly, as the test of the task wire configures it, so that Start Task is tried on its own. */
 const CREATE_TASK = {
@@ -82,13 +32,6 @@ const CREATE_TASK = {
     ...["channels", "extendedErrorInfo"].map((name) => ({ name, type: "string", "string-format": "string-handle" })),
   ],
 };
-
-/** The plugin's OVI `file` as node `name`, its task in and error in wired from `task` and `errorIn` (outputs of other nodes). */
-function callPlugin(b, name, file, task, errorIn) {
-  b.node(name, "subvi", { vi: file });
-  b.wire(task, `${name}.daq-name-control_1`);
-  b.wire(errorIn, `${name}.cluster-control_1`);
-}
 
 test("the plugin's Start, Stop and Clear Task, on an empty task, answer as LabVIEW's", async () => {
   const vi = buildVI(PLUGIN, (b) => {
@@ -147,7 +90,6 @@ test("an error in passes through Start Task without calling the library", async 
   assert.deepEqual((await run(vi))["start error"], { status: true, code: 5, source: "orig" });
 });
 
-const NO_ERROR = { status: false, code: 0, source: "" };
 const DEVICE_NOT_VALID = -200220;
 const PHYSICAL_CHANNEL_DOES_NOT_EXIST = -200170;
 const CREATE_AI_VOLTAGE = "DAQ Create Virtual Channel (AI Voltage).sdg";
@@ -159,12 +101,6 @@ function createAiVoltage(b, name, physicalChannels) {
   b.node(`${name} no error`, "error-cluster-constant");
   callPlugin(b, name, CREATE_AI_VOLTAGE, `${name} empty.result`, `${name} no error.result`);
   b.wire(`${name} channels.result`, `${name}.daq-name-control_2`);
-}
-
-/** An error out indicator `name` showing `output`. */
-function showError(b, name, output) {
-  b.node(name, "cluster-indicator", { type: ERROR, style: "error-out" });
-  b.wire(output, `${name}.value`);
 }
 
 test("Create Virtual Channel, Start, Stop and Clear Task run a task on the simulated device without an error", async () => {

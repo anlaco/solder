@@ -4207,7 +4207,10 @@ once Solder can compile libraries, it will be written in Solder with the same ex
 | DAQmx's VIs call these functions of `nilvaiu.dll` with these signatures | Inspection of the stage A VIs in LabVIEW | **Measured** (2026-11-08); the value passed as `taskID` and nilvaiu's relation to nicaiu **unverified** |
 | The engine reproduces DAQmx's analog-input path on a simulated device: names, the errors -200220, -200170, -200077 (rate at Timing, range at Start), -200479, -200278, -200284 and -200560, finite and continuous reads, waits, the sine with noise | `native/solder-daq/tests/ai_voltage.rs` (`cargo test`, on a virtual clock) | **Verified** (2026-11-08, slice 1) |
 | The engine's unmeasured parts: Dev2's profile, the channel count of Dev1 (eight), the continuous sine's period, -200088 for a cleared task and -200478 at Timing (both measured elsewhere on 2026-11-13), Wait Until Done's duration, a continuous wait with no timeout, a read on a stopped task, a rate below the minimum | — | **Unverified**, marked where they are used |
-| Analog output, digital lines, the triggers, the other reads and writes | — | **Not built** (next slices) |
+| Analog output on the simulated devices: two lines each, Dev1's write limit the union of the channel's range and ±10 V, Dev2's the range itself and -200077 at Start outside ±10 V, -200082, -200462 on Dev1, -200846, -200288, -200524, -200561 (one sample written beside it), -200459, -200460, -200477 | `native/solder-daq/tests/ao_voltage.rs`, `native/nilvaiu/tests/facade.rs` | **Verified** (2026-11-15) against [`daqmx-ao`](../../labview-captures/reports/2026-11-15-daqmx-ao.md); the outputs' rate limits and ao1-only tasks **unverified**; inputs and outputs in one task measured on 2026-11-15 (-200559) |
+| Digital lines on the simulated devices: Dev1's ports of 8, 4 and 1 lines and Dev2's three of 8, -200170 at Create, the groupings and their names (-200376, -200489, -200014, `line0...`), names to assign, one kind of channel to a task (-200559, also AI with AO), -201426 at Start for two devices, the counter masked by the lines that every read gives, an untimed read or write leaving the task as it found it, -200587 only for lines of a task started by Start, -200463, -200523, -200562 (one written beside it), -200524, -200525, -200526, -200459, -200460, -200477, -200478, -200846; Timing -200077 (SampTimingType) on Dev1, a finite count on Dev2, -200462 for a timed output started empty | `native/solder-daq/tests/digital_lines.rs`, `native/nilvaiu/tests/facade.rs`, `test/core/daq-plugin-digital.test.mjs` | **Verified** (2026-11-15) against [`daqmx-dio`](../../labview-captures/reports/2026-11-15-daqmx-dio.md); the naming rule for several names to assign (inferred from three cases), any line grouping but 0 and 1, lines of a range of ports, reservation between two input tasks, and the digital clock's slowest rate **unverified** |
+| Start triggers: a simulated device never waits for its edge; the source checked at Start (PFI0–1 on Dev1, PFI0–39 on Dev2, -89120, -89129, -89131, -89136 on Dev1 and -89125 on Dev2 for the other device's terminal, -200797 for an empty one), -200262 with no sample clock, -200452 on Dev1's digital task, -200077 for an unknown edge, -200557 while running or ended without Stop, -200477 on an empty task; None removes it | `native/solder-daq/tests/start_trigger.rs`, `native/nilvaiu/tests/facade.rs` | **Verified** (2026-11-15) against [`daqmx-trigger`](../../labview-captures/reports/2026-11-15-daqmx-trigger.md); which of a bad edge and a task that takes no trigger comes first, the text of each error **unverified** |
+| The other reads and writes (waveforms, counters, the other digital formats) | — | **Not built** (stage B) |
 | The driver exports the 20 `nilvaiu` functions and a node calls them | `native/nilvaiu/tests/facade.rs` (the library through `solder-io`'s `LibraryCaller`); the plugin's instances: not built | **Verified** for the library (2026-11-13); the plugin **not built** |
 | NI's VIs run against the driver unchanged | — (opening NI's VIs is a future goal) | **Unverified** |
 
@@ -4298,8 +4301,8 @@ imitating LabVIEW so that we see how close we can come in design"), after the sh
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| The plugin's OVIs are built by hand in the editor, with the measured shape, and every difficulty is written down | `daq-plugin-findings.md`, the saved `.sdg` files | **In progress**: Fill In Error Info, Create Task, Create Virtual Channel (AI Voltage), Timing (Sample Clock), Start, the four analog reads of doubles, Wait Until Done, Stop and Clear Task (2026-11-14) |
-| A built instance calls Solder's `nilvaiu` and gives LabVIEW's errors | `test/core/daq-plugin-ovis.test.mjs` (the saved OVIs as subOVIs against the add-on's `nilvaiu`: Create Task → Create Virtual Channel → Timing → Start → Wait Until Done → Stop → Clear; -200220, -200170, -200077, -200088, -200278, -200478; Stop given an error still stops; reads auto-start, one value or row per channel) | **Verified** (2026-11-14) for those; what NI's Clear answers for an empty task **unverified** |
+| The plugin's OVIs are built by hand in the editor, with the measured shape, and every difficulty is written down | `daq-plugin-findings.md`, the saved `.sdg` files | **Done for stage A** (2026-11-15): Fill In Error Info, Create Task, Create Virtual Channel (AI Voltage, AO Voltage, Digital Input, Digital Output), Timing (Sample Clock), Start Trigger (None, Digital Edge), Start, the four analog reads of doubles, Read (Digital Bool 1Line 1Point, Digital U32 1Chan 1Samp), the three analog writes of doubles, Write (Digital Bool 1Line 1Point), Wait Until Done, Stop and Clear Task; their findings in `daq-plugin-findings.md` |
+| A built instance calls Solder's `nilvaiu` and gives LabVIEW's errors | `test/core/daq-plugin-ovis.test.mjs` (the saved OVIs as subOVIs against the add-on's `nilvaiu`: Create Task → Create Virtual Channel → Timing → Start → Wait Until Done → Stop → Clear; -200220, -200170, -200077, -200088, -200278, -200478; Stop given an error still stops; reads auto-start, one value or row per channel) | **Verified** (2026-11-14) for those, and on 2026-11-15 the writes (`test/core/daq-plugin-write.test.mjs`), the digital lines (`daq-plugin-digital.test.mjs`: -200376, -200170, -200559, -200463, -200459, the counter read as a line and as a port, one written) and the triggers (`daq-plugin-trigger.test.mjs`: -89120 and -200262 at Start, None removing an edge); what NI's Clear answers for an empty task **unverified** |
 | `lvAppReference` is wired from This Application, as NI's (§3 amended by [DT-090](#dt-090)) | the saved Create Task and Create Virtual Channel | **Verified** (2026-11-14) |
 
 ## DT-088
@@ -4537,3 +4540,41 @@ pairs of a text and a value, saved as pairs from `.sdg` version 5.**
 | A ring is a numeric: coercion dot, value run unchanged | `test/core/rings.test.mjs` | **Verified** (2026-11-15) |
 | Pairs round-trip and validate; version 4 texts migrate, also inside structures | `test/core/rings.test.mjs` | **Verified** (2026-11-15) |
 | Text Ring, Menu Ring and the constant look, menus and Edit Items as LabVIEW's | `test/editor/rings.test.mjs` | **Verified** (2026-11-15) |
+
+## DT-092
+
+**Replace ▸ on a front-panel object replaces it as LabVIEW does: by any object of the Controls palette that Solder
+has, keeping its place in the diagram, its wires, label, representation and value; a change of data type breaks the
+wires, as in LabVIEW.**
+
+- **Status:** Accepted on 2026-11-15 by the developer, who chose LabVIEW's rule over allowing only replacements of the
+  same data type. Brought by finding S11-#1 of the DAQ plugin (Replace ▸ greyed on a numeric control, so a control is
+  changed by adding, deleting and rewiring).
+- **Measured:** [`delete-replace`](../../labview-captures/reports/2026-11-15-delete-replace.md) §C.
+
+### Decision
+
+1. **Replace ▸ is on the panel object's menu, not on its diagram terminal's** (measured: the terminal's menu has none).
+   It opens the Controls palette as a submenu of the row, with the palette's own folders.
+2. **Any object Solder has can be picked.** The replaced object keeps its terminal in the diagram (the same node, so its
+   wires stay), its visible label, its representation when the new object has one (I32 kept by a Knob and by a Text
+   Ring, measured) and its value (a Text Ring shows `<n>` when no item has it, measured). Its size is the new object's
+   and its place moves as LabVIEW's does (unmeasured: kept at the old top-left until measured). **A control stays a
+   control and an indicator an indicator** (measured: Replace by a Numeric Indicator leaves a numeric control a control,
+   [`terminal-hot-zones`](../../labview-captures/reports/2026-11-15-terminal-hot-zones.md) §3): the object's role is not
+   the palette item's.
+3. **A change of data type breaks the wires** that no longer fit, as any wire that does not fit; they are not removed.
+4. What Solder does not have yet stays in the submenu greyed with its reason (DT-035).
+5. Replace on a diagram constant (measured: present, opening the Functions palette) follows the same rule; it is built
+   after the panel's.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Replace keeps the node, wires, label, representation and value | `test/editor/panel-replace.test.mjs` (a Text Ring keeps I32, 7 and `<7>`) | **Built** (2026-11-15) |
+| A control replaced by an indicator's item stays a control, and the other way round | the same tests | **Measured** (2026-11-15), **built**; the indicator-to-control direction is unmeasured |
+| Replace ▸ opens the Controls palette as a submenu; what Solder lacks is greyed with its palette's reason; the diagram terminal's menu has none | the same tests | **Built** (numeric, boolean, enum, ring, path, VISA and DAQ-name objects; not the graphs, the arrays or the numeric indicator, whose panel menu is not captured) |
+| A change of data type leaves the wire broken, and it is one Undo step | the same tests | **Built** |
+| The place after a replace | kept at the old top-left | **Unverified** |
+| A value across kinds of data (a number to a boolean) | the new object's default | **Unverified** (only numerics were measured) |

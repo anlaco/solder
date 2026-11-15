@@ -31,11 +31,11 @@
 | SubOVIs, libraries and projects | 8 / 22 (36 %) | `████░░░░░░` |
 | Debugging | 8 / 16 (50 %) | `█████░░░░░` |
 | Files | 5 / 15 (33 %) | `███░░░░░░░` |
-| Instruments and communication | 11 / 27 (41 %) | `████░░░░░░` |
+| Instruments and communication | 14 / 30 (47 %) | `█████░░░░░` |
 | Functions palette | 211 / 563 (37 %) | `████░░░░░░` |
 | Controls palette | 33 / 92 (36 %) | `████░░░░░░` |
-| Windows and dialogs | 142 / 399 (36 %) | `████░░░░░░` |
-| Right-click menus | 582 / 2185 (27 %) | `███░░░░░░░` |
+| Windows and dialogs | 143 / 399 (36 %) | `████░░░░░░` |
+| Right-click menus | 593 / 2185 (27 %) | `███░░░░░░░` |
 <!-- /coverage:summary -->
 
 ## Features
@@ -246,6 +246,9 @@
 - [x] The DAQ name controls' panel menus, by kind, and the list of their arrow button (2026-11-15)
 - [x] DAQ palette (Measurement I/O ▸ DAQ - Data Acquisition) with the polymorphic Create Virtual Channel, Read and Timing (DT-086, 2026-11-14)
 - [x] DAQ plugin OVIs, analog input setup: Create Task, Create Virtual Channel (AI Voltage), Timing (Sample Clock), Start, the four DBL reads, Wait Until Done, Stop, Clear Task (DT-087, 2026-11-14)
+- [x] DAQ plugin OVIs, analog output: Create Virtual Channel (AO Voltage) and the three DBL writes in a polymorphic DAQ Write, on the palette (DT-087, 2026-11-15)
+- [x] DAQ plugin OVIs, digital lines: Create Virtual Channel (Digital Input, Digital Output), Read (Digital Bool 1Line 1Point, Digital U32 1Chan 1Samp), Write (Digital Bool 1Line 1Point) (DT-087, 2026-11-15)
+- [x] DAQ plugin OVIs, start triggers: Start Trigger (None, Digital Edge) in a polymorphic DAQ Trigger, on the palette (DT-087, 2026-11-15)
 - [ ] TCP functions (in the catalog; not compiled yet)
 - [ ] UDP
 - [ ] Queues, notifiers, semaphores and rendezvous
@@ -333,7 +336,7 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 |--------|---------|---|
 | Project Explorer | 0 / 26 (0 %) | `░░░░░░░░░░` |
 | Front Panel | 27 / 73 (37 %) | `████░░░░░░` |
-| Block Diagram | 37 / 102 (36 %) | `████░░░░░░` |
+| Block Diagram | 38 / 102 (37 %) | `████░░░░░░` |
 | Debug Window | 10 / 18 (56 %) | `██████░░░░` |
 | Error list | 7 / 8 (88 %) | `█████████░` |
 | OVI Properties | 6 / 26 (23 %) | `██░░░░░░░░` |
@@ -350,5 +353,5 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Menus | Covered | |
 |-------|---------|---|
-| Every right-click menu captured | 582 / 2185 (27 %) | `███░░░░░░░` |
+| Every right-click menu captured | 593 / 2185 (27 %) | `███░░░░░░░` |
 <!-- /coverage:inventory -->

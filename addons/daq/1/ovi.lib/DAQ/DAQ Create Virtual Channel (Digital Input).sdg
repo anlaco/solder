@@ -1,0 +1,637 @@
+{
+  "solder": 5,
+  "connector": {
+    "pattern": 4833,
+    "inputs": [
+      {
+        "name": "daq-name-control_1",
+        "cell": 0
+      },
+      {
+        "name": "daq-name-control_2",
+        "cell": 5
+      },
+      {
+        "name": "str-control_1",
+        "cell": 7
+      },
+      {
+        "name": "control_1",
+        "cell": 9
+      },
+      {
+        "name": "cluster-control_1",
+        "cell": 11
+      }
+    ],
+    "outputs": [
+      {
+        "name": "daq-name-indicator_1",
+        "cell": 4
+      },
+      {
+        "name": "cluster-indicator_1",
+        "cell": 15
+      }
+    ]
+  },
+  "front-panel": [
+    {
+      "name": "cluster-control_1",
+      "role": "control",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "default": {
+        "status": false,
+        "code": 0,
+        "source": ""
+      },
+      "style": "error-in"
+    },
+    {
+      "name": "cluster-indicator_1",
+      "role": "indicator",
+      "type": {
+        "cluster": [
+          {
+            "name": "status",
+            "type": "boolean"
+          },
+          {
+            "name": "code",
+            "type": "i32"
+          },
+          {
+            "name": "source",
+            "type": "string"
+          }
+        ]
+      },
+      "default": {
+        "status": false,
+        "code": 0,
+        "source": ""
+      },
+      "style": "error-out"
+    },
+    {
+      "name": "daq-name-control_1",
+      "role": "control",
+      "type": {
+        "daq-name": "task"
+      },
+      "default": ""
+    },
+    {
+      "name": "daq-name-indicator_1",
+      "role": "indicator",
+      "type": {
+        "daq-name": "task"
+      },
+      "default": ""
+    },
+    {
+      "name": "daq-name-control_2",
+      "role": "control",
+      "type": {
+        "daq-name": "physical-channel"
+      },
+      "default": ""
+    },
+    {
+      "name": "str-control_1",
+      "role": "control",
+      "type": "string",
+      "default": ""
+    },
+    {
+      "name": "control_1",
+      "role": "control",
+      "type": "i32",
+      "default": 1,
+      "style": "text-ring",
+      "ring-items": [
+        {
+          "text": "one channel for each line",
+          "value": 0
+        },
+        {
+          "text": "one channel for all lines",
+          "value": 1
+        }
+      ],
+      "allow-undefined": false
+    }
+  ],
+  "block-diagram": {
+    "nodes": [
+      {
+        "name": "cluster-control_1",
+        "type": "cluster-control"
+      },
+      {
+        "name": "cluster-indicator_1",
+        "type": "cluster-indicator"
+      },
+      {
+        "name": "daq-name-control_1",
+        "type": "daq-name-control"
+      },
+      {
+        "name": "daq-name-indicator_1",
+        "type": "daq-name-indicator"
+      },
+      {
+        "name": "daq-name-control_2",
+        "type": "daq-name-control"
+      },
+      {
+        "name": "str-control_1",
+        "type": "str-control"
+      },
+      {
+        "name": "control_1",
+        "type": "control"
+      }
+    ],
+    "wires": [
+      {
+        "from": "cluster-control_1.result",
+        "to": "case-structure_1.selector"
+      },
+      {
+        "from": "case-structure_1.case-tunnel-out_1",
+        "to": "cluster-indicator_1.value"
+      },
+      {
+        "from": "cluster-control_1.result",
+        "to": "case-structure_1.tunnel-in_1"
+      },
+      {
+        "from": "daq-name-control_1.result",
+        "to": "case-structure_1.tunnel-in_2"
+      },
+      {
+        "from": "case-structure_1.case-tunnel-out_2",
+        "to": "daq-name-indicator_1.value"
+      },
+      {
+        "from": "daq-name-control_2.result",
+        "to": "case-structure_1.tunnel-in_4"
+      },
+      {
+        "from": "str-control_1.result",
+        "to": "case-structure_1.tunnel-in_5"
+      },
+      {
+        "from": "control_1.result",
+        "to": "case-structure_1.tunnel-in_3"
+      }
+    ],
+    "structures": [
+      {
+        "name": "case-structure_1",
+        "kind": "case-structure",
+        "tunnels": [
+          {
+            "name": "case-tunnel-out_1",
+            "dir": "out"
+          },
+          {
+            "name": "tunnel-in_1",
+            "dir": "in"
+          },
+          {
+            "name": "tunnel-in_2",
+            "dir": "in"
+          },
+          {
+            "name": "case-tunnel-out_2",
+            "dir": "out"
+          },
+          {
+            "name": "tunnel-in_4",
+            "dir": "in"
+          },
+          {
+            "name": "tunnel-in_5",
+            "dir": "in"
+          },
+          {
+            "name": "tunnel-in_3",
+            "dir": "in"
+          }
+        ],
+        "frames": [
+          {
+            "match": [
+              {
+                "noError": true
+              }
+            ],
+            "body": {
+              "nodes": [
+                {
+                  "name": "call-library_1",
+                  "type": "call-library",
+                  "config": {
+                    "library": "nilvaiu.*",
+                    "specify-path-on-diagram": false,
+                    "function": "DAQCreateDIChan",
+                    "thread": "any",
+                    "calling-convention": "c",
+                    "error-checking": "default",
+                    "return-type": {
+                      "type": "numeric",
+                      "data-type": "i32"
+                    },
+                    "parameters": [
+                      {
+                        "name": "lvAppRef",
+                        "type": "adapt-to-type",
+                        "data-format": "handles-by-value"
+                      },
+                      {
+                        "name": "refObjPtr",
+                        "type": "adapt-to-type",
+                        "data-format": "handles-by-value"
+                      },
+                      {
+                        "name": "lines",
+                        "type": "string",
+                        "constant": true,
+                        "string-format": "string-handle"
+                      },
+                      {
+                        "name": "channelNameIn",
+                        "type": "string",
+                        "string-format": "string-handle",
+                        "constant": true
+                      },
+                      {
+                        "name": "lineGrouping",
+                        "type": "numeric",
+                        "data-type": "i32",
+                        "pass": "value"
+                      },
+                      {
+                        "name": "channelNamesOut",
+                        "type": "string",
+                        "string-format": "string-handle"
+                      },
+                      {
+                        "name": "extendedErrorInfo",
+                        "type": "string",
+                        "string-format": "string-handle"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "subvi_1",
+                  "type": "subvi",
+                  "config": {
+                    "vi": "DAQ Fill In Error Info.sdg"
+                  }
+                },
+                {
+                  "name": "empty-string-constant_1",
+                  "type": "empty-string-constant"
+                },
+                {
+                  "name": "empty-string-constant_2",
+                  "type": "empty-string-constant"
+                },
+                {
+                  "name": "vi-server-reference_1",
+                  "type": "vi-server-reference",
+                  "config": {
+                    "type": {
+                      "refnum": "Application"
+                    }
+                  }
+                }
+              ],
+              "wires": [
+                {
+                  "from": "call-library_1.return",
+                  "to": "subvi_1.control_2"
+                },
+                {
+                  "from": "call-library_1.error-out",
+                  "to": "subvi_1.cluster-control_1"
+                },
+                {
+                  "from": "subvi_1.cluster-indicator_1",
+                  "to": "case-structure_1.case-tunnel-out_1"
+                },
+                {
+                  "from": "case-structure_1.tunnel-in_1",
+                  "to": "call-library_1.error-in"
+                },
+                {
+                  "from": "case-structure_1.tunnel-in_4",
+                  "to": "call-library_1.arg-2-in"
+                },
+                {
+                  "from": "case-structure_1.tunnel-in_5",
+                  "to": "call-library_1.arg-3-in"
+                },
+                {
+                  "from": "call-library_1.arg-1-out",
+                  "to": "case-structure_1.case-tunnel-out_2"
+                },
+                {
+                  "from": "case-structure_1.tunnel-in_2",
+                  "to": "call-library_1.arg-1-in"
+                },
+                {
+                  "from": "vi-server-reference_1.reference",
+                  "to": "call-library_1.arg-0-in"
+                },
+                {
+                  "from": "empty-string-constant_1.result",
+                  "to": "call-library_1.arg-6-in"
+                },
+                {
+                  "from": "empty-string-constant_2.result",
+                  "to": "call-library_1.arg-5-in"
+                },
+                {
+                  "from": "case-structure_1.tunnel-in_3",
+                  "to": "call-library_1.arg-4-in"
+                }
+              ]
+            }
+          },
+          {
+            "match": [
+              {}
+            ],
+            "body": {
+              "wires": [
+                {
+                  "from": "case-structure_1.tunnel-in_1",
+                  "to": "case-structure_1.case-tunnel-out_1"
+                },
+                {
+                  "from": "case-structure_1.tunnel-in_2",
+                  "to": "case-structure_1.case-tunnel-out_2"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "layout": {
+    "diagram": {
+      "cluster-control_1": {
+        "x": 23,
+        "y": 223,
+        "label": {
+          "text": "error in\n"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 975,
+        "y": 223,
+        "label": {
+          "text": "error out\n"
+        }
+      },
+      "daq-name-control_1": {
+        "x": 16,
+        "y": 50,
+        "label": {
+          "text": "task in\n"
+        }
+      },
+      "daq-name-indicator_1": {
+        "x": 934,
+        "y": 51,
+        "label": {
+          "text": "task out\n"
+        }
+      },
+      "daq-name-control_2": {
+        "x": 921,
+        "y": 620,
+        "label": {
+          "text": "lines"
+        }
+      },
+      "str-control_1": {
+        "x": 1312,
+        "y": 626,
+        "label": {
+          "text": "name to assign\n"
+        }
+      },
+      "control_1": {
+        "x": 84,
+        "y": 502,
+        "label": {
+          "text": "line grouping"
+        }
+      },
+      "case-structure_1": {
+        "x": 200,
+        "y": 103,
+        "w": 700,
+        "h": 430
+      },
+      "case-structure_1.selector": {
+        "x": 200,
+        "y": 306
+      },
+      "case-tunnel-out_1": {
+        "x": 891,
+        "y": 313
+      },
+      "tunnel-in_1": {
+        "x": 200,
+        "y": 248
+      },
+      "tunnel-in_2": {
+        "x": 200,
+        "y": 265
+      },
+      "case-tunnel-out_2": {
+        "x": 891,
+        "y": 265
+      },
+      "tunnel-in_4": {
+        "x": 200,
+        "y": 287
+      },
+      "tunnel-in_5": {
+        "x": 200,
+        "y": 320
+      },
+      "tunnel-in_3": {
+        "x": 200,
+        "y": 375
+      },
+      "call-library_1": {
+        "x": 360,
+        "y": 239
+      },
+      "subvi_1": {
+        "x": 646,
+        "y": 289
+      },
+      "empty-string-constant_1": {
+        "x": 296,
+        "y": 429
+      },
+      "empty-string-constant_2": {
+        "x": 296,
+        "y": 469
+      },
+      "vi-server-reference_1": {
+        "x": 227,
+        "y": 383
+      }
+    },
+    "panel": {
+      "cluster-control_1": {
+        "x": 23,
+        "y": 223,
+        "label": {
+          "text": "error in\n"
+        }
+      },
+      "cluster-indicator_1": {
+        "x": 623,
+        "y": 223,
+        "label": {
+          "text": "error out\n"
+        }
+      },
+      "daq-name-control_1": {
+        "x": 16,
+        "y": 50,
+        "label": {
+          "text": "task in\n"
+        }
+      },
+      "daq-name-indicator_1": {
+        "x": 337,
+        "y": 51,
+        "label": {
+          "text": "task out\n"
+        }
+      },
+      "daq-name-control_2": {
+        "x": 166,
+        "y": 380,
+        "label": {
+          "text": "lines"
+        }
+      },
+      "str-control_1": {
+        "x": 200,
+        "y": 461,
+        "label": {
+          "text": "name to assign\n"
+        }
+      },
+      "control_1": {
+        "x": 399,
+        "y": 391,
+        "label": {
+          "text": "line grouping"
+        }
+      }
+    },
+    "wires": {
+      "subvi_1.control_2": {
+        "bends": [
+          406
+        ]
+      },
+      "subvi_1.cluster-control_1": {
+        "bends": [
+          406
+        ]
+      },
+      "case-structure_1.case-tunnel-out_1": {
+        "bends": [
+          216
+        ]
+      },
+      "case-structure_1.case-tunnel-out_2": {
+        "bends": [
+          406
+        ]
+      },
+      "call-library_1.arg-1-in": {
+        "bends": [
+          216
+        ]
+      },
+      "call-library_1.arg-0-in": {
+        "bends": [
+          339
+        ]
+      },
+      "case-structure_1.selector": {
+        "bends": [
+          68
+        ]
+      },
+      "case-structure_1.tunnel-in_2": {
+        "bends": [
+          61
+        ]
+      },
+      "case-structure_1.tunnel-in_5": {
+        "bends": [
+          1358,
+          319,
+          192
+        ]
+      },
+      "call-library_1.arg-6-in": {
+        "bends": [
+          318
+        ]
+      },
+      "call-library_1.arg-5-in": {
+        "bends": [
+          318
+        ]
+      }
+    },
+    "windows": {
+      "front-panel": {
+        "x": 525,
+        "y": 168,
+        "width": 1800,
+        "height": 960
+      },
+      "block-diagram": {
+        "x": 476,
+        "y": 138,
+        "width": 1800,
+        "height": 960
+      }
+    }
+  }
+}

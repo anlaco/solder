@@ -61,6 +61,13 @@ export function teclear(e, tecla) {
   return { ...e, texto: e.todo ? c : e.texto + c, todo: false };
 }
 
+/**
+ * Does this key end the editing of a label, owned or free, instead of typing into it? Numpad Enter and Ctrl+Enter end
+ * it with no new line; the main Enter and Shift+Enter start another line (measured in LabVIEW 2026 Q3,
+ * labview-captures/reports/2026-11-15-label-enter.md).
+ */
+export const endsLabelEdit = ({ key, code, ctrlKey, metaKey }) => key === "Enter" && (code === "NumpadEnter" || ctrlKey || metaKey);
+
 /** Ctrl+A while typing: all the text of the box is selected, so that the next key replaces it (as in LabVIEW, after a click). */
 export const seleccionarTodo = (e) => ({ ...e, todo: true });
 
