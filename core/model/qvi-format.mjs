@@ -25,7 +25,7 @@ import { FREE_LABEL, isFreeLabel } from "./free-label.mjs";
 const freeLabelToFile = (n, place, inside, frame) => limpio({ x: place.x, y: place.y, text: n.label?.text ?? "", inside, frame, width: n.tam?.ancho, height: n.tam?.alto });
 const freeLabelSize = (label) => (label.width === undefined ? undefined : limpio({ ancho: label.width, alto: label.height }));
 
-export const VERSION = 4;
+export const VERSION = 5;
 
 /** Solder's own numbering of 4-2-2-4's cells in version 1: 0–3 the left column down, 4–7 the middle, 8–11 the right column down. */
 const VERSION_1_PATTERN = "4-2-2-4";
@@ -53,12 +53,36 @@ const withWindowsVersion = (vi) => ({ ...vi, solder: 3 });
 /** Version 3 → 4 (DT-085): `layout.free-labels` may hold the free labels of the panel and the diagram. Optional too. */
 const withFreeLabelsVersion = (vi) => ({ ...vi, solder: 4 });
 
+/** A ring constant of version 4 or older: its items were texts whose values were their positions. */
+const RING_CONSTANT = "ring-const";
+
+/** Every node object of the file, at any depth (structures hold their frames' nodes inside them). */
+function withEachNode(value, change) {
+  if (Array.isArray(value)) return value.map((element) => withEachNode(element, change));
+  if (!value || typeof value !== "object") return value;
+  const walked = Object.fromEntries(Object.entries(value).map(([key, element]) => [key, withEachNode(element, change)]));
+  return typeof walked.type === "string" && walked.name !== undefined ? change(walked) : walked;
+}
+
+/**
+ * Version 4 → 5 (DT-091): a ring's items are pairs `{ text, value }`, since a ring's values are free. A ring constant of
+ * version 4 had texts, sequential by position, and was a U16 (the only representation it had), so its value stays.
+ */
+function withRingPairsVersion(vi) {
+  const toPairs = (node) => {
+    if (node.type !== RING_CONSTANT || !Array.isArray(node.config?.items)) return node;
+    const items = node.config.items.map((item, index) => (typeof item === "string" ? { text: item, value: index } : item));
+    return { ...node, config: { ...node.config, items } };
+  };
+  return { ...withEachNode(vi, toPairs), solder: 5 };
+}
+
 /**
  * The format is frozen from 0.4.0-beta on (DT-055, spec/02 §4.1): a change to it raises VERSION and adds here the
  * function that turns a file of the version before into one of the new version, so every file a released Solder
  * saved still opens. `MIGRATIONS[n - 1]` migrates version n to n + 1.
  */
-export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion, withFreeLabelsVersion];
+export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion, withFreeLabelsVersion, withRingPairsVersion];
 
 /** A file of an older version brought up to `version`, one migration after another. */
 export function migrar(vi, migrations = MIGRATIONS, version = VERSION) {
@@ -182,7 +206,7 @@ export function escribir(g, cat) {
     if (esPanel) {
       const salida = cat.puertos(n).out.length > 0;
       const tipoBase = b.config?.default?.type ?? "number";
-      panel.push(limpio({ name: n.name, role: salida ? "control" : "indicator", type: n.config?.type ?? tipoBase, default: n.config?.value, style: n.config?.style, "visible-elements": n.config?.visibles, index: n.config?.indice || undefined, "mechanical-action": n.config?.mechanical, graph: graphToFile(n.config) }));
+      panel.push(limpio({ name: n.name, role: salida ? "control" : "indicator", type: n.config?.type ?? tipoBase, default: n.config?.value, style: n.config?.style, "ring-items": n.config?.items, "allow-undefined": n.config?.["allow-undefined"], "visible-elements": n.config?.visibles, index: n.config?.indice || undefined, "mechanical-action": n.config?.mechanical, graph: graphToFile(n.config) }));
       if (n.panel) placPanel[n.name] = limpio({ x: n.panel.x, y: n.panel.y, label: etiqueta, "label-offset": n.panel.etiqueta });
     }
   }
@@ -297,7 +321,7 @@ export function leer(datos, cat) {
           const item = fp.get(nodo.name);
           const tipoBase = cat.bloque(nodo.type).config?.default?.type ?? "number";
           // Lo que no es de fábrica del bloque se conserva; lo demás lo pone el bloque al crearse.
-          const config = limpio({ type: item && item.type !== tipoBase ? item.type : undefined, value: item?.default, style: item?.style, visibles: item?.["visible-elements"], indice: item?.index, mechanical: item?.["mechanical-action"], ...graphFromFile(item?.graph) });
+          const config = limpio({ type: item && item.type !== tipoBase ? item.type : undefined, value: item?.default, style: item?.style, items: item?.["ring-items"], "allow-undefined": item?.["allow-undefined"], visibles: item?.["visible-elements"], indice: item?.index, mechanical: item?.["mechanical-action"], ...graphFromFile(item?.graph) });
           n.config = { ...n.config, ...config };
           if (!Object.keys(n.config).length) delete n.config;
         } else if (nodo.config) n.config = { ...n.config, ...aGrafo(nodo.config) };

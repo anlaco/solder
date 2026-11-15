@@ -14,6 +14,7 @@
 import * as CH from "../front-panel/chart-history-dialog.mjs";
 import * as CLD from "../block-diagram/call-library-dialog.mjs";
 import * as EI from "../block-diagram/edit-items-dialog.mjs";
+import * as RI from "../block-diagram/ring-items-dialog.mjs";
 import * as XD from "../block-diagram/express-dialog.mjs";
 import * as SI from "../block-diagram/select-item-dialog.mjs";
 
@@ -41,7 +42,8 @@ export function openDialog(diagram, panel) {
   const stateOf = { diagram, panel };
   for (const { field, side, mod } of DIALOGS) {
     const state = stateOf[side];
-    if (state?.[field]) return { side, field, mod, dialog: state[field] };
+    // A ring's Edit Items is the enum's dialog with a Values column of its own: the state says which module drives it.
+    if (state?.[field]) return { side, field, mod: state[field].ring ? RI : mod, dialog: state[field] };
   }
   return null;
 }
@@ -51,6 +53,9 @@ export const keyIntent = (open, event) => (open ? open.mod.key(open.dialog, even
 
 /** What a click on the part `id` means for the open dialog (`clicks`: 2 for a double click); `null` when it ignores it. */
 export const clickIntent = (open, id, clicks = 1) => (open && id ? open.mod.click(open.dialog, id, clicks) : null);
+
+/** The dialog after the wheel turned `deltaY` over its list; `null` when the open dialog has no list that scrolls. */
+export const wheelIntent = (open, deltaY) => (open?.mod.wheel ? { dialog: open.mod.wheel(open.dialog, deltaY) } : null);
 
 /** The VI that accepting the open dialog gives, from the graph `g` it was opened on. */
 export const accepted = (open, g) => open.mod.apply(g, open.dialog);

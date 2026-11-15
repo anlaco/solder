@@ -8,6 +8,7 @@
 // other name changes.
 
 import { DRAW_ICON, emptyPolymorphic, readPolymorphic, writePolymorphic } from "../../../core/model/polymorphic.mjs";
+import { SELECTOR_LINE_HEIGHT, SELECTOR_LINE_SEPARATOR, selectorLines } from "../../../core/model/polymorphic-menu.mjs";
 import { inicial as windowState } from "../window/window-state.mjs";
 
 export { DRAW_ICON };
@@ -67,6 +68,12 @@ export const toText = (state) =>
 /** The file name of an instance as the list shows it: with its extension (measured). */
 export const instanceFileName = (instance) => instance.path.replaceAll("\\", "/").split("/").pop();
 
+/**
+ * The height of the row of `instance`: 18 px, and 15 more for each further line of its selector name (measured: about
+ * 33 px for two lines).
+ */
+export const rowHeightOf = (instance, singleLineHeight) => singleLineHeight + (selectorLines(instance.selectorName).length - 1) * SELECTOR_LINE_HEIGHT;
+
 /** The three cells of a row: the file name, the menu name and the selector name, the last two empty when left to their defaults (measured). */
 export const rowCells = (instance) => [instanceFileName(instance), instance.menuName, instance.selectorName];
 
@@ -122,6 +129,17 @@ export function openNameDialog(state) {
 }
 
 export const typeInNameDialog = (state, field, text) => (state.nameDialog ? { ...state, nameDialog: { ...state.nameDialog, [field]: text, focus: field } } : state);
+
+/**
+ * Enter in the Selector Name field types a line break (measured, Shift+Enter too), so a selector name can have several
+ * lines; in the Menu Name field, which is one line, it is OK, as in a dialog. Returns the state with the dialog still
+ * open after a line break, and with it closed when the names were accepted.
+ */
+export function pressEnterInNameDialog(state) {
+  const dialog = state.nameDialog;
+  if (!dialog) return state;
+  return dialog.focus === "selectorName" ? typeInNameDialog(state, "selectorName", `${dialog.selectorName}${SELECTOR_LINE_SEPARATOR}`) : acceptNameDialog(state);
+}
 
 export const cancelNameDialog = (state) => ({ ...state, nameDialog: null });
 

@@ -13,13 +13,14 @@ import { caja } from "./diagram-view.mjs";
 import * as PN from "./property-nodes.mjs";
 import { typePaletteLabel } from "./unbundle-by-name.mjs";
 import * as CR from "./control-references.mjs";
+import { RING_MENUS } from "../common/ring-editing.mjs";
 
 const nodeOf = (graph, id) => graph.nodos.find((node) => node.id === id);
 
 // ——— Create ▸ Property Node ▸ and Create ▸ Property for Instr Class ▸ ———
 
 /** The panel objects' menus (their Create ▸ makes the node on the diagram) and the terminals' menus. */
-export const PANEL_OBJECT_ROOTS = new Set(["context.numeric-panel-control", "context.boolean-control", "context.boolean-indicator"]);
+export const PANEL_OBJECT_ROOTS = new Set(["context.numeric-panel-control", "context.boolean-control", "context.boolean-indicator", RING_MENUS.control, RING_MENUS.indicator]);
 const CREATE_PROPERTY_NODE = "create.property-node";
 const CREATE_INSTR_PROPERTY = "create.property-for-instr-class";
 /** The control reference constant's menu, whose Create ▸ Property for <class> Class ▸ makes an explicit node (Q3, Q4). */

@@ -80,8 +80,9 @@ with the DAQ task control and indicator and pattern 4833, run against the add-on
   *Fixed the same day:* a Case tunnel takes any type (`core/model/graph.mjs`, `CASE_TUNNEL_TYPE`;
   `test/editor/daq-name-controls.test.mjs`, "a DAQ task and a VISA resource name pass through a Case's output tunnel").
   Start Task still carries its task outside the Case; to redraw through both frames with the rest of stage A.
-- **S2-#1 The DAQ name control has no menu on the panel** (`P.menuDe` gives none): Change to Indicator and the rest only
-  from its diagram terminal. Medium.
+- **S2-#1 The DAQ name control has no menu on the panel** (`P.menuDe` gave none): Change to Indicator and the rest only
+  from its diagram terminal. Medium. *Built 2026-11-15, with LabVIEW's rows by kind and the arrow button's list
+  (`daq-name-menus.test.mjs`); Change to Indicator / Control and Data Operations work, the rest is greyed with its reason.*
 - S2-#4, S2-#6 Deleting a panel object leaves its tunnels and broken wires (Ctrl+B cleans the wires); a Case output
   tunnel is not deleted by selecting it and pressing Delete (a rubber band does it); Remove and Rewire is greyed.
 - S2-#9 The Patterns grid shows no number or tooltip, as LabVIEW's (the number was read from the file).
@@ -137,7 +138,9 @@ LabVIEW and passes its name, which Solder already did (`test/core/daq-task-run.t
   Adapt to Type as the address of its 4 bytes (measured).*
 - **S4-#2 No ring with free values** (medium): Text Ring and Menu Ring are "not yet"; an enum's values are sequential.
   `input terminal configuration` (-1, 10083, 10078, 10106, 12529) and `units` (10348, 10065) are I32 controls with the
-  default value. Later: the rings (their own step).
+  default value. Later: the rings (their own step). *Built on 2026-11-15 (DT-091, measured in
+  [`rings`](../../labview-captures/reports/2026-11-15-rings.md)): Text Ring, Menu Ring and the Ring Constant with free
+  values (`test/core/rings.test.mjs`, `test/editor/rings.test.mjs`).*
 - S4-#3 Values typed and saved are lost on reopening; only Make Current Values Default keeps them (as LabVIEW saves
   defaults, unverified here).
 - S4-#4 Representation only from the diagram terminal (stage 1 #6).
@@ -160,13 +163,15 @@ Save As of it, with LabVIEW's 4833 cells (measured that day: 1, 2, 4, 5, 7, 11, 
 Virtual Channel → Start → Stop → Clear runs without an error against the add-on's `nilvaiu`
 (`test/core/daq-plugin-ovis.test.mjs`). Numbered S5-#n.
 
-- **S5-#1 The DAQ Task Name constant is hard to reach** (medium; worked around): the agent saw Create ▸ Constant greyed
-  on a DAQ Task Name control's and indicator's terminals, though the inventory has both as built and
-  `daq-name-controls.test.mjs` makes a constant from the indicator's terminal: to check by hand. Create ▸ All Constants on
-  an unwired Adapt to Type input says its type is not known yet (LabVIEW's answer not measured). The constant is in no
-  palette Solder has: LabVIEW's Functions-side DAQmx constants come with the add-on's Measurement I/O ▸ DAQmx palette
-  (`ioconstants.mnu`, not dumped), which is the DAQ palette still to build (`daq.json`). Done by Create ▸ Constant on a
-  DAQ wire, then copy and paste.
+- **S5-#1 The DAQ Task Name constant is hard to reach** (medium; **closed 2026-11-15**): the agent saw Create ▸ Constant
+  greyed on a DAQ Task Name control's and indicator's terminals. *Measured the same day
+  ([`daqname-menus`](../../labview-captures/reports/2026-11-15-daqname-menus.md) Q3): Create ▸ on a DAQ name's diagram
+  terminal has Constant, Control and Indicator enabled in LabVIEW too, and so they are in Solder (`daq-name-controls.test.mjs`
+  makes the constant from the indicator's terminal). What LabVIEW does grey is Create ▸ on an unwired Adapt to Type
+  parameter of a Call Library Function Node (Constant, Control, Indicator and Channel Writer...; Q4): the greyed rows the
+  agent saw were probably those of the node's terminal, and Solder now greys them as LabVIEW does
+  (`call-library-terminal-menu.test.mjs`). The constants are in the DAQ palette since stage 9, so the copy and paste
+  workaround is no longer needed.*
 - S5-#2 Change to Control is greyed on a Round LED, so auto cleanup is a toggle switch; LabVIEW's is a lit LED control.
 - S5-#3 Operate ▸ is "not yet"; Make Current Value Default is per control; a click on a Boolean in edit mode toggles it.
 - S5-#4, S5-#5 New terminals land inside the Case (S4-#6); a drag from a terminal's arrow moved it instead of wiring.
@@ -249,10 +254,16 @@ LabVIEW's 6 × 4 grid with its empty cells, which needed columns, spacers, const
 - **S9-#2 Edit Name… appends to the old text** (high): the caret lands at the end and Ctrl+A did not select, so
   retyping a name doubled it. **S9-#3** typing after Enter had committed the dialog removed an instance row (high, cause
   uncertain). To check by hand.
-- **S9-#1 A selector name cannot hold a line break** (medium): LabVIEW's DAQmx short names have one ("Analog DBL\n1Chan
-  1Samp"); Solder's are on one line.
-- S9 (seen) The selector's dropdown lists the menu names flat; LabVIEW's turns ":" into submenus (Analog ▸ Single
-  Channel ▸ …, measured in `daqmx-read-write`). Medium.
+- ~~**S9-#1 A selector name cannot hold a line break** (medium)~~ **Fixed 2026-11-15**: Enter in the Selector Name
+  field types a line break, the ring and the list draw the lines (`test/editor/polymorphic-nodes.test.mjs` "a selector
+  name with a line break draws on two lines", `test/editor/polymorphic-window.test.mjs` "Enter and Shift+Enter…", "a
+  selector name with two lines…"); DAQ Read's selector names are now two lines. Only "Analog DBL\n1Chan 1Samp" is
+  measured; the other three follow its pattern (unverified).
+- ~~S9 (seen) The selector's dropdown lists the menu names flat~~ **Fixed 2026-11-15**: ":" makes cascading submenus
+  in the ring's dropdown and in Select Type ▸, with ticks along the path (`test/editor/polymorphic-nodes.test.mjs`
+  "':' in a menu name makes cascading submenus…"). The submenus open on hover at once, not after about 1 s as in
+  LabVIEW; the first level is the right-click menus' look (19.3 px rows), not the measured 19 px; both unverified in
+  Solder.
 - S9-#4 Show Selector by Default starts unticked; S9-#5 added instances go last, Move Up one row per click; S9-#6 the
   list truncates long names; S9-#8 the polymorphic window's File menu positions differ.
 - S9-#10 The polymorphic OVIs show the generic polymorphic icon (no icon of their own, as every OVI today).
@@ -268,7 +279,9 @@ the same after saving and reopening. The palette as seen matches LabVIEW's grid 
   channels (-200478). *Fixed the same day:* confirming the edit kept the text only for string and VISA constants
   (`diagram-editing.mjs`, `TEXT_CONSTANTS`; a test in `daq-name-controls.test.mjs` that failed before).
 - **S10-#8 The command line does not find the add-on's OVIs** (medium): `cli/solder.mjs run` resolves `<ovilib>` only
-  against the repository's `ovi.lib`, not the installed add-ons', as the editor does.
+  against the repository's `ovi.lib`, not the installed add-ons', as the editor does. *Not reproduced on 2026-11-15: the
+  command line reads the installed add-ons as the editor does; the add-on was installed only where the editor run of
+  stage 10 looked. Kept by a test (`test/end-to-end/command-line.test.mjs`, which fails without the add-on).*
 - S10-#2 A control's typed value is not saved, only its default (as LabVIEW saves defaults, unverified here).
 - S10-#3 Deleting a constant left an unselectable broken stub (Undo restored it).
 - S10-#4 A double click on the panel's empty space, or on an array's index, makes a free label that then takes the typing.
@@ -278,3 +291,25 @@ the same after saving and reopening. The palette as seen matches LabVIEW's grid 
 - S10-#10..#15 Look: blank icons for Measurement I/O's folder and the two constants; the palette closes after each
   placement; the panel opens scrolled; the error source shows LabVIEW's `<B>` markup (as LabVIEW's indicator does,
   unverified) and is cut; the saved polymorphic node stores `instance: 1, selected: 0`.
+
+Stage 11, 2026-11-15 ([report](../../labview-captures/reports/2026-11-15-daq-plugin-stage11.md)): DAQ Create Virtual
+Channel (AI Voltage)'s `input terminal configuration` and `units` rebuilt by hand as I32 Text Rings with NI's items and
+defaults (measured that day: NI's are modern Text Rings, I32), on cells 3 and 9; the setup runs without an error
+(`test/core/daq-plugin-ovis.test.mjs`). Numbered S11-#n.
+
+- **S11-#3 Edit Items of a ring** (medium) - **fixed 2026-11-15**: Enter made rows and two blank ones counted as a
+  duplicate value; values wider than a digit were clipped; the Values cell's hit target was as wide as its digits; the
+  wheel did not scroll the list; the first click on an unselected row was lost; a stray click ticked "Allow undefined".
+  Now a row made by Enter is a blank edit row until it gets a text or a value (not an item, not saved, not in the
+  duplicate check, as the measured blank last row); the Values column is 110 px (column width unmeasured) and its whole
+  cell takes the click; the list scrolls by wheel with a thumb and keeps the edited row in view (the enum's too); a click
+  on a selected row's text, or typing on it, edits it (unmeasured; the Values cell keeps the measured "first click only
+  selects"); only a checkbox's box and label take its click (shared with the enum's). Tests in
+  `test/editor/rings.test.mjs` and `test/editor/enum-edit.test.mjs`. Left: the enum's own Values column is still 13 px
+  (indices only) and its Enter behaviour is the measured one.
+- S11-#1 Replace ▸ is greyed on a numeric control, so a control is changed by adding, deleting and rewiring.
+- S11-#2 A click on a numeric's text does not select it for Delete; only its edge does.
+- S11-#4 The down arrow of a Text Ring from a value with no item does nothing (LabVIEW's unmeasured) - **fixed
+  2026-11-15**: it goes to the first item, unverified in LabVIEW (`test/editor/rings.test.mjs`).
+- S11-#5..#12 A label's Enter, the palette at the click, stale tunnels after a delete, terminals placed far right, the
+  small connector pane, spec Rule 67, tooling offsets.

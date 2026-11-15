@@ -21,7 +21,7 @@ body.polymorphic-window { background: var(--polymorphic-window-background); colo
 .po-header { position: absolute; left: 0; right: 0; top: 0; background: var(--polymorphic-window-header-background); border-bottom: 1px solid var(--polymorphic-window-row-line); }
 .po-row { position: absolute; left: 0; right: 0; border-bottom: 1px solid var(--polymorphic-window-row-line); box-sizing: border-box; }
 .po-row.seleccionada { background: var(--polymorphic-window-selected-background); color: var(--polymorphic-window-selected-text); }
-.po-cell { position: absolute; top: 0; bottom: 0; line-height: 17px; padding-left: 2px; white-space: nowrap; overflow: hidden; box-sizing: border-box; }
+.po-cell { position: absolute; top: 0; bottom: 0; line-height: 17px; padding-left: 2px; white-space: pre; overflow: hidden; box-sizing: border-box; }
 .po-header .po-cell { border-left: 1px solid var(--polymorphic-window-row-line); }
 .po-header .po-cell:first-child { border-left: 0; }
 
@@ -33,3 +33,6 @@ body.polymorphic-window { background: var(--polymorphic-window-background); colo
 .po-name-dialog { font-size: var(--fuente); }
 .po-field { position: absolute; }
 .po-field .caret { display: inline-block; width: 1px; height: 14px; background: var(--caret); margin-left: 1px; }
+/* A selector name with line breaks: its lines are 15 px apart (2026-11-15-poly-selector.md §4), in the list and in the dialog's field. */
+.po-cell.po-lines { line-height: 15px; padding-top: 1px; }
+.po-field-text { white-space: pre; line-height: 15px; }

@@ -303,3 +303,36 @@ test("a saved sdp refreshes the callers that have it open, and the window reads 
   const main = readFileSync(path.join(RAIZ, "editor/electron/main.mjs"), "utf8");
   assert.match(main, /send\("vi:saved", \{ id: entry\.id, key: pathKey\(target\) \}\)/);
 });
+
+// ——— Line breaks in the selector name (reports/2026-11-15-poly-selector.md §4) ———
+
+test("Enter and Shift+Enter in the Selector Name field type a line break; in Menu Name, Enter is OK", () => {
+  let state = State.openNameDialog(State.select(withInstances(State.emptyState(), "Step (I64).sdg"), 0));
+  state = State.typeInNameDialog(State.typeInNameDialog(state, "menuName", "Top"), "selectorName", "Top");
+  const afterEnter = State.pressEnterInNameDialog(state);
+  assert.equal(afterEnter.nameDialog.selectorName, "Top\n", "a line break, and the dialog stays open");
+  const typed = State.typeInNameDialog(afterEnter, "selectorName", `${afterEnter.nameDialog.selectorName}Bot`);
+  assert.match(draw(typed), /data-field="selectorName"[^>]*><span class="po-field-text">Top\nBot<\/span><span class="caret">/, "the field shows both lines (the style sheet keeps the break)");
+  assert.equal(View.NAME_DIALOG_LAYOUT.selectorField.height, 32, "measured: two lines of 15 px fit the 300 x 32 field");
+
+  const accepted = State.acceptNameDialog(typed);
+  assert.equal(accepted.instances[0].selectorName, "Top\nBot");
+  assert.equal(JSON.parse(State.toText(accepted)).instances[0]["selector-name"], "Top\nBot", "stored as a JSON string with the line break");
+  assert.equal(Poly.readPolymorphic(State.toText(accepted)).instances[0].selectorName, "Top\nBot", "and read back as it was");
+
+  const inMenuName = State.pressEnterInNameDialog(State.typeInNameDialog(state, "menuName", "Top2"));
+  assert.equal(inMenuName.nameDialog, null, "Enter in Menu Name accepts");
+  assert.equal(inMenuName.instances[0].menuName, "Top2");
+  assert.equal(State.pressEnterInNameDialog(accepted), accepted, "nothing to do without a dialog");
+});
+
+test("a selector name with two lines shows both in the list and its row grows from 18 to about 33 px", () => {
+  let state = withInstances(State.emptyState(), "Step (I64).sdg", "Step (DBL).sdg");
+  state = State.acceptNameDialog(State.typeInNameDialog(State.openNameDialog(State.select(state, 0)), "selectorName", "Top\nBot"));
+  assert.deepEqual([State.rowHeightOf(state.instances[0], View.LAYOUT.rowHeight), State.rowHeightOf(state.instances[1], View.LAYOUT.rowHeight)], [33, 18]);
+  const html = draw(state);
+  const rows = [...html.matchAll(/<div class="po-row[^"]*" data-row="(\d)" style="top:([\d.]+)px;height:([\d.]+)px">/g)].map(([, index, top, height]) => [Number(index), Number(top), Number(height)]);
+  assert.deepEqual(rows, [[0, 17, 33], [1, 50, 18]], "the second row follows the taller first one");
+  assert.match(html, /<span class="po-cell po-lines" style="left:\d+px;width:81px">Top\nBot<\/span>/, "the Selector Name cell holds both lines");
+  assert.equal((html.match(/class="po-row vacia"/g) ?? []).length, 4, "the empty rows fill what is left of the box");
+});

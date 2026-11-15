@@ -54,10 +54,10 @@ test("a free label inside a structure that is not in the file is refused", () =>
   assert.throws(() => leer(file, CAT), /while-loop_9/);
 });
 
-test("a version 3 file opens and is saved as version 4", () => {
+test("a version 3 file opens and is saved as the current version", () => {
   const file = JSON.parse(aTexto(buildAdder().g, CAT));
   file.solder = 3;
-  assert.equal(JSON.parse(aTexto(leer(file, CAT), CAT)).solder, 4);
+  assert.equal(JSON.parse(aTexto(leer(file, CAT), CAT)).solder, VERSION);
 });
 
 test("free labels do not change what an OVI compiles to", () => {

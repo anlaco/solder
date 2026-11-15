@@ -37,6 +37,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [076](#dt-076) | DAQ: Solder's own acquisition layer, DAQmx's API one to one under the name DAQ, a native engine in `solder-io` over swappable drivers | Accepted · not implemented |
 | [077](#dt-077) | When Solder is 1.0: what a LabVIEW developer certified on Core 1 and Core 2 does, reliably, with nothing lost; not a coverage figure | Accepted · not implemented |
 | [089](#dt-089) | The compiler is split into modules of one responsibility each, after everything native and before 1.0 | Proposed · not implemented |
+| [091](#dt-091) | Rings are plain numerics of their representation with items as text–value pairs, saved as pairs from `.sdg` version 5 | Accepted · core built |
 
 ## The 34 Red decisions
 
@@ -3422,6 +3423,11 @@ LabVIEW's selector and menus.**
    Items ▸ Polymorphic VI Selector), a ring 1 px under the icon, centred on it, as wide as its text, showing the menu
    name ("Integer") with a dropdown triangle; the node menu with Select Type ▸ and Open Polymorphic VI; double-click
    opens the chosen instance.
+   *Amended 2026-11-15 (reports/2026-11-15-poly-selector.md):* a ":" in a Menu Name makes cascading submenus, in Select
+   Type ▸ and in the ring's dropdown, which opens over the ring (its left edge on the ring's, its top 2 px above); the
+   rows along the path to the instance are ticked; Automatic and its separator are rows only when the OVI adapts to the
+   data type (not greyed otherwise). Enter in the Selector Name field types a line break; the ring then has one line per
+   line of the name (19 px + 15 per extra line) and the list's row grows to match. Code: `core/model/polymorphic-menu.mjs`.
 5. **Users make their own:** File ▸ New ▸ Polymorphic OVI and the Polymorphic OVI window (measured: Instance VIs with
    VI Name, Menu Name and Selector Name; Add..., Remove, Edit Name..., Edit Icon..., Help and the reorder arrows; Draw
    Polymorphic VI Icon or Draw Instance VI Icon; Show Selector by Default; Allow Polymorphic VI to Adapt to Data Type),
@@ -4491,3 +4497,43 @@ its own that moves code without changing what it compiles.**
 | Wired to nothing it does not break the OVI; never Not A Refnum | `test/core/vi-server-reference.test.mjs` | **Verified** (2026-11-14) |
 | Into Adapt to Type it is the address of a U32; `DAQCreateTask140` takes the call | `test/core/vi-server-reference.test.mjs` | **Verified** (2026-11-14); the bytes the library reads are not checked by a library that echoes them |
 | Its look, menu and palette place as LabVIEW's | `test/editor/vi-server-reference.test.mjs` | **Verified** (2026-11-14) against the report's numbers; not compared by eye with LabVIEW. Unverified: "This OVI" is wider than LabVIEW's "This VI"; the Create ▸ rows' names on This Application |
+
+## DT-091
+
+**Rings: the Text Ring, the Menu Ring and the Ring Constant are plain numerics of their representation whose items are
+pairs of a text and a value, saved as pairs from `.sdg` version 5.**
+
+- **Status:** Accepted on 2026-11-15 by the developer, who chose pairs `{ text, value }` and a new format version over a
+  parallel array of values. Brought by finding S4-#2 of the DAQ plugin (`input terminal configuration` and `units` need
+  NI's values, such as 10106 and -1).
+- **Measured:** [`rings`](../../labview-captures/reports/2026-11-15-rings.md).
+
+### Decision
+
+1. **A ring is a numeric, not a type of its own.** Its wire is the plain numeric wire of its representation, U16 by
+   default; EXT, DBL, SGL and every integer are allowed, FXP and the complex types are not (measured). A U16 ring into
+   an I32 has a coercion dot (measured). Unlike an enum, the items are not part of the type, so a ring into a Case
+   selector gives frames named by number (measured).
+2. **The items belong to the object:** `config.items` of a `ring-const` node, and of a numeric `control` or `indicator`
+   whose `config.style` is `text-ring` or `menu-ring`. Each item is `{ text, value }`; two items may share a text but
+   never a value (LabVIEW greys OK, measured). A new ring has one empty item of value 0. `config["allow-undefined"]`
+   is Allow Undefined Values (off by default, measured).
+3. **Format version 5.** The panel stores a ring control's items as `ring-items` and its option as `allow-undefined`;
+   a ring constant stores `items` as pairs. Version 4 saved a ring constant's items as texts whose values were their
+   positions, and it was always U16; the migration turns those texts into pairs numbered by position.
+4. **Values.** What a ring shows is the text of the item with its value, or `<value>` when none has it; nothing
+   coerces such a value, neither a run nor a write (measured). A value typed into Edit Items is clamped to the
+   representation's range; changing the representation wraps every integer value modulo 2^n and rounds a float
+   (measured). "Sequential values" is not stored: it is ticked when the values are 0, 1, 2… by position (measured: no
+   such property, and the dialog opens unticked for non-sequential values).
+5. **Not built yet**, greyed and saying why (DT-035): Pict Ring and Text & Pict Ring, Data Entry…, Disable Item, Hide
+   Last Item When Running, and the `<Other>...` row of a ring with Allow Undefined Values.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Shown text, `<value>`, duplicates, clamping and wrapping as measured | `test/core/rings.test.mjs` | **Verified** (2026-11-15) |
+| A ring is a numeric: coercion dot, value run unchanged | `test/core/rings.test.mjs` | **Verified** (2026-11-15) |
+| Pairs round-trip and validate; version 4 texts migrate, also inside structures | `test/core/rings.test.mjs` | **Verified** (2026-11-15) |
+| Text Ring, Menu Ring and the constant look, menus and Edit Items as LabVIEW's | `test/editor/rings.test.mjs` | **Verified** (2026-11-15) |

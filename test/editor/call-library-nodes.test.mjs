@@ -226,7 +226,7 @@ test("the right-click menu of the node is the measured one", () => {
   assert.deepEqual(nameFormat.map((r) => [r.label, r.checked, r.greyed]), [["No Names", true, false], ["Names", false, true]]);
   assert.deepEqual(menuRows(hover(d, "context.call-library.create"), "context.call-library.create").map((r) => r.label), ["All Controls and Indicators", "All Constants"]);
   assert.deepEqual(menuRows(hover(d, "context.call-library.visible-items"), "context.call-library.visible-items").map((r) => r.label), ["Label"]);
-  assert.equal(D.menuDe(n, "arg-0-in", g, false, CAT), "context.call-library", "its terminals share the node's menu");
+  assert.equal(D.menuDe(n, "arg-0-in", g, false, CAT), "context.call-library-terminal", "a parameter's terminal has its own (call-library-terminal-menu.test.mjs); the others keep the node's");
 });
 
 test("Create ▸ All Constants and All Controls and Indicators make an object for each terminal that takes one", () => {

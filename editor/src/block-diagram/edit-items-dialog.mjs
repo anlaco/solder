@@ -35,8 +35,48 @@ export const LAYOUT = {
   bottom: { y: 468, h: 18, ok: 319, cancel: 377, help: 433, w: 56 },
 };
 
-const esc = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-const px = (n) => `${Number(n.toFixed(2))}px`;
+/** Width of the scroll bar drawn at the list's right edge once the rows overflow. Unmeasured: the enum's list in LabVIEW was not captured with more rows than fit. */
+const LIST_SCROLLBAR_WIDTH = 6;
+
+/** The most the list scrolls: what the rows take beyond the list's height, in px. */
+export const maxScroll = (rowCount) => Math.max(0, rowCount * LAYOUT.list.row - LAYOUT.list.h);
+
+/** The list scrolled by `deltaY` px (the mouse wheel), kept between its top and its last row. */
+export const scrolledBy = (dialog, deltaY) => ({ ...dialog, scroll: Math.max(0, Math.min(maxScroll(dialog.filas.length), (dialog.scroll ?? 0) + deltaY)) });
+
+/** The list scrolled just enough for the chosen row to be seen, as it must be after Enter, Insert or a move reach a row below the visible ones. */
+export function revealed(dialog) {
+  const { row, h } = LAYOUT.list;
+  const top = dialog.elegida * row;
+  const scroll = dialog.scroll ?? 0;
+  if (top < scroll) return { ...dialog, scroll: top };
+  return top + row > scroll + h ? { ...dialog, scroll: Math.min(maxScroll(dialog.filas.length), top + row - h) } : dialog;
+}
+
+/** What the wheel over the list does to the dialog. */
+export const wheel = scrolledBy;
+
+/** A thin thumb at the list's right edge, only when the rows overflow. */
+export function scrollbarHtml(dialog) {
+  const { row, h, w } = LAYOUT.list;
+  const total = dialog.filas.length * row;
+  if (total <= h) return "";
+  const thumbHeight = Math.max(12, (h * h) / total);
+  const thumbTop = ((dialog.scroll ?? 0) / maxScroll(dialog.filas.length)) * (h - thumbHeight);
+  return `<div class="ficha-lista-barra" style="left:${px(w - LIST_SCROLLBAR_WIDTH - 2)};top:${px(thumbTop)};width:${px(LIST_SCROLLBAR_WIDTH)};height:${px(thumbHeight)}"></div>`;
+}
+
+/**
+ * A checkbox of the Edit Items tab. Only its box and its label take the click: the outer element lets every click
+ * through and the inner one, as wide as the box and the label, carries the id.
+ */
+export function checkboxHtml(inv, part, label, { ticked = false, greyed = false, place }) {
+  const box = LAYOUT.checkbox.box;
+  return `<div class="ficha-casilla${ticked ? " marcada" : ""}${greyed ? " desactivada" : ""}${holeClass(inv, `${DIALOG_ID}.${part}`)}" style="left:${px(place.x)};top:${px(place.y)}"><span class="ficha-casilla-parte" data-id="${DIALOG_ID}.${part}"><span class="cuadro${ticked ? " marcado" : ""}" style="width:${px(box)};height:${px(box)}"></span>${esc(label)}</span></div>`;
+}
+
+export const esc = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+export const px = (n) => `${Number(n.toFixed(2))}px`;
 
 /**
  * The dialog for an enum node. Each row keeps the name it had when the dialog opened
@@ -47,7 +87,7 @@ export const open = (node) => {
   const items = node.config?.type?.enum ?? [];
   const current = items[node.config?.value ?? 0];
   const elegida = Math.max(0, items.indexOf(current));
-  return { nodo: node.id, titulo: title(node), filas: items.map((name) => ({ texto: name, original: name })), elegida: Math.min(elegida, items.length - 1), edicion: null, listFocused: false };
+  return { nodo: node.id, titulo: title(node), filas: items.map((name) => ({ texto: name, original: name })), elegida: Math.min(elegida, items.length - 1), edicion: null, listFocused: false, scroll: 0 };
 };
 
 /** The title of the window: measured for the constant; the panel ones are unverified. */
@@ -120,8 +160,8 @@ export function act(dialog, id, clicks = 1) {
  */
 export function key(dialog, event) {
   if (event.ctrlKey || event.metaKey || event.altKey) return null;
-  if (dialog.edicion) return { dialog: type(dialog, event.key) };
-  if (dialog.listFocused && event.key === "Enter") return { dialog: editarFila(insertar(dialog, dialog.elegida + 1), dialog.elegida + 1) };
+  if (dialog.edicion) return { dialog: revealed(type(dialog, event.key)) };
+  if (dialog.listFocused && event.key === "Enter") return { dialog: revealed(editarFila(insertar(dialog, dialog.elegida + 1), dialog.elegida + 1)) };
   if (dialog.listFocused && event.key !== "Escape") return { dialog };
   if (event.key === "Enter") return { accept: true };
   if (event.key === "Escape") return { cancel: true };
@@ -139,7 +179,7 @@ export function click(dialog, id, clicks = 1) {
   if (parte === "cancel") return { cancel: true };
   if (parte === "allow-undefined") return null;
   if (parte.startsWith("tab-") || parte === "help") return { explain: true };
-  return { dialog: act(dialog, id, clicks) };
+  return { dialog: revealed(act(dialog, id, clicks)) };
 }
 
 /**
@@ -165,14 +205,43 @@ export function apply(g, dialog) {
   return Gr.editarItemsEnum(g, dialog.nodo, committed.filas.map((f) => f.texto), renombres);
 }
 
-const holeClass = (inv, id) => (esHueco(inv.resolver(id) ?? { estado: "todo" }) ? " hueco" : "");
+export const holeClass = (inv, id) => (esHueco(inv.resolver(id) ?? { estado: "todo" }) ? " hueco" : "");
+
+/** The five tabs of the Properties dialog, Edit Items the active one. */
+export function tabsHtml(inv) {
+  const L = LAYOUT;
+  return L.tabs.items
+    .map((tab) => `<div class="ficha${tab.key === "edit-items" ? " activa" : holeClass(inv, `${DIALOG_ID}.tab-${tab.key}`)}" data-id="${DIALOG_ID}.tab-${tab.key}" style="left:${px(tab.x)};top:${px(L.tabs.y)};width:${px(tab.w)};height:${px(L.tabs.height)}">${esc(tab.label)}</div>`)
+    .join("");
+}
+
+/** Insert, Delete, Move Up, Move Down and Disable Item; a greyed one has no id to click. `isEnabled(part)` says which work. */
+export function buttonsHtml(inv, isEnabled) {
+  const L = LAYOUT;
+  return L.buttons.labels
+    .map((label, k) => {
+      const parte = ["insert", "delete", "move-up", "move-down", "disable-item"][k];
+      const activo = isEnabled(parte);
+      return `<div class="pv-boton${activo ? "" : " desactivado"}${holeClass(inv, `${DIALOG_ID}.${parte}`)}" data-id="${activo ? `${DIALOG_ID}.${parte}` : ""}" style="left:${px(L.buttons.x)};top:${px(L.buttons.first + k * L.buttons.pitch)};width:${px(L.buttons.w)};height:${px(L.buttons.h)}">${esc(label)}</div>`;
+    })
+    .join("");
+}
+
+/** OK, Cancel and Help; `okEnabled` false greys OK (a ring with two items of one value). */
+export function bottomHtml(inv, okEnabled = true) {
+  const L = LAYOUT;
+  return [{ key: "ok", label: "OK", x: L.bottom.ok, defecto: true }, { key: "cancel", label: "Cancel", x: L.bottom.cancel }, { key: "help", label: "Help", x: L.bottom.help }]
+    .map(({ key, label, x, defecto }) => {
+      const greyed = key === "ok" && !okEnabled;
+      const id = key === "help" || greyed ? "" : `${DIALOG_ID}.${key}`;
+      return `<div class="pv-boton${defecto ? " defecto" : ""}${greyed ? " desactivado" : ""}${key === "help" ? holeClass(inv, `${DIALOG_ID}.help`) : ""}" data-id="${id}" style="left:${px(x)};top:${px(L.bottom.y)};width:${px(L.bottom.w)};height:${px(L.bottom.h)}">${label}</div>`;
+    })
+    .join("");
+}
 
 /** The dialog, modal over the window, like the VI Properties one. */
 export function view(inv, dialog) {
   const L = LAYOUT;
-  const tabs = L.tabs.items
-    .map((tab) => `<div class="ficha${tab.key === "edit-items" ? " activa" : holeClass(inv, `${DIALOG_ID}.tab-${tab.key}`)}" data-id="${DIALOG_ID}.tab-${tab.key}" style="left:${px(tab.x)};top:${px(L.tabs.y)};width:${px(tab.w)};height:${px(L.tabs.height)}">${esc(tab.label)}</div>`)
-    .join("");
   const filas = dialog.filas
     .map((fila, k) => {
       const editando = dialog.edicion?.fila === k;
@@ -181,21 +250,11 @@ export function view(inv, dialog) {
           ? `<span class="texto-elegido">${esc(dialog.edicion.texto)}</span>`
           : `<span>${esc(dialog.edicion.texto)}</span><span class="caret"></span>`
         : esc(fila.texto);
-      return `<div class="ficha-lista-fila${k === dialog.elegida ? " elegida" : ""}" data-id="${DIALOG_ID}.row-${k}" style="top:${px(k * L.list.row)};height:${px(L.list.row)}"><span class="celda" style="left:${px(L.headers.items - L.list.x)}">${nombre}</span><span class="celda valor" style="left:${px(L.list.divider - L.list.x + 6)}">${k}</span></div>`;
+      return `<div class="ficha-lista-fila${k === dialog.elegida ? " elegida" : ""}" data-id="${DIALOG_ID}.row-${k}" style="top:${px(k * L.list.row - (dialog.scroll ?? 0))};height:${px(L.list.row)}"><span class="celda" style="left:${px(L.headers.items - L.list.x)}">${nombre}</span><span class="celda valor" style="left:${px(L.list.divider - L.list.x + 6)}">${k}</span></div>`;
     })
     .join("");
   const lista = `<div class="ficha-lista-cabecera" style="top:${px(L.headers.y)}"><span style="left:${px(L.headers.items)}">Items</span><span style="left:${px(L.headers.values)}">Values</span></div>` +
-    `<div class="ficha-lista" style="left:${px(L.list.x)};top:${px(L.list.y)};width:${px(L.list.w)};height:${px(L.list.h)}"><div class="ficha-lista-separador" style="left:${px(L.list.divider - L.list.x)}"></div>${filas}</div>`;
-  const botones = L.buttons.labels
-    .map((label, k) => {
-      const parte = ["insert", "delete", "move-up", "move-down", "disable-item"][k];
-      const activo = enabled(dialog, parte);
-      return `<div class="pv-boton${activo ? "" : " desactivado"}${holeClass(inv, `${DIALOG_ID}.${parte}`)}" data-id="${activo ? `${DIALOG_ID}.${parte}` : ""}" style="left:${px(L.buttons.x)};top:${px(L.buttons.first + k * L.buttons.pitch)};width:${px(L.buttons.w)};height:${px(L.buttons.h)}">${esc(label)}</div>`;
-    })
-    .join("");
-  const casilla = `<div class="ficha-casilla desactivada${holeClass(inv, `${DIALOG_ID}.allow-undefined`)}" data-id="${DIALOG_ID}.allow-undefined" style="left:${px(L.checkbox.x)};top:${px(L.checkbox.y)}"><span class="cuadro" style="width:${px(L.checkbox.box)};height:${px(L.checkbox.box)}"></span>${esc(L.checkbox.label)}</div>`;
-  const pie = [{ key: "ok", label: "OK", x: L.bottom.ok, defecto: true }, { key: "cancel", label: "Cancel", x: L.bottom.cancel }, { key: "help", label: "Help", x: L.bottom.help }]
-    .map(({ key, label, x, defecto }) => `<div class="pv-boton${defecto ? " defecto" : ""}${key === "help" ? holeClass(inv, `${DIALOG_ID}.help`) : ""}" data-id="${key === "help" ? "" : `${DIALOG_ID}.${key}`}" style="left:${px(x)};top:${px(L.bottom.y)};width:${px(L.bottom.w)};height:${px(L.bottom.h)}">${label}</div>`)
-    .join("");
-  return `<div class="pv-velo"><div class="pv-dialogo dialogo-edit-items" data-dialogo="${DIALOG_ID}" style="width:${px(L.width)};height:${px(L.height)}"><div class="pv-titulo" style="height:${px(L.title.height)}">${esc(dialog.titulo)}</div>${tabs}${lista}${botones}${casilla}${pie}</div></div>`;
+    `<div class="ficha-lista" style="left:${px(L.list.x)};top:${px(L.list.y)};width:${px(L.list.w)};height:${px(L.list.h)}"><div class="ficha-lista-separador" style="left:${px(L.list.divider - L.list.x)}"></div>${filas}${scrollbarHtml(dialog)}</div>`;
+  const casilla = checkboxHtml(inv, "allow-undefined", L.checkbox.label, { greyed: true, place: L.checkbox });
+  return `<div class="pv-velo"><div class="pv-dialogo dialogo-edit-items" data-dialogo="${DIALOG_ID}" style="width:${px(L.width)};height:${px(L.height)}"><div class="pv-titulo" style="height:${px(L.title.height)}">${esc(dialog.titulo)}</div>${tabsHtml(inv)}${lista}${buttonsHtml(inv, (part) => enabled(dialog, part))}${casilla}${bottomHtml(inv)}</div></div>`;
 }

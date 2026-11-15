@@ -19,7 +19,7 @@ import { PATH } from "../../../core/model/types.mjs";
 import { browseFolderGlyph, pathCellGlyph, refnumPageGlyph, visaIoGlyph } from "../common/glyphs.mjs";
 
 /** Every kind of object an HTML panel draws: each one has rules in plain.css (DT-058 §3, a test checks it). */
-export const PLAIN_KINDS = ["numeric", "enum", "string", "visa", "path", "boolean", "error-cluster", "array", "waveform-chart", "waveform-graph", "xy-graph"];
+export const PLAIN_KINDS = ["numeric", "enum", "ring", "string", "visa", "path", "boolean", "error-cluster", "array", "waveform-chart", "waveform-graph", "xy-graph"];
 
 /** The parts that are only ornament in Plain: hidden by plain.css, shown by the style that draws them (a test checks it). */
 export const ORNAMENT_CLASSES = ["sd-art", "sd-visa-glyph", "sd-path-glyph", "sd-radix", "sd-code-arrows", "sd-scrollbar", "sd-frame", "sd-plot-frame", "sd-swatch-frame"];
@@ -74,17 +74,27 @@ export function numericHtml(frame, { valueHtml, withIncrementer, isEnum }) {
   return objectFrame({ ...frame, kind: isEnum ? "enum" : "numeric" }, (withIncrementer ? incrementer() : "") + field(frame.id, valueHtml));
 }
 
+/**
+ * A Text Ring or a Menu Ring (DT-091). A Text Ring is a field with the incrementer's arrows on a control; a Menu Ring is a
+ * bar with a dropdown triangle at its right end, on a control and an indicator alike (measured, reports/2026-11-15-rings.md
+ * §3). `style` ("text-ring" or "menu-ring") is a class too, so a panel style can tell the two looks apart.
+ */
+export function ringHtml(frame, { style, valueHtml, withArrows }) {
+  const triangle = style === "menu-ring" ? `<span class="sd-dropdown" role="button" aria-haspopup="menu" aria-label="Items"></span>` : "";
+  return objectFrame({ ...frame, kind: "ring", classes: [...(frame.classes ?? []), `sd-${style}`] }, (withArrows ? incrementer() : "") + field(frame.id, valueHtml) + triangle);
+}
+
 /** A string control or indicator: its text, with the lines it has. */
 export const stringHtml = (frame, { valueHtml }) => objectFrame({ ...frame, kind: "string" }, field(frame.id, valueHtml));
 
-/** The parts of a VISA resource name's HTML that a DAQ name changes: a class, and a button with no menu behind it yet. */
-export const DAQ_NAME_VARIANT = Object.freeze({ extraClass: "sd-daq-name", dropdown: `<span class="sd-dropdown" role="button" aria-haspopup="menu" aria-label="DAQ names"></span>` });
+/** The parts of a VISA resource name's HTML that a DAQ name changes: a class, and a button that opens the DAQ names' list (`data-daq-dropdown`, answered by the window). */
+export const DAQ_NAME_VARIANT = Object.freeze({ extraClass: "sd-daq-name", dropdown: `<span class="sd-dropdown" role="button" aria-haspopup="menu" aria-label="DAQ names" data-daq-dropdown></span>` });
 
 /**
  * A VISA resource name control or indicator: the icon cell, the text field with its resource string and, on a control,
  * the dropdown button that lists the VISA resources (`data-visa-dropdown`, which the window answers). The I/O glyph is
  * ornament: Plain writes "I/O" in the cell and Old School draws the glyph. A DAQ name (`DAQ_NAME_VARIANT`) is the
- * same, wider, and its button does not open anything yet.
+ * same, wider, and its button opens the list of DAQ names.
  */
 export function visaHtml(frame, { valueHtml, extraClass, dropdown = `<span class="sd-dropdown" role="button" aria-haspopup="menu" aria-label="VISA resources" data-visa-dropdown></span>` }) {
   const icon = `<span class="sd-visa-icon"><span class="sd-visa-glyph" aria-hidden="true">${visaIoGlyph()}</span></span>`;

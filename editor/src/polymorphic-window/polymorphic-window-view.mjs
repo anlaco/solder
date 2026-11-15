@@ -8,7 +8,7 @@ import * as D from "../block-diagram/diagram-view.mjs";
 import { esHueco } from "../common/labview-inventory.mjs";
 import { ownIconHtml } from "../block-diagram/polymorphic-nodes.mjs";
 import * as V from "../window/window-view.mjs";
-import { DRAW_ICON, buttonStates, rowCells, showsEmptyMarker } from "./polymorphic-window-state.mjs";
+import { DRAW_ICON, buttonStates, rowCells, rowHeightOf, showsEmptyMarker } from "./polymorphic-window-state.mjs";
 
 export const PREFIX = "window.polymorphic-ovi";
 export const NAME_DIALOG = "dialog.edit-instance-name";
@@ -100,20 +100,29 @@ function choice(inv, id, kind, label, box, checked) {
   return `<div class="po-choice po-${kind}${checked ? " marcada" : ""}${holeClass(inv, id)}" data-id="${id}" style="${place(box)}"><span class="pv-casilla${kind === "radio" ? " redonda" : ""}"></span><span class="po-choice-text">${label}</span></div>`;
 }
 
-/** The list: a header, a row per instance and empty striped rows down to the bottom of the box. */
+/**
+ * The list: a header, a row per instance (taller when its selector name has several lines) and empty striped rows down
+ * to the bottom of the box.
+ */
 function instanceList(state) {
   const { list, headerHeight, rowHeight, columns, fileNameIndent } = LAYOUT;
-  const cell = ([left, right], text, indent = 0) => `<span class="po-cell" style="left:${px(left - list.x + indent)};width:${px(right - left - indent)}">${esc(text)}</span>`;
+  const cell = ([left, right], text, indent = 0, className = "") => `<span class="po-cell${className}" style="left:${px(left - list.x + indent)};width:${px(right - left - indent)}">${esc(text)}</span>`;
   const header = `<div class="po-header" style="height:${px(headerHeight)}">${cell(columns.fileName, "OVI Name", 0)}${cell(columns.menuName, "Menu Name")}${cell(columns.selectorName, "Selector Name")}</div>`;
-  const rowCount = Math.max(state.instances.length, Math.floor((list.height - headerHeight) / rowHeight));
-  const rows = Array.from({ length: rowCount }, (_, index) => {
-    const instance = state.instances[index];
+  let top = headerHeight;
+  const rowHtml = (instance, index) => {
     const [fileName, menuName, selectorName] = instance ? rowCells(instance) : ["", "", ""];
+    const height = instance ? rowHeightOf(instance, rowHeight) : rowHeight;
     const selected = instance && state.selected === index ? " seleccionada" : "";
     const data = instance ? ` data-row="${index}"` : "";
-    return `<div class="po-row${instance ? "" : " vacia"}${selected}"${data} style="top:${px(headerHeight + index * rowHeight)};height:${px(rowHeight)}">${cell(columns.fileName, fileName, fileNameIndent)}${cell(columns.menuName, menuName)}${cell(columns.selectorName, selectorName)}</div>`;
-  }).join("");
-  return `<div class="po-list" data-id="${PREFIX}.instances" style="${place(list)}">${header}${rows}</div>`;
+    const multiline = height > rowHeight ? " po-lines" : "";
+    const html = `<div class="po-row${instance ? "" : " vacia"}${selected}"${data} style="top:${px(top)};height:${px(height)}">${cell(columns.fileName, fileName, fileNameIndent)}${cell(columns.menuName, menuName)}${cell(columns.selectorName, selectorName, 0, multiline)}</div>`;
+    top += height;
+    return html;
+  };
+  const rows = state.instances.map(rowHtml);
+  const emptyRowCount = Math.max(0, Math.floor((list.height - top) / rowHeight));
+  rows.push(...Array.from({ length: emptyRowCount }, (_, index) => rowHtml(undefined, state.instances.length + index)));
+  return `<div class="po-list" data-id="${PREFIX}.instances" style="${place(list)}">${header}${rows.join("")}</div>`;
 }
 
 /** The "Edit Instance Name" dialog, modal over the window: the two fields, with the caret in the one being typed. */

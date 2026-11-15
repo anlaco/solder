@@ -31,11 +31,11 @@
 | SubOVIs, libraries and projects | 8 / 22 (36 %) | `████░░░░░░` |
 | Debugging | 8 / 16 (50 %) | `█████░░░░░` |
 | Files | 5 / 15 (33 %) | `███░░░░░░░` |
-| Instruments and communication | 9 / 25 (36 %) | `████░░░░░░` |
+| Instruments and communication | 11 / 27 (41 %) | `████░░░░░░` |
 | Functions palette | 211 / 563 (37 %) | `████░░░░░░` |
-| Controls palette | 31 / 92 (34 %) | `███░░░░░░░` |
-| Windows and dialogs | 141 / 398 (35 %) | `████░░░░░░` |
-| Right-click menus | 519 / 1983 (26 %) | `███░░░░░░░` |
+| Controls palette | 33 / 92 (36 %) | `████░░░░░░` |
+| Windows and dialogs | 142 / 399 (36 %) | `████░░░░░░` |
+| Right-click menus | 582 / 2185 (27 %) | `███░░░░░░░` |
 <!-- /coverage:summary -->
 
 ## Features
@@ -50,7 +50,7 @@
 - [x] Boolean
 - [x] String
 - [x] Enum, with Edit Items… and Select Item
-- [x] Ring constant (the panel rings are in the Controls palette)
+- [x] Ring constant, Text Ring and Menu Ring, with Edit Items… (Sequential values, free values) and Allow Undefined Values
 - [x] Arrays of one and two dimensions
 - [ ] Arrays of three or more dimensions
 - [x] The error cluster
@@ -177,7 +177,7 @@
 - [ ] Add/Remove Terminal, Rotate and Flip on the connector pane
 - [ ] Icon Editor (Edit Icon… takes an SVG file)
 - [x] OVI Properties, Execution page (the other pages are missing)
-- [x] Polymorphic OVIs, with their window and Select Type ▸
+- [x] Polymorphic OVIs, with their window and Select Type ▸ (":" submenus, two-line selector names, 2026-11-15)
 - [x] Express OVIs with a configuration dialog (Time Delay, File Dialog)
 - [x] `ovi.lib`, the library shipped with Solder (LabVIEW's `vi.lib`)
 - [x] New dialog (Blank OVI, Polymorphic OVI)
@@ -243,6 +243,7 @@
 - [ ] The VISA resource name's dropdown of resources
 - [ ] DAQmx (Solder's DAQ layer, DT-076)
 - [x] DAQ name controls and indicators on the panel (the seven kinds)
+- [x] The DAQ name controls' panel menus, by kind, and the list of their arrow button (2026-11-15)
 - [x] DAQ palette (Measurement I/O ▸ DAQ - Data Acquisition) with the polymorphic Create Virtual Channel, Read and Timing (DT-086, 2026-11-14)
 - [x] DAQ plugin OVIs, analog input setup: Create Task, Create Virtual Channel (AI Voltage), Timing (Sample Clock), Start, the four DBL reads, Wait Until Done, Stop, Clear Task (DT-087, 2026-11-14)
 - [ ] TCP functions (in the catalog; not compiled yet)
@@ -252,6 +253,7 @@
 - [ ] Network streams and shared variables
 - [ ] HTTP client and web services
 - [x] Call Library Function Node (shared libraries), DT-080 (2026-11-06; `.wasm` modules later)
+- [x] The Call Library Function Node's parameter terminal menu, with Create greyed on an unwired Adapt to Type parameter (2026-11-15)
 - [ ] .NET and ActiveX
 - [ ] OVI Server (Open OVI Reference, the OVI and Application classes)
 - [x] OVI Server Reference constant (This OVI, This Application) and the Application Control palette's layout, DT-090 (2026-11-14)
@@ -308,7 +310,7 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 | Modern ▸ Data Containers | 3 / 8 (38 %) | `████░░░░░░` |
 | Modern ▸ List, Table & Tree | not captured yet | |
 | Modern ▸ Graph | 3 / 21 (14 %) | `█░░░░░░░░░` |
-| Modern ▸ Ring & Enum | 1 / 5 (20 %) | `██░░░░░░░░` |
+| Modern ▸ Ring & Enum | 3 / 5 (60 %) | `██████░░░░` |
 | Modern ▸ Layout | not captured yet | |
 | Modern ▸ I/O | 8 / 19 (42 %) | `████░░░░░░` |
 | Modern ▸ Variant & Class | not captured yet | |
@@ -337,7 +339,7 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 | OVI Properties | 6 / 26 (23 %) | `██░░░░░░░░` |
 | Chart History Length | 2 / 3 (67 %) | `███████░░░` |
 | Configure Express OVI | 9 / 11 (82 %) | `████████░░` |
-| Enum Constant Properties | 9 / 14 (64 %) | `██████░░░░` |
+| Enum Constant Properties | 10 / 15 (67 %) | `███████░░░` |
 | Getting Started | 5 / 51 (10 %) | `█░░░░░░░░░` |
 | Polymorphic OVI | 20 / 42 (48 %) | `█████░░░░░` |
 | Edit Instance Name | 2 / 3 (67 %) | `███████░░░` |
@@ -348,5 +350,5 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Menus | Covered | |
 |-------|---------|---|
-| Every right-click menu captured | 519 / 1983 (26 %) | `███░░░░░░░` |
+| Every right-click menu captured | 582 / 2185 (27 %) | `███░░░░░░░` |
 <!-- /coverage:inventory -->

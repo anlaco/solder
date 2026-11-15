@@ -593,7 +593,7 @@
       "desc": "the DAQ - Data Acquisition palette from the right-click menus of the DAQ names and functions: the Functions palette does not have Measurement I/O yet"
     },
     "nombres-daq": {
-      "desc": "the names NI-DAQ offers (tasks, channels, terminals, scales, devices, switches) for a DAQ name's dropdown, Select Item... and I/O Name Filtering...: Solder has no list of them yet"
+      "desc": "the names the DAQ driver offers (tasks, channels, terminals, scales, devices, switches) for a DAQ name's arrow list (Browse... and the channels after it), Select Item... and I/O Name Filtering...: the editor cannot ask the DAQ engine for them yet (its devices are listed in Rust only)"
     },
     "ovi-server": {
       "desc": "the rest of OVI Server: references to applications and OVIs, calling by reference, asynchronous calls, classes, quitting and the palettes of scripting and application building. Only the constant of This OVI and This Application is done",
@@ -602,6 +602,14 @@
     "crear-desde-referencia-ovi": {
       "desc": "Create ▸ Control and Indicator on an OVI Server Reference constant: LabVIEW closed with a fatal internal error there, so what it makes was not measured",
       "ref": "labview-captures/reports/2026-11-14-vi-server-reference.md"
+    },
+    "ring-options": {
+      "desc": "the rings' Data Entry..., Disable Item and Hide Last Item When Running, and the <Other>... row of Allow Undefined Values",
+      "ref": "docs/design/05-decisions.md, DT-091 §5"
+    },
+    "configuracion-de-tareas-daq": {
+      "desc": "the DAQ task configuration tool, where LabVIEW makes and edits DAQ tasks in a separate application: New DAQ Task, Edit DAQ Task and Generate Code of a DAQ Task Name need it; Solder has none, tasks are made on the diagram",
+      "ref": "labview-captures/reports/2026-11-15-daqname-menus.md"
     }
   },
   "entradas": [
@@ -8757,18 +8765,38 @@
     {
       "id": "palette.controls.modern.ring-and-enum.text-ring",
       "etiqueta": "Text Ring",
-      "estado": "todo",
-      "labview": "A ring of texts with values.",
-      "necesita": "ring",
-      "captura": "enum-edit/13-ringenum.png"
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the Text Ring and the Menu Ring of Controls Ring & Enum are placed on the panel as numerics with one empty item",
+      "captura": "enum-edit/13-ringenum.png",
+      "bloque": "control",
+      "config": {
+        "type": "u16",
+        "style": "text-ring",
+        "items": [
+          {
+            "text": "",
+            "value": 0
+          }
+        ]
+      }
     },
     {
       "id": "palette.controls.modern.ring-and-enum.menu-ring",
       "etiqueta": "Menu Ring",
-      "estado": "todo",
-      "labview": "A drop-down that cannot be typed into.",
-      "necesita": "ring",
-      "captura": "enum-edit/13-ringenum.png"
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the Text Ring and the Menu Ring of Controls Ring & Enum are placed on the panel as numerics with one empty item",
+      "captura": "enum-edit/13-ringenum.png",
+      "bloque": "control",
+      "config": {
+        "type": "u16",
+        "style": "menu-ring",
+        "items": [
+          {
+            "text": "",
+            "value": 0
+          }
+        ]
+      }
     },
     {
       "id": "palette.controls.modern.ring-and-enum.enum",
@@ -13488,6 +13516,994 @@
       "labview": "The object's properties dialog.",
       "necesita": "propiedades",
       "captura": "enum-edit/32-ind-menu.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-control",
+      "etiqueta": "Ring",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring menus show LabVIEW's rows in its order for the control, the indicator and the constant",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the control are shown.",
+      "necesita": "etiquetas",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.find-terminal",
+      "etiqueta": "Find Terminal",
+      "estado": "todo",
+      "labview": "Points out the control's terminal on the diagram.",
+      "necesita": "resaltar-terminal",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Change to Indicator and Change to Control keep the style and the items of a panel ring",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the object into an array of enums.",
+      "necesita": "menus-contextuales",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "rings/03-textring-menu-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-control.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "rings/03-textring-menu-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-control.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring's Data Operations and Create rows work as the numeric's",
+      "captura": "rings/03-textring-menu-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-control.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "Creates a local variable of the control.",
+      "necesita": "variables-y-feedback",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.ring-control.create.reference",
+      "etiqueta": "Reference",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring's Data Operations and Create rows work as the numeric's",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.ring-control.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring's Data Operations and Create rows work as the numeric's",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.ring-control.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Creates an Invoke Node linked to the control.",
+      "necesita": "nodos-de-metodos",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.ring-control.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Bundles the selected controls into a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.ring-control.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Swaps the control for another object.",
+      "necesita": "menus-contextuales",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring's Data Operations and Create rows work as the numeric's",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring's Data Operations and Create rows work as the numeric's",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.ring-control.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring's Data Operations and Create rows work as the numeric's",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.ring-control.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the data of the object to the clipboard; greyed out in LabVIEW in edit mode (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-control.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to a clipboard of LabVIEW's own (no text arrives in another program, measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.ring-control.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes the data copied with Copy Data; greyed out until then (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/r2_s.png"
+    },
+    {
+      "id": "context.ring-control.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options for the object.",
+      "necesita": "menus-contextuales",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.fit-control-to-pane",
+      "etiqueta": "Fit Control to Pane",
+      "estado": "todo",
+      "labview": "The object fills the whole pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.scale-object-with-pane",
+      "etiqueta": "Scale Object with Pane",
+      "estado": "todo",
+      "labview": "The object grows with the pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.representation",
+      "etiqueta": "Representation",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/03-textring-menu-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-control.representation.ext",
+      "etiqueta": "EXT",
+      "estado": "todo",
+      "labview": "Extended precision, 80 bits.",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.representation.dbl",
+      "etiqueta": "DBL",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.representation.sgl",
+      "etiqueta": "SGL",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.representation.fxp",
+      "etiqueta": "FXP",
+      "estado": "todo",
+      "labview": "Fixed point, with the chosen word length and integer part. A ring does not take it (measured: greyed).",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.representation.i64",
+      "etiqueta": "I64",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.representation.i32",
+      "etiqueta": "I32",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.representation.i16",
+      "etiqueta": "I16",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.representation.i8",
+      "etiqueta": "I8",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.representation.u64",
+      "etiqueta": "U64",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.representation.u32",
+      "etiqueta": "U32",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.representation.u16",
+      "etiqueta": "U16",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.representation.u8",
+      "etiqueta": "U8",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.representation.cxt",
+      "etiqueta": "CXT",
+      "estado": "todo",
+      "labview": "Extended-precision complex. A ring does not take it (measured: greyed).",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.representation.cdb",
+      "etiqueta": "CDB",
+      "estado": "todo",
+      "labview": "Double-precision complex. A ring does not take it (measured: greyed).",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.representation.csg",
+      "etiqueta": "CSG",
+      "estado": "todo",
+      "labview": "Single-precision complex. A ring does not take it (measured: greyed).",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-control.data-entry",
+      "etiqueta": "Data Entry...",
+      "estado": "todo",
+      "labview": "Sets the limits and the increment of the ring (its contents were not measured).",
+      "necesita": "ring-options",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.display-format",
+      "etiqueta": "Display Format...",
+      "estado": "todo",
+      "labview": "How the value is shown.",
+      "necesita": "formato-de-presentacion",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.allow-undefined",
+      "etiqueta": "Allow Undefined Values",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Allow Undefined Values toggles on the menu with a check mark",
+      "captura": "rings/03-textring-menu-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-control.select-item",
+      "etiqueta": "Select Item...",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Select Item of a ring picks the value of its item",
+      "captura": "rings/03-textring-menu-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-control.edit-items",
+      "etiqueta": "Edit Items...",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Edit Items of a ring has Sequential values and a Values column",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.disable-item",
+      "etiqueta": "Disable Item",
+      "estado": "todo",
+      "labview": "Disables an item of the ring; what it does at run time was not measured.",
+      "necesita": "ring-options",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.hide-last-item-when-running",
+      "etiqueta": "Hide Last Item When Running",
+      "estado": "todo",
+      "labview": "Hides the ring's last item in the list while the OVI runs (not measured).",
+      "necesita": "ring-options",
+      "captura": "rings/03-textring-menu-x2.png"
+    },
+    {
+      "id": "context.ring-control.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "rings/03-textring-menu-x2.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-indicator",
+      "etiqueta": "Ring",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring menus show LabVIEW's rows in its order for the control, the indicator and the constant",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the indicator are shown.",
+      "necesita": "etiquetas",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.find-terminal",
+      "etiqueta": "Find Terminal",
+      "estado": "todo",
+      "labview": "Points out the indicator's terminal on the diagram.",
+      "necesita": "resaltar-terminal",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.change-to-indicator",
+      "etiqueta": "Change to Control",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Change to Indicator and Change to Control keep the style and the items of a panel ring",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the object into an array of enums.",
+      "necesita": "menus-contextuales",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "rings/51-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-indicator.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "rings/51-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-indicator.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring's Data Operations and Create rows work as the numeric's",
+      "captura": "rings/51-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-indicator.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "Creates a local variable of the control.",
+      "necesita": "variables-y-feedback",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.ring-indicator.create.reference",
+      "etiqueta": "Reference",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring's Data Operations and Create rows work as the numeric's",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.ring-indicator.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring's Data Operations and Create rows work as the numeric's",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.ring-indicator.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Creates an Invoke Node linked to the control.",
+      "necesita": "nodos-de-metodos",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.ring-indicator.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Bundles the selected controls into a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.ring-indicator.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Swaps the indicator for another object.",
+      "necesita": "menus-contextuales",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring's Data Operations and Create rows work as the numeric's",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring's Data Operations and Create rows work as the numeric's",
+      "captura": "default-values/s2_32_s.png"
+    },
+    {
+      "id": "context.ring-indicator.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring's Data Operations and Create rows work as the numeric's",
+      "captura": "default-values/s2_32_s.png"
+    },
+    {
+      "id": "context.ring-indicator.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the data of the object to the clipboard; greyed out in LabVIEW in edit mode (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/s2_32_s.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-indicator.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the data of the object to a clipboard of LabVIEW's own (no text arrives in another program, measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/s2_32_s.png"
+    },
+    {
+      "id": "context.ring-indicator.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes the data copied with Copy Data; greyed out until then (measured).",
+      "necesita": "copiar-datos",
+      "captura": "default-values/s2_32_s.png"
+    },
+    {
+      "id": "context.ring-indicator.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options for the object.",
+      "necesita": "menus-contextuales",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.fit-control-to-pane",
+      "etiqueta": "Fit Control to Pane",
+      "estado": "todo",
+      "labview": "The object fills the whole pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.scale-object-with-pane",
+      "etiqueta": "Scale Object with Pane",
+      "estado": "todo",
+      "labview": "The object grows with the pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.adapt-to-source",
+      "etiqueta": "Adapt To Source",
+      "estado": "todo",
+      "labview": "The indicator's type follows that of whatever it receives (only the indicator has this; measured).",
+      "necesita": "adaptar-a-la-fuente",
+      "captura": "rings/51-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-indicator.representation",
+      "etiqueta": "Representation",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.ext",
+      "etiqueta": "EXT",
+      "estado": "todo",
+      "labview": "Extended precision, 80 bits.",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.dbl",
+      "etiqueta": "DBL",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.sgl",
+      "etiqueta": "SGL",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.fxp",
+      "etiqueta": "FXP",
+      "estado": "todo",
+      "labview": "Fixed point, with the chosen word length and integer part. A ring does not take it (measured: greyed).",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.i64",
+      "etiqueta": "I64",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.i32",
+      "etiqueta": "I32",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.i16",
+      "etiqueta": "I16",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.i8",
+      "etiqueta": "I8",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.u64",
+      "etiqueta": "U64",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.u32",
+      "etiqueta": "U32",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.u16",
+      "etiqueta": "U16",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.u8",
+      "etiqueta": "U8",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.cxt",
+      "etiqueta": "CXT",
+      "estado": "todo",
+      "labview": "Extended-precision complex. A ring does not take it (measured: greyed).",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.cdb",
+      "etiqueta": "CDB",
+      "estado": "todo",
+      "labview": "Double-precision complex. A ring does not take it (measured: greyed).",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.representation.csg",
+      "etiqueta": "CSG",
+      "estado": "todo",
+      "labview": "Single-precision complex. A ring does not take it (measured: greyed).",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.display-format",
+      "etiqueta": "Display Format...",
+      "estado": "todo",
+      "labview": "How the value is shown.",
+      "necesita": "formato-de-presentacion",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.allow-undefined",
+      "etiqueta": "Allow Undefined Values",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Allow Undefined Values toggles on the menu with a check mark",
+      "captura": "rings/51-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-indicator.select-item",
+      "etiqueta": "Select Item...",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Select Item of a ring picks the value of its item",
+      "captura": "rings/51-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-indicator.edit-items",
+      "etiqueta": "Edit Items...",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Edit Items of a ring has Sequential values and a Values column",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.disable-item",
+      "etiqueta": "Disable Item",
+      "estado": "todo",
+      "labview": "Disables an item of the ring; what it does at run time was not measured.",
+      "necesita": "ring-options",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.hide-last-item-when-running",
+      "etiqueta": "Hide Last Item When Running",
+      "estado": "todo",
+      "labview": "Hides the ring's last item in the list while the OVI runs (not measured).",
+      "necesita": "ring-options",
+      "captura": "rings/51-crop.png"
+    },
+    {
+      "id": "context.ring-indicator.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "rings/51-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-constant",
+      "etiqueta": "Ring Constant",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::the ring menus show LabVIEW's rows in its order for the control, the indicator and the constant",
+      "captura": "rings/27-crop.png"
+    },
+    {
+      "id": "context.ring-constant.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the constant are shown.",
+      "necesita": "etiquetas",
+      "captura": "rings/27-crop.png"
+    },
+    {
+      "id": "context.ring-constant.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Turns the constant into a control on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "rings/27-crop.png"
+    },
+    {
+      "id": "context.ring-constant.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns the constant into an indicator on the panel.",
+      "necesita": "panel-frontal",
+      "captura": "rings/27-crop.png"
+    },
+    {
+      "id": "context.ring-constant.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the constant into an array constant of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "rings/27-crop.png"
+    },
+    {
+      "id": "context.ring-constant.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the constant into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "rings/27-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-constant.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "rings/27-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-constant.numeric-palette",
+      "etiqueta": "Numeric Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the palette the constant comes from.",
+      "necesita": "menus-contextuales",
+      "captura": "rings/27-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-constant.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to the constant.",
+      "necesita": "menus-contextuales",
+      "captura": "rings/27-crop.png"
+    },
+    {
+      "id": "context.ring-constant.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Swaps the constant for another object.",
+      "necesita": "menus-contextuales",
+      "captura": "rings/27-crop.png"
+    },
+    {
+      "id": "context.ring-constant.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Cut, copy and paste data, and save the current value as the default value.",
+      "necesita": "menus-contextuales",
+      "captura": "rings/27-crop.png"
+    },
+    {
+      "id": "context.ring-constant.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options for the object.",
+      "necesita": "menus-contextuales",
+      "captura": "rings/27-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation",
+      "etiqueta": "Representation",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/27-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-constant.representation.ext",
+      "etiqueta": "EXT",
+      "estado": "todo",
+      "labview": "Extended precision, 80 bits.",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation.dbl",
+      "etiqueta": "DBL",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation.sgl",
+      "etiqueta": "SGL",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation.fxp",
+      "etiqueta": "FXP",
+      "estado": "todo",
+      "labview": "Fixed point, with the chosen word length and integer part. A ring does not take it (measured: greyed).",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation.i64",
+      "etiqueta": "I64",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation.i32",
+      "etiqueta": "I32",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation.i16",
+      "etiqueta": "I16",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation.i8",
+      "etiqueta": "I8",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation.u64",
+      "etiqueta": "U64",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation.u32",
+      "etiqueta": "U32",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation.u16",
+      "etiqueta": "U16",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation.u8",
+      "etiqueta": "U8",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Representation of a ring changes its type and wraps the values of its items",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation.cxt",
+      "etiqueta": "CXT",
+      "estado": "todo",
+      "labview": "Extended-precision complex. A ring does not take it (measured: greyed).",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation.cdb",
+      "etiqueta": "CDB",
+      "estado": "todo",
+      "labview": "Double-precision complex. A ring does not take it (measured: greyed).",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.representation.csg",
+      "etiqueta": "CSG",
+      "estado": "todo",
+      "labview": "Single-precision complex. A ring does not take it (measured: greyed).",
+      "necesita": "tipos-numericos",
+      "captura": "rings/04-rep-crop.png"
+    },
+    {
+      "id": "context.ring-constant.display-format",
+      "etiqueta": "Display Format...",
+      "estado": "todo",
+      "labview": "How the value is shown.",
+      "necesita": "formato-de-presentacion",
+      "captura": "rings/27-crop.png"
+    },
+    {
+      "id": "context.ring-constant.allow-undefined",
+      "etiqueta": "Allow Undefined Values",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Allow Undefined Values toggles on the menu with a check mark",
+      "captura": "rings/27-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-constant.edit-items",
+      "etiqueta": "Edit Items...",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Edit Items of a ring has Sequential values and a Values column",
+      "captura": "rings/27-crop.png",
+      "separado": true
+    },
+    {
+      "id": "context.ring-constant.select-item",
+      "etiqueta": "Select Item...",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Select Item of a ring picks the value of its item",
+      "captura": "rings/27-crop.png"
+    },
+    {
+      "id": "context.ring-constant.disable-item",
+      "etiqueta": "Disable Item",
+      "estado": "todo",
+      "labview": "Disables an item of the ring; what it does at run time was not measured.",
+      "necesita": "ring-options",
+      "captura": "rings/27-crop.png"
+    },
+    {
+      "id": "context.ring-constant.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "rings/27-crop.png",
       "separado": true
     },
     {
@@ -22559,6 +23575,13 @@
       "captura": "enum-edit/41-eidialog.png"
     },
     {
+      "id": "dialog.enum-edit-items.sequential-values",
+      "etiqueta": "Sequential values",
+      "estado": "built",
+      "prueba": "test/editor/rings.test.mjs::Edit Items of a ring has Sequential values and a Values column",
+      "captura": "rings/06-unseq.png"
+    },
+    {
       "id": "dialog.enum-edit-items.allow-undefined",
       "etiqueta": "Allow undefined values at run time",
       "estado": "built",
@@ -25674,6 +26697,627 @@
       "separado": true
     },
     {
+      "id": "context.daq-task-name-control",
+      "etiqueta": "DAQ Task Name Control",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-menus.test.mjs::a DAQ task name control and indicator have the panel menu of LabVIEW's Task Name",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown: Label, Caption and Menu Button.",
+      "necesita": "etiquetas",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the label.",
+      "necesita": "etiquetas",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.visible-items.caption",
+      "etiqueta": "Caption",
+      "estado": "todo",
+      "labview": "Shows or hides the caption.",
+      "necesita": "etiquetas",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.visible-items.menu-button",
+      "etiqueta": "Menu Button",
+      "estado": "todo",
+      "labview": "Shows or hides the arrow button; greyed on an indicator, which has none.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.find-terminal",
+      "etiqueta": "Find Terminal",
+      "estado": "todo",
+      "labview": "Points out the control's terminal on the diagram.",
+      "necesita": "resaltar-terminal",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-menus.test.mjs::Change to Indicator and Data Operations work from the panel menu of a DAQ name",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the control into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the control into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "daqname-menus/m1.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-task-name-control.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "daqname-menus/m1.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-task-name-control.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to the control.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m1.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-task-name-control.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "A local variable of the control.",
+      "necesita": "variables-y-feedback",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "A reference to the control (a DAQ name has no reference class in Solder yet).",
+      "necesita": "clases-de-referencias",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "A Property Node of the control.",
+      "necesita": "nodos-de-propiedades",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "An Invoke Node of the control.",
+      "necesita": "nodos-de-metodos",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Groups the selection in a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Swaps the control for another one.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-menus.test.mjs::Change to Indicator and Data Operations work from the panel menu of a DAQ name",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-menus.test.mjs::Change to Indicator and Data Operations work from the panel menu of a DAQ name",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-menus.test.mjs::Change to Indicator and Data Operations work from the panel menu of a DAQ name",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the current value to the clipboard (greyed in LabVIEW too, at rest).",
+      "necesita": "copiar-datos",
+      "captura": "daqname-menus/m1.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-task-name-control.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the current value to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes a value from the clipboard (greyed in LabVIEW too, with nothing to paste).",
+      "necesita": "copiar-datos",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options for the control.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.advanced.key-navigation",
+      "etiqueta": "Key Navigation...",
+      "estado": "todo",
+      "labview": "Chooses how the keyboard reaches the control (greyed in LabVIEW on a Task Name).",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.advanced.synchronous-display",
+      "etiqueta": "Synchronous Display",
+      "estado": "todo",
+      "labview": "Makes the panel redraw the control each time its value changes (greyed in LabVIEW on a Task Name).",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Opens the control editor to change how the control is drawn.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.advanced.run-time-shortcut-menu",
+      "etiqueta": "Run-Time Shortcut Menu",
+      "estado": "todo",
+      "labview": "Chooses the menu the control shows when the OVI runs.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.advanced.hide-control",
+      "etiqueta": "Hide Control",
+      "estado": "todo",
+      "labview": "Hides the object on the panel; on an indicator it says Hide Indicator.",
+      "necesita": "panel-frontal",
+      "captura": "daqname-menus/m1.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-task-name-control.advanced.enabled-state",
+      "etiqueta": "Enabled State",
+      "estado": "todo",
+      "labview": "Enables or disables the control, or disables it and greys it (greyed in LabVIEW on a Task Name).",
+      "necesita": "panel-frontal",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.fit-control-to-pane",
+      "etiqueta": "Fit Control to Pane",
+      "estado": "todo",
+      "labview": "The control grows to fill the pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.scale-object-with-pane",
+      "etiqueta": "Scale Object with Pane",
+      "estado": "todo",
+      "labview": "The control grows with the pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.io-name-filtering",
+      "etiqueta": "I/O Name Filtering...",
+      "estado": "todo",
+      "labview": "Chooses which names the control accepts and lists.",
+      "necesita": "nombres-daq",
+      "captura": "daqname-menus/m1.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-task-name-control.new-daq-task",
+      "etiqueta": "New DAQ Task",
+      "estado": "todo",
+      "labview": "Starts a new task in the task configuration tool, from a project or from the device manager; Solder has no task configuration tool.",
+      "necesita": "configuracion-de-tareas-daq",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.new-daq-task.project",
+      "etiqueta": "Project...",
+      "estado": "todo",
+      "labview": "Makes the task in the project (greyed in LabVIEW too, with no project).",
+      "necesita": "configuracion-de-tareas-daq",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.new-daq-task.device-manager",
+      "etiqueta": "Device Manager...",
+      "estado": "todo",
+      "labview": "Opens the device manager to make the task there (LabVIEW opens the vendor configuration application; Solder has no such tool).",
+      "necesita": "configuracion-de-tareas-daq",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.edit-daq-task",
+      "etiqueta": "Edit DAQ Task",
+      "estado": "todo",
+      "labview": "Opens the task chosen in the task configuration tool; Solder has none (greyed in LabVIEW too until a task is chosen).",
+      "necesita": "configuracion-de-tareas-daq",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.generate-code",
+      "etiqueta": "Generate Code",
+      "estado": "todo",
+      "labview": "Generates the diagram code of the chosen task (greyed in LabVIEW too until a task is chosen; its submenu was not opened); the indicator has no such row.",
+      "necesita": "configuracion-de-tareas-daq",
+      "captura": "daqname-menus/m1.png"
+    },
+    {
+      "id": "context.daq-task-name-control.select-item",
+      "etiqueta": "Select Item...",
+      "estado": "todo",
+      "labview": "Opens a list of the names the control can take.",
+      "necesita": "nombres-daq",
+      "captura": "daqname-menus/m1.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-task-name-control.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the object's properties.",
+      "necesita": "propiedades",
+      "captura": "daqname-menus/m1.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control",
+      "etiqueta": "DAQ Physical Channel Control",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-menus.test.mjs::the other DAQ names have the panel menu of a Physical Channel",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown: Label, Caption and Menu Button.",
+      "necesita": "etiquetas",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the label.",
+      "necesita": "etiquetas",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.visible-items.caption",
+      "etiqueta": "Caption",
+      "estado": "todo",
+      "labview": "Shows or hides the caption.",
+      "necesita": "etiquetas",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.visible-items.menu-button",
+      "etiqueta": "Menu Button",
+      "estado": "todo",
+      "labview": "Shows or hides the arrow button; greyed on an indicator, which has none.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.find-terminal",
+      "etiqueta": "Find Terminal",
+      "estado": "todo",
+      "labview": "Points out the control's terminal on the diagram.",
+      "necesita": "resaltar-terminal",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-menus.test.mjs::Change to Indicator and Data Operations work from the panel menu of a DAQ name",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the control into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the control into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "daqname-menus/m2.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "daqname-menus/m2.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to the control.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m2.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "A local variable of the control.",
+      "necesita": "variables-y-feedback",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "A reference to the control (a DAQ name has no reference class in Solder yet).",
+      "necesita": "clases-de-referencias",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "A Property Node of the control.",
+      "necesita": "nodos-de-propiedades",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "An Invoke Node of the control.",
+      "necesita": "nodos-de-metodos",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Groups the selection in a cluster.",
+      "necesita": "tipo-cluster",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Swaps the control for another one.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-menus.test.mjs::Change to Indicator and Data Operations work from the panel menu of a DAQ name",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-menus.test.mjs::Change to Indicator and Data Operations work from the panel menu of a DAQ name",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-menus.test.mjs::Change to Indicator and Data Operations work from the panel menu of a DAQ name",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the current value to the clipboard (greyed in LabVIEW too, at rest).",
+      "necesita": "copiar-datos",
+      "captura": "daqname-menus/m2.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the current value to the clipboard.",
+      "necesita": "copiar-datos",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes a value from the clipboard (greyed in LabVIEW too, with nothing to paste).",
+      "necesita": "copiar-datos",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced options for the control.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.advanced.key-navigation",
+      "etiqueta": "Key Navigation...",
+      "estado": "todo",
+      "labview": "Chooses how the keyboard reaches the control.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.advanced.synchronous-display",
+      "etiqueta": "Synchronous Display",
+      "estado": "todo",
+      "labview": "Makes the panel redraw the control each time its value changes.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Opens the control editor to change how the control is drawn.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.advanced.run-time-shortcut-menu",
+      "etiqueta": "Run-Time Shortcut Menu",
+      "estado": "todo",
+      "labview": "Chooses the menu the control shows when the OVI runs.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.advanced.hide-control",
+      "etiqueta": "Hide Control",
+      "estado": "todo",
+      "labview": "Hides the object on the panel; on an indicator it says Hide Indicator.",
+      "necesita": "panel-frontal",
+      "captura": "daqname-menus/m2.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control.advanced.enabled-state",
+      "etiqueta": "Enabled State",
+      "estado": "todo",
+      "labview": "Enables or disables the control, or disables it and greys it.",
+      "necesita": "panel-frontal",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.fit-control-to-pane",
+      "etiqueta": "Fit Control to Pane",
+      "estado": "todo",
+      "labview": "The control grows to fill the pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.scale-object-with-pane",
+      "etiqueta": "Scale Object with Pane",
+      "estado": "todo",
+      "labview": "The control grows with the pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "daqname-menus/m2.png"
+    },
+    {
+      "id": "context.daq-name-control.io-name-filtering",
+      "etiqueta": "I/O Name Filtering...",
+      "estado": "todo",
+      "labview": "Chooses which names the control accepts and lists.",
+      "necesita": "nombres-daq",
+      "captura": "daqname-menus/m2.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control.select-item",
+      "etiqueta": "Select Item...",
+      "estado": "todo",
+      "labview": "Opens a list of the names the control can take.",
+      "necesita": "nombres-daq",
+      "captura": "daqname-menus/m2.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-control.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the object's properties.",
+      "necesita": "propiedades",
+      "captura": "daqname-menus/m2.png",
+      "separado": true
+    },
+    {
+      "id": "context.daq-name-dropdown",
+      "etiqueta": "DAQ Names",
+      "estado": "built",
+      "prueba": "test/editor/daq-name-menus.test.mjs::the arrow of a DAQ name control opens a list with a greyed Browse...",
+      "captura": "daqname-menus/d2.png"
+    },
+    {
+      "id": "context.daq-name-dropdown.browse",
+      "etiqueta": "Browse...",
+      "estado": "todo",
+      "labview": "Opens the browser of the names the control can take (a task's, a channel's, a device's). On a Physical Channel the list goes on with the channels the driver names, Dev1/ai0 and the rest (measured down to Dev1/ai7).",
+      "necesita": "nombres-daq",
+      "captura": "daqname-menus/d2.png"
+    },
+    {
       "id": "context.daq-name-constant",
       "etiqueta": "DAQ Name Constant",
       "estado": "built",
@@ -28313,6 +29957,178 @@
       "labview": "Opens the node's properties dialog.",
       "necesita": "propiedades",
       "captura": "clfn/g2.png",
+      "separado": true
+    },
+    {
+      "id": "context.call-library-terminal",
+      "etiqueta": "Call Library Function Node Parameter",
+      "estado": "built",
+      "prueba": "test/editor/call-library-terminal-menu.test.mjs::the terminal menu of a Call Library Function Node parameter has the measured rows",
+      "captura": "daqname-menus/k5.png"
+    },
+    {
+      "id": "context.call-library-terminal.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the node are shown (the submenu of the terminal was not opened).",
+      "necesita": "etiquetas",
+      "captura": "daqname-menus/k5.png"
+    },
+    {
+      "id": "context.call-library-terminal.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the node's help.",
+      "necesita": "ayuda-contextual",
+      "captura": "daqname-menus/k5.png"
+    },
+    {
+      "id": "context.call-library-terminal.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Looks for examples that use the node.",
+      "necesita": "ejemplos",
+      "captura": "daqname-menus/k5.png"
+    },
+    {
+      "id": "context.call-library-terminal.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the node's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "daqname-menus/k5.png"
+    },
+    {
+      "id": "context.call-library-terminal.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/debugging.test.mjs::a breakpoint is added to a node or a wire and its menu offers Remove and Disable",
+      "captura": "daqname-menus/k5.png",
+      "separado": true
+    },
+    {
+      "id": "context.call-library-terminal.libraries-executables-palette",
+      "etiqueta": "Libraries & Executables Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the two functions of the Libraries & Executables palette.",
+      "necesita": "paleta-bibliotecas-en-menu",
+      "captura": "daqname-menus/k5.png",
+      "separado": true
+    },
+    {
+      "id": "context.call-library-terminal.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/call-library-terminal-menu.test.mjs::Create on the terminal of a Call Library Function Node parameter is greyed while it adapts and works once it is typed",
+      "captura": "daqname-menus/k7.png"
+    },
+    {
+      "id": "context.call-library-terminal.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/call-library-terminal-menu.test.mjs::Create on the terminal of a Call Library Function Node parameter is greyed while it adapts and works once it is typed",
+      "captura": "daqname-menus/k7.png"
+    },
+    {
+      "id": "context.call-library-terminal.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/call-library-terminal-menu.test.mjs::Create on the terminal of a Call Library Function Node parameter is greyed while it adapts and works once it is typed",
+      "captura": "daqname-menus/k7.png"
+    },
+    {
+      "id": "context.call-library-terminal.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/call-library-terminal-menu.test.mjs::Create on the terminal of a Call Library Function Node parameter is greyed while it adapts and works once it is typed",
+      "captura": "daqname-menus/k7.png"
+    },
+    {
+      "id": "context.call-library-terminal.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "A Channel Writer for the parameter; greyed in LabVIEW on an Adapt to Type parameter that is not wired, and enabled on the error terminals.",
+      "necesita": "canales",
+      "captura": "daqname-menus/k7.png"
+    },
+    {
+      "id": "context.call-library-terminal.create.all-controls-and-indicators",
+      "etiqueta": "All Controls and Indicators",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::Create ▸ All Constants and All Controls and Indicators make an object for each terminal that takes one",
+      "captura": "daqname-menus/k7.png",
+      "separado": true
+    },
+    {
+      "id": "context.call-library-terminal.create.all-constants",
+      "etiqueta": "All Constants",
+      "estado": "built",
+      "prueba": "test/editor/call-library-nodes.test.mjs::Create ▸ All Constants and All Controls and Indicators make an object for each terminal that takes one",
+      "captura": "daqname-menus/k7.png"
+    },
+    {
+      "id": "context.call-library-terminal.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the node with another function, keeping the wires that fit.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/k5.png",
+      "separado": true
+    },
+    {
+      "id": "context.call-library-terminal.name-format",
+      "etiqueta": "Name Format",
+      "estado": "built",
+      "prueba": "test/editor/call-library-terminal-menu.test.mjs::the terminal menu of a Call Library Function Node parameter has the measured rows",
+      "captura": "daqname-menus/k5.png",
+      "separado": true
+    },
+    {
+      "id": "context.call-library-terminal.name-format.no-names",
+      "etiqueta": "No Names",
+      "estado": "built",
+      "prueba": "test/editor/call-library-terminal-menu.test.mjs::the terminal menu of a Call Library Function Node parameter has the measured rows",
+      "captura": "daqname-menus/k5.png"
+    },
+    {
+      "id": "context.call-library-terminal.name-format.names",
+      "etiqueta": "Names",
+      "estado": "todo",
+      "labview": "Shows the names of the parameters on the node's rows (not measured).",
+      "necesita": "clfn-formato-de-nombres",
+      "captura": "daqname-menus/k5.png"
+    },
+    {
+      "id": "context.call-library-terminal.configure",
+      "etiqueta": "Configure...",
+      "estado": "built",
+      "prueba": "test/editor/call-library-terminal-menu.test.mjs::the terminal menu of a Call Library Function Node parameter has the measured rows",
+      "captura": "daqname-menus/k5.png"
+    },
+    {
+      "id": "context.call-library-terminal.create-c-file",
+      "etiqueta": "Create C File",
+      "estado": "todo",
+      "labview": "Writes a C source file with the function's prototype (not measured).",
+      "necesita": "clfn-crear-archivo-c",
+      "captura": "daqname-menus/k5.png"
+    },
+    {
+      "id": "context.call-library-terminal.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the node and joins the wires that went in to the ones that came out.",
+      "necesita": "menus-contextuales",
+      "captura": "daqname-menus/k5.png",
+      "separado": true
+    },
+    {
+      "id": "context.call-library-terminal.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the node's properties dialog.",
+      "necesita": "propiedades",
+      "captura": "daqname-menus/k5.png",
       "separado": true
     },
     {

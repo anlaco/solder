@@ -1,5 +1,5 @@
 {
-  "solder": 4,
+  "solder": 5,
   "connector": {
     "pattern": 4833,
     "inputs": [
@@ -16,7 +16,7 @@
         "cell": 2
       },
       {
-        "name": "control_3",
+        "name": "control_5",
         "cell": 3
       },
       {
@@ -28,7 +28,7 @@
         "cell": 7
       },
       {
-        "name": "control_4",
+        "name": "control_6",
         "cell": 9
       },
       {
@@ -155,16 +155,52 @@
       "default": 5
     },
     {
-      "name": "control_3",
+      "name": "control_5",
       "role": "control",
       "type": "i32",
-      "default": -1
+      "default": -1,
+      "style": "text-ring",
+      "ring-items": [
+        {
+          "text": "Default",
+          "value": -1
+        },
+        {
+          "text": "RSE",
+          "value": 10083
+        },
+        {
+          "text": "NRSE",
+          "value": 10078
+        },
+        {
+          "text": "Differential",
+          "value": 10106
+        },
+        {
+          "text": "Pseudodifferential",
+          "value": 12529
+        }
+      ],
+      "allow-undefined": false
     },
     {
-      "name": "control_4",
+      "name": "control_6",
       "role": "control",
       "type": "i32",
-      "default": 10348
+      "default": 10348,
+      "style": "text-ring",
+      "ring-items": [
+        {
+          "text": "Volts",
+          "value": 10348
+        },
+        {
+          "text": "From Custom Scale",
+          "value": 10065
+        }
+      ],
+      "allow-undefined": false
     }
   ],
   "block-diagram": {
@@ -206,11 +242,11 @@
         "type": "control"
       },
       {
-        "name": "control_3",
+        "name": "control_5",
         "type": "control"
       },
       {
-        "name": "control_4",
+        "name": "control_6",
         "type": "control"
       }
     ],
@@ -244,10 +280,6 @@
         "to": "case-structure_1.tunnel-in_5"
       },
       {
-        "from": "control_3.result",
-        "to": "case-structure_1.tunnel-in_6"
-      },
-      {
         "from": "control_1.result",
         "to": "case-structure_1.tunnel-in_7"
       },
@@ -256,12 +288,16 @@
         "to": "case-structure_1.tunnel-in_8"
       },
       {
-        "from": "control_4.result",
-        "to": "case-structure_1.tunnel-in_9"
-      },
-      {
         "from": "daq-name-control_3.result",
         "to": "case-structure_1.tunnel-in_10"
+      },
+      {
+        "from": "control_5.result",
+        "to": "case-structure_1.tunnel-in_6"
+      },
+      {
+        "from": "control_6.result",
+        "to": "case-structure_1.tunnel-in_9"
       }
     ],
     "structures": [
@@ -586,18 +622,18 @@
           "text": "maximum value\n"
         }
       },
-      "control_3": {
-        "x": 521,
-        "y": 621,
+      "control_5": {
+        "x": 969,
+        "y": 161,
         "label": {
-          "text": "input terminal configuration\n"
+          "text": "input terminal configuration"
         }
       },
-      "control_4": {
-        "x": 721,
-        "y": 621,
+      "control_6": {
+        "x": 1269,
+        "y": 161,
         "label": {
-          "text": "units\n"
+          "text": "units"
         }
       },
       "case-structure_1": {
@@ -739,18 +775,18 @@
           "text": "maximum value\n"
         }
       },
-      "control_3": {
-        "x": 211,
-        "y": 141,
+      "control_5": {
+        "x": 969,
+        "y": 161,
         "label": {
-          "text": "input terminal configuration\n"
+          "text": "input terminal configuration"
         }
       },
-      "control_4": {
-        "x": 411,
-        "y": 141,
+      "control_6": {
+        "x": 1269,
+        "y": 161,
         "label": {
-          "text": "units\n"
+          "text": "units"
         }
       }
     },
@@ -795,6 +831,11 @@
           216
         ]
       },
+      "call-library_1.arg-0-in": {
+        "bends": [
+          339
+        ]
+      },
       "case-structure_1.selector": {
         "bends": [
           68
@@ -805,9 +846,18 @@
           61
         ]
       },
-      "call-library_1.arg-0-in": {
+      "case-structure_1.tunnel-in_6": {
         "bends": [
-          339
+          1015,
+          241,
+          192
+        ]
+      },
+      "case-structure_1.tunnel-in_9": {
+        "bends": [
+          1315,
+          269,
+          192
         ]
       }
     },

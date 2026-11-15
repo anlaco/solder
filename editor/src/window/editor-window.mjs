@@ -27,6 +27,7 @@ import { createBrowserPool } from "./browser-pool.mjs";
 import * as D from "../block-diagram/diagram-view.mjs";
 import * as DC from "../block-diagram/diagram-clipboard.mjs";
 import * as ED from "../block-diagram/diagram-editing.mjs";
+import { DAQ_NAME_DROPDOWN_MENU } from "../common/daq-name-menus.mjs";
 import * as UN from "../block-diagram/unbundle-by-name.mjs";
 import * as PN from "../block-diagram/property-nodes.mjs";
 import * as EM from "./edit-menu.mjs";
@@ -1413,8 +1414,6 @@ function objetivo(el) {
   const fila = el.closest(".item-marco");
   if (fila) return { tipo: "fila-marco", nodo: fila.dataset.nodo, k: Number(fila.dataset.marco) };
   // The rows of Read Delimited Spreadsheet's instance list.
-  const filaTipo = el.closest(".item-tipo");
-  if (filaTipo) return { tipo: "fila-tipo", nodo: filaTipo.dataset.nodo, fila: filaTipo.dataset.fila };
   const filaInstancia = el.closest(".item-instancia");
   if (filaInstancia) return { tipo: "fila-instancia", nodo: filaInstancia.dataset.nodo, instancia: filaInstancia.dataset.instancia };
   // The names in the list of an Unbundle By Name.
@@ -1428,7 +1427,7 @@ function objetivo(el) {
   if (t) return { tipo: "terminal", nodo: t.dataset.nodo, puerto: t.dataset.puerto, dir: t.dataset.dir };
   const n = el.closest(".nodo");
   // Un nodo con celdas (la constante de error) dice sobre cuál se pulsó.
-  if (n && !n.closest(".fantasma")) return { tipo: "nodo", id: n.dataset.nodo, ...(el.closest(".celda-error") ? { campo: el.closest(".celda-error").dataset.campo } : {}), ...(el.closest(".fila-nombre") ? { fila: Number(el.closest(".fila-nombre").dataset.fila) } : {}), ...(el.closest(".fila-propiedad") ? { filaPropiedad: Number(el.closest(".fila-propiedad").dataset.filaPropiedad) } : {}), ...(el.closest(".anillo-instancia") ? { anillo: true } : {}), ...(el.closest(".celda-array, .celda-grid") ? { campo: addressFromText(el.closest(".celda-array, .celda-grid").dataset.campo) } : {}) };
+  if (n && !n.closest(".fantasma")) return { tipo: "nodo", id: n.dataset.nodo, ...(el.closest(".celda-error") ? { campo: el.closest(".celda-error").dataset.campo } : {}), ...(el.closest(".fila-nombre") ? { fila: Number(el.closest(".fila-nombre").dataset.fila) } : {}), ...(el.closest(".fila-propiedad") ? { filaPropiedad: Number(el.closest(".fila-propiedad").dataset.filaPropiedad) } : {}), ...(el.closest(".anillo-instancia") ? { anillo: true, anilloEn: topLeftOf(el.closest(".anillo-instancia")) } : {}), ...(el.closest(".celda-array, .celda-grid") ? { campo: addressFromText(el.closest(".celda-array, .celda-grid").dataset.campo) } : {}) };
   const c = el.closest(".tramo-zona");
   if (c) return { tipo: "tramo", cable: c.dataset.cable, k: Number(c.dataset.tramo) };
   return { tipo: "fondo" };
@@ -1459,6 +1458,9 @@ function objetivoPanel(el) {
   // The legend of a graph and the swatch of a plot are parts of it, with menus of their own.
   const parte = el.closest("[data-parte]");
   if (parte) return { tipo: "objeto", id: objectOf(parte), parte: parte.dataset.parte };
+  // A row of the list of a ring's items, open in operate mode (a row that is not built carries no item).
+  const ringRow = el.closest(".item-ring");
+  if (ringRow) return { tipo: "fila-ring", id: ringRow.dataset.nodo, k: ringRow.dataset.ringItem === undefined ? undefined : Number(ringRow.dataset.ringItem) };
   const o = el.closest(".objeto-panel");
   if (o) return { tipo: "objeto", id: o.dataset.nodo };
   return { tipo: "fondo" };
@@ -1481,6 +1483,12 @@ const anclaMenu = (el) => {
   return { x: r.left, y: r.bottom };
 };
 
+/** The top-left corner of an element in window pixels: where a ring's menu opens from. */
+const topLeftOf = (el) => {
+  const box = el.getBoundingClientRect();
+  return { x: box.left, y: box.top };
+};
+
 const ancla = (el) => {
   const r = el.getBoundingClientRect();
   return { x: r.left, y: r.bottom + 2 };
@@ -1489,17 +1497,18 @@ const ancla = (el) => {
 /**
  * The arrow of a VISA resource name (the constant's, or the control's button) opens the menu of the VISA resources
  * flush left under it, and a second press closes it. Solder cannot find resources yet, so the menu only has its
- * greyed Refresh row, which says why (spec/05-editor.md, VISA resource name).
+ * greyed Refresh row, which says why (spec/05-editor.md, VISA resource name). The arrow of a DAQ name control
+ * does the same with its own list, which has Browse..., greyed for the same reason.
  */
-function toggleVisaDropdown(ev, arrow) {
+function toggleNameDropdown(ev, arrow, menuRoot = ED.VISA_DROPDOWN_MENU) {
   ev.preventDefault();
   const nodeId = arrow.closest("[data-nodo]")?.dataset.nodo;
   const owner = conPanel ? pan : dia;
   if (!nodeId) return;
-  const closing = owner.menu?.raiz === ED.VISA_DROPDOWN_MENU;
+  const closing = owner.menu?.raiz === menuRoot;
   const settled = conPanel ? P.confirmar(pan) : ED.confirmar(dia, ctx);
   const box = arrow.closest(".constante, .objeto-panel").getBoundingClientRect();
-  const next = closing ? { ...settled, menu: null } : ED.abrirMenu(settled, ED.VISA_DROPDOWN_MENU, nodeId, box.left, box.bottom);
+  const next = closing ? { ...settled, menu: null } : ED.abrirMenu(settled, menuRoot, nodeId, box.left, box.bottom);
   if (conPanel) cambiarPanel(next);
   else cambiarDiagrama(next);
 }
@@ -1544,7 +1553,9 @@ addEventListener("mousedown", (ev) => {
   const browseButton = ev.target.closest?.("[data-browse]");
   if (browseButton && !ev.target.closest(".menu-contextual")) return browseForPath(ev, browseButton);
   const visaDropdown = ev.target.closest?.("[data-visa-dropdown]");
-  if (visaDropdown && !ev.target.closest(".menu-contextual")) return toggleVisaDropdown(ev, visaDropdown);
+  if (visaDropdown && !ev.target.closest(".menu-contextual")) return toggleNameDropdown(ev, visaDropdown);
+  const daqDropdown = ev.target.closest?.("[data-daq-dropdown]");
+  if (daqDropdown && !ev.target.closest(".menu-contextual")) return toggleNameDropdown(ev, daqDropdown, DAQ_NAME_DROPDOWN_MENU);
   if (ejecutando && !pan.menu) return pulsarEnRun(ev);
   if (dia.menu) {
     if (ev.target.closest(".menu-contextual")) return;
@@ -1635,9 +1646,13 @@ function pulsarEnRun(ev) {
     return;
   }
   ev.preventDefault();
+  // The list of a ring's items is open: a row picks its item, a press anywhere else closes it (DT-091).
+  if (pan.lista) return cambiarPanel(P.pressRingList(pan, sobre));
   // A control a Property Node disabled cannot be operated (DT-072 §6, measured for Disabled 1 and 2).
   if (!PP.isOperable(pan.runProps, sobre.id)) return;
   const n = pan.g.nodos.find((k) => k.id === sobre.id);
+  // A press on a ring control's box opens the list of its items (the arrows step as for any numeric).
+  if (P.opensRingList(pan, sobre)) return cambiarPanel(P.openRingList(pan, sobre.id));
   if ((sobre.tipo === "casilla" || sobre.tipo === "paso") && (n?.tipo === "control" || n?.tipo === "str-control" || n?.tipo === "visa-control" || n?.tipo === "daq-name-control" || n?.tipo === "path-control")) return cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), false));
   // Un array se acciona como parado: se escribe en sus elementos y su índice se mueve (también el de un indicador).
   if ((sobre.tipo === "elem" && n?.tipo === "arr-control") || (sobre.tipo === "paso" && (n?.tipo === "arr-control" || n?.tipo === "arr-indicator"))) return cambiarPanel(P.pulsar(pan, ctx, sobre, punto(ev), false));
@@ -1895,6 +1910,12 @@ addEventListener(
 addEventListener(
   "wheel",
   (ev) => {
+    // The list of an Edit Items dialog scrolls with the wheel; over the rest of the dialog the wheel does nothing.
+    const openDialog = dialogoModal();
+    if (openDialog) {
+      ev.preventDefault();
+      return ev.target.closest?.(".ficha-lista") ? aplicarEnDialogo(MD.wheelIntent(openDialog, ev.deltaY), openDialog) : undefined;
+    }
     const list = ev.target.closest?.(".menu-contextual.desplazable");
     if (!list) {
       if (ev.ctrlKey || !ev.target.closest?.(".lienzo, .barra-desplazamiento")) return;

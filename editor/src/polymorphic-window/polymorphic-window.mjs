@@ -157,7 +157,10 @@ document.addEventListener("mouseover", (event) => {
 
 document.addEventListener("keydown", (event) => {
   if (state.nameDialog) {
-    if (event.key === "Enter") return change(State.acceptNameDialog(state));
+    if (event.key === "Enter") {
+      const next = State.pressEnterInNameDialog(state);
+      return next.nameDialog ? show(next) : change(next);
+    }
     if (event.key === "Escape") return show(State.cancelNameDialog(state));
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     const field = state.nameDialog.focus;

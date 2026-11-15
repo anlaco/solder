@@ -9,6 +9,30 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- `.sdg` format version 5 (DT-091): a ring's items are saved as text–value pairs; a ring constant of an older file opens
+  with its items numbered by position, as before. A file saved by this version does not open in 0.12 or older.
+- DAQ Create Virtual Channel (AI Voltage) takes `input terminal configuration` and `units` as I32 Text Rings with the
+  driver's values (Default, RSE, NRSE, Differential, Pseudodifferential; Volts, From Custom Scale), as LabVIEW's.
+- The polymorphic OVI's selector: a ":" in a Menu Name makes cascading submenus, in the ring's dropdown (which now opens
+  over the ring, as in LabVIEW) and in Select Type ▸, with ticks along the path to the instance; Automatic and its separator
+  appear only when the OVI adapts to the data type. Enter in the Selector Name field of Edit Name... types a line break: the ring
+  draws one line per line and the list's row grows. DAQ Read's instances have DAQmx's menu tree and two-line selector names.
+- The Text Ring and the Menu Ring (DT-091): Controls ▸ Modern ▸ Ring & Enum places them on the panel as plain U16 numerics
+  with LabVIEW's sizes and looks (a Text Ring with arrows and no triangle, a Menu Ring with the triangle and no arrows). In
+  operate mode a click opens the list of the items with the current one checked, and a pick gives the ring that item's value.
+  Their right-click menus, the Ring Constant's too, have LabVIEW's rows: Change to Indicator / Control, Representation (the
+  item values wrap as in LabVIEW), Allow Undefined Values, Select Item... and Edit Items...; Edit Items has the Sequential
+  values box, an editable Values column and the warning that greys OK when two items share a value. Data Entry..., Disable
+  Item, Hide Last Item When Running and the `<Other>...` row are greyed with their reason.
+  In Edit Items the list scrolls with the wheel (enum's too), a blank row made by Enter is not an item, the Values column
+  shows whole values, and a Text Ring's down arrow from a value with no item goes to the first item.
+- The DAQ name controls and indicators have their right-click menu on the panel, in LabVIEW's order: a Task Name's with New DAQ
+  Task, Edit DAQ Task and Generate Code (greyed: Solder has no task configuration tool), the other kinds with a Physical
+  Channel's rows, and the indicator's with Change to Control and Hide Indicator. Change to Indicator / Control and Data
+  Operations work; the rest is greyed with its reason. The control's arrow button opens a list with Browse..., greyed until
+  the editor can ask the DAQ engine for names. On a Call Library Function Node a parameter's terminal has its own menu, and its
+  Create greys Constant, Control and Indicator while an Adapt to Type parameter is unwired, as LabVIEW does.
+
 ## 0.12.0-beta — 2026-11-14
 
 Solder's DAQ add-on acquires: Measurement I/O ▸ DAQ - Data Acquisition places LabVIEW's DAQmx analog-input OVIs, built in

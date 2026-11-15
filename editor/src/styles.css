@@ -394,6 +394,8 @@ svg { display: block; overflow: visible; }
 /* A polymorphic OVI's selector: the border and the triangle are blue (labview-captures/reports/2026-11-05-polymorphic-vi.md). */
 .selector-polimorfico { border-color: var(--selector-border); box-shadow: 1px 1px 0 var(--menu-shadow); }
 .selector-polimorfico .flecha-anillo { border-top-color: var(--selector-border); }
+/* Several lines (a selector name with line breaks): 15 px apart, centred on each other (2026-11-15-poly-selector.md §3). */
+.anillo-instancia .lineas-anillo { text-align: center; line-height: 15px; }
 .invertida { position: absolute; width: 3.6px; height: 3.6px; border-radius: 50%; background: var(--invert-dot-fill); border: 1px solid var(--invert-dot-border); box-sizing: border-box; pointer-events: none; }
 /* En una subpaleta, el nombre de lo que está bajo el ratón, centrado bajo el título. */
 .nombre-sobre { position: absolute; left: 0; right: 0; transform: translateY(-50%); text-align: center; white-space: nowrap; }
@@ -658,10 +660,19 @@ svg { display: block; overflow: visible; }
 .ficha-lista-fila .celda { position: absolute; white-space: nowrap; }
 .ficha-lista-fila .celda.valor { color: var(--list-value-text); }
 .ficha-lista-separador { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--dialog-page-border); }
-.ficha-casilla { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
+.ficha-casilla { display: flex; align-items: center; white-space: nowrap; pointer-events: none; }
+/* Only the box and the label of a checkbox take the click, not the empty space around them. */
+.ficha-casilla-parte { display: inline-flex; align-items: center; gap: 5px; pointer-events: auto; }
+.ficha-lista-fila .celda.valor { display: flex; align-items: center; top: 0; box-sizing: border-box; }
+.ficha-lista-barra { position: absolute; background: var(--scrollbar-thumb); border-radius: 3px; pointer-events: none; }
 .ficha-casilla .cuadro { border: 1px solid var(--checkbox-border); background: var(--checkbox-background); box-sizing: border-box; }
 /* The checkbox of an enum is greyed but present, as LabVIEW draws it (measured). */
 .ficha-casilla.desactivada { color: var(--placeholder-text); }
+/* A ring's Edit Items (block-diagram/ring-items-dialog.mjs): the ticked box, the Values column once it is editable (black
+   instead of grey, measured) and the bold warning about two items of one value (its colour was not measured). */
+.ficha-casilla.marcada .cuadro { background: var(--edit-items-checked); border-color: var(--edit-items-checked); }
+.ficha-lista-fila .celda.valor.editable { color: inherit; }
+.ficha-aviso { position: absolute; font-weight: bold; white-space: nowrap; }
 
 /* Chart History Length..., from labview-captures/graphs/50-chart-history-length-dialog.png. */
 .pv-dialogo.dialogo-historial { font-size: var(--fuente); }

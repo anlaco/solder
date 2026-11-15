@@ -75,16 +75,16 @@
 .sd-panel .sd-step:hover::before { border-top-color: var(--sd-accent); border-left-color: var(--sd-accent); }
 .sd-panel .sd-decorative .sd-step::before { opacity: 0.6; }
 
-/* ——— Numeric, enum and string ——— */
+/* ——— Numeric, enum, ring and string ——— */
 
 /* The whole object is the field, so a control's incrementer sits inside it, as in the mockup. */
-.sd-panel :is(.sd-numeric, .sd-enum, .sd-string) { border-radius: var(--sd-radius); }
-.sd-panel .sd-control:is(.sd-numeric, .sd-enum, .sd-string) { background: var(--sd-surface); box-shadow: var(--sd-raise); }
-.sd-panel .sd-indicator:is(.sd-numeric, .sd-enum, .sd-string) { background: var(--sd-recess); box-shadow: var(--sd-inset); }
-.sd-panel :is(.sd-numeric, .sd-enum, .sd-string) > .sd-field { background: transparent; box-shadow: none; }
-.sd-panel .sd-control:is(.sd-numeric, .sd-enum) > .sd-incrementer { padding: 2px 0 2px 2px; }
-.sd-panel .sd-control:is(.sd-numeric, .sd-enum) > .sd-incrementer + .sd-field { padding-left: 2px; }
-.sd-panel .sd-control.sd-editing:is(.sd-numeric, .sd-enum, .sd-string) { box-shadow: var(--sd-raise), 0 0 0 3px var(--sd-accent-soft); }
+.sd-panel :is(.sd-numeric, .sd-enum, .sd-ring, .sd-string) { border-radius: var(--sd-radius); }
+.sd-panel .sd-control:is(.sd-numeric, .sd-enum, .sd-ring, .sd-string) { background: var(--sd-surface); box-shadow: var(--sd-raise); }
+.sd-panel .sd-indicator:is(.sd-numeric, .sd-enum, .sd-ring, .sd-string) { background: var(--sd-recess); box-shadow: var(--sd-inset); }
+.sd-panel :is(.sd-numeric, .sd-enum, .sd-ring, .sd-string) > .sd-field { background: transparent; box-shadow: none; }
+.sd-panel .sd-control:is(.sd-numeric, .sd-enum, .sd-ring) > .sd-incrementer { padding: 2px 0 2px 2px; }
+.sd-panel .sd-control:is(.sd-numeric, .sd-enum, .sd-ring) > .sd-incrementer + .sd-field { padding-left: 2px; }
+.sd-panel .sd-control.sd-editing:is(.sd-numeric, .sd-enum, .sd-ring, .sd-string) { box-shadow: var(--sd-raise), 0 0 0 3px var(--sd-accent-soft); }
 
 /* A VISA resource name: its field is a card like the string's, and its button a raised key. */
 .sd-panel .sd-visa-icon { padding-left: 2px; }

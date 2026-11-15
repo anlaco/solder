@@ -46,6 +46,10 @@ When the developer says "keep going":
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
 
+*2026-11-15: rings with free values (Text Ring, Menu Ring, Ring Constant; DT-091, `.sdg` version 5), the polymorphic
+selector's submenus and two-line names, and the DAQ name controls' panel menus; the DAQ plugin's open findings of 0.12
+closed. Next: DAQ Write, the triggers and the Property Nodes.*
+
 *2026-11-07: free labels on the panel and the diagram (DT-085), measured in LabVIEW and done the same day, after a user
 found that a double click on an empty spot did nothing (`coverage.md` had them ticked by mistake); the `.sdg` format is
 at version 4. Left: selecting the word under a double click (needs a caret in text editing), the Decorations "Label".*
@@ -800,6 +804,13 @@ array or string read by a local variable while another loop writes it is never t
       (DT-081 amendment; `scripts/pack-addons.mjs`), its Windows `nilvaiu.dll` and the I/O addon built in the VM
       ([`windows-build-0.12`](../../labview-captures/reports/2026-11-14-windows-build-0.12.md)). Next: the open findings
       above, then Write, the triggers and the rings.*
+      *The open findings done on 2026-11-15, each measured in LabVIEW first: rings with free values (DT-091, `.sdg`
+      version 5; [`rings`](../../labview-captures/reports/2026-11-15-rings.md)), and Create Virtual Channel's two I32
+      stand-ins rebuilt by hand as NI's I32 Text Rings ([`stage11`](../../labview-captures/reports/2026-11-15-daq-plugin-stage11.md));
+      the selector's ':' submenus and two-line names ([`poly-selector`](../../labview-captures/reports/2026-11-15-poly-selector.md),
+      DT-074 amendment); the DAQ name controls' panel menus and arrow list, and Create ▸ on a Call Library Function
+      Node's parameter ([`daqname-menus`](../../labview-captures/reports/2026-11-15-daqname-menus.md), closing S5-#1);
+      S10-#8 not reproduced and kept by a test. Next: DAQ Write, the triggers and the Property Nodes.*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

@@ -19,6 +19,7 @@
 //     { tipo: "rectangulo", x0, y0, x1, y1, base }     selecting by dragging over the background
 //   edicion    { nodo, etiqueta: true, texto, todo } while typing into a label,
 //              or { nodo, valor: true, texto, todo } into a control's box
+//   lista      { nodo, x, y } the list of items of a ring, open in operate mode (panel-rings.mjs)
 //   menu       { raiz, nodo, x, y, abierto } the right-click menu of a boolean control
 //              (handled with the same functions as the diagram's: diagram-editing.mjs)
 
@@ -28,7 +29,11 @@ import * as FL from "../common/free-labels.mjs";
 import { FREE_LABEL, isFreeLabel } from "../../../core/model/free-label.mjs";
 import { BOOLEANOS } from "../common/glyphs.mjs";
 import { isUndefinedArray } from "../../../core/model/types.mjs";
+import { ringItems } from "../../../core/model/ring.mjs";
+import { arrowRingValue, isPanelRing, ringMenuRoot, shownRingText, withPickedRingItem } from "../common/ring-editing.mjs";
+import { ringLabel, ringListHtml, ringMeasures } from "./panel-rings.mjs";
 import { daqNameText, isDaqName } from "../../../core/model/daq-name.mjs";
+import { daqNamePanelMenuRoot, isDaqNamePanelObject } from "../common/daq-name-menus.mjs";
 import { controlForElement, elementMenuRoot, emptyArrayAgain, isEmptyArrayShell, panelArrayFromElement, typeEmptyArray } from "../common/array-typing.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { REPEATED_PASTE_STEP } from "../common/paste-memory.mjs";
@@ -196,7 +201,7 @@ const pathTextWidth = (M = MEDIDAS_PATH_PANEL) => M.ancho - 2 * M.bisel - M.celd
 export const estiloDe = (tipo, config) => (CONTROLES[tipo]?.booleano ? BOOLEANOS[config?.style] ?? BOOLEANOS["push-button"] : null);
 
 /** La etiqueta con que nace un control: la de su clase si es booleano o un enum, o la del bloque. */
-const etiquetaNueva = (tipo, config) => claseError(tipo, config)?.etiqueta ?? estiloDe(tipo, config)?.etiqueta ?? (isDaqName(config?.type) ? daqNameText(config.type) : esEnum(config?.type) ? "Enum" : CONTROLES[tipo]?.etiqueta) ?? "";
+const etiquetaNueva = (tipo, config) => claseError(tipo, config)?.etiqueta ?? ringLabel(tipo, config) ?? estiloDe(tipo, config)?.etiqueta ?? (isDaqName(config?.type) ? daqNameText(config.type) : esEnum(config?.type) ? "Enum" : CONTROLES[tipo]?.etiqueta) ?? "";
 
 /**
  * Medidas de un control numérico, de numeric-panel.png: la casilla mide
@@ -255,6 +260,11 @@ export function cajaObjeto(tipo, x, y, config) {
   if (CONTROLES[tipo]?.daq) return { x, y, ancho: tipo === "daq-name-control" ? MEDIDAS_DAQ_NAME_PANEL.anchoControl : MEDIDAS_DAQ_NAME_PANEL.anchoIndicador, alto: MEDIDAS_DAQ_NAME_PANEL.alto, casilla: 0 };
   if (CONTROLES[tipo]?.visa) return { x, y, ancho: MEDIDAS_VISA_PANEL.ancho, alto: MEDIDAS_VISA_PANEL.alto, casilla: 0 };
   if (CONTROLES[tipo]?.cadena) return { x, y, ancho: MEDIDAS_CADENA_PANEL.ancho, alto: MEDIDAS_CADENA_PANEL.alto, casilla: 0 };
+  const ring = ringMeasures(tipo, config);
+  if (ring) {
+    const start = ring.arrows ? inicioCasilla(tipo) : 0;
+    return { x, y, ancho: start + ring.width, alto: ring.height, casilla: start };
+  }
   const casilla = inicioCasilla(tipo);
   return { x, y, ancho: casilla + (esEnum(config?.type) ? CASILLA_ENUM : M.casilla), alto: M.alto, casilla };
 }
@@ -276,7 +286,7 @@ function isInMoveBand(box, point) {
 }
 
 /** Whether a press in the node's value box types in it: numeric controls with an incrementer, and string controls. */
-const typesInValueBox = (n) => (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control" || n?.tipo === "visa-control" || n?.tipo === "daq-name-control" || n?.tipo === "path-control") && !esEnum(n?.config?.type);
+const typesInValueBox = (n) => (CONTROLES[n?.tipo]?.incrementador || n?.tipo === "str-control" || n?.tipo === "visa-control" || n?.tipo === "daq-name-control" || n?.tipo === "path-control") && !esEnum(n?.config?.type) && !isPanelRing(n);
 
 /**
  * The edit-mode pointer over a panel object, as LabVIEW's automatic tool shows it
@@ -347,6 +357,8 @@ const textoValor = (n, ctx, valores) => {
   // An enum shows the name of its current item (DT-049); while running, the value that
   // arrives is the item's number.
   if (esEnum(tipoDe(n))) return (n.config?.type?.enum ?? [])[valores?.[n.id] ?? valorActual(n) ?? 0] ?? "";
+  // A ring shows the text of the item with its value, or <value> (DT-091), also while running.
+  if (isPanelRing(n)) return shownRingText(n, valores);
   return esCadena(n) ? String(valores?.[n.id] ?? valorActual(n) ?? "") : formatear(valores?.[n.id] ?? valorActual(n) ?? 0, tipoDe(n), ctx.separador);
 };
 
@@ -481,6 +493,7 @@ function panelObject(n, ctx, selected, p, resolvedTypes) {
   if (control?.path) return HC.pathHtml(frame, { valueHtml: typedOrText(editing, shownPathText(pathValueText(n, ctx, p.valores), ctx)), notAPath: isNotAPath(pathValueOf(n, p.valores)) });
   if (control?.visa) return HC.visaHtml(frame, { valueHtml, ...(control.daq && HC.DAQ_NAME_VARIANT) });
   if (control?.cadena) return HC.stringHtml(frame, { valueHtml });
+  if (isPanelRing(n)) return HC.ringHtml(frame, { style: n.config.style, valueHtml, withArrows: ringMeasures(n.tipo, n.config).arrows });
   return HC.numericHtml(frame, { valueHtml, withIncrementer: !!control?.incrementador, isEnum: esEnum(tipoDe(n)) });
 }
 
@@ -508,6 +521,8 @@ export function contenido(p, ctx, resueltos) {
     const labelClass = disabledOf(p.runProps, n.id) === DISABLED.grayed ? "sd-label sd-grayed" : "sd-label";
     if (labelShown(n)) html += Et.pintar(n, cajaEtiqueta(n, ctx.medir, p.edicion), { edicion: p.edicion, elegida: elegidos.has(idEtiqueta(n.id)), publicClass: labelClass });
   }
+  const listed = p.lista && p.g.nodos.find((n) => n.id === p.lista.nodo);
+  if (listed) html += ringListHtml(listed, p.lista, p.valores, ctx);
   const { accion } = p;
   if (accion?.tipo === "colocar" && accion.x !== undefined) {
     // Mientras se arrastra desde la paleta, LabVIEW enseña sólo el contorno
@@ -543,7 +558,7 @@ function emptyShellAt(g, pt) {
 function esquina(bloque, pt, config) {
   const k = cajaObjeto(bloque, 0, 0, config);
   // Un booleano cuelga por el centro de su dibujo.
-  const mitad = estiloDe(bloque, config) || CONTROLES[bloque]?.cadena || CONTROLES[bloque]?.array || CONTROLES[bloque]?.grafico || claseError(bloque, config) ? k.ancho / 2 : k.casilla + MEDIDAS_PANEL.casilla / 2;
+  const mitad = estiloDe(bloque, config) || ringMeasures(bloque, config) || CONTROLES[bloque]?.cadena || CONTROLES[bloque]?.array || CONTROLES[bloque]?.grafico || claseError(bloque, config) ? k.ancho / 2 : k.casilla + MEDIDAS_PANEL.casilla / 2;
   return { x: Math.round(pt.x - mitad), y: Math.round(pt.y - k.alto / 2) };
 }
 
@@ -578,6 +593,8 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
   // Pulsar fuera de lo que se escribe lo confirma, y nada más, como en el vídeo.
   if (p.edicion && !enLoQueSeEscribe) return confirmar(p);
   if (p.edicion) return p;
+  // A press anywhere else closes the list of a ring.
+  if (p.lista) return { ...p, lista: null };
   if (p.accion?.tipo === "colocar") return colocar(p, ctx, pt);
   const elegir = (id) => {
     const ya = p.seleccion.includes(id);
@@ -778,11 +795,15 @@ export function menuDe(n, onElement = false) {
   if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return (onElement && elementMenuRoot(n)) || "context.panel-array";
   // A graph's menu, with its settings (labview-captures/graphs/10..45); the same root in Run mode is another one (graph-menus.mjs).
   if (isGraph(n)) return `context.${n.tipo}`;
+  // A Text Ring or a Menu Ring has its own menus, measured (DT-091).
+  if (isPanelRing(n)) return ringMenuRoot(n);
   // An enum control or indicator has its own menus, measured (DT-049).
   if (esEnum(n.config?.type) && (n.tipo === "control" || n.tipo === "indicator")) return n.tipo === "control" ? "context.enum-control" : "context.enum-indicator";
   // A VISA resource name (reports/2026-10-26-visa-resource-name-look.md Q5).
   // The panel's indicator was not measured: its menu does not open yet.
   if (n.tipo === "visa-control") return "context.visa-control";
+  // A DAQ name control and indicator, by their kind (reports/2026-11-15-daqname-menus.md Q1).
+  if (isDaqNamePanelObject(n)) return daqNamePanelMenuRoot(n);
   // A File Path Control and Indicator share a menu; the indicator's Change to Control is a variant (diagram-editing.mjs).
   if (n.tipo === "path-control" || n.tipo === "path-indicator") return "context.path-control";
   // A numeric control, measured with its Create ▸ (property-node-panel/pc2.png); the indicator's was not read.
@@ -894,9 +915,33 @@ function pasoValor(g, id, paso) {
   const n = g.nodos.find((m) => m.id === id);
   // The arrows of an enum move to the next or the previous item (whether they wrap around at
   // the ends is unverified; here they stop).
+  if (isPanelRing(n)) return CV.setCurrentValue(g, id, arrowRingValue(ringItems(n.config), valorActual(n) ?? 0, paso));
   const items = n.config?.type?.enum;
   if (items) return CV.setCurrentValue(g, id, Math.max(0, Math.min(items.length - 1, (valorActual(n) ?? 0) + paso)));
   return CV.setCurrentValue(g, id, convertirValor((valorActual(n) ?? 0) + paso, tipoDe(n)));
+}
+
+/** Whether a press on `sobre` opens the list of a ring: operate mode, on a control's box (an indicator cannot be operated). */
+export function opensRingList(p, sobre) {
+  const node = p.g.nodos.find((candidate) => candidate.id === sobre?.id);
+  return isPanelRing(node) && node.tipo === "control" && (sobre.tipo === "casilla" || sobre.tipo === "objeto");
+}
+
+/** The list of a ring's items, opened at the top left of its box (measured, reports/2026-11-15-rings.md §6). */
+export function openRingList(p, id) {
+  const box = caja(p.g.nodos.find((candidate) => candidate.id === id));
+  return { ...p, lista: { nodo: id, x: box.x + box.casilla, y: box.y }, seleccion: [], accion: null };
+}
+
+/**
+ * A press while the list is open: a row picks its item, which gives the ring the item's value; anywhere else (or on the
+ * greyed `<Other>...` row) closes the list and does nothing.
+ */
+export function pressRingList(p, sobre) {
+  const closed = { ...p, lista: null };
+  if (sobre?.tipo !== "fila-ring") return closed;
+  const { [sobre.id]: _, ...valores } = p.valores ?? {};
+  return { ...closed, g: withPickedRingItem(p.g, sobre.id, sobre.k), valores };
 }
 
 /**
@@ -952,6 +997,7 @@ export function confirmar(p) {
 /** Esc deja la etiqueta como estaba o lo que está a medias; si no hay nada, vacía la selección. */
 export function escape(p) {
   if (p.menu) return { ...p, menu: null };
+  if (p.lista) return { ...p, lista: null };
   // Escape cancels a free label just started, the whole of it (measured).
   if (p.edicion?.graphBefore) return { ...p, g: p.edicion.graphBefore, edicion: null };
   if (p.edicion) return { ...p, edicion: null };

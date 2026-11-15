@@ -42,6 +42,45 @@
 /* The old drawing showed no caret in a field, nor in an array's element: an inline element with no content. */
 .sd-panel :is(.sd-numeric, .sd-enum, .sd-string, .sd-array) .caret { display: inline; vertical-align: baseline; }
 
+/* ——— Text Ring and Menu Ring (DT-091) ———
+   Measured in LabVIEW 2026 Q3 (reports/2026-11-15-rings.md §3). A Text Ring is a 50 × 25 recessed field with the
+   incrementer's arrows left of it, outside the box (a control); its interior is #fafafa, left bevel #c2c2c2 #b7b7b7
+   #b1b1b1 and right bevel #eaeaea #ededed #f2f2f2 (the outermost row of each side was not read: the VISA name's is
+   used). An indicator has no arrows, an #d2d2d2 interior and a darker left bevel #c9c9c9 #b8b8b8 #adadad #a7a7a7 (its
+   right side and bottom were not read: the control's). A Menu Ring is a 115 × 21 flat bar of a vertical gradient from
+   #d3d3d3 to about #b8b8b8 with a dark #737373 lower edge, centred text and the dropdown triangle at its right end,
+   identical on a control and an indicator. The text is clipped to the box in both; the triangle's size is unverified. */
+.sd-panel .sd-ring { display: block; }
+.sd-panel .sd-ring .sd-field {
+  position: absolute; top: 0; bottom: 0; left: 0; box-sizing: border-box; width: 50px; min-width: auto; align-items: center; justify-content: normal;
+  padding: 0 0 0 6px; border: 0; border-radius: 0; background: #fafafa; font-size: var(--fuente); line-height: 1;
+  box-shadow:
+    inset 1px 0 0 #c9c9c9, inset 0 1px 0 #d3d3d3, inset -1px 0 0 #eaeaea, inset 0 -1px 0 #eaeaea,
+    inset 2px 0 0 #c2c2c2, inset 0 2px 0 #c2c2c2, inset -2px 0 0 #ededed, inset 0 -2px 0 #ededed,
+    inset 3px 0 0 #b7b7b7, inset 0 3px 0 #adadad, inset -3px 0 0 #f2f2f2, inset 0 -3px 0 #f2f2f2,
+    inset 4px 0 0 #b1b1b1, inset 0 4px 0 #b1b1b1, inset -4px 0 0 #eeeeee, inset 0 -4px 0 #eeeeee;
+}
+.sd-panel .sd-ring .sd-incrementer + .sd-field { left: 12px; }
+.sd-panel .sd-text-ring.sd-indicator .sd-field {
+  background: #d2d2d2;
+  box-shadow:
+    inset 1px 0 0 #c9c9c9, inset 0 1px 0 #c9c9c9, inset -1px 0 0 #eaeaea, inset 0 -1px 0 #eaeaea,
+    inset 2px 0 0 #b8b8b8, inset 0 2px 0 #b8b8b8, inset -2px 0 0 #ededed, inset 0 -2px 0 #ededed,
+    inset 3px 0 0 #adadad, inset 0 3px 0 #adadad, inset -3px 0 0 #f2f2f2, inset 0 -3px 0 #f2f2f2,
+    inset 4px 0 0 #a7a7a7, inset 0 4px 0 #a7a7a7, inset -4px 0 0 #eeeeee, inset 0 -4px 0 #eeeeee;
+}
+.sd-panel .sd-ring .sd-value { flex: initial; min-width: auto; overflow: hidden; white-space: nowrap; }
+.sd-panel .sd-ring .caret { display: inline; vertical-align: baseline; }
+.sd-panel .sd-menu-ring { background: linear-gradient(#d3d3d3, #b8b8b8); box-shadow: inset 0 -1px 0 #737373; }
+.sd-panel .sd-menu-ring .sd-field {
+  right: 16px; width: auto; justify-content: center; padding: 0; background: none; box-shadow: none;
+}
+.sd-panel .sd-menu-ring .sd-dropdown {
+  position: absolute; right: 3px; top: 0; bottom: 0; width: 12px; padding: 0; border: 0; border-radius: 0; background: none;
+}
+.sd-panel .sd-menu-ring .sd-dropdown::before { border-top-color: #000; }
+.sd-panel .sd-menu-ring .sd-dropdown:hover::before { border-top-color: #000; }
+
 /* A string's field fills its box and keeps the lines of its text. */
 .sd-panel .sd-string .sd-field { width: 100%; white-space: pre; line-height: 15px; }
 

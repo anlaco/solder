@@ -4,22 +4,22 @@
     {
       "ovi": "DAQ Read (Analog DBL 1Chan 1Samp).sdg",
       "menu-name": "Analog:Single Channel:Single Sample:DBL",
-      "selector-name": "Analog DBL 1Chan 1Samp"
+      "selector-name": "Analog DBL\n1Chan 1Samp"
     },
     {
       "ovi": "DAQ Read (Analog 1D DBL 1Chan NSamp).sdg",
       "menu-name": "Analog:Single Channel:Multiple Samples:1D DBL",
-      "selector-name": "Analog 1D DBL 1Chan NSamp"
+      "selector-name": "Analog 1D DBL\n1Chan NSamp"
     },
     {
       "ovi": "DAQ Read (Analog 1D DBL NChan 1Samp).sdg",
       "menu-name": "Analog:Multiple Channels:Single Sample:1D DBL",
-      "selector-name": "Analog 1D DBL NChan 1Samp"
+      "selector-name": "Analog 1D DBL\nNChan 1Samp"
     },
     {
       "ovi": "DAQ Read (Analog 2D DBL NChan NSamp).sdg",
       "menu-name": "Analog:Multiple Channels:Multiple Samples:2D DBL",
-      "selector-name": "Analog 2D DBL NChan NSamp"
+      "selector-name": "Analog 2D DBL\nNChan NSamp"
     }
   ],
   "show-selector-by-default": true,

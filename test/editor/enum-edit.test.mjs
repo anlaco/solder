@@ -197,3 +197,19 @@ test("Edit Items: a single click selects a row, typing then does nothing and Ent
   assert.equal(EI.act(EI.open(node), `${EI.DIALOG_ID}.row-1`, 2).edicion.fila, 1, "a double click edits the row");
   assert.deepEqual(key(EI.open(node), "Enter"), { accept: true }, "with no row clicked, Enter is still OK");
 });
+
+test("the enum's Edit Items list scrolls with the wheel and its checkbox takes clicks only on box and label (S11-#3, 2026-11-15)", () => {
+  const names = Array.from({ length: 12 }, (_, k) => `Item ${k}`);
+  const dialog = EI.open({ id: "n1", tipo: "enum-const", config: { type: { enum: names }, value: 0 } });
+  const wheeled = EI.wheel(dialog, 40);
+  assert.equal(wheeled.scroll, 40);
+  assert.match(EI.view(INV, wheeled), /row-1" style="top:-11px/);
+  assert.equal(EI.wheel(dialog, 100000).scroll, 12 * 29 - 148);
+  assert.match(EI.view(INV, wheeled), /ficha-lista-barra/);
+  // Enter past the visible rows brings the new row into view.
+  let last = EI.click(dialog, "dialog.enum-edit-items.row-4").dialog;
+  last = EI.key(EI.click(last, "dialog.enum-edit-items.row-11").dialog, { key: "Enter" }).dialog;
+  assert.equal(last.elegida, 12);
+  assert.equal(last.scroll, 13 * 29 - 148);
+  assert.doesNotMatch(EI.view(INV, dialog), /<div class="ficha-casilla[^>]*data-id/);
+});

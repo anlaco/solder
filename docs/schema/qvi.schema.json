@@ -12,7 +12,7 @@
       "description": "Versión del formato. Un lector DEBE rechazar una versión mayor que la que conoce.",
       "type": "integer",
       "minimum": 1,
-      "maximum": 4
+      "maximum": 5
     },
 
     "meta": {
@@ -127,6 +127,13 @@
   },
 
   "$defs": {
+    "ringItem": {
+      "description": "An item of a ring (DT-091): the text it shows and its value, unique within the ring.",
+      "type": "object",
+      "required": ["text", "value"],
+      "additionalProperties": false,
+      "properties": { "text": { "type": "string" }, "value": { "type": "number" } }
+    },
 
     "freeLabel": {
       "description": "One free label: the top-left corner of its box, its text (lines split by \\n) and, on the diagram, the structure and frame it sits in. `width` and `height` only once it was resized; otherwise it fits its text.",
@@ -349,8 +356,16 @@
           "description": "Valor inicial. SEMÁNTICO: forma parte del programa, no de la presentación."
         },
         "style": {
-          "description": "La clase de control booleano (push-button, horizontal-toggle-switch, round-led, stop-button…): su aspecto y su acción mecánica de fábrica. Sólo en los booleanos.",
+          "description": "The control's class: a Boolean's (push-button, horizontal-toggle-switch, round-led, stop-button…), its look and its default mechanical action; or a numeric's ring look, text-ring or menu-ring (DT-091).",
           "type": "string"
+        },
+        "ring-items": {
+          "description": "For a Text Ring or Menu Ring: its items, each a text and its value (DT-091). The type stays the numeric representation.",
+          "type": "array", "items": { "$ref": "#/$defs/ringItem" }, "minItems": 1
+        },
+        "allow-undefined": {
+          "description": "For a Text Ring or Menu Ring: Allow Undefined Values (DT-091; off by default, measured).",
+          "type": "boolean"
         },
         "visible-elements": {
           "description": "Array: cuántos elementos enseña la caja (presentación; de fábrica, 1). Un array de dos dimensiones guarda [filas, columnas] (DT-044).",
@@ -473,8 +488,12 @@
               "type": "integer", "minimum": 1
             },
             "items": {
-              "description": "For unbundle-by-name: the element name each row shows, top to bottom; null for a row not named yet (DT-050). For ring-const: its labels.",
-              "type": "array", "items": { "type": ["string", "null"] }
+              "description": "For unbundle-by-name: the element name each row shows, top to bottom; null for a row not named yet (DT-050). For ring-const: its items, each a text and its value (DT-091; version 4 and older stored texts whose values were their positions).",
+              "type": "array", "items": { "oneOf": [{ "type": ["string", "null"] }, { "$ref": "#/$defs/ringItem" }] }
+            },
+            "allow-undefined": {
+              "description": "For ring-const: whether the menu row Allow Undefined Values is ticked (DT-091; off by default).",
+              "type": "boolean"
             },
             "rowTypes": {
               "description": "For format-into-string and scan-from-string: the type each row keeps when it is not wired (a stretched row copies the one above it, as in LabVIEW).",

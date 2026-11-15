@@ -8,6 +8,8 @@
 
 import * as CV from "../../../core/model/control-values.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
+import { ringItems } from "../../../core/model/ring.mjs";
+import { isRing, withPickedRingItem } from "../common/ring-editing.mjs";
 
 export const DIALOG_ID = "dialog.select-item";
 
@@ -27,8 +29,11 @@ export const LAYOUT = {
 const esc = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const px = (n) => `${Number(n.toFixed(2))}px`;
 
-/** The window for an enum node: the field empty and no row highlighted, not even the current item (measured). */
-export const open = (node) => ({ nodo: node.id, items: node.config?.type?.enum ?? [], filtro: "", resaltado: null, ultimoResaltado: null });
+/**
+ * The window for an enum or ring node: the field empty and no row highlighted, not even the current item (measured for
+ * the enum; a ring's items are its texts, and the window was not measured on a ring: unverified).
+ */
+export const open = (node) => ({ nodo: node.id, items: isRing(node) ? ringItems(node.config).map((item) => item.text) : node.config?.type?.enum ?? [], filtro: "", resaltado: null, ultimoResaltado: null });
 
 /** The indices of the items whose name contains the filter, ignoring case (measured: "o" keeps Hold, Cool, Done). */
 export function shownItems(dialog) {
@@ -96,6 +101,8 @@ export function apply(g, dialog) {
   const picked = pickedItem(dialog);
   const node = g.nodos.find((candidate) => candidate.id === dialog.nodo);
   if (picked === null || !node) return g;
+  // A ring takes the value of the item picked, not its position (DT-091).
+  if (isRing(node)) return withPickedRingItem(g, node.id, picked);
   return node.tipo === "enum-const" ? Gr.fijarValor(g, node.id, picked) : CV.setCurrentValue(g, node.id, picked);
 }
 

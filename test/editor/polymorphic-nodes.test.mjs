@@ -177,19 +177,91 @@ test("the node's bounds with the ring are 190 x 54 for a ring 188 wide, and the 
   assert.deepEqual(D.dentroDe(unwired().g, unwired().ctx, { x0: -3, y0: 40, x1: 5, y1: 50 }), [], "the hidden ring is not");
 });
 
-test("a click on the ring opens the list of Select Type, picking a row there is the same choice (what the ring opens: unverified)", () => {
+test("a click on the ring opens a menu over it with Select Type's rows, and picking a row is the same choice", () => {
   const vi = wiredWith("i32", { selector: true });
   const node = callNode(vi);
-  const clicked = ED.pulsar({ ...ED.inicial(), g: vi.g }, vi.ctx, { tipo: "nodo", id: node.id, anillo: true }, { x: 30, y: 50 });
-  assert.deepEqual(clicked.lista, { nodo: node.id, x: 30, y: 50 });
-  const list = D.contenido(clicked, vi.ctx, Gr.tipos(vi.g, vi.cat));
-  const rows = [...list.matchAll(/class="item-menu item-tipo( marcado)?" data-nodo="[^"]+" data-fila="([^"]+)"[^>]*><span class="texto-menu"[^>]*>([^<]*)</g)].map(([, mark, id, label]) => [id, label, !!mark]);
-  assert.deepEqual(rows, [[PN.AUTOMATIC_ROW, "Automatic", true], [PN.instanceRow(0), "Integer", false], [PN.instanceRow(1), "Double", false]], "the same rows and ticks as Select Type");
-  assert.equal((list.match(/separador-menu/g) ?? []).length, 1, "a separator after Automatic");
+  const clicked = ED.pulsar({ ...ED.inicial(), g: vi.g }, vi.ctx, { tipo: "nodo", id: node.id, anillo: true, anilloEn: { x: 72, y: 247 } }, { x: 80, y: 250 });
+  assert.deepEqual([clicked.menu.raiz, clicked.menu.nodo, clicked.menu.x, clicked.menu.y], [PN.RING_MENU_ROOT, node.id, 72, 245], "measured: its left edge on the ring's, its top 2 px above the ring's top");
+  assert.equal(clicked.lista, undefined, "it is a menu, not a list");
+  const rows = drawnRows(vi, clicked);
+  assert.deepEqual(rows.map(([, label, classes]) => [label, classes.includes("marcado")]), [["Automatic", true], ["Integer", false], ["Double", false]], "the same rows and ticks as Select Type");
+  assert.equal((D.menuContextual(INV, clicked.menu, ED.marcados(clicked, vi.ctx), measure, ED.variantes(clicked, vi.ctx)).match(/separador-menu/g) ?? []).length, 1, "a separator after Automatic");
 
-  const picked = ED.pulsar(clicked, vi.ctx, { tipo: "fila-tipo", nodo: node.id, fila: PN.instanceRow(1) }, { x: 0, y: 0 });
-  assert.equal(picked.lista, null);
+  const picked = ED.orden(clicked, rows[2][0], vi.ctx);
+  assert.equal(picked.menu, null);
   assert.equal(picked.g.nodos.find((n) => n.id === node.id).config.instance, 1);
+  const automatic = ED.orden(ED.abrirMenu({ ...ED.inicial(), g: picked.g }, PN.RING_MENU_ROOT, node.id, 0, 0), rows[0][0], vi.ctx);
+  assert.equal(automatic.g.nodos.find((n) => n.id === node.id).config.instance, null, "Automatic sets Automatic");
+});
+
+/** A polymorphic OVI with menu names "Analog:Single:DBL", "Analog:Single:Waveform", "Analog:Multiple:1D DBL" and "Digital". */
+const TREE_SDP = (overrides = {}) =>
+  sdpText({
+    instances: ["Analog:Single:DBL", "Analog:Single:Waveform", "Analog:Multiple:1D DBL", "Digital"].map((menuName, index) => ({ path: `Step (${index % 2 ? "DBL" : "I64"}).sdg`, menuName, selectorName: menuName })),
+    ...overrides,
+  });
+const treeCaller = (config = {}, sdp = TREE_SDP()) => callerOf((b) => b.node("call", "subvi", { ...CALL(), ...config }), { sdp });
+const ringMenuOf = (vi) => ED.abrirMenu({ ...ED.inicial(), g: vi.g }, PN.RING_MENU_ROOT, vi.id.call, 10, 10);
+const withOpen = (menu, abierto) => ({ ...menu, menu: { ...menu.menu, abierto } });
+
+test("':' in a menu name makes cascading submenus in the ring's menu and in Select Type, with ticks along the path to the instance", () => {
+  const vi = treeCaller({ instance: 2 }, TREE_SDP({ adaptToDataType: false }));
+  const ring = ringMenuOf(vi);
+  const labels = (rows) => rows.map(([, label, classes]) => `${label}${classes.includes("marcado") ? " ✓" : ""}`);
+  // Level 1: no Automatic and no separator, Analog ticked (the path to the instance picked), and every row in the list's order.
+  assert.deepEqual(labels(drawnRows(vi, ring)), ["Analog ✓", "Digital"]);
+  const analog = drawnRows(vi, ring)[0][0];
+  assert.match(D.menuContextual(INV, ring.menu, new Set(), measure, ED.variantes(ring, vi.ctx)), /flecha-menu/);
+  assert.ok(ED.menuRowHasSubmenu(ring, vi.ctx, INV, analog), "Analog opens a submenu");
+  assert.ok(!ED.menuRowHasSubmenu(ring, vi.ctx, INV, drawnRows(vi, ring)[1][0]), "Digital is a leaf");
+  // Levels 2 and 3, opened by hovering (sobreMenu) the row that has the submenu.
+  const level2 = withOpen(ring, analog);
+  assert.deepEqual(labels(drawnRows(vi, level2, analog)), ["Single", "Multiple ✓"]);
+  const multiple = drawnRows(vi, level2, analog)[1][0];
+  assert.deepEqual(labels(drawnRows(vi, withOpen(ring, multiple), multiple)), ["1D DBL ✓"]);
+  const single = drawnRows(vi, level2, analog)[0][0];
+  assert.deepEqual(labels(drawnRows(vi, withOpen(ring, single), single)), ["DBL", "Waveform"], "leaves with the instance's last segment, in the list's order");
+
+  // Picking a leaf sets the instance; hovering another row of a submenu keeps the ones that hold it open.
+  const leaf = drawnRows(vi, withOpen(ring, single), single)[1][0];
+  assert.equal(ED.orden(withOpen(ring, single), leaf, vi.ctx).g.nodos.find((n) => n.id === vi.id.call).config.instance, 1);
+  assert.equal(ED.sobreMenu(withOpen(ring, single), leaf, false).menu.abierto, single, "its own submenu stays open");
+
+  // Select Type ▸ shows the same tree and the same ticks.
+  const selectType = withOpen(menuOf(vi), PN.SELECT_TYPE_ROW);
+  assert.deepEqual(labels(drawnRows(vi, selectType, PN.SELECT_TYPE_ROW)), ["Analog ✓", "Digital"]);
+  const selectAnalog = drawnRows(vi, selectType, PN.SELECT_TYPE_ROW)[0][0];
+  assert.deepEqual(labels(drawnRows(vi, withOpen(menuOf(vi), selectAnalog), selectAnalog)), ["Single", "Multiple ✓"]);
+  assert.ok(ED.marcados(selectType, vi.ctx).has(selectAnalog) && ED.marcados(ring, vi.ctx).has(analog));
+  assert.equal(PN.choiceOfRow(leaf).choice, 1);
+  assert.equal(PN.choiceOfRow(`${PN.MENU_ROOT}.view-as-icon`), null);
+});
+
+test("Automatic and its separator are the first rows only when the polymorphic OVI adapts to the data type, ticked while it is on", () => {
+  const adapting = treeCaller({}, TREE_SDP());
+  const rows = drawnRows(adapting, ringMenuOf(adapting));
+  assert.deepEqual(rows.map(([, label, classes]) => `${label}${classes.includes("marcado") ? " ✓" : ""}`), ["Automatic ✓", "Analog", "Digital"], "no instance is ticked in Automatic mode");
+  assert.equal((D.menuContextual(INV, ringMenuOf(adapting).menu, new Set(), measure, ED.variantes(ringMenuOf(adapting), adapting.ctx)).match(/separador-menu/g) ?? []).length, 1);
+  const fixed = treeCaller({ instance: 3 }, TREE_SDP({ adaptToDataType: false }));
+  assert.deepEqual(drawnRows(fixed, ringMenuOf(fixed)).map(([, label]) => label), ["Analog", "Digital"], "measured on DAQmx Read, which does not adapt: no Automatic, no separator");
+  assert.deepEqual(drawnRows(fixed, withOpen(menuOf(fixed), PN.SELECT_TYPE_ROW), PN.SELECT_TYPE_ROW).map(([, label, classes]) => `${label}${classes.includes("marcado") ? " ✓" : ""}`), ["Analog", "Digital ✓"]);
+});
+
+test("a selector name with a line break draws on two lines: 19 + 15 px tall, as wide as the widest line, the triangle centred", () => {
+  const twoLines = "Analog DBL\n1Chan 1Samp";
+  assert.deepEqual(PN.selectorRing("Top", measure).alto, 19, "one line, measured 19");
+  const ring = PN.selectorRing(twoLines, measure);
+  assert.deepEqual([ring.alto, ring.ancho, ring.y], [34, "1Chan 1Samp".length * 7 + PN.SELECTOR_TEXT_PADDING, 33], "measured: 34 = 19 + 15; the widest line sets the width");
+  // DAQmx Read's measured ring is 91 x 34 and its node 93 x 69; a font in which its widest line is 65 px wide reproduces it.
+  const daqmxFont = (text) => (text === "1Chan 1Samp" ? 91 - PN.SELECTOR_TEXT_PADDING : 0);
+  const vi = callerOf((b) => b.node("call", "subvi", { ...CALL(), selector: true }), { sdp: sdpText({ instances: [{ path: "Step (I64).sdg", menuName: "Analog:DBL", selectorName: twoLines }, { path: "Step (DBL).sdg", menuName: "Double", selectorName: "Double" }] }) });
+  const bounds = PN.nodeBounds(callNode(vi), vi.cat, daqmxFont);
+  assert.deepEqual([bounds.ancho, bounds.alto], [93, 69], "measured: 93 x 69 = icon 32 + 1 + ring 34 + 2 px shadow");
+  const html = htmlOf(vi);
+  assert.match(html, /<span class="texto-anillo lineas-anillo" style="width:77px">Analog DBL<br>1Chan 1Samp<\/span><span class="flecha-anillo" style="top:14px">/, "two lines in one block, the triangle 14 px from the top of the ring's inside");
+  assert.match(html, /selector-polimorfico" data-nodo="[^"]+" style="left:-?[\d.]+px;top:33px;width:\d+px;height:34px"/);
+  const oneLine = unwired({ selector: true });
+  assert.match(htmlOf(oneLine), /<span class="texto-anillo">Integer<\/span><span class="flecha-anillo"><\/span>/, "one line is drawn as before");
 });
 
 // ——— The menu ———
@@ -279,17 +351,6 @@ test("a wire to a terminal the chosen instance lacks is loosened where the termi
   assert.ok(Gr.esSuelto(wire.a), "the wire keeps its source and loses its sink");
   assert.deepEqual(wire.a.suelto, [0, 20], "the loose end is where the terminal was, on the left edge of the icon at its cell's middle");
   assert.equal(Gr.tipos(hand.g, vi.cat).cables.get(wire.id).roto, Gr.LOOSE_WIRE_REASONS.looseEnd);
-});
-
-test("Automatic is greyed in Select Type, and the ring's list, when the polymorphic OVI does not adapt to the data type", () => {
-  const fixed = callerOf((b) => b.node("call", "subvi", { ...CALL(), instance: 1 }), { sdp: sdpText({ adaptToDataType: false }) });
-  const rows = drawnRows(fixed, inSelectTypeMenu(fixed), PN.SELECT_TYPE_ROW);
-  assert.ok(rows.find(([id]) => id === PN.AUTOMATIC_ROW)[2].includes("desactivado"));
-  assert.ok(!rows.find(([id]) => id === PN.instanceRow(0))[2].includes("desactivado"));
-  assert.deepEqual(ticked(rows), ["Double"], "it keeps the instance it calls");
-  // The ring's list does nothing on the greyed row.
-  const opened = { ...ED.inicial(), g: fixed.g, lista: { nodo: fixed.id.call, x: 0, y: 0 } };
-  assert.equal(ED.pulsar(opened, fixed.ctx, { tipo: "fila-tipo", nodo: fixed.id.call, fila: PN.AUTOMATIC_ROW }, { x: 0, y: 0 }).g, fixed.g);
 });
 
 // ——— Automatic follows the diagram ———

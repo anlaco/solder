@@ -19,10 +19,12 @@ import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
 import * as VN from "./visa-nodes.mjs";
 import * as CL from "./call-library-nodes.mjs";
+import * as CLT from "./call-library-terminal-menu.mjs";
 import * as FileNodes from "./file-nodes.mjs";
 import * as ExpressNodes from "./express-nodes.mjs";
 import * as SpreadsheetNodes from "./spreadsheet-nodes.mjs";
 import * as PolymorphicNodes from "./polymorphic-nodes.mjs";
+import { selectorLines } from "../../../core/model/polymorphic-menu.mjs";
 import * as PN from "./property-nodes.mjs";
 import * as CR from "./control-references.mjs";
 import * as VSR from "./vi-server-references.mjs";
@@ -36,6 +38,8 @@ import { COLORES, CONSTANT_DIGITS, PATH, VISA_RESOURCE, aspecto, isUndefinedArra
 import { GRAPH_KINDS, labelShown } from "../front-panel/graph-state.mjs";
 import { elementMenuRoot } from "../common/array-typing.mjs";
 import { MAX_EDITOR_DIMENSIONS, cellAddress, dimensionsOfNode, firstShown, isDefined, readCell, visibleGrid } from "../common/array-grid.mjs";
+import { ringItems, ringText } from "../../../core/model/ring.mjs";
+import { isRingConstant, ringMenuRoot } from "../common/ring-editing.mjs";
 
 const esNumericoNoEntero = (t) => typeof t === "string" && esNumerico(t) && !esEntero(t);
 
@@ -121,7 +125,8 @@ export const CONSTANTES = {
   // An enum or a ring shows the name of its current item and widens with it (measured,
   // enum report 2026-10-14, question 6; DT-049).
   "enum-const": { texto: (n) => (n.config?.type?.enum ?? [])[n.config?.value ?? 0] ?? "", selector: true },
-  "ring-const": { texto: (n) => (n.config?.items ?? [])[n.config?.value ?? 0] ?? "", selector: true },
+  // A ring shows the text of the item with its value, or <value> when none has it (DT-091).
+  "ring-const": { texto: (n) => ringText(ringItems(n.config), n.config?.value ?? 0), selector: true },
 };
 
 /** Medidas de una constante: «32» ocupa 27 × 27 px del vídeo y «43,3», 39 × 27. */
@@ -1518,36 +1523,32 @@ function subVIIcon(node, cat) {
 
 /**
  * A polymorphic OVI node's selector ring (Visible Items ▸ Polymorphic OVI Selector): under the icon, centred on it,
- * as wide as the selector name it shows, with the dropdown triangle. What a click on it opens was not measured:
- * it opens the list of Select Type ▸ (unverified).
+ * as wide as the widest line of the selector name it shows and as tall as its lines, with the dropdown triangle. A click
+ * on it opens a menu over it (polymorphic-nodes.mjs `RING_MENU_ROOT`).
  */
 function polymorphicSelector(node, ctx) {
   const callee = ctx.cat.polymorphicOf(node);
-  const ring = PolymorphicNodes.selectorRing(PolymorphicNodes.selectorText(node, callee.polymorphic), ctx.medir);
-  return `<div class="anillo-instancia selector-polimorfico" data-nodo="${esc(node.id)}" style="left:${px(ring.x)};top:${px(ring.y)};width:${px(ring.ancho)};height:${px(ring.alto)}"><span class="texto-anillo">${esc(PolymorphicNodes.selectorText(node, callee.polymorphic))}</span><span class="flecha-anillo"></span></div>`;
+  const text = PolymorphicNodes.selectorText(node, callee.polymorphic);
+  const ring = PolymorphicNodes.selectorRing(text, ctx.medir);
+  return `<div class="anillo-instancia selector-polimorfico" data-nodo="${esc(node.id)}" style="left:${px(ring.x)};top:${px(ring.y)};width:${px(ring.ancho)};height:${px(ring.alto)}">${selectorTextHtml(text, ring, ctx)}<span class="flecha-anillo"${selectorArrowStyle(text, ring)}></span></div>`;
 }
 
-/** The list a click on a polymorphic OVI's ring opens: the rows of Select Type ▸ with its ticks. */
-function listaTipos(d, ctx) {
-  const node = d.g.nodos.find((candidate) => candidate.id === d.lista.nodo);
-  const callee = node && ctx.cat.polymorphicOf?.(node);
-  if (!callee) return "";
-  const M = MEDIDAS_MENU;
-  const rows = PolymorphicNodes.selectTypeRows(callee.polymorphic);
-  const ticked = new Set(PolymorphicNodes.tickedRows(node, callee.polymorphic));
-  const greyed = PolymorphicNodes.menuVariants(node, ctx.cat).desactivados;
-  let top = M.arriba;
-  const rowHtml = (row) => {
-    const separator = row.separado ? `<div class="separador-menu" style="top:${px(top + M.separador / 2 - 0.5)}"></div>` : "";
-    if (row.separado) top += M.separador;
-    const marks = `${ticked.has(row.id) ? " marcado" : ""}${greyed.has(row.id) ? " desactivado" : ""}`;
-    const html = `${separator}<div class="item-menu item-tipo${marks}" data-nodo="${esc(node.id)}" data-fila="${esc(row.id)}" style="top:${px(top)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(row.etiqueta)}</span></div>`;
-    top += M.fila;
-    return html;
-  };
-  const html = rows.map(rowHtml).join("");
-  const width = listWidth(rows.map((row) => row.etiqueta), ctx);
-  return `<div class="menu-contextual lista-marcos" style="left:${px(d.lista.x)};top:${px(d.lista.y)};width:${px(width)};height:${px(top + M.arriba)}">${html}</div>`;
+/**
+ * The text of a ring: one line is as an instance ring draws it; several are centred on each other, 15 px apart, in a
+ * block as wide as the widest (measured: DAQmx Read's two lines, centres 110.5 and 111).
+ */
+function selectorTextHtml(text, ring, ctx) {
+  const lines = selectorLines(text);
+  if (lines.length === 1) return `<span class="texto-anillo">${esc(text)}</span>`;
+  const blockWidth = Math.ceil(Math.max(...lines.map(ctx.medir)));
+  return `<span class="texto-anillo lineas-anillo" style="width:${px(blockWidth)}">${lines.map(esc).join("<br>")}</span>`;
+}
+
+/** The triangle of a ring of several lines is vertically centred on it (measured: 14 px from the top of the ring's inside for 34 px); the one-line ring's is in the style sheet. */
+function selectorArrowStyle(text, ring) {
+  if (selectorLines(text).length === 1) return "";
+  const BORDER_AND_TRIANGLE = 2 + 4;
+  return ` style="top:${px(Math.round((ring.alto - BORDER_AND_TRIANGLE) / 2))}"`;
 }
 
 /** The list a click on Read Delimited Spreadsheet's ring opens, with the check mark on its instance (read-ring-menu.png). */
@@ -1571,13 +1572,25 @@ function listaInstancias(d, ctx) {
 function listaValores(d, ctx) {
   const n = d.g.nodos.find((k) => k.id === d.lista.nodo);
   if (!n) return "";
+  const rows = isRingConstant(n) ? ringConstantRows(n) : (n.config?.type?.enum ?? []).map((text, k) => ({ text, checked: k === (n.config?.value ?? 0), attributes: `data-nodo="${esc(n.id)}" data-valor="${k}"` }));
+  return dropDownListHtml({ x: d.lista.x, y: d.lista.y, rows: rows.map((row) => ({ className: "item-valor", ...row })) }, ctx);
+}
+
+/** The rows of a Ring Constant's list: the texts of its items, the check mark on the one that has its value (DT-091). */
+const ringConstantRows = (n) =>
+  ringItems(n.config).map((item, k) => ({ text: item.text, checked: item.value === (n.config?.value ?? 0), attributes: `data-nodo="${esc(n.id)}" data-valor="${k}"` }));
+
+/**
+ * A drop-down list of rows of text at (x, y), a check mark on the `checked` one: an enum's or a ring's items (and the
+ * Case's frames look the same). `rows`: `{ text, checked, className, attributes, grey }`; a row is greyed when it is not built.
+ */
+export function dropDownListHtml({ x, y, rows, minWidth = 0 }, ctx) {
   const M = MEDIDAS_MENU;
-  const items = n.tipo === "enum-const" ? n.config?.type?.enum ?? [] : n.config?.items ?? [];
-  const ancho = listWidth(items, ctx);
-  const filas = items
-    .map((t, k) => `<div class="item-menu item-valor${k === (n.config?.value ?? 0) ? " marcado" : ""}" data-nodo="${esc(n.id)}" data-valor="${k}" style="top:${px(M.arriba + k * M.fila)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(t)}</span></div>`)
+  const width = Math.max(minWidth, listWidth(rows.map((row) => row.text), ctx));
+  const html = rows
+    .map((row, k) => `<div class="item-menu ${row.className}${row.checked ? " marcado" : ""}${row.grey ? " hueco" : ""}" ${row.attributes} style="top:${px(M.arriba + k * M.fila)};height:${px(M.fila)}"><span class="texto-menu" style="left:${px(M.texto)}">${esc(row.text)}</span></div>`)
     .join("");
-  return `<div class="menu-contextual lista-marcos" style="left:${px(d.lista.x)};top:${px(d.lista.y)};width:${px(ancho)};height:${px(M.arriba * 2 + items.length * M.fila)}">${filas}</div>`;
+  return `<div class="menu-contextual lista-marcos" style="left:${px(x)};top:${px(y)};width:${px(width)};height:${px(M.arriba * 2 + rows.length * M.fila)}">${html}</div>`;
 }
 
 /** The drop-down list that is open: the names of an Unbundle or Bundle By Name, the items of an enum or ring constant, or the frames of a Case. */
@@ -1585,7 +1598,6 @@ function listaAbierta(d, ctx, resueltos) {
   const tipo = d.g.nodos.find((n) => n.id === d.lista.nodo)?.tipo;
   if (tipo === UN.BLOCK || tipo === UN.BUNDLE_BLOCK) return listaElementos(d, ctx);
   if (tipo === SpreadsheetNodes.READ_DELIMITED) return listaInstancias(d, ctx);
-  if (tipo === "subvi") return listaTipos(d, ctx);
   return CONSTANTES[tipo]?.selector ? listaValores(d, ctx) : listaMarcos(d, ctx, resueltos);
 }
 
@@ -1747,6 +1759,8 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   // constant (DT-049); the diagram terminal of a panel enum uses the same rows.
   if (esEnum(n.config?.type) && (n.tipo === "control" || n.tipo === "indicator")) return n.tipo === "control" ? "context.enum-control" : "context.enum-indicator";
   if (n.tipo === "enum-const") return "context.enum-constant";
+  // A Ring Constant's, measured (reports/2026-11-15-rings.md §3).
+  if (isRingConstant(n)) return ringMenuRoot(n);
   // The menus of a VISA resource name, measured (reports/2026-10-26-visa-resource-name-look.md Q5).
   if (n.tipo === "visa-resource-constant") return "context.visa-constant";
   if (n.tipo === "visa-control") return "context.visa-control-terminal";
@@ -1777,8 +1791,9 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   if (VN.isVisaNode(n)) return puerto === VN.RESOURCE_PORT ? VN.RESOURCE_TERMINAL_MENU : VN.BODY_MENU;
   // The Property Node: one menu for its header and its rows, the rows of a row shown only on a row (DT-072 §7).
   if (PN.isPropertyNode(n)) return PN.menuRoot(n);
-  // The Call Library Function Node has one menu for the whole node (reports/2026-11-06-clfn.md "Right-click").
-  if (CL.isCallLibraryNode(n)) return CL.MENU_ROOT;
+  // The Call Library Function Node has one menu for the whole node (reports/2026-11-06-clfn.md "Right-click"), and a parameter's
+  // terminal has its own (reports/2026-11-15-daqname-menus.md Q4).
+  if (CL.isCallLibraryNode(n)) return CLT.isParameterPort(puerto) ? CLT.TERMINAL_MENU_ROOT : CL.MENU_ROOT;
   // The control reference constant (reports/2026-11-03-control-references.md Q3).
   if (CR.isControlReference(n)) return "context.control-reference";
   // The VI Server Reference constant (reports/2026-11-14-vi-server-reference.md "Menu").
@@ -1957,7 +1972,7 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
   const hijos = (padre) => (submenus.get(padre) ?? inv.hijos(padre)).filter((e) => !ocultos.has(e.id) && (ultimo(e.id) !== "disable-breakpoint" || mostrados.has(e.id)));
   const rotuloDe = (e) => rotulos.get(e.id) ?? e.etiqueta;
   const anchoAtajos = (padre) => Math.max(0, ...hijos(padre).map((e) => (e.atajo ? medir(e.atajo) : 0)));
-  const anchoTextos = (padre) => Math.max(...hijos(padre).map((e) => medir(rotuloDe(e))));
+  const anchoTextos = (padre) => Math.max(0, ...hijos(padre).map((e) => medir(rotuloDe(e))));
   const anchoDe = (padre) => {
     const atajos = anchoAtajos(padre);
     return M.texto + anchoTextos(padre) + (atajos ? M.antesAtajo + atajos + M.trasAtajo : M.derecha);

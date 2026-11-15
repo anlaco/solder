@@ -82,6 +82,15 @@
 .sd-panel .sd-numeric .sd-field,
 .sd-panel .sd-enum .sd-field { flex: 1; justify-content: flex-start; }
 
+/* ——— Ring ——— */
+
+/* A Text Ring is a field (with arrows on a control); a Menu Ring centres its text and ends in the dropdown triangle. The
+   text never grows the object: it is clipped (measured, DT-091). */
+.sd-panel .sd-ring { display: flex; }
+.sd-panel .sd-ring .sd-field { flex: 1; justify-content: flex-start; min-width: 0; }
+.sd-panel .sd-menu-ring .sd-field { justify-content: center; }
+.sd-panel .sd-ring .sd-value { overflow: hidden; white-space: nowrap; }
+
 /* ——— String ——— */
 
 .sd-panel .sd-string { display: flex; }

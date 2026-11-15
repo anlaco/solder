@@ -4,22 +4,30 @@
 // Port (labview-captures/reports/2026-11-05-polymorphic-vi.md). Pure, over the graph and the catalog view of the OVI.
 
 import * as Gr from "../../../core/model/graph.mjs";
-import { DRAW_ICON, isAutomatic, isPolymorphicNode, selectedInstance } from "../../../core/model/polymorphic.mjs";
+import { DRAW_ICON, isPolymorphicNode, selectedInstance } from "../../../core/model/polymorphic.mjs";
 import { PANE_SIZE } from "../../../core/model/connector.mjs";
 import * as G from "../common/glyphs.mjs";
+import { selectorHeight, selectorLines } from "../../../core/model/polymorphic-menu.mjs";
+import * as SelectorMenu from "./polymorphic-selector-menu.mjs";
 
 export { isPolymorphicNode };
 
 // ——— The selector ring ———
 
-/** The ring sits 1 px under the icon (measured). */
+/**
+ * The ring sits 1 px under the icon: the node's bounds are the icon, this gap and the ring (measured: 54 = 32 + 1 + 19 +
+ * the 2 px shadow, and 69 = 32 + 1 + 34 + 2 for a two-line ring). The 2 px of white that the capture saw between the
+ * icon's last row and the ring's border are this 1 px and, presumably, a blank bottom row of the icon's own bitmap;
+ * the bounds are what the layout follows, so the gap stays 1 (the blank row is not checked).
+ */
 export const SELECTOR_GAP = 1;
-/** The ring is 19 px tall; the shadow it casts adds 2 px to the node's bounds (measured: VISA's ring 188 x 19, bounds 190 x 54). */
-export const SELECTOR_HEIGHT = 19;
+/** The ring is 19 px tall with one line and 15 px more for each further one (`selectorHeight`); its shadow adds 2 px to the node's bounds. */
 export const SELECTOR_SHADOW = 2;
 /**
  * What the ring adds to the width of its text: the margin, the gap and the dropdown triangle. Only the total was
  * measured (188 px for "VISA Configure Serial Port (Instr)"), so this share is unverified; the ring follows its text.
+ * With two lines the ring is as wide as the widest one plus this (measured: lines 73 and 65 px wide in a ring 91 wide
+ * on DAQmx Read, which this reproduces to within the font's rounding).
  */
 export const SELECTOR_TEXT_PADDING = 26;
 
@@ -33,11 +41,12 @@ export const selectorShown = (node, cat) => !!node.config?.selector && !!cat.pol
 
 /**
  * The ring from the icon's top-left corner: centred on the icon (measured: it can be wider than the icon), 1 px
- * below it, as wide as its text. `measureText` is the width of a text in the font the editor draws.
+ * below it, as wide as its widest line and as tall as its lines. `measureText` is the width of a text in the font the editor draws.
  */
 export function selectorRing(text, measureText) {
-  const width = Math.ceil(measureText(text)) + SELECTOR_TEXT_PADDING;
-  return { x: Math.floor((PANE_SIZE - width) / 2), y: PANE_SIZE + SELECTOR_GAP, ancho: width, alto: SELECTOR_HEIGHT };
+  const widestLine = Math.max(...selectorLines(text).map(measureText));
+  const width = Math.ceil(widestLine) + SELECTOR_TEXT_PADDING;
+  return { x: Math.floor((PANE_SIZE - width) / 2), y: PANE_SIZE + SELECTOR_GAP, ancho: width, alto: selectorHeight(text) };
 }
 
 /**
@@ -76,55 +85,53 @@ export function ownIconHtml(iconText) {
 
 export const MENU_ROOT = "context.polymorphic-subvi";
 export const SELECT_TYPE_ROW = `${MENU_ROOT}.select-type`;
-export const AUTOMATIC_ROW = `${SELECT_TYPE_ROW}.automatic`;
+/** The menu the selector ring opens: the same rows as Select Type ▸, as a menu of its own over the ring (measured). */
+export const RING_MENU_ROOT = "context.polymorphic-selector-ring";
 export const SELECTOR_ROW = `${MENU_ROOT}.visible-items.polymorphic-ovi-selector`;
-const INSTANCE_ROW_PREFIX = `${SELECT_TYPE_ROW}.instance-`;
-export const instanceRow = (index) => `${INSTANCE_ROW_PREFIX}${index}`;
-
-/** What a click on a row of Select Type ▸ (or of the ring's list) chooses for Automatic; an instance is its index. */
-export const AUTOMATIC = null;
-
-/** The rows of Select Type ▸ (measured): Automatic, a separator, then each instance's menu name in order. */
-export function selectTypeRows(polymorphic) {
-  return [
-    { id: AUTOMATIC_ROW, etiqueta: "Automatic", estado: "built" },
-    ...polymorphic.instances.map(({ menuName }, index) => ({ id: instanceRow(index), etiqueta: menuName, estado: "built", ...(index === 0 ? { separado: true } : {}) })),
-  ];
-}
-
-/** The choice a row id stands for: `{ choice }` (null for Automatic, else the index), or null when it is not one of the rows. */
-export function choiceOfRow(rowId) {
-  if (rowId === AUTOMATIC_ROW) return { choice: AUTOMATIC };
-  if (!rowId.startsWith(INSTANCE_ROW_PREFIX)) return null;
-  const index = Number(rowId.slice(INSTANCE_ROW_PREFIX.length));
-  return Number.isInteger(index) ? { choice: index } : null;
-}
+export const AUTOMATIC = SelectorMenu.AUTOMATIC;
+/** The id of a first-level row that calls instance `index` in Select Type ▸ (deeper rows have the ids of their submenus). */
+export const instanceRow = (index) => `${SELECT_TYPE_ROW}.instance-${index}`;
+export const AUTOMATIC_ROW = `${SELECT_TYPE_ROW}.automatic`;
 
 /**
- * Which rows of Select Type ▸ carry the tick (measured): with Automatic on only Automatic, whatever it picked; with
- * an instance picked by hand, that instance.
+ * The ring's dropdown opens with its left edge on the ring's and its top 2 px above the ring's top, so that its first row
+ * lies over the ring (measured: 245 against 247).
  */
-export function tickedRows(node, polymorphic) {
-  return [isAutomatic(node, polymorphic) ? AUTOMATIC_ROW : instanceRow(selectedInstance(node, polymorphic))];
+export const RING_MENU_OVERLAP = 2;
+
+/** The choice a row id stands for: `{ choice }` (null for Automatic, else the index), or null when it is not one of the rows of these menus. */
+export function choiceOfRow(rowId) {
+  const inThese = [SELECT_TYPE_ROW, RING_MENU_ROOT].some((root) => rowId.startsWith(`${root}.`));
+  return inThese ? SelectorMenu.choiceOfRow(rowId) : null;
 }
+
+/** The rows of Select Type ▸ (or of the ring's menu, from `RING_MENU_ROOT`) of the node's polymorphic OVI. */
+const menuRowsOf = (node, cat, root) => {
+  const callee = cat.polymorphicOf?.(node);
+  return callee && SelectorMenu.selectorMenuRows(node, callee.polymorphic, root);
+};
+
+/** The ids of the rows of Select Type ▸ (or of the ring's menu, by `root`) that carry a tick: Automatic, or the path to the instance (measured). */
+export const tickedRows = (node, cat, root = SELECT_TYPE_ROW) => menuRowsOf(node, cat, root)?.marks ?? new Set();
 
 /** The ids of the rows of the node's menu that carry a tick, besides the general ones (View As Icon, Terminals). */
 export function menuMarks(node, cat) {
-  const callee = cat.polymorphicOf?.(node);
-  if (!callee) return [];
-  return [...tickedRows(node, callee.polymorphic), ...(node.config?.selector ? [SELECTOR_ROW] : [])];
+  return [...tickedRows(node, cat), ...(cat.polymorphicOf?.(node) && node.config?.selector ? [SELECTOR_ROW] : [])];
 }
 
 /**
- * What the polymorphic node's menu fills in: the rows of Select Type ▸ from the `.sdp`, and Automatic greyed when the
- * `.sdp` does not let the OVI adapt to the data type (DT-074 §1).
+ * What the menus of the polymorphic node fill in: the rows of Select Type ▸ (or, for `RING_MENU_ROOT`, of the ring's
+ * menu) with their submenus, from the `.sdp`. Automatic is a row only when the OVI adapts to the data type (measured).
  */
-export function menuVariants(node, cat) {
-  const callee = cat.polymorphicOf?.(node);
-  if (!callee) return {};
-  const greyed = callee.polymorphic.adaptToDataType ? [] : [AUTOMATIC_ROW];
-  return { desactivados: new Set(greyed), submenus: new Map([[SELECT_TYPE_ROW, selectTypeRows(callee.polymorphic)]]) };
+export function menuVariants(node, cat, root = SELECT_TYPE_ROW) {
+  return { submenus: menuRowsOf(node, cat, root)?.submenus ?? new Map() };
 }
+
+/**
+ * The state of the menu the ring opens at the ring's top-left corner (`ringX`, `ringY` in window pixels), the
+ * dropdown that LabVIEW opens over the ring (measured).
+ */
+export const ringMenuPlace = (ringX, ringY) => ({ x: ringX, y: ringY - RING_MENU_OVERLAP });
 
 // ——— Changing the node ———
 

@@ -37,6 +37,11 @@ import * as PNM from "./property-node-menus.mjs";
 import * as CR from "./control-references.mjs";
 import * as VSR from "./vi-server-references.mjs";
 import * as EI from "./edit-items-dialog.mjs";
+import { RING_REPRESENTATION } from "../../../core/model/ring.mjs";
+import * as RI from "./ring-items-dialog.mjs";
+import { daqNameMenuMarks, daqNameMenuVariants, isDaqNamePanelMenu } from "../common/daq-name-menus.mjs";
+import * as CLT from "./call-library-terminal-menu.mjs";
+import { isPanelRing, isRing, isRingConstant, isRingMenu, toggledAllowUndefined, withPickedRingItem, withRingRepresentation, allowsUndefined } from "../common/ring-editing.mjs";
 import { endPoint } from "./broken-wire.mjs";
 import { sharedSegmentCount } from "./wire-tree.mjs";
 import * as CP from "../front-panel/connector-pane.mjs";
@@ -571,6 +576,13 @@ export function mostrarMarco(d, caso, k) {
   return { ...d, g, seleccion: d.seleccion.filter((id) => !ocultos.has(id.split("#")[0])) };
 }
 
+/** The menu a polymorphic OVI's ring opens, over the ring at `sobre.anilloEn` (window pixels; where the pointer is when the window did not say). */
+function openSelectorMenu(d, sobre, pointer) {
+  const ring = sobre.anilloEn ?? pointer;
+  const place = PolymorphicNodes.ringMenuPlace(ring.x, ring.y);
+  return abrirMenu(d, PolymorphicNodes.RING_MENU_ROOT, sobre.id, place.x, place.y);
+}
+
 /**
  * Pulsar el selector de marcos de un Case: las flechas dan la vuelta (después
  * del último, el primero), el triángulo abre la lista en el punto del clic y el
@@ -918,17 +930,6 @@ function errorFramesFromBoolean(frames) {
 }
 
 /**
- * A row of the list a polymorphic OVI's ring opens: the same choice as Select Type ▸. A row greyed there (Automatic
- * on a polymorphic OVI that does not adapt to the data type) does nothing.
- */
-function chooseTypeFromList(d, ctx, row) {
-  const node = nodoPor(d.g, row.nodo);
-  const greyed = PolymorphicNodes.menuVariants(node, ctx.cat).desactivados;
-  const chosen = PolymorphicNodes.choiceOfRow(row.fila);
-  return greyed?.has(row.fila) || !chosen ? d.g : PolymorphicNodes.setType(d.g, row.nodo, chosen.choice, ctx.cat, terminalPlacer(ctx));
-}
-
-/**
  * Case Insensitive Match (string selector only): toggles `config.caseInsensitive`,
  * which the compiler reads. Off is stored as absence, as the file does.
  */
@@ -980,14 +981,12 @@ export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
     return sobre.tipo === "fila-marco"
       ? mostrarMarco({ ...d, lista: null }, sobre.nodo, sobre.k)
       : sobre.tipo === "fila-valor"
-        ? { ...d, g: Gr.fijarConfig(d.g, sobre.nodo, { value: sobre.k }), lista: null }
+        ? { ...d, g: isRingConstant(nodoPor(d.g, sobre.nodo)) ? withPickedRingItem(d.g, sobre.nodo, sobre.k) : Gr.fijarConfig(d.g, sobre.nodo, { value: sobre.k }), lista: null }
         : sobre.tipo === "fila-elemento"
           ? { ...d, g: chooseUnbundleName(d, ctx, sobre.k), lista: null }
           : sobre.tipo === "fila-instancia"
             ? { ...d, g: ajustarSelectores(Gr.fijarConfig(d.g, sobre.nodo, { instance: sobre.instancia }), ctx), lista: null }
-            : sobre.tipo === "fila-tipo"
-              ? { ...d, g: chooseTypeFromList(d, ctx, sobre), lista: null }
-              : { ...d, lista: null };
+            : { ...d, lista: null };
   // Pulsar fuera de la constante en la que se escribe confirma lo escrito, y
   // nada más: es lo que se ve en el vídeo.
   const typedTargetKind = d.edicion?.etiqueta && !d.edicion.libre ? "etiqueta" : "nodo";
@@ -1018,6 +1017,8 @@ export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
     const pulsado = d.g.nodos.find((n) => n.id === sobre.id);
     // A click on a name row of an Unbundle By Name drops the list of the names of the cluster wired in; unwired, there is none.
     if (UN.isByName(pulsado) && sobre.fila !== undefined && UN.clusterElementNames(d.g, ctx.cat, pulsado.id).length) return { ...d0, seleccion: elegir(sobre.id), lista: { nodo: sobre.id, x: p.x, y: p.y, fila: sobre.fila } };
+    // A polymorphic OVI's ring opens a menu over itself (polymorphic-nodes.mjs); the window says where the ring is.
+    if (sobre.anillo && PolymorphicNodes.isPolymorphicNode(pulsado)) return { ...openSelectorMenu(d0, sobre, p), seleccion: elegir(sobre.id) };
     // Read Delimited Spreadsheet's ring opens its instances (read-ring-menu.png).
     if (sobre.anillo) return { ...d0, seleccion: elegir(sobre.id), lista: { nodo: sobre.id, x: p.x, y: p.y } };
     if (CONSTANTES[pulsado?.tipo]?.selector && !d.seleccion.includes(sobre.id)) return { ...d0, seleccion: elegir(sobre.id), lista: { nodo: sobre.id, x: p.x, y: p.y } };
@@ -1508,15 +1509,15 @@ export function orden(d, id, ctx) {
   if (id.endsWith(".size-to-text") && isFreeLabel(nodoPor(d.g, nodo))) return cerrar(FL.toggleSizeToText(d.g, nodo, ctx.medir, FL.canvasOf(nodoPor(d.g, nodo))));
   // Edit Items… opens the enum's Properties dialog on its Edit Items tab (DT-049); the
   // window draws it and keeps it modal.
-  if (id.endsWith(".edit-items")) return { ...d, menu: null, itemsDialog: EI.open(nodoPor(d.g, nodo)) };
+  if (id.endsWith(".edit-items")) return { ...d, menu: null, itemsDialog: isRing(nodoPor(d.g, nodo)) ? RI.open(nodoPor(d.g, nodo)) : EI.open(nodoPor(d.g, nodo)) };
   // Select Item… of an enum opens its window of items with a filter (select-item-dialog.mjs).
-  if (/^context\.enum-(constant|control|indicator)\.select-item$/.test(id)) return { ...d, menu: null, selectItemDialog: SI.open(nodoPor(d.g, nodo)) };
+  if (/^context\.(enum|ring)-(constant|control|indicator)\.select-item$/.test(id)) return { ...d, menu: null, selectItemDialog: SI.open(nodoPor(d.g, nodo)) };
   // Properties of an Express VI is its configuration dialog (DT-069 §3).
   if (ExpressNodes.isExpressMenu(d.menu.raiz) && id === `${d.menu.raiz}.properties`) return openConfiguration(d, ctx, nodo);
   // Configure... of a Call Library Function Node opens its dialog (DT-080).
-  if (d.menu.raiz === CL.MENU_ROOT && id === `${CL.MENU_ROOT}.configure`) return openCallLibraryConfiguration(d, nodo);
+  if (CLT.isConfigureCommand(d.menu.raiz, id)) return openCallLibraryConfiguration(d, nodo);
   // A polymorphic OVI node: Select Type ▸ and its selector (polymorphic-nodes.mjs).
-  if (d.menu.raiz === PolymorphicNodes.MENU_ROOT) {
+  if (d.menu.raiz === PolymorphicNodes.MENU_ROOT || d.menu.raiz === PolymorphicNodes.RING_MENU_ROOT) {
     const polymorphicGraph = PolymorphicNodes.menuCommand(d.g, nodo, id, ctx.cat, terminalPlacer(ctx));
     if (polymorphicGraph) return cerrar(polymorphicGraph);
   }
@@ -1539,11 +1540,13 @@ export function orden(d, id, ctx) {
   if (id.includes(".change-mode.")) return cerrar(Gr.fijarConfig(d.g, nodo, { mode: ultimo }));
   if (id.includes(".representation.") && POR_ABREVIATURA[ultimo]) {
     // On the element of an array the representation is the whole array's (array-typing stage 2, Q5b).
-    const retype = isArrayNode(nodoPor(d.g, nodo)) ? setArrayRepresentation : Gr.fijarRepresentacion;
+    const retype = isArrayNode(nodoPor(d.g, nodo)) ? setArrayRepresentation : isRing(nodoPor(d.g, nodo)) ? withRingRepresentation : Gr.fijarRepresentacion;
     return cerrar(retype(d.g, nodo, POR_ABREVIATURA[ultimo]));
   }
   // LabVIEW flips the whole panel array from its own menu or from the one of its element.
-  if (/\.change-to-(indicator|control)$/.test(id) && FLIPPABLE_PANEL_KINDS.includes(nodoPor(d.g, nodo)?.tipo)) return cerrar(flipArrayKind(d.g, nodo));
+  if (/\.change-to-(indicator|control)$/.test(id) && (FLIPPABLE_PANEL_KINDS.includes(nodoPor(d.g, nodo)?.tipo) || isPanelRing(nodoPor(d.g, nodo)))) return cerrar(flipArrayKind(d.g, nodo));
+  // Allow Undefined Values of a ring, on the panel and on the diagram (measured: a check mark, on the constant too).
+  if (isRingMenu(d.menu.raiz) && id.endsWith(".allow-undefined")) return cerrar(toggledAllowUndefined(d.g, nodo));
   if (id.includes(".mechanical-action.")) return cerrar(Gr.fijarConfig(d.g, nodo, { mechanical: ultimo }));
   // Data Operations of a panel object or its terminal (DT-053): its current value becomes its default, or the other way round.
   if (id.endsWith(".data-operations.make-current-value-default")) return cerrar(CV.makeCurrentValuesDefault(d.g, [nodo]));
@@ -1791,10 +1794,12 @@ function nodeVariants(d, ctx) {
   if (UN.isByName(n)) return unbundleVariants(d, ctx, n);
   if (PN.isPropertyNode(n) && ctx) return PNM.nodeVariants(d, ctx);
   if (VSR.isViServerReference(n)) return VSR.menuVariants(n);
-  if (n && r === PolymorphicNodes.MENU_ROOT && ctx) return PolymorphicNodes.menuVariants(n, ctx.cat);
+  if (n && (r === PolymorphicNodes.MENU_ROOT || r === PolymorphicNodes.RING_MENU_ROOT) && ctx) return PolymorphicNodes.menuVariants(n, ctx.cat, r === PolymorphicNodes.MENU_ROOT ? PolymorphicNodes.SELECT_TYPE_ROW : r);
   // LabVIEW greys Advanced on the terminals of a VISA resource name (reports/2026-10-26-visa-resource-name-look.md Q5; why is unverified).
   if (r === "context.visa-control-terminal" || r === "context.visa-indicator-terminal") return { desactivados: new Set([`${r}.advanced`]) };
   if (n && PATH_INDICATOR_ROOTS.has(r) && n.tipo === "path-indicator") return pathIndicatorVariants(r);
+  if (n && isDaqNamePanelMenu(r)) return daqNameMenuVariants(n, r);
+  if (n && r === CLT.TERMINAL_MENU_ROOT && ctx) return CLT.menuVariants(d.g, ctx, n, d.menu.puerto);
   if (n?.tipo === "case-selector") {
     const caso = d.g.nodos.find((k) => k.id === n.dentro);
     return { ocultos: fila(caso && esBooleano(caso) ? "numeric-palette" : "boolean-palette"), rotulos: new Map() };
@@ -1957,6 +1962,7 @@ export function marcados(d, ctx) {
   const m = new Set();
   if (n.vista?.terminales) m.add(`${r}.visible-items.terminals`);
   if (r === PolymorphicNodes.MENU_ROOT && ctx) for (const row of PolymorphicNodes.menuMarks(n, ctx.cat)) m.add(row);
+  if (r === PolymorphicNodes.RING_MENU_ROOT && ctx) for (const row of PolymorphicNodes.tickedRows(n, ctx.cat, r)) m.add(row);
   if (!n.vista?.compacto && !ExpressNodes.isExpressMenu(r)) m.add(`${r}.view-as-icon`);
   // Caption is the one item of an Express VI's Visible Items, ticked (measured); in the icon view View As Icon is ticked instead
   // (the caption is not drawn there; whether Caption stays ticked is unverified).
@@ -1964,13 +1970,15 @@ export function marcados(d, ctx) {
   if (r === ExpressNodes.EXPRESS_ICON_MENU) m.add(`${r}.view-as-icon`);
   for (const mark of VISA_MENU_MARKS[r] ?? []) m.add(`${r}.${mark}`);
   for (const mark of pathMenuMarks(r, n)) m.add(`${r}.${mark}`);
+  if (isDaqNamePanelMenu(r)) for (const mark of daqNameMenuMarks(n, r)) m.add(mark);
   if (PN.isPropertyNode(n) && ctx) for (const mark of PNM.marks(d, ctx)) m.add(mark);
-  if (CL.isCallLibraryNode(n)) for (const mark of CL.NAME_FORMAT_MARKS) m.add(mark);
+  if (CL.isCallLibraryNode(n)) for (const mark of r === CLT.TERMINAL_MENU_ROOT ? CLT.NAME_FORMAT_MARKS : CL.NAME_FORMAT_MARKS) m.add(mark);
   if (VSR.isViServerReference(n)) for (const mark of VSR.menuMarks(n)) m.add(mark);
   if (n.config?.mode) m.add(`${r}.change-mode.${n.config.mode}`);
   if (n.config?.mechanical) m.add(`${r}.mechanical-action.${n.config.mechanical}`);
-  const abrev = r.startsWith("context.numeric-") && NUMERICOS[n.config?.type ?? DBL]?.abrev;
+  const abrev = (r.startsWith("context.numeric-") || isRingMenu(r)) && NUMERICOS[n.config?.type ?? (isRing(n) ? RING_REPRESENTATION : DBL)]?.abrev;
   if (abrev) m.add(`${r}.representation.${abrev.toLowerCase()}`);
+  if (isRingMenu(r) && allowsUndefined(n)) m.add(`${r}.allow-undefined`);
   // The representation of an array's element is the array's own; the string element shows the defaults LabVIEW ticks.
   const elementAbbreviation = [NUMERIC_ELEMENT_ROOT, "context.array-constant-element", PANEL_ARRAY_TERMINAL_MENU].includes(r) ? NUMERICOS[n.config?.type?.array]?.abrev : null;
   if (elementAbbreviation) m.add(`${r}.representation.${elementAbbreviation.toLowerCase()}`);
