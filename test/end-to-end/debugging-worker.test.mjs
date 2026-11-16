@@ -8,7 +8,7 @@ import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
 import * as DS from "../../editor/src/debugging/debug-state.mjs";
 import * as Gr from "../../core/model/graph.mjs";
 import { buildDebugPlan } from "../../editor/src/debugging/debug-plan.mjs";
-import { compilar, runnableVI } from "../../core/compiler/compiler.mjs";
+import { compilar, runnableOVI } from "../../core/compiler/compiler.mjs";
 import { CAT, INV } from "../helpers.mjs";
 
 const answers = [];
@@ -43,7 +43,7 @@ function startRun(g, id, debugState) {
   const compiled = compilar(g, CAT);
   const plan = buildDebugPlan(g, compiled.debugNodes, D.contexto(CAT, D.glifosPorBloque(INV)), INV);
   answers.length = 0;
-  const handler = globalThis.onmessage({ data: { orden: "run", clave: "debugging", compilado: runnableVI(compiled), depuracion: { plan, config: DS.controllerConfig(debugState, g), stepFirst: false }, valores: {}, separador: "." } });
+  const handler = globalThis.onmessage({ data: { orden: "run", clave: "debugging", compilado: runnableOVI(compiled), depuracion: { plan, config: DS.controllerConfig(debugState, g), stepFirst: false }, valores: {}, separador: "." } });
   return { handler, compiled };
 }
 

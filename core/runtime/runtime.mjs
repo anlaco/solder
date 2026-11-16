@@ -14,7 +14,9 @@ import {
   EMPTY_PATH, arrayOfStringsToPath, buildPath, decodePath, encodePath, hostPathRules, isEmptyPath, pathFromText, pathToArrayOfStrings, pathToText, pathsEqual, stripPath,
 } from "../model/paths.mjs";
 import { FUNCIONES } from "../compiler/expression-parser.mjs";
-import { MAXIMUM_PAGES, SHARED_MEMORY_IMPORT, SPREADSHEET_ELEMENTS, tipoWasm } from "../compiler/compiler.mjs";
+import { SPREADSHEET_ELEMENTS } from "../compiler/nodes/files.mjs";
+import { MAXIMUM_PAGES, SHARED_MEMORY_IMPORT } from "../compiler/runtime-functions.mjs";
+import { wasmTypeOf } from "../compiler/wasm-types.mjs";
 import { mensaje as mensajeDeError } from "./error-codes.mjs";
 import { aEntero64, cientifica, fraccionaria, noFinito, rellenar, separar } from "./number-text.mjs";
 import { formatIntoString, scanFromString } from "./format-string.mjs";
@@ -130,7 +132,7 @@ export const CADENAS = {
 /** El valor de un control, en la forma que espera el módulo. */
 function aWasm(v, tipo) {
   if (tipo === "boolean") return v ? 1 : 0;
-  const vt = tipoWasm(tipo);
+  const vt = wasmTypeOf(tipo);
   // A BigInt is kept as it is: through a JavaScript number an I64 would lose its last digits.
   if (vt === "i64") return typeof v === "bigint" ? BigInt.asIntN(64, v) : BigInt(Math.round(Number(v ?? 0)));
   if (vt === "i32") return Math.round(Number(v ?? 0)) | 0;
@@ -540,7 +542,7 @@ export function createHostFunctions({ compilado, separador = ".", pathRules = ho
     if (tipo === "string") return leerCadena(address);
     if (disposicion) return leerCluster(address, disposicion);
     if (elemento) return leerArray(address, elemento, dims);
-    return deWasm(atomicScalar(memory, address, tipoWasm(tipo)), tipo);
+    return deWasm(atomicScalar(memory, address, wasmTypeOf(tipo)), tipo);
   };
   const math = { random: Math.random, pow: Math.pow, ...funcionesMath };
   // The path functions (DT-067): a path's block is decoded, the rules of the host applied, and the result written.
@@ -646,7 +648,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
     const { record, tipo, elemento, dims, disposicion } = control;
     const value = control.resourceName ? resourceNameValue(shownValue) : control.task ? emptyTaskNamed(shownValue) : shownValue;
     const address = record + PANEL_RECORD.value;
-    if (tipo !== "string" && !elemento && !disposicion) return storeAtomicScalar(memory, address, tipoWasm(tipo), aWasm(value, tipo));
+    if (tipo !== "string" && !elemento && !disposicion) return storeAtomicScalar(memory, address, wasmTypeOf(tipo), aWasm(value, tipo));
     ex.write_lock(record + PANEL_RECORD.lock);
     if (control.path) putBytes(address, encodePath(value ?? EMPTY_PATH));
     else if (tipo === "string") ponerCadena(address, value);

@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { compilar, runnableVI } from "../../core/compiler/compiler.mjs";
+import { compilar, runnableOVI } from "../../core/compiler/compiler.mjs";
 import { CAT, buildVI } from "../helpers.mjs";
 
 const sent = [];
@@ -31,7 +31,7 @@ test("a Stop button pressed in the window stops a running loop and is released",
   const compiled = compilar(vi.g, CAT);
   assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
   sent.length = 0;
-  const run = globalThis.onmessage({ data: { orden: "run", clave: "stop", compilado: runnableVI(compiled), valores: { [vi.id.stop]: false }, separador: "." } });
+  const run = globalThis.onmessage({ data: { orden: "run", clave: "stop", compilado: runnableOVI(compiled), valores: { [vi.id.stop]: false }, separador: "." } });
   // Let it go round for a while, then press Stop as the window does.
   await new Promise((resolve) => setTimeout(resolve, 60));
   const shownBefore = sent.flatMap((message) => (message.escritos && vi.id.turns in message.escritos ? [message.escritos[vi.id.turns]] : []));

@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { compilar, runnableVI } from "../../core/compiler/compiler.mjs";
+import { compilar, runnableOVI } from "../../core/compiler/compiler.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { createVirtualHost } from "../../core/runtime/scheduler.mjs";
 import { loadHierarchy } from "../../core/model/hierarchy.mjs";
@@ -234,7 +234,7 @@ test("the source of an error raised in a subVI names the call chain", async () =
   assert.deepEqual(error, { status: true, code: 85, source: "Scan From String (arg 1) in Parse Reply.qvi->Instrument Protocol.qvi" });
 });
 
-// The editor sends the worker only what a Run needs (runnableVI), through a structured clone.
+// The editor sends the worker only what a Run needs (runnableOVI), through a structured clone.
 test("the call chain of an error source reaches the editor's worker", async () => {
   const cat = callerCatalog({ "examples/Parse Reply.qvi": parseReply() });
   const caller = buildVI(cat, (b) => {
@@ -244,7 +244,7 @@ test("the call chain of an error source reaches the editor's worker", async () =
     b.wire("command.result", "parse.str-control_1");
     b.wire("parse.cluster-indicator_1", "error.value");
   });
-  const sent = structuredClone(runnableVI(compilar(caller.g, cat, { name: "Instrument Protocol.qvi" })));
+  const sent = structuredClone(runnableOVI(compilar(caller.g, cat, { name: "Instrument Protocol.qvi" })));
   const { error } = await run(caller, cat, {}, {}, sent);
   assert.equal(error.source, "Scan From String (arg 1) in Parse Reply.qvi->Instrument Protocol.qvi");
 });

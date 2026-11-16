@@ -19,7 +19,7 @@ import * as CH from "../../editor/src/front-panel/chart-history-dialog.mjs";
 import * as GM from "../../editor/src/front-panel/graph-menus.mjs";
 import * as GS from "../../editor/src/front-panel/graph-state.mjs";
 import { GRAPH_MEASURES, graphSvg, tickLabel } from "../../editor/src/front-panel/graph-view.mjs";
-import { compilar, runnableVI } from "../../core/compiler/compiler.mjs";
+import { compilar, runnableOVI } from "../../core/compiler/compiler.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { aTexto, leer } from "../../core/model/qvi-format.mjs";
 import { abrirSubpaleta, clic, inicial, paletaNueva } from "../../editor/src/window/window-state.mjs";
@@ -539,7 +539,7 @@ test("the run worker sends every write to a chart and only the last one to an in
   const { g, chart, indicator } = loopWritingToChart(5);
   const compiled = compilar(g, CAT);
   assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
-  await globalThis.onmessage({ data: { orden: "run", clave: "test", compilado: runnableVI(compiled), valores: {}, separador: ".", charts: [chart] } });
+  await globalThis.onmessage({ data: { orden: "run", clave: "test", compilado: runnableOVI(compiled), valores: {}, separador: ".", charts: [chart] } });
   const series = sent.flatMap((message) => message.series?.[chart] ?? []);
   assert.deepEqual(series, [0, 1, 2, 3, 4], "each write is a point of the chart (70)");
   const written = Object.assign({}, ...sent.map((message) => message.escritos ?? {}));

@@ -7,7 +7,9 @@ import { test } from "node:test";
 import { Worker } from "node:worker_threads";
 
 import * as Gr from "../../core/model/graph.mjs";
-import { MAXIMUM_PAGES, SHARED_MEMORY_IMPORT, compilar, tipoWasm } from "../../core/compiler/compiler.mjs";
+import { compilar } from "../../core/compiler/compiler.mjs";
+import { MAXIMUM_PAGES, SHARED_MEMORY_IMPORT } from "../../core/compiler/runtime-functions.mjs";
+import { wasmTypeOf } from "../../core/compiler/wasm-types.mjs";
 import { CIMA, MEMORY_FUNCTION_NAMES, funcionesMemoria } from "../../core/compiler/linear-memory.mjs";
 import { codificar } from "../../core/compiler/wasm-encoder.mjs";
 import { RUN_STATUS } from "../../core/compiler/pool-scheduler.mjs";
@@ -223,7 +225,7 @@ async function runOnPool(compiled, threads, { duringRun } = {}) {
   await stopCoordinator?.();
   // Each indicator's record of the panel: how many times it was written and its last value.
   const view = new DataView(memory.buffer);
-  const lastValue = (record, type) => (tipoWasm(type) === "f64" ? view.getFloat64(record + PANEL_RECORD.value, true) : view.getInt32(record + PANEL_RECORD.value, true));
+  const lastValue = (record, type) => (wasmTypeOf(type) === "f64" ? view.getFloat64(record + PANEL_RECORD.value, true) : view.getInt32(record + PANEL_RECORD.value, true));
   const indicators = compiled.indicadores.map(({ record, tipo }) => ({ writes: view.getInt32(record + PANEL_RECORD.version, true), last: lastValue(record, tipo) }));
   return { statuses, indicators };
 }

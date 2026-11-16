@@ -12,7 +12,7 @@
 // Measured in LabVIEW 2026 Q3 on Windows: labview-captures/reports/2026-10-26-file-io-behavior.md and
 // 2026-10-29-file-dialogs.md.
 
-import { FILE_DIALOG_CODES, READ_MODE } from "../compiler/compiler.mjs";
+import { FILE_DIALOG_CODES, READ_MODE } from "../compiler/nodes/files.mjs";
 import { CANCELLING_DIALOGS, deleteConfirmation, fileDialogOf, fileDialogRequest, replaceConfirmation } from "./file-dialogs.mjs";
 import { arrayToSpreadsheetString, endOfLineFor, firstRowOf, readDelimitedRows, rowsToArray, transposeArray } from "./spreadsheet.mjs";
 import { EMPTY_PATH, NOT_A_PATH, NOT_A_PATH_TEXT, PATH_KIND, isEmptyPath, isNotAPath, pathFromText, pathToText } from "../model/paths.mjs";

@@ -62,7 +62,7 @@ import { panelStyleFromQuery } from "../front-panel/panel-style.mjs";
 import { applyWindowStyle } from "../front-panel/window-stylesheet.mjs";
 import { buildHierarchy } from "./hierarchy-client.mjs";
 import * as PP from "../front-panel/panel-properties.mjs";
-import { compilar, runnableVI } from "../../../core/compiler/compiler.mjs";
+import { compilar, runnableOVI } from "../../../core/compiler/compiler.mjs";
 import { patternOf, pruneConnector } from "../../../core/model/connector.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 import { pathFromText } from "../../../core/model/paths.mjs";
@@ -506,7 +506,7 @@ async function ejecutarVI({ stepFirst = false } = {}) {
   canal.postMessage({ ejecutando: true });
   modoRun(true);
   const transferred = ioPort ? [...poolPorts, ioPort] : poolPorts;
-  trabajador.postMessage({ orden: "run", clave: viKey, compilado: runnableVI(c), depuracion: debugging, valores: valoresDeControles(g), separador, charts: g.nodos.filter((n) => n.tipo === "waveform-chart").map((n) => n.id), poolPorts, ioPort }, transferred);
+  trabajador.postMessage({ orden: "run", clave: viKey, compilado: runnableOVI(c), depuracion: debugging, valores: valoresDeControles(g), separador, charts: g.nodos.filter((n) => n.tipo === "waveform-chart").map((n) => n.id), poolPorts, ioPort }, transferred);
 }
 
 /**

@@ -24,147 +24,31 @@ import { connectorPorts, ejecutable, nodesWithUndefinedInput, orden, panelObject
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { DAQ_TASK_LAYOUT, isDaqTask } from "../model/daq-name.mjs";
 import { OVI_CLASS, refnumOfClass } from "../model/vi-server-reference.mjs";
-import { callLibraryConfig, callLibraryReturnKind, returnsString, whyCallLibraryCannotRun } from "../model/call-library.mjs";
 import { coversEveryError, isErrorFrameValue } from "../model/error-case.mjs";
-import { FUNCIONES, analizar } from "./expression-parser.mjs";
+import { HOST_IMPORTS, importIndex } from "./host-imports.mjs";
+import { callMemory, callScheduler, CLUMP_TYPE, FIRST_COMPILED_FUNCTION, MAXIMUM_PAGES, pagesFor, PARK_PRIMITIVES, RUNTIME_FUNCTIONS, runtimeFunctionIndex, SHARED_MEMORY_IMPORT, THREAD_GLOBALS } from "./runtime-functions.mjs";
+import { ARRAY_HEADER_BYTES, arrayElement, atomicLoad, atomicStore, copyElement, copyRow, copyValue, copyValueTo, dimensionSize, elementCount, isByReference, loadElement, MAX_COMPILED_DIMENSIONS, NULL_HANDLE, reserveArray, SECOND_SIZE_OFFSET, storeElement } from "./memory-ops.mjs";
+import { fullClusterLayout, panelData, panelDataOf, taskPanelData } from "./panel-data.mjs";
+import { ERROR_FIELDS, constantOf, readClusterFields, setZeroClusterAddress } from "./constants.mjs";
+import { callStringFunction, characterTest, concatenateStrings, numberToFloatString, numberToString, stringToNumber } from "./nodes/strings.mjs";
+import { formatIntoString, scanFromString } from "./nodes/format-scan.mjs";
+import { expressionNode } from "./nodes/expression-node.mjs";
+import { FILE_DIALOG_CODES, SPREADSHEET_ELEMENTS, delimitedWriteFormat, fileFunction, fileInput, optionalHandle, readMode, spreadsheetCall, spreadsheetElementOfInput } from "./nodes/files.mjs";
+import { visaFunction } from "./nodes/visa.mjs";
+import { timeDelay } from "./nodes/timing.mjs";
+import { propertyNode } from "./nodes/property-node.mjs";
+import { callLibrary } from "./nodes/call-library.mjs";
+import { arithmetic, compare, compareInstruction, compareWithZero, compoundArithmetic, inRangeAndCoerce, logical, maxAndMin, negate, rounding } from "./nodes/arithmetic.mjs";
+import { joinNumbers, logicalShift, mantissaAndExponent, rotate, rotateWithCarry, splitNumber, swapBytes, swapWords } from "./nodes/data-manipulation.mjs";
 import { EMPTY_PATH, NOT_A_PATH, PATH_KIND, encodePath } from "../model/paths.mjs";
-import { ERROR, FILE_REFNUM, NUMERICOS, PATH, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esEntero, esEnum, esError, esNumerico, esRefnum, flattenArrayValue, inMemory, limites, representacion } from "../model/types.mjs";
+import { ERROR, FILE_REFNUM, PATH, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esEnum, esError, esNumerico, esRefnum, flattenArrayValue, inMemory, limites, representacion } from "../model/types.mjs";
 import { codificar } from "./wasm-encoder.mjs";
-import { CELDAS, CIMA, EXPORTADAS, MEMORY_FUNCTION_NAMES, bloqueCadena, funcionesMemoria, i32 } from "./linear-memory.mjs";
+import { i32Const, ins, localGet } from "./instructions.mjs";
+import { clusterLayout, convertValue, isFloat, isSigned, narrowInteger, wasmTypeOf } from "./wasm-types.mjs";
+import { CELDAS, CIMA, EXPORTADAS, bloqueCadena, i32 } from "./linear-memory.mjs";
 import { makeStackless } from "./stackless.mjs";
 import { DEFAULT_CHART_HISTORY, PANEL_RECORD, recordBytes, slotBytes } from "./panel-memory.mjs";
-import { SCHEDULER_EXPORTS, SCHEDULER_FUNCTION_NAMES, SCHEDULER_PARK_PRIMITIVES, schedulerData, schedulerFunctions } from "./pool-scheduler.mjs";
-
-/** El tipo de WebAssembly con que se representa un tipo de Solder. */
-export function tipoWasm(t) {
-  if (t === "boolean") return "i32";
-  // Una cadena viaja como su handle: la dirección de su celda en el data space;
-  // un cluster, como la dirección de su bloque plano (DT-042).
-  if (t === "string" || esCluster(t) || esArray(t)) return "i32";
-  if (!esNumerico(t)) return null;
-  const r = representacion(t);
-  if (r === "number") return "f64";
-  if (r === "sgl") return "f32";
-  return NUMERICOS[r].bits === 64 ? "i64" : "i32";
-}
-
-const conSigno = (t) => NUMERICOS[representacion(t)]?.signo ?? true;
-const bits = (t) => NUMERICOS[representacion(t)]?.bits ?? 32;
-const esFlotante = (t) => esNumerico(t) && !esEntero(t);
-
-/**
- * What the module imports from its host, always in this order: the string, array and math functions
- * written in JavaScript, the clocks, the dialogs and the debugger. The panel is not imported: it is in
- * the memory (panel-memory.mjs, DT-063 §10).
- */
-const IMPORTACIONES = [
-  // Las funciones de cadena que dependen del formato de LabVIEW, en JavaScript sobre la
-  // misma memoria (DT-042 b): reciben handles y la celda donde dejar su resultado.
-  ...[["sub", 4], ["reemplazar", 6]].map(([nombre, n]) => ({ modulo: "cad", nombre, params: Array(n).fill("i32"), results: [] })),
-  ...["mayus", "minus", "invertir", "rotar"].map((nombre) => ({ modulo: "cad", nombre, params: ["i32", "i32"], results: [] })),
-  { modulo: "cad", nombre: "recortar", params: ["i32", "i32", "i32"], results: [] },
-  { modulo: "cad", nombre: "buscar", params: Array(6).fill("i32"), results: ["i32"] },
-  { modulo: "cad", nombre: "extra", params: [], results: ["i32"] },
-  { modulo: "cad", nombre: "cmp", params: ["i32", "i32"], results: ["i32"] },
-  // The same comparison ignoring ASCII case, for a Case with Case Insensitive Match (spec/04 Rule 17d).
-  { modulo: "cad", nombre: "cmp_ci", params: ["i32", "i32"], results: ["i32"] },
-  // Format Into String and Scan From String (spec/04 Rule 21j): the rows go through a buffer of
-  // FORMAT_ROW_BYTES per row; the host writes the result and the error cluster.
-  { modulo: "cad", nombre: "formatear", params: Array(9).fill("i32"), results: [] },
-  // Array To Spreadsheet String and Spreadsheet String To Array (DT-067 §9): the result's cell, the format, the
-  // array (or the text), the delimiter, the element type (SPREADSHEET_ELEMENTS) and the dimensions.
-  { modulo: "cad", nombre: "array_to_spreadsheet", params: Array(6).fill("i32"), results: [] },
-  { modulo: "cad", nombre: "spreadsheet_to_array", params: Array(6).fill("i32"), results: [] },
-  { modulo: "cad", nombre: "escanear", params: Array(10).fill("i32"), results: ["i32"] },
-  // celda, número, width y los bits de su tipo (un hexadecimal negativo es su complemento a dos).
-  ...["dec", "hex", "oct"].map((nombre) => ({ modulo: "cad", nombre, params: ["i32", "f64", "i32", "i32"], results: [] })),
-  ...["frac", "exp", "eng"].map((nombre) => ({ modulo: "cad", nombre, params: ["i32", "f64", "i32", "i32", "i32"], results: [] })),
-  ...["leer_dec", "leer_hex", "leer_oct", "leer_frac"].map((nombre) => ({ modulo: "cad", nombre, params: ["i32", "i32"], results: ["f64"] })),
-  // Las funciones de array de una dimensión con elementos de tamaño fijo, en JavaScript sobre la memoria.
-  { modulo: "arr", nombre: "a_reemplazar", params: Array(5).fill("i32"), results: [] },
-  { modulo: "arr", nombre: "a_insertar", params: Array(6).fill("i32"), results: [] },
-  { modulo: "arr", nombre: "a_borrar", params: Array(7).fill("i32"), results: [] },
-  { modulo: "arr", nombre: "a_ordenar", params: Array(4).fill("i32"), results: [] },
-  { modulo: "arr", nombre: "a_rotar", params: Array(4).fill("i32"), results: [] },
-  { modulo: "arr", nombre: "a_partir", params: Array(5).fill("i32"), results: [] },
-  { modulo: "arr", nombre: "a_sumar", params: Array(6).fill("i32"), results: [] },
-  { modulo: "math", nombre: "random", params: [], results: ["f64"] },
-  { modulo: "math", nombre: "pow", params: ["f64", "f64"], results: ["f64"] },
-  // Las funciones del Expression Node que WebAssembly no trae, con su número de argumentos.
-  ...Object.entries(FUNCIONES)
-    .filter(([, f]) => f.js)
-    .map(([nombre, f]) => ({ modulo: "math", nombre: `fn_${nombre}`, params: Array(f.args).fill("f64"), results: ["f64"] })),
-  // The millisecond timer (U32), the Run's clock for timers (the host's, virtual in the reference
-  // traces) and the real clock in milliseconds for the budget of a loop's iterations. The waits,
-  // yields, subplans and subVI turns are the module's own scheduler (pool-scheduler.mjs).
-  { modulo: "tiempo", nombre: "reloj", params: [], results: ["i32"] },
-  { modulo: "tiempo", nombre: "ahora", params: [], results: ["f64"] },
-  { modulo: "tiempo", nombre: "reloj_real", params: [], results: ["f64"] },
-  // Debugging (DT-047): the value of each output of a node that just ran, by its wasm type
-  // (a string, array or cluster goes by address), and then the node itself, which may
-  // suspend the clump (a breakpoint, a step, Highlight Execution's pace).
-  ...["i32", "i64", "f32", "f64"].map((vt) => ({ modulo: "dep", nombre: `valor_${vt}`, params: ["i32", "i32", vt], results: [] })),
-  { modulo: "dep", nombre: "nodo", params: ["i32"], results: ["i32"] },
-  // Manejo automático de errores (DT-043): el error de un nodo con «error out» sin
-  // cablear; el anfitrión saca el diálogo y espera Continue o Stop (suspende).
-  { modulo: "tiempo", nombre: "error_automatico", params: ["i32", "i32"], results: ["i32"] },
-  // Simple Error Handler (DT-043): decide el error (el de «error in» o el del código y el source),
-  // saca su diálogo si lo hay y espera, y deja «error out», «source out» y «message» en sus
-  // sitios. Da «error?». Params: error in, código, handle del source, tipo de diálogo, búfer de
-  // «error out», celda de «source out», celda de «message».
-  { modulo: "tiempo", nombre: "dialogo_error", params: ["i32", "i32", "i32", "i32", "i32", "i32", "i32"], results: ["i32"] },
-  // Solder's VISA (DT-065 §4, DT-066): each function parks its clump while the Run's coordinator talks to the
-  // instrument, which writes the outputs into their places (core/runtime/instrument-io.mjs). By address:
-  // the resource name in, the error in, then the outputs; the last parameter is the call chain's index.
-  { modulo: "io", nombre: "visa_open", params: ["i32", "i32", "i32", "i32", "i32", "i32"], results: ["i32"] },
-  { modulo: "io", nombre: "visa_write", params: ["i32", "i32", "i32", "i32", "i32", "i32", "i32"], results: ["i32"] },
-  { modulo: "io", nombre: "visa_read", params: ["i32", "i32", "i32", "i32", "i32", "i32", "i32", "i32"], results: ["i32"] },
-  { modulo: "io", nombre: "visa_close", params: ["i32", "i32", "i32", "i32"], results: ["i32"] },
-  // The file functions (DT-067 §7), external waits like VISA's (core/runtime/file-io.mjs). By value or
-  // handle the inputs and whether the file is a path and is wired, then the error in by address, the
-  // outputs' places and the call chain's index.
-  { modulo: "io", nombre: "file_open", params: Array(11).fill("i32"), results: ["i32"] },
-  { modulo: "io", nombre: "file_close", params: Array(5).fill("i32"), results: ["i32"] },
-  { modulo: "io", nombre: "file_write_text", params: Array(13).fill("i32"), results: ["i32"] },
-  { modulo: "io", nombre: "file_read_text", params: Array(14).fill("i32"), results: ["i32"] },
-  { modulo: "io", nombre: "file_size", params: Array(7).fill("i32"), results: ["i32"] },
-  { modulo: "io", nombre: "file_delete", params: Array(11).fill("i32"), results: ["i32"] },
-  // Write and Read Delimited Spreadsheet (DT-067 §9): the spreadsheet string and the file in one wait.
-  { modulo: "io", nombre: "file_write_spreadsheet", params: Array(16).fill("i32"), results: ["i32"] },
-  { modulo: "io", nombre: "file_read_spreadsheet", params: Array(17).fill("i32"), results: ["i32"] },
-  // File Dialog (DT-069): its inputs, its configuration as codes, the error in, its outputs' places, the chain.
-  { modulo: "io", nombre: "file_dialog", params: Array(16).fill("i32"), results: ["i32"] },
-  // The Property Node (DT-072): its index in `propertyNodes`, its rows' records, the reference in (0 for an implicit
-  // node), the error in, the reference out's and the error out's places and the call chain's index. The host runs
-  // the rows top to bottom and writes what they read.
-  { modulo: "io", nombre: "property_node", params: Array(7).fill("i32"), results: ["i32"] },
-  // The Call Library Function Node (DT-080): its index in `callLibraries`, its records (the return value's, then one
-  // per parameter), the path in (0 without Specify path on diagram), the error in, the error out's place and the
-  // call chain's index. The host calls the library and writes what it gave back.
-  { modulo: "io", nombre: "call_library", params: Array(6).fill("i32"), results: ["i32"] },
-  // The path functions (DT-067): the host reads each path's block, applies the rules of the system it runs
-  // on (core/model/paths.mjs) and writes the result into its cell. The first parameters are the output cells.
-  { modulo: "pth", nombre: "build_path", params: ["i32", "i32", "i32", "i32"], results: [] },
-  { modulo: "pth", nombre: "strip_path", params: ["i32", "i32", "i32"], results: [] },
-  { modulo: "pth", nombre: "path_to_string", params: ["i32", "i32"], results: [] },
-  { modulo: "pth", nombre: "string_to_path", params: ["i32", "i32"], results: [] },
-  { modulo: "pth", nombre: "path_kind", params: ["i32"], results: ["i32"] },
-  { modulo: "pth", nombre: "path_to_array", params: ["i32", "i32"], results: ["i32"] },
-  { modulo: "pth", nombre: "array_to_path", params: ["i32", "i32", "i32"], results: [] },
-  { modulo: "pth", nombre: "path_is_empty", params: ["i32"], results: ["i32"] },
-  { modulo: "pth", nombre: "paths_equal", params: ["i32", "i32"], results: ["i32"] },
-];
-
-/** The element types the spreadsheet functions take, numbered as the host reads them (DT-067 §9). */
-export const SPREADSHEET_ELEMENTS = Object.freeze(["number", "sgl", "i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64", "string"]);
-
-/** A spreadsheet function's call: the result's cell, its three inputs by index, the element type and dimensions of `arrayType`. */
-function spreadsheetCall(e, importName, inputs, arrayType) {
-  const cell = e.celda();
-  const element = SPREADSHEET_ELEMENTS.indexOf(representacion(arrayType.array) ?? arrayType.array);
-  const delimiter = e.cableada(inputs[2]) ? e.entrada(inputs[2]) : [ins("i32.const", e.cadena(""))];
-  return [k32(cell), ...e.entrada(inputs[0]), ...e.entrada(inputs[1]), ...delimiter, k32(element), k32(dimensionsOf(arrayType)), ins("call", idImport(importName)), k32(cell)];
-}
+import { SCHEDULER_EXPORTS, schedulerData } from "./pool-scheduler.mjs";
 
 /** The VISA functions (DT-066): each waits for an instrument, and a Run that has one needs the I/O. */
 const VISA_FUNCTIONS = new Set(["visa-open", "visa-write", "visa-read", "visa-close"]);
@@ -172,669 +56,7 @@ const VISA_FUNCTIONS = new Set(["visa-open", "visa-write", "visa-read", "visa-cl
 const FILE_FUNCTIONS = new Set(["open-create-replace-file", "close-file", "write-to-text-file", "read-from-text-file", "get-file-size", "delete", "write-delimited-spreadsheet-vi", "read-delimited-spreadsheet-vi", "file-dialog"]);
 /** The nodes that take time: each runs in its own clump and yields while it waits. */
 export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "time-delay", "simple-error-handler", "property-node", "call-library", ...VISA_FUNCTIONS, ...FILE_FUNCTIONS]);
-const idImport = (nombre) => IMPORTACIONES.findIndex((i) => i.nombre === nombre);
-/** The imports that may park the clump that calls them (DT-063 §8): the dialogs, the debugger, VISA and files, which wait for the outside. */
-const PARKING_IMPORTS = ["nodo", "error_automatico", "dialogo_error", "visa_open", "visa_write", "visa_read", "visa_close", "file_open", "file_close", "file_write_text", "file_read_text", "file_size", "file_delete", "file_write_spreadsheet", "file_read_spreadsheet", "file_dialog", "property_node", "call_library"].map(idImport);
 
-const ins = (op, arg) => (arg === undefined ? { op } : { op, arg });
-
-/** Una constante de un tipo de Solder. */
-/** Dónde van status, code y source en un cluster de error (DT-043). */
-const ERR = (() => {
-  const c = disposicion(ERROR).campos;
-  return { status: c[0].off, code: c[1].off, source: c[2].off, tam: disposicion(ERROR).tam };
-})();
-
-/** Dónde está el cluster «cero» de este módulo: el valor por defecto de cualquier cluster (todo a 0, cadenas vacías). */
-let zonaCero = 0;
-
-/**
- * La disposición de un cluster en memoria, como en LabVIEW (DT-042 §3): sus
- * campos en orden, los escalares dentro, alineados a su tamaño; una cadena, como
- * la celda de su handle; un cluster dentro de otro, en línea. `tam` va alineado a 8.
- */
-/**
- * Reads the given fields of the cluster at the node's input, without copying
- * (DT-042): a string or a cluster by its address, a scalar by its value.
- */
-function readClusterFields(e, fields) {
-  const cluster = e.temporal("i32");
-  const reads = [...e.entrada(0), ins("local.set", cluster)];
-  for (const field of fields) {
-    if (porReferencia(field.tipo)) reads.push(ins("local.get", cluster), ins("i32.const", field.off), ins("i32.add"));
-    else reads.push(ins("local.get", cluster), ins(`${tipoWasm(field.tipo)}.load`, field.off));
-  }
-  return reads;
-}
-
-export function disposicion(t) {
-  let off = 0;
-  const campos = [];
-  for (const f of t.cluster) {
-    let tam;
-    if (esCluster(f.type)) tam = disposicion(f.type).tam;
-    else tam = ["f64", "i64"].includes(tipoWasm(f.type)) ? 8 : 4;
-    const al = esCluster(f.type) ? 8 : tam;
-    off = (off + al - 1) & ~(al - 1);
-    campos.push({ off, nombre: f.name, tipo: f.type });
-    off += tam;
-  }
-  return { tam: (off + 7) & ~7, campos };
-}
-
-function constante(t, v) {
-  if (esCluster(t)) return [ins("i32.const", zonaCero)];
-  // Un array vacío es el handle 0, como en LabVIEW.
-  if (esArray(t)) return [ins("i32.const", 0)];
-  const vt = tipoWasm(t);
-  if (vt === "f64" || vt === "f32") return [ins(`${vt}.const`, Number(v))];
-  if (vt === "i64") return [ins("i64.const", typeof v === "bigint" ? BigInt.asIntN(64, v) : BigInt(Math.trunc(Number(v))))];
-  return [ins("i32.const", Number(v) | 0)];
-}
-
-/** Recorta un entero de 8 o 16 bits a su tamaño, como hace LabVIEW al desbordarse. */
-function estrechar(t) {
-  if (!esEntero(t) || bits(t) > 16) return [];
-  if (conSigno(t)) return [ins(bits(t) === 8 ? "i32.extend8_s" : "i32.extend16_s")];
-  return [ins("i32.const", bits(t) === 8 ? 0xff : 0xffff), ins("i32.and")];
-}
-
-/**
- * Convierte el valor de la pila de `desde` a `hacia`. De coma flotante a entero
- * se redondea al más cercano y se satura, como LabVIEW (ayuda de NI, «Numeric
- * Conversion»); entre enteros se conservan los bits bajos (sin comprobar en
- * LabVIEW: el tipo común nunca estrecha, así que hoy no ocurre).
- */
-export function convertir(desde, hacia) {
-  if (desde === hacia || JSON.stringify(desde) === JSON.stringify(hacia)) return [];
-  const [a, b] = [tipoWasm(desde), tipoWasm(hacia)];
-  if (desde === "boolean" || hacia === "boolean") return a === b ? [] : null;
-  const r = [];
-  if (esFlotante(desde) && esFlotante(hacia)) {
-    if (a !== b) r.push(ins(b === "f64" ? "f64.promote_f32" : "f32.demote_f64"));
-    return r;
-  }
-  if (!esFlotante(desde) && esFlotante(hacia)) {
-    r.push(ins(`${b}.convert_${a}_${conSigno(desde) ? "s" : "u"}`));
-    return r;
-  }
-  if (esFlotante(desde) && !esFlotante(hacia)) {
-    r.push(ins(`${a}.nearest`));
-    if (bits(hacia) <= 16) {
-      const R = { 8: [-128, 127, 0, 255], 16: [-32768, 32767, 0, 65535] }[bits(hacia)];
-      const [lo, hi] = conSigno(hacia) ? R.slice(0, 2) : R.slice(2);
-      r.push(ins(`${a}.const`, lo), ins(`${a}.max`), ins(`${a}.const`, hi), ins(`${a}.min`));
-    }
-    r.push(ins(`${b}.trunc_sat_${a}_${conSigno(hacia) ? "s" : "u"}`));
-    return r;
-  }
-  if (a === "i32" && b === "i64") r.push(ins(conSigno(desde) ? "i64.extend_i32_s" : "i64.extend_i32_u"));
-  if (a === "i64" && b === "i32") r.push(ins("i32.wrap_i64"));
-  return [...r, ...estrechar(hacia)];
-}
-
-
-// ——— Data Manipulation: operaciones sobre los bits de un entero ———
-//
-// Un entero de menos de 32 bits vive en un i32 con su signo (o ceros) extendido;
-// los de 64, en un i64. Cada operación trabaja con los bits del ancho del tipo y
-// vuelve a dejar el resultado en esa forma (`estrechar`).
-
-/** Una constante entera del tipo de valor `vt` («i32» o «i64»). */
-const kte = (vt, n) => ins(`${vt}.const`, vt === "i64" ? BigInt(n) : Number(n));
-/** Los `bits` bajos a uno (sólo para anchos de menos de 32 bits). */
-const mascara = (bits) => (1n << BigInt(bits)) - 1n;
-
-/** Swap Bytes: los dos bytes de cada palabra de 16 bits. */
-function intercambiarBytes(e) {
-  const t = e.tIn(0);
-  const [w, vt] = [bits(t), tipoWasm(t)];
-  if (w === 8) return e.entrada(0);
-  const m = w === 16 ? 0xff : w === 32 ? 0x00ff00ff : 0x00ff00ff00ff00ffn;
-  const x = e.temporal(vt);
-  return [
-    ...e.entrada(0), ins("local.tee", x), kte(vt, m), ins(`${vt}.and`), kte(vt, 8), ins(`${vt}.shl`),
-    ins("local.get", x), kte(vt, 8), ins(`${vt}.shr_u`), kte(vt, m), ins(`${vt}.and`), ins(`${vt}.or`),
-    ...estrechar(t),
-  ];
-}
-
-/** Swap Words: las dos palabras de 16 bits de cada entero largo. */
-function intercambiarPalabras(e) {
-  const t = e.tIn(0);
-  const [w, vt] = [bits(t), tipoWasm(t)];
-  if (w <= 16) return e.entrada(0);
-  if (w === 32) return [...e.entrada(0), kte("i32", 16), ins("i32.rotl")];
-  const x = e.temporal("i64");
-  const m = 0x0000ffff0000ffffn;
-  return [
-    ...e.entrada(0), ins("local.tee", x), kte(vt, m), ins("i64.and"), kte(vt, 16), ins("i64.shl"),
-    ins("local.get", x), kte(vt, 16), ins("i64.shr_u"), kte(vt, m), ins("i64.and"), ins("i64.or"),
-  ];
-}
-
-/** El desplazamiento `y`, ya como i32. */
-const desplazamiento = (e) => [...e.entrada(1), ...convertir(e.tIn(1), "i32")];
-
-/** Rotate: x rotado a la izquierda y bits; con y negativo, a la derecha. */
-function rotar(e) {
-  const t = e.tIn(0);
-  const w = bits(t);
-  if (w === 32) return [...e.entrada(0), ...desplazamiento(e), ins("i32.rotl")];
-  if (w === 64) return [...e.entrada(0), ...desplazamiento(e), ins("i64.extend_i32_s"), ins("i64.rotl")];
-  const [v, n] = [e.temporal("i32"), e.temporal("i32")];
-  const m = Number(mascara(w));
-  return [
-    ...e.entrada(0), kte("i32", m), ins("i32.and"), ins("local.set", v),
-    ...desplazamiento(e), kte("i32", w - 1), ins("i32.and"), ins("local.set", n),
-    ins("local.get", v), ins("local.get", n), ins("i32.shl"),
-    ins("local.get", v), kte("i32", w), ins("local.get", n), ins("i32.sub"), ins("i32.shr_u"),
-    ins("i32.or"), kte("i32", m), ins("i32.and"), ...estrechar(t),
-  ];
-}
-
-/** Logical Shift: x << y, con ceros; a la derecha si y es negativo; cero si y se sale del ancho. */
-function desplazar(e) {
-  const t = e.tIn(0);
-  const [w, vt] = [bits(t), tipoWasm(t)];
-  const [v, y] = [e.temporal(vt), e.temporal("i32")];
-  const ext = vt === "i64" ? [ins("i64.extend_i32_s")] : [];
-  const enteroMascara = w < 32 ? [kte("i32", Number(mascara(w))), ins("i32.and")] : [];
-  return [
-    ...e.entrada(0), ...enteroMascara, ins("local.set", v),
-    ...desplazamiento(e), ins("local.set", y),
-    // Dentro de rango: -(w-1) <= y <= w-1  ⇔  (y + w-1) <u 2w-1.
-    ins("local.get", v), ins("local.get", y), ...ext, ins(`${vt}.shl`),
-    ins("local.get", v), kte("i32", 0), ins("local.get", y), ins("i32.sub"), ...ext, ins(`${vt}.shr_u`),
-    ins("local.get", y), kte("i32", -1), ins("i32.gt_s"), ins("select"),
-    kte(vt, 0),
-    ins("local.get", y), kte("i32", w - 1), ins("i32.add"), kte("i32", 2 * w - 1), ins("i32.lt_u"), ins("select"),
-    ...estrechar(t),
-  ];
-}
-
-/** Rotate Left / Right With Carry: sale [acarreo, valor]. */
-const rotarConAcarreo = (haciaLaIzquierda) => (e) => {
-  const t = e.tIn(1);
-  const [w, vt] = [bits(t), tipoWasm(t)];
-  const [x, c] = [e.temporal(vt), e.temporal("i32")];
-  const aVt = vt === "i64" ? [ins("i64.extend_i32_u")] : [];
-  const aI32 = vt === "i64" ? [ins("i32.wrap_i64")] : [];
-  const entra = [...e.entrada(1), ...(haciaLaIzquierda || w >= 32 ? [] : [kte("i32", Number(mascara(w))), ins("i32.and")]), ins("local.set", x), ...e.entrada(0), ins("local.set", c)];
-  if (haciaLaIzquierda) {
-    return [
-      ...entra,
-      ins("local.get", x), kte(vt, w - 1), ins(`${vt}.shr_u`), ...aI32, kte("i32", 1), ins("i32.and"),
-      ins("local.get", x), kte(vt, 1), ins(`${vt}.shl`), ins("local.get", c), ...aVt, ins(`${vt}.or`), ...estrechar(t),
-    ];
-  }
-  return [
-    ...entra,
-    ins("local.get", x), kte(vt, 1), ins(`${vt}.and`), ...aI32,
-    ins("local.get", x), kte(vt, 1), ins(`${vt}.shr_u`), ins("local.get", c), ...aVt, kte(vt, w - 1), ins(`${vt}.shl`), ins(`${vt}.or`), ...estrechar(t),
-  ];
-};
-
-/** Split Number: [hi, lo], cada uno sin signo y de la mitad de bits. */
-function partirNumero(e) {
-  const t = e.tIn(0);
-  const [w, vt] = [bits(t), tipoWasm(t)];
-  const x = e.temporal(vt);
-  const mitad = w / 2;
-  if (w === 64) return [...e.entrada(0), ins("local.set", x), ins("local.get", x), kte("i64", 32), ins("i64.shr_u"), ins("i32.wrap_i64"), ins("local.get", x), ins("i32.wrap_i64")];
-  const m = Number(mascara(mitad));
-  return [
-    ...e.entrada(0), ins("local.set", x),
-    ins("local.get", x), kte("i32", mitad), ins("i32.shr_u"), kte("i32", m), ins("i32.and"),
-    ins("local.get", x), kte("i32", m), ins("i32.and"),
-  ];
-}
-
-/** Join Numbers: (hi.lo), sin signo y del doble de bits. */
-function juntarNumeros(e) {
-  const t = e.tIn(0);
-  const w = bits(t);
-  if (w === 32) return [...e.entrada(0), ins("i64.extend_i32_u"), kte("i64", 32), ins("i64.shl"), ...e.entrada(1), ins("i64.extend_i32_u"), ins("i64.or")];
-  const m = Number(mascara(w));
-  return [
-    ...e.entrada(0), kte("i32", m), ins("i32.and"), kte("i32", w), ins("i32.shl"),
-    ...e.entrada(1), kte("i32", m), ins("i32.and"), ins("i32.or"),
-  ];
-}
-
-/** Mantissa & Exponent: número = mantisa * 2^exponente, con 1 <= |mantisa| < 2; 0 da (0, 0). */
-function mantisaYExponente(e) {
-  const t = e.tOut(0);
-  const f32 = tipoWasm(t) === "f32";
-  const [vt, ft] = f32 ? ["i32", "f32"] : ["i64", "f64"];
-  const [desp, anchoExp, sesgo] = f32 ? [23, 0xff, 127] : [52, 0x7ff, 1023];
-  const [x, ex] = [e.temporal(vt), e.temporal(vt)];
-  const aVt = f32 ? [ins("i32.reinterpret_f32")] : [ins("i64.reinterpret_f64")];
-  const deVt = f32 ? [ins("f32.reinterpret_i32")] : [ins("f64.reinterpret_i64")];
-  const cero = [ins(`${ft}.const`, 0)];
-  const exponente = [ins("local.get", x), kte(vt, desp), ins(`${vt}.shr_u`), kte(vt, anchoExp), ins(`${vt}.and`), ins("local.set", ex)];
-  const esCero = [ins("local.get", ex), ins(`${vt}.eqz`)];
-  const exp0 = [ins("local.get", ex), kte(vt, sesgo), ins(`${vt}.sub`), ins(f32 ? "f32.convert_i32_s" : "f64.convert_i64_s")];
-  // La mantisa: los bits del número con el exponente puesto a 0 (el sesgo).
-  const limpia = [ins("local.get", x), kte(vt, f32 ? ~(0xff << 23) : ~(0x7ffn << 52n)), ins(`${vt}.and`), kte(vt, f32 ? sesgo << 23 : BigInt(sesgo) << 52n), ins(`${vt}.or`), ...deVt];
-  // `select` devuelve el primero si la condición es verdadera: con exponente 0, el cero.
-  return [
-    ...e.entrada(0), ...aVt, ins("local.set", x), ...exponente,
-    ...cero, ...limpia, ...esCero, ins("select"),
-    ...cero, ...exp0, ...esCero, ins("select"),
-  ];
-}
-
-
-/**
- * Expression Node: la fórmula se calcula en DBL y el resultado vuelve al tipo
- * del terminal, redondeado al par (comprobado en LabVIEW: con un I32, 3/2 da 2,
- * 5/2 da 2 y 5*2.7 da 14). `^` es el o exclusivo y sólo vale con enteros.
- */
-function expresion(e) {
-  const r = analizar(e.nodo.config?.expression ?? "x");
-  if (r.error) throw new Error(`the expression "${e.nodo.config?.expression}" is not valid: ${r.error}`);
-  if (r.xor && !esEntero(e.tIn(0))) throw new Error("exclusive or \"^\" needs an integer (Integer type required); the power is \"**\"");
-  const x = e.temporal("f64");
-  const aEntero = [ins("f64.nearest"), ins("i64.trunc_sat_f64_s")];
-  const emitirAst = (a) => {
-    if ("n" in a) return [ins("f64.const", a.n)];
-    if ("var" in a) return [ins("local.get", x)];
-    if ("neg" in a) return [...emitirAst(a.a), ins("f64.neg")];
-    if ("fn" in a) {
-      const f = FUNCIONES[a.fn];
-      return [...a.args.flatMap(emitirAst), f.wasm ? ins(f.wasm) : ins("call", idImport(`fn_${a.fn}`))];
-    }
-    const [ia, ib] = [emitirAst(a.a), emitirAst(a.b)];
-    if (a.op === "**") return [...ia, ...ib, ins("call", idImport("pow"))];
-    if (a.op === "%") return [...ia, ...ib, ins("call", idImport("fn_mod"))];
-    if (a.op === "^") return [...ia, ...aEntero, ...ib, ...aEntero, ins("i64.xor"), ins("f64.convert_i64_s")];
-    return [...ia, ...ib, ins({ "+": "f64.add", "-": "f64.sub", "*": "f64.mul", "/": "f64.div" }[a.op])];
-  };
-  return [...e.entrada(0), ...convertir(e.tIn(0), "number"), ins("local.set", x), ...emitirAst(r.ast), ...convertir("number", e.tOut(0))];
-}
-
-// ——— Cadenas ———
-
-const get = (l) => ins("local.get", l);
-const k32 = (n) => ins("i32.const", n);
-
-/** Concatenate Strings: todas sus entradas, una tras otra, en la celda del nodo. */
-function concatenar(e) {
-  const n = e.cat.puertos(e.nodo).in.length;
-  const [hs, ls, p, celda] = [Array.from({ length: n }, () => e.temporal("i32")), Array.from({ length: n }, () => e.temporal("i32")), e.temporal("i32"), e.celda()];
-  const salida = [];
-  for (let i = 0; i < n; i++) salida.push(...e.entrada(i), ins("local.set", hs[i]), get(hs[i]), llamarMemoria("longitud"), ins("local.set", ls[i]));
-  // total = suma de las longitudes
-  salida.push(k32(celda), k32(4));
-  for (let i = 0; i < n; i++) salida.push(get(ls[i]), ins("i32.add"));
-  salida.push(llamarMemoria("redimensionar"), ins("local.tee", p));
-  salida.push(k32(0));
-  for (let i = 0; i < n; i++) salida.push(get(ls[i]), ins("i32.add"));
-  salida.push(ins("i32.store"));
-  // los bytes: p + 4 + (longitudes de las anteriores)
-  for (let i = 0; i < n; i++) {
-    salida.push(get(p), k32(4), ins("i32.add"));
-    for (let j = 0; j < i; j++) salida.push(get(ls[j]), ins("i32.add"));
-    salida.push(get(hs[i]), llamarMemoria("datos"), get(ls[i]), ins("memory.copy"));
-  }
-  salida.push(k32(celda));
-  return salida;
-}
-
-/** Una función de cadena del anfitrión: deja su resultado en la celda del nodo y su handle en la pila. */
-function llamarCad(e, nombre, entradas) {
-  const celda = e.celda();
-  return [k32(celda), ...entradas.flatMap((i) => e.entrada(i)), ins("call", idImport(nombre)), k32(celda)];
-}
-
-// ——— Format Into String and Scan From String (spec/04 Rule 21j) ———
-//
-// Each argument or output row is a record of FORMAT_ROW_BYTES in a buffer of the
-// node: [kind I32][bits I32][value: f64, i64 or I32], read and written by the host.
-// For a string row the value is its handle and the bits word holds the cell where
-// Scan From String writes the string it read.
-const FORMAT_ROW_BYTES = 16;
-const ROW_BITS_OFFSET = 4;
-const ROW_VALUE_OFFSET = 8;
-const ROW_KIND = { float: 0, signed: 1, unsigned: 2, bool: 3, string: 4 };
-
-const rowKind = (t) => (t === "string" ? ROW_KIND.string : t === "boolean" ? ROW_KIND.bool : !esEntero(t) ? ROW_KIND.float : conSigno(t) ? ROW_KIND.signed : ROW_KIND.unsigned);
-
-/** Writes the value that `value` leaves on the stack, of type `t`, into the row record at `record`. */
-function writeRow(t, record, value) {
-  const kind = rowKind(t);
-  const header = [ins("i32.const", record), ins("i32.const", kind), ins("i32.store"), ins("i32.const", record), ins("i32.const", t === "string" || t === "boolean" ? 0 : bits(t)), ins("i32.store", ROW_BITS_OFFSET)];
-  const at = [ins("i32.const", record)];
-  if (kind === ROW_KIND.float) return [...header, ...at, ...value, ...convertir(t, "number"), ins("f64.store", ROW_VALUE_OFFSET)];
-  if (kind === ROW_KIND.signed || kind === ROW_KIND.unsigned) return [...header, ...at, ...value, ...convertir(t, kind === ROW_KIND.signed ? "i64" : "u64"), ins("i64.store", ROW_VALUE_OFFSET)];
-  return [...header, ...at, ...value, ins("i32.store", ROW_VALUE_OFFSET)];
-}
-
-/** Leaves on the stack the value of type `t` that the host left in the row record at `record`. */
-function readRow(t, record) {
-  const kind = rowKind(t);
-  if (kind === ROW_KIND.float) return [ins("i32.const", record), ins("f64.load", ROW_VALUE_OFFSET), ...convertir("number", t)];
-  if (kind === ROW_KIND.signed || kind === ROW_KIND.unsigned) return [ins("i32.const", record), ins("i64.load", ROW_VALUE_OFFSET), ...convertir(kind === ROW_KIND.signed ? "i64" : "u64", t)];
-  if (kind === ROW_KIND.string) return [ins("i32.const", record), ins("i32.load", ROW_BITS_OFFSET)];
-  return [ins("i32.const", record), ins("i32.load", ROW_VALUE_OFFSET)];
-}
-
-/** The node's rows: those whose port names start with `prefix`, with their index among the inputs. */
-const formatRows = (e, prefix) => e.cat.puertos(e.nodo).in.map((port, index) => ({ port, index })).filter(({ port }) => port.name.startsWith(prefix));
-
-/** Format Into String: resulting string and error out (the host writes both). */
-/**
- * A VISA function (DT-066): `inputs` are the indices of what goes to the host before the error in (the
- * resource name and the function's own value), then the error in. Its outputs get
- * places of their own, the host writes them while the clump is parked, and they are left on the stack in
- * the catalog's order: resource name out, read buffer, return count, error out.
- */
-function visaFunction(e, importName, inputs, { resourceOut, buffer, count }) {
-  const places = {
-    resourceOut: resourceOut ? e.bufer(disposicion(VISA_RESOURCE_LAYOUT).tam) : null,
-    buffer: buffer ? e.celda() : null,
-    count: count ? e.bufer(4) : null,
-    errorOut: e.bufer(disposicion(ERROR).tam),
-  };
-  const errorIn = e.cat.puertos(e.nodo).in.findIndex((port) => port.name === "error-in");
-  const addresses = [places.resourceOut, places.buffer, places.count, places.errorOut].filter((place) => place !== null);
-  const outputs = [
-    ...(resourceOut ? [ins("i32.const", places.resourceOut)] : []),
-    ...(buffer ? [ins("i32.const", places.buffer)] : []),
-    ...(count ? [ins("i32.const", places.count), ins("i32.load")] : []),
-    ins("i32.const", places.errorOut),
-  ];
-  return [
-    ...inputs.flatMap((index) => e.entrada(index)), ...e.entrada(errorIn),
-    ...addresses.map((address) => ins("i32.const", address)), ins("i32.const", e.chainIndex),
-    ins("call", idImport(importName)), ins("drop"),
-    ...outputs,
-  ];
-}
-
-/** The bytes of each kind of place a file function's output takes, for those the host writes by address. */
-const FILE_OUTPUT_BYTES = { refnum: 4, boolean: 4, i32: 4, size: 8 };
-
-/**
- * A file function (DT-067 §7): `inputs` is the code that leaves the host's arguments up to the error in,
- * and `outputs` the kinds of its outputs in the catalog's order ("refnum", "boolean", "size", "cell" for a
- * string, path or array, and "error"). Each output gets a place of its own, the host writes them while the
- * clump is parked, and they are left on the stack in that order.
- */
-function fileFunction(e, importName, inputs, outputs) {
-  const places = outputs.map((kind) => (kind === "cell" ? e.celda() : kind === "error" ? e.bufer(disposicion(ERROR).tam) : e.bufer(FILE_OUTPUT_BYTES[kind])));
-  const load = (kind, place) => {
-    if (kind === "refnum" || kind === "boolean" || kind === "i32") return [k32(place), ins("i32.load")];
-    if (kind === "size") return [k32(place), ins("i64.load")];
-    return [k32(place)];
-  };
-  return [
-    ...inputs, ...e.entrada(e.cat.puertos(e.nodo).in.findIndex((port) => port.name === "error-in")),
-    ...places.map(k32), k32(e.chainIndex), ins("call", idImport(importName)), ins("drop"),
-    ...outputs.flatMap((kind, index) => load(kind, places[index])),
-  ];
-}
-
-/** How Read from Text File reads: bytes, lines with Read Lines and count wired, or the next line with count unwired (measured). */
-export const READ_MODE = Object.freeze({ BYTES: 0, LINES: 1, NEXT_LINE: 2 });
-const readMode = (e) => (!e.nodo.config?.["read-lines"] ? READ_MODE.BYTES : e.cableada(2) ? READ_MODE.LINES : READ_MODE.NEXT_LINE);
-
-/** An input that may be left unwired with no value to pass: its handle (0 unwired) and whether it is wired. */
-const optionalHandle = (e, index) => (e.cableada(index) ? [...e.entrada(index), k32(1)] : [k32(0), k32(0)]);
-
-/** The SPREADSHEET_ELEMENTS number of an array input's element; DBL when it is unwired. */
-const spreadsheetElementOfInput = (e, index) => SPREADSHEET_ELEMENTS.indexOf(e.cableada(index) ? representacion(e.tIn(index).array) ?? e.tIn(index).array : DBL_ELEMENT);
-const DBL_ELEMENT = "number";
-
-/**
- * Write Delimited Spreadsheet's unwired format, by its instance (measured): %.3f for reals, though the label says
- * "%d"; %d for integers; %s for strings.
- */
-function delimitedWriteFormat(e, dataIndex) {
-  if (e.cableada(1)) return e.entrada(1);
-  const element = SPREADSHEET_ELEMENTS[spreadsheetElementOfInput(e, dataIndex)];
-  return [k32(e.cadena(element === "string" ? "%s" : NUMERICOS[element].entero ? "%d" : "%.3f"))];
-}
-
-/** A file function's `file` input: the refnum or path handle, whether it is a path, and whether it is wired (unwired asks for a dialog). */
-const MS_PER_SECOND = 1000;
-/** How File Dialog's configuration travels to its import: each setting by its index here. */
-export const FILE_DIALOG_CODES = Object.freeze({ selection: ["file", "folder", "file-or-folder"], existence: ["existing", "new", "new-or-existing"] });
-
-/**
- * Time Delay (DT-069): it waits the wired seconds, or the configured ones when the terminal is unwired; it waits
- * also with an error in, which passes unchanged; 0, a negative number and NaN do not wait (measured,
- * labview-captures/reports/2026-10-29-time-delay.md). Unverified: how LabVIEW rounds a fraction of a millisecond;
- * here it is cut off.
- */
-function timeDelay(e) {
-  const seconds = e.cableada(0) ? [...e.entrada(0), ...convertir(e.tIn(0), "number")] : [ins("f64.const", e.nodo.config?.delay ?? e.cat.bloque("time-delay").config.delay.value)];
-  const milliseconds = e.temporal("f64");
-  return [
-    ...seconds, ins("f64.const", MS_PER_SECOND), ins("f64.mul"), ins("f64.floor"), ins("local.tee", milliseconds),
-    ins("f64.const", 0), ins("local.get", milliseconds), ins("f64.const", 0), ins("f64.gt"), ins("select"),
-    callScheduler("wait"), ins("drop"),
-    ...e.entrada(1),
-  ];
-}
-
-function fileInput(e, index) {
-  const wired = e.cableada(index);
-  return [...(wired ? e.entrada(index) : [k32(0)]), k32(e.logicalTIn(index) === PATH ? 1 : 0), k32(wired ? 1 : 0)];
-}
-
-function formatIntoString(e) {
-  const rows = formatRows(e, "input-");
-  const buffer = e.bufer(rows.length * FORMAT_ROW_BYTES);
-  const [result, errorOut] = [e.celda(), e.bufer(disposicion(ERROR).tam)];
-  const code = rows.flatMap(({ index }, k) => writeRow(e.tIn(index), buffer + k * FORMAT_ROW_BYTES, e.entrada(index)));
-  code.push(
-    ins("i32.const", result), ...e.entrada(0), ...e.entrada(1), ins("i32.const", buffer), ins("i32.const", rows.length),
-    ...e.entrada(2), ins("i32.const", errorOut), ins("i32.const", e.cadena("Format Into String")), ins("i32.const", e.chainIndex), ins("call", idImport("formatear")),
-  );
-  return [...code, ins("i32.const", result), ins("i32.const", errorOut)];
-}
-
-/** Scan From String: remaining string, offset past scan, error out and one output per row. */
-function scanFromString(e) {
-  const rows = formatRows(e, "default-");
-  const buffer = e.bufer(rows.length * FORMAT_ROW_BYTES);
-  const [remaining, errorOut, offset] = [e.celda(), e.bufer(disposicion(ERROR).tam), e.temporal("i32")];
-  const code = [];
-  rows.forEach(({ index }, k) => {
-    const record = buffer + k * FORMAT_ROW_BYTES;
-    code.push(...writeRow(e.tIn(index), record, e.entrada(index)));
-    if (e.tIn(index) === "string") code.push(ins("i32.const", record), ins("i32.const", e.celda()), ins("i32.store", ROW_BITS_OFFSET));
-  });
-  code.push(
-    ins("i32.const", remaining), ...e.entrada(0), ...e.entrada(1), ...e.entrada(2), ins("i32.const", buffer), ins("i32.const", rows.length),
-    ...e.entrada(3), ins("i32.const", errorOut), ins("i32.const", e.cadena("Scan From String")), ins("i32.const", e.chainIndex), ins("call", idImport("escanear")), ins("local.set", offset),
-  );
-  return [...code, ins("i32.const", remaining), ins("local.get", offset), ins("i32.const", errorOut), ...rows.flatMap(({ index }, k) => readRow(e.tIn(index), buffer + k * FORMAT_ROW_BYTES))];
-}
-
-// ——— The Property Node (DT-072) ———
-//
-// Each row is a record of FORMAT_ROW_BYTES, as Format Into String's: a write row's value is written into it
-// before the call, and the host writes a read row's value into it, a string into the cell the record's bits
-// word names. A cluster (Position, Bounds) goes by address: a write row's record holds the cluster wired in, a
-// read row's the node's own buffer, which the host fills. The host runs the rows top to bottom with LabVIEW's rules
-// (core/runtime/property-node.mjs).
-
-/** A Property Node: its read rows, in order, and its error out. */
-function propertyNode(e) {
-  const { class: className, link = null, rows = [], "ignore-errors": ignoreErrors = false } = e.nodo.config ?? {};
-  const { in: inputs, out: outputs } = e.cat.puertos(e.nodo);
-  const buffer = e.bufer(Math.max(1, rows.length) * FORMAT_ROW_BYTES);
-  const errorOut = e.bufer(disposicion(ERROR).tam);
-  const code = [];
-  const rowRecord = (row) => buffer + row * FORMAT_ROW_BYTES;
-  const hostRows = rows.map((row, index) => {
-    const property = e.cat.properties?.find(className, row.property);
-    if (!property?.done) throw new Error(`The property "${row.property}" of the Property Node cannot run yet.`);
-    const portName = `row-${index}`;
-    const layout = (type) => (esCluster(type) ? { disposicion: disposicionCompleta(type) } : {});
-    if (row.write) {
-      const input = inputs.findIndex((port) => port.name === portName);
-      const type = e.tIn(input);
-      code.push(...(esCluster(type) ? [k32(rowRecord(index)), ...e.entrada(input), ins("i32.store", ROW_VALUE_OFFSET)] : writeRow(type, rowRecord(index), e.entrada(input))));
-      return { property: row.property, write: true, tipo: type, ...layout(type) };
-    }
-    const type = e.tOut(outputs.findIndex((port) => port.name === portName));
-    if (type === "string") code.push(k32(rowRecord(index)), k32(e.celda()), ins("i32.store", ROW_BITS_OFFSET));
-    if (esCluster(type)) code.push(k32(rowRecord(index)), k32(e.bufer(disposicion(type).tam)), ins("i32.store", ROW_VALUE_OFFSET));
-    return { property: row.property, write: false, tipo: type, ...layout(type) };
-  });
-  const index = e.registerPropertyNode({ class: className, link, rows: hostRows, ignoreErrors });
-  const errorIn = inputs.findIndex((port) => port.name === "error-in");
-  const referenceIn = inputs.findIndex((port) => port.name === "reference");
-  // An Instr node's reference out is a VISA resource name the host fills; a control reference's is the refnum wired
-  // in, passed on as it came.
-  const isInstr = className === "Instr";
-  const referenceOut = referenceIn >= 0 && isInstr ? e.bufer(disposicion(VISA_RESOURCE_LAYOUT).tam) : 0;
-  const controlRefnum = referenceIn >= 0 && !isInstr ? e.temporal("i32") : null;
-  const reference = referenceIn < 0 ? [k32(0)] : controlRefnum === null ? e.entrada(referenceIn) : [...e.entrada(referenceIn), ins("local.tee", controlRefnum)];
-  code.push(
-    k32(index), k32(buffer), ...reference, ...e.entrada(errorIn), k32(referenceOut), k32(errorOut), k32(e.chainIndex),
-    ins("call", idImport("property_node")), ins("drop"),
-  );
-  const leaveOutput = (port) => {
-    if (port.name === "error-out") return [k32(errorOut)];
-    if (port.name === "reference-out") return controlRefnum === null ? [k32(referenceOut)] : [ins("local.get", controlRefnum)];
-    const row = Number(port.name.slice("row-".length));
-    if (esCluster(hostRows[row].tipo)) return [k32(rowRecord(row)), ins("i32.load", ROW_VALUE_OFFSET)];
-    return readRow(hostRows[row].tipo, rowRecord(row));
-  };
-  return [...code, ...outputs.flatMap(leaveOutput)];
-}
-
-// The Call Library Function Node (DT-080): an external wait whose host calls the library (core/runtime/call-library.mjs).
-// Record 0 is the return value's and record n the n-th parameter's, laid out as a Property Node's rows: a number in
-// the value word, written before the call and read after it; a string's or an array's handle in the value word and
-// the cell its output goes to in the bits word.
-
-/** A refnum lives in memory as a U32 (DT-072, amendment of 2026-11-03 §2). */
-const REFNUM_IN_MEMORY = "u32";
-
-/** A Call Library Function Node: its return value, each parameter's output, the path out and the error out. */
-function callLibrary(e) {
-  const config = callLibraryConfig(e.nodo.config);
-  const why = whyCallLibraryCannotRun(config);
-  if (why) throw new Error(why);
-  const { in: inputs, out: outputs } = e.cat.puertos(e.nodo);
-  const records = e.bufer((config.parameters.length + 1) * FORMAT_ROW_BYTES);
-  const recordAt = (slot) => records + slot * FORMAT_ROW_BYTES;
-  const code = [];
-  const outputCell = (record) => [k32(record), k32(e.celda()), ins("i32.store", ROW_BITS_OFFSET)];
-  const hostParameters = config.parameters.map((parameter, index) => {
-    const input = inputs.findIndex((port) => port.name === `arg-${index}-in`);
-    const type = e.tIn(input);
-    const record = recordAt(index + 1);
-    const minimumSize = parameter["minimum-size"] ? config.parameters.findIndex((other) => other.name === parameter["minimum-size"]) : -1;
-    // How a string or an array is passed (a handle or an address, DT-088); the host reads it to build and read the block.
-    const format = parameter.type === "string" ? parameter["string-format"] : parameter.type === "array" ? parameter["array-format"] : undefined;
-    const described = { type: parameter.type, dataType: parameter["data-type"] ?? "i32", pass: parameter.pass ?? "value", minimumSize, tipo: type, format };
-    if (parameter.type === "adapt-to-type" && esRefnum(e.logicalTIn(input))) {
-      // A refnum, as the This Application LabVIEW's DAQ VIs wire into lvAppRef: the library gets the address of its
-      // 4-byte value, in every format but Interface to Data (measured, reports/2026-11-14-vi-server-reference.md; DT-090).
-      code.push(...writeRow(REFNUM_IN_MEMORY, record, e.entrada(input)));
-      return { ...described, type: "numeric", dataType: REFNUM_IN_MEMORY, pass: "pointer", tipo: REFNUM_IN_MEMORY };
-    }
-    if (parameter.type === "adapt-to-type" && !isDaqTask(e.logicalTIn(input))) {
-      throw new Error(`The parameter "${parameter.name}" adapts to a type Solder does not pass to a library yet: only a DAQ task or a refnum.`);
-    }
-    if (isDaqTask(e.logicalTIn(input))) {
-      code.push(k32(record), ...e.entrada(input), ins("i32.store", ROW_VALUE_OFFSET));
-      // Adapt to Type gets a cell with the record and the I/O writes the task it holds afterwards into the output's
-      // buffer; a pointer-sized integer gets the task object and passes the wire on (DT-087 §7).
-      if (parameter.type === "adapt-to-type") code.push(k32(record), k32(e.bufer(disposicion(DAQ_TASK_LAYOUT).tam)), ins("i32.store", ROW_BITS_OFFSET));
-      return { ...described, task: parameter.type === "adapt-to-type" ? "record-cell" : "object", disposicion: disposicionCompleta(DAQ_TASK_LAYOUT) };
-    }
-    if (parameter.type === "string") {
-      code.push(k32(record), ...e.entrada(input), ins("i32.store", ROW_VALUE_OFFSET), ...outputCell(record));
-      return described;
-    }
-    if (esArray(type)) {
-      code.push(k32(record), ...e.entrada(input), ins("i32.store", ROW_VALUE_OFFSET), ...outputCell(record));
-      return { ...described, array: datosDePanel(type) };
-    }
-    code.push(...writeRow(type, record, e.entrada(input)));
-    return described;
-  });
-  const returnValue = config["return-type"];
-  const returnKind = callLibraryReturnKind(returnValue);
-  if (returnsString(returnKind)) code.push(...outputCell(recordAt(0)));
-  const index = e.registerCallLibrary({
-    library: config.library,
-    specifyPathOnDiagram: config["specify-path-on-diagram"],
-    function: config.function,
-    uiThread: config.thread === "ui",
-    returnKind,
-    parameters: hostParameters,
-  });
-  const pathIn = inputs.findIndex((port) => port.name === "path-in");
-  const errorIn = inputs.findIndex((port) => port.name === "error-in");
-  const errorOut = e.bufer(disposicion(ERROR).tam);
-  const path = pathIn >= 0 ? e.temporal("i32") : null;
-  code.push(
-    k32(index), k32(records), ...(path === null ? [k32(0)] : [...e.entrada(pathIn), ins("local.tee", path)]), ...e.entrada(errorIn), k32(errorOut), k32(e.chainIndex),
-    ins("call", idImport("call_library")), ins("drop"),
-  );
-  const leaveOutput = (port) => {
-    if (port.name === "error-out") return [k32(errorOut)];
-    if (port.name === "path-out") return [ins("local.get", path)];
-    if (port.name === "return") return returnsString(returnKind) ? [k32(recordAt(0)), ins("i32.load", ROW_BITS_OFFSET)] : readRow(port.type, recordAt(0));
-    const parameterIndex = Number(port.name.split("-")[1]);
-    const parameter = hostParameters[parameterIndex];
-    const record = recordAt(parameterIndex + 1);
-    if (parameter.type === "string" || parameter.array || parameter.task === "record-cell") return [k32(record), ins("i32.load", ROW_BITS_OFFSET)];
-    if (parameter.task === "object") return [k32(record), ins("i32.load", ROW_VALUE_OFFSET)];
-    return readRow(parameter.tipo, record);
-  };
-  return [...code, ...outputs.flatMap(leaveOutput)];
-}
-
-/** Number To Decimal/Hexadecimal/Octal String: número (f64) y width. */
-function numeroACadena(e, nombre) {
-  const celda = e.celda();
-  const t = e.tIn(0);
-  return [k32(celda), ...e.entrada(0), ...convertir(t, "number"), ...e.entrada(1), k32(esEntero(t) ? bits(t) : 64), ins("call", idImport(nombre)), k32(celda)];
-}
-
-/** Number To Fractional/Exponential/Engineering String: use system decimal point?, número, width y precision. */
-function numeroACadenaFlotante(e, nombre) {
-  const celda = e.celda();
-  return [k32(celda), ...e.entrada(1), ...convertir(e.tIn(1), "number"), ...e.entrada(2), ...e.entrada(3), ...e.entrada(0), ins("call", idImport(nombre)), k32(celda)];
-}
-
-/**
- * Decimal/Hexadecimal/Octal/Fract-Exp String To Number: `primera` es la posición
- * de string entre las entradas (la de default es la última). Si no hay número,
- * sale default y offset past number es offset.
- */
-function cadenaANumero(e, nombre, primera) {
-  const [v, n] = [e.temporal("f64"), e.temporal("i32")];
-  const t = e.tOut(1);
-  return [
-    ...e.entrada(primera), ...e.entrada(primera + 1), ins("call", idImport(nombre)), ins("local.set", v),
-    ins("call", idImport("extra")), ins("local.set", n),
-    get(n),
-    ...e.entrada(primera + 2), ...convertir(e.tIn(primera + 2), t),
-    get(v), ...convertir("number", t),
-    get(v), get(v), ins("f64.ne"), ins("select"),
-  ];
-}
-
-/** Las funciones de carácter: el primer byte de una cadena (-1 si está vacía) o el código de un número. */
-function claseDeCaracter(e, prueba) {
-  const c = e.temporal("i32");
-  const cargar =
-    e.tIn(0) === "string"
-      ? [...e.entrada(0), ins("local.tee", c), llamarMemoria("datos"), ins("i32.load8_u"), k32(-1), get(c), llamarMemoria("longitud"), ins("select")]
-      : [...e.entrada(0), ...convertir(e.tIn(0), "i32")];
-  return [...cargar, ins("local.set", c), ...prueba(c)];
-}
 
 /**
  * Lo que emite cada bloque. Recibe `e`: `e.entrada(i)` deja en la pila la
@@ -843,37 +65,37 @@ function claseDeCaracter(e, prueba) {
  * instrucciones que dejan en la pila sus salidas, en orden.
  */
 const BLOQUES = {
-  const: (e) => constante(e.tOut(0), e.nodo.config?.value ?? 0),
-  "num-const": (e) => constante(e.tOut(0), e.nodo.config?.value ?? 0),
+  const: (e) => constantOf(e.tOut(0), e.nodo.config?.value ?? 0),
+  "num-const": (e) => constantOf(e.tOut(0), e.nodo.config?.value ?? 0),
   "bool-const": (e) => [ins("i32.const", e.nodo.config?.value ? 1 : 0)],
-  "enum-const": (e) => constante(e.tOut(0), e.nodo.config?.value ?? 0),
-  "ring-const": (e) => constante(e.tOut(0), e.nodo.config?.value ?? 0),
+  "enum-const": (e) => constantOf(e.tOut(0), e.nodo.config?.value ?? 0),
+  "ring-const": (e) => constantOf(e.tOut(0), e.nodo.config?.value ?? 0),
   // Range Limits For Type: sólo importa el tipo cableado, no su valor.
   "range-limits-for-type": (e) => {
     const { min, max } = limites(e.tIn(0));
-    return [...constante(e.tOut(0), max), ...constante(e.tOut(1), min)];
+    return [...constantOf(e.tOut(0), max), ...constantOf(e.tOut(1), min)];
   },
   "positive-infinity": () => [ins("f64.const", Infinity)],
   "negative-infinity": () => [ins("f64.const", -Infinity)],
   "machine-epsilon": () => [ins("f64.const", Number.EPSILON)],
   ...Object.fromEntries(Object.entries(CONSTANTES_MATEMATICAS).map(([n, k]) => [n, () => [ins("f64.const", k.valor)]])),
   "not-a-number": () => [ins("f64.const", NaN)],
-  "random-number": () => [ins("call", idImport("random"))],
-  // Cadenas (DT-042): la constante vive en la zona estática; las demás escriben en su celda.
+  "random-number": () => [ins("call", importIndex("random"))],
+  // Cadenas (DT-042): la constantOf vive en la zona estática; las demás escriben en su celda.
   "str-const": (e) => [ins("i32.const", e.cadena(e.nodo.config?.value ?? ""))],
-  "string-length": (e) => [...e.entrada(0), llamarMemoria("longitud")],
-  "concatenate-strings": concatenar,
-  "string-subset": (e) => llamarCad(e, "sub", [0, 1, 2]),
-  "to-upper-case": (e) => llamarCad(e, "mayus", [0]),
-  "to-lower-case": (e) => llamarCad(e, "minus", [0]),
-  "reverse-string": (e) => llamarCad(e, "invertir", [0]),
-  "rotate-string": (e) => llamarCad(e, "rotar", [0]),
-  "trim-whitespace": (e) => llamarCad(e, "recortar", [1, 0]),
+  "string-length": (e) => [...e.entrada(0), callMemory("longitud")],
+  "concatenate-strings": concatenateStrings,
+  "string-subset": (e) => callStringFunction(e, "sub", [0, 1, 2]),
+  "to-upper-case": (e) => callStringFunction(e, "mayus", [0]),
+  "to-lower-case": (e) => callStringFunction(e, "minus", [0]),
+  "reverse-string": (e) => callStringFunction(e, "invertir", [0]),
+  "rotate-string": (e) => callStringFunction(e, "rotar", [0]),
+  "trim-whitespace": (e) => callStringFunction(e, "recortar", [1, 0]),
   "replace-substring": (e) => {
     // Sin cablear length, son los bytes de substring.
-    const largo = e.cableada(3) ? e.entrada(3) : [...e.entrada(1), llamarMemoria("longitud")];
+    const largo = e.cableada(3) ? e.entrada(3) : [...e.entrada(1), callMemory("longitud")];
     const [c1, c2] = [e.celda(), e.celda()];
-    return [ins("i32.const", c1), ins("i32.const", c2), ...e.entrada(0), ...e.entrada(1), ...e.entrada(2), ...largo, ins("call", idImport("reemplazar")), ins("i32.const", c1), ins("i32.const", c2)];
+    return [ins("i32.const", c1), ins("i32.const", c2), ...e.entrada(0), ...e.entrada(1), ...e.entrada(2), ...largo, ins("call", importIndex("reemplazar")), ins("i32.const", c1), ins("i32.const", c2)];
   },
   "format-into-string": (e) => formatIntoString(e),
   "array-to-spreadsheet-string": (e) => spreadsheetCall(e, "array_to_spreadsheet", [0, 1, 2], e.tIn(1)),
@@ -885,64 +107,64 @@ const BLOQUES = {
     return [
       ins("i32.const", celda), ...e.entrada(3), ...e.entrada(4), ...e.entrada(5), ...e.entrada(6),
       ...e.entrada(1), ...e.entrada(2), ins("i32.const", 1), ins("i32.shl"), ins("i32.or"),
-      ins("call", idImport("buscar")), ins("local.set", n),
-      ins("i32.const", celda), ins("local.get", n), ins("call", idImport("extra")),
+      ins("call", importIndex("buscar")), ins("local.set", n),
+      ins("i32.const", celda), ins("local.get", n), ins("call", importIndex("extra")),
       ...e.entrada(7), // error out: pasa el que entra (un aviso sigue su camino)
     ];
   },
   // Number/String Conversion. El número llega como f64 y el anfitrión lo formatea (DT-042 b).
-  "number-to-decimal-string": (e) => numeroACadena(e, "dec"),
-  "number-to-hexadecimal-string": (e) => numeroACadena(e, "hex"),
-  "number-to-octal-string": (e) => numeroACadena(e, "oct"),
-  "number-to-fractional-string": (e) => numeroACadenaFlotante(e, "frac"),
-  "number-to-exponential-string": (e) => numeroACadenaFlotante(e, "exp"),
-  "number-to-engineering-string": (e) => numeroACadenaFlotante(e, "eng"),
-  "decimal-string-to-number": (e) => cadenaANumero(e, "leer_dec", 0),
-  "hexadecimal-string-to-number": (e) => cadenaANumero(e, "leer_hex", 0),
-  "octal-string-to-number": (e) => cadenaANumero(e, "leer_oct", 0),
-  "fract-exp-string-to-number": (e) => cadenaANumero(e, "leer_frac", 1),
+  "number-to-decimal-string": (e) => numberToString(e, "dec"),
+  "number-to-hexadecimal-string": (e) => numberToString(e, "hex"),
+  "number-to-octal-string": (e) => numberToString(e, "oct"),
+  "number-to-fractional-string": (e) => numberToFloatString(e, "frac"),
+  "number-to-exponential-string": (e) => numberToFloatString(e, "exp"),
+  "number-to-engineering-string": (e) => numberToFloatString(e, "eng"),
+  "decimal-string-to-number": (e) => stringToNumber(e, "leer_dec", 0),
+  "hexadecimal-string-to-number": (e) => stringToNumber(e, "leer_hex", 0),
+  "octal-string-to-number": (e) => stringToNumber(e, "leer_oct", 0),
+  "fract-exp-string-to-number": (e) => stringToNumber(e, "leer_frac", 1),
   // Las constantes de cadena fijas de la paleta String.
   ...Object.fromEntries(
     ["empty-string-constant", "space-constant", "tab-constant", "carriage-return-constant", "line-feed-constant", "end-of-line-constant"].map((n) => [n, (e) => [ins("i32.const", e.cadena(e.cat.bloque(n).value))]]),
   ),
-  "empty-string-path": (e) => (e.logicalTIn(0) === PATH ? [...e.entrada(0), ins("call", idImport("path_is_empty"))] : [...e.entrada(0), llamarMemoria("longitud"), ins("i32.eqz")]),
-  "decimal-digit": (e) => claseDeCaracter(e, (c) => [get(c), k32(48), ins("i32.sub"), k32(10), ins("i32.lt_u")]),
-  "octal-digit": (e) => claseDeCaracter(e, (c) => [get(c), k32(48), ins("i32.sub"), k32(8), ins("i32.lt_u")]),
-  "hex-digit": (e) => claseDeCaracter(e, (c) => [
-    get(c), k32(48), ins("i32.sub"), k32(10), ins("i32.lt_u"),
-    get(c), k32(32), ins("i32.or"), k32(97), ins("i32.sub"), k32(6), ins("i32.lt_u"), ins("i32.or"),
+  "empty-string-path": (e) => (e.logicalTIn(0) === PATH ? [...e.entrada(0), ins("call", importIndex("path_is_empty"))] : [...e.entrada(0), callMemory("longitud"), ins("i32.eqz")]),
+  "decimal-digit": (e) => characterTest(e, (c) => [localGet(c), i32Const(48), ins("i32.sub"), i32Const(10), ins("i32.lt_u")]),
+  "octal-digit": (e) => characterTest(e, (c) => [localGet(c), i32Const(48), ins("i32.sub"), i32Const(8), ins("i32.lt_u")]),
+  "hex-digit": (e) => characterTest(e, (c) => [
+    localGet(c), i32Const(48), ins("i32.sub"), i32Const(10), ins("i32.lt_u"),
+    localGet(c), i32Const(32), ins("i32.or"), i32Const(97), ins("i32.sub"), i32Const(6), ins("i32.lt_u"), ins("i32.or"),
   ]),
   // Espacio, HT, LF, VT, FF y CR (la ayuda de NI: «space, h/v tab, cr, lf, ff»).
-  "white-space": (e) => claseDeCaracter(e, (c) => [get(c), k32(32), ins("i32.eq"), get(c), k32(9), ins("i32.sub"), k32(5), ins("i32.lt_u"), ins("i32.or")]),
+  "white-space": (e) => characterTest(e, (c) => [localGet(c), i32Const(32), ins("i32.eq"), localGet(c), i32Const(9), ins("i32.sub"), i32Const(5), ins("i32.lt_u"), ins("i32.or")]),
   // Clusters (DT-042): Bundle escribe sus campos en su bloque; Unbundle los lee sin copiar.
   bundle: (e) => {
-    const d = disposicion(e.tOut(0));
+    const d = clusterLayout(e.tOut(0));
     const b = e.bufer(d.tam);
     const r = [];
     d.campos.forEach((c, i) => {
-      if (porReferencia(c.tipo)) r.push(...copiarValor(c.tipo, e.entrada(i), b + c.off, e.temporal));
-      else r.push(ins("i32.const", b + c.off), ...e.entrada(i), ins(`${tipoWasm(c.tipo)}.store`));
+      if (isByReference(c.tipo)) r.push(...copyValue(c.tipo, e.entrada(i), b + c.off, e.temporal));
+      else r.push(ins("i32.const", b + c.off), ...e.entrada(i), ins(`${wasmTypeOf(c.tipo)}.store`));
     });
     return [...r, ins("i32.const", b)];
   },
-  unbundle: (e) => readClusterFields(e, disposicion(e.tIn(0)).campos),
+  unbundle: (e) => readClusterFields(e, clusterLayout(e.tIn(0)).campos),
   // Bundle By Name: a copy of the input cluster with each named row's element written over (DT-083).
   "bundle-by-name": (e) => {
-    const layout = disposicion(e.tIn(0));
+    const layout = clusterLayout(e.tIn(0));
     const buffer = e.bufer(layout.tam);
-    const code = copiarValor(e.tIn(0), e.entrada(0), buffer, e.temporal);
+    const code = copyValue(e.tIn(0), e.entrada(0), buffer, e.temporal);
     const rows = (e.nodo.config?.items ?? []).filter((field) => field !== null);
     rows.forEach((name, row) => {
       const field = layout.campos.find((c) => c.nombre === name);
       const input = row + 1;
-      if (porReferencia(field.tipo)) code.push(...copiarValor(field.tipo, e.entrada(input), buffer + field.off, e.temporal));
-      else code.push(ins("i32.const", buffer + field.off), ...e.entrada(input), ins(`${tipoWasm(field.tipo)}.store`));
+      if (isByReference(field.tipo)) code.push(...copyValue(field.tipo, e.entrada(input), buffer + field.off, e.temporal));
+      else code.push(ins("i32.const", buffer + field.off), ...e.entrada(input), ins(`${wasmTypeOf(field.tipo)}.store`));
     });
     return [...code, ins("i32.const", buffer)];
   },
   // Unbundle By Name: the same reads, only the named rows and in their order (DT-050).
   "unbundle-by-name": (e) => {
-    const fields = disposicion(e.tIn(0)).campos;
+    const fields = clusterLayout(e.tIn(0)).campos;
     const rows = (e.nodo.config?.items ?? []).filter((field) => field !== null);
     return readClusterFields(e, rows.map((field) => fields.find((c) => c.nombre === field)));
   },
@@ -951,15 +173,15 @@ const BLOQUES = {
   "clear-errors": (e) => {
     // Sin código específico, todo a cero; con él, sólo si coincide (sin comprobar en LabVIEW).
     const [x, k, borra] = [e.temporal("i32"), e.temporal("i32"), e.temporal("i32")];
-    const b = e.bufer(ERR.tam);
+    const b = e.bufer(ERROR_FIELDS.tam);
     const g = (l) => ins("local.get", l);
     return [
       ...e.entrada(0), ins("local.set", k), ...e.entrada(1), ins("local.set", x),
-      g(k), ins("i32.eqz"), g(x), ins("i32.load", ERR.code), g(k), ins("i32.eq"), ins("i32.or"), ins("local.set", borra),
+      g(k), ins("i32.eqz"), g(x), ins("i32.load", ERROR_FIELDS.code), g(k), ins("i32.eq"), ins("i32.or"), ins("local.set", borra),
       g(borra), ins("if"),
-      ins("i32.const", b), ins("i32.const", 0), ins("i32.store", ERR.status), ins("i32.const", b), ins("i32.const", 0), ins("i32.store", ERR.code),
-      ...copiarValor("string", [ins("i32.const", 0)], b + ERR.source, e.temporal),
-      ins("else"), ...copiarValor(ERROR, [g(x)], b, e.temporal), ins("end"),
+      ins("i32.const", b), ins("i32.const", 0), ins("i32.store", ERROR_FIELDS.status), ins("i32.const", b), ins("i32.const", 0), ins("i32.store", ERROR_FIELDS.code),
+      ...copyValue("string", [ins("i32.const", 0)], b + ERROR_FIELDS.source, e.temporal),
+      ins("else"), ...copyValue(ERROR, [g(x)], b, e.temporal), ins("end"),
       g(k), ins("i32.const", 0), ins("i32.ne"), g(borra), ins("i32.and"),
       ins("i32.const", b),
     ];
@@ -972,7 +194,7 @@ const BLOQUES = {
     const c = [];
     ent.forEach((l, i) => c.push(...e.entrada(i), ins("local.set", l)));
     c.push(ins("local.get", ent[0]), ins("local.set", r), ins("i32.const", 0), ins("local.set", hay));
-    for (const campo of [ERR.status, ERR.code]) {
+    for (const campo of [ERROR_FIELDS.status, ERROR_FIELDS.code]) {
       for (const l of ent) {
         c.push(ins("local.get", hay), ins("i32.eqz"), ins("local.get", l), ins("i32.load", campo), ins("i32.const", 0), ins("i32.ne"), ins("i32.and"),
           ins("if"), ins("local.get", l), ins("local.set", r), ins("i32.const", 1), ins("local.set", hay), ins("end"));
@@ -983,15 +205,15 @@ const BLOQUES = {
   "error-cluster-from-error-code": (e) => {
     // Un código distinto de 0: un error (o un aviso) con el mensaje como source (sin comprobar en LabVIEW qué source pone).
     // Con 0, pasa el error que entra. El envoltorio de «pasa-error» ya trata un error a la entrada.
-    const b = e.bufer(ERR.tam);
+    const b = e.bufer(ERROR_FIELDS.tam);
     const [code, x] = [e.temporal("i32"), e.temporal("i32")];
     return [
       ...e.entrada(4), ins("local.set", x), ...e.entrada(2), ins("local.tee", code),
       ins("if"),
-      ins("i32.const", b), ...e.entrada(0), ins("i32.eqz"), ins("i32.store", ERR.status),
-      ins("i32.const", b), ins("local.get", code), ins("i32.store", ERR.code),
-      ...copiarValor("string", e.entrada(3), b + ERR.source, e.temporal),
-      ins("else"), ...copiarValor(ERROR, [ins("local.get", x)], b, e.temporal), ins("end"),
+      ins("i32.const", b), ...e.entrada(0), ins("i32.eqz"), ins("i32.store", ERROR_FIELDS.status),
+      ins("i32.const", b), ins("local.get", code), ins("i32.store", ERROR_FIELDS.code),
+      ...copyValue("string", e.entrada(3), b + ERROR_FIELDS.source, e.temporal),
+      ins("else"), ...copyValue(ERROR, [ins("local.get", x)], b, e.temporal), ins("end"),
       ins("i32.const", b),
     ];
   },
@@ -1008,40 +230,40 @@ const BLOQUES = {
   "property-node": (e) => propertyNode(e),
   "call-library": (e) => callLibrary(e),
   // A control reference is the refnum the host knows its control by (DT-072 §2).
-  "control-reference": (e) => [k32(e.registerControlReference(e.nodo.config?.link))],
+  "control-reference": (e) => [i32Const(e.registerControlReference(e.nodo.config?.link))],
   // This OVI or This Application: a fixed refnum of its class, never Not A Refnum (DT-090).
-  "vi-server-reference": (e) => [k32(refnumOfClass(e.nodo.config?.type?.refnum ?? OVI_CLASS))],
+  "vi-server-reference": (e) => [i32Const(refnumOfClass(e.nodo.config?.type?.refnum ?? OVI_CLASS))],
   // The file functions (DT-067 §7), by the catalog's index. A wired prompt is the title of the dialog of an unwired path.
   "open-create-replace-file": (e) =>
-    fileFunction(e, "file_open", [...optionalHandle(e, 0), ...(e.cableada(1) ? e.entrada(1) : [k32(0)]), k32(e.cableada(1) ? 1 : 0), ...e.entrada(2), ...e.entrada(3)], ["refnum", "boolean", "error"]),
+    fileFunction(e, "file_open", [...optionalHandle(e, 0), ...(e.cableada(1) ? e.entrada(1) : [i32Const(0)]), i32Const(e.cableada(1) ? 1 : 0), ...e.entrada(2), ...e.entrada(3)], ["refnum", "boolean", "error"]),
   "close-file": (e) => fileFunction(e, "file_close", e.entrada(0), ["cell", "error"]),
   "write-to-text-file": (e) =>
-    fileFunction(e, "file_write_text", [...optionalHandle(e, 0), ...fileInput(e, 1), ...e.entrada(2), k32(esArray(e.tIn(2)) ? 1 : 0), k32(e.nodo.config?.["convert-eol"] ?? true ? 1 : 0)], ["refnum", "boolean", "error"]),
+    fileFunction(e, "file_write_text", [...optionalHandle(e, 0), ...fileInput(e, 1), ...e.entrada(2), i32Const(esArray(e.tIn(2)) ? 1 : 0), i32Const(e.nodo.config?.["convert-eol"] ?? true ? 1 : 0)], ["refnum", "boolean", "error"]),
   "read-from-text-file": (e) =>
-    fileFunction(e, "file_read_text", [...optionalHandle(e, 0), ...fileInput(e, 1), ...e.entrada(2), k32(readMode(e)), k32(e.nodo.config?.["convert-eol"] ?? true ? 1 : 0)], ["refnum", "cell", "boolean", "error"]),
+    fileFunction(e, "file_read_text", [...optionalHandle(e, 0), ...fileInput(e, 1), ...e.entrada(2), i32Const(readMode(e)), i32Const(e.nodo.config?.["convert-eol"] ?? true ? 1 : 0)], ["refnum", "cell", "boolean", "error"]),
   "delete": (e) =>
-    fileFunction(e, "file_delete", [...optionalHandle(e, 0), ...(e.cableada(1) ? e.entrada(1) : [k32(0)]), k32(e.cableada(1) ? 1 : 0), ...e.entrada(2), ...e.entrada(3)], ["cell", "boolean", "error"]),
-  "get-file-size": (e) => fileFunction(e, "file_size", [...e.entrada(0), k32(e.logicalTIn(0) === PATH ? 1 : 0)], ["refnum", "size", "error"]),
+    fileFunction(e, "file_delete", [...optionalHandle(e, 0), ...(e.cableada(1) ? e.entrada(1) : [i32Const(0)]), i32Const(e.cableada(1) ? 1 : 0), ...e.entrada(2), ...e.entrada(3)], ["cell", "boolean", "error"]),
+  "get-file-size": (e) => fileFunction(e, "file_size", [...e.entrada(0), i32Const(e.logicalTIn(0) === PATH ? 1 : 0)], ["refnum", "size", "error"]),
   // The instance follows the data: 1D data's type when it is wired, the 2D's otherwise (measured: 1D wins when not empty).
   "write-delimited-spreadsheet-vi": (e) => {
     const instanceData = e.cableada(3) ? 3 : 2;
     return fileFunction(e, "file_write_spreadsheet", [
       ...optionalHandle(e, 0), ...delimitedWriteFormat(e, instanceData),
-      ...optionalHandle(e, 2), k32(spreadsheetElementOfInput(e, 2)), ...optionalHandle(e, 3), k32(spreadsheetElementOfInput(e, 3)),
+      ...optionalHandle(e, 2), i32Const(spreadsheetElementOfInput(e, 2)), ...optionalHandle(e, 3), i32Const(spreadsheetElementOfInput(e, 3)),
       ...e.entrada(4), ...e.entrada(6), ...e.entrada(7),
     ], ["cell", "error"]);
   },
   "read-delimited-spreadsheet-vi": (e) =>
     fileFunction(e, "file_read_spreadsheet", [
       ...optionalHandle(e, 0), ...e.entrada(1), ...e.entrada(2), ...e.entrada(3), ...e.entrada(4), ...e.entrada(6), ...e.entrada(7),
-      k32(SPREADSHEET_ELEMENTS.indexOf(representacion(e.tOut(1).array) ?? e.tOut(1).array)),
+      i32Const(SPREADSHEET_ELEMENTS.indexOf(representacion(e.tOut(1).array) ?? e.tOut(1).array)),
     ], ["cell", "cell", "cell", "i32", "boolean", "error"]),
   // File Dialog (DT-069): the strings by handle (empty when unwired), its configuration as codes of FILE_DIALOG_CODES.
   "file-dialog": (e) => {
     const config = e.nodo.config ?? {};
     return fileFunction(e, "file_dialog", [
       ...optionalHandle(e, 0), ...e.entrada(1), ...e.entrada(3), ...e.entrada(4), ...e.entrada(5), ...e.entrada(6),
-      k32(FILE_DIALOG_CODES.selection.indexOf(config.selection ?? "file")), k32(FILE_DIALOG_CODES.existence.indexOf(config.existence ?? "new-or-existing")), k32(config.multiple ? 1 : 0),
+      i32Const(FILE_DIALOG_CODES.selection.indexOf(config.selection ?? "file")), i32Const(FILE_DIALOG_CODES.existence.indexOf(config.existence ?? "new-or-existing")), i32Const(config.multiple ? 1 : 0),
     ], ["cell", "boolean", "boolean", "error"]);
   },
   // Paths (DT-067): a constant is its block in the static zone, like a string's.
@@ -1051,77 +273,77 @@ const BLOQUES = {
   "build-path": (e) => {
     const cell = e.celda();
     const nameIsPath = e.logicalTIn(1) === PATH ? 1 : 0;
-    return [k32(cell), ...e.entrada(0), ...e.entrada(1), k32(nameIsPath), ins("call", idImport("build_path")), k32(cell)];
+    return [i32Const(cell), ...e.entrada(0), ...e.entrada(1), i32Const(nameIsPath), ins("call", importIndex("build_path")), i32Const(cell)];
   },
   "strip-path": (e) => {
     const [strippedCell, nameCell] = [e.celda(), e.celda()];
-    return [k32(strippedCell), k32(nameCell), ...e.entrada(0), ins("call", idImport("strip_path")), k32(strippedCell), k32(nameCell)];
+    return [i32Const(strippedCell), i32Const(nameCell), ...e.entrada(0), ins("call", importIndex("strip_path")), i32Const(strippedCell), i32Const(nameCell)];
   },
-  "path-to-string": (e) => llamarCad(e, "path_to_string", [0]),
-  "string-to-path": (e) => llamarCad(e, "string_to_path", [0]),
-  "path-type": (e) => [...e.entrada(0), ins("call", idImport("path_kind"))],
+  "path-to-string": (e) => callStringFunction(e, "path_to_string", [0]),
+  "string-to-path": (e) => callStringFunction(e, "string_to_path", [0]),
+  "path-type": (e) => [...e.entrada(0), ins("call", importIndex("path_kind"))],
   "path-to-array-of-strings": (e) => {
     const [arrayCell, relative] = [e.celda(), e.temporal("i32")];
-    return [k32(arrayCell), ...e.entrada(0), ins("call", idImport("path_to_array")), ins("local.set", relative), k32(arrayCell), ins("local.get", relative)];
+    return [i32Const(arrayCell), ...e.entrada(0), ins("call", importIndex("path_to_array")), ins("local.set", relative), i32Const(arrayCell), ins("local.get", relative)];
   },
-  "array-of-strings-to-path": (e) => llamarCad(e, "array_to_path", [0, 1]),
+  "array-of-strings-to-path": (e) => callStringFunction(e, "array_to_path", [0, 1]),
   "simple-error-handler": (e) => {
     // The host decides everything (core/runtime/runtime.mjs): the dialog waits for the user.
-    const [b, src, msg] = [e.bufer(ERR.tam), e.celda(), e.celda()];
+    const [b, src, msg] = [e.bufer(ERROR_FIELDS.tam), e.celda(), e.celda()];
     return [
       ...e.entrada(3), ...e.entrada(0), ...e.entrada(1), ...e.entrada(2),
-      ins("i32.const", b), ins("i32.const", src), ins("i32.const", msg), ins("call", idImport("dialogo_error")),
-      ins("i32.const", b), ins("i32.load", ERR.code), ins("i32.const", src), ins("i32.const", b), ins("i32.const", msg),
+      ins("i32.const", b), ins("i32.const", src), ins("i32.const", msg), ins("call", importIndex("dialogo_error")),
+      ins("i32.const", b), ins("i32.load", ERROR_FIELDS.code), ins("i32.const", src), ins("i32.const", b), ins("i32.const", msg),
     ];
   },
   // Arrays de una dimensión (DT-042): un bloque [n][relleno][elementos]; cada nodo, en su celda.
-  "array-size": (e) => (dimensionsOf(e.tIn(0)) === 1 ? [...e.entrada(0), llamarMemoria("longitud")] : arraySizes(e)),
+  "array-size": (e) => (dimensionsOf(e.tIn(0)) === 1 ? [...e.entrada(0), callMemory("longitud")] : arraySizes(e)),
   "index-array": (e) => {
     if (dimensionsOf(e.tIn(0)) === 2) return indexArray2d(e);
     // Fuera de rango, el valor por defecto del tipo (spec/04 §6).
     const t = e.tOut(0);
-    const el = elemento(t);
-    const [h, i, r] = [e.temporal("i32"), e.temporal("i32"), e.temporal(tipoWasm(t))];
+    const el = arrayElement(t);
+    const [h, i, r] = [e.temporal("i32"), e.temporal("i32"), e.temporal(wasmTypeOf(t))];
     const g = (l) => ins("local.get", l);
     return [
       ...e.entrada(0), ins("local.set", h), ...e.entrada(1), ins("local.set", i),
-      ...constante(t, 0), ins("local.set", r),
-      g(i), ins("i32.const", 0), ins("i32.ge_s"), g(i), g(h), llamarMemoria("longitud"), ins("i32.lt_s"), ins("i32.and"),
-      ins("if"), ...cargarElemento(t, [g(h), llamarMemoria("datos8"), g(i), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add")]), ins("local.set", r), ins("end"),
+      ...constantOf(t, 0), ins("local.set", r),
+      g(i), ins("i32.const", 0), ins("i32.ge_s"), g(i), g(h), callMemory("longitud"), ins("i32.lt_s"), ins("i32.and"),
+      ins("if"), ...loadElement(t, [g(h), callMemory("datos8"), g(i), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add")]), ins("local.set", r), ins("end"),
       g(r),
     ];
   },
   "build-array": (e) => {
-    // Un elemento se añade; un array se concatena; arrays que se apilan dan una dimensión más (DT-044).
+    // Un arrayElement se añade; un array se concatena; arrays que se apilan dan una dimensión más (DT-044).
     if (dimensionsOf(e.tOut(0)) === 2) return buildArray2d(e);
     if (dimensionsOf(e.tOut(0)) > 2) throw new Error("Build Array giving an array of more than 2 dimensions: not yet (DT-044).");
     const t = e.tOut(0).array;
-    const el = elemento(t);
+    const el = arrayElement(t);
     const n = e.cat.puertos(e.nodo).in.length;
     const esArr = Array.from({ length: n }, (_, i) => esArray(e.tIn(i)));
     const celda = e.celda();
     const ent = esArr.map(() => e.temporal("i32"));
-    const valores = esArr.map((a) => (a ? null : e.temporal(tipoWasm(t))));
+    const valores = esArr.map((a) => (a ? null : e.temporal(wasmTypeOf(t))));
     const [total, d] = [e.temporal("i32"), e.temporal("i32")];
     const g = (l) => ins("local.get", l);
     const c = [];
     esArr.forEach((a, i) => c.push(...e.entrada(i), ins("local.set", a ? ent[i] : valores[i])));
     c.push(ins("i32.const", 0), ins("local.set", total));
-    esArr.forEach((a, i) => c.push(g(total), ...(a ? [g(ent[i]), llamarMemoria("longitud")] : [ins("i32.const", 1)]), ins("i32.add"), ins("local.set", total)));
-    c.push(ins("i32.const", celda), g(total), ins("i32.const", el.tam), ins("i32.const", el.ref ? 1 : 0), llamarMemoria("nuevo_array"), ins("local.set", d));
+    esArr.forEach((a, i) => c.push(g(total), ...(a ? [g(ent[i]), callMemory("longitud")] : [ins("i32.const", 1)]), ins("i32.add"), ins("local.set", total)));
+    c.push(ins("i32.const", celda), g(total), ins("i32.const", el.tam), ins("i32.const", el.ref ? 1 : 0), callMemory("nuevo_array"), ins("local.set", d));
     esArr.forEach((a, i) => {
       if (!a) {
-        c.push(...guardarElemento(t, [g(d)], [g(valores[i])], e.temporal), g(d), ins("i32.const", el.tam), ins("i32.add"), ins("local.set", d));
+        c.push(...storeElement(t, [g(d)], [g(valores[i])], e.temporal), g(d), ins("i32.const", el.tam), ins("i32.add"), ins("local.set", d));
         return;
       }
       // Un array entero: sus elementos, detrás de lo que ya hay.
       const [m, o, j] = [e.temporal("i32"), e.temporal("i32"), e.temporal("i32")];
-      c.push(g(ent[i]), llamarMemoria("longitud"), ins("local.set", m), g(ent[i]), llamarMemoria("datos8"), ins("local.set", o));
+      c.push(g(ent[i]), callMemory("longitud"), ins("local.set", m), g(ent[i]), callMemory("datos8"), ins("local.set", o));
       if (!el.ref) c.push(g(d), g(o), g(m), ins("i32.const", el.tam), ins("i32.mul"), ins("memory.copy"));
       else {
         const paso = (l) => [g(l), g(j), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add")];
         c.push(ins("i32.const", 0), ins("local.set", j), ins("block"), ins("loop"), g(j), g(m), ins("i32.ge_s"), ins("br_if", 1),
-          ...copiarA(t, paso(o), paso(d), e.temporal), g(j), ins("i32.const", 1), ins("i32.add"), ins("local.set", j), ins("br", 0), ins("end"), ins("end"));
+          ...copyValueTo(t, paso(o), paso(d), e.temporal), g(j), ins("i32.const", 1), ins("i32.add"), ins("local.set", j), ins("br", 0), ins("end"), ins("end"));
       }
       c.push(g(d), g(m), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add"), ins("local.set", d));
     });
@@ -1130,58 +352,58 @@ const BLOQUES = {
   "initialize-array": (e) => {
     if (dimensionsOf(e.tOut(0)) > 1) return initializeArrayNd(e);
     const t = e.tIn(0);
-    const el = elemento(t);
+    const el = arrayElement(t);
     const celda = e.celda();
-    const [v, n, d, i] = [e.temporal(tipoWasm(t)), e.temporal("i32"), e.temporal("i32"), e.temporal("i32")];
+    const [v, n, d, i] = [e.temporal(wasmTypeOf(t)), e.temporal("i32"), e.temporal("i32"), e.temporal("i32")];
     const g = (l) => ins("local.get", l);
     const sitio = [g(d), g(i), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add")];
     return [
       ...e.entrada(0), ins("local.set", v), ...e.entrada(1), ins("local.tee", n), ins("i32.const", 0), g(n), ins("i32.const", 0), ins("i32.gt_s"), ins("select"), ins("local.set", n),
-      ins("i32.const", celda), g(n), ins("i32.const", el.tam), ins("i32.const", el.ref ? 1 : 0), llamarMemoria("nuevo_array"), ins("local.set", d),
+      ins("i32.const", celda), g(n), ins("i32.const", el.tam), ins("i32.const", el.ref ? 1 : 0), callMemory("nuevo_array"), ins("local.set", d),
       ins("i32.const", 0), ins("local.set", i), ins("block"), ins("loop"), g(i), g(n), ins("i32.ge_s"), ins("br_if", 1),
-      ...guardarElemento(t, sitio, [g(v)], e.temporal), g(i), ins("i32.const", 1), ins("i32.add"), ins("local.set", i), ins("br", 0), ins("end"), ins("end"),
+      ...storeElement(t, sitio, [g(v)], e.temporal), g(i), ins("i32.const", 1), ins("i32.add"), ins("local.set", i), ins("br", 0), ins("end"), ins("end"),
       ins("i32.const", celda),
     ];
   },
   "array-subset": (e) => {
     // Desde `index` (recortado a [0, n]), `length` elementos (recortado a lo que queda; sin cablear, todo lo que queda).
     const t = e.tOut(0).array;
-    const el = elemento(t);
+    const el = arrayElement(t);
     const celda = e.celda();
     const [h, n, a, l, o, d, i] = Array.from({ length: 7 }, () => e.temporal("i32"));
     const g = (x) => ins("local.get", x);
     const c = [
-      ...e.entrada(0), ins("local.tee", h), llamarMemoria("longitud"), ins("local.set", n),
+      ...e.entrada(0), ins("local.tee", h), callMemory("longitud"), ins("local.set", n),
       ...e.entrada(1), ins("local.set", a),
       g(a), ins("i32.const", 0), g(a), ins("i32.const", 0), ins("i32.gt_s"), ins("select"), ins("local.set", a),
       g(a), g(n), g(a), g(n), ins("i32.lt_s"), ins("select"), ins("local.set", a),
       ...(e.cableada(2) ? e.entrada(2) : [g(n)]), ins("local.set", l),
       g(l), ins("i32.const", 0), g(l), ins("i32.const", 0), ins("i32.gt_s"), ins("select"), ins("local.set", l),
       g(l), g(n), g(a), ins("i32.sub"), g(l), g(n), g(a), ins("i32.sub"), ins("i32.lt_s"), ins("select"), ins("local.set", l),
-      g(h), llamarMemoria("datos8"), g(a), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add"), ins("local.set", o),
-      ins("i32.const", celda), g(l), ins("i32.const", el.tam), ins("i32.const", el.ref ? 1 : 0), llamarMemoria("nuevo_array"), ins("local.set", d),
+      g(h), callMemory("datos8"), g(a), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add"), ins("local.set", o),
+      ins("i32.const", celda), g(l), ins("i32.const", el.tam), ins("i32.const", el.ref ? 1 : 0), callMemory("nuevo_array"), ins("local.set", d),
     ];
     if (!el.ref) c.push(g(d), g(o), g(l), ins("i32.const", el.tam), ins("i32.mul"), ins("memory.copy"));
     else {
       const paso = (x) => [g(x), g(i), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add")];
       c.push(ins("i32.const", 0), ins("local.set", i), ins("block"), ins("loop"), g(i), g(l), ins("i32.ge_s"), ins("br_if", 1),
-        ...copiarA(t, paso(o), paso(d), e.temporal), g(i), ins("i32.const", 1), ins("i32.add"), ins("local.set", i), ins("br", 0), ins("end"), ins("end"));
+        ...copyValueTo(t, paso(o), paso(d), e.temporal), g(i), ins("i32.const", 1), ins("i32.add"), ins("local.set", i), ins("br", 0), ins("end"), ins("end"));
     }
     return [...c, ins("i32.const", celda)];
   },
   "reverse-1d-array": (e) => {
     const t = e.tOut(0).array;
-    const el = elemento(t);
+    const el = arrayElement(t);
     const celda = e.celda();
     const [h, n, o, d, i] = Array.from({ length: 5 }, () => e.temporal("i32"));
     const g = (x) => ins("local.get", x);
     const origen = [g(o), g(n), ins("i32.const", 1), ins("i32.sub"), g(i), ins("i32.sub"), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add")];
     const destino = [g(d), g(i), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add")];
     return [
-      ...e.entrada(0), ins("local.tee", h), llamarMemoria("longitud"), ins("local.set", n), g(h), llamarMemoria("datos8"), ins("local.set", o),
-      ins("i32.const", celda), g(n), ins("i32.const", el.tam), ins("i32.const", el.ref ? 1 : 0), llamarMemoria("nuevo_array"), ins("local.set", d),
+      ...e.entrada(0), ins("local.tee", h), callMemory("longitud"), ins("local.set", n), g(h), callMemory("datos8"), ins("local.set", o),
+      ins("i32.const", celda), g(n), ins("i32.const", el.tam), ins("i32.const", el.ref ? 1 : 0), callMemory("nuevo_array"), ins("local.set", d),
       ins("i32.const", 0), ins("local.set", i), ins("block"), ins("loop"), g(i), g(n), ins("i32.ge_s"), ins("br_if", 1),
-      ...(el.ref ? copiarA(t, origen, destino, e.temporal) : [...destino, ...origen, ins(el.carga), ins(el.guarda)]),
+      ...(el.ref ? copyValueTo(t, origen, destino, e.temporal) : [...destino, ...origen, ins(el.carga), ins(el.guarda)]),
       g(i), ins("i32.const", 1), ins("i32.add"), ins("local.set", i), ins("br", 0), ins("end"), ins("end"),
       ins("i32.const", celda),
     ];
@@ -1189,20 +411,20 @@ const BLOQUES = {
   "array-max-min": (e) => {
     // Medido en LabVIEW: el primero en caso de empate; un NaN no cuenta; vacío, 0 y −1.
     const t = e.tOut(0);
-    const el = elemento(t);
-    const vt = tipoWasm(t);
+    const el = arrayElement(t);
+    const vt = wasmTypeOf(t);
     const real = vt === "f64" || vt === "f32";
     const [h, n, o, i, mi, ni] = Array.from({ length: 6 }, () => e.temporal("i32"));
     const [x, mx, mn] = [e.temporal(vt), e.temporal(vt), e.temporal(vt)];
     const g = (l) => ins("local.get", l);
     return [
-      ...e.entrada(0), ins("local.tee", h), llamarMemoria("longitud"), ins("local.set", n), g(h), llamarMemoria("datos8"), ins("local.set", o),
-      ...constante(t, 0), ins("local.set", mx), ...constante(t, 0), ins("local.set", mn), ins("i32.const", -1), ins("local.set", mi), ins("i32.const", -1), ins("local.set", ni),
+      ...e.entrada(0), ins("local.tee", h), callMemory("longitud"), ins("local.set", n), g(h), callMemory("datos8"), ins("local.set", o),
+      ...constantOf(t, 0), ins("local.set", mx), ...constantOf(t, 0), ins("local.set", mn), ins("i32.const", -1), ins("local.set", mi), ins("i32.const", -1), ins("local.set", ni),
       ins("i32.const", 0), ins("local.set", i), ins("block"), ins("loop"), g(i), g(n), ins("i32.ge_s"), ins("br_if", 1),
       g(o), g(i), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add"), ins(el.carga), ins("local.set", x),
       ...(real ? [g(x), g(x), ins(`${vt}.eq`), ins("if")] : []),
-      g(mi), ins("i32.const", 0), ins("i32.lt_s"), g(x), g(mx), instruccionComparar(t, "gt"), ins("i32.or"), ins("if"), g(x), ins("local.set", mx), g(i), ins("local.set", mi), ins("end"),
-      g(ni), ins("i32.const", 0), ins("i32.lt_s"), g(x), g(mn), instruccionComparar(t, "lt"), ins("i32.or"), ins("if"), g(x), ins("local.set", mn), g(i), ins("local.set", ni), ins("end"),
+      g(mi), ins("i32.const", 0), ins("i32.lt_s"), g(x), g(mx), compareInstruction(t, "gt"), ins("i32.or"), ins("if"), g(x), ins("local.set", mx), g(i), ins("local.set", mi), ins("end"),
+      g(ni), ins("i32.const", 0), ins("i32.lt_s"), g(x), g(mn), compareInstruction(t, "lt"), ins("i32.or"), ins("if"), g(x), ins("local.set", mn), g(i), ins("local.set", ni), ins("end"),
       ...(real ? [ins("end")] : []),
       g(i), ins("i32.const", 1), ins("i32.add"), ins("local.set", i), ins("br", 0), ins("end"), ins("end"),
       g(mx), g(mi), g(mn), g(ni),
@@ -1211,14 +433,14 @@ const BLOQUES = {
   "search-1d-array": (e) => {
     const t = e.tIn(1);
     if (esCluster(t) || esArray(t)) throw new Error("Search 1D Array on clusters: not yet (M6).");
-    const el = elemento(t);
+    const el = arrayElement(t);
     const [h, n, o, i, r] = Array.from({ length: 5 }, () => e.temporal("i32"));
-    const v = e.temporal(tipoWasm(t));
+    const v = e.temporal(wasmTypeOf(t));
     const g = (l) => ins("local.get", l);
     const actual = [g(o), g(i), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add")];
-    const igual = t === "string" ? [...actual, g(v), ins("call", idImport("cmp")), ins("i32.eqz")] : [...actual, ins(el.carga), g(v), instruccionComparar(t, "eq")];
+    const igual = t === "string" ? [...actual, g(v), ins("call", importIndex("cmp")), ins("i32.eqz")] : [...actual, ins(el.carga), g(v), compareInstruction(t, "eq")];
     return [
-      ...e.entrada(0), ins("local.tee", h), llamarMemoria("longitud"), ins("local.set", n), g(h), llamarMemoria("datos8"), ins("local.set", o),
+      ...e.entrada(0), ins("local.tee", h), callMemory("longitud"), ins("local.set", n), g(h), callMemory("datos8"), ins("local.set", o),
       ...e.entrada(1), ins("local.set", v), ...e.entrada(2), ins("local.set", i),
       g(i), ins("i32.const", 0), g(i), ins("i32.const", 0), ins("i32.gt_s"), ins("select"), ins("local.set", i),
       ins("i32.const", -1), ins("local.set", r),
@@ -1236,9 +458,9 @@ const BLOQUES = {
     sinReferencias(t, "Delete From Array");
     const [c1, c2] = [e.celda(), e.celda()];
     return [
-      ins("i32.const", c1), ins("i32.const", c2), ...e.entrada(0), ins("i32.const", elemento(t).tam),
+      ins("i32.const", c1), ins("i32.const", c2), ...e.entrada(0), ins("i32.const", arrayElement(t).tam),
       ...(e.cableada(2) ? e.entrada(2) : [ins("i32.const", 0)]), ...(e.cableada(1) ? e.entrada(1) : [ins("i32.const", 1)]),
-      ins("i32.const", e.cableada(2) ? 1 : 0), ins("call", idImport("a_borrar")), ins("i32.const", c1), ins("i32.const", c2),
+      ins("i32.const", e.cableada(2) ? 1 : 0), ins("call", importIndex("a_borrar")), ins("i32.const", c1), ins("i32.const", c2),
     ];
   },
   "sort-1d-array": (e) => arrJs(e, "a_ordenar", "Sort 1D Array", [() => [ins("i32.const", kindDe(e.tOut(0).array))]]),
@@ -1247,7 +469,7 @@ const BLOQUES = {
     const t = e.tOut(0).array;
     sinReferencias(t, "Split 1D Array");
     const [c1, c2] = [e.celda(), e.celda()];
-    return [ins("i32.const", c1), ins("i32.const", c2), ...e.entrada(0), ins("i32.const", elemento(t).tam), ...e.entrada(1), ins("call", idImport("a_partir")), ins("i32.const", c1), ins("i32.const", c2)];
+    return [ins("i32.const", c1), ins("i32.const", c2), ...e.entrada(0), ins("i32.const", arrayElement(t).tam), ...e.entrada(1), ins("call", importIndex("a_partir")), ins("i32.const", c1), ins("i32.const", c2)];
   },
   "increment-array-element": (e) => arrSumar(e, 1),
   "decrement-array-element": (e) => arrSumar(e, -1),
@@ -1264,247 +486,148 @@ const BLOQUES = {
   "path-control": (e) => readControl(e),
   "refnum-control": (e) => readControl(e),
   // Timing: el reloj de milisegundos de LabVIEW es un U32 que da la vuelta.
-  "tick-count-ms": () => [ins("call", idImport("reloj"))],
-  "wait-ms": (e) => [...e.entrada(0), ...convertir(e.tIn(0), "u32"), ins("f64.convert_i32_u"), callScheduler("wait")],
+  "tick-count-ms": () => [ins("call", importIndex("reloj"))],
+  "wait-ms": (e) => [...e.entrada(0), ...convertValue(e.tIn(0), "u32"), ins("f64.convert_i32_u"), callScheduler("wait")],
   "time-delay": (e) => timeDelay(e),
-  "wait-until-next-ms-multiple": (e) => [...e.entrada(0), ...convertir(e.tIn(0), "u32"), ins("f64.convert_i32_u"), callScheduler("wait_multiple")],
+  "wait-until-next-ms-multiple": (e) => [...e.entrada(0), ...convertValue(e.tIn(0), "u32"), ins("f64.convert_i32_u"), callScheduler("wait_multiple")],
   control: (e) => readControl(e),
   // Un control booleano se lee igual: el booleano viaja como i32 0/1.
   "bool-control": (e) => readControl(e),
 
-  add: (e) => aritmetica(e, "add"),
-  sub: (e) => aritmetica(e, "sub"),
-  mul: (e) => aritmetica(e, "mul"),
+  add: (e) => arithmetic(e, "add"),
+  sub: (e) => arithmetic(e, "sub"),
+  mul: (e) => arithmetic(e, "mul"),
   div: (e) => {
     const t = e.tOut(0);
-    return [...e.entrada(0), ...convertir(e.tIn(0), t), ...e.entrada(1), ...convertir(e.tIn(1), t), ins(`${tipoWasm(t)}.div`)];
+    return [...e.entrada(0), ...convertValue(e.tIn(0), t), ...e.entrada(1), ...convertValue(e.tIn(1), t), ins(`${wasmTypeOf(t)}.div`)];
   },
-  increment: (e) => [...e.entrada(0), ...constante(e.tOut(0), 1), ins(`${tipoWasm(e.tOut(0))}.add`), ...estrechar(e.tOut(0))],
-  decrement: (e) => [...e.entrada(0), ...constante(e.tOut(0), 1), ins(`${tipoWasm(e.tOut(0))}.sub`), ...estrechar(e.tOut(0))],
+  increment: (e) => [...e.entrada(0), ...constantOf(e.tOut(0), 1), ins(`${wasmTypeOf(e.tOut(0))}.add`), ...narrowInteger(e.tOut(0))],
+  decrement: (e) => [...e.entrada(0), ...constantOf(e.tOut(0), 1), ins(`${wasmTypeOf(e.tOut(0))}.sub`), ...narrowInteger(e.tOut(0))],
   negate: (e) => {
     const t = e.tOut(0);
-    if (esFlotante(t)) return [...e.entrada(0), ins(`${tipoWasm(t)}.neg`)];
-    return [...constante(t, 0), ...e.entrada(0), ins(`${tipoWasm(t)}.sub`), ...estrechar(t)];
+    if (isFloat(t)) return [...e.entrada(0), ins(`${wasmTypeOf(t)}.neg`)];
+    return [...constantOf(t, 0), ...e.entrada(0), ins(`${wasmTypeOf(t)}.sub`), ...narrowInteger(t)];
   },
   "absolute-value": (e) => {
     const t = e.tOut(0);
-    const vt = tipoWasm(t);
-    if (esFlotante(t)) return [...e.entrada(0), ins(`${vt}.abs`)];
-    if (!conSigno(t)) return e.entrada(0);
+    const vt = wasmTypeOf(t);
+    if (isFloat(t)) return [...e.entrada(0), ins(`${vt}.abs`)];
+    if (!isSigned(t)) return e.entrada(0);
     const x = e.temporal(vt);
-    return [...e.entrada(0), ins("local.set", x), ...constante(t, 0), ins("local.get", x), ins(`${vt}.sub`), ...estrechar(t), ins("local.get", x), ins("local.get", x), ...constante(t, 0), ins(`${vt}.lt_s`), ins("select")];
+    return [...e.entrada(0), ins("local.set", x), ...constantOf(t, 0), ins("local.get", x), ins(`${vt}.sub`), ...narrowInteger(t), ins("local.get", x), ins("local.get", x), ...constantOf(t, 0), ins(`${vt}.lt_s`), ins("select")];
   },
   square: (e) => {
-    const vt = tipoWasm(e.tOut(0));
+    const vt = wasmTypeOf(e.tOut(0));
     const x = e.temporal(vt);
-    return [...e.entrada(0), ins("local.tee", x), ins("local.get", x), ins(`${vt}.mul`), ...estrechar(e.tOut(0))];
+    return [...e.entrada(0), ins("local.tee", x), ins("local.get", x), ins(`${vt}.mul`), ...narrowInteger(e.tOut(0))];
   },
-  "square-root": (e) => [...e.entrada(0), ...convertir(e.tIn(0), e.tOut(0)), ins(`${tipoWasm(e.tOut(0))}.sqrt`)],
+  "square-root": (e) => [...e.entrada(0), ...convertValue(e.tIn(0), e.tOut(0)), ins(`${wasmTypeOf(e.tOut(0))}.sqrt`)],
   reciprocal: (e) => {
     const t = e.tOut(0);
-    return [...constante(t, 1), ...e.entrada(0), ...convertir(e.tIn(0), t), ins(`${tipoWasm(t)}.div`)];
+    return [...constantOf(t, 1), ...e.entrada(0), ...convertValue(e.tIn(0), t), ins(`${wasmTypeOf(t)}.div`)];
   },
-  "round-to-nearest": (e) => redondeo(e, "nearest"),
-  "round-toward-negative-infinity": (e) => redondeo(e, "floor"),
-  "round-toward-positive-infinity": (e) => redondeo(e, "ceil"),
+  "round-to-nearest": (e) => rounding(e, "nearest"),
+  "round-toward-negative-infinity": (e) => rounding(e, "floor"),
+  "round-toward-positive-infinity": (e) => rounding(e, "ceil"),
   sign: (e) => {
     const t = e.tOut(0);
-    const vt = tipoWasm(t);
+    const vt = wasmTypeOf(t);
     const x = e.temporal(vt);
-    const s = !esFlotante(t) && !conSigno(t) ? "_u" : esFlotante(t) ? "" : "_s";
+    const s = !isFloat(t) && !isSigned(t) ? "_u" : isFloat(t) ? "" : "_s";
     // (x > 0) − (x < 0), que da −1, 0 o 1, en el tipo de la entrada.
-    return [...e.entrada(0), ins("local.set", x), ins("local.get", x), ...constante(t, 0), ins(`${vt}.gt${s}`), ins("local.get", x), ...constante(t, 0), ins(`${vt}.lt${s}`), ins("i32.sub"), ...convertir("i32", t)];
+    return [...e.entrada(0), ins("local.set", x), ins("local.get", x), ...constantOf(t, 0), ins(`${vt}.gt${s}`), ins("local.get", x), ...constantOf(t, 0), ins(`${vt}.lt${s}`), ins("i32.sub"), ...convertValue("i32", t)];
   },
   "quotient-remainder": (e) => {
     // floor(x/y) y x − y·floor(x/y), calculados en DBL. Un I64 enorme pierde precisión.
     const t = e.tOut(0);
     const [x, y, q] = [e.temporal("f64"), e.temporal("f64"), e.temporal("f64")];
     return [
-      ...e.entrada(0), ...convertir(e.tIn(0), "number"), ins("local.set", x),
-      ...e.entrada(1), ...convertir(e.tIn(1), "number"), ins("local.set", y),
+      ...e.entrada(0), ...convertValue(e.tIn(0), "number"), ins("local.set", x),
+      ...e.entrada(1), ...convertValue(e.tIn(1), "number"), ins("local.set", y),
       ins("local.get", x), ins("local.get", y), ins("f64.div"), ins("f64.floor"), ins("local.set", q),
-      ins("local.get", x), ins("local.get", y), ins("local.get", q), ins("f64.mul"), ins("f64.sub"), ...convertir("number", t),
-      ins("local.get", q), ...convertir("number", t),
+      ins("local.get", x), ins("local.get", y), ins("local.get", q), ins("f64.mul"), ins("f64.sub"), ...convertValue("number", t),
+      ins("local.get", q), ...convertValue("number", t),
     ];
   },
   "scale-by-power-of-2": (e) => {
     const t = e.tOut(0);
-    const vt = tipoWasm(t);
-    if (esFlotante(t)) return [...e.entrada(1), ins("f64.const", 2), ...e.entrada(0), ins("f64.convert_i32_s"), ins("call", idImport("pow")), ...convertir("number", t), ins(`${vt}.mul`)];
+    const vt = wasmTypeOf(t);
+    if (isFloat(t)) return [...e.entrada(1), ins("f64.const", 2), ...e.entrada(0), ins("f64.convert_i32_s"), ins("call", importIndex("pow")), ...convertValue("number", t), ins(`${vt}.mul`)];
     // Con enteros, un desplazamiento: a la derecha si n < 0, a la izquierda si no.
     const [x, n] = [e.temporal(vt), e.temporal("i32")];
     const ext = vt === "i64" ? [ins("i64.extend_i32_s")] : [];
     return [
       ...e.entrada(1), ins("local.set", x), ...e.entrada(0), ins("local.set", n),
-      ins("local.get", x), ins("i32.const", 0), ins("local.get", n), ins("i32.sub"), ...ext, ins(`${vt}.shr_${conSigno(t) ? "s" : "u"}`),
+      ins("local.get", x), ins("i32.const", 0), ins("local.get", n), ins("i32.sub"), ...ext, ins(`${vt}.shr_${isSigned(t) ? "s" : "u"}`),
       ins("local.get", x), ins("local.get", n), ...ext, ins(`${vt}.shl`),
-      ins("local.get", n), ins("i32.const", 0), ins("i32.lt_s"), ins("select"), ...estrechar(t),
+      ins("local.get", n), ins("i32.const", 0), ins("i32.lt_s"), ins("select"), ...narrowInteger(t),
     ];
   },
   "random-number-range": (e) => {
     const t = e.tOut(0);
     const [lo, hi] = [e.temporal("f64"), e.temporal("f64")];
     return [
-      ...e.entrada(0), ...convertir(e.tIn(0), "number"), ins("local.set", lo),
-      ...e.entrada(1), ...convertir(e.tIn(1), "number"), ins("local.set", hi),
-      ins("local.get", lo), ins("call", idImport("random")), ins("local.get", hi), ins("local.get", lo), ins("f64.sub"), ins("f64.mul"), ins("f64.add"),
-      ...(esFlotante(t) ? convertir("number", t) : [ins("f64.floor"), ...convertir("number", t)]),
+      ...e.entrada(0), ...convertValue(e.tIn(0), "number"), ins("local.set", lo),
+      ...e.entrada(1), ...convertValue(e.tIn(1), "number"), ins("local.set", hi),
+      ins("local.get", lo), ins("call", importIndex("random")), ins("local.get", hi), ins("local.get", lo), ins("f64.sub"), ins("f64.mul"), ins("f64.add"),
+      ...(isFloat(t) ? convertValue("number", t) : [ins("f64.floor"), ...convertValue("number", t)]),
     ];
   },
-  "compound-arithmetic": (e) => compuesto(e),
+  "compound-arithmetic": (e) => compoundArithmetic(e),
 
-  "and-op": (e) => logica(e, "and"),
-  "or-op": (e) => logica(e, "or"),
-  "xor-op": (e) => logica(e, "xor"),
-  "nand-op": (e) => [...logica(e, "and"), ...negar(e.tOut(0))],
-  "nor-op": (e) => [...logica(e, "or"), ...negar(e.tOut(0))],
-  "nxor-op": (e) => [...logica(e, "xor"), ...negar(e.tOut(0))],
-  "not-op": (e) => [...e.entrada(0), ...negar(e.tOut(0))],
-  "implies-op": (e) => [...e.entrada(0), ...negar(e.tIn(0)), ...e.entrada(1), ins(`${tipoWasm(e.tOut(0))}.or`), ...estrechar(e.tOut(0))],
+  "and-op": (e) => logical(e, "and"),
+  "or-op": (e) => logical(e, "or"),
+  "xor-op": (e) => logical(e, "xor"),
+  "nand-op": (e) => [...logical(e, "and"), ...negate(e.tOut(0))],
+  "nor-op": (e) => [...logical(e, "or"), ...negate(e.tOut(0))],
+  "nxor-op": (e) => [...logical(e, "xor"), ...negate(e.tOut(0))],
+  "not-op": (e) => [...e.entrada(0), ...negate(e.tOut(0))],
+  "implies-op": (e) => [...e.entrada(0), ...negate(e.tIn(0)), ...e.entrada(1), ins(`${wasmTypeOf(e.tOut(0))}.or`), ...narrowInteger(e.tOut(0))],
   "boolean-to-0-1": (e) => e.entrada(0),
 
   // La subpaleta Comparison. Los dos operandos llegan ya en el tipo común.
-  equal: (e) => comparar(e, "eq"),
-  "not-equal": (e) => comparar(e, "ne"),
-  greater: (e) => comparar(e, "gt"),
-  less: (e) => comparar(e, "lt"),
-  "greater-or-equal": (e) => comparar(e, "ge"),
-  "less-or-equal": (e) => comparar(e, "le"),
-  "equal-to-0": (e) => compararConCero(e, "eq"),
-  "not-equal-to-0": (e) => compararConCero(e, "ne"),
-  "greater-than-0": (e) => compararConCero(e, "gt"),
-  "less-than-0": (e) => compararConCero(e, "lt"),
-  "greater-or-equal-to-0": (e) => compararConCero(e, "ge"),
-  "less-or-equal-to-0": (e) => compararConCero(e, "le"),
+  equal: (e) => compare(e, "eq"),
+  "not-equal": (e) => compare(e, "ne"),
+  greater: (e) => compare(e, "gt"),
+  less: (e) => compare(e, "lt"),
+  "greater-or-equal": (e) => compare(e, "ge"),
+  "less-or-equal": (e) => compare(e, "le"),
+  "equal-to-0": (e) => compareWithZero(e, "eq"),
+  "not-equal-to-0": (e) => compareWithZero(e, "ne"),
+  "greater-than-0": (e) => compareWithZero(e, "gt"),
+  "less-than-0": (e) => compareWithZero(e, "lt"),
+  "greater-or-equal-to-0": (e) => compareWithZero(e, "ge"),
+  "less-or-equal-to-0": (e) => compareWithZero(e, "le"),
   // t, s, f: `select` de WebAssembly da su primer operando si la condición es distinta de 0.
   select: (e) => [...e.entrada(0), ...e.entrada(2), ...e.entrada(1), ins("select")],
-  "max-and-min": mayorYMenor,
-  "in-range-and-coerce": enRango,
+  "max-and-min": maxAndMin,
+  "in-range-and-coerce": inRangeAndCoerce,
   "not-a-number-path-refnum": (e) => {
-    if (e.logicalTIn(0) === PATH) return [...e.entrada(0), ins("call", idImport("path_kind")), k32(PATH_KIND.NOT_A_PATH), ins("i32.eq")];
+    if (e.logicalTIn(0) === PATH) return [...e.entrada(0), ins("call", importIndex("path_kind")), i32Const(PATH_KIND.NOT_A_PATH), ins("i32.eq")];
     // Not A Refnum is 0, a file's and a control reference's alike (measured, reports/2026-11-03-control-reference-run.md Q5).
     if (e.logicalTIn(0) === FILE_REFNUM || esRefnum(e.logicalTIn(0))) return [...e.entrada(0), ins("i32.eqz")];
-    if (!esFlotante(e.tIn(0))) return [ins("i32.const", 0)];
-    const x = e.temporal(tipoWasm(e.tIn(0)));
-    return [...e.entrada(0), ins("local.tee", x), ins("local.get", x), ins(`${tipoWasm(e.tIn(0))}.ne`)];
+    if (!isFloat(e.tIn(0))) return [ins("i32.const", 0)];
+    const x = e.temporal(wasmTypeOf(e.tIn(0)));
+    return [...e.entrada(0), ins("local.tee", x), ins("local.get", x), ins(`${wasmTypeOf(e.tIn(0))}.ne`)];
   },
-  "expression-node": expresion,
-  "split-number": partirNumero,
-  "join-numbers": juntarNumeros,
-  "swap-bytes": intercambiarBytes,
-  "swap-words": intercambiarPalabras,
-  rotate: rotar,
-  "logical-shift": desplazar,
-  "rotate-left-with-carry": rotarConAcarreo(true),
-  "rotate-right-with-carry": rotarConAcarreo(false),
-  "mantissa-and-exponent": mantisaYExponente,
+  "expression-node": expressionNode,
+  "split-number": splitNumber,
+  "join-numbers": joinNumbers,
+  "swap-bytes": swapBytes,
+  "swap-words": swapWords,
+  rotate: rotate,
+  "logical-shift": logicalShift,
+  "rotate-left-with-carry": rotateWithCarry(true),
+  "rotate-right-with-carry": rotateWithCarry(false),
+  "mantissa-and-exponent": mantissaAndExponent,
   // La subpaleta Conversion: el número llega en su tipo y sale en el de la función.
   ...Object.fromEntries(
     ["to-double-precision-float", "to-single-precision-float", "to-quad-integer", "to-long-integer", "to-word-integer", "to-byte-integer", "to-unsigned-quad-integer", "to-unsigned-long-integer", "to-unsigned-word-integer", "to-unsigned-byte-integer"].map((n) => [
       n,
-      (e) => [...e.entrada(0), ...convertir(e.tIn(0), e.tOut(0))],
+      (e) => [...e.entrada(0), ...convertValue(e.tIn(0), e.tOut(0))],
     ]),
   ),
 };
-
-function aritmetica(e, op) {
-  const t = e.tOut(0);
-  return [...e.entrada(0), ...e.entrada(1), ins(`${tipoWasm(t)}.${op}`), ...estrechar(t)];
-}
-
-function redondeo(e, op) {
-  const t = e.tOut(0);
-  return esFlotante(t) ? [...e.entrada(0), ins(`${tipoWasm(t)}.${op}`)] : e.entrada(0);
-}
-
-/**
- * La instrucción que compara dos valores de tipo `t`: `op` es eq, ne, gt, lt,
- * ge o le. Los enteros con signo y los sin signo usan la comparación que les
- * toca; en coma flotante, las de IEEE: con un NaN todo es FALSE salvo `ne`.
- */
-function instruccionComparar(t, op) {
-  const vt = tipoWasm(t);
-  if (esFlotante(t) || op === "eq" || op === "ne") return ins(`${vt}.${op}`);
-  return ins(`${vt}.${op}_${t === "boolean" || conSigno(t) ? "s" : "u"}`);
-}
-
-function comparar(e, op) {
-  if (esCluster(e.tIn(0)) || esCluster(e.tIn(1))) throw new Error("Comparing clusters cannot be compiled yet (M6).");
-  // Two paths are equal with the host's rules (DT-067); how LabVIEW orders paths is not measured.
-  if (e.logicalTIn(0) === PATH) {
-    if (op !== "eq" && op !== "ne") throw new Error("Comparing paths by order is not measured in LabVIEW yet.");
-    return [...e.entrada(0), ...e.entrada(1), ins("call", idImport("paths_equal")), ...(op === "ne" ? [ins("i32.eqz")] : [])];
-  }
-  // Las cadenas se comparan byte a byte, en el anfitrión: -1, 0 o 1.
-  if (e.tIn(0) === "string") return [...e.entrada(0), ...e.entrada(1), ins("call", idImport("cmp")), k32(0), ins(`i32.${op}${op === "eq" || op === "ne" ? "" : "_s"}`)];
-  return [...e.entrada(0), ...e.entrada(1), instruccionComparar(e.tIn(0), op)];
-}
-
-function compararConCero(e, op) {
-  return [...e.entrada(0), ...constante(e.tIn(0), 0), instruccionComparar(e.tIn(0), op)];
-}
-
-/**
- * El mayor (`op` = "max") o el menor ("min") de dos locales `a` y `b` de tipo
- * `t`. En coma flotante, como Max & Min de LabVIEW (comprobado en 2026 Q3): un
- * NaN se ignora si el otro es un número, y con dos NaN sale NaN. `f64.max` de
- * WebAssembly, en cambio, propaga el NaN; por eso el resultado se corrige con
- * `u`, un local temporal.
- */
-function mayorOMenor(t, op, a, b, u) {
-  const vt = tipoWasm(t);
-  const [ga, gb] = [ins("local.get", a), ins("local.get", b)];
-  if (!esFlotante(t)) return extremo(t, op, a, b);
-  return [
-    gb, ga, gb, ins(`${vt}.${op}`), ga, ga, ins(`${vt}.ne`), ins("select"), ins("local.set", u),
-    ga, ins("local.get", u), gb, gb, ins(`${vt}.ne`), ins("select"),
-  ];
-}
-
-/** El mayor o el menor de dos locales; en coma flotante, un NaN lo contagia (es el de WebAssembly). */
-function extremo(t, op, a, b) {
-  const [ga, gb] = [ins("local.get", a), ins("local.get", b)];
-  if (esFlotante(t)) return [ga, gb, ins(`${tipoWasm(t)}.${op}`)];
-  return [ga, gb, ga, gb, instruccionComparar(t, op === "max" ? "gt" : "lt"), ins("select")];
-}
-
-/** Max & Min: salen max(x,y) y min(x,y). */
-function mayorYMenor(e) {
-  const t = e.tOut(0);
-  const vt = tipoWasm(t);
-  const [a, b, u] = [e.temporal(vt), e.temporal(vt), e.temporal(vt)];
-  return [
-    ...e.entrada(0), ins("local.set", a), ...e.entrada(1), ins("local.set", b),
-    ...mayorOMenor(t, "max", a, b, u), ...mayorOMenor(t, "min", a, b, u),
-  ];
-}
-
-/**
- * In Range and Coerce (upper limit, x, lower limit). In Range? compara con los
- * límites tal cual vienen, incluyendo cada extremo o no según `config`; con
- * los límites cruzados da FALSE. coerced(x) lleva x al rango con los límites
- * ordenados, y es NaN si x o un límite lo son. Comprobado en LabVIEW 2026 Q3.
- */
-function enRango(e) {
-  const t = e.tOut(0);
-  const vt = tipoWasm(t);
-  const [U, X, L, lo, hi, r] = Array.from({ length: 6 }, () => e.temporal(vt));
-  const cfg = e.nodo.config ?? {};
-  const [incluyeSup, incluyeInf] = [cfg["include-upper-limit"] ?? false, cfg["include-lower-limit"] ?? true];
-  const g = (l) => ins("local.get", l);
-  return [
-    ...e.entrada(0), ins("local.set", U), ...e.entrada(1), ins("local.set", X), ...e.entrada(2), ins("local.set", L),
-    // coerced(x) = mín(máx(x, mín(L, U)), máx(L, U))
-    ...extremo(t, "min", L, U), ins("local.set", lo),
-    ...extremo(t, "max", L, U), ins("local.set", hi),
-    ...extremo(t, "max", X, lo), ins("local.set", r),
-    ...extremo(t, "min", r, hi),
-    // In Range?
-    g(X), g(L), instruccionComparar(t, incluyeInf ? "ge" : "gt"),
-    g(X), g(U), instruccionComparar(t, incluyeSup ? "le" : "lt"),
-    ins("i32.and"),
-  ];
-}
 
 /** Array Size of an array of several dimensions: a 1D array of I32 with the size of each one, rows first. */
 function arraySizes(e) {
@@ -1526,7 +649,7 @@ function arraySizes(e) {
  */
 function buildArray2d(e) {
   const t = e.tOut(0);
-  const element = elemento(t.array);
+  const element = arrayElement(t.array);
   const g = (local) => ins("local.get", local);
   const inputCount = e.cat.puertos(e.nodo).in.length;
   const [rows, columns, target, cell] = [e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.celda()];
@@ -1535,9 +658,9 @@ function buildArray2d(e) {
   }));
   const code = [ins("i32.const", 0), ins("local.set", rows), ins("i32.const", 0), ins("local.set", columns)];
   inputs.forEach((input, i) => {
-    code.push(...e.entrada(i), ins("local.set", input.handle), g(input.handle), llamarMemoria("datos8"), ins("local.set", input.data));
+    code.push(...e.entrada(i), ins("local.set", input.handle), g(input.handle), callMemory("datos8"), ins("local.set", input.data));
     if (input.is2d) code.push(...dimensionSize(input.handle, 0, e.temporal), ins("local.set", input.rows), ...dimensionSize(input.handle, 1, e.temporal), ins("local.set", input.columns));
-    else code.push(ins("i32.const", 1), ins("local.set", input.rows), g(input.handle), llamarMemoria("longitud"), ins("local.set", input.columns));
+    else code.push(ins("i32.const", 1), ins("local.set", input.rows), g(input.handle), callMemory("longitud"), ins("local.set", input.columns));
     code.push(
       g(rows), g(input.rows), ins("i32.add"), ins("local.set", rows),
       g(input.columns), g(columns), g(input.columns), g(columns), ins("i32.gt_s"), ins("select"), ins("local.set", columns),
@@ -1564,9 +687,9 @@ function buildArray2d(e) {
 function initializeArrayNd(e) {
   const t = e.tOut(0);
   if (dimensionsOf(t) > MAX_COMPILED_DIMENSIONS) throw new Error("Initialize Array of more than 2 dimensions: not yet (DT-044).");
-  const element = elemento(t.array);
+  const element = arrayElement(t.array);
   const g = (local) => ins("local.get", local);
-  const [value, rows, columns, target, count, k] = [e.temporal(tipoWasm(t.array)), e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.temporal("i32")];
+  const [value, rows, columns, target, count, k] = [e.temporal(wasmTypeOf(t.array)), e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.temporal("i32")];
   const cell = e.celda();
   const atLeastZero = (local) => [g(local), ins("i32.const", 0), g(local), ins("i32.const", 0), ins("i32.gt_s"), ins("select"), ins("local.set", local)];
   const place = [g(target), g(k), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add")];
@@ -1577,7 +700,7 @@ function initializeArrayNd(e) {
     ...reserveArray(t, cell, [rows, columns], e.temporal), ins("local.set", target),
     g(rows), g(columns), ins("i32.mul"), ins("local.set", count),
     ins("i32.const", 0), ins("local.set", k), ins("block"), ins("loop"), g(k), g(count), ins("i32.ge_s"), ins("br_if", 1),
-    ...guardarElemento(t.array, place, [g(value)], e.temporal), g(k), ins("i32.const", 1), ins("i32.add"), ins("local.set", k), ins("br", 0), ins("end"), ins("end"),
+    ...storeElement(t.array, place, [g(value)], e.temporal), g(k), ins("i32.const", 1), ins("i32.add"), ins("local.set", k), ins("br", 0), ins("end"), ins("end"),
     ins("i32.const", cell),
   ];
 }
@@ -1587,7 +710,7 @@ function initializeArrayNd(e) {
  * tunnel, copied into the tunnel's own cell; past the last row, an empty array.
  */
 function filaDeLaVuelta(x, i, temporal) {
-  const element = elemento(x.t.array);
+  const element = arrayElement(x.t.array);
   const g = (local) => ins("local.get", local);
   const [count, source, target] = [temporal("i32"), temporal("i32"), temporal("i32")];
   return [
@@ -1606,7 +729,7 @@ function filaDeLaVuelta(x, i, temporal) {
  * Build Array (padding not measured for a loop).
  */
 function juntarFilas(t, rowsCell, cell, temporal) {
-  const element = elemento(t.array);
+  const element = arrayElement(t.array);
   const g = (local) => ins("local.get", local);
   const [rows, columns, rowCells, row, rowHandle, length, target, source] = Array.from({ length: 8 }, () => temporal("i32"));
   const defaultSource = element.ref && t.array === "string" ? NULL_HANDLE : null;
@@ -1618,13 +741,13 @@ function juntarFilas(t, rowsCell, cell, temporal) {
     g(row), ins("i32.const", 1), ins("i32.add"), ins("local.set", row), ins("br", 0), ins("end"), ins("end"),
   ];
   return [
-    ins("i32.const", rowsCell), llamarMemoria("longitud"), ins("local.set", rows),
-    ins("i32.const", rowsCell), llamarMemoria("datos8"), ins("local.set", rowCells),
+    ins("i32.const", rowsCell), callMemory("longitud"), ins("local.set", rows),
+    ins("i32.const", rowsCell), callMemory("datos8"), ins("local.set", rowCells),
     ins("i32.const", 0), ins("local.set", columns),
-    ...eachRow([g(rowHandle), llamarMemoria("longitud"), ins("local.tee", length), g(columns), g(length), g(columns), ins("i32.gt_s"), ins("select"), ins("local.set", columns)]),
+    ...eachRow([g(rowHandle), callMemory("longitud"), ins("local.tee", length), g(columns), g(length), g(columns), ins("i32.gt_s"), ins("select"), ins("local.set", columns)]),
     ...reserveArray(t, cell, [rows, columns], temporal), ins("local.set", target),
     ...eachRow([
-      g(rowHandle), llamarMemoria("longitud"), ins("local.set", length), g(rowHandle), llamarMemoria("datos8"), ins("local.set", source),
+      g(rowHandle), callMemory("longitud"), ins("local.set", length), g(rowHandle), callMemory("datos8"), ins("local.set", source),
       ...copyRow(t.array, source, length, target, columns, defaultSource, temporal),
       g(target), g(columns), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add"), ins("local.set", target),
     ]),
@@ -1658,7 +781,7 @@ function subVIInstance(callee, node, module, callerKey) {
   }
   const callerCell = module.bufer(4, 4);
   const chainIndex = module.callChain.push({ name: viNameOf(callee.key), callerCell }) - 1;
-  const compiled = compileVI(callee.g, callee.cat, module, slots, key, chainIndex);
+  const compiled = compileOVI(callee.g, callee.cat, module, slots, key, chainIndex);
   if (compiled.errores) return { errores: compiled.errores.map((e) => ({ ...e, vi: callee.key })) };
   const { clumps } = compiled;
   const waits = clumps.length > 1 || clumps.some((k) => k.largo);
@@ -1678,19 +801,19 @@ const viNameOf = (key) => key.split(/[\\/]/).pop();
 
 /** A slot of the data space for a value of type `t`: 8 bytes for a scalar, a cell for a string or an array, a buffer for a cluster. */
 function slotFor(t, module) {
-  if (esCluster(t)) return module.bufer(disposicion(t).tam);
+  if (esCluster(t)) return module.bufer(clusterLayout(t).tam);
   if (t === "string" || esArray(t)) return module.bufer(4, 4);
   return module.bufer(8);
 }
 
 /** Stores the value that `value` leaves on the stack into `slot`: a scalar, or a copy of a string, array or cluster. */
 function storeInSlot(t, slot, value, temporal) {
-  if (porReferencia(t)) return copiarA(t, value, [ins("i32.const", slot.address)], temporal);
-  return [ins("i32.const", slot.address), ...value, ins(`${tipoWasm(t)}.store`)];
+  if (isByReference(t)) return copyValueTo(t, value, [ins("i32.const", slot.address)], temporal);
+  return [ins("i32.const", slot.address), ...value, ins(`${wasmTypeOf(t)}.store`)];
 }
 
 /** Leaves on the stack the value in `slot`: a scalar, or the address of the string, array or cluster. */
-const loadFromSlot = (t, slot) => (porReferencia(t) ? [ins("i32.const", slot.address)] : [ins("i32.const", slot.address), ins(`${tipoWasm(t)}.load`)]);
+const loadFromSlot = (t, slot) => (isByReference(t) ? [ins("i32.const", slot.address)] : [ins("i32.const", slot.address), ins(`${wasmTypeOf(t)}.load`)]);
 
 /**
  * A control inside a subVI: a connector control reads the value the caller left
@@ -1706,11 +829,11 @@ function defaultValueCode(e, t, value) {
   if (t === "string") return [ins("i32.const", e.cadena(String(value ?? "")))];
   if (esArray(t)) return [ins("i32.const", e.arrayConstante(t, value ?? []))];
   if (esCluster(t)) {
-    const buffer = e.bufer(disposicion(t).tam);
+    const buffer = e.bufer(clusterLayout(t).tam);
     e.clusterConstante(t, value ?? {}, buffer);
     return [ins("i32.const", buffer)];
   }
-  return constante(t, value === true ? 1 : value ?? 0);
+  return constantOf(t, value === true ? 1 : value ?? 0);
 }
 
 /**
@@ -1740,12 +863,12 @@ function callSubVI(e, instance) {
   else code.push(ins("i32.const", instance.plan), callScheduler("run_plan"), ins("drop"));
   for (const port of outputs) {
     const slot = instance.slots.get(port.calleeName ?? port.name);
-    if (!porReferencia(port.type)) {
+    if (!isByReference(port.type)) {
       code.push(...loadFromSlot(port.type, slot));
       continue;
     }
-    const own = esCluster(port.type) ? e.bufer(disposicion(port.type).tam) : e.celda();
-    code.push(...copiarA(port.type, loadFromSlot(port.type, slot), [ins("i32.const", own)], e.temporal), ins("i32.const", own));
+    const own = esCluster(port.type) ? e.bufer(clusterLayout(port.type).tam) : e.celda();
+    code.push(...copyValueTo(port.type, loadFromSlot(port.type, slot), [ins("i32.const", own)], e.temporal), ins("i32.const", own));
   }
   if (waits) code.push(ins("i32.const", instance.plan), callScheduler("leave_subvi"));
   return code;
@@ -1760,16 +883,16 @@ function callSubVI(e, instance) {
  */
 function writeIndicator(record, slot, type, value, temporal, historyLength) {
   const at = (offset) => [ins("i32.const", record + offset)];
-  const lock = (name) => [...at(PANEL_RECORD.lock), llamarMemoria(name)];
+  const lock = (name) => [...at(PANEL_RECORD.lock), callMemory(name)];
   const countWrite = [...at(PANEL_RECORD.version), ins("i32.const", 1), ins("i32.atomic.rmw.add"), ins("drop")];
   // A chart's slot for this write: its count modulo the history; any other indicator has one.
   const slotAddress = historyLength
     ? [...at(PANEL_RECORD.version), ins("i32.atomic.load"), ins("i32.const", historyLength), ins("i32.rem_u"), ins("i32.const", slot), ins("i32.mul"), ins("i32.const", record + PANEL_RECORD.value), ins("i32.add")]
     : at(PANEL_RECORD.value);
-  const held = temporal(porReferencia(type) ? "i32" : tipoWasm(type));
-  const store = porReferencia(type) ? copiarA(type, [ins("local.get", held)], slotAddress, temporal) : [...slotAddress, ins("local.get", held), ...atomicStore(tipoWasm(type))];
+  const held = temporal(isByReference(type) ? "i32" : wasmTypeOf(type));
+  const store = isByReference(type) ? copyValueTo(type, [ins("local.get", held)], slotAddress, temporal) : [...slotAddress, ins("local.get", held), ...atomicStore(wasmTypeOf(type))];
   // A scalar that is not a chart needs no lock: one atomic store is never seen half-written.
-  const locked = historyLength || porReferencia(type);
+  const locked = historyLength || isByReference(type);
   return [...value, ins("local.set", held), ...(locked ? lock("write_lock") : []), ...store, ...countWrite, ...(locked ? lock("write_unlock") : [])];
 }
 
@@ -1783,8 +906,8 @@ function readControl(e) {
   const record = e.controlRecord;
   const type = e.tOut(0);
   const at = (offset) => [ins("i32.const", record + offset)];
-  if (!porReferencia(type)) {
-    if (!mecanica(e.cat, e.nodo)?.startsWith("latch")) return [...at(PANEL_RECORD.value), ...atomicLoad(tipoWasm(type))];
+  if (!isByReference(type)) {
+    if (!mecanica(e.cat, e.nodo)?.startsWith("latch")) return [...at(PANEL_RECORD.value), ...atomicLoad(wasmTypeOf(type))];
     const pressed = e.temporal("i32");
     return [
       ...at(PANEL_RECORD.value), ins("i32.const", 0), ins("i32.atomic.rmw.xchg"), ins("local.tee", pressed),
@@ -1792,65 +915,9 @@ function readControl(e) {
       ins("local.get", pressed),
     ];
   }
-  const own = esCluster(type) ? e.bufer(disposicion(type).tam) : e.celda();
-  const lock = (name) => [...at(PANEL_RECORD.lock), llamarMemoria(name)];
-  return [...lock("read_lock"), ...copiarA(type, at(PANEL_RECORD.value), [ins("i32.const", own)], e.temporal), ...lock("read_unlock"), ins("i32.const", own)];
-}
-
-/** Loads a value of WebAssembly type `wasmType` from the address on the stack, in one atomic load. */
-function atomicLoad(wasmType) {
-  if (wasmType === "f64") return [ins("i64.atomic.load"), ins("f64.reinterpret_i64")];
-  if (wasmType === "f32") return [ins("i32.atomic.load"), ins("f32.reinterpret_i32")];
-  return [ins(`${wasmType}.atomic.load`)];
-}
-
-/** Stores the value of WebAssembly type `wasmType` on the stack at the address under it, in one atomic store. */
-function atomicStore(wasmType) {
-  if (wasmType === "f64") return [ins("i64.reinterpret_f64"), ins("i64.atomic.store")];
-  if (wasmType === "f32") return [ins("i32.reinterpret_f32"), ins("i32.atomic.store")];
-  return [ins(`${wasmType}.atomic.store`)];
-}
-
-/** The address of the null handle: a cell that always holds 0, the empty string or array. */
-const NULL_HANDLE = 0;
-
-/**
- * Copies a row of `length` elements of type `t` from the address in the local
- * `source` to the one in `target`, in a row `width` elements wide: what does
- * not fit is left out and what is missing gets the default value, which for an
- * element by reference is copied from `defaultSource`.
- */
-function copyRow(t, source, length, target, width, defaultSource, temporal) {
-  const element = elemento(t);
-  const g = (local) => ins("local.get", local);
-  const copied = temporal("i32");
-  const code = [g(length), g(width), g(length), g(width), ins("i32.lt_s"), ins("select"), ins("local.set", copied)];
-  if (!element.ref) {
-    return [
-      ...code,
-      g(target), g(source), g(copied), ins("i32.const", element.tam), ins("i32.mul"), ins("memory.copy"),
-      g(target), g(copied), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add"),
-      ins("i32.const", 0), g(width), g(copied), ins("i32.sub"), ins("i32.const", element.tam), ins("i32.mul"), ins("memory.fill"),
-    ];
-  }
-  const [k, from, to] = [temporal("i32"), temporal("i32"), temporal("i32")];
-  const at = (base) => [g(base), g(k), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add")];
-  return [
-    ...code,
-    ins("i32.const", 0), ins("local.set", k), ins("block"), ins("loop"), g(k), g(width), ins("i32.ge_s"), ins("br_if", 1),
-    ...at(target), ins("local.set", to),
-    g(k), g(copied), ins("i32.lt_s"),
-    ins("if"), ...at(source), ins("local.set", from), ins("else"), ins("i32.const", defaultSource), ins("local.set", from), ins("end"),
-    ...copyElement(t, from, to, temporal),
-    g(k), ins("i32.const", 1), ins("i32.add"), ins("local.set", k), ins("br", 0), ins("end"), ins("end"),
-  ];
-}
-
-/** Copies the element of type `t` at the address in the local `from` to the one in the local `to`. */
-function copyElement(t, from, to, temporal) {
-  const element = elemento(t);
-  if (element.ref) return copiarA(t, [ins("local.get", from)], [ins("local.get", to)], temporal);
-  return [ins("local.get", to), ins("local.get", from), ins("i32.const", element.tam), ins("memory.copy")];
+  const own = esCluster(type) ? e.bufer(clusterLayout(type).tam) : e.celda();
+  const lock = (name) => [...at(PANEL_RECORD.lock), callMemory(name)];
+  return [...lock("read_lock"), ...copyValueTo(type, at(PANEL_RECORD.value), [ins("i32.const", own)], e.temporal), ...lock("read_unlock"), ins("i32.const", own)];
 }
 
 /**
@@ -1861,7 +928,7 @@ function copyElement(t, from, to, temporal) {
  */
 function indexArray2d(e) {
   const t = e.tIn(0);
-  const element = elemento(t.array);
+  const element = arrayElement(t.array);
   const [rowWired, columnWired] = [e.cableada(1), e.cableada(2)];
   const g = (local) => ins("local.get", local);
   const [handle, rows, columns, row, column, source, target, count, k] = Array.from({ length: 9 }, () => e.temporal("i32"));
@@ -1871,19 +938,19 @@ function indexArray2d(e) {
     ...dimensionSize(handle, 1, e.temporal), ins("local.set", columns),
   ];
   const inRange = (index, size) => [g(index), ins("i32.const", 0), ins("i32.ge_s"), g(index), g(size), ins("i32.lt_s"), ins("i32.and")];
-  const addressOf = (rowIndex, columnIndex) => [g(handle), llamarMemoria("datos8"), g(rowIndex), g(columns), ins("i32.mul"), g(columnIndex), ins("i32.add"), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add")];
+  const addressOf = (rowIndex, columnIndex) => [g(handle), callMemory("datos8"), g(rowIndex), g(columns), ins("i32.mul"), g(columnIndex), ins("i32.add"), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add")];
   if (rowWired && columnWired) {
-    const result = e.temporal(tipoWasm(t.array));
+    const result = e.temporal(wasmTypeOf(t.array));
     return [
       ...code, ...e.entrada(1), ins("local.set", row), ...e.entrada(2), ins("local.set", column),
-      ...constante(t.array, 0), ins("local.set", result),
+      ...constantOf(t.array, 0), ins("local.set", result),
       ...inRange(row, rows), ...inRange(column, columns), ins("i32.and"),
-      ins("if"), ...cargarElemento(t.array, addressOf(row, column)), ins("local.set", result), ins("end"),
+      ins("if"), ...loadElement(t.array, addressOf(row, column)), ins("local.set", result), ins("end"),
       g(result),
     ];
   }
   const cell = e.celda();
-  if (!rowWired && !columnWired) return [...code, ...copiarA(t, [g(handle)], [ins("i32.const", cell)], e.temporal), ins("i32.const", cell)];
+  if (!rowWired && !columnWired) return [...code, ...copyValueTo(t, [g(handle)], [ins("i32.const", cell)], e.temporal), ins("i32.const", cell)];
   // One line of the array: a row runs along the columns, a column along the rows.
   const [fixed, fixedSize, along, alongSize] = rowWired ? [row, rows, column, columns] : [column, columns, row, rows];
   code.push(...e.entrada(rowWired ? 1 : 2), ins("local.set", fixed));
@@ -1902,99 +969,58 @@ function indexArray2d(e) {
 
 /**
  * Suma, producto, AND u OR de los elementos de un array (Add/Multiply Array
- * Elements y And/Or Array Elements): empieza en `neutro` y opera elemento a
- * elemento, en el tipo de los elementos (un entero da la vuelta, como en LabVIEW).
+ * Elements y And/Or Array Elements): empieza en `neutro` y opera arrayElement a
+ * arrayElement, en el tipo de los elementos (un entero da la vuelta, como en LabVIEW).
  */
 function reducir(e, op, neutro) {
   const t = e.tOut(0);
-  const el = elemento(t);
-  const vt = tipoWasm(t);
+  const el = arrayElement(t);
+  const vt = wasmTypeOf(t);
   const [h, n, o, i] = [e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.temporal("i32")];
   const r = e.temporal(vt);
   const g = (l) => ins("local.get", l);
   return [
-    ...e.entrada(0), ins("local.tee", h), llamarMemoria("longitud"), ins("local.set", n), g(h), llamarMemoria("datos8"), ins("local.set", o),
-    ...constante(t, neutro), ins("local.set", r),
+    ...e.entrada(0), ins("local.tee", h), callMemory("longitud"), ins("local.set", n), g(h), callMemory("datos8"), ins("local.set", o),
+    ...constantOf(t, neutro), ins("local.set", r),
     ins("i32.const", 0), ins("local.set", i), ins("block"), ins("loop"), g(i), g(n), ins("i32.ge_s"), ins("br_if", 1),
-    g(r), g(o), g(i), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add"), ins(el.carga), ins(`${vt}.${op}`), ...estrechar(t), ins("local.set", r),
+    g(r), g(o), g(i), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add"), ins(el.carga), ins(`${vt}.${op}`), ...narrowInteger(t), ins("local.set", r),
     g(i), ins("i32.const", 1), ins("i32.add"), ins("local.set", i), ins("br", 0), ins("end"), ins("end"),
     g(r),
   ];
 }
 
-
 const KINDS = ["f32.load", "f64.load", "i64.load", "i32.load", "i32.load16_s", "i32.load16_u", "i32.load8_s", "i32.load8_u"];
-/** Cómo se lee un elemento escalar, para el anfitrión: un número de `KINDS`. */
-const kindDe = (t) => KINDS.indexOf(elemento(t).carga);
+/** Cómo se lee un arrayElement escalar, para el anfitrión: un número de `KINDS`. */
+const kindDe = (t) => KINDS.indexOf(arrayElement(t).carga);
 function sinReferencias(t, nombre) {
-  if (elemento(t).ref) throw new Error(`${nombre} con cadenas, clusters o arrays como elementos: todavía no (M6).`);
+  if (arrayElement(t).ref) throw new Error(`${nombre} con cadenas, clusters o arrays como elementos: todavía no (M6).`);
 }
-/** Deja en la pila el handle de un array con lo que entra por `i`: él mismo, o un array de un solo elemento. */
+/** Deja en la pila el handle de un array con lo que entra por `i`: él mismo, o un array de un solo arrayElement. */
 function comoArray(e, i) {
   const t = e.tOut(0).array;
   if (esArray(e.tIn(i))) return e.entrada(i);
-  const [celda, v] = [e.celda(), e.temporal(tipoWasm(t))];
-  const el = elemento(t);
+  const [celda, v] = [e.celda(), e.temporal(wasmTypeOf(t))];
+  const el = arrayElement(t);
   return [
     ...e.entrada(i), ins("local.set", v),
-    ins("i32.const", celda), ins("i32.const", 1), ins("i32.const", el.tam), ins("i32.const", 0), llamarMemoria("nuevo_array"), ins("drop"),
-    ...guardarElemento(t, [ins("i32.const", celda), ins("i32.load"), ins("i32.const", 8), ins("i32.add")], [ins("local.get", v)], e.temporal),
+    ins("i32.const", celda), ins("i32.const", 1), ins("i32.const", el.tam), ins("i32.const", 0), callMemory("nuevo_array"), ins("drop"),
+    ...storeElement(t, [ins("i32.const", celda), ins("i32.load"), ins("i32.const", 8), ins("i32.add")], [ins("local.get", v)], e.temporal),
     ins("i32.const", celda),
   ];
 }
-/** Una función de array hecha en JavaScript: celda de salida, array, tamaño del elemento y sus argumentos. `primera`: la entrada del array. */
+/** Una función de array hecha en JavaScript: celda de salida, array, tamaño del arrayElement y sus argumentos. `primera`: la entrada del array. */
 function arrJs(e, nombre, titulo, args, primera = 0) {
   const t = e.tOut(0).array;
   sinReferencias(t, titulo);
   const celda = e.celda();
-  return [ins("i32.const", celda), ...e.entrada(primera), ins("i32.const", elemento(t).tam), ...args.flatMap((a) => a()), ins("call", idImport(nombre)), ins("i32.const", celda)];
+  return [ins("i32.const", celda), ...e.entrada(primera), ins("i32.const", arrayElement(t).tam), ...args.flatMap((a) => a()), ins("call", importIndex(nombre)), ins("i32.const", celda)];
 }
 function arrSumar(e, delta) {
   const t = e.tOut(0).array;
   const celda = e.celda();
-  return [ins("i32.const", celda), ...e.entrada(0), ins("i32.const", elemento(t).tam), ins("i32.const", kindDe(t)), ...e.entrada(1), ins("i32.const", delta), ins("call", idImport("a_sumar")), ins("i32.const", celda)];
+  return [ins("i32.const", celda), ...e.entrada(0), ins("i32.const", arrayElement(t).tam), ins("i32.const", kindDe(t)), ...e.entrada(1), ins("i32.const", delta), ins("call", importIndex("a_sumar")), ins("i32.const", celda)];
 }
 
-/** Negación lógica: de un booleano, su contrario; de un entero, todos sus bits. */
-function negar(t) {
-  if (t === "boolean") return [ins("i32.eqz")];
-  const vt = tipoWasm(t);
-  return [...constante(t, -1), ins(`${vt}.xor`), ...estrechar(t)];
-}
-
-function logica(e, op) {
-  return [...e.entrada(0), ...e.entrada(1), ins(`${tipoWasm(e.tOut(0))}.${op}`)];
-}
-
-/**
- * Compound Arithmetic: su operación sobre todas las entradas, con las
- * invertidas negadas (suma), en recíproco (producto) o negadas bit a bit.
- */
-function compuesto(e) {
-  const t = e.tOut(0);
-  const vt = tipoWasm(t);
-  const b = e.cat.bloque(e.nodo.tipo);
-  const modo = e.nodo.config?.mode ?? b.config.mode.value;
-  const invertidas = new Set(e.nodo.config?.inverted ?? []);
-  const n = e.cat.puertos(e.nodo).in.length;
-  const invertir = () => {
-    if (modo === "add") return esFlotante(t) ? [ins(`${vt}.neg`)] : [...constante(t, -1), ins(`${vt}.mul`)];
-    if (modo === "multiply") {
-      const x = e.temporal(vt);
-      return [ins("local.set", x), ...constante(t, 1), ins("local.get", x), ins(esFlotante(t) ? `${vt}.div` : `${vt}.div_s`)];
-    }
-    return negar(t);
-  };
-  const op = { add: "add", multiply: "mul", and: "and", or: "or", xor: "xor" }[modo];
-  const r = [];
-  for (let i = 0; i < n; i++) {
-    r.push(...e.entrada(i));
-    if (invertidas.has(`value-${i}`)) r.push(...invertir());
-    if (i) r.push(ins(`${vt}.${op}`), ...estrechar(t));
-  }
-  if (invertidas.has("result")) r.push(...invertir());
-  return r;
-}
 
 /**
  * La acción mecánica de un control booleano: la elegida o, si no, la de fábrica
@@ -2014,107 +1040,8 @@ function mecanica(cat, n) {
 const escalar = (t) =>
   t === "boolean" || t === "string" || esNumerico(t) || (esCluster(t) && t.cluster.every((f) => escalar(f.type))) || (esArray(t) && dimensionsOf(t) <= MAX_COMPILED_DIMENSIONS && escalar(t.array));
 
-/** ¿Es un valor que vive por referencia (una celda o un bloque): cadena, cluster o array? */
-const porReferencia = (t) => t === "string" || esCluster(t) || esArray(t);
-
-/**
- * Cómo se guarda un elemento de un array (DT-042): su tamaño y cómo se carga y
- * se escribe. Un elemento que es una cadena, un cluster o un array va por
- * referencia: su dirección dentro del array es su handle.
- */
-function elemento(t) {
-  if (porReferencia(t)) return { tam: esCluster(t) ? disposicion(t).tam : 4, ref: true };
-  if (t === "boolean") return { tam: 1, carga: "i32.load8_u", guarda: "i32.store8" };
-  const r = representacion(t);
-  const n = NUMERICOS[r];
-  if (!n.entero) return n.bits === 32 ? { tam: 4, carga: "f32.load", guarda: "f32.store" } : { tam: 8, carga: "f64.load", guarda: "f64.store" };
-  if (n.bits === 64) return { tam: 8, carga: "i64.load", guarda: "i64.store" };
-  if (n.bits === 32) return { tam: 4, carga: "i32.load", guarda: "i32.store" };
-  if (n.bits === 16) return { tam: 2, carga: n.signo ? "i32.load16_s" : "i32.load16_u", guarda: "i32.store16" };
-  return { tam: 1, carga: n.signo ? "i32.load8_s" : "i32.load8_u", guarda: "i32.store8" };
-}
-
-/**
- * An array block is `[size of each dimension I32][padding][elements]` (DT-044).
- * With one or two dimensions the header is 8 bytes, so `datos8` finds the
- * elements of both; more dimensions are not compiled yet.
- */
-const MAX_COMPILED_DIMENSIONS = 2;
-const SECOND_SIZE_OFFSET = 4;
-const ARRAY_HEADER_BYTES = 8;
-
-/** Leaves the number of elements of the array in the local `handle`: the product of its sizes, 0 when it is empty. */
-function elementCount(t, handle, temporal) {
-  if (dimensionsOf(t) === 1) return [ins("local.get", handle), llamarMemoria("longitud")];
-  const block = temporal("i32");
-  return [
-    ins("local.get", handle), ins("i32.load"), ins("local.tee", block), ins("i32.load"),
-    ins("local.get", block), ins("i32.load", SECOND_SIZE_OFFSET), ins("i32.mul"),
-    ins("i32.const", 0), ins("local.get", block), ins("select"),
-  ];
-}
-
-/** Leaves size `dimension` (0 the rows, 1 the columns) of the array in the local `handle`; 0 when it is empty. */
-function dimensionSize(handle, dimension, temporal) {
-  const block = temporal("i32");
-  return [
-    ins("local.get", handle), ins("i32.load"), ins("local.tee", block), ins("i32.load", dimension * SECOND_SIZE_OFFSET),
-    ins("i32.const", 0), ins("local.get", block), ins("select"),
-  ];
-}
-
-/**
- * Makes the block of `cell` an array of type `t` with the sizes held in the
- * locals `sizes` and leaves where its elements start, like `nuevo_array`. For
- * two dimensions, the old header is first turned into an element count, which
- * is what `nuevo_array` reads to know which elements are new.
- */
-function reserveArray(t, cell, sizes, temporal) {
-  return reserveArrayAt(t, [ins("i32.const", cell)], sizes, temporal);
-}
-
-/** Like reserveArray, with the cell left on the stack by the instructions `cell`. */
-function reserveArrayAt(t, cell, sizes, temporal) {
-  const element = elemento(t.array);
-  const g = (local) => ins("local.get", local);
-  const allocate = (count) => [...cell, ...count, ins("i32.const", element.tam), ins("i32.const", element.ref ? 1 : 0), llamarMemoria("nuevo_array")];
-  if (dimensionsOf(t) === 1) return allocate([g(sizes[0])]);
-  const [block, data] = [temporal("i32"), temporal("i32")];
-  return [
-    ...cell, ins("i32.load"), ins("local.tee", block),
-    ins("if"), g(block), g(block), ins("i32.load"), g(block), ins("i32.load", SECOND_SIZE_OFFSET), ins("i32.mul"), ins("i32.store"), ins("end"),
-    ...allocate([g(sizes[0]), g(sizes[1]), ins("i32.mul")]), ins("local.tee", data),
-    ins("i32.const", ARRAY_HEADER_BYTES), ins("i32.sub"), ins("local.tee", block), g(sizes[0]), ins("i32.store"),
-    g(block), g(sizes[1]), ins("i32.store", SECOND_SIZE_OFFSET),
-    g(data),
-  ];
-}
-
-/** El elemento de tipo `t` que está en la dirección que deja `dir`: su valor o, si va por referencia, esa dirección. */
-const cargarElemento = (t, dir) => (elemento(t).ref ? dir : [...dir, ins(elemento(t).carga)]);
-
-/** Lo que necesita el anfitrión para leer y escribir un valor compuesto del panel: la disposición de un cluster o el elemento de un array. */
-function datosDePanel(t) {
-  if (esCluster(t)) return { disposicion: disposicionCompleta(t) };
-  if (esArray(t)) return { dims: dimensionsOf(t), elemento: { ...elemento(t.array), tipo: t.array, ...(esCluster(t.array) ? { disposicion: disposicionCompleta(t.array) } : {}) } };
-  return {};
-}
-
-/** The panel data of a value of memory type `t` and logical type `logical`: an array of paths says so of its elements. */
-function panelDataOf(t, logical) {
-  const data = datosDePanel(t);
-  return esArray(logical) && logical.array === PATH ? { ...data, elemento: { ...data.elemento, path: true } } : data;
-}
-
-/**
- * What the host needs to know of a DAQ task control or indicator (DT-087 §7): the editor holds a task on the panel as
- * its name alone, so the host writes a control's text as a task with no record (record 0) and reads an indicator's
- * name out of the task wire.
- */
-const taskPanelData = (logicalType) => (isDaqTask(logicalType) ? { task: true } : {});
-
 /** Where a task's name lies in its memory (DT-087 §7). */
-const daqTaskNameOffset = () => disposicion(DAQ_TASK_LAYOUT).campos.find((field) => field.nombre === "name").off;
+const daqTaskNameOffset = () => clusterLayout(DAQ_TASK_LAYOUT).campos.find((field) => field.nombre === "name").off;
 
 /**
  * The coercion dot between a DAQ task and a string (measured, reports/2026-11-06-daqmx-types.md), or null for any other
@@ -2126,98 +1053,6 @@ function daqTaskCoercion(from, to, read) {
   if (from === "string" && isDaqTask(to)) throw new Error("A string wired to a DAQ task cannot run yet: Solder has no saved tasks to look it up in.");
   return null;
 }
-
-/** La disposición de un cluster con la de sus clusters de dentro, para que el anfitrión lo lea y lo escriba. */
-function disposicionCompleta(t) {
-  const d = disposicion(t);
-  // A field that is an array carries what the host needs to read it (its element and dimensions).
-  return { ...d, campos: d.campos.map((c) => ({ ...c, wasm: tipoWasm(c.tipo), ...(esCluster(c.tipo) ? { disposicion: disposicionCompleta(c.tipo) } : {}), ...(esArray(c.tipo) ? { array: datosDePanel(c.tipo) } : {}) })) };
-}
-
-/**
- * Copia el valor de tipo `t` que deja en la pila `origen` (un handle o la
- * dirección de un cluster) a `destino` (una dirección fija): una cadena, a su
- * celda; un cluster, campo a campo, con sus cadenas copiadas. Para guardarse un
- * valor propio, como un shift register o un Bundle (DT-042).
- */
-function copiarValor(t, origen, destino, temporal) {
-  return copiarA(t, origen, [ins("i32.const", destino)], temporal);
-}
-
-/** Como copiarValor, con el destino calculado: las instrucciones que dejan su dirección. */
-function copiarA(t, origen, destino, temporal) {
-  if (t === "string") return [...origen, ...destino, llamarMemoria("copiar")];
-  const [de, a] = [temporal("i32"), temporal("i32")];
-  const r = [...origen, ins("local.set", de), ...destino, ins("local.set", a)];
-  const g = (l) => ins("local.get", l);
-  if (esArray(t)) {
-    // n elementos al bloque de la celda destino: de golpe o, si van por referencia, uno a uno.
-    const e = elemento(t.array);
-    const [n, od, dd, i] = [temporal("i32"), temporal("i32"), temporal("i32"), temporal("i32")];
-    const sizes = Array.from({ length: dimensionsOf(t) }, () => temporal("i32"));
-    sizes.forEach((size, dimension) => r.push(...dimensionSize(de, dimension, temporal), ins("local.set", size)));
-    r.push(...elementCount(t, de, temporal), ins("local.set", n), g(de), llamarMemoria("datos8"), ins("local.set", od));
-    r.push(...reserveArrayAt(t, [g(a)], sizes, temporal), ins("local.set", dd));
-    if (!e.ref) r.push(g(dd), g(od), g(n), ins("i32.const", e.tam), ins("i32.mul"), ins("memory.copy"));
-    else {
-      const paso = (l) => [g(l), g(i), ins("i32.const", e.tam), ins("i32.mul"), ins("i32.add")];
-      r.push(ins("i32.const", 0), ins("local.set", i), ins("block"), ins("loop"), g(i), g(n), ins("i32.ge_s"), ins("br_if", 1),
-        ...copiarA(t.array, paso(od), paso(dd), temporal),
-        g(i), ins("i32.const", 1), ins("i32.add"), ins("local.set", i), ins("br", 0), ins("end"), ins("end"));
-    }
-    return r;
-  }
-  for (const c of disposicion(t).campos) {
-    const sitio = (l) => [g(l), ins("i32.const", c.off), ins("i32.add")];
-    if (porReferencia(c.tipo)) r.push(...copiarA(c.tipo, sitio(de), sitio(a), temporal));
-    else {
-      const vt = tipoWasm(c.tipo);
-      r.push(g(a), g(de), ins(`${vt}.load`, c.off), ins(`${vt}.store`, c.off));
-    }
-  }
-  return r;
-}
-
-/** Guarda en la dirección que deja `dir` el elemento de tipo `t` que deja `valor`. */
-function guardarElemento(t, dir, valor, temporal) {
-  const e = elemento(t);
-  return e.ref ? copiarA(t, valor, dir, temporal) : [...dir, ...valor, ins(e.guarda)];
-}
-
-/** Las funciones de la memoria van las primeras del módulo: su índice, por nombre. */
-const MEMORIA_NOMBRES = MEMORY_FUNCTION_NAMES;
-
-// The memory of a Run, created by the host and shared by its threads (DT-063 §1). A shared memory
-// must declare a maximum; this is wasm32's whole address space, the limit a VI already had, and it
-// costs only address space until the VI grows into it.
-export const SHARED_MEMORY_IMPORT = { modulo: "env", nombre: "memory" };
-export const MAXIMUM_PAGES = 65536;
-const PAGE_BYTES = 65536;
-const pagesFor = (bytes) => Math.max(1, Math.ceil(bytes / PAGE_BYTES));
-const MEMORIA = funcionesMemoria((n) => IMPORTACIONES.length + MEMORIA_NOMBRES.indexOf(n));
-
-// The globals of each thread (each instance of the module has its own): whether its clump is
-// parking, the answer it resumes with (stackless.mjs), and the clump and thread it runs.
-const THREAD_GLOBALS = { parking: 0, resumeValue: 1, currentClump: 2, currentThread: 3 };
-// A clump takes nothing and gives nothing: its type is the first of every module.
-const CLUMP_TYPE = 0;
-const FIRST_SCHEDULER_FUNCTION = IMPORTACIONES.length + MEMORIA.length;
-/** The index of a function by name: an import, a memory function or one of the scheduler's. */
-const runtimeFunctionIndex = (name) => {
-  if (MEMORIA_NOMBRES.includes(name)) return IMPORTACIONES.length + MEMORIA_NOMBRES.indexOf(name);
-  if (SCHEDULER_FUNCTION_NAMES.includes(name)) return FIRST_SCHEDULER_FUNCTION + SCHEDULER_FUNCTION_NAMES.indexOf(name);
-  const index = idImport(name);
-  if (index < 0) throw new Error(`No runtime function is called "${name}".`);
-  return index;
-};
-const SCHEDULER = schedulerFunctions({ functionIndex: runtimeFunctionIndex, globals: THREAD_GLOBALS, clumpType: CLUMP_TYPE });
-/** The functions every module has before its VIs': the memory's and the scheduler's. */
-const RUNTIME_FUNCTIONS = [...MEMORIA, ...SCHEDULER];
-const FIRST_COMPILED_FUNCTION = IMPORTACIONES.length + RUNTIME_FUNCTIONS.length;
-const callScheduler = (name) => ins("call", runtimeFunctionIndex(name));
-/** What may park a clump: the imports that wait for the outside and the scheduler's park primitives. */
-const PARK_PRIMITIVES = new Set([...PARKING_IMPORTS, ...SCHEDULER_PARK_PRIMITIVES.map(runtimeFunctionIndex)]);
-const llamarMemoria = (n) => ({ op: "call", arg: IMPORTACIONES.length + MEMORIA_NOMBRES.indexOf(n) });
 
 /**
  * Orden topológico (Kahn) de los nodos de un ámbito, uniendo cada nodo a su
@@ -2290,7 +1125,7 @@ function partir(g, ids, raiz, largo, cadenas = []) {
 export function compilar(g, cat, { name } = {}) {
   const module = newModule();
   module.callChain.push({ name: name ?? null, callerCell: null });
-  const vi = compileVI(g, cat, module, null, "", TOP_LEVEL_CHAIN_INDEX);
+  const vi = compileOVI(g, cat, module, null, "", TOP_LEVEL_CHAIN_INDEX);
   if (vi.errores) return { errores: vi.errores };
   return assemble(module, vi);
 }
@@ -2342,7 +1177,7 @@ function laidOutInMemory(resolved) {
  * connector control and indicator to its slot in the data space, through which
  * the caller passes inputs and reads outputs (DT-045).
  */
-function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainIndex) {
+function compileOVI(withDecorations, cat, module, asSubVI, instanceKey, chainIndex) {
   // Free labels and other decorations (DT-085) are presentation: they have no ports and nothing to emit.
   const g = { ...withDecorations, nodos: withDecorations.nodos.filter((n) => !cat.bloque(n.tipo).decoracion) };
   // A path is laid out as a string's handle, so the functions that take a path or a string, and the
@@ -2382,7 +1217,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
   const esEstructura = (id) => !!cat.bloque(porId.get(id).tipo).estructura;
   // Un bucle tarda; un Case, sólo si algo suyo tarda (si no, es instantáneo y va
   // en el clump de lo que le rodea, como cualquier nodo).
-  // Cada marco de una Flat Sequence es, para el flujo de datos, un elemento
+  // Cada marco de una Flat Sequence es, para el flujo de datos, un arrayElement
   // propio (`secuencia#k`), encadenado al anterior: en LabVIEW lo que sale de un
   // marco sale al acabar ese marco, no la secuencia (comprobado en 2026 Q3,
   // labview-captures/structures/secuencia-*.png). La Stacked es un solo nodo.
@@ -2456,20 +1291,20 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
   const { constantes, datosFijos, planes, automaticos, bufer } = module;
   const nuevaCelda = () => bufer(4, 4);
   // El cluster «cero»: tan grande como el mayor cluster del VI; no se escribe nunca.
-  const tamMax = Math.max(0, ...[...resueltos.entradas.values(), ...resueltos.salidas.values()].filter(esCluster).map((t) => disposicion(t).tam));
-  zonaCero = bufer(Math.max(tamMax, 8));
+  const tamMax = Math.max(0, ...[...resueltos.entradas.values(), ...resueltos.salidas.values()].filter(esCluster).map((t) => clusterLayout(t).tam));
+  setZeroClusterAddress(bufer(Math.max(tamMax, 8)));
   const cadena = (texto) => {
     const celda = nuevaCelda();
     constantes.push({ celda, bytes: bloqueCadena(texto) });
     return celda;
   };
   /**
-   * Una constante de array: su bloque [n][relleno][elementos] en el data space,
+   * Una constantOf de array: su bloque [n][relleno][elementos] en el data space,
    * ya escrito al instanciar, y la celda que lo apunta. Sus cadenas, en la zona
    * estática; sus clusters, con clusterConstante.
    */
   const arrayConstante = (t, valoresAnidados) => {
-    const el = elemento(t.array);
+    const el = arrayElement(t.array);
     const celda = nuevaCelda();
     const { sizes, elements: valores } = flattenArrayValue(valoresAnidados, dimensionsOf(t), undefined);
     if (!valores.length) return celda;
@@ -2490,16 +1325,16 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     });
     return celda;
   };
-  /** Una constante de cluster: su bloque en el data space, ya escrito al instanciar; sus cadenas, en la zona estática. */
+  /** Una constantOf de cluster: su bloque en el data space, ya escrito al instanciar; sus cadenas, en la zona estática. */
   const clusterConstante = (t, v, dir = null) => {
-    const d = disposicion(t);
+    const d = clusterLayout(t);
     const b = dir ?? bufer(d.tam);
     for (const c of d.campos) {
       const x = v?.[c.nombre];
       if (esCluster(c.tipo)) clusterConstante(c.tipo, x, b + c.off);
       else if (c.tipo === "string") constantes.push({ celda: b + c.off, bytes: bloqueCadena(String(x ?? "")) });
       else {
-        const vt = tipoWasm(c.tipo);
+        const vt = wasmTypeOf(c.tipo);
         const bytes = new Uint8Array(vt === "f64" || vt === "i64" ? 8 : 4);
         const dv = new DataView(bytes.buffer);
         if (vt === "f64") dv.setFloat64(0, Number(x ?? 0), true);
@@ -2523,7 +1358,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
   /** The record of panel object `id`, whose value is of `type` (a chart keeps `historyLength` of them). */
   function panelRecordOf(id, type, historyLength = null) {
     if (!panelRecords.has(id)) {
-      const slot = slotBytes(type, esCluster(type) ? disposicion(type).tam : undefined);
+      const slot = slotBytes(type, esCluster(type) ? clusterLayout(type).tam : undefined);
       panelRecords.set(id, { record: module.bufer(recordBytes(slot, historyLength ?? 1), 8), slot });
     }
     return panelRecords.get(id);
@@ -2574,10 +1409,10 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
    */
   function debugHook(id, outputs, { border = false, frame = null, frameIndex = null } = {}) {
     if (!allowDebugging) return [];
-    const entry = { vi: instanceKey, nodo: id, outputs: outputs.map(({ port, type }) => ({ port, tipo: type, ...datosDePanel(type) })) };
+    const entry = { vi: instanceKey, nodo: id, outputs: outputs.map(({ port, type }) => ({ port, tipo: type, ...panelData(type) })) };
     const index = module.debugNodes.push({ ...entry, ...(border && { border: true }), ...(frame && { frame }), ...(frameIndex !== null && { frameIndex }) }) - 1;
-    const values = outputs.flatMap(({ type, local }, j) => [ins("i32.const", index), ins("i32.const", j), ins("local.get", local), ins("call", idImport(`valor_${tipoWasm(type)}`))]);
-    return [ins("i32.const", module.debugFlag), ins("i32.load"), ins("if"), ...values, ins("i32.const", index), ins("call", idImport("nodo")), ins("drop"), ins("end")];
+    const values = outputs.flatMap(({ type, local }, j) => [ins("i32.const", index), ins("i32.const", j), ins("local.get", local), ins("call", importIndex(`valor_${wasmTypeOf(type)}`))]);
+    return [ins("i32.const", module.debugFlag), ins("i32.load"), ins("if"), ...values, ins("i32.const", index), ins("call", importIndex("nodo")), ins("drop"), ins("end")];
   }
   /**
    * The debug hook of a border element of a structure —a tunnel, a shift register, the
@@ -2610,7 +1445,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     const nuevoLocal = (vt) => k.locales.push(vt) - 1;
     const entrada = (i) => {
       const c = llegaA.get(`${id}.${entradas[i].name}`);
-      if (!c) return constante(tIn(i), entradas[i].default ?? 0);
+      if (!c) return constantOf(tIn(i), entradas[i].default ?? 0);
       const t = resueltos.salidas.get(`${c.de.nodo}.${c.de.puerto}`);
       const v = valor.get(`${c.de.nodo}.${c.de.puerto}`);
       // El nodo de origen ya dio un error: no hay valor, y el VI no se emitirá.
@@ -2620,30 +1455,30 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
       // is enough to store it at the end of what its function has emitted so far: in the loop,
       // that comes before the call to the subplan.
       if (v.clump !== k && v.cell === undefined) {
-        v.wasmType ??= tipoWasm(t);
+        v.wasmType ??= wasmTypeOf(t);
         v.cell = crossingCell(v.wasmType);
         v.clump.cuerpo.push(...storeCrossing(v));
       }
       const leer = v.clump === k ? [ins("local.get", v.local)] : loadCrossing(v);
-      // Un array con otro tipo de elemento se convierte entero en un búfer propio:
+      // Un array con otro tipo de arrayElement se convierte entero en un búfer propio:
       // el punto de coerción de LabVIEW (DT-042).
       if (esArray(t) && esArray(tIn(i)) && JSON.stringify(t.array) !== JSON.stringify(tIn(i).array)) return convertirArray(t, tIn(i), leer);
       const daqCoercion = daqTaskCoercion(logicalTypes.salidas.get(`${c.de.nodo}.${c.de.puerto}`), logicalTIn(i), leer);
-      return daqCoercion ?? [...leer, ...convertir(t, tIn(i))];
+      return daqCoercion ?? [...leer, ...convertValue(t, tIn(i))];
     };
-    /** Copia el array que deja `origen` a una celda nueva, convirtiendo cada elemento de `desde.array` a `hacia.array`. */
+    /** Copia el array que deja `origen` a una celda nueva, convirtiendo cada arrayElement de `desde.array` a `hacia.array`. */
     const convertirArray = (desde, hacia, origen) => {
       const [ed, eh] = [desde.array, hacia.array];
-      const conv = convertir(ed, eh);
-      if (porReferencia(ed) || porReferencia(eh) || conv === null) throw new Error(`An array of ${JSON.stringify(ed)} cannot be converted into one of ${JSON.stringify(eh)}.`);
-      const [elD, elH] = [elemento(ed), elemento(eh)];
+      const conv = convertValue(ed, eh);
+      if (isByReference(ed) || isByReference(eh) || conv === null) throw new Error(`An array of ${JSON.stringify(ed)} cannot be converted into one of ${JSON.stringify(eh)}.`);
+      const [elD, elH] = [arrayElement(ed), arrayElement(eh)];
       const celda = nuevaCelda();
       const [h, n, o, d, j] = Array.from({ length: 5 }, () => nuevoLocal("i32"));
       const g = (l) => ins("local.get", l);
       // The converted array keeps the sizes of the original, whatever its dimensions.
       const tamanos = Array.from({ length: dimensionsOf(desde) }, () => nuevoLocal("i32"));
       return [
-        ...origen, ins("local.set", h), ...elementCount(desde, h, nuevoLocal), ins("local.set", n), g(h), llamarMemoria("datos8"), ins("local.set", o),
+        ...origen, ins("local.set", h), ...elementCount(desde, h, nuevoLocal), ins("local.set", n), g(h), callMemory("datos8"), ins("local.set", o),
         ...tamanos.flatMap((tamano, dimension) => [...dimensionSize(h, dimension, nuevoLocal), ins("local.set", tamano)]),
         ...reserveArray(hacia, celda, tamanos, nuevoLocal), ins("local.set", d),
         ins("i32.const", 0), ins("local.set", j), ins("block"), ins("loop"), g(j), g(n), ins("i32.ge_s"), ins("br_if", 1),
@@ -2716,15 +1551,15 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     } catch (fallo) {
       return errores.push({ nodo: id, motivo: fallo.message });
     }
-    const locs = salidas.map((_, j) => nuevoLocal(tipoWasm(tOut(j))));
+    const locs = salidas.map((_, j) => nuevoLocal(wasmTypeOf(tOut(j))));
     for (let j = locs.length - 1; j >= 0; j--) k.cuerpo.push(ins("local.set", locs[j]));
-    salidas.forEach((p, j) => dejar(k, id, p.name, locs[j], tipoWasm(tOut(j))));
+    salidas.forEach((p, j) => dejar(k, id, p.name, locs[j], wasmTypeOf(tOut(j))));
     k.cuerpo.push(...debugHook(id, salidas.map((p, j) => ({ port: p.name, type: tOut(j), local: locs[j] }))));
     // Manejo automático de errores (DT-043): un «error out» sin cablear que lleva un error para el VI y lo cuenta.
     const oe = salidas.findIndex((p) => p.name === "error-out");
     if (oe >= 0 && autoErrores && n.tipo !== "simple-error-handler" && !g.cables.some((c) => c.de.nodo === id && c.de.puerto === "error-out")) {
-      k.cuerpo.push(ins("local.get", locs[oe]), ins("i32.load", ERR.status), ins("if"),
-        ins("i32.const", automaticos.push(id) - 1), ins("local.get", locs[oe]), ins("call", idImport("error_automatico")), ins("drop"), ins("end"));
+      k.cuerpo.push(ins("local.get", locs[oe]), ins("i32.load", ERROR_FIELDS.status), ins("if"),
+        ins("i32.const", automaticos.push(id) - 1), ins("local.get", locs[oe]), ins("call", importIndex("error_automatico")), ins("drop"), ins("end"));
     }
   }
 
@@ -2735,10 +1570,10 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
    * deja sus salidas en la pila, «error out» incluido).
    */
   function pasaError(e, salidas, ie, oe, trabajo) {
-    const locs = salidas.map((_, j) => e.temporal(tipoWasm(e.tOut(j))));
+    const locs = salidas.map((_, j) => e.temporal(wasmTypeOf(e.tOut(j))));
     const x = e.temporal("i32");
-    const c = [...e.entrada(ie), ins("local.tee", x), ins("i32.load", ERR.status), ins("if")];
-    salidas.forEach((_, j) => c.push(...(j === oe ? [ins("local.get", x)] : constante(e.tOut(j), 0)), ins("local.set", locs[j])));
+    const c = [...e.entrada(ie), ins("local.tee", x), ins("i32.load", ERROR_FIELDS.status), ins("if")];
+    salidas.forEach((_, j) => c.push(...(j === oe ? [ins("local.get", x)] : constantOf(e.tOut(j), 0)), ins("local.set", locs[j])));
     c.push(ins("else"), ...trabajo);
     for (let j = locs.length - 1; j >= 0; j--) c.push(ins("local.set", locs[j]));
     c.push(ins("end"), ...locs.map((l) => ins("local.get", l)));
@@ -2763,15 +1598,15 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     const L = (vt) => k.locales.push(vt) - 1;
     const c = k.cuerpo;
     // Antes de la primera vuelta: lo que entra por el borde. Un túnel indexado
-    // guarda su array (handle, longitud, datos) y da su elemento en cada vuelta.
+    // guarda su array (handle, longitud, datos) y da su arrayElement en cada vuelta.
     const indexados = [];
     for (const id of de("tunnel-in")) {
       const x = contexto(id, k);
-      const l = L(tipoWasm(x.tOut(0)));
+      const l = L(wasmTypeOf(x.tOut(0)));
       if (porId.get(id).config?.indexado) {
         // `m` is the length of a 1D array or the rows of a 2D one: the first word of the block either way.
         const [h, m, d] = [L("i32"), L("i32"), L("i32")];
-        c.push(...x.entrada(0), ins("local.tee", h), llamarMemoria("longitud"), ins("local.set", m), ins("local.get", h), llamarMemoria("datos8"), ins("local.set", d));
+        c.push(...x.entrada(0), ins("local.tee", h), callMemory("longitud"), ins("local.set", m), ins("local.get", h), callMemory("datos8"), ins("local.set", d));
         const fila = esArray(x.tOut(0)) ? { celda: nuevaCelda(), columnas: L("i32") } : null;
         if (fila) c.push(...dimensionSize(h, 1, L), ins("local.set", fila.columnas));
         indexados.push({ t: x.tOut(0), l, m, d, fila });
@@ -2780,17 +1615,17 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     }
     const registros = de("shift-register-left").map((id) => {
       const x = contexto(id, k);
-      const vt = tipoWasm(x.tOut(0));
+      const vt = wasmTypeOf(x.tOut(0));
       const [ahora, nuevo] = [L(vt), L(vt)];
       // Una cadena: el shift register tiene su propia celda y se guarda una copia,
       // para que quien la produjo pueda reescribir su búfer en la vuelta siguiente.
       const t = x.tOut(0);
-      const celda = t === "string" || esArray(t) ? nuevaCelda() : esCluster(t) ? bufer(disposicion(t).tam) : null;
+      const celda = t === "string" || esArray(t) ? nuevaCelda() : esCluster(t) ? bufer(clusterLayout(t).tam) : null;
       // Uninitialized, it starts with what it held when the loop last ended, kept in
       // the data space: a functional global variable relies on it (DT-045).
       const inicializado = x.cableada(0);
       const guardado = !inicializado && celda === null ? bufer(8) : null;
-      if (celda !== null && inicializado) c.push(...copiarValor(t, x.entrada(0), celda, x.nuevoLocal));
+      if (celda !== null && inicializado) c.push(...copyValue(t, x.entrada(0), celda, x.nuevoLocal));
       if (celda !== null) c.push(ins("i32.const", celda), ins("local.set", ahora));
       else if (guardado !== null) c.push(ins("i32.const", guardado), ins(`${vt}.load`), ins("local.set", ahora));
       else c.push(...x.entrada(0), ins("local.set", ahora));
@@ -2814,7 +1649,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
       const x = contexto(id, k);
       // Un túnel de salida indexado va llenando el array de su celda, una vuelta cada vez.
       if (porId.get(id).config?.indexado) return { id, l: L("i32"), indexado: { celda: nuevaCelda(), n: L("i32"), t: x.tIn(0) } };
-      return { id, l: L(tipoWasm(x.tOut(0))) };
+      return { id, l: L(wasmTypeOf(x.tOut(0))) };
     });
     const parada = L("i32");
 
@@ -2823,22 +1658,22 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     c.push(ins("i32.const", 0), ins("local.set", i));
     for (const t of salidas) {
       if (t.indexado) {
-        const el = elemento(t.indexado.t);
-        c.push(ins("i32.const", 0), ins("local.set", t.indexado.n), ins("i32.const", t.indexado.celda), ins("i32.const", 0), ins("i32.const", el.tam), ins("i32.const", el.ref ? 1 : 0), llamarMemoria("nuevo_array"), ins("drop"));
-      } else c.push(...constante(contexto(t.id, k).tOut(0), 0), ins("local.set", t.l));
+        const el = arrayElement(t.indexado.t);
+        c.push(ins("i32.const", 0), ins("local.set", t.indexado.n), ins("i32.const", t.indexado.celda), ins("i32.const", 0), ins("i32.const", el.tam), ins("i32.const", el.ref ? 1 : 0), callMemory("nuevo_array"), ins("drop"));
+      } else c.push(...constantOf(contexto(t.id, k).tOut(0), 0), ins("local.set", t.l));
     }
     c.push(...frameHook(sid, "start"), ins("block"));
     if (n !== null) c.push(ins("local.get", n), ins("i32.const", 0), ins("i32.le_s"), ins("br_if", 0));
     c.push(ins("loop"));
-    // El elemento de cada túnel indexado en esta vuelta (fuera del array, el valor por defecto).
+    // El arrayElement de cada túnel indexado en esta vuelta (fuera del array, el valor por defecto).
     for (const x of indexados) {
       if (x.fila) {
         c.push(...filaDeLaVuelta(x, i, L));
         continue;
       }
-      const el = elemento(x.t);
-      c.push(...constante(x.t, 0), ins("local.set", x.l), ins("local.get", i), ins("local.get", x.m), ins("i32.lt_s"),
-        ins("if"), ...cargarElemento(x.t, [ins("local.get", x.d), ins("local.get", i), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add")]), ins("local.set", x.l), ins("end"));
+      const el = arrayElement(x.t);
+      c.push(...constantOf(x.t, 0), ins("local.set", x.l), ins("local.get", i), ins("local.get", x.m), ins("i32.lt_s"),
+        ins("if"), ...loadElement(x.t, [ins("local.get", x.d), ins("local.get", i), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add")]), ins("local.set", x.l), ins("end"));
     }
     // Each iteration the values enter again by the border, as Highlight Execution shows them.
     for (const id of de("tunnel-in")) c.push(...borderHook(id, "y", valor.get(`${id}.y`).local, k));
@@ -2851,11 +1686,11 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
         continue;
       }
       const { celda, n: m, t: te } = t.indexado;
-      const el = elemento(te);
+      const el = arrayElement(te);
       const d = L("i32");
       c.push(
-        ins("i32.const", celda), ins("local.get", m), ins("i32.const", 1), ins("i32.add"), ins("i32.const", el.tam), ins("i32.const", el.ref ? 1 : 0), llamarMemoria("nuevo_array"), ins("local.set", d),
-        ...guardarElemento(te, [ins("local.get", d), ins("local.get", m), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add")], contexto(t.id, k).entrada(0), L),
+        ins("i32.const", celda), ins("local.get", m), ins("i32.const", 1), ins("i32.add"), ins("i32.const", el.tam), ins("i32.const", el.ref ? 1 : 0), callMemory("nuevo_array"), ins("local.set", d),
+        ...storeElement(te, [ins("local.get", d), ins("local.get", m), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add")], contexto(t.id, k).entrada(0), L),
         ins("local.get", m), ins("i32.const", 1), ins("i32.add"), ins("local.set", m),
       );
     }
@@ -2866,7 +1701,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
       c.push(ins("local.set", parada));
     }
     for (const r of registros) {
-      if (r.celda !== null) c.push(...copiarValor(r.t, [ins("local.get", r.nuevo)], r.celda, L));
+      if (r.celda !== null) c.push(...copyValue(r.t, [ins("local.get", r.nuevo)], r.celda, L));
       else c.push(ins("local.get", r.nuevo), ins("local.set", r.ahora));
     }
     c.push(...frameHook(sid, "iteration"));
@@ -2886,7 +1721,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
         const celda = nuevaCelda();
         c.push(...juntarFilas(contexto(t.id, k).tOut(0), t.indexado.celda, celda, L), ins("i32.const", celda), ins("local.set", t.l));
       } else if (t.indexado) c.push(ins("i32.const", t.indexado.celda), ins("local.set", t.l));
-      dejar(k, t.id, "y", t.l, tipoWasm(contexto(t.id, k).tOut(0)));
+      dejar(k, t.id, "y", t.l, wasmTypeOf(contexto(t.id, k).tOut(0)));
       c.push(...borderHook(t.id, "y", t.l, k));
     }
     for (const r of registros) if (r.guardado !== null) c.push(ins("i32.const", r.guardado), ins("local.get", r.ahora), ins(`${r.vt}.store`));
@@ -2932,7 +1767,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     const L = (vt) => k.locales.push(vt) - 1;
     for (const id of deAqui.filter((x) => porId.get(x).tipo === "tunnel-in")) {
       const x = contexto(id, k);
-      const l = L(tipoWasm(x.tOut(0)));
+      const l = L(wasmTypeOf(x.tOut(0)));
       c.push(...x.entrada(0), ins("local.set", l));
       valor.set(`${id}.y`, { local: l, clump: k });
     }
@@ -2972,9 +1807,9 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
       c.push(...x.entrada(0));
       if (errorSelector) {
         const cluster = L("i32");
-        c.push(ins("local.tee", cluster), ins("i32.load", ERR.status), ins("local.set", errorStatus), ins("local.get", cluster), ins("i32.load", ERR.code));
+        c.push(ins("local.tee", cluster), ins("i32.load", ERROR_FIELDS.status), ins("local.set", errorStatus), ins("local.get", cluster), ins("i32.load", ERROR_FIELDS.code));
       }
-      else if (t !== "boolean" && !stringSelector && !esCluster(t)) c.push(...convertir(t, "i32"));
+      else if (t !== "boolean" && !stringSelector && !esCluster(t)) c.push(...convertValue(t, "i32"));
       c.push(ins("local.set", sel));
     }
     // A frame value that no longer names an item — a stale name left by deleting the item in
@@ -2993,8 +1828,8 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     c.push(...frameHook(sid, "start"));
     const salidas = deAqui.filter((x) => porId.get(x).tipo === "case-tunnel-out").map((id) => {
       const x = contexto(id, k);
-      const l = L(tipoWasm(x.tOut(0)));
-      c.push(...constante(x.tOut(0), 0), ins("local.set", l));
+      const l = L(wasmTypeOf(x.tOut(0)));
+      c.push(...constantOf(x.tOut(0), 0), ins("local.set", l));
       return { id, l, x };
     });
     const marco = (m) => {
@@ -3006,7 +1841,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     };
     const valorI32 = (v) => (v === true ? 1 : v === false ? 0 : Math.round(v));
     // A string selector compares on the host: equal to a value, or min ≤ selector < max in a range.
-    const compareSelectorTo = (text) => [ins("local.get", sel), ins("i32.const", cadena(text)), ins("call", idImport(s.config?.caseInsensitive ? "cmp_ci" : "cmp"))];
+    const compareSelectorTo = (text) => [ins("local.get", sel), ins("i32.const", cadena(text)), ins("call", importIndex(s.config?.caseInsensitive ? "cmp_ci" : "cmp"))];
     const stringCondition = (v) => {
       if (typeof v === "string") return [...compareSelectorTo(v), ins("i32.eqz")];
       const bounds = [];
@@ -3077,7 +1912,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     for (const { i } of conValores) if (i !== porDefecto) c.push(ins("end"));
     c.push(...frameHook(sid, "end"));
     for (const t of salidas) {
-      dejar(k, t.id, "y", t.l, tipoWasm(t.x.tOut(0)));
+      dejar(k, t.id, "y", t.l, wasmTypeOf(t.x.tOut(0)));
       c.push(...borderHook(t.id, "y", t.l, k));
     }
   }
@@ -3116,7 +1951,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     c.push(...frameHook(seq, m === 0 ? "start" : "between"));
     for (const id of deAqui.filter((x) => porId.get(x).tipo === "tunnel-in" && marcoEnFlat(porId.get(x), seq) === m)) {
       const x = contexto(id, k);
-      const vt = tipoWasm(x.tOut(0));
+      const vt = wasmTypeOf(x.tOut(0));
       const l = k.locales.push(vt) - 1;
       c.push(...x.entrada(0), ins("local.set", l), ...borderHook(id, "y", l, k));
       valor.set(`${id}.y`, { local: l, clump: k });
@@ -3125,7 +1960,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     c.push(...frameHook(seq, lastFrame ? "last-frame-end" : "frame-end", m));
     for (const id of deAqui.filter((x) => porId.get(x).tipo === "tunnel-out" && marcoEnFlat(porId.get(x), seq) === m)) {
       const x = contexto(id, k);
-      const vt = tipoWasm(x.tOut(0));
+      const vt = wasmTypeOf(x.tOut(0));
       const l = k.locales.push(vt) - 1;
       c.push(...x.entrada(0), ins("local.set", l));
       dejar(k, id, "y", l, vt);
@@ -3146,14 +1981,14 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
     const c = k.cuerpo;
     for (const id of deAqui.filter((x) => porId.get(x).tipo === "tunnel-in")) {
       const x = contexto(id, k);
-      const l = k.locales.push(tipoWasm(x.tOut(0))) - 1;
+      const l = k.locales.push(wasmTypeOf(x.tOut(0))) - 1;
       c.push(...x.entrada(0), ins("local.set", l), ...borderHook(id, "y", l, k));
       valor.set(`${id}.y`, { local: l, clump: k });
     }
     (s.config?.marcos ?? []).forEach((_, m) => emitirCuerpo(deAqui.filter((id) => porId.get(id).marco === m), sid, k));
     for (const id of deAqui.filter((x) => porId.get(x).tipo === "tunnel-out")) {
       const x = contexto(id, k);
-      const vt = tipoWasm(x.tOut(0));
+      const vt = wasmTypeOf(x.tOut(0));
       const l = k.locales.push(vt) - 1;
       c.push(...x.entrada(0), ins("local.set", l));
       dejar(k, id, "y", l, vt);
@@ -3179,7 +2014,7 @@ function compileVI(withDecorations, cat, module, asSubVI, instanceKey, chainInde
  * Only the tree is left out, so a field the runtime reads is never lost on the way (the call
  * chain of an error source was, once; the parked frames must go too, DT-063 §8).
  */
-export const runnableVI = ({ modulo: _moduleTree, ...runnable }) => runnable;
+export const runnableOVI = ({ modulo: _moduleTree, ...runnable }) => runnable;
 
 /** The module with the top-level VI `vi`, its subVIs, the memory functions and the scheduler, ready to instantiate. */
 function assemble(module, vi) {
@@ -3201,9 +2036,9 @@ function assemble(module, vi) {
   const bodies = [...directFunctions, ...clumps, ...planes.flat()].map((k) => ({ params: [], results: [], locales: k.locales, cuerpo: k.cuerpo }));
   const allFunctions = [...RUNTIME_FUNCTIONS, ...bodies];
   const { functions: stackless, frames } = makeStackless(allFunctions, {
-    importCount: IMPORTACIONES.length,
+    importCount: HOST_IMPORTS.length,
     parkPrimitives: PARK_PRIMITIVES,
-    typeOfCall: (index) => (index < IMPORTACIONES.length ? IMPORTACIONES[index] : allFunctions[index - IMPORTACIONES.length]),
+    typeOfCall: (index) => (index < HOST_IMPORTS.length ? HOST_IMPORTS[index] : allFunctions[index - HOST_IMPORTS.length]),
     allocateFrame: (bytes) => module.bufer(bytes, 8),
     parkingGlobal: THREAD_GLOBALS.parking,
     resumeValueGlobal: THREAD_GLOBALS.resumeValue,
@@ -3241,7 +2076,7 @@ function assemble(module, vi) {
   };
   const modulo = {
     tipos: tiposF,
-    importaciones: IMPORTACIONES.map((im) => ({ modulo: im.modulo, nombre: im.nombre, tipo: tipo(im.params, im.results) })),
+    importaciones: HOST_IMPORTS.map((im) => ({ modulo: im.modulo, nombre: im.nombre, tipo: tipo(im.params, im.results) })),
     funciones: [...stackless, initialize].map((f) => ({ tipo: tipo(f.params, f.results), locales: f.locales, cuerpo: f.cuerpo })),
     globales,
     globalesExportadas: [{ nombre: "parking", global: THREAD_GLOBALS.parking }, { nombre: "resumeValue", global: THREAD_GLOBALS.resumeValue }],
@@ -3251,11 +2086,11 @@ function assemble(module, vi) {
     datos,
     datosPasivos: true,
     exportaciones: [
-      { nombre: "initialize", funcion: IMPORTACIONES.length + stackless.length },
+      { nombre: "initialize", funcion: HOST_IMPORTS.length + stackless.length },
       ...[...EXPORTADAS, ...SCHEDULER_EXPORTS].map((nombre) => ({ nombre, funcion: runtimeFunctionIndex(nombre) })),
       ...[...clumps.map((_, i) => `c${i}`), ...planes.flatMap((sub, p) => sub.map((_, i) => `p${p}c${i}`))].map((nombre, i) => ({ nombre, funcion: firstClumpFunction + i })),
     ],
   };
   const plan = (lista) => lista.map((k) => ({ deps: [...k.deps], largo: k.largo }));
-  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: disposicionCompleta(ERROR), disposicionVisa: disposicionCompleta(VISA_RESOURCE_LAYOUT), usesInstrumentIo: !!module.usesInstrumentIo, debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, propertyNodes: module.propertyNodes, callLibraries: module.callLibraries, controlReferences: module.controlReferences, frames };
+  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: fullClusterLayout(ERROR), disposicionVisa: fullClusterLayout(VISA_RESOURCE_LAYOUT), usesInstrumentIo: !!module.usesInstrumentIo, debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, propertyNodes: module.propertyNodes, callLibraries: module.callLibraries, controlReferences: module.controlReferences, frames };
 }

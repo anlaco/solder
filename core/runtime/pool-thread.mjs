@@ -7,7 +7,7 @@
 // to hear the ports the coordinator connects to it, once per Run.
 
 import { NO_DEBUG_VALUE, createHostFunctions, debugValueReader, millisecondTimerOf, sharedClock } from "./runtime.mjs";
-import { SHARED_MEMORY_IMPORT } from "../compiler/compiler.mjs";
+import { SHARED_MEMORY_IMPORT } from "../compiler/runtime-functions.mjs";
 import { VISA_FUNCTION_NAMES } from "./instrument-io.mjs";
 import { FILE_FUNCTION_NAMES } from "./file-io.mjs";
 import { PROPERTY_NODE_FUNCTION_NAMES } from "./property-node.mjs";

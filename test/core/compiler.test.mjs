@@ -5,7 +5,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { compilar, convertir } from "../../core/compiler/compiler.mjs";
+import { compilar } from "../../core/compiler/compiler.mjs";
+import { convertValue } from "../../core/compiler/wasm-types.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import * as Gr from "../../core/model/graph.mjs";
 import { leer } from "../../core/model/qvi-format.mjs";
@@ -96,7 +97,7 @@ test("las funciones de numeric calculan como labview", async () => {
 // De coma flotante a entero, LabVIEW redondea al más cercano (al par en el
 // punto medio) y satura.
 test("las coerciones redondean y saturan", async () => {
-  const ops = (desde, hacia) => convertir(desde, hacia).map((i) => i.op);
+  const ops = (desde, hacia) => convertValue(desde, hacia).map((i) => i.op);
   assert.deepEqual(ops("number", "i32"), ["f64.nearest", "i32.trunc_sat_f64_s"]);
   assert.deepEqual(ops("number", "u8"), ["f64.nearest", "f64.const", "f64.max", "f64.const", "f64.min", "i32.trunc_sat_f64_u"]);
   assert.deepEqual(ops("i32", "number"), ["f64.convert_i32_s"]);
