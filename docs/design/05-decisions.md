@@ -4454,9 +4454,9 @@ its own that moves code without changing what it compiles.**
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| The split changes nothing the compiler emits | The examples and the test OVIs compiled before and after, compared byte for byte | **Not built** |
-| No file of `core/compiler/` grows past the limit | A test that counts the lines of `core/compiler/**/*.mjs` (tables listed as exceptions) | **Not built** |
-| No function grows past the limit | ESLint's `max-lines-per-function`, or the same test | **Not built** |
+| The split changes nothing the compiler emits | The `.wat` of every OVI of the repository (51 files) by `cli/solder.mjs wat`, compared before and after each move | **Verified** (2026-11-16, by hand at each move; no test keeps it) |
+| No file of `core/compiler/` grows past the limit | `test/core/compiler-limits.test.mjs`: the files over 400 lines at the end of the split are listed with their size then and may not grow | **Built** (2026-11-16) |
+| No function grows past the limit | The same test: the 21 functions over 30 lines at the end of the split are listed and may not grow; the parts of compileOVI (`create…(ovi)`) are measured by their functions | **Built** (2026-11-16) |
 
 ## DT-090
 

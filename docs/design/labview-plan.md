@@ -926,8 +926,10 @@ to it go on, new fronts wait for step 6.
    `compiler.mjs` is the entry point alone (172 lines). Left for DT-089 §4's limits: 27 functions over 30 lines (the
    Case's and the loops' emitters, about 150 each; `compileOVI`'s set-up, 187; `contexto`; `callLibrary`;
    `propertyNode`), the inline emitters of `node-table.mjs` (597 lines), the three files that were large before
-   (`pool-scheduler.mjs` 638, `stackless.mjs` 494, `linear-memory.mjs` 307), the Spanish inside the parts, and the
-   test that holds the limits.
+   (`pool-scheduler.mjs` 638, `stackless.mjs` 494), and the Spanish inside the parts. *Closed on 2026-11-16 as a
+   ratchet:* `test/core/compiler-limits.test.mjs` lists what was over the limits then, which may shrink and never
+   grow; each long function is split by the Boy Scout rule when a later step touches it (the Case's and the loops'
+   emitters with the clusters). `tsc --checkJs` waits for the developer's go-ahead to install TypeScript.
    The `.wat` comparison does not reach every node (no example uses Delete From Array): a name left behind shows only
    in the suite, so it runs after every move. A rename by regular expression also hits quoted names and spread calls (`"rotar"`, a host import, became
    `"rotate"` once; `...convertir(` was missed once): after each rename, look for both.*
