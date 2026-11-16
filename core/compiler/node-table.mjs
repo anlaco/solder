@@ -20,6 +20,7 @@ import { callLibrary } from "./nodes/call-library.mjs";
 import { arithmetic, compare, compareInstruction, compareWithZero, compoundArithmetic, inRangeAndCoerce, logical, maxAndMin, negate, rounding } from "./nodes/arithmetic.mjs";
 import { addToArrayElement, arraySizes, asArray, buildArray2d, callArrayFunction, indexArray2d, initializeArrayNd, loadKindOf, reduceArray, refuseElementsByReference } from "./nodes/arrays.mjs";
 import { readControl } from "./panel-io.mjs";
+import { quotientAndRemainder, scaleByPowerOf2 } from "./nodes/integer-arithmetic.mjs";
 import { joinNumbers, logicalShift, mantissaAndExponent, rotate, rotateWithCarry, splitNumber, swapBytes, swapWords } from "./nodes/data-manipulation.mjs";
 import { EMPTY_PATH, NOT_A_PATH, PATH_KIND, encodePath } from "../model/paths.mjs";
 import { ERROR, FILE_REFNUM, PATH, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esRefnum, limites, representacion } from "../model/types.mjs";
@@ -479,32 +480,8 @@ export const NODE_EMITTERS = {
     // (x > 0) − (x < 0), que da −1, 0 o 1, en el tipo de la entrada.
     return [...e.entrada(0), ins("local.set", x), ins("local.get", x), ...constantOf(t, 0), ins(`${vt}.gt${s}`), ins("local.get", x), ...constantOf(t, 0), ins(`${vt}.lt${s}`), ins("i32.sub"), ...convertValue("i32", t)];
   },
-  "quotient-remainder": (e) => {
-    // floor(x/y) y x − y·floor(x/y), calculados en DBL. Un I64 enorme pierde precisión.
-    const t = e.tOut(0);
-    const [x, y, q] = [e.temporal("f64"), e.temporal("f64"), e.temporal("f64")];
-    return [
-      ...e.entrada(0), ...convertValue(e.tIn(0), "number"), ins("local.set", x),
-      ...e.entrada(1), ...convertValue(e.tIn(1), "number"), ins("local.set", y),
-      ins("local.get", x), ins("local.get", y), ins("f64.div"), ins("f64.floor"), ins("local.set", q),
-      ins("local.get", x), ins("local.get", y), ins("local.get", q), ins("f64.mul"), ins("f64.sub"), ...convertValue("number", t),
-      ins("local.get", q), ...convertValue("number", t),
-    ];
-  },
-  "scale-by-power-of-2": (e) => {
-    const t = e.tOut(0);
-    const vt = wasmTypeOf(t);
-    if (isFloat(t)) return [...e.entrada(1), ins("f64.const", 2), ...e.entrada(0), ins("f64.convert_i32_s"), ins("call", importIndex("pow")), ...convertValue("number", t), ins(`${vt}.mul`)];
-    // Con enteros, un desplazamiento: a la derecha si n < 0, a la izquierda si no.
-    const [x, n] = [e.temporal(vt), e.temporal("i32")];
-    const ext = vt === "i64" ? [ins("i64.extend_i32_s")] : [];
-    return [
-      ...e.entrada(1), ins("local.set", x), ...e.entrada(0), ins("local.set", n),
-      ins("local.get", x), ins("i32.const", 0), ins("local.get", n), ins("i32.sub"), ...ext, ins(`${vt}.shr_${isSigned(t) ? "s" : "u"}`),
-      ins("local.get", x), ins("local.get", n), ...ext, ins(`${vt}.shl`),
-      ins("local.get", n), ins("i32.const", 0), ins("i32.lt_s"), ins("select"), ...narrowInteger(t),
-    ];
-  },
+  "quotient-remainder": quotientAndRemainder,
+  "scale-by-power-of-2": scaleByPowerOf2,
   "random-number-range": (e) => {
     const t = e.tOut(0);
     const [lo, hi] = [e.temporal("f64"), e.temporal("f64")];

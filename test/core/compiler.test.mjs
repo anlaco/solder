@@ -98,8 +98,9 @@ test("las funciones de numeric calculan como labview", async () => {
 // punto medio) y satura.
 test("las coerciones redondean y saturan", async () => {
   const ops = (desde, hacia) => convertValue(desde, hacia).map((i) => i.op);
-  assert.deepEqual(ops("number", "i32"), ["f64.nearest", "i32.trunc_sat_f64_s"]);
-  assert.deepEqual(ops("number", "u8"), ["f64.nearest", "f64.const", "f64.max", "f64.const", "f64.min", "i32.trunc_sat_f64_u"]);
+  // The call first turns a NaN into +∞, so that it saturates to the largest value as in LabVIEW.
+  assert.deepEqual(ops("number", "i32"), ["call", "f64.nearest", "i32.trunc_sat_f64_s"]);
+  assert.deepEqual(ops("number", "u8"), ["call", "f64.nearest", "f64.const", "f64.max", "f64.const", "f64.min", "i32.trunc_sat_f64_u"]);
   assert.deepEqual(ops("i32", "number"), ["f64.convert_i32_s"]);
   assert.deepEqual(ops("u32", "i64"), ["i64.extend_i32_u"]);
   // Y ejecutado: un DBL de 2,5 cableado a la entrada I32 de Scale By Power Of 2 (n) vale 2.

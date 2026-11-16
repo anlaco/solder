@@ -12,8 +12,9 @@ import { clusterLayout, wasmTypeOf } from "./wasm-types.mjs";
 /**
  * The instance of a subOVI that a `subvi` node calls (DT-045): a non-reentrant OVI has one for all its callers; a
  * preallocated-clone reentrant OVI, one per call site. Each instance has its own data space —slots for its connector,
- * cells and buffers— and either a function that is called directly (it never waits) or a plan that the host runs (it
- * waits). `compileCallee` is compileOVI, passed in so that the two modules do not import each other.
+ * cells and buffers— and either a function that is called directly (it never waits) or a plan that the scheduler runs
+ * (it waits). An instance that two calls could be inside at once has a lock of the scheduler (`lock`, DT-063 §2): any
+ * non-reentrant one, since its call sites may run on different threads, and any that waits. `compileCallee` is compileOVI, passed in so that the two modules do not import each other.
  */
 export function subOVIInstance(callee, node, module, callerKey, compileCallee) {
   const reentrant = callee.g.vi?.execution?.reentrancy === "preallocated";
@@ -33,6 +34,7 @@ export function subOVIInstance(callee, node, module, callerKey, compileCallee) {
   const waits = clumps.length > 1 || clumps.some((k) => k.largo);
   const instance = {
     key, slots, chainIndex, callerCell,
+    lock: waits || !reentrant ? module.lockCount++ : null,
     direct: waits ? null : module.directFunctions.push(clumps[0] ?? { locales: [], cuerpo: [] }) - 1,
     plan: waits ? module.planes.push(clumps) - 1 : null,
   };
@@ -84,7 +86,7 @@ function defaultValueCode(node, t, value) {
  * A call to a subOVI (DT-045): each input into its slot —an unwired one, with the
  * default value of the subOVI's control—, the call, and each output read back. A
  * string, array or cluster output is copied into the caller's own buffer, since
- * the next call overwrites the slot. A subOVI that waits is entered before its
+ * the next call overwrites the slot. An instance with a lock is entered before its
  * inputs are written and left after its outputs are read, so that a parallel
  * call to the same instance cannot touch its slots in between.
  */
@@ -92,11 +94,12 @@ export function callSubOVI(node, instance) {
   const laidOut = (ports) => ports.map((port) => ({ ...port, type: inMemory(port.type) }));
   const inputs = laidOut(node.cat.puertos(node.nodo).in);
   const outputs = laidOut(node.cat.puertos(node.nodo).out);
-  const waits = instance.direct === null;
+  const locked = instance.lock !== null;
   // A non-reentrant OVI serves one call at a time (DT-045): the call enters (waiting while another one
-  // is inside) before it writes its inputs, runs the plan, reads its outputs and leaves. Writing the
-  // inputs before waiting let a second call overwrite the first one's (bug #30).
-  const code = waits ? [ins("i32.const", instance.plan), callScheduler("enter_subvi"), ins("drop")] : [];
+  // is inside) before it writes its inputs, runs the subOVI, reads its outputs and leaves. Writing the
+  // inputs before waiting let a second call overwrite the first one's (bug #30); so did calling a subOVI
+  // that never waits with no lock at all, from two threads of the pool.
+  const code = locked ? [ins("i32.const", instance.lock), callScheduler("enter_subvi"), ins("drop")] : [];
   code.push(ins("i32.const", instance.callerCell), ins("i32.const", node.chainIndex), ins("i32.store"));
   inputs.forEach((port, i) => {
     const slot = instance.slots.get(port.calleeName ?? port.name);
@@ -114,6 +117,6 @@ export function callSubOVI(node, instance) {
     const own = esCluster(port.type) ? node.bufer(clusterLayout(port.type).tam) : node.celda();
     code.push(...copyValueTo(port.type, loadFromSlot(port.type, slot), [ins("i32.const", own)], node.temporal), ins("i32.const", own));
   }
-  if (waits) code.push(ins("i32.const", instance.plan), callScheduler("leave_subvi"));
+  if (locked) code.push(ins("i32.const", instance.lock), callScheduler("leave_subvi"));
   return code;
 }

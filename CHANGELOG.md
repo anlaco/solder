@@ -9,6 +9,24 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Fixed, each as measured in LabVIEW: Quotient & Remainder of integers divided by zero gave the largest integer (it
+  gives quotient 0 and remainder x) and lost the last digits of a large I64; a NaN converted to an integer gave 0 (it
+  gives the largest value of the type); Scale By Power Of 2 of an integer by the width of its type or more gave a
+  wrong value (it gives 0, or −1 for a negative number scaled down); Compound Arithmetic with an inverted output did
+  not wrap an 8- or 16-bit result, and in Multiply mode with an inverted input it stopped the Run on a zero (it
+  divides in DBL and gives Inf).
+
+- Fixed: two loops that called the same non-reentrant subOVI at the same time could get each other's results when the
+  subOVI had nothing that waits (no loop, no Wait, no I/O). Such a subOVI now serves one call at a time, like any other
+  non-reentrant one (DT-045, DT-063 §2). A call costs a little more for it; a reentrant subOVI is called as before.
+
+- Fixed: two shift registers of strings, arrays or clusters that exchanged their values in a loop both ended with the
+  same value, and an output tunnel wired to such a register's left terminal gave the new value instead of the one the
+  last iteration began with.
+
+- Fixed: in a Case Structure whose frames each held two or more functions that take time (two Waits, two file or VISA
+  functions with error out unwired), only the first frame read the values of the input tunnels; the others read zero.
+
 - The `.ovi` format is version 6 (DT-095): a cluster can hold its elements, each a control or constant of its own, in
   cluster order. Files of earlier versions open unchanged; this version's files do not open in 0.13 or earlier. The
   editor's side of the clusters made by the user comes next.

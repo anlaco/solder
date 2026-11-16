@@ -45,16 +45,7 @@ export function createNodeEmission(ovi) {
       const v = valor.get(`${c.de.nodo}.${c.de.puerto}`);
       // El nodo de origen ya dio un error: no hay valor, y el OVI no se emitirá.
       if (!v) return [];
-      // Read from another function —a clump of a subplan, or the loop that calls it—: the value
-      // goes through a cell of the data space. Each output is assigned once per execution, so it
-      // is enough to store it at the end of what its function has emitted so far: in the loop,
-      // that comes before the call to the subplan.
-      if (v.clump !== k && v.cell === undefined) {
-        v.wasmType ??= wasmTypeOf(t);
-        v.cell = crossingCell(v.wasmType);
-        v.clump.cuerpo.push(...storeCrossing(v));
-      }
-      const leer = v.clump === k ? [ins("local.get", v.local)] : loadCrossing(v);
+      const leer = v.clump === k ? [ins("local.get", v.local)] : readAcrossFunctions(v, t);
       // Un array con otro tipo de arrayElement se convierte entero en un búfer propio:
       // el punto de coerción de LabVIEW (DT-042).
       if (esArray(t) && esArray(tIn(i)) && JSON.stringify(t.array) !== JSON.stringify(tIn(i).array)) return convertirArray(t, tIn(i), leer);
@@ -96,6 +87,19 @@ export function createNodeEmission(ovi) {
     const bytes = wasmType === "i64" || wasmType === "f64" ? 8 : 4;
     return bufer(bytes, bytes);
   };
+  /**
+   * Reads the value `v`, of type `t`, from a function other than the one that produced it —a clump of a subplan, or
+   * the loop that calls it—: it goes through a cell of the data space. It is stored at the end of what its function
+   * has emitted so far, which comes before the call to the subplan that reads it. Every reader stores it again unless
+   * it was stored where it was produced: the first reader may be inside a frame of a Case, and a store emitted there
+   * never runs for a reader in another frame.
+   */
+  function readAcrossFunctions(v, t) {
+    v.wasmType ??= wasmTypeOf(t);
+    v.cell ??= crossingCell(v.wasmType);
+    if (!v.storedWhereProduced) v.clump.cuerpo.push(...storeCrossing(v));
+    return loadCrossing(v);
+  }
   const storeCrossing = (v) => [ins("i32.const", v.cell), ins("local.get", v.local), ins(`${v.wasmType}.store`)];
   const loadCrossing = (v) => [ins("i32.const", v.cell), ins(`${v.wasmType}.load`)];
 
@@ -104,6 +108,7 @@ export function createNodeEmission(ovi) {
     const v = { local: l, clump: k, wasmType: vt };
     if (cruzan.has(`${id}.${puerto}`)) {
       v.cell = crossingCell(vt);
+      v.storedWhereProduced = true;
       k.cuerpo.push(...storeCrossing(v));
     }
     valor.set(`${id}.${puerto}`, v);

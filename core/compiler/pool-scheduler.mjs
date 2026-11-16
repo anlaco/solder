@@ -44,9 +44,10 @@ export const HEADER = {
   timerHeap: 72,
   timerSequence: 76,
   subOVILockLock: 80, // guards every subOVI lock's waiters
-  subOVILocks: 84,
+  subOVILocks: 84, // address of the lock records, one for each subOVI instance that serves one call at a time
   oneClumpAtATime: 88,
   runningClumps: 92,
+  lockCount: 96,
 };
 
 // ——— A clump's record ———
@@ -64,7 +65,7 @@ export const CLUMP = {
   lastBudgetCall: 40, // F64: the budget of iterations of a loop (DT-041)
   lastYield: 48, // F64
   iterations: 56,
-  lock: 60, // the subOVI lock it waits for
+  lock: 60, // the index of the subOVI lock it waits for
   started: 64,
 };
 
@@ -411,19 +412,19 @@ export function schedulerFunctions({ functionIndex, globals, clumpType }) {
       ...currentThread, get(0), k(1), ins("i32.add"), call("group_start"),
       ...raiseParking, k(0),
     ]),
-    // enter_subvi(plan) → 0 once the calling clump holds the non-reentrant subOVI.
+    // enter_subvi(lock) → 0 once the calling clump holds the subOVI instance of that lock.
     fn("enter_subvi", ["i32"], ["i32"], ["i32"], [
       k(header("subOVILockLock")), call("lock"),
-      get(0), k(1), ins("i32.add"), call("lock_record"), set(1),
+      get(0), call("lock_record"), set(1),
       ...ifThen([get(1), ins("i32.load", LOCK.held), ins("i32.eqz")], [get(1), k(1), ins("i32.store", LOCK.held), k(header("subOVILockLock")), call("unlock"), k(0), ins("return")]),
       k(header("subOVILockLock")), call("unlock"),
-      ...recordOf(currentClump), get(0), k(1), ins("i32.add"), ins("i32.store", CLUMP.lock),
+      ...recordOf(currentClump), get(0), ins("i32.store", CLUMP.lock),
       ...park(PARK_KIND.lock),
     ]),
-    // leave_subvi(plan): the subOVI goes to the oldest call waiting for it, or is free.
+    // leave_subvi(lock): the subOVI goes to the oldest call waiting for it, or is free.
     fn("leave_subvi", ["i32"], [], ["i32", "i32"], [
       k(header("subOVILockLock")), call("lock"),
-      get(0), k(1), ins("i32.add"), call("lock_record"), set(1),
+      get(0), call("lock_record"), set(1),
       ...ifThen([get(1), ins("i32.load", LOCK.head), get(1), ins("i32.load", LOCK.tail), ins("i32.ne")], [
         get(1), ins("i32.load", LOCK.waiters), get(1), ins("i32.load", LOCK.head), ...readHeader("clumpCount"), ins("i32.rem_u"), k(4), ins("i32.mul"), ins("i32.add"), ins("i32.load"), set(2),
         get(1), get(1), ins("i32.load", LOCK.head), k(1), ins("i32.add"), ins("i32.store", LOCK.head),
@@ -559,7 +560,7 @@ export function schedulerFunctions({ functionIndex, globals, clumpType }) {
         ...storeHeader("dequesAllocated", [get(2)]),
       ]),
       ...forEach(3, [k(0)], [get(2)], [get(3), call("deque"), tee(4), ins("i64.const", 0), ins("i64.store", DEQUE.top), get(4), ins("i64.const", 0), ins("i64.store", DEQUE.bottom)]),
-      ...forEach(3, [k(0)], readHeader("groupCount"), [get(3), call("lock_record"), tee(4), k(0), ins("i32.store", LOCK.held), get(4), k(0), ins("i32.store", LOCK.head), get(4), k(0), ins("i32.store", LOCK.tail)]),
+      ...forEach(3, [k(0)], readHeader("lockCount"), [get(3), call("lock_record"), tee(4), k(0), ins("i32.store", LOCK.held), get(4), k(0), ins("i32.store", LOCK.head), get(4), k(0), ins("i32.store", LOCK.tail)]),
       ...forEach(3, [k(0)], readHeader("clumpCount"), [
         get(3), call("clump_record"), tee(4), get(1), ins("f64.store", CLUMP.lastBudgetCall),
         get(4), get(1), ins("f64.store", CLUMP.lastYield),
@@ -581,10 +582,10 @@ export const SCHEDULER_PARK_PRIMITIVES = ["yield_point", "wait", "wait_multiple"
 
 /**
  * The scheduler's tables for one module: `clumps` in id order, each `{ group, deps: [ids] }` with
- * the ids of the clumps it waits for; `groups`, each `{ first, count }`. `reserve(bytes)` gives an
- * 8-aligned address in the data space. Returns the header and the tables as data: `[{ desde, bytes }]`.
+ * the ids of the clumps it waits for; `groups`, each `{ first, count }`; `lockCount`, how many subOVI instances
+ * serve one call at a time. `reserve(bytes)` gives an 8-aligned address in the data space. Returns the header and the tables as data: `[{ desde, bytes }]`.
  */
-export function schedulerData({ clumps, groups, reserve }) {
+export function schedulerData({ clumps, groups, lockCount, reserve }) {
   const clumpCount = clumps.length;
   const dependents = clumps.map(() => []);
   clumps.forEach((clump, id) => clump.deps.forEach((dependency) => dependents[dependency].push(id)));
@@ -611,22 +612,18 @@ export function schedulerData({ clumps, groups, reserve }) {
     dependents: reserve(dependentsTable.byteLength),
     groups: reserve(groupTable.byteLength),
     timerHeap: reserve(Math.max(clumpCount, 1) * TIMER_BYTES),
-    subOVILocks: reserve(groups.length * LOCK_BYTES),
+    subOVILocks: reserve(Math.max(lockCount, 1) * LOCK_BYTES),
   };
   // Each lock's waiters: at most every clump once.
-  const locks = new DataView(new ArrayBuffer(groups.length * LOCK_BYTES));
-  groups.forEach((_, index) => locks.setInt32(index * LOCK_BYTES + LOCK.waiters, reserve(Math.max(clumpCount, 1) * 4), true));
+  const locks = new DataView(new ArrayBuffer(Math.max(lockCount, 1) * LOCK_BYTES));
+  for (let lock = 0; lock < lockCount; lock++) locks.setInt32(lock * LOCK_BYTES + LOCK.waiters, reserve(Math.max(clumpCount, 1) * 4), true);
   const head = new DataView(new ArrayBuffer(Object.keys(HEADER).length * 4));
-  const put = (field, value) => head.setInt32(HEADER[field], value, true);
-  put("clumps", addresses.clumps);
-  put("clumpCount", clumpCount);
-  put("groups", addresses.groups);
-  put("groupCount", groups.length);
-  put("dependents", addresses.dependents);
-  put("dequeMask", dequeCapacity(clumpCount) - 1);
-  put("dequeStride", dequeStride(clumpCount));
-  put("timerHeap", addresses.timerHeap);
-  put("subOVILocks", addresses.subOVILocks);
+  const fixedFields = {
+    clumps: addresses.clumps, clumpCount, groups: addresses.groups, groupCount: groups.length, dependents: addresses.dependents,
+    dequeMask: dequeCapacity(clumpCount) - 1, dequeStride: dequeStride(clumpCount), timerHeap: addresses.timerHeap,
+    subOVILocks: addresses.subOVILocks, lockCount,
+  };
+  for (const [field, value] of Object.entries(fixedFields)) head.setInt32(HEADER[field], value, true);
   const bytes = (view) => new Uint8Array(view.buffer);
   return [
     { desde: SCHEDULER, bytes: bytes(head) },

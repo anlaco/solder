@@ -3,6 +3,7 @@
 // shared memory itself is imported from the host.
 
 import { MEMORY_FUNCTION_NAMES, funcionesMemoria } from "./linear-memory.mjs";
+import { NUMERIC_FUNCTIONS, NUMERIC_FUNCTION_NAMES } from "./numeric-functions.mjs";
 import { SCHEDULER_FUNCTION_NAMES, SCHEDULER_PARK_PRIMITIVES, schedulerFunctions } from "./pool-scheduler.mjs";
 import { HOST_IMPORTS, PARKING_IMPORT_INDICES, importIndex } from "./host-imports.mjs";
 import { ins } from "./instructions.mjs";
@@ -22,17 +23,21 @@ export const THREAD_GLOBALS = { parking: 0, resumeValue: 1, currentClump: 2, cur
 // A clump takes nothing and gives nothing: its type is the first of every module.
 export const CLUMP_TYPE = 0;
 export const FIRST_SCHEDULER_FUNCTION = HOST_IMPORTS.length + MEMORY_FUNCTIONS.length;
-/** The index of a function by name: an import, a memory function or one of the scheduler's. */
+const FIRST_NUMERIC_FUNCTION = FIRST_SCHEDULER_FUNCTION + SCHEDULER_FUNCTION_NAMES.length;
+/** The index of a function by name: an import, a memory function, one of the scheduler's or a numeric one. */
 export const runtimeFunctionIndex = (name) => {
   if (MEMORY_FUNCTION_NAMES.includes(name)) return HOST_IMPORTS.length + MEMORY_FUNCTION_NAMES.indexOf(name);
   if (SCHEDULER_FUNCTION_NAMES.includes(name)) return FIRST_SCHEDULER_FUNCTION + SCHEDULER_FUNCTION_NAMES.indexOf(name);
+  if (NUMERIC_FUNCTION_NAMES.includes(name)) return FIRST_NUMERIC_FUNCTION + NUMERIC_FUNCTION_NAMES.indexOf(name);
   const index = importIndex(name);
   if (index < 0) throw new Error(`No runtime function is called "${name}".`);
   return index;
 };
 export const SCHEDULER = schedulerFunctions({ functionIndex: runtimeFunctionIndex, globals: THREAD_GLOBALS, clumpType: CLUMP_TYPE });
-/** The functions every module has before its OVIs': the memory's and the scheduler's. */
-export const RUNTIME_FUNCTIONS = [...MEMORY_FUNCTIONS, ...SCHEDULER];
+/** The functions every module has before its OVIs': the memory's, the scheduler's and the numeric ones. */
+export const RUNTIME_FUNCTIONS = [...MEMORY_FUNCTIONS, ...SCHEDULER, ...NUMERIC_FUNCTIONS];
+/** The call that turns the NaN on the stack into +∞ (numeric-functions.mjs). */
+export const NOT_A_NUMBER_TO_INFINITY = ins("call", FIRST_NUMERIC_FUNCTION + NUMERIC_FUNCTION_NAMES.indexOf("not_a_number_to_infinity"));
 export const FIRST_COMPILED_FUNCTION = HOST_IMPORTS.length + RUNTIME_FUNCTIONS.length;
 export const callScheduler = (name) => ins("call", runtimeFunctionIndex(name));
 /** What may park a clump: the imports that wait for the outside and the scheduler's park primitives. */

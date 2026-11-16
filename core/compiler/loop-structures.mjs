@@ -4,7 +4,7 @@
 
 import { orden } from "../model/graph.mjs";
 import { callMemory, callScheduler } from "./runtime-functions.mjs";
-import { arrayElement, copyValue, dimensionSize, loadElement, storeElement } from "./memory-ops.mjs";
+import { arrayElement, copyValue, copyValueTo, dimensionSize, isByReference, loadElement, storeElement } from "./memory-ops.mjs";
 import { constantOf } from "./constants.mjs";
 import { gatherRowsInto2dArray, loopRowOfIteration } from "./array-rows.mjs";
 import { esArray, esCluster } from "../model/types.mjs";
@@ -21,6 +21,41 @@ export function createLoopStructures(ovi) {
   const dejar = (...args) => ovi.dejar(...args);
   const emitirCuerpo = (...args) => ovi.emitirCuerpo(...args);
   const frameHook = (...args) => ovi.frameHook(...args);
+
+  /** A place of the data space for a value of type `t` kept by reference: a cell for a string or an array, a block for a cluster. */
+  const placeFor = (t) => (esCluster(t) ? bufer(clusterLayout(t).tam) : nuevaCelda());
+
+  /** The instructions that leave the address of the place a by-reference register does not hold its value in now. */
+  const otherPlace = (register) => [ins("i32.const", register.places[0] + register.places[1]), ins("local.get", register.ahora), ins("i32.sub")];
+
+  /**
+   * A shift register, before the first turn: the local `ahora` holds its value (or its address, by reference) and
+   * `nuevo` what the turn leaves for the next one.
+   *
+   * A string, an array or a cluster is kept in two places of the register's own, used in turn: a turn reads one and
+   * its end copies the new value into the other. So the producer may rewrite its buffer in the next turn, and what a
+   * wire took from the left terminal (another register's new value, an output tunnel) is still there when the turn ends.
+   *
+   * Uninitialized, it starts with what it held when the loop last ended, kept in the data space: a functional global
+   * variable relies on it (DT-045). By reference, what is kept is which of its two places holds the value.
+   */
+  function shiftRegister(id, k, L) {
+    const c = k.cuerpo;
+    const x = contexto(id, k);
+    const t = x.tOut(0);
+    const vt = wasmTypeOf(t);
+    const [ahora, nuevo] = [L(vt), L(vt)];
+    const places = isByReference(t) ? [placeFor(t), placeFor(t)] : null;
+    const inicializado = x.cableada(0);
+    const guardado = inicializado ? null : bufer(8);
+    if (inicializado && places) c.push(...copyValue(t, x.entrada(0), places[0], x.nuevoLocal), ins("i32.const", places[0]), ins("local.set", ahora));
+    else if (inicializado) c.push(...x.entrada(0), ins("local.set", ahora));
+    // Before the first entry nothing is kept (a zero): the value is the default one, in the first place.
+    else if (places) c.push(ins("i32.const", guardado), ins("i32.load"), ins("local.tee", ahora), ins("i32.const", places[0]), ins("local.get", ahora), ins("select"), ins("local.set", ahora));
+    else c.push(ins("i32.const", guardado), ins(`${vt}.load`), ins("local.set", ahora));
+    valor.set(`${id}.value`, { local: ahora, clump: k });
+    return { izq: id, der: porId.get(id).config.par, ahora, nuevo, vt, places, t, guardado };
+  }
 
   /**
    * Un While o un For, en línea en la función de su clump (DT-041): los túneles
@@ -55,25 +90,7 @@ export function createLoopStructures(ovi) {
       } else c.push(...x.entrada(0), ins("local.set", l));
       valor.set(`${id}.y`, { local: l, clump: k });
     }
-    const registros = de("shift-register-left").map((id) => {
-      const x = contexto(id, k);
-      const vt = wasmTypeOf(x.tOut(0));
-      const [ahora, nuevo] = [L(vt), L(vt)];
-      // Una cadena: el shift register tiene su propia celda y se guarda una copia,
-      // para que quien la produjo pueda reescribir su búfer en la vuelta siguiente.
-      const t = x.tOut(0);
-      const celda = t === "string" || esArray(t) ? nuevaCelda() : esCluster(t) ? bufer(clusterLayout(t).tam) : null;
-      // Uninitialized, it starts with what it held when the loop last ended, kept in
-      // the data space: a functional global variable relies on it (DT-045).
-      const inicializado = x.cableada(0);
-      const guardado = !inicializado && celda === null ? bufer(8) : null;
-      if (celda !== null && inicializado) c.push(...copyValue(t, x.entrada(0), celda, x.nuevoLocal));
-      if (celda !== null) c.push(ins("i32.const", celda), ins("local.set", ahora));
-      else if (guardado !== null) c.push(ins("i32.const", guardado), ins(`${vt}.load`), ins("local.set", ahora));
-      else c.push(...x.entrada(0), ins("local.set", ahora));
-      valor.set(`${id}.value`, { local: ahora, clump: k });
-      return { izq: id, der: porId.get(id).config.par, ahora, nuevo, vt, celda, t, guardado };
-    });
+    const registros = de("shift-register-left").map((id) => shiftRegister(id, k, L));
     // La cuenta de un For: la cableada, recortada a la longitud de cada array indexado.
     let n = null;
     for (const id of de("loop-count")) {
@@ -142,10 +159,10 @@ export function createLoopStructures(ovi) {
       if (porId.get(id).config?.mode === "continue-if-true") c.push(ins("i32.eqz"));
       c.push(ins("local.set", parada));
     }
-    for (const r of registros) {
-      if (r.celda !== null) c.push(...copyValue(r.t, [ins("local.get", r.nuevo)], r.celda, L));
-      else c.push(ins("local.get", r.nuevo), ins("local.set", r.ahora));
-    }
+    // Every register takes its new value at once: the new value of one may be the old value of another, so those kept
+    // by reference are all copied into their other place before any of them changes place.
+    for (const r of registros) if (r.places) c.push(...copyValueTo(r.t, [ins("local.get", r.nuevo)], otherPlace(r), L));
+    for (const r of registros) c.push(...(r.places ? otherPlace(r) : [ins("local.get", r.nuevo)]), ins("local.set", r.ahora));
     c.push(...frameHook(sid, "iteration"));
     // i + 1, sin pasar de 2^31 − 1: LabVIEW lo deja ahí.
     c.push(ins("local.get", i), ins("local.get", i), ins("i32.const", 0x7fffffff), ins("i32.ne"), ins("i32.add"), ins("local.set", i));

@@ -3,6 +3,7 @@
 
 import { NUMERICOS, esArray, esCluster, esEntero, esNumerico, representacion } from "../model/types.mjs";
 import { ins } from "./instructions.mjs";
+import { NOT_A_NUMBER_TO_INFINITY } from "./runtime-functions.mjs";
 
 /** The WebAssembly value type a Solder type travels as, or null for one that has none. */
 export function wasmTypeOf(type) {
@@ -51,15 +52,19 @@ export function narrowInteger(type) {
 /** The range a float is clamped to before it becomes a small integer: [signed low, signed high, unsigned low, unsigned high]. */
 const SMALL_INTEGER_RANGES = { 8: [-128, 127, 0, 255], 16: [-32768, 32767, 0, 65535] };
 
-/** From a float to an integer: rounded to the nearest and saturated, as LabVIEW does (NI's help, "Numeric Conversion"). */
+/**
+ * From a float to an integer: rounded to the nearest, ties to even, and saturated, as LabVIEW does (NI's help,
+ * "Numeric Conversion"); a NaN gives the largest value of the type, as +∞ does (measured in 2026 Q3,
+ * labview-captures/reports/2026-11-16-numeric-edges.md Q4). The work is done in f64, which holds every f32.
+ */
 function floatToInteger(fromWasm, toWasm, to) {
-  const conversion = [ins(`${fromWasm}.nearest`)];
+  const conversion = [...(fromWasm === "f32" ? [ins("f64.promote_f32")] : []), NOT_A_NUMBER_TO_INFINITY, ins("f64.nearest")];
   if (bitWidth(to) <= 16) {
     const range = SMALL_INTEGER_RANGES[bitWidth(to)];
     const [low, high] = isSigned(to) ? range.slice(0, 2) : range.slice(2);
-    conversion.push(ins(`${fromWasm}.const`, low), ins(`${fromWasm}.max`), ins(`${fromWasm}.const`, high), ins(`${fromWasm}.min`));
+    conversion.push(ins("f64.const", low), ins("f64.max"), ins("f64.const", high), ins("f64.min"));
   }
-  conversion.push(ins(`${toWasm}.trunc_sat_${fromWasm}_${isSigned(to) ? "s" : "u"}`));
+  conversion.push(ins(`${toWasm}.trunc_sat_f64_${isSigned(to) ? "s" : "u"}`));
   return conversion;
 }
 

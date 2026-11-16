@@ -46,17 +46,29 @@ export function buildAdder() {
 export function buildOVI(cat, steps) {
   const vi = { g: Gr.nuevo(), id: {} };
   const api = {
-    node(name, block, config, inside) {
+    /** A node, inside the structure `inside` when given, in its frame `frame` for a Case or a sequence. */
+    node(name, block, config, inside, frame) {
       const r = Gr.crearNodo(vi.g, cat, block, 0, 0);
       vi.g = config ? Gr.fijarConfig(r.g, r.id, config) : r.g;
       vi.id[name] = r.id;
-      if (inside) vi.g = Gr.meter(vi.g, cat, [r.id], vi.id[inside]);
+      if (inside) vi.g = Gr.meter(vi.g, cat, [r.id], vi.id[inside], frame);
     },
+    /** A structure (a loop, a Case, a sequence); its own terminals are named "name:i", "name:stop", "name:N" and "name:sel". */
     loop(name, block) {
       const r = Gr.crearEstructura(vi.g, cat, block, 0, 0, 200, 150);
       vi.g = r.g;
       vi.id[name] = r.id;
-      for (const n of vi.g.nodos.filter((k) => k.dentro === r.id)) vi.id[`${name}:${{ "loop-iteration": "i", "loop-condition": "stop", "loop-count": "N" }[n.tipo]}`] = n.id;
+      for (const n of vi.g.nodos.filter((k) => k.dentro === r.id)) vi.id[`${name}:${{ "loop-iteration": "i", "loop-condition": "stop", "loop-count": "N", "case-selector": "sel" }[n.tipo]}`] = n.id;
+    },
+    /** Moves the node or structure `name` into the structure `structure`. */
+    inside(name, structure) {
+      vi.g = Gr.meter(vi.g, cat, [vi.id[name]], vi.id[structure]);
+    },
+    /** A tunnel on the border of `structure`, "in" or "out", to wire by name. */
+    tunnel(name, structure, direction) {
+      const r = Gr.crearTunel(vi.g, cat, vi.id[structure], direction, 0);
+      vi.g = r.g;
+      vi.id[name] = r.id;
     },
     shiftRegister(name, loop) {
       const r = Gr.crearRegistro(vi.g, cat, vi.id[loop], 0);

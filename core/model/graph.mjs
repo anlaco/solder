@@ -1218,6 +1218,12 @@ function resolverTipos(g, cat, pistas) {
       for (const p of [...ins, ...outs]) if (p.type?.num && !vars[p.type.num]) vars[p.type.num] = DBL;
       for (const [k, v] of Object.entries(vars)) if (esNumerico(v) && !esEntero(v)) vars[k] = v === "sgl" ? "i32" : "i64";
     }
+    // Compound Arithmetic in Multiply mode with an inverted input divides: integers are taken as DBL and so is the
+    // result (measured in LabVIEW 2026 Q3, labview-captures/reports/2026-11-16-numeric-edges.md Q2: I32 6 × 1/4 is
+    // 1.5 and 6 × 1/0 is Inf). An inverted output alone is not measured, and keeps the type of the inputs.
+    if (n.tipo === "compound-arithmetic" && (n.config?.mode ?? b.config?.mode?.value) === "multiply" && (n.config?.inverted ?? []).some((inverted) => inverted !== "result")) {
+      for (const [variable, bound] of Object.entries(vars)) if (esNumerico(bound) && esEntero(bound)) vars[variable] = DBL;
+    }
     const construido = dimensionesDeBuildArray(n, ins, (puerto) => {
       const c = llegaA.get(`${n.id}.${puerto}`);
       return c ? salidas.get(`${c.de.nodo}.${c.de.puerto}`) : undefined;

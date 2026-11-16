@@ -7,6 +7,8 @@ import { after, test } from "node:test";
 import { compilar } from "../../core/compiler/compiler.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { createNodePool } from "../../core/runtime/node-pool.mjs";
+import { HOST_IMPORTS } from "../../core/compiler/host-imports.mjs";
+import { FIRST_COMPILED_FUNCTION, runtimeFunctionIndex } from "../../core/compiler/runtime-functions.mjs";
 import { CAT, buildOVI, callerCatalog } from "../helpers.mjs";
 
 const THREADS = 4;
@@ -99,6 +101,69 @@ test("a non-reentrant subOVI keeps counting across Runs on the pool, one call at
   assert.equal(Math.max(...Object.values(first)), LOOPS * COUNT);
   const second = await runOnPool(caller, {}, { estado }, cat);
   assert.equal(Math.max(...Object.values(second)), 2 * LOOPS * COUNT);
+});
+
+/** A subOVI that never waits: it gives back its input, through an Add, so that its call has slots to write and read. */
+const echo = () =>
+  buildOVI(CAT, (b) => {
+    b.node("x", "control");
+    b.node("zero", "const", { value: 0 });
+    b.node("plus", "add");
+    b.node("y", "indicator");
+    b.wire("x.result", "plus.a");
+    b.wire("zero.result", "plus.b");
+    b.wire("plus.result", "y.value");
+    b.connector(["x"], ["y"]);
+  });
+
+/** `loops` For Loops of `count` turns, each calling `echo.ovi` with a number of its own and counting the answers that are not it. */
+const echoCallers = (cat, loops, count) =>
+  buildOVI(cat, (b) => {
+    for (let loop = 0; loop < loops; loop++) {
+      b.loop(`l${loop}`, "for-loop");
+      b.node(`n${loop}`, "const", { value: count });
+      b.wire(`n${loop}.result`, `l${loop}:N.count`);
+      b.node(`own${loop}`, "const", { value: (loop + 1) * 1000 }, `l${loop}`);
+      b.node(`call${loop}`, "subvi", { vi: "echo.ovi" }, `l${loop}`);
+      b.node(`differs${loop}`, "not-equal", null, `l${loop}`);
+      b.node(`one-if-wrong${loop}`, "boolean-to-0-1", null, `l${loop}`);
+      b.node(`sum${loop}`, "add", null, `l${loop}`);
+      b.shiftRegister(`wrong${loop}`, `l${loop}`);
+      b.node(`none${loop}`, "const", { value: 0 });
+      b.node(`wrong-answers${loop}`, "indicator");
+      b.wire(`none${loop}.result`, `wrong${loop}.left.init`);
+      b.wire(`own${loop}.result`, `call${loop}.control_1`);
+      b.wire(`call${loop}.indicator_1`, `differs${loop}.x`);
+      b.wire(`own${loop}.result`, `differs${loop}.y`);
+      b.wire(`differs${loop}.result`, `one-if-wrong${loop}.boolean`);
+      b.wire(`one-if-wrong${loop}.result`, `sum${loop}.a`);
+      b.wire(`wrong${loop}.left.value`, `sum${loop}.b`);
+      b.wire(`sum${loop}.result`, `wrong${loop}.right.value`);
+      b.wire(`wrong${loop}.right.result`, `wrong-answers${loop}.value`);
+    }
+  });
+
+/** Whether any function of the compiled module calls the scheduler's function `name`. */
+const callsScheduler = (compiled, name) => compiled.modulo.funciones.slice(FIRST_COMPILED_FUNCTION - HOST_IMPORTS.length).some((compiledFunction) => compiledFunction.cuerpo.some((instruction) => instruction.op === "call" && instruction.arg === runtimeFunctionIndex(name)));
+
+// A non-reentrant OVI serves one call at a time (DT-045, DT-063 §2) whether it waits or not. One that never waits was
+// called with no lock: two loops on two threads wrote its input slot at once and read each other's answer, some
+// thousand times in two million calls.
+test("a non-reentrant subOVI that never waits serves one call at a time on the pool", async () => {
+  const LOOPS = 2;
+  const cat = callerCatalog({ "echo.ovi": echo() });
+  const caller = echoCallers(cat, LOOPS, 200_000);
+  assert.ok(callsScheduler(compilar(caller.g, cat), "enter_subvi"), "the call enters the subOVI before it writes its inputs");
+  const written = await runOnPool(caller, {}, {}, cat);
+  assert.deepEqual(written, { "wrong-answers0": 0, "wrong-answers1": 0 });
+});
+
+// A preallocated clone belongs to its call site, which runs one call at a time: it needs no lock, and has none.
+test("a reentrant subOVI that never waits is called with no lock", () => {
+  const reentrantEcho = echo();
+  reentrantEcho.g = { ...reentrantEcho.g, vi: { ...reentrantEcho.g.vi, execution: { reentrancy: "preallocated" } } };
+  const cat = callerCatalog({ "echo.ovi": reentrantEcho });
+  assert.ok(!callsScheduler(compilar(echoCallers(cat, 2, 1).g, cat), "enter_subvi"));
 });
 
 test("Abort stops a Run on the pool at once, and the pool serves the next Run", async () => {

@@ -123,7 +123,8 @@ const COMPOUND_OPERATIONS = { add: "add", multiply: "mul", and: "and", or: "or",
 /** What an inverted input or output of Compound Arithmetic becomes: negated (add), its reciprocal (multiply) or its bits negated. */
 function compoundInversion(node, mode, type) {
   const wasmType = wasmTypeOf(type);
-  if (mode === "add") return isFloat(type) ? [ins(`${wasmType}.neg`)] : [...constantOf(type, -1), ins(`${wasmType}.mul`)];
+  // An integer of 8 or 16 bits wraps to its width, as every operation on it does: a U8 5 negated is 251.
+  if (mode === "add") return isFloat(type) ? [ins(`${wasmType}.neg`)] : [...constantOf(type, -1), ins(`${wasmType}.mul`), ...narrowInteger(type)];
   if (mode === "multiply") {
     const value = node.temporal(wasmType);
     return [ins("local.set", value), ...constantOf(type, 1), ins("local.get", value), ins(isFloat(type) ? `${wasmType}.div` : `${wasmType}.div_s`)];

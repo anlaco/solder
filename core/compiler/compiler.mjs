@@ -66,6 +66,7 @@ function newModule() {
     directFunctions: [], // the single clump of each synchronous subOVI instance
     debugNodes: [], // DT-047: the nodes that report to the debugger, by index: { vi, nodo, outputs }
     instances: new Map(), // instance key → compiled subOVI instance
+    lockCount: 0, // the subOVI instances that serve one call at a time, each with a lock of the scheduler
     propertyNodes: [], // DT-072: what the host needs to run each Property Node, by index
     callLibraries: [], // DT-080: what the host needs to make each Call Library Function Node's call, by index
     controlReferences: [], // DT-072 §2: the panel control each control reference names; a refnum is its index + 1
@@ -130,7 +131,7 @@ function assemble(module, vi) {
     return group;
   });
   const schedulerClumps = groups.flatMap((members, group) => members.map((k) => ({ group, deps: [...k.deps].map((index) => schedulerGroups[group].first + index) })));
-  const schedulerTables = schedulerData({ clumps: schedulerClumps, groups: schedulerGroups, reserve: (bytes) => module.bufer(bytes, 8) });
+  const schedulerTables = schedulerData({ clumps: schedulerClumps, groups: schedulerGroups, lockCount: module.lockCount, reserve: (bytes) => module.bufer(bytes, 8) });
   // La zona estática, detrás del data space; el montón, detrás (alineado a 8).
   const datos = [];
   let libre = CELDAS + ((module.space + 7) & ~7);

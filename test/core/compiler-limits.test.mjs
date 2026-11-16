@@ -14,7 +14,7 @@ const FILE_LIMIT = 400;
 const FUNCTION_LIMIT = 30;
 
 /** Files over the limit at the end of the split, with their lines then. node-table.mjs is a table, but its inline emitters are code. */
-const LONG_FILES = { "node-table.mjs": 572, "pool-scheduler.mjs": 638, "stackless.mjs": 494 };
+const LONG_FILES = { "node-table.mjs": 549, "pool-scheduler.mjs": 635, "stackless.mjs": 494 };
 
 /** Functions over the limit at the end of the split, by `file::name`, with their lines then. */
 const LONG_FUNCTIONS = {
