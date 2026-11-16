@@ -919,7 +919,15 @@ to it go on, new fronts wait for step 6.
    `host-rows.mjs`, files, VISA, timing, Expression Node, Property Node, Call Library, arithmetic and comparison,
    arrays), `array-rows.mjs` (a 2D array's rows through an indexed tunnel), `subovi-calls.mjs` and `panel-io.mjs`;
    `compileVI` is `compileOVI` and `runnableVI` `runnableOVI` (DT-071). `compiler.mjs` is down from 3,261 to 1,705
-   lines. Next: the `BLOQUES` table (`node-table.mjs`), then `compileOVI` (`compile-ovi.mjs`) and the clump ordering.
+   lines; then the table (`node-table.mjs`, `NODE_EMITTERS`), the clump ordering (`clumps.mjs`, in English), what the
+   compiler knows of node kinds (`node-kinds.mjs`), and `compileOVI` (`compile-ovi.mjs`), whose inner groups became
+   parts that share the OVI's state through one object, their bodies unchanged: `panel-registry.mjs`,
+   `debug-hooks.mjs`, `node-emission.mjs`, `loop-structures.mjs`, `case-structure.mjs`, `sequences.mjs`.
+   `compiler.mjs` is the entry point alone (172 lines). Left for DT-089 §4's limits: 27 functions over 30 lines (the
+   Case's and the loops' emitters, about 150 each; `compileOVI`'s set-up, 187; `contexto`; `callLibrary`;
+   `propertyNode`), the inline emitters of `node-table.mjs` (597 lines), the three files that were large before
+   (`pool-scheduler.mjs` 638, `stackless.mjs` 494, `linear-memory.mjs` 307), the Spanish inside the parts, and the
+   test that holds the limits.
    The `.wat` comparison does not reach every node (no example uses Delete From Array): a name left behind shows only
    in the suite, so it runs after every move. A rename by regular expression also hits quoted names and spread calls (`"rotar"`, a host import, became
    `"rotate"` once; `...convertir(` was missed once): after each rename, look for both.*
