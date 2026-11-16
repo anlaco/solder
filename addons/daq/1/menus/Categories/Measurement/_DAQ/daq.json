@@ -63,7 +63,7 @@
       "name": "DAQ Wait Until Done",
       "block": "subvi",
       "config": {
-        "vi": "<ovilib>/DAQ/DAQ Wait Until Done.sdg"
+        "vi": "<ovilib>/DAQ/DAQ Wait Until Done.ovi"
       }
     },
     {
@@ -96,7 +96,7 @@
       "name": "DAQ Start Task",
       "block": "subvi",
       "config": {
-        "vi": "<ovilib>/DAQ/DAQ Start Task.sdg"
+        "vi": "<ovilib>/DAQ/DAQ Start Task.ovi"
       }
     },
     {
@@ -104,7 +104,7 @@
       "name": "DAQ Stop Task",
       "block": "subvi",
       "config": {
-        "vi": "<ovilib>/DAQ/DAQ Stop Task.sdg"
+        "vi": "<ovilib>/DAQ/DAQ Stop Task.ovi"
       }
     },
     {
@@ -112,7 +112,7 @@
       "name": "DAQ Clear Task",
       "block": "subvi",
       "config": {
-        "vi": "<ovilib>/DAQ/DAQ Clear Task.sdg"
+        "vi": "<ovilib>/DAQ/DAQ Clear Task.ovi"
       }
     },
     {

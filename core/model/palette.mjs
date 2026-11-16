@@ -4,7 +4,7 @@
 // change of NI's format touches only that reader (DT-086 §5).
 //
 //   { "palette": 1, "title": "DAQ", "columns": 6, "entries": [
-//       { "kind": "item",    "name": "DAQ Start Task", "path": "<ovilib>/DAQ/Start Task.sdg" },
+//       { "kind": "item",    "name": "DAQ Start Task", "path": "<ovilib>/DAQ/Start Task.ovi" },
 //       { "kind": "item",    "name": "DAQ Task Name",  "block": "daq-name-constant", "config": { … } },
 //       { "kind": "item",    "name": "DAQ Write",      "missing": "the writes", "labview": "Writes samples…" },
 //       { "kind": "spacer" },

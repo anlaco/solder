@@ -9,27 +9,26 @@
 // symbolic `<ovilib>/…` path instead (DT-073, core/model/ovi-lib.mjs), which a
 // rebase leaves alone: it does not depend on where the caller is.
 
-import { isOviLibPath, oviLibPathFor, resolveOviLibPath } from "../../../core/model/ovi-lib.mjs";
+import { OVI_EXTENSIONS, isOviLibPath, oviLibPathFor, resolveOviLibPath } from "../../../core/model/ovi-lib.mjs";
 import { POLYMORPHIC_EXTENSION, isPolymorphicPath } from "../../../core/model/polymorphic.mjs";
 
 const WINDOWS_DRIVE = /^[A-Za-z]:\//;
 
 /**
- * The extension a VI is written with (DT-051), and the one Solder wrote before it, which still
- * opens: a caller names its subVIs with the extension they had, so an old file keeps it when it is
- * saved again in place.
+ * The extension an OVI is written with (DT-094), and the ones Solder wrote before it (DT-051's `.sdg`, the first
+ * `.qvi`), which still open: a caller names its subOVIs with the extension they had, so an old file keeps it when it
+ * is saved again in place.
  */
-export const VI_EXTENSION = ".sdg";
-export const OLD_VI_EXTENSION = ".qvi";
-const VI_EXTENSIONS = [VI_EXTENSION, OLD_VI_EXTENSION];
+export const VI_EXTENSIONS = OVI_EXTENSIONS;
+export const VI_EXTENSION = VI_EXTENSIONS[0];
 
-/** Whether a path names a VI file, with either extension and in any case. */
+/** Whether a path names an OVI file, with any of its extensions and in any case. */
 export const isVIFile = (path) => VI_EXTENSIONS.some((extension) => path.toLowerCase().endsWith(extension));
 
 /** A VI's name without its extension, as the error chain and the debugger show it. */
 export const withoutVIExtension = (name) => VI_EXTENSIONS.reduce((rest, extension) => (rest.toLowerCase().endsWith(extension) ? rest.slice(0, -extension.length) : rest), name);
 
-/** Where Save As writes the path the user chose: as it is if it already names a VI file, with `.sdg` added if not. */
+/** Where Save As writes the path the user chose: as it is if it already names a VI file, with `.ovi` added if not. */
 export const savePathFor = (chosen) => (isVIFile(chosen) ? chosen : `${chosen}${VI_EXTENSION}`);
 
 /**
@@ -44,7 +43,7 @@ export const polymorphicSaveProposal = (currentPath, name) => `${(currentPath ??
 /** The stylesheet that goes with a VI file (DT-058 §2): the same name with `.css`, next to it. */
 export const companionStylesheetPath = (viPath) => `${withoutVIExtension(viPath)}.css`;
 
-/** What Save As proposes: the same name with `.sdg`, so an old `.qvi` is offered under the new extension. */
+/** What Save As proposes: the same name with `.ovi`, so an old `.sdg` or `.qvi` is offered under the new extension. */
 export const saveAsProposal = (currentPath, name) => (currentPath ? `${withoutVIExtension(currentPath)}${VI_EXTENSION}` : `${withoutVIExtension(name)}${VI_EXTENSION}`);
 
 const withSlashes = (path) => path.replaceAll("\\", "/");

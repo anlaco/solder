@@ -10,6 +10,7 @@ import { test } from "node:test";
 import * as Paths from "../../editor/src/common/vi-paths.mjs";
 import * as Q from "../../core/model/qvi-format.mjs";
 import * as SN from "../../editor/src/block-diagram/subvi-nodes.mjs";
+import { buildOviLibLocator } from "../../core/model/ovi-lib.mjs";
 import { CAT, RAIZ } from "../helpers.mjs";
 
 test("a path is resolved and written relative to a folder, on either kind of system", () => {
@@ -84,30 +85,36 @@ test("Open Front Panel names the absolute file of the subVI that a node stores r
   assert.equal(Paths.resolveRelative(Paths.untitledKey(1), "/opt/add2.qvi"), "/opt/add2.qvi", "an untitled caller stores it absolute");
 });
 
-// DT-051: a VI is written as `.sdg`; the old `.qvi` still opens and, saved in place, keeps its name.
-test("Save As writes .sdg unless the chosen path already names a VI file, of either extension", () => {
-  assert.equal(Paths.savePathFor("/vis/main"), "/vis/main.sdg");
-  assert.equal(Paths.savePathFor("/vis/main.sdg"), "/vis/main.sdg");
-  assert.equal(Paths.savePathFor("/vis/old.qvi"), "/vis/old.qvi", "an old name chosen on purpose is kept");
-  assert.equal(Paths.savePathFor("/vis/MAIN.SDG"), "/vis/MAIN.SDG", "in any case");
-  assert.equal(Paths.saveAsProposal("/vis/old.qvi", "old.qvi"), "/vis/old.sdg", "an old file is offered under the new extension");
-  assert.equal(Paths.saveAsProposal(null, "Untitled 1"), "Untitled 1.sdg");
+// DT-094: an OVI is written as `.ovi`; the old `.sdg` (DT-051) and `.qvi` still open and, saved in place, keep their name.
+test("Save As writes .ovi unless the chosen path already names an OVI file, of any of its extensions", () => {
+  assert.equal(Paths.savePathFor("/vis/main"), "/vis/main.ovi");
+  assert.equal(Paths.savePathFor("/vis/main.ovi"), "/vis/main.ovi");
+  assert.equal(Paths.savePathFor("/vis/old.sdg"), "/vis/old.sdg", "an old name chosen on purpose is kept");
+  assert.equal(Paths.savePathFor("/vis/older.qvi"), "/vis/older.qvi", "an old name chosen on purpose is kept");
+  assert.equal(Paths.savePathFor("/vis/MAIN.OVI"), "/vis/MAIN.OVI", "in any case");
+  assert.equal(Paths.saveAsProposal("/vis/old.sdg", "old.sdg"), "/vis/old.ovi", "an old file is offered under the new extension");
+  assert.equal(Paths.saveAsProposal("/vis/older.qvi", "older.qvi"), "/vis/older.ovi");
+  assert.equal(Paths.saveAsProposal(null, "Untitled 1"), "Untitled 1.ovi");
 });
 
-test("both extensions name a VI file, and the debugger and the error chain drop either", () => {
-  assert.deepEqual(["a.sdg", "a.qvi", "A.QVI", "a.sdt", "a.sdproj", "a.vi"].map(Paths.isVIFile), [true, true, true, false, false, false]);
-  assert.deepEqual(["Parse Reply.sdg", "Parse Reply.qvi", "Parse Reply"].map(Paths.withoutVIExtension), ["Parse Reply", "Parse Reply", "Parse Reply"]);
+test("the three extensions name an OVI file, and the debugger and the error chain drop any of them", () => {
+  assert.deepEqual(["a.ovi", "a.sdg", "a.qvi", "A.QVI", "a.sdt", "a.sdproj", "a.vi", "a.octl"].map(Paths.isVIFile), [true, true, true, true, false, false, false, false]);
+  assert.deepEqual(["Parse Reply.ovi", "Parse Reply.sdg", "Parse Reply.qvi", "Parse Reply"].map(Paths.withoutVIExtension), ["Parse Reply", "Parse Reply", "Parse Reply", "Parse Reply"]);
 });
 
-test("every example is a .sdg and every subVI it names is there", () => {
-  const folder = path.join(RAIZ, "examples");
-  const files = readdirSync(folder, { recursive: true }).filter((name) => /\.(sdg|qvi)$/.test(name));
-  assert.ok(files.length >= 6, "the three examples and their subVIs");
-  for (const name of files) {
-    assert.ok(name.endsWith(".sdg"), `${name} has the new extension`);
-    const file = path.join(folder, name);
+// What Solder ships is renamed to `.ovi` (DT-094 §3); the fixtures of released betas keep the names they were saved with.
+const SHIPPED_FOLDERS = ["examples", "ovi.lib", "addons"];
+
+test("every OVI Solder ships is a .ovi and every subOVI it names is there", () => {
+  const oviLib = buildOviLibLocator([path.join(RAIZ, "ovi.lib"), path.join(RAIZ, "addons/daq/1/ovi.lib")], (root) => readdirSync(root, { recursive: true }).map(String));
+  const shipped = SHIPPED_FOLDERS.flatMap((folder) => readdirSync(path.join(RAIZ, folder), { recursive: true }).map((name) => path.join(RAIZ, folder, String(name))));
+  const ovis = shipped.filter(Paths.isVIFile);
+  assert.ok(ovis.length >= 30, "the examples, ovi.lib's OVIs and the DAQ add-on's");
+  for (const file of ovis) {
+    assert.ok(file.endsWith(Paths.VI_EXTENSION), `${file} has the new extension`);
     for (const stored of Paths.subVIPathsInFile(JSON.parse(readFileSync(file, "utf8")))) {
-      assert.ok(existsSync(path.join(path.dirname(file), stored)), `${name} calls ${stored}, which exists`);
+      assert.ok(stored.endsWith(Paths.VI_EXTENSION), `${file} calls ${stored} by its new name`);
+      assert.ok(existsSync(Paths.resolveRelative(file, stored, oviLib)), `${file} calls ${stored}, which exists`);
     }
   }
 });

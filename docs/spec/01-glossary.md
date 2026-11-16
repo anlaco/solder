@@ -25,12 +25,12 @@ a schema or a lint— or the mark **[UNVERIFIED]**.
 
 Solder is a **visual dataflow programming environment** for instrumentation and
 automation, inspired by LabVIEW. The user builds programs by placing *nodes* and
-connecting them with *wires*; the result is saved in a `.sdg` file and compiled
+connecting them with *wires*; the result is saved in an `.ovi` file and compiled
 to WebAssembly.
 
 Solder is two things at once, and they should not be confused:
 
-1. **A visual programming language**, whose syntax is the `.sdg` format and
+1. **A visual programming language**, whose syntax is the `.ovi` format and
    whose semantics this specification defines.
 2. **An editor** that produces and consumes files of that language.
 
@@ -64,7 +64,7 @@ editor is an implementation.
 
 **OVI** — *Open Virtual Instrument*. The program unit of Solder. It is equivalent to a
 function or to a complete program depending on how it is invoked. It is saved in
-a `.sdg` file. An OVI is made up of a *Front Panel*, a *Block Diagram* and,
+an `.ovi` file. An OVI is made up of a *Front Panel*, a *Block Diagram* and,
 optionally, a *connector pane*. It is what LabVIEW calls a VI; Solder says OVI (DT-071),
 and keeps "VI" for LabVIEW's own.
 
@@ -111,7 +111,7 @@ type*. Every port has:
 - a **data type**.
 
 > **This definition resolves an inherited ambiguity.** In the Red
-> implementation, the port names in the registry and those in the `.sdg` files
+> implementation, the port names in the registry and those in the `.ovi` files
 > did not match: the registry declares the output of `control` as `result` and
 > the input of `indicator` as `value`, while the corpus wrote `out` and `in`.
 > It was not a tolerated alias: it was an inconsistency that the file loader
@@ -169,14 +169,14 @@ user. It **MAY** be repeated between elements and it **MAY** be empty.
 > affect the compiled program. It is the distinction that lets two blocks be
 > called "Suma" on screen without colliding in the code.
 
-**Semantic layer** — The part of the `.sdg` that determines the program: the
+**Semantic layer** — The part of the `.ovi` that determines the program: the
 graph, the types, the default values of the controls, the *connector pane*.
 
 **Presentation layer** — The part that only affects how it looks: coordinates,
 sizes, label visibility, icon. It **MUST NOT** influence the result of
 compilation.
 
-> **Verifiable invariant:** changing only the *presentation layer* of a `.sdg`
+> **Verifiable invariant:** changing only the *presentation layer* of an `.ovi`
 > **MUST** produce a byte-for-byte identical WebAssembly module.
 > *(Verified in a spike; see `../reference/history/00-provisional-plan.md`.)*
 
@@ -200,10 +200,11 @@ obtained from the operation that opens the resource.
 
 ## 7. Files
 
-**`.sdg`** (Solder Graphics) — An *OVI* drawn as a diagram. It contains the graph, the *Front Panel* and the
+**`.ovi`** — An *OVI* drawn as a diagram. It contains the graph, the *Front Panel* and the
 *presentation layer*. **It is the source of truth**: the compiled module is a
-derived artifact and **MUST NOT** be stored inside the file. Until DT-051 it was
-written `.qvi`; a `.qvi` still opens, and saved in place it keeps its name.
+derived artifact and **MUST NOT** be stored inside the file. Until DT-094 it was
+written `.sdg` (*Solder Graphics*), and until DT-051 `.qvi`; both still open, and saved in place they keep
+their name.
 
 **`.sdt`** (Solder Text) — Reserved for a future textual Solder language: an *OVI*
 written as code (DT-051, DT-071). Nothing reads or writes it yet.
@@ -214,7 +215,7 @@ written as code (DT-051, DT-071). Nothing reads or writes it yet.
 
 **Schema** — The JSON Schema document that formally defines the syntax of these
 files. It is **normative and executable**: a file that does not validate against
-the schema is not a conformant `.sdg`.
+the schema is not a conformant `.ovi`.
 
 ## 8. Execution
 

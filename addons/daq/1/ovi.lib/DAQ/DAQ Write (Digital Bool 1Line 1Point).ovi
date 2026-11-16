@@ -9,6 +9,15 @@
         "connection": "required"
       },
       {
+        "name": "bool-control_1",
+        "cell": 1
+      },
+      {
+        "name": "bool-control_2",
+        "cell": 7,
+        "connection": "required"
+      },
+      {
         "name": "control_1",
         "cell": 9,
         "connection": "optional"
@@ -24,8 +33,8 @@
         "cell": 4
       },
       {
-        "name": "bool-indicator_1",
-        "cell": 6
+        "name": "indicator_1",
+        "cell": 10
       },
       {
         "name": "cluster-indicator_1",
@@ -109,11 +118,26 @@
       "default": 10
     },
     {
-      "name": "bool-indicator_1",
+      "name": "bool-control_1",
+      "role": "control",
+      "type": "boolean",
+      "default": true,
+      "style": "horizontal-toggle-switch",
+      "mechanical-action": "switch-when-pressed"
+    },
+    {
+      "name": "indicator_1",
       "role": "indicator",
+      "type": "u32",
+      "default": 0
+    },
+    {
+      "name": "bool-control_2",
+      "role": "control",
       "type": "boolean",
       "default": false,
-      "style": "round-led"
+      "style": "horizontal-toggle-switch",
+      "mechanical-action": "switch-when-pressed"
     }
   ],
   "block-diagram": {
@@ -140,7 +164,7 @@
         "config": {
           "library": "nilvaiu.*",
           "specify-path-on-diagram": false,
-          "function": "DAQRead1Chan1Samp1LineBool",
+          "function": "DAQWrite1Chan1Samp1LineBool",
           "thread": "any",
           "calling-convention": "c",
           "error-checking": "default",
@@ -163,9 +187,21 @@
               "constant": false
             },
             {
+              "name": "autoStart",
+              "type": "numeric",
+              "data-type": "u8",
+              "pass": "value"
+            },
+            {
               "name": "data",
               "type": "numeric",
               "data-type": "u8",
+              "pass": "pointer"
+            },
+            {
+              "name": "numSamplesWriten",
+              "type": "numeric",
+              "data-type": "u32",
               "pass": "pointer"
             },
             {
@@ -184,7 +220,7 @@
         "name": "subvi_1",
         "type": "subvi",
         "config": {
-          "vi": "DAQ Fill In Error Info.sdg"
+          "vi": "DAQ Fill In Error Info.ovi"
         }
       },
       {
@@ -192,20 +228,32 @@
         "type": "control"
       },
       {
+        "name": "bool-control_1",
+        "type": "bool-control"
+      },
+      {
+        "name": "indicator_1",
+        "type": "indicator"
+      },
+      {
+        "name": "boolean-to-0-1_1",
+        "type": "boolean-to-0-1"
+      },
+      {
         "name": "num-const_1",
         "type": "num-const",
         "config": {
-          "type": "u8",
+          "type": "u32",
           "default": 0
         }
       },
       {
-        "name": "bool-indicator_1",
-        "type": "bool-indicator"
+        "name": "bool-control_2",
+        "type": "bool-control"
       },
       {
-        "name": "not-equal-to-0_1",
-        "type": "not-equal-to-0"
+        "name": "boolean-to-0-1_2",
+        "type": "boolean-to-0-1"
       }
     ],
     "wires": [
@@ -238,24 +286,36 @@
         "to": "call-library_1.arg-1-in"
       },
       {
-        "from": "num-const_1.result",
-        "to": "call-library_1.arg-2-in"
-      },
-      {
         "from": "empty-string-constant_1.result",
-        "to": "call-library_1.arg-3-in"
+        "to": "call-library_1.arg-5-in"
       },
       {
-        "from": "call-library_1.arg-3-out",
+        "from": "call-library_1.arg-5-out",
         "to": "subvi_1.str-control_1"
       },
       {
-        "from": "call-library_1.arg-2-out",
-        "to": "not-equal-to-0_1.x"
+        "from": "bool-control_1.result",
+        "to": "boolean-to-0-1_1.boolean"
       },
       {
-        "from": "not-equal-to-0_1.result",
-        "to": "bool-indicator_1.value"
+        "from": "boolean-to-0-1_1.result",
+        "to": "call-library_1.arg-2-in"
+      },
+      {
+        "from": "call-library_1.arg-4-out",
+        "to": "indicator_1.value"
+      },
+      {
+        "from": "num-const_1.result",
+        "to": "call-library_1.arg-4-in"
+      },
+      {
+        "from": "bool-control_2.result",
+        "to": "boolean-to-0-1_2.boolean"
+      },
+      {
+        "from": "boolean-to-0-1_2.result",
+        "to": "call-library_1.arg-3-in"
       }
     ]
   },
@@ -308,20 +368,38 @@
           "text": "timeout\n"
         }
       },
-      "num-const_1": {
-        "x": 246,
-        "y": 709
+      "bool-control_1": {
+        "x": 681,
+        "y": 63,
+        "label": {
+          "text": "auto start"
+        }
       },
-      "bool-indicator_1": {
-        "x": 501,
-        "y": 69,
+      "indicator_1": {
+        "x": 873,
+        "y": 191,
+        "label": {
+          "text": "number of samples written per channel"
+        }
+      },
+      "boolean-to-0-1_1": {
+        "x": 556,
+        "y": 279
+      },
+      "num-const_1": {
+        "x": 331,
+        "y": 692
+      },
+      "bool-control_2": {
+        "x": 521,
+        "y": 68,
         "label": {
           "text": "data"
         }
       },
-      "not-equal-to-0_1": {
-        "x": 466,
-        "y": 349
+      "boolean-to-0-1_2": {
+        "x": 476,
+        "y": 369
       }
     },
     "panel": {
@@ -360,9 +438,23 @@
           "text": "timeout\n"
         }
       },
-      "bool-indicator_1": {
-        "x": 501,
-        "y": 69,
+      "bool-control_1": {
+        "x": 681,
+        "y": 63,
+        "label": {
+          "text": "auto start"
+        }
+      },
+      "indicator_1": {
+        "x": 873,
+        "y": 191,
+        "label": {
+          "text": "number of samples written per channel"
+        }
+      },
+      "bool-control_2": {
+        "x": 521,
+        "y": 68,
         "label": {
           "text": "data"
         }
@@ -404,12 +496,7 @@
           336
         ]
       },
-      "call-library_1.arg-2-in": {
-        "bends": [
-          266
-        ]
-      },
-      "call-library_1.arg-3-in": {
+      "call-library_1.arg-5-in": {
         "bends": [
           298
         ]
@@ -419,14 +506,37 @@
           406
         ]
       },
-      "not-equal-to-0_1.x": {
+      "boolean-to-0-1_1.boolean": {
+        "bends": [
+          727,
+          183.5,
+          548
+        ]
+      },
+      "call-library_1.arg-2-in": {
+        "bends": [
+          590.3333333333334,
+          484.75,
+          352
+        ]
+      },
+      "indicator_1.value": {
         "bends": [
           406
         ]
       },
-      "bool-indicator_1.value": {
+      "boolean-to-0-1_2.boolean": {
         "bends": [
-          492
+          567,
+          231,
+          468
+        ]
+      },
+      "call-library_1.arg-3-in": {
+        "bends": [
+          510.3333333333333,
+          533.75,
+          352
         ]
       }
     },

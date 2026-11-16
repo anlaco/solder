@@ -93,7 +93,7 @@ export function loadInstalledAddons({ oviLibRoot, nodePlatform, architecture, ho
     solderVersion,
   });
   const libraryFolders = addonLibraryFolders(addons).map(normalizePath);
-  if (addons.length === 0) return { oviLib: oviLibRoot, addons, problems, menuFiles: {}, libraryFolders };
+  // Always a locator, add-ons or not: it is what finds ovi.lib's OVIs under their new extension (DT-094 §3).
   const roots = oviLibRoots(oviLibRoot, addons).map(normalizePath);
   return { oviLib: buildOviLibLocator(roots, listRelativeFiles), addons, problems, menuFiles: readAddonMenuFiles(addons), libraryFolders };
 }

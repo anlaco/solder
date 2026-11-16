@@ -15,7 +15,9 @@ When the developer says "keep going":
    detail of each module. Its order was amended on 2026-10-26 (DT-064, "Amendment of
    2026-10-26"). Steps 1 to 5 are done (step 5, the ESP32 DAQ, on 2026-11-05). Step 6, the DAQ layer
    (DT-076), has its stage A done (2026-11-15), built on step **6a, the two doors for libraries** (DT-079): the Call
-   Library Function Node and the add-ons folder. Next is its stage B (DT-076 §10). After Core 1, everything native, then Core 2 (DT-079 §1).
+   Library Function Node and the add-ons folder. "OVI files are `.ovi`" (DT-094) is done (2026-11-16). **DT-093 (2026-11-16)
+   closes the hardware stage here**: next is **"The language's everyday types"** below, starting with the compiler's
+   split; DAQ's stage B waits for its waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
    `win11 encender`, `tools/vm_control.py foto|clic|arrastrar|tecla|texto`.
@@ -892,13 +894,73 @@ array or string read by a local variable while another loop writes it is never t
    (every menu of the editor). *Packaging the addon done in 0.7.0-beta (2026-10-28): one per platform, Windows'
    built in the Windows virtual machine (`scripts/build-native.mjs`).*
 
+**OVI files are `.ovi`** (DT-094, decided on 2026-11-16). One step, on `main`. *Done on 2026-11-16; the Windows
+installer's association is unverified until it is tried in the virtual machine. At the release, the DAQ add-on's
+`MinimumSupportedSolderVersion` is raised to that version, the first that opens `.ovi`.*
+1. `editor/src/common/vi-paths.mjs`: `.ovi` is the extension Save As writes; `.sdg` and `.qvi` still name an OVI file,
+   open and keep their names on Ctrl+S.
+2. The subOVI lookup of DT-094 §3: a callee named with one of the three extensions that is not found is looked for
+   with the other two (core and editor alike), with its test.
+3. Rename what Solder ships (`ovi.lib/`, `addons/` and their palette files, `examples/`) and the subOVI paths inside;
+   `cli/solder.mjs`'s usage; `package.json`'s file associations (`.ovi`, `.sdg`, `.qvi`, named "Solder OVI").
+4. The living documentation: CLAUDE.md, README, `docs/README.md`, `spec/`, the Getting Started pages, this plan.
+5. The CHANGELOG's "Unreleased": a feature, so the next release raises MINOR.
+
+**The language's everyday types** (DT-093, decided on 2026-11-16). The hardware stage closes with DAQ's stage A; fixes
+to it go on, new fronts wait for step 6.
+1. **Split the compiler** (DT-089, brought forward by DT-093 §2): `core/compiler/compiler.mjs` into modules of one
+   responsibility, moving code without changing what it emits (the `.wat` of the examples compared before and after).
+   Try `tsc --checkJs` over `core/` in the same step; keep it only if it costs little.
+   *Started on 2026-11-16, moving code without changing what it emits (every OVI of the repository, 51 files of
+   `examples/`, `ovi.lib/`, `addons/` and `test/fixtures/`, compiled with `cli/solder.mjs wat` before and after:
+   identical), with the names moved rewritten in English. Out so far: `instructions.mjs`, `wasm-types.mjs`,
+   `host-imports.mjs`, `runtime-functions.mjs`, `memory-ops.mjs`, `panel-data.mjs`, `constants.mjs` (`constantOf`, the
+   zero cluster, `ERROR_FIELDS`) and the families in `nodes/` (data manipulation, strings, Format/Scan and their
+   `host-rows.mjs`, files, VISA, timing, Expression Node, Property Node, Call Library, arithmetic and comparison);
+   `compileVI` is `compileOVI` (DT-071). `compiler.mjs` is down from 3,261 to 2,096 lines. Next: the array family and
+   the subOVI calls, then the `BLOQUES` table (`node-table.mjs`), then `compileOVI` (`compile-ovi.mjs`) and the clump
+   ordering. A rename by regular expression also hits quoted names and spread calls (`"rotar"`, a host import, became
+   `"rotate"` once; `...convertir(` was missed once): after each rename, look for both.*
+   **Style debts seen while splitting** (2026-11-16; counts over `core/`, `editor/` and `cli/`). Each goes against a
+   written rule, so each is to be changed; the ones inside the compiler go with this step, the rest by the Boy Scout
+   rule or as their own step where noted:
+   - **"VI" in Solder's own names** (DT-071: Solder's unit is the OVI): `subVI` (58), `viName` (29), `openVIs` (23),
+     `subVITexts`, `isSubVI`, `findSubVI`, `asSubVI`, `loadVI`, `iconoVI`, `viKey`, `viPath`, `viInfo`, the exports of
+     `editor/src/common/vi-paths.mjs` (`VI_EXTENSION`, `isVIFile`, `withoutVIExtension`, `viDisplayName`) and the file
+     names `vi-paths.mjs`, `subvis.test.mjs`, `subvi-editor.test.mjs`. `runnableVI` became `runnableOVI` on 2026-11-16.
+     The node type `"subvi"` is part of the `.ovi` format, so renaming it needs a format migration (DT-055) and its own
+     decision; the rest are code only.
+   - **Spanish in identifiers** (CLAUDE.md "Language"): the emitting context every node emitter receives (`e.entrada`
+     310 uses, `e.temporal` 182, `e.celda` 202, `e.bufer`, `e.cadena`, `e.cableada`, `e.tIn`/`e.tOut`), the graph's
+     `nodo`/`nodos`/`tipo` (over 1,300) and the catalog's `puertos`/`bloque`; `compilar`, `BLOQUES`, `LARGOS`,
+     `funcionesMemoria`, `CELDAS`, `CIMA`, `EXPORTADAS`, `bloqueCadena`; graph.mjs's `tipos`, `orden`, `ejecutable`,
+     `requerido`; runtime.mjs's `ejecutar`. The emitting context is renamed with `compile-ovi.mjs`; the graph's names
+     touch the editor and the format, so they are a step of their own.
+   - **Spanish data keys that cross to the runtime**: a cluster layout's `tam`, `campos`, `off`, `nombre`, `tipo`, an
+     array element's `carga`, `guarda`, `ref`, panel data's `disposicion`, `elemento`, and the imports' `modulo`,
+     `nombre`. Both sides (compiler and `core/runtime/`) change in one go, or the runtime reads nothing.
+   - **Spanish text a user reads**: the command line answers `se puede ejecutar` (`cli/solder.mjs`); the Electron
+     channels are named in two languages (`vi:guardar` beside `vi:open-path`).
+   - **Single-letter names** (rule 9): `g`, `n`, `c`, `t`, `e`, `x`, `k` across the compiler (over 250 arrow functions
+     with such parameters before the split); the moved modules no longer have them.
+   - **Long functions** (rule 9, about 30 lines): `compileOVI` (about 840), the inline emitters of `BLOQUES`,
+     `propertyNode` (about 50) and `callLibrary` (about 75), moved as they were; they are split once the move ends.
+   - **Leftovers of DT-051**: `qvi-format.mjs`, `qvi.schema.json` and "`.qvi`" in comments, for what is now an `.ovi`.
+
+2. **Clusters made by the user**: cluster control, indicator and constant, Bundle and Unbundle, the cluster order.
+3. **Type definitions** and strict type definitions, in `.octl` files (DT-093 §5): Make Type Def., the control editor,
+   updating the instances.
+4. **Time stamp**: control, constant, Get Date/Time, conversions.
+5. **Waveform**: the type, Build and Get Waveform Components, charts and graphs fed by it.
+6. **DAQ on waveforms**: DAQmx Read's waveform instances; the hardware stage may reopen here.
+7. **Variant.**
+8. **The rest of OVI Server** (hardware step 7 above), with Core 2.
+
 **After it:** **LabVIEW Core 1** (DT-054, moved after the beta by DT-055 and after the hardware by DT-064): every
 lesson of NI's Core 1 course can be done in Solder, the hardware lessons on the ESP32 and on simulated instruments.
 The outline is in `labview-captures/core-courses/README.md`; first, list which lessons Solder misses.
 
-**Before 1.0, once the native compiler is more or less complete:** split `core/compiler/compiler.mjs` (3,209
-lines on 2026-11-12) into modules of one responsibility each, moving code without changing what it emits (DT-089).
-Preferably before *inplaceness*, so that change is made in the smaller modules.
+*The split of `core/compiler/compiler.mjs` (DT-089) moved to step 1 of "The language's everyday types" (DT-093 §2).*
 
 **Before 1.0:** *inplaceness* (DT-042 §5), which changes memory and speed but not
 results. It was postponed until a real program ran slowly; since 2026-11-05 it is a

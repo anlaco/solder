@@ -37,7 +37,7 @@ test("the plugin's Start, Stop and Clear Task, on an empty task, answer as LabVI
   const vi = buildVI(PLUGIN, (b) => {
     b.node("empty", "daq-name-constant", { type: DAQ_TASK, value: "" });
     b.node("noError", "error-cluster-constant");
-    for (const [name, file] of [["start", "DAQ Start Task.sdg"], ["stop", "DAQ Stop Task.sdg"], ["clear", "DAQ Clear Task.sdg"]]) {
+    for (const [name, file] of [["start", "DAQ Start Task.ovi"], ["stop", "DAQ Stop Task.ovi"], ["clear", "DAQ Clear Task.ovi"]]) {
       callPlugin(b, name, file, "empty.result", "noError.result");
       b.node(`${name} error`, "cluster-indicator", { type: ERROR, style: "error-out" });
       b.wire(`${name}.cluster-indicator_1`, `${name} error.value`);
@@ -62,13 +62,13 @@ test("a task created through the library goes through the plugin's Start Task an
     b.wire("empty.result", "create.arg-1-in");
     b.wire("name.result", "create.arg-2-in");
     for (const index of [3, 5, 6]) b.wire("nothing.result", `create.arg-${index}-in`);
-    callPlugin(b, "start", "DAQ Start Task.sdg", "create.arg-1-out", "noError.result");
+    callPlugin(b, "start", "DAQ Start Task.ovi", "create.arg-1-out", "noError.result");
     b.node("start error", "cluster-indicator", { type: ERROR, style: "error-out" });
     b.wire("start.cluster-indicator_1", "start error.value");
     b.node("task out", "daq-name-indicator", { type: DAQ_TASK });
     b.wire("start.daq-name-indicator_1", "task out.value");
     // Clear runs even after an error, as LabVIEW's has no Case on error in: the task is released.
-    callPlugin(b, "clear", "DAQ Clear Task.sdg", "start.daq-name-indicator_1", "start.cluster-indicator_1");
+    callPlugin(b, "clear", "DAQ Clear Task.ovi", "start.daq-name-indicator_1", "start.cluster-indicator_1");
     b.node("clear error", "cluster-indicator", { type: ERROR, style: "error-out" });
     b.wire("clear.cluster-indicator_1", "clear error.value");
   });
@@ -83,7 +83,7 @@ test("an error in passes through Start Task without calling the library", async 
   const vi = buildVI(PLUGIN, (b) => {
     b.node("empty", "daq-name-constant", { type: DAQ_TASK, value: "" });
     b.node("incoming", "error-cluster-constant", { value: { status: true, code: 5, source: "orig" } });
-    callPlugin(b, "start", "DAQ Start Task.sdg", "empty.result", "incoming.result");
+    callPlugin(b, "start", "DAQ Start Task.ovi", "empty.result", "incoming.result");
     b.node("start error", "cluster-indicator", { type: ERROR, style: "error-out" });
     b.wire("start.cluster-indicator_1", "start error.value");
   });
@@ -92,7 +92,7 @@ test("an error in passes through Start Task without calling the library", async 
 
 const DEVICE_NOT_VALID = -200220;
 const PHYSICAL_CHANNEL_DOES_NOT_EXIST = -200170;
-const CREATE_AI_VOLTAGE = "DAQ Create Virtual Channel (AI Voltage).sdg";
+const CREATE_AI_VOLTAGE = "DAQ Create Virtual Channel (AI Voltage).ovi";
 
 /** The plugin's Create Virtual Channel (AI Voltage) on `physicalChannels`, with no task in: it creates one (measured). */
 function createAiVoltage(b, name, physicalChannels) {
@@ -111,7 +111,7 @@ test("Create Virtual Channel, Start, Stop and Clear Task run a task on the simul
     showError(b, "create error", error);
     b.node("task name", "daq-name-indicator", { type: DAQ_TASK });
     b.wire(task, "task name.value");
-    for (const [name, file] of [["start", "DAQ Start Task.sdg"], ["stop", "DAQ Stop Task.sdg"], ["clear", "DAQ Clear Task.sdg"]]) {
+    for (const [name, file] of [["start", "DAQ Start Task.ovi"], ["stop", "DAQ Stop Task.ovi"], ["clear", "DAQ Clear Task.ovi"]]) {
       callPlugin(b, name, file, task, error);
       error = `${name}.cluster-indicator_1`;
       showError(b, `${name} error`, error);
@@ -130,7 +130,7 @@ test("Create Virtual Channel gives LabVIEW's codes for a device or a channel tha
       createAiVoltage(b, name, channels);
       showError(b, `${name} error`, `${name}.cluster-indicator_1`);
       // Each failed Create still made its task, which Clear releases.
-      callPlugin(b, `${name} clear`, "DAQ Clear Task.sdg", `${name}.daq-name-indicator_1`, `${name}.cluster-indicator_1`);
+      callPlugin(b, `${name} clear`, "DAQ Clear Task.ovi", `${name}.daq-name-indicator_1`, `${name}.cluster-indicator_1`);
     }
   });
   const shown = await run(vi);
@@ -140,7 +140,7 @@ test("Create Virtual Channel gives LabVIEW's codes for a device or a channel tha
   assert.match(shown["no channel error"].source, /Dev1\/ai99/);
 });
 
-const CREATE_TASK_OVI = "DAQ Create Task.sdg";
+const CREATE_TASK_OVI = "DAQ Create Task.ovi";
 /** Solder's code for what its library does not do yet (DT-087 §4). */
 const NOT_BUILT_IN_SOLDER = -1;
 
@@ -165,7 +165,7 @@ test("Create Task, Create Virtual Channel, Start, Stop and Clear Task: LabVIEW's
     showError(b, "create channel error", error);
     b.node("task name", "daq-name-indicator", { type: DAQ_TASK });
     b.wire(task, "task name.value");
-    for (const [name, file] of [["start", "DAQ Start Task.sdg"], ["stop", "DAQ Stop Task.sdg"], ["clear", "DAQ Clear Task.sdg"]]) {
+    for (const [name, file] of [["start", "DAQ Start Task.ovi"], ["stop", "DAQ Stop Task.ovi"], ["clear", "DAQ Clear Task.ovi"]]) {
       callPlugin(b, name, file, task, error);
       error = `${name}.cluster-indicator_1`;
       showError(b, `${name} error`, error);
@@ -197,7 +197,7 @@ test("Create Task passes an error in through and gives an empty task, and refuse
   assert.match(shown["copying error"].source, /^<append>[\s\S]*copying a task/);
 });
 
-const TIMING_OVI = "DAQ Timing (Sample Clock).sdg";
+const TIMING_OVI = "DAQ Timing (Sample Clock).ovi";
 const INVALID_PROPERTY_VALUE = -200077;
 /** Few samples, so that Wait Until Done waits a tenth of a second at the default 1 kHz. */
 const SHORT_ACQUISITION = 100;
@@ -213,7 +213,7 @@ const timedAcquisition = (rate) =>
     b.node("samples", "const", { value: SHORT_ACQUISITION, type: "i32" });
     let task = "create.daq-name-indicator_1";
     let error = "create.cluster-indicator_1";
-    for (const [name, file] of [["timing", TIMING_OVI], ["start", "DAQ Start Task.sdg"], ["wait", "DAQ Wait Until Done.sdg"], ["stop", "DAQ Stop Task.sdg"], ["clear", "DAQ Clear Task.sdg"]]) {
+    for (const [name, file] of [["timing", TIMING_OVI], ["start", "DAQ Start Task.ovi"], ["wait", "DAQ Wait Until Done.ovi"], ["stop", "DAQ Stop Task.ovi"], ["clear", "DAQ Clear Task.ovi"]]) {
       callPlugin(b, name, file, task, error);
       error = `${name}.cluster-indicator_1`;
       showError(b, `${name} error`, error);
@@ -243,10 +243,10 @@ test("Stop Task stops the task even with an error in, which it passes on, as NI'
   const vi = buildVI(PLUGIN, (b) => {
     createAiVoltage(b, "create", "Dev1/ai0");
     b.node("incoming", "error-cluster-constant", { value: { status: true, code: 5, source: "orig" } });
-    callPlugin(b, "start", "DAQ Start Task.sdg", "create.daq-name-indicator_1", "create.cluster-indicator_1");
-    callPlugin(b, "stop", "DAQ Stop Task.sdg", "start.daq-name-indicator_1", "incoming.result");
-    callPlugin(b, "start again", "DAQ Start Task.sdg", "stop.daq-name-indicator_1", "start.cluster-indicator_1");
-    callPlugin(b, "clear", "DAQ Clear Task.sdg", "start again.daq-name-indicator_1", "start again.cluster-indicator_1");
+    callPlugin(b, "start", "DAQ Start Task.ovi", "create.daq-name-indicator_1", "create.cluster-indicator_1");
+    callPlugin(b, "stop", "DAQ Stop Task.ovi", "start.daq-name-indicator_1", "incoming.result");
+    callPlugin(b, "start again", "DAQ Start Task.ovi", "stop.daq-name-indicator_1", "start.cluster-indicator_1");
+    callPlugin(b, "clear", "DAQ Clear Task.ovi", "start again.daq-name-indicator_1", "start again.cluster-indicator_1");
     showError(b, "stop error", "stop.cluster-indicator_1");
     showError(b, "start again error", "start again.cluster-indicator_1");
     showError(b, "clear error", "clear.cluster-indicator_1");
@@ -259,10 +259,10 @@ test("Stop Task stops the task even with an error in, which it passes on, as NI'
 
 // ——— The reads (measured, labview-captures/reports/2026-11-06-daqmx-read-write.md "Behaviour on Dev1") ———
 
-const READ_1CHAN_1SAMP = "DAQ Read (Analog DBL 1Chan 1Samp).sdg";
-const READ_1CHAN_NSAMP = "DAQ Read (Analog 1D DBL 1Chan NSamp).sdg";
-const READ_NCHAN_1SAMP = "DAQ Read (Analog 1D DBL NChan 1Samp).sdg";
-const READ_NCHAN_NSAMP = "DAQ Read (Analog 2D DBL NChan NSamp).sdg";
+const READ_1CHAN_1SAMP = "DAQ Read (Analog DBL 1Chan 1Samp).ovi";
+const READ_1CHAN_NSAMP = "DAQ Read (Analog 1D DBL 1Chan NSamp).ovi";
+const READ_NCHAN_1SAMP = "DAQ Read (Analog 1D DBL NChan 1Samp).ovi";
+const READ_NCHAN_NSAMP = "DAQ Read (Analog 2D DBL NChan NSamp).ovi";
 const READ_BEYOND_FINAL_SAMPLE = -200278;
 /** The simulated input's range, ±5 V as Create Virtual Channel's default (its sine is about 4.84 V, measured). */
 const AI_RANGE = 5;
@@ -298,7 +298,7 @@ function readingChain(b, channels, reads, { onDemand = false, samplesPerRead } =
       b.wire(`${name} count.result`, `${name}.control_2`);
     }
   }
-  callPlugin(b, "clear", "DAQ Clear Task.sdg", task, error);
+  callPlugin(b, "clear", "DAQ Clear Task.ovi", task, error);
   showError(b, "clear error", "clear.cluster-indicator_1");
 }
 

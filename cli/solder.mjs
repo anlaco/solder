@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // Solder's command line, with no user interface (provisional plan §3):
 //
-//   cli/solder.mjs run   file.sdg   runs the VI and prints its indicators
-//   cli/solder.mjs wat   file.sdg   prints the WebAssembly module as text
-//   cli/solder.mjs check file.sdg   says whether it can run and, if not, why
+//   cli/solder.mjs run   file.ovi   runs the VI and prints its indicators
+//   cli/solder.mjs wat   file.ovi   prints the WebAssembly module as text
+//   cli/solder.mjs check file.ovi   says whether it can run and, if not, why
 //
 //   --threads N   with run: the threads of the pool (DT-063 §11), by default one per logical processor,
 //                 as each of LabVIEW's execution systems has; 1 runs the clumps in the exact order
@@ -52,7 +52,7 @@ function shownValue(value, type) {
   return formatear(value, type);
 }
 
-const USAGE = "usage: solder.mjs run|wat|check file.sdg (or an old .qvi) [--threads N]";
+const USAGE = "usage: solder.mjs run|wat|check file.ovi (or an old .sdg or .qvi) [--threads N]";
 let parsed;
 try {
   parsed = parseArgs({ allowPositionals: true, options: { threads: { type: "string" } } });

@@ -11,10 +11,10 @@ import { NO_ERROR, PLUGIN, callPlugin, installAddonForTheseTests, run, showError
 
 installAddonForTheseTests();
 
-const CREATE_AO_VOLTAGE = "DAQ Create Virtual Channel (AO Voltage).sdg";
-const WRITE_ONE_SAMPLE = "DAQ Write (Analog DBL 1Chan 1Samp).sdg";
-const WRITE_1D = "DAQ Write (Analog 1D DBL 1Chan NSamp).sdg";
-const WRITE_2D = "DAQ Write (Analog 2D DBL NChan NSamp).sdg";
+const CREATE_AO_VOLTAGE = "DAQ Create Virtual Channel (AO Voltage).ovi";
+const WRITE_ONE_SAMPLE = "DAQ Write (Analog DBL 1Chan 1Samp).ovi";
+const WRITE_1D = "DAQ Write (Analog 1D DBL 1Chan NSamp).ovi";
+const WRITE_2D = "DAQ Write (Analog 2D DBL NChan NSamp).ovi";
 const PHYSICAL_CHANNEL_DOES_NOT_EXIST = -200170;
 const DATA_OUTSIDE_RANGE = -200561;
 const CHANNEL_COUNT_MISMATCH = -200524;
@@ -41,7 +41,7 @@ function write(b, file, task, errorIn) {
 
 /** Clear Task after `task`, its error shown as "clear error". */
 function clear(b, task, errorIn) {
-  callPlugin(b, "clear", "DAQ Clear Task.sdg", task, errorIn);
+  callPlugin(b, "clear", "DAQ Clear Task.ovi", task, errorIn);
   showError(b, "clear error", "clear.cluster-indicator_1");
 }
 
@@ -60,7 +60,7 @@ const finiteGeneration = (physicalChannels, file, data, dataType) =>
     createAoVoltage(b, physicalChannels);
     b.node("rate", "const", { value: RATE, type: "dbl" });
     b.node("samples", "const", { value: SAMPLES, type: "i32" });
-    callPlugin(b, "timing", "DAQ Timing (Sample Clock).sdg", "create.daq-name-indicator_1", "create.cluster-indicator_1");
+    callPlugin(b, "timing", "DAQ Timing (Sample Clock).ovi", "create.daq-name-indicator_1", "create.cluster-indicator_1");
     b.wire("rate.result", "timing.control_1");
     b.wire("samples.result", "timing.control_4");
     showError(b, "timing error", "timing.cluster-indicator_1");
@@ -68,7 +68,7 @@ const finiteGeneration = (physicalChannels, file, data, dataType) =>
     write(b, file, "timing.daq-name-indicator_1", "timing.cluster-indicator_1");
     b.wire("data.result", "write.arr-control_1");
     let [task, error] = ["write.daq-name-indicator_1", "write.cluster-indicator_1"];
-    for (const [name, ovi] of [["start", "DAQ Start Task.sdg"], ["wait", "DAQ Wait Until Done.sdg"]]) {
+    for (const [name, ovi] of [["start", "DAQ Start Task.ovi"], ["wait", "DAQ Wait Until Done.ovi"]]) {
       callPlugin(b, name, ovi, task, error);
       showError(b, `${name} error`, `${name}.cluster-indicator_1`);
       [task, error] = [`${name}.daq-name-indicator_1`, `${name}.cluster-indicator_1`];

@@ -4418,7 +4418,8 @@ function longer than about 30. It is done once the native compiler is more or le
 its own that moves code without changing what it compiles.**
 
 - **Status:** Proposed on 2026-11-12; the developer asked for it and chose when ("when we finish the current plan, before
-  version 1, but after the compiler is more or less finished"). The split below is a first outline, settled when the step
+  version 1, but after the compiler is more or less finished"). Accepted on 2026-11-16 through [DT-093](#dt-093) §2,
+  which brings §1's moment forward: before the first new type. The split below is a first outline, settled when the step
   starts.
 - **Why:** on 2026-11-12 `compiler.mjs` had 3,209 lines, more than the other six files of `core/compiler/` together
   (1,926). It holds about twenty unrelated families of node emitters (numeric, bits, strings, 2D arrays, clusters, VISA,
@@ -4441,7 +4442,7 @@ its own that moves code without changing what it compiles.**
    - `nodes/<family>.mjs`, one per family of nodes (numeric, bits, strings, arrays, clusters, comparison, Boolean,
      VISA, files, spreadsheet, Property Node, Call Library, subOVIs, timing…), each exporting its emitters.
    - `node-table.mjs`: the table from node kind to emitter, which only points to named functions.
-   - `compile-vi.mjs`: `compileVI`, split into small functions (structures, loops, the panel, subOVI calls, clumps).
+   - `compile-ovi.mjs`: `compileOVI` (`compileVI` until 2026-11-16, DT-071), split into small functions (structures, loops, the panel, subOVI calls, clumps).
    - `compiler.mjs`: the entry point only (`compilar`, `assemble`, the module).
 3. **How.** Only moves and renames, never a change of behaviour: one module at a time, `npm test` green after each, and
    the WebAssembly the examples compile to the same before and after (compared byte for byte). Names that are moved are
@@ -4578,3 +4579,98 @@ wires, as in LabVIEW.**
 | A change of data type leaves the wire broken, and it is one Undo step | the same tests | **Built** |
 | The place after a replace | kept at the old top-left | **Unverified** |
 | A value across kinds of data (a number to a boolean) | the new object's default | **Unverified** (only numerics were measured) |
+
+## DT-093
+
+**The hardware stage closes with DAQ's stage A. No new hardware front is opened until the language has LabVIEW's
+everyday types: clusters made by the user, type definitions, time stamp, waveform and variant. The compiler is split
+first, because each of those types goes into it.**
+
+- **Status:** Accepted on 2026-11-16 by the developer, as proposed the same day after an external audit of the
+  repository at `887a7db` (0.13.0-beta) found the scope open on new fronts while basic pieces of the language are
+  missing (its finding H1) and the compiler monolithic where every new type must enter (M1).
+- **Why:** [DT-079](#dt-079) §1–§2 already put native work before libraries and counts waveform and time stamp as
+  native. DAQ came early to prove the two doors ([DT-080](#dt-080), [DT-081](#dt-081)); stage A, closed in
+  0.13.0-beta, is that proof. [`coverage.md`](coverage.md) still has unmarked: clusters made by the user, type
+  definitions, time stamp, waveform and variant; Programming ▸ Cluster, Class, & Variant is at 2 of 19. Core 1
+  ([DT-077](#dt-077) §1) needs clusters and type definitions (lesson 13, DT-054), and DAQmx Read returns waveforms
+  with a time stamp `t0`, so DAQ itself is not LabVIEW's until those types exist.
+
+### Decision
+
+1. **The hardware stage ends here** (amends the plan's hardware steps, [DT-064](#dt-064)). Fixes to what exists
+   (VISA, VXI-11, the CLFN, the add-ons, DAQ's stage A) and trying them on real hardware go on as usual. DAQ's later
+   stages ([DT-076](#dt-076) §10), new transports and new instrument protocols wait for this decision's step 5.
+2. **The compiler is split first** (amends [DT-089](#dt-089) §1, which waited until the compiler was more or less
+   complete): before the first new type, as a step of its own that moves code without changing what it emits, with
+   DT-089 §2's outline. Checking the types of `core/` with `tsc --checkJs` over the existing JSDoc is tried in the
+   same step (audit finding M2) and kept only if it costs little.
+3. **Then the types, in this order**, each measured in LabVIEW and with its own DT where it needs one:
+   1. Clusters made by the user: cluster control, indicator and constant, Bundle and Unbundle, the cluster's order.
+   2. Type definitions and strict type definitions (`.ctl` in LabVIEW): Make Type Def., the control editor, updating
+      their instances.
+   3. Time stamp: control, constant, Get Date/Time, conversions.
+   4. Waveform: the type, Build and Get Waveform Components, waveform charts and graphs fed by it.
+   5. **DAQ on waveforms**: DAQmx Read's waveform instances. Here the hardware stage may reopen.
+   6. Variant.
+4. **The rest of OVI Server** (the plan's hardware step 7) is native ([DT-079](#dt-079) §2) and is placed after the
+   types, with Core 2.
+5. **A control's file is `.octl`** (*Open Control*), chosen by the developer on 2026-11-16: it stands to LabVIEW's
+   `.ctl` as OVI stands to VI ([DT-071](#dt-071)). LabVIEW's words (custom control, type definition, strict type
+   definition) are kept, since only "VI" is NI's name for the program unit. LabVIEW puts no `lv` on `.vi` and `.ctl`,
+   only on `.lvproj` and `.lvlib`, so the control's file carries no `sd` either. `.ctl` itself is LabVIEW's format,
+   which Solder may open some day ([DT-076](#dt-076)); `.ocx` is ActiveX, `.oct` GNU Octave and `.ocl` is taken in
+   shared-mime-info. `.octl` is free there (checked on 2026-11-16); other uses are unverified.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| No new hardware front opens before step 5 | the plan's §3b and the CHANGELOG | Unverified (a rule of work) |
+| The split moves code without changing what it emits | the whole suite, and the `.wat` of the examples compared before and after | Not built |
+| Each type is LabVIEW's | its own measurements and tests, step by step | Not built |
+
+## DT-094
+
+**An OVI drawn as a diagram is saved as `.ovi`, not `.sdg`. The files take LabVIEW's names with Solder's letter:
+`.vi` → `.ovi`, `.ctl` → `.octl` ([DT-093](#dt-093) §5), `.lvproj` → `.sdproj`, `.lvlib` → `.sdlib`. Old `.sdg`
+and `.qvi` files keep opening.**
+
+- **Status:** Accepted on 2026-11-16 by the developer, who proposed it ("tengo la idea de cambiar .sdg por .ovi") and
+  asked for it to be put in the plan. It amends [DT-051](#dt-051) §1 and §2.
+- **Why:** [DT-051](#dt-051) (2026-10-15) left `.qvi` because it "reads as LabVIEW's `.vi`" and chose `.sdg`. Two weeks
+  later [DT-071](#dt-071) gave Solder's program unit its own word, the OVI; a file named as that word is now what is
+  sought, not a confusion, and it is a name of Solder's, not NI's. With `.octl` for a control the family is LabVIEW's
+  one to one: no prefix on the unit and the control, as LabVIEW's `.vi` and `.ctl`; `sd` where LabVIEW puts `lv`. The
+  change costs least now: few users, and the format's promise of 1.0 ([DT-077](#dt-077) §3) is not given yet.
+- **Checked:** `.ovi` and `.ovt` are not in shared-mime-info (2026-11-16); other uses are unverified.
+
+### Decision
+
+1. **`.ovi`** is the extension Save As writes for an OVI drawn as a diagram. The content, `qvi.schema.json` and
+   `core/model/qvi-format.mjs` do not change (as DT-051 §5).
+2. **Old files still open**, as DT-051 §4 did for `.qvi`: a `.sdg` or `.qvi` opens, Ctrl+S keeps its name, because its
+   callers name it so; Save As offers the same name with `.ovi`. Any of the three extensions calls any other.
+3. **What Solder ships is renamed**: `ovi.lib/`, the add-ons (`addons/`, their palette files) and `examples/`, with
+   the subOVI paths inside them. So that a user's OVI that calls `<ovilib>/…/X.sdg` keeps running, **an `<ovilib>`
+   path whose file is not there is looked for with the other two extensions** (`core/model/ovi-lib.mjs`, through the
+   locator built at start-up, now built with or without add-ons), and the caller keeps the path it has. Only `<ovilib>`
+   paths need it: Solder renames no file of the user's, so their relative paths stay true. This lookup is Solder's own
+   (LabVIEW never renamed its extension); it is kept until 1.0 and its removal is decided then.
+4. **The installer** associates `.ovi`, `.sdg` and `.qvi`, and its uninstaller removes all three. The file type's
+   name is "Solder OVI" (today "Solder VI", against DT-071).
+5. **The textual twin.** DT-051 reserved `.sdt` as `.sdg`'s pair. The name of a textual OVI's file is decided when that
+   language is designed; `.ovt` is free and noted here. `.sdt` stays reserved until then.
+6. **Unchanged:** the polymorphic OVI's `.sdp` ([DT-074](#dt-074)), `.sdproj` and `.sdlib`, and each OVI's companion
+   stylesheet (`.css`, [DT-058](#dt-058) §2). The words in the living documentation (CLAUDE.md, README, `spec/`, the
+   plan) change with the step; this log's history keeps `.sdg` where it was meant then.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| Save As writes `.ovi`; `.sdg` and `.qvi` name an OVI file and keep their names on Ctrl+S | "Save As writes .ovi…" and "the three extensions name an OVI file…" in `test/editor/vi-paths.test.mjs` | **Built** (2026-11-16) |
+| An `<ovilib>` path saved with `.sdg` or `.qvi` finds the OVI renamed to `.ovi`, in ovi.lib and in an add-on; a file that has its name is that one | "an <ovilib> path saved with .sdg finds the OVI renamed…" in `test/editor/installed-addons.test.mjs` | **Built** (2026-11-16) |
+| Every OVI Solder ships is `.ovi` and every subOVI it calls, by its new name, exists | "every OVI Solder ships is a .ovi…" in `test/editor/vi-paths.test.mjs` (examples, ovi.lib, add-ons) | **Built** (2026-11-16) |
+| The installer associates `.ovi` and removes it on uninstall | `package.json`, `build/installer.nsh` | **Unverified** (not installed in the virtual machine) |
+| Files of released betas still open | `test/fixtures/released/` | Kept |

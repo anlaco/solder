@@ -9,8 +9,13 @@
         "connection": "required"
       },
       {
-        "name": "control_2",
-        "cell": 7
+        "name": "bool-control_1",
+        "cell": 1
+      },
+      {
+        "name": "arr-control_1",
+        "cell": 7,
+        "connection": "required"
       },
       {
         "name": "control_1",
@@ -28,8 +33,8 @@
         "cell": 4
       },
       {
-        "name": "arr-control_1",
-        "cell": 6
+        "name": "indicator_1",
+        "cell": 10
       },
       {
         "name": "cluster-indicator_1",
@@ -113,8 +118,22 @@
       "default": 10
     },
     {
-      "name": "arr-control_1",
+      "name": "bool-control_1",
+      "role": "control",
+      "type": "boolean",
+      "default": false,
+      "style": "horizontal-toggle-switch",
+      "mechanical-action": "switch-when-pressed"
+    },
+    {
+      "name": "indicator_1",
       "role": "indicator",
+      "type": "u32",
+      "default": 0
+    },
+    {
+      "name": "arr-control_1",
+      "role": "control",
       "type": {
         "array": "number",
         "dims": 2
@@ -128,12 +147,6 @@
         0,
         0
       ]
-    },
-    {
-      "name": "control_2",
-      "role": "control",
-      "type": "i32",
-      "default": -1
     }
   ],
   "block-diagram": {
@@ -160,7 +173,7 @@
         "config": {
           "library": "nilvaiu.*",
           "specify-path-on-diagram": false,
-          "function": "DAQReadNChanNSamp2DF64",
+          "function": "DAQWriteNChanNSamp2DF64",
           "thread": "any",
           "calling-convention": "c",
           "error-checking": "default",
@@ -176,16 +189,16 @@
               "pass": "value"
             },
             {
-              "name": "samplesPerChannel",
+              "name": "timeout",
               "type": "numeric",
-              "data-type": "i32",
+              "data-type": "dbl",
               "pass": "value",
               "constant": false
             },
             {
-              "name": "timeout",
+              "name": "autoStart",
               "type": "numeric",
-              "data-type": "dbl",
+              "data-type": "u8",
               "pass": "value"
             },
             {
@@ -194,6 +207,12 @@
               "data-type": "dbl",
               "dimensions": 2,
               "array-format": "array-handle"
+            },
+            {
+              "name": "numSamplesWriten",
+              "type": "numeric",
+              "data-type": "u32",
+              "pass": "pointer"
             },
             {
               "name": "extendedErrorInfo",
@@ -211,7 +230,7 @@
         "name": "subvi_1",
         "type": "subvi",
         "config": {
-          "vi": "DAQ Fill In Error Info.sdg"
+          "vi": "DAQ Fill In Error Info.ovi"
         }
       },
       {
@@ -219,12 +238,28 @@
         "type": "control"
       },
       {
-        "name": "arr-control_1",
-        "type": "arr-indicator"
+        "name": "bool-control_1",
+        "type": "bool-control"
       },
       {
-        "name": "control_2",
-        "type": "control"
+        "name": "indicator_1",
+        "type": "indicator"
+      },
+      {
+        "name": "boolean-to-0-1_1",
+        "type": "boolean-to-0-1"
+      },
+      {
+        "name": "num-const_1",
+        "type": "num-const",
+        "config": {
+          "type": "u32",
+          "default": 0
+        }
+      },
+      {
+        "name": "arr-control_1",
+        "type": "arr-control"
       }
     ],
     "wires": [
@@ -253,24 +288,36 @@
         "to": "daq-name-indicator_1.value"
       },
       {
-        "from": "empty-string-constant_1.result",
-        "to": "call-library_1.arg-4-in"
-      },
-      {
-        "from": "call-library_1.arg-4-out",
-        "to": "subvi_1.str-control_1"
-      },
-      {
         "from": "control_1.result",
-        "to": "call-library_1.arg-2-in"
-      },
-      {
-        "from": "control_2.result",
         "to": "call-library_1.arg-1-in"
       },
       {
-        "from": "call-library_1.arg-3-out",
-        "to": "arr-control_1.value"
+        "from": "empty-string-constant_1.result",
+        "to": "call-library_1.arg-5-in"
+      },
+      {
+        "from": "call-library_1.arg-5-out",
+        "to": "subvi_1.str-control_1"
+      },
+      {
+        "from": "bool-control_1.result",
+        "to": "boolean-to-0-1_1.boolean"
+      },
+      {
+        "from": "boolean-to-0-1_1.result",
+        "to": "call-library_1.arg-2-in"
+      },
+      {
+        "from": "call-library_1.arg-4-out",
+        "to": "indicator_1.value"
+      },
+      {
+        "from": "num-const_1.result",
+        "to": "call-library_1.arg-4-in"
+      },
+      {
+        "from": "arr-control_1.result",
+        "to": "call-library_1.arg-3-in"
       }
     ]
   },
@@ -323,18 +370,33 @@
           "text": "timeout\n"
         }
       },
-      "arr-control_1": {
-        "x": 460,
-        "y": 42,
+      "bool-control_1": {
+        "x": 681,
+        "y": 63,
         "label": {
-          "text": "data\n"
+          "text": "auto start"
         }
       },
-      "control_2": {
-        "x": 441,
-        "y": 411,
+      "indicator_1": {
+        "x": 873,
+        "y": 191,
         "label": {
-          "text": "number of samples per channel\n"
+          "text": "number of samples written per channel"
+        }
+      },
+      "boolean-to-0-1_1": {
+        "x": 556,
+        "y": 279
+      },
+      "num-const_1": {
+        "x": 331,
+        "y": 692
+      },
+      "arr-control_1": {
+        "x": 420,
+        "y": 12,
+        "label": {
+          "text": "data"
         }
       }
     },
@@ -374,18 +436,25 @@
           "text": "timeout\n"
         }
       },
-      "arr-control_1": {
-        "x": 460,
-        "y": 42,
+      "bool-control_1": {
+        "x": 681,
+        "y": 63,
         "label": {
-          "text": "data\n"
+          "text": "auto start"
         }
       },
-      "control_2": {
-        "x": 441,
-        "y": 411,
+      "indicator_1": {
+        "x": 873,
+        "y": 191,
         "label": {
-          "text": "number of samples per channel\n"
+          "text": "number of samples written per channel"
+        }
+      },
+      "arr-control_1": {
+        "x": 420,
+        "y": 12,
+        "label": {
+          "text": "data"
         }
       }
     },
@@ -420,7 +489,12 @@
           61
         ]
       },
-      "call-library_1.arg-4-in": {
+      "call-library_1.arg-1-in": {
+        "bends": [
+          336
+        ]
+      },
+      "call-library_1.arg-5-in": {
         "bends": [
           298
         ]
@@ -430,21 +504,30 @@
           406
         ]
       },
-      "call-library_1.arg-2-in": {
+      "boolean-to-0-1_1.boolean": {
         "bends": [
-          336
+          727,
+          183.5,
+          548
         ]
       },
-      "call-library_1.arg-1-in": {
+      "call-library_1.arg-2-in": {
         "bends": [
-          487,
-          553.75,
+          590.3333333333334,
+          484.75,
           352
         ]
       },
-      "arr-control_1.value": {
+      "indicator_1.value": {
         "bends": [
           406
+        ]
+      },
+      "call-library_1.arg-3-in": {
+        "bends": [
+          466,
+          362.25,
+          352
         ]
       }
     },

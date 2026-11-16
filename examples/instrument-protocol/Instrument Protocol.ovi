@@ -58,7 +58,7 @@
         "name": "subvi_2",
         "type": "subvi",
         "config": {
-          "vi": "Simulated Instrument.sdg"
+          "vi": "Simulated Instrument.ovi"
         }
       },
       {
@@ -122,14 +122,14 @@
               "name": "subvi_1",
               "type": "subvi",
               "config": {
-                "vi": "Simulated Instrument.sdg"
+                "vi": "Simulated Instrument.ovi"
               }
             },
             {
               "name": "subvi_3",
               "type": "subvi",
               "config": {
-                "vi": "Parse Reply.sdg"
+                "vi": "Parse Reply.ovi"
               }
             },
             {

@@ -90,16 +90,23 @@
     "icon": "build/icon.png",
     "fileAssociations": [
       {
+        "ext": "ovi",
+        "name": "Solder OVI",
+        "description": "Solder OVI",
+        "icon": "build/icon",
+        "role": "Editor"
+      },
+      {
         "ext": "sdg",
-        "name": "Solder VI",
-        "description": "Solder VI",
+        "name": "Solder OVI (old extension)",
+        "description": "Solder OVI (old extension)",
         "icon": "build/icon",
         "role": "Editor"
       },
       {
         "ext": "qvi",
-        "name": "Solder VI (old extension)",
-        "description": "Solder VI (old extension)",
+        "name": "Solder OVI (first extension)",
+        "description": "Solder OVI (first extension)",
         "icon": "build/icon",
         "role": "Editor"
       }

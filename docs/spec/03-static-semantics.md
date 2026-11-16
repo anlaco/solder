@@ -6,7 +6,7 @@
 
 ## 1. Scope
 
-[`02-syntax.md`](02-syntax.md) defines what a `.sdg` is **well formed as a
+[`02-syntax.md`](02-syntax.md) defines what an `.ovi` is **well formed as a
 document**. This one defines what an OVI is **well formed as a program**: types,
 ports, connections and graph structure.
 

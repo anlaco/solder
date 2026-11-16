@@ -1,11 +1,17 @@
 // ovi.lib, Solder's own library of OVIs (DT-073): a folder shipped with Solder whose OVIs a caller names by a
-// symbolic path, `<ovilib>/Instr/VISA Configure Serial Port (Instr).sdg`, resolved against the ovi.lib of the
+// symbolic path, `<ovilib>/Instr/VISA Configure Serial Port (Instr).ovi`, resolved against the ovi.lib of the
 // Solder that opens it, as LabVIEW stores `<vilib>\Utility\error.llb\Clear Errors.vi` (measured,
 // labview-captures/reports/2026-11-05-vilib-and-type-polymorphic.md §A). Pure: it works on strings with `/` as the
 // separator, so the command line, the main process and the page share it.
 
 /** The root token of a stored path into ovi.lib, as LabVIEW's `<vilib>`. */
 export const OVI_LIB_TOKEN = "<ovilib>";
+
+/**
+ * The extensions of an OVI file, the one written first (DT-094); the others are DT-051's `.sdg` and the first `.qvi`,
+ * which still open.
+ */
+export const OVI_EXTENSIONS = [".ovi", ".sdg", ".qvi"];
 
 /** What the hierarchy and a subOVI's description add after an OVI of ovi.lib, as LabVIEW adds "(vi.lib)". */
 export const OVI_LIB_MARK = "(ovi.lib)";
@@ -43,13 +49,28 @@ function rootHolding(relativePath, oviLib) {
   return oviLib.roots[rootPosition];
 }
 
+const extensionOf = (relativePath) => OVI_EXTENSIONS.find((extension) => relativePath.toLowerCase().endsWith(extension));
+
+/**
+ * The relative path of the file a stored path names. Solder renamed what it ships from `.ovi` to `.ovi` (DT-094 §3),
+ * so a caller saved before still names `<ovilib>/…/X.sdg`: when the locator does not know that file but knows the same
+ * name with another OVI extension, that one is it.
+ */
+function fileNamed(relativePath, oviLib) {
+  const extension = extensionOf(relativePath);
+  if (!isLocator(oviLib) || Object.hasOwn(oviLib.files, relativePath) || !extension) return relativePath;
+  const stem = relativePath.slice(0, -extension.length);
+  const renamed = OVI_EXTENSIONS.map((other) => `${stem}${other}`).find((candidate) => Object.hasOwn(oviLib.files, candidate));
+  return renamed ?? relativePath;
+}
+
 /**
  * The absolute path of a stored `<ovilib>/…` path, against `oviLib` (a folder or a locator). With nothing known (a
  * caller that does not know where ovi.lib is) the stored path is returned as it is, so that it is reported as not found.
  */
 export function resolveOviLibPath(storedPath, oviLib) {
   if (!oviLib) return storedPath;
-  const relativePath = withSlashes(storedPath).slice(OVI_LIB_TOKEN.length + 1);
+  const relativePath = fileNamed(withSlashes(storedPath).slice(OVI_LIB_TOKEN.length + 1), oviLib);
   return `${withoutTrailingSlash(withSlashes(rootHolding(relativePath, oviLib)))}/${relativePath}`;
 }
 

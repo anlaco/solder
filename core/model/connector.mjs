@@ -2,7 +2,7 @@
 // indicator occupies, and how its terminal must be wired (DT-045, spec/02 §4.5).
 //
 // Pure functions over the graph. The connector lives in `g.vi.connector`, the
-// same object the `.sdg` stores: its LabVIEW pattern number and its terminals,
+// same object the `.ovi` stores: its LabVIEW pattern number and its terminals,
 // each the name of a panel element or `{ name, cell, connection }`. A cell is
 // LabVIEW's connector index in that pattern (DT-075, core/model/connector-patterns.mjs).
 
@@ -55,7 +55,7 @@ export function cellAnchor(cell, pattern = DEFAULT_PATTERN) {
 }
 
 /**
- * The cells a terminal with no cell takes, in order (a `.sdg` written by hand): inputs from the left column down,
+ * The cells a terminal with no cell takes, in order (a `.ovi` written by hand): inputs from the left column down,
  * outputs from the right column down. That default is ours, not LabVIEW's. For 4-2-2-4 it is the order Solder has
  * always used; for any other pattern, cells sorted from the left (inputs) or from the right (outputs), then down.
  */

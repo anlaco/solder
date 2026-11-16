@@ -11,16 +11,16 @@ import { NO_ERROR, PLUGIN, callPlugin, installAddonForTheseTests, run, showError
 
 installAddonForTheseTests();
 
-const CREATE_DIGITAL_INPUT = "DAQ Create Virtual Channel (Digital Input).sdg";
-const CREATE_DIGITAL_OUTPUT = "DAQ Create Virtual Channel (Digital Output).sdg";
+const CREATE_DIGITAL_INPUT = "DAQ Create Virtual Channel (Digital Input).ovi";
+const CREATE_DIGITAL_OUTPUT = "DAQ Create Virtual Channel (Digital Output).ovi";
 const ONE_CHANNEL_FOR_EACH_LINE = 0;
 const ONE_CHANNEL_FOR_ALL_LINES = 1;
 const PHYSICAL_CHANNEL_DOES_NOT_EXIST = -200170;
 const PORT_NEEDS_ONE_CHANNEL = -200376;
 const CHANNEL_TYPE_MIXED = -200559;
-const READ_BOOL = "DAQ Read (Digital Bool 1Line 1Point).sdg";
-const READ_U32 = "DAQ Read (Digital U32 1Chan 1Samp).sdg";
-const WRITE_BOOL = "DAQ Write (Digital Bool 1Line 1Point).sdg";
+const READ_BOOL = "DAQ Read (Digital Bool 1Line 1Point).ovi";
+const READ_U32 = "DAQ Read (Digital U32 1Chan 1Samp).ovi";
+const WRITE_BOOL = "DAQ Write (Digital Bool 1Line 1Point).ovi";
 const LINE_COUNT_MISMATCH = -200463;
 const NO_OUTPUT_CHANNELS = -200459;
 const READS = 5;
@@ -42,7 +42,7 @@ function createDigital(b, name, file, lines, grouping, task, errorIn) {
 
 /** Clears the task of node `after`. */
 function clear(b, after) {
-  callPlugin(b, "clear", "DAQ Clear Task.sdg", `${after}.daq-name-indicator_1`, `${after}.cluster-indicator_1`);
+  callPlugin(b, "clear", "DAQ Clear Task.ovi", `${after}.daq-name-indicator_1`, `${after}.cluster-indicator_1`);
 }
 
 const createAndClear = (file, lines, grouping) =>

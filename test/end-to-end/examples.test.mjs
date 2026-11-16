@@ -92,7 +92,7 @@ const temperatureAt = (iteration) => 20 + 5 * Math.sin(iteration / 10);
 for (const mode of MODES) {
   test(`Temperature Monitor gives LabVIEW's average, alarm and chart after its 100 samples ${mode.name}`, async () => {
     // Period (ms) only paces the loop: with 0 it does not wait and every value is the same.
-    const { last, series } = await runExample("temperature-monitor/Temperature Monitor.sdg", { mode, controls: { "Period (ms)": 0 } });
+    const { last, series } = await runExample("temperature-monitor/Temperature Monitor.ovi", { mode, controls: { "Period (ms)": 0 } });
     assert.equal(series.Temperature.length, 100, "100 iterations, i = 0…99");
     series.Temperature.forEach((value, iteration) => assertClose(value, temperatureAt(iteration), `point ${iteration}`));
     assert.equal(last.Average, 20.932369884762963);
@@ -104,7 +104,7 @@ for (const mode of MODES) {
 for (const mode of MODES) {
   test(`Instrument Protocol identifies the instrument and plots 5 for every MEAS:VOLT? until Stop ${mode.name}`, async () => {
     const pointsBeforeStop = 3;
-    const { last, series, dialogs } = await runExample("instrument-protocol/Instrument Protocol.sdg", { mode,
+    const { last, series, dialogs } = await runExample("instrument-protocol/Instrument Protocol.ovi", { mode,
       stopWhen: (received) => (received.Voltage?.length ?? 0) >= pointsBeforeStop,
     });
     assert.equal(last.Identification, "SOLDER,SIM-1,0,0.2");
@@ -117,10 +117,10 @@ for (const mode of MODES) {
 
 for (const mode of MODES) {
   test(`Instrument Protocol with FOO stops after one iteration with LabVIEW's error 85 ${mode.name}`, async () => {
-    const { last, series, dialogs } = await runExample("instrument-protocol/Instrument Protocol.sdg", { mode, controls: { Command: "FOO" } });
+    const { last, series, dialogs } = await runExample("instrument-protocol/Instrument Protocol.ovi", { mode, controls: { Command: "FOO" } });
     assert.deepEqual(series.Voltage, [0], "one point, Scan From String's default");
     // LabVIEW names the VIs by their .vi files and Solder by its own (spec/04 Rule 21k).
-    const source = "Scan From String (arg 1) in Parse Reply.sdg->Instrument Protocol.sdg";
+    const source = "Scan From String (arg 1) in Parse Reply.ovi->Instrument Protocol.ovi";
     assert.deepEqual(
       { status: last["error out"].status, code: last["error out"].code, source: last["error out"].source },
       { status: true, code: 85, source },
@@ -132,7 +132,7 @@ for (const mode of MODES) {
 
 for (const mode of MODES) {
   test(`Oven Controller heats, holds and cools in LabVIEW's 66 iterations and ends Done with the fan on ${mode.name}`, async () => {
-    const { last, series } = await runExample("oven-controller/Oven Controller.sdg", { mode });
+    const { last, series } = await runExample("oven-controller/Oven Controller.ovi", { mode });
     const heating = Array.from({ length: 27 }, (_, step) => 21.5 + 1.5 * step);
     const holding = Array(20).fill(60.5);
     const cooling = Array.from({ length: 18 }, (_, step) => 58.5 - 2 * step);
@@ -146,6 +146,6 @@ for (const mode of MODES) {
 test("the command line runs the subVIs of Instrument Protocol and prints their strings and error cluster", () => {
   const run = (relativePath) =>
     execFileSync(process.execPath, [path.join(RAIZ, "cli/solder.mjs"), "run", path.join(RAIZ, "examples", relativePath), "--threads", "2"], { encoding: "utf8" });
-  assert.equal(run("instrument-protocol/Simulated Instrument.sdg"), "Reply = ERR unknown command\n");
-  assert.match(run("instrument-protocol/Parse Reply.sdg"), /error out = \{ status: TRUE, code: 85, source: Scan From String \(arg 1\) in Parse Reply\.sdg \}/);
+  assert.equal(run("instrument-protocol/Simulated Instrument.ovi"), "Reply = ERR unknown command\n");
+  assert.match(run("instrument-protocol/Parse Reply.ovi"), /error out = \{ status: TRUE, code: 85, source: Scan From String \(arg 1\) in Parse Reply\.ovi \}/);
 });

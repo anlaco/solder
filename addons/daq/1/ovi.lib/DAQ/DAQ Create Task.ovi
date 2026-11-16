@@ -1,44 +1,27 @@
 {
-  "solder": 5,
+  "solder": 4,
   "connector": {
     "pattern": 4833,
     "inputs": [
       {
-        "name": "daq-name-control_1",
-        "cell": 0
-      },
-      {
-        "name": "control_2",
+        "name": "str-control_1",
         "cell": 1
       },
       {
-        "name": "control_1",
+        "name": "bool-control_1",
         "cell": 2
       },
       {
-        "name": "control_5",
-        "cell": 3
+        "name": "daq-name-control_1",
+        "cell": 5
       },
       {
         "name": "daq-name-control_2",
-        "cell": 5,
-        "connection": "required"
-      },
-      {
-        "name": "str-control_1",
         "cell": 7
-      },
-      {
-        "name": "control_6",
-        "cell": 9
       },
       {
         "name": "cluster-control_1",
         "cell": 11
-      },
-      {
-        "name": "daq-name-control_3",
-        "cell": 12
       }
     ],
     "outputs": [
@@ -122,86 +105,26 @@
       "default": ""
     },
     {
-      "name": "daq-name-control_2",
-      "role": "control",
-      "type": {
-        "daq-name": "physical-channel"
-      },
-      "default": ""
-    },
-    {
-      "name": "daq-name-control_3",
-      "role": "control",
-      "type": {
-        "daq-name": "scale"
-      },
-      "default": ""
-    },
-    {
       "name": "str-control_1",
       "role": "control",
       "type": "string",
       "default": ""
     },
     {
-      "name": "control_1",
+      "name": "daq-name-control_2",
       "role": "control",
-      "type": "number",
-      "default": -5
+      "type": {
+        "daq-name": "global-channel"
+      },
+      "default": ""
     },
     {
-      "name": "control_2",
+      "name": "bool-control_1",
       "role": "control",
-      "type": "number",
-      "default": 5
-    },
-    {
-      "name": "control_5",
-      "role": "control",
-      "type": "i32",
-      "default": -1,
-      "style": "text-ring",
-      "ring-items": [
-        {
-          "text": "Default",
-          "value": -1
-        },
-        {
-          "text": "RSE",
-          "value": 10083
-        },
-        {
-          "text": "NRSE",
-          "value": 10078
-        },
-        {
-          "text": "Differential",
-          "value": 10106
-        },
-        {
-          "text": "Pseudodifferential",
-          "value": 12529
-        }
-      ],
-      "allow-undefined": false
-    },
-    {
-      "name": "control_6",
-      "role": "control",
-      "type": "i32",
-      "default": 10348,
-      "style": "text-ring",
-      "ring-items": [
-        {
-          "text": "Volts",
-          "value": 10348
-        },
-        {
-          "text": "From Custom Scale",
-          "value": 10065
-        }
-      ],
-      "allow-undefined": false
+      "type": "boolean",
+      "default": true,
+      "style": "horizontal-toggle-switch",
+      "mechanical-action": "switch-when-pressed"
     }
   ],
   "block-diagram": {
@@ -223,32 +146,16 @@
         "type": "daq-name-indicator"
       },
       {
-        "name": "daq-name-control_2",
-        "type": "daq-name-control"
-      },
-      {
-        "name": "daq-name-control_3",
-        "type": "daq-name-control"
-      },
-      {
         "name": "str-control_1",
         "type": "str-control"
       },
       {
-        "name": "control_1",
-        "type": "control"
+        "name": "daq-name-control_2",
+        "type": "daq-name-control"
       },
       {
-        "name": "control_2",
-        "type": "control"
-      },
-      {
-        "name": "control_5",
-        "type": "control"
-      },
-      {
-        "name": "control_6",
-        "type": "control"
+        "name": "bool-control_1",
+        "type": "bool-control"
       }
     ],
     "wires": [
@@ -273,32 +180,16 @@
         "to": "daq-name-indicator_1.value"
       },
       {
-        "from": "daq-name-control_2.result",
-        "to": "case-structure_1.tunnel-in_4"
-      },
-      {
         "from": "str-control_1.result",
         "to": "case-structure_1.tunnel-in_5"
       },
       {
-        "from": "control_1.result",
-        "to": "case-structure_1.tunnel-in_7"
+        "from": "daq-name-control_2.result",
+        "to": "case-structure_1.tunnel-in_3"
       },
       {
-        "from": "control_2.result",
-        "to": "case-structure_1.tunnel-in_8"
-      },
-      {
-        "from": "daq-name-control_3.result",
-        "to": "case-structure_1.tunnel-in_10"
-      },
-      {
-        "from": "control_5.result",
-        "to": "case-structure_1.tunnel-in_6"
-      },
-      {
-        "from": "control_6.result",
-        "to": "case-structure_1.tunnel-in_9"
+        "from": "bool-control_1.result",
+        "to": "case-structure_1.tunnel-in_4"
       }
     ],
     "structures": [
@@ -323,31 +214,15 @@
             "dir": "out"
           },
           {
-            "name": "tunnel-in_4",
-            "dir": "in"
-          },
-          {
             "name": "tunnel-in_5",
             "dir": "in"
           },
           {
-            "name": "tunnel-in_6",
+            "name": "tunnel-in_3",
             "dir": "in"
           },
           {
-            "name": "tunnel-in_7",
-            "dir": "in"
-          },
-          {
-            "name": "tunnel-in_8",
-            "dir": "in"
-          },
-          {
-            "name": "tunnel-in_9",
-            "dir": "in"
-          },
-          {
-            "name": "tunnel-in_10",
+            "name": "tunnel-in_4",
             "dir": "in"
           }
         ],
@@ -361,90 +236,10 @@
             "body": {
               "nodes": [
                 {
-                  "name": "call-library_1",
-                  "type": "call-library",
-                  "config": {
-                    "library": "nilvaiu.*",
-                    "specify-path-on-diagram": false,
-                    "function": "DAQCreateAIVoltageChan",
-                    "thread": "any",
-                    "calling-convention": "c",
-                    "error-checking": "default",
-                    "return-type": {
-                      "type": "numeric",
-                      "data-type": "i32"
-                    },
-                    "parameters": [
-                      {
-                        "name": "lvAppRef",
-                        "type": "adapt-to-type",
-                        "data-format": "handles-by-value"
-                      },
-                      {
-                        "name": "refObjPtr",
-                        "type": "adapt-to-type",
-                        "data-format": "handles-by-value"
-                      },
-                      {
-                        "name": "physicalChannelName",
-                        "type": "string",
-                        "string-format": "string-handle",
-                        "constant": true
-                      },
-                      {
-                        "name": "channelNameIn",
-                        "type": "string",
-                        "string-format": "string-handle",
-                        "constant": true
-                      },
-                      {
-                        "name": "terminalConfig",
-                        "type": "numeric",
-                        "data-type": "i32",
-                        "pass": "value"
-                      },
-                      {
-                        "name": "minVal",
-                        "type": "numeric",
-                        "data-type": "dbl",
-                        "pass": "value"
-                      },
-                      {
-                        "name": "maxVal",
-                        "type": "numeric",
-                        "data-type": "dbl",
-                        "pass": "value"
-                      },
-                      {
-                        "name": "units",
-                        "type": "numeric",
-                        "data-type": "i32",
-                        "pass": "value"
-                      },
-                      {
-                        "name": "customScaleName",
-                        "type": "string",
-                        "string-format": "string-handle",
-                        "constant": true
-                      },
-                      {
-                        "name": "channelNamesOut",
-                        "type": "string",
-                        "string-format": "string-handle"
-                      },
-                      {
-                        "name": "extendedErrorInfo",
-                        "type": "string",
-                        "string-format": "string-handle"
-                      }
-                    ]
-                  }
-                },
-                {
                   "name": "subvi_1",
                   "type": "subvi",
                   "config": {
-                    "vi": "DAQ Fill In Error Info.sdg"
+                    "vi": "DAQ Fill In Error Info.ovi"
                   }
                 },
                 {
@@ -463,17 +258,80 @@
                       "refnum": "Application"
                     }
                   }
+                },
+                {
+                  "name": "call-library_1",
+                  "type": "call-library",
+                  "config": {
+                    "library": "nilvaiu.*",
+                    "specify-path-on-diagram": false,
+                    "function": "DAQCreateTask140",
+                    "thread": "any",
+                    "calling-convention": "c",
+                    "error-checking": "default",
+                    "return-type": {
+                      "type": "numeric",
+                      "data-type": "i32"
+                    },
+                    "parameters": [
+                      {
+                        "name": "lvAppReference",
+                        "type": "adapt-to-type",
+                        "data-format": "handles-by-value"
+                      },
+                      {
+                        "name": "taskRefObjectPtr",
+                        "type": "adapt-to-type",
+                        "data-format": "handles-by-value"
+                      },
+                      {
+                        "name": "newTaskName",
+                        "type": "string",
+                        "string-format": "string-handle",
+                        "constant": true
+                      },
+                      {
+                        "name": "taskToCopy",
+                        "type": "string",
+                        "string-format": "string-handle",
+                        "constant": true
+                      },
+                      {
+                        "name": "autoCleanup",
+                        "type": "numeric",
+                        "data-type": "u8",
+                        "pass": "value"
+                      },
+                      {
+                        "name": "channels",
+                        "type": "string",
+                        "string-format": "string-handle",
+                        "constant": true
+                      },
+                      {
+                        "name": "extendedErrorInfo",
+                        "type": "string",
+                        "string-format": "string-handle"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "boolean-to-0-1_1",
+                  "type": "boolean-to-0-1"
+                },
+                {
+                  "name": "daq-name-constant_1",
+                  "type": "daq-name-constant",
+                  "config": {
+                    "type": {
+                      "daq-name": "task"
+                    },
+                    "default": ""
+                  }
                 }
               ],
               "wires": [
-                {
-                  "from": "call-library_1.return",
-                  "to": "subvi_1.control_2"
-                },
-                {
-                  "from": "call-library_1.error-out",
-                  "to": "subvi_1.cluster-control_1"
-                },
                 {
                   "from": "subvi_1.cluster-indicator_1",
                   "to": "case-structure_1.case-tunnel-out_1"
@@ -483,56 +341,52 @@
                   "to": "call-library_1.error-in"
                 },
                 {
-                  "from": "case-structure_1.tunnel-in_4",
-                  "to": "call-library_1.arg-2-in"
-                },
-                {
-                  "from": "case-structure_1.tunnel-in_5",
+                  "from": "case-structure_1.tunnel-in_2",
                   "to": "call-library_1.arg-3-in"
                 },
                 {
-                  "from": "case-structure_1.tunnel-in_6",
-                  "to": "call-library_1.arg-4-in"
+                  "from": "case-structure_1.tunnel-in_5",
+                  "to": "call-library_1.arg-2-in"
                 },
                 {
-                  "from": "case-structure_1.tunnel-in_7",
+                  "from": "vi-server-reference_1.reference",
+                  "to": "call-library_1.arg-0-in"
+                },
+                {
+                  "from": "case-structure_1.tunnel-in_3",
                   "to": "call-library_1.arg-5-in"
                 },
                 {
-                  "from": "case-structure_1.tunnel-in_8",
+                  "from": "case-structure_1.tunnel-in_4",
+                  "to": "boolean-to-0-1_1.boolean"
+                },
+                {
+                  "from": "boolean-to-0-1_1.result",
+                  "to": "call-library_1.arg-4-in"
+                },
+                {
+                  "from": "empty-string-constant_1.result",
                   "to": "call-library_1.arg-6-in"
-                },
-                {
-                  "from": "case-structure_1.tunnel-in_9",
-                  "to": "call-library_1.arg-7-in"
-                },
-                {
-                  "from": "case-structure_1.tunnel-in_10",
-                  "to": "call-library_1.arg-8-in"
                 },
                 {
                   "from": "call-library_1.arg-1-out",
                   "to": "case-structure_1.case-tunnel-out_2"
                 },
                 {
-                  "from": "empty-string-constant_1.result",
-                  "to": "call-library_1.arg-9-in"
+                  "from": "call-library_1.return",
+                  "to": "subvi_1.control_2"
                 },
                 {
-                  "from": "empty-string-constant_2.result",
-                  "to": "call-library_1.arg-10-in"
-                },
-                {
-                  "from": "call-library_1.arg-10-out",
+                  "from": "call-library_1.arg-6-out",
                   "to": "subvi_1.str-control_1"
                 },
                 {
-                  "from": "case-structure_1.tunnel-in_2",
-                  "to": "call-library_1.arg-1-in"
+                  "from": "call-library_1.error-out",
+                  "to": "subvi_1.cluster-control_1"
                 },
                 {
-                  "from": "vi-server-reference_1.reference",
-                  "to": "call-library_1.arg-0-in"
+                  "from": "daq-name-constant_1.result",
+                  "to": "call-library_1.arg-1-in"
                 }
               ]
             }
@@ -542,13 +396,25 @@
               {}
             ],
             "body": {
+              "nodes": [
+                {
+                  "name": "daq-name-constant_2",
+                  "type": "daq-name-constant",
+                  "config": {
+                    "type": {
+                      "daq-name": "task"
+                    },
+                    "default": ""
+                  }
+                }
+              ],
               "wires": [
                 {
                   "from": "case-structure_1.tunnel-in_1",
                   "to": "case-structure_1.case-tunnel-out_1"
                 },
                 {
-                  "from": "case-structure_1.tunnel-in_2",
+                  "from": "daq-name-constant_2.result",
                   "to": "case-structure_1.case-tunnel-out_2"
                 }
               ]
@@ -578,7 +444,7 @@
         "x": 16,
         "y": 50,
         "label": {
-          "text": "task in\n"
+          "text": "task to copy\n"
         }
       },
       "daq-name-indicator_1": {
@@ -588,53 +454,25 @@
           "text": "task out\n"
         }
       },
-      "daq-name-control_2": {
-        "x": 921,
-        "y": 620,
-        "label": {
-          "text": "physical channels\n"
-        }
-      },
-      "daq-name-control_3": {
-        "x": 1121,
-        "y": 620,
-        "label": {
-          "text": "custom scale name\n"
-        }
-      },
       "str-control_1": {
         "x": 1312,
         "y": 626,
         "label": {
-          "text": "name to assign\n"
+          "text": "new task name\n"
         }
       },
-      "control_1": {
-        "x": 106,
-        "y": 591,
+      "daq-name-control_2": {
+        "x": 89,
+        "y": 456,
         "label": {
-          "text": "minimum value\n"
+          "text": "global virtual channels\n"
         }
       },
-      "control_2": {
-        "x": 321,
-        "y": 621,
+      "bool-control_1": {
+        "x": 80,
+        "y": 561,
         "label": {
-          "text": "maximum value\n"
-        }
-      },
-      "control_5": {
-        "x": 969,
-        "y": 161,
-        "label": {
-          "text": "input terminal configuration"
-        }
-      },
-      "control_6": {
-        "x": 1269,
-        "y": 161,
-        "label": {
-          "text": "units"
+          "text": "auto cleanup\n"
         }
       },
       "case-structure_1": {
@@ -663,37 +501,17 @@
         "x": 891,
         "y": 265
       },
-      "tunnel-in_4": {
-        "x": 200,
-        "y": 287
-      },
       "tunnel-in_5": {
         "x": 200,
         "y": 320
       },
-      "tunnel-in_6": {
+      "tunnel-in_3": {
         "x": 200,
-        "y": 297
+        "y": 225
       },
-      "tunnel-in_7": {
+      "tunnel-in_4": {
         "x": 200,
-        "y": 331
-      },
-      "tunnel-in_8": {
-        "x": 200,
-        "y": 342
-      },
-      "tunnel-in_9": {
-        "x": 200,
-        "y": 353
-      },
-      "tunnel-in_10": {
-        "x": 200,
-        "y": 364
-      },
-      "call-library_1": {
-        "x": 360,
-        "y": 239
+        "y": 390
       },
       "subvi_1": {
         "x": 646,
@@ -710,6 +528,22 @@
       "vi-server-reference_1": {
         "x": 227,
         "y": 383
+      },
+      "call-library_1": {
+        "x": 430,
+        "y": 159
+      },
+      "boolean-to-0-1_1": {
+        "x": 396,
+        "y": 389
+      },
+      "daq-name-constant_1": {
+        "x": 292,
+        "y": 133
+      },
+      "daq-name-constant_2": {
+        "x": 463,
+        "y": 163
       }
     },
     "panel": {
@@ -731,7 +565,7 @@
         "x": 16,
         "y": 50,
         "label": {
-          "text": "task in\n"
+          "text": "task to copy\n"
         }
       },
       "daq-name-indicator_1": {
@@ -741,100 +575,32 @@
           "text": "task out\n"
         }
       },
-      "daq-name-control_2": {
-        "x": 166,
-        "y": 380,
-        "label": {
-          "text": "physical channels\n"
-        }
-      },
-      "daq-name-control_3": {
-        "x": 416,
-        "y": 380,
-        "label": {
-          "text": "custom scale name\n"
-        }
-      },
       "str-control_1": {
         "x": 200,
         "y": 461,
         "label": {
-          "text": "name to assign\n"
+          "text": "new task name\n"
         }
       },
-      "control_1": {
-        "x": 211,
-        "y": 91,
+      "daq-name-control_2": {
+        "x": 366,
+        "y": 380,
         "label": {
-          "text": "minimum value\n"
+          "text": "global virtual channels\n"
         }
       },
-      "control_2": {
-        "x": 411,
-        "y": 91,
+      "bool-control_1": {
+        "x": 381,
+        "y": 443,
         "label": {
-          "text": "maximum value\n"
-        }
-      },
-      "control_5": {
-        "x": 969,
-        "y": 161,
-        "label": {
-          "text": "input terminal configuration"
-        }
-      },
-      "control_6": {
-        "x": 1269,
-        "y": 161,
-        "label": {
-          "text": "units"
+          "text": "auto cleanup\n"
         }
       }
     },
     "wires": {
-      "subvi_1.control_2": {
-        "bends": [
-          406
-        ]
-      },
-      "subvi_1.cluster-control_1": {
-        "bends": [
-          406
-        ]
-      },
       "case-structure_1.case-tunnel-out_1": {
         "bends": [
           216
-        ]
-      },
-      "case-structure_1.case-tunnel-out_2": {
-        "bends": [
-          406
-        ]
-      },
-      "call-library_1.arg-9-in": {
-        "bends": [
-          318
-        ]
-      },
-      "call-library_1.arg-10-in": {
-        "bends": [
-          318
-        ]
-      },
-      "subvi_1.str-control_1": {
-        "bends": [
-          406
-        ]
-      },
-      "call-library_1.arg-1-in": {
-        "bends": [
-          216
-        ]
-      },
-      "call-library_1.arg-0-in": {
-        "bends": [
-          339
         ]
       },
       "case-structure_1.selector": {
@@ -847,18 +613,61 @@
           61
         ]
       },
-      "case-structure_1.tunnel-in_6": {
+      "call-library_1.error-in": {
         "bends": [
-          1015,
-          241,
-          192
+          216
         ]
       },
-      "case-structure_1.tunnel-in_9": {
+      "call-library_1.arg-3-in": {
         "bends": [
-          1315,
-          269,
-          192
+          216
+        ]
+      },
+      "call-library_1.arg-2-in": {
+        "bends": [
+          216
+        ]
+      },
+      "call-library_1.arg-0-in": {
+        "bends": [
+          339
+        ]
+      },
+      "call-library_1.arg-4-in": {
+        "bends": [
+          430.3333333333333,
+          307.75,
+          422
+        ]
+      },
+      "call-library_1.arg-6-in": {
+        "bends": [
+          318
+        ]
+      },
+      "case-structure_1.case-tunnel-out_2": {
+        "bends": [
+          505
+        ]
+      },
+      "subvi_1.control_2": {
+        "bends": [
+          476
+        ]
+      },
+      "subvi_1.str-control_1": {
+        "bends": [
+          476
+        ]
+      },
+      "subvi_1.cluster-control_1": {
+        "bends": [
+          476
+        ]
+      },
+      "call-library_1.arg-1-in": {
+        "bends": [
+          334
         ]
       }
     },

@@ -95,7 +95,7 @@ const ticked = (rows) => rows.filter(([, , classes]) => classes.includes("marcad
 
 test("Select a VI accepts a .sdp and a placed one is Automatic, on its first instance, with the selector as the file says", () => {
   const main = readFileSync(path.join(RAIZ, "editor/electron/main.mjs"), "utf8");
-  assert.match(main, /OVI_AND_POLYMORPHIC_FILTERS = \[\{ name: "[^"]+", extensions: \[VI_EXTENSION, OLD_VI_EXTENSION, POLYMORPHIC_EXTENSION\]/, "the dialog lists .sdp");
+  assert.match(main, /OVI_AND_POLYMORPHIC_FILTERS = \[\{ name: "[^"]+", extensions: \[\.\.\.VI_EXTENSIONS, POLYMORPHIC_EXTENSION\]/, "the dialog lists .sdp");
   assert.match(main, /title: "Select an OVI"[^)]*filters: OVI_AND_POLYMORPHIC_FILTERS/);
 
   const placed = SN.placedConfig(STORED_SDP, sdpText());

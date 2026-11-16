@@ -1,4 +1,4 @@
-// examples/error-no-error/ErrorNoError.sdg gives, run after run, what LabVIEW 2026 Q3's ErrorNoError.vi gave
+// examples/error-no-error/ErrorNoError.ovi gives, run after run, what LabVIEW 2026 Q3's ErrorNoError.vi gave
 // (labview-captures/reports/2026-11-06-case-error-selector.md, "Runtime"): two Property Nodes clear the LEDs,
 // Bundle By Name writes the Boolean into the error's status, and a Case with an error selector lights one LED.
 // With an error in, the Property Nodes write nothing and the LEDs keep the previous run's values.
@@ -15,7 +15,7 @@ import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { createNodePool } from "../../core/runtime/node-pool.mjs";
 import { CAT, RAIZ, leer as leerJson } from "../helpers.mjs";
 
-const FILE = path.join(RAIZ, "examples", "error-no-error", "ErrorNoError.sdg");
+const FILE = path.join(RAIZ, "examples", "error-no-error", "ErrorNoError.ovi");
 
 const pool = createNodePool(2);
 after(() => pool.close());
@@ -51,7 +51,7 @@ for (const [mode, options] of [["on one thread", () => ({})], ["on a pool of thr
   });
 }
 
-test("ErrorNoError.sdg validates and saves back to the same text", () => {
+test("ErrorNoError.ovi validates and saves back to the same text", () => {
   const text = readFileSync(FILE, "utf8");
   const validate = new Ajv2020({ allErrors: true, strict: false }).compile(leerJson("docs/schema/qvi.schema.json"));
   assert.ok(validate(JSON.parse(text)), JSON.stringify(validate.errors));

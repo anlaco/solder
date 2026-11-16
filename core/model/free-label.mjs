@@ -1,6 +1,6 @@
 // Free labels (DT-085): text comments placed on empty space of the panel or the diagram, as in LabVIEW. Each one is
 // a node of the graph, so it is selected, moved, deleted, copied and undone as any other object, but it has no
-// ports and the compiler never sees it: the .sdg keeps it in `layout.free-labels`. A label of the panel has a
+// ports and the compiler never sees it: the .ovi keeps it in `layout.free-labels`. A label of the panel has a
 // `panel` place and no diagram place; one of the diagram has `x`, `y` and may sit inside a structure (`dentro`).
 
 export const FREE_LABEL = "free-label";

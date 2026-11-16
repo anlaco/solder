@@ -9,15 +9,6 @@
         "connection": "required"
       },
       {
-        "name": "daq-name-control_2",
-        "cell": 5,
-        "connection": "required"
-      },
-      {
-        "name": "control_1",
-        "cell": 7
-      },
-      {
         "name": "cluster-control_1",
         "cell": 11
       }
@@ -101,32 +92,6 @@
         "daq-name": "task"
       },
       "default": ""
-    },
-    {
-      "name": "daq-name-control_2",
-      "role": "control",
-      "type": {
-        "daq-name": "terminal"
-      },
-      "default": ""
-    },
-    {
-      "name": "control_1",
-      "role": "control",
-      "type": "i32",
-      "default": 10280,
-      "style": "text-ring",
-      "ring-items": [
-        {
-          "text": "Rising",
-          "value": 10280
-        },
-        {
-          "text": "Falling",
-          "value": 10171
-        }
-      ],
-      "allow-undefined": false
     }
   ],
   "block-diagram": {
@@ -146,14 +111,6 @@
       {
         "name": "daq-name-indicator_1",
         "type": "daq-name-indicator"
-      },
-      {
-        "name": "daq-name-control_2",
-        "type": "daq-name-control"
-      },
-      {
-        "name": "control_1",
-        "type": "control"
       }
     ],
     "wires": [
@@ -176,14 +133,6 @@
       {
         "from": "case-structure_1.case-tunnel-out_2",
         "to": "daq-name-indicator_1.value"
-      },
-      {
-        "from": "daq-name-control_2.result",
-        "to": "case-structure_1.tunnel-in_3"
-      },
-      {
-        "from": "control_1.result",
-        "to": "case-structure_1.tunnel-in_4"
       }
     ],
     "structures": [
@@ -206,14 +155,6 @@
           {
             "name": "case-tunnel-out_2",
             "dir": "out"
-          },
-          {
-            "name": "tunnel-in_3",
-            "dir": "in"
-          },
-          {
-            "name": "tunnel-in_4",
-            "dir": "in"
           }
         ],
         "frames": [
@@ -231,7 +172,7 @@
                   "config": {
                     "library": "nilvaiu.*",
                     "specify-path-on-diagram": false,
-                    "function": "DAQCfgDigEdgeStartTrig",
+                    "function": "DAQDisableStartTrig",
                     "thread": "any",
                     "calling-convention": "c",
                     "error-checking": "default",
@@ -244,18 +185,6 @@
                         "name": "taskID",
                         "type": "numeric",
                         "data-type": "uptr",
-                        "pass": "value"
-                      },
-                      {
-                        "name": "source",
-                        "type": "string",
-                        "string-format": "string-handle",
-                        "constant": true
-                      },
-                      {
-                        "name": "edge",
-                        "type": "numeric",
-                        "data-type": "i32",
                         "pass": "value"
                       },
                       {
@@ -274,21 +203,21 @@
                   "name": "subvi_1",
                   "type": "subvi",
                   "config": {
-                    "vi": "DAQ Fill In Error Info.sdg"
+                    "vi": "DAQ Fill In Error Info.ovi"
                   }
                 }
               ],
               "wires": [
                 {
                   "from": "empty-string-constant_1.result",
-                  "to": "call-library_1.arg-3-in"
+                  "to": "call-library_1.arg-1-in"
                 },
                 {
                   "from": "call-library_1.return",
                   "to": "subvi_1.control_2"
                 },
                 {
-                  "from": "call-library_1.arg-3-out",
+                  "from": "call-library_1.arg-1-out",
                   "to": "subvi_1.str-control_1"
                 },
                 {
@@ -310,14 +239,6 @@
                 {
                   "from": "case-structure_1.tunnel-in_2",
                   "to": "case-structure_1.case-tunnel-out_2"
-                },
-                {
-                  "from": "case-structure_1.tunnel-in_3",
-                  "to": "call-library_1.arg-1-in"
-                },
-                {
-                  "from": "case-structure_1.tunnel-in_4",
-                  "to": "call-library_1.arg-2-in"
                 }
               ]
             }
@@ -373,20 +294,6 @@
           "text": "task out\n"
         }
       },
-      "daq-name-control_2": {
-        "x": 16,
-        "y": 120,
-        "label": {
-          "text": "source\n"
-        }
-      },
-      "control_1": {
-        "x": 81,
-        "y": 374,
-        "label": {
-          "text": "edge\n"
-        }
-      },
       "case-structure_1": {
         "x": 200,
         "y": 103,
@@ -412,14 +319,6 @@
       "case-tunnel-out_2": {
         "x": 891,
         "y": 265
-      },
-      "tunnel-in_3": {
-        "x": 200,
-        "y": 276
-      },
-      "tunnel-in_4": {
-        "x": 200,
-        "y": 287
       },
       "call-library_1": {
         "x": 360,
@@ -462,24 +361,10 @@
         "label": {
           "text": "task out\n"
         }
-      },
-      "daq-name-control_2": {
-        "x": 16,
-        "y": 120,
-        "label": {
-          "text": "source\n"
-        }
-      },
-      "control_1": {
-        "x": 369,
-        "y": 121,
-        "label": {
-          "text": "edge\n"
-        }
       }
     },
     "wires": {
-      "call-library_1.arg-3-in": {
+      "call-library_1.arg-1-in": {
         "bends": [
           298
         ]

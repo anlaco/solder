@@ -24,7 +24,7 @@
         "cell": 4
       },
       {
-        "name": "arr-control_1",
+        "name": "bool-indicator_1",
         "cell": 6
       },
       {
@@ -109,12 +109,11 @@
       "default": 10
     },
     {
-      "name": "arr-control_1",
+      "name": "bool-indicator_1",
       "role": "indicator",
-      "type": {
-        "array": "number"
-      },
-      "default": []
+      "type": "boolean",
+      "default": false,
+      "style": "round-led"
     }
   ],
   "block-diagram": {
@@ -141,7 +140,7 @@
         "config": {
           "library": "nilvaiu.*",
           "specify-path-on-diagram": false,
-          "function": "DAQReadNChan1Samp1DF64",
+          "function": "DAQRead1Chan1Samp1LineBool",
           "thread": "any",
           "calling-convention": "c",
           "error-checking": "default",
@@ -160,14 +159,14 @@
               "name": "timeout",
               "type": "numeric",
               "data-type": "dbl",
-              "pass": "value"
+              "pass": "value",
+              "constant": false
             },
             {
               "name": "data",
-              "type": "array",
-              "data-type": "dbl",
-              "dimensions": 1,
-              "array-format": "array-handle"
+              "type": "numeric",
+              "data-type": "u8",
+              "pass": "pointer"
             },
             {
               "name": "extendedErrorInfo",
@@ -185,7 +184,7 @@
         "name": "subvi_1",
         "type": "subvi",
         "config": {
-          "vi": "DAQ Fill In Error Info.sdg"
+          "vi": "DAQ Fill In Error Info.ovi"
         }
       },
       {
@@ -193,8 +192,20 @@
         "type": "control"
       },
       {
-        "name": "arr-control_1",
-        "type": "arr-indicator"
+        "name": "num-const_1",
+        "type": "num-const",
+        "config": {
+          "type": "u8",
+          "default": 0
+        }
+      },
+      {
+        "name": "bool-indicator_1",
+        "type": "bool-indicator"
+      },
+      {
+        "name": "not-equal-to-0_1",
+        "type": "not-equal-to-0"
       }
     ],
     "wires": [
@@ -223,6 +234,14 @@
         "to": "daq-name-indicator_1.value"
       },
       {
+        "from": "control_1.result",
+        "to": "call-library_1.arg-1-in"
+      },
+      {
+        "from": "num-const_1.result",
+        "to": "call-library_1.arg-2-in"
+      },
+      {
         "from": "empty-string-constant_1.result",
         "to": "call-library_1.arg-3-in"
       },
@@ -231,12 +250,12 @@
         "to": "subvi_1.str-control_1"
       },
       {
-        "from": "control_1.result",
-        "to": "call-library_1.arg-1-in"
+        "from": "call-library_1.arg-2-out",
+        "to": "not-equal-to-0_1.x"
       },
       {
-        "from": "call-library_1.arg-2-out",
-        "to": "arr-control_1.value"
+        "from": "not-equal-to-0_1.result",
+        "to": "bool-indicator_1.value"
       }
     ]
   },
@@ -289,12 +308,20 @@
           "text": "timeout\n"
         }
       },
-      "arr-control_1": {
-        "x": 460,
-        "y": 42,
+      "num-const_1": {
+        "x": 246,
+        "y": 709
+      },
+      "bool-indicator_1": {
+        "x": 501,
+        "y": 69,
         "label": {
-          "text": "data\n"
+          "text": "data"
         }
+      },
+      "not-equal-to-0_1": {
+        "x": 466,
+        "y": 349
       }
     },
     "panel": {
@@ -333,11 +360,11 @@
           "text": "timeout\n"
         }
       },
-      "arr-control_1": {
-        "x": 460,
-        "y": 42,
+      "bool-indicator_1": {
+        "x": 501,
+        "y": 69,
         "label": {
-          "text": "data\n"
+          "text": "data"
         }
       }
     },
@@ -372,6 +399,16 @@
           61
         ]
       },
+      "call-library_1.arg-1-in": {
+        "bends": [
+          336
+        ]
+      },
+      "call-library_1.arg-2-in": {
+        "bends": [
+          266
+        ]
+      },
       "call-library_1.arg-3-in": {
         "bends": [
           298
@@ -382,14 +419,14 @@
           406
         ]
       },
-      "call-library_1.arg-1-in": {
-        "bends": [
-          336
-        ]
-      },
-      "arr-control_1.value": {
+      "not-equal-to-0_1.x": {
         "bends": [
           406
+        ]
+      },
+      "bool-indicator_1.value": {
+        "bends": [
+          492
         ]
       }
     },

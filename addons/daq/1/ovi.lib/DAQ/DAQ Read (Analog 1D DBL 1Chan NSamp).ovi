@@ -202,7 +202,7 @@
         "name": "subvi_1",
         "type": "subvi",
         "config": {
-          "vi": "DAQ Fill In Error Info.sdg"
+          "vi": "DAQ Fill In Error Info.ovi"
         }
       },
       {

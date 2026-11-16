@@ -9,6 +9,12 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- OVIs are saved as `.ovi` files, the name of Solder's program unit (DT-094). Files saved as `.sdg` or `.qvi` still open,
+  and Ctrl+S keeps their name, because the OVIs that call them name them so; Save As offers the same name with `.ovi`.
+  The examples, ovi.lib and the DAQ add-on are renamed: an OVI saved with an earlier version that calls
+  `<ovilib>/…/X.sdg` finds `X.ovi`. The installer associates `.ovi` too. The DAQ add-on of this version needs this
+  version, which is the first that opens `.ovi`.
+
 ## 0.13.0-beta — 2026-11-16
 
 Solder's DAQ add-on closes its first stage: besides analog input, it now writes analog outputs, reads and writes digital

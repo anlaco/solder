@@ -10,7 +10,7 @@ program that talks to the instruments, **Anvil** sequences and tests it, and
 **Crucible** simulates the bench so you can test without hardware.
 
 > **Beta.** Solder does not do all of LabVIEW yet, but what it does is meant to
-> be reliable, and the files it saves keep opening in later versions: the `.sdg`
+> be reliable, and the files it saves keep opening in later versions: the `.ovi`
 > format is frozen, and any change to it comes with an automatic migration.
 > Version **0.4.0-beta** — see [`CHANGELOG.md`](CHANGELOG.md).
 
@@ -19,7 +19,7 @@ program that talks to the instruments, **Anvil** sequences and tests it, and
 - The editor: Front Panel and Block Diagram, the Functions and Controls
   palettes cloned from LabVIEW (what is missing shows greyed out and says why),
   wiring, undo, Create ▸ Constant/Control/Indicator, copy and paste, several
-  OVIs open at once, saving and opening `.sdg` files.
+  OVIs open at once, saving and opening `.ovi` files.
 - Types: 8- to 64-bit integers and floating point, booleans, strings, arrays
   of one and two dimensions, clusters and the error cluster.
 - Functions: Numeric, Boolean, Comparison, String (with Format Into String and
@@ -70,7 +70,7 @@ that waits parks its clumps without a stack (DT-063 §8).
 
 | Folder | What it is |
 |--------|------------|
-| `core/model/` | The program model: graph, data types, constants and the `.sdg` file format |
+| `core/model/` | The program model: graph, data types, constants and the `.ovi` file format |
 | `core/compiler/` | Diagram to WebAssembly: compiler, wasm encoder, linear memory, expression parser |
 | `core/runtime/` | Running a compiled OVI by dataflow, and the error codes |
 | `cli/` | The command-line entry point (`run`, `wat`, `check`) |

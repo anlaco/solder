@@ -11,8 +11,8 @@ import { NO_ERROR, PLUGIN, callPlugin, installAddonForTheseTests, run, showError
 
 installAddonForTheseTests();
 
-const NONE = "DAQ Start Trigger (None).sdg";
-const DIGITAL_EDGE = "DAQ Start Trigger (Digital Edge).sdg";
+const NONE = "DAQ Start Trigger (None).ovi";
+const DIGITAL_EDGE = "DAQ Start Trigger (Digital Edge).ovi";
 const FALLING = 10171;
 const TERMINAL_NOT_FOUND = -89120;
 const TRIGGER_NEEDS_SAMPLE_CLOCK = -200262;
@@ -32,13 +32,13 @@ const acquisition = (triggers, { untimed = false } = {}) =>
     b.node("channel", "str-const", { value: "Dev1/ai0" });
     b.node("empty", "daq-name-constant", { type: DAQ_TASK, value: "" });
     b.node("no error", "error-cluster-constant");
-    callPlugin(b, "create", "DAQ Create Virtual Channel (AI Voltage).sdg", "empty.result", "no error.result");
+    callPlugin(b, "create", "DAQ Create Virtual Channel (AI Voltage).ovi", "empty.result", "no error.result");
     b.wire("channel.result", "create.daq-name-control_2");
     let after = "create";
     if (!untimed) {
       b.node("rate", "const", { value: 1000, type: "dbl" });
       b.node("samples", "const", { value: 100, type: "i32" });
-      step(b, "timing", "DAQ Timing (Sample Clock).sdg", after);
+      step(b, "timing", "DAQ Timing (Sample Clock).ovi", after);
       b.wire("rate.result", "timing.control_1");
       b.wire("samples.result", "timing.control_4");
       after = "timing";
@@ -56,7 +56,7 @@ const acquisition = (triggers, { untimed = false } = {}) =>
       }
       after = name;
     });
-    for (const [name, file] of [["start", "DAQ Start Task.sdg"], ["wait", "DAQ Wait Until Done.sdg"], ["clear", "DAQ Clear Task.sdg"]]) {
+    for (const [name, file] of [["start", "DAQ Start Task.ovi"], ["wait", "DAQ Wait Until Done.ovi"], ["clear", "DAQ Clear Task.ovi"]]) {
       step(b, name, file, after);
       after = name;
     }

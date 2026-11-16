@@ -135,18 +135,10 @@
       "name": "arr-control_1",
       "role": "control",
       "type": {
-        "array": "number",
-        "dims": 2
+        "array": "number"
       },
       "default": [],
-      "visible-elements": [
-        1,
-        1
-      ],
-      "index": [
-        0,
-        0
-      ]
+      "visible-elements": 1
     }
   ],
   "block-diagram": {
@@ -230,7 +222,7 @@
         "name": "subvi_1",
         "type": "subvi",
         "config": {
-          "vi": "DAQ Fill In Error Info.sdg"
+          "vi": "DAQ Fill In Error Info.ovi"
         }
       },
       {
@@ -260,6 +252,14 @@
       {
         "name": "arr-control_1",
         "type": "arr-control"
+      },
+      {
+        "name": "build-array_1",
+        "type": "build-array",
+        "config": {
+          "inputs": 1,
+          "concatenate": false
+        }
       }
     ],
     "wires": [
@@ -317,6 +317,10 @@
       },
       {
         "from": "arr-control_1.result",
+        "to": "build-array_1.element-0"
+      },
+      {
+        "from": "build-array_1.result",
         "to": "call-library_1.arg-3-in"
       }
     ]
@@ -398,6 +402,10 @@
         "label": {
           "text": "data"
         }
+      },
+      "build-array_1": {
+        "x": 426,
+        "y": 249
       }
     },
     "panel": {
@@ -523,10 +531,17 @@
           406
         ]
       },
-      "call-library_1.arg-3-in": {
+      "build-array_1.element-0": {
         "bends": [
           466,
-          362.25,
+          142.18,
+          418
+        ]
+      },
+      "call-library_1.arg-3-in": {
+        "bends": [
+          457,
+          472.93,
           352
         ]
       }

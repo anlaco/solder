@@ -15,26 +15,26 @@ const TIMEOUT = 9;
 
 /** The cells that are not Recommended, by OVI. */
 const MEASURED_WEIGHTS = {
-  "DAQ Create Task.sdg": {},
-  "DAQ Start Task.sdg": { [TASK_IN]: "required" },
-  "DAQ Stop Task.sdg": { [TASK_IN]: "required" },
-  "DAQ Clear Task.sdg": { [TASK_IN]: "required" },
-  "DAQ Wait Until Done.sdg": { [TASK_IN]: "required" },
-  "DAQ Create Virtual Channel (AI Voltage).sdg": { [PHYSICAL_CHANNELS]: "required" },
-  "DAQ Create Virtual Channel (AO Voltage).sdg": { [PHYSICAL_CHANNELS]: "required" },
-  "DAQ Create Virtual Channel (Digital Input).sdg": { [PHYSICAL_CHANNELS]: "required" },
-  "DAQ Create Virtual Channel (Digital Output).sdg": { [PHYSICAL_CHANNELS]: "required" },
-  "DAQ Timing (Sample Clock).sdg": { [TASK_IN]: "required", 5: "required" },
-  "DAQ Start Trigger (None).sdg": { [TASK_IN]: "required" },
-  "DAQ Start Trigger (Digital Edge).sdg": { [TASK_IN]: "required", 5: "required" },
+  "DAQ Create Task.ovi": {},
+  "DAQ Start Task.ovi": { [TASK_IN]: "required" },
+  "DAQ Stop Task.ovi": { [TASK_IN]: "required" },
+  "DAQ Clear Task.ovi": { [TASK_IN]: "required" },
+  "DAQ Wait Until Done.ovi": { [TASK_IN]: "required" },
+  "DAQ Create Virtual Channel (AI Voltage).ovi": { [PHYSICAL_CHANNELS]: "required" },
+  "DAQ Create Virtual Channel (AO Voltage).ovi": { [PHYSICAL_CHANNELS]: "required" },
+  "DAQ Create Virtual Channel (Digital Input).ovi": { [PHYSICAL_CHANNELS]: "required" },
+  "DAQ Create Virtual Channel (Digital Output).ovi": { [PHYSICAL_CHANNELS]: "required" },
+  "DAQ Timing (Sample Clock).ovi": { [TASK_IN]: "required", 5: "required" },
+  "DAQ Start Trigger (None).ovi": { [TASK_IN]: "required" },
+  "DAQ Start Trigger (Digital Edge).ovi": { [TASK_IN]: "required", 5: "required" },
   ...Object.fromEntries(
     ["Analog DBL 1Chan 1Samp", "Analog 1D DBL 1Chan NSamp", "Analog 1D DBL NChan 1Samp", "Analog 2D DBL NChan NSamp", "Digital Bool 1Line 1Point", "Digital U32 1Chan 1Samp"].map(
-      (instance) => [`DAQ Read (${instance}).sdg`, { [TASK_IN]: "required", [TIMEOUT]: "optional" }],
+      (instance) => [`DAQ Read (${instance}).ovi`, { [TASK_IN]: "required", [TIMEOUT]: "optional" }],
     ),
   ),
   ...Object.fromEntries(
     ["Analog DBL 1Chan 1Samp", "Analog 1D DBL 1Chan NSamp", "Analog 2D DBL NChan NSamp", "Digital Bool 1Line 1Point"].map((instance) => [
-      `DAQ Write (${instance}).sdg`,
+      `DAQ Write (${instance}).ovi`,
       { [TASK_IN]: "required", [DATA]: "required", [TIMEOUT]: "optional" },
     ]),
   ),
@@ -60,7 +60,7 @@ for (const [file, weights] of Object.entries(MEASURED_WEIGHTS)) {
 const labelsByName = (ovi) => new Map(Object.entries(ovi.layout.panel).map(([name, place]) => [name, place.label?.text.trim()]));
 
 test("DAQ Fill In Error Info weighs its inputs as NI's VI does, by label", () => {
-  const ovi = readOVI("DAQ Fill In Error Info.sdg");
+  const ovi = readOVI("DAQ Fill In Error Info.ovi");
   const labels = labelsByName(ovi);
   const actual = Object.fromEntries(ovi.connector.inputs.map((input) => [labels.get(input.name), weightOf(input)]));
   assert.deepEqual(actual, FILL_IN_ERROR_INFO);
@@ -68,7 +68,7 @@ test("DAQ Fill In Error Info weighs its inputs as NI's VI does, by label", () =>
 
 /** NI's sample mode and active edge are I32 Text Rings (measured: Ring class, I32, `Strings[]`; S16-#9). */
 test("DAQ Timing (Sample Clock) takes sample mode and active edge as NI's I32 Text Rings", () => {
-  const ovi = readOVI("DAQ Timing (Sample Clock).sdg");
+  const ovi = readOVI("DAQ Timing (Sample Clock).ovi");
   const labels = labelsByName(ovi);
   const ring = (label) => {
     const control = ovi["front-panel"].find((object) => labels.get(object.name) === label);

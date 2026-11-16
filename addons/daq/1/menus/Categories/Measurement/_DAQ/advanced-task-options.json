@@ -8,7 +8,7 @@
       "name": "DAQ Create Task",
       "block": "subvi",
       "config": {
-        "vi": "<ovilib>/DAQ/DAQ Create Task.sdg"
+        "vi": "<ovilib>/DAQ/DAQ Create Task.ovi"
       }
     },
     {

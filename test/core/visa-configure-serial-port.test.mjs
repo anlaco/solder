@@ -24,7 +24,7 @@ import { CAT, RAIZ, buildVI } from "../helpers.mjs";
 
 const OVI_LIB = path.join(RAIZ, "ovi.lib");
 const STORED = "<ovilib>/Instr/VISA Configure Serial Port.sdp";
-const CALLER = path.join(tmpdir(), "caller.sdg");
+const CALLER = path.join(tmpdir(), "caller.ovi");
 
 const resolvePath = (callerKey, stored) => (isOviLibPath(stored) ? resolveOviLibPath(stored, OVI_LIB) : path.resolve(path.dirname(callerKey), stored));
 
@@ -63,7 +63,7 @@ test("both instances have the measured connector: pattern 4833, its indices, lab
   const vi = callerOf((b) => b.node("call", "subvi", { vi: STORED, instance: null, selected: 0, selector: false }));
   const node = vi.g.nodos.find((one) => one.id === vi.id.call);
   const polymorphic = vi.cat.polymorphicOf(node);
-  assert.deepEqual(polymorphic.instances.map((one) => path.basename(one.key)), ["VISA Configure Serial Port (Instr).sdg", "VISA Configure Serial Port (Serial Instr).sdg"]);
+  assert.deepEqual(polymorphic.instances.map((one) => path.basename(one.key)), ["VISA Configure Serial Port (Instr).ovi", "VISA Configure Serial Port (Serial Instr).ovi"]);
   for (const index of [0, 1]) {
     const ports = vi.cat.puertos({ ...node, config: { ...node.config, instance: index } });
     assert.deepEqual(ports.in.map((port) => [port.cell, port.label, port.defaultValue === "" ? undefined : port.defaultValue, port.connection === "optional"]).filter(([cell]) => cell !== 0 && cell !== 11), MEASURED_INPUTS.filter(([cell]) => cell !== 0 && cell !== 11));
@@ -146,7 +146,7 @@ test("the command line resolves <ovilib> and checks a caller of VISA Configure S
     b.wire("name.result", "call.cell-0");
     b.wire("call.cell-15", "errorOut.value");
   });
-  const file = path.join(folder, "caller.sdg");
+  const file = path.join(folder, "caller.ovi");
   writeFileSync(file, aTexto(vi.g, vi.cat));
   assert.match(execFileSync(process.execPath, [path.join(RAIZ, "cli/solder.mjs"), "check", file], { encoding: "utf8" }), /se puede ejecutar|can run/);
 });

@@ -50,9 +50,9 @@ test("the command line finds a subOVI of an installed add-on through its <ovilib
   const [, userAddons] = addonsFolders({ nodePlatform: process.platform, homeDirectory: userData, environment });
   const platformPart = `daq-${platformName(process.platform, process.arch)}`;
   for (const part of ["daq", platformPart]) cpSync(path.join(RAIZ, "addons", part), path.join(userAddons, part), { recursive: true });
-  const startTask = readFileSync(path.join(RAIZ, "addons/daq/1/ovi.lib/DAQ/DAQ Start Task.sdg"), "utf8");
-  const caller = path.join(userData, "Caller.sdg");
-  writeFileSync(caller, startTask.replace('"vi": "DAQ Fill In Error Info.sdg"', '"vi": "<ovilib>/DAQ/DAQ Fill In Error Info.sdg"'));
+  const startTask = readFileSync(path.join(RAIZ, "addons/daq/1/ovi.lib/DAQ/DAQ Start Task.ovi"), "utf8");
+  const caller = path.join(userData, "Caller.ovi");
+  writeFileSync(caller, startTask.replace('"vi": "DAQ Fill In Error Info.ovi"', '"vi": "<ovilib>/DAQ/DAQ Fill In Error Info.ovi"'));
   const check = (env) => execFileSync(process.execPath, [path.join(RAIZ, "cli/solder.mjs"), "check", caller], { encoding: "utf8", env, stdio: "pipe" });
   assert.doesNotThrow(() => check(environment));
   const withoutAddons = { ...environment, XDG_DATA_HOME: path.join(userData, "none"), APPDATA: path.join(userData, "none") };

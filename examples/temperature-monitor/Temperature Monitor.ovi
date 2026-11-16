@@ -151,7 +151,7 @@
               "name": "subvi_1",
               "type": "subvi",
               "config": {
-                "vi": "Read Sensor.sdg"
+                "vi": "Read Sensor.ovi"
               }
             },
             {

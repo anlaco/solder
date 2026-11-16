@@ -12,7 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, dialog, ipcMain, Menu, MessageChannelMain, protocol, screen, utilityProcess } from "electron";
 import { POLYMORPHIC_EXTENSION, isPolymorphicPath } from "../../core/model/polymorphic.mjs";
-import { OLD_VI_EXTENSION, VI_EXTENSION, isVIFile, pathKey, polymorphicSavePathFor, polymorphicSaveProposal, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey } from "../src/common/vi-paths.mjs";
+import { VI_EXTENSIONS, isVIFile, pathKey, polymorphicSavePathFor, polymorphicSaveProposal, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey } from "../src/common/vi-paths.mjs";
 import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
 import { newVIBounds, otherWindowKind, tiledBounds } from "./window-layout.mjs";
@@ -207,9 +207,9 @@ const openVIs = new Map();
 /** Web contents id → the open VI whose window it is. */
 const viOfContents = new Map();
 // Both extensions open (DT-051); the dialogs list the new one first.
-const FILTERS = [{ name: "Solder OVI", extensions: [VI_EXTENSION, OLD_VI_EXTENSION].map((extension) => extension.slice(1)) }];
+const FILTERS = [{ name: "Solder OVI", extensions: VI_EXTENSIONS.map((extension) => extension.slice(1)) }];
 // Open and Select a VI... also take a polymorphic OVI (DT-074), listed first so that the dialog shows both kinds.
-const OVI_AND_POLYMORPHIC_FILTERS = [{ name: "Solder OVI and polymorphic OVI", extensions: [VI_EXTENSION, OLD_VI_EXTENSION, POLYMORPHIC_EXTENSION].map((extension) => extension.slice(1)) }, ...FILTERS];
+const OVI_AND_POLYMORPHIC_FILTERS = [{ name: "Solder OVI and polymorphic OVI", extensions: [...VI_EXTENSIONS, POLYMORPHIC_EXTENSION].map((extension) => extension.slice(1)) }, ...FILTERS];
 /** What Save As offers for a polymorphic OVI, which LabVIEW saves as a `.vi` and Solder as a file of its own (DT-074). */
 const POLYMORPHIC_FILTERS = [{ name: "Solder polymorphic OVI", extensions: [POLYMORPHIC_EXTENSION.slice(1)] }];
 /** The Call Library Function Node's browse dialog: shared libraries first (LabVIEW's "Shared Libraries (*.dll)"), then WebAssembly modules (DT-080 §3) and every file. */
@@ -837,7 +837,7 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
   serve();
   handleRequests();
-  // SOLDER_ABRIR=<file.sdg>: starts with that VI open instead of a new one (for the comparisons of capturing-labview.md §5).
+  // SOLDER_ABRIR=<file.ovi>: starts with that VI open instead of a new one (for the comparisons of capturing-labview.md §5).
   await loadStartState();
   app.on("before-quit", () => {
     quitting = true;

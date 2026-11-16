@@ -515,11 +515,11 @@ Measured in LabVIEW 2026 Q3 by running each case (`labview-captures/format-scan/
 > ` in ` and the OVIs it ran in, the OVI of the function first and each caller after it, joined by `->`:
 > `Scan From String (arg 1) in Parse Reply.vi->Instrument Protocol.vi` in LabVIEW. The chain is the one
 > of that call: a non-reentrant subOVI called from two places names the caller of each call. Solder names
-> an OVI by its file name, so the same error reads `… in Parse Reply.sdg->Instrument Protocol.sdg`; an OVI
+> an OVI by its file name, so the same error reads `… in Parse Reply.ovi->Instrument Protocol.ovi`; an OVI
 > never saved is `Untitled N`. *(Measured in LabVIEW 2026 Q3 on 2026-10-10, Instrument Protocol with the
 > command `FOO`, `examples/README.md`; tests "the source of an error raised …" in
 > `test/core/subvis.test.mjs`. Done for Format Into String and Scan From String. Unverified: the form for an
-> error raised in the top-level OVI, which Solder writes `… in Top.sdg`, and the other functions that raise
+> error raised in the top-level OVI, which Solder writes `… in Top.ovi`, and the other functions that raise
 > errors.)*
 
 ### 6.6 Call Library Function Node (DT-080, 2026-11-06)

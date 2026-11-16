@@ -147,13 +147,13 @@
       "name": "control_1",
       "role": "control",
       "type": "number",
-      "default": -10
+      "default": -5
     },
     {
       "name": "control_2",
       "role": "control",
       "type": "number",
-      "default": 10
+      "default": 5
     },
     {
       "name": "control_5",
@@ -169,6 +169,10 @@
         {
           "text": "RSE",
           "value": 10083
+        },
+        {
+          "text": "NRSE",
+          "value": 10078
         },
         {
           "text": "Differential",
@@ -362,7 +366,7 @@
                   "config": {
                     "library": "nilvaiu.*",
                     "specify-path-on-diagram": false,
-                    "function": "DAQCreateAOVoltageChan",
+                    "function": "DAQCreateAIVoltageChan",
                     "thread": "any",
                     "calling-convention": "c",
                     "error-checking": "default",
@@ -440,7 +444,7 @@
                   "name": "subvi_1",
                   "type": "subvi",
                   "config": {
-                    "vi": "DAQ Fill In Error Info.sdg"
+                    "vi": "DAQ Fill In Error Info.ovi"
                   }
                 },
                 {
@@ -623,7 +627,7 @@
         "x": 969,
         "y": 161,
         "label": {
-          "text": "output terminal configuration"
+          "text": "input terminal configuration"
         }
       },
       "control_6": {
@@ -776,7 +780,7 @@
         "x": 969,
         "y": 161,
         "label": {
-          "text": "output terminal configuration"
+          "text": "input terminal configuration"
         }
       },
       "control_6": {

@@ -111,7 +111,7 @@
     {
       "name": "indicator_1",
       "role": "indicator",
-      "type": "u32",
+      "type": "number",
       "default": 0
     }
   ],
@@ -139,7 +139,7 @@
         "config": {
           "library": "nilvaiu.*",
           "specify-path-on-diagram": false,
-          "function": "DAQRead1Chan1SampU32Port",
+          "function": "DAQRead1Chan1SampF64",
           "thread": "any",
           "calling-convention": "c",
           "error-checking": "default",
@@ -164,7 +164,7 @@
             {
               "name": "data",
               "type": "numeric",
-              "data-type": "u32",
+              "data-type": "dbl",
               "pass": "pointer"
             },
             {
@@ -183,7 +183,7 @@
         "name": "subvi_1",
         "type": "subvi",
         "config": {
-          "vi": "DAQ Fill In Error Info.sdg"
+          "vi": "DAQ Fill In Error Info.ovi"
         }
       },
       {
@@ -194,7 +194,7 @@
         "name": "num-const_1",
         "type": "num-const",
         "config": {
-          "type": "u32",
+          "type": "number",
           "default": 0
         }
       },

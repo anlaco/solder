@@ -4,6 +4,7 @@
 !macro customUnInstall
   RMDir /r "$LOCALAPPDATA\@soldereditor-updater"
   RMDir /r "$LOCALAPPDATA\solder-updater"
+  DeleteRegKey HKCU "Software\Classes\.ovi"
   DeleteRegKey HKCU "Software\Classes\.sdg"
   DeleteRegKey HKCU "Software\Classes\.qvi"
 !macroend

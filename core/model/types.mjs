@@ -84,7 +84,7 @@ export const ERROR = Object.freeze({ cluster: [{ name: "status", type: "boolean"
 export const esError = (t) => esCluster(t) && JSON.stringify(t) === JSON.stringify(ERROR);
 
 /**
- * LabVIEW's VISA resource name (DT-066): a scalar type of its own on wires, terminals and in the `.sdg`.
+ * LabVIEW's VISA resource name (DT-066): a scalar type of its own on wires, terminals and in the `.ovi`.
  * It carries the resource string and the session VISA Open gave it (measured over ActiveX as the pair
  * `[name, refnum]`, labview-captures/reports/2026-10-25-visa-read-socket.md).
  */

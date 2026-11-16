@@ -2,10 +2,10 @@
   "solder-polymorphic": 1,
   "instances": [
     {
-      "ovi": "VISA Configure Serial Port (Instr).sdg"
+      "ovi": "VISA Configure Serial Port (Instr).ovi"
     },
     {
-      "ovi": "VISA Configure Serial Port (Serial Instr).sdg"
+      "ovi": "VISA Configure Serial Port (Serial Instr).ovi"
     }
   ],
   "show-selector-by-default": false,

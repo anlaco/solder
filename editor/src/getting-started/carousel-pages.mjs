@@ -16,7 +16,7 @@ export const CAROUSEL_PAGES = [
   },
   {
     heading: "What is new in this version",
-    body: "This release adds this window, the list of recent files and the Close and Close All commands. OVIs are now saved as .sdg files, and the editor asks before it closes an OVI that has unsaved changes.",
+    body: "This release adds this window, the list of recent files and the Close and Close All commands. OVIs are now saved as .ovi files, and the editor asks before it closes an OVI that has unsaved changes.",
   },
   {
     heading: "Think in dataflow",
@@ -32,7 +32,7 @@ export const CAROUSEL_PAGES = [
   },
   {
     heading: "Know the file formats",
-    body: "An OVI is a text file with the extension .sdg that holds only the diagram, so it can be read, compared and kept under version control. Solder compiles it to WebAssembly when you run it.",
+    body: "An OVI is a text file with the extension .ovi that holds only the diagram, so it can be read, compared and kept under version control. Solder compiles it to WebAssembly when you run it.",
   },
   {
     heading: "Report a problem",

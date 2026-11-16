@@ -9,25 +9,18 @@
         "connection": "required"
       },
       {
-        "name": "control_3",
+        "name": "bool-control_1",
         "cell": 1
       },
       {
-        "name": "control_4",
-        "cell": 2
-      },
-      {
-        "name": "control_1",
-        "cell": 5,
+        "name": "control_2",
+        "cell": 7,
         "connection": "required"
       },
       {
-        "name": "daq-name-control_2",
-        "cell": 7
-      },
-      {
-        "name": "control_2",
-        "cell": 9
+        "name": "control_1",
+        "cell": 9,
+        "connection": "optional"
       },
       {
         "name": "cluster-control_1",
@@ -38,6 +31,10 @@
       {
         "name": "daq-name-indicator_1",
         "cell": 4
+      },
+      {
+        "name": "indicator_1",
+        "cell": 10
       },
       {
         "name": "cluster-indicator_1",
@@ -118,61 +115,27 @@
       "name": "control_1",
       "role": "control",
       "type": "number",
-      "default": 1000
+      "default": 10
     },
     {
       "name": "control_2",
       "role": "control",
-      "type": "i32",
-      "default": 10280,
-      "style": "text-ring",
-      "ring-items": [
-        {
-          "text": "Rising",
-          "value": 10280
-        },
-        {
-          "text": "Falling",
-          "value": 10171
-        }
-      ],
-      "allow-undefined": false
+      "type": "number",
+      "default": 0
     },
     {
-      "name": "control_3",
+      "name": "bool-control_1",
       "role": "control",
-      "type": "i32",
-      "default": 10178,
-      "style": "text-ring",
-      "ring-items": [
-        {
-          "text": "Finite Samples",
-          "value": 10178
-        },
-        {
-          "text": "Continuous Samples",
-          "value": 10123
-        },
-        {
-          "text": "Hardware Timed Single Point",
-          "value": 12522
-        }
-      ],
-      "allow-undefined": false
+      "type": "boolean",
+      "default": true,
+      "style": "horizontal-toggle-switch",
+      "mechanical-action": "switch-when-pressed"
     },
     {
-      "name": "control_4",
-      "role": "control",
-      "type": "i32",
-      "default": 1000
-    },
-    {
-      "name": "daq-name-control_2",
-      "role": "control",
-      "type": {
-        "daq-name": "terminal"
-      },
-      "default": ""
+      "name": "indicator_1",
+      "role": "indicator",
+      "type": "u32",
+      "default": 0
     }
   ],
   "block-diagram": {
@@ -199,7 +162,7 @@
         "config": {
           "library": "nilvaiu.*",
           "specify-path-on-diagram": false,
-          "function": "DAQCfgSampClkTiming",
+          "function": "DAQWrite1Chan1SampF64",
           "thread": "any",
           "calling-convention": "c",
           "error-checking": "default",
@@ -215,38 +178,29 @@
               "pass": "value"
             },
             {
-              "name": "source",
-              "type": "string",
-              "string-format": "string-handle",
-              "constant": true
-            },
-            {
-              "name": "rate",
+              "name": "timeout",
               "type": "numeric",
               "data-type": "dbl",
               "pass": "value",
-              "constant": true
+              "constant": false
             },
             {
-              "name": "activeEdge",
+              "name": "autoStart",
               "type": "numeric",
-              "data-type": "i32",
-              "pass": "value",
-              "constant": true
+              "data-type": "u8",
+              "pass": "value"
             },
             {
-              "name": "sampleMode",
+              "name": "data",
               "type": "numeric",
-              "data-type": "i32",
-              "pass": "value",
-              "constant": true
+              "data-type": "dbl",
+              "pass": "pointer"
             },
             {
-              "name": "samplesPerChannel",
+              "name": "numSamplesWriten",
               "type": "numeric",
-              "data-type": "u64",
-              "pass": "value",
-              "constant": true
+              "data-type": "u32",
+              "pass": "pointer"
             },
             {
               "name": "extendedErrorInfo",
@@ -264,7 +218,7 @@
         "name": "subvi_1",
         "type": "subvi",
         "config": {
-          "vi": "DAQ Fill In Error Info.sdg"
+          "vi": "DAQ Fill In Error Info.ovi"
         }
       },
       {
@@ -276,30 +230,30 @@
         "type": "control"
       },
       {
-        "name": "control_3",
-        "type": "control"
+        "name": "bool-control_1",
+        "type": "bool-control"
       },
       {
-        "name": "control_4",
-        "type": "control"
+        "name": "indicator_1",
+        "type": "indicator"
       },
       {
-        "name": "daq-name-control_2",
-        "type": "daq-name-control"
+        "name": "boolean-to-0-1_1",
+        "type": "boolean-to-0-1"
+      },
+      {
+        "name": "num-const_1",
+        "type": "num-const",
+        "config": {
+          "type": "u32",
+          "default": 0
+        }
       }
     ],
     "wires": [
       {
-        "from": "empty-string-constant_1.result",
-        "to": "call-library_1.arg-6-in"
-      },
-      {
         "from": "call-library_1.return",
         "to": "subvi_1.control_2"
-      },
-      {
-        "from": "call-library_1.arg-6-out",
-        "to": "subvi_1.str-control_1"
       },
       {
         "from": "call-library_1.error-out",
@@ -322,11 +276,23 @@
         "to": "daq-name-indicator_1.value"
       },
       {
-        "from": "daq-name-control_2.result",
+        "from": "control_1.result",
         "to": "call-library_1.arg-1-in"
       },
       {
-        "from": "control_1.result",
+        "from": "empty-string-constant_1.result",
+        "to": "call-library_1.arg-5-in"
+      },
+      {
+        "from": "call-library_1.arg-5-out",
+        "to": "subvi_1.str-control_1"
+      },
+      {
+        "from": "bool-control_1.result",
+        "to": "boolean-to-0-1_1.boolean"
+      },
+      {
+        "from": "boolean-to-0-1_1.result",
         "to": "call-library_1.arg-2-in"
       },
       {
@@ -334,12 +300,12 @@
         "to": "call-library_1.arg-3-in"
       },
       {
-        "from": "control_3.result",
-        "to": "call-library_1.arg-4-in"
+        "from": "call-library_1.arg-4-out",
+        "to": "indicator_1.value"
       },
       {
-        "from": "control_4.result",
-        "to": "call-library_1.arg-5-in"
+        "from": "num-const_1.result",
+        "to": "call-library_1.arg-4-in"
       }
     ]
   },
@@ -389,36 +355,37 @@
         "x": 291,
         "y": 391,
         "label": {
-          "text": "rate\n"
+          "text": "timeout\n"
         }
       },
       "control_2": {
-        "x": 821,
-        "y": 391,
+        "x": 521,
+        "y": 71,
         "label": {
-          "text": "active edge\n"
+          "text": "data"
         }
       },
-      "control_3": {
-        "x": 461,
-        "y": 391,
+      "bool-control_1": {
+        "x": 681,
+        "y": 63,
         "label": {
-          "text": "sample mode\n"
+          "text": "auto start"
         }
       },
-      "control_4": {
-        "x": 641,
-        "y": 391,
+      "indicator_1": {
+        "x": 873,
+        "y": 191,
         "label": {
-          "text": "samples per channel\n"
+          "text": "number of samples written per channel"
         }
       },
-      "daq-name-control_2": {
-        "x": 916,
-        "y": 80,
-        "label": {
-          "text": "source\n"
-        }
+      "boolean-to-0-1_1": {
+        "x": 556,
+        "y": 279
+      },
+      "num-const_1": {
+        "x": 331,
+        "y": 692
       }
     },
     "panel": {
@@ -454,57 +421,40 @@
         "x": 291,
         "y": 391,
         "label": {
-          "text": "rate\n"
+          "text": "timeout\n"
         }
       },
       "control_2": {
-        "x": 821,
-        "y": 391,
+        "x": 521,
+        "y": 71,
         "label": {
-          "text": "active edge\n"
+          "text": "data"
         }
       },
-      "control_3": {
-        "x": 461,
-        "y": 391,
+      "bool-control_1": {
+        "x": 681,
+        "y": 63,
         "label": {
-          "text": "sample mode\n"
+          "text": "auto start"
         }
       },
-      "control_4": {
-        "x": 641,
-        "y": 391,
+      "indicator_1": {
+        "x": 873,
+        "y": 191,
         "label": {
-          "text": "samples per channel\n"
-        }
-      },
-      "daq-name-control_2": {
-        "x": 916,
-        "y": 80,
-        "label": {
-          "text": "source\n"
+          "text": "number of samples written per channel"
         }
       }
     },
     "wires": {
-      "call-library_1.arg-6-in": {
-        "bends": [
-          298
-        ]
-      },
       "subvi_1.control_2": {
-        "bends": [
-          406
-        ]
-      },
-      "subvi_1.str-control_1": {
         "bends": [
           406
         ]
       },
       "subvi_1.cluster-control_1": {
         "bends": [
-          406
+          650
         ]
       },
       "call-library_1.error-in": {
@@ -529,35 +479,43 @@
       },
       "call-library_1.arg-1-in": {
         "bends": [
-          962,
-          388.25,
-          352
-        ]
-      },
-      "call-library_1.arg-2-in": {
-        "bends": [
           336
-        ]
-      },
-      "call-library_1.arg-3-in": {
-        "bends": [
-          867,
-          551.75,
-          352
-        ]
-      },
-      "call-library_1.arg-4-in": {
-        "bends": [
-          507,
-          555.75,
-          352
         ]
       },
       "call-library_1.arg-5-in": {
         "bends": [
-          687,
-          559.75,
+          298
+        ]
+      },
+      "subvi_1.str-control_1": {
+        "bends": [
+          406
+        ]
+      },
+      "boolean-to-0-1_1.boolean": {
+        "bends": [
+          727,
+          183.5,
+          548
+        ]
+      },
+      "call-library_1.arg-2-in": {
+        "bends": [
+          590.3333333333334,
+          484.75,
           352
+        ]
+      },
+      "call-library_1.arg-3-in": {
+        "bends": [
+          567,
+          391.75,
+          352
+        ]
+      },
+      "indicator_1.value": {
+        "bends": [
+          406
         ]
       }
     },

@@ -2,7 +2,7 @@
   "solder-polymorphic": 1,
   "instances": [
     {
-      "ovi": "DAQ Timing (Sample Clock).sdg",
+      "ovi": "DAQ Timing (Sample Clock).ovi",
       "menu-name": "Sample Clock (Analog/Counter/Digital)",
       "selector-name": "Sample Clock"
     }

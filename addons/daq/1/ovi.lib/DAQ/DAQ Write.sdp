@@ -2,22 +2,22 @@
   "solder-polymorphic": 1,
   "instances": [
     {
-      "ovi": "DAQ Write (Analog DBL 1Chan 1Samp).sdg",
+      "ovi": "DAQ Write (Analog DBL 1Chan 1Samp).ovi",
       "menu-name": "Analog:Single Channel:Single Sample:DBL",
       "selector-name": "Analog DBL\n1Chan 1Samp"
     },
     {
-      "ovi": "DAQ Write (Analog 1D DBL 1Chan NSamp).sdg",
+      "ovi": "DAQ Write (Analog 1D DBL 1Chan NSamp).ovi",
       "menu-name": "Analog:Single Channel:Multiple Samples:1D DBL",
       "selector-name": "Analog 1D DBL\n1Chan NSamp"
     },
     {
-      "ovi": "DAQ Write (Analog 2D DBL NChan NSamp).sdg",
+      "ovi": "DAQ Write (Analog 2D DBL NChan NSamp).ovi",
       "menu-name": "Analog:Multiple Channels:Multiple Samples:2D DBL",
       "selector-name": "Analog 2D DBL\nNChan NSamp"
     },
     {
-      "ovi": "DAQ Write (Digital Bool 1Line 1Point).sdg",
+      "ovi": "DAQ Write (Digital Bool 1Line 1Point).ovi",
       "menu-name": "Digital:Single Channel:Single Sample:Boolean (1 line)",
       "selector-name": "Digital Bool\n1Line 1Point"
     }

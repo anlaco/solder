@@ -38,10 +38,29 @@ test("the two folders are the system's and the user's, on Linux and on Windows",
   assert.equal(platformName("linux", "arm64"), "linux-arm64");
 });
 
-test("with no add-on installed, <ovilib> keeps resolving against the plain ovi.lib folder", () => withTemporaryFolder((folder) => {
+test("with no add-on installed, <ovilib> resolves against the plain ovi.lib folder", () => withTemporaryFolder((folder) => {
   const result = load([path.join(folder, "missing system"), path.join(folder, "missing user")], "/opt/solder/ovi.lib");
-  assert.equal(result.oviLib, "/opt/solder/ovi.lib", "the same text as before, so nothing downstream changes");
+  assert.deepEqual(result.oviLib.roots, ["/opt/solder/ovi.lib"]);
+  assert.equal(resolveOviLibPath("<ovilib>/Instr/Other.ovi", result.oviLib), "/opt/solder/ovi.lib/Instr/Other.ovi");
   assert.deepEqual(result.addons, []);
+}));
+
+// DT-094 §3: what Solder ships was renamed from .sdg to .ovi; a caller saved before still names the old file.
+test("an <ovilib> path saved with .sdg finds the OVI renamed to .ovi, in ovi.lib and in an add-on", () => withTemporaryFolder((folder) => {
+  const oviLib = path.join(folder, "ovi.lib");
+  const user = path.join(folder, "user");
+  writeFiles(oviLib, { "Instr/Open.ovi": "{}", "Instr/Kept.sdg": "{}" });
+  writeFiles(user, { "daq/1/sdaddoninfo.json": manifest, "daq/1/ovi.lib/DAQ/Read.ovi": "{}" });
+  const slashed = (folderPath) => folderPath.replaceAll("\\", "/");
+  for (const folders of [[path.join(folder, "none")], [path.join(folder, "none"), user]]) {
+    const result = load(folders, oviLib);
+    assert.equal(resolveOviLibPath("<ovilib>/Instr/Open.sdg", result.oviLib), `${slashed(oviLib)}/Instr/Open.ovi`);
+    assert.equal(resolveOviLibPath("<ovilib>/Instr/Open.qvi", result.oviLib), `${slashed(oviLib)}/Instr/Open.ovi`);
+    assert.equal(resolveOviLibPath("<ovilib>/Instr/Kept.sdg", result.oviLib), `${slashed(oviLib)}/Instr/Kept.sdg`, "a file that has its name is that one");
+    assert.equal(resolveOviLibPath("<ovilib>/Instr/Gone.sdg", result.oviLib), `${slashed(oviLib)}/Instr/Gone.sdg`, "a missing file is reported by the name stored");
+  }
+  const withAddon = load([path.join(folder, "none"), user], oviLib);
+  assert.equal(resolveOviLibPath("<ovilib>/DAQ/Read.sdg", withAddon.oviLib), `${slashed(user)}/daq/1/ovi.lib/DAQ/Read.ovi`);
 }));
 
 test("an OVI inside an installed add-on resolves to the add-on's folder, and ovi.lib's still to ovi.lib", () => withTemporaryFolder((folder) => {

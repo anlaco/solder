@@ -17,11 +17,11 @@ import { leer } from "../../core/model/qvi-format.mjs";
 import { CAT, INV } from "../helpers.mjs";
 
 const FOLDER = path.resolve("addons/daq/1/ovi.lib/DAQ");
-const CALLER = "/caller/main.sdg";
+const CALLER = "/caller/main.ovi";
 const fileOf = (key) => path.join(FOLDER, path.posix.basename(key));
 const resolvePath = (callerKey, stored) => path.posix.resolve(path.posix.dirname(callerKey), stored);
 
-/** A caller with one call of `ovi` (a .sdg or a .sdp of the add-on), its hierarchy and the editor's context. */
+/** A caller with one call of `ovi` (a .ovi or a .sdp of the add-on), its hierarchy and the editor's context. */
 function callerOf(ovi, config = {}) {
   const load = (rootGraph) =>
     loadHierarchy(CALLER, CAT, {
@@ -40,7 +40,7 @@ const nodeIn = (g, id) => g.nodos.find((candidate) => candidate.id === id);
 const create = (caller, port, kind) => createForTerminal(caller.g, caller.ctx, { nodo: caller.node, puerto: port, kind });
 
 test("a constant on a numeric input holds the control's default, not 0, and sits right-aligned 8 px left of the node", () => {
-  const timing = callerOf("DAQ Timing (Sample Clock).sdg");
+  const timing = callerOf("DAQ Timing (Sample Clock).ovi");
   const rate = timing.ctx.cat.puertos(nodeIn(timing.g, timing.node)).in.find((port) => port.name === "control_1");
   assert.ok(rate, "Timing has a DBL rate input");
   const made = create(timing, rate.name, "constant");
@@ -55,7 +55,7 @@ test("a constant on a numeric input holds the control's default, not 0, and sits
 });
 
 test("a constant on a ring input is a Ring Constant with the control's items, default and Allow Undefined Values", () => {
-  const caller = callerOf("DAQ Start Trigger (Digital Edge).sdg");
+  const caller = callerOf("DAQ Start Trigger (Digital Edge).ovi");
   const ringPort = caller.ctx.cat.puertos(nodeIn(caller.g, caller.node)).in.find((port) => port.defaultValue === 10280);
   assert.ok(ringPort, "the edge input");
   const made = create(caller, ringPort.name, "constant");
@@ -69,7 +69,7 @@ test("a constant on a ring input is a Ring Constant with the control's items, de
 });
 
 test("a Ring Constant with long items keeps the node's left edge 8 px clear: it grows to the left", () => {
-  const caller = callerOf("DAQ Timing (Sample Clock).sdg");
+  const caller = callerOf("DAQ Timing (Sample Clock).ovi");
   const ports = caller.ctx.cat.puertos(nodeIn(caller.g, caller.node)).in;
   // The sample mode ring (cell 1) is on the node's top edge, so the wire does not come from the left: the active edge is.
   const [wideRing, edge] = [ports.find((port) => port.defaultValue === 10178), ports.find((port) => port.defaultValue === 10280)];
@@ -82,7 +82,7 @@ test("a Ring Constant with long items keeps the node's left edge 8 px clear: it 
 });
 
 test("a control on a ring input is a ring control with the items, the default and the style of the callee's", () => {
-  const caller = callerOf("DAQ Start Trigger (Digital Edge).sdg");
+  const caller = callerOf("DAQ Start Trigger (Digital Edge).ovi");
   const ringPort = caller.ctx.cat.puertos(nodeIn(caller.g, caller.node)).in.find((port) => port.defaultValue === 10280);
   const made = create(caller, ringPort.name, "control");
   const control = nodeIn(made.g, made.id);
