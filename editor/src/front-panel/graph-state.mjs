@@ -4,7 +4,7 @@
 // scales that result from both. Measured in LabVIEW 2026 Q3
 // (labview-captures/graphs/REPORT.md); what was not measured says "unverified".
 //
-// Pure functions: the window holds `charts` and the VI's last `valores`.
+// Pure functions: the window holds `charts` and the OVI's last `valores`.
 
 import { isFreeLabel } from "../../../core/model/free-label.mjs";
 import { AXIS_MIN_SPACING, DEFAULT_CHART_HISTORY, DEFAULT_SCALES, autoscale, chartAppend, chartPlots, emptyHistory, graphPlots, stripXScale, xyPlots } from "./plot-data.mjs";

@@ -108,9 +108,9 @@ test("only the path and file functions and the path constants of File I/O are do
     "advanced-file-functions.array-of-strings-to-path", "advanced-file-functions.path-type",
     // DT-067 §10 (b): the file functions (test/editor/file-io-nodes.test.mjs).
     "open-create-replace-file", "close-file", "write-to-text-file", "read-from-text-file", "advanced-file-functions.get-file-size", "advanced-file-functions.delete",
-    // DT-067 §10 (c): the spreadsheet VIs (test/editor/delimited-spreadsheet-nodes.test.mjs).
+    // DT-067 §10 (c): the spreadsheet OVIs (test/editor/delimited-spreadsheet-nodes.test.mjs).
     "write-delimited-spreadsheet-vi", "read-delimited-spreadsheet-vi",
-    // DT-067 (d2): File Dialog, an Express VI (test/editor/file-dialog-express-nodes.test.mjs).
+    // DT-067 (d2): File Dialog, an Express OVI (test/editor/file-dialog-express-nodes.test.mjs).
     "advanced-file-functions.file-dialog",
   ].map((tail) => `${ROOT}.${tail}`);
   const everything = INV.entradas.filter((e) => e.id.startsWith(`${ROOT}.`) && ultimo(e.id) !== "thumbtack" && INV.hijos(e.id).length === 0);

@@ -75,7 +75,7 @@ test("the configuration dialog opens as Time Delay is dropped and Cancel keeps t
   assert.deepEqual(intent, { cancel: true });
   assert.deepEqual(MD.keyIntent(MD.openDialog(d, null), { key: "Escape" }), { cancel: true });
   assert.deepEqual(clickDialog(d, "close").intent, { cancel: true }, "the X of the title bar cancels too");
-  // Cancelling changes nothing in the VI: the node stays, as dropped.
+  // Cancelling changes nothing in the OVI: the node stays, as dropped.
   assert.equal(nodeOf(d.g, id).config.configured, false);
   assert.equal(nodeOf(d.g, id).config.delay, 1);
   // The dialog shows the buttons OK (default), Cancel and Help, Help greyed with its reason (the editor has no help yet).
@@ -211,7 +211,7 @@ test("the right-click menu of an Express VI is the one measured", () => {
   ], "Visible Items, Help, Examples, Description, —, Add Breakpoint, —, <Palette>, Replace, —, Open Front Panel, —, Size To Text, View As Icon, —, Remove and Rewire, Create, —, Properties (Disable Breakpoint only with a breakpoint)");
   assert.deepEqual(INV.hijos(`${MENU}.visible-items`).map((row) => row.etiqueta), ["Caption"]);
   assert.deepEqual(INV.hijos(`${MENU}.create`).map((row) => row.etiqueta), ["Constant", "Control", "Indicator", "Channel Writer...", "All Controls and Indicators", "All Constants"]);
-  // The palette row is named after the Express VI's palette, and Caption is ticked (measured).
+  // The palette row is named after the Express OVI's palette, and Caption is ticked (measured).
   const opened = ED.abrirMenu(d, MENU, id, 0, 0);
   assert.equal(ED.variantes(opened, CTX).rotulos.get(`${MENU}.palette`), "Timing Palette");
   assert.ok(ED.marcados(opened, CTX).has(`${MENU}.visible-items.caption`));
@@ -250,7 +250,7 @@ test("a double click and Properties open the same configuration dialog", () => {
   assert.equal(byDoubleClick.expressDialog.body.text, "2.123", "it opens with the configured value");
   assert.equal(byDoubleClick.expressDialog.dropped, false);
   assert.equal(byProperties.menu, null);
-  // What is not an Express VI, or whose dialog is not done, is left alone.
+  // What is not an Express OVI, or whose dialog is not done, is left alone.
   const add = Gr.crearNodo(Gr.nuevo(), CAT, "add", 0, 0);
   assert.equal(ED.openConfiguration({ ...ED.inicial(), g: add.g }, CTX, add.id).expressDialog, undefined);
   assert.equal(XD.hasDialog("time-delay"), true);

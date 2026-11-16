@@ -2,15 +2,15 @@
 // (labview-captures/editor-checks/REPORT.md §4 and §7). Pure functions over the
 // work area of the screen, so the rules are tested without Electron.
 
-import { WINDOW_KINDS } from "./vi-registry.mjs";
+import { WINDOW_KINDS } from "./ovi-registry.mjs";
 
-/** The outer size of both windows of a new VI, title bar included. */
-export const NEW_VI_SIZE = { width: 1090, height: 696 };
+/** The outer size of both windows of a new OVI, title bar included. */
+export const NEW_OVI_SIZE = { width: 1090, height: 696 };
 
 /** The Block Diagram sits this far left of and above the Front Panel, which is in front. */
 export const DIAGRAM_OFFSET = { x: -49, y: -30 };
 
-/** Each VI opened after the first sits this far down and right of the one before, so none hides another. */
+/** Each OVI opened after the first sits this far down and right of the one before, so none hides another. */
 export const CASCADE_STEP = 30;
 
 /**
@@ -24,15 +24,15 @@ const PAIR_PLACE = { horizontal: 0.61, vertical: 0.39 };
 const TILE = { sideMargin: 12, verticalMargin: 3, gap: 20 };
 
 /**
- * The outer bounds of the Front Panel and the Block Diagram of the VI opened
- * as number `index` (0 for the first one). Both are `NEW_VI_SIZE`, scaled down
+ * The outer bounds of the Front Panel and the Block Diagram of the OVI opened
+ * as number `index` (0 for the first one). Both are `NEW_OVI_SIZE`, scaled down
  * when the pair does not fit the work area `{ x, y, width, height }`.
  */
-export function newVIBounds(workArea, index) {
-  const pairWidth = NEW_VI_SIZE.width - DIAGRAM_OFFSET.x;
-  const pairHeight = NEW_VI_SIZE.height - DIAGRAM_OFFSET.y;
+export function newOVIBounds(workArea, index) {
+  const pairWidth = NEW_OVI_SIZE.width - DIAGRAM_OFFSET.x;
+  const pairHeight = NEW_OVI_SIZE.height - DIAGRAM_OFFSET.y;
   const scale = Math.min(1, workArea.width / pairWidth, workArea.height / pairHeight);
-  const [width, height] = [Math.floor(NEW_VI_SIZE.width * scale), Math.floor(NEW_VI_SIZE.height * scale)];
+  const [width, height] = [Math.floor(NEW_OVI_SIZE.width * scale), Math.floor(NEW_OVI_SIZE.height * scale)];
   const offset = { x: Math.round(DIAGRAM_OFFSET.x * scale), y: Math.round(DIAGRAM_OFFSET.y * scale) };
   const free = { x: workArea.width - (width - offset.x), y: workArea.height - (height - offset.y) };
   const cascade = index * CASCADE_STEP;
@@ -53,5 +53,5 @@ export function tiledBounds(workArea) {
   return { "front-panel": bounds, "block-diagram": { ...bounds, x: bounds.x + width + TILE.gap } };
 }
 
-/** Ctrl+E from one window of a VI goes to the other one. */
+/** Ctrl+E from one window of an OVI goes to the other one. */
 export const otherWindowKind = (kind) => WINDOW_KINDS.find((candidate) => candidate !== kind);

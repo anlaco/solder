@@ -9,7 +9,7 @@ import { test } from "node:test";
 import { defaultCallLibraryConfig } from "../../core/model/call-library.mjs";
 import { DAQ_TASK } from "../../core/model/daq-name.mjs";
 import { ERROR } from "../../core/model/types.mjs";
-import { buildVI } from "../helpers.mjs";
+import { buildOVI } from "../helpers.mjs";
 import { NO_ERROR, PLUGIN, callPlugin, installAddonForTheseTests, run, showError } from "./daq-plugin-harness.mjs";
 
 const INVALID_TASK = -200088;
@@ -34,7 +34,7 @@ const CREATE_TASK = {
 };
 
 test("the plugin's Start, Stop and Clear Task, on an empty task, answer as LabVIEW's", async () => {
-  const vi = buildVI(PLUGIN, (b) => {
+  const vi = buildOVI(PLUGIN, (b) => {
     b.node("empty", "daq-name-constant", { type: DAQ_TASK, value: "" });
     b.node("noError", "error-cluster-constant");
     for (const [name, file] of [["start", "DAQ Start Task.ovi"], ["stop", "DAQ Stop Task.ovi"], ["clear", "DAQ Clear Task.ovi"]]) {
@@ -53,7 +53,7 @@ test("the plugin's Start, Stop and Clear Task, on an empty task, answer as LabVI
 });
 
 test("a task created through the library goes through the plugin's Start Task and is released by its Clear Task", async () => {
-  const vi = buildVI(PLUGIN, (b) => {
+  const vi = buildOVI(PLUGIN, (b) => {
     b.node("empty", "daq-name-constant", { type: DAQ_TASK, value: "" });
     b.node("name", "str-const", { value: "p1" });
     b.node("nothing", "str-const", { value: "" });
@@ -80,7 +80,7 @@ test("a task created through the library goes through the plugin's Start Task an
 });
 
 test("an error in passes through Start Task without calling the library", async () => {
-  const vi = buildVI(PLUGIN, (b) => {
+  const vi = buildOVI(PLUGIN, (b) => {
     b.node("empty", "daq-name-constant", { type: DAQ_TASK, value: "" });
     b.node("incoming", "error-cluster-constant", { value: { status: true, code: 5, source: "orig" } });
     callPlugin(b, "start", "DAQ Start Task.ovi", "empty.result", "incoming.result");
@@ -104,7 +104,7 @@ function createAiVoltage(b, name, physicalChannels) {
 }
 
 test("Create Virtual Channel, Start, Stop and Clear Task run a task on the simulated device without an error", async () => {
-  const vi = buildVI(PLUGIN, (b) => {
+  const vi = buildOVI(PLUGIN, (b) => {
     createAiVoltage(b, "create", "Dev1/ai0");
     let task = "create.daq-name-indicator_1";
     let error = "create.cluster-indicator_1";
@@ -125,7 +125,7 @@ test("Create Virtual Channel, Start, Stop and Clear Task run a task on the simul
 });
 
 test("Create Virtual Channel gives LabVIEW's codes for a device or a channel that does not exist", async () => {
-  const vi = buildVI(PLUGIN, (b) => {
+  const vi = buildOVI(PLUGIN, (b) => {
     for (const [name, channels] of [["no device", "Dev9/ai0"], ["no channel", "Dev1/ai99"]]) {
       createAiVoltage(b, name, channels);
       showError(b, `${name} error`, `${name}.cluster-indicator_1`);
@@ -154,7 +154,7 @@ function createTask(b, name, taskName) {
 }
 
 test("Create Task, Create Virtual Channel, Start, Stop and Clear Task: LabVIEW's whole analog-input setup", async () => {
-  const vi = buildVI(PLUGIN, (b) => {
+  const vi = buildOVI(PLUGIN, (b) => {
     createTask(b, "create task", "p1");
     b.node("channels", "str-const", { value: "Dev1/ai0" });
     callPlugin(b, "create channel", CREATE_AI_VOLTAGE, "create task.daq-name-indicator_1", "create task.cluster-indicator_1");
@@ -178,7 +178,7 @@ test("Create Task, Create Virtual Channel, Start, Stop and Clear Task: LabVIEW's
 });
 
 test("Create Task passes an error in through and gives an empty task, and refuses to copy a task, which Solder does not do yet", async () => {
-  const vi = buildVI(PLUGIN, (b) => {
+  const vi = buildOVI(PLUGIN, (b) => {
     b.node("incoming", "error-cluster-constant", { value: { status: true, code: 5, source: "orig" } });
     b.node("passing", "subvi", { vi: CREATE_TASK_OVI });
     b.wire("incoming.result", "passing.cluster-control_1");
@@ -207,7 +207,7 @@ const SHORT_ACQUISITION = 100;
  * samples), Start, Wait Until Done, Stop and Clear; each step's error out shown as `<step> error`.
  */
 const timedAcquisition = (rate) =>
-  buildVI(PLUGIN, (b) => {
+  buildOVI(PLUGIN, (b) => {
     createAiVoltage(b, "create", "Dev1/ai0");
     b.node("rate", "const", { value: rate, type: "dbl" });
     b.node("samples", "const", { value: SHORT_ACQUISITION, type: "i32" });
@@ -240,7 +240,7 @@ test("a rate the device cannot reach is -200077 at Timing, as measured, and the 
 test("Stop Task stops the task even with an error in, which it passes on, as NI's does", async () => {
   // Measured: NI's Stop Task's node has no error in, so it always stops; without the stop a second Start is -200479
   // (labview-captures/reports/2026-11-14-clfn-error-in.md).
-  const vi = buildVI(PLUGIN, (b) => {
+  const vi = buildOVI(PLUGIN, (b) => {
     createAiVoltage(b, "create", "Dev1/ai0");
     b.node("incoming", "error-cluster-constant", { value: { status: true, code: 5, source: "orig" } });
     callPlugin(b, "start", "DAQ Start Task.ovi", "create.daq-name-indicator_1", "create.cluster-indicator_1");
@@ -307,13 +307,13 @@ const DBL_1D = { array: "number" };
 const DBL_2D = { array: "number", dims: 2 };
 
 test("a single read with no Timing nor Start starts the task itself and gives one value in range, as LabVIEW's", async () => {
-  const shown = await run(buildVI(PLUGIN, (b) => readingChain(b, "Dev1/ai0", [["read", READ_1CHAN_1SAMP, ONE_DBL]], { onDemand: true })));
+  const shown = await run(buildOVI(PLUGIN, (b) => readingChain(b, "Dev1/ai0", [["read", READ_1CHAN_1SAMP, ONE_DBL]], { onDemand: true })));
   assert.deepEqual(shown["read error"], NO_ERROR);
   assert.ok(Math.abs(shown["read data"]) <= AI_RANGE, `${shown["read data"]} is within ±5 V`);
 });
 
 test("a finite acquisition read with -1 gives every sample, and a second read is -200278", async () => {
-  const shown = await run(buildVI(PLUGIN, (b) =>
+  const shown = await run(buildOVI(PLUGIN, (b) =>
     readingChain(b, "Dev1/ai0", [["first", READ_1CHAN_NSAMP, DBL_1D], ["second", READ_1CHAN_NSAMP, DBL_1D]], { samplesPerRead: -1 })));
   assert.deepEqual(shown["first error"], NO_ERROR);
   assert.equal(shown["first data"].length, SHORT_ACQUISITION);
@@ -323,10 +323,10 @@ test("a finite acquisition read with -1 gives every sample, and a second read is
 });
 
 test("two channels read one sample each, or every sample of each as a row", async () => {
-  const single = await run(buildVI(PLUGIN, (b) => readingChain(b, "Dev1/ai0:1", [["read", READ_NCHAN_1SAMP, DBL_1D]], { onDemand: true })));
+  const single = await run(buildOVI(PLUGIN, (b) => readingChain(b, "Dev1/ai0:1", [["read", READ_NCHAN_1SAMP, DBL_1D]], { onDemand: true })));
   assert.deepEqual(single["read error"], NO_ERROR);
   assert.equal(single["read data"].length, 2, "one value per channel");
-  const all = await run(buildVI(PLUGIN, (b) => readingChain(b, "Dev1/ai0:1", [["read", READ_NCHAN_NSAMP, DBL_2D]], { samplesPerRead: -1 })));
+  const all = await run(buildOVI(PLUGIN, (b) => readingChain(b, "Dev1/ai0:1", [["read", READ_NCHAN_NSAMP, DBL_2D]], { samplesPerRead: -1 })));
   assert.deepEqual(all["read error"], NO_ERROR);
   assert.deepEqual(all["read data"].map((row) => row.length), [SHORT_ACQUISITION, SHORT_ACQUISITION], "a row per channel");
 });

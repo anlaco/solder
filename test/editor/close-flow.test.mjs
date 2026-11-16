@@ -9,8 +9,8 @@ import {
   closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll,
 } from "../../editor/electron/close-flow.mjs";
 
-/** Open VIs as the flow sees them; `replies` gives, by VI name, what the dialog answers. */
-function scenario(vis, replies, { saveWorks = true } = {}) {
+/** Open OVIs as the flow sees them; `replies` gives, by OVI name, what the dialog answers. */
+function scenario(ovis, replies, { saveWorks = true } = {}) {
   const asked = [];
   const saved = [];
   const hooks = {
@@ -24,7 +24,7 @@ function scenario(vis, replies, { saveWorks = true } = {}) {
       return saveWorks;
     },
   };
-  return { run: () => confirmCloseAll(vis, hooks), asked, saved };
+  return { run: () => confirmCloseAll(ovis, hooks), asked, saved };
 }
 
 const dirty = (name) => ({ name, dirty: true });
@@ -52,8 +52,8 @@ test("the Close All dialog offers to apply the answer to the rest, and has no bo
 });
 
 test("Close All asks about the VI created last first", () => {
-  const vis = [{ id: 2 }, { id: 4 }, { id: 3 }];
-  assert.deepEqual(closeAllOrder(vis, (vi) => vi.id).map((vi) => vi.id), [4, 3, 2]);
+  const ovis = [{ id: 2 }, { id: 4 }, { id: 3 }];
+  assert.deepEqual(closeAllOrder(ovis, (vi) => vi.id).map((vi) => vi.id), [4, 3, 2]);
 });
 
 test("Don't Save - All answers once for every VI with changes and skips the ones without", async () => {

@@ -26,12 +26,12 @@ function callerOf(ovi, config = {}) {
   const load = (rootGraph) =>
     loadHierarchy(CALLER, CAT, {
       resolvePath,
-      loadVI: (key) => (key === CALLER ? rootGraph : leer(JSON.parse(readFileSync(fileOf(key), "utf8")), CAT)),
+      loadOVI: (key) => (key === CALLER ? rootGraph : leer(JSON.parse(readFileSync(fileOf(key), "utf8")), CAT)),
       loadPolymorphic: (key) => Poly.readPolymorphic(readFileSync(fileOf(key), "utf8")),
     });
-  const placed = Gr.crearNodo(Gr.nuevo(), load(Gr.nuevo()).vis.get(CALLER).cat, "subvi", 400, 200);
+  const placed = Gr.crearNodo(Gr.nuevo(), load(Gr.nuevo()).ovis.get(CALLER).cat, "subvi", 400, 200);
   const g = Gr.fijarConfig(placed.g, placed.id, { vi: `../daq/${ovi}`, ...config });
-  const { cat } = load(g).vis.get(CALLER);
+  const { cat } = load(g).ovis.get(CALLER);
   return { g, node: placed.id, ctx: contexto(cat, glifosPorBloque(INV), ",") };
 }
 

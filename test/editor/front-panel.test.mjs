@@ -60,7 +60,7 @@ test("un control y un indicador numéricos se ponen en el panel con su terminal 
 
   // Un indicador sin cablear no rompe el VI, como en LabVIEW (spec/03 regla 10).
   assert.ok(Gr.ejecutable(p.g, CAT, Gr.tipos(p.g, CAT)), "la flecha de Run no se rompe");
-  // Se cablean y el VI sigue listo.
+  // Se cablean y el OVI sigue listo.
   const g = Gr.conectar(p.g, CAT, { nodo: control.id, puerto: "result", dir: "out" }, { nodo: indicador.id, puerto: "value", dir: "in" }).g;
   assert.ok(Gr.ejecutable(g, CAT, Gr.tipos(g, CAT)));
 
@@ -352,7 +352,7 @@ test("los controles booleanos de la paleta se ponen en el panel con su terminal 
   assert.ok(bd.includes(`stroke="${COLORES.booleano}"`), "el borde es verde");
   assert.ok(!bd.includes(">DBL<"), "ninguno es numérico");
 
-  // Se cablean a las funciones de Boolean: Push Button → Not → Round LED, y el VI sigue listo.
+  // Se cablean a las funciones de Boolean: Push Button → Not → Round LED, y el OVI sigue listo.
   const [boton, led] = p.g.nodos;
   let g = p.g;
   const no = Gr.crearNodo(g, CAT, "not-op", 300, 300);
@@ -501,7 +501,7 @@ test("un control y un indicador de cadena se ponen en el panel con su terminal e
   p = P.editarValor(p, CTX, control.id, true);
   p = P.confirmar(P.teclear(p, "z"));
   assert.equal(CV.currentValue(p.g.nodos[0]), "z");
-  // El indicador enseña lo que le llega del VI en ejecución, no su valor.
+  // El indicador enseña lo que le llega del OVI en ejecución, no su valor.
   const conValor = { ...p, valores: { [indicador.id]: "resultado" } };
   assert.match(P.contenido(conValor, CTX), />resultado</);
   // En un indicador un clic no escribe.
@@ -559,7 +559,7 @@ test("los controles Error In y Error Out se ponen en el panel con su terminal en
   let r = P.pulsar(q, CTX, { tipo: "campo", id: control.id, campo: "code" }, { x: 160, y: 125 });
   for (const t of ["9", "9", "9", "9", "9", "9", "9", "9", "9", "9", "9", "9"]) r = P.teclear(r, t);
   assert.equal(CV.currentValue(P.confirmar({ ...r, edicion: { ...r.edicion, todo: false } }).g.nodos[0]).code, 2147483647);
-  // En el indicador un clic no escribe, y enseña lo que le llega del VI.
+  // En el indicador un clic no escribe, y enseña lo que le llega del OVI.
   assert.equal(P.pulsar(p, CTX, { tipo: "campo", id: indicador.id, campo: "code" }, { x: 460, y: 125 }).edicion, null);
   const conValor = { ...p, valores: { [indicador.id]: { status: true, code: 7, source: "algo" } } };
   const html2 = P.contenido(conValor, CTX);
@@ -762,7 +762,7 @@ test("a 2D indicator shows the rows the run left and ignores a value with other 
   assert.equal((P.contenido({ ...p, valores: { [id]: [[1]] } }, CTX).match(/class="sd-element"/g) ?? []).length, 1, "only the cell the run defined is solid");
 });
 
-// A tester on Windows saved a VI whose control was still being named: the file had no front panel.
+// A tester on Windows saved an OVI whose control was still being named: the file had no front panel.
 test("a control dropped on the panel exists, with its terminal, before its label is typed", () => {
   const dropped = poner(P.inicial(), "control", { x: 100, y: 100 });
   assert.equal(dropped.g.nodos.length, 1, "the control and its terminal are in the graph");

@@ -1,4 +1,4 @@
-// The modal dialogs of the VI window — Edit Items… and Select Item… of an enum, Chart History Length… and the configuration of an Express VI —:
+// The modal dialogs of the OVI window — Edit Items… and Select Item… of an enum, Chart History Length… and the configuration of an Express OVI —:
 // which one is open and what a key or a click means for it.
 //
 // It exists because of the review of the enum commit (#32, 2026-10-14): the routing used to live
@@ -7,7 +7,7 @@
 // returns, so a new dialog adds one row to `DIALOGS` and nothing else.
 //
 // Each dialog's module answers with one intent: `{ dialog }` a new state for it, `{ accept }`
-// write it into the VI and close, `{ cancel }` close it as it was, `{ explain }` say why the part
+// write it into the OVI and close, `{ cancel }` close it as it was, `{ explain }` say why the part
 // is not done (DT-035), or `null` for a key or a part the dialog ignores. `{ dialog, accept }` changes the
 // dialog and then accepts it (a double click that picks a row).
 
@@ -19,7 +19,7 @@ import * as XD from "../block-diagram/express-dialog.mjs";
 import * as SI from "../block-diagram/select-item-dialog.mjs";
 
 /**
- * The dialogs, by the field their state lives in and the side of the VI they belong to. The
+ * The dialogs, by the field their state lives in and the side of the OVI they belong to. The
  * fields are distinct on purpose: while the items dialog shared `dialogo` with the chart one,
  * a digit typed into Chart History Length reached the items dialog's view and threw.
  */
@@ -57,5 +57,5 @@ export const clickIntent = (open, id, clicks = 1) => (open && id ? open.mod.clic
 /** The dialog after the wheel turned `deltaY` over its list; `null` when the open dialog has no list that scrolls. */
 export const wheelIntent = (open, deltaY) => (open?.mod.wheel ? { dialog: open.mod.wheel(open.dialog, deltaY) } : null);
 
-/** The VI that accepting the open dialog gives, from the graph `g` it was opened on. */
+/** The OVI that accepting the open dialog gives, from the graph `g` it was opened on. */
 export const accepted = (open, g) => open.mod.apply(g, open.dialog);

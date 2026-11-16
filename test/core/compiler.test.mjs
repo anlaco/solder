@@ -1,4 +1,4 @@
-// Compiling a VI to WebAssembly and running it (core/compiler/compiler.mjs and
+// Compiling an OVI to WebAssembly and running it (core/compiler/compiler.mjs and
 // core/runtime/runtime.mjs). Each case builds a diagram with the graph
 // operations, really runs it and checks what reaches the indicators.
 
@@ -367,7 +367,7 @@ test("un control booleano se lee del panel y un indicador booleano lo recibe", a
   );
   assert.equal((await correr(dos, { a: true, b: true })).led, true);
   assert.equal((await correr(dos, { a: true, b: false })).led, false);
-  // Un indicador booleano sin cable no se escribe y el VI sigue ejecutable.
+  // Un indicador booleano sin cable no se escribe y el OVI sigue ejecutable.
   const solo = vi([["led", "bool-indicator"]], []);
   assert.deepEqual(await correr(solo), {});
 });
@@ -375,7 +375,7 @@ test("un control booleano se lee del panel y un indicador booleano lo recibe", a
 // ——— Functions ▸ Programming ▸ Comparison ———
 //
 // Todos los valores esperados están medidos en LabVIEW 2026 Q3 (el 2026-10-01):
-// se construyó cada VI con constantes y se leyó el indicador (capturas
+// se construyó cada OVI con constantes y se leyó el indicador (capturas
 // block-diagram/comparison-*.png).
 
 /** Una constante de un tipo: «boolean», o un numérico con su representación. */

@@ -133,7 +133,7 @@ test("a Run after one aborted in the middle of a wait waits again: no clump star
   const WAIT_MS = 60;
   const { g, id } = waitThenWrite(WAIT_MS);
   const compiled = compilar(g, CAT);
-  // The state the VI keeps between Runs (DT-045) holds the whole memory, frames included.
+  // The state the OVI keeps between Runs (DT-045) holds the whole memory, frames included.
   const estado = {};
   const abort = new AbortController();
   const aborted = ejecutar(compiled, {}, { estado, senal: abort.signal });

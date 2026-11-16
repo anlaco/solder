@@ -1,4 +1,4 @@
-// Compiles a VI's diagram into a WebAssembly module (DT-039).
+// Compiles an OVI's diagram into a WebAssembly module (DT-039).
 //
 // The diagram is split into clumps, as LabVIEW does (DT-040): each node that
 // takes time (Wait (ms)…) gets its own, and the instant ones are grouped by the
@@ -35,11 +35,11 @@ import { compileOVI } from "./compile-ovi.mjs";
 const TOP_LEVEL_CHAIN_INDEX = 0;
 
 /**
- * Compila un VI. Devuelve `{ bytes, modulo, controles, indicadores, clumps }`,
+ * Compila un OVI. Devuelve `{ bytes, modulo, controles, indicadores, clumps }`,
  * con los controles y los indicadores en el orden de sus índices y, por cada
  * clump (la función exportada `c<i>`), de cuáles depende y si tarda; o
  * `{ errores }`: los motivos por los que no se puede, cada uno con su nodo si lo
- * tiene. With a catalog from a hierarchy (`conSubVIs`), its subVIs are compiled
+ * tiene. With a catalog from a hierarchy (`conSubOVIs`), its subOVIs are compiled
  * into the same module (DT-045).
  */
 export function compilar(g, cat, { name } = {}) {
@@ -51,9 +51,9 @@ export function compilar(g, cat, { name } = {}) {
 }
 
 /**
- * What the VIs of one module share: the data space and its static data, the
+ * What the OVIs of one module share: the data space and its static data, the
  * globals, the subplans run by the host, the nodes that may raise the automatic
- * error dialog and the functions of synchronous subVIs, called directly.
+ * error dialog and the functions of synchronous subOVIs, called directly.
  */
 function newModule() {
   const module = {
@@ -63,14 +63,14 @@ function newModule() {
     datosFijos: [], // { desde, bytes }: escalares de las constantes de cluster
     planes: [], // los subplanes: por cada uno, sus clumps
     automaticos: [], // los nodos que pueden sacar el diálogo, por índice
-    directFunctions: [], // the single clump of each synchronous subVI instance
+    directFunctions: [], // the single clump of each synchronous subOVI instance
     debugNodes: [], // DT-047: the nodes that report to the debugger, by index: { vi, nodo, outputs }
-    instances: new Map(), // instance key → compiled subVI instance
+    instances: new Map(), // instance key → compiled subOVI instance
     propertyNodes: [], // DT-072: what the host needs to run each Property Node, by index
     callLibraries: [], // DT-080: what the host needs to make each Call Library Function Node's call, by index
     controlReferences: [], // DT-072 §2: the panel control each control reference names; a refnum is its index + 1
-    // The VIs an error source names (spec/04 Rule 21k): by chain index, the VI's name and the cell
-    // where each call to it writes the chain index of its caller; the top-level VI has no cell.
+    // The OVIs an error source names (spec/04 Rule 21k): by chain index, the OVI's name and the cell
+    // where each call to it writes the chain index of its caller; the top-level OVI has no cell.
     callChain: [],
   };
   // El data space (DT-042): una celda por búfer; las constantes, aparte.
@@ -86,13 +86,13 @@ function newModule() {
 }
 
 /**
- * What a Run needs of a compiled VI, to send it to a worker: everything but the module's tree.
+ * What a Run needs of a compiled OVI, to send it to a worker: everything but the module's tree.
  * Only the tree is left out, so a field the runtime reads is never lost on the way (the call
  * chain of an error source was, once; the parked frames must go too, DT-063 §8).
  */
 export const runnableOVI = ({ modulo: _moduleTree, ...runnable }) => runnable;
 
-/** The module with the top-level VI `vi`, its subVIs, the memory functions and the scheduler, ready to instantiate. */
+/** The module with the top-level OVI `vi`, its subOVIs, the memory functions and the scheduler, ready to instantiate. */
 function assemble(module, vi) {
   const { clumps, controles, indicadores } = vi;
   const { globales, constantes, datosFijos, planes, automaticos, directFunctions } = module;
@@ -120,8 +120,8 @@ function assemble(module, vi) {
     resumeValueGlobal: THREAD_GLOBALS.resumeValue,
     debugFlagAddress: module.debugFlag,
   });
-  // The scheduler's tables (DT-063 §9): every clump by id —the top-level VI's, then each plan's— with
-  // its group and the clumps it waits for; group 0 is the top-level VI, group p + 1 is plan p.
+  // The scheduler's tables (DT-063 §9): every clump by id —the top-level OVI's, then each plan's— with
+  // its group and the clumps it waits for; group 0 is the top-level OVI, group p + 1 is plan p.
   const groups = [clumps, ...planes];
   let firstOfGroup = 0;
   const schedulerGroups = groups.map((members) => {

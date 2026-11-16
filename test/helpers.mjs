@@ -16,7 +16,7 @@ export const INV = cargarInventario(DATOS);
 export const CAT = cargarCatalogo_(leer("docs/schema/blocks.json"), leer("docs/schema/properties.json"));
 
 /**
- * A VI that adds two numbers, built as the editor does: controls `x` and `y`
+ * An OVI that adds two numbers, built as the editor does: controls `x` and `y`
  * and an indicator `sum` on the panel, wired through an Add. Without a
  * connector: the tests give it one. Returns the graph and the id of each element.
  */
@@ -42,8 +42,8 @@ export function buildAdder() {
   return { g, ids: { x, y, sum, add } };
 }
 
-/** Builds a VI with the catalog `cat`; `steps` receives an API that names each node. */
-export function buildVI(cat, steps) {
+/** Builds an OVI with the catalog `cat`; `steps` receives an API that names each node. */
+export function buildOVI(cat, steps) {
   const vi = { g: Gr.nuevo(), id: {} };
   const api = {
     node(name, block, config, inside) {
@@ -83,8 +83,8 @@ export function buildVI(cat, steps) {
   return vi;
 }
 
-/** The catalog of a caller whose subVIs are `library` (relative path → VI built with buildVI). */
+/** The catalog of a caller whose subOVIs are `library` (relative path → OVI built with buildOVI). */
 export function callerCatalog(library) {
   const entries = new Map(Object.entries(library).map(([path, vi]) => [path, { key: path, g: vi.g, cat: CAT }]));
-  return Gr.conSubVIs(CAT, (path) => entries.get(path) ?? null);
+  return Gr.conSubOVIs(CAT, (path) => entries.get(path) ?? null);
 }

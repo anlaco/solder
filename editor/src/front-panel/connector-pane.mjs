@@ -1,6 +1,6 @@
 // The connector pane on the Front Panel (DT-045, spec/05 §12): the 32 × 32
 // square to the left of the icon, where each cell is given a control or an
-// indicator so that the VI can be used as a subVI. Measured in LabVIEW 2026 Q3
+// indicator so that the VI can be used as a subOVI. Measured in LabVIEW 2026 Q3
 // (labview-captures/subvi/).
 //
 // Pure functions over the panel state of front-panel.mjs: the window translates
@@ -24,7 +24,7 @@ export const ICON_MENU_ROOT = "context.vi-icon";
 const NEUTRAL_COLOR = "#808080";
 
 /**
- * The connector pane as the window paints it: one cell per terminal of the VI
+ * The connector pane as the window paints it: one cell per terminal of the OVI
  * coloured with its type, and the cell waiting for an element, if any.
  */
 export function paneGlyph(g, cat, selectedCell = null) {

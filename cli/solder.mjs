@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Solder's command line, with no user interface (provisional plan §3):
 //
-//   cli/solder.mjs run   file.ovi   runs the VI and prints its indicators
+//   cli/solder.mjs run   file.ovi   runs the OVI and prints its indicators
 //   cli/solder.mjs wat   file.ovi   prints the WebAssembly module as text
 //   cli/solder.mjs check file.ovi   says whether it can run and, if not, why
 //
@@ -70,9 +70,9 @@ if (!["run", "wat", "check"].includes(orden) || !fichero || !Number.isInteger(th
 // The OVI and its subOVIs, each read from the path its caller stores relative to itself (DT-045), or from ovi.lib
 // for a `<ovilib>/…` path (DT-073).
 const resolvePath = (caller, stored) => (isOviLibPath(stored) ? path.resolve(resolveOviLibPath(stored, OVI_LIB)) : path.resolve(path.dirname(caller), stored));
-const loadVI = (key, viCatalog) => {
+const loadOVI = (key, oviCatalog) => {
   try {
-    return leer(readFileSync(key, "utf8"), viCatalog);
+    return leer(readFileSync(key, "utf8"), oviCatalog);
   } catch (e) {
     if (e.code === "ENOENT") return null;
     console.error(`${key}: ${e.message}`);
@@ -88,10 +88,10 @@ const loadPolymorphic = (key) => {
     process.exit(1);
   }
 };
-const hierarchy = loadHierarchy(path.resolve(fichero), cat, { resolvePath, loadVI, loadPolymorphic });
+const hierarchy = loadHierarchy(path.resolve(fichero), cat, { resolvePath, loadOVI, loadPolymorphic });
 for (const e of hierarchy.errors) console.error(`${e.vi ?? fichero}: ${e.motivo}`);
 if (hierarchy.errors.length) process.exit(1);
-const { g, cat: rootCatalog } = hierarchy.vis.get(hierarchy.root);
+const { g, cat: rootCatalog } = hierarchy.ovis.get(hierarchy.root);
 const c = compilar(g, rootCatalog, { name: path.basename(fichero) });
 if (c.errores) {
   for (const e of c.errores) console.error(`${fichero}: ${e.motivo}`);
@@ -115,7 +115,7 @@ if (orden === "check") {
 }
 
 /**
- * Solder's VISA (DT-065), which the command line loads itself. Without the addon (not built), a VI with no
+ * Solder's VISA (DT-065), which the command line loads itself. Without the addon (not built), an OVI with no
  * VISA function still runs, and one that has them fails saying that instrument I/O is not available.
  */
 function instrumentIo() {

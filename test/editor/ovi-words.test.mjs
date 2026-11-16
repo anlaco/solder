@@ -1,4 +1,4 @@
-// The editor calls Solder's program unit an OVI, never a VI (DT-071): its menus, palettes, windows, dialogs and
+// The editor calls Solder's program unit an OVI, never an OVI (DT-071): its menus, palettes, windows, dialogs and
 // tooltips. What it shows comes from two places, the LabVIEW inventory (the names of menus, palettes and context
 // menus, and why a hole is missing) and the string literals of the code (the editor's window titles, dialogs, notices
 // and tooltips, and the core's error messages, which the editor shows); both are read here. What is said about LabVIEW itself keeps its word: an inventory entry's `labview`
@@ -140,7 +140,7 @@ const htmlText = (source) =>
     .replace(/<[^>]*>/g, "\n")
     .split("\n");
 
-const sayVI = (text) => VI_WORD.test(text) && !ALLOWED_TEXTS.has(text);
+const sayOVI = (text) => VI_WORD.test(text) && !ALLOWED_TEXTS.has(text);
 
 test("the tokenizer finds the strings and leaves comments and regular expressions out", () => {
   const source = [
@@ -154,29 +154,29 @@ test("the tokenizer finds the strings and leaves comments and regular expression
 });
 
 test("the names of the inventory's menus, palettes and dialogs say OVI, not VI (DT-071)", () => {
-  const saysVI = DATOS.entradas.filter((entry) => sayVI(entry.etiqueta)).map((entry) => `${entry.id}: ${entry.etiqueta}`);
-  assert.deepEqual(saysVI, []);
+  const saysOVI = DATOS.entradas.filter((entry) => sayOVI(entry.etiqueta)).map((entry) => `${entry.id}: ${entry.etiqueta}`);
+  assert.deepEqual(saysOVI, []);
 });
 
 test("why a hole is missing, as Solder tells it, says OVI, not VI (DT-071)", () => {
-  const saysVI = Object.entries(DATOS.desbloqueos)
-    .filter(([, unlock]) => sayVI(unlock.desc))
+  const saysOVI = Object.entries(DATOS.desbloqueos)
+    .filter(([, unlock]) => sayOVI(unlock.desc))
     .map(([id, unlock]) => `${id}: ${unlock.desc}`);
-  assert.deepEqual(saysVI, []);
+  assert.deepEqual(saysOVI, []);
 });
 
 test("the editor's own texts and the core's error messages say OVI, not VI (DT-071)", () => {
   const sourceFiles = ["editor", "core"].flatMap((folder) => sourceFilesUnder(path.join(RAIZ, folder)));
-  const saysVI = sourceFiles.flatMap((file) => {
+  const saysOVI = sourceFiles.flatMap((file) => {
     const source = readFileSync(file, "utf8");
     const texts = file.endsWith(".html") ? htmlText(source) : stringLiterals(source);
-    return texts.filter(sayVI).map((text) => `${path.relative(RAIZ, file)}: ${text.trim()}`);
+    return texts.filter(sayOVI).map((text) => `${path.relative(RAIZ, file)}: ${text.trim()}`);
   });
-  assert.deepEqual(saysVI, []);
+  assert.deepEqual(saysOVI, []);
 });
 
 test("a LabVIEW file name keeps its .vi, and the word VI is caught", () => {
-  assert.ok(!sayVI("Trim Whitespace.vi"));
-  assert.ok(sayVI("Select a VI..."));
-  assert.ok(sayVI("Create SubVI"));
+  assert.ok(!sayOVI("Trim Whitespace.vi"));
+  assert.ok(sayOVI("Select a VI..."));
+  assert.ok(sayOVI("Create SubVI"));
 });

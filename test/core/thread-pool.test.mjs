@@ -15,7 +15,7 @@ import { codificar } from "../../core/compiler/wasm-encoder.mjs";
 import { RUN_STATUS } from "../../core/compiler/pool-scheduler.mjs";
 import { PANEL_RECORD } from "../../core/compiler/panel-memory.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
-import { CAT, buildVI, callerCatalog } from "../helpers.mjs";
+import { CAT, buildOVI, callerCatalog } from "../helpers.mjs";
 
 // A thread that has not answered by then is stuck (a lock that never opens): it is ended, so the test
 // fails instead of keeping the process alive.
@@ -191,7 +191,7 @@ function parallelWaitingLoops(loops, count) {
 }
 
 /**
- * Runs a compiled VI on `threads` worker threads at once, each in `run_thread` blocking, over one
+ * Runs a compiled OVI on `threads` worker threads at once, each in `run_thread` blocking, over one
  * memory. Resolves to each thread's status and, for each indicator, how many times it was written and
  * its last value, from its record of the panel.
  */
@@ -255,7 +255,7 @@ test("a pool of threads runs every clump once, parks and resumes them on any thr
 
 /** A functional global that counts its calls (an uninitialized shift register) and waits 0 ms while it is called. */
 const waitingCounter = () =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.loop("w", "while-loop");
     b.shiftRegister("sr", "w");
     b.node("one", "const", { value: 1, type: "i32" }, "w");
@@ -275,12 +275,12 @@ const waitingCounter = () =>
     b.connector([], ["count"]);
   });
 
-test("on a pool, a non-reentrant subVI called from parallel loops serves one call at a time", { timeout: 60_000 }, async () => {
+test("on a pool, a non-reentrant subOVI called from parallel loops serves one call at a time", { timeout: 60_000 }, async () => {
   const LOOPS = 6;
   const COUNT = 200;
   const THREADS = 6;
   const cat = callerCatalog({ "counter.sdg": waitingCounter() });
-  const caller = buildVI(cat, (b) => {
+  const caller = buildOVI(cat, (b) => {
     for (let loop = 0; loop < LOOPS; loop++) {
       b.loop(`l${loop}`, "for-loop");
       b.node(`n${loop}`, "const", { value: COUNT });
@@ -301,7 +301,7 @@ test("on a pool, a non-reentrant subVI called from parallel loops serves one cal
 
 /** `loops` parallel For Loops of `iterations` turns of x = x·1.0000001 + 0.5, each showing its x at the end. */
 const computeLoops = (loops, iterations) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     for (let loop = 0; loop < loops; loop++) {
       b.loop(`l${loop}`, "for-loop");
       b.node(`n${loop}`, "const", { value: iterations });
@@ -442,7 +442,7 @@ test("the read-write lock lets readers in together, never with a writer, and sta
  * counts the reads whose first and last elements differ, which a value half old and half new would give.
  */
 const readersOfArrayControls = (loops, reads) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     for (let loop = 0; loop < loops; loop++) {
       b.loop(`l${loop}`, "for-loop");
       b.node(`n${loop}`, "const", { value: reads });

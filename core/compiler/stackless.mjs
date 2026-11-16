@@ -12,7 +12,7 @@
 //   rewinds: every statement before that point is skipped, every branch on the way is taken as when
 //   it parked (the locals that decided it are the same), and at the point the answer is taken from
 //   `resumeValue` instead of calling the import.
-// - A call to another function that may park (a synchronous subVI, which parks only for the
+// - A call to another function that may park (a synchronous subOVI, which parks only for the
 //   debugger) is a park point too: when the callee returns parked, the caller parks as well, and on
 //   resume it calls the callee again, which rewinds itself.
 //
@@ -21,7 +21,7 @@
 // - The running copy is the original with, after each call that may park, a check of `parking`
 //   that leaves through one exit outside every loop. A function with debugger hooks (DT-047) has two
 //   running copies, with and without them, and takes the one the debug flag asks for when it starts
-//   or resumes: a VI that allows debugging runs at full speed while nobody debugs it, and turning
+//   or resumes: an OVI that allows debugging runs at full speed while nobody debugs it, and turning
 //   debugging on reaches a loop at its next yield.
 // - The rewinding copy runs only when the function is called to resume: each statement that comes
 //   before a park point is guarded by "not rewinding", each structure that contains park points is
@@ -250,7 +250,7 @@ function rewriteFunction(f, tree, context) {
 
   /**
    * A running copy: the code as it was, parking when a call it makes asks to. Without `debugging`,
-   * the debugger's hooks are left out, so that a VI that allows debugging runs at full speed while
+   * the debugger's hooks are left out, so that an OVI that allows debugging runs at full speed while
    * nobody debugs it; a clump takes the copy with the hooks when it starts or resumes with the flag set.
    */
   function emitRunning(items, debugging) {
@@ -375,7 +375,7 @@ function rewriteFunction(f, tree, context) {
     if (answersThroughResumeValue) {
       if (answer !== null) out.push(ins("global.get", resumeValueGlobal), ins("local.set", answer));
     } else {
-      // The callee rewinds itself; it takes no arguments (a subVI's inputs are in its slots).
+      // The callee rewinds itself; it takes no arguments (a subOVI's inputs are in its slots).
       if (args.length) throw new Error("Stackless: a function that parks is called with arguments.");
       out.push(call);
       emitParkCheck(call);

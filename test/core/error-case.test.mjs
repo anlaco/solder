@@ -10,11 +10,11 @@ import { ejecutar } from "../../core/runtime/runtime.mjs";
 import * as Gr from "../../core/model/graph.mjs";
 import { ANY_ERROR, NO_ERROR, coversEveryError, errorValuesFromBoolean, isErrorFrameValue } from "../../core/model/error-case.mjs";
 import { ERROR } from "../../core/model/types.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { CAT, buildOVI } from "../helpers.mjs";
 
 /** A Case fed by the error control `errorIn`; frame k wires the constant k + 1 to the indicator `ran`. */
-function errorCaseVI(frames) {
-  const vi = buildVI(CAT, (b) => {
+function errorCaseOVI(frames) {
+  const vi = buildOVI(CAT, (b) => {
     b.node("errorIn", "cluster-control", { type: ERROR, style: "error-in" });
     b.node("ran", "indicator", { type: "i32" });
   });
@@ -48,7 +48,7 @@ async function frameRun(vi, error) {
 const error = (status, code, source = "") => ({ status, code, source });
 
 test("No Error runs with no error and with a warning; Error .. runs with any error", async () => {
-  const vi = errorCaseVI([{ valores: [NO_ERROR] }, { valores: [ANY_ERROR] }]);
+  const vi = errorCaseOVI([{ valores: [NO_ERROR] }, { valores: [ANY_ERROR] }]);
   assert.equal(await frameRun(vi, error(false, 0)), 1);
   assert.equal(await frameRun(vi, error(false, 5, "warn")), 1);
   assert.equal(await frameRun(vi, error(true, 0)), 2);
@@ -56,7 +56,7 @@ test("No Error runs with no error and with a warning; Error .. runs with any err
 });
 
 test("a frame of codes runs for an error with one of its codes; Default takes the rest", async () => {
-  const vi = errorCaseVI([{ valores: [NO_ERROR] }, { valores: [7] }, { valores: [{ min: 40, max: 49 }] }, { valores: [], default: true }]);
+  const vi = errorCaseOVI([{ valores: [NO_ERROR] }, { valores: [7] }, { valores: [{ min: 40, max: 49 }] }, { valores: [], default: true }]);
   assert.equal(await frameRun(vi, error(false, 7)), 1);
   assert.equal(await frameRun(vi, error(true, 7)), 2);
   assert.equal(await frameRun(vi, error(true, 42)), 3);
@@ -64,7 +64,7 @@ test("a frame of codes runs for an error with one of its codes; Default takes th
 });
 
 test("an error Case with no frame for some values, or a value of the wrong type, breaks the VI", () => {
-  const reasons = (frames) => (compilar(errorCaseVI(frames).g, CAT).errores ?? []).map((e) => e.motivo);
+  const reasons = (frames) => (compilar(errorCaseOVI(frames).g, CAT).errores ?? []).map((e) => e.motivo);
   assert.deepEqual(reasons([{ valores: [NO_ERROR] }, { valores: [7] }]), ["Case Structure: No case for some selector values"]);
   assert.ok(reasons([{ valores: [NO_ERROR] }, { valores: ["Foo"], default: true }]).includes("Case Structure: Selector values have wrong type"));
 });

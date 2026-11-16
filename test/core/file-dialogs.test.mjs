@@ -16,7 +16,7 @@ import { DIALOG_MODE, fileDialogOf } from "../../core/runtime/file-dialogs.mjs";
 import { ERROR } from "../../core/model/types.mjs";
 import { NOT_A_PATH, hostPathRules, pathFromText } from "../../core/model/paths.mjs";
 import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { CAT, buildOVI } from "../helpers.mjs";
 
 const OPERATION = { open: 0, replace: 1, create: 2, openOrCreate: 3, replaceOrCreate: 4, replaceOrCreateWithConfirmation: 5 };
 const NO_ERROR = { status: false, code: 0, source: "" };
@@ -68,7 +68,7 @@ const errorIndicator = (b, name) => b.node(name, "cluster-indicator", { type: ER
 
 /** Open/Create/Replace File with `operation`, its path wired from the control "file" or unwired, then Close File. */
 const openThenClose = ({ operation, pathWired = false, prompt }) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("operation", "const", { value: operation, type: "u16" });
     b.node("open", "open-create-replace-file");
     b.node("close", "close-file");
@@ -166,7 +166,7 @@ test("op 5 on a wired path that exists asks, and replaces on OK or cancels with 
 
 /** Write to Text File of "XY" with its file unwired, and Read from Text File with its file unwired. */
 const writeAndRead = () =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("text", "str-const", { value: "XY" });
     b.node("write", "write-to-text-file");
     b.node("read", "read-from-text-file");
@@ -199,7 +199,7 @@ test("Write and Read Text File unwired work on the file chosen, and a Cancel nam
 
 /** Delete with its path unwired, `confirm` as given. */
 const deleteUnwired = (confirm = false) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("confirm", "bool-const", { value: confirm });
     b.node("delete", "delete");
     b.node("deletedPath", "path-indicator");
@@ -240,7 +240,7 @@ test("Delete with confirm asks \"Delete <path>?\" and deletes only on OK", async
 
 test("Write and Read Delimited Spreadsheet unwired use the file chosen and give it as new file path", async () => {
   const name = newFile("old");
-  const write = buildVI(CAT, (b) => {
+  const write = buildOVI(CAT, (b) => {
     b.node("write", "write-delimited-spreadsheet-vi");
     b.node("data", "arr-control", { type: { array: "number", dims: 2 } });
     b.node("newPath", "path-indicator");
@@ -256,7 +256,7 @@ test("Write and Read Delimited Spreadsheet unwired use the file chosen and give 
   assert.deepEqual(written.newPath, pathOf(name));
   assert.match(readFileSync(name, "latin1"), /^1\.000\t2\.000/, "replaced with no question (measured)");
 
-  const read = buildVI(CAT, (b) => {
+  const read = buildOVI(CAT, (b) => {
     b.node("read", "read-delimited-spreadsheet-vi");
     b.node("newPath", "path-indicator");
     b.node("all", "arr-indicator", { type: { array: "number", dims: 2 } });
@@ -272,8 +272,8 @@ test("Write and Read Delimited Spreadsheet unwired use the file chosen and give 
 });
 
 /** A File Dialog configured with `config`, its prompt wired when given, its outputs to indicators; `errorIn` wired when given. */
-const fileDialogVI = ({ config = {}, prompt, pattern, patternLabel, errorIn } = {}) =>
-  buildVI(CAT, (b) => {
+const fileDialogOVI = ({ config = {}, prompt, pattern, patternLabel, errorIn } = {}) =>
+  buildOVI(CAT, (b) => {
     b.node("dialog", "file-dialog", { ...config, configured: true });
     const several = Boolean(config.multiple);
     b.node("selected", several ? "arr-indicator" : "path-indicator", several ? { type: { array: "path" } } : undefined);
@@ -310,25 +310,25 @@ test("File Dialog asks with LabVIEW's title for its selection mode, its button a
   ];
   for (const [config, title] of titles) {
     const dialogs = scriptedFileDialog(null);
-    await run(fileDialogVI({ config }), dialogs);
+    await run(fileDialogOVI({ config }), dialogs);
     assert.equal(dialogs.asked[0].title, title, JSON.stringify(config));
     assert.equal(dialogs.asked[0].buttonLabel, "OK");
   }
   const dialogs = scriptedFileDialog(null);
-  await run(fileDialogVI({ prompt: "My prompt", pattern: "*.txt;*.csv", patternLabel: "Data" }), dialogs);
+  await run(fileDialogOVI({ prompt: "My prompt", pattern: "*.txt;*.csv", patternLabel: "Data" }), dialogs);
   assert.equal(dialogs.asked[0].title, "My prompt");
   assert.deepEqual(dialogs.asked[0].filters, [{ name: "Data (*.txt;*.csv)", extensions: ["txt", "csv"] }, { name: "All Files", extensions: ["*"] }]);
 });
 
 test("File Dialog gives the path chosen and whether it exists, and a Cancel LabVIEW's outputs", async () => {
   const name = newFile("x");
-  const chosen = await run(fileDialogVI(), scriptedFileDialog({ paths: [name], exists: true }));
+  const chosen = await run(fileDialogOVI(), scriptedFileDialog({ paths: [name], exists: true }));
   assert.deepEqual(chosen.selected, pathOf(name));
   assert.equal(chosen.exists, true);
   assert.equal(chosen.cancelled, false);
   assert.deepEqual(chosen.error, NO_ERROR);
 
-  const cancelled = await run(fileDialogVI(), scriptedFileDialog(null));
+  const cancelled = await run(fileDialogOVI(), scriptedFileDialog(null));
   assert.deepEqual(cancelled.selected, NOT_A_PATH);
   assert.equal(cancelled.exists, false);
   assert.equal(cancelled.cancelled, true);
@@ -337,16 +337,16 @@ test("File Dialog gives the path chosen and whether it exists, and a Cancel LabV
 
 test("File Dialog with several items gives an array, empty on a Cancel", async () => {
   const [first, second] = [newFile("a"), newFile("b")];
-  const shown = await run(fileDialogVI({ config: { multiple: true, existence: "existing" } }), scriptedFileDialog({ paths: [first, second], exists: true }));
+  const shown = await run(fileDialogOVI({ config: { multiple: true, existence: "existing" } }), scriptedFileDialog({ paths: [first, second], exists: true }));
   assert.deepEqual(shown.selected, [pathOf(first), pathOf(second)]);
-  const cancelled = await run(fileDialogVI({ config: { multiple: true } }), scriptedFileDialog(null));
+  const cancelled = await run(fileDialogOVI({ config: { multiple: true } }), scriptedFileDialog(null));
   assert.deepEqual(cancelled.selected, []);
 });
 
 test("File Dialog with an error in shows no dialog; a warning passes on an OK and a Cancel replaces it", async () => {
   const error = { status: true, code: 5000, source: "x" };
   const dialogs = scriptedFileDialog({ paths: ["/a"], exists: true });
-  const withError = await run(fileDialogVI({ errorIn: error }), dialogs);
+  const withError = await run(fileDialogOVI({ errorIn: error }), dialogs);
   assert.equal(dialogs.asked.length, 0);
   assert.deepEqual(withError.error, error);
   assert.deepEqual(withError.selected, NOT_A_PATH);
@@ -354,6 +354,6 @@ test("File Dialog with an error in shows no dialog; a warning passes on an OK an
 
   const warning = { status: false, code: 5000, source: "w" };
   const name = newFile("x");
-  assert.deepEqual((await run(fileDialogVI({ errorIn: warning }), scriptedFileDialog({ paths: [name], exists: true }))).error, warning);
-  assert.equal((await run(fileDialogVI({ errorIn: warning }), scriptedFileDialog(null))).error.code, CANCELLED);
+  assert.deepEqual((await run(fileDialogOVI({ errorIn: warning }), scriptedFileDialog({ paths: [name], exists: true }))).error, warning);
+  assert.equal((await run(fileDialogOVI({ errorIn: warning }), scriptedFileDialog(null))).error.code, CANCELLED);
 });

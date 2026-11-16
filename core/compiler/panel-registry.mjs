@@ -11,7 +11,7 @@ import { clusterLayout } from "./wasm-types.mjs";
 import { recordBytes, slotBytes } from "./panel-memory.mjs";
 
 export function createPanelRegistry(ovi) {
-  const { cat, module, asSubVI, g, porId, indicadores } = ovi;
+  const { cat, module, asSubOVI, g, porId, indicadores } = ovi;
 
   // The panel's records, by node id (DT-063 §10): made when a control or a wired indicator is emitted, or
   // earlier by a Property Node linked to it (DT-072), which may come first and may link an unwired indicator.
@@ -24,7 +24,7 @@ export function createPanelRegistry(ovi) {
     }
     return panelRecords.get(id);
   }
-  /** An indicator of the top-level VI, listed once for the host to walk; returns its record. */
+  /** An indicator of the top-level OVI, listed once for the host to walk; returns its record. */
   function registerIndicator(id, type, logicalType, historyLength = null) {
     const { record, slot } = panelRecordOf(id, type, historyLength);
     if (!indicadores.some((indicator) => indicator.nodo === id)) {
@@ -40,7 +40,7 @@ export function createPanelRegistry(ovi) {
   function linkPanelObject(linkName) {
     const node = g.nodos.find((candidate) => candidate.name === linkName);
     if (!node) throw new Error(`The control "${linkName}" this Property Node is linked to is not on the panel.`);
-    if (asSubVI) throw new Error("A Property Node linked to a control of a subOVI cannot run yet.");
+    if (asSubOVI) throw new Error("A Property Node linked to a control of a subOVI cannot run yet.");
     // The object's own type: linkedControlType answers for a Property Node, not for the object it links to.
     const logicalType = panelObjectType(cat, node);
     const type = inMemory(logicalType);

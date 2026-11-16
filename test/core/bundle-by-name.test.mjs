@@ -11,11 +11,11 @@ import { ejecutar } from "../../core/runtime/runtime.mjs";
 import * as Gr from "../../core/model/graph.mjs";
 import { aTexto, leer } from "../../core/model/qvi-format.mjs";
 import { ERROR } from "../../core/model/types.mjs";
-import { CAT, buildVI, leer as leerJson } from "../helpers.mjs";
+import { CAT, buildOVI, leer as leerJson } from "../helpers.mjs";
 
 /** An error control wired to input cluster of a Bundle By Name of `rows` rows, its output to an indicator. */
 function bundleOfError(rows = 1) {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("errorIn", "cluster-control", { type: ERROR, style: "error-in" });
     b.node("bundle", "bundle-by-name");
     b.node("errorOut", "cluster-indicator", { type: ERROR, style: "error-out" });
@@ -39,7 +39,7 @@ function wireConstant(vi, block, value, port) {
 const reasons = (vi) => (compilar(vi.g, CAT).errores ?? []).map((e) => e.motivo);
 
 test("a fresh Bundle By Name has input cluster and one row with no name and no terminal", () => {
-  const vi = buildVI(CAT, (b) => b.node("bundle", "bundle-by-name"));
+  const vi = buildOVI(CAT, (b) => b.node("bundle", "bundle-by-name"));
   assert.deepEqual(inputs(vi).map((p) => p.label), ["input cluster"]);
   assert.deepEqual(CAT.puertos(vi.g.nodos[0]).out.map((p) => p.label), ["output cluster"]);
 });
@@ -63,7 +63,7 @@ test("the rows write their elements and the elements without a row pass through 
 
 test("an unwired row or an unwired input cluster breaks the VI (Q4)", () => {
   assert.ok(reasons(bundleOfError(1)).length > 0);
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("bundle", "bundle-by-name");
     b.node("errorOut", "cluster-indicator", { type: ERROR, style: "error-out" });
     b.wire("bundle.output-cluster", "errorOut.value");
@@ -72,7 +72,7 @@ test("an unwired row or an unwired input cluster breaks the VI (Q4)", () => {
 });
 
 test("a number does not wire to input cluster (Q5)", () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("number", "const", { value: 1 });
     b.node("bundle", "bundle-by-name");
   });

@@ -1,5 +1,5 @@
-// Saving and opening a VI (core/model/qvi-format.mjs): what is saved opens the
-// same. The VI is built with the same operations the editor uses, written, read
+// Saving and opening an OVI (core/model/qvi-format.mjs): what is saved opens the
+// same. The OVI is built with the same operations the editor uses, written, read
 // back, and both the text and what gets drawn are checked to be the same.
 
 import assert from "node:assert/strict";
@@ -18,8 +18,8 @@ const ajv = new Ajv2020({ allErrors: true, strict: false });
 const validar = ajv.compile(leerJson("docs/schema/qvi.schema.json"));
 const errores = () => (validar.errors ?? []).map((e) => `${e.instancePath} ${e.message}`).join("\n");
 
-/** Un VI con todo lo que el editor sabe poner hoy. */
-function viCompleto() {
+/** Un OVI con todo lo que el editor sabe poner hoy. */
+function oviCompleto() {
   let g = Gr.nuevo();
   const poner = (tipo, x, y, config) => {
     const r = Gr.crearNodo(g, CAT, tipo, x, y);
@@ -73,7 +73,7 @@ function dibujo(g) {
 }
 
 test("un vi guardado cumple el esquema del qvi", () => {
-  const vi = escribir(viCompleto(), CAT);
+  const vi = escribir(oviCompleto(), CAT);
   assert.ok(validar(vi), errores());
   // El programa y la presentación, separados.
   assert.deepEqual(vi["front-panel"].map((i) => [i.name, i.role]), [["control_1", "control"], ["indicator_1", "indicator"]]);
@@ -85,11 +85,11 @@ test("un vi guardado cumple el esquema del qvi", () => {
   // Los extremos de In Range and Coerce van en el fichero y vuelven.
   const enRango = vi["block-diagram"].nodes.find((n) => n.name === "in-range-and-coerce_1");
   assert.deepEqual(enRango.config, { "include-upper-limit": true, "include-lower-limit": false });
-  assert.deepEqual(leer(aTexto(viCompleto(), CAT), CAT).nodos.find((n) => n.tipo === "in-range-and-coerce").config, { "include-upper-limit": true, "include-lower-limit": false });
+  assert.deepEqual(leer(aTexto(oviCompleto(), CAT), CAT).nodos.find((n) => n.tipo === "in-range-and-coerce").config, { "include-upper-limit": true, "include-lower-limit": false });
 });
 
 test("lo que se guarda se abre igual", () => {
-  const g = viCompleto();
+  const g = oviCompleto();
   const texto = aTexto(g, CAT);
   const abierto = leer(texto, CAT);
   assert.equal(aTexto(abierto, CAT), texto, "guardar lo abierto da el mismo fichero");
@@ -102,7 +102,7 @@ test("lo que se guarda se abre igual", () => {
 
 // DT-068: a junction is where branches part, so a `junction` saved before is accepted and not read.
 test("a junction saved before DT-068 opens and is not kept", () => {
-  const vi = escribir(viCompleto(), CAT);
+  const vi = escribir(oviCompleto(), CAT);
   const [branchEnd] = Object.keys(vi.layout.wires);
   vi.layout.wires[branchEnd] = { ...vi.layout.wires[branchEnd], junction: [1, 2] };
   assert.ok(validar(vi), errores());
@@ -311,7 +311,7 @@ test("the visible elements and the index of 2D arrays are saved as pairs and ope
   assert.deepEqual([config(unaDimension).visibles, config(unaDimension).indice], [3, 1], "also a 1D constant on the diagram, which the schema did not allow");
 });
 
-test("a hierarchy with a subVI is saved, validated and read back through its relative path (DT-045)", async () => {
+test("a hierarchy with a subOVI is saved, validated and read back through its relative path (DT-045)", async () => {
   const { loadHierarchy } = await import("../../core/model/hierarchy.mjs");
   let sub = Gr.nuevo();
   let r = Gr.crearEnPanel(sub, CAT, "control", 50, 50, "x");
@@ -328,7 +328,7 @@ test("a hierarchy with a subVI is saved, validated and read back through its rel
   const subText = aTexto(sub, CAT);
   assert.ok(validar(JSON.parse(subText)), errores());
 
-  const cat = Gr.conSubVIs(CAT, (path) => (path === "util/double.qvi" ? { key: "util/double.qvi", g: sub, cat: CAT } : null));
+  const cat = Gr.conSubOVIs(CAT, (path) => (path === "util/double.qvi" ? { key: "util/double.qvi", g: sub, cat: CAT } : null));
   let top = Gr.nuevo();
   r = Gr.crearNodo(top, cat, "subvi", 100, 100);
   top = Gr.fijarConfig(r.g, r.id, { vi: "util/double.qvi" });
@@ -340,11 +340,11 @@ test("a hierarchy with a subVI is saved, validated and read back through its rel
 
   const files = new Map([["app/top.qvi", topText], ["app/util/double.qvi", subText]]);
   const resolvePath = (caller, relative) => `${caller.slice(0, caller.lastIndexOf("/") + 1)}${relative}`;
-  const loaded = loadHierarchy("app/top.qvi", CAT, { resolvePath, loadVI: (key, viCatalog) => (files.has(key) ? leer(files.get(key), viCatalog) : null) });
+  const loaded = loadHierarchy("app/top.qvi", CAT, { resolvePath, loadOVI: (key, oviCatalog) => (files.has(key) ? leer(files.get(key), oviCatalog) : null) });
   assert.deepEqual(loaded.errors, []);
-  const readTop = loaded.vis.get("app/top.qvi");
+  const readTop = loaded.ovis.get("app/top.qvi");
   assert.equal(aTexto(readTop.g, readTop.cat), topText);
-  assert.deepEqual(loaded.vis.get("app/util/double.qvi").g.vi, sub.vi);
+  assert.deepEqual(loaded.ovis.get("app/util/double.qvi").g.vi, sub.vi);
   // The Required input is left unwired: the caller cannot run.
   const { compilar } = await import("../../core/compiler/compiler.mjs");
   assert.match(compilar(readTop.g, readTop.cat).errores.map((e) => e.motivo).join(), /is missing a wire/);

@@ -1,4 +1,4 @@
-// The connector pane of a VI: which cell of the pattern each control or
+// The connector pane of an OVI: which cell of the pattern each control or
 // indicator occupies, and how its terminal must be wired (DT-045, spec/02 §4.5).
 //
 // Pure functions over the graph. The connector lives in `g.vi.connector`, the
@@ -19,7 +19,7 @@ export const DEFAULT_CONNECTION = "recommended";
 /** The pattern a connector uses: the one it names, else LabVIEW's default. */
 export const connectorPattern = (connector) => connector?.pattern ?? DEFAULT_PATTERN;
 
-/** The pattern of a VI's connector pane. */
+/** The pattern of an OVI's connector pane. */
 export const patternOf = (g) => connectorPattern(g.vi?.connector);
 
 /** How many terminals a pattern has. */
@@ -39,7 +39,7 @@ export function cellAt(point, pattern = DEFAULT_PATTERN) {
 }
 
 /**
- * Where the terminal of a cell sits on the edge of a subVI node, which is the
+ * Where the terminal of a cell sits on the edge of a subOVI node, which is the
  * 32 × 32 icon: a cell on the left or right edge on that edge, at its middle;
  * a middle cell on the top or bottom edge, at the centre of its column. The
  * edge for the middle cells, and the left edge for a cell as wide as the pane,

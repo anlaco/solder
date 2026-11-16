@@ -1,5 +1,5 @@
 // The debugger of a Run on the worker's side (debug-controller.mjs), driven by the real
-// compiled VI: values reported, the pace of Highlight Execution, breakpoints that stop
+// compiled OVI: values reported, the pace of Highlight Execution, breakpoints that stop
 // BEFORE a node, Pause and the three steps.
 
 import assert from "node:assert/strict";
@@ -16,7 +16,7 @@ import { CAT, INV } from "../helpers.mjs";
 const CONTEXT = D.contexto(CAT, D.glifosPorBloque(INV));
 
 /** 2 + 3 -> negate -> indicator: a chain of four nodes in one clump, plus 7 -> indicator on its own. */
-function chainVI() {
+function chainOVI() {
   let g = Gr.nuevo();
   const id = {};
   const put = (name, block, config, x = 0, y = 0) => {
@@ -40,7 +40,7 @@ function chainVI() {
  * a shift register from 0 accumulates acc = register + add, add leaves by a tunnel to "last"
  * and the register's right terminal to "sum". So add is 10, 11, 12; last 12; sum 33.
  */
-function loopVI() {
+function loopOVI() {
   let g = Gr.nuevo();
   const id = {};
   const put = (name, block, config, inside) => {
@@ -85,11 +85,11 @@ function loopVI() {
 }
 
 /**
- * Runs `vi` (`chainVI` by default) with a controller; `events` collects what the page would receive.
+ * Runs `vi` (`chainOVI` by default) with a controller; `events` collects what the page would receive.
  * `nextPause()` resolves on the next `paused` event, so a test waits for the stop it asserts instead of a
  * fixed time that a loaded machine can outlast (CLAUDE.md rule 6).
  */
-function start({ configure = {}, sleepLog = null, vi = chainVI } = {}) {
+function start({ configure = {}, sleepLog = null, vi = chainOVI } = {}) {
   const { g, id } = vi();
   const compiled = compilar(g, CAT);
   assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
@@ -108,12 +108,12 @@ function start({ configure = {}, sleepLog = null, vi = chainVI } = {}) {
     sleep: async (ms) => sleepLog?.push(ms),
   });
   controller.configure({ active: true, ...configure });
-  // As the run worker does: the diagram's last stop comes after the VI has run.
+  // As the run worker does: the diagram's last stop comes after the OVI has run.
   const run = ejecutar(compiled, {}, { depurador: controller.hooks }).then(() => controller.finishDiagram());
   return { controller, events, run, nextPause, id, plan, compiled };
 }
 
-/** The next stop, or null when the VI ends first; arm it before the `resume` that leads to it. */
+/** The next stop, or null when the OVI ends first; arm it before the `resume` that leads to it. */
 const nextStopOrEnd = (nextPause, run) => Promise.race([nextPause(), run.then(() => null)]);
 const pausedNode = (events) => events.filter((event) => event.paused).at(-1)?.paused;
 
@@ -227,7 +227,7 @@ test("a disabled breakpoint does not stop, and Abort frees a held VI", async () 
 const reported = (events, node, port) => events.flatMap((event) => event.values ?? []).filter((entry) => entry.node === node && entry.port === port).map((entry) => entry.value);
 
 test("the borders of a loop report their values each iteration, and the outputs when it ends", async () => {
-  const { events, run, id, compiled } = start({ vi: loopVI, configure: { highlight: { on: true, speed: "very-fast" } } });
+  const { events, run, id, compiled } = start({ vi: loopOVI, configure: { highlight: { on: true, speed: "very-fast" } } });
   await run;
   const borders = compiled.debugNodes.filter((entry) => entry.border).map((entry) => entry.nodo);
   assert.deepEqual(new Set(borders), new Set([id.count, id.tunnelIn, id.left, id.i, id.tunnelOut, id.right]));
@@ -240,7 +240,7 @@ test("the borders of a loop report their values each iteration, and the outputs 
 });
 
 test("the plan never waits for a border, and counts a tunnel that reports each iteration once", async () => {
-  const { plan, id, run } = start({ vi: loopVI });
+  const { plan, id, run } = start({ vi: loopOVI });
   await run;
   assert.equal(plan.inputCounts[id.add], 2, "the tunnel and i");
   assert.equal(plan.inputCounts[id.tunnelOut], undefined, "a border is not a node the debugger stops before");
@@ -248,7 +248,7 @@ test("the plan never waits for a border, and counts a tunnel that reports each i
 });
 
 test("single stepping through a loop stops before its nodes, never at a border", async () => {
-  const { controller, events, run, nextPause, id } = start({ vi: loopVI });
+  const { controller, events, run, nextPause, id } = start({ vi: loopOVI });
   let stop = nextStopOrEnd(nextPause, run);
   controller.requestPause();
   const borders = new Set([id.tunnelIn, id.left, id.i, id.tunnelOut, id.right]);
@@ -265,7 +265,7 @@ test("single stepping through a loop stops before its nodes, never at a border",
 
 // labview-captures/reports/2026-10-16-warnings-frame-stops.md §B: the frames of the structures are stops too.
 
-/** Steps with `mode` until the VI ends, and gives each stop as "kind:phase" (frames) or "kind:name" (nodes). */
+/** Steps with `mode` until the OVI ends, and gives each stop as "kind:phase" (frames) or "kind:name" (nodes). */
 async function stepThrough(vi, modes = () => "over", configure = {}) {
   const { controller, events, run, nextPause, id } = start({ vi, configure });
   let stop = nextStopOrEnd(nextPause, run);
@@ -281,14 +281,14 @@ async function stepThrough(vi, modes = () => "over", configure = {}) {
 }
 
 test("single stepping stops at the loop before it runs, at the end of each iteration and at the end of the diagram", async () => {
-  const stops = await stepThrough(loopVI);
+  const stops = await stepThrough(loopOVI);
   const iteration = ["before:add", "before:acc", "frame:iteration"];
   assert.deepEqual(stops, ["frame:start", ...iteration, ...iteration, ...iteration, "diagram"]);
 });
 
 test("Step Out at the end of an iteration finishes the loop", async () => {
   let outDone = false;
-  const stops = await stepThrough(loopVI, (paused) => {
+  const stops = await stepThrough(loopOVI, (paused) => {
     if (paused.kind === "frame" && paused.phase === "iteration" && !outDone) return (outDone = true), "out";
     return "over";
   });
@@ -297,7 +297,7 @@ test("Step Out at the end of an iteration finishes the loop", async () => {
 
 test("Step Out at the end of an iteration finishes the loop with Highlight Execution on too", async () => {
   let outDone = false;
-  const stops = await stepThrough(loopVI, (paused) => {
+  const stops = await stepThrough(loopOVI, (paused) => {
     if (paused.kind === "frame" && paused.phase === "iteration" && !outDone) return (outDone = true), "out";
     return "over";
   }, { highlight: { on: true, speed: "very-fast" } });

@@ -18,7 +18,7 @@ import { DEFAULT_CHART_HISTORY } from "./panel-memory.mjs";
 import { NODE_EMITTERS } from "./node-table.mjs";
 
 export function createNodeEmission(ovi) {
-  const { cat, module, asSubVI, chainIndex, g, logicalTypes, resueltos, calls, porId, llegaA, clumpDe, nuevaCelda, cadena, arrayConstante, clusterConstante, autoErrores, valor, controles, errores, automaticos, bufer } = ovi;
+  const { cat, module, asSubOVI, chainIndex, g, logicalTypes, resueltos, calls, porId, llegaA, clumpDe, nuevaCelda, cadena, arrayConstante, clusterConstante, autoErrores, valor, controles, errores, automaticos, bufer } = ovi;
   const debugHook = (...args) => ovi.debugHook(...args);
   const panelRecordOf = (...args) => ovi.panelRecordOf(...args);
   const registerCallLibrary = (...args) => ovi.registerCallLibrary(...args);
@@ -43,7 +43,7 @@ export function createNodeEmission(ovi) {
       if (!c) return constantOf(tIn(i), entradas[i].default ?? 0);
       const t = resueltos.salidas.get(`${c.de.nodo}.${c.de.puerto}`);
       const v = valor.get(`${c.de.nodo}.${c.de.puerto}`);
-      // El nodo de origen ya dio un error: no hay valor, y el VI no se emitirá.
+      // El nodo de origen ya dio un error: no hay valor, y el OVI no se emitirá.
       if (!v) return [];
       // Read from another function —a clump of a subplan, or the loop that calls it—: the value
       // goes through a cell of the data space. Each output is assigned once per execution, so it
@@ -116,9 +116,9 @@ export function createNodeEmission(ovi) {
     // Un indicador sin cable no se escribe: conserva su valor, como en LabVIEW.
     if (["indicator", "bool-indicator", "str-indicator", "cluster-indicator", "arr-indicator", "visa-indicator", "path-indicator", "refnum-indicator", "daq-name-indicator", "waveform-chart", "waveform-graph", "xy-graph"].includes(n.tipo)) {
       if (!llegaA.has(`${id}.value`)) return;
-      // In a subVI, a connector indicator leaves its value in its slot for the caller; any other one, nowhere.
-      if (asSubVI) {
-        const slot = asSubVI.get(n.name);
+      // In a subOVI, a connector indicator leaves its value in its slot for the caller; any other one, nowhere.
+      if (asSubOVI) {
+        const slot = asSubOVI.get(n.name);
         if (slot) k.cuerpo.push(...storeInSlot(tIn(0), slot, entrada(0), nuevoLocal));
         return;
       }
@@ -130,10 +130,10 @@ export function createNodeEmission(ovi) {
     // VISA and the file functions are served by the same I/O (the editor's I/O process).
     // VISA's Property Node too (DT-072 §5).
     if (VISA_FUNCTIONS.has(n.tipo) || FILE_FUNCTIONS.has(n.tipo) || (n.tipo === "property-node" && n.config?.class === "Instr") || n.tipo === "call-library") module.usesInstrumentIo = true;
-    const emitir = n.tipo === "subvi" ? (e) => callSubOVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subOVIControl(e, asSubVI.get(n.name)) : NODE_EMITTERS[n.tipo];
+    const emitir = n.tipo === "subvi" ? (e) => callSubOVI(e, calls.get(id)) : asSubOVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subOVIControl(e, asSubOVI.get(n.name)) : NODE_EMITTERS[n.tipo];
     if (!emitir) return errores.push({ nodo: id, motivo: `The compiler cannot emit "${nombre}" (${n.tipo}) yet.` });
     const e = { nodo: n, cat, tIn, tOut, logicalTIn, logicalTOut, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex, registerPropertyNode, registerCallLibrary, registerControlReference };
-    if (!asSubVI && PANEL_CONTROLS.includes(n.tipo)) {
+    if (!asSubOVI && PANEL_CONTROLS.includes(n.tipo)) {
       e.controlRecord = panelRecordOf(id, tOut(0)).record;
       controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mechanicalAction(cat, n), record: e.controlRecord, ...panelDataOf(tOut(0), logicalTOut(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTOut(0) === PATH && { path: true }), ...taskPanelData(logicalTOut(0)) });
     }
@@ -150,7 +150,7 @@ export function createNodeEmission(ovi) {
     for (let j = locs.length - 1; j >= 0; j--) k.cuerpo.push(ins("local.set", locs[j]));
     salidas.forEach((p, j) => dejar(k, id, p.name, locs[j], wasmTypeOf(tOut(j))));
     k.cuerpo.push(...debugHook(id, salidas.map((p, j) => ({ port: p.name, type: tOut(j), local: locs[j] }))));
-    // Manejo automático de errores (DT-043): un «error out» sin cablear que lleva un error para el VI y lo cuenta.
+    // Manejo automático de errores (DT-043): un «error out» sin cablear que lleva un error para el OVI y lo cuenta.
     const oe = salidas.findIndex((p) => p.name === "error-out");
     if (oe >= 0 && autoErrores && n.tipo !== "simple-error-handler" && !g.cables.some((c) => c.de.nodo === id && c.de.puerto === "error-out")) {
       k.cuerpo.push(ins("local.get", locs[oe]), ins("i32.load", ERROR_FIELDS.status), ins("if"),

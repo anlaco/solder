@@ -1,5 +1,5 @@
 // Copy, cut and paste of a piece of a diagram (spec/05, Edit menu). A copied
-// fragment is plain data, so it can be pasted into the same VI or another one.
+// fragment is plain data, so it can be pasted into the same OVI or another one.
 //
 // A pure module: every operation returns new data.
 
@@ -29,7 +29,7 @@ export function cutFragment(g, ids) {
  * (panelDx, panelDy) on the panel. Every node gets a new id and a new name;
  * a control or indicator gets a free label, numbered as LabVIEW does with a
  * new one ("Numeric 2"). The pasted nodes that were at the top of the fragment
- * go into `scope` (a structure id, or undefined for the VI's diagram). Returns
+ * go into `scope` (a structure id, or undefined for the OVI's diagram). Returns
  * the diagram and the ids of the top pasted nodes, to select them.
  */
 export function pasteFragment(g, fragment, { dx = 0, dy = 0, panelDx = dx, panelDy = dy, scope } = {}) {

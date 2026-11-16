@@ -16,7 +16,7 @@ import * as E from "../../editor/src/window/window-state.mjs";
 import { INV, RAIZ } from "../helpers.mjs";
 
 const PREFIX = "window.getting-started";
-const RECENT = ["/home/ana/vis/Two Calls.sdg", "/home/ana/vis/Add.sdg", "C:\\Users\\ana\\Notes.txt", "/home/ana/p/Bench.sdproj"];
+const RECENT = ["/home/ana/ovis/Two Calls.sdg", "/home/ana/ovis/Add.sdg", "C:\\Users\\ana\\Notes.txt", "/home/ana/p/Bench.sdproj"];
 const measure = (text) => text.length * 6;
 const windowSize = { width: 837, height: 526 };
 const draw = (state) => gettingStartedWindow(INV, state, measure, windowSize);
@@ -61,12 +61,12 @@ test("the filter has LabVIEW's four choices, checks the current one and filters 
 });
 
 test("the recent list shows file names, with the whole path as the tooltip, and nothing when empty", () => {
-  assert.equal(fileName("/home/ana/vis/Two Calls.sdg"), "Two Calls.sdg");
+  assert.equal(fileName("/home/ana/ovis/Two Calls.sdg"), "Two Calls.sdg");
   assert.equal(fileName("C:\\Users\\ana\\Notes.txt"), "Notes.txt");
   const html = draw(start());
-  assert.match(html, /title="\/home\/ana\/vis\/Two Calls\.sdg"[^>]*>[\s\S]*?<span>Two Calls\.sdg<\/span>/);
+  assert.match(html, /title="\/home\/ana\/ovis\/Two Calls\.sdg"[^>]*>[\s\S]*?<span>Two Calls\.sdg<\/span>/);
   assert.ok(!html.includes("<span>/home/ana"), "the path is not shown, only named in the tooltip");
-  assert.ok(html.includes('data-path="/home/ana/vis/Add.sdg"'), "a click opens the file by its path");
+  assert.ok(html.includes('data-path="/home/ana/ovis/Add.sdg"'), "a click opens the file by its path");
   const empty = draw(start({ recentFiles: [] }));
   assert.ok(!empty.includes("gs-recent\""), "an empty list has no rows");
 });
@@ -97,7 +97,7 @@ test("Getting Started greyed items explain themselves through the inventory", ()
     const { labview, solder } = INV.explicacion(entry);
     assert.ok(labview && solder, `${id} says what LabVIEW does and what Solder lacks`);
   }
-  // Clicking one opens the explanation, as in the VI windows.
+  // Clicking one opens the explanation, as in the OVI windows.
   const clicked = E.clic(start(), INV, `${PREFIX}.create-project`, { x: 60, y: 160 });
   assert.match(draw(clicked), /class="explicacion" data-explicacion="window\.getting-started\.create-project"[\s\S]*In Solder: Missing/);
 });

@@ -1,4 +1,4 @@
-// Solder's VISA inside a Run (DT-065 §4, DT-066). Each VISA function of a VI is an external wait: its
+// Solder's VISA inside a Run (DT-065 §4, DT-066). Each VISA function of an OVI is an external wait: its
 // clump parks, the Run's coordinator asks the I/O for it here, writes the outputs into the shared
 // memory and answers, and the clump is woken. No thread of the Run ever blocks on an instrument.
 //
@@ -21,7 +21,7 @@ const NO_ERROR = { status: false, code: 0, source: "" };
 const EMPTY = new Uint8Array(0);
 
 /**
- * The VISA functions a compiled VI imports, each `(...addresses) → ANSWERED | Promise`. `host` is the
+ * The VISA functions a compiled OVI imports, each `(...addresses) → ANSWERED | Promise`. `host` is the
  * Run's createHostFunctions over `memory`; `compilado` gives the layouts of the error cluster and of the VISA
  * resource name. Without `io` (an editor with no I/O process yet), a VISA function fails the Run.
  */

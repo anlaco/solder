@@ -272,7 +272,7 @@ test("the resource terminal of a VISA node has its own menu with Create making t
   }
 });
 
-// ——— A VI built with them ———
+// ——— An OVI built with them ———
 
 test("a VI built in the editor with VISA Open, Write, Read and Close compiles with its I/O process", () => {
   const FONDO = { tipo: "fondo" };

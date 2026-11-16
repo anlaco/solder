@@ -1,5 +1,5 @@
 // Waveform Chart, Waveform Graph and XY Graph as indicators: what each accepts
-// (labview-captures/graphs/REPORT.md) and the value they receive when the VI runs.
+// (labview-captures/graphs/REPORT.md) and the value they receive when the OVI runs.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";

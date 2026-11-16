@@ -4,7 +4,7 @@
 // what could not be measured says "unverified".
 //
 // Pure functions over JavaScript values: the runtime reads the arguments from
-// the compiled VI's memory and writes the results back (DT-042 b).
+// the compiled OVI's memory and writes the results back (DT-042 b).
 //
 // An argument or an output is `{ kind, value, bits, signed }`: `kind` is
 // "float", "int", "bool" or "string"; `bits` and `signed` describe an integer.

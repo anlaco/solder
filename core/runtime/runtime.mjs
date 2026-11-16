@@ -1,11 +1,11 @@
-// Running a compiled VI (core/compiler/compiler.mjs): instantiating its
+// Running a compiled OVI (core/compiler/compiler.mjs): instantiating its
 // WebAssembly module and running its clumps by dataflow (DT-040).
 //
 // This is the module's host and the Run's coordinator: it writes the control
 // values into the panel's memory and passes over the indicators to report what
-// changed (DT-063 §10). It also provides the clocks; the waits, yields, subplans and subVI turns are the
+// changed (DT-063 §10). It also provides the clocks; the waits, yields, subplans and subOVI turns are the
 // module's own scheduler (pool-scheduler.mjs, DT-063 §9), which this host drives
-// turn by turn on one thread. It provides nothing else: a VI has no
+// turn by turn on one thread. It provides nothing else: an OVI has no
 // gates other than what is imported into it (DT-039, decision 4). The editor's
 // worker and the command line, in Node, use it the same way.
 
@@ -163,7 +163,7 @@ const funcionesMath = Object.fromEntries(
     .map(([n, f]) => [`fn_${n}`, f.js]),
 );
 
-/** The error a VI that was aborted ends with: not a fault of the VI. */
+/** The error an OVI that was aborted ends with: not a fault of the OVI. */
 export const abortado = abortedError;
 
 /** LabVIEW's millisecond clock on a host's time: a U32 that wraps, with its zero undefined. */
@@ -172,11 +172,11 @@ export const millisecondTimerOf = (clock) => () => Math.floor(clock()) >>> 0;
 const millisecondTimer = (host) => millisecondTimerOf(() => host.now());
 
 /**
- * What a VI and its subVIs keep from one Run to the next while they stay loaded
+ * What an OVI and its subOVIs keep from one Run to the next while they stay loaded
  * (DT-045, measured in LabVIEW 2026 Q3: a functional global counts 1, 2 in one
  * Run and 3, 4 in the next). The whole memory —data spaces, uninitialized shift
  * registers, buffers— is kept and put back into the next instance of the same
- * module; another module (the VI was edited and recompiled) starts afresh.
+ * module; another module (the OVI was edited and recompiled) starts afresh.
  * `estado` is an object the caller keeps between Runs.
  */
 function restoreState(estado, bytes, memory) {
@@ -442,9 +442,9 @@ export function createHostFunctions({ compilado, separador = ".", pathRules = ho
     else m.setBigInt64(record + 8, BigInt.asIntN(64, BigInt(value)), true);
   };
   /**
-   * The VIs from the one at `chainIndex` up to the top level, as an error source names them:
+   * The OVIs from the one at `chainIndex` up to the top level, as an error source names them:
    * "Parse Reply.qvi->Instrument Protocol.qvi" (spec/04 Rule 21k). Each call wrote its caller's
-   * index into the callee's cell; an unnamed top-level VI ends the chain.
+   * index into the callee's cell; an unnamed top-level OVI ends the chain.
    */
   const callChainText = (chainIndex) => {
     const names = [];
@@ -600,8 +600,8 @@ export function windowlessPanel() {
 }
 
 /**
- * Runs the compiled VI. `valores` gives the value of each control by its node id; the caller may
- * change it while the VI runs, and what changed reaches the panel's memory at the start of the next
+ * Runs the compiled OVI. `valores` gives the value of each control by its node id; the caller may
+ * change it while the OVI runs, and what changed reaches the panel's memory at the start of the next
  * turn (DT-063 §10). Returns the value of each indicator written, by id. `opciones`:
  * - `alEscribir(nodo, valor)`: an indicator that changed since the last pass over the panel, with its
  *   last value; a Waveform Chart, every write its history still holds, in order. The panel is passed
@@ -615,16 +615,16 @@ export function windowlessPanel() {
  * - `pathRules`: "windows" or "posix", the rules a path is read and written with (DT-067); by default,
  *   those of the system the Run is on.
  * - `depurador` (DT-047): `{ alValor(nodo, salida, valor), alNodo(nodo), unoACadaVez() }`. With it the
- *   VI reports every node and the value of its outputs while debugging is on: `alNodo` may return a promise
+ *   OVI reports every node and the value of its outputs while debugging is on: `alNodo` may return a promise
  *   (a breakpoint, a step, Highlight Execution's pace) and the clump waits for it. The runtime gives it
  *   `activar(on)` to turn debugging on or off, also in the middle of a Run; `unoACadaVez()` true makes the
  *   clumps run one at a time, as LabVIEW does with Highlight Execution. `compilado.debugNodes[i]` says which
  *   node index `i` is.
- * - `estado`: an object kept between Runs, through which the VI keeps its
+ * - `estado`: an object kept between Runs, through which the OVI keeps its
  *   state while it stays loaded (DT-045).
  * - `host`: where time and turns come from (scheduler.mjs); by default the real one. The reference traces
  *   run on `createVirtualHost`, whose clock jumps.
- * - `senal`: un AbortSignal; el Abort para el VI aunque esté esperando, y la
+ * - `senal`: un AbortSignal; el Abort para el OVI aunque esté esperando, y la
  *   promesa se rechaza con un error `abortado`.
  */
 export async function ejecutar(compilado, valores = {}, opciones = {}) {
@@ -764,7 +764,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   const whenAnswered = (answer, then) => (isPromise(answer) ? answer.then(then) : then(answer));
   // Manejo automático de errores (DT-043): el diálogo lo saca quien llama
   // (`alErrorAutomatico`, que resuelve «continuar» o «parar»). Sin él —la línea
-  // de órdenes—, el VI se detiene con el error.
+  // de órdenes—, el OVI se detiene con el error.
   // The dialogs answer at once or with a promise; on one thread the clump parks on it (`parkOn`), on a
   // pool the coordinator wakes the clump that a thread parked (runOnPool).
   const automaticErrorDialog = (i, dir) => {
@@ -800,7 +800,7 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   const propertyNodeFunction = createPropertyNodeFunction({ compilado, host: hostFunctions, memory, panel: runPanel(), instr: { session: instrSession, io: instrIo } });
   const callLibraryFunction = createCallLibraryFunction({ io: opciones.io, host: hostFunctions, memory, compilado, pathRules });
   const externalWaits = { error_automatico: automaticErrorDialog, dialogo_error: errorHandlerDialog, ...visaFunctions, ...fileFunctions, ...propertyNodeFunction, ...callLibraryFunction };
-  // Debugging (DT-047): the hooks the compiled VI calls while the debug flag is set.
+  // Debugging (DT-047): the hooks the compiled OVI calls while the debug flag is set.
   const readDebugValue = debugValueReader(compilado, { leerCadena, leerCluster, leerArray });
   const valorDepurado = (nodo, salida, valor) => {
     if (!depurador) return;

@@ -94,7 +94,7 @@ const flechaRun = poligono(
 
 const cajaPaso = (x0, y0, x1, y1) => caja(x0, y0, x1, y1, PAPER, 1.4);
 
-/** Glifos de la barra de un VI, por el último segmento de su id. */
+/** Glifos de la barra de un OVI, por el último segmento de su id. */
 export const BARRA = {
   run: svg(flechaRun),
   "run-continuously": svg(
@@ -222,12 +222,12 @@ export function conectorPane(terminals = [], selectedCell = null, pattern = DEFA
 export const CONNECTOR_PANE = conectorPane();
 
 /**
- * The default icon of a VI: a 32 × 32 drawing with a 1 px black border and, at
- * the bottom right, the number of the untitled VI it was born as, if known
+ * The default icon of an OVI: a 32 × 32 drawing with a 1 px black border and, at
+ * the bottom right, the number of the untitled OVI it was born as, if known
  * (labview-captures/subvi/new-vi-front-panel.png). The drawing is ours: the
  * one in LabVIEW is NI's.
  */
-export function iconoVI(numero) {
+export function iconoOVI(numero) {
   const puntos = [];
   for (let i = 0; i <= 20; i++) {
     const t = i / 20;
@@ -259,15 +259,15 @@ export const polymorphicOviIcon = () =>
     "0 0 32 32",
   );
 
-/** The icon of a subVI whose file cannot be found: the same frame, dashed and with a question mark. */
-export const ICONO_VI_FALTA = svg(
+/** The icon of a subOVI whose file cannot be found: the same frame, dashed and with a question mark. */
+export const ICONO_OVI_FALTA = svg(
   lleno(0, 0, 32, 32, PAPER) +
     `<rect x="0.5" y="0.5" width="31" height="31" fill="none" stroke="${INK}" stroke-width="1" stroke-dasharray="3 2"/>` +
     `<text x="16" y="17" text-anchor="middle" dominant-baseline="central" font-size="20" fill="${INK}">?</text>`,
   "0 0 32 32",
 );
 
-export const ICONO_VI = iconoVI(1);
+export const ICONO_OVI = iconoOVI(1);
 
 export const CHINCHETA = svg(
   linea(1, 8, 5, 8) + caja(5, 5.5, 11, 10.5) + linea(11, 3.5, 11, 12.5, 1.6) + lleno(11.5, 5, 14.5, 11, "#969696", 1),
@@ -549,7 +549,7 @@ export const CAJAS = {
 };
 
 /**
- * La flecha de Run rota: el VI no se puede ejecutar. Dos trozos de la flecha,
+ * La flecha de Run rota: el OVI no se puede ejecutar. Dos trozos de la flecha,
  * gris oscuro, separados por una grieta, como en numeric-editar-constante.png.
  */
 BARRA["run-roto"] = svg(
@@ -558,7 +558,7 @@ BARRA["run-roto"] = svg(
 );
 
 /**
- * La flecha de Run mientras el VI corre: rellena de negro y con rayas detrás,
+ * La flecha de Run mientras el OVI corre: rellena de negro y con rayas detrás,
  * medida a 1:1 en labview-captures/run/barra-run.png. El dibujo es propio.
  */
 BARRA["run-en-marcha"] = svg(
@@ -569,7 +569,7 @@ BARRA["run-en-marcha"] = svg(
 // ——— The debugging buttons in their other states (labview-captures/debugging/REPORT.md §1, §2, §4 and §6) ———
 // The drawings are our own; what is measured is which state changes: the lit bulb with rays, the P of
 // Retain Wire Values filled yellow, the red bars of a Pause that became Continue, and the yellow squares of
-// the step buttons while the VI is stopped.
+// the step buttons while the OVI is stopped.
 
 const STEP_SQUARE_YELLOW = "#ffe94d";
 const STEP_SQUARE_EDGE = "#96960b";
@@ -1013,7 +1013,7 @@ Object.assign(FUNCIONES, {
 });
 Object.assign(CAJAS, { select: [3.75, 3.75, 40.5, 45], "max-and-min": [1.5, 1.5, 46.5, 46.5], "in-range-and-coerce": [1.5, 7.5, 46.5, 40.5], "not-a-number-path-refnum": COMPARACION });
 
-// Lo que pide cadenas, arrays, rutas, VIs maleables o punto fijo: en su sitio,
+// Lo que pide cadenas, arrays, rutas, OVIs maleables o punto fijo: en su sitio,
 // en gris, con un rótulo corto (el dibujo de NI no se copia).
 for (const [id, rotulo] of Object.entries({
   "empty-array": "[ ]?", "empty-string-path": '""?', "decimal-digit": "0-9", "hex-digit": "hex", "octal-digit": "oct", printable: "prt",
@@ -1048,8 +1048,8 @@ Object.assign(FUNCIONES, {
     poligono([[14, 41], [34, 41], [28.5, 7], [19.5, 7]], PAPER, INK, 2) + linea(24, 36, 31, 12, 2) + lleno(27.5, 17, 33.5, 21, INK),
   ),
 });
-// Lo que pide time stamps, cadenas, clusters, subVIs, VIs maleables o Express
-// VIs: en su sitio, en gris, con un rótulo corto.
+// Lo que pide time stamps, cadenas, clusters, subOVIs, OVIs maleables o Express
+// OVIs: en su sitio, en gris, con un rótulo corto.
 for (const [id, rotulo] of Object.entries({
   "high-resolution-relative-seconds": "s.μs", "stall-data-flow": "stall", "get-date-time-string": "→abc", "get-date-time-in-seconds": "now",
   "date-time-to-seconds": "→ts", "seconds-to-date-time": "ts→", "to-time-stamp": "#→ts", "elapsed-time": "Δt",
@@ -1059,9 +1059,9 @@ for (const id of ["tick-count-ms", "wait-ms", "wait-until-next-ms-multiple", "hi
   "get-date-time-in-seconds", "date-time-to-seconds", "seconds-to-date-time", "to-time-stamp", "elapsed-time",
   "notification-polling-wait", "format-date-time-string", "time-stamp-constant"]) CAJAS[id] = TIEMPO;
 
-// ——— Express VIs (DT-069) ———
+// ——— Express OVIs (DT-069) ———
 //
-// The icon of an Express VI is 32 × 32 px: a black rounded frame, one black row at the top and then a 2 px bar of #0000ff
+// The icon of an Express OVI is 32 × 32 px: a black rounded frame, one black row at the top and then a 2 px bar of #0000ff
 // across it (measured in LabVIEW 2026 Q3, reports/2026-10-29-express-vi-common.md §2 and
 // 2026-10-29-editor-time-delay-compare.md §2). The drawings are our own.
 
@@ -1086,10 +1086,10 @@ const FILE_IN_BUBBLE =
   `<path d="M12.5 13.5h5l2.5 2.5v6.5h-7.5z" fill="${PAPER}" stroke="${INK}" stroke-width="1"/><path d="M17.5 13.5v2.5h2.5" fill="none" stroke="${INK}" stroke-width="1"/>` +
   lleno(14, 18.5, 18.5, 19.5, EXPRESS_SAND) + lleno(14, 20.5, 18.5, 21.5, EXPRESS_SAND);
 
-/** What each Express VI draws inside its frame. */
+/** What each Express OVI draws inside its frame. */
 const EXPRESS_DRAWINGS = { "time-delay": HOURGLASS, "file-dialog": FILE_IN_BUBBLE };
 
-/** The 32 × 32 icons the nodes of the Express VIs draw, by block. */
+/** The 32 × 32 icons the nodes of the Express OVIs draw, by block. */
 export const EXPRESS_ICONS = Object.fromEntries(Object.entries(EXPRESS_DRAWINGS).map(([block, drawing]) => [block, svg(expressFrame(drawing), `0 0 ${EXPRESS_ICON_SIZE} ${EXPRESS_ICON_SIZE}`)]));
 
 // The palette shows the same icon, centred in its 48 px cell.

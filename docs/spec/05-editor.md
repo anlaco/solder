@@ -939,7 +939,7 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/subvi/`).
 > **Rule 66 — Several OVIs open.** Each open OVI has its own Front Panel and Block Diagram, its own file and its
 > own unsaved changes (asterisk and "Save changes?" per OVI). File ▸ Open opens another OVI in new windows, or
 > brings forward the windows of one already open; File ▸ Exit asks about each OVI with unsaved changes and quits (rule 98). Tested in
-> `test/editor/vi-registry.test.mjs`.
+> `test/editor/ovi-registry.test.mjs`.
 
 > **Rule 67 — Connector pane.** The Front Panel shows the pattern 4-2-2-4 (cells 0-3 left, 4-5 and 6-7 middle,
 > 8-11 right) left of the icon. Click a cell, then a control or an indicator: it is assigned (a control is an
@@ -963,21 +963,21 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/subvi/`).
 > **Rule 68 — SubOVI node.** Select an OVI... (Functions palette) opens the file dialog; the OVI follows the cursor
 > and a click drops it. The node is the 32 × 32 icon of the callee; its terminals sit on the edge next to their
 > connector cell, with the wire touching the border. Double click or Open Front Panel opens the callee's windows.
-> The other menu rows are placeholders. Tested in `test/editor/subvi-nodes.test.mjs`.
+> The other menu rows are placeholders. Tested in `test/editor/subovi-nodes.test.mjs`.
 
 > **Rule 69 — Stored path.** `config.vi` is relative to the caller's file. A caller never saved stores the
 > absolute path, and every save (first save or Save As elsewhere) rebases it relative to the new file.
-> Tested in `test/editor/vi-paths.test.mjs`.
+> Tested in `test/editor/ovi-paths.test.mjs`.
 
 > **Rule 70 — Hierarchy in the editor.** An OVI is loaded with its subOVIs (`loadHierarchy`); Run compiles what is on
 > disk and keeps one `estado` per top-level OVI between Runs. When a subOVI is saved, the open callers rebuild their
 > view; wires to ports that no longer exist **stay, broken, with a loose end where the terminal was drawn**, and the caller is
 > not marked modified (rule 91; measured, DT-046). A missing subOVI or a recursive call breaks the Run arrow and Run reports why.
-> Tested in `test/end-to-end/subvi-editor.test.mjs` and `test/editor/subvi-nodes.test.mjs`.
+> Tested in `test/end-to-end/subovi-editor.test.mjs` and `test/editor/subovi-nodes.test.mjs`.
 
 > **Rule 71 — OVI Properties.** File ▸ OVI Properties (Ctrl+I) and the connector and icon menus open a modal dialog on
 > Execution; Non-reentrant and Preallocated clone work and write `vi.execution`; the rest is greyed with its reason.
-> Tested in `test/editor/vi-properties.test.mjs`.
+> Tested in `test/editor/ovi-properties.test.mjs`.
 
 ## 13. Create ▸ and the clipboard (2026-10-08)
 
@@ -1382,7 +1382,7 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-10-15-file-close.md`
 
 > **Rule 101 — File ▸ New OVI (Ctrl+N).** It opens a blank OVI in its own pair of windows, placed as rule 99 says, from either
 > window of any OVI. Its name is **Untitled N**, and N never goes back: closing Untitled 1 and pressing Ctrl+N gives Untitled 2,
-> and every way of making an OVI shares one counter. Tested in `test/editor/vi-registry.test.mjs` and
+> and every way of making an OVI shares one counter. Tested in `test/editor/ovi-registry.test.mjs` and
 > `test/editor/window-layout.test.mjs`.
 
 > **Rule 102 — File ▸ Close (Ctrl+W).** On the **Front Panel** the whole OVI leaves memory, both windows. An OVI without unsaved
@@ -1828,7 +1828,7 @@ Tests: `test/editor/daq-name-controls.test.mjs`.
 
 > **Rule 134 — The OVI Server Reference constant (DT-090, 2026-11-14).** Measured in
 > `labview-captures/reports/2026-11-14-vi-server-reference.md` (the constant, its menu, its type) and
-> `2026-11-14-application-control-palette.md` (the palette); tests: `test/editor/vi-server-reference.test.mjs`. **Functions ▸ Programming ▸
+> `2026-11-14-application-control-palette.md` (the palette); tests: `test/editor/ovi-server-reference.test.mjs`. **Functions ▸ Programming ▸
 > Application Control** is a 5 × 5 grid (row 1: Open Application Reference, Open OVI Reference, Static OVI Reference, Close
 > Reference, Get Command Line Arguments.vi; row 2: Property Node, Invoke Node, Call By Reference, Start Asynchronous Call, Wait On
 > Asynchronous Call; row 3: To More Specific Class, To More Generic Class, Class Specifier Constant, OVI Server Reference, Call Chain;

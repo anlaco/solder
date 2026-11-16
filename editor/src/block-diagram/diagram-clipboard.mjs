@@ -3,7 +3,7 @@
 // (REPORT.md §B). Pure functions over the diagram state of diagram-editing.mjs.
 //
 // A copied fragment is plain data (core/model/clipboard.mjs), so the window can
-// keep it for any other VI that is open. What the window also keeps is the
+// keep it for any other OVI that is open. What the window also keeps is the
 // "paste memory": where the last paste was done, to move the next one.
 
 import { alojar, borrarConCables, copyableIds } from "./diagram-editing.mjs";

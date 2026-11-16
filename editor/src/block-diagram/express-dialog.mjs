@@ -1,10 +1,10 @@
-// The configuration dialog of an Express VI (DT-069 §3): "Configure <Express VI> [<caption>]", with OK (default), Cancel
-// and Help. This is the part every Express VI shares: the title, the buttons, opening and closing, and writing the
-// configuration into the node. What is inside the dialog is each Express VI's own module (its "body", see
+// The configuration dialog of an Express OVI (DT-069 §3): "Configure <Express OVI> [<caption>]", with OK (default), Cancel
+// and Help. This is the part every Express OVI shares: the title, the buttons, opening and closing, and writing the
+// configuration into the node. What is inside the dialog is each Express OVI's own module (its "body", see
 // time-delay-dialog.mjs), registered in `BODIES`.
 //
 // Pure, like chart-history-dialog.mjs: `open` builds the dialog from the node, `key` and `click` turn what the user
-// does into an intent, `apply` writes the configuration into the VI and `view` draws it from the inventory
+// does into an intent, `apply` writes the configuration into the OVI and `view` draws it from the inventory
 // (`dialog.express-vi.*`). Measured in LabVIEW 2026 Q3 (labview-captures/express-vi/td-dlg.png, 100 %; reports/
 // 2026-10-29-express-vi-common.md §1, §6).
 //
@@ -23,13 +23,13 @@ export const DIALOG_ID = "dialog.express-vi";
 /** The name LabVIEW gives the undo step of an OK (measured: the Edit menu says "Undo Change Attribute"). */
 export const UNDO_STEP_NAME = "Change Attribute";
 
-/** The bodies of the Express VIs whose dialog is done, by block. */
+/** The bodies of the Express OVIs whose dialog is done, by block. */
 const BODIES = { "time-delay": TimeDelay, "file-dialog": FileDialog };
 
-/** Whether the Express VI `block` has its configuration dialog done. */
+/** Whether the Express OVI `block` has its configuration dialog done. */
 export const hasDialog = (block) => block in BODIES;
 
-/** The title bar and the row of buttons every Express VI's dialog has, in px from its top left corner (td-dlg.png). */
+/** The title bar and the row of buttons every Express OVI's dialog has, in px from its top left corner (td-dlg.png). */
 const FRAME = {
   titleHeight: 28,
   button: { width: 82, height: 22, ok: 14, cancel: 110, help: 206 },
@@ -41,7 +41,7 @@ const esc = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").
 const px = (n) => `${Number(n.toFixed(2))}px`;
 
 /**
- * The dialog for an Express VI node. `dropped` says it opened as the node was placed: cancelling it keeps the node,
+ * The dialog for an Express OVI node. `dropped` says it opened as the node was placed: cancelling it keeps the node,
  * unconfigured (measured).
  */
 export function open(node, cat, { dropped = false } = {}) {
@@ -73,7 +73,7 @@ export function click(dialog, id) {
 }
 
 /**
- * The VI with the configuration of the dialog: any OK configures the node, even with nothing changed (measured), but an
+ * The OVI with the configuration of the dialog: any OK configures the node, even with nothing changed (measured), but an
  * OK that leaves it as it was is not a step to undo.
  */
 export function apply(g, dialog) {

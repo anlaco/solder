@@ -1,4 +1,4 @@
-// The VI Server Reference constant (DT-090), measured on 2026-11-14 (labview-captures/reports/2026-11-14-vi-server-reference.md):
+// The OVI Server Reference constant (DT-090), measured on 2026-11-14 (labview-captures/reports/2026-11-14-vi-server-reference.md):
 // This OVI by default, This Application by Link to ▸, never Not A Refnum, wired to nothing it does not break the OVI,
 // and into a Call Library Function Node's Adapt to Type parameter the library gets the address of its 4-byte value.
 
@@ -12,10 +12,10 @@ import { defaultCallLibraryConfig } from "../../core/model/call-library.mjs";
 import { DAQ_TASK } from "../../core/model/daq-name.mjs";
 import { crearNodo } from "../../core/model/graph.mjs";
 import { nombre } from "../../core/model/types.mjs";
-import { THIS_APPLICATION_TYPE, THIS_OVI_TYPE, VI_SERVER_REFERENCE, refnumOfClass } from "../../core/model/vi-server-reference.mjs";
+import { THIS_APPLICATION_TYPE, THIS_OVI_TYPE, OVI_SERVER_REFERENCE, refnumOfClass } from "../../core/model/ovi-server-reference.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { CAT, buildOVI } from "../helpers.mjs";
 
 const LIBRARY_FILE = { linux: "libnilvaiu.so", darwin: "libnilvaiu.dylib", win32: "nilvaiu.dll" }[process.platform];
 
@@ -33,16 +33,16 @@ async function run(vi) {
 }
 
 test("a VI Server Reference is placed as This OVI, and each class's wire is named as LabVIEW's Context Help names it", () => {
-  const { g, id } = crearNodo({ nodos: [], cables: [], siguiente: 1 }, CAT, VI_SERVER_REFERENCE, 0, 0);
+  const { g, id } = crearNodo({ nodos: [], cables: [], siguiente: 1 }, CAT, OVI_SERVER_REFERENCE, 0, 0);
   assert.deepEqual(g.nodos.find((node) => node.id === id).config.type, THIS_OVI_TYPE);
   assert.equal(nombre(THIS_APPLICATION_TYPE), "LabVIEW Application Reference");
   assert.equal(nombre(THIS_OVI_TYPE), "Generic OVI Reference");
 });
 
 test("This Application wired to nothing does not break the OVI, and is never Not A Refnum", async () => {
-  const vi = buildVI(CAT, (b) => {
-    b.node("alone", VI_SERVER_REFERENCE, { type: THIS_APPLICATION_TYPE });
-    b.node("application", VI_SERVER_REFERENCE, { type: THIS_APPLICATION_TYPE });
+  const vi = buildOVI(CAT, (b) => {
+    b.node("alone", OVI_SERVER_REFERENCE, { type: THIS_APPLICATION_TYPE });
+    b.node("application", OVI_SERVER_REFERENCE, { type: THIS_APPLICATION_TYPE });
     b.node("null?", "not-a-number-path-refnum");
     b.node("is null", "bool-indicator");
     b.wire("application.reference", "null?.number");
@@ -67,8 +67,8 @@ test("into an Adapt to Type parameter, the library gets the address of the refnu
       ...["channels", "extendedErrorInfo"].map((name) => ({ name, type: "string", "string-format": "string-handle" })),
     ],
   };
-  const vi = buildVI(CAT, (b) => {
-    b.node("application", VI_SERVER_REFERENCE, { type: THIS_APPLICATION_TYPE });
+  const vi = buildOVI(CAT, (b) => {
+    b.node("application", OVI_SERVER_REFERENCE, { type: THIS_APPLICATION_TYPE });
     b.node("empty", "daq-name-constant", { type: DAQ_TASK, value: "" });
     b.node("nothing", "str-const", { value: "" });
     b.node("create", "call-library", createTask);

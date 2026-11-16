@@ -9,15 +9,15 @@ import path from "node:path";
 import { test } from "node:test";
 
 import * as Gr from "../../core/model/graph.mjs";
-import * as Paths from "../../editor/src/common/vi-paths.mjs";
+import * as Paths from "../../editor/src/common/ovi-paths.mjs";
 import * as Poly from "../../core/model/polymorphic.mjs";
 import * as Q from "../../core/model/qvi-format.mjs";
-import * as Registry from "../../editor/electron/vi-registry.mjs";
+import * as Registry from "../../editor/electron/ovi-registry.mjs";
 import * as State from "../../editor/src/polymorphic-window/polymorphic-window-state.mjs";
 import * as View from "../../editor/src/polymorphic-window/polymorphic-window-view.mjs";
 import * as E from "../../editor/src/window/window-state.mjs";
 import { buildHierarchy } from "../../editor/src/window/hierarchy-client.mjs";
-import { CAT, INV, RAIZ, buildVI } from "../helpers.mjs";
+import { CAT, INV, RAIZ, buildOVI } from "../helpers.mjs";
 
 const measure = (text) => text.length * 6;
 const windowSize = { width: 482, height: 358 };
@@ -218,14 +218,14 @@ test("the menu bar has LabVIEW's eight titles and the File rows run the window's
   assert.deepEqual(["new-vi", "open", "close", "save", "exit"].map((row) => INV.entrada(`${PREFIX}.menu.file.${row}`).atajo), ["Ctrl+N", "Ctrl+O", "Ctrl+W", "Ctrl+S", "Ctrl+Q"]);
   // The page runs them through the main process.
   const page = readFileSync(path.join(RAIZ, "editor/src/polymorphic-window/polymorphic-window.mjs"), "utf8");
-  for (const call of ["solder?.nuevoVI()", "solder?.nuevo()", "solder?.abrir()", "solder?.cerrarVentana()", "solder?.salir()", "solder?.guardar("]) assert.ok(page.includes(call), call);
+  for (const call of ["solder?.nuevoOVI()", "solder?.nuevo()", "solder?.abrir()", "solder?.cerrarVentana()", "solder?.salir()", "solder?.guardar("]) assert.ok(page.includes(call), call);
 });
 
 test("a polymorphic OVI is registered with its own window and title, numbered with the other Untitled", () => {
   const registry = Registry.createRegistry();
   const ovi = registry.open().entry;
   const polymorphic = registry.open({ kind: Registry.ENTRY_KINDS.POLYMORPHIC }).entry;
-  assert.deepEqual([Registry.viName(ovi), Registry.viName(polymorphic)], ["Untitled 1", "Untitled 2"], "measured: the next Untitled number");
+  assert.deepEqual([Registry.oviName(ovi), Registry.oviName(polymorphic)], ["Untitled 1", "Untitled 2"], "measured: the next Untitled number");
   assert.deepEqual(Registry.windowKindsOf(polymorphic), ["polymorphic"]);
   assert.deepEqual(Registry.windowKindsOf(ovi), Registry.WINDOW_KINDS);
   assert.equal(Registry.primaryWindowKind(polymorphic), "polymorphic");
@@ -279,13 +279,13 @@ test("File Open takes a sdp and Open Polymorphic OVI on a node opens its window"
   const editorWindow = readFileSync(path.join(RAIZ, "editor/src/window/editor-window.mjs"), "utf8");
   assert.match(editorWindow, /"open-polymorphic-ovi": \(nodeId\) => abrirPolimorfico\(nodeId\)/);
   assert.match(editorWindow, /cat\.polymorphicOf\?\.\(grafo\(\)\.nodos\.find\(\(n\) => n\.id === nodeId\)\);\n  if \(polymorphic\) window\.solder\?\.abrirRuta\(polymorphic\.key\)/);
-  assert.equal(Paths.isVIFile("/lib/Step.sdp"), false, "it is not an OVI file: the registry takes it by its own extension");
+  assert.equal(Paths.isOVIFile("/lib/Step.sdp"), false, "it is not an OVI file: the registry takes it by its own extension");
   assert.ok(Poly.isPolymorphicPath("/lib/STEP.SDP"));
 });
 
 test("a saved sdp refreshes the callers that have it open, and the window reads what a caller wrote", () => {
   // A caller's hierarchy lists the .sdp among its keys, which is what the page checks when some OVI is saved.
-  const instance = buildVI(CAT, (b) => {
+  const instance = buildOVI(CAT, (b) => {
     b.node("x", "control", { type: "i64" });
     b.node("result", "indicator", { type: "i64" });
     b.wire("x.result", "result.value");
@@ -293,16 +293,16 @@ test("a saved sdp refreshes the callers that have it open, and the window reads 
   });
   const sdpState = withInstances(State.emptyState(), "Step (I64).sdg");
   const texts = { "/lib/Step.sdp": State.toText(sdpState), "/lib/Step (I64).sdg": Q.aTexto(instance.g, CAT) };
-  const probe = buildHierarchy({ rootKey: "/app/main.sdg", rootGraph: Gr.nuevo(), texts, baseCatalog: CAT, readVI: Q.leer });
-  const call = buildVI(probe.catalog, (b) => b.node("call", "subvi", Poly.polymorphicNodeConfig("../lib/Step.sdp", Poly.readPolymorphic(texts["/lib/Step.sdp"]))));
-  const result = buildHierarchy({ rootKey: "/app/main.sdg", rootGraph: call.g, texts, baseCatalog: CAT, readVI: Q.leer });
+  const probe = buildHierarchy({ rootKey: "/app/main.sdg", rootGraph: Gr.nuevo(), texts, baseCatalog: CAT, readOVI: Q.leer });
+  const call = buildOVI(probe.catalog, (b) => b.node("call", "subvi", Poly.polymorphicNodeConfig("../lib/Step.sdp", Poly.readPolymorphic(texts["/lib/Step.sdp"]))));
+  const result = buildHierarchy({ rootKey: "/app/main.sdg", rootGraph: call.g, texts, baseCatalog: CAT, readOVI: Q.leer });
   assert.deepEqual(result.errors, []);
   assert.ok(result.keys.includes("/lib/Step.sdp"), "so a save of the .sdp rebuilds this caller's hierarchy");
   const page = readFileSync(path.join(RAIZ, "editor/src/window/editor-window.mjs"), "utf8");
   assert.match(page, /if \(hierarchyKeys\.includes\(key\)\) refrescarJerarquia\(\)/);
-  // writeVI tells every window which key was saved, the .sdp's included.
+  // writeOVI tells every window which key was saved, the .sdp's included.
   const main = readFileSync(path.join(RAIZ, "editor/electron/main.mjs"), "utf8");
-  assert.match(main, /send\("vi:saved", \{ id: entry\.id, key: pathKey\(target\) \}\)/);
+  assert.match(main, /send\("ovi:saved", \{ id: entry\.id, key: pathKey\(target\) \}\)/);
 });
 
 // ——— Line breaks in the selector name (reports/2026-11-15-poly-selector.md §4) ———

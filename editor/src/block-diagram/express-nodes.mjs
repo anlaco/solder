@@ -1,4 +1,4 @@
-// The node of an Express VI on the Block Diagram (DT-069): a blue box 96 px wide with the 32 × 32 icon of the VI, its
+// The node of an Express OVI on the Block Diagram (DT-069): a blue box 96 px wide with the 32 × 32 icon of the OVI, its
 // caption below and a chevron at the bottom. Measured at 100 % in LabVIEW 2026 Q3
 // (labview-captures/reports/2026-10-29-express-vi-common.md §2, §3 and 2026-10-29-time-delay.md):
 //   - Unconfigured, 96 × 67: the icon at (32, 4) and every terminal on the edge of the node, at fixed heights.
@@ -22,7 +22,7 @@ import { aspecto } from "../../../core/model/types.mjs";
 import { EXPRESS_ICONS } from "../common/glyphs.mjs";
 
 export const EXPRESS_NODE_WIDTH = 96;
-/** The inventory id of the right-click menu every Express VI shares (DT-069 §6). */
+/** The inventory id of the right-click menu every Express OVI shares (DT-069 §6). */
 export const EXPRESS_MENU = "context.express-vi";
 /** The menu of the node in its icon view, whose rows are in another order (measured). */
 export const EXPRESS_ICON_MENU = "context.express-vi-icon";
@@ -56,7 +56,7 @@ const ROW_LABEL_LIMIT = EXPRESS_NODE_WIDTH - 1 - BORDER;
 const ROW_OUTPUT_LABEL_CENTRE = 45.5;
 
 /**
- * What differs from one Express VI's node to another, measured: the unconfigured height, where the icon and the caption sit, and
+ * What differs from one Express OVI's node to another, measured: the unconfigured height, where the icon and the caption sit, and
  * where each terminal that stays on the icon has its mark (`top`, from the node's top, and its `side`). They look like fixed
  * connector-pane slots. Time Delay: marks at y 4, 33 and 22. File Dialog: the inputs' marks 9 px apart from y 4 and the
  * outputs' 18 px apart from y 4 (their centres at +6.. as the report says; the mark's top is 2 px above its centre).
@@ -83,10 +83,10 @@ const NODE_LAYOUTS = {
 /** A block without measured layout is laid out as Time Delay. */
 const layoutFor = (node) => NODE_LAYOUTS[node.tipo] ?? NODE_LAYOUTS["time-delay"];
 
-/** Whether the node is an Express VI (its block says so in the catalog). */
+/** Whether the node is an Express OVI (its block says so in the catalog). */
 export const isExpressNode = (node, cat) => isExpress(cat.bloque(node.tipo));
 
-/** The caption of the node: its own, or the name of its Express VI. */
+/** The caption of the node: its own, or the name of its Express OVI. */
 export const expressCaption = (node, cat) => node.config?.caption ?? cat.bloque(node.tipo).express.name;
 
 /** What the dialog and the menu call the node: "Configure Time Delay [Time Delay]". */

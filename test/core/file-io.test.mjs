@@ -18,7 +18,7 @@ import { createIoClient, serveSolderIo } from "../../core/runtime/io-protocol.mj
 import { ERROR } from "../../core/model/types.mjs";
 import { EMPTY_PATH, NOT_A_PATH, pathFromText } from "../../core/model/paths.mjs";
 import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { CAT, buildOVI } from "../helpers.mjs";
 
 const THREADS = 2;
 const SYSTEM_END_OF_LINE = process.platform === "win32" ? "\r\n" : "\n";
@@ -42,7 +42,7 @@ function newFile(content) {
 }
 
 const errorIndicator = (b, name) => b.node(name, "cluster-indicator", { type: ERROR, style: "error-out" });
-/** The source of a file function's error: its name and, after a line break, the file (measured; no VI name in a test). */
+/** The source of a file function's error: its name and, after a line break, the file (measured; no OVI name in a test). */
 const sourceOf = (functionName, fileText) => `${functionName}<APPEND>\n${fileText}`;
 
 /** Runs `vi` with solder-io; the writes come back by the names `vi` gave its nodes. */
@@ -57,7 +57,7 @@ async function run(vi, values = {}, options = {}) {
 
 /** Open/Create/Replace File with `operation` and `access` on the path control "file", then Close File. */
 const openThenClose = (operation, access = ACCESS.readWrite) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("file", "path-control");
     b.node("operation", "const", { value: operation, type: "u16" });
     b.node("access", "const", { value: access, type: "u16" });
@@ -80,7 +80,7 @@ const openThenClose = (operation, access = ACCESS.readWrite) =>
 
 /** Opens "file" with `operation`, writes "text" (a string or lines) at the start, and closes it. */
 const openWriteClose = ({ operation = OPERATION.open, access = ACCESS.readWrite, lines = false, convertEol = true } = {}) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("file", "path-control");
     b.node("operation", "const", { value: operation, type: "u16" });
     b.node("access", "const", { value: access, type: "u16" });
@@ -101,7 +101,7 @@ const openWriteClose = ({ operation = OPERATION.open, access = ACCESS.readWrite,
 
 /** Opens "file" with `access`, reads `count` (bytes, or lines with Read Lines), and closes it. */
 const openReadClose = ({ count, readLines = false, convertEol = true, access = ACCESS.readWrite } = {}) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("file", "path-control");
     b.node("access", "const", { value: access, type: "u16" });
     b.node("open", "open-create-replace-file");
@@ -127,7 +127,7 @@ const openReadClose = ({ count, readLines = false, convertEol = true, access = A
 for (const [where, options] of [["on one thread", () => ({})], ["on a pool", () => ({ poolPorts: pool.connect() })]]) {
   test(`Write to Text File and Read from Text File by path go through solder-io ${where}`, async () => {
     const name = newFile("old content that is replaced");
-    const vi = buildVI(CAT, (b) => {
+    const vi = buildOVI(CAT, (b) => {
       b.node("file", "path-control");
       b.node("text", "str-const", { value: "ab\ncd\n" });
       b.node("write", "write-to-text-file");
@@ -263,7 +263,7 @@ test("the access mode refuses a write or a read with error 8", async () => {
 
 test("Close File of a closed refnum is error 1, and with no dialogs host an unwired file answers as a cancelled dialog", async () => {
   const name = newFile("hello");
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("file", "path-control");
     b.node("open", "open-create-replace-file");
     b.node("close", "close-file");
@@ -291,7 +291,7 @@ test("Close File of a closed refnum is error 1, and with no dialogs host an unwi
 test("with an error in, a file function does nothing and passes the error on", async () => {
   const name = newFile("hello");
   const incoming = { status: true, code: 5, source: "my source" };
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("file", "path-control");
     b.node("incoming", "error-cluster-constant", { value: incoming });
     b.node("text", "str-const", { value: "XY" });
@@ -309,7 +309,7 @@ test("with an error in, a file function does nothing and passes the error on", a
 
 test("Get File Size of an open file, and Not A Number/Path/Refnum? on a file refnum", async () => {
   const name = newFile("ab\r\ncd\r\n");
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("file", "path-control");
     b.node("open", "open-create-replace-file");
     b.node("size", "get-file-size");
@@ -346,7 +346,7 @@ test("a Run reaches the files through a message port to the I/O, as in the edito
 
 /** Get File Size on the path control "file", its refnum out closed afterwards. */
 const sizeByPath = () =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("file", "path-control");
     b.node("size", "get-file-size");
     b.node("close", "close-file");
@@ -381,7 +381,7 @@ test("Get File Size by path opens the file, with LabVIEW's codes for what it can
 
 test("Get File Size of a closed refnum is error 1 with no file in its source", async () => {
   const name = newFile("hello");
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("file", "path-control");
     b.node("open", "open-create-replace-file");
     b.node("close", "close-file");
@@ -399,7 +399,7 @@ test("Get File Size of a closed refnum is error 1 with no file in its source", a
 
 /** Delete of the path control "file", with the Booleans given. */
 const deleteOf = ({ entireHierarchy = false, confirm = false } = {}) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("file", "path-control");
     b.node("entireHierarchy", "bool-const", { value: entireHierarchy });
     b.node("confirm", "bool-const", { value: confirm });
@@ -444,7 +444,7 @@ test("Delete gives LabVIEW's deleted path, cancelled and codes", async () => {
 
 test("Delete keeps a file that is open (error 5) and, with no dialogs host, one it must confirm (error 43)", async () => {
   const name = newFile("hello");
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("file", "path-control");
     b.node("open", "open-create-replace-file");
     b.node("delete", "delete");
@@ -493,7 +493,7 @@ test("a relative path is error 1430 and nothing is created", async () => {
 test("Write and Read on a closed refnum are error 1 with no file, and Write with an error in gives Not A Refnum", async () => {
   const name = newFile("hello");
   const incoming = { status: true, code: 5, source: "src" };
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("file", "path-control");
     b.node("open", "open-create-replace-file");
     b.node("close", "close-file");
@@ -545,7 +545,7 @@ test("Write and Read on a closed refnum are error 1 with no file, and Write with
 
 test("the files a Run leaves open are closed when it finishes", async () => {
   const name = newFile("hello");
-  const leaveOpen = buildVI(CAT, (b) => {
+  const leaveOpen = buildOVI(CAT, (b) => {
     b.node("file", "path-control");
     b.node("open", "open-create-replace-file");
     b.wire("file.result", "open.file-path");

@@ -1,4 +1,4 @@
-// Debugging hooks (DT-047): the compiled VI reports each node and its output
+// Debugging hooks (DT-047): the compiled OVI reports each node and its output
 // values only while debugging is on, and can stop at a node until it is told
 // to go on.
 
@@ -11,7 +11,7 @@ import * as Gr from "../../core/model/graph.mjs";
 import { CAT } from "../helpers.mjs";
 
 /** 2 + 3 → indicator, and a string constant → string indicator. */
-function addVI(execution) {
+function addOVI(execution) {
   let g = Gr.nuevo();
   const id = {};
   const put = (name, block, config) => {
@@ -52,7 +52,7 @@ function recorder({ on = true, pauseAt = null } = {}) {
 const nodeOf = (compiled, index) => compiled.debugNodes[index].nodo;
 
 test("while debugging, every node reports itself and the values of its outputs", async () => {
-  const { g, id } = addVI();
+  const { g, id } = addOVI();
   const compiled = compilar(g, CAT);
   const { debuggerHooks, log } = recorder();
   const written = await ejecutar(compiled, {}, { depurador: debuggerHooks });
@@ -66,14 +66,14 @@ test("while debugging, every node reports itself and the values of its outputs",
 
 test("with debugging off, or Allow Debugging unchecked, nothing is reported", async () => {
   const quiet = recorder({ on: false });
-  await ejecutar(compilar(addVI().g, CAT), {}, { depurador: quiet.debuggerHooks });
+  await ejecutar(compilar(addOVI().g, CAT), {}, { depurador: quiet.debuggerHooks });
   assert.deepEqual(quiet.log.nodes, []);
-  const noHooks = compilar(addVI({ "allow-debugging": false }).g, CAT);
+  const noHooks = compilar(addOVI({ "allow-debugging": false }).g, CAT);
   assert.deepEqual(noHooks.debugNodes, []);
 });
 
 test("a node that stops holds the VI until it is told to go on", async () => {
-  const { g, id } = addVI();
+  const { g, id } = addOVI();
   const compiled = compilar(g, CAT);
   const addIndex = compiled.debugNodes.findIndex((n) => n.nodo === id.add);
   const paused = recorder({ pauseAt: addIndex });

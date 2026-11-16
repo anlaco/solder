@@ -7,7 +7,7 @@ import { after, test } from "node:test";
 import { compilar } from "../../core/compiler/compiler.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { createNodePool } from "../../core/runtime/node-pool.mjs";
-import { CAT, buildVI, callerCatalog } from "../helpers.mjs";
+import { CAT, buildOVI, callerCatalog } from "../helpers.mjs";
 
 const THREADS = 4;
 const pool = createNodePool(THREADS);
@@ -28,7 +28,7 @@ async function runOnPool(vi, values = {}, options = {}, cat = CAT) {
  * also hands out the millisecond timer after each of its waits, through an indexing tunnel, to `timers<loop>`.
  */
 const waitingLoops = (loops, count, ms, { timers = false } = {}) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     for (let loop = 0; loop < loops; loop++) {
       b.loop(`l${loop}`, "for-loop");
       b.node(`n${loop}`, "const", { value: count });
@@ -59,7 +59,7 @@ test("parallel loops that wait run on the pool, at the same time, and give their
 
 /** A functional global that counts its calls and waits 0 ms while it is called. */
 const waitingCounter = () =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.loop("w", "while-loop");
     b.shiftRegister("sr", "w");
     b.node("one", "const", { value: 1, type: "i32" }, "w");
@@ -79,11 +79,11 @@ const waitingCounter = () =>
     b.connector([], ["count"]);
   });
 
-test("a non-reentrant subVI keeps counting across Runs on the pool, one call at a time", async () => {
+test("a non-reentrant subOVI keeps counting across Runs on the pool, one call at a time", async () => {
   const LOOPS = 4;
   const COUNT = 50;
   const cat = callerCatalog({ "counter.sdg": waitingCounter() });
-  const caller = buildVI(cat, (b) => {
+  const caller = buildOVI(cat, (b) => {
     for (let loop = 0; loop < LOOPS; loop++) {
       b.loop(`l${loop}`, "for-loop");
       b.node(`n${loop}`, "const", { value: COUNT });
@@ -93,7 +93,7 @@ test("a non-reentrant subVI keeps counting across Runs on the pool, one call at 
       b.wire(`call${loop}.indicator_1`, `seen${loop}.value`);
     }
   });
-  // The state a VI keeps between Runs (DT-045) travels with its memory, from one pool Run to the next.
+  // The state an OVI keeps between Runs (DT-045) travels with its memory, from one pool Run to the next.
   const estado = {};
   const first = await runOnPool(caller, {}, { estado }, cat);
   assert.equal(Math.max(...Object.values(first)), LOOPS * COUNT);
@@ -111,7 +111,7 @@ test("Abort stops a Run on the pool at once, and the pool serves the next Run", 
 });
 
 test("a thread's automatic error dialog is shown by the coordinator, and the clump goes on with the answer", async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("reply", "str-const", { value: "FOO" });
     b.node("format", "str-const", { value: "%f" });
     b.node("zero", "const", { value: 0 });
@@ -129,7 +129,7 @@ test("a thread's automatic error dialog is shown by the coordinator, and the clu
 });
 
 test("a Stop button pressed while a loop runs on the pool stops it and is released", async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.loop("w", "while-loop");
     b.node("stop", "bool-control", { style: "stop-button", mechanical: "latch-when-released" }, "w");
     b.node("ms", "const", { value: 2 }, "w");

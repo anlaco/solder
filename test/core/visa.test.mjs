@@ -14,7 +14,7 @@ import { ERROR } from "../../core/model/types.mjs";
 import { HAS_SERIAL_TEST_INSTRUMENT, IDENTITY, SERIAL_IDENTITY, startInstrument, startSerialInstrument } from "../instrument.mjs";
 import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
 import { createIoClient, serveSolderIo } from "../../core/runtime/io-protocol.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { CAT, buildOVI } from "../helpers.mjs";
 
 const VI_SUCCESS_MAX_CNT = 1073676294;
 const VI_WARN_NULL_OBJECT = 1073676418;
@@ -26,7 +26,7 @@ after(() => pool.close());
 
 /** Open → Write `*IDN?\n` → Read `byteCount` → Close, errors chained, with the read and each error out shown. */
 const identityQuery = (resource, byteCount, { errorIn } = {}) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("name", "visa-resource-constant", { value: resource });
     b.node("open", "visa-open");
     b.node("query", "str-const", { value: "*IDN?\n" });
@@ -104,7 +104,7 @@ test("with an error in, the VISA functions do nothing and pass the error on", as
 
 /** Write `*IDN?\n` and Read straight from a resource name constant, with no VISA Open; optionally Close twice before. */
 const queryWithoutOpen = (resource, byteCount) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("name", "visa-resource-constant", { value: resource });
     b.node("query", "str-const", { value: "*IDN?\n" });
     b.node("write", "visa-write");
@@ -134,7 +134,7 @@ test("Write and Read on a resource name never opened open it from the name, as L
 
 /** Open → Close → Close again → Write → Read, errors chained, with each Close's error out shown. */
 const queryAfterClose = (resource, byteCount) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("name", "visa-resource-constant", { value: resource });
     b.node("open", "visa-open");
     b.node("close", "visa-close");
@@ -214,7 +214,7 @@ test("when the I/O process ends, a Run waiting for an instrument fails instead o
 
 /** A VISA resource name control → Open → Read → Close, with Open's resource name out on an indicator. */
 const queryFromAControl = (byteCount) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("name", "visa-control");
     b.node("open", "visa-open");
     b.node("query", "str-const", { value: "*IDN?\n" });

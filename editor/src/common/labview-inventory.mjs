@@ -16,7 +16,7 @@ export const nombreVeredicto = (estado) => VERDICT_NAMES[estado];
 
 export const ultimo = (id) => id.slice(id.lastIndexOf(".") + 1);
 
-/** "Reading a VI" → "reading a VI", to follow "Missing:". */
+/** "Reading an OVI" → "reading an OVI", to follow "Missing:". */
 const lowerFirst = (text) => (text ? text[0].toLowerCase() + text.slice(1) : text);
 
 export function cargarInventario(datos) {

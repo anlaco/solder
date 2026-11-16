@@ -7,15 +7,15 @@
 // done comes from the inventory (rule 55), and each block's terminals from the
 // catalog (spec/03, rule 3).
 //
-// The two windows are two views of the same VI (spec/05 §7): each one holds a
+// The two windows are two views of the same OVI (spec/05 §7): each one holds a
 // copy of the graph and, every time its own comes to rest, sends it to the other
-// over a BroadcastChannel (one per VI, as several VIs can be open: DT-045). So a
+// over a BroadcastChannel (one per OVI, as several OVIs can be open: DT-045). So a
 // control placed on the panel appears on the diagram, and a terminal deleted on
 // the diagram disappears from the panel.
 //
-// A VI is loaded with the subVIs it calls: the main process reads their files
+// An OVI is loaded with the subOVIs it calls: the main process reads their files
 // and hierarchy-client.mjs turns them into the catalog view in which the ports of
-// each `subvi` node come from the connector of the VI it calls. That view
+// each `subvi` node come from the connector of the OVI it calls. That view
 // replaces the plain catalog everywhere (`cat`).
 
 import * as CP from "../front-panel/connector-pane.mjs";
@@ -45,9 +45,9 @@ import * as GS from "../front-panel/graph-state.mjs";
 import { morphInnerHtml } from "./dom-morph.mjs";
 import * as P from "../front-panel/front-panel.mjs";
 import * as PC from "../front-panel/panel-clipboard.mjs";
-import * as Paths from "../common/vi-paths.mjs";
+import * as Paths from "../common/ovi-paths.mjs";
 import * as Q from "../../../core/model/qvi-format.mjs";
-import * as SN from "../block-diagram/subvi-nodes.mjs";
+import * as SN from "../block-diagram/subovi-nodes.mjs";
 import * as PolymorphicNodes from "../block-diagram/polymorphic-nodes.mjs";
 import * as ExpressNodes from "../block-diagram/express-nodes.mjs";
 import * as CallLibraryNodes from "../block-diagram/call-library-nodes.mjs";
@@ -56,7 +56,7 @@ import { commandForCtrlKey } from "./shortcuts.mjs";
 import * as RV from "./run-values.mjs";
 import * as Scroll from "./scrolling.mjs";
 import * as Sync from "./graph-sync.mjs";
-import * as VP from "./vi-properties.mjs";
+import * as VP from "./ovi-properties.mjs";
 import * as V from "./window-view.mjs";
 import { panelStyleFromQuery } from "../front-panel/panel-style.mjs";
 import { applyWindowStyle } from "../front-panel/window-stylesheet.mjs";
@@ -78,11 +78,11 @@ const [inv, baseCatalog] = await Promise.all([
   fetchJson("/inventario.json").then(cargarInventario),
   Promise.all([fetchJson("/blocks.json"), fetchJson("/properties.json")]).then(([blocks, properties]) => Gr.cargarCatalogo(blocks, properties)),
 ]);
-/** The VI these windows show, as the main process knows it (without it, as in a plain browser, a new VI). */
-const viInfo = (await window.solder?.iniciar()) ?? { id: "0", text: null, key: Paths.untitledKey(0), name: "Untitled 1", untitledNumber: 1 };
-applyWindowStyle(document, viInfo.windowStyle);
+/** The OVI these windows show, as the main process knows it (without it, as in a plain browser, a new OVI). */
+const oviInfo = (await window.solder?.iniciar()) ?? { id: "0", text: null, key: Paths.untitledKey(0), name: "Untitled 1", untitledNumber: 1 };
+applyWindowStyle(document, oviInfo.windowStyle);
 window.solder?.alCambiarEstiloVentana((text) => applyWindowStyle(document, text));
-/** The catalog of this VI: the blocks, and for each subVI node the connector of the VI it calls. */
+/** The catalog of this OVI: the blocks, and for each subOVI node the connector of the OVI it calls. */
 let cat = baseCatalog;
 const glifos = D.glifosPorBloque(inv);
 /** El Block Diagram edita el diagrama; el Front Panel, el panel. */
@@ -130,26 +130,26 @@ let historial = H.nuevo(dia.g);
 /** El grafo de esta ventana. */
 const grafo = () => (conDiagrama ? dia.g : pan.g);
 
-// ——— The two windows, one VI ———
+// ——— The two windows, one OVI ———
 
-const canal = new BroadcastChannel(`solder-vi-${viInfo.id}`);
+const canal = new BroadcastChannel(`solder-vi-${oviInfo.id}`);
 /** The last graph that was sent to the other window or came from it. */
 let publicado = dia.g;
 /** The stamp of the graph this window holds, to tell a newer copy from an older one (graph-sync.mjs). */
 let stamp = Sync.initialStamp();
-/** The window answers the other one only once it has loaded its VI: before that, its graph is an empty one. */
+/** The window answers the other one only once it has loaded its OVI: before that, its graph is an empty one. */
 let listo = false;
 
 /**
  * Sends the graph this window holds to the other one, stamped as a newer copy,
- * with the subVI texts it needs to understand it. `markModified`: the main
- * process learns the VI changed (the asterisk in the title); a graph rebuilt
+ * with the subOVI texts it needs to understand it. `markModified`: the main
+ * process learns the OVI changed (the asterisk in the title); a graph rebuilt
  * after a hierarchy change is shared without it.
  */
 function publicarGrafo(g, { markModified = true } = {}) {
   publicado = g;
   stamp = Sync.afterLocalChange(stamp, nombre);
-  canal.postMessage({ g, subVITexts, stamp });
+  canal.postMessage({ g, subOVITexts, stamp });
   if (markModified) avisar(g);
 }
 
@@ -165,32 +165,32 @@ function quieto(g, stepName) {
   publicarGrafo(g);
 }
 
-// ——— The hierarchy: the subVIs of this VI ———
+// ——— The hierarchy: the subOVIs of this OVI ———
 //
-// A VI is compiled and drawn with the connectors of the VIs it calls. The main
-// process reads their files from disk; a subVI that is saved while its callers
-// are open reaches them through `vi:saved` (alGuardarOtroVI).
+// An OVI is compiled and drawn with the connectors of the OVIs it calls. The main
+// process reads their files from disk; a subOVI that is saved while its callers
+// are open reaches them through `vi:saved` (alGuardarOtroOVI).
 
-/** The path this VI is saved at, or the key of an untitled one (see common/vi-paths.mjs). */
-let viKey = viInfo.key;
+/** The path this OVI is saved at, or the key of an untitled one (see common/ovi-paths.mjs). */
+let oviKey = oviInfo.key;
 /** Where this Solder's ovi.lib is, which `<ovilib>/…` subOVI paths lead to (DT-073). */
-const oviLibRoot = viInfo.oviLibRoot ?? "";
-/** The text of every other VI of the hierarchy, by absolute path. */
-let subVITexts = {};
-/** Why the hierarchy cannot be compiled: a subVI that cannot be found, a recursive call… */
+const oviLibRoot = oviInfo.oviLibRoot ?? "";
+/** The text of every other OVI of the hierarchy, by absolute path. */
+let subOVITexts = {};
+/** Why the hierarchy cannot be compiled: a subOVI that cannot be found, a recursive call… */
 let hierarchyErrors = [];
-/** The keys of the subVIs this VI reaches. */
+/** The keys of the subOVIs this OVI reaches. */
 let hierarchyKeys = [];
 
 /**
- * Builds the catalog view of this VI over `g` and the subVI texts held now, and
- * returns `g` with the wires to ports a subVI no longer has left broken, with a
- * loose end where those terminals were drawn (DT-046). The VI is not marked
+ * Builds the catalog view of this OVI over `g` and the subOVI texts held now, and
+ * returns `g` with the wires to ports a subOVI no longer has left broken, with a
+ * loose end where those terminals were drawn (DT-046). The OVI is not marked
  * modified, as in LabVIEW (labview-captures/broken-wires/REPORT.md §2).
  */
 function rebuildHierarchy(g) {
   const placeOfOldTerminal = ED.terminalPlacer(ctx);
-  const result = buildHierarchy({ rootKey: viKey, rootGraph: g, texts: subVITexts, baseCatalog, readVI: Q.leer, oviLibRoot });
+  const result = buildHierarchy({ rootKey: oviKey, rootGraph: g, texts: subOVITexts, baseCatalog, readOVI: Q.leer, oviLibRoot });
   cat = result.catalog;
   ctx = D.contexto(cat, glifos, separador, medirMenu);
   hierarchyErrors = result.errors;
@@ -211,53 +211,53 @@ function ponerGrafo(g, { share = false } = {}) {
   else publicado = g;
 }
 
-/** Reads the subVI files again and redraws: a subVI was saved, or a Run is about to start. */
+/** Reads the subOVI files again and redraws: a subOVI was saved, or a Run is about to start. */
 async function refrescarJerarquia() {
-  const { texts } = await window.solder.textosDeSubVIs(Q.aTexto(grafo(), cat));
-  subVITexts = texts;
+  const { texts } = await window.solder.textosDeSubOVIs(Q.aTexto(grafo(), cat));
+  subOVITexts = texts;
   ponerGrafo(rebuildHierarchy(grafo()), { share: true });
   pintar();
 }
 
-/** Does this graph have a subVI node whose callee this window does not know yet? */
-const faltaSubVI = (g) => g.nodos.some((n) => SN.isSubVI(n) && !cat.findSubVI?.(n.config?.vi));
+/** Does this graph have a subOVI node whose callee this window does not know yet? */
+const faltaSubOVI = (g) => g.nodos.some((n) => SN.isSubOVI(n) && !cat.findSubOVI?.(n.config?.vi));
 
-/** The name this VI goes by now, in error sources, the toolbar and the debugging windows: it changes when the VI is saved. */
-const currentVIName = () => Paths.viDisplayName(viKey, viInfo.name);
+/** The name this OVI goes by now, in error sources, the toolbar and the debugging windows: it changes when the OVI is saved. */
+const currentOVIName = () => Paths.oviDisplayName(oviKey, oviInfo.name);
 
 /**
  * The page's own title follows the window's (which the main process sets, asterisk included):
- * tools that find a window by its page, as the tests under Xvfb do, saw "Untitled 1" in every VI
+ * tools that find a window by its page, as the tests under Xvfb do, saw "Untitled 1" in every OVI
  * (real-programs-0.3.md B16).
  */
-const showVINameInPageTitle = () => (document.title = `${currentVIName()} ${conPanel ? "Front Panel" : "Block Diagram"}`);
-showVINameInPageTitle();
+const showOVINameInPageTitle = () => (document.title = `${currentOVIName()} ${conPanel ? "Front Panel" : "Block Diagram"}`);
+showOVINameInPageTitle();
 
-/** Some VI was saved, here or elsewhere (preload `alGuardar`). */
-function alGuardarOtroVI({ id, key }) {
-  if (id !== viInfo.id) {
+/** Some OVI was saved, here or elsewhere (preload `alGuardar`). */
+function alGuardarOtroOVI({ id, key }) {
+  if (id !== oviInfo.id) {
     if (hierarchyKeys.includes(key)) refrescarJerarquia();
     return;
   }
-  // This VI was saved, maybe for the first time or somewhere else: its subVI paths are now relative to the new file.
-  if (key === viKey) return;
-  const old = viKey;
-  viKey = key;
-  showVINameInPageTitle();
+  // This OVI was saved, maybe for the first time or somewhere else: its subOVI paths are now relative to the new file.
+  if (key === oviKey) return;
+  const old = oviKey;
+  oviKey = key;
+  showOVINameInPageTitle();
   ponerGrafo(rebuildHierarchy(Paths.rebaseGraph(grafo(), old, key)));
   pintar();
 }
-window.solder?.alGuardar(alGuardarOtroVI);
+window.solder?.alGuardar(alGuardarOtroOVI);
 // Leaving this window (switching to the other one) commits what is being typed, as clicking outside does.
 addEventListener("blur", () => confirmarEscritura());
 
 // ——— Save and open (core/model/qvi-format.mjs) ———
 //
-// The page only turns the VI into text and back; the disk, the system dialogs
+// The page only turns the OVI into text and back; the disk, the system dialogs
 // and the asterisk in the title belong to the main process
 // (electron/main.mjs), which receives every change to know if anything is unsaved.
 
-/** The VI has changed: the main process compares it with what was saved. */
+/** The OVI has changed: the main process compares it with what was saved. */
 const avisar = (g) => window.solder?.cambio(Q.aTexto(g, cat));
 
 /** What is being typed is confirmed before saving, as with Enter Text. */
@@ -267,13 +267,13 @@ function confirmarEscritura() {
 }
 
 /** File ▸ Save and Save As. */
-async function guardarVI(como) {
+async function guardarOVI(como) {
   if (!window.solder) return;
   confirmarEscritura();
   await window.solder.guardar(Q.aTexto(grafo(), cat), como);
 }
 
-/** A VI just opened or created: it starts with no history and nothing selected. */
+/** An OVI just opened or created: it starts with no history and nothing selected. */
 function cargar(g) {
   publicado = g;
   stamp = Sync.initialStamp();
@@ -285,12 +285,12 @@ function cargar(g) {
   avisar(g);
 }
 
-/** Loads the VI the main process gave this window: its subVIs first, so that its wires find their ports. */
+/** Loads the OVI the main process gave this window: its subOVIs first, so that its wires find their ports. */
 async function cargarTexto(text) {
-  const { texts } = await window.solder.textosDeSubVIs(text);
-  subVITexts = texts;
+  const { texts } = await window.solder.textosDeSubOVIs(text);
+  subOVITexts = texts;
   try {
-    const result = buildHierarchy({ rootKey: viKey, rootText: text, texts, baseCatalog, readVI: Q.leer, oviLibRoot });
+    const result = buildHierarchy({ rootKey: oviKey, rootText: text, texts, baseCatalog, readOVI: Q.leer, oviLibRoot });
     cat = result.catalog;
     ctx = D.contexto(cat, glifos, separador, medirMenu);
     hierarchyErrors = result.errors;
@@ -302,12 +302,12 @@ async function cargarTexto(text) {
   }
 }
 
-/** File ▸ Open: another VI, in its own windows (or those it already has). */
-const abrirVI = () => window.solder?.abrir();
+/** File ▸ Open: another OVI, in its own windows (or those it already has). */
+const abrirOVI = () => window.solder?.abrir();
 
 // ——— Run ———
 //
-// Run compiles the VI to WebAssembly (core/compiler/compiler.mjs) and runs it in
+// Run compiles the OVI to WebAssembly (core/compiler/compiler.mjs) and runs it in
 // a worker (run-worker.mjs) by dataflow (DT-040). While it runs, both windows
 // are in Run mode, as in LabVIEW (labview-captures/run/): the arrow is filled,
 // Abort lights up, the editing tools disappear, the panel loses its grid and the
@@ -317,11 +317,11 @@ const abrirVI = () => window.solder?.abrir();
 // like LabVIEW's error list.
 
 let trabajador = null;
-/** The threads that run this window's VIs, created at the first Run and kept (DT-063 §11). */
+/** The threads that run this window's OVIs, created at the first Run and kept (DT-063 §11). */
 let pool = null;
-/** The VI Properties dialog while it is open (vi-properties.mjs), or `null`. */
+/** The OVI Properties dialog while it is open (ovi-properties.mjs), or `null`. */
 let propiedades = null;
-/** El VI corre (en cualquiera de las dos ventanas): las dos están en modo Run. */
+/** El OVI corre (en cualquiera de las dos ventanas): las dos están en modo Run. */
 let ejecutando = false;
 /** Esta ventana lanzó el Run: el worker es suyo. */
 let lanzado = false;
@@ -330,7 +330,7 @@ let vistos = {};
 let plazoAbort = null;
 
 /**
- * What reaches the indicators: it is shown on the panel and does not change the VI. `series`: each value
+ * What reaches the indicators: it is shown on the panel and does not change the OVI. `series`: each value
  * written to a Waveform Chart since the last time, in order; the chart adds them to its history, which
  * outlives the Run (labview-captures/graphs/REPORT.md §4).
  */
@@ -339,7 +339,7 @@ function mostrarValores(valores, series = {}) {
   pintar();
 }
 
-/** The charts with what the VI wrote to them appended, by the type their wire carries now. */
+/** The charts with what the OVI wrote to them appended, by the type their wire carries now. */
 function appendSeries(charts, series) {
   const nodeIds = Object.keys(series);
   if (!nodeIds.length) return charts;
@@ -459,8 +459,8 @@ async function answerFileDialog({ id, kind, request }) {
 }
 
 /**
- * El diálogo de error que espera al usuario (DT-043), en la ventana que lanzó el VI: el worker ha
- * parado el VI en la importación y sigue cuando se contesta. Sin él, el VI espera.
+ * El diálogo de error que espera al usuario (DT-043), en la ventana que lanzó el OVI: el worker ha
+ * parado el OVI en la importación y sigue cuando se contesta. Sin él, el OVI espera.
  */
 let dialogoError = null;
 function responderDialogo(valor) {
@@ -470,7 +470,7 @@ function responderDialogo(valor) {
   pintar();
 }
 
-/** El VI ha acabado, solo, con un error o abortado: las dos ventanas vuelven a editar. */
+/** El OVI ha acabado, solo, con un error o abortado: las dos ventanas vuelven a editar. */
 function acabar(data) {
   clearTimeout(plazoAbort);
   dialogoError = null;
@@ -480,19 +480,19 @@ function acabar(data) {
   if (data.error) window.solder?.avisar("The OVI stopped with an error.", data.error);
 }
 
-async function ejecutarVI({ stepFirst = false } = {}) {
+async function ejecutarOVI({ stepFirst = false } = {}) {
   // Run con el VI corriendo no hace nada, como en LabVIEW.
   if (ejecutando) return;
   confirmarEscritura();
-  // The subVIs may have been saved since this VI was opened: Run compiles what is on disk now.
+  // The subOVIs may have been saved since this OVI was opened: Run compiles what is on disk now.
   await refrescarJerarquia();
   if (ejecutando) return;
   const g = grafo();
   // A VI that cannot run opens the Error list, as the broken arrow does in LabVIEW (REPORT.md §5).
   if (errorRows().length) return openErrorList();
-  const c = compilar(g, cat, { name: currentVIName() });
+  const c = compilar(g, cat, { name: currentOVIName() });
   if (c.errores) return window.solder?.avisar("The OVI cannot run.", c.errores.map((e) => e.motivo).join("\n"));
-  // A VI that talks to instruments gets a port to the I/O process for this Run (DT-065 §3).
+  // An OVI that talks to instruments gets a port to the I/O process for this Run (DT-065 §3).
   const ioPort = c.usesInstrumentIo ? await instrumentIoPort() : null;
   if (ejecutando) return ioPort?.close();
   const debugging = allowsDebugging(g) ? { plan: (debugPlan = buildDebugPlan(g, c.debugNodes, ctx, inv)), config: DS.controllerConfig(debug, g), stepFirst } : null;
@@ -506,7 +506,7 @@ async function ejecutarVI({ stepFirst = false } = {}) {
   canal.postMessage({ ejecutando: true });
   modoRun(true);
   const transferred = ioPort ? [...poolPorts, ioPort] : poolPorts;
-  trabajador.postMessage({ orden: "run", clave: viKey, compilado: runnableOVI(c), depuracion: debugging, valores: valoresDeControles(g), separador, charts: g.nodos.filter((n) => n.tipo === "waveform-chart").map((n) => n.id), poolPorts, ioPort }, transferred);
+  trabajador.postMessage({ orden: "run", clave: oviKey, compilado: runnableOVI(c), depuracion: debugging, valores: valoresDeControles(g), separador, charts: g.nodos.filter((n) => n.tipo === "waveform-chart").map((n) => n.id), poolPorts, ioPort }, transferred);
 }
 
 /**
@@ -531,7 +531,7 @@ function instrumentIoPort() {
 window.solder?.io?.alTerminar(() => trabajador?.postMessage({ orden: "io-exited" }));
 
 /**
- * Abort: el VI para en el acto, aunque esté esperando. Si en medio segundo el
+ * Abort: el OVI para en el acto, aunque esté esperando. Si en medio segundo el
  * worker no contesta —un cálculo que no cede—, se termina el worker entero.
  */
 function abortar() {
@@ -551,10 +551,10 @@ function abortar() {
 
 /** Las órdenes hechas del menú File, por el último segmento de su id. */
 const ORDENES_MENU = {
-  save: () => guardarVI(false),
-  "save-as": () => guardarVI(true),
-  open: abrirVI,
-  "new-vi": () => window.solder?.nuevoVI(),
+  save: () => guardarOVI(false),
+  "save-as": () => guardarOVI(true),
+  open: abrirOVI,
+  "new-vi": () => window.solder?.nuevoOVI(),
   new: () => window.solder?.nuevo(),
   close: () => (confirmarEscritura(), window.solder?.cerrarVentana()),
   "close-all": () => (confirmarEscritura(), window.solder?.cerrarTodos()),
@@ -582,16 +582,16 @@ const ORDENES_MENU = {
   "error-list": () => openErrorList(),
 };
 
-/** The orders of the context menus (subVI node, connector pane, icon) that act on the window and not on the graph; they receive the node the menu was opened on. */
-const ORDENES_CONTEXTUALES = { "vi-properties": () => abrirPropiedades(), "open-front-panel": (nodeId) => abrirSubVI(nodeId), "open-polymorphic-ovi": (nodeId) => abrirPolimorfico(nodeId), "list-errors": (wireId) => openErrorList(`wire.${wireId}`) };
+/** The orders of the context menus (subOVI node, connector pane, icon) that act on the window and not on the graph; they receive the node the menu was opened on. */
+const ORDENES_CONTEXTUALES = { "vi-properties": () => abrirPropiedades(), "open-front-panel": (nodeId) => abrirSubOVI(nodeId), "open-polymorphic-ovi": (nodeId) => abrirPolimorfico(nodeId), "list-errors": (wireId) => openErrorList(`wire.${wireId}`) };
 
 // ——— Debugging (DT-047) ———
 //
 // Highlight Execution, Retain Wire Values, probes, breakpoints and the steps (debugging/debug-state.mjs)
-// are state of the VI that is open, shared by its two windows: the diagram is the one that changes it
+// are state of the OVI that is open, shared by its two windows: the diagram is the one that changes it
 // and sends it to the panel (`debugState`), and both apply what the run worker reports (`debugEvent`).
 // The Debug Window and the Error list are windows of the diagram, drawn over it like the dialogs
-// (debugging/debug-view.mjs). The controller that stops and paces the VI is in the run worker.
+// (debugging/debug-view.mjs). The controller that stops and paces the OVI is in the run worker.
 
 let debug = DS.initial();
 let errorList = EL.initial();
@@ -624,14 +624,14 @@ function toWorker(message) {
   else canal.postMessage({ workerMessage: message });
 }
 
-/** What the run worker said about the VI: it is applied here and the other window gets it too. */
+/** What the run worker said about the OVI: it is applied here and the other window gets it too. */
 function applyDebugEvent(event, fromChannel = false) {
   if (!fromChannel) canal.postMessage({ debugEvent: event });
   debug = DS.applyDebugEvent(debug, event, grafo(), Date.now());
   pintar();
 }
 
-/** The toolbar's debugging buttons in the state of the VI now (debugging/debug-state.mjs `toolbarState`). */
+/** The toolbar's debugging buttons in the state of the OVI now (debugging/debug-state.mjs `toolbarState`). */
 function debugToolbar() {
   const paused = debug.run.paused;
   const node = paused && grafo().nodos.find((candidate) => candidate.id === paused.node);
@@ -642,23 +642,23 @@ function debugToolbar() {
     allowDebugging: allowsDebugging(grafo()),
     highlight: debug.highlight,
     retain: debug.retain,
-    viName: currentVIName(),
+    oviName: currentOVIName(),
     nodeName: paused?.name ?? "",
-    nodeIsSubVI: !!node && SN.isSubVI(node),
+    nodeIsSubOVI: !!node && SN.isSubOVI(node),
     container: container ? (container.tipo === "while-loop" || container.tipo === "for-loop" ? "loop" : "structure") : null,
     stop: paused ? { kind: paused.kind, phase: paused.phase } : null,
     parentName: container ? nodeDisplayName(container, inv) : null,
   });
 }
 
-/** The toolbar's buttons that change with the VI: the debugging ones and the List Warnings triangle (Rule 89b). */
+/** The toolbar's buttons that change with the OVI: the debugging ones and the List Warnings triangle (Rule 89b). */
 const toolbarButtons = () => ({ ...debugToolbar(), "list-warnings": { enabled: true, tooltip: "List Warnings" } });
 
 /** Highlight Execution button: toggles; held, it opens the menu of speeds (REPORT.md §1). */
 const clickHighlight = () => allowsDebugging(grafo()) && setDebug(DS.toggleHighlight(debug));
 const clickRetain = () => allowsDebugging(grafo()) && setDebug(DS.toggleRetain(debug));
 
-/** Pause, Continue and the three steps. In edit mode the steps start the VI stopped at its first node (Start Single Stepping, unverified). */
+/** Pause, Continue and the three steps. In edit mode the steps start the OVI stopped at its first node (Start Single Stepping, unverified). */
 function clickPause() {
   if (!allowsDebugging(grafo())) return;
   if (!ejecutando) return;
@@ -668,7 +668,7 @@ function clickPause() {
 
 function clickStep(mode) {
   if (!allowsDebugging(grafo())) return;
-  if (!ejecutando) return mode === "out" ? undefined : ejecutarVI({ stepFirst: true });
+  if (!ejecutando) return mode === "out" ? undefined : ejecutarOVI({ stepFirst: true });
   if (!debug.run.paused) return;
   if (mode === "into" && !debugToolbar()["step-into"].enabled) return;
   toWorker({ orden: "debug-resume", modo: mode });
@@ -738,7 +738,7 @@ function openDebugWindow() {
   setDebug(DS.openDebugWindow(debug));
 }
 
-/** The errors of the VI now (cached by graph: compiling on each repaint would be wasteful). Only these stop Run. */
+/** The errors of the OVI now (cached by graph: compiling on each repaint would be wasteful). Only these stop Run. */
 let errorRowsCache = { graph: null, hierarchy: null, rows: [], warnings: [] };
 function errorRows() {
   const g = grafo();
@@ -754,7 +754,7 @@ const listRows = () => [...errorRows(), ...errorRowsCache.warnings];
 /** The rows the Error list shows now, with or without the warnings. */
 const shownRows = () => EL.visibleRows(listRows(), errorList.showWarnings);
 
-/** Show Warnings is one setting for the whole session (measured): the main process keeps it for every VI. */
+/** Show Warnings is one setting for the whole session (measured): the main process keeps it for every OVI. */
 function receiveShowWarnings(showWarnings) {
   if (errorList.showWarnings === !!showWarnings) return;
   errorList = { ...errorList, showWarnings: !!showWarnings };
@@ -782,7 +782,7 @@ function showError(rowId) {
   pintar();
 }
 
-/** Remove Breakpoints from Hierarchy: this VI has no subVI breakpoints yet (subVIs are not debugged), so it clears its own. */
+/** Remove Breakpoints from Hierarchy: this OVI has no subOVI breakpoints yet (subOVIs are not debugged), so it clears its own. */
 function removeAllBreakpoints() {
   const numbers = DS.breakpointsOf(debug).map((item) => item.number);
   if (numbers.length) setDebug(DS.removeItems(debug, numbers));
@@ -794,12 +794,12 @@ function floatingWindows() {
   let windows = "";
   let popup = "";
   if (debug.debugWindow.open) {
-    windows += DV.debugWindow(inv, debug, grafo(), { viName: currentVIName(), separator: separador, position: debugUi.debugWindowAt ?? defaultWindowPosition(DV.DEBUG_WINDOW.width, DV.DEBUG_WINDOW.height) });
+    windows += DV.debugWindow(inv, debug, grafo(), { oviName: currentOVIName(), separator: separador, position: debugUi.debugWindowAt ?? defaultWindowPosition(DV.DEBUG_WINDOW.width, DV.DEBUG_WINDOW.height) });
     if (debugUi.menu) popup += D.menuContextual(inv, debugUi.menu, DV.debugWindowMenuMarks(debug), medirMenu, DV.debugWindowMenuVariants(debug), windowSize());
     if (debugUi.askingToCloseProbes) windows += DV.closeProbesDialog(inv);
   }
   if (errorList.open) {
-    windows += DV.errorListWindow(inv, { rows: listRows(), state: errorList, viName: currentVIName(), position: debugUi.errorListAt ?? defaultWindowPosition(DV.ERROR_LIST.width, DV.ERROR_LIST.height, 30) });
+    windows += DV.errorListWindow(inv, { rows: listRows(), state: errorList, oviName: currentOVIName(), position: debugUi.errorListAt ?? defaultWindowPosition(DV.ERROR_LIST.width, DV.ERROR_LIST.height, 30) });
   }
   return { windows, popup };
 }
@@ -913,11 +913,11 @@ function moveFloatingDrag(ev) {
 // ——— Edit: undo, copy, cut, paste, delete and select all ———
 //
 // What is copied is plain data (core/model/clipboard.mjs). It is kept here for
-// this window and, through the main process, for every other open VI: the
-// system clipboard is not used, so that copying in one VI and pasting in another
+// this window and, through the main process, for every other open OVI: the
+// system clipboard is not used, so that copying in one OVI and pasting in another
 // does not depend on what else the user copied (spec/05 rule 73).
 
-/** The last thing copied or cut in this window (`{ viKey, fragment }`), and where the last paste was done. */
+/** The last thing copied or cut in this window (`{ oviKey, fragment }`), and where the last paste was done. */
 let portapapeles = { paquete: null, memoria: null };
 /**
  * The last point of the canvas that was clicked: where Ctrl+V and Edit ▸ Paste centre what they paste. LabVIEW pastes
@@ -938,30 +938,30 @@ function dondePegar() {
   return { x: Math.round(tam.width / 2), y: Math.round(tam.height / 2) };
 }
 
-/** What the main process says was copied in any VI (it tells every window, and a new window asks). */
+/** What the main process says was copied in any OVI (it tells every window, and a new window asks). */
 function recibirPortapapeles(texto) {
   if (texto) portapapeles = { paquete: JSON.parse(texto), memoria: null };
 }
 
-/** Keeps what was copied here and tells the main process, which hands it to the other VIs. */
+/** Keeps what was copied here and tells the main process, which hands it to the other OVIs. */
 function guardarEnPortapapeles(fragment) {
-  portapapeles = { paquete: { viKey, fragment }, memoria: null };
+  portapapeles = { paquete: { oviKey, fragment }, memoria: null };
   window.solder?.portapapeles.guardar(JSON.stringify(portapapeles.paquete));
 }
 
-/** The fragment as it reads in this VI: the paths of its subVIs are relative to the file it came from. */
-function fragmentoParaEsteVI({ viKey: origen, fragment }) {
-  if (origen === viKey) return fragment;
-  const nodes = fragment.nodes.map((n) => (SN.isSubVI(n) ? { ...n, config: { ...n.config, vi: Paths.rebaseStoredPath(n.config.vi, origen, viKey) } } : n));
+/** The fragment as it reads in this OVI: the paths of its subOVIs are relative to the file it came from. */
+function fragmentoParaEsteOVI({ oviKey: origen, fragment }) {
+  if (origen === oviKey) return fragment;
+  const nodes = fragment.nodes.map((n) => (SN.isSubOVI(n) ? { ...n, config: { ...n.config, vi: Paths.rebaseStoredPath(n.config.vi, origen, oviKey) } } : n));
   return { ...fragment, nodes };
 }
 
-/** A pasted subVI must be known before it is drawn: its file is read, like Select a VI... does. */
-async function conocerSubVIs(fragment) {
-  const faltan = fragment.nodes.filter((n) => SN.isSubVI(n) && !cat.findSubVI?.(n.config.vi));
+/** A pasted subOVI must be known before it is drawn: its file is read, like Select an OVI... does. */
+async function conocerSubOVIs(fragment) {
+  const faltan = fragment.nodes.filter((n) => SN.isSubOVI(n) && !cat.findSubOVI?.(n.config.vi));
   for (const n of faltan) {
-    const { texts } = await window.solder.textosDeVI(Paths.resolveRelative(viKey, n.config.vi, oviLibRoot));
-    subVITexts = { ...subVITexts, ...texts };
+    const { texts } = await window.solder.textosDeOVI(Paths.resolveRelative(oviKey, n.config.vi, oviLibRoot));
+    subOVITexts = { ...subOVITexts, ...texts };
   }
   if (faltan.length) ponerGrafo(rebuildHierarchy(grafo()));
 }
@@ -989,8 +989,8 @@ async function pegar() {
   if (ejecutando) return;
   const { paquete } = portapapeles;
   if (!paquete) return;
-  const fragment = fragmentoParaEsteVI(paquete);
-  if (conDiagrama) await conocerSubVIs(fragment);
+  const fragment = fragmentoParaEsteOVI(paquete);
+  if (conDiagrama) await conocerSubOVIs(fragment);
   const donde = dondePegar();
   if (conDiagrama) {
     const pasted = DC.pasteAt(dia, ctx, fragment, donde, portapapeles.memoria);
@@ -1051,7 +1051,7 @@ function variantesDelMenuEdit() {
   });
 }
 
-// ——— VI Properties (vi-properties.mjs) ———
+// ——— OVI Properties (ovi-properties.mjs) ———
 
 function abrirPropiedades() {
   if (ejecutando || propiedades) return;
@@ -1063,7 +1063,7 @@ function abrirPropiedades() {
   pintar();
 }
 
-/** OK writes the dialog into the VI; Cancel leaves it as it was. */
+/** OK writes the dialog into the OVI; Cancel leaves it as it was. */
 function cerrarPropiedades(aceptar) {
   const dialogo = propiedades;
   propiedades = null;
@@ -1097,7 +1097,7 @@ function clicPropiedades(ev) {
 /** The menus of the parts of a graph that have one (labview-captures/graphs/90..98). */
 const PART_MENUS = { legend: "context.plot-legend", "plot-swatch": "context.plot-swatch" };
 
-/** The right-click menu of a graph while the VI runs (88, 89); nothing else on the panel has one yet. */
+/** The right-click menu of a graph while the OVI runs (88, 89); nothing else on the panel has one yet. */
 function runModeMenu(ev) {
   if (!conPanel) return;
   const sobre = objetivoPanel(ev.target);
@@ -1116,7 +1116,7 @@ const dibujarDialogoModal = () => {
 
 /**
  * What a key or a click on the open dialog meant (`modal-dialog.mjs` asked its module): the
- * window only applies it. Accepting writes the dialog into the VI; a VI that does not change
+ * window only applies it. Accepting writes the dialog into the OVI; an OVI that does not change
  * records no step of undo.
  */
 function aplicarEnDialogo(intent, abierto) {
@@ -1160,20 +1160,20 @@ async function browseForLibrary() {
   if (chosen && dia.callLibraryDialog) cambiarDiagrama({ ...dia, callLibraryDialog: CallLibraryDialog.withLibrary(dia.callLibraryDialog, chosen) });
 }
 
-// ——— SubVIs: placing one, opening its Front Panel ———
+// ——— SubOVIs: placing one, opening its Front Panel ———
 
-/** Select a VI...: the file dialog, then the VI follows the cursor until a click drops it (labview-captures/subvi/select-a-vi-dialog.png). */
-async function seleccionarVI() {
+/** Select an OVI...: the file dialog, then the OVI follows the cursor until a click drops it (labview-captures/subvi/select-a-vi-dialog.png). */
+async function seleccionarOVI() {
   if (!conDiagrama || ejecutando) return;
   estado = { ...estado, paleta: null, abierta: null };
   pintar();
-  const absolutePath = await window.solder?.elegirVI();
+  const absolutePath = await window.solder?.elegirOVI();
   if (!absolutePath) return;
-  const { texts } = await window.solder.textosDeVI(absolutePath);
+  const { texts } = await window.solder.textosDeOVI(absolutePath);
   const g = learnCallee(texts);
   let config;
   try {
-    config = SN.placedConfig(Paths.storedPathFor(viKey, absolutePath, oviLibRoot), texts[absolutePath]);
+    config = SN.placedConfig(Paths.storedPathFor(oviKey, absolutePath, oviLibRoot), texts[absolutePath]);
   } catch (error) {
     return window.solder.error(error.message);
   }
@@ -1183,16 +1183,16 @@ async function seleccionarVI() {
 
 /** Adds the texts of a callee (and of what it reaches) to the hierarchy and rebuilds it; returns the diagram's graph over it. */
 function learnCallee(texts) {
-  subVITexts = { ...subVITexts, ...texts };
+  subOVITexts = { ...subOVITexts, ...texts };
   return rebuildHierarchy(dia.g);
 }
 
 /**
  * A palette element that places a subOVI (`bloque: "subvi"` with its `config.vi`, as VISA Configure Serial Port's): the callee's texts
- * are read first, as Select a VI... does, so that the node is drawn with its icon and its terminals at once.
+ * are read first, as Select an OVI... does, so that the node is drawn with its icon and its terminals at once.
  */
-async function carrySubVIFromPalette(entry, where) {
-  const { texts } = await window.solder.textosDeVI(Paths.resolveRelative(viKey, entry.config.vi, oviLibRoot));
+async function carrySubOVIFromPalette(entry, where) {
+  const { texts } = await window.solder.textosDeOVI(Paths.resolveRelative(oviKey, entry.config.vi, oviLibRoot));
   const g = learnCallee(texts);
   dia = ED.moverA(ED.coger({ ...dia, g }, entry.bloque, entry.config), ctx, where);
   dia = { ...dia, accion: { ...dia.accion, arrastrado: false } };
@@ -1205,13 +1205,13 @@ function abrirPolimorfico(nodeId) {
   if (polymorphic) window.solder?.abrirRuta(polymorphic.key);
 }
 
-/** Opens the windows of the VI that a `subvi` node calls (or brings them forward if they are open). */
-function abrirSubVI(nodeId) {
-  const file = SN.fileToOpen(grafo().nodos.find((n) => n.id === nodeId), cat, viKey, oviLibRoot);
+/** Opens the windows of the OVI that a `subvi` node calls (or brings them forward if they are open). */
+function abrirSubOVI(nodeId) {
+  const file = SN.fileToOpen(grafo().nodos.find((n) => n.id === nodeId), cat, oviKey, oviLibRoot);
   if (file) window.solder?.abrirRuta(file);
 }
 
-/** The right-click menu of the connector pane (on a cell) or of the icon of the VI. */
+/** The right-click menu of the connector pane (on a cell) or of the icon of the OVI. */
 function menuDelIcono(ev, elemento) {
   const esConector = elemento.dataset.id === `${prefijo}.connector-pane`;
   const raiz = esConector ? CP.MENU_ROOT : CP.ICON_MENU_ROOT;
@@ -1222,10 +1222,10 @@ function menuDelIcono(ev, elemento) {
 }
 
 canal.onmessage = ({ data }) => {
-  // Before this window has loaded its VI, what it holds is not the VI.
+  // Before this window has loaded its OVI, what it holds is not the OVI.
   if (!listo) return;
-  // Una ventana que acaba de abrirse pide el VI; la que lo tiene lo manda.
-  if (data.pide) return canal.postMessage({ g: grafo(), subVITexts, stamp });
+  // Una ventana que acaba de abrirse pide el OVI; la que lo tiene lo manda.
+  if (data.pide) return canal.postMessage({ g: grafo(), subOVITexts, stamp });
   if (data.debugState) {
     debug = data.debugState;
     return pintar();
@@ -1249,13 +1249,13 @@ canal.onmessage = ({ data }) => {
   if (!data.g) return;
   // A copy older than the one this window holds is not taken: it is answered with the newer one (graph-sync.mjs).
   const verdict = Sync.judgeIncoming(stamp, data.stamp);
-  if (verdict === "stale") return canal.postMessage({ g: grafo(), subVITexts, stamp });
+  if (verdict === "stale") return canal.postMessage({ g: grafo(), subOVITexts, stamp });
   stamp = data.stamp;
   if (JSON.stringify(data.g) === JSON.stringify(grafo())) return;
   let g = data.g;
-  // The other window may have placed a subVI this one has not read yet: its view of the hierarchy comes first.
-  if (data.subVITexts && (JSON.stringify(data.subVITexts) !== JSON.stringify(subVITexts) || faltaSubVI(g))) {
-    subVITexts = data.subVITexts;
+  // The other window may have placed a subOVI this one has not read yet: its view of the hierarchy comes first.
+  if (data.subOVITexts && (JSON.stringify(data.subOVITexts) !== JSON.stringify(subOVITexts) || faltaSubOVI(g))) {
+    subOVITexts = data.subOVITexts;
     g = rebuildHierarchy(g);
   }
   publicado = g;
@@ -1305,7 +1305,7 @@ function pintar() {
   const charts = GS.reconciledCharts(pan.charts, grafo(), resueltos);
   if (charts !== pan.charts) pan = { ...pan, charts };
   const floating = floatingWindows();
-  const extra = { toolbar: toolbarButtons(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, conAvisos: !ejecutando && EL.showsWarningButton(listRows(), errorList.showWarnings), dialogo: dialogoError, numeroVI: viInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
+  const extra = { toolbar: toolbarButtons(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, conAvisos: !ejecutando && EL.showsWarningButton(listRows(), errorList.showWarnings), dialogo: dialogoError, numeroOVI: oviInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
   if (conDiagrama) {
     extra.lienzo = D.contenido({ ...dia, debug: DV.canvasView(debug, dia.g, ejecutando) }, ctx, resueltos) + DV.overlay(debug, dia.g, ctx, resueltos, { now: Date.now(), separator: separador, running: ejecutando, pausedAt: debug.run.paused, errorFocus });
     extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia, ctx), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx, inv), DV.menuVariants(debug, dia.g, resueltos, dia.menu)), windowSize()) : "") + floating.popup;
@@ -1337,7 +1337,7 @@ function pintar() {
   if (conPanel) showPanelCursor();
 }
 
-/** The check marks of a menu opened from the page and not from the menu bar: the current page of VI Properties. */
+/** The check marks of a menu opened from the page and not from the menu bar: the current page of OVI Properties. */
 const marcasDelMenuBarra = (id) => new Set(id === VP.CATEGORIES_ID ? [`${VP.CATEGORIES_ID}.execution`] : id === HIGHLIGHT_BUTTON_ID ? [`${HIGHLIGHT_BUTTON_ID}.${debug.highlight.speed}`] : []);
 
 function cambiar(nuevo) {
@@ -1543,7 +1543,7 @@ addEventListener("mousedown", (ev) => {
   }
   // An error dialog is modal: only its buttons answer.
   if (document.querySelector(".modal-error")) return;
-  // VI Properties is modal too: its buttons answer to the click event.
+  // OVI Properties is modal too: its buttons answer to the click event.
   if (propiedades && !estado.menuBarra) return;
   // Con un menú de la barra abierto, pulsar fuera de él y de los títulos lo cierra.
   if (estado.menuBarra && !ev.target.closest(".menu-contextual, .menu")) return cambiar({ ...estado, menuBarra: null });
@@ -1574,7 +1574,7 @@ addEventListener("mousedown", (ev) => {
     estado = { ...estado, paleta: null, abierta: null };
     // A subOVI (a polymorphic OVI of ovi.lib, say) is carried once its file has been read, so that it is drawn with its icon.
     if (conDiagrama && e.bloque === "subvi") {
-      carrySubVIFromPalette(e, punto(ev));
+      carrySubOVIFromPalette(e, punto(ev));
       return pintar();
     }
     if (conDiagrama) {
@@ -1612,9 +1612,9 @@ addEventListener("mousedown", (ev) => {
   if (ev.detail >= 2 && sobreDiagrama.tipo === "etiqueta") return cambiarDiagrama(ED.editarEtiqueta(dia, sobreDiagrama.id));
   // Un doble clic en el texto del selector de marcos de un Case escribe en él.
   if (ev.detail >= 2 && sobreDiagrama.tipo === "marco" && sobreDiagrama.zona === "texto") return cambiarDiagrama(ED.editarMarco(dia, sobreDiagrama.nodo, ctx));
-  // A double click on a subVI opens its Front Panel.
-  if (ev.detail >= 2 && sobreDiagrama.tipo === "nodo" && SN.isSubVI(dia.g.nodos.find((n) => n.id === sobreDiagrama.id))) return abrirSubVI(sobreDiagrama.id);
-  // A double click on an Express VI opens its configuration dialog (DT-069 §3).
+  // A double click on a subOVI opens its Front Panel.
+  if (ev.detail >= 2 && sobreDiagrama.tipo === "nodo" && SN.isSubOVI(dia.g.nodos.find((n) => n.id === sobreDiagrama.id))) return abrirSubOVI(sobreDiagrama.id);
+  // A double click on an Express OVI opens its configuration dialog (DT-069 §3).
   const doubleClicked = ev.detail >= 2 && sobreDiagrama.tipo === "nodo" && dia.g.nodos.find((n) => n.id === sobreDiagrama.id);
   if (doubleClicked && ExpressNodes.isExpressNode(doubleClicked, cat)) return cambiarDiagrama(ED.openConfiguration(dia, ctx, doubleClicked.id));
   // A double click on a Call Library Function Node opens its configuration dialog (DT-080).
@@ -1629,7 +1629,7 @@ addEventListener("mousedown", (ev) => {
 
 // ——— Accionar el panel en modo Run ———
 //
-// Mientras el VI corre, un clic acciona el control: nada se mueve, se
+// Mientras el OVI corre, un clic acciona el control: nada se mueve, se
 // selecciona ni se borra, y el diagrama no se edita. Un booleano cambia según
 // su acción mecánica: los «When Pressed» al pulsar, los «When Released» al
 // soltar; un Switch alterna y un Latch pasa a TRUE hasta que el diagrama lo lee.
@@ -1726,7 +1726,7 @@ function pulsarPanel(ev) {
 
 // ——— Scrolling the canvas (scrolling.mjs) ———
 
-/** The point of the canvas at the top left of its visible area; saved with the VI, never marking it modified. */
+/** The point of the canvas at the top left of its visible area; saved with the OVI, never marking it modified. */
 let scrollOrigin = { x: 0, y: 0 };
 /** Per axis, what the bars were last drawn from: `{ range, visible, trackLength, thumb }`, or null when nothing scrolls. */
 const scrollAxes = { x: null, y: null };
@@ -1776,7 +1776,7 @@ function drawScrollbars() {
   }
 }
 
-/** Shows the canvas from `origin` and tells the main process, which saves it with the VI. */
+/** Shows the canvas from `origin` and tells the main process, which saves it with the OVI. */
 function scrollTo(origin) {
   const rounded = { x: Math.round(origin.x), y: Math.round(origin.y) };
   if (rounded.x === scrollOrigin.x && rounded.y === scrollOrigin.y) return;
@@ -2029,10 +2029,10 @@ addEventListener("click", (ev) => {
   if (!el || inerte(el)) return;
   const toolbarAction = el.dataset.id.startsWith(`${prefijo}.toolbar.`) && !esHueco(inv.resolver(el.dataset.id)) && !el.classList.contains("desactivado") && TOOLBAR_ACTIONS[ultimo(el.dataset.id)];
   if (toolbarAction) return toolbarAction();
-  // La flecha de Run, hecha: ejecuta el VI; rota, dice por qué no se puede.
-  if (el.dataset.id === `${prefijo}.toolbar.run` && !esHueco(inv.resolver(el.dataset.id))) return ejecutarVI();
+  // La flecha de Run, hecha: ejecuta el OVI; rota, dice por qué no se puede.
+  if (el.dataset.id === `${prefijo}.toolbar.run` && !esHueco(inv.resolver(el.dataset.id))) return ejecutarOVI();
   if (el.dataset.id === `${prefijo}.toolbar.abort-execution`) return abortar();
-  if (el.dataset.id === "palette.functions.select-a-vi" && !esHueco(inv.resolver(el.dataset.id))) return seleccionarVI();
+  if (el.dataset.id === "palette.functions.select-a-vi" && !esHueco(inv.resolver(el.dataset.id))) return seleccionarOVI();
   const donde = abreSubpaleta(el) ? V.anclaSubpaleta(el.getBoundingClientRect()) : el.classList.contains("menu") ? anclaMenu(el) : ancla(el);
   cambiar(E.clic(estado, inv, el.dataset.id, donde, nivelDe(el)));
 });
@@ -2043,8 +2043,8 @@ addEventListener("contextmenu", (ev) => {
   // In Run mode LabVIEW gives another menu (the run-time one): captured only for the graphs.
   if (ejecutando) return runModeMenu(ev);
   // The connector pane and the icon have menus of their own.
-  const iconoVI = ev.target.closest(".icono-vi");
-  if (iconoVI) return menuDelIcono(ev, iconoVI);
+  const iconoOVI = ev.target.closest(".icono-vi");
+  if (iconoOVI) return menuDelIcono(ev, iconoOVI);
   if (!ev.target.closest(".lienzo")) return;
   // On the panel the palette comes up over the background and an object's menu over any part of it
   // (its box, arrows, elements or fields too). A numeric indicator has no captured menu yet: nothing opens.
@@ -2090,7 +2090,7 @@ addEventListener("keydown", (ev) => {
     if (ev.key === "Enter") responderDialogo(dialogoError.pregunta === "error-automatico" ? "continuar" : "ok");
     return ev.preventDefault();
   }
-  // VI Properties: Esc cancels (or closes what is open over it) and Enter accepts.
+  // OVI Properties: Esc cancels (or closes what is open over it) and Enter accepts.
   if (propiedades) {
     ev.preventDefault();
     if (ev.key === "Escape") return estado.abierta || estado.menuBarra ? cambiar(E.escape(estado)) : cerrarPropiedades(false);
@@ -2103,7 +2103,7 @@ addEventListener("keydown", (ev) => {
   const conTeclaEnDialogo = dialogoModal();
   if (conTeclaEnDialogo) {
     ev.preventDefault();
-    // What is open over the dialog takes Escape first and the dialog stays, as in VI Properties
+    // What is open over the dialog takes Escape first and the dialog stays, as in OVI Properties
     // above: otherwise closing the explanation of a greyed tab closed the whole dialog with it.
     if (ev.key === "Escape" && (estado.abierta || estado.menuBarra)) return cambiar(E.escape(estado));
     return aplicarEnDialogo(MD.keyIntent(conTeclaEnDialogo, ev), conTeclaEnDialogo);
@@ -2134,7 +2134,7 @@ addEventListener("keydown", (ev) => {
     // Ctrl+R: Run, y Ctrl+.: Abort, los atajos de LabVIEW.
     if (ev.key.toLowerCase() === "r") {
       ev.preventDefault();
-      return ejecutarVI();
+      return ejecutarOVI();
     }
     if (ev.key === ".") {
       ev.preventDefault();
@@ -2317,12 +2317,12 @@ function mostrarTip(ev) {
   }, 150);
 }
 
-// Everything above is declared: now the VI is loaded and the window starts to talk to the other one.
+// Everything above is declared: now the OVI is loaded and the window starts to talk to the other one.
 window.solder?.portapapeles.alCambiar(recibirPortapapeles);
 window.solder?.listaDeErrores.alCambiar(receiveShowWarnings);
 receiveShowWarnings(await window.solder?.listaDeErrores.mostrarAvisos());
 recibirPortapapeles(await window.solder?.portapapeles.leer());
-if (viInfo.text) await cargarTexto(viInfo.text);
+if (oviInfo.text) await cargarTexto(oviInfo.text);
 pintar();
 avisar(grafo());
 listo = true;

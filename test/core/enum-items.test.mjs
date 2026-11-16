@@ -12,7 +12,7 @@ import { aTexto, leer } from "../../core/model/qvi-format.mjs";
 import { compilar } from "../../core/compiler/compiler.mjs";
 import { CAT, leer as leerJson } from "../helpers.mjs";
 
-/** A small VI builder over the core graph functions; see `construir` in structures.test.mjs. */
+/** A small OVI builder over the core graph functions; see `construir` in structures.test.mjs. */
 function construir(pasos) {
   const v = { g: Gr.nuevo(), id: {} };
   const api = {

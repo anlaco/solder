@@ -2,7 +2,7 @@
 //
 // The Run starts from the current value of each control, and operating a control
 // while it runs changes that current value, never the default the file saves, so
-// the VI is not marked modified. When the Run ends the controls keep what was
+// the OVI is not marked modified. When the Run ends the controls keep what was
 // operated, and what each indicator shows becomes its current value: Make Current
 // Values Default then makes it the indicator's default, as in LabVIEW
 // (labview-captures/reports/2026-10-15-default-values.md, stage 2).

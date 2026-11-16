@@ -3,18 +3,18 @@
 // the wires are (for the pace of Highlight Execution) and what each node is called.
 //
 // Pure: the page builds it when a Run starts and sends it to the run worker with the
-// module. Only the nodes the compiled VI hooks (`debugNodes` of the top-level VI) count.
+// module. Only the nodes the compiled OVI hooks (`debugNodes` of the top-level OVI) count.
 
 import * as D from "../block-diagram/diagram-view.mjs";
-import { isSubVI } from "../block-diagram/subvi-nodes.mjs";
-import { withoutVIExtension } from "../common/vi-paths.mjs";
+import { isSubOVI } from "../block-diagram/subovi-nodes.mjs";
+import { withoutOVIExtension } from "../common/ovi-paths.mjs";
 
 const LOOP_KINDS = ["while-loop", "for-loop"];
 
 /** The name LabVIEW shows for a node: its own label, the palette's name for its block, or the block. */
 export function nodeDisplayName(node, inventory) {
   if (node.label?.text) return node.label.text;
-  if (isSubVI(node)) return withoutVIExtension(String(node.config?.vi ?? "SubOVI").split("/").pop());
+  if (isSubOVI(node)) return withoutOVIExtension(String(node.config?.vi ?? "SubOVI").split("/").pop());
   const entry = inventory?.entradas.find((candidate) => candidate.bloque === node.tipo && candidate.id.startsWith("palette."));
   return entry?.etiqueta ?? node.tipo;
 }
@@ -31,7 +31,7 @@ export function wireLength(graph, wire, terminals) {
 }
 
 /**
- * @param {object} graph      the VI's graph
+ * @param {object} graph      the OVI's graph
  * @param {Array} debugNodes  `compilado.debugNodes`
  * @param {object} context    `D.contexto(...)`, to measure the wires
  * @param {object} [inventory]  to name the nodes

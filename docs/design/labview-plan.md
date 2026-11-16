@@ -570,7 +570,7 @@ array or string read by a local variable while another loop writes it is never t
       1.0). Next: the core of DT-069 with Time Delay, then the editor's expandable node and dialog, then (d2).*
       *Time Delay done on 2026-10-29 (DT-069, stage A): its runtime measured
       ([`time-delay`](../../labview-captures/reports/2026-10-29-time-delay.md)) and compiled to the scheduler's wait
-      (`core/model/express.mjs`, `test/core/express-vi.test.mjs` on the virtual host); in the editor placed from Timing,
+      (`core/model/express.mjs`, `test/core/express-ovi.test.mjs` on the virtual host); in the editor placed from Timing,
       its configuration dialog on drop, double click and Properties, OK as one "Change Attribute" undo step, the node
       unconfigured and configured with its row, the common Express OVI menu; compared with LabVIEW's captures
       ([`editor-time-delay-compare`](../../labview-captures/reports/2026-10-29-editor-time-delay-compare.md)) and fixed.
@@ -897,7 +897,7 @@ array or string read by a local variable while another loop writes it is never t
 **OVI files are `.ovi`** (DT-094, decided on 2026-11-16). One step, on `main`. *Done on 2026-11-16; the Windows
 installer's association is unverified until it is tried in the virtual machine. At the release, the DAQ add-on's
 `MinimumSupportedSolderVersion` is raised to that version, the first that opens `.ovi`.*
-1. `editor/src/common/vi-paths.mjs`: `.ovi` is the extension Save As writes; `.sdg` and `.qvi` still name an OVI file,
+1. `editor/src/common/ovi-paths.mjs`: `.ovi` is the extension Save As writes; `.sdg` and `.qvi` still name an OVI file,
    open and keep their names on Ctrl+S.
 2. The subOVI lookup of DT-094 §3: a callee named with one of the three extensions that is not found is looked for
    with the other two (core and editor alike), with its test.
@@ -918,7 +918,7 @@ to it go on, new fronts wait for step 6.
    zero cluster, `ERROR_FIELDS`) and the families in `nodes/` (data manipulation, strings, Format/Scan and their
    `host-rows.mjs`, files, VISA, timing, Expression Node, Property Node, Call Library, arithmetic and comparison,
    arrays), `array-rows.mjs` (a 2D array's rows through an indexed tunnel), `subovi-calls.mjs` and `panel-io.mjs`;
-   `compileVI` is `compileOVI` and `runnableVI` `runnableOVI` (DT-071). `compiler.mjs` is down from 3,261 to 1,705
+   `compileOVI` is `compileOVI` and `runnableOVI` `runnableOVI` (DT-071). `compiler.mjs` is down from 3,261 to 1,705
    lines; then the table (`node-table.mjs`, `NODE_EMITTERS`), the clump ordering (`clumps.mjs`, in English), what the
    compiler knows of node kinds (`node-kinds.mjs`), and `compileOVI` (`compile-ovi.mjs`), whose inner groups became
    parts that share the OVI's state through one object, their bodies unchanged: `panel-registry.mjs`,
@@ -934,12 +934,12 @@ to it go on, new fronts wait for step 6.
    **Style debts seen while splitting** (2026-11-16; counts over `core/`, `editor/` and `cli/`). Each goes against a
    written rule, so each is to be changed; the ones inside the compiler go with this step, the rest by the Boy Scout
    rule or as their own step where noted:
-   - **"VI" in Solder's own names** (DT-071: Solder's unit is the OVI): `subVI` (58), `viName` (29), `openVIs` (23),
-     `subVITexts`, `isSubVI`, `findSubVI`, `asSubVI`, `loadVI`, `iconoVI`, `viKey`, `viPath`, `viInfo`, the exports of
-     `editor/src/common/vi-paths.mjs` (`VI_EXTENSION`, `isVIFile`, `withoutVIExtension`, `viDisplayName`) and the file
-     names `vi-paths.mjs`, `subvis.test.mjs`, `subvi-editor.test.mjs`. `runnableVI` became `runnableOVI` on 2026-11-16.
-     The node type `"subvi"` is part of the `.ovi` format, so renaming it needs a format migration (DT-055) and its own
-     decision; the rest are code only.
+   - **"VI" in Solder's own names** (DT-071): *done on 2026-11-16*. Every identifier, file name and comment of `core/`,
+     `editor/`, `cli/`, `scripts/` and `test/` says OVI (`subOVI`, `oviName`, `openOVIs`, `ovi-paths.mjs`,
+     `subovis.test.mjs`…), and the Electron channels are `ovi:…`; the inventory's test references follow. Kept on
+     purpose: LabVIEW's and NI's own names (NI-VISA's `VI_SUCCESS`…, "LabVIEW's VI", `.vi`, `vi.lib`), and what the
+     `.ovi` format stores — the node type `"subvi"`, a subOVI's `config.vi`, the file's `vi` key and the block
+     `vi-server-reference` —, which need a format migration (DT-055) and a decision of their own.
    - **Spanish in identifiers** (CLAUDE.md "Language"): the emitting context every node emitter receives (`e.entrada`
      310 uses, `e.temporal` 182, `e.celda` 202, `e.bufer`, `e.cadena`, `e.cableada`, `e.tIn`/`e.tOut`), the graph's
      `nodo`/`nodos`/`tipo` (over 1,300) and the catalog's `puertos`/`bloque`; `compilar`, `BLOQUES`, `LARGOS`,

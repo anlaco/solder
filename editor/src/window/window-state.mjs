@@ -121,7 +121,7 @@ export function clicFuera(estado, { enPaleta, enExplicacion }) {
 /**
  * A modal dialog keeps its own clicks, but one outside the explanation open over it still closes the
  * explanation, as anywhere else in the window. Only the explanation goes: a bar menu the dialog opened
- * (VI Properties' categories) answers to its own rule.
+ * (OVI Properties' categories) answers to its own rule.
  */
 export const clicEnDialogoModal = (estado, { enExplicacion }) => (enExplicacion || !estado.abierta ? estado : { ...estado, abierta: null });
 

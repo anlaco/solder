@@ -162,7 +162,7 @@ const REJILLAS = {
   // The top level is 6 rows of 4: Waveform File I/O alone at the start of the last row and Advanced File Functions at its end.
   "palette.functions.programming.file-io": { columnas: 4, celdas: { "waveform-file-i-o": [5, 0], "advanced-file-functions": [5, 3] } },
   "palette.functions.programming.file-io.file-constants": { columnas: 3, celdas: {} },
-  // Configuration File VIs: 6 columns; the second row has Get Key Names, Get Section Names and, after a gap, Not A Config Data Refnum.
+  // Configuration File OVIs: 6 columns; the second row has Get Key Names, Get Section Names and, after a gap, Not A Config Data Refnum.
   "palette.functions.programming.file-io.configuration-file-vis": { columnas: 6, celdas: { "get-key-names-vi": [1, 1], "not-a-config-data-refnum-vi": [1, 4] } },
   // TDM Streaming: 4 columns; its third row ends with a gap and the folder Advanced TDMS.
   "palette.functions.programming.file-io.tdm-streaming": { columnas: 4, celdas: { "advanced-tdms": [2, 3] } },
@@ -186,7 +186,7 @@ const REJILLA_POR_DEFECTO = { columnas: 6, celdas: {} };
 /** Elementos de la barra que LabVIEW alinea a la derecha. Es disposición. */
 const A_LA_DERECHA = ["save-version", "search", "nigel", "show-context-help-window"];
 /**
- * Elementos de la barra que desaparecen mientras el VI corre: los de editar.
+ * Elementos de la barra que desaparecen mientras el OVI corre: los de editar.
  * Comprobado en LabVIEW 2026 Q3 (labview-captures/run/r1.png): quedan Run, Run
  * Continuously, Abort y Pause.
  */
@@ -254,7 +254,7 @@ export function disposicionBarra(inv, ventana) {
 function elementoBarra(inv, e, sitio, extra) {
   const n = ultimo(e.id);
   // The same slot left of Run holds Enter Text while text is typed and, otherwise, the List Warnings triangle while
-  // Show Warnings is on and the VI has warnings (warnings-frame-stops §A2; which wins when both apply is unverified).
+  // Show Warnings is on and the OVI has warnings (warnings-frame-stops §A2; which wins when both apply is unverified).
   const shown = n === "list-warnings" ? extra.conAvisos && !extra.editandoTexto : extra.editandoTexto;
   if (sitio.alEscribir && !shown) sitio = { ...sitio, oculto: true };
   if (extra.ejecutando && AL_EDITAR.includes(n)) sitio = { ...sitio, oculto: true };
@@ -268,11 +268,11 @@ function elementoBarra(inv, e, sitio, extra) {
     return `<div class="${clases(inv, e.id, "caja-busqueda")}" ${id} ${estilo}><span class="selector">${G.SELECTOR}</span><span class="valor">${esc(rotulo(e))}</span><span class="lupa">${G.LUPA}</span></div>`;
   if (n === "save-version") return `<div class="${clases(inv, e.id, "texto-barra")}" ${id} ${estilo}>${esc(rotulo(e))}</div>`;
   if (G.BARRA[n]) {
-    // The debugging buttons change glyph, enabled state and tooltip with the state of the VI (debugging/debug-state.mjs).
+    // The debugging buttons change glyph, enabled state and tooltip with the state of the OVI (debugging/debug-state.mjs).
     const state = extra.toolbar?.[n];
     const glifo = G.BARRA[state?.glyph] ?? (n === "run" && extra.ejecutando ? G.BARRA["run-en-marcha"] : n === "run" && extra.runRoto ? G.BARRA["run-roto"] : G.BARRA[n]);
     const triangulo = G.CON_DESPLEGABLE.has(n) ? `<span class="triangulo">${G.TRIANGULO}</span>` : "";
-    // Abort sólo se enciende mientras el VI corre (run/barra-run.png).
+    // Abort sólo se enciende mientras el OVI corre (run/barra-run.png).
     const apagado = (state ? !state.enabled : n === "abort-execution" && !extra.ejecutando) ? " desactivado" : "";
     const tip = state?.tooltip ? ` data-tip="${esc(state.tooltip)}"` : "";
     return `<div class="${clases(inv, e.id, `boton${triangulo ? " con-desplegable" : ""}${apagado}`)}" ${id}${tip} ${estilo}><span class="glifo">${glifo}</span>${triangulo}</div>`;
@@ -292,9 +292,9 @@ const scrolledLayer = (content, origin) => `<div class="capa-desplazada" style="
 /**
  * Pinta una ventana entera. `extra`: `lienzo`, lo que va dentro del lienzo (el
  * diagrama); `encima`, lo que va sobre todo (un menú de clic derecho);
- * `runRoto`, si el VI no se puede ejecutar; `ejecutando`, si corre (modo Run),
+ * `runRoto`, si el OVI no se puede ejecutar; `ejecutando`, si corre (modo Run),
  * `editandoTexto`, `conectorGlifo`, the connector pane drawn with its assigned cells,
- * `numeroVI`, the number on the VI's icon, `propiedades`, the VI Properties dialog, and `panelStyle`, the style
+ * `numeroOVI`, the number on the OVI's icon, `propiedades`, the OVI Properties dialog, and `panelStyle`, the style
  * the Front Panel is drawn in, and `origin`, the point of the canvas at the top left of its visible area.
  */
 export function ventana(inv, nombre, estado, extra = {}) {
@@ -319,7 +319,7 @@ export function ventana(inv, nombre, estado, extra = {}) {
     iconos.push(icono(inv, `${pre}.connector-pane`, x, extra.conectorGlifo ?? G.CONNECTOR_PANE));
     x += M.pasoIcono;
   }
-  iconos.push(icono(inv, `${pre}.icon`, x, G.iconoVI(extra.numeroVI)));
+  iconos.push(icono(inv, `${pre}.icon`, x, G.iconoOVI(extra.numeroOVI)));
 
   const instancia = inv.entrada(`${pre}.application-instance`);
   const estadoHTML = instancia
@@ -399,10 +399,10 @@ const glifoIcono = (id) => (id.startsWith("palette.controls.") ? G.CONTROLES : G
 /**
  * The icon of a palette element that places an OVI is the OVI's own, as in LabVIEW, never one the palette stores. An OVI
  * keeps no icon in its file yet (the icon editor is postponed), so it is the standard one, the same that the node shows
- * on the diagram (`subVIIcon`); when OVIs carry their icons, both read them from the OVI. Found by trying an add-on's
+ * on the diagram (`subOVIIcon`); when OVIs carry their icons, both read them from the OVI. Found by trying an add-on's
  * palette in the running editor: without this its elements were invisible.
  */
-const iconoDeOVI = (entrada) => (entrada.bloque === "subvi" ? G.iconoVI() : "");
+const iconoDeOVI = (entrada) => (entrada.bloque === "subvi" ? G.iconoOVI() : "");
 
 /** Una carpeta de una rejilla; la abierta lleva el marco de LabVIEW. */
 function carpeta(inv, e, left, top, abierta, conEtiqueta = false) {
@@ -447,7 +447,7 @@ export const anclaSubpaleta = (r) => ({ x: r.left + MEDIDAS_SUBPALETA.anclaX, y:
 
 /**
  * How LabVIEW keeps a palette on the screen (labview-captures/reports/2026-10-15-palette-edges.md). Solder's screen is the
- * VI window's page, since its palettes live in the page.
+ * OVI window's page, since its palettes live in the page.
  */
 export const PALETTE_EDGES = {
   /** A palette or subpalette never ends lower than this above the bottom of the room (B1, B2: 1025 for 1040). */
@@ -569,7 +569,7 @@ function explicacionFlotante(inv, abierta) {
 }
 
 /**
- * The two error dialogs (DT-043), modal over the window that launched the VI. `d`:
+ * The two error dialogs (DT-043), modal over the window that launched the OVI. `d`:
  * `{ id, pregunta, status, code, source }`.
  *
  * - `error-automatico` (automatic error handling, labview-captures/errores/44b-dialogo-x3.png):

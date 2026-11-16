@@ -2,8 +2,8 @@
 // (labview-captures/graphs/50-chart-history-length-dialog.png): the number of data
 // points the chart keeps, 1024 by default.
 //
-// Pure, like vi-properties.mjs: `open` creates the dialog from the chart, `type` writes into
-// its field, `apply` puts the number into the VI and `view` draws it, from the inventory
+// Pure, like ovi-properties.mjs: `open` creates the dialog from the chart, `type` writes into
+// its field, `apply` puts the number into the OVI and `view` draws it, from the inventory
 // (`dialog.chart-history-length.*`).
 
 import { esHueco } from "../common/labview-inventory.mjs";
@@ -59,7 +59,7 @@ export function length(dialog) {
   return Number.isInteger(value) && value >= 1 ? value : undefined;
 }
 
-/** The VI with the length of the dialog; 1024 is the default and is not stored. An invalid field leaves it as it was. */
+/** The OVI with the length of the dialog; 1024 is the default and is not stored. An invalid field leaves it as it was. */
 export function apply(g, dialog) {
   const value = length(dialog);
   return value === undefined ? g : Gr.fijarConfig(g, dialog.nodo, { historyLength: value === DEFAULT_CHART_HISTORY ? undefined : value });
@@ -67,7 +67,7 @@ export function apply(g, dialog) {
 
 const holeClass = (inv, id) => (esHueco(inv.resolver(id) ?? { estado: "todo" }) ? " hueco" : "");
 
-/** The dialog, modal over the window, like the VI Properties one. */
+/** The dialog, modal over the window, like the OVI Properties one. */
 export function view(inv, dialog) {
   const L = LAYOUT;
   const text = dialog.todo ? `<span class="texto-elegido">${esc(dialog.texto)}</span>` : `<span>${esc(dialog.texto)}</span><span class="caret"></span>`;

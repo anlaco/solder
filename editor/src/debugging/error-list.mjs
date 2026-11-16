@@ -5,7 +5,7 @@
 // finds, the required inputs nobody wired, what the hierarchy and the compiler
 // refuse) into rows; `view` in debug-view.mjs draws them. `collectWarnings` finds what
 // LabVIEW warns about without breaking the VI (labview-captures/reports/2026-10-16-warnings-frame-stops.md §A),
-// shown only with Show Warnings, a setting of the session shared by every VI.
+// shown only with Show Warnings, a setting of the session shared by every OVI.
 
 import * as Gr from "../../../core/model/graph.mjs";
 import { nodeDisplayName } from "./debug-plan.mjs";
@@ -46,7 +46,7 @@ const LOOSE_WIRE_DETAILS = {
 };
 
 /**
- * The rows of the error list of a VI: `{ id, text, details, target }`, where `target` is the object
+ * The rows of the error list of an OVI: `{ id, text, details, target }`, where `target` is the object
  * Show Error frames: `{ node }`, `{ wire }` or nothing.
  */
 export function collect({ graph, catalog, resolved, hierarchyErrors = [], compileErrors = [], inventory }) {
@@ -92,8 +92,8 @@ export function collect({ graph, catalog, resolved, hierarchyErrors = [], compil
 }
 
 /**
- * The warnings of a VI, as rows like the errors' with `warning: true`: a constant nothing reads and a panel
- * terminal with no wire. They never break the VI: Run works.
+ * The warnings of an OVI, as rows like the errors' with `warning: true`: a constant nothing reads and a panel
+ * terminal with no wire. They never break the OVI: Run works.
  */
 export function collectWarnings({ graph, catalog }) {
   const touched = new Set(graph.cables.flatMap((wire) => [wire.de.nodo, wire.a.nodo]));
@@ -118,7 +118,7 @@ export const initial = () => ({ open: false, showWarnings: false, selected: null
 /** The rows the list shows: the errors, and the warnings after them only with Show Warnings. */
 export const visibleRows = (rows, showWarnings = false) => [...rows.filter((row) => !row.warning), ...(showWarnings ? rows.filter((row) => row.warning) : [])];
 
-/** Whether the toolbars show the List Warnings triangle: Show Warnings is on and the VI has some. */
+/** Whether the toolbars show the List Warnings triangle: Show Warnings is on and the OVI has some. */
 export const showsWarningButton = (rows, showWarnings) => showWarnings && rows.some((row) => row.warning);
 
 export function selectRow(state, rowId) {

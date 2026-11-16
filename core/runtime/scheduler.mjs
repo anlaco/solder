@@ -1,5 +1,5 @@
 // The reference model of the scheduler of one Run (DT-061, amended by DT-063 §9). The scheduler that
-// runs VIs is in the compiled module itself (core/compiler/pool-scheduler.mjs); this one keeps its
+// runs OVIs is in the compiled module itself (core/compiler/pool-scheduler.mjs); this one keeps its
 // rules in plain JavaScript, with its own tests, and with one thread the module's must give exactly
 // its order of resumes (test/end-to-end/reference-traces.test.mjs). It starts and resumes clumps in
 // an order of its own, never the host's. It hands ready clumps to a pool of threads, as
@@ -16,7 +16,7 @@
 // at a time, so the clump that called is the one the scheduler last started or resumed on it:
 // `currentContext()`. The hosts (`createRealHost`, `createVirtualHost`) are also the runtime's.
 
-/** The error a Run ends with when it is aborted: not a fault of the VI. */
+/** The error a Run ends with when it is aborted: not a fault of the OVI. */
 export const abortedError = () => Object.assign(new Error("The OVI was aborted."), { abortado: true });
 
 /** Why a parked clump waits, for the deadlock message. */

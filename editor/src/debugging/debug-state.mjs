@@ -2,7 +2,7 @@
 // window only translates events into these calls, so the rules are tested without a
 // browser). Measurements: labview-captures/debugging/REPORT.md.
 //
-// The state is plain JSON, because the two windows of a VI keep a copy each and the
+// The state is plain JSON, because the two windows of an OVI keep a copy each and the
 // diagram sends its copy to the panel over the BroadcastChannel (editor-window.mjs):
 //   highlight  { on, speed }              Highlight Execution and its speed
 //   retain     boolean                    Retain Wire Values
@@ -10,7 +10,7 @@
 //   nextNumber the number the next probe or breakpoint gets
 //   debugWindow { open, selected, showValues, keepOnTop, wrap, hideProbeDisplay }
 //   run        { values, lit, litWires, paused, startedAt }   what the Run in progress shows
-// Probes and breakpoints belong to the open VI, not to the file: they are not saved.
+// Probes and breakpoints belong to the open OVI, not to the file: they are not saved.
 
 import { DEFAULT_SPEED, SPEEDS, SPEED_LABELS } from "./debug-controller.mjs";
 
@@ -36,7 +36,7 @@ export const toggleHighlight = (state) => ({ ...state, highlight: { ...state.hig
 export const setHighlightSpeed = (state, speed) => (SPEEDS.includes(speed) ? { ...state, highlight: { on: true, speed } } : state);
 export const toggleRetain = (state) => ({ ...state, retain: !state.retain });
 
-/** The VI's phase as the toolbar sees it. */
+/** The OVI's phase as the toolbar sees it. */
 export const phaseOf = ({ running, run }) => (!running ? "edit" : run.paused ? "paused" : "running");
 
 const ALLOW_DEBUGGING_OFF = "Allow debugging is off (OVI Properties ▸ Execution)";
@@ -44,14 +44,14 @@ const ALLOW_DEBUGGING_OFF = "Allow debugging is off (OVI Properties ▸ Executio
 /**
  * Each debugging button of the toolbar: whether it is enabled, its tooltip and the variant of its
  * glyph (REPORT.md §6, with the tooltips of 11-17 and 75). Unverified: the tooltips of the step
- * buttons while the VI runs, "Step out of <VI>" at the top level, and those of a subVI node.
+ * buttons while the OVI runs, "Step out of <OVI>" at the top level, and those of a subOVI node.
  *
- * `info`: { phase, broken, allowDebugging, highlight, retain, viName, nodeName, nodeIsSubVI, container, stop, parentName }
- * where `container` is "loop", "structure" or null for the node the VI is stopped at, `stop` is the
+ * `info`: { phase, broken, allowDebugging, highlight, retain, oviName, nodeName, nodeIsSubOVI, container, stop, parentName }
+ * where `container` is "loop", "structure" or null for the node the OVI is stopped at, `stop` is the
  * `{ kind, phase }` of the stop and `parentName` the name of the structure holding it, if any.
  */
 export function toolbarState(info) {
-  const { phase, broken, allowDebugging, highlight, retain, viName, nodeName, nodeIsSubVI, container, stop, parentName } = info;
+  const { phase, broken, allowDebugging, highlight, retain, oviName, nodeName, nodeIsSubOVI, container, stop, parentName } = info;
   const unavailable = (label) => ({ enabled: false, tooltip: `${label}: ${ALLOW_DEBUGGING_OFF}` });
   const paused = phase === "paused";
   const stepping = (label) => (allowDebugging ? { enabled: !broken && phase !== "running", tooltip: label } : unavailable(label));
@@ -63,14 +63,14 @@ export function toolbarState(info) {
     ? { enabled: true, tooltip: "Retain Wire Values", glyph: retain ? "retain-wire-values-on" : "retain-wire-values" }
     : { ...unavailable("Retain Wire Values"), glyph: "retain-wire-values" };
   const overLabel = paused ? `Step over ${nodeName}` : "Start Single Stepping";
-  const stepOutLabel = container === "loop" ? "Finish Iteration" : container ? "Finish Structure" : `Step out of ${viName}`;
+  const stepOutLabel = container === "loop" ? "Finish Iteration" : container ? "Finish Structure" : `Step out of ${oviName}`;
 
-  const atStructure = paused && stop && (stop.kind === "frame" || stop.kind === "diagram") ? structureStopLabels({ stop, nodeName, parentName, viName }) : null;
+  const atStructure = paused && stop && (stop.kind === "frame" || stop.kind === "diagram") ? structureStopLabels({ stop, nodeName, parentName, oviName }) : null;
   const stepButton = (label, glyph, enabled = true) => ({ enabled: allowDebugging && enabled, tooltip: label, glyph });
 
   return {
     run: { enabled: true, tooltip: phase === "running" || paused ? "Running" : broken ? "List Errors" : "Run", glyph: phase !== "edit" ? "run-en-marcha" : broken ? "run-roto" : "run" },
-    "abort-execution": { enabled: phase !== "edit", tooltip: phase === "edit" ? "Abort Execution" : `Abort execution of "${viName}"` },
+    "abort-execution": { enabled: phase !== "edit", tooltip: phase === "edit" ? "Abort Execution" : `Abort execution of "${oviName}"` },
     pause: allowDebugging
       ? { enabled: true, tooltip: paused ? "Continue" : "Pause", glyph: paused ? "pause-continue" : "pause" }
       : { ...unavailable("Pause"), glyph: "pause" },
@@ -79,7 +79,7 @@ export function toolbarState(info) {
     "step-into": atStructure
       ? stepButton(atStructure.into, "step-into-enabled", atStructure.steps)
       : paused
-      ? { enabled: allowDebugging && !nodeIsSubVI, tooltip: nodeIsSubVI ? `Step into ${nodeName}: the subOVI is not stepped into yet` : overLabel, glyph: "step-into-enabled" }
+      ? { enabled: allowDebugging && !nodeIsSubOVI, tooltip: nodeIsSubOVI ? `Step into ${nodeName}: the subOVI is not stepped into yet` : overLabel, glyph: "step-into-enabled" }
       : stepping("Start Single Stepping"),
     "step-over": atStructure ? stepButton(atStructure.over, "step-over-enabled", atStructure.steps) : paused ? { enabled: allowDebugging, tooltip: overLabel, glyph: "step-over-enabled" } : stepping("Start Single Stepping"),
     "step-out": atStructure ? stepButton(atStructure.out, "step-out-enabled") : paused ? { enabled: allowDebugging, tooltip: stepOutLabel, glyph: "step-out-enabled" } : { enabled: false, tooltip: allowDebugging ? "Step Out" : `Step Out: ${ALLOW_DEBUGGING_OFF}` },
@@ -92,10 +92,10 @@ export function toolbarState(info) {
  * are enabled — at the end of the diagram only Step Out is. Out of a top-level structure's start is "Finish Block
  * Diagram"; inside another structure it is assumed to finish that one (unverified).
  */
-export function structureStopLabels({ stop, nodeName, parentName, viName }) {
+export function structureStopLabels({ stop, nodeName, parentName, oviName }) {
   const finish = (name) => `Finish ${name}`;
   const finishParent = finish(parentName ?? "Block Diagram");
-  if (stop.kind === "diagram") return { into: finish(`OVI "${viName}"`), over: finish(`OVI "${viName}"`), out: finish(`OVI "${viName}"`), steps: false };
+  if (stop.kind === "diagram") return { into: finish(`OVI "${oviName}"`), over: finish(`OVI "${oviName}"`), out: finish(`OVI "${oviName}"`), steps: false };
   switch (stop.phase) {
     case "iteration":
       return { into: "Step to next iteration", over: "Step to next iteration", out: finish(nodeName), steps: true };
@@ -173,7 +173,7 @@ export function toggleOption(state, optionId) {
   return key ? { ...state, debugWindow: { ...state.debugWindow, [key]: !state.debugWindow[key] } } : state;
 }
 
-/** What the VI no longer has leaves with it: probes on a deleted wire, breakpoints on a deleted node or wire. */
+/** What the OVI no longer has leaves with it: probes on a deleted wire, breakpoints on a deleted node or wire. */
 export function pruneToGraph(state, graph) {
   const wires = new Set(graph.cables.map((wire) => wire.id));
   const nodes = new Set(graph.nodos.map((node) => node.id));
@@ -184,7 +184,7 @@ export function pruneToGraph(state, graph) {
 
 // ——— What the controller of the worker is told ———
 
-/** Whether the compiled VI has to report anything now: Highlight Execution, probes, breakpoints or Retain Wire Values. */
+/** Whether the compiled OVI has to report anything now: Highlight Execution, probes, breakpoints or Retain Wire Values. */
 export const needsReports = (state) => state.highlight.on || state.retain || state.items.length > 0;
 
 /** `configure` of debug-controller.mjs, from the state and the graph (a wire breakpoint needs the node the wire starts at). */

@@ -23,7 +23,7 @@ import * as P from "../../editor/src/front-panel/front-panel.mjs";
 import { esHueco, ultimo } from "../../editor/src/common/labview-inventory.mjs";
 import { clic, inicial, paletaNueva } from "../../editor/src/window/window-state.mjs";
 import { celdasSubpaleta, subpaletas } from "../../editor/src/window/window-view.mjs";
-import { CAT, INV, buildVI, callerCatalog } from "../helpers.mjs";
+import { CAT, INV, buildOVI, callerCatalog } from "../helpers.mjs";
 
 const CTX = D.contexto(CAT, D.glifosPorBloque(INV), ",");
 const FOLDER = "palette.controls.modern.io.daqmx-name-controls";
@@ -279,7 +279,7 @@ const run = async (vi, cat, values = {}) => {
 };
 
 test("a task control gives the empty task at the top level and its indicator shows the task's name", async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("in", "daq-name-control", { type: DAQ_TASK });
     b.node("out", "daq-name-indicator", { type: DAQ_TASK });
     b.node("name", "daq-name-indicator", { type: daqName("physical-channel") });
@@ -293,7 +293,7 @@ test("a task control gives the empty task at the top level and its indicator sho
 
 test("the other kinds are strings: a physical channel control into an indicator and into a string", async () => {
   const type = daqName("physical-channel");
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("in", "daq-name-control", { type });
     b.node("out", "daq-name-indicator", { type });
     b.node("asText", "str-indicator", {});
@@ -304,14 +304,14 @@ test("the other kinds are strings: a physical channel control into an indicator 
 });
 
 test("a subOVI with a task control and indicator passes the caller's task through unchanged", async () => {
-  const passThrough = buildVI(CAT, (b) => {
+  const passThrough = buildOVI(CAT, (b) => {
     b.node("task in", "daq-name-control", { type: DAQ_TASK });
     b.node("task out", "daq-name-indicator", { type: DAQ_TASK });
     b.wire("task in.result", "task out.value");
     b.connector(["task in"], ["task out"]);
   });
   const cat = callerCatalog({ "pass.sdg": passThrough });
-  const caller = buildVI(cat, (b) => {
+  const caller = buildOVI(cat, (b) => {
     b.node("task", "daq-name-constant", { type: DAQ_TASK, value: "p1" });
     b.node("call", "subvi", { vi: "pass.sdg" });
     b.node("shown", "daq-name-indicator", { type: DAQ_TASK });
@@ -320,7 +320,7 @@ test("a subOVI with a task control and indicator passes the caller's task throug
   });
   assert.deepEqual(cat.puertos(caller.g.nodos.find((n) => n.id === caller.id.call)).in.map((port) => port.type), [DAQ_TASK], "the connector's terminal is a task");
   assert.deepEqual(await run(caller, cat), { shown: "p1" }, "the name travelled through the subOVI's control and indicator");
-  const unwired = buildVI(cat, (b) => {
+  const unwired = buildOVI(cat, (b) => {
     b.node("call", "subvi", { vi: "pass.sdg" });
     b.node("shown", "daq-name-indicator", { type: DAQ_TASK });
     b.wire("call.daq-name-indicator_1", "shown.value");
@@ -331,7 +331,7 @@ test("a subOVI with a task control and indicator passes the caller's task throug
 // Finding #5 of the plugin's second stage (docs/design/daq-plugin-findings.md): a Case's output tunnel refused a DAQ
 // name, and a VISA resource name, because it took only Booleans, strings, paths, numbers and clusters.
 test("a DAQ task and a VISA resource name pass through a Case's output tunnel", async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("pick", "bool-control", {});
     b.loop("case", "case-structure");
     b.node("task", "daq-name-constant", { type: DAQ_TASK, value: "p1" }, "case");

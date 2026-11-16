@@ -1,6 +1,6 @@
 // The Getting Started window's page: it loads what the main process remembers, paints with
 // getting-started-view.mjs and turns clicks and keys into getting-started-state.mjs and window-state.mjs
-// (the menu bar and the explanation of a greyed item, rule 53), as the VI windows do.
+// (the menu bar and the explanation of a greyed item, rule 53), as the OVI windows do.
 
 import { atajo, cargarInventario, esHueco, pulsa, ultimo } from "../common/labview-inventory.mjs";
 import { installPageFont } from "../common/page-font.mjs";
@@ -34,7 +34,7 @@ const anchorBelow = (element) => {
 
 /** What the built rows of the menu bar do: each one asks the main process, which owns the windows. */
 const COMMANDS = {
-  newVI: () => solder?.nuevoVI(),
+  newOVI: () => solder?.nuevoOVI(),
   newDialog: () => solder?.nuevo(),
   open: () => solder?.abrir(),
   exit: () => solder?.salir(),

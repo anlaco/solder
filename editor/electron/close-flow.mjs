@@ -1,11 +1,11 @@
 // File ▸ Close (Ctrl+W) and File ▸ Close All: what LabVIEW asks and does
 // (labview-captures/reports/2026-10-15-file-close.md).
 //
-// Close on the Front Panel takes the whole VI out of memory, asking first only
+// Close on the Front Panel takes the whole OVI out of memory, asking first only
 // when it has unsaved changes; on the Block Diagram it only hides that window.
-// Close All asks once for the VI created last, with "Apply same action to the
-// remaining N affected items" checked; unchecked, each VI is asked about on its
-// own. The VIs without changes are not asked about but close all the same.
+// Close All asks once for the OVI created last, with "Apply same action to the
+// remaining N affected items" checked; unchecked, each OVI is asked about on its
+// own. The OVIs without changes are not asked about but close all the same.
 //
 // Pure: the dialog and the disk are given by the main process, so the flow is
 // tested without Electron.
@@ -30,8 +30,8 @@ const leavingMemoryText = (name) => ({
 export const closeDialogText = (name) => ({ title: "Save changes before closing?", ...leavingMemoryText(name) });
 
 /**
- * The texts of the Close All dialog for the VI called `name`, with
- * `remaining` other VIs still to ask about; without any, there is no box.
+ * The texts of the Close All dialog for the OVI called `name`, with
+ * `remaining` other OVIs still to ask about; without any, there is no box.
  */
 export const closeAllDialogText = (name, remaining) => ({
   title: "Save changes? (Close All)",
@@ -39,17 +39,17 @@ export const closeAllDialogText = (name, remaining) => ({
   checkboxLabel: remaining > 0 ? `Apply same action to the remaining ${remaining} affected items` : null,
 });
 
-/** Close All asks about the VI created last first, not the one in front. */
-export const closeAllOrder = (openVIs, creationOrder) => [...openVIs].sort((first, second) => creationOrder(second) - creationOrder(first));
+/** Close All asks about the OVI created last first, not the one in front. */
+export const closeAllOrder = (openOVIs, creationOrder) => [...openOVIs].sort((first, second) => creationOrder(second) - creationOrder(first));
 
 /**
- * Asks about each VI of `openVIs` with unsaved changes, in that order.
+ * Asks about each OVI of `openOVIs` with unsaved changes, in that order.
  * `ask(vi, remaining)` gives `{ answer, applyToRemaining }`, `answer` one of
  * `CLOSE_ANSWERS`; `save(vi)` saves it and says whether it was (a cancelled
- * Save As cancels the whole Close All). Returns whether every VI may close.
+ * Save As cancels the whole Close All). Returns whether every OVI may close.
  */
-export async function confirmCloseAll(openVIs, { isDirty, ask, save }) {
-  const affected = openVIs.filter(isDirty);
+export async function confirmCloseAll(openOVIs, { isDirty, ask, save }) {
+  const affected = openOVIs.filter(isDirty);
   let answerForTheRest = null;
   for (const [position, vi] of affected.entries()) {
     let answer = answerForTheRest;

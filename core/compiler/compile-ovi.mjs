@@ -18,19 +18,19 @@ import { createNodeEmission } from "./node-emission.mjs";
 import { createDebugHooks } from "./debug-hooks.mjs";
 import { createPanelRegistry } from "./panel-registry.mjs";
 
-/** The resolved types of a VI with each terminal's type as it is laid out in memory (`inMemory`). */
+/** The resolved types of an OVI with each terminal's type as it is laid out in memory (`inMemory`). */
 function laidOutInMemory(resolved) {
   const mapTypes = (types) => new Map([...types].map(([terminal, type]) => [terminal, inMemory(type)]));
   return { ...resolved, entradas: mapTypes(resolved.entradas), salidas: mapTypes(resolved.salidas) };
 }
 
 /**
- * Compiles one VI into `module`. `asSubVI` is null for the top-level VI, whose
- * controls and indicators are the panel's; for a subVI it maps the name of each
+ * Compiles one OVI into `module`. `asSubOVI` is null for the top-level OVI, whose
+ * controls and indicators are the panel's; for a subOVI it maps the name of each
  * connector control and indicator to its slot in the data space, through which
  * the caller passes inputs and reads outputs (DT-045).
  */
-export function compileOVI(withDecorations, cat, module, asSubVI, instanceKey, chainIndex) {
+export function compileOVI(withDecorations, cat, module, asSubOVI, instanceKey, chainIndex) {
   // Free labels and other decorations (DT-085) are presentation: they have no ports and nothing to emit.
   const g = { ...withDecorations, nodos: withDecorations.nodos.filter((n) => !cat.bloque(n.tipo).decoracion) };
   // A path is laid out as a string's handle, so the functions that take a path or a string, and the
@@ -54,11 +54,11 @@ export function compileOVI(withDecorations, cat, module, asSubVI, instanceKey, c
     }
     return { errores };
   }
-  // The subVIs first, each into its own instance, before this VI claims the zero zone (DT-045).
+  // The subOVIs first, each into its own instance, before this OVI claims the zero zone (DT-045).
   const calls = new Map(); // subvi node id → compiled instance
   for (const n of g.nodos.filter((x) => x.tipo === "subvi")) {
     // A polymorphic OVI is called as the instance the node has chosen (DT-074 §2).
-    const callee = cat.calleeOf ? cat.calleeOf(n) : cat.findSubVI?.(n.config?.vi);
+    const callee = cat.calleeOf ? cat.calleeOf(n) : cat.findSubOVI?.(n.config?.vi);
     if (!callee) return { errores: [{ nodo: n.id, motivo: `The subOVI "${n.config?.vi}" is not loaded.` }] };
     const instance = subOVIInstance(callee, n, module, instanceKey, compileOVI);
     if (instance.errores) return { errores: instance.errores };
@@ -103,7 +103,7 @@ export function compileOVI(withDecorations, cat, module, asSubVI, instanceKey, c
     return k ?? porId.get(seq).config.marcos.length - 1;
   };
   // El representante de un nodo en un ámbito: él mismo, la estructura de ese
-  // ámbito que lo contiene o, en una Flat, el marco; `raiz`, en el del VI.
+  // ámbito que lo contiene o, en una Flat, el marco; `raiz`, en el del OVI.
   const representante = (id, ambito) => {
     let n = porId.get(id);
     let hijo = null;
@@ -135,7 +135,7 @@ export function compileOVI(withDecorations, cat, module, asSubVI, instanceKey, c
     }
     return { lista: r, cadenas };
   };
-  // El diagrama del VI en orden, con cada estructura como un bloque: va después
+  // El diagrama del OVI en orden, con cada estructura como un bloque: va después
   // de lo que entra por sus túneles y antes de lo que lee sus salidas.
   const deArriba = conMarcos(ids.filter((id) => !porId.get(id).dentro));
   const arriba = topologicalOrder(g, deArriba.lista, raiz, deArriba.cadenas);
@@ -143,7 +143,7 @@ export function compileOVI(withDecorations, cat, module, asSubVI, instanceKey, c
   const clumpDe = (id) => clumpRaiz.get(raiz(id));
   const { constantes, datosFijos, planes, automaticos, bufer } = module;
   const nuevaCelda = () => bufer(4, 4);
-  // El cluster «cero»: tan grande como el mayor cluster del VI; no se escribe nunca.
+  // El cluster «cero»: tan grande como el mayor cluster del OVI; no se escribe nunca.
   const tamMax = Math.max(0, ...[...resueltos.entradas.values(), ...resueltos.salidas.values()].filter(esCluster).map((t) => clusterLayout(t).tam));
   setZeroClusterAddress(bufer(Math.max(tamMax, 8)));
   const cadena = (texto) => {
@@ -199,14 +199,14 @@ export function compileOVI(withDecorations, cat, module, asSubVI, instanceKey, c
     }
     return b;
   };
-  // Manejo automático de errores, activo de fábrica (VI Properties ▸ Execution).
+  // Manejo automático de errores, activo de fábrica (OVI Properties ▸ Execution).
   const autoErrores = g.vi?.["automatic-error-handling"] !== false;
   const valor = new Map(); // `${nodo}.${puerto}` → { local, wasmType, clump, cell }
   const controles = [];
   const indicadores = [];
   const errores = [];
 
-  const ovi = { withDecorations, cat, module, asSubVI, instanceKey, chainIndex, g, logicalTypes, resueltos, calls, porId, llegaA, esEstructura, deMarco, esFlat, esLargo, marcoEnFlat, representante, raiz, conMarcos, deArriba, arriba, clumpDe, nuevaCelda, tamMax, cadena, arrayConstante, clusterConstante, autoErrores, valor, controles, indicadores, errores, constantes, datosFijos, planes, automaticos, bufer, ids, clumpRaiz, clumps };
+  const ovi = { withDecorations, cat, module, asSubOVI, instanceKey, chainIndex, g, logicalTypes, resueltos, calls, porId, llegaA, esEstructura, deMarco, esFlat, esLargo, marcoEnFlat, representante, raiz, conMarcos, deArriba, arriba, clumpDe, nuevaCelda, tamMax, cadena, arrayConstante, clusterConstante, autoErrores, valor, controles, indicadores, errores, constantes, datosFijos, planes, automaticos, bufer, ids, clumpRaiz, clumps };
   Object.assign(ovi, createPanelRegistry(ovi));
   Object.assign(ovi, createDebugHooks(ovi));
   Object.assign(ovi, createNodeEmission(ovi));

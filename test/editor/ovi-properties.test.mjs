@@ -1,4 +1,4 @@
-// VI Properties with its Execution page (DT-045, spec/05 §12), measured in
+// OVI Properties with its Execution page (DT-045, spec/05 §12), measured in
 // LabVIEW 2026 Q3: labview-captures/subvi/vi-properties-execution-default.png.
 
 import assert from "node:assert/strict";
@@ -6,7 +6,7 @@ import { test } from "node:test";
 
 import * as E from "../../editor/src/window/window-state.mjs";
 import * as Q from "../../core/model/qvi-format.mjs";
-import * as VP from "../../editor/src/window/vi-properties.mjs";
+import * as VP from "../../editor/src/window/ovi-properties.mjs";
 import { esHueco } from "../../editor/src/common/labview-inventory.mjs";
 import { CAT, INV, buildAdder } from "../helpers.mjs";
 
@@ -22,7 +22,7 @@ test("VI Properties opens on Execution with the reentrancy of the VI and OK writ
   assert.equal(Q.leer(Q.aTexto(preallocated, CAT), CAT).vi.execution.reentrancy, "preallocated", "and read back");
   assert.equal(VP.open(preallocated).reentrancy, "preallocated", "the dialog shows what the VI has");
 
-  // Back to the default: nothing is stored, and a VI with nothing else has no `vi` at all.
+  // Back to the default: nothing is stored, and an OVI with nothing else has no `vi` at all.
   const back = VP.apply(preallocated, VP.choose(VP.open(preallocated), "non-reentrant"));
   assert.equal(back.vi, undefined);
   assert.equal("execution" in Q.escribir(back, CAT), false);
@@ -30,7 +30,7 @@ test("VI Properties opens on Execution with the reentrancy of the VI and OK writ
   const withConnector = { ...preallocated, vi: { ...preallocated.vi, connector: { inputs: [], outputs: [] } } };
   assert.deepEqual(VP.apply(withConnector, VP.choose(VP.open(withConnector), "non-reentrant")).vi, { connector: { inputs: [], outputs: [] } });
 
-  // The dialog is where File ▸ VI Properties (Ctrl+I) and the right-click menus lead.
+  // The dialog is where File ▸ OVI Properties (Ctrl+I) and the right-click menus lead.
   for (const id of ["window.front-panel.menu.file.vi-properties", "window.block-diagram.menu.file.vi-properties", "context.connector-pane.vi-properties", "context.vi-icon.vi-properties"]) {
     assert.equal(INV.entrada(id).estado, "built", id);
   }

@@ -237,12 +237,12 @@ not exist. LabVIEW requires the same.)*
 > **Rule 19c — Uninitialized shift register.** A shift register whose initial value is not wired starts
 > each execution of its loop with the value it held when the loop last ended (the type's default the first
 > time), and keeps it while the OVI stays loaded: this is LabVIEW's functional global variable (NI, *Reentrancy*;
-> measured with a subOVI in `labview-captures/subvi/functional-global-*`). Tested in `test/core/subvis.test.mjs`.
+> measured with a subOVI in `labview-captures/subvi/functional-global-*`). Tested in `test/core/subovis.test.mjs`.
 
 ### 5.5 SubOVIs (DT-045, 2026-10-03)
 
 A `subvi` node calls another OVI; its ports are the connector of that OVI (spec/03 Rule 4). Measured in LabVIEW
-2026 Q3 (`labview-captures/subvi/`) and tested in `test/core/subvis.test.mjs`:
+2026 Q3 (`labview-captures/subvi/`) and tested in `test/core/subovis.test.mjs`:
 
 > **Rule 19d — SubOVI calls.**
 >
@@ -518,7 +518,7 @@ Measured in LabVIEW 2026 Q3 by running each case (`labview-captures/format-scan/
 > an OVI by its file name, so the same error reads `… in Parse Reply.ovi->Instrument Protocol.ovi`; an OVI
 > never saved is `Untitled N`. *(Measured in LabVIEW 2026 Q3 on 2026-10-10, Instrument Protocol with the
 > command `FOO`, `examples/README.md`; tests "the source of an error raised …" in
-> `test/core/subvis.test.mjs`. Done for Format Into String and Scan From String. Unverified: the form for an
+> `test/core/subovis.test.mjs`. Done for Format Into String and Scan From String. Unverified: the form for an
 > error raised in the top-level OVI, which Solder writes `… in Top.ovi`, and the other functions that raise
 > errors.)*
 

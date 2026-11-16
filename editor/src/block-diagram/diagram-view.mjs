@@ -14,7 +14,7 @@ import * as G from "../common/glyphs.mjs";
 import { esHueco, ultimo } from "../common/labview-inventory.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 import { PANE_SIZE } from "../../../core/model/connector.mjs";
-import { isSubVI, portsWithAnchors } from "./subvi-nodes.mjs";
+import { isSubOVI, portsWithAnchors } from "./subovi-nodes.mjs";
 import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
 import * as VN from "./visa-nodes.mjs";
@@ -27,7 +27,7 @@ import * as PolymorphicNodes from "./polymorphic-nodes.mjs";
 import { selectorLines } from "../../../core/model/polymorphic-menu.mjs";
 import * as PN from "./property-nodes.mjs";
 import * as CR from "./control-references.mjs";
-import * as VSR from "./vi-server-references.mjs";
+import * as VSR from "./ovi-server-references.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { EMPTY_PATH, hostPathRules, pathToText } from "../../../core/model/paths.mjs";
 import { brokenWireMarks, endPoint } from "./broken-wire.mjs";
@@ -566,14 +566,14 @@ export function caja(n, ctx, edicion) {
     const M = medidasPanel(n);
     return { x: n.x, y: n.y, ancho: M.ancho, alto: M.alto };
   }
-  if (isSubVI(n)) return { x: n.x, y: n.y, ancho: PANE_SIZE, alto: PANE_SIZE };
+  if (isSubOVI(n)) return { x: n.x, y: n.y, ancho: PANE_SIZE, alto: PANE_SIZE };
   if (FN.isFormatNode(n, ctx.cat)) return { x: n.x, y: n.y, ...FN.formatNodeSize(n, ctx.cat) };
   if (ExpressNodes.isExpressNode(n, ctx.cat)) return ExpressNodes.expressBox(n, ctx.cat);
   if (UN.isByName(n)) return { x: n.x, y: n.y, ...UN.unbundleSize(n, ctx.cat, ctx.medir) };
   if (PN.isPropertyNode(n)) return { x: n.x, y: n.y, ...PN.propertyNodeSize(n, ctx.cat, ctx.medir) };
   if (CL.isCallLibraryNode(n)) return { x: n.x, y: n.y, ...CL.callLibrarySize(n) };
   if (CR.isControlReference(n)) return { x: n.x, y: n.y, ...CR.referenceSize(n, ctx.medir) };
-  if (VSR.isViServerReference(n)) return { x: n.x, y: n.y, ...VSR.size(n, ctx.medir) };
+  if (VSR.isOviServerReference(n)) return { x: n.x, y: n.y, ...VSR.size(n, ctx.medir) };
   if (FileNodes.isFileNode(n)) return { x: n.x, y: n.y, ...FileNodes.fileNodeSize() };
   if (SpreadsheetNodes.isSpreadsheetNode(n)) return { x: n.x, y: n.y, ...SpreadsheetNodes.spreadsheetNodeSize() };
   if (esExpresion(n)) {
@@ -672,7 +672,7 @@ const fixedTerminalRows = (n) => FIXED_TERMINAL_ROWS[n.tipo];
  */
 export function terminales(n, ctx, edicion) {
   const k = caja(n, ctx, edicion);
-  if (isSubVI(n)) return terminalesSubVI(n, k, ctx);
+  if (isSubOVI(n)) return terminalesSubOVI(n, k, ctx);
   if (FN.isFormatNode(n, ctx.cat)) return FN.formatNodeTerminals(n, k, ctx.cat);
   if (ExpressNodes.isExpressNode(n, ctx.cat)) return ExpressNodes.expressTerminals(n, k, ctx.cat);
   if (UN.isByName(n)) return UN.unbundleTerminals(n, k, ctx.cat);
@@ -680,7 +680,7 @@ export function terminales(n, ctx, edicion) {
   if (PN.isPropertyNode(n)) return PN.propertyNodeTerminals(n, k, ctx.cat);
   if (CL.isCallLibraryNode(n)) return CL.callLibraryTerminals(n, k);
   if (CR.isControlReference(n)) return CR.referenceTerminals(n, k);
-  if (VSR.isViServerReference(n)) return VSR.terminals(n, k);
+  if (VSR.isOviServerReference(n)) return VSR.terminals(n, k);
   if (FileNodes.isFileNode(n)) return FileNodes.fileNodeTerminals(n, k, ctx.cat);
   if (SpreadsheetNodes.isSpreadsheetNode(n)) return SpreadsheetNodes.spreadsheetNodeTerminals(n, k, ctx.cat);
   const { in: ins, out: outs } = ctx.cat.puertos(n);
@@ -719,13 +719,13 @@ export function widenTowardWire(zone, dir) {
 }
 
 /**
- * The size of the area of a subVI terminal that is clicked to wire it, centred on the edge of the icon
+ * The size of the area of a subOVI terminal that is clicked to wire it, centred on the edge of the icon
  * (the wire touches the border of the icon: labview-captures/subvi/caller-x-unwired-diagram.png).
  */
 const SUBVI_TERMINAL_ZONE = 6;
 
-/** The terminals of a subVI node: each one on the edge of the icon next to its connector cell (core/model/connector.mjs). */
-function terminalesSubVI(n, k, ctx) {
+/** The terminals of a subOVI node: each one on the edge of the icon next to its connector cell (core/model/connector.mjs). */
+function terminalesSubOVI(n, k, ctx) {
   const half = SUBVI_TERMINAL_ZONE / 2;
   return portsWithAnchors(n, ctx.cat).map((port) => {
     const [x, y] = [k.x + port.anchor.x, k.y + port.anchor.y];
@@ -1014,7 +1014,7 @@ export function contenido(d0, ctx, resueltos) {
       fantasma = `<div class="rectangulo-estructura" style="left:${px(x)};top:${px(y)};width:${px(Math.abs(accion.x - accion.esquina.x))};height:${px(Math.abs(accion.y - accion.esquina.y))}"></div>`;
     }
   } else if (accion?.tipo === "colocar" && accion.x !== undefined) {
-    const n = { id: "fantasma", tipo: accion.bloque, x: accion.x, y: accion.y, ...(isSubVI({ tipo: accion.bloque }) || PN.isPropertyNode({ tipo: accion.bloque }) || CR.isControlReference({ tipo: accion.bloque }) || VSR.isViServerReference({ tipo: accion.bloque }) ? { config: accion.config } : {}) };
+    const n = { id: "fantasma", tipo: accion.bloque, x: accion.x, y: accion.y, ...(isSubOVI({ tipo: accion.bloque }) || PN.isPropertyNode({ tipo: accion.bloque }) || CR.isControlReference({ tipo: accion.bloque }) || VSR.isOviServerReference({ tipo: accion.bloque }) ? { config: accion.config } : {}) };
     fantasma = `<div class="fantasma">${nodo(n, { g, seleccion: [] }, ctx, null, false)}</div>`;
   }
   const lista = d.lista ? listaAbierta(d, ctx, resueltos) : "";
@@ -1103,7 +1103,7 @@ function pistasTerminales(n, d, ctx, resueltos) {
     if (cableadas.has(clave) && d.sobre.puerto !== t.puerto) continue;
     const tipo = (t.dir === "in" ? resueltos.entradas : resueltos.salidas).get(clave);
     const { color } = aspecto(tipo ?? "number");
-    // A tip sticks out of the edge it is on: a subVI also has terminals on its top and bottom edges.
+    // A tip sticks out of the edge it is on: a subOVI also has terminals on its top and bottom edges.
     const fuera = t.dir === "in" ? -4.5 : 4.5;
     const vertical = t.lado === "top" || t.lado === "bottom";
     const [dx, dy] = vertical ? [0, t.lado === "top" ? -4.5 : 4.5] : [fuera, 0];
@@ -1339,8 +1339,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
         ? (n.vista?.compacto ? G.terminalPanelCompacto(control, aspecto(tipo).color, "abc") : G.terminalPanelIcono(control, aspecto(tipo).color, "abc", G.dibujoCadena(control)))
         : (n.vista?.compacto ? G.terminalPanelCompacto : G.terminalPanelIcono)(control, aspecto(tipo).color, nombre(tipo));
     cuerpo = `<div class="glifo-terminal-panel">${glifo}</div>`;
-  } else if (isSubVI(n)) {
-    cuerpo = `<div class="glifo-subvi">${subVIIcon(n, ctx.cat)}</div>`;
+  } else if (isSubOVI(n)) {
+    cuerpo = `<div class="glifo-subvi">${subOVIIcon(n, ctx.cat)}</div>`;
   } else if (FN.isFormatNode(n, ctx.cat)) {
     cuerpo = `<div class="glifo-formato">${FN.formatNodeBody(n, k, ctx.cat, resueltos)}</div>`;
   } else if (ExpressNodes.isExpressNode(n, ctx.cat)) {
@@ -1355,7 +1355,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
   } else if (CR.isControlReference(n)) {
     const graph = d.completo ?? d.g;
     cuerpo = `<div class="glifo-formato">${CR.referenceBody(graph, ctx.cat, n, k)}</div>${PN.labelAbove(graph, n.config?.link)}`;
-  } else if (VSR.isViServerReference(n)) {
+  } else if (VSR.isOviServerReference(n)) {
     cuerpo = `<div class="glifo-formato">${VSR.body(n, k)}</div>${VSR.label(n)}`;
   } else if (esExpresion(n)) {
     cuerpo = expresion(n, k, ctx, resueltos, d.edicion);
@@ -1387,7 +1387,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
   // Initialize Array is stretched downwards to add a dimension size (array-2d/initializearray-contexthelp.png).
   if (n.tipo === "initialize-array") asas = `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(k.ancho / 2 - 3)};top:${px(k.alto - 3)}"></div>`;
   // Format Into String and Scan From String are stretched downwards to add rows (format-scan/16-node-stretched.png).
-  // An Express VI is stretched downwards by its bottom edge to show more of its terminals as rows (DT-069); not in the icon view.
+  // An Express OVI is stretched downwards by its bottom edge to show more of its terminals as rows (DT-069); not in the icon view.
   if (ExpressNodes.isExpressNode(n, ctx.cat) && !ExpressNodes.isIconView(n)) {
     const edge = ExpressNodes.stretchHandle(k);
     asas = `<div class="asa oculta express-edge" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(edge.x)};top:${px(edge.y)};width:${px(edge.ancho)};height:${px(edge.alto)}"></div>`;
@@ -1510,10 +1510,10 @@ function instanceRing(n) {
 }
 
 /** The icon of a subOVI node: the polymorphic OVI's, the callee's, or the broken one when the file cannot be found. */
-function subVIIcon(node, cat) {
+function subOVIIcon(node, cat) {
   const polymorphic = cat.polymorphicOf?.(node);
   if (polymorphic) return PolymorphicNodes.iconHtml(polymorphic.polymorphic);
-  return cat.findSubVI?.(node.config?.vi) ? G.iconoVI() : G.ICONO_VI_FALTA;
+  return cat.findSubOVI?.(node.config?.vi) ? G.iconoOVI() : G.ICONO_OVI_FALTA;
 }
 
 /**
@@ -1747,8 +1747,8 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   if (isFreeLabel(n)) return FL.DIAGRAM_MENU_ROOT;
   if (n.tipo in MENU_ESTRUCTURA) return MENU_ESTRUCTURA[n.tipo];
   if (PolymorphicNodes.isPolymorphicNode(n)) return PolymorphicNodes.MENU_ROOT;
-  if (isSubVI(n)) return "context.subvi";
-  // An Express VI has one menu for every one (DT-069 §6); its terminals keep the function's.
+  if (isSubOVI(n)) return "context.subvi";
+  // An Express OVI has one menu for every one (DT-069 §6); its terminals keep the function's.
   if (!puerto && cat && ExpressNodes.isExpressNode(n, cat)) return ExpressNodes.isIconView(n) ? ExpressNodes.EXPRESS_ICON_MENU : ExpressNodes.EXPRESS_MENU;
   // An enum has its own menus, measured with the panel control, the indicator and the
   // constant (DT-049); the diagram terminal of a panel enum uses the same rows.
@@ -1791,8 +1791,8 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   if (CL.isCallLibraryNode(n)) return CLT.isParameterPort(puerto) ? CLT.TERMINAL_MENU_ROOT : CL.MENU_ROOT;
   // The control reference constant (reports/2026-11-03-control-references.md Q3).
   if (CR.isControlReference(n)) return "context.control-reference";
-  // The VI Server Reference constant (reports/2026-11-14-vi-server-reference.md "Menu").
-  if (VSR.isViServerReference(n)) return VSR.MENU_ROOT;
+  // The OVI Server Reference constant (reports/2026-11-14-vi-server-reference.md "Menu").
+  if (VSR.isOviServerReference(n)) return VSR.MENU_ROOT;
   // Write to and Read from Text File have a menu of their own, with Convert EOL and Read Lines (file-io-behavior.md §2, §3); the other file functions' menus were not read.
   if (FileNodes.MENU_ROOTS[n.tipo]) return FileNodes.MENU_ROOTS[n.tipo];
   if (n.tipo === "format-into-string") return "context.format-into-string";
@@ -1924,7 +1924,7 @@ const shiftedUp = (top, height, limit, gap) => (top + height > limit ? Math.max(
  * does at the edges of the screen (reports/2026-10-15-editor-wide.md Q2): one that does not fit below is
  * moved up until its bottom is 2 px above the edge (it does not open upward from the click), and one that
  * does not fit on the right opens to the left of the click, its right edge 2 px before it. LabVIEW's menus
- * can leave the VI window and only stop at the screen; Solder's are drawn in the window, which stands for
+ * can leave the OVI window and only stop at the screen; Solder's are drawn in the window, which stands for
  * the screen.
  */
 export function placeMenu(click, size, limits) {

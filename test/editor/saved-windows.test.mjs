@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { restoredBounds, savedWindows, windowRecord, withWindows, withoutWindows } from "../../editor/electron/saved-windows.mjs";
-import { createRegistry, isDirty, recordChange, recordSave } from "../../editor/electron/vi-registry.mjs";
+import { createRegistry, isDirty, recordChange, recordSave } from "../../editor/electron/ovi-registry.mjs";
 
 const SCREEN = { x: 0, y: 0, width: 1920, height: 1040 };
 const FALLBACK = { x: 527, y: 153, width: 1090, height: 696 };

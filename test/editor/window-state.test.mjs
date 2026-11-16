@@ -164,7 +164,7 @@ test("la carpeta boolean abre su subpaleta", () => {
 // paletas/functions-comparison.png, capturada en LabVIEW 2026 Q3: tres columnas
 // y 29 elementos, con las doce comparaciones arriba, Select, Max & Min e In Range
 // and Coerce en la quinta fila y, tras ellas, lo que pide cadenas, arrays, rutas,
-// VIs maleables o punto fijo, que son huecos.
+// OVIs maleables o punto fijo, que son huecos.
 test("la carpeta comparison abre su subpaleta", () => {
   const id = "palette.functions.programming.comparison";
   const abierta = clic(conPaleta(), INV, id, AQUI);

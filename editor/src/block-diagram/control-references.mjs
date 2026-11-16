@@ -45,7 +45,7 @@ const TEXT_RIGHT = 6;
 const GLYPH = { x: 5, y: 5 };
 const GLYPH_COLOR = "#000000";
 
-// ——— The constant's picture, shared with the VI Server Reference constant (vi-server-references.mjs) ———
+// ——— The constant's picture, shared with the OVI Server Reference constant (ovi-server-references.mjs) ———
 
 /** The width of a reference constant showing `text`: the glyph, the text and the margin on the right. */
 export const constantWidth = (text, measure) => Math.ceil(TEXT_LEFT + measure(text) + TEXT_RIGHT);

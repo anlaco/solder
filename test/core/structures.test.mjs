@@ -15,7 +15,7 @@ import { aTexto, leer } from "../../core/model/qvi-format.mjs";
 import { CAT, leer as leerJson } from "../helpers.mjs";
 
 /**
- * Un VI con estructuras. `pasos` construye sobre un objeto con el grafo y los
+ * Un OVI con estructuras. `pasos` construye sobre un objeto con el grafo y los
  * ids por nombre: bucle(nombre, tipo, dentro?), nodo(nombre, bloque, config,
  * dentro?), registro(nombre, bucle), tunel(nombre, bucle, dir) y cable("a.p", "b.q").
  */

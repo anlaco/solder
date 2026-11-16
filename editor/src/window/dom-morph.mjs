@@ -1,5 +1,5 @@
 // Brings the live page to the markup of a fresh render by changing only what differs, instead of
-// replacing the whole body. A window is drawn from its state on every change, and while a VI runs
+// replacing the whole body. A window is drawn from its state on every change, and while an OVI runs
 // that is on every value it writes; replacing the body made every element a new one each time, so
 // a press and a release on a toolbar button landed on two different elements and the browser
 // never made a click of them (Abort could not stop a loop that writes all the time). Elements whose

@@ -14,7 +14,7 @@ import { defaultCallLibraryConfig } from "../../core/model/call-library.mjs";
 import { ERROR } from "../../core/model/types.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { CAT, buildOVI } from "../helpers.mjs";
 
 const FIXTURE_SOURCE = path.resolve("native/solder-io/tests/fixtures/handle_functions.rs");
 let temporaryFolder;
@@ -72,7 +72,7 @@ async function run(vi) {
 }
 
 test("a string handle reaches the library with its length, and the library's changes to it come out", { skip: !BRIDGE_BUILT_HERE }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("text", "str-const", { value: "hello" });
     b.node("upper", "call-library", configured({ function: "fixture_string_to_upper", parameters: [stringHandle] }));
     b.node("length", "call-library", configured({ function: "fixture_string_length", "return-type": { type: "numeric", "data-type": "i32" }, parameters: [stringHandle] }));
@@ -89,7 +89,7 @@ test("a string handle reaches the library with its length, and the library's cha
 });
 
 test("an empty string is a handle too", { skip: !BRIDGE_BUILT_HERE }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("text", "str-const", { value: "" });
     b.node("length", "call-library", configured({ function: "fixture_string_length", "return-type": { type: "numeric", "data-type": "i32" }, parameters: [stringHandle] }));
     b.node("count", "indicator", { type: "i32" });
@@ -100,7 +100,7 @@ test("an empty string is a handle too", { skip: !BRIDGE_BUILT_HERE }, async () =
 });
 
 test("an array handle carries the elements and its size, and the library's changes come out", { skip: !BRIDGE_BUILT_HERE }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("values", "arr-const", { type: { array: "number" }, value: [1, 2, 3] });
     b.node("factor", "const", { value: 2, type: "number" });
     b.node("scale", "call-library", configured({ function: "fixture_array_scale_f64", parameters: [doubleHandle(1), numeric("factor", "dbl")] }));
@@ -119,7 +119,7 @@ test("an array handle carries the elements and its size, and the library's chang
 });
 
 test("a two-dimensional array handle carries both sizes", { skip: !BRIDGE_BUILT_HERE }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("matrix", "arr-const", { type: { array: "number", dims: 2 }, value: [[1, 2, 3], [4, 5, 6]] });
     b.node("shape", "call-library", configured({ function: "fixture_array2d_shape", parameters: [doubleHandle(2), numeric("rows", "i32", "pointer"), numeric("columns", "i32", "pointer")] }));
     b.node("rows", "indicator", { type: "i32" });
@@ -136,7 +136,7 @@ test("a two-dimensional array handle carries both sizes", { skip: !BRIDGE_BUILT_
 // LabVIEW's names through its memory bridge.
 
 test("a library that grows a string handle with DSSetHandleSize gives the OVI the longer string", { skip: !BRIDGE_BUILT_HERE }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("text", "str-const", { value: "ab" });
     b.node("letter", "const", { value: 122, type: "u8" });
     b.node("count", "const", { value: 7, type: "i32" });
@@ -159,7 +159,7 @@ test("a library that grows a string handle with DSSetHandleSize gives the OVI th
 });
 
 test("a library that fills an empty array with NumericArrayResize gives the OVI every element", { skip: !BRIDGE_BUILT_HERE }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("values", "arr-const", { type: { array: "number" }, value: [] });
     b.node("count", "const", { value: 500, type: "i32" });
     b.node("ramp", "call-library", configured({
@@ -180,7 +180,7 @@ test("a library that fills an empty array with NumericArrayResize gives the OVI 
 const pascal = { name: "text", type: "string", "string-format": "pascal-string-pointer" };
 
 test("a Pascal string reaches the library with its length byte, cut to 255 letters", { skip: !BRIDGE_BUILT_HERE }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("text", "str-const", { value: "a".repeat(300) });
     b.node("length", "call-library", configured({ function: "fixture_pascal_length", "return-type": { type: "numeric", "data-type": "i32" }, parameters: [pascal] }));
     b.node("count", "indicator", { type: "i32" });
@@ -195,7 +195,7 @@ test("a Pascal string reaches the library with its length byte, cut to 255 lette
 });
 
 test("a library may leave a longer Pascal string than it was given, up to 255 letters, and the OVI gets it", { skip: !BRIDGE_BUILT_HERE }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("text", "str-const", { value: "abc" });
     b.node("count", "const", { value: 200, type: "u8" });
     b.node("letter", "const", { value: 122, type: "u8" });
@@ -210,7 +210,7 @@ test("a library may leave a longer Pascal string than it was given, up to 255 le
 });
 
 test("a returned Pascal string comes out whole", { skip: !BRIDGE_BUILT_HERE }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("long", "call-library", configured({ function: "fixture_pascal_return_long", "return-type": { type: "string", "string-format": "pascal-string-pointer" }, parameters: [] }));
     b.node("shown", "str-indicator", {});
     b.wire("long.return", "shown.value");
@@ -224,7 +224,7 @@ const stringHandlePointer = { name: "text", type: "string", "string-format": "st
 
 /** An OVI that passes `text` to `functionName` through a pointer to a string handle, with the string and error out shown. */
 const throughStringHandlePointer = (text, functionName, extraParameters = [], extraConstants = []) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("text", "str-const", { value: text });
     b.node("call", "call-library", configured({ function: functionName, "return-type": { type: "numeric", "data-type": "i32" }, parameters: [stringHandlePointer, ...extraParameters] }));
     b.node("shown", "str-indicator", {});
@@ -268,7 +268,7 @@ test("an address left in the cell that is not a handle is not read, and the node
 });
 
 test("a library makes an array in a pointer to an array handle that came empty", { skip: !BRIDGE_BUILT_HERE }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("values", "arr-const", { type: { array: "number" }, value: [] });
     b.node("count", "const", { value: 4, type: "i32" });
     b.node("ramp", "call-library", configured({

@@ -20,7 +20,7 @@ import { aTexto, leer } from "../../core/model/qvi-format.mjs";
 import { ERROR } from "../../core/model/types.mjs";
 import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
 import { HAS_SERIAL_TEST_INSTRUMENT, startSerialInstrument } from "../instrument.mjs";
-import { CAT, RAIZ, buildVI } from "../helpers.mjs";
+import { CAT, RAIZ, buildOVI } from "../helpers.mjs";
 
 const OVI_LIB = path.join(RAIZ, "ovi.lib");
 const STORED = "<ovilib>/Instr/VISA Configure Serial Port.sdp";
@@ -33,15 +33,15 @@ function callerOf(build) {
   const load = (rootGraph) =>
     loadHierarchy(CALLER, CAT, {
       resolvePath,
-      loadVI: (key, viCatalog) => (key === CALLER ? rootGraph : leer(readFileSync(key, "utf8"), viCatalog)),
+      loadOVI: (key, oviCatalog) => (key === CALLER ? rootGraph : leer(readFileSync(key, "utf8"), oviCatalog)),
       loadPolymorphic: (key) => readPolymorphic(readFileSync(key, "utf8")),
     });
   const probe = load(Gr.nuevo());
   assert.deepEqual(probe.errors, []);
-  const vi = buildVI(probe.vis.get(CALLER).cat, build);
+  const vi = buildOVI(probe.ovis.get(CALLER).cat, build);
   const loaded = load(vi.g);
   assert.deepEqual(loaded.errors, []);
-  const { cat } = loaded.vis.get(CALLER);
+  const { cat } = loaded.ovis.get(CALLER);
   return { ...vi, g: Gr.adaptPolymorphicNodes(vi.g, cat), cat };
 }
 

@@ -35,7 +35,7 @@ Each program had to go around something that a LabVIEW user would do without thi
   run one call at a time, each with its own inputs. *Core (compiler/runtime); needs a test that fails today.*
   *Fixed on 2026-10-10:* a call to a subVI that waits now enters its turn before writing its inputs and leaves
   it after reading its outputs (`entrar_subvi` / `salir_subvi`); measured in LabVIEW with `Two Calls.vi`
-  (DT-045 §2) and tested in `test/core/subvis.test.mjs`. Two calls of the example's *Simulated Instrument*
+  (DT-045 §2) and tested in `test/core/subovis.test.mjs`. Two calls of the example's *Simulated Instrument*
   now answer each its own command in Solder too.
 
 ### Blockers: a common program cannot be written

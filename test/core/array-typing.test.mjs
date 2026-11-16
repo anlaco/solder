@@ -11,7 +11,7 @@ import * as EL from "../../editor/src/debugging/error-list.mjs";
 import * as DV from "../../editor/src/debugging/debug-view.mjs";
 import { CAT, INV } from "../helpers.mjs";
 
-/** A VI with the given blocks (`[name, block, config]`) and wires (`"node.port"` pairs). */
+/** An OVI with the given blocks (`[name, block, config]`) and wires (`"node.port"` pairs). */
 function vi(blocks, wires = []) {
   let graph = Gr.nuevo();
   const ids = {};
@@ -54,7 +54,7 @@ test("an empty panel array is a Front Panel error: 'Control contains no elements
   const rows = errorRows(built);
   assert.deepEqual(rows.map((row) => row.text), ["Array 'Array': Control contains no elements and is undefined"]);
   assert.equal(rows[0].group, EL.PANEL_GROUP_TITLE);
-  const html = DV.errorListWindow(INV, { rows, state: EL.initial(), viName: "Untitled 1", position: { x: 0, y: 0 } });
+  const html = DV.errorListWindow(INV, { rows, state: EL.initial(), oviName: "Untitled 1", position: { x: 0, y: 0 } });
   assert.ok(html.includes("Front Panel Errors") && !html.includes("Block Diagram Errors"));
 });
 

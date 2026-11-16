@@ -71,7 +71,7 @@ export function nodeBounds(node, cat, measureText) {
  * yet, so "instance" draws the generic subOVI icon.
  */
 export function iconHtml(polymorphic) {
-  return polymorphic.drawIcon === DRAW_ICON.INSTANCE ? G.iconoVI() : ownIconHtml(polymorphic.icon);
+  return polymorphic.drawIcon === DRAW_ICON.INSTANCE ? G.iconoOVI() : ownIconHtml(polymorphic.icon);
 }
 
 /** A polymorphic OVI's own icon from the text of its SVG document, or the generic polymorphic icon when it has none. */

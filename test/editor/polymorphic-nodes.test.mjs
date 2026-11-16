@@ -16,9 +16,9 @@ import * as Gr from "../../core/model/graph.mjs";
 import * as PN from "../../editor/src/block-diagram/polymorphic-nodes.mjs";
 import * as Poly from "../../core/model/polymorphic.mjs";
 import * as Q from "../../core/model/qvi-format.mjs";
-import * as SN from "../../editor/src/block-diagram/subvi-nodes.mjs";
+import * as SN from "../../editor/src/block-diagram/subovi-nodes.mjs";
 import { buildHierarchy } from "../../editor/src/window/hierarchy-client.mjs";
-import { CAT, INV, RAIZ, buildVI } from "../helpers.mjs";
+import { CAT, INV, RAIZ, buildOVI } from "../helpers.mjs";
 
 const CALLER = "/app/main.sdg";
 const SDP = "/lib/Step.sdp";
@@ -37,7 +37,7 @@ const sdpText = (overrides = {}) =>
 
 /** An instance: `x` (of `type`) into `step`, out to `result`; x in cell 9 (left edge), result in cell 2 (right edge), LabVIEW's indices of 4-2-2-4. */
 const instance = (type, step) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("x", "control", { type });
     b.node("step", step);
     b.node("result", "indicator", { type });
@@ -51,15 +51,15 @@ const instanceTexts = () => ({
 });
 /** An instance with an output only: picking it by hand leaves the input terminal without a place. */
 const outputOnly = () =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("result", "indicator", { type: "i64" });
     b.connector([], [{ name: "result", cell: 2 }]);
   });
 
 /** A caller at /app/main.sdg whose graph `build(b)` makes, its hierarchy as the page builds it, Automatic already run. */
 function callerOf(build, { sdp = sdpText(), texts = instanceTexts() } = {}) {
-  const load = (rootGraph) => buildHierarchy({ rootKey: CALLER, rootGraph, texts: { [SDP]: sdp, ...texts }, baseCatalog: CAT, readVI: Q.leer });
-  const vi = buildVI(load(Gr.nuevo()).catalog, build);
+  const load = (rootGraph) => buildHierarchy({ rootKey: CALLER, rootGraph, texts: { [SDP]: sdp, ...texts }, baseCatalog: CAT, readOVI: Q.leer });
+  const vi = buildOVI(load(Gr.nuevo()).catalog, build);
   const { catalog } = load(vi.g);
   const g = Gr.adaptPolymorphicNodes(vi.g, catalog);
   return { ...vi, g, cat: catalog, ctx: D.contexto(catalog, D.glifosPorBloque(INV), ".", measure) };
@@ -95,7 +95,7 @@ const ticked = (rows) => rows.filter(([, , classes]) => classes.includes("marcad
 
 test("Select a VI accepts a .sdp and a placed one is Automatic, on its first instance, with the selector as the file says", () => {
   const main = readFileSync(path.join(RAIZ, "editor/electron/main.mjs"), "utf8");
-  assert.match(main, /OVI_AND_POLYMORPHIC_FILTERS = \[\{ name: "[^"]+", extensions: \[\.\.\.VI_EXTENSIONS, POLYMORPHIC_EXTENSION\]/, "the dialog lists .sdp");
+  assert.match(main, /OVI_AND_POLYMORPHIC_FILTERS = \[\{ name: "[^"]+", extensions: \[\.\.\.OVI_EXTENSIONS, POLYMORPHIC_EXTENSION\]/, "the dialog lists .sdp");
   assert.match(main, /title: "Select an OVI"[^)]*filters: OVI_AND_POLYMORPHIC_FILTERS/);
 
   const placed = SN.placedConfig(STORED_SDP, sdpText());
@@ -125,7 +125,7 @@ test("the icon of a polymorphic OVI is drawn as an image from a data URI, so not
   // No icon in the file: a generic polymorphic icon of our own; "instance": the generic subOVI icon.
   assert.ok(htmlOf(own).includes(G.polymorphicOviIcon()));
   const drawsInstance = callerOf((b) => b.node("call", "subvi", CALL()), { sdp: sdpText({ drawIcon: Poly.DRAW_ICON.INSTANCE, icon }) });
-  assert.ok(htmlOf(drawsInstance).includes(G.iconoVI()));
+  assert.ok(htmlOf(drawsInstance).includes(G.iconoOVI()));
   assert.ok(!htmlOf(drawsInstance).includes("<img"), "the polymorphic icon is not drawn when the instance's is asked for");
 });
 
@@ -279,7 +279,7 @@ test("the menu of a polymorphic subOVI node has LabVIEW's rows in its order", ()
   ], "measured order");
   assert.deepEqual(INV.hijos(`${PN.MENU_ROOT}.visible-items`).map((entry) => entry.etiqueta), ["Label", "Polymorphic OVI Selector", "Terminals"]);
   assert.deepEqual(INV.hijos(`${PN.MENU_ROOT}.create`).map((entry) => entry.etiqueta), INV.hijos("context.subvi.create").map((entry) => entry.etiqueta), "Create is the subOVI node's");
-  // The plain subOVI menu has neither Select Type nor Open Polymorphic OVI (measured on a vi.lib subVI).
+  // The plain subOVI menu has neither Select Type nor Open Polymorphic OVI (measured on a vi.lib subOVI).
   assert.deepEqual(INV.hijos("context.subvi").map((entry) => entry.etiqueta).filter((label) => /Select Type|Polymorphic/.test(label)), []);
 
   // What is done and what is greyed with its reason (rule 1).
@@ -369,7 +369,7 @@ test("every edit is settled: Automatic follows what is wired, and nothing change
   const unwiredAgain = PN.settlePolymorphicNodes(settled, { ...settled, cables: [] }, vi.cat, ED.terminalPlacer(vi.ctx));
   assert.equal(unwiredAgain.nodos.find((n) => n.id === vi.id.call).config.selected, 0);
 
-  const plain = buildVI(CAT, (b) => b.node("c", "control"));
+  const plain = buildOVI(CAT, (b) => b.node("c", "control"));
   assert.equal(PN.settlePolymorphicNodes(plain.g, plain.g, CAT, ED.terminalPlacer(vi.ctx)), plain.g, "a diagram with no polymorphic node is returned as it is");
   // The page does it in one place, for every edit, a received graph and a rebuilt hierarchy.
   const page = readFileSync(path.join(RAIZ, "editor/src/window/editor-window.mjs"), "utf8");
@@ -390,16 +390,16 @@ test("double-click and Open Front Panel open the instance the node calls, not th
   const plain = { tipo: "subvi", config: { vi: "lib/add2.sdg" } };
   assert.equal(SN.fileToOpen(plain, automatic.cat, CALLER), "/app/lib/add2.sdg");
   assert.equal(SN.fileToOpen({ tipo: "subvi", config: {} }, automatic.cat, CALLER), null);
-  // Both the double-click and the menu row go through the page's abrirSubVI.
+  // Both the double-click and the menu row go through the page's abrirSubOVI.
   const page = readFileSync(path.join(RAIZ, "editor/src/window/editor-window.mjs"), "utf8");
-  assert.match(page, /"open-front-panel": \(nodeId\) => abrirSubVI\(nodeId\)/);
-  assert.match(page, /ev\.detail >= 2 && sobreDiagrama\.tipo === "nodo" && SN\.isSubVI\(.*\)\) return abrirSubVI\(sobreDiagrama\.id\)/);
+  assert.match(page, /"open-front-panel": \(nodeId\) => abrirSubOVI\(nodeId\)/);
+  assert.match(page, /ev\.detail >= 2 && sobreDiagrama\.tipo === "nodo" && SN\.isSubOVI\(.*\)\) return abrirSubOVI\(sobreDiagrama\.id\)/);
 });
 
 test("a saved caller reopens with its polymorphic node on the instance Automatic picked", () => {
   const vi = wiredWith("number");
   const text = Q.aTexto(vi.g, vi.cat);
-  const reopened = buildHierarchy({ rootKey: CALLER, rootText: text, texts: { [SDP]: sdpText(), ...instanceTexts() }, baseCatalog: CAT, readVI: Q.leer });
+  const reopened = buildHierarchy({ rootKey: CALLER, rootText: text, texts: { [SDP]: sdpText(), ...instanceTexts() }, baseCatalog: CAT, readOVI: Q.leer });
   assert.deepEqual(reopened.errors, []);
   assert.equal(reopened.graph.nodos.find((n) => n.tipo === "subvi").config.selected, 1);
 });
@@ -413,7 +413,7 @@ const SERIAL_PALETTE_ENTRIES = [
 
 test("a palette element of a subOVI places a polymorphic node from both Serial palettes on Automatic with the selector hidden, its file read first", async () => {
   const { readFile } = await import("node:fs/promises");
-  const Paths = await import("../../editor/src/common/vi-paths.mjs");
+  const Paths = await import("../../editor/src/common/ovi-paths.mjs");
   const oviLibRoot = path.join(RAIZ, "ovi.lib").replaceAll("\\", "/");
   const readText = (key) => readFile(key, "utf8").catch(() => null);
 
@@ -431,13 +431,13 @@ test("a palette element of a subOVI places a polymorphic node from both Serial p
     // The page reads the callee's texts before the node is carried, so it is drawn with its icon and its terminals at once.
     const { texts } = await Paths.readHierarchyTexts(absolute, sdpText, readText, oviLibRoot);
     const allTexts = { ...texts, [absolute]: sdpText };
-    const empty = buildHierarchy({ rootKey: CALLER, rootGraph: Gr.nuevo(), texts: allTexts, baseCatalog: CAT, readVI: Q.leer, oviLibRoot });
+    const empty = buildHierarchy({ rootKey: CALLER, rootGraph: Gr.nuevo(), texts: allTexts, baseCatalog: CAT, readOVI: Q.leer, oviLibRoot });
     const ctx = D.contexto(empty.catalog, D.glifosPorBloque(INV), ".", measure);
     let d = ED.moverA(ED.coger({ ...ED.inicial(), g: empty.graph }, entry.bloque, entry.config), ctx, { x: 204, y: 104 });
     d = ED.pulsar(d, ctx, { tipo: "fondo" }, { x: 204, y: 104 });
     const [node] = d.g.nodos;
     assert.deepEqual([node.tipo, node.config], ["subvi", entry.config]);
-    const placed = buildHierarchy({ rootKey: CALLER, rootGraph: d.g, texts: allTexts, baseCatalog: CAT, readVI: Q.leer, oviLibRoot });
+    const placed = buildHierarchy({ rootKey: CALLER, rootGraph: d.g, texts: allTexts, baseCatalog: CAT, readOVI: Q.leer, oviLibRoot });
     assert.deepEqual(placed.errors, []);
     assert.ok(placed.catalog.polymorphicOf(node), "a polymorphic node");
     const ports = placed.catalog.puertos(node);
@@ -451,6 +451,6 @@ test("a palette element of a subOVI places a polymorphic node from both Serial p
 
   // Both entries go through the one function that reads the file before the node is carried.
   const page = readFileSync(path.join(RAIZ, "editor/src/window/editor-window.mjs"), "utf8");
-  assert.match(page, /if \(conDiagrama && e\.bloque === "subvi"\) \{\n\s+carrySubVIFromPalette\(e, punto\(ev\)\);/);
-  assert.match(page, /textosDeVI\(Paths\.resolveRelative\(viKey, entry\.config\.vi, oviLibRoot\)\)/);
+  assert.match(page, /if \(conDiagrama && e\.bloque === "subvi"\) \{\n\s+carrySubOVIFromPalette\(e, punto\(ev\)\);/);
+  assert.match(page, /textosDeOVI\(Paths\.resolveRelative\(oviKey, entry\.config\.vi, oviLibRoot\)\)/);
 });

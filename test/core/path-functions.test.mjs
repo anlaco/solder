@@ -1,4 +1,4 @@
-// The path type and its functions in a compiled VI (DT-067), on one thread and on a pool, with the rules
+// The path type and its functions in a compiled OVI (DT-067), on one thread and on a pool, with the rules
 // LabVIEW showed on Windows (labview-captures/reports/2026-10-26-path-type.md) whatever system runs the test.
 
 import assert from "node:assert/strict";
@@ -9,7 +9,7 @@ import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { createNodePool } from "../../core/runtime/node-pool.mjs";
 import * as Gr from "../../core/model/graph.mjs";
 import { EMPTY_PATH, NOT_A_PATH, PATH_KIND, pathFromText } from "../../core/model/paths.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { CAT, buildOVI } from "../helpers.mjs";
 
 const THREADS = 2;
 const pool = createNodePool(THREADS);
@@ -28,7 +28,7 @@ async function run(vi, values = {}, options = {}) {
 
 /** A path control into Build Path with the name "b\\c", then Strip Path, Path To String, Path Type and Path to Array of Strings. */
 const pathPipeline = () =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("base", "path-control");
     b.node("name", "str-const", { value: "b\\c" });
     b.node("build", "build-path");
@@ -85,7 +85,7 @@ test("a Not A Path base gives Not A Path, shown as <Not A Path>, of type 2", asy
 });
 
 test("String To Path, the path constants and Array of Strings to Path reach their indicators", async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("text", "str-const", { value: "C:/a/b" });
     b.node("toPath", "string-to-path");
     b.node("parsed", "path-indicator");
@@ -118,7 +118,7 @@ test("String To Path, the path constants and Array of Strings to Path reach thei
 });
 
 test("Build Path takes a path as its name, and a path never wires to a string (measured: the wire breaks)", async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("base", "path-constant", { value: windowsPath("C:\\a") });
     b.node("name", "path-constant", { value: windowsPath("b") });
     b.node("build", "build-path");
@@ -129,7 +129,7 @@ test("Build Path takes a path as its name, and a path never wires to a string (m
   });
   assert.deepEqual((await run(vi)).built, windowsPath("C:\\a\\b"));
 
-  const mixed = buildVI(CAT, (b) => {
+  const mixed = buildOVI(CAT, (b) => {
     b.node("path", "path-constant");
     b.node("shown", "str-indicator");
   });
@@ -142,7 +142,7 @@ test("a path is saved in the .sdg as its kind and components, never as text, and
   const { aTexto, leer } = await import("../../core/model/qvi-format.mjs");
   const { default: Ajv2020 } = await import("ajv/dist/2020.js");
   const { leer: readJson } = await import("../helpers.mjs");
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("constant", "path-constant", { value: windowsPath("C:\\data\\run 1.txt") });
     b.node("shown", "path-indicator");
     b.wire("constant.result", "shown.value");
@@ -164,7 +164,7 @@ test("Equal?, Not Equal?, Empty String/Path? and Not A Number/Path/Refnum? on pa
     ["C:/a", "C:\\a", false],
   ];
   for (const [first, second, equal] of cases) {
-    const vi = buildVI(CAT, (b) => {
+    const vi = buildOVI(CAT, (b) => {
       b.node("first", "path-control");
       b.node("second", "path-control");
       b.node("equal", "equal");
@@ -182,7 +182,7 @@ test("Equal?, Not Equal?, Empty String/Path? and Not A Number/Path/Refnum? on pa
     assert.deepEqual([shown.isEqual, shown.isNotEqual], [equal, !equal], `${first} = ${second}`);
   }
   for (const [text, empty, notAPath] of [["", true, false], ["<Not A Path>", false, true], [".", true, false], ["C:\\a", false, false]]) {
-    const vi = buildVI(CAT, (b) => {
+    const vi = buildOVI(CAT, (b) => {
       b.node("path", "path-control");
       b.node("empty", "empty-string-path");
       b.node("nap", "not-a-number-path-refnum");

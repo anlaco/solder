@@ -1,6 +1,6 @@
-// Where the subVIs of a VI are, as paths (DT-045, spec/05 §12).
+// Where the subOVIs of an OVI are, as paths (DT-045, spec/05 §12).
 //
-// A `subvi` node stores the path of the VI file it calls relative to the file of
+// A `subvi` node stores the path of the OVI file it calls relative to the file of
 // its caller. A caller that has never been saved has no folder to be relative
 // to, so it stores the absolute path and converts it when it is first saved.
 // Pure and independent of the system: it works on strings, with `/` as the
@@ -19,17 +19,17 @@ const WINDOWS_DRIVE = /^[A-Za-z]:\//;
  * `.qvi`), which still open: a caller names its subOVIs with the extension they had, so an old file keeps it when it
  * is saved again in place.
  */
-export const VI_EXTENSIONS = OVI_EXTENSIONS;
-export const VI_EXTENSION = VI_EXTENSIONS[0];
+export { OVI_EXTENSIONS };
+export const OVI_EXTENSION = OVI_EXTENSIONS[0];
 
 /** Whether a path names an OVI file, with any of its extensions and in any case. */
-export const isVIFile = (path) => VI_EXTENSIONS.some((extension) => path.toLowerCase().endsWith(extension));
+export const isOVIFile = (path) => OVI_EXTENSIONS.some((extension) => path.toLowerCase().endsWith(extension));
 
-/** A VI's name without its extension, as the error chain and the debugger show it. */
-export const withoutVIExtension = (name) => VI_EXTENSIONS.reduce((rest, extension) => (rest.toLowerCase().endsWith(extension) ? rest.slice(0, -extension.length) : rest), name);
+/** An OVI's name without its extension, as the error chain and the debugger show it. */
+export const withoutOVIExtension = (name) => OVI_EXTENSIONS.reduce((rest, extension) => (rest.toLowerCase().endsWith(extension) ? rest.slice(0, -extension.length) : rest), name);
 
-/** Where Save As writes the path the user chose: as it is if it already names a VI file, with `.ovi` added if not. */
-export const savePathFor = (chosen) => (isVIFile(chosen) ? chosen : `${chosen}${VI_EXTENSION}`);
+/** Where Save As writes the path the user chose: as it is if it already names an OVI file, with `.ovi` added if not. */
+export const savePathFor = (chosen) => (isOVIFile(chosen) ? chosen : `${chosen}${OVI_EXTENSION}`);
 
 /**
  * Where Save As writes a polymorphic OVI (DT-074): the path the user chose, with `.sdp` added if it does not end so.
@@ -40,28 +40,28 @@ export const polymorphicSavePathFor = (chosen) => (isPolymorphicPath(chosen) ? c
 /** What Save As proposes for a polymorphic OVI: its name with `.sdp`. */
 export const polymorphicSaveProposal = (currentPath, name) => `${(currentPath ?? name).replace(/\.[^./\\]+$/, "")}${POLYMORPHIC_EXTENSION}`;
 
-/** The stylesheet that goes with a VI file (DT-058 §2): the same name with `.css`, next to it. */
-export const companionStylesheetPath = (viPath) => `${withoutVIExtension(viPath)}.css`;
+/** The stylesheet that goes with an OVI file (DT-058 §2): the same name with `.css`, next to it. */
+export const companionStylesheetPath = (oviPath) => `${withoutOVIExtension(oviPath)}.css`;
 
 /** What Save As proposes: the same name with `.ovi`, so an old `.sdg` or `.qvi` is offered under the new extension. */
-export const saveAsProposal = (currentPath, name) => (currentPath ? `${withoutVIExtension(currentPath)}${VI_EXTENSION}` : `${withoutVIExtension(name)}${VI_EXTENSION}`);
+export const saveAsProposal = (currentPath, name) => (currentPath ? `${withoutOVIExtension(currentPath)}${OVI_EXTENSION}` : `${withoutOVIExtension(name)}${OVI_EXTENSION}`);
 
 const withSlashes = (path) => path.replaceAll("\\", "/");
 
-/** The key of a saved VI: its path with `/` as separator, whatever the system. */
+/** The key of a saved OVI: its path with `/` as separator, whatever the system. */
 export const pathKey = withSlashes;
 
 /** Is it a path from the root of a disk, and not one relative to a folder? */
 export const isAbsolutePath = (path) => withSlashes(path).startsWith("/") || WINDOWS_DRIVE.test(withSlashes(path));
 
-/** The key of a VI that has no file yet. It is not a path: it never contains a folder. */
+/** The key of an OVI that has no file yet. It is not a path: it never contains a folder. */
 export const untitledKey = (id) => `untitled:${id}`;
 
-/** Does this key stand for a VI saved in a file? */
+/** Does this key stand for an OVI saved in a file? */
 export const isSavedKey = (key) => typeof key === "string" && isAbsolutePath(key);
 
-/** The name a VI goes by: its file name once saved, `untitledName` ("Untitled N") before (spec/04 Rule 21k). */
-export const viDisplayName = (key, untitledName) => (isSavedKey(key) ? withSlashes(key).split("/").pop() : untitledName);
+/** The name an OVI goes by: its file name once saved, `untitledName` ("Untitled N") before (spec/04 Rule 21k). */
+export const oviDisplayName = (key, untitledName) => (isSavedKey(key) ? withSlashes(key).split("/").pop() : untitledName);
 
 /** A path split into its root (`/`, `C:/` or nothing) and its folders and file name. */
 function splitPath(path) {
@@ -83,7 +83,7 @@ function collapse({ root, segments }) {
 
 const joinPath = ({ root, segments }) => root + segments.join("/");
 
-/** The folder that holds a saved VI, or nothing for an unsaved one. */
+/** The folder that holds a saved OVI, or nothing for an unsaved one. */
 export function directoryOf(key) {
   if (!isSavedKey(key)) return "";
   const { root, segments } = splitPath(key);
@@ -91,7 +91,7 @@ export function directoryOf(key) {
 }
 
 /**
- * The absolute path of the VI that a caller (saved or not) refers to with `storedPath`; a `<ovilib>/…` path is
+ * The absolute path of the OVI that a caller (saved or not) refers to with `storedPath`; a `<ovilib>/…` path is
  * resolved against `oviLibRoot`, the ovi.lib folder of this Solder.
  */
 export function resolveRelative(callerKey, storedPath, oviLibRoot = "") {
@@ -116,7 +116,7 @@ export function relativeBetween(directory, target) {
 }
 
 /**
- * What a caller stores for a subVI the user has chosen at `absolutePath`: the
+ * What a caller stores for a subOVI the user has chosen at `absolutePath`: the
  * symbolic path if it is in ovi.lib (`oviLibRoot`), else the path relative to
  * the caller if it has a file, and the absolute one if not.
  */
@@ -130,7 +130,7 @@ export function storedPathFor(callerKey, absolutePath, oviLibRoot = "") {
 /**
  * The path a caller stored while it lived at `fromKey`, as it must be stored
  * once it lives at `toKey` (first save, or Save As to another folder). The
- * VI it points to is the same one.
+ * OVI it points to is the same one.
  */
 export function rebaseStoredPath(storedPath, fromKey, toKey) {
   if (isOviLibPath(storedPath) || !isSavedKey(toKey)) return storedPath;
@@ -138,13 +138,13 @@ export function rebaseStoredPath(storedPath, fromKey, toKey) {
   return relativeBetween(directoryOf(toKey), resolveRelative(fromKey, storedPath));
 }
 
-const isSubVINode = (node) => node?.tipo === "subvi" && typeof node.config?.vi === "string";
+const isSubOVINode = (node) => node?.tipo === "subvi" && typeof node.config?.vi === "string";
 
-/** The graph of a VI with the subVI paths of its nodes rebased from one location to another. */
+/** The graph of an OVI with the subOVI paths of its nodes rebased from one location to another. */
 export function rebaseGraph(g, fromKey, toKey) {
   let changed = false;
   const nodos = g.nodos.map((node) => {
-    if (!isSubVINode(node)) return node;
+    if (!isSubOVINode(node)) return node;
     const vi = rebaseStoredPath(node.config.vi, fromKey, toKey);
     if (vi === node.config.vi) return node;
     changed = true;
@@ -154,26 +154,26 @@ export function rebaseGraph(g, fromKey, toKey) {
 }
 
 /** Calls `visit` with every `subvi` node of a `.qvi` as an object (its structures and frames included). */
-function eachFileSubVINode(value, visit) {
-  if (Array.isArray(value)) return value.forEach((item) => eachFileSubVINode(item, visit));
+function eachFileSubOVINode(value, visit) {
+  if (Array.isArray(value)) return value.forEach((item) => eachFileSubOVINode(item, visit));
   if (!value || typeof value !== "object") return;
   if (value.type === "subvi" && typeof value.config?.vi === "string") visit(value);
-  for (const inner of Object.values(value)) eachFileSubVINode(inner, visit);
+  for (const inner of Object.values(value)) eachFileSubOVINode(inner, visit);
 }
 
-/** The paths a `.qvi` (as an object) stores for its subVIs, in the order they appear. */
-export function subVIPathsInFile(file) {
+/** The paths a `.qvi` (as an object) stores for its subOVIs, in the order they appear. */
+export function subOVIPathsInFile(file) {
   const paths = [];
-  eachFileSubVINode(file["block-diagram"], (node) => paths.push(node.config.vi));
+  eachFileSubOVINode(file["block-diagram"], (node) => paths.push(node.config.vi));
   return paths;
 }
 
-/** The text of a `.qvi` with its subVI paths rebased, formatted as the writer does (core/model/qvi-format.mjs). */
+/** The text of a `.qvi` with its subOVI paths rebased, formatted as the writer does (core/model/qvi-format.mjs). */
 export function rebaseText(text, fromKey, toKey) {
   const file = JSON.parse(text);
   if (file["solder-polymorphic"] !== undefined) return rebasePolymorphicText(file, text, fromKey, toKey);
   let changed = false;
-  eachFileSubVINode(file["block-diagram"], (node) => {
+  eachFileSubOVINode(file["block-diagram"], (node) => {
     const vi = rebaseStoredPath(node.config.vi, fromKey, toKey);
     if (vi === node.config.vi) return;
     node.config.vi = vi;
@@ -196,7 +196,7 @@ function rebasePolymorphicText(file, text, fromKey, toKey) {
 }
 
 /**
- * Reads a VI and, one level after another, every subVI it calls: `readText(key)`
+ * Reads an OVI and, one level after another, every subOVI it calls: `readText(key)`
  * gives the text of a file or `null`; `oviLibRoot` is where `<ovilib>` paths lead. Returns `{ texts, missing }`, with the
  * text of each file that was found by its key (the absolute path) and the keys
  * that could not be read. Whoever opens the hierarchy in the page passes the
@@ -216,7 +216,7 @@ export async function readHierarchyTexts(rootKey, rootText, readText, oviLibRoot
       continue;
     }
     // A polymorphic OVI (DT-074) reaches its instances, each stored relative to the `.sdp`.
-    const reached = isPolymorphicPath(key) ? (Array.isArray(file.instances) ? file.instances.map((instance) => instance?.ovi).filter((path) => typeof path === "string") : []) : subVIPathsInFile(file);
+    const reached = isPolymorphicPath(key) ? (Array.isArray(file.instances) ? file.instances.map((instance) => instance?.ovi).filter((path) => typeof path === "string") : []) : subOVIPathsInFile(file);
     for (const stored of reached) {
       const calleeKey = resolveRelative(key, stored, oviLibRoot);
       if (visited.has(calleeKey)) continue;

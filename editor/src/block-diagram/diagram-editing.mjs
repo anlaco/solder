@@ -35,7 +35,7 @@ import { ANY_ERROR, NO_ERROR, errorValuesFromBoolean, isAnyErrorValue, isNoError
 import * as PN from "./property-nodes.mjs";
 import * as PNM from "./property-node-menus.mjs";
 import * as CR from "./control-references.mjs";
-import * as VSR from "./vi-server-references.mjs";
+import * as VSR from "./ovi-server-references.mjs";
 import * as EI from "./edit-items-dialog.mjs";
 import { RING_REPRESENTATION } from "../../../core/model/ring.mjs";
 import * as RI from "./ring-items-dialog.mjs";
@@ -83,10 +83,10 @@ const grabPoint = (block, ctx, config) => {
   if (block === CL.CALL_LIBRARY) return CL.callLibraryGrabPoint({ tipo: block, config });
   // A control reference hangs by its centre too (reports/2026-11-03-control-references.md Q1).
   if (CR.isControlReference({ tipo: block }) && config) return CR.referenceGrabPoint(config, ctx.medir);
-  // So does the VI Server Reference constant (reports/2026-11-14-vi-server-reference.md "Placed"; unverified how it hangs).
-  if (VSR.isViServerReference({ tipo: block })) return VSR.grabPoint(config, ctx.medir);
+  // So does the OVI Server Reference constant (reports/2026-11-14-vi-server-reference.md "Placed"; unverified how it hangs).
+  if (VSR.isOviServerReference({ tipo: block })) return VSR.grabPoint(config, ctx.medir);
   if (FN.isFormatNode({ tipo: block }, ctx.cat)) return FN.formatNodeGrabPoint(block, ctx.cat);
-  // An Express VI hangs by the middle of its node (DT-069).
+  // An Express OVI hangs by the middle of its node (DT-069).
   if (ExpressNodes.isExpressNode({ tipo: block }, ctx.cat)) return ExpressNodes.expressGrabPoint(block);
   // Unbundle By Name hangs by its centre too (cluster palette, stage 1: dropped at the click, centred).
   return block === UN.BLOCK || block === UN.BUNDLE_BLOCK ? UN.grabPoint(ctx.cat, ctx.medir, block) : AGARRE;
@@ -186,19 +186,19 @@ function colocar(d, ctx, p) {
   if (elementType) return { ...d, g: typeEmptyArray(d.g, shellId, elementType), seleccion: [shellId], accion: null, aviso: null };
   // Soltarlo dentro de un bucle lo mete en él (DT-041).
   const placed = { ...d, g: alojar(g, ctx, [id]), seleccion: [id], accion: null, aviso: null, edicion: typingAfterDrop(d, id) };
-  // An Express VI asks for its configuration as it is dropped (DT-069 §3); cancelling it keeps the node, unconfigured.
+  // An Express OVI asks for its configuration as it is dropped (DT-069 §3); cancelling it keeps the node, unconfigured.
   return openConfigurationOnDrop(placed, ctx, id);
 }
 
-/** Opens the configuration dialog of the Express VI just dropped, if its dialog is done. */
+/** Opens the configuration dialog of the Express OVI just dropped, if its dialog is done. */
 const openConfigurationOnDrop = (d, ctx, id) => {
   const node = nodoPor(d.g, id);
   return ExpressNodes.isExpressNode(node, ctx.cat) && ExpressDialog.hasDialog(node.tipo) ? { ...d, expressDialog: ExpressDialog.open(node, ctx.cat, { dropped: true }) } : d;
 };
 
 /**
- * Opens the configuration dialog of an Express VI node: on a double click and from Properties (DT-069 §3). Anything
- * else, and an Express VI whose dialog is not done, leaves the state as it was.
+ * Opens the configuration dialog of an Express OVI node: on a double click and from Properties (DT-069 §3). Anything
+ * else, and an Express OVI whose dialog is not done, leaves the state as it was.
  */
 export function openConfiguration(d, ctx, id) {
   const node = nodoPor(d.g, id);
@@ -1511,7 +1511,7 @@ export function orden(d, id, ctx, inv) {
     const replaced = PanelReplace.replacedObject(d.g, d.menu.nodo, d.menu.raiz, id, ctx, inv);
     return replaced ? { ...d, g: replaced, menu: null } : d;
   }
-  // The connector pane's menu belongs to the panel's state and changes the VI's connector.
+  // The connector pane's menu belongs to the panel's state and changes the OVI's connector.
   if (id.startsWith(`${CP.MENU_ROOT}.`)) return CP.runMenuCommand(d, id);
   // The menus of the graphs on the panel (graph-menus.mjs).
   const graphResult = graphCommand(d, id, ctx);
@@ -1524,7 +1524,7 @@ export function orden(d, id, ctx, inv) {
   if (id.endsWith(".edit-items")) return { ...d, menu: null, itemsDialog: isRing(nodoPor(d.g, nodo)) ? RI.open(nodoPor(d.g, nodo)) : EI.open(nodoPor(d.g, nodo)) };
   // Select Item… of an enum opens its window of items with a filter (select-item-dialog.mjs).
   if (/^context\.(enum|ring)-(constant|control|indicator)\.select-item$/.test(id)) return { ...d, menu: null, selectItemDialog: SI.open(nodoPor(d.g, nodo)) };
-  // Properties of an Express VI is its configuration dialog (DT-069 §3).
+  // Properties of an Express OVI is its configuration dialog (DT-069 §3).
   if (ExpressNodes.isExpressMenu(d.menu.raiz) && id === `${d.menu.raiz}.properties`) return openConfiguration(d, ctx, nodo);
   // Configure... of a Call Library Function Node opens its dialog (DT-080).
   if (CLT.isConfigureCommand(d.menu.raiz, id)) return openCallLibraryConfiguration(d, nodo);
@@ -1534,8 +1534,8 @@ export function orden(d, id, ctx, inv) {
     if (polymorphicGraph) return cerrar(polymorphicGraph);
   }
   const ultimo = id.slice(id.lastIndexOf(".") + 1);
-  // Link to ▸ of a VI Server Reference constant changes its class.
-  const linked = VSR.isViServerReference(nodoPor(d.g, nodo)) ? VSR.menuCommand(d, id, ctx.medir) : null;
+  // Link to ▸ of an OVI Server Reference constant changes its class.
+  const linked = VSR.isOviServerReference(nodoPor(d.g, nodo)) ? VSR.menuCommand(d, id, ctx.medir) : null;
   if (linked) return linked;
   // The Property Node's own menu, and Create ▸ Property Node ▸ or Property for Instr Class ▸ on a control (DT-072 §7).
   const propertyNodeResult = PN.isPropertyNode(nodoPor(d.g, nodo)) ? PNM.nodeCommand(d, id, ctx) : PNM.createCommand(d, id, ctx, coger);
@@ -1765,7 +1765,7 @@ function nodeVariants(d, ctx) {
   const n = d.menu && d.g.nodos.find((k) => k.id === d.menu.nodo);
   const r = d.menu?.raiz;
   const fila = (...ids) => new Set(ids.map((i) => `${r}.${i}`));
-  // The palette row of an Express VI is named after its palette: "Timing Palette" (measured).
+  // The palette row of an Express OVI is named after its palette: "Timing Palette" (measured).
   if (n && ExpressNodes.isExpressMenu(r) && ctx) return { rotulos: new Map([[`${r}.palette`, `${ctx.cat.bloque(n.tipo).express.palette} Palette`]]) };
   if (n && esCase(n)) {
     const ms = marcosDe(n);
@@ -1805,7 +1805,7 @@ function nodeVariants(d, ctx) {
   if (n?.tipo === "scan-from-string" && (n.config?.inputs ?? 1) <= 1) return { desactivados: new Set([`${r}.remove-parameter`]) };
   if (UN.isByName(n)) return unbundleVariants(d, ctx, n);
   if (PN.isPropertyNode(n) && ctx) return PNM.nodeVariants(d, ctx);
-  if (VSR.isViServerReference(n)) return VSR.menuVariants(n);
+  if (VSR.isOviServerReference(n)) return VSR.menuVariants(n);
   if (n && (r === PolymorphicNodes.MENU_ROOT || r === PolymorphicNodes.RING_MENU_ROOT) && ctx) return PolymorphicNodes.menuVariants(n, ctx.cat, r === PolymorphicNodes.MENU_ROOT ? PolymorphicNodes.SELECT_TYPE_ROW : r);
   // LabVIEW greys Advanced on the terminals of a VISA resource name (reports/2026-10-26-visa-resource-name-look.md Q5; why is unverified).
   if (r === "context.visa-control-terminal" || r === "context.visa-indicator-terminal") return { desactivados: new Set([`${r}.advanced`]) };
@@ -1978,7 +1978,7 @@ export function marcados(d, ctx) {
   if (r === PolymorphicNodes.MENU_ROOT && ctx) for (const row of PolymorphicNodes.menuMarks(n, ctx.cat)) m.add(row);
   if (r === PolymorphicNodes.RING_MENU_ROOT && ctx) for (const row of PolymorphicNodes.tickedRows(n, ctx.cat, r)) m.add(row);
   if (!n.vista?.compacto && !ExpressNodes.isExpressMenu(r)) m.add(`${r}.view-as-icon`);
-  // Caption is the one item of an Express VI's Visible Items, ticked (measured); in the icon view View As Icon is ticked instead
+  // Caption is the one item of an Express OVI's Visible Items, ticked (measured); in the icon view View As Icon is ticked instead
   // (the caption is not drawn there; whether Caption stays ticked is unverified).
   if (r === ExpressNodes.EXPRESS_MENU) m.add(`${r}.visible-items.caption`);
   if (r === ExpressNodes.EXPRESS_ICON_MENU) m.add(`${r}.view-as-icon`);
@@ -1987,7 +1987,7 @@ export function marcados(d, ctx) {
   if (isDaqNamePanelMenu(r)) for (const mark of daqNameMenuMarks(n, r)) m.add(mark);
   if (PN.isPropertyNode(n) && ctx) for (const mark of PNM.marks(d, ctx)) m.add(mark);
   if (CL.isCallLibraryNode(n)) for (const mark of r === CLT.TERMINAL_MENU_ROOT ? CLT.NAME_FORMAT_MARKS : CL.NAME_FORMAT_MARKS) m.add(mark);
-  if (VSR.isViServerReference(n)) for (const mark of VSR.menuMarks(n)) m.add(mark);
+  if (VSR.isOviServerReference(n)) for (const mark of VSR.menuMarks(n)) m.add(mark);
   if (n.config?.mode) m.add(`${r}.change-mode.${n.config.mode}`);
   if (n.config?.mechanical) m.add(`${r}.mechanical-action.${n.config.mechanical}`);
   const abrev = (r.startsWith("context.numeric-") || isRingMenu(r)) && NUMERICOS[n.config?.type ?? (isRing(n) ? RING_REPRESENTATION : DBL)]?.abrev;

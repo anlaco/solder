@@ -79,7 +79,7 @@ test("una funcion con error a la entrada no trabaja y pasa el mismo error", asyn
   assert.deepEqual((await correr(hacer(err(false, 0, ""), 7, true))).r, err(false, 7, "algo falló"), "con is warning?, un aviso");
 });
 
-// labview-errors.md §4: con «error out» sin cablear sale el diálogo y el VI espera.
+// labview-errors.md §4: con «error out» sin cablear sale el diálogo y el OVI espera.
 test("manejo automatico de errores: el error out sin cablear para el vi y pregunta", async () => {
   const hacer = (cableado) =>
     vi(
@@ -127,7 +127,7 @@ test("simple error handler: sin error no saca dialogo y con error espera al usua
   assert.equal(con.m, vistos[0].mensaje, "message es el texto del diálogo");
   // Sin nadie que saque el diálogo —la línea de órdenes—, no se queda esperando.
   assert.equal((await correr(hacer(err(true, 7, "Read from Text File in X<APPEND>\nC:\\no.txt")))).m.split("\n")[0], "Error 7 occurred at Read from Text File in X");
-  // Abort con el diálogo abierto no deja el VI colgado.
+  // Abort con el diálogo abierto no deja el OVI colgado.
   const parar = new AbortController();
   const colgado = correr(hacer(err(true, 5000, "prueba")), { senal: parar.signal, alDialogoError: () => new Promise(() => {}) });
   setTimeout(() => parar.abort(), 10);

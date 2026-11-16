@@ -1,10 +1,10 @@
 // The Polymorphic OVI window's page (DT-074 §5): it loads the `.sdp` the main process gives it (or a new, empty one), paints
 // with polymorphic-window-view.mjs and turns clicks and keys into polymorphic-window-state.mjs. The disk and the
-// system dialogs belong to the main process (electron/main.mjs); the page only passes text, as the VI windows do.
+// system dialogs belong to the main process (electron/main.mjs); the page only passes text, as the OVI windows do.
 
 import { atajo, cargarInventario, esHueco, pulsa, ultimo } from "../common/labview-inventory.mjs";
 import { installPageFont } from "../common/page-font.mjs";
-import * as Paths from "../common/vi-paths.mjs";
+import * as Paths from "../common/ovi-paths.mjs";
 import * as E from "../window/window-state.mjs";
 import * as State from "./polymorphic-window-state.mjs";
 import { NAME_DIALOG, PREFIX, polymorphicWindow } from "./polymorphic-window-view.mjs";
@@ -90,7 +90,7 @@ const BUTTONS = {
 };
 
 const MENU_ACTIONS = {
-  newOvi: () => solder?.nuevoVI(),
+  newOvi: () => solder?.nuevoOVI(),
   newDialog: () => solder?.nuevo(),
   open: () => solder?.abrir(),
   close: () => solder?.cerrarVentana(),

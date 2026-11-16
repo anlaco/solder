@@ -4,7 +4,7 @@
 //
 // Measured two ways that agree (labview-captures/reports/2026-11-05-connector-4833.md): the table of NI's example
 // Connector Pane Pattern Reference.vi read as data, and VIs built by scripting with control tN on index N, whose
-// terminals were found on a subVI node. The grid order was matched thumbnail by thumbnail against the table; its
+// terminals were found on a subOVI node. The grid order was matched thumbnail by thumbnail against the table; its
 // cell counts are those of Solder's own capture (labview-captures/subvi/connector-patterns-grid-zoom2x.png).
 
 /** Each pattern's terminals, index = connector index: [left, top, right, bottom) in the 32 × 32 icon's pixels. */

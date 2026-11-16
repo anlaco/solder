@@ -1,5 +1,5 @@
 // The panel in the shared memory, as LabVIEW's transfer buffer (DT-063 §10): every control and
-// indicator of the top-level VI has a record in the data space. The diagram reads and writes the
+// indicator of the top-level OVI has a record in the data space. The diagram reads and writes the
 // records and never waits for the editor; the host (one coordinating thread) writes into the
 // controls what the editor sends and walks the indicators to send the editor what changed.
 //

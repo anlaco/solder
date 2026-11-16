@@ -1,4 +1,4 @@
-// DT-058 §1–2: a VI's window style is the `.css` with its name next to its file; it is read when the VI opens,
+// DT-058 §1–2: an OVI's window style is the `.css` with its name next to its file; it is read when the OVI opens,
 // again whenever it changes on disk, and it goes after every other sheet so it wins over the editor's style.
 
 import assert from "node:assert/strict";
@@ -6,7 +6,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
-import { companionStylesheetPath } from "../../editor/src/common/vi-paths.mjs";
+import { companionStylesheetPath } from "../../editor/src/common/ovi-paths.mjs";
 import { applyWindowStyle } from "../../editor/src/front-panel/window-stylesheet.mjs";
 import { readWindowStyle, watchWindowStyle } from "../../editor/electron/window-style.mjs";
 
@@ -41,13 +41,13 @@ test("the window style is read from the file next to the VI", async () => {
 });
 
 /** The next text `watchWindowStyle` reports, or a failure after a while. */
-function nextChange(viPath, action) {
+function nextChange(oviPath, action) {
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       stop();
       reject(new Error("no change reported"));
     }, 3000);
-    const stop = watchWindowStyle(viPath, (text) => {
+    const stop = watchWindowStyle(oviPath, (text) => {
       clearTimeout(timeout);
       stop();
       resolve(text);

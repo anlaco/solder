@@ -1,9 +1,9 @@
-// VI Properties, with the Execution page (DT-045, spec/05 §12). Measured in
+// OVI Properties, with the Execution page (DT-045, spec/05 §12). Measured in
 // LabVIEW 2026 Q3: labview-captures/subvi/vi-properties-execution-default.png
 // and vi-properties-category-list.png.
 //
-// Pure: the dialog is a state, `open` creates it from the VI, `choose` changes
-// it and `apply` writes it back into the VI when OK is pressed. Only the
+// Pure: the dialog is a state, `open` creates it from the OVI, `choose` changes
+// it and `apply` writes it back into the OVI when OK is pressed. Only the
 // reentrancy choices Non-reentrant and Preallocated clone work; the rest of the
 // page is shown greyed out with its reason (the inventory, rule 55).
 
@@ -54,7 +54,7 @@ const COMBO_BOX = { width: 200, height: 20 };
 const esc = (text) => String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const px = (n) => `${Number(n.toFixed(2))}px`;
 
-/** The dialog for a VI: showing the Execution page, with the VI's reentrancy. */
+/** The dialog for an OVI: showing the Execution page, with the OVI's reentrancy. */
 export const open = (g) => ({ page: "execution", reentrancy: g.vi?.execution?.reentrancy ?? "non-reentrant", allowDebugging: g.vi?.execution?.["allow-debugging"] !== false });
 
 /** The id of the Allow debugging checkbox, which writes `vi.execution["allow-debugging"]` (DT-047). */
@@ -68,7 +68,7 @@ export function choose(dialog, reentrancy) {
   return reentrancy === "non-reentrant" || reentrancy === "preallocated" ? { ...dialog, reentrancy } : dialog;
 }
 
-/** The VI with what the dialog says. Non-reentrant and Allow debugging are the defaults, so they are not stored. */
+/** The OVI with what the dialog says. Non-reentrant and Allow debugging are the defaults, so they are not stored. */
 export function apply(g, dialog) {
   const { execution: previous, ...rest } = g.vi ?? {};
   const { reentrancy: _old, "allow-debugging": _oldDebugging, ...others } = previous ?? {};

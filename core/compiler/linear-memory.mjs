@@ -15,7 +15,7 @@
 // Una cadena es un bloque [longitud I32][bytes]; un array de una dimensión,
 // [tamaño I32][4 de relleno][datos], para que un DBL quede alineado a 8.
 //
-// Las funciones de aquí se emiten en cada módulo, antes que las del VI.
+// Las funciones de aquí se emiten en cada módulo, antes que las del OVI.
 
 export const CIMA = 4;
 export const LISTAS = 8;

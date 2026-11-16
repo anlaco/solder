@@ -1,24 +1,24 @@
 // The `subvi` nodes of a diagram: what the editor needs besides what any node
-// has (DT-045). Pure, over the graph and the catalog view of the VI.
+// has (DT-045). Pure, over the graph and the catalog view of the OVI.
 
 import { cellAnchor } from "../../../core/model/connector.mjs";
-import { resolveRelative } from "../common/vi-paths.mjs";
+import { resolveRelative } from "../common/ovi-paths.mjs";
 import { isPolymorphicPath, polymorphicNodeConfig, readPolymorphic } from "../../../core/model/polymorphic.mjs";
 
-export const isSubVI = (node) => node?.tipo === "subvi";
+export const isSubOVI = (node) => node?.tipo === "subvi";
 
-/** The node as it is placed from Select a VI...: `storedPath` is what the caller stores (see common/vi-paths.mjs). */
-export const subVIConfig = (storedPath) => ({ vi: storedPath });
+/** The node as it is placed from Select an OVI...: `storedPath` is what the caller stores (see common/ovi-paths.mjs). */
+export const subOVIConfig = (storedPath) => ({ vi: storedPath });
 
 /**
- * The config of a node placed from Select a VI... `textOfFile` is the text of the chosen file: a `.sdp` gives a
+ * The config of a node placed from Select an OVI... `textOfFile` is the text of the chosen file: a `.sdp` gives a
  * polymorphic node (Automatic, the first instance, the selector as the file says: DT-074), anything else a plain subOVI.
  * Throws `PolymorphicFileError` when the `.sdp` cannot be read.
  */
 export const placedConfig = (storedPath, textOfFile) =>
-  isPolymorphicPath(storedPath) ? polymorphicNodeConfig(storedPath, readPolymorphic(textOfFile)) : subVIConfig(storedPath);
+  isPolymorphicPath(storedPath) ? polymorphicNodeConfig(storedPath, readPolymorphic(textOfFile)) : subOVIConfig(storedPath);
 
-/** The ports of a subVI node with the place of each on the 32 × 32 icon, from its connector cell. */
+/** The ports of a subOVI node with the place of each on the 32 × 32 icon, from its connector cell. */
 export const portsWithAnchors = (node, cat) => {
   const { in: inputs, out: outputs } = cat.puertos(node);
   return [...inputs, ...outputs].map((port) => ({ ...port, anchor: cellAnchor(port.cell, port.pattern) }));

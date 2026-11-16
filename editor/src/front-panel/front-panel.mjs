@@ -1,4 +1,4 @@
-// The Front Panel: the VI's controls and indicators, how they are drawn and what
+// The Front Panel: the OVI's controls and indicators, how they are drawn and what
 // each click, move and key does.
 //
 // Pure functions, like diagram-editing.mjs, over the same graph: a control is a

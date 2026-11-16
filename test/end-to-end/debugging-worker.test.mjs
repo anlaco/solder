@@ -1,5 +1,5 @@
 // Debugging through the real run worker (DT-047): the page's messages in, the worker's messages out,
-// with a compiled VI in the middle, as editor-window.mjs does it.
+// with a compiled OVI in the middle, as editor-window.mjs does it.
 
 import assert from "node:assert/strict";
 import { test } from "node:test";

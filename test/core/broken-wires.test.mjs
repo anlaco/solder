@@ -1,5 +1,5 @@
 // Broken wires with a loose end (DT-046): deleting a panel object leaves its
-// wires broken, a VI whose subVI lost a terminal still opens, and Ctrl+B
+// wires broken, an OVI whose subOVI lost a terminal still opens, and Ctrl+B
 // removes broken wires.
 
 import assert from "node:assert/strict";
@@ -61,7 +61,7 @@ test("Ctrl+B removes broken wires: all, or only those selected", () => {
   assert.equal(Gr.quitarCablesRotos(deleted, CAT, [loose.id]).cables.length, deleted.cables.length - 1);
 });
 
-test("a caller whose subVI lost a connector terminal still opens, with that wire broken", () => {
+test("a caller whose subOVI lost a connector terminal still opens, with that wire broken", () => {
   let sub = Gr.nuevo();
   let r = Gr.crearEnPanel(sub, CAT, "control", 0, 0, "a");
   sub = r.g;
@@ -72,7 +72,7 @@ test("a caller whose subVI lost a connector terminal still opens, with that wire
   sub = Gr.conectar(sub, CAT, { nodo: a, puerto: "result", dir: "out" }, { nodo: b, puerto: "value", dir: "in" }).g;
   const nameOf = (id) => sub.nodos.find((n) => n.id === id).name;
   const withBoth = { ...sub, vi: { connector: { inputs: [nameOf(a)], outputs: [nameOf(b)] } } };
-  const catWith = (callee) => Gr.conSubVIs(CAT, (path) => (path === "sub.qvi" ? { key: "sub.qvi", g: callee, cat: CAT } : null));
+  const catWith = (callee) => Gr.conSubOVIs(CAT, (path) => (path === "sub.qvi" ? { key: "sub.qvi", g: callee, cat: CAT } : null));
   let caller = Gr.nuevo();
   r = Gr.crearNodo(caller, catWith(withBoth), "subvi", 50, 50);
   caller = Gr.fijarConfig(r.g, r.id, { vi: "sub.qvi" });
@@ -87,7 +87,7 @@ test("a caller whose subVI lost a connector terminal still opens, with that wire
   assert.ok(Gr.esSuelto(wire.a), "the wire to the lost terminal is loose");
   assert.equal(Gr.tipos(reopened, catWith(withoutInput)).cables.get(wire.id).roto, Gr.LOOSE_WIRE_REASONS.looseEnd, "it has a source but reaches nothing");
   const refreshed = Gr.aflojarCablesHuerfanos(caller, catWith(withoutInput));
-  assert.ok(Gr.esSuelto(refreshed.cables[0].a), "an open caller loosens it too when its subVI changes");
+  assert.ok(Gr.esSuelto(refreshed.cables[0].a), "an open caller loosens it too when its subOVI changes");
 });
 
 // labview-captures/windows-install/test.qvi: a loop's output tunnel wired back into its own input tunnel

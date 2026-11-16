@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { DAQ_TASK } from "../../core/model/daq-name.mjs";
-import { buildVI } from "../helpers.mjs";
+import { buildOVI } from "../helpers.mjs";
 import { NO_ERROR, PLUGIN, callPlugin, installAddonForTheseTests, run, showError } from "./daq-plugin-harness.mjs";
 
 installAddonForTheseTests();
@@ -46,7 +46,7 @@ function clear(b, task, errorIn) {
 }
 
 const singleSample = (value) =>
-  buildVI(PLUGIN, (b) => {
+  buildOVI(PLUGIN, (b) => {
     createAoVoltage(b, "Dev1/ao0");
     b.node("value", "const", { value, type: "dbl" });
     write(b, WRITE_ONE_SAMPLE, "create.daq-name-indicator_1", "create.cluster-indicator_1");
@@ -56,7 +56,7 @@ const singleSample = (value) =>
 
 /** Create on `physicalChannels`, Timing finite at RATE for SAMPLES, `file` writing `data`, Start, Wait Until Done, Clear. */
 const finiteGeneration = (physicalChannels, file, data, dataType) =>
-  buildVI(PLUGIN, (b) => {
+  buildOVI(PLUGIN, (b) => {
     createAoVoltage(b, physicalChannels);
     b.node("rate", "const", { value: RATE, type: "dbl" });
     b.node("samples", "const", { value: SAMPLES, type: "i32" });
@@ -79,9 +79,9 @@ const finiteGeneration = (physicalChannels, file, data, dataType) =>
 const ramp = (top) => Array.from({ length: SAMPLES }, (_, index) => (top * index) / SAMPLES);
 
 test("Create Virtual Channel (AO Voltage) takes the device's two outputs and refuses a third, as NI's", async () => {
-  const shown = await run(buildVI(PLUGIN, (b) => createAoVoltage(b, "Dev1/ao2")));
+  const shown = await run(buildOVI(PLUGIN, (b) => createAoVoltage(b, "Dev1/ao2")));
   assert.deepEqual([shown["create error"].status, shown["create error"].code], [true, PHYSICAL_CHANNEL_DOES_NOT_EXIST], "§2");
-  assert.deepEqual((await run(buildVI(PLUGIN, (b) => createAoVoltage(b, "Dev1/ao0:1"))))["create error"], NO_ERROR);
+  assert.deepEqual((await run(buildOVI(PLUGIN, (b) => createAoVoltage(b, "Dev1/ao0:1"))))["create error"], NO_ERROR);
 });
 
 test("Write one sample: 3 V goes out, 15 V is -200561 and still counts one sample written", async () => {

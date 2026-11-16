@@ -1,4 +1,4 @@
-// A Run does not change the VI: a control operated while it runs changes its current
+// A Run does not change the OVI: a control operated while it runs changes its current
 // value, not the default the file saves. When the Run ends the controls keep what was
 // operated and the indicators keep what they show, as their current value (DT-053;
 // labview-captures/reports/2026-10-15-default-values.md, stage 2).

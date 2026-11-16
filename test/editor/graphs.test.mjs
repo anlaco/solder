@@ -141,7 +141,7 @@ test("a Waveform Chart, a Waveform Graph and an XY Graph are placed on the panel
     assert.deepEqual([k.ancho, k.alto], [38, 38]);
     assert.equal(D.extremos(p.g, CTX).get(`${node.id}.value`).dir, "in");
   }
-  // Placing them does not break the VI, and an unwired indicator keeps its value.
+  // Placing them does not break the OVI, and an unwired indicator keeps its value.
   assert.ok(Gr.ejecutable(p.g, CAT, resolved));
 });
 

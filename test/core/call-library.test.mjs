@@ -17,7 +17,7 @@ import {
 } from "../../core/model/call-library.mjs";
 import { aTexto, leer } from "../../core/model/qvi-format.mjs";
 import { compilar } from "../../core/compiler/compiler.mjs";
-import { CAT, buildVI, leer as leerJson } from "../helpers.mjs";
+import { CAT, buildOVI, leer as leerJson } from "../helpers.mjs";
 
 /** A graph with one Call Library Function Node configured with `config`. */
 function nodeWith(config) {
@@ -203,7 +203,7 @@ test("Adapt to Type prints void pointers, and Interface to Data an ILVData handl
 });
 
 test("the prototypes of two of nilvaiu's functions, which DAQmx's VIs call, come out as LabVIEW printed them", () => {
-  // Measured in the DAQmx VIs (labview-captures/reports/2026-11-08-daq-clfn-api.md): handles for strings and arrays.
+  // Measured in the DAQmx OVIs (labview-captures/reports/2026-11-08-daq-clfn-api.md): handles for strings and arrays.
   assert.equal(
     callLibraryPrototype({
       function: "DAQRead1ChanNSamp1DF64",
@@ -228,7 +228,7 @@ test("the prototypes of two of nilvaiu's functions, which DAQmx's VIs call, come
 test("a parameter that is an array of two dimensions accepts a wire of a 2D array, and one of one dimension does not", () => {
   const parameters = [{ name: "data", type: "array", "data-type": "dbl", dimensions: 2, "array-format": "array-handle" }];
   const wiredFrom = (constant) =>
-    buildVI(CAT, (b) => {
+    buildOVI(CAT, (b) => {
       b.node("values", "arr-const", constant);
       b.node("call", "call-library", { ...defaultCallLibraryConfig(), library: "x", function: "f", parameters });
       b.wire("values.result", "call.arg-0-in");

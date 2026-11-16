@@ -1362,7 +1362,7 @@ c. The panel reads and writes an N-dimensional array as a typed view plus its
    command, so the turn covers the whole call —inputs written, code run, outputs
    read—, not only the run. Solder entered the turn after writing the inputs and
    mixed them (bug #30); test "two parallel calls to a non-reentrant subVI that
-   waits each get their own inputs" in `test/core/subvis.test.mjs`.
+   waits each get their own inputs" in `test/core/subovis.test.mjs`.
 3. **That state survives between calls** —an uninitialized shift register keeps
    its value: the "functional global variable"— and also **between runs of the
    top-level VI, while the VI stays in memory**; it is lost when it is unloaded.
@@ -1709,8 +1709,8 @@ shared-mime-info.
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| Save As writes `.sdg` unless a VI extension is chosen; both extensions name a VI file; the debugger and the error chain drop either | "Save As writes .sdg…" and "both extensions name a VI file…" in `test/editor/vi-paths.test.mjs` | **Verified** (2026-10-15) |
-| Every example is a `.sdg` and every subVI it calls exists | "every example is a .sdg…" in `test/editor/vi-paths.test.mjs`; `cli/solder.mjs check` on each | **Verified** (2026-10-15) |
+| Save As writes `.sdg` unless a VI extension is chosen; both extensions name a VI file; the debugger and the error chain drop either | "Save As writes .sdg…" and "both extensions name a VI file…" in `test/editor/ovi-paths.test.mjs` | **Verified** (2026-10-15) |
+| Every example is a `.sdg` and every subVI it calls exists | "every example is a .sdg…" in `test/editor/ovi-paths.test.mjs`; `cli/solder.mjs check` on each | **Verified** (2026-10-15) |
 | A `.sdg` caller runs a `.qvi` subVI; a missing subVI is reported | `cli/solder.mjs check` on a copy of Temperature Monitor (2026-10-15) | **Verified** by hand, no test |
 | The Windows installer associates `.sdg` and `.qvi` and the uninstaller removes both | the next installer test in the VM | **Pending** |
 
@@ -2060,7 +2060,7 @@ in that order, through companion `.css` files.**
      in and out, arrays and the three graphs). *Amended on 2026-10-17 (§5):* it is the only drawing, so there is
      nothing to fall back on.
    - **The window's style** is read by the main process from `<VI name>.css` next to the VI's file
-     (`editor/electron/window-style.mjs`, `companionStylesheetPath` in `vi-paths.mjs`) and put by the page in a
+     (`editor/electron/window-style.mjs`, `companionStylesheetPath` in `ovi-paths.mjs`) and put by the page in a
      `<style>` after every other sheet (`front-panel/window-stylesheet.mjs`), so with the same specificity it wins.
      The folder is watched: creating, changing or deleting the file shows at once, and Save As to another folder
      takes the style found there. An unsaved VI has none.
@@ -3115,9 +3115,9 @@ The mechanism is kept lean: File Dialog and Time Delay first, dynamic data and t
 
 | What | Mechanism | Status |
 |------|-----------|--------|
-| Unconfigured and configured terminals, types by configuration, wires kept or broken | `test/core/express-vi.test.mjs` | **Unverified** (to do) |
+| Unconfigured and configured terminals, types by configuration, wires kept or broken | `test/core/express-ovi.test.mjs` | **Unverified** (to do) |
 | Time Delay waits its configured time, or the wired one | A test on the virtual host (`createVirtualHost`, DT-061 §6) | **Unverified** (to do) |
-| Dialog on drop, double click and Properties; OK is one undo step | `test/editor/express-vi-nodes.test.mjs` (Time Delay) | Done for Time Delay; File Dialog's body is to do |
+| Dialog on drop, double click and Properties; OK is one undo step | `test/editor/express-ovi-nodes.test.mjs` (Time Delay) | Done for Time Delay; File Dialog's body is to do |
 | The node, its rows and its menu look as LabVIEW's | Comparison of captures with `scripts/measure.py` | **Unverified** (to do) |
 
 ## DT-070
@@ -4497,10 +4497,10 @@ its own that moves code without changing what it compiles.**
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| Placed as This OVI; the wires named as LabVIEW's Context Help names them | `test/core/vi-server-reference.test.mjs` | **Verified** (2026-11-14) |
-| Wired to nothing it does not break the OVI; never Not A Refnum | `test/core/vi-server-reference.test.mjs` | **Verified** (2026-11-14) |
-| Into Adapt to Type it is the address of a U32; `DAQCreateTask140` takes the call | `test/core/vi-server-reference.test.mjs` | **Verified** (2026-11-14); the bytes the library reads are not checked by a library that echoes them |
-| Its look, menu and palette place as LabVIEW's | `test/editor/vi-server-reference.test.mjs` | **Verified** (2026-11-14) against the report's numbers; not compared by eye with LabVIEW. Unverified: "This OVI" is wider than LabVIEW's "This VI"; the Create ▸ rows' names on This Application |
+| Placed as This OVI; the wires named as LabVIEW's Context Help names them | `test/core/ovi-server-reference.test.mjs` | **Verified** (2026-11-14) |
+| Wired to nothing it does not break the OVI; never Not A Refnum | `test/core/ovi-server-reference.test.mjs` | **Verified** (2026-11-14) |
+| Into Adapt to Type it is the address of a U32; `DAQCreateTask140` takes the call | `test/core/ovi-server-reference.test.mjs` | **Verified** (2026-11-14); the bytes the library reads are not checked by a library that echoes them |
+| Its look, menu and palette place as LabVIEW's | `test/editor/ovi-server-reference.test.mjs` | **Verified** (2026-11-14) against the report's numbers; not compared by eye with LabVIEW. Unverified: "This OVI" is wider than LabVIEW's "This VI"; the Create ▸ rows' names on This Application |
 
 ## DT-091
 
@@ -4669,8 +4669,8 @@ and `.qvi` files keep opening.**
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| Save As writes `.ovi`; `.sdg` and `.qvi` name an OVI file and keep their names on Ctrl+S | "Save As writes .ovi…" and "the three extensions name an OVI file…" in `test/editor/vi-paths.test.mjs` | **Built** (2026-11-16) |
+| Save As writes `.ovi`; `.sdg` and `.qvi` name an OVI file and keep their names on Ctrl+S | "Save As writes .ovi…" and "the three extensions name an OVI file…" in `test/editor/ovi-paths.test.mjs` | **Built** (2026-11-16) |
 | An `<ovilib>` path saved with `.sdg` or `.qvi` finds the OVI renamed to `.ovi`, in ovi.lib and in an add-on; a file that has its name is that one | "an <ovilib> path saved with .sdg finds the OVI renamed…" in `test/editor/installed-addons.test.mjs` | **Built** (2026-11-16) |
-| Every OVI Solder ships is `.ovi` and every subOVI it calls, by its new name, exists | "every OVI Solder ships is a .ovi…" in `test/editor/vi-paths.test.mjs` (examples, ovi.lib, add-ons) | **Built** (2026-11-16) |
+| Every OVI Solder ships is `.ovi` and every subOVI it calls, by its new name, exists | "every OVI Solder ships is a .ovi…" in `test/editor/ovi-paths.test.mjs` (examples, ovi.lib, add-ons) | **Built** (2026-11-16) |
 | The installer associates `.ovi` and removes it on uninstall | `package.json`, `build/installer.nsh` | **Unverified** (not installed in the virtual machine) |
 | Files of released betas still open | `test/fixtures/released/` | Kept |

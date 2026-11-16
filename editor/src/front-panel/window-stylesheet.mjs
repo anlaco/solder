@@ -1,4 +1,4 @@
-// The window style of a VI (DT-058 §1–2) in its page: a <style> after every other sheet, so its rules win over the
+// The window style of an OVI (DT-058 §1–2) in its page: a <style> after every other sheet, so its rules win over the
 // editor's panel style with the same specificity.
 
 const ELEMENT_ID = "sd-window-style";

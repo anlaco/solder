@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { DAQ_TASK } from "../../core/model/daq-name.mjs";
-import { buildVI } from "../helpers.mjs";
+import { buildOVI } from "../helpers.mjs";
 import { NO_ERROR, PLUGIN, callPlugin, installAddonForTheseTests, run, showError } from "./daq-plugin-harness.mjs";
 
 installAddonForTheseTests();
@@ -28,7 +28,7 @@ function step(b, name, file, after) {
  * and, for Digital Edge, its source and edge), Start, Wait Until Done and Clear.
  */
 const acquisition = (triggers, { untimed = false } = {}) =>
-  buildVI(PLUGIN, (b) => {
+  buildOVI(PLUGIN, (b) => {
     b.node("channel", "str-const", { value: "Dev1/ai0" });
     b.node("empty", "daq-name-constant", { type: DAQ_TASK, value: "" });
     b.node("no error", "error-cluster-constant");

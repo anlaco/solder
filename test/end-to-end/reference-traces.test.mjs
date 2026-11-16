@@ -1,5 +1,5 @@
-// The reference traces of the scheduler (DT-061 §8): VIs with parallel waits, run on a virtual clock,
-// and the exact order in which their clumps must resume and write. The same VI and the same instants
+// The reference traces of the scheduler (DT-061 §8): OVIs with parallel waits, run on a virtual clock,
+// and the exact order in which their clumps must resume and write. The same OVI and the same instants
 // must give the same trace in every host; with one thread (DT-063 §4) the order is exact.
 
 import assert from "node:assert/strict";

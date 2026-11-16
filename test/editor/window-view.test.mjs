@@ -146,7 +146,7 @@ test("al pasar por un icono de la subpaleta sale su nombre", () => {
   assert.doesNotMatch(subpaletas(INV, conNumeric()), /nombre-sobre/);
 });
 
-// labview-captures/run/r1.png y barra-run.png: mientras el VI corre, la flecha
+// labview-captures/run/r1.png y barra-run.png: mientras el OVI corre, la flecha
 // de Run va rellena, Abort se enciende, desaparecen las herramientas de editar
 // y el panel pierde la rejilla. Parado, Abort está apagado.
 test("en modo run la barra enciende abort y esconde las herramientas de editar", () => {

@@ -522,7 +522,7 @@ icon is 32 × 32 with a 1 px black border; the default icon is ours, with the un
 when known (opened files show none). The subOVI node is that icon, wires touching its border
 (`caller-x-unwired-diagram.png`); on hover each terminal shows a dot and a 4.5 px whisker in its type colour.
 Menus: `connector-menu.png`, `icon-menu.png`, `subvi-node-menu.png`. OVI Properties: dialog 640 × 380, positions
-in `editor/src/window/vi-properties.mjs` (`vi-properties-execution-default.png`). Type colours are the wire colours,
+in `editor/src/window/ovi-properties.mjs` (`vi-properties-execution-default.png`). Type colours are the wire colours,
 `#ff7f00` for DBL, the same as measured in the connector cells.
 
 Patterns submenu (`connector-menu-patterns.png` at 1:1, `connector-patterns-grid-zoom2x.png`): it opens at the
@@ -785,7 +785,7 @@ rules 115–119.
   tall, but the frame (2 px) and the text in the refnums' teal `#007F7F`, the cream inside; "This VI" is 52 px wide and "This Application" 102,
   growing about its centre when the text changes; its label above it shows the same text; its terminal is at the middle of the right
   edge and its wire is `#007F7F`, 1 px, solid. Solder's first reads "This OVI" (DT-071). Code:
-  `editor/src/block-diagram/vi-server-references.mjs`. **Unverified:** the width of "This OVI" (a letter wider than the measured text).
+  `editor/src/block-diagram/ovi-server-references.mjs`. **Unverified:** the width of "This OVI" (a letter wider than the measured text).
 - **Control refnum** (same report, Q2): on the panel a 36 × 48 grey page (`#B3B3B3`) with its top right corner folded and a
   `#595959` edge on the right and at the bottom, a miniature numeric control ("1.23") and a small red-orange star under it; it shows
   no value, before or while running (`2026-11-03-control-reference-subvi.md` Q4). On the diagram a terminal: a teal (`#007F7F`)

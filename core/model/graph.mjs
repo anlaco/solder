@@ -1,4 +1,4 @@
-// A VI's diagram as data: nodes, wires and the types they carry.
+// An OVI's diagram as data: nodes, wires and the types they carry.
 //
 // Implements the rules of spec/03-static-semantics.md that the editor needs to
 // drag and wire: ports come from the catalog (rules 1 and 3), a valid wire and
@@ -139,21 +139,21 @@ function withTypeOfConfig(port, nodo) {
 }
 
 /**
- * The catalog seen from one VI of a hierarchy (DT-045): the same blocks, and
- * the ports of each `subvi` node taken from the connector of the VI it calls.
- * `findSubVI(relativePath)` gives that VI as `{ g, cat }`, or `null`; without
+ * The catalog seen from one OVI of a hierarchy (DT-045): the same blocks, and
+ * the ports of each `subvi` node taken from the connector of the OVI it calls.
+ * `findSubOVI(relativePath)` gives that OVI as `{ g, cat }`, or `null`; without
  * it, a `subvi` node has no ports.
  */
-export function conSubVIs(cat, findSubVI) {
-  /** The OVI a `subvi` node calls: the VI, or for a polymorphic OVI the instance it calls now (DT-074); null if not loaded. */
+export function conSubOVIs(cat, findSubOVI) {
+  /** The OVI a `subvi` node calls: the OVI, or for a polymorphic OVI the instance it calls now (DT-074); null if not loaded. */
   const calleeOf = (nodo) => {
-    const callee = findSubVI(nodo.config?.vi);
+    const callee = findSubOVI(nodo.config?.vi);
     if (!callee?.polymorphic) return callee ?? null;
     return callee.instances[selectedInstance(nodo, callee.polymorphic)] ?? null;
   };
-  /** The polymorphic OVI a node calls, as `{ key, polymorphic, instances }`, or null when it calls a plain VI. */
+  /** The polymorphic OVI a node calls, as `{ key, polymorphic, instances }`, or null when it calls a plain OVI. */
   const polymorphicOf = (nodo) => {
-    const callee = nodo.tipo === "subvi" ? findSubVI(nodo.config?.vi) : null;
+    const callee = nodo.tipo === "subvi" ? findSubOVI(nodo.config?.vi) : null;
     return callee?.polymorphic ? callee : null;
   };
   const puertos = (nodo) => {
@@ -167,15 +167,15 @@ export function conSubVIs(cat, findSubVI) {
     if (!p) throw new Error(`"${nodo.tipo}" has no ${dir === "in" ? "input" : "output"} port "${nombrePuerto}"`);
     return p;
   };
-  return { ...cat, puertos, puerto, findSubVI, calleeOf, polymorphicOf };
+  return { ...cat, puertos, puerto, findSubOVI, calleeOf, polymorphicOf };
 }
 
 const connectorPortsCache = new WeakMap();
 
 /**
- * The ports of a call to a VI: one input for each control on its connector and
+ * The ports of a call to an OVI: one input for each control on its connector and
  * one output for each indicator, named after the panel element and of its
- * type. An input that is not Required may stay unwired: the subVI then uses
+ * type. An input that is not Required may stay unwired: the subOVI then uses
  * its control's default value (DT-045). A terminal is the name of a panel
  * element or `{ name, cell, connection }`; Recommended when not said.
  */
@@ -207,7 +207,7 @@ export const nuevo = () => ({ nodos: [], cables: [], siguiente: 1 });
 // ——— Broken wires with a loose end (DT-046) ———
 //
 // One end of a wire may be a point of the diagram instead of a terminal:
-// `{ suelto: [x, y] }`, where the terminal was. Such a wire is broken: the VI
+// `{ suelto: [x, y] }`, where the terminal was. Such a wire is broken: the OVI
 // does not run until it is removed (Ctrl+B) or wired again.
 
 /**
@@ -246,9 +246,9 @@ export function borrarDejandoCables(g, ids, placeOf = (n) => [n.x ?? 0, n.y ?? 0
 }
 
 /**
- * The wires whose terminal no longer exists —a subVI that lost a connector
+ * The wires whose terminal no longer exists —a subOVI that lost a connector
  * terminal— become broken, with a loose end at that node, instead of making
- * the VI impossible to open (DT-046).
+ * the OVI impossible to open (DT-046).
  */
 export function aflojarCablesHuerfanos(g, cat, placeOf = (n) => [n.x ?? 0, n.y ?? 0]) {
   const existe = (extremo, dir) => {
@@ -274,7 +274,7 @@ export function quitarCablesRotos(g, cat, ids) {
 }
 
 /**
- * Pone un bloque en el diagrama. El `name` es `tipo_N`, único en el VI (regla
+ * Pone un bloque en el diagrama. El `name` es `tipo_N`, único en el OVI (regla
  * 6); la etiqueta, libre, empieza vacía.
  */
 export function crearNodo(g, cat, tipo, x, y) {
@@ -297,7 +297,7 @@ export function crearNodo(g, cat, tipo, x, y) {
 
 /**
  * La etiqueta que LabVIEW da a un control nuevo: la de su clase («Numeric») y,
- * si ya hay una igual en el VI, con un número detrás («Numeric 2»).
+ * si ya hay una igual en el OVI, con un número detrás («Numeric 2»).
  */
 export function etiquetaLibre(g, base) {
   const usadas = new Set(g.nodos.map((n) => n.label?.text));
@@ -392,7 +392,7 @@ export function conContenido(g, ids) {
 
 /**
  * El ámbito de un puerto: la estructura en cuyo cuerpo está, o `undefined` en
- * el diagrama del VI. Un puerto que mira fuera del borde está en el ámbito de
+ * el diagrama del OVI. Un puerto que mira fuera del borde está en el ámbito de
  * la estructura misma.
  */
 export function ambitoDe(g, cat, nodo, puerto, dir) {
@@ -484,7 +484,7 @@ export function fijarMarcos(g, cat, caso, marcos) {
  * Whether the value that comes out of `nodoId` can come from the node `id`: the
  * node itself, or a border node that only passes a value through (tunnels, shift
  * registers, Case output tunnels). The trace stops at anything that computes — a
- * function, a subVI — so a rename never travels through it.
+ * function, a subOVI — so a rename never travels through it.
  */
 function llegaDe(g, id, nodoId, vistos = new Set()) {
   if (nodoId === id) return true;
@@ -565,7 +565,7 @@ export function crearRegistro(g, cat, estructura, y) {
   return { g: g2, izquierdo: izq.id, derecho: der.id };
 }
 
-/** Las estructuras que hay entre el diagrama del VI y un ámbito, de fuera a dentro. */
+/** Las estructuras que hay entre el diagrama del OVI y un ámbito, de fuera a dentro. */
 function cadena(g, ambito) {
   const r = [];
   for (let a = ambito; a; a = nodoDe(g, a)?.dentro) r.unshift(a);
@@ -1326,7 +1326,7 @@ function cablesEnCicloDeEstructura(g, cat) {
 }
 
 /**
- * ¿Se puede ejecutar el VI? No, si hay un cable roto o una entrada sin cable ni
+ * ¿Se puede ejecutar el OVI? No, si hay un cable roto o una entrada sin cable ni
  * valor por defecto (spec/03 regla 10). Es lo que pone la flecha de Run rota.
  * El terminal de un indicador no cuenta: sin cable, conserva su valor, como en
  * LabVIEW.
@@ -1341,7 +1341,7 @@ export function ejecutable(g, cat, resueltos) {
 /** The blocks whose own type is an array that can be born empty (DT-060). */
 const ARRAY_SHELL_BLOCKS = new Set(["arr-const", "arr-control", "arr-indicator"]);
 
-/** The arrays with no element yet: each breaks the VI until an element is dropped inside (DT-060). */
+/** The arrays with no element yet: each breaks the OVI until an element is dropped inside (DT-060). */
 export const undefinedArrayNodes = (g) => g.nodos.filter((n) => ARRAY_SHELL_BLOCKS.has(n.tipo) && isUndefinedArray(n.config?.type));
 
 /**

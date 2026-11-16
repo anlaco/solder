@@ -1,21 +1,21 @@
-// The worker where a VI runs (DT-039, decision 3; DT-040): off the page's thread, so
-// that the interface does not freeze while the VI works.
+// The worker where an OVI runs (DT-039, decision 3; DT-040): off the page's thread, so
+// that the interface does not freeze while the OVI works.
 //
 // It receives:
 //   { orden: "run", clave, compilado, valores, separador, charts, poolPorts, depuracion? }
-//        the key of the top-level VI (its path), the module, the value of the controls, the decimal
+//        the key of the top-level OVI (its path), the module, the value of the controls, the decimal
 //        separator of the system, the ids of the Waveform Charts and one port to each thread of the
 //        window's pool (DT-063 §11): this worker coordinates the Run and the pool runs its clumps. `compilado` carries `debugFlag`
 //        and `debugNodes` (DT-047). `depuracion` is `{ plan, config, stepFirst }` when the page wants
 //        the debugger of this Run: the plan of the diagram (debug-plan.mjs), what it wants now
 //        (debug-controller.mjs `configure`) and whether to stop before the first node (Start Single Stepping).
-//        `ioPort`, when the VI talks to instruments, is this Run's port to the editor's I/O process (DT-065 §3).
-//   { orden: "control", nodo, valor }      a control changed while the VI runs
+//        `ioPort`, when the OVI talks to instruments, is this Run's port to the editor's I/O process (DT-065 §3).
+//   { orden: "control", nodo, valor }      a control changed while the OVI runs
 //   { orden: "abort" }                     Abort
 //   { orden: "respuesta", id, valor }      what the user answered to a dialog: "continuar" or "parar" in the one of
 //                                          automatic error handling, nothing in the one of Simple Error Handler
 //   { orden: "debug-config", config }      Highlight Execution, Retain Wire Values, probes and breakpoints changed
-//   { orden: "debug-pause" }               the Pause button of a VI that runs
+//   { orden: "debug-pause" }               the Pause button of an OVI that runs
 //   { orden: "debug-resume", modo }        Continue ("continue"), Step Into ("into"), Step Over ("over") or Step Out ("out")
 //   { orden: "io-exited" }                 the I/O process ended: what the Run waits for from an instrument fails
 // It sends:
@@ -25,17 +25,17 @@
 //   { dialogo: { id, pregunta, status, code, source } }   an error dialog waiting for an answer (DT-043):
 //                                          "error-automatico" (Continue or Stop) or "dialogo-error" (OK)
 //   { debug: { ran: nodo, pace, values: [{ node, port, value, at }] } }   a node ran: the values of its outputs and,
-//                                          with Highlight Execution, how long the worker holds the VI to show it (ms)
-//   { debug: { paused: { node, kind, phase?, wire?, container, name } } }   the VI stopped (kind: "before", "at", "wire",
+//                                          with Highlight Execution, how long the worker holds the OVI to show it (ms)
+//   { debug: { paused: { node, kind, phase?, wire?, container, name } } }   the OVI stopped (kind: "before", "at", "wire",
 //                                          "frame" of a structure with its phase, or "diagram" at the end)
-//   { debug: { resumed: true } }           the VI goes on
+//   { debug: { resumed: true } }           the OVI goes on
 //   { panel: { id, kind, request } }      a Property Node's row for the panel (DT-072 §6): kind "get" or "set" with
 //                                          `{ nodo, property, value? }`, or "draw": answer once what was sent is drawn
 //   { controlEscrito: { nodo, valor } }    a Property Node wrote Value of a control
-//   { fin: true, error?, abortado? }       the VI has finished
+//   { fin: true, error?, abortado? }       the OVI has finished
 //
 // The runtime passes over the panel's memory at the end of each turn of the scheduler, before a
-// dialog and when the VI finishes (DT-063 §10), and what it reports is sent then: a loop that writes
+// dialog and when the OVI finishes (DT-063 §10), and what it reports is sent then: a loop that writes
 // thousands of times a second does not flood the page, and the panel shows the last value, as
 // LabVIEW does. A Waveform Chart is not like that: each write is a point of its history, so every one
 // its history still holds is sent.
@@ -45,18 +45,18 @@ import { ejecutar } from "../../../core/runtime/runtime.mjs";
 import { createIoClient } from "../../../core/runtime/io-protocol.mjs";
 
 /**
- * What each top-level VI and its subVIs keep from one Run to the next, by the key of the VI
+ * What each top-level OVI and its subOVIs keep from one Run to the next, by the key of the OVI
  * (DT-045): a functional global keeps counting while the hierarchy stays loaded. The core
  * discards it by itself when the compiled module changes.
  */
-const statesByVI = new Map();
+const statesByOVI = new Map();
 
 let valores = null;
 let parar = null;
 let pendientes = {};
 /** What was written to each Waveform Chart since the last message, in order. */
 let pendingChartWrites = {};
-/** The ids of the Waveform Charts of the VI that runs. */
+/** The ids of the Waveform Charts of the OVI that runs. */
 let chartNodeIds = new Set();
 /** The most that is kept of a chart between two messages: its history (1024 points by default) cannot use more than the last ones. */
 const MAX_BUFFERED_CHART_WRITES = 100000;
@@ -136,7 +136,7 @@ function startDebugger({ compilado, depuracion }) {
     debugNodes: compilado.debugNodes ?? [],
     plan: depuracion.plan,
     send: (message) => {
-      // What the VI wrote so far goes first, so that the panel and the diagram agree.
+      // What the OVI wrote so far goes first, so that the panel and the diagram agree.
       vaciar();
       postMessage(message);
     },
@@ -170,7 +170,7 @@ onmessage = async ({ data }) => {
   if (data.orden === "abort") {
     parar?.abort();
     debugController?.release();
-    // Un diálogo abierto no puede dejar el VI esperando: Abort lo contesta.
+    // Un diálogo abierto no puede dejar el OVI esperando: Abort lo contesta.
     for (const ok of respuestas.values()) ok(ABORTED);
     return respuestas.clear();
   }
@@ -179,9 +179,9 @@ onmessage = async ({ data }) => {
   valores = { ...data.valores };
   chartNodeIds = new Set(data.charts);
   parar = new AbortController();
-  if (!statesByVI.has(data.clave)) statesByVI.set(data.clave, {});
+  if (!statesByOVI.has(data.clave)) statesByOVI.set(data.clave, {});
   const opciones = {
-    estado: statesByVI.get(data.clave),
+    estado: statesByOVI.get(data.clave),
     senal: parar.signal,
     separador: data.separador,
     alErrorAutomatico: (e) => preguntar("error-automatico", e),

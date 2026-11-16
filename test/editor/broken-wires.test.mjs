@@ -346,7 +346,7 @@ test("the menu of a broken wire opens with List Errors and the Error list shows 
   assert.deepEqual(row.target, { wire: brokenWire.id }, "Show Error frames the wire");
   assert.ok(row.details.includes("Remove Broken Wires"));
   assert.notEqual(row.details, listed.find((candidate) => candidate.id.startsWith("wire.") && candidate.id !== row.id)?.details ?? "", "the reasons are told apart");
-  const html = DV.errorListWindow(INV, { rows: listed, state: { ...EL.initial(), selected: row.id }, viName: "Untitled 1", position: { x: 0, y: 0 } });
+  const html = DV.errorListWindow(INV, { rows: listed, state: { ...EL.initial(), selected: row.id }, oviName: "Untitled 1", position: { x: 0, y: 0 } });
   assert.ok(html.includes("Block Diagram Errors") && html.includes(Gr.LOOSE_WIRE_REASONS.noSource));
   const overlay = DV.overlay(DS_INITIAL, broken.g, CTX, resolve(broken), { now: 0, errorFocus: row.target });
   assert.match(overlay, new RegExp(`class="dep-detenido-cable"[^>]*data-error-focus="${brokenWire.id}"`), "the frame follows the wire to its loose end");

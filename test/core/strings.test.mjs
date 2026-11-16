@@ -105,7 +105,7 @@ test("un bucle que concatena reutiliza su bufer: la memoria no crece", async () 
 
 // ——— Las funciones de la paleta String, con los resultados medidos en LabVIEW 2026 Q3 ———
 // (labview-captures/string/prueba-*.png). Cada una se prueba cableando controles a sus
-// entradas e indicadores a sus salidas, y corriendo el VI compilado.
+// entradas e indicadores a sus salidas, y corriendo el OVI compilado.
 
 /**
  * Corre un bloque: `entradas` da, por puerto, el valor de un control (cadena,

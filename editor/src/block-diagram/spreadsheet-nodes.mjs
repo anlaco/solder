@@ -4,7 +4,7 @@
 // Measured in LabVIEW 2026 Q3 by VI scripting: all four are 32 x 32 tiles and every terminal is a hot rectangle
 // `x, y, w x h` from the node's top-left corner (labview-captures/reports/2026-10-28-spreadsheet-strings.md §1 and
 // 2026-10-28-delimited-spreadsheet.md Q1). The string functions have three columns, the delimiter alone in the middle;
-// the Delimited VIs have the cells of a 4 x 2 x 2 x 4 connector pane, 6 and 7 px wide. Read Delimited Spreadsheet shows
+// the Delimited OVIs have the cells of a 4 x 2 x 2 x 4 connector pane, 6 and 7 px wide. Read Delimited Spreadsheet shows
 // its instance ring under the icon. Unverified: from which edge a wire reaches a middle-column terminal of the string
 // functions; it is taken as the top.
 //
@@ -19,7 +19,7 @@ export const isSpreadsheetNode = (node) => SPREADSHEET_NODE_BLOCKS.includes(node
 
 const spot = (side, x, y, w, h) => ({ side, x, y, w, h });
 const delimiter = spot("top", 11, 0, 10, SPREADSHEET_NODE_SIZE);
-// The cells of the Delimited VIs' connector pane: corners 7 x 7, side rows 7 x 6, top and bottom columns 6 x 16.
+// The cells of the Delimited OVIs' connector pane: corners 7 x 7, side rows 7 x 6, top and bottom columns 6 x 16.
 const corner = (side, x, y) => spot(side, x, y, 7, 7);
 const sideRow = (side, x, y) => spot(side, x, y, 7, 6);
 const column = (side, x, y) => spot(side, x, y, 6, 16);

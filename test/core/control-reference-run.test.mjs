@@ -10,7 +10,7 @@ import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { createNodePool } from "../../core/runtime/node-pool.mjs";
 import { INVALID_REFNUM_ERROR, LATCH_VALUE_READ_ERROR } from "../../core/runtime/property-node.mjs";
 import { ERROR } from "../../core/model/types.mjs";
-import { CAT, buildVI, callerCatalog } from "../helpers.mjs";
+import { CAT, buildOVI, callerCatalog } from "../helpers.mjs";
 import * as Gr from "../../core/model/graph.mjs";
 import { blockForTerminal } from "../../core/model/create-on-terminal.mjs";
 
@@ -21,11 +21,11 @@ after(() => pool.close());
 const NO_ERROR = { status: false, code: 0, source: "" };
 
 /**
- * A VI whose first node is the panel object `target` (node name `<block>_1`), a control reference to it and an
+ * An OVI whose first node is the panel object `target` (node name `<block>_1`), a control reference to it and an
  * explicit Property Node of `className` with `rows`, wired to the reference; `steps` adds the rest.
  */
-const referenceVI = ({ target, targetConfig, className, rows }, steps) =>
-  buildVI(CAT, (b) => {
+const referenceOVI = ({ target, targetConfig, className, rows }, steps) =>
+  buildOVI(CAT, (b) => {
     b.node("target", target, targetConfig);
     b.node("reference", "control-reference", { type: { refnum: className }, link: `${target}_1` });
     b.node("node", "property-node", { class: className, link: null, rows });
@@ -46,7 +46,7 @@ async function run(vi, values = {}, options = {}) {
 
 /** Value 7 written through the reference, then read in the next row (measured as cr-q1.vi: 7, no error). */
 const writeThenRead = (target) =>
-  referenceVI({ target, targetConfig: { type: "i32" }, className: "Numeric", rows: [{ property: "Value", write: true }, { property: "Value" }] }, (b) => {
+  referenceOVI({ target, targetConfig: { type: "i32" }, className: "Numeric", rows: [{ property: "Value", write: true }, { property: "Value" }] }, (b) => {
     b.node("seven", "const", { value: 7, type: "i32" });
     b.node("readBack", "indicator", { type: "i32" });
     b.wire("seven.result", "node.row-0");
@@ -86,7 +86,7 @@ test("a Value write through a reference waits until the caller has drawn it", as
 });
 
 test("Visible written FALSE through a reference reads back FALSE (cr-q2.vi)", async () => {
-  const vi = referenceVI({ target: "control", className: "Numeric", rows: [{ property: "Visible", write: true }, { property: "Visible" }] }, (b) => {
+  const vi = referenceOVI({ target: "control", className: "Numeric", rows: [{ property: "Visible", write: true }, { property: "Visible" }] }, (b) => {
     b.node("hide", "bool-const", { value: false });
     b.node("visible", "bool-indicator");
     b.wire("hide.result", "node.row-0");
@@ -101,8 +101,8 @@ test("Visible written FALSE through a reference reads back FALSE (cr-q2.vi)", as
  * Node 1 writes Value 9 with `errorIn`; node 2 reads Value through node 1's reference out with no error in; node 3
  * reads it with node 1's error out (measured as cr-q4.vi).
  */
-const chainedVI = (errorIn) =>
-  referenceVI({ target: "control", className: "Numeric", rows: [{ property: "Value", write: true }] }, (b) => {
+const chainedOVI = (errorIn) =>
+  referenceOVI({ target: "control", className: "Numeric", rows: [{ property: "Value", write: true }] }, (b) => {
     b.node("incoming", "error-cluster-constant", { value: errorIn });
     b.node("nine", "const", { value: 9 });
     b.node("second", "property-node", { class: "Numeric", link: null, rows: [{ property: "Value" }] });
@@ -125,7 +125,7 @@ const chainedVI = (errorIn) =>
   });
 
 test("reference out carries the reference on to the next node, whose Value takes the control's type", async () => {
-  const shown = await run(chainedVI(NO_ERROR), { target: 3 });
+  const shown = await run(chainedOVI(NO_ERROR), { target: 3 });
   assert.equal(shown.secondValue, 9);
   assert.equal(shown.thirdValue, 9);
   assert.equal(shown.referenceOutInvalid, false);
@@ -134,7 +134,7 @@ test("reference out carries the reference on to the next node, whose Value takes
 test("with an error in, the write is skipped but reference out is still valid: a node not chained to the error reads the control", async () => {
   const errorIn = { status: true, code: 5000, source: "src" };
   const told = [];
-  const shown = await run(chainedVI(errorIn), { target: 3 }, { alEscribirControl: (...args) => told.push(args) });
+  const shown = await run(chainedOVI(errorIn), { target: 3 }, { alEscribirControl: (...args) => told.push(args) });
   assert.deepEqual(told, [], "the control was not written");
   assert.deepEqual(shown.errorOut, errorIn);
   assert.equal(shown.secondValue, 3);
@@ -144,7 +144,7 @@ test("with an error in, the write is skipped but reference out is still valid: a
 });
 
 test("a failing row through a reference stops the node and names the row and the property, as the implicit node (cr-e4.vi)", async () => {
-  const vi = referenceVI({ target: "bool-control", targetConfig: { mechanical: "latch-when-pressed" }, className: "Boolean", rows: [{ property: "Visible" }, { property: "Value" }, { property: "Visible" }] }, (b) => {
+  const vi = referenceOVI({ target: "bool-control", targetConfig: { mechanical: "latch-when-pressed" }, className: "Boolean", rows: [{ property: "Visible" }, { property: "Value" }, { property: "Visible" }] }, (b) => {
     b.node("first", "bool-indicator");
     b.node("value", "bool-indicator");
     b.node("third", "bool-indicator");
@@ -162,7 +162,7 @@ test("a failing row through a reference stops the node and names the row and the
 });
 
 test("Not A Number/Path/Refnum? says FALSE on a control reference (cr-q5.vi)", async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("target", "control");
     b.node("reference", "control-reference", { type: { refnum: "Numeric" }, link: "control_1" });
     b.node("notARefnum", "not-a-number-path-refnum");
@@ -174,7 +174,7 @@ test("Not A Number/Path/Refnum? says FALSE on a control reference (cr-q5.vi)", a
 });
 
 test("an explicit node with its reference unwired keeps the OVI from running (cr-e1.vi: the VI is broken)", () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("node", "property-node", { class: "Numeric", link: null, rows: [{ property: "Visible" }] });
     b.node("visible", "bool-indicator");
     b.wire("node.row-0", "visible.value");
@@ -189,7 +189,7 @@ const numericRefnum = (dataType) => ({ refnum: "Numeric", of: dataType });
 
 /** An OVI whose control refnum "ref" feeds a node writing Value 9; with `asSubOVI` the refnum is on its connector. */
 const writeNineThroughRefnum = ({ dataType = "number", warningIn = null, asSubOVI = false } = {}) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("ref", "refnum-control", { type: numericRefnum(dataType) });
     b.node("node", "property-node", { class: "Numeric", link: null, rows: [{ property: "Value", write: true }] });
     b.node("nine", "const", { value: 9, type: dataType });
@@ -217,7 +217,7 @@ test("a refnum that names no control replaces a warning in with 1055 (cr-e6.vi)"
 
 test("a reference passed to a subOVI's control refnum lets the subOVI write the caller's control (cr-call.vi: Numeric = 9)", async () => {
   const cat = callerCatalog({ "cr-sub.qvi": writeNineThroughRefnum({ asSubOVI: true }) });
-  const caller = buildVI(cat, (b) => {
+  const caller = buildOVI(cat, (b) => {
     b.node("numeric", "control");
     b.node("reference", "control-reference", { type: { refnum: "Numeric" }, link: "control_1" });
     b.node("call", "subvi", { vi: "cr-sub.qvi" });
@@ -235,7 +235,7 @@ test("a reference passed to a subOVI's control refnum lets the subOVI write the 
 
 test("the refnum of an I32 numeric does not wire to a DBL numeric's: the wire breaks, a class conflict (cr-call.vi)", () => {
   const cat = callerCatalog({ "cr-sub.qvi": writeNineThroughRefnum({ asSubOVI: true }) });
-  const caller = buildVI(cat, (b) => {
+  const caller = buildOVI(cat, (b) => {
     b.node("numeric", "control", { type: "i32" });
     b.node("reference", "control-reference", { type: { refnum: "Numeric" }, link: "control_1" });
     b.node("call", "subvi", { vi: "cr-sub.qvi" });
@@ -248,7 +248,7 @@ test("the refnum of an I32 numeric does not wire to a DBL numeric's: the wire br
 test("Create ▸ Indicator on a reference makes a refnum indicator of its strict type, which holds the reference (cr-ind.vi)", async () => {
   assert.deepEqual(blockForTerminal(numericRefnum("i32"), "indicator"), { tipo: "refnum-indicator", config: { type: numericRefnum("i32") } });
   assert.deepEqual(blockForTerminal(numericRefnum("i32"), "control"), { tipo: "refnum-control", config: { type: numericRefnum("i32") } });
-  const vi = referenceVI({ target: "control", className: "Numeric", rows: [] }, (b) => {
+  const vi = referenceOVI({ target: "control", className: "Numeric", rows: [] }, (b) => {
     b.node("held", "refnum-indicator", { type: numericRefnum("number") });
     b.wire("node.reference-out", "held.value");
   });

@@ -11,7 +11,7 @@ import { LATCH_VALUE_READ_ERROR } from "../../core/runtime/property-node.mjs";
 import { ERROR } from "../../core/model/types.mjs";
 import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
 import { HAS_SERIAL_TEST_INSTRUMENT, startInstrument, startSerialInstrument } from "../instrument.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { CAT, buildOVI } from "../helpers.mjs";
 
 const THREADS = 2;
 const pool = createNodePool(THREADS);
@@ -20,11 +20,11 @@ after(() => pool.close());
 const NO_ERROR = { status: false, code: 0, source: "" };
 
 /**
- * A VI whose first node is the panel object `target` (so its node name is `<block>_1`, what the Property Node
+ * An OVI whose first node is the panel object `target` (so its node name is `<block>_1`, what the Property Node
  * links to) and whose Property Node `node` has `rows`; `steps` adds the rest with the builder.
  */
-const propertyVI = ({ target, targetConfig, className, rows, ignoreErrors = false }, steps) =>
-  buildVI(CAT, (b) => {
+const propertyOVI = ({ target, targetConfig, className, rows, ignoreErrors = false }, steps) =>
+  buildOVI(CAT, (b) => {
     b.node("target", target, targetConfig);
     b.node("node", "property-node", { class: className, link: `${target}_1`, rows, "ignore-errors": ignoreErrors });
     b.node("errorOut", "cluster-indicator", { type: ERROR, style: "error-out" });
@@ -43,7 +43,7 @@ async function run(vi, values = {}, options = {}) {
 
 /** Value written to an indicator that nothing else wires, then read back in the next row (measured: 3 and 3). */
 const writeThenReadValue = () =>
-  propertyVI({ target: "indicator", targetConfig: { type: "i32" }, className: "Numeric", rows: [{ property: "Value", write: true }, { property: "Value" }] }, (b) => {
+  propertyOVI({ target: "indicator", targetConfig: { type: "i32" }, className: "Numeric", rows: [{ property: "Value", write: true }, { property: "Value" }] }, (b) => {
     b.node("three", "const", { value: 3, type: "i32" });
     b.node("readBack", "indicator", { type: "i32" });
     b.wire("three.result", "node.row-0");
@@ -60,7 +60,7 @@ for (const [where, options] of [["on one thread", () => ({})], ["on a pool", () 
 }
 
 test("Value of a control reads what the panel holds, and a write is what the caller is told", async () => {
-  const vi = propertyVI({ target: "str-control", className: "String", rows: [{ property: "Value" }, { property: "Value", write: true }] }, (b) => {
+  const vi = propertyOVI({ target: "str-control", className: "String", rows: [{ property: "Value" }, { property: "Value", write: true }] }, (b) => {
     b.node("before", "str-indicator");
     b.node("text", "str-const", { value: "written" });
     b.wire("node.row-0", "before.value");
@@ -89,7 +89,7 @@ test("a Value write waits until the caller has drawn it", async () => {
 
 test("with an error in, nothing runs, the read rows give their defaults and the error passes", async () => {
   const errorIn = { status: true, code: 5000, source: "src" };
-  const vi = propertyVI({ target: "control", className: "Numeric", rows: [{ property: "Value", write: true }, { property: "Value" }, { property: "Visible" }] }, (b) => {
+  const vi = propertyOVI({ target: "control", className: "Numeric", rows: [{ property: "Value", write: true }, { property: "Value" }, { property: "Visible" }] }, (b) => {
     b.node("incoming", "error-cluster-constant", { value: errorIn });
     b.node("nine", "const", { value: 9 });
     b.node("value", "indicator");
@@ -109,7 +109,7 @@ test("with an error in, nothing runs, the read rows give their defaults and the 
 
 test("a warning in runs the node and passes the warning", async () => {
   const warning = { status: false, code: 1234, source: "warn src" };
-  const vi = propertyVI({ target: "control", className: "Numeric", rows: [{ property: "Value" }] }, (b) => {
+  const vi = propertyOVI({ target: "control", className: "Numeric", rows: [{ property: "Value" }] }, (b) => {
     b.node("incoming", "error-cluster-constant", { value: warning });
     b.node("value", "indicator");
     b.wire("incoming.result", "node.error-in");
@@ -122,7 +122,7 @@ test("a warning in runs the node and passes the warning", async () => {
 
 /** A latch Boolean with rows Visible, Value (fails: 1193), Visible, read (measured as ppn-q4c.vi). */
 const latchRows = (ignoreErrors) =>
-  propertyVI({ target: "bool-control", targetConfig: { mechanical: "latch-when-pressed" }, className: "Boolean", rows: [{ property: "Visible" }, { property: "Value" }, { property: "Visible" }], ignoreErrors }, (b) => {
+  propertyOVI({ target: "bool-control", targetConfig: { mechanical: "latch-when-pressed" }, className: "Boolean", rows: [{ property: "Visible" }, { property: "Value" }, { property: "Visible" }], ignoreErrors }, (b) => {
     b.node("first", "bool-indicator");
     b.node("value", "bool-indicator");
     b.node("third", "bool-indicator");
@@ -153,7 +153,7 @@ test("with Ignore Errors inside Node every row runs, and the error is still give
 
 test("with no window, Visible keeps what is written, Key Focus reads FALSE and Label.Text is the label", async () => {
   const rows = [{ property: "Visible", write: true }, { property: "Visible" }, { property: "Key Focus", write: true }, { property: "Key Focus" }, { property: "Label:Text" }];
-  const vi = propertyVI({ target: "control", className: "Numeric", rows }, (b) => {
+  const vi = propertyOVI({ target: "control", className: "Numeric", rows }, (b) => {
     b.node("hide", "bool-const", { value: false });
     b.node("focus", "bool-const", { value: true });
     b.node("visible", "bool-indicator");
@@ -172,7 +172,7 @@ test("with no window, Visible keeps what is written, Key Focus reads FALSE and L
 });
 
 test("a write row left unwired keeps the OVI from running", () => {
-  const vi = propertyVI({ target: "control", className: "Numeric", rows: [{ property: "Value", write: true }] }, () => {});
+  const vi = propertyOVI({ target: "control", className: "Numeric", rows: [{ property: "Value", write: true }] }, () => {});
   assert.ok(compilar(vi.g, CAT).errores);
 });
 
@@ -182,8 +182,8 @@ const VI_ERROR_NSUP_ATTR = -1073807331;
 const VI_ERROR_NSUP_ATTR_STATE = -1073807330;
 
 /** An Instr Property Node on a resource name constant, with `rows`; `steps` wires the rest. */
-const instrVI = (resource, rows, steps) =>
-  buildVI(CAT, (b) => {
+const instrOVI = (resource, rows, steps) =>
+  buildOVI(CAT, (b) => {
     b.node("name", "visa-resource-constant", { value: resource });
     b.node("node", "property-node", { class: "Instr", rows });
     b.node("errorOut", "cluster-indicator", { type: ERROR, style: "error-out" });
@@ -200,7 +200,7 @@ for (const [where, options] of [["on one thread", () => ({})], ["on a pool", () 
   test(`an Instr node opens a name never opened and reads a new session's defaults, ${where}`, async () => {
     const instrument = await startInstrument();
     try {
-      const vi = instrVI(instrument.resource, readRows("General Settings:Timeout Value", "Message Based Settings:Termination Character", "Message Based Settings:Termination Character Enable", "General Settings:Resource Class"), (b) => {
+      const vi = instrOVI(instrument.resource, readRows("General Settings:Timeout Value", "Message Based Settings:Termination Character", "Message Based Settings:Termination Character Enable", "General Settings:Resource Class"), (b) => {
         b.node("timeout", "indicator", { type: "u32" });
         b.node("termChar", "indicator", { type: "u8" });
         b.node("enabled", "bool-indicator");
@@ -224,7 +224,7 @@ test("an Instr row's error names only the row, and the rows after it do not run"
   const instrument = await startInstrument();
   try {
     const rows = [{ property: "General Settings:Timeout Value", write: true }, { property: "Message Based Settings:Termination Character Enable", write: true }, { property: "Serial Settings:Baud Rate" }];
-    const vi = instrVI(instrument.resource, [...rows, ...readRows("General Settings:Timeout Value", "Message Based Settings:Termination Character Enable")], (b) => {
+    const vi = instrOVI(instrument.resource, [...rows, ...readRows("General Settings:Timeout Value", "Message Based Settings:Termination Character Enable")], (b) => {
       b.node("timeout", "const", { value: 777, type: "u32" });
       b.node("enable", "bool-const", { value: true });
       b.node("baud", "indicator", { type: "u32" });
@@ -251,7 +251,7 @@ test("an Instr row's error names only the row, and the rows after it do not run"
 (HAS_SERIAL_TEST_INSTRUMENT ? test : test.skip)("Bytes at Port reads how many bytes wait in a serial port: none on a new session", async () => {
   const instrument = await startSerialInstrument();
   try {
-    const vi = instrVI(instrument.resource, readRows("Serial Settings:Number of Bytes at Serial Port"), (b) => {
+    const vi = instrOVI(instrument.resource, readRows("Serial Settings:Number of Bytes at Serial Port"), (b) => {
       b.node("waiting", "indicator", { type: "u32" });
       b.wire("node.row-0", "waiting.value");
     });
@@ -266,7 +266,7 @@ test("an Instr row's error names only the row, and the rows after it do not run"
 test("a Timeout Value beyond 2147483647 is refused with VI_ERROR_NSUP_ATTR_STATE", async () => {
   const instrument = await startInstrument();
   try {
-    const vi = instrVI(instrument.resource, [{ property: "General Settings:Timeout Value", write: true }], (b) => {
+    const vi = instrOVI(instrument.resource, [{ property: "General Settings:Timeout Value", write: true }], (b) => {
       b.node("timeout", "const", { value: 2147483648, type: "u32" });
       b.wire("timeout.result", "node.row-0");
     });
@@ -285,7 +285,7 @@ test("Position and Bounds go as clusters: the caller's panel answers them, and a
     set: (link, property, value) => void asked.push(["set", property, value]),
   };
   const position = { cluster: [{ name: "Left", type: "i32" }, { name: "Top", type: "i32" }] };
-  const vi = propertyVI({ target: "control", className: "Numeric", rows: [{ property: "Position" }, { property: "Bounds" }, { property: "Position", write: true }] }, (b) => {
+  const vi = propertyOVI({ target: "control", className: "Numeric", rows: [{ property: "Position" }, { property: "Bounds" }, { property: "Position", write: true }] }, (b) => {
     b.node("where", "cluster-indicator", { type: position });
     b.node("size", "cluster-indicator", { type: { cluster: [{ name: "Width", type: "u32" }, { name: "Height", type: "u32" }] } });
     b.node("moveTo", "cluster-control", { type: position });
@@ -302,7 +302,7 @@ test("Position and Bounds go as clusters: the caller's panel answers them, and a
 
 test("Value written to an unwired Boolean indicator reaches the panel as a Boolean", async () => {
   // A regression: the indicator was registered with no type, so its record was read as a number (1.4e-45).
-  const vi = propertyVI({ target: "bool-indicator", className: "Boolean", rows: [{ property: "Value", write: true }] }, (b) => {
+  const vi = propertyOVI({ target: "bool-indicator", className: "Boolean", rows: [{ property: "Value", write: true }] }, (b) => {
     b.node("on", "bool-const", { value: true });
     b.wire("on.result", "node.row-0");
   });

@@ -8,8 +8,8 @@ import { HOST_IMPORTS, PARKING_IMPORT_INDICES, importIndex } from "./host-import
 import { ins } from "./instructions.mjs";
 
 // The memory of a Run, created by the host and shared by its threads (DT-063 §1). A shared memory
-// must declare a maximum; this is wasm32's whole address space, the limit a VI already had, and it
-// costs only address space until the VI grows into it.
+// must declare a maximum; this is wasm32's whole address space, the limit an OVI already had, and it
+// costs only address space until the OVI grows into it.
 export const SHARED_MEMORY_IMPORT = { modulo: "env", nombre: "memory" };
 export const MAXIMUM_PAGES = 65536;
 export const PAGE_BYTES = 65536;
@@ -31,7 +31,7 @@ export const runtimeFunctionIndex = (name) => {
   return index;
 };
 export const SCHEDULER = schedulerFunctions({ functionIndex: runtimeFunctionIndex, globals: THREAD_GLOBALS, clumpType: CLUMP_TYPE });
-/** The functions every module has before its VIs': the memory's and the scheduler's. */
+/** The functions every module has before its OVIs': the memory's and the scheduler's. */
 export const RUNTIME_FUNCTIONS = [...MEMORY_FUNCTIONS, ...SCHEDULER];
 export const FIRST_COMPILED_FUNCTION = HOST_IMPORTS.length + RUNTIME_FUNCTIONS.length;
 export const callScheduler = (name) => ins("call", runtimeFunctionIndex(name));

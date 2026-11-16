@@ -1,4 +1,4 @@
-// The font of the pages that are not a VI window (Getting Started, the Polymorphic OVI window, the New dialog): Segoe UI at
+// The font of the pages that are not an OVI window (Getting Started, the Polymorphic OVI window, the New dialog): Segoe UI at
 // 12 px, LabVIEW's, or Noto Sans at 11.3 px where Segoe UI is missing, which matches its widths (spec/06-visual.md §10).
 
 const FULL_SIZE_FONT = "12px";

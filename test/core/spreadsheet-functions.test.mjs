@@ -1,4 +1,4 @@
-// Array To Spreadsheet String and Spreadsheet String To Array in a compiled VI (DT-067 §9), with the end of line
+// Array To Spreadsheet String and Spreadsheet String To Array in a compiled OVI (DT-067 §9), with the end of line
 // of Windows, where LabVIEW was measured (labview-captures/reports/2026-10-28-spreadsheet-strings.md).
 
 import assert from "node:assert/strict";
@@ -7,7 +7,7 @@ import { test } from "node:test";
 import { compilar } from "../../core/compiler/compiler.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { tipos } from "../../core/model/graph.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { CAT, buildOVI } from "../helpers.mjs";
 
 async function run(vi, values = {}) {
   const compiled = compilar(vi.g, CAT);
@@ -20,7 +20,7 @@ async function run(vi, values = {}) {
 
 /** An array control of `type` written with `format` and `delimiter`, read back as `readType`. */
 const roundTrip = (type, readType, format, delimiter) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("data", "arr-control", { type });
     b.node("format", "str-const", { value: format });
     if (delimiter !== undefined) b.node("delimiter", "str-const", { value: delimiter });
@@ -65,7 +65,7 @@ test("a 2D string array is written as it is and read back into the type wired to
 });
 
 test("a U8 array saturates when it is read back", async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("text", "str-const", { value: "300,-5\r\n2.5,3.5\r\n" });
     b.node("format", "str-const", { value: "%.3f" });
     b.node("delimiter", "str-const", { value: "," });
@@ -82,7 +82,7 @@ test("a U8 array saturates when it is read back", async () => {
 });
 
 test("a Boolean array breaks the wire into Array To Spreadsheet String, and format string is required", () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("data", "arr-control", { type: { array: "boolean" } });
     b.node("write", "array-to-spreadsheet-string");
     b.wire("data.result", "write.array");

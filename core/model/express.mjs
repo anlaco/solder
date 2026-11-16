@@ -1,14 +1,14 @@
-// What every Express VI shares (DT-069): a catalog block with an `express` section whose configuration is the
+// What every Express OVI shares (DT-069): a catalog block with an `express` section whose configuration is the
 // node's `config`. A node is unconfigured until its configuration dialog is first closed with OK; then the
 // terminals the dialog sets (`express-row` in the catalog) leave the icon for expansion rows, and its context help
 // says how it is configured.
 //
 // Measured in LabVIEW 2026 Q3: labview-captures/reports/2026-10-29-express-vi-common.md.
 
-/** Whether `block` (a catalog entry) is an Express VI. */
+/** Whether `block` (a catalog entry) is an Express OVI. */
 export const isExpress = (block) => Boolean(block?.express);
 
-/** Whether an Express VI node was configured: any OK of its dialog, even with nothing changed (measured). */
+/** Whether an Express OVI node was configured: any OK of its dialog, even with nothing changed (measured). */
 export const isConfigured = (node) => Boolean(node.config?.configured);
 
 /** The node with `changes` merged into its configuration and marked configured: what an OK of its dialog does. */

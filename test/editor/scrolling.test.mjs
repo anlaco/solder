@@ -6,7 +6,7 @@ import { test } from "node:test";
 
 import * as Scroll from "../../editor/src/window/scrolling.mjs";
 
-/** The Front Panel of a new VI shows 1073 x 600 px of its canvas. */
+/** The Front Panel of a new OVI shows 1073 x 600 px of its canvas. */
 const PANEL_VIEW = { width: 1073, height: 600 };
 
 test("the range reaches a quarter of the view past the content and always includes the view (measured origins)", () => {

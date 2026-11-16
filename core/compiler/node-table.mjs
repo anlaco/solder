@@ -3,7 +3,7 @@
 
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { DAQ_TASK_LAYOUT, isDaqTask } from "../model/daq-name.mjs";
-import { OVI_CLASS, refnumOfClass } from "../model/vi-server-reference.mjs";
+import { OVI_CLASS, refnumOfClass } from "../model/ovi-server-reference.mjs";
 import { importIndex } from "./host-imports.mjs";
 import { callMemory, callScheduler } from "./runtime-functions.mjs";
 import { arrayElement, copyValue, copyValueTo, isByReference, loadElement, storeElement } from "./memory-ops.mjs";

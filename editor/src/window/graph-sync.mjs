@@ -1,10 +1,10 @@
-// Keeping the two windows of a VI on the same graph.
+// Keeping the two windows of an OVI on the same graph.
 //
 // Each window holds its own copy and, when it changes, sends it to the other one
 // over a BroadcastChannel (editor-window.mjs). Two messages that cross on their
 // way —each window changed its copy before the other's arrived— used to swap
 // the copies for good: every window ended up holding the other's older version,
-// and saving from one window or the other saved a different VI.
+// and saving from one window or the other saved a different OVI.
 //
 // So that does not happen every copy carries a stamp: a revision number and the
 // window that made it. A window takes an incoming copy only when its stamp is

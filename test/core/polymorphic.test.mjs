@@ -15,7 +15,7 @@ import * as Poly from "../../core/model/polymorphic.mjs";
 import { compilar } from "../../core/compiler/compiler.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { loadHierarchy } from "../../core/model/hierarchy.mjs";
-import { CAT, RAIZ, buildVI } from "../helpers.mjs";
+import { CAT, RAIZ, buildOVI } from "../helpers.mjs";
 
 const SDP = "/lib/Step.sdp";
 const SDP_TEXT = Poly.writePolymorphic({
@@ -28,7 +28,7 @@ const SDP_TEXT = Poly.writePolymorphic({
 
 /** An instance: `x` (of `type`) into `step`, out to `result`; x in cell 9 (left edge), result in cell 2 (right edge), LabVIEW's indices of 4-2-2-4 of both. */
 const instance = (type, step) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("x", "control", { type });
     b.node("step", step);
     b.node("result", "indicator", { type });
@@ -46,12 +46,12 @@ function callerOf(build) {
   const load = (rootGraph) =>
     loadHierarchy("/app/main.sdg", CAT, {
       resolvePath,
-      loadVI: (key) => (key === "/app/main.sdg" ? rootGraph : FILES[key]?.g ?? null),
+      loadOVI: (key) => (key === "/app/main.sdg" ? rootGraph : FILES[key]?.g ?? null),
       loadPolymorphic: (key) => (key === SDP ? Poly.readPolymorphic(SDP_TEXT) : null),
     });
   const probe = load(Gr.nuevo());
-  const vi = buildVI(probe.vis.get("/app/main.sdg").cat, build);
-  const { cat } = load(vi.g).vis.get("/app/main.sdg");
+  const vi = buildOVI(probe.ovis.get("/app/main.sdg").cat, build);
+  const { cat } = load(vi.g).ovis.get("/app/main.sdg");
   return { ...vi, g: Gr.adaptPolymorphicNodes(vi.g, cat), cat };
 }
 
@@ -155,7 +155,7 @@ test("Automatic is not offered when the polymorphic OVI does not adapt to the da
 
 test("the page reads a .sdp and its instances with the caller, and the call's config survives its file", async () => {
   const { aTexto, leer } = await import("../../core/model/qvi-format.mjs");
-  const Paths = await import("../../editor/src/common/vi-paths.mjs");
+  const Paths = await import("../../editor/src/common/ovi-paths.mjs");
   const { buildHierarchy } = await import("../../editor/src/window/hierarchy-client.mjs");
   const vi = wiredWith("number");
   const files = { [SDP]: SDP_TEXT, ...Object.fromEntries(Object.entries(FILES).map(([key, one]) => [key, aTexto(one.g, CAT)])) };
@@ -164,7 +164,7 @@ test("the page reads a .sdp and its instances with the caller, and the call's co
   assert.deepEqual(missing, []);
   assert.deepEqual(Object.keys(texts).sort(), [SDP, ...Object.keys(FILES)].sort(), "the .sdp and every instance");
 
-  const reopened = buildHierarchy({ rootKey: "/app/main.sdg", rootText: callerText, texts, baseCatalog: CAT, readVI: leer });
+  const reopened = buildHierarchy({ rootKey: "/app/main.sdg", rootText: callerText, texts, baseCatalog: CAT, readOVI: leer });
   assert.deepEqual(reopened.errors, []);
   const node = reopened.graph.nodos.find((one) => one.tipo === "subvi");
   assert.deepEqual({ instance: node.config.instance ?? null, selected: node.config.selected, selector: node.config.selector }, { instance: null, selected: 1, selector: false });

@@ -1,4 +1,4 @@
-// The two windows of a VI hold one graph each and swap copies over a
+// The two windows of an OVI hold one graph each and swap copies over a
 // BroadcastChannel (editor-window.mjs). graph-sync.mjs stamps every copy so
 // that messages that cross on their way cannot leave each window holding the
 // other's older version (the saved .qvi must be what the user last saw).

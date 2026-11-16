@@ -1518,7 +1518,7 @@ test("concatenate strings se estira por sus asas como compound arithmetic y mide
   assert.match(contenido(d, CTX, tipos(d.g, CAT)), /<text[^>]*>abc<\/text>/, "el símbolo del nodo es «abc»");
 });
 
-// Un VI de cadenas hecho con el ratón es el mismo grafo que compila y ejecuta el núcleo:
+// Un OVI de cadenas hecho con el ratón es el mismo grafo que compila y ejecuta el núcleo:
 // «Hola, » y «mundo» concatenados, en mayúsculas y con su longitud.
 test("un vi de cadenas hecho con el ratón se compila y se ejecuta", async () => {
   let d = ED.inicial();

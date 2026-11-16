@@ -4,7 +4,7 @@
 // `Gr.editarItemsEnum`).
 //
 // Pure, like chart-history-dialog.mjs: `open` builds the dialog from the node, `type`
-// and `act` edit it, `apply` writes it into the VI and `view` draws it from the
+// and `act` edit it, `apply` writes it into the OVI and `view` draws it from the
 // inventory (`dialog.enum-edit-items.*`).
 //
 // Measured in LabVIEW 2026 Q3 (labview-captures/enum-edit/41-eidialog.png, window
@@ -197,7 +197,7 @@ export function enabled(dialog, parte) {
   return true;
 }
 
-/** The VI with the items of the dialog: one rename map for the frames (DT-049), no rewrites
+/** The OVI with the items of the dialog: one rename map for the frames (DT-049), no rewrites
  * for additions and deletions. */
 export function apply(g, dialog) {
   const committed = commit(dialog);
@@ -239,7 +239,7 @@ export function bottomHtml(inv, okEnabled = true) {
     .join("");
 }
 
-/** The dialog, modal over the window, like the VI Properties one. */
+/** The dialog, modal over the window, like the OVI Properties one. */
 export function view(inv, dialog) {
   const L = LAYOUT;
   const filas = dialog.filas

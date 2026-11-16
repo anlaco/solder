@@ -12,7 +12,7 @@
 // another's (Chase and Lev, "Dynamic Circular Work-Stealing Deque", 2005).
 //
 // The state of a clump goes IDLE → READY → RUNNING → PARKED → READY … → ENDED. A clump can be woken
-// (a timer, its turn at a subVI, the end of its subplan, an answer from outside) while it is still
+// (a timer, its turn at a subOVI, the end of its subplan, an answer from outside) while it is still
 // returning from the park on its thread; then it goes RUNNING → WAKE_PENDING, and the thread puts it
 // back as ready as soon as it has returned, so no clump is resumed before its state is saved.
 //
@@ -25,7 +25,7 @@ import { HEAP_LOCK, SCHEDULER } from "./linear-memory.mjs";
 export const HEADER = {
   clumps: 0, // address of the clump records
   clumpCount: 4,
-  groups: 8, // address of the group records: group 0 is the top-level VI, group p + 1 is plan p
+  groups: 8, // address of the group records: group 0 is the top-level OVI, group p + 1 is plan p
   groupCount: 12,
   dependents: 16, // address of the I32 ids of every clump's dependents, clump after clump
   threads: 20, // how many threads run clumps
@@ -43,8 +43,8 @@ export const HEADER = {
   timerCount: 68,
   timerHeap: 72,
   timerSequence: 76,
-  subVILockLock: 80, // guards every subVI lock's waiters
-  subVILocks: 84,
+  subOVILockLock: 80, // guards every subOVI lock's waiters
+  subOVILocks: 84,
   oneClumpAtATime: 88,
   runningClumps: 92,
 };
@@ -64,14 +64,14 @@ export const CLUMP = {
   lastBudgetCall: 40, // F64: the budget of iterations of a loop (DT-041)
   lastYield: 48, // F64
   iterations: 56,
-  lock: 60, // the subVI lock it waits for
+  lock: 60, // the subOVI lock it waits for
   started: 64,
 };
 
 export const GROUP_BYTES = 16;
 export const GROUP = { remaining: 0, parent: 4, first: 8, count: 12 };
 
-// A non-reentrant subVI's lock: held, and a FIFO of the clumps waiting for it (DT-061 §2).
+// A non-reentrant subOVI's lock: held, and a FIFO of the clumps waiting for it (DT-061 §2).
 export const LOCK_BYTES = 16;
 const LOCK = { held: 0, head: 4, tail: 8, waiters: 12 };
 
@@ -142,7 +142,7 @@ export function schedulerFunctions({ functionIndex, globals, clumpType }) {
   return [
     fn("clump_record", ["i32"], ["i32"], [], [...readHeader("clumps"), get(0), k(CLUMP_BYTES), ins("i32.mul"), ins("i32.add")]),
     fn("group_record", ["i32"], ["i32"], [], [...readHeader("groups"), get(0), k(GROUP_BYTES), ins("i32.mul"), ins("i32.add")]),
-    fn("lock_record", ["i32"], ["i32"], [], [...readHeader("subVILocks"), get(0), k(LOCK_BYTES), ins("i32.mul"), ins("i32.add")]),
+    fn("lock_record", ["i32"], ["i32"], [], [...readHeader("subOVILocks"), get(0), k(LOCK_BYTES), ins("i32.mul"), ins("i32.add")]),
     fn("deque", ["i32"], ["i32"], [], [...readHeader("deques"), get(0), ...readHeader("dequeStride"), ins("i32.mul"), ins("i32.add")]),
 
     // notify_work(all): there is something new to do; wakes one sleeping thread, or all of them.
@@ -262,7 +262,7 @@ export function schedulerFunctions({ functionIndex, globals, clumpType }) {
       ins("end"), ins("end"),
     ]),
 
-    // group_ended(thread, group): the top-level VI ends the Run; a subplan wakes the clump that started it.
+    // group_ended(thread, group): the top-level OVI ends the Run; a subplan wakes the clump that started it.
     fn("group_ended", ["i32", "i32"], [], [], [
       ...ifThen([get(1), ins("i32.eqz")],
         [...storeHeader("runState", [k(RUN_STATUS.done)]), k(1), call("notify_work")],
@@ -404,34 +404,34 @@ export function schedulerFunctions({ functionIndex, globals, clumpType }) {
       ...recordOf(currentClump), call("ahora"), get(1), ins("f64.add"), ins("f64.store", CLUMP.deadline),
       ...park(PARK_KIND.timer),
     ]),
-    // run_plan(plan) → 0 when every clump of the plan has ended: a subplan, or a subVI that waits.
+    // run_plan(plan) → 0 when every clump of the plan has ended: a subplan, or a subOVI that waits.
     fn("run_plan", ["i32"], ["i32"], [], [
       get(0), k(1), ins("i32.add"), call("group_record"), ...currentClump, ins("i32.store", GROUP.parent),
       ...recordOf(currentClump), k(PARK_KIND.join), ins("i32.store", CLUMP.parkKind),
       ...currentThread, get(0), k(1), ins("i32.add"), call("group_start"),
       ...raiseParking, k(0),
     ]),
-    // enter_subvi(plan) → 0 once the calling clump holds the non-reentrant subVI.
+    // enter_subvi(plan) → 0 once the calling clump holds the non-reentrant subOVI.
     fn("enter_subvi", ["i32"], ["i32"], ["i32"], [
-      k(header("subVILockLock")), call("lock"),
+      k(header("subOVILockLock")), call("lock"),
       get(0), k(1), ins("i32.add"), call("lock_record"), set(1),
-      ...ifThen([get(1), ins("i32.load", LOCK.held), ins("i32.eqz")], [get(1), k(1), ins("i32.store", LOCK.held), k(header("subVILockLock")), call("unlock"), k(0), ins("return")]),
-      k(header("subVILockLock")), call("unlock"),
+      ...ifThen([get(1), ins("i32.load", LOCK.held), ins("i32.eqz")], [get(1), k(1), ins("i32.store", LOCK.held), k(header("subOVILockLock")), call("unlock"), k(0), ins("return")]),
+      k(header("subOVILockLock")), call("unlock"),
       ...recordOf(currentClump), get(0), k(1), ins("i32.add"), ins("i32.store", CLUMP.lock),
       ...park(PARK_KIND.lock),
     ]),
-    // leave_subvi(plan): the subVI goes to the oldest call waiting for it, or is free.
+    // leave_subvi(plan): the subOVI goes to the oldest call waiting for it, or is free.
     fn("leave_subvi", ["i32"], [], ["i32", "i32"], [
-      k(header("subVILockLock")), call("lock"),
+      k(header("subOVILockLock")), call("lock"),
       get(0), k(1), ins("i32.add"), call("lock_record"), set(1),
       ...ifThen([get(1), ins("i32.load", LOCK.head), get(1), ins("i32.load", LOCK.tail), ins("i32.ne")], [
         get(1), ins("i32.load", LOCK.waiters), get(1), ins("i32.load", LOCK.head), ...readHeader("clumpCount"), ins("i32.rem_u"), k(4), ins("i32.mul"), ins("i32.add"), ins("i32.load"), set(2),
         get(1), get(1), ins("i32.load", LOCK.head), k(1), ins("i32.add"), ins("i32.store", LOCK.head),
-        k(header("subVILockLock")), call("unlock"),
+        k(header("subOVILockLock")), call("unlock"),
         ...currentThread, get(2), k(0), call("make_ready"), ins("return"),
       ]),
       get(1), k(0), ins("i32.store", LOCK.held),
-      k(header("subVILockLock")), call("unlock"),
+      k(header("subOVILockLock")), call("unlock"),
     ]),
     // park_external() → the calling clump, parked until JavaScript answers with wake_external.
     fn("park_external", [], ["i32"], [], [
@@ -453,17 +453,17 @@ export function schedulerFunctions({ functionIndex, globals, clumpType }) {
       ...ifThen([get(4), k(PARK_KIND.yield), ins("i32.eq")], [get(0), get(1), k(0), call("make_ready"), ins("return")]),
       ...ifThen([get(4), k(PARK_KIND.timer), ins("i32.eq")], [get(1), call("timer_insert"), ins("return")]),
       ...ifThen([get(4), k(PARK_KIND.lock), ins("i32.eq")], [
-        k(header("subVILockLock")), call("lock"),
+        k(header("subOVILockLock")), call("lock"),
         get(2), ins("i32.load", CLUMP.lock), call("lock_record"), set(3),
-        // The subVI may have been left after the clump found it held.
+        // The subOVI may have been left after the clump found it held.
         ...ifThen([get(3), ins("i32.load", LOCK.held), ins("i32.eqz")], [
           get(3), k(1), ins("i32.store", LOCK.held),
-          k(header("subVILockLock")), call("unlock"),
+          k(header("subOVILockLock")), call("unlock"),
           get(0), get(1), k(0), call("make_ready"), ins("return"),
         ]),
         get(3), ins("i32.load", LOCK.waiters), get(3), ins("i32.load", LOCK.tail), ...readHeader("clumpCount"), ins("i32.rem_u"), k(4), ins("i32.mul"), ins("i32.add"), get(1), ins("i32.store"),
         get(3), get(3), ins("i32.load", LOCK.tail), k(1), ins("i32.add"), ins("i32.store", LOCK.tail),
-        k(header("subVILockLock")), call("unlock"),
+        k(header("subOVILockLock")), call("unlock"),
       ]),
     ]),
 
@@ -550,7 +550,7 @@ export function schedulerFunctions({ functionIndex, globals, clumpType }) {
     // prepare_run(threads, now): the Run starts afresh on `threads` threads, at real time `now`.
     fn("prepare_run", ["i32", "f64"], [], ["i32", "i32", "i32"], [
       k(0), k(0), ins("i32.store", HEAP_LOCK),
-      ...["abort", "runState", "liveClumps", "externalWaits", "workEpoch", "idleThreads", "timerLock", "timerCount", "timerSequence", "subVILockLock", "oneClumpAtATime", "runningClumps"].flatMap((field) => storeHeader(field, [k(0)])),
+      ...["abort", "runState", "liveClumps", "externalWaits", "workEpoch", "idleThreads", "timerLock", "timerCount", "timerSequence", "subOVILockLock", "oneClumpAtATime", "runningClumps"].flatMap((field) => storeHeader(field, [k(0)])),
       ...storeHeader("threads", [get(0)]),
       // One deque per thread and one for the coordinator; kept with the memory for the next Run.
       get(0), k(1), ins("i32.add"), set(2),
@@ -611,7 +611,7 @@ export function schedulerData({ clumps, groups, reserve }) {
     dependents: reserve(dependentsTable.byteLength),
     groups: reserve(groupTable.byteLength),
     timerHeap: reserve(Math.max(clumpCount, 1) * TIMER_BYTES),
-    subVILocks: reserve(groups.length * LOCK_BYTES),
+    subOVILocks: reserve(groups.length * LOCK_BYTES),
   };
   // Each lock's waiters: at most every clump once.
   const locks = new DataView(new ArrayBuffer(groups.length * LOCK_BYTES));
@@ -626,13 +626,13 @@ export function schedulerData({ clumps, groups, reserve }) {
   put("dequeMask", dequeCapacity(clumpCount) - 1);
   put("dequeStride", dequeStride(clumpCount));
   put("timerHeap", addresses.timerHeap);
-  put("subVILocks", addresses.subVILocks);
+  put("subOVILocks", addresses.subOVILocks);
   const bytes = (view) => new Uint8Array(view.buffer);
   return [
     { desde: SCHEDULER, bytes: bytes(head) },
     { desde: addresses.clumps, bytes: bytes(records) },
     { desde: addresses.dependents, bytes: bytes(dependentsTable) },
     { desde: addresses.groups, bytes: bytes(groupTable) },
-    { desde: addresses.subVILocks, bytes: bytes(locks) },
+    { desde: addresses.subOVILocks, bytes: bytes(locks) },
   ];
 }

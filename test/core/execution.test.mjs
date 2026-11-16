@@ -1,4 +1,4 @@
-// Cómo corre un VI (DT-040): por flujo de datos, con los indicadores escritos en
+// Cómo corre un OVI (DT-040): por flujo de datos, con los indicadores escritos en
 // el momento, las ramas independientes a la vez, Abort y Latch. Cada caso es un
 // circuito construido igual en LabVIEW 2026 Q3 (labview-captures/run/), donde
 // se midió lo que aquí se comprueba.
@@ -99,7 +99,7 @@ test("el diagrama se parte en clumps: uno por espera y los instantáneos según 
   const { clumps } = compilar(g, CAT);
   // [las constantes y c] → [w1] → [a]
   assert.deepEqual(clumps, [{ deps: [], largo: false }, { deps: [0], largo: true }, { deps: [1], largo: false }]);
-  // Sin esperas, todo es un clump: el VI corre de un tirón, sin suspenderse.
+  // Sin esperas, todo es un clump: el OVI corre de un tirón, sin suspenderse.
   const quieto = vi([["k", "const", { value: 1 }], ["r", "indicator"]], [["k.result", "r.value"]]);
   assert.deepEqual(compilar(quieto.g, CAT).clumps, [{ deps: [], largo: false }]);
 });

@@ -1,4 +1,4 @@
-// Solder's files inside a Run (DT-067 §6–§7). Each file function of a VI is an external wait, as VISA's
+// Solder's files inside a Run (DT-067 §6–§7). Each file function of an OVI is an external wait, as VISA's
 // are (instrument-io.mjs): its clump parks, the Run's coordinator asks `io` here, writes the outputs into
 // the shared memory and answers, and the clump is woken. No thread of the Run ever blocks on a disk.
 //
@@ -42,7 +42,7 @@ const END_OF_FILE = 4;
 const NOTHING_READ = -1;
 
 /**
- * The error sources of the Delimited VIs, as LabVIEW's subVIs raise them (measured,
+ * The error sources of the Delimited VIs, as LabVIEW's subOVIs raise them (measured,
  * labview-captures/reports/2026-10-26-file-io-behavior.md §7 and 2026-10-28-delimited-spreadsheet.md Q3).
  */
 const WRITE_DELIMITED_CHAIN = (instance) => `Open/Create/Replace File in Write Spreadsheet String.vi->Write Delimited Spreadsheet (${instance}).vi`;
@@ -56,7 +56,7 @@ const PATH_ELEMENT = Object.freeze({ tipo: "string", tam: 4, ref: true, path: tr
 const AS_I64 = { kind: "int", bits: 64, signed: true };
 
 /**
- * The file functions a compiled VI imports, each `(...addresses) → ANSWERED | Promise`. `host` is the Run's
+ * The file functions a compiled OVI imports, each `(...addresses) → ANSWERED | Promise`. `host` is the Run's
  * createHostFunctions over `memory`; `compilado` gives the error cluster's layout; `pathRules` turns a path
  * into the system's name of the file; `dialogs` shows the dialogs of an unwired path and the confirmations
  * (file-dialogs.mjs). Without `io` (an editor with no I/O process yet), a file function fails the Run.
@@ -168,7 +168,7 @@ export function createFileFunctions({ io, dialogs = CANCELLING_DIALOGS, host, me
     const element = host.spreadsheetElementOf(code);
     return { array, element: element.kind === "int" ? AS_I64 : element };
   };
-  /** The path chosen in `functionName`'s dialog (the Delimited VIs have no prompt), or `null` for Cancel. */
+  /** The path chosen in `functionName`'s dialog (the Delimited OVIs have no prompt), or `null` for Cancel. */
   const chosenPathOf = async (functionName) => {
     const name = await chooseFile(functionName);
     return name === null ? null : pathFromText(name, pathRules);
@@ -180,7 +180,7 @@ export function createFileFunctions({ io, dialogs = CANCELLING_DIALOGS, host, me
     const caller = host.callChainOf(chainIndex);
     return `${caller ? `File Dialog->${caller}` : "File Dialog"}\r\n`;
   };
-  /** A Write Delimited error: its chain through LabVIEW's subVIs and the VI it ran in, and the file after a line break. */
+  /** A Write Delimited error: its chain through LabVIEW's subOVIs and the VI it ran in, and the file after a line break. */
   const writeDelimitedError = (code, instance, chainIndex, fileText) => {
     const caller = host.callChainOf(chainIndex);
     const chain = caller ? `${WRITE_DELIMITED_CHAIN(instance)}->${caller}` : WRITE_DELIMITED_CHAIN(instance);

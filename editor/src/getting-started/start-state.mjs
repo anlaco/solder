@@ -6,7 +6,7 @@
 // Pure, shared by the main process and the page: the main process reads and writes the state as JSON in the user's
 // data folder, so the rules are tested without Electron or the disk.
 
-import { VI_EXTENSIONS } from "../common/vi-paths.mjs";
+import { OVI_EXTENSIONS } from "../common/ovi-paths.mjs";
 
 /** How many files the list keeps; LabVIEW's limit was not measured. */
 export const MAX_RECENT_FILES = 30;
@@ -47,8 +47,8 @@ const hasExtension = (filePath, extensions) => extensions.some((extension) => fi
 
 /** The files the Open Existing list shows under `filter`, one of `RECENT_FILTERS`. */
 export function filterRecentFiles(files, filter) {
-  if (filter === "Recent OVIs") return files.filter((file) => hasExtension(file, VI_EXTENSIONS));
+  if (filter === "Recent OVIs") return files.filter((file) => hasExtension(file, OVI_EXTENSIONS));
   if (filter === "Recent Projects") return files.filter((file) => hasExtension(file, PROJECT_EXTENSIONS));
-  if (filter === "Other Recent Files") return files.filter((file) => !hasExtension(file, [...VI_EXTENSIONS, ...PROJECT_EXTENSIONS]));
+  if (filter === "Other Recent Files") return files.filter((file) => !hasExtension(file, [...OVI_EXTENSIONS, ...PROJECT_EXTENSIONS]));
   return files;
 }

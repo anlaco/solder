@@ -1,4 +1,4 @@
-// The main process: serves the editor and opens the two windows of each VI, the
+// The main process: serves the editor and opens the two windows of each OVI, the
 // Front Panel and the Block Diagram, as LabVIEW does. Several VIs can be open at
 // once (DT-045), each with its own windows, its own file and its own unsaved
 // changes.
@@ -12,15 +12,15 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, dialog, ipcMain, Menu, MessageChannelMain, protocol, screen, utilityProcess } from "electron";
 import { POLYMORPHIC_EXTENSION, isPolymorphicPath } from "../../core/model/polymorphic.mjs";
-import { VI_EXTENSIONS, isVIFile, pathKey, polymorphicSavePathFor, polymorphicSaveProposal, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey } from "../src/common/vi-paths.mjs";
+import { OVI_EXTENSIONS, isOVIFile, pathKey, polymorphicSavePathFor, polymorphicSaveProposal, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey } from "../src/common/ovi-paths.mjs";
 import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
-import { newVIBounds, otherWindowKind, tiledBounds } from "./window-layout.mjs";
+import { newOVIBounds, otherWindowKind, tiledBounds } from "./window-layout.mjs";
 import { restoredBounds, savedWindows, windowRecord, withWindows } from "./saved-windows.mjs";
 import { CHOSEN_THEME_ROUTE, THEMES, chosenThemeName } from "./theme.mjs";
 import { CHOSEN_PANEL_STYLE_ROUTE, PANEL_STYLES, chosenPanelStyleName } from "../src/front-panel/panel-style.mjs";
 import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from "../src/getting-started/start-state.mjs";
-import { ENTRY_KINDS, POLYMORPHIC_WINDOW_KIND, WINDOW_KINDS, createRegistry, isDirty, primaryWindowKind, recordChange, recordSave, viName, windowTitle } from "./vi-registry.mjs";
+import { ENTRY_KINDS, POLYMORPHIC_WINDOW_KIND, WINDOW_KINDS, createRegistry, isDirty, primaryWindowKind, recordChange, recordSave, oviName, windowTitle } from "./ovi-registry.mjs";
 import { readWindowStyle, watchWindowStyle } from "./window-style.mjs";
 import { createInstrumentIoProcess } from "./instrument-io-process.mjs";
 import { chosenFileOf, chosenFilesOf, confirmationBoxFor, confirmedBy, fileDialogFor, folderAfter, systemDialogFor } from "./file-dialog-options.mjs";
@@ -132,9 +132,9 @@ async function chosenPanelStylesheet() {
 // SOLDER_TAMANO=<width>x<height>: the size of the client area of the windows, to compare with the captures.
 const CAPTURE_CLIENT_SIZE = process.env.SOLDER_TAMANO?.split("x").map(Number);
 
-/** The windows of a new VI: Front Panel in front, Block Diagram behind it (REPORT.md §4), the VI opened as number `index`. */
-function boundsForNewVI(index) {
-  const bounds = newVIBounds(screen.getPrimaryDisplay().workArea, index);
+/** The windows of a new OVI: Front Panel in front, Block Diagram behind it (REPORT.md §4), the OVI opened as number `index`. */
+function boundsForNewOVI(index) {
+  const bounds = newOVIBounds(screen.getPrimaryDisplay().workArea, index);
   if (!CAPTURE_CLIENT_SIZE) return bounds;
   const [width, height] = CAPTURE_CLIENT_SIZE;
   return Object.fromEntries(Object.entries(bounds).map(([kind, place]) => [kind, { ...place, width, height }]));
@@ -158,7 +158,7 @@ function createWindow(entry, kind, bounds) {
 }
 
 /**
- * SOLDER_CAPTURAS=<directory>: saves the two windows of the first VI as PNG and
+ * SOLDER_CAPTURAS=<directory>: saves the two windows of the first OVI as PNG and
  * quits. With SOLDER_PALETA=x,y, first opens the diagram's palette with a right
  * click at that point; with SOLDER_CLICS=<id> <id>…, then clicks those
  * inventory elements, for example a folder, to open its subpalette. It is what
@@ -193,23 +193,23 @@ async function capture(windows, directory) {
   app.quit();
 }
 
-// ——— The VIs that are open ———
+// ——— The OVIs that are open ———
 //
-// The two windows of a VI are the same VI: here we remember where it is saved
+// The two windows of an OVI are the same OVI: here we remember where it is saved
 // and how it was when it was saved. If what the windows report differs, there
 // are unsaved changes: the title carries an asterisk, as in LabVIEW, and before
-// losing them the editor asks (spec/05 rule 41). vi-registry.mjs has the rules;
+// losing them the editor asks (spec/05 rule 41). ovi-registry.mjs has the rules;
 // this file has the windows.
 
 const registry = createRegistry();
-/** Open VI id → `{ entry, windows: { kind: BrowserWindow }, closing }`. */
-const openVIs = new Map();
-/** Web contents id → the open VI whose window it is. */
-const viOfContents = new Map();
+/** Open OVI id → `{ entry, windows: { kind: BrowserWindow }, closing }`. */
+const openOVIs = new Map();
+/** Web contents id → the open OVI whose window it is. */
+const oviOfContents = new Map();
 // Both extensions open (DT-051); the dialogs list the new one first.
-const FILTERS = [{ name: "Solder OVI", extensions: VI_EXTENSIONS.map((extension) => extension.slice(1)) }];
-// Open and Select a VI... also take a polymorphic OVI (DT-074), listed first so that the dialog shows both kinds.
-const OVI_AND_POLYMORPHIC_FILTERS = [{ name: "Solder OVI and polymorphic OVI", extensions: [...VI_EXTENSIONS, POLYMORPHIC_EXTENSION].map((extension) => extension.slice(1)) }, ...FILTERS];
+const FILTERS = [{ name: "Solder OVI", extensions: OVI_EXTENSIONS.map((extension) => extension.slice(1)) }];
+// Open and Select an OVI... also take a polymorphic OVI (DT-074), listed first so that the dialog shows both kinds.
+const OVI_AND_POLYMORPHIC_FILTERS = [{ name: "Solder OVI and polymorphic OVI", extensions: [...OVI_EXTENSIONS, POLYMORPHIC_EXTENSION].map((extension) => extension.slice(1)) }, ...FILTERS];
 /** What Save As offers for a polymorphic OVI, which LabVIEW saves as a `.vi` and Solder as a file of its own (DT-074). */
 const POLYMORPHIC_FILTERS = [{ name: "Solder polymorphic OVI", extensions: [POLYMORPHIC_EXTENSION.slice(1)] }];
 /** The Call Library Function Node's browse dialog: shared libraries first (LabVIEW's "Shared Libraries (*.dll)"), then WebAssembly modules (DT-080 §3) and every file. */
@@ -219,7 +219,7 @@ const ICON_FILTERS = [{ name: "SVG icon", extensions: ["svg"] }];
 const POLYMORPHIC_WINDOW_SIZE = { width: 482, height: 391 - 33 };
 const NEW_DIALOG_SIZE = { width: 802, height: 632 - 33 };
 let quitting = false;
-/** What was last copied in any VI, as the text its window sent. */
+/** What was last copied in any OVI, as the text its window sent. */
 let sharedClipboard = null;
 /** The Error list's Show Warnings, for the whole session; it starts off, as LabVIEW's Options default (measured). */
 let showWarnings = false;
@@ -251,10 +251,10 @@ function setTitles(open) {
   }
 }
 
-/** Sends the VI's window style to its windows whenever its `.css` changes on disk (DT-058 §2). */
+/** Sends the OVI's window style to its windows whenever its `.css` changes on disk (DT-058 §2). */
 function watchStyleOf(open) {
   open.stopWatchingStyle = watchWindowStyle(open.entry.path, (text) => {
-    for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.webContents.send("vi:window-style", text);
+    for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.webContents.send("ovi:window-style", text);
   });
 }
 
@@ -275,7 +275,7 @@ const polymorphicWindowPosition = (index) => {
  */
 function openPolymorphicWindow(entry) {
   const window = new BrowserWindow({
-    ...polymorphicWindowPosition(openVIs.size),
+    ...polymorphicWindowPosition(openOVIs.size),
     ...POLYMORPHIC_WINDOW_SIZE,
     useContentSize: true,
     title: windowTitle(entry, POLYMORPHIC_WINDOW_KIND),
@@ -287,8 +287,8 @@ function openPolymorphicWindow(entry) {
   window.on("page-title-updated", (event) => event.preventDefault());
   window.loadURL(`solder://editor/polymorphic.html?vi=${entry.id}`);
   const open = { entry, windows: { [POLYMORPHIC_WINDOW_KIND]: window }, closing: false };
-  openVIs.set(entry.id, open);
-  viOfContents.set(window.webContents.id, open);
+  openOVIs.set(entry.id, open);
+  oviOfContents.set(window.webContents.id, open);
   window.once("ready-to-show", () => {
     window.show();
     gettingStarted?.hide();
@@ -296,25 +296,25 @@ function openPolymorphicWindow(entry) {
   window.on("close", (event) => {
     if (open.closing || process.env.SOLDER_CAPTURAS) return;
     event.preventDefault();
-    closeVI(open);
+    closeOVI(open);
   });
   window.on("closed", () => {
     registry.close(entry.id);
-    openVIs.delete(entry.id);
-    if (openVIs.size) return;
+    openOVIs.delete(entry.id);
+    if (openOVIs.size) return;
     if (quitting || process.env.SOLDER_CAPTURAS) app.quit();
     else showGettingStarted();
   });
   return open;
 }
 
-/** Opens the windows of a VI the registry has just created. */
+/** Opens the windows of an OVI the registry has just created. */
 /**
  * Where the windows of an OVI open: where they were saved (DT-078), or, for a new OVI or one saved before, where a
- * new VI's go. The captures for the comparisons always use the new VI's places.
+ * new OVI's go. The captures for the comparisons always use the new OVI's places.
  */
 function boundsForOvi(entry) {
-  const newBounds = boundsForNewVI(openVIs.size);
+  const newBounds = boundsForNewOVI(openOVIs.size);
   const saved = savedWindows(entry.initialText);
   if (!saved || CAPTURE_CLIENT_SIZE) return newBounds;
   const workAreas = screen.getAllDisplays().map((display) => display.workArea);
@@ -330,12 +330,12 @@ function openOviWindows(entry) {
   const saved = savedWindows(entry.initialText);
   const origins = Object.fromEntries(WINDOW_KINDS.map((kind) => [kind, saved?.[kind]?.origin ?? null]));
   const open = { entry, windows: {}, origins, closing: false };
-  openVIs.set(entry.id, open);
+  openOVIs.set(entry.id, open);
   // The Block Diagram is created first so that the Front Panel is shown over it.
   for (const kind of [...WINDOW_KINDS].reverse()) {
     const window = createWindow(entry, kind, bounds[kind]);
     open.windows[kind] = window;
-    viOfContents.set(window.webContents.id, open);
+    oviOfContents.set(window.webContents.id, open);
   }
   watchStyleOf(open);
   const panel = open.windows["front-panel"];
@@ -346,18 +346,18 @@ function openOviWindows(entry) {
     panel.show();
     gettingStarted?.hide();
   });
-  // Closing the panel closes the VI, asking first if it has unsaved changes.
+  // Closing the panel closes the OVI, asking first if it has unsaved changes.
   panel.on("close", (event) => {
     if (open.closing || process.env.SOLDER_CAPTURAS) return;
     event.preventDefault();
-    closeVI(open);
+    closeOVI(open);
   });
   panel.on("closed", () => {
     open.stopWatchingStyle();
     registry.close(entry.id);
-    openVIs.delete(entry.id);
+    openOVIs.delete(entry.id);
     for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.destroy();
-    if (openVIs.size) return;
+    if (openOVIs.size) return;
     // LabVIEW does not quit when its last VI closes: the Getting Started window comes back (DT-052).
     if (quitting || process.env.SOLDER_CAPTURAS) app.quit();
     else showGettingStarted();
@@ -388,7 +388,7 @@ function showWindow(window) {
   window.focus();
 }
 
-/** Window ▸ Tile Left and Right: the Front Panel and the Block Diagram of a VI side by side, both shown. */
+/** Window ▸ Tile Left and Right: the Front Panel and the Block Diagram of an OVI side by side, both shown. */
 function tileWindows(open) {
   const bounds = tiledBounds(screen.getPrimaryDisplay().workArea);
   for (const kind of WINDOW_KINDS) {
@@ -401,29 +401,29 @@ function tileWindows(open) {
 /**
  * File ▸ Exit: LabVIEW asks about every VI with unsaved changes (Save, Don't
  * Save, Cancel; Cancel keeps everything open) and then quits, without opening
- * a blank VI (labview-captures/editor-checks/REPORT.md §3).
+ * a blank OVI (labview-captures/editor-checks/REPORT.md §3).
  */
 async function exitApplication() {
   const owner = BrowserWindow.getFocusedWindow() ?? undefined;
   const ask = async (open) => {
-    const { title, message, detail } = exitDialogText(viName(open.entry));
+    const { title, message, detail } = exitDialogText(oviName(open.entry));
     const { response } = await dialog.showMessageBox(owner, { type: "question", title, message, detail, buttons: EXIT_BUTTONS, defaultId: 0, cancelId: EXIT_BUTTONS.length - 1 });
     return EXIT_BUTTON_ANSWERS[response] ?? EXIT_ANSWERS.cancel;
   };
-  const save = async (open) => (await writeVI(open, primaryWindow(open), open.entry.current, false)) !== null;
-  if (!(await confirmExit([...openVIs.values()], { isDirty: (open) => isDirty(open.entry), ask, save }))) return;
+  const save = async (open) => (await writeOVI(open, primaryWindow(open), open.entry.current, false)) !== null;
+  if (!(await confirmExit([...openOVIs.values()], { isDirty: (open) => isDirty(open.entry), ask, save }))) return;
   quitting = true;
-  for (const open of openVIs.values()) open.closing = true;
+  for (const open of openOVIs.values()) open.closing = true;
   app.quit();
 }
 
 /** What a file opens as: a `.sdp` is a polymorphic OVI, anything else an OVI. */
 const kindOfFile = (filePath) => (isPolymorphicPath(filePath) ? ENTRY_KINDS.POLYMORPHIC : ENTRY_KINDS.OVI);
 
-/** Opens a VI from disk in its own windows, or brings its windows forward if it is already open. */
+/** Opens an OVI from disk in its own windows, or brings its windows forward if it is already open. */
 async function openPath(filePath, owner) {
   const existing = registry.findByPath(filePath);
-  if (existing) return focusPanel(openVIs.get(existing.id));
+  if (existing) return focusPanel(openOVIs.get(existing.id));
   let text;
   try {
     text = await readFile(filePath, "utf8");
@@ -442,7 +442,7 @@ async function openFirstFile(filePath) {
   return openWindows(entry);
 }
 
-function openNewVI() {
+function openNewOVI() {
   const { entry } = registry.open();
   return openWindows(entry);
 }
@@ -456,7 +456,7 @@ function openNewPolymorphic() {
 // ——— The New dialog (File ▸ New...) ———
 
 /** What each creation of the New dialog opens. */
-const NEW_DIALOG_CREATIONS = { "blank-ovi": openNewVI, "polymorphic-ovi": openNewPolymorphic };
+const NEW_DIALOG_CREATIONS = { "blank-ovi": openNewOVI, "polymorphic-ovi": openNewPolymorphic };
 let newDialogWindow = null;
 
 /** The New dialog: a window of its own, modal over the one that asked, which gives its choice back through `new-dialog:accept`. */
@@ -491,16 +491,16 @@ function closeNewDialog() {
 /** The VI has unsaved changes: LabVIEW's Close dialog (Save, Don't Save, Cancel). Returns whether to go on. */
 async function canDiscard(open, owner) {
   if (!isDirty(open.entry)) return true;
-  const { title, message, detail } = closeDialogText(viName(open.entry));
+  const { title, message, detail } = closeDialogText(oviName(open.entry));
   const { response } = await dialog.showMessageBox(owner, { type: "question", title, message, detail, buttons: CLOSE_BUTTONS, defaultId: 0, cancelId: CLOSE_BUTTONS.length - 1 });
   const answer = CLOSE_BUTTON_ANSWERS[response] ?? CLOSE_ANSWERS.cancel;
   if (answer === CLOSE_ANSWERS.cancel) return false;
   if (answer === CLOSE_ANSWERS.dontSave) return true;
-  return (await writeVI(open, owner, open.entry.current, false)) !== null;
+  return (await writeOVI(open, owner, open.entry.current, false)) !== null;
 }
 
-/** Closes a VI and its windows, after asking about unsaved changes unless `force`. Returns whether it closed. */
-async function closeVI(open, { force = false } = {}) {
+/** Closes an OVI and its windows, after asking about unsaved changes unless `force`. Returns whether it closed. */
+async function closeOVI(open, { force = false } = {}) {
   if (!force && !(await canDiscard(open, primaryWindow(open)))) return false;
   open.closing = true;
   for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.close();
@@ -508,12 +508,12 @@ async function closeVI(open, { force = false } = {}) {
 }
 
 /**
- * File ▸ Close All: one question for the VI created last, which can answer for
- * the rest, and then every VI leaves, those without changes too.
+ * File ▸ Close All: one question for the OVI created last, which can answer for
+ * the rest, and then every OVI leaves, those without changes too.
  */
-async function closeAllVIs(owner) {
+async function closeAllOVIs(owner) {
   const ask = async (open, remaining) => {
-    const { title, message, detail, checkboxLabel } = closeAllDialogText(viName(open.entry), remaining);
+    const { title, message, detail, checkboxLabel } = closeAllDialogText(oviName(open.entry), remaining);
     // The box can only be checked when there are others to apply the answer to; while checked LabVIEW says "Save - All".
     const buttons = checkboxLabel ? CLOSE_ALL_BUTTONS : CLOSE_BUTTONS;
     const { response, checkboxChecked } = await dialog.showMessageBox(owner, {
@@ -522,24 +522,24 @@ async function closeAllVIs(owner) {
     });
     return { answer: CLOSE_BUTTON_ANSWERS[response] ?? CLOSE_ANSWERS.cancel, applyToRemaining: !!checkboxLabel && checkboxChecked };
   };
-  const save = async (open) => (await writeVI(open, primaryWindow(open), open.entry.current, false)) !== null;
-  const order = closeAllOrder(openVIs.values(), (open) => Number(open.entry.id));
+  const save = async (open) => (await writeOVI(open, primaryWindow(open), open.entry.current, false)) !== null;
+  const order = closeAllOrder(openOVIs.values(), (open) => Number(open.entry.id));
   if (!(await confirmCloseAll(order, { isDirty: (open) => isDirty(open.entry), ask, save }))) return;
-  for (const open of order) await closeVI(open, { force: true });
+  for (const open of order) await closeOVI(open, { force: true });
 }
 
 /**
- * Writes the VI. Without a path, or with Save As, it asks where. The paths of
- * its subVIs are stored relative to the file, so they are rebased to where it
+ * Writes the OVI. Without a path, or with Save As, it asks where. The paths of
+ * its subOVIs are stored relative to the file, so they are rebased to where it
  * is written now (spec/05 rule 69). Returns the text written, or `null` if the
  * user cancelled.
  */
-async function writeVI(open, owner, text, saveAs) {
+async function writeOVI(open, owner, text, saveAs) {
   const { entry } = open;
   const polymorphic = entry.kind === ENTRY_KINDS.POLYMORPHIC;
   let target = entry.path;
   if (!target || saveAs) {
-    const defaultPath = polymorphic ? polymorphicSaveProposal(target, viName(entry)) : saveAsProposal(target, viName(entry));
+    const defaultPath = polymorphic ? polymorphicSaveProposal(target, oviName(entry)) : saveAsProposal(target, oviName(entry));
     const result = await dialog.showSaveDialog(owner, { title: "Save As", defaultPath, filters: polymorphic ? POLYMORPHIC_FILTERS : FILTERS });
     if (result.canceled || !result.filePath) return null;
     target = polymorphic ? polymorphicSavePathFor(result.filePath) : savePathFor(result.filePath);
@@ -548,27 +548,27 @@ async function writeVI(open, owner, text, saveAs) {
   await writeFile(target, rebased);
   const moved = target !== entry.path;
   recordSave(entry, target, rebased);
-  // Saved somewhere else, the VI takes the style that is next to its new file.
+  // Saved somewhere else, the OVI takes the style that is next to its new file.
   if (moved && !polymorphic) await restyle(open);
   rememberRecentFile(target);
   setTitles(open);
-  // The callers of this VI that are open must see its new connector.
-  for (const other of BrowserWindow.getAllWindows()) other.webContents.send("vi:saved", { id: entry.id, key: pathKey(target) });
+  // The callers of this OVI that are open must see its new connector.
+  for (const other of BrowserWindow.getAllWindows()) other.webContents.send("ovi:saved", { id: entry.id, key: pathKey(target) });
   return rebased;
 }
 
-/** Points the window style at the VI's current file and sends what is there. */
+/** Points the window style at the OVI's current file and sends what is there. */
 async function restyle(open) {
   open.stopWatchingStyle();
   watchStyleOf(open);
   const text = await readWindowStyle(open.entry.path);
-  for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.webContents.send("vi:window-style", text);
+  for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.webContents.send("ovi:window-style", text);
 }
 
 // ——— The Getting Started window (DT-052) ———
 //
 // LabVIEW starts with it, hides it behind the first VI and shows it again when
-// the last VI closes; closing it with no VI open quits. It remembers the recent
+// the last OVI closes; closing it with no OVI open quits. It remembers the recent
 // files and moves its carousel on one page each time it is shown
 // (labview-captures/reports/2026-10-15-getting-started.md).
 
@@ -605,13 +605,13 @@ function createGettingStarted() {
   window.on("page-title-updated", (event) => event.preventDefault());
   // With no VI open, closing it quits; with VIs open it only hides (unverified in LabVIEW).
   window.on("close", (event) => {
-    if (quitting || !openVIs.size) return;
+    if (quitting || !openOVIs.size) return;
     event.preventDefault();
     window.hide();
   });
   window.on("closed", () => {
     gettingStarted = null;
-    if (!openVIs.size) app.quit();
+    if (!openOVIs.size) app.quit();
   });
   window.loadURL("solder://editor/getting-started.html");
   return window;
@@ -626,8 +626,8 @@ function showGettingStarted() {
   else showWindow(window);
 }
 
-/** What a page learns about its VI when it starts. */
-const describe = (entry) => ({ id: entry.id, kind: entry.kind, text: entry.initialText, key: keyOf(entry), name: viName(entry), untitledNumber: entry.untitledNumber });
+/** What a page learns about its OVI when it starts. */
+const describe = (entry) => ({ id: entry.id, kind: entry.kind, text: entry.initialText, key: keyOf(entry), name: oviName(entry), untitledNumber: entry.untitledNumber });
 
 async function readTextOrNull(key) {
   try {
@@ -638,39 +638,39 @@ async function readTextOrNull(key) {
 }
 
 function handleRequests() {
-  const openOf = (event) => viOfContents.get(event.sender.id);
+  const openOf = (event) => oviOfContents.get(event.sender.id);
   const ownerOf = (event) => BrowserWindow.fromWebContents(event.sender);
 
-  ipcMain.handle("vi:init", async (event) => {
+  ipcMain.handle("ovi:init", async (event) => {
     const { entry } = openOf(event);
     return { ...describe(entry), windowStyle: await readWindowStyle(entry.path), oviLibRoot: OVI_LIB };
   });
   // Scrolling is saved with the OVI and never marks it modified (DT-078).
-  ipcMain.on("vi:scrolled", (event, origin) => {
+  ipcMain.on("ovi:scrolled", (event, origin) => {
     const open = openOf(event);
     const kind = WINDOW_KINDS.find((candidate) => open.windows[candidate]?.webContents.id === event.sender.id);
     if (kind) open.origins[kind] = origin;
   });
-  ipcMain.on("vi:cambio", (event, text) => {
+  ipcMain.on("ovi:cambio", (event, text) => {
     const open = openOf(event);
     recordChange(open.entry, text);
     setTitles(open);
   });
-  ipcMain.handle("vi:guardar", async (event, text, saveAs) => {
+  ipcMain.handle("ovi:guardar", async (event, text, saveAs) => {
     const open = openOf(event);
-    const written = await writeVI(open, ownerOf(event), text, saveAs);
-    return written === null ? null : { ruta: keyOf(open.entry), nombre: viName(open.entry), texto: written };
+    const written = await writeOVI(open, ownerOf(event), text, saveAs);
+    return written === null ? null : { ruta: keyOf(open.entry), nombre: oviName(open.entry), texto: written };
   });
-  // File ▸ Open: another VI, in its own windows.
-  ipcMain.handle("vi:abrir", async (event) => {
+  // File ▸ Open: another OVI, in its own windows.
+  ipcMain.handle("ovi:abrir", async (event) => {
     const owner = ownerOf(event);
     const result = await dialog.showOpenDialog(owner, { title: "Open", properties: ["openFile"], filters: OVI_AND_POLYMORPHIC_FILTERS });
     if (!result.canceled && result.filePaths.length) await openPath(result.filePaths[0], owner);
   });
-  // A subVI opened by double click or Open Front Panel; `key` is its absolute path.
-  ipcMain.handle("vi:open-path", (event, key) => openPath(key, ownerOf(event)));
-  // Select a VI...: the file dialog; returns the absolute path or nothing.
-  ipcMain.handle("vi:choose-subvi", async (event) => {
+  // A subOVI opened by double click or Open Front Panel; `key` is its absolute path.
+  ipcMain.handle("ovi:open-path", (event, key) => openPath(key, ownerOf(event)));
+  // Select an OVI...: the file dialog; returns the absolute path or nothing.
+  ipcMain.handle("ovi:choose-subovi", async (event) => {
     const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select an OVI", properties: ["openFile"], filters: OVI_AND_POLYMORPHIC_FILTERS });
     return result.canceled || !result.filePaths.length ? null : pathKey(result.filePaths[0]);
   });
@@ -710,19 +710,19 @@ function handleRequests() {
   });
   // A Run's confirmation (op 5, Delete with confirm): whether OK was pressed.
   ipcMain.handle("run:confirm", async (event, question) => confirmedBy(await dialog.showMessageBox(ownerOf(event), confirmationBoxFor(question))));
-  // The text of every VI that a VI reaches, from the disk (not from the other open VIs: a caller sees a subVI when it is saved).
-  ipcMain.handle("vi:subvi-texts", (event, text) => {
+  // The text of every OVI that an OVI reaches, from the disk (not from the other open OVIs: a caller sees a subOVI when it is saved).
+  ipcMain.handle("ovi:subovi-texts", (event, text) => {
     const entry = openOf(event).entry;
     return readHierarchyTexts(keyOf(entry), text, readTextOrNull, OVI_LIB);
   });
-  // The same for a VI that is about to be placed as a subVI: its own text and that of its subVIs.
-  ipcMain.handle("vi:subvi-texts-of", async (_event, key) => {
+  // The same for an OVI that is about to be placed as a subOVI: its own text and that of its subOVIs.
+  ipcMain.handle("ovi:subovi-texts-of", async (_event, key) => {
     const text = await readTextOrNull(key);
     if (text === null) return { texts: {}, missing: [key] };
     const { texts, missing } = await readHierarchyTexts(key, text, readTextOrNull, OVI_LIB);
     return { texts: { [key]: text, ...texts }, missing };
   });
-  // One clipboard for all the open VIs, kept as text: what a window copies reaches every window (spec/05 rule 73).
+  // One clipboard for all the open OVIs, kept as text: what a window copies reaches every window (spec/05 rule 73).
   ipcMain.handle("clipboard:read", () => sharedClipboard);
   ipcMain.on("clipboard:write", (_event, text) => {
     sharedClipboard = text;
@@ -733,26 +733,26 @@ function handleRequests() {
     showWarnings = !!on;
     for (const window of BrowserWindow.getAllWindows()) window.webContents.send("error-list:show-warnings-changed", showWarnings);
   });
-  ipcMain.on("vi:error", (event, message) => {
+  ipcMain.on("ovi:error", (event, message) => {
     dialog.showMessageBox(ownerOf(event), { type: "error", message: "The OVI cannot be opened.", detail: message });
   });
-  ipcMain.on("vi:avisar", (event, message, detail) => {
+  ipcMain.on("ovi:avisar", (event, message, detail) => {
     dialog.showMessageBox(ownerOf(event), { type: "warning", message, detail });
   });
   // The Getting Started window: what it remembers, a recent file clicked, and View ▸ Getting Started Window....
   ipcMain.handle("start:init", () => ({ ...startState, version: app.getVersion() }));
   ipcMain.handle("start:open-recent", (event, filePath) => openPath(filePath, ownerOf(event)));
   ipcMain.on("start:show", () => showGettingStarted());
-  // File ▸ New VI (Ctrl+N): a blank VI, numbered after every Untitled before it.
-  ipcMain.on("vi:new", () => openNewVI());
-  // File ▸ Close (Ctrl+W): on the Front Panel the whole VI leaves memory; on the Block Diagram only that window hides.
-  ipcMain.on("vi:close-window", (event) => {
+  // File ▸ New OVI (Ctrl+N): a blank OVI, numbered after every Untitled before it.
+  ipcMain.on("ovi:new", () => openNewOVI());
+  // File ▸ Close (Ctrl+W): on the Front Panel the whole OVI leaves memory; on the Block Diagram only that window hides.
+  ipcMain.on("ovi:close-window", (event) => {
     const open = openOf(event);
     if (open.windows["block-diagram"]?.webContents.id === event.sender.id) return open.windows["block-diagram"].hide();
-    closeVI(open);
+    closeOVI(open);
   });
   // File ▸ New...: the New dialog; its OK opens what was chosen and Cancel only closes it.
-  ipcMain.on("vi:new-dialog", (event) => showNewDialog(ownerOf(event)));
+  ipcMain.on("ovi:new-dialog", (event) => showNewDialog(ownerOf(event)));
   ipcMain.on("new-dialog:accept", (_event, creation) => {
     closeNewDialog();
     NEW_DIALOG_CREATIONS[creation]?.();
@@ -769,19 +769,19 @@ function handleRequests() {
     return result.canceled || !result.filePaths.length ? null : readTextOrNull(result.filePaths[0]);
   });
   // File ▸ Close All.
-  ipcMain.on("vi:close-all", (event) => closeAllVIs(ownerOf(event)));
-  // A VI that could not be read closes without asking: there is nothing to save.
-  ipcMain.on("vi:close", (event) => closeVI(openOf(event), { force: true }));
-  // File ▸ Exit: asks about each VI with unsaved changes, then quits (REPORT.md §3).
-  ipcMain.on("vi:salir", exitApplication);
-  // Ctrl+E: the other window of the VI, from either (REPORT.md §7).
-  ipcMain.on("vi:toggle-window", (event) => {
+  ipcMain.on("ovi:close-all", (event) => closeAllOVIs(ownerOf(event)));
+  // An OVI that could not be read closes without asking: there is nothing to save.
+  ipcMain.on("ovi:close", (event) => closeOVI(openOf(event), { force: true }));
+  // File ▸ Exit: asks about each OVI with unsaved changes, then quits (REPORT.md §3).
+  ipcMain.on("ovi:salir", exitApplication);
+  // Ctrl+E: the other window of the OVI, from either (REPORT.md §7).
+  ipcMain.on("ovi:toggle-window", (event) => {
     const open = openOf(event);
     const kind = WINDOW_KINDS.find((candidate) => open.windows[candidate].webContents.id === event.sender.id);
     showWindow(open.windows[otherWindowKind(kind)]);
   });
   // Ctrl+T: Window ▸ Tile Left and Right (REPORT.md §4).
-  ipcMain.on("vi:tile", (event) => tileWindows(openOf(event)));
+  ipcMain.on("ovi:tile", (event) => tileWindows(openOf(event)));
   // A Run that talks to instruments gets its own port to the I/O process (DT-065 §3).
   ipcMain.on("io:connect", (event) => event.sender.postMessage("io:port", null, [instrumentIo.connect()]));
 }
@@ -801,13 +801,13 @@ const instrumentIo = createInstrumentIoProcess({
   },
 });
 
-/** The VI file named on the command line: a double click on a file in the system's file manager starts Solder with it. */
-const viFileInArguments = (argv) => argv.slice(1).find((argument) => (isVIFile(argument) || isPolymorphicPath(argument)) && !argument.startsWith("-"));
+/** The OVI file named on the command line: a double click on a file in the system's file manager starts Solder with it. */
+const oviFileInArguments = (argv) => argv.slice(1).find((argument) => (isOVIFile(argument) || isPolymorphicPath(argument)) && !argument.startsWith("-"));
 
-// One Solder at a time: opening a VI file while it runs opens it in the running one.
+// One Solder at a time: opening an OVI file while it runs opens it in the running one.
 if (!app.requestSingleInstanceLock()) app.quit();
 app.on("second-instance", (_event, argv) => {
-  const file = viFileInArguments(argv);
+  const file = oviFileInArguments(argv);
   if (file) openPath(path.resolve(file));
 });
 
@@ -837,19 +837,19 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
   serve();
   handleRequests();
-  // SOLDER_ABRIR=<file.ovi>: starts with that VI open instead of a new one (for the comparisons of capturing-labview.md §5).
+  // SOLDER_ABRIR=<file.ovi>: starts with that OVI open instead of a new one (for the comparisons of capturing-labview.md §5).
   await loadStartState();
   app.on("before-quit", () => {
     quitting = true;
     instrumentIo.stop();
   });
   // LabVIEW starts on its Getting Started window; started with a VI file it opens only that VI (REPORT.md §3).
-  // The captures for the comparisons start on a new VI.
-  const fileToOpen = process.env.SOLDER_ABRIR ?? viFileInArguments(process.argv);
+  // The captures for the comparisons start on a new OVI.
+  const fileToOpen = process.env.SOLDER_ABRIR ?? oviFileInArguments(process.argv);
   if (fileToOpen) {
     const first = await openFirstFile(path.resolve(fileToOpen));
     if (process.env.SOLDER_CAPTURAS) capture(first.windows, process.env.SOLDER_CAPTURAS);
-  } else if (process.env.SOLDER_CAPTURAS) capture(openNewVI().windows, process.env.SOLDER_CAPTURAS);
+  } else if (process.env.SOLDER_CAPTURAS) capture(openNewOVI().windows, process.env.SOLDER_CAPTURAS);
   else showGettingStarted();
   offerUpdate();
 });

@@ -1,6 +1,6 @@
 // The debugger of a Run (DT-047), on the side of the run worker: it receives the
-// hooks the compiled VI calls after each node and decides what happens next: report
-// the values, hold the VI at a breakpoint, a step or a Pause, and set the pace of
+// hooks the compiled OVI calls after each node and decides what happens next: report
+// the values, hold the OVI at a breakpoint, a step or a Pause, and set the pace of
 // Highlight Execution. It knows nothing of the page except the messages it sends
 // (see run-worker.mjs for the protocol) and the plan the page gave it.
 //
@@ -8,10 +8,10 @@
 // (labview-captures/debugging/REPORT.md §4). The controller recovers "before" from the
 // plan: every report of a node counts as the arrival of its value at the nodes it
 // feeds, and a node whose reported inputs have all arrived is "ready", about to fire.
-// A breakpoint on a node holds the VI at the report that made it ready; a node with
+// A breakpoint on a node holds the OVI at the report that made it ready; a node with
 // no reported inputs (a constant) cannot be caught before, so it stops right after it.
 // The borders of the structures (tunnels, shift registers, the loop's "i") report too:
-// their values reach the nodes they feed, but the VI never stops before or at one of
+// their values reach the nodes they feed, but the OVI never stops before or at one of
 // them, since they are not nodes; nor at a constant or a panel terminal. Single stepping
 // also stops at the frames of the structures (before one runs, at the end of a loop's
 // iteration, of a Case's frame, of a Flat Sequence's frame) and once more at the end of
@@ -33,7 +33,7 @@ export const WIRE_PIXELS_PER_SECOND = { slow: 500, medium: 1000, fast: 3200, "ve
 /** How long a node stays lit when it has no wire to animate (unverified; scaled like the iteration times). */
 export const MINIMUM_NODE_PACE_MS = { slow: 120, medium: 50, fast: 15, "very-fast": 5 };
 
-/** How long the values of a VI that runs free are gathered before they are sent to the page. */
+/** How long the values of an OVI that runs free are gathered before they are sent to the page. */
 export const VALUE_BATCH_MS = 40;
 
 /** The whole diagram is drawn dimmed for about 0.6 s before the data flows (REPORT.md §1, frames 1-5). */
@@ -45,7 +45,7 @@ export function paceFor(speed, longestWirePixels = 0) {
   return Math.round(Math.max(MINIMUM_NODE_PACE_MS[speed], growing));
 }
 
-/** What the page tells the controller about the diagram of the VI that runs. */
+/** What the page tells the controller about the diagram of the OVI that runs. */
 export const EMPTY_PLAN = { successors: {}, inputCounts: {}, containers: {}, loops: [], parents: {}, wireLengths: {}, wires: {}, quiet: [] };
 
 /**
@@ -124,7 +124,7 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
   }
 
   /**
-   * Where the VI has to stop after the report of `node`, if anywhere. Stepping stops before a node, or at one
+   * Where the OVI has to stop after the report of `node`, if anywhere. Stepping stops before a node, or at one
    * that has no inputs to wait for (it cannot be caught before), but never at a border (`border`: a tunnel, a
    * shift register, "i"), a constant or a panel terminal; a breakpoint on a constant still does.
    */
@@ -161,7 +161,7 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
   };
 
   async function afterNode(node, border = false) {
-    // Another clump already stopped the VI: nothing goes on until it is released.
+    // Another clump already stopped the OVI: nothing goes on until it is released.
     while (paused) await paused.gate;
     const pace = config.highlight.on ? paceFor(config.highlight.speed, plan.wireLengths[node] ?? 0) : 0;
     if (config.highlight.on) send({ debug: { ran: node, values: flushValues(), pace } });
@@ -233,12 +233,12 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
       seenSinceStepOut = new Set();
       refreshActive();
     },
-    /** Start Single Stepping, from edit mode: the VI starts and stops before its first node. */
+    /** Start Single Stepping, from edit mode: the OVI starts and stops before its first node. */
     startStepping() {
       stepMode = "any";
       refreshActive();
     },
-    /** Continue, Step Into, Step Over and Step Out of a paused VI. */
+    /** Continue, Step Into, Step Over and Step Out of a paused OVI. */
     resume(mode = "continue") {
       if (!paused) return;
       const node = paused.node;
@@ -258,7 +258,7 @@ export function createDebugController({ debugNodes, plan = EMPTY_PLAN, send, sle
     },
     /** The Run ended: what was gathered goes to the page. */
     flush,
-    /** The VI's diagram finished: while stepping, it stops once more at its end, until it is told to go on. */
+    /** The OVI's diagram finished: while stepping, it stops once more at its end, until it is told to go on. */
     async finishDiagram() {
       if (stepMode === null) return;
       await pauseAt({ kind: "diagram", node: null });

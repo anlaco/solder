@@ -1,4 +1,4 @@
-// The editor's run worker with a VI whose Stop button is read inside its While Loop (DT-063 §10): the
+// The editor's run worker with an OVI whose Stop button is read inside its While Loop (DT-063 §10): the
 // window sends the click as a "control" message, the worker writes it into the panel's memory at the
 // next turn, the loop reads it, stops, and the Latch goes back to FALSE with a "soltar" message.
 
@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { compilar, runnableOVI } from "../../core/compiler/compiler.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { CAT, buildOVI } from "../helpers.mjs";
 
 const sent = [];
 globalThis.onmessage = null;
@@ -15,7 +15,7 @@ await import("../../editor/src/window/run-worker.mjs");
 
 /** A While Loop that waits 5 ms a turn, shows its "i" and stops when Stop is pressed. */
 const loopWithStop = () =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.loop("w", "while-loop");
     b.node("stop", "bool-control", { style: "stop-button", mechanical: "latch-when-released" }, "w");
     b.node("ms", "const", { value: 5 }, "w");

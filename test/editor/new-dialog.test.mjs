@@ -65,8 +65,8 @@ test("File New... is a row of the menus of the OVI windows and of Getting Starte
   const editorWindow = readFileSync(path.join(RAIZ, "editor/src/window/editor-window.mjs"), "utf8");
   assert.match(editorWindow, /new: \(\) => window\.solder\?\.nuevo\(\)/);
   const main = readFileSync(path.join(RAIZ, "editor/electron/main.mjs"), "utf8");
-  assert.match(main, /const NEW_DIALOG_CREATIONS = \{ "blank-ovi": openNewVI, "polymorphic-ovi": openNewPolymorphic \}/);
-  assert.match(main, /ipcMain\.on\("vi:new-dialog"/);
+  assert.match(main, /const NEW_DIALOG_CREATIONS = \{ "blank-ovi": openNewOVI, "polymorphic-ovi": openNewPolymorphic \}/);
+  assert.match(main, /ipcMain\.on\("ovi:new-dialog"/);
   assert.match(main, /modal: !!owner/, "it is modal over the window that asked");
   // Every creation of the tree that is done has an opener.
   for (const creation of Object.values(State.CREATIONS)) assert.ok(main.includes(`"${creation}": open`), creation);

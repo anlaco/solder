@@ -96,7 +96,7 @@ function captions(inv) {
   ).join("");
 }
 
-/** The floating explanation of a greyed item (rule 54), the same one the VI windows show. */
+/** The floating explanation of a greyed item (rule 54), the same one the OVI windows show. */
 function explanation(inv, opened) {
   const entry = opened && inv.resolver(opened.id);
   if (!entry) return "";

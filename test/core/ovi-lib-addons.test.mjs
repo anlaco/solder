@@ -34,12 +34,12 @@ test("an OVI chosen inside an add-on is stored by its symbolic path, unless ovi.
   assert.equal(OviLib.oviLibPathFor(`${OVI_LIB}/Utility/Add Two.sdg`, locator()), "<ovilib>/Utility/Add Two.sdg");
   assert.equal(OviLib.oviLibPathFor(`${DAQ}/Shared/Clash.sdg`, locator()), null, "the symbolic path would lead to ovi.lib's copy");
   assert.equal(OviLib.oviLibPathFor(`${DAQ}/DAQ/New.sdg`, locator()), null, "a file not in the index would resolve under ovi.lib");
-  assert.equal(OviLib.oviLibPathFor("/home/ana/vis/mine.sdg", locator()), null);
+  assert.equal(OviLib.oviLibPathFor("/home/ana/ovis/mine.sdg", locator()), null);
 });
 
 test("the hierarchy marks an add-on's OVIs as ovi.lib's", () => {
   assert.equal(OviLib.hierarchyName(`${DAQ}/DAQ/Read.sdg`, locator()), "Read.sdg (ovi.lib)");
-  assert.equal(OviLib.hierarchyName("/home/ana/vis/mine.sdg", locator()), "mine.sdg");
+  assert.equal(OviLib.hierarchyName("/home/ana/ovis/mine.sdg", locator()), "mine.sdg");
 });
 
 test("the locator is plain data, so it crosses from the main process to the page unchanged", () => {

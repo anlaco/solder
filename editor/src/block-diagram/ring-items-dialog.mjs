@@ -214,7 +214,7 @@ export function click(dialog, id, clicks = 1) {
   return { dialog: revealed(act(dialog, id, clicks)) };
 }
 
-/** The VI with the items of the dialog. Allow undefined values is written only where the dialog lets it be changed (the controls). */
+/** The OVI with the items of the dialog. Allow undefined values is written only where the dialog lets it be changed (the controls). */
 export function apply(graph, dialog) {
   const committed = commit(dialog);
   const withItems = Gr.fijarConfig(graph, committed.nodo, { items: itemsOf(committed) });

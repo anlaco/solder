@@ -34,7 +34,7 @@ export const editMenuId = (windowName) => `window.${windowName}.menu.edit`;
  *   hasSelection          anything at all is selected
  *   clipboardFilled       something was copied
  *   undoName, redoName    what the step to undo or to redo is called, if it has a name: the rows say "Undo Change
- *                         Attribute" (measured on an Express VI's dialog, DT-069)
+ *                         Attribute" (measured on an Express OVI's dialog, DT-069)
  */
 export function editMenuVariants(windowName, { canUndo, canRedo, canCopy, hasSelection, clipboardFilled, undoName, redoName }) {
   const row = (name) => `${editMenuId(windowName)}.${name}`;

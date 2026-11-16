@@ -11,7 +11,7 @@ import { ERROR } from "../../core/model/types.mjs";
 import { createNodePool } from "../../core/runtime/node-pool.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { CAT, buildOVI } from "../helpers.mjs";
 
 const ON_LINUX = process.platform === "linux";
 const C_LIBRARY = "libc.so.6";
@@ -36,7 +36,7 @@ async function run(vi, options = {}) {
 
 /** strlen of a string constant, with its return value and error out shown. */
 const strlenOf = (text, { library = C_LIBRARY, functionName = "strlen", errorIn } = {}) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("text", "str-const", { value: text });
     b.node("call", "call-library", configured({ library, function: functionName, "return-type": { type: "numeric", "data-type": "uptr" }, parameters: [{ name: "arg1", type: "string" }] }));
     b.node("length", "indicator", { type: "u64" });
@@ -59,7 +59,7 @@ for (const [where, options] of [["on one thread", () => ({})], ["on a pool", () 
 }
 
 test("a number goes by value and a double comes back", { skip: !ON_LINUX }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("angle", "const", { value: 0, type: "number" });
     b.node("call", "call-library", configured({ library: MATH_LIBRARY, function: "cos", "return-type": { type: "numeric", "data-type": "dbl" }, parameters: [numeric("x", "dbl")] }));
     b.node("cosine", "indicator", { type: "number" });
@@ -70,7 +70,7 @@ test("a number goes by value and a double comes back", { skip: !ON_LINUX }, asyn
 });
 
 test("what the function writes through a pointer comes out of the parameter's output", { skip: !ON_LINUX }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("x", "const", { value: 8, type: "number" });
     b.node("call", "call-library", configured({
       library: MATH_LIBRARY,
@@ -90,7 +90,7 @@ test("what the function writes through a pointer comes out of the parameter's ou
 });
 
 test("an array goes by its data's address and what the function writes into it comes back", { skip: !ON_LINUX }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("bytes", "arr-const", { type: { array: "u8" }, value: [0, 0, 0, 0] });
     b.node("fill", "const", { value: 65, type: "i32" });
     b.node("count", "const", { value: 4, type: "u64" });
@@ -109,7 +109,7 @@ test("an array goes by its data's address and what the function writes into it c
 });
 
 test("a string's buffer takes its minimum size from another parameter, and what is written into it comes out", { skip: !ON_LINUX }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("destination", "str-const", { value: "" });
     b.node("source", "str-const", { value: "solder" });
     b.node("size", "const", { value: 16, type: "u64" });
@@ -146,7 +146,7 @@ test("with an error in, nothing is called: the return is 0 and the error passes 
 });
 
 test("with an error in, a parameter passed by pointer comes out as it went in", { skip: !ON_LINUX }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("x", "const", { value: 8, type: "number" });
     b.node("seven", "const", { value: 7, type: "i32" });
     b.node("incoming", "error-cluster-constant", { value: { status: true, code: 5, source: "orig" } });
@@ -175,15 +175,15 @@ test("a warning in calls the function and passes unchanged", { skip: !ON_LINUX }
 });
 
 test("a node with no function does not compile, nor one with an unwired string", () => {
-  const noFunction = buildVI(CAT, (b) => b.node("call", "call-library", configured({})));
+  const noFunction = buildOVI(CAT, (b) => b.node("call", "call-library", configured({})));
   assert.match(JSON.stringify(compilar(noFunction.g, CAT).errores), /No function specified/);
-  const unwired = buildVI(CAT, (b) => b.node("call", "call-library", configured({ library: C_LIBRARY, function: "strlen", parameters: [{ name: "arg1", type: "string" }] })));
+  const unwired = buildOVI(CAT, (b) => b.node("call", "call-library", configured({ library: C_LIBRARY, function: "strlen", parameters: [{ name: "arg1", type: "string" }] })));
   assert.match(JSON.stringify(compilar(unwired.g, CAT).errores), /missing a wire on its input \\"arg1\\"/);
 });
 
 // Seen: NI's DAQmx Read (Analog 1D DBL 1Chan NSamp) leaves its array input unwired and runs (labview-captures/daq-api/walk.json).
 test("an unwired array goes as an empty one, and what the function writes into it comes out", { skip: !ON_LINUX }, async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("call", "call-library", configured({
       library: C_LIBRARY,
       function: "memset",

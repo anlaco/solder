@@ -3,7 +3,7 @@
 // constant, control and indicator.
 //
 // Pure, like edit-items-dialog.mjs: `open` builds it from the node, `key` and `click` turn
-// what the user does into an intent, `apply` writes the chosen item into the VI and `view`
+// what the user does into an intent, `apply` writes the chosen item into the OVI and `view`
 // draws it. Measured in LabVIEW 2026 Q3 (labview-captures/reports/2026-10-15-select-item.md).
 
 import * as CV from "../../../core/model/control-values.mjs";
@@ -94,7 +94,7 @@ export function click(dialog, id, clicks = 1) {
 }
 
 /**
- * The VI with the picked item. On the constant it is its value, which marks the VI modified;
+ * The OVI with the picked item. On the constant it is its value, which marks the OVI modified;
  * on a control or an indicator it is its current value, which does not (measured, DT-053).
  */
 export function apply(g, dialog) {
@@ -106,7 +106,7 @@ export function apply(g, dialog) {
   return node.tipo === "enum-const" ? Gr.fijarValor(g, node.id, picked) : CV.setCurrentValue(g, node.id, picked);
 }
 
-/** The window, modal over the VI like the other dialogs. */
+/** The window, modal over the OVI like the other dialogs. */
 export function view(inv, dialog) {
   const L = LAYOUT;
   const greyed = greyedItem(dialog);

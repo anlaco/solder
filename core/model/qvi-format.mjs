@@ -1,4 +1,4 @@
-// Reading and writing a VI in its .qvi file (spec/02-syntax.md,
+// Reading and writing an OVI in its .qvi file (spec/02-syntax.md,
 // schema/qvi.schema.json).
 //
 // The .qvi separates the program from its presentation: `front-panel` and
@@ -129,7 +129,7 @@ function limpio(o) {
 }
 
 /**
- * The VI as an object conforming to qvi.schema.json. `cat` is the block
+ * The OVI as an object conforming to qvi.schema.json. `cat` is the block
  * catalog (graph.mjs): it tells whether a panel item is a control or an
  * indicator.
  */
@@ -139,7 +139,7 @@ export function escribir(g, cat) {
   const diagram = {};
   const placPanel = {};
   const BORDE = new Set(["tunnel-in", "tunnel-out", "case-tunnel-out", "shift-register-left", "shift-register-right", "loop-iteration", "loop-condition", "loop-count", "case-selector"]);
-  // Un ámbito por estructura (por marco, en un Case) y otro para el diagrama del VI (clave "").
+  // Un ámbito por estructura (por marco, en un Case) y otro para el diagrama del OVI (clave "").
   const ambitos = new Map([["", { nodes: [], wires: [], structures: [] }]]);
   const ambito = (id, marco) => {
     const clave = id === undefined ? "" : marco === undefined ? id : `${id}#${marco}`;
@@ -198,7 +198,7 @@ export function escribir(g, cat) {
       label: etiqueta,
       "label-offset": n.etiqueta,
       "show-terminals": n.vista?.terminales || undefined,
-      // A terminal is an icon by default, so its file says `false` when it is not; an Express VI is a box by default, so its file
+      // A terminal is an icon by default, so its file says `false` when it is not; an Express OVI is a box by default, so its file
       // says `true` when it is an icon (DT-069).
       "view-as-icon": n.vista?.compacto ? Boolean(b.express) : undefined,
       rows: n.vista?.rows || undefined,
@@ -275,14 +275,14 @@ export function escribir(g, cat) {
   });
 }
 
-/** El texto del fichero: JSON con sangría de dos espacios, siempre igual para el mismo VI. */
+/** El texto del fichero: JSON con sangría de dos espacios, siempre igual para el mismo OVI. */
 export const aTexto = (g, cat) => `${JSON.stringify(escribir(g, cat), null, 2)}\n`;
 
 /** Un fichero que no se puede leer, con el motivo. */
 export class ErrorQvi extends Error {}
 
 /**
- * Lee un VI. `datos` es el objeto del fichero (o su texto). Las estructuras se
+ * Lee un OVI. `datos` es el objeto del fichero (o su texto). Las estructuras se
  * reconstruyen planas, con `dentro` (DT-041).
  */
 export function leer(datos, cat) {
@@ -422,7 +422,7 @@ export function leer(datos, cat) {
     try {
       cat.puerto(n, puerto, dir);
     } catch (err) {
-      // A subVI that lost this connector terminal: the VI still opens, with this wire broken (DT-046).
+      // A subOVI that lost this connector terminal: the OVI still opens, with this wire broken (DT-046).
       if (n.tipo === "subvi") return { suelto: [n.x ?? 0, n.y ?? 0] };
       throw new ErrorQvi(err.message);
     }

@@ -1,4 +1,4 @@
-// File Dialog as an Express VI in the editor (DT-069, DT-067 (d2)): placed from Advanced File Functions, its configuration dialog
+// File Dialog as an Express OVI in the editor (DT-069, DT-067 (d2)): placed from Advanced File Functions, its configuration dialog
 // and its node. Measured in LabVIEW 2026 Q3: labview-captures/reports/2026-10-29-file-dialog-express.md Q1, Q2 and the capture
 // file-io/file-dialog/config-dialog.png (1.5 times the screen). What was NOT measured is in the modules' own comments.
 

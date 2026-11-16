@@ -2,7 +2,7 @@
 // value, `config.value`, which is what the file saves, and a current value,
 // `currentValue`, which typing into it or operating it changes and which the
 // file never saves; without one, the current value is the default. The editor,
-// the command line and the tests all start a VI from the current values.
+// the command line and the tests all start an OVI from the current values.
 
 import { EMPTY_PATH } from "./paths.mjs";
 

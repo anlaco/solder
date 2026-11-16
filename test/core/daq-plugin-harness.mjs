@@ -28,7 +28,7 @@ const PLATFORM_PART = `daq-${process.platform === "win32" ? "windows" : process.
 export const NO_ERROR = { status: false, code: 0, source: "" };
 
 /** The plugin's OVIs by file name, read as the editor reads a subOVI; each finds its own subOVIs the same way. */
-export const PLUGIN = Gr.conSubVIs(CAT, (file) => {
+export const PLUGIN = Gr.conSubOVIs(CAT, (file) => {
   try {
     return { key: file, g: leer(JSON.parse(readFileSync(path.join(PLUGIN_FOLDER, file), "utf8")), PLUGIN), cat: PLUGIN };
   } catch {
@@ -60,7 +60,7 @@ export function installAddonForTheseTests() {
   });
 }
 
-/** Compiles and runs an OVI built with `buildVI`; what each indicator got, by the name it was built with. */
+/** Compiles and runs an OVI built with `buildOVI`; what each indicator got, by the name it was built with. */
 export async function run(vi) {
   const compiled = compilar(vi.g, PLUGIN);
   assert.ok(!compiled.errores, JSON.stringify(compiled.errores));

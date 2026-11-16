@@ -1,5 +1,5 @@
-// SubVIs (DT-045): every VI of a hierarchy is compiled into one module, each
-// with its own data space; a non-reentrant subVI serves one call at a time and
+// SubOVIs (DT-045): every OVI of a hierarchy is compiled into one module, each
+// with its own data space; a non-reentrant subOVI serves one call at a time and
 // keeps its state between calls.
 
 import assert from "node:assert/strict";
@@ -9,7 +9,7 @@ import { compilar, runnableOVI } from "../../core/compiler/compiler.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { createVirtualHost } from "../../core/runtime/scheduler.mjs";
 import { loadHierarchy } from "../../core/model/hierarchy.mjs";
-import { CAT, buildVI, callerCatalog } from "../helpers.mjs";
+import { CAT, buildOVI, callerCatalog } from "../helpers.mjs";
 
 async function run(vi, cat, values = {}, options = {}, compiled = compilar(vi.g, cat)) {
   assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
@@ -21,7 +21,7 @@ async function run(vi, cat, values = {}, options = {}, compiled = compilar(vi.g,
 
 /** add2: x + y, with y's default value set to 10. */
 const add2 = () =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("x", "control");
     b.node("y", "control", { value: 10 });
     b.node("add", "add");
@@ -32,17 +32,17 @@ const add2 = () =>
     b.connector(["x", "y"], ["sum"]);
   });
 
-test("a subVI node has the ports of the connector of the VI it calls", () => {
+test("a subOVI node has the ports of the connector of the VI it calls", () => {
   const cat = callerCatalog({ "add2.qvi": add2() });
-  const caller = buildVI(cat, (b) => b.node("call", "subvi", { vi: "add2.qvi" }));
+  const caller = buildOVI(cat, (b) => b.node("call", "subvi", { vi: "add2.qvi" }));
   const ports = cat.puertos(caller.g.nodos[0]);
   assert.deepEqual(ports.in.map((p) => [p.name, p.type, !!p.optional]), [["control_1", "number", true], ["control_2", "number", true]]);
   assert.deepEqual(ports.out.map((p) => [p.name, p.type]), [["indicator_1", "number"]]);
 });
 
-test("a call runs the subVI and an unwired input takes the default value of its control", async () => {
+test("a call runs the subOVI and an unwired input takes the default value of its control", async () => {
   const cat = callerCatalog({ "add2.qvi": add2() });
-  const caller = buildVI(cat, (b) => {
+  const caller = buildOVI(cat, (b) => {
     b.node("two", "const", { value: 2 });
     b.node("three", "const", { value: 3 });
     b.node("call", "subvi", { vi: "add2.qvi" });
@@ -58,8 +58,8 @@ test("a call runs the subVI and an unwired input takes the default value of its 
   assert.deepEqual(await run(caller, cat), { r: 5, r2: 12 });
 });
 
-test("a subVI passes strings and arrays by value", async () => {
-  const join = buildVI(CAT, (b) => {
+test("a subOVI passes strings and arrays by value", async () => {
+  const join = buildOVI(CAT, (b) => {
     b.node("s", "str-control");
     b.node("t", "str-const", { value: "!" });
     b.node("cat", "concatenate-strings");
@@ -75,7 +75,7 @@ test("a subVI passes strings and arrays by value", async () => {
     b.connector(["s", "a"], ["out", "n"]);
   });
   const cat = callerCatalog({ "join.qvi": join });
-  const caller = buildVI(cat, (b) => {
+  const caller = buildOVI(cat, (b) => {
     b.node("text", "str-const", { value: "hola" });
     b.node("arr", "arr-const", { type: { array: "number" }, value: [1, 2, 3] });
     b.node("call", "subvi", { vi: "join.qvi" });
@@ -91,7 +91,7 @@ test("a subVI passes strings and arrays by value", async () => {
 
 /** A functional global variable: a While that runs once with an uninitialized shift register that counts the calls. */
 const counter = (execution) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.loop("w", "while-loop");
     b.shiftRegister("sr", "w");
     b.node("one", "const", { value: 1, type: "i32" }, "w");
@@ -107,9 +107,9 @@ const counter = (execution) =>
     if (execution) b.execution(execution);
   });
 
-/** Two calls to the same subVI from one caller. */
+/** Two calls to the same subOVI from one caller. */
 function twoCalls(cat, path) {
-  return buildVI(cat, (b) => {
+  return buildOVI(cat, (b) => {
     b.node("first", "subvi", { vi: path });
     b.node("second", "subvi", { vi: path });
     b.node("r1", "indicator", { type: "i32" });
@@ -119,23 +119,23 @@ function twoCalls(cat, path) {
   });
 }
 
-test("a non-reentrant subVI keeps its uninitialized shift register between calls (functional global)", async () => {
+test("a non-reentrant subOVI keeps its uninitialized shift register between calls (functional global)", async () => {
   const cat = callerCatalog({ "counter.qvi": counter() });
   const caller = twoCalls(cat, "counter.qvi");
   const r = await run(caller, cat);
   assert.deepEqual([r.r1, r.r2].sort(), [1, 2], "both calls share one data space");
 });
 
-test("a preallocated-clone reentrant subVI has one data space per call site", async () => {
+test("a preallocated-clone reentrant subOVI has one data space per call site", async () => {
   const cat = callerCatalog({ "counter.qvi": counter({ reentrancy: "preallocated" }) });
   const caller = twoCalls(cat, "counter.qvi");
   const r = await run(caller, cat);
   assert.deepEqual([r.r1, r.r2], [1, 1]);
 });
 
-/** A subVI that waits `ms` milliseconds. */
+/** A subOVI that waits `ms` milliseconds. */
 const waiter = (execution) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("ms", "const", { value: 150, type: "i32" });
     b.node("wait", "wait-ms");
     b.node("done", "indicator", { type: "u32" });
@@ -147,7 +147,7 @@ const waiter = (execution) =>
 
 async function timeTwoParallelCalls(execution) {
   const cat = callerCatalog({ "wait.qvi": waiter(execution) });
-  const caller = buildVI(cat, (b) => {
+  const caller = buildOVI(cat, (b) => {
     b.node("a", "subvi", { vi: "wait.qvi" });
     b.node("b", "subvi", { vi: "wait.qvi" });
     b.node("ra", "indicator", { type: "u32" });
@@ -161,14 +161,14 @@ async function timeTwoParallelCalls(execution) {
   return host.now();
 }
 
-test("two parallel calls to a non-reentrant subVI that waits take turns; reentrant ones overlap", async () => {
+test("two parallel calls to a non-reentrant subOVI that waits take turns; reentrant ones overlap", async () => {
   assert.equal(await timeTwoParallelCalls(), 300, "non-reentrant: one call after the other");
   assert.equal(await timeTwoParallelCalls({ reentrancy: "preallocated" }), 150, "preallocated clones: at the same time");
 });
 
-/** echo: a subVI that waits, then returns its input `x` unchanged. */
+/** echo: a subOVI that waits, then returns its input `x` unchanged. */
 const echoAfterWait = () =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("x", "control");
     b.node("echo", "indicator");
     b.node("ms", "const", { value: 50, type: "i32" });
@@ -183,9 +183,9 @@ const echoAfterWait = () =>
 // Bug #30 (docs/design/real-programs-0.2.md): the second call wrote its input into the shared slot
 // while the first one was still waiting for its turn, so both answered the second input. LabVIEW
 // serializes the whole call, inputs included (measured in labview-captures/two-calls/).
-test("two parallel calls to a non-reentrant subVI that waits each get their own inputs", async () => {
+test("two parallel calls to a non-reentrant subOVI that waits each get their own inputs", async () => {
   const cat = callerCatalog({ "echo.qvi": echoAfterWait() });
-  const caller = buildVI(cat, (b) => {
+  const caller = buildOVI(cat, (b) => {
     b.node("one", "const", { value: 1 });
     b.node("two", "const", { value: 2 });
     b.node("a", "subvi", { vi: "echo.qvi" });
@@ -204,7 +204,7 @@ const ERROR_TYPE = { cluster: [{ name: "status", type: "boolean" }, { name: "cod
 
 /** Parse Reply: Scan From String `%f` of the input `reply`, with its value and its error out. */
 const parseReply = () =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("reply", "str-control");
     b.node("format", "str-const", { value: "%f" });
     b.node("zero", "const", { value: 0 });
@@ -220,10 +220,10 @@ const parseReply = () =>
   });
 
 // spec/04 Rule 21k, measured in LabVIEW 2026 Q3 (examples/README.md, Instrument Protocol with FOO): the
-// source of an error raised inside a subVI names the function and then the VIs, callee first.
-test("the source of an error raised in a subVI names the call chain", async () => {
+// source of an error raised inside a subOVI names the function and then the OVIs, callee first.
+test("the source of an error raised in a subOVI names the call chain", async () => {
   const cat = callerCatalog({ "examples/Parse Reply.qvi": parseReply() });
-  const caller = buildVI(cat, (b) => {
+  const caller = buildOVI(cat, (b) => {
     b.node("command", "str-const", { value: "FOO" });
     b.node("parse", "subvi", { vi: "examples/Parse Reply.qvi" });
     b.node("error", "cluster-indicator", { type: ERROR_TYPE, style: "error-out" });
@@ -237,7 +237,7 @@ test("the source of an error raised in a subVI names the call chain", async () =
 // The editor sends the worker only what a Run needs (runnableOVI), through a structured clone.
 test("the call chain of an error source reaches the editor's worker", async () => {
   const cat = callerCatalog({ "examples/Parse Reply.qvi": parseReply() });
-  const caller = buildVI(cat, (b) => {
+  const caller = buildOVI(cat, (b) => {
     b.node("command", "str-const", { value: "FOO" });
     b.node("parse", "subvi", { vi: "examples/Parse Reply.qvi" });
     b.node("error", "cluster-indicator", { type: ERROR_TYPE, style: "error-out" });
@@ -258,24 +258,24 @@ test("the source of an error raised in the top-level VI names that VI", async ()
 test("the hierarchy is loaded from relative paths and a recursive cycle is an error", () => {
   const leaf = add2();
   const cat = callerCatalog({ "add2.qvi": leaf });
-  const top = buildVI(cat, (b) => b.node("call", "subvi", { vi: "add2.qvi" }));
+  const top = buildOVI(cat, (b) => b.node("call", "subvi", { vi: "add2.qvi" }));
   const files = new Map([["lib/top.qvi", top.g], ["lib/add2.qvi", leaf.g]]);
   const resolvePath = (caller, relative) => `${caller.slice(0, caller.lastIndexOf("/") + 1)}${relative}`;
-  const loaded = loadHierarchy("lib/top.qvi", CAT, { resolvePath, loadVI: (key) => files.get(key) ?? null });
+  const loaded = loadHierarchy("lib/top.qvi", CAT, { resolvePath, loadOVI: (key) => files.get(key) ?? null });
   assert.deepEqual(loaded.errors, []);
-  assert.deepEqual([...loaded.vis.keys()], ["lib/add2.qvi", "lib/top.qvi"], "callees before callers");
-  assert.equal(loaded.vis.get("lib/top.qvi").cat.puertos(top.g.nodos[0]).in.length, 2);
+  assert.deepEqual([...loaded.ovis.keys()], ["lib/add2.qvi", "lib/top.qvi"], "callees before callers");
+  assert.equal(loaded.ovis.get("lib/top.qvi").cat.puertos(top.g.nodos[0]).in.length, 2);
 
-  const itself = buildVI(CAT, (b) => b.node("call", "subvi", { vi: "self.qvi" }));
-  const recursive = loadHierarchy("self.qvi", CAT, { resolvePath, loadVI: () => itself.g });
+  const itself = buildOVI(CAT, (b) => b.node("call", "subvi", { vi: "self.qvi" }));
+  const recursive = loadHierarchy("self.qvi", CAT, { resolvePath, loadOVI: () => itself.g });
   assert.match(recursive.errors[0].motivo, /recursion/);
-  const missing = loadHierarchy("lib/top.qvi", CAT, { resolvePath, loadVI: (key) => (key === "lib/top.qvi" ? top.g : null) });
+  const missing = loadHierarchy("lib/top.qvi", CAT, { resolvePath, loadOVI: (key) => (key === "lib/top.qvi" ? top.g : null) });
   assert.match(missing.errors[0].motivo, /cannot be found/);
 });
 
 // labview-captures/subvi/functional-global-*: non-reentrant, Run 1 gives 1 and 2 and Run 2 gives 3 and 4;
 // preallocated clones, 1 and 1 and then 2 and 2.
-test("a subVI keeps its state from one Run to the next while it stays loaded", async () => {
+test("a subOVI keeps its state from one Run to the next while it stays loaded", async () => {
   for (const [execution, runs] of [[undefined, [[1, 2], [3, 4]]], [{ reentrancy: "preallocated" }, [[1, 1], [2, 2]]]]) {
     const cat = callerCatalog({ "counter.qvi": counter(execution) });
     const caller = twoCalls(cat, "counter.qvi");
@@ -285,7 +285,7 @@ test("a subVI keeps its state from one Run to the next while it stays loaded", a
       const r = await run(caller, cat, {}, { estado }, compiled);
       assert.deepEqual([r.r1, r.r2].sort(), expected, JSON.stringify(execution));
     }
-    const edited = buildVI(cat, (b) => {
+    const edited = buildOVI(cat, (b) => {
       b.node("first", "subvi", { vi: "counter.qvi" });
       b.node("second", "subvi", { vi: "counter.qvi" });
       b.node("r1", "indicator", { type: "i32" });

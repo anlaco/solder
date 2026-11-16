@@ -1,4 +1,4 @@
-// Express VIs (DT-069): the two states of a node and its context help, and Time Delay in a Run on the virtual host
+// Express OVIs (DT-069): the two states of a node and its context help, and Time Delay in a Run on the virtual host
 // (DT-061 §6), whose clock jumps to the next deadline, so the times are exact. Values measured in LabVIEW:
 // labview-captures/reports/2026-10-29-express-vi-common.md and 2026-10-29-time-delay.md.
 
@@ -11,7 +11,7 @@ import { createVirtualHost } from "../../core/runtime/scheduler.mjs";
 import { configure, configuredAsLines, expansionRowPorts, isConfigured, isExpress } from "../../core/model/express.mjs";
 import { ERROR } from "../../core/model/types.mjs";
 import * as Gr from "../../core/model/graph.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { CAT, buildOVI } from "../helpers.mjs";
 
 const NO_ERROR = { status: false, code: 0, source: "" };
 const TIME_DELAY = CAT.bloque("time-delay");
@@ -44,7 +44,7 @@ test("an Express VI is unconfigured until an OK, and then its dialog's terminals
 
 /** Time Delay configured with `delay`, its Delay Time wired from a constant when `wired` is given, then an indicator of the clock. */
 const delayThenClock = ({ delay, wired, errorIn }) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("delay", "time-delay");
     b.node("errorOut", "cluster-indicator", { type: ERROR, style: "error-out" });
     b.wire("delay.error-out", "errorOut.value");

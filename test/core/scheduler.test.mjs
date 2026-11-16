@@ -102,7 +102,7 @@ test("each thread is given the next ready clump, the lowest free thread first", 
   );
 });
 
-test("a non-reentrant subVI serves one call at a time, in the order the calls arrived", async () => {
+test("a non-reentrant subOVI serves one call at a time, in the order the calls arrived", async () => {
   const { scheduler } = setUp(4);
   const inside = [];
   let callsInside = 0;

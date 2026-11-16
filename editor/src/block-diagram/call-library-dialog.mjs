@@ -9,7 +9,7 @@
 // Waveform parameter, and the greatest number of dimensions.
 //
 // Pure, like express-dialog.mjs: `open` builds the dialog from the node, `key` and `click` turn what the user does into an
-// intent (`modal-dialog.mjs`), `apply` writes the draft into the VI as one step and `view` draws it from the inventory
+// intent (`modal-dialog.mjs`), `apply` writes the draft into the OVI as one step and `view` draws it from the inventory
 // (`dialog.call-library.*`). The draft is a configuration of its own: Cancel and Escape leave the node as it was.
 
 import {
@@ -20,7 +20,7 @@ import { esHueco } from "../common/labview-inventory.mjs";
 
 export const DIALOG_ID = "dialog.call-library";
 export const TITLE = "Call Library Function";
-/** The name of the undo step an OK makes: the dialog changes the node's attributes, as an Express VI's does. */
+/** The name of the undo step an OK makes: the dialog changes the node's attributes, as an Express OVI's does. */
 export const UNDO_STEP_NAME = "Change Attribute";
 
 export const SIZE = { width: 677, height: 458 };
@@ -335,7 +335,7 @@ function clickOnSetting(dialog, part) {
 /** The dialog with the library the system's file dialog chose. */
 export const withLibrary = (dialog, library) => withConfig(dialog, { library });
 
-// ——— Writing it into the VI ———
+// ——— Writing it into the OVI ———
 
 /** The port a cable end names, renamed to follow its parameter, or null when the port is gone. */
 function followedPort(portName, origins) {
@@ -361,7 +361,7 @@ function rewired(g, node, configured, origins) {
   return { ...g, cables };
 }
 
-/** The VI with the draft as the node's configuration: one step, which an OK with nothing changed does not make. */
+/** The OVI with the draft as the node's configuration: one step, which an OK with nothing changed does not make. */
 export function apply(g, dialog) {
   const node = g.nodos.find((candidate) => candidate.id === dialog.nodo);
   if (!node) return g;

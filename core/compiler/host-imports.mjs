@@ -49,7 +49,7 @@ export const HOST_IMPORTS = [
     .map(([nombre, f]) => ({ modulo: "math", nombre: `fn_${nombre}`, params: Array(f.args).fill("f64"), results: ["f64"] })),
   // The millisecond timer (U32), the Run's clock for timers (the host's, virtual in the reference
   // traces) and the real clock in milliseconds for the budget of a loop's iterations. The waits,
-  // yields, subplans and subVI turns are the module's own scheduler (pool-scheduler.mjs).
+  // yields, subplans and subOVI turns are the module's own scheduler (pool-scheduler.mjs).
   { modulo: "tiempo", nombre: "reloj", params: [], results: ["i32"] },
   { modulo: "tiempo", nombre: "ahora", params: [], results: ["f64"] },
   { modulo: "tiempo", nombre: "reloj_real", params: [], results: ["f64"] },

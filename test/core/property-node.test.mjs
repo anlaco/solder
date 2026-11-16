@@ -69,7 +69,7 @@ test("the implicit node of each panel block has the class measured", () => {
   assert.equal(classOfPanelBlock("str-indicator"), "String");
 });
 
-/** A VI with a control and an implicit Property Node linked to it, with `rows`. */
+/** An OVI with a control and an implicit Property Node linked to it, with `rows`. */
 function linkedNode(controlBlock, rows, controlConfig) {
   let g = Gr.nuevo();
   const control = Gr.crearEnPanel(g, CAT, controlBlock, 20, 20, "Numeric", controlConfig);

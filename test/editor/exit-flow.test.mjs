@@ -1,13 +1,13 @@
 // File ▸ Exit (Ctrl+Q): LabVIEW asks about each VI with unsaved changes and
-// then quits, with no blank VI afterwards (labview-captures/editor-checks/REPORT.md §3).
+// then quits, with no blank OVI afterwards (labview-captures/editor-checks/REPORT.md §3).
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "../../editor/electron/exit-flow.mjs";
 
-/** An open VI as the flow sees it, and a record of what was asked and saved. */
-function scenario(vis, answers, { saveWorks = true } = {}) {
+/** An open OVI as the flow sees it, and a record of what was asked and saved. */
+function scenario(ovis, answers, { saveWorks = true } = {}) {
   const asked = [];
   const saved = [];
   const hooks = {
@@ -21,7 +21,7 @@ function scenario(vis, answers, { saveWorks = true } = {}) {
       return saveWorks;
     },
   };
-  return { run: () => confirmExit(vis, hooks), asked, saved };
+  return { run: () => confirmExit(ovis, hooks), asked, saved };
 }
 
 test("the Exit dialog has LabVIEW's texts and buttons", () => {

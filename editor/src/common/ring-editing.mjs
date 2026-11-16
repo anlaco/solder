@@ -37,7 +37,7 @@ export const ringValue = (node, runValues) => runValues?.[node.id] ?? (isRingCon
 /** What a ring shows now: the text of the item with its value, or `<value>` (measured). */
 export const shownRingText = (node, runValues) => ringText(ringItems(node.config), ringValue(node, runValues));
 
-/** The VI with the ring's items replaced; the value stays as it is, even if no item has it any more (measured). */
+/** The OVI with the ring's items replaced; the value stays as it is, even if no item has it any more (measured). */
 export const withRingItems = (graph, id, items) => Gr.fijarConfig(graph, id, { items });
 
 /** Allow Undefined Values: ticked or not (off by default, measured). */

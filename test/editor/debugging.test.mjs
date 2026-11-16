@@ -1,6 +1,6 @@
 // The debugging tools of the editor (DT-047, labview-captures/debugging/REPORT.md): the toolbar
 // buttons, Highlight Execution, probes, breakpoints, the Debug Window, the Error list and Allow
-// debugging. Pure state and HTML: no browser needed. What the worker does while the VI runs is in
+// debugging. Pure state and HTML: no browser needed. What the worker does while the OVI runs is in
 // debug-controller.test.mjs and test/end-to-end/debugging-worker.test.mjs.
 
 import assert from "node:assert/strict";
@@ -14,7 +14,7 @@ import * as E from "../../editor/src/window/window-state.mjs";
 import * as ED from "../../editor/src/block-diagram/diagram-editing.mjs";
 import * as EL from "../../editor/src/debugging/error-list.mjs";
 import * as Gr from "../../core/model/graph.mjs";
-import * as VP from "../../editor/src/window/vi-properties.mjs";
+import * as VP from "../../editor/src/window/ovi-properties.mjs";
 import { EDIT_COMMANDS } from "../../editor/src/window/edit-menu.mjs";
 import { esHueco } from "../../editor/src/common/labview-inventory.mjs";
 import { ventana } from "../../editor/src/window/window-view.mjs";
@@ -45,7 +45,7 @@ function chain() {
   return { g, id, wires, resolved: Gr.tipos(g, CAT) };
 }
 
-const phaseInfo = (phase, extra = {}) => ({ phase, broken: false, allowDebugging: true, highlight: { on: false, speed: "medium" }, retain: false, viName: "Untitled 1", nodeName: "Wait (ms)", nodeIsSubVI: false, container: "loop", ...extra });
+const phaseInfo = (phase, extra = {}) => ({ phase, broken: false, allowDebugging: true, highlight: { on: false, speed: "medium" }, retain: false, oviName: "Untitled 1", nodeName: "Wait (ms)", nodeIsSubOVI: false, container: "loop", ...extra });
 
 test("the debugging buttons are enabled and named as LabVIEW does in edit mode while running and paused", () => {
   const edit = DS.toolbarState(phaseInfo("edit"));
@@ -126,9 +126,9 @@ test("Pause becomes Continue when the VI stops and the step buttons follow", () 
   assert.equal(paused["step-out"].tooltip, "Finish Iteration");
   assert.deepEqual([paused["step-into"].enabled, paused["step-over"].enabled, paused["step-out"].enabled, paused["abort-execution"].enabled], [true, true, true, true]);
   assert.equal(DS.toolbarState(phaseInfo("paused", { container: null }))["step-out"].tooltip, "Step out of Untitled 1");
-  const inSubVI = DS.toolbarState(phaseInfo("paused", { nodeIsSubVI: true, nodeName: "adder" }));
-  assert.equal(inSubVI["step-into"].enabled, false, "stepping into a subVI is not done yet");
-  assert.match(inSubVI["step-into"].tooltip, /not stepped into yet/);
+  const inSubOVI = DS.toolbarState(phaseInfo("paused", { nodeIsSubOVI: true, nodeName: "adder" }));
+  assert.equal(inSubOVI["step-into"].enabled, false, "stepping into a subOVI is not done yet");
+  assert.match(inSubOVI["step-into"].tooltip, /not stepped into yet/);
   assert.ok(!esHueco(INV.resolver("window.front-panel.toolbar.pause")), "the panel has Pause too");
   // The events of the worker move the state in and out of the stop.
   const { g, id } = chain();
@@ -221,7 +221,7 @@ test("the Debug Window lists the probes and breakpoints of the VI with their val
   let state = DS.addBreakpoint(DS.initial(), { node: id.add });
   state = DS.addProbe(state, wires.c);
   state = DS.applyDebugEvent(state, { values: [{ node: id.add, port: "result", value: 5, at: new Date(2026, 9, 9, 8, 54, 32, 907).getTime() }] }, g, 0);
-  const html = DV.debugWindow(INV, state, g, { viName: "Untitled 1", separator: ",", position: { x: 10, y: 20 } });
+  const html = DV.debugWindow(INV, state, g, { oviName: "Untitled 1", separator: ",", position: { x: 10, y: 20 } });
   assert.match(html, /width:682px;height:338px/, "the window measures 682 by 338 (55)");
   for (const text of ["Probes and Breakpoints", "Value", "Last Update", "Untitled 1", "[1] Breakpoint", "[2] Probe", "Probe Display"]) assert.ok(html.includes(text), text);
   assert.match(html, /dw-valor"[^>]*>5</);
@@ -266,7 +266,7 @@ test("the Debug Options menu checks Keep Window on Top and Show Values on Wires"
   assert.ok(!/dep-etiqueta/.test(DV.overlay(probed, g, CONTEXT, resolved, { now: 0 })), "without Show Values on Wires there are no tags");
   state = DS.toggleOption(state, "hide-probe-display");
   assert.match(D.menuContextual(INV, { raiz: root, x: 0, y: 0 }, DV.debugWindowMenuMarks(state), (text) => text.length * 7, DV.debugWindowMenuVariants(state)), /Show Probe Display/);
-  assert.ok(!/Probe Display<\/div>|dw-visor-panel/.test(DV.debugWindow(INV, state, g, { viName: "x", position: { x: 0, y: 0 } })), "hidden");
+  assert.ok(!/Probe Display<\/div>|dw-visor-panel/.test(DV.debugWindow(INV, state, g, { oviName: "x", position: { x: 0, y: 0 } })), "hidden");
 });
 
 test("the Error list lists the errors of a VI and Show Error frames the object", () => {
@@ -283,7 +283,7 @@ test("the Error list lists the errors of a VI and Show Error frames the object",
   assert.equal(rowsOfBroken.length, 1);
   assert.equal(rowsOfBroken[0].text, "Array Size: Contains unwired or bad terminal");
   assert.deepEqual(rowsOfBroken[0].target, { node: broken.id });
-  const html = DV.errorListWindow(INV, { rows: rowsOfBroken, state: { ...EL.initial(), selected: rowsOfBroken[0].id }, viName: "Untitled 2", position: { x: 0, y: 0 } });
+  const html = DV.errorListWindow(INV, { rows: rowsOfBroken, state: { ...EL.initial(), selected: rowsOfBroken[0].id }, oviName: "Untitled 2", position: { x: 0, y: 0 } });
   assert.match(html, /width:661px;height:412px/, "the window measures 661 by 412 (92)");
   for (const text of ["Error list", "Items with errors", "Untitled 2", "1 errors and warnings", "Show Warnings", "Block Diagram Errors", "Array Size: Contains unwired or bad terminal", "Details", "Close", "Show Error", "Help"]) assert.ok(html.includes(text), text);
   assert.ok(html.includes(EL.UNWIRED_DETAILS), "the details of the selected row");
@@ -323,10 +323,10 @@ test("the warnings of a VI are listed with Show Warnings and light the triangle"
   assert.equal(EL.visibleRows(rows, false).length, errors.length, "hidden without Show Warnings");
   assert.equal(EL.showsWarningButton(rows, false), false);
   assert.equal(EL.showsWarningButton(rows, true), true);
-  const html = DV.errorListWindow(INV, { rows, state: { ...EL.initial(), showWarnings: true }, viName: "Untitled 3", position: { x: 0, y: 0 } });
+  const html = DV.errorListWindow(INV, { rows, state: { ...EL.initial(), showWarnings: true }, oviName: "Untitled 3", position: { x: 0, y: 0 } });
   assert.ok(html.includes("Block Diagram Warnings") && html.includes(`${EL.visibleRows(rows, true).length} errors and warnings`), "one group, counted with the errors");
   assert.match(html, /el-casilla marcada/);
-  assert.doesNotMatch(html, /el-x"><svg/, "a VI with warnings only has no red X");
+  assert.doesNotMatch(html, /el-x"><svg/, "an OVI with warnings only has no red X");
 
   const toolbar = (conAvisos) => ventana(INV, "block-diagram", E.inicial(), { conAvisos });
   assert.match(toolbar(true), /data-id="window\.block-diagram\.toolbar\.list-warnings" style="left:[\d.]+px;width:[\d.]+px"/, "the triangle shows left of Run");
@@ -423,7 +423,7 @@ test("a constant's tag shows as its band starts, and N's tag stays on its termin
 
 // labview-captures/reports/2026-10-16-warnings-frame-stops.md §B.
 test("the step buttons name what they do at the stops on a structure and at the end of the diagram", () => {
-  const at = (stop, nodeName, extra = {}) => DS.toolbarState(phaseInfo("paused", { stop, nodeName, viName: "Frame Stops.vi", ...extra }));
+  const at = (stop, nodeName, extra = {}) => DS.toolbarState(phaseInfo("paused", { stop, nodeName, oviName: "Frame Stops.vi", ...extra }));
   const tips = (state) => ["step-into", "step-over", "step-out"].map((key) => state[key].tooltip);
   assert.deepEqual(tips(at({ kind: "frame", phase: "start" }, "For Loop")), ["Step into For Loop", "Step over For Loop", "Finish Block Diagram"]);
   assert.deepEqual(tips(at({ kind: "frame", phase: "iteration" }, "For Loop")), ["Step to next iteration", "Step to next iteration", "Finish For Loop"]);

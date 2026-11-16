@@ -13,7 +13,7 @@ import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { ERROR } from "../../core/model/types.mjs";
 import { hostPathRules, pathFromText } from "../../core/model/paths.mjs";
 import { loadSolderIo } from "../../native/solder-io-node/solder-io.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { CAT, buildOVI } from "../helpers.mjs";
 
 const EOL = process.platform === "win32" ? "\r\n" : "\n";
 const NO_ERROR = { status: false, code: 0, source: "" };
@@ -41,7 +41,7 @@ const errorIndicator = (b, name) => b.node(name, "cluster-indicator", { type: ER
 
 /** Write Delimited Spreadsheet of the 2D control "data" (and the 1D control "row" if given) with `inputs` as constants. */
 const writer = ({ twoD = { array: "number", dims: 2 }, oneD, format, delimiter = ",", append, transpose, pathWired = true } = {}) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("write", "write-delimited-spreadsheet-vi");
     if (pathWired) {
       b.node("file", "path-control");
@@ -96,7 +96,7 @@ test("Q6: append writes right after what the file had, and a string array is wri
   assert.equal(readFileSync(name, "latin1"), `x,y${EOL}`, "without append the file is replaced");
 });
 
-test("§7 and Q3: a missing folder is error 7 through LabVIEW's subVIs; an unwired path is a cancelled dialog", async () => {
+test("§7 and Q3: a missing folder is error 7 through LabVIEW's subOVIs; an unwired path is a cancelled dialog", async () => {
   const name = join(folder, "missing", "s.csv");
   const out = await run(writer(), { file: pathOf(name), data: [[1]] });
   assert.deepEqual(out.error, { status: true, code: 7, source: `Open/Create/Replace File in Write Spreadsheet String.vi->Write Delimited Spreadsheet (DBL).vi<APPEND>\n${name}` });
@@ -107,7 +107,7 @@ test("§7 and Q3: a missing folder is error 7 through LabVIEW's subVIs; an unwir
 
 /** Read Delimited Spreadsheet of the path control "file" with `inputs` as constants, all outputs to indicators. */
 const reader = ({ instance, rows, offset, maxCharacters, transpose, delimiter = ",", format } = {}) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("read", "read-delimited-spreadsheet-vi", instance ? { instance } : undefined);
     b.node("file", "path-control");
     b.wire("file.result", "read.file-path");

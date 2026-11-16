@@ -1,4 +1,4 @@
-// The three examples of examples/ give, value by value, what the same VIs gave in
+// The three examples of examples/ give, value by value, what the same OVIs gave in
 // LabVIEW 2026 Q3 (examples/README.md, the reference read on 2026-10-10). They are
 // the yardstick of the maintainable version (plan, "Road to a maintainable version",
 // step 3): nothing else is implemented until these are green.
@@ -37,15 +37,15 @@ const MODES = [
   { name: "on a pool of threads", options: () => ({ poolPorts: pool.connect() }) },
 ];
 
-/** Loads an example and its subVIs from examples/, as the command line does. */
+/** Loads an example and its subOVIs from examples/, as the command line does. */
 function loadExample(relativePath) {
   const rootKey = path.join(RAIZ, "examples", relativePath);
   const hierarchy = loadHierarchy(rootKey, CAT, {
     resolvePath: (caller, relative) => path.resolve(path.dirname(caller), relative),
-    loadVI: (key, viCatalog) => leer(readFileSync(key, "utf8"), viCatalog),
+    loadOVI: (key, oviCatalog) => leer(readFileSync(key, "utf8"), oviCatalog),
   });
-  assert.deepEqual(hierarchy.errors, [], `${relativePath} loads with its subVIs`);
-  return hierarchy.vis.get(hierarchy.root);
+  assert.deepEqual(hierarchy.errors, [], `${relativePath} loads with its subOVIs`);
+  return hierarchy.ovis.get(hierarchy.root);
 }
 
 /**
@@ -143,7 +143,7 @@ for (const mode of MODES) {
   });
 }
 
-test("the command line runs the subVIs of Instrument Protocol and prints their strings and error cluster", () => {
+test("the command line runs the subOVIs of Instrument Protocol and prints their strings and error cluster", () => {
   const run = (relativePath) =>
     execFileSync(process.execPath, [path.join(RAIZ, "cli/solder.mjs"), "run", path.join(RAIZ, "examples", relativePath), "--threads", "2"], { encoding: "utf8" });
   assert.equal(run("instrument-protocol/Simulated Instrument.ovi"), "Reply = ERR unknown command\n");

@@ -9,7 +9,7 @@ import path from "node:path";
 import { test } from "node:test";
 
 import * as Gr from "../../core/model/graph.mjs";
-import { THIS_APPLICATION_TYPE, THIS_OVI_TYPE, VI_SERVER_REFERENCE } from "../../core/model/vi-server-reference.mjs";
+import { THIS_APPLICATION_TYPE, THIS_OVI_TYPE, OVI_SERVER_REFERENCE } from "../../core/model/ovi-server-reference.mjs";
 import { aspecto } from "../../core/model/types.mjs";
 import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
 import { caja, contexto, glifosPorBloque, terminales } from "../../editor/src/block-diagram/diagram-view.mjs";
@@ -34,7 +34,7 @@ function placedFromPalette(point = { x: 300, y: 100 }) {
   const entry = INV.entrada(`${PALETTE}.ovi-server-reference`);
   const picked = ED.coger(ED.inicial(), entry.bloque);
   const d = ED.pulsar(ED.moverA(picked, CTX, point), CTX, FONDO, point);
-  return { d, node: d.g.nodos.find((n) => n.tipo === VI_SERVER_REFERENCE) };
+  return { d, node: d.g.nodos.find((n) => n.tipo === OVI_SERVER_REFERENCE) };
 }
 
 const openMenu = (d, nodeId) => ED.abrirMenu(d, D.menuDe(nodeOf(d, nodeId), null, d.g, false, CAT), nodeId, 0, 0, null);
@@ -58,7 +58,7 @@ const ticked = (d) => [...ED.marcados(d, CTX)].map((id) => id.slice(d.menu.raiz.
 
 // ——— The palette ———
 
-/** The names of the 5 x 5 grid, row by row (reports/2026-11-14-application-control-palette.md); Solder says OVI for VI (DT-071). */
+/** The names of the 5 x 5 grid, row by row (reports/2026-11-14-application-control-palette.md); Solder says OVI for OVI (DT-071). */
 const GRID = [
   ["Open Application Reference", "Open OVI Reference", "Static OVI Reference", "Close Reference", "Get Command Line Arguments.vi"],
   ["Property Node", "Invoke Node", "Call By Reference", "Start Asynchronous Call", "Wait On Asynchronous Call"],
@@ -74,8 +74,8 @@ test("the Application Control palette has LabVIEW's 5 x 5 grid and places the OV
   assert.deepEqual(cells.map((site) => [site.fila, site.columna, site.e.etiqueta]), GRID.flatMap((row, r) => row.map((label, c) => [r, c, label])));
   // The OVI Server Reference is row 3, column 4, and the only one done: it places the block, the rest are greyed holes that say why.
   const done = cells.filter((site) => !esHueco(site.e));
-  assert.deepEqual(done.map((site) => [site.fila + 1, site.columna + 1, site.e.bloque]), [[3, 4, VI_SERVER_REFERENCE]]);
-  assert.ok(CAT.bloque(VI_SERVER_REFERENCE));
+  assert.deepEqual(done.map((site) => [site.fila + 1, site.columna + 1, site.e.bloque]), [[3, 4, OVI_SERVER_REFERENCE]]);
+  assert.ok(CAT.bloque(OVI_SERVER_REFERENCE));
   for (const { e } of cells.filter((site) => esHueco(site.e))) {
     const { labview, solder } = INV.explicacion(e);
     assert.ok(labview && /^Missing: /.test(solder), e.id);
@@ -91,7 +91,7 @@ test("placed from the palette it is This OVI with its label, 19 px tall, teal, a
   const { d, node } = placedFromPalette();
   assert.deepEqual(node.config.type, THIS_OVI_TYPE);
   const box = caja(node, CTX);
-  // 52 x 19 with "This VI" (measured); dropped centred on the click, as the control reference's.
+  // 52 x 19 with "This OVI" (measured); dropped centred on the click, as the control reference's.
   assert.deepEqual([box.ancho, box.alto], [52, 19]);
   assert.deepEqual([box.x + box.ancho / 2, box.y + box.alto / 2], [300, 99.5]);
   // A 2 px frame and the text in #007f7f, the cream inside, and the label above it with the same text.
@@ -157,8 +157,8 @@ test("on This Application Create names the properties and methods of the Applica
 });
 
 test("every inventory entry of the palette and of the menu that is done points at a test of this file", () => {
-  const source = readFileSync(path.join(RAIZ, "test/editor/vi-server-reference.test.mjs"), "utf8");
-  const done = INV.entradas.filter((e) => (e.id.startsWith(PALETTE) || e.id.startsWith("context.vi-server-reference")) && e.estado === "built" && e.prueba.startsWith("test/editor/vi-server-reference"));
+  const source = readFileSync(path.join(RAIZ, "test/editor/ovi-server-reference.test.mjs"), "utf8");
+  const done = INV.entradas.filter((e) => (e.id.startsWith(PALETTE) || e.id.startsWith("context.vi-server-reference")) && e.estado === "built" && e.prueba.startsWith("test/editor/ovi-server-reference"));
   assert.ok(done.length >= 8);
   for (const entry of done) assert.ok(source.includes(`test("${entry.prueba.split("::")[1].replaceAll("_", " ")}"`), entry.id);
 });

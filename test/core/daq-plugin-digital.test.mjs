@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import { DAQ_TASK } from "../../core/model/daq-name.mjs";
-import { buildVI } from "../helpers.mjs";
+import { buildOVI } from "../helpers.mjs";
 import { NO_ERROR, PLUGIN, callPlugin, installAddonForTheseTests, run, showError } from "./daq-plugin-harness.mjs";
 
 installAddonForTheseTests();
@@ -46,7 +46,7 @@ function clear(b, after) {
 }
 
 const createAndClear = (file, lines, grouping) =>
-  buildVI(PLUGIN, (b) => {
+  buildOVI(PLUGIN, (b) => {
     createDigital(b, "create", file, lines, grouping);
     clear(b, "create");
   });
@@ -67,7 +67,7 @@ test("Create Virtual Channel (Digital Input) takes a line, refuses a missing one
 
 test("Create Virtual Channel (Digital Output) runs, and a digital output joins no digital input's task", async () => {
   assert.deepEqual((await run(createAndClear(CREATE_DIGITAL_OUTPUT, "Dev2/port2/line7", ONE_CHANNEL_FOR_EACH_LINE)))["create error"], NO_ERROR, "§1");
-  const mixed = buildVI(PLUGIN, (b) => {
+  const mixed = buildOVI(PLUGIN, (b) => {
     createDigital(b, "input", CREATE_DIGITAL_INPUT, "Dev1/port0/line0", ONE_CHANNEL_FOR_EACH_LINE);
     createDigital(b, "output", CREATE_DIGITAL_OUTPUT, "Dev1/port0/line1", ONE_CHANNEL_FOR_EACH_LINE, "input.daq-name-indicator_1", "input.cluster-indicator_1");
     clear(b, "output");
@@ -78,7 +78,7 @@ test("Create Virtual Channel (Digital Output) runs, and a digital output joins n
 
 /** Create on `lines`, then READS reads of `file` in a chain, each value shown as "value <n>". */
 const readsInARow = (file, lines, grouping, indicatorType) =>
-  buildVI(PLUGIN, (b) => {
+  buildOVI(PLUGIN, (b) => {
     createDigital(b, "create", CREATE_DIGITAL_INPUT, lines, grouping);
     let after = "create";
     for (let index = 0; index < READS; index++) {
@@ -109,7 +109,7 @@ test("Read (Digital U32 1Chan 1Samp) gives a whole port's counter", async () => 
 
 /** Create of `file` on Dev1/port0/line0 and one Write of true with its default auto start. */
 const writeTrue = (file) =>
-  buildVI(PLUGIN, (b) => {
+  buildOVI(PLUGIN, (b) => {
     createDigital(b, "create", file, "Dev1/port0/line0", ONE_CHANNEL_FOR_EACH_LINE);
     b.node("true", "bool-const", { value: true });
     callPlugin(b, "write", WRITE_BOOL, "create.daq-name-indicator_1", "create.cluster-indicator_1");

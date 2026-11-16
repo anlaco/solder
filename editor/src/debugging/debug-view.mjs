@@ -151,7 +151,7 @@ export function overlay(state, graph, context, resolved, options) {
   // A stop on a structure's frame or at the end of the diagram (warnings-frame-stops §B).
   if (pausedAt?.kind === "diagram") marks += `<div class="dep-fin-diagrama" data-detenido="diagram"></div>`;
   else if (pausedAt?.kind === "frame") marks += structureStop(graph.nodos.find((candidate) => candidate.id === pausedAt.node), pausedAt, context);
-  // The node the VI stopped at: inverse video and the marching frame (§4, 74).
+  // The node the OVI stopped at: inverse video and the marching frame (§4, 74).
   else if (pausedAt) {
     const node = graph.nodos.find((candidate) => candidate.id === pausedAt.node);
     if (node) marks += frame(D.caja(node, context), "dep-detenido", 0, `data-detenido="${pausedAt.node}"`);
@@ -294,7 +294,7 @@ function rowValue(state, graph, item, separator) {
   return reported ? { value: State.formatValue(reported.value, separator), update: State.formatClock(reported.at, separator) } : { value: "", update: "" };
 }
 
-function listRows(inv, state, graph, viName, separator) {
+function listRows(inv, state, graph, oviName, separator) {
   const L = DEBUG_WINDOW.list;
   const top = L.headerTop + L.headerHeight;
   const bodyHeight = DEBUG_WINDOW.height - top - 2;
@@ -307,7 +307,7 @@ function listRows(inv, state, graph, viName, separator) {
     const zebra = k % 2 === 0 ? "par" : "impar";
     const style = `top:${px(top + k * L.rowHeight)};height:${px(L.rowHeight)};width:${px(L.width - 18)}`;
     if (!row) html += `<div class="dw-fila ${zebra}" style="${style}"></div>`;
-    else if (row.type === "group") html += `<div class="dw-fila ${zebra} grupo" style="${style}"><span class="dw-expansor">⊟</span><span class="dw-texto">${esc(viName)}</span></div>`;
+    else if (row.type === "group") html += `<div class="dw-fila ${zebra} grupo" style="${style}"><span class="dw-expansor">⊟</span><span class="dw-texto">${esc(oviName)}</span></div>`;
     else {
       const { item } = row;
       const { value, update } = rowValue(state, graph, item, separator);
@@ -337,7 +337,7 @@ function probeDisplay(inv, state, graph, separator) {
  * `ui.position` is where its corner is. `ui.menu` is the open popup, drawn by the caller.
  */
 export function debugWindow(inv, state, graph, ui) {
-  const { viName, separator = ".", position, active = true } = ui;
+  const { oviName, separator = ".", position, active = true } = ui;
   const W = DEBUG_WINDOW;
   const L = W.list;
   const header = ["Probes and Breakpoints", "Value", "Last Update"]
@@ -349,7 +349,7 @@ export function debugWindow(inv, state, graph, ui) {
     `<div class="dw-titulo" style="height:${px(W.title)}"><span class="dw-icono-app">${G.ICONO_APP}</span><span class="dw-titulo-texto">Debug Window</span><span class="dw-cerrar" data-id="${DEBUG_WINDOW_ID}.close">✕</span></div>` +
     `<div class="dw-barra" style="top:${px(W.toolbar.top)};height:${px(W.toolbar.height)}">${toolbarButtons(inv, state)}</div>` +
     `<div class="dw-lista" style="top:${px(L.headerTop)};width:${px(listWidth)};height:${px(W.height - L.headerTop - 1)}"><div class="dw-cabeceras" style="height:${px(L.headerHeight)}">${header}</div></div>` +
-    `<div class="dw-filas" style="top:0;width:${px(listWidth)}">${listRows(inv, state, graph, viName, separator)}</div>` +
+    `<div class="dw-filas" style="top:0;width:${px(listWidth)}">${listRows(inv, state, graph, oviName, separator)}</div>` +
     `${hidden ? "" : `<div class="dw-divisor" style="left:${px(L.width)};top:${px(W.toolbar.top + W.toolbar.height)};height:${px(W.height - W.toolbar.top - W.toolbar.height)}"></div>${probeDisplay(inv, state, graph, separator)}`}</div>`;
 }
 
@@ -379,18 +379,18 @@ export function closeProbesDialog(inv) {
 
 export const ERROR_LIST_ID = "window.error-list";
 /** Measured on 92-error-list.png: 661 × 412, with the lists at x 11..649. */
-export const ERROR_LIST = { width: 661, height: 412, title: 32, margin: 11, innerWidth: 638, viList: { top: 63, height: 69 }, countTop: 140, list: { top: 158, height: 89 }, detailsLabelTop: 253, details: { top: 268, height: 103 }, buttons: { top: 380, width: 100, height: 21, close: 317, showError: 433, help: 549 }, row: 16 };
+export const ERROR_LIST = { width: 661, height: 412, title: 32, margin: 11, innerWidth: 638, oviList: { top: 63, height: 69 }, countTop: 140, list: { top: 158, height: 89 }, detailsLabelTop: 253, details: { top: 268, height: 103 }, buttons: { top: 380, width: 100, height: 21, close: 317, showError: 433, help: 549 }, row: 16 };
 
-/** The window; `model`: { rows, state, viName, position }. */
+/** The window; `model`: { rows, state, oviName, position }. */
 export function errorListWindow(inv, model) {
-  const { rows, state, viName, position, showWarnings = state.showWarnings } = model;
+  const { rows, state, oviName, position, showWarnings = state.showWarnings } = model;
   const W = ERROR_LIST;
   const shown = ErrorList.visibleRows(rows, showWarnings);
   const selected = shown.find((row) => row.id === state.selected);
   const hasErrors = shown.some((row) => !row.warning);
-  // A VI with warnings only is listed without the red X (REPORT.md §5, warnings-frame-stops §A1).
+  // An OVI with warnings only is listed without the red X (REPORT.md §5, warnings-frame-stops §A1).
   const mark = hasErrors ? `<span class="el-x">${G.DEBUG_WINDOW_ICONS["error-mark"]}</span>` : `<span class="el-x"></span>`;
-  const viRow = shown.length ? `<div class="el-fila vi elegida" style="top:2px">${mark}<span>${esc(viName)}</span></div>` : "";
+  const oviRow = shown.length ? `<div class="el-fila vi elegida" style="top:2px">${mark}<span>${esc(oviName)}</span></div>` : "";
   // The errors' group, then the warnings' group, each a bulleted title over its indented rows.
   let line = 0;
   const groupOf = (title, members) => {
@@ -406,7 +406,7 @@ export function errorListWindow(inv, model) {
   return `<div class="error-list" data-id="${ERROR_LIST_ID}" style="left:${px(position.x)};top:${px(position.y)};width:${px(W.width)};height:${px(W.height)}">` +
     `<div class="dw-titulo" style="height:${px(W.title)}"><span class="dw-icono-app">${G.ICONO_APP}</span><span class="dw-titulo-texto">Error list</span><span class="dw-cerrar" data-id="${ERROR_LIST_ID}.close-x">✕</span></div>` +
     `<div class="el-etiqueta" style="left:${px(W.margin + 2)};top:${px(W.title + 11)}">Items with errors</div>` +
-    `<div class="el-caja" data-id="${ERROR_LIST_ID}.items-with-errors" style="left:${px(W.margin)};top:${px(W.viList.top)};width:${px(W.innerWidth)};height:${px(W.viList.height)}">${viRow}</div>` +
+    `<div class="el-caja" data-id="${ERROR_LIST_ID}.items-with-errors" style="left:${px(W.margin)};top:${px(W.oviList.top)};width:${px(W.innerWidth)};height:${px(W.oviList.height)}">${oviRow}</div>` +
     `<div class="el-etiqueta" style="left:${px(W.margin + 2)};top:${px(W.countTop)}">${esc(ErrorList.countLabel(shown))}</div>` +
     `<label class="el-casilla${holeClass(inv, `${ERROR_LIST_ID}.show-warnings`)}${showWarnings ? " marcada" : ""}" data-id="${ERROR_LIST_ID}.show-warnings" style="right:${px(W.margin + 2)};top:${px(W.countTop - 1)}">Show Warnings<span class="pv-casilla"></span></label>` +
     `<div class="el-caja" data-id="${ERROR_LIST_ID}.errors" style="left:${px(W.margin)};top:${px(W.list.top)};width:${px(W.innerWidth)};height:${px(W.list.height)}">${listed}</div>` +

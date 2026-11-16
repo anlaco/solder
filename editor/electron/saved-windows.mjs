@@ -1,7 +1,7 @@
 // The windows saved with an OVI (DT-078). Pure functions over the file's text and the screens, tested without Electron.
 //
 // LabVIEW saves where both windows of a VI were and how far each was scrolled, and opens them there again; moving
-// or scrolling a window does not make the VI modified, and a Save writes them all the same
+// or scrolling a window does not make the OVI modified, and a Save writes them all the same
 // (labview-captures/reports/2026-11-05-scrollbars-and-window-bounds.md §B).
 
 /** The file's text as an object, or null when it is not JSON (it is then left as it is). */

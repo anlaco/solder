@@ -1,5 +1,5 @@
-// SubVI nodes in the editor (DT-045, spec/05 §12): their ports come from the
-// connector of the VI they call, they are drawn as that VI's 32 × 32 icon, and
+// SubOVI nodes in the editor (DT-045, spec/05 §12): their ports come from the
+// connector of the OVI they call, they are drawn as that OVI's 32 × 32 icon, and
 // they are placed from Select a VI... Measured in LabVIEW 2026 Q3
 // (labview-captures/subvi/).
 
@@ -9,15 +9,15 @@ import { test } from "node:test";
 import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
 import * as ED from "../../editor/src/block-diagram/diagram-editing.mjs";
 import * as Gr from "../../core/model/graph.mjs";
-import * as Paths from "../../editor/src/common/vi-paths.mjs";
+import * as Paths from "../../editor/src/common/ovi-paths.mjs";
 import * as Q from "../../core/model/qvi-format.mjs";
-import * as SN from "../../editor/src/block-diagram/subvi-nodes.mjs";
+import * as SN from "../../editor/src/block-diagram/subovi-nodes.mjs";
 import { assignPanelElement } from "../../core/model/connector.mjs";
 import { buildHierarchy } from "../../editor/src/window/hierarchy-client.mjs";
 import { CAT, INV, buildAdder } from "../helpers.mjs";
 
-const CALLER = "/vis/main.qvi";
-const ADDER = "/vis/lib/add2.qvi";
+const CALLER = "/ovis/main.qvi";
+const ADDER = "/ovis/lib/add2.qvi";
 
 /** The adder with `x` in cell 11, `y` in cell 9 and `sum` in cell 2 (LabVIEW's indices of 4-2-2-4), as text. */
 function adderText(connectionOfX) {
@@ -28,17 +28,17 @@ function adderText(connectionOfX) {
   return Q.aTexto(withConnector, CAT);
 }
 
-/** A caller holding a subVI node that calls the adder, with the hierarchy the page would build. */
+/** A caller holding a subOVI node that calls the adder, with the hierarchy the page would build. */
 function callerWithAdder(texts = { [ADDER]: adderText() }) {
   const empty = Gr.nuevo();
-  const probe = buildHierarchy({ rootKey: CALLER, rootGraph: empty, texts, baseCatalog: CAT, readVI: Q.leer });
+  const probe = buildHierarchy({ rootKey: CALLER, rootGraph: empty, texts, baseCatalog: CAT, readOVI: Q.leer });
   const placed = Gr.crearNodo(empty, probe.catalog, "subvi", 100, 60);
-  const g = Gr.fijarConfig(placed.g, placed.id, SN.subVIConfig("lib/add2.qvi"));
-  const result = buildHierarchy({ rootKey: CALLER, rootGraph: g, texts, baseCatalog: CAT, readVI: Q.leer });
+  const g = Gr.fijarConfig(placed.g, placed.id, SN.subOVIConfig("lib/add2.qvi"));
+  const result = buildHierarchy({ rootKey: CALLER, rootGraph: g, texts, baseCatalog: CAT, readOVI: Q.leer });
   return { g, id: placed.id, ...result, ctx: D.contexto(result.catalog, D.glifosPorBloque(INV)) };
 }
 
-test("a subVI node has the ports of the connector of the VI it calls, on the edges of its icon", () => {
+test("a subOVI node has the ports of the connector of the VI it calls, on the edges of its icon", () => {
   const { g, id, catalog, ctx, errors, keys } = callerWithAdder();
   assert.deepEqual(errors, []);
   assert.deepEqual(keys, [ADDER], "the callee is part of the hierarchy");
@@ -57,7 +57,7 @@ test("a subVI node has the ports of the connector of the VI it calls, on the edg
 
 });
 
-test("a subVI node is drawn as a 32 by 32 icon and its menu is declared in the order of LabVIEW", () => {
+test("a subOVI node is drawn as a 32 by 32 icon and its menu is declared in the order of LabVIEW", () => {
   const { g, id, ctx, catalog } = callerWithAdder();
   const html = D.contenido({ ...ED.inicial(), g }, ctx, Gr.tipos(g, catalog));
   assert.match(html, new RegExp(`class="nodo" data-nodo="${id}" style="left:100px;top:60px;width:32px;height:32px"`));
@@ -83,7 +83,7 @@ test("a subVI node is drawn as a 32 by 32 icon and its menu is declared in the o
   assert.match(D.menuContextual(INV, opened.menu, ED.marcados(opened)), /data-id="context\.subvi\.open-front-panel"/);
 });
 
-test("a wire to a port the subVI no longer has is kept, broken, when the hierarchy is rebuilt (DT-046)", () => {
+test("a wire to a port the subOVI no longer has is kept, broken, when the hierarchy is rebuilt (DT-046)", () => {
   const { g, id } = callerWithAdder();
   // Wire a control of the caller to x and to y, and the sum to an indicator.
   let wired = g;
@@ -96,10 +96,10 @@ test("a wire to a port the subVI no longer has is kept, broken, when the hierarc
   const placeOfOldTerminal = ED.terminalPlacer(callerWithAdder().ctx);
   assert.ok(Gr.aflojarCablesHuerfanos(wired, catalog, placeOfOldTerminal).cables.every(Gr.conectado), "nothing to loosen while the connector is the same");
 
-  // The subVI is saved again with `x` taken off its connector.
+  // The subOVI is saved again with `x` taken off its connector.
   const { g: adder, ids } = buildAdder();
   const changed = assignPanelElement(assignPanelElement(adder, CAT, ids.y, 2), CAT, ids.sum, 9);
-  const rebuilt = buildHierarchy({ rootKey: CALLER, rootGraph: wired, texts: { [ADDER]: Q.aTexto(changed, CAT) }, baseCatalog: CAT, readVI: Q.leer });
+  const rebuilt = buildHierarchy({ rootKey: CALLER, rootGraph: wired, texts: { [ADDER]: Q.aTexto(changed, CAT) }, baseCatalog: CAT, readOVI: Q.leer });
   const loosened = Gr.aflojarCablesHuerfanos(wired, rebuilt.catalog, placeOfOldTerminal);
   assert.equal(loosened.cables.length, 2, "no wire is dropped");
   const toX = loosened.cables.find((wire) => wire.de.nodo === control.id);
@@ -110,16 +110,16 @@ test("a wire to a port the subVI no longer has is kept, broken, when the hierarc
   assert.ok(!Gr.ejecutable(loosened, rebuilt.catalog, Gr.tipos(loosened, rebuilt.catalog)), "the caller is broken until the wire is removed");
 });
 
-test("Select a VI places a subVI node and stores its path relative to the caller", () => {
+test("Select a VI places a subOVI node and stores its path relative to the caller", () => {
   const texts = { [ADDER]: adderText() };
-  const empty = buildHierarchy({ rootKey: CALLER, rootGraph: Gr.nuevo(), texts, baseCatalog: CAT, readVI: Q.leer });
+  const empty = buildHierarchy({ rootKey: CALLER, rootGraph: Gr.nuevo(), texts, baseCatalog: CAT, readOVI: Q.leer });
   const ctx = D.contexto(empty.catalog, D.glifosPorBloque(INV));
 
   // The dialog gives an absolute path; a caller with a file stores it relative to itself.
   const stored = Paths.storedPathFor(CALLER, ADDER);
   assert.equal(stored, "lib/add2.qvi");
-  // The VI follows the cursor and a click drops it, as with any function of the palette.
-  let d = ED.coger({ ...ED.inicial(), g: Gr.nuevo() }, "subvi", SN.subVIConfig(stored));
+  // The OVI follows the cursor and a click drops it, as with any function of the palette.
+  let d = ED.coger({ ...ED.inicial(), g: Gr.nuevo() }, "subvi", SN.subOVIConfig(stored));
   d = ED.moverA(d, ctx, { x: 204, y: 104 });
   assert.match(D.contenido(d, ctx, Gr.tipos(d.g, empty.catalog)), /class="fantasma"/, "the ghost shows while it is carried");
   d = ED.pulsar(d, ctx, { tipo: "fondo" }, { x: 204, y: 104 });
@@ -129,24 +129,24 @@ test("Select a VI places a subVI node and stores its path relative to the caller
   assert.deepEqual([node.x, node.y], [200, 100]);
 
   // It is saved and read back with its ports, and the file keeps the relative path.
-  const rootGraph = buildHierarchy({ rootKey: CALLER, rootGraph: d.g, texts, baseCatalog: CAT, readVI: Q.leer });
+  const rootGraph = buildHierarchy({ rootKey: CALLER, rootGraph: d.g, texts, baseCatalog: CAT, readOVI: Q.leer });
   const file = Q.escribir(d.g, rootGraph.catalog);
   assert.equal(file["block-diagram"].nodes[0].config.vi, "lib/add2.qvi");
-  const back = buildHierarchy({ rootKey: CALLER, rootText: Q.aTexto(d.g, rootGraph.catalog), texts, baseCatalog: CAT, readVI: Q.leer });
+  const back = buildHierarchy({ rootKey: CALLER, rootText: Q.aTexto(d.g, rootGraph.catalog), texts, baseCatalog: CAT, readOVI: Q.leer });
   assert.equal(back.graph.nodos[0].config.vi, "lib/add2.qvi");
   assert.deepEqual(back.keys, [ADDER]);
 
   // From a caller that has never been saved, the absolute path is stored (and rebased when it is saved).
   assert.equal(Paths.storedPathFor(Paths.untitledKey(1), ADDER), ADDER);
   assert.equal(INV.entrada("palette.functions.select-a-vi").estado, "built");
-  // A recursive call, or a VI that cannot be found, is reported and breaks the Run arrow.
-  const recursive = buildHierarchy({ rootKey: ADDER, rootGraph: Gr.fijarConfig(d.g, node.id, { vi: "add2.qvi" }), texts: { [ADDER]: adderText() }, baseCatalog: CAT, readVI: Q.leer });
+  // A recursive call, or an OVI that cannot be found, is reported and breaks the Run arrow.
+  const recursive = buildHierarchy({ rootKey: ADDER, rootGraph: Gr.fijarConfig(d.g, node.id, { vi: "add2.qvi" }), texts: { [ADDER]: adderText() }, baseCatalog: CAT, readOVI: Q.leer });
   assert.equal(recursive.errors.length, 1);
   assert.match(recursive.errors[0], /calls itself/);
-  assert.match(buildHierarchy({ rootKey: CALLER, rootGraph: d.g, texts: {}, baseCatalog: CAT, readVI: Q.leer }).errors[0], /cannot be found/);
+  assert.match(buildHierarchy({ rootKey: CALLER, rootGraph: d.g, texts: {}, baseCatalog: CAT, readOVI: Q.leer }).errors[0], /cannot be found/);
 });
 
-test("Create on a subVI node makes the object of the terminal's type, labelled with the callee's control, and All Controls and Indicators fills every terminal", () => {
+test("Create on a subOVI node makes the object of the terminal's type, labelled with the callee's control, and All Controls and Indicators fills every terminal", () => {
   const { g, id, ctx } = callerWithAdder();
   const menu = (d, port) => ED.abrirMenu(d, "context.subvi", id, 0, 0, port, { x: 5, y: 5 });
   const state = { ...ED.inicial(), g };

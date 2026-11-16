@@ -18,7 +18,7 @@ import { SOLDER_VERSION } from "./daq-plugin-harness.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { addonLibraryLocator, loadInstalledAddons } from "../../editor/electron/installed-addons.mjs";
 import { loadSolderIo, withLibraryLocator } from "../../native/solder-io-node/solder-io.mjs";
-import { CAT, buildVI } from "../helpers.mjs";
+import { CAT, buildOVI } from "../helpers.mjs";
 
 const INVALID_TASK = -200088;
 const TASK_HAS_NO_CHANNELS = -200478;
@@ -59,7 +59,7 @@ async function run(vi, io = loadSolderIo()) {
  * `name(config)` gives each node its library.
  */
 const createStartDestroy = (name = (config) => config) =>
-  buildVI(CAT, (b) => {
+  buildOVI(CAT, (b) => {
     b.node("empty", "daq-name-constant", { type: DAQ_TASK, value: "" });
     b.node("name", "str-const", { value: "p1" });
     b.node("nothing", "str-const", { value: "" });
@@ -110,7 +110,7 @@ test("a task created through a cell travels on its wire to a pointer-sized integ
 });
 
 test("an empty task constant gives a pointer-sized integer 0, which the library refuses", async () => {
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("empty", "daq-name-constant", { type: DAQ_TASK, value: "" });
     b.node("nothing", "str-const", { value: "" });
     b.node("mode", "const", { value: START, type: "u32" });
@@ -149,7 +149,7 @@ test("a node naming NI's nilvaiu.* loads the DAQ add-on's copy by its full path"
 test("a task wire into a String Handle parameter passes the task's name, as LabVIEW's coercion dot does", async () => {
   // Measured: NI's Create Task wires `task to copy` into taskToCopy, a String Handle, with a coercion dot
   // (labview-captures/reports/2026-11-14-daqmx-name-origin.md); the library then reads a name, not a task object.
-  const vi = buildVI(CAT, (b) => {
+  const vi = buildOVI(CAT, (b) => {
     b.node("empty", "daq-name-constant", { type: DAQ_TASK, value: "" });
     b.node("name", "str-const", { value: "p1" });
     b.node("copyName", "str-const", { value: "p2" });
