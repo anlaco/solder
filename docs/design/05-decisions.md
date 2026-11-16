@@ -4627,7 +4627,8 @@ first, because each of those types goes into it.**
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
 | No new hardware front opens before step 5 | the plan's §3b and the CHANGELOG | Unverified (a rule of work) |
-| The split moves code without changing what it emits | the whole suite, and the `.wat` of the examples compared before and after | Not built |
+| The split moves code without changing what it emits | the whole suite, and the `.wat` of every OVI of the repository compared before and after each move | **Verified** (2026-11-16) |
+| `tsc --checkJs` over `core/` is kept | `tsconfig.json`, `test/core/typecheck.test.mjs` (a ratchet over the 48 errors found when it came in) | **Built** (2026-11-16) |
 | Each type is LabVIEW's | its own measurements and tests, step by step | Not built |
 
 ## DT-094

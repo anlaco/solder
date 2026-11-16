@@ -1,0 +1,14 @@
+{
+  "//": "Type checking of core/ over its JSDoc (DT-093 §2): nothing is emitted. test/core/typecheck.test.mjs runs it.",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "target": "es2023",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "skipLibCheck": true,
+    "strict": false
+  },
+  "include": ["core/**/*.mjs"]
+}

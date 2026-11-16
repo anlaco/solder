@@ -929,7 +929,9 @@ to it go on, new fronts wait for step 6.
    (`pool-scheduler.mjs` 638, `stackless.mjs` 494), and the Spanish inside the parts. *Closed on 2026-11-16 as a
    ratchet:* `test/core/compiler-limits.test.mjs` lists what was over the limits then, which may shrink and never
    grow; each long function is split by the Boy Scout rule when a later step touches it (the Case's and the loops'
-   emitters with the clusters). `tsc --checkJs` waits for the developer's go-ahead to install TypeScript.
+   emitters with the clusters). `tsc --checkJs` is kept (2026-11-16, TypeScript 7.0.2 pinned, `tsconfig.json` over
+   `core/`, 0.7 s): `test/core/typecheck.test.mjs` fails on any type error over the 48 listed when it came in (all
+   JSDoc that says less than the code), so a name left behind by a rename fails the suite. **Step 1 is done.**
    The `.wat` comparison does not reach every node (no example uses Delete From Array): a name left behind shows only
    in the suite, so it runs after every move. A rename by regular expression also hits quoted names and spread calls (`"rotar"`, a host import, became
    `"rotate"` once; `...convertir(` was missed once): after each rename, look for both.*
