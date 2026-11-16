@@ -20,14 +20,14 @@
 // enters, like LabVIEW's coercion dot. Whatever the compiler cannot emit yet is
 // returned as an error, with its node; nothing is emitted halfway.
 
-import { connectorPorts, ejecutable, nodesWithUndefinedInput, orden, panelObjectType, requerido, tipos, undefinedArrayNodes } from "../model/graph.mjs";
+import { ejecutable, nodesWithUndefinedInput, orden, panelObjectType, requerido, tipos, undefinedArrayNodes } from "../model/graph.mjs";
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
 import { DAQ_TASK_LAYOUT, isDaqTask } from "../model/daq-name.mjs";
 import { OVI_CLASS, refnumOfClass } from "../model/vi-server-reference.mjs";
 import { coversEveryError, isErrorFrameValue } from "../model/error-case.mjs";
 import { HOST_IMPORTS, importIndex } from "./host-imports.mjs";
 import { callMemory, callScheduler, CLUMP_TYPE, FIRST_COMPILED_FUNCTION, MAXIMUM_PAGES, pagesFor, PARK_PRIMITIVES, RUNTIME_FUNCTIONS, runtimeFunctionIndex, SHARED_MEMORY_IMPORT, THREAD_GLOBALS } from "./runtime-functions.mjs";
-import { ARRAY_HEADER_BYTES, arrayElement, atomicLoad, atomicStore, copyElement, copyRow, copyValue, copyValueTo, dimensionSize, elementCount, isByReference, loadElement, MAX_COMPILED_DIMENSIONS, NULL_HANDLE, reserveArray, SECOND_SIZE_OFFSET, storeElement } from "./memory-ops.mjs";
+import { ARRAY_HEADER_BYTES, arrayElement, copyValue, copyValueTo, dimensionSize, elementCount, isByReference, loadElement, MAX_COMPILED_DIMENSIONS, reserveArray, SECOND_SIZE_OFFSET, storeElement } from "./memory-ops.mjs";
 import { fullClusterLayout, panelData, panelDataOf, taskPanelData } from "./panel-data.mjs";
 import { ERROR_FIELDS, constantOf, readClusterFields, setZeroClusterAddress } from "./constants.mjs";
 import { callStringFunction, characterTest, concatenateStrings, numberToFloatString, numberToString, stringToNumber } from "./nodes/strings.mjs";
@@ -39,6 +39,10 @@ import { timeDelay } from "./nodes/timing.mjs";
 import { propertyNode } from "./nodes/property-node.mjs";
 import { callLibrary } from "./nodes/call-library.mjs";
 import { arithmetic, compare, compareInstruction, compareWithZero, compoundArithmetic, inRangeAndCoerce, logical, maxAndMin, negate, rounding } from "./nodes/arithmetic.mjs";
+import { addToArrayElement, arraySizes, asArray, buildArray2d, callArrayFunction, indexArray2d, initializeArrayNd, loadKindOf, reduceArray, refuseElementsByReference } from "./nodes/arrays.mjs";
+import { gatherRowsInto2dArray, loopRowOfIteration } from "./array-rows.mjs";
+import { callSubOVI, storeInSlot, subOVIControl, subOVIInstance } from "./subovi-calls.mjs";
+import { mechanicalAction, readControl, writeIndicator } from "./panel-io.mjs";
 import { joinNumbers, logicalShift, mantissaAndExponent, rotate, rotateWithCarry, splitNumber, swapBytes, swapWords } from "./nodes/data-manipulation.mjs";
 import { EMPTY_PATH, NOT_A_PATH, PATH_KIND, encodePath } from "../model/paths.mjs";
 import { ERROR, FILE_REFNUM, PATH, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esEnum, esError, esNumerico, esRefnum, flattenArrayValue, inMemory, limites, representacion } from "../model/types.mjs";
@@ -47,7 +51,7 @@ import { i32Const, ins, localGet } from "./instructions.mjs";
 import { clusterLayout, convertValue, isFloat, isSigned, narrowInteger, wasmTypeOf } from "./wasm-types.mjs";
 import { CELDAS, CIMA, EXPORTADAS, bloqueCadena, i32 } from "./linear-memory.mjs";
 import { makeStackless } from "./stackless.mjs";
-import { DEFAULT_CHART_HISTORY, PANEL_RECORD, recordBytes, slotBytes } from "./panel-memory.mjs";
+import { DEFAULT_CHART_HISTORY, recordBytes, slotBytes } from "./panel-memory.mjs";
 import { SCHEDULER_EXPORTS, schedulerData } from "./pool-scheduler.mjs";
 
 /** The VISA functions (DT-066): each waits for an instrument, and a Run that has one needs the I/O. */
@@ -56,7 +60,6 @@ const VISA_FUNCTIONS = new Set(["visa-open", "visa-write", "visa-read", "visa-cl
 const FILE_FUNCTIONS = new Set(["open-create-replace-file", "close-file", "write-to-text-file", "read-from-text-file", "get-file-size", "delete", "write-delimited-spreadsheet-vi", "read-delimited-spreadsheet-vi", "file-dialog"]);
 /** The nodes that take time: each runs in its own clump and yields while it waits. */
 export const LARGOS = new Set(["wait-ms", "wait-until-next-ms-multiple", "time-delay", "simple-error-handler", "property-node", "call-library", ...VISA_FUNCTIONS, ...FILE_FUNCTIONS]);
-
 
 /**
  * Lo que emite cada bloque. Recibe `e`: `e.entrada(i)` deja en la pila la
@@ -451,11 +454,11 @@ const BLOQUES = {
     ];
   },
   // Las que cambian el array en sitio ajeno: JavaScript sobre los bytes de los elementos (nada de cadenas ni clusters).
-  "replace-array-subset": (e) => arrJs(e, "a_reemplazar", "Replace Array Subset", [() => e.entrada(1), () => comoArray(e, 2)]),
-  "insert-into-array": (e) => arrJs(e, "a_insertar", "Insert Into Array", [() => (e.cableada(1) ? e.entrada(1) : [ins("i32.const", 0)]), () => comoArray(e, 2), () => [ins("i32.const", e.cableada(1) ? 1 : 0)]]),
+  "replace-array-subset": (e) => callArrayFunction(e, "a_reemplazar", "Replace Array Subset", [() => e.entrada(1), () => asArray(e, 2)]),
+  "insert-into-array": (e) => callArrayFunction(e, "a_insertar", "Insert Into Array", [() => (e.cableada(1) ? e.entrada(1) : [ins("i32.const", 0)]), () => asArray(e, 2), () => [ins("i32.const", e.cableada(1) ? 1 : 0)]]),
   "delete-from-array": (e) => {
     const t = e.tOut(0).array;
-    sinReferencias(t, "Delete From Array");
+    refuseElementsByReference(t, "Delete From Array");
     const [c1, c2] = [e.celda(), e.celda()];
     return [
       ins("i32.const", c1), ins("i32.const", c2), ...e.entrada(0), ins("i32.const", arrayElement(t).tam),
@@ -463,20 +466,20 @@ const BLOQUES = {
       ins("i32.const", e.cableada(2) ? 1 : 0), ins("call", importIndex("a_borrar")), ins("i32.const", c1), ins("i32.const", c2),
     ];
   },
-  "sort-1d-array": (e) => arrJs(e, "a_ordenar", "Sort 1D Array", [() => [ins("i32.const", kindDe(e.tOut(0).array))]]),
-  "rotate-1d-array": (e) => arrJs(e, "a_rotar", "Rotate 1D Array", [() => (e.cableada(0) ? e.entrada(0) : [ins("i32.const", 1)])], 1),
+  "sort-1d-array": (e) => callArrayFunction(e, "a_ordenar", "Sort 1D Array", [() => [ins("i32.const", loadKindOf(e.tOut(0).array))]]),
+  "rotate-1d-array": (e) => callArrayFunction(e, "a_rotar", "Rotate 1D Array", [() => (e.cableada(0) ? e.entrada(0) : [ins("i32.const", 1)])], 1),
   "split-1d-array": (e) => {
     const t = e.tOut(0).array;
-    sinReferencias(t, "Split 1D Array");
+    refuseElementsByReference(t, "Split 1D Array");
     const [c1, c2] = [e.celda(), e.celda()];
     return [ins("i32.const", c1), ins("i32.const", c2), ...e.entrada(0), ins("i32.const", arrayElement(t).tam), ...e.entrada(1), ins("call", importIndex("a_partir")), ins("i32.const", c1), ins("i32.const", c2)];
   },
-  "increment-array-element": (e) => arrSumar(e, 1),
-  "decrement-array-element": (e) => arrSumar(e, -1),
-  "add-array-elements": (e) => reducir(e, "add", 0),
-  "multiply-array-elements": (e) => reducir(e, "mul", 1),
-  "and-array-elements": (e) => reducir(e, "and", 1),
-  "or-array-elements": (e) => reducir(e, "or", 0),
+  "increment-array-element": (e) => addToArrayElement(e, 1),
+  "decrement-array-element": (e) => addToArrayElement(e, -1),
+  "add-array-elements": (e) => reduceArray(e, "add", 0),
+  "multiply-array-elements": (e) => reduceArray(e, "mul", 1),
+  "and-array-elements": (e) => reduceArray(e, "and", 1),
+  "or-array-elements": (e) => reduceArray(e, "or", 0),
   "arr-const": (e) => [ins("i32.const", e.arrayConstante(e.tOut(0), e.nodo.config?.value ?? []))],
   "arr-control": (e) => readControl(e),
   "cluster-control": (e) => readControl(e),
@@ -629,131 +632,6 @@ const BLOQUES = {
   ),
 };
 
-/** Array Size of an array of several dimensions: a 1D array of I32 with the size of each one, rows first. */
-function arraySizes(e) {
-  const dims = dimensionsOf(e.tIn(0));
-  const [handle, data, size] = [e.temporal("i32"), e.temporal("i32"), e.temporal("i32")];
-  const cell = e.celda();
-  const code = [...e.entrada(0), ins("local.set", handle), ins("i32.const", dims), ins("local.set", size), ...reserveArray({ array: "i32" }, cell, [size], e.temporal), ins("local.set", data)];
-  for (let dimension = 0; dimension < dims; dimension++) {
-    code.push(ins("local.get", data), ...dimensionSize(handle, dimension, e.temporal), ins("i32.store", dimension * SECOND_SIZE_OFFSET));
-  }
-  return [...code, ins("i32.const", cell)];
-}
-
-/**
- * Build Array that gives a 2D array (DT-044, measured in LabVIEW 2026 Q3): each
- * 1D input is one row and each 2D input brings its rows. The array is as wide
- * as its longest row and the shorter ones are padded with the default value:
- * Build Array([1,2,3], [4,5]) gives [[1,2,3],[4,5,0]].
- */
-function buildArray2d(e) {
-  const t = e.tOut(0);
-  const element = arrayElement(t.array);
-  const g = (local) => ins("local.get", local);
-  const inputCount = e.cat.puertos(e.nodo).in.length;
-  const [rows, columns, target, cell] = [e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.celda()];
-  const inputs = Array.from({ length: inputCount }, (_, i) => ({
-    is2d: dimensionsOf(e.tIn(i)) === 2, handle: e.temporal("i32"), rows: e.temporal("i32"), columns: e.temporal("i32"), data: e.temporal("i32"),
-  }));
-  const code = [ins("i32.const", 0), ins("local.set", rows), ins("i32.const", 0), ins("local.set", columns)];
-  inputs.forEach((input, i) => {
-    code.push(...e.entrada(i), ins("local.set", input.handle), g(input.handle), callMemory("datos8"), ins("local.set", input.data));
-    if (input.is2d) code.push(...dimensionSize(input.handle, 0, e.temporal), ins("local.set", input.rows), ...dimensionSize(input.handle, 1, e.temporal), ins("local.set", input.columns));
-    else code.push(ins("i32.const", 1), ins("local.set", input.rows), g(input.handle), callMemory("longitud"), ins("local.set", input.columns));
-    code.push(
-      g(rows), g(input.rows), ins("i32.add"), ins("local.set", rows),
-      g(input.columns), g(columns), g(input.columns), g(columns), ins("i32.gt_s"), ins("select"), ins("local.set", columns),
-    );
-  });
-  code.push(...reserveArray(t, cell, [rows, columns], e.temporal), ins("local.set", target));
-  const rowBytes = (count) => [g(count), ins("i32.const", element.tam), ins("i32.mul")];
-  const defaultSource = element.ref ? (t.array === "string" ? NULL_HANDLE : e.bufer(element.tam)) : null;
-  for (const input of inputs) {
-    const [row, source] = [e.temporal("i32"), e.temporal("i32")];
-    code.push(
-      g(input.data), ins("local.set", source),
-      ins("i32.const", 0), ins("local.set", row), ins("block"), ins("loop"), g(row), g(input.rows), ins("i32.ge_s"), ins("br_if", 1),
-      ...copyRow(t.array, source, input.columns, target, columns, defaultSource, e.temporal),
-      g(source), ...rowBytes(input.columns), ins("i32.add"), ins("local.set", source),
-      g(target), ...rowBytes(columns), ins("i32.add"), ins("local.set", target),
-      g(row), ins("i32.const", 1), ins("i32.add"), ins("local.set", row), ins("br", 0), ins("end"), ins("end"),
-    );
-  }
-  return [...code, ins("i32.const", cell)];
-}
-
-/** Initialize Array with two dimensions: rows × columns copies of the element; a negative size counts as 0. */
-function initializeArrayNd(e) {
-  const t = e.tOut(0);
-  if (dimensionsOf(t) > MAX_COMPILED_DIMENSIONS) throw new Error("Initialize Array of more than 2 dimensions: not yet (DT-044).");
-  const element = arrayElement(t.array);
-  const g = (local) => ins("local.get", local);
-  const [value, rows, columns, target, count, k] = [e.temporal(wasmTypeOf(t.array)), e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.temporal("i32")];
-  const cell = e.celda();
-  const atLeastZero = (local) => [g(local), ins("i32.const", 0), g(local), ins("i32.const", 0), ins("i32.gt_s"), ins("select"), ins("local.set", local)];
-  const place = [g(target), g(k), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add")];
-  return [
-    ...e.entrada(0), ins("local.set", value),
-    ...e.entrada(1), ins("local.set", rows), ...atLeastZero(rows),
-    ...e.entrada(2), ins("local.set", columns), ...atLeastZero(columns),
-    ...reserveArray(t, cell, [rows, columns], e.temporal), ins("local.set", target),
-    g(rows), g(columns), ins("i32.mul"), ins("local.set", count),
-    ins("i32.const", 0), ins("local.set", k), ins("block"), ins("loop"), g(k), g(count), ins("i32.ge_s"), ins("br_if", 1),
-    ...storeElement(t.array, place, [g(value)], e.temporal), g(k), ins("i32.const", 1), ins("i32.add"), ins("local.set", k), ins("br", 0), ins("end"), ins("end"),
-    ins("i32.const", cell),
-  ];
-}
-
-/**
- * The row of iteration `i` of a 2D array that enters a loop through an indexed
- * tunnel, copied into the tunnel's own cell; past the last row, an empty array.
- */
-function filaDeLaVuelta(x, i, temporal) {
-  const element = arrayElement(x.t.array);
-  const g = (local) => ins("local.get", local);
-  const [count, source, target] = [temporal("i32"), temporal("i32"), temporal("i32")];
-  return [
-    g(x.fila.columnas), ins("i32.const", 0), g(i), g(x.m), ins("i32.lt_s"), ins("select"), ins("local.set", count),
-    g(x.d), g(i), g(x.fila.columnas), ins("i32.mul"), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add"), ins("local.set", source),
-    ...reserveArray(x.t, x.fila.celda, [count], temporal), ins("local.set", target),
-    ...copyRow(x.t.array, source, count, target, count, NULL_HANDLE, temporal),
-    ins("i32.const", x.fila.celda), ins("local.set", x.l),
-  ];
-}
-
-/**
- * Packs the rows gathered by an indexed output tunnel —a 1D array whose
- * elements are the cells of 1D arrays— into the 2D array `t` in `cell`, as wide
- * as its longest row and the shorter ones padded with the default value, like
- * Build Array (padding not measured for a loop).
- */
-function juntarFilas(t, rowsCell, cell, temporal) {
-  const element = arrayElement(t.array);
-  const g = (local) => ins("local.get", local);
-  const [rows, columns, rowCells, row, rowHandle, length, target, source] = Array.from({ length: 8 }, () => temporal("i32"));
-  const defaultSource = element.ref && t.array === "string" ? NULL_HANDLE : null;
-  if (element.ref && defaultSource === null) throw new Error("A loop that gathers rows of clusters into a 2D array: not yet (DT-044).");
-  const eachRow = (body) => [
-    ins("i32.const", 0), ins("local.set", row), ins("block"), ins("loop"), g(row), g(rows), ins("i32.ge_s"), ins("br_if", 1),
-    g(rowCells), g(row), ins("i32.const", 4), ins("i32.mul"), ins("i32.add"), ins("local.set", rowHandle),
-    ...body,
-    g(row), ins("i32.const", 1), ins("i32.add"), ins("local.set", row), ins("br", 0), ins("end"), ins("end"),
-  ];
-  return [
-    ins("i32.const", rowsCell), callMemory("longitud"), ins("local.set", rows),
-    ins("i32.const", rowsCell), callMemory("datos8"), ins("local.set", rowCells),
-    ins("i32.const", 0), ins("local.set", columns),
-    ...eachRow([g(rowHandle), callMemory("longitud"), ins("local.tee", length), g(columns), g(length), g(columns), ins("i32.gt_s"), ins("select"), ins("local.set", columns)]),
-    ...reserveArray(t, cell, [rows, columns], temporal), ins("local.set", target),
-    ...eachRow([
-      g(rowHandle), callMemory("longitud"), ins("local.set", length), g(rowHandle), callMemory("datos8"), ins("local.set", source),
-      ...copyRow(t.array, source, length, target, columns, defaultSource, temporal),
-      g(target), g(columns), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add"), ins("local.set", target),
-    ]),
-  ];
-}
-
 const PANEL_CONTROLS = ["control", "bool-control", "str-control", "cluster-control", "arr-control", "visa-control", "path-control", "refnum-control", "daq-name-control"];
 
 /**
@@ -762,276 +640,7 @@ const PANEL_CONTROLS = ["control", "bool-control", "str-control", "cluster-contr
  */
 const RESOURCE_NAME_PANEL_OBJECTS = new Set(["visa-control", "visa-indicator"]);
 
-/**
- * The instance of a subVI that a `subvi` node calls (DT-045): a non-reentrant
- * VI has one for all its callers; a preallocated-clone reentrant VI, one per
- * call site. Each instance has its own data space —slots for its connector,
- * cells and buffers— and either a function that is called directly (it never
- * waits) or a plan that the host runs (it waits).
- */
-function subVIInstance(callee, node, module, callerKey) {
-  const reentrant = callee.g.vi?.execution?.reentrancy === "preallocated";
-  const key = reentrant ? `${callee.key}@${callerKey}/${node.id}` : callee.key;
-  if (module.instances.has(key)) return module.instances.get(key);
-  const slots = new Map();
-  const ports = connectorPorts(callee);
-  for (const port of [...ports.in, ...ports.out]) {
-    const type = inMemory(port.type);
-    slots.set(port.name, { address: slotFor(type, module), type });
-  }
-  const callerCell = module.bufer(4, 4);
-  const chainIndex = module.callChain.push({ name: viNameOf(callee.key), callerCell }) - 1;
-  const compiled = compileOVI(callee.g, callee.cat, module, slots, key, chainIndex);
-  if (compiled.errores) return { errores: compiled.errores.map((e) => ({ ...e, vi: callee.key })) };
-  const { clumps } = compiled;
-  const waits = clumps.length > 1 || clumps.some((k) => k.largo);
-  const instance = {
-    key, slots, chainIndex, callerCell,
-    direct: waits ? null : module.directFunctions.push(clumps[0] ?? { locales: [], cuerpo: [] }) - 1,
-    plan: waits ? module.planes.push(clumps) - 1 : null,
-  };
-  module.instances.set(key, instance);
-  return instance;
-}
-
 const TOP_LEVEL_CHAIN_INDEX = 0;
-
-/** The name of a VI as an error source gives it: its file name, without the folders of its key. */
-const viNameOf = (key) => key.split(/[\\/]/).pop();
-
-/** A slot of the data space for a value of type `t`: 8 bytes for a scalar, a cell for a string or an array, a buffer for a cluster. */
-function slotFor(t, module) {
-  if (esCluster(t)) return module.bufer(clusterLayout(t).tam);
-  if (t === "string" || esArray(t)) return module.bufer(4, 4);
-  return module.bufer(8);
-}
-
-/** Stores the value that `value` leaves on the stack into `slot`: a scalar, or a copy of a string, array or cluster. */
-function storeInSlot(t, slot, value, temporal) {
-  if (isByReference(t)) return copyValueTo(t, value, [ins("i32.const", slot.address)], temporal);
-  return [ins("i32.const", slot.address), ...value, ins(`${wasmTypeOf(t)}.store`)];
-}
-
-/** Leaves on the stack the value in `slot`: a scalar, or the address of the string, array or cluster. */
-const loadFromSlot = (t, slot) => (isByReference(t) ? [ins("i32.const", slot.address)] : [ins("i32.const", slot.address), ins(`${wasmTypeOf(t)}.load`)]);
-
-/**
- * A control inside a subVI: a connector control reads the value the caller left
- * in its slot; any other one gives its default value, as nobody can set it.
- */
-function subVIControl(e, slot) {
-  const t = e.tOut(0);
-  return slot ? loadFromSlot(t, slot) : defaultValueCode(e, t, e.nodo.config?.value);
-}
-
-/** The instructions that leave the value `value` of type `t`, as a constant of the module. */
-function defaultValueCode(e, t, value) {
-  if (t === "string") return [ins("i32.const", e.cadena(String(value ?? "")))];
-  if (esArray(t)) return [ins("i32.const", e.arrayConstante(t, value ?? []))];
-  if (esCluster(t)) {
-    const buffer = e.bufer(clusterLayout(t).tam);
-    e.clusterConstante(t, value ?? {}, buffer);
-    return [ins("i32.const", buffer)];
-  }
-  return constantOf(t, value === true ? 1 : value ?? 0);
-}
-
-/**
- * A call to a subVI (DT-045): each input into its slot —an unwired one, with the
- * default value of the subVI's control—, the call, and each output read back. A
- * string, array or cluster output is copied into the caller's own buffer, since
- * the next call overwrites the slot. A subVI that waits is entered before its
- * inputs are written and left after its outputs are read, so that a parallel
- * call to the same instance cannot touch its slots in between.
- */
-function callSubVI(e, instance) {
-  const laidOut = (ports) => ports.map((port) => ({ ...port, type: inMemory(port.type) }));
-  const inputs = laidOut(e.cat.puertos(e.nodo).in);
-  const outputs = laidOut(e.cat.puertos(e.nodo).out);
-  const waits = instance.direct === null;
-  // A non-reentrant VI serves one call at a time (DT-045): the call enters (waiting while another one
-  // is inside) before it writes its inputs, runs the plan, reads its outputs and leaves. Writing the
-  // inputs before waiting let a second call overwrite the first one's (bug #30).
-  const code = waits ? [ins("i32.const", instance.plan), callScheduler("enter_subvi"), ins("drop")] : [];
-  code.push(ins("i32.const", instance.callerCell), ins("i32.const", e.chainIndex), ins("i32.store"));
-  inputs.forEach((port, i) => {
-    const slot = instance.slots.get(port.calleeName ?? port.name);
-    const value = e.cableada(i) ? e.entrada(i) : defaultValueCode(e, port.type, port.defaultValue);
-    code.push(...storeInSlot(port.type, slot, value, e.temporal));
-  });
-  if (instance.direct !== null) code.push(ins("call", FIRST_COMPILED_FUNCTION + instance.direct));
-  else code.push(ins("i32.const", instance.plan), callScheduler("run_plan"), ins("drop"));
-  for (const port of outputs) {
-    const slot = instance.slots.get(port.calleeName ?? port.name);
-    if (!isByReference(port.type)) {
-      code.push(...loadFromSlot(port.type, slot));
-      continue;
-    }
-    const own = esCluster(port.type) ? e.bufer(clusterLayout(port.type).tam) : e.celda();
-    code.push(...copyValueTo(port.type, loadFromSlot(port.type, slot), [ins("i32.const", own)], e.temporal), ins("i32.const", own));
-  }
-  if (waits) code.push(ins("i32.const", instance.plan), callScheduler("leave_subvi"));
-  return code;
-}
-
-/**
- * An indicator of the top-level VI written into its record of the panel (DT-063 §10): the diagram never
- * waits for the editor. A scalar is one atomic store, then its version goes up; a string, array or
- * cluster is copied into the record under the write lock, so the host never reads it half-written. A
- * chart (`historyLength`) writes into the next slot of its ring and counts the write. Returns the code,
- * which takes the value from `value`, into the record at `record` whose values take `slot` bytes each.
- */
-function writeIndicator(record, slot, type, value, temporal, historyLength) {
-  const at = (offset) => [ins("i32.const", record + offset)];
-  const lock = (name) => [...at(PANEL_RECORD.lock), callMemory(name)];
-  const countWrite = [...at(PANEL_RECORD.version), ins("i32.const", 1), ins("i32.atomic.rmw.add"), ins("drop")];
-  // A chart's slot for this write: its count modulo the history; any other indicator has one.
-  const slotAddress = historyLength
-    ? [...at(PANEL_RECORD.version), ins("i32.atomic.load"), ins("i32.const", historyLength), ins("i32.rem_u"), ins("i32.const", slot), ins("i32.mul"), ins("i32.const", record + PANEL_RECORD.value), ins("i32.add")]
-    : at(PANEL_RECORD.value);
-  const held = temporal(isByReference(type) ? "i32" : wasmTypeOf(type));
-  const store = isByReference(type) ? copyValueTo(type, [ins("local.get", held)], slotAddress, temporal) : [...slotAddress, ins("local.get", held), ...atomicStore(wasmTypeOf(type))];
-  // A scalar that is not a chart needs no lock: one atomic store is never seen half-written.
-  const locked = historyLength || isByReference(type);
-  return [...value, ins("local.set", held), ...(locked ? lock("write_lock") : []), ...store, ...countWrite, ...(locked ? lock("write_unlock") : [])];
-}
-
-/**
- * A control of the top-level VI read from its record of the panel (DT-063 §10), where the host writes
- * what the editor sends. A scalar is one atomic load; a Latch is an atomic exchange that leaves FALSE, so
- * only one read sees TRUE, and it counts the release for the host to tell the editor. A string, array or
- * cluster is copied into the node's own buffer under the read lock, as a local variable copies its data.
- */
-function readControl(e) {
-  const record = e.controlRecord;
-  const type = e.tOut(0);
-  const at = (offset) => [ins("i32.const", record + offset)];
-  if (!isByReference(type)) {
-    if (!mecanica(e.cat, e.nodo)?.startsWith("latch")) return [...at(PANEL_RECORD.value), ...atomicLoad(wasmTypeOf(type))];
-    const pressed = e.temporal("i32");
-    return [
-      ...at(PANEL_RECORD.value), ins("i32.const", 0), ins("i32.atomic.rmw.xchg"), ins("local.tee", pressed),
-      ins("if"), ...at(PANEL_RECORD.released), ins("i32.const", 1), ins("i32.atomic.rmw.add"), ins("drop"), ins("end"),
-      ins("local.get", pressed),
-    ];
-  }
-  const own = esCluster(type) ? e.bufer(clusterLayout(type).tam) : e.celda();
-  const lock = (name) => [...at(PANEL_RECORD.lock), callMemory(name)];
-  return [...lock("read_lock"), ...copyValueTo(type, at(PANEL_RECORD.value), [ins("i32.const", own)], e.temporal), ...lock("read_unlock"), ins("i32.const", own)];
-}
-
-/**
- * Index Array on a 2D array (DT-044, measured in LabVIEW 2026 Q3): with row and
- * column, the element (out of range, the default value); with only the row, that
- * row; with only the column, that column (out of range, an empty array); with
- * neither, the whole array.
- */
-function indexArray2d(e) {
-  const t = e.tIn(0);
-  const element = arrayElement(t.array);
-  const [rowWired, columnWired] = [e.cableada(1), e.cableada(2)];
-  const g = (local) => ins("local.get", local);
-  const [handle, rows, columns, row, column, source, target, count, k] = Array.from({ length: 9 }, () => e.temporal("i32"));
-  const code = [
-    ...e.entrada(0), ins("local.set", handle),
-    ...dimensionSize(handle, 0, e.temporal), ins("local.set", rows),
-    ...dimensionSize(handle, 1, e.temporal), ins("local.set", columns),
-  ];
-  const inRange = (index, size) => [g(index), ins("i32.const", 0), ins("i32.ge_s"), g(index), g(size), ins("i32.lt_s"), ins("i32.and")];
-  const addressOf = (rowIndex, columnIndex) => [g(handle), callMemory("datos8"), g(rowIndex), g(columns), ins("i32.mul"), g(columnIndex), ins("i32.add"), ins("i32.const", element.tam), ins("i32.mul"), ins("i32.add")];
-  if (rowWired && columnWired) {
-    const result = e.temporal(wasmTypeOf(t.array));
-    return [
-      ...code, ...e.entrada(1), ins("local.set", row), ...e.entrada(2), ins("local.set", column),
-      ...constantOf(t.array, 0), ins("local.set", result),
-      ...inRange(row, rows), ...inRange(column, columns), ins("i32.and"),
-      ins("if"), ...loadElement(t.array, addressOf(row, column)), ins("local.set", result), ins("end"),
-      g(result),
-    ];
-  }
-  const cell = e.celda();
-  if (!rowWired && !columnWired) return [...code, ...copyValueTo(t, [g(handle)], [ins("i32.const", cell)], e.temporal), ins("i32.const", cell)];
-  // One line of the array: a row runs along the columns, a column along the rows.
-  const [fixed, fixedSize, along, alongSize] = rowWired ? [row, rows, column, columns] : [column, columns, row, rows];
-  code.push(...e.entrada(rowWired ? 1 : 2), ins("local.set", fixed));
-  code.push(g(alongSize), ins("i32.const", 0), ...inRange(fixed, fixedSize), ins("select"), ins("local.set", count));
-  code.push(...reserveArray({ array: t.array }, cell, [count], e.temporal), ins("local.set", target));
-  code.push(
-    ins("i32.const", 0), ins("local.set", k), ins("block"), ins("loop"), g(k), g(count), ins("i32.ge_s"), ins("br_if", 1),
-    g(k), ins("local.set", along),
-    ...addressOf(row, column), ins("local.set", source),
-    ...copyElement(t.array, source, target, e.temporal),
-    g(target), ins("i32.const", element.tam), ins("i32.add"), ins("local.set", target),
-    g(k), ins("i32.const", 1), ins("i32.add"), ins("local.set", k), ins("br", 0), ins("end"), ins("end"),
-  );
-  return [...code, ins("i32.const", cell)];
-}
-
-/**
- * Suma, producto, AND u OR de los elementos de un array (Add/Multiply Array
- * Elements y And/Or Array Elements): empieza en `neutro` y opera arrayElement a
- * arrayElement, en el tipo de los elementos (un entero da la vuelta, como en LabVIEW).
- */
-function reducir(e, op, neutro) {
-  const t = e.tOut(0);
-  const el = arrayElement(t);
-  const vt = wasmTypeOf(t);
-  const [h, n, o, i] = [e.temporal("i32"), e.temporal("i32"), e.temporal("i32"), e.temporal("i32")];
-  const r = e.temporal(vt);
-  const g = (l) => ins("local.get", l);
-  return [
-    ...e.entrada(0), ins("local.tee", h), callMemory("longitud"), ins("local.set", n), g(h), callMemory("datos8"), ins("local.set", o),
-    ...constantOf(t, neutro), ins("local.set", r),
-    ins("i32.const", 0), ins("local.set", i), ins("block"), ins("loop"), g(i), g(n), ins("i32.ge_s"), ins("br_if", 1),
-    g(r), g(o), g(i), ins("i32.const", el.tam), ins("i32.mul"), ins("i32.add"), ins(el.carga), ins(`${vt}.${op}`), ...narrowInteger(t), ins("local.set", r),
-    g(i), ins("i32.const", 1), ins("i32.add"), ins("local.set", i), ins("br", 0), ins("end"), ins("end"),
-    g(r),
-  ];
-}
-
-const KINDS = ["f32.load", "f64.load", "i64.load", "i32.load", "i32.load16_s", "i32.load16_u", "i32.load8_s", "i32.load8_u"];
-/** Cómo se lee un arrayElement escalar, para el anfitrión: un número de `KINDS`. */
-const kindDe = (t) => KINDS.indexOf(arrayElement(t).carga);
-function sinReferencias(t, nombre) {
-  if (arrayElement(t).ref) throw new Error(`${nombre} con cadenas, clusters o arrays como elementos: todavía no (M6).`);
-}
-/** Deja en la pila el handle de un array con lo que entra por `i`: él mismo, o un array de un solo arrayElement. */
-function comoArray(e, i) {
-  const t = e.tOut(0).array;
-  if (esArray(e.tIn(i))) return e.entrada(i);
-  const [celda, v] = [e.celda(), e.temporal(wasmTypeOf(t))];
-  const el = arrayElement(t);
-  return [
-    ...e.entrada(i), ins("local.set", v),
-    ins("i32.const", celda), ins("i32.const", 1), ins("i32.const", el.tam), ins("i32.const", 0), callMemory("nuevo_array"), ins("drop"),
-    ...storeElement(t, [ins("i32.const", celda), ins("i32.load"), ins("i32.const", 8), ins("i32.add")], [ins("local.get", v)], e.temporal),
-    ins("i32.const", celda),
-  ];
-}
-/** Una función de array hecha en JavaScript: celda de salida, array, tamaño del arrayElement y sus argumentos. `primera`: la entrada del array. */
-function arrJs(e, nombre, titulo, args, primera = 0) {
-  const t = e.tOut(0).array;
-  sinReferencias(t, titulo);
-  const celda = e.celda();
-  return [ins("i32.const", celda), ...e.entrada(primera), ins("i32.const", arrayElement(t).tam), ...args.flatMap((a) => a()), ins("call", importIndex(nombre)), ins("i32.const", celda)];
-}
-function arrSumar(e, delta) {
-  const t = e.tOut(0).array;
-  const celda = e.celda();
-  return [ins("i32.const", celda), ...e.entrada(0), ins("i32.const", arrayElement(t).tam), ins("i32.const", kindDe(t)), ...e.entrada(1), ins("i32.const", delta), ins("call", importIndex("a_sumar")), ins("i32.const", celda)];
-}
-
-
-/**
- * La acción mecánica de un control booleano: la elegida o, si no, la de fábrica
- * de su estilo (Stop, OK y Cancel traen Latch When Released; comprobado en
- * LabVIEW 2026 Q3, front-panel/boolean-menu-mechanical-action.png).
- */
-function mecanica(cat, n) {
-  const def = cat.bloque(n.tipo).config?.mechanical;
-  if (!def) return undefined;
-  return n.config?.mechanical ?? def["by-style"]?.[n.config?.style] ?? def.value;
-}
 
 /**
  * Los tipos que el compilador sabe llevar hoy por un cable: numéricos,
@@ -1207,7 +816,7 @@ function compileOVI(withDecorations, cat, module, asSubVI, instanceKey, chainInd
     // A polymorphic OVI is called as the instance the node has chosen (DT-074 §2).
     const callee = cat.calleeOf ? cat.calleeOf(n) : cat.findSubVI?.(n.config?.vi);
     if (!callee) return { errores: [{ nodo: n.id, motivo: `The subOVI "${n.config?.vi}" is not loaded.` }] };
-    const instance = subVIInstance(callee, n, module, instanceKey);
+    const instance = subOVIInstance(callee, n, module, instanceKey, compileOVI);
     if (instance.errores) return { errores: instance.errores };
     calls.set(n.id, instance);
   }
@@ -1386,7 +995,7 @@ function compileOVI(withDecorations, cat, module, asSubVI, instanceKey, chainInd
     const isControl = PANEL_CONTROLS.includes(node.tipo);
     if (isControl) panelRecordOf(node.id, type);
     else registerIndicator(node.id, type, logicalType);
-    return { nodo: node.id, control: isControl, mecanica: mecanica(cat, node) ?? null, label: node.label?.text ?? "" };
+    return { nodo: node.id, control: isControl, mecanica: mechanicalAction(cat, node) ?? null, label: node.label?.text ?? "" };
   }
   /** Records what the host needs to run a Property Node and returns its index. */
   function registerPropertyNode(entry) {
@@ -1535,12 +1144,12 @@ function compileOVI(withDecorations, cat, module, asSubVI, instanceKey, chainInd
     // VISA and the file functions are served by the same I/O (the editor's I/O process).
     // VISA's Property Node too (DT-072 §5).
     if (VISA_FUNCTIONS.has(n.tipo) || FILE_FUNCTIONS.has(n.tipo) || (n.tipo === "property-node" && n.config?.class === "Instr") || n.tipo === "call-library") module.usesInstrumentIo = true;
-    const emitir = n.tipo === "subvi" ? (e) => callSubVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subVIControl(e, asSubVI.get(n.name)) : BLOQUES[n.tipo];
+    const emitir = n.tipo === "subvi" ? (e) => callSubOVI(e, calls.get(id)) : asSubVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subOVIControl(e, asSubVI.get(n.name)) : BLOQUES[n.tipo];
     if (!emitir) return errores.push({ nodo: id, motivo: `The compiler cannot emit "${nombre}" (${n.tipo}) yet.` });
     const e = { nodo: n, cat, tIn, tOut, logicalTIn, logicalTOut, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex, registerPropertyNode, registerCallLibrary, registerControlReference };
     if (!asSubVI && PANEL_CONTROLS.includes(n.tipo)) {
       e.controlRecord = panelRecordOf(id, tOut(0)).record;
-      controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mecanica(cat, n), record: e.controlRecord, ...panelDataOf(tOut(0), logicalTOut(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTOut(0) === PATH && { path: true }), ...taskPanelData(logicalTOut(0)) });
+      controles.push({ nodo: id, name: n.name, tipo: tOut(0), mecanica: mechanicalAction(cat, n), record: e.controlRecord, ...panelDataOf(tOut(0), logicalTOut(0)), ...(RESOURCE_NAME_PANEL_OBJECTS.has(n.tipo) && { resourceName: true }), ...(logicalTOut(0) === PATH && { path: true }), ...taskPanelData(logicalTOut(0)) });
     }
     try {
       const b = cat.bloque(n.tipo);
@@ -1668,7 +1277,7 @@ function compileOVI(withDecorations, cat, module, asSubVI, instanceKey, chainInd
     // El arrayElement de cada túnel indexado en esta vuelta (fuera del array, el valor por defecto).
     for (const x of indexados) {
       if (x.fila) {
-        c.push(...filaDeLaVuelta(x, i, L));
+        c.push(...loopRowOfIteration(x, i, L));
         continue;
       }
       const el = arrayElement(x.t);
@@ -1719,7 +1328,7 @@ function compileOVI(withDecorations, cat, module, asSubVI, instanceKey, chainInd
       // Rows that come out of an indexed tunnel make a 2D array: one block, not an array of arrays (DT-044).
       if (t.indexado && esArray(t.indexado.t)) {
         const celda = nuevaCelda();
-        c.push(...juntarFilas(contexto(t.id, k).tOut(0), t.indexado.celda, celda, L), ins("i32.const", celda), ins("local.set", t.l));
+        c.push(...gatherRowsInto2dArray(contexto(t.id, k).tOut(0), t.indexado.celda, celda, L), ins("i32.const", celda), ins("local.set", t.l));
       } else if (t.indexado) c.push(ins("i32.const", t.indexado.celda), ins("local.set", t.l));
       dejar(k, t.id, "y", t.l, wasmTypeOf(contexto(t.id, k).tOut(0)));
       c.push(...borderHook(t.id, "y", t.l, k));

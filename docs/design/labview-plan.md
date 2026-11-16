@@ -916,10 +916,12 @@ to it go on, new fronts wait for step 6.
    identical), with the names moved rewritten in English. Out so far: `instructions.mjs`, `wasm-types.mjs`,
    `host-imports.mjs`, `runtime-functions.mjs`, `memory-ops.mjs`, `panel-data.mjs`, `constants.mjs` (`constantOf`, the
    zero cluster, `ERROR_FIELDS`) and the families in `nodes/` (data manipulation, strings, Format/Scan and their
-   `host-rows.mjs`, files, VISA, timing, Expression Node, Property Node, Call Library, arithmetic and comparison);
-   `compileVI` is `compileOVI` (DT-071). `compiler.mjs` is down from 3,261 to 2,096 lines. Next: the array family and
-   the subOVI calls, then the `BLOQUES` table (`node-table.mjs`), then `compileOVI` (`compile-ovi.mjs`) and the clump
-   ordering. A rename by regular expression also hits quoted names and spread calls (`"rotar"`, a host import, became
+   `host-rows.mjs`, files, VISA, timing, Expression Node, Property Node, Call Library, arithmetic and comparison,
+   arrays), `array-rows.mjs` (a 2D array's rows through an indexed tunnel), `subovi-calls.mjs` and `panel-io.mjs`;
+   `compileVI` is `compileOVI` and `runnableVI` `runnableOVI` (DT-071). `compiler.mjs` is down from 3,261 to 1,705
+   lines. Next: the `BLOQUES` table (`node-table.mjs`), then `compileOVI` (`compile-ovi.mjs`) and the clump ordering.
+   The `.wat` comparison does not reach every node (no example uses Delete From Array): a name left behind shows only
+   in the suite, so it runs after every move. A rename by regular expression also hits quoted names and spread calls (`"rotar"`, a host import, became
    `"rotate"` once; `...convertir(` was missed once): after each rename, look for both.*
    **Style debts seen while splitting** (2026-11-16; counts over `core/`, `editor/` and `cli/`). Each goes against a
    written rule, so each is to be changed; the ones inside the compiler go with this step, the rest by the Boy Scout
