@@ -1847,3 +1847,44 @@ Tests: `test/editor/daq-name-controls.test.mjs`.
 > closed with an internal error on Indicator and what they make was not measured). **Unverified:** how the node hangs from the cursor
 > while it is placed (centred, as the control reference's), the rows' names on This Application (the menu was measured on This VI), and the
 > width of "This OVI", which is a letter wider than the measured "This VI". Tested.
+
+## 26. A user's cluster on the panel (2026-11-16, DT-095, stage a)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-11-16-cluster-panel.md` and `2026-11-16-cluster-diagram.md`). Code:
+`editor/src/front-panel/cluster-panel.mjs` (geometry and drops), `cluster-view.mjs` (drawing), `cluster-menus.mjs` (the menu). Tests:
+`test/editor/cluster-panel.test.mjs`. A cluster made by the user is a `cluster-control` whose `config.elements` is the list of its
+elements in cluster order (`core/model/user-cluster.mjs`); its type and value follow them. The error clusters keep their style and are
+not touched. This stage is the shell, dropping controls into it, its terminal and wire and its menu; Reorder Controls In Cluster...,
+Change to Indicator, AutoSizing, the Cluster Constant, Bundle and Unbundle are the next stages.
+
+> **Rule 135 — The Cluster control (palette, shell, label).** Controls ▸ Modern ▸ **Array, Matrix & Cluster** ▸ **Cluster** (row 1,
+> column 2) is done: it drops a `cluster-control` with `elements: []`, a **100 × 100** shell hanging from the cursor by its centre, with
+> the label "Cluster" (then "Cluster 2"…) above it, left-aligned and **2 px** away. The shell is a **4 px bevel** round a **92 × 92**
+> interior of `#B3B3B3` (`--cluster-interior`) on the panel's `#E2E2E2`; its bevel, from the outside in, is `#C9C9C9`, `#C2C2C2`,
+> `#B7B7B7`, `#B1B1B1` on the left (`#D3D3D3` as the outermost on the top) and `#E0E0E0`, `#EDEDED`, `#F2F2F2`, `#EEEEEE` on the right
+> (`#EAEAEA` as the outermost on the bottom), as tokens `--cluster-*` of the Old School theme. Its **AutoSizing is None**: it never grows
+> when elements are dropped in. A resize handle on each corner and side (selected only) changes the size; the size is saved in the
+> panel placement (`w`, `h`) and the smallest is 9 × 9 (**unverified**; LabVIEW's grew slightly more than the drag, **unverified**).
+> Visible Items ▸ Label hides and shows the label (`config.hidden`, saved with the object).
+
+> **Rule 136 — Elements.** A control from the palette **dropped on the interior** (not on the bevel), or a control **dragged** there on
+> the panel, becomes an **element** at the drop point and is appended to `elements` (the cluster order is the drop order), through
+> `setClusterElements`, so the cluster's type follows. An element is no panel object: it is removed from the panel's top level and from
+> the diagram with its wires (it has no terminal), and a press on it is a press on the cluster. The element's box is centred on the drop
+> point as the control hangs from the cursor, **pushed inside the inner left edge**, and elements may overlap; each is drawn as the editor
+> draws that kind of control (numeric, Boolean, string), with its label above it, **clipped by the interior**. The elements are numeric,
+> Boolean and string objects; the other kinds (arrays, graphs, clusters, paths) are not elements yet and stay on the panel. All the
+> elements of a cluster are controls (or all indicators): an indicator dropped in becomes a control, a Boolean taking the style of its
+> kind. Not built: typing the dropped element's label (it keeps "Numeric", "Boolean"…), dragging an element out of the shell, the menus
+> of an element (the shell's opens instead) and operating an element's value.
+
+> **Rule 137 — The shell's menu.** The right-click menu is `context.cluster-control`, in the measured order: Visible Items ▸ (Label,
+> Caption), Find Terminal, Change to Indicator, Change to Array, —, Make Type Def., —, Description and Tip..., —, Create ▸ (Local
+> Variable, Reference, Property Node, Invoke Node, Cluster from Selection), Replace ▸, Data Operations ▸ (Reinitialize to Default Value,
+> Make Current Value Default, —, Cut Data, Copy Data, Paste Data), Advanced ▸ (Key Navigation..., Synchronous Display, Customize...,
+> Run-Time Shortcut Menu ▸, —, Hide Control, Enabled State ▸, Show Hidden Element ▸), Fit Control to Pane, Scale Object with Pane, —,
+> Reorder Controls In Cluster..., AutoSizing ▸ (None ✓, Size to Fit, Arrange Horizontally, Arrange Vertically), —, Properties: 15 rows
+> and 5 separators, the 20 measured. **Done:** Visible Items ▸ Label; the ticks (Caption, as measured; Label while shown; AutoSizing ▸
+> None). Every other row is greyed with its reason (rule 54); Reorder Controls In Cluster... (`reordenar-cluster`), Change to Indicator
+> and AutoSizing's other modes (`autosizing-de-cluster`) wait for their stages. **Unverified:** which of Label and Caption LabVIEW ticks
+> (the report reads "Label, ✓ Caption"; its label's class is unclear). Find Terminal stays greyed, as every control's.

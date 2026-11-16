@@ -2,12 +2,13 @@
 // live in nodes/; the short ones are still written here inline.
 
 import { CONSTANTES_MATEMATICAS } from "../model/math-constants.mjs";
+import { bundle, bundleByName, clusterConstant, unbundle, unbundleByName } from "./nodes/clusters.mjs";
 import { DAQ_TASK_LAYOUT, isDaqTask } from "../model/daq-name.mjs";
 import { OVI_CLASS, refnumOfClass } from "../model/ovi-server-reference.mjs";
 import { importIndex } from "./host-imports.mjs";
 import { callMemory, callScheduler } from "./runtime-functions.mjs";
-import { arrayElement, copyValue, copyValueTo, isByReference, loadElement, storeElement } from "./memory-ops.mjs";
-import { ERROR_FIELDS, constantOf, readClusterFields } from "./constants.mjs";
+import { arrayElement, copyValue, copyValueTo, loadElement, storeElement } from "./memory-ops.mjs";
+import { ERROR_FIELDS, constantOf } from "./constants.mjs";
 import { callStringFunction, characterTest, concatenateStrings, numberToFloatString, numberToString, stringToNumber } from "./nodes/strings.mjs";
 import { formatIntoString, scanFromString } from "./nodes/format-scan.mjs";
 import { expressionNode } from "./nodes/expression-node.mjs";
@@ -23,7 +24,7 @@ import { joinNumbers, logicalShift, mantissaAndExponent, rotate, rotateWithCarry
 import { EMPTY_PATH, NOT_A_PATH, PATH_KIND, encodePath } from "../model/paths.mjs";
 import { ERROR, FILE_REFNUM, PATH, VISA_RESOURCE_LAYOUT, dimensionsOf, esArray, esCluster, esRefnum, limites, representacion } from "../model/types.mjs";
 import { i32Const, ins, localGet } from "./instructions.mjs";
-import { clusterLayout, convertValue, isFloat, isSigned, narrowInteger, wasmTypeOf } from "./wasm-types.mjs";
+import { convertValue, isFloat, isSigned, narrowInteger, wasmTypeOf } from "./wasm-types.mjs";
 import { i32 } from "./linear-memory.mjs";
 
 /**
@@ -103,39 +104,13 @@ export const NODE_EMITTERS = {
   ]),
   // Espacio, HT, LF, VT, FF y CR (la ayuda de NI: «space, h/v tab, cr, lf, ff»).
   "white-space": (e) => characterTest(e, (c) => [localGet(c), i32Const(32), ins("i32.eq"), localGet(c), i32Const(9), ins("i32.sub"), i32Const(5), ins("i32.lt_u"), ins("i32.or")]),
-  // Clusters (DT-042): Bundle escribe sus campos en su bloque; Unbundle los lee sin copiar.
-  bundle: (e) => {
-    const d = clusterLayout(e.tOut(0));
-    const b = e.bufer(d.tam);
-    const r = [];
-    d.campos.forEach((c, i) => {
-      if (isByReference(c.tipo)) r.push(...copyValue(c.tipo, e.entrada(i), b + c.off, e.temporal));
-      else r.push(ins("i32.const", b + c.off), ...e.entrada(i), ins(`${wasmTypeOf(c.tipo)}.store`));
-    });
-    return [...r, ins("i32.const", b)];
-  },
-  unbundle: (e) => readClusterFields(e, clusterLayout(e.tIn(0)).campos),
-  // Bundle By Name: a copy of the input cluster with each named row's element written over (DT-083).
-  "bundle-by-name": (e) => {
-    const layout = clusterLayout(e.tIn(0));
-    const buffer = e.bufer(layout.tam);
-    const code = copyValue(e.tIn(0), e.entrada(0), buffer, e.temporal);
-    const rows = (e.nodo.config?.items ?? []).filter((field) => field !== null);
-    rows.forEach((name, row) => {
-      const field = layout.campos.find((c) => c.nombre === name);
-      const input = row + 1;
-      if (isByReference(field.tipo)) code.push(...copyValue(field.tipo, e.entrada(input), buffer + field.off, e.temporal));
-      else code.push(ins("i32.const", buffer + field.off), ...e.entrada(input), ins(`${wasmTypeOf(field.tipo)}.store`));
-    });
-    return [...code, ins("i32.const", buffer)];
-  },
-  // Unbundle By Name: the same reads, only the named rows and in their order (DT-050).
-  "unbundle-by-name": (e) => {
-    const fields = clusterLayout(e.tIn(0)).campos;
-    const rows = (e.nodo.config?.items ?? []).filter((field) => field !== null);
-    return readClusterFields(e, rows.map((field) => fields.find((c) => c.nombre === field)));
-  },
-  // El cluster de error (DT-043).
+  // Clusters (nodes/clusters.mjs).
+  bundle,
+  unbundle,
+  "bundle-by-name": bundleByName,
+  "unbundle-by-name": unbundleByName,
+  "cluster-constant": clusterConstant,
+  // The error cluster (DT-043).
   "error-cluster-constant": (e) => [ins("i32.const", e.clusterConstante(ERROR, e.nodo.config?.value ?? {}))],
   "clear-errors": (e) => {
     // Sin código específico, todo a cero; con él, sólo si coincide (sin comprobar en LabVIEW).

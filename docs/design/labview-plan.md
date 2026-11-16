@@ -16,8 +16,10 @@ When the developer says "keep going":
    2026-10-26"). Steps 1 to 5 are done (step 5, the ESP32 DAQ, on 2026-11-05). Step 6, the DAQ layer
    (DT-076), has its stage A done (2026-11-15), built on step **6a, the two doors for libraries** (DT-079): the Call
    Library Function Node and the add-ons folder. "OVI files are `.ovi`" (DT-094) is done (2026-11-16). **DT-093 (2026-11-16)
-   closes the hardware stage here**: next is **"The language's everyday types"** below, starting with the compiler's
-   split; DAQ's stage B waits for its waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
+   closes the hardware stage here**: next is **"The language's everyday types"** below. Its step 1 (the compiler's
+   split) is done; step 2, clusters made by the user (DT-095), has its core and editor stage (a) done (2026-11-16):
+   **continue with its stage (b)**, Reorder Controls In Cluster and Change to Indicator. DAQ's stage B waits for the
+   waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
    `win11 encender`, `tools/vm_control.py foto|clic|arrastrar|tecla|texto`.
@@ -962,6 +964,18 @@ to it go on, new fronts wait for step 6.
    - **Leftovers of DT-051**: `qvi-format.mjs`, `qvi.schema.json` and "`.qvi`" in comments, for what is now an `.ovi`.
 
 2. **Clusters made by the user**: cluster control, indicator and constant, Bundle and Unbundle, the cluster order.
+   *Measured on 2026-11-16 ([`cluster-panel`](../../labview-captures/reports/2026-11-16-cluster-panel.md),
+   [`cluster-diagram`](../../labview-captures/reports/2026-11-16-cluster-diagram.md)) and decided in DT-095. Core done
+   the same day: `core/model/user-cluster.mjs` (type and value derived from the elements), format version 6
+   (`elements`, spec/02 §4.4), the `cluster-constant` block, the cluster emitters in `nodes/clusters.mjs`,
+   `test/core/user-clusters.test.mjs` (the measured run: "hi", TRUE, 3). Next, the editor, in stages: (a) the panel's
+   Cluster shell, dropping controls into it, its terminal and wire; (b) Reorder Controls In Cluster and Change to
+   Indicator; (c) the Cluster Constant; (d) Bundle and Unbundle from the palette, taking the wired cluster's elements.
+   Stage (a) built on 2026-11-16 (`editor/src/front-panel/cluster-panel.mjs`, `-view.mjs`, `-menus.mjs`; spec/05 §26
+   rules 135–137, spec/06 §22) and tried under Xvfb
+   ([`cluster-shell-editor-try`](../../labview-captures/reports/2026-11-16-cluster-shell-editor-try.md)). Left: the
+   subpalette's title says "Data Containers" where LabVIEW says "Data Container"; an element's own menu, label editing,
+   value operating and dragging it out of the shell.*
 3. **Type definitions** and strict type definitions, in `.octl` files (DT-093 §5): Make Type Def., the control editor,
    updating the instances.
 4. **Time stamp**: control, constant, Get Date/Time, conversions.

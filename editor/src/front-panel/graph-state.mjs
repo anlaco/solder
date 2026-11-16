@@ -7,6 +7,7 @@
 // Pure functions: the window holds `charts` and the OVI's last `valores`.
 
 import { isFreeLabel } from "../../../core/model/free-label.mjs";
+import { hasElements } from "../../../core/model/user-cluster.mjs";
 import { AXIS_MIN_SPACING, DEFAULT_CHART_HISTORY, DEFAULT_SCALES, autoscale, chartAppend, chartPlots, emptyHistory, graphPlots, stripXScale, xyPlots } from "./plot-data.mjs";
 
 export const GRAPH_KINDS = ["waveform-chart", "waveform-graph", "xy-graph"];
@@ -36,9 +37,11 @@ export function graphSettings(node) {
 /** Whether an item of the graph is shown. */
 export const isShown = (node, item) => !graphSettings(node).hidden.has(item);
 
-/** Visible Items ▸ Label of a graph hides its label, on both canvases; every other object always shows it. */
-/** Whether an object's own label is drawn. A free label is its own text and has no label apart from it (DT-085). */
-export const labelShown = (node) => !isFreeLabel(node) && (!isGraph(node) || isShown(node, "label"));
+/**
+ * Whether an object's own label is drawn. Visible Items ▸ Label of a graph or of a user's cluster (DT-095) hides it, on
+ * both canvases; every other object always shows it. A free label is its own text and has no label apart from it (DT-085).
+ */
+export const labelShown = (node) => !isFreeLabel(node) && (!(isGraph(node) || hasElements(node)) || isShown(node, "label"));
 
 /** The patch for `fijarConfig` that shows or hides `item`. */
 export function toggledItem(node, item) {

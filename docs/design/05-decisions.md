@@ -4675,3 +4675,60 @@ and `.qvi` files keep opening.**
 | Every OVI Solder ships is `.ovi` and every subOVI it calls, by its new name, exists | "every OVI Solder ships is a .ovi…" in `test/editor/ovi-paths.test.mjs` (examples, ovi.lib, add-ons) | **Built** (2026-11-16) |
 | The installer associates `.ovi` and removes it on uninstall | `package.json`, `build/installer.nsh` | **Unverified** (not installed in the virtual machine) |
 | Files of released betas still open | `test/fixtures/released/` | Kept |
+
+## DT-095
+
+**A cluster made by the user is a container: a panel object (or a diagram constant) that holds other panel objects
+(or constants), each a whole object of its own. Its type is its elements' types in cluster order, which is the order
+of the elements in the file. The `.ovi` format stores the elements inside the container and goes to version 6.**
+
+- **Status:** Accepted on 2026-11-16 by the developer, as proposed the same day as DT-093's step 2, after measuring LabVIEW 2026 Q3
+  ([`cluster-panel`](../../labview-captures/reports/2026-11-16-cluster-panel.md),
+  [`cluster-diagram`](../../labview-captures/reports/2026-11-16-cluster-diagram.md)).
+- **Why:** Solder already has the cluster type (DT-042), its layout in memory, Bundle and Unbundle in the compiler,
+  Bundle and Unbundle By Name (DT-050) and the error cluster; a cluster control today is one panel object whose type
+  is written in its configuration and whose look comes from a style (`error-in`). A user's cluster is different: in
+  LabVIEW each element is a full control (a Numeric with its representation, a Boolean with its mechanical action, a
+  String with its display) with its own label, place and menus, dropped into the shell. Measured: the shell does not
+  grow (AutoSizing None), elements sit where dropped and may overlap, the cluster order is the drop order and is
+  changed only by Reorder Controls In Cluster..., the value follows that order (VI Server: `Cluster = ["", false, 0]`
+  after reversing Numeric, Boolean, String), Change to Indicator turns every element into an indicator, and Bundle
+  and Unbundle take as many rows as the wired cluster has elements, in cluster order (proven by a run).
+
+### Decision
+
+1. **The model.** A panel `cluster-control` / `cluster-indicator` gets `elements`: the panel objects inside it, each
+   as any panel object (kind, label, configuration, value), with its position relative to the cluster's interior.
+   The array's order is the cluster order. Its type is derived from the elements (`{ cluster: [{ name: label, type }] }`)
+   and is no longer written by hand; the error clusters keep their style and stored type as today. An element has no
+   terminal of its own. The diagram's Cluster Constant (`cluster-constant`) is the same over constants, with no labels
+   shown (measured).
+2. **The format** (DT-055): version 6 adds `elements` to a cluster panel object and to a cluster constant. A file of
+   version 5 or earlier opens unchanged (its clusters have no elements and keep their stored type); a file of version 6
+   is refused by an older Solder, as any newer file.
+3. **The editor, as measured:** Controls ▸ Modern ▸ Array, Matrix & Cluster ▸ Cluster (row 1, column 2) drops a 100 ×
+   100 shell labelled "Cluster" with the measured bevel and #b3b3b3 interior; a control dropped inside becomes an
+   element at the drop point, clipped by the shell; resizing the shell by its handle. The terminal is LabVIEW's 38 × 38
+   cluster icon (32 × 16 with View As Icon off), magenta #ff00ff for mixed contents and brown #993300 for numbers only,
+   and the cluster wire is 3 px of that colour with a dotted core. Functions ▸ Cluster, Class & Variant ▸ Cluster
+   Constant: a 100 × 100 white box with the double brown or magenta frame, its menu only from the frame. Bundle and
+   Unbundle from the same palette: Bundle unwired shows two element inputs and takes the wired cluster's elements when
+   its top input is wired; Unbundle shows one output and takes the wired cluster's elements; their rows carry type
+   marks; Unbundle cannot be resized (no resize cursor, measured). An indicator created from an Unbundle output is
+   named after its element.
+4. **Reorder Controls In Cluster...** is built as measured: the darkened panel, the two-cell badges (new, current),
+   ✓ and ✗ and "Click to set to" in the toolbar, live renumbering; it is one undo step.
+5. **Change to Indicator / Change to Control** on the shell changes every element.
+6. **Left greyed with their reason** (DT-035): AutoSizing other than None, Cluster from Selection, Make Type Def.
+   (step 3), Change to Array of a cluster, View Cluster As Icon on the constant, Bundle with fewer rows than the
+   cluster (unmeasured).
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| A cluster's type is its elements' types in the file's order, and reordering changes the value's order | a core test over a version-6 file, compiled and run | Not built |
+| A version-5 file opens unchanged; a version-6 file is refused by version-5 rules | `test/fixtures/released/`, `qvi-round-trip` | Not built |
+| Bundle and Unbundle take the wired cluster's elements, in cluster order | an editor test and a run: Numeric 3, Boolean TRUE, String "hi" reversed give "hi", TRUE, 3, as LabVIEW | Measured (2026-11-16), not built |
+| The shell, terminal, constant, wire and menus look as measured | editor tests on the measured sizes and colours; a comparison under Xvfb | Not built |
+| ✗ discards a pending reorder | — | **Unverified** in LabVIEW |

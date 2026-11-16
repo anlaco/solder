@@ -36,12 +36,16 @@ import { daqNameText, isDaqName } from "../../../core/model/daq-name.mjs";
 import { daqNamePanelMenuRoot, isDaqNamePanelObject } from "../common/daq-name-menus.mjs";
 import { controlForElement, elementMenuRoot, emptyArrayAgain, isEmptyArrayShell, panelArrayFromElement, typeEmptyArray } from "../common/array-typing.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
+import { setClusterElements } from "../../../core/model/user-cluster.mjs";
 import { REPEATED_PASTE_STEP } from "../common/paste-memory.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { EMPTY_PATH, hostPathRules, isNotAPath, pathFromText, pathToText } from "../../../core/model/paths.mjs";
 import { abbreviatePath } from "../common/path-text.mjs";
 import { PATH, convertirValor, elementoPorDefecto, esEnum, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import { GRAPH_MEASURES, LABEL_PLACEMENT, graphSvg } from "./graph-view.mjs";
+import { CLUSTER_MEASURES, clusterAt, dropObjects, isUserCluster, newElement, placeInside, shellBox, withElement, withShellBox, canBeElement } from "./cluster-panel.mjs";
+import { clusterObject } from "./cluster-view.mjs";
+import { CLUSTER_MENU_ROOT } from "./cluster-menus.mjs";
 import * as HC from "./html-controls.mjs";
 import { DISABLED, disabledOf, isVisible } from "./panel-properties.mjs";
 import { isGraph, labelShown, wireTypeOf } from "./graph-state.mjs";
@@ -74,7 +78,7 @@ export const CONTROLES = {
   // takes the terminal's label; the palette's own label is unverified.
   "refnum-control": { etiqueta: "Control Refnum", incrementador: false, refnum: true },
   "refnum-indicator": { etiqueta: "Control Refnum", incrementador: false, refnum: true },
-  // Un cluster: de momento sólo los de error (Error In y Error Out), que se distinguen por `config.style`.
+  // A cluster: the error ones (Error In and Error Out, told apart by `config.style`) and a user's (DT-095), which has `config.elements`.
   "cluster-control": { etiqueta: "Cluster", incrementador: false, cluster: true },
   "cluster-indicator": { etiqueta: "Cluster", incrementador: false, cluster: true },
   // Un array de una dimensión: el índice y la caja de sus elementos (labview-captures/array/panel-array-1a1.png).
@@ -234,6 +238,7 @@ const inicioCasilla = (tipo) => (CONTROLES[tipo]?.incrementador ? MEDIDAS_PANEL.
 /** La caja de un objeto del panel, sin su etiqueta. */
 export function cajaObjeto(tipo, x, y, config) {
   const M = MEDIDAS_PANEL;
+  if (isUserCluster({ config })) return { x, y, ancho: CLUSTER_MEASURES.width, alto: CLUSTER_MEASURES.height, casilla: 0 };
   if (claseError(tipo, config)) return { x, y, ancho: MEDIDAS_ERROR.ancho, alto: MEDIDAS_ERROR.alto, casilla: 0 };
   if (CONTROLES[tipo]?.array && isUndefinedArray(config?.type)) {
     const shell = MEDIDAS_ARRAY_PANEL_VACIO.casilla;
@@ -270,7 +275,11 @@ export function cajaObjeto(tipo, x, y, config) {
 }
 
 /** An object's box on the panel. A free label's follows its text: `measure` and `edicion` say how wide it is drawn. */
-export const caja = (n, measure, edicion) => (isFreeLabel(n) ? { ...FL.box(n, "panel", measure, edicion), casilla: 0 } : cajaObjeto(n.tipo, n.panel.x, n.panel.y, n.config));
+export function caja(n, measure, edicion) {
+  if (isFreeLabel(n)) return { ...FL.box(n, "panel", measure, edicion), casilla: 0 };
+  // A user's cluster keeps the size it was resized to (a shell is never refitted: AutoSizing None).
+  return isUserCluster(n) ? { ...shellBox(n), casilla: 0 } : cajaObjeto(n.tipo, n.panel.x, n.panel.y, n.config);
+}
 
 /** How deep inside a numeric or string control's edge a press moves it instead of typing (2026-10-17-panel-move-zones.md). */
 const MOVE_BAND_PX = 4;
@@ -473,11 +482,22 @@ function freeLabelObject(n, ctx, selected, p) {
   return `<div class="${classes}" data-nodo="${FL.esc(n.id)}" style="left:${FL.px(box.x)};top:${FL.px(box.y)};width:${FL.px(box.ancho)};height:${FL.px(box.alto)}"><div class="${FL.textClass(n, p.edicion)}">${FL.contentHtml(n, p.edicion)}</div>${handles}</div>`;
 }
 
-function panelObject(n, ctx, selected, p, resolvedTypes) {
+/** An element of a cluster as it holds its value now: while running, the value its cluster received under its name. */
+function elementHoldingValue(cluster, node, valores) {
+  const running = valores?.[cluster.id]?.[node.label?.text ?? ""];
+  return running === undefined ? node : { ...node, config: { ...node.config, value: running } };
+}
+
+/** The object `n` of the panel, or, with `asElement`, an element of a user's cluster: drawn the same, with no hooks of its own. */
+function panelObject(n, ctx, selected, p, resolvedTypes, asElement = false) {
   if (isFreeLabel(n)) return freeLabelObject(n, ctx, selected, p);
   const editing = p.edicion?.valor && p.edicion.nodo === n.id ? p.edicion : null;
-  const frame = { id: n.id, box: caja(n), label: n.label?.text ?? "", selected, editing: !!editing, isControl: isControlNode(n), classes: disabledClasses(p.runProps, n.id) };
+  const frame = { id: asElement ? "" : n.id, box: caja(n), label: n.label?.text ?? "", selected, editing: !!editing, isControl: isControlNode(n), classes: disabledClasses(p.runProps, n.id), element: asElement };
   const control = CONTROLES[n.tipo];
+  if (isUserCluster(n)) {
+    const tools = { drawElement: (node) => panelObject(node, ctx, false, p, resolvedTypes, true), boxOf: (node) => caja(node), measure: ctx.medir, value: (cluster, node) => elementHoldingValue(cluster, node, p.valores) };
+    return clusterObject(n, frame, tools);
+  }
   if (isGraph(n)) {
     const type = resolvedTypes ? wireTypeOf(p.g, resolvedTypes, n.id) : undefined;
     return HC.graphHtml(frame, { kind: n.tipo, svg: graphSvg(n, { type, value: p.valores?.[n.id], charts: p.charts, separator: ctx.separador }) });
@@ -558,7 +578,7 @@ function emptyShellAt(g, pt) {
 function esquina(bloque, pt, config) {
   const k = cajaObjeto(bloque, 0, 0, config);
   // Un booleano cuelga por el centro de su dibujo.
-  const mitad = estiloDe(bloque, config) || ringMeasures(bloque, config) || CONTROLES[bloque]?.cadena || CONTROLES[bloque]?.array || CONTROLES[bloque]?.grafico || claseError(bloque, config) ? k.ancho / 2 : k.casilla + MEDIDAS_PANEL.casilla / 2;
+  const mitad = estiloDe(bloque, config) || ringMeasures(bloque, config) || CONTROLES[bloque]?.cadena || CONTROLES[bloque]?.array || CONTROLES[bloque]?.grafico || claseError(bloque, config) || isUserCluster({ config }) ? k.ancho / 2 : k.casilla + MEDIDAS_PANEL.casilla / 2;
   return { x: Math.round(pt.x - mitad), y: Math.round(pt.y - k.alto / 2) };
 }
 
@@ -576,9 +596,14 @@ function colocar(p, ctx, pt) {
   const shellId = emptyShellAt(p.g, pt);
   const element = shellId && panelArrayFromElement(bloque, config);
   if (element) return { ...p, g: typeEmptyArray(p.g, shellId, element.elementType, element.block), seleccion: [shellId], accion: null, edicion: null };
-  const { x, y } = esquina(bloque, pt, config);
-  const { g, id } = Gr.crearEnPanel(p.g, ctx.cat, bloque, x, y, etiquetaNueva(bloque, config), config);
-  const n = g.nodos.find((m) => m.id === id);
+  const corner = esquina(bloque, pt, config);
+  const cluster = canBeElement(bloque) && clusterAt(p.g, pt);
+  if (cluster) return { ...p, g: withElement(p.g, ctx.cat, cluster.id, newElement(p.g, ctx.cat, cluster.id, bloque, config, etiquetaNueva(bloque, config), placeInside(cluster, corner))), seleccion: [], accion: null, edicion: null };
+  const { x, y } = corner;
+  const created = Gr.crearEnPanel(p.g, ctx.cat, bloque, x, y, etiquetaNueva(bloque, config), config);
+  // A user's cluster has its type and value derived from its elements, none yet.
+  const g = isUserCluster({ config }) ? setClusterElements(created.g, ctx.cat, created.id, config.elements) : created.g;
+  const n = g.nodos.find((m) => m.id === created.id);
   return { ...p, g, seleccion: [], accion: null, edicion: { ...Et.editar(n), nuevo: true } };
 }
 
@@ -624,6 +649,8 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
     const node = p.g.nodos.find((m) => m.id === sobre.id);
     return { ...p, seleccion: [sobre.id], accion: { tipo: "estirar-libre", nodo: sobre.id, lado: sobre.lado, x0: pt.x, y0: pt.y, g0: p.g, box0: caja(node, ctx.medir) } };
   }
+  // A handle of a user's cluster resizes its shell (DT-095).
+  if (sobre.tipo === "asa-cluster") return { ...p, seleccion: [sobre.id], accion: { tipo: "estirar-cluster", nodo: sobre.id, lado: sobre.lado, x0: pt.x, y0: pt.y, g0: p.g, box0: shellBox(p.g.nodos.find((m) => m.id === sobre.id)) } };
   if (sobre.tipo === "asa-array") {
     const nodo = p.g.nodos.find((m) => m.id === sobre.id);
     if (isUndefinedArray(nodo.config?.type)) return p;
@@ -673,6 +700,10 @@ export function moverA(p, ctx, pt) {
       return pt.x === accion.x && pt.y === accion.y ? p : { ...p, accion: { ...accion, x: pt.x, y: pt.y, movido: true } };
     case "estirar-array":
       return { ...p, g: Gr.fijarConfig(p.g, accion.nodo, estirarArray(p.g.nodos.find((m) => m.id === accion.nodo), accion, pt)) };
+    case "estirar-cluster": {
+      const smallest = { ancho: CLUSTER_MEASURES.smallest, alto: CLUSTER_MEASURES.smallest };
+      return { ...p, g: withShellBox(accion.g0, accion.nodo, FL.stretchedBox(accion.box0, accion.lado, pt.x - accion.x0, pt.y - accion.y0, smallest)) };
+    }
     case "estirar-libre": {
       const node = accion.g0.nodos.find((m) => m.id === accion.nodo);
       const stretched = FL.resized(node, "panel", accion.box0, accion.lado, pt.x - accion.x0, pt.y - accion.y0);
@@ -732,6 +763,9 @@ export function soltar(p, ctx, sobre, pt) {
       // Pressed, la acción mecánica de fábrica de los interruptores).
       const n = p.g.nodos.find((m) => m.id === accion.nodo);
       const toggles = n?.tipo === "bool-control" && !accion.movido && !accion.byLabel;
+      // Controls dragged onto a cluster's interior become its elements (DT-095).
+      const dropped = accion.movido && dropObjects(p.g, ctx.cat, p.seleccion.filter((id) => !esEtiqueta(id)), pt);
+      if (dropped) return { ...p, g: dropped.g, seleccion: [], accion: null };
       return { ...p, g: toggles ? alternar(p.g, n) : p.g, accion: null };
     }
     default:
@@ -792,6 +826,8 @@ export function menuDe(n, onElement = false) {
   if (isFreeLabel(n)) return FL.PANEL_MENU_ROOT;
   // An array control (labview-captures/array-2d/panel-array-menu-index.png), the same for the indicator (measured, array-typing/). Its typed
   // ELEMENT has a menu of its own; the index and the margin of the shell keep the array's.
+  // A user's cluster: its measured menu (cluster-menus.mjs). An element's own menu is not built yet; the shell's opens instead.
+  if (isUserCluster(n)) return CLUSTER_MENU_ROOT;
   if (n.tipo === "arr-control" || n.tipo === "arr-indicator") return (onElement && elementMenuRoot(n)) || "context.panel-array";
   // A graph's menu, with its settings (labview-captures/graphs/10..45); the same root in Run mode is another one (graph-menus.mjs).
   if (isGraph(n)) return `context.${n.tipo}`;

@@ -2010,6 +2010,16 @@ export const dibujoError = (control) =>
   `<rect x="9" y="12" width="12" height="3" fill="#ff6633" stroke="#000" stroke-width="0.8"/>` +
   `<rect x="5" y="19" width="4" height="4" fill="#00a000" stroke="#000" stroke-width="0.8"/><rect x="13" y="18.5" width="10" height="3" fill="#0000ff" stroke="#000" stroke-width="0.8"/>`;
 
+/**
+ * The picture on the terminal of a user's cluster: always the same, whatever it holds (measured, reports/2026-11-16-cluster-panel.md
+ * §5: a grey #bbbbbb box with a #444444 border and five coloured boxes; the boxes' colours are drawn anew, one per kind of wire).
+ */
+export const dibujoCluster = () =>
+  `<rect x="2.5" y="2.5" width="26" height="26" fill="#bbbbbb" stroke="#444444" stroke-width="1"/>` +
+  `<rect x="6" y="6" width="9" height="3" fill="#ff00ff" stroke="#000" stroke-width="0.8"/><rect x="18" y="6" width="7" height="3" fill="#007f00" stroke="#000" stroke-width="0.8"/>` +
+  `<rect x="6" y="12" width="12" height="3" fill="#ff7f00" stroke="#000" stroke-width="0.8"/>` +
+  `<rect x="6" y="19" width="6" height="4" fill="#0000ff" stroke="#000" stroke-width="0.8"/><rect x="15" y="19" width="10" height="4" fill="#993300" stroke="#000" stroke-width="0.8"/>`;
+
 /** The size of the status button of an error cluster on the panel. */
 export const ERROR_STATUS_SIZE = { width: 20, height: 19 };
 

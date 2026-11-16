@@ -323,6 +323,22 @@
   --error-scrollbar-control-background: #f2f2f2;
 }
 
+/* A user's cluster (DT-095), measured in LabVIEW 2026 Q3 (reports/2026-11-16-cluster-panel.md §1): a 4 px bevel, inner rings
+   from the outside in, dark on the left and top, light on the right and bottom, round a #b3b3b3 interior. */
+:root {
+  --cluster-bevel-left: #c9c9c9;
+  --cluster-bevel-top: #d3d3d3;
+  --cluster-bevel-dark-2: #c2c2c2;
+  --cluster-bevel-dark-3: #b7b7b7;
+  --cluster-bevel-dark-4: #b1b1b1;
+  --cluster-bevel-right: #e0e0e0;
+  --cluster-bevel-bottom: #eaeaea;
+  --cluster-bevel-light-2: #ededed;
+  --cluster-bevel-light-3: #f2f2f2;
+  --cluster-bevel-light-4: #eeeeee;
+  --cluster-interior: #b3b3b3;
+}
+
 /* Debugging: Highlight Execution, probes, breakpoints, the Debug Window and the Error list. */
 :root {
   --debug-label-background: #ccffff;

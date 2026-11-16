@@ -1447,6 +1447,8 @@ function objetivoPanel(el) {
   if (campo) return { tipo: "campo", id: objectOf(campo), campo: campo.dataset.campo };
   const freeLabelHandle = el.closest("[data-asa-libre]");
   if (freeLabelHandle) return { tipo: "asa-libre", id: freeLabelHandle.dataset.nodo, lado: freeLabelHandle.dataset.asaLibre };
+  const clusterHandle = el.closest("[data-asa-cluster]");
+  if (clusterHandle) return { tipo: "asa-cluster", id: clusterHandle.dataset.nodo, lado: clusterHandle.dataset.asaCluster };
   const asaArray = el.closest("[data-asa-array]");
   if (asaArray) return { tipo: "asa-array", id: objectOf(asaArray), lado: asaArray.dataset.lado };
   const elem = el.closest("[data-k]");

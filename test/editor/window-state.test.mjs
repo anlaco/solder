@@ -397,8 +397,8 @@ test("la carpeta data containers de controls abre su subpaleta", () => {
   assert.equal(columnas, 2);
   assert.deepEqual(sitios.map((s) => [s.fila, s.columna, s.e.etiqueta]), [[0, 0, "Array"], [0, 1, "Cluster"], [1, 0, "RealMatrix.ctl"], [1, 1, "ComplexMatrix.ctl"], [2, 0, "Set"], [2, 1, "Map"], [3, 0, "Error In 3D.ctl"], [3, 1, "Error Out 3D.ctl"]]);
   const html = subpaletas(INV, abierta.paleta);
-  for (const hecho of ["array", "error-in", "error-out"]) assert.match(html, new RegExp(`class="icono-funcion" data-id="${id}\\.${hecho}"`), `${hecho} está hecho`);
-  for (const hueco of ["cluster", "real-matrix", "complex-matrix", "set", "map"]) assert.match(html, new RegExp(`class="icono-funcion hueco" data-id="${id}\\.${hueco}"`), `${hueco} es un hueco`);
+  for (const hecho of ["array", "cluster", "error-in", "error-out"]) assert.match(html, new RegExp(`class="icono-funcion" data-id="${id}\\.${hecho}"`), `${hecho} está hecho`);
+  for (const hueco of ["real-matrix", "complex-matrix", "set", "map"]) assert.match(html, new RegExp(`class="icono-funcion hueco" data-id="${id}\\.${hueco}"`), `${hueco} es un hueco`);
 });
 
 // Array, de labview-captures/array/subpaleta-array-5-columnas.png: 34 elementos en 5 columnas; la última fila

@@ -179,6 +179,12 @@
 .sd-panel .sd-error-source .sd-caption { grid-area: 3 / 1 / 3 / 3; }
 .sd-panel .sd-error-source .sd-field { grid-area: 4 / 1 / 4 / 3; align-items: flex-start; padding-top: 3px; white-space: pre; line-height: 15px; }
 
+/* ——— User's cluster ——— */
+
+/* A shell, with an interior that clips its elements (they are drawn where they were dropped and may overlap). */
+.sd-panel .sd-cluster { box-sizing: border-box; box-shadow: inset 0 0 0 1px var(--sd-line-soft); border-radius: var(--sd-radius); background: var(--sd-recess); }
+.sd-panel .sd-cluster .sd-cluster-interior { position: absolute; box-sizing: border-box; overflow: hidden; }
+
 /* ——— Array ——— */
 
 .sd-panel .sd-array .sd-index { position: absolute; box-sizing: border-box; display: flex; }

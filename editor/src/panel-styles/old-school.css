@@ -236,6 +236,19 @@
 }
 .sd-panel .sd-control.sd-error-cluster .sd-scrollbar { background: var(--error-scrollbar-control-background); }
 
+/* ——— User's cluster ——— */
+
+/* A 4 px bevel round a #b3b3b3 interior. The bevel's four rings are strips painted from the innermost ring out, each ring one
+   pixel wider than the one before and the outer ones on top, so each side shows its own four colours (reports/2026-11-16-cluster-panel.md §1). */
+.sd-panel .sd-cluster {
+  border-radius: 0; background: var(--cluster-interior);
+  box-shadow:
+    inset 1px 0 0 0 var(--cluster-bevel-left), inset 0 1px 0 0 var(--cluster-bevel-top), inset -1px 0 0 0 var(--cluster-bevel-right), inset 0 -1px 0 0 var(--cluster-bevel-bottom),
+    inset 2px 0 0 0 var(--cluster-bevel-dark-2), inset 0 2px 0 0 var(--cluster-bevel-dark-2), inset -2px 0 0 0 var(--cluster-bevel-light-2), inset 0 -2px 0 0 var(--cluster-bevel-light-2),
+    inset 3px 0 0 0 var(--cluster-bevel-dark-3), inset 0 3px 0 0 var(--cluster-bevel-dark-3), inset -3px 0 0 0 var(--cluster-bevel-light-3), inset 0 -3px 0 0 var(--cluster-bevel-light-3),
+    inset 4px 0 0 0 var(--cluster-bevel-dark-4), inset 0 4px 0 0 var(--cluster-bevel-dark-4), inset -4px 0 0 0 var(--cluster-bevel-light-4), inset 0 -4px 0 0 var(--cluster-bevel-light-4);
+}
+
 /* ——— Array ——— */
 
 /* The index: an incrementer and a blue number in a white box with a hairline, the incrementer centered in it. */

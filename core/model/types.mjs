@@ -200,6 +200,8 @@ export function aspecto(t) {
   if (isDaqName(t)) return { color: COLORES.visa, dimension: 0, squiggle: true };
   // El cluster de error: oliva, con trazos amarillos y negros (docs/reference/labview-errors.md §1).
   if (esError(t)) return { color: COLORES.error, dimension: 0, error: true };
+  // A user's cluster: 3 px, brown when it holds only numbers (or nothing) and magenta when mixed (measured, DT-095).
+  if (esCluster(t)) return { color: clusterColor(t), dimension: 0, cluster: true };
   const dimension = dimensionsOf(t);
   const base = esArray(t) ? aspecto(t.array).color : colorEscalar(t);
   // A path, alone or in an array, is dashed three on and one off in its colour (measured, reports/2026-10-26-path-type.md §2).
@@ -232,7 +234,14 @@ export const COLORES = {
   visa: "#7f007f",
   /** The wire, terminals and constants of a path: teal #007f7f, measured in LabVIEW 2026 Q3 (reports/2026-10-26-path-type.md §2). */
   path: "#007f7f",
+  /** The wire, terminals and constant of a cluster that holds only numbers, or nothing: brown #993300, measured in LabVIEW 2026 Q3 (reports/2026-11-16-cluster-diagram.md Q1, Q6). */
+  cluster: "#993300",
+  /** The same, for a cluster of mixed kinds: magenta #ff00ff (reports/2026-11-16-cluster-panel.md §5). */
+  clusterMixed: "#ff00ff",
 };
+
+/** The colour of a cluster's wire, terminal and constant: brown if every element is numeric (an empty one too), magenta otherwise. */
+export const clusterColor = (t) => (t.cluster.every((field) => esNumerico(field.type)) ? COLORES.cluster : COLORES.clusterMixed);
 
 function colorEscalar(t) {
   if (esNumerico(t)) return esEntero(t) ? COLORES.entero : COLORES.flotante;

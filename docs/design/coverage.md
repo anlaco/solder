@@ -33,9 +33,9 @@
 | Files | 5 / 15 (33 %) | `███░░░░░░░` |
 | Instruments and communication | 14 / 30 (47 %) | `█████░░░░░` |
 | Functions palette | 211 / 563 (37 %) | `████░░░░░░` |
-| Controls palette | 33 / 92 (36 %) | `████░░░░░░` |
+| Controls palette | 34 / 92 (37 %) | `████░░░░░░` |
 | Windows and dialogs | 143 / 399 (36 %) | `████░░░░░░` |
-| Right-click menus | 593 / 2185 (27 %) | `███░░░░░░░` |
+| Right-click menus | 594 / 2218 (27 %) | `███░░░░░░░` |
 <!-- /coverage:summary -->
 
 ## Features
@@ -310,7 +310,7 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 | Modern ▸ Numeric | 2 / 21 (10 %) | `█░░░░░░░░░` |
 | Modern ▸ Boolean | 10 / 13 (77 %) | `████████░░` |
 | Modern ▸ String & Path | 4 / 5 (80 %) | `████████░░` |
-| Modern ▸ Data Containers | 3 / 8 (38 %) | `████░░░░░░` |
+| Modern ▸ Data Containers | 4 / 8 (50 %) | `█████░░░░░` |
 | Modern ▸ List, Table & Tree | not captured yet | |
 | Modern ▸ Graph | 3 / 21 (14 %) | `█░░░░░░░░░` |
 | Modern ▸ Ring & Enum | 3 / 5 (60 %) | `██████░░░░` |
@@ -353,5 +353,5 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Menus | Covered | |
 |-------|---------|---|
-| Every right-click menu captured | 593 / 2185 (27 %) | `███░░░░░░░` |
+| Every right-click menu captured | 594 / 2218 (27 %) | `███░░░░░░░` |
 <!-- /coverage:inventory -->

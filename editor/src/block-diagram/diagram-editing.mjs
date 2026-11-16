@@ -47,6 +47,7 @@ import { sharedSegmentCount } from "./wire-tree.mjs";
 import * as CP from "../front-panel/connector-pane.mjs";
 import * as PanelReplace from "../common/panel-replace.mjs";
 import { graphCommand, graphMenuMarks, graphMenuVariants, isGraphMenu } from "../front-panel/graph-menus.mjs";
+import { clusterCommand, clusterMenuMarks, isClusterMenu } from "../front-panel/cluster-menus.mjs";
 import * as Et from "../common/labels.mjs";
 import * as FL from "../common/free-labels.mjs";
 import { FREE_LABEL, isFreeLabel } from "../../../core/model/free-label.mjs";
@@ -1516,6 +1517,9 @@ export function orden(d, id, ctx, inv) {
   // The menus of the graphs on the panel (graph-menus.mjs).
   const graphResult = graphCommand(d, id, ctx);
   if (graphResult) return graphResult;
+  // A user's cluster's menu (cluster-menus.mjs).
+  const clusterResult = clusterCommand(d, id);
+  if (clusterResult) return clusterResult;
   const { nodo, puerto } = d.menu;
   const cerrar = (g) => ({ ...d, g, menu: null });
   if (id.endsWith(".size-to-text") && isFreeLabel(nodoPor(d.g, nodo))) return cerrar(FL.toggleSizeToText(d.g, nodo, ctx.medir, FL.canvasOf(nodoPor(d.g, nodo))));
@@ -1969,6 +1973,7 @@ function pathMenuMarks(root, node) {
 export function marcados(d, ctx) {
   if (CP.hasConnectorMenu(d)) return CP.menuMarks(d);
   if (isGraphMenu(d)) return graphMenuMarks(d);
+  if (isClusterMenu(d)) return clusterMenuMarks(d);
   const n = d.menu && d.g.nodos.find((k) => k.id === d.menu.nodo);
   if (!n) return new Set();
   const r = d.menu.raiz;

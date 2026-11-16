@@ -19,7 +19,7 @@ import { PATH } from "../../../core/model/types.mjs";
 import { browseFolderGlyph, pathCellGlyph, refnumPageGlyph, visaIoGlyph } from "../common/glyphs.mjs";
 
 /** Every kind of object an HTML panel draws: each one has rules in plain.css (DT-058 §3, a test checks it). */
-export const PLAIN_KINDS = ["numeric", "enum", "ring", "string", "visa", "path", "boolean", "error-cluster", "array", "waveform-chart", "waveform-graph", "xy-graph"];
+export const PLAIN_KINDS = ["numeric", "enum", "ring", "string", "visa", "path", "boolean", "error-cluster", "cluster", "array", "waveform-chart", "waveform-graph", "xy-graph"];
 
 /** The parts that are only ornament in Plain: hidden by plain.css, shown by the style that draws them (a test checks it). */
 export const ORNAMENT_CLASSES = ["sd-art", "sd-visa-glyph", "sd-path-glyph", "sd-radix", "sd-code-arrows", "sd-scrollbar", "sd-frame", "sd-plot-frame", "sd-swatch-frame"];
@@ -43,18 +43,21 @@ const boxStyle = (box) => `left:${px(box.x)};top:${px(box.y)};width:${px(box.anc
 
 /**
  * The root of an object: its box on the panel, the public classes and the editor's hooks. `frame`:
- * `{ id, kind, isControl, box, label, selected, editing, classes, attributes }`.
+ * `{ id, kind, isControl, box, label, selected, editing, classes, attributes, element }`. An `element` is an object
+ * inside a user's cluster (DT-095): it is only drawn, so it has none of the editor's hooks, and a press on it is a
+ * press on the cluster that holds it.
  */
 function objectFrame(frame, inner) {
   const classes = [
-    "objeto-panel",
+    frame.element ? "sd-cluster-element" : "objeto-panel",
     frame.isControl ? "sd-control" : "sd-indicator",
     `sd-${frame.kind}`,
     ...(frame.classes ?? []),
     ...(frame.selected ? ["seleccionado", "sd-selected"] : []),
     ...(frame.editing ? ["editando-valor", "sd-editing"] : []),
   ];
-  return `<div class="${classes.join(" ")}" data-nodo="${escapeHtml(frame.id)}" data-label="${escapeHtml(frame.label ?? "")}"${frame.attributes ?? ""} style="${boxStyle(frame.box)}">${inner}</div>`;
+  const node = frame.element ? "" : ` data-nodo="${escapeHtml(frame.id)}"`;
+  return `<div class="${classes.join(" ")}"${node} data-label="${escapeHtml(frame.label ?? "")}"${frame.attributes ?? ""} style="${boxStyle(frame.box)}">${inner}</div>`;
 }
 
 /** The two arrows of an incrementer; `axis` names the index of an array they move. */
@@ -71,7 +74,8 @@ const field = (id, valueHtml) => `<span class="sd-field"${id ? ` data-casilla="$
 
 /** A numeric control or indicator, or an enum (`enum: true`): an incrementer on a control, and its field. */
 export function numericHtml(frame, { valueHtml, withIncrementer, isEnum }) {
-  return objectFrame({ ...frame, kind: isEnum ? "enum" : "numeric" }, (withIncrementer ? incrementer() : "") + field(frame.id, valueHtml));
+  const arrows = frame.element ? DECORATIVE_INCREMENTER : incrementer();
+  return objectFrame({ ...frame, kind: isEnum ? "enum" : "numeric" }, (withIncrementer ? arrows : "") + field(frame.id, valueHtml));
 }
 
 /**
@@ -180,6 +184,19 @@ export function arrayHtml(frame, { indices, elementsBox, elementsHtml, handles, 
   const elements = `<span class="sd-elements" style="left:${px(elementsBox.x)};top:${px(elementsBox.y)};width:${px(elementsBox.width)};height:${px(elementsBox.height)}">${elementsHtml}</span>`;
   return objectFrame({ ...frame, kind: "array", classes: [...(indices.length === 2 ? ["sd-two-dimensions"] : []), ...(undefinedElement ? ["sd-undefined"] : [])] }, indexHtml + elements + handles);
 }
+
+/**
+ * A user's cluster (DT-095): its shell, an interior that clips its elements, and the handles that resize it while it is
+ * selected. `interior`: the interior's box inside the shell; `elementsHtml`: the elements, already drawn, each in its
+ * own coordinates relative to the interior, and their labels.
+ */
+export function clusterHtml(frame, { interior, elementsHtml, handles }) {
+  const inside = `<span class="sd-cluster-interior" style="${boxStyle(interior)}">${elementsHtml}</span>`;
+  return objectFrame({ ...frame, kind: "cluster" }, inside + handles);
+}
+
+/** A label of an element inside a cluster: only drawn, at `box` inside the interior. */
+export const elementLabelHtml = (text, box) => `<div class="sd-label sd-cluster-label" style="${boxStyle(box)}">${escapeHtml(text)}</div>`;
 
 /** A graph: its SVG (graph-view.mjs), in the box of its frame. */
 export const graphHtml = (frame, { kind, svg }) => objectFrame({ ...frame, kind, isControl: false, attributes: ` data-grafico="${escapeHtml(kind)}"` }, svg);

@@ -12,7 +12,7 @@
       "description": "Versión del formato. Un lector DEBE rechazar una versión mayor que la que conoce.",
       "type": "integer",
       "minimum": 1,
-      "maximum": 5
+      "maximum": 6
     },
 
     "meta": {
@@ -343,14 +343,32 @@
       }
     },
 
-    "fpItem": {
-      "description": "Un control o indicador. Su forma completa está en `type`: un cluster ya lleva sus campos dentro.",
+    "clusterElement": {
+      "description": "An element of a user's cluster or Cluster Constant (DT-095): its block, label, configuration (as a node's) and place.",
       "type": "object",
-      "required": ["name", "role", "type"],
+      "required": ["kind", "x", "y"],
+      "properties": {
+        "kind": { "type": "string" },
+        "label": { "type": "string" },
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      }
+    },
+
+    "fpItem": {
+      "description": "A control or indicator. Its whole form is in `type`: a cluster carries its fields inside; a user's cluster (DT-095) carries `elements` instead, and its type and default are derived from them.",
+      "type": "object",
+      "required": ["name", "role"],
+      "if": { "not": { "required": ["elements"] } },
+      "then": { "required": ["type"] },
       "additionalProperties": false,
       "properties": {
         "name": { "$ref": "#/$defs/name" },
         "role": { "type": "string", "enum": ["control", "indicator"] },
+        "elements": {
+          "description": "A user's cluster (DT-095): its elements in cluster order, each a panel object with its block (`kind`), label, configuration and place relative to the cluster's interior.",
+          "type": "array", "items": { "$ref": "#/$defs/clusterElement" }
+        },
         "type": { "$ref": "#/$defs/dataType" },
         "default": {
           "description": "Valor inicial. SEMÁNTICO: forma parte del programa, no de la presentación."

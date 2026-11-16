@@ -294,6 +294,8 @@
                   "in": "dynamic:named-field-inputs", "out": [{ "name": "output-cluster", "label": "output cluster", "type": { "clusterOf": "C" } }],
                   "dynamic-ports": true, "config": { "items": { "type": "fieldNames", "value": [null] } } },
 
+    "cluster-constant": { "cat": "cluster", "desc": "Cluster Constant (DT-095): a constant that holds constants, its elements, in cluster order; its type and value are derived from them. Measured in reports/2026-11-16-cluster-diagram.md", "in": [], "out": [{ "name": "result", "label": "", "type": { "var": "C" } }],
+                  "type-from": "config", "config": { "type": { "type": "dataType", "value": { "cluster": [] } }, "elements": { "type": "array", "value": [] } } },
     "error-cluster-constant": { "cat": "error", "desc": "Constante de error: status, code y source (DT-043)", "in": [], "out": [{ "name": "result", "label": "", "type": "error" }],
                   "config": { "default": { "type": "error", "value": { "status": false, "code": 0, "source": "" } } } },
     "clear-errors": { "cat": "error", "desc": "Deja el error a cero: status FALSE, code 0, source vacío. Con un código en «specific error code to clear», sólo borra ese (sin comprobar en LabVIEW)",

@@ -48,6 +48,7 @@ const EVERY_KIND = [
   ...Object.keys(G.BOOLEANOS).map((style) => [G.BOOLEANOS[style].indicador ? "bool-indicator" : "bool-control", { style }, "boolean"]),
   ["cluster-control", errorConfig("error-in"), "error-cluster"],
   ["cluster-indicator", errorConfig("error-out"), "error-cluster"],
+  ["cluster-control", { elements: [] }, "cluster"],
   ["arr-control", { type: { array: "number" }, value: [1, 2] }, "array"],
   ["arr-indicator", { type: { array: "string" }, value: ["a"] }, "array"],
   ["arr-control", { type: { array: "boolean" }, value: [true] }, "array"],

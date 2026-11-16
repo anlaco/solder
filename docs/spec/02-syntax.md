@@ -118,8 +118,8 @@ entities: they are the two faces of one. That is why `layout` needs to separate 
 
 ### 4.1 `solder` *(required)*
 
-Format version. Its value is `3` (version 1 until DT-075, 2 until DT-078). A reader **MUST** reject a value greater than the
-one it knows, instead of trying to read it halfway.
+Format version. Its value is `6` (version 1 until DT-075, 2 until DT-078, 3 until DT-085, 4 until DT-091, 5 until DT-095).
+A reader **MUST** reject a value greater than the one it knows, instead of trying to read it halfway.
 
 **The format is frozen from `0.4.0-beta` on** (DT-055). Any later change to it
 raises this number and comes with an **automatic migration** from the version before
@@ -181,6 +181,20 @@ definition is recursive and the type carries its full shape inside:
 
 `array` and `cluster` **MUST NOT** appear without their parameter. The
 compatibility rules are in [`03-static-semantics.md`](03-static-semantics.md) §3.
+
+**A cluster made by the user** (DT-095, version 6) carries `elements` instead of `type` and `default`: its elements
+in **cluster order**, each a panel object with its block as `kind`, its `label`, its own configuration (as a node's:
+`type`, `default`, `style`…) and its place `x`, `y` relative to the cluster's interior. Its type is derived from them —
+each element named after its label — and so is its default value. An element has no node of its own on the diagram.
+A Cluster Constant (`cluster-constant`) stores its constants the same way in its node's `config.elements`.
+
+```json
+{ "name": "cluster-control_1", "role": "control", "elements": [
+    { "kind": "str-control", "label": "String", "x": 3, "y": 64 },
+    { "kind": "control", "label": "Numeric", "type": "number", "default": 7, "x": 4, "y": 19 } ] }
+```
+
+An error cluster, which has a `style`, keeps its stored `type` (DT-043).
 
 ### 4.5 `connector` *(optional)*
 

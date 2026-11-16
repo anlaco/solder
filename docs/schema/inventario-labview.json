@@ -610,6 +610,18 @@
     "configuracion-de-tareas-daq": {
       "desc": "the DAQ task configuration tool, where LabVIEW makes and edits DAQ tasks in a separate application: New DAQ Task, Edit DAQ Task and Generate Code of a DAQ Task Name need it; Solder has none, tasks are made on the diagram",
       "ref": "labview-captures/reports/2026-11-15-daqname-menus.md"
+    },
+    "reordenar-cluster": {
+      "desc": "Reorder Controls In Cluster...: the darkened panel with its two-cell badges, to change the order of a cluster's elements",
+      "ref": "design/05-decisions.md DT-095 §4"
+    },
+    "autosizing-de-cluster": {
+      "desc": "a cluster's AutoSizing other than None: Size to Fit, Arrange Horizontally and Arrange Vertically",
+      "ref": "design/05-decisions.md DT-095 §6"
+    },
+    "elementos-de-cluster": {
+      "desc": "the menu of an element inside a cluster, and the rest of a user's cluster that is built after its shell: Change to Indicator, dragging an element out",
+      "ref": "design/05-decisions.md DT-095"
     }
   },
   "entradas": [
@@ -8454,10 +8466,13 @@
     {
       "id": "palette.controls.modern.data-containers.cluster",
       "etiqueta": "Cluster",
-      "estado": "todo",
-      "labview": "A frame that groups controls or indicators of different types.",
-      "necesita": "tipo-cluster",
-      "captura": "errores/300-controls-data-containers.png"
+      "estado": "built",
+      "prueba": "test/editor/cluster-panel.test.mjs::the Cluster of the Data Containers palette drops a 100 x 100 shell with no elements",
+      "captura": "errores/300-controls-data-containers.png",
+      "bloque": "cluster-control",
+      "config": {
+        "elements": []
+      }
     },
     {
       "id": "palette.controls.modern.data-containers.real-matrix",
@@ -15465,6 +15480,284 @@
       "labview": "Opens the object's properties dialog.",
       "necesita": "propiedades",
       "captura": "front-panel/boolean-menu-control.png",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-control",
+      "etiqueta": "Cluster",
+      "estado": "built",
+      "prueba": "test/editor/cluster-panel.test.mjs::the cluster shell has its measured menu with the rows that are not built greyed",
+      "captura": "errores/300-controls-data-containers.png"
+    },
+    {
+      "id": "context.cluster-control.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/cluster-panel.test.mjs::the cluster shell has its measured menu with the rows that are not built greyed"
+    },
+    {
+      "id": "context.cluster-control.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "built",
+      "prueba": "test/editor/cluster-panel.test.mjs::Visible Items Label hides the label of a cluster"
+    },
+    {
+      "id": "context.cluster-control.visible-items.caption",
+      "etiqueta": "Caption",
+      "estado": "todo",
+      "labview": "Shows or hides the caption (ticked on the shell as measured; its label class is unclear).",
+      "necesita": "etiquetas"
+    },
+    {
+      "id": "context.cluster-control.find-terminal",
+      "etiqueta": "Find Terminal",
+      "estado": "todo",
+      "labview": "Points out the cluster's terminal on the diagram.",
+      "necesita": "resaltar-terminal"
+    },
+    {
+      "id": "context.cluster-control.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns the cluster and every element in it into an indicator.",
+      "necesita": "elementos-de-cluster"
+    },
+    {
+      "id": "context.cluster-control.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the cluster into an array of its type.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-control.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the cluster into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-control.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-control.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to the cluster.",
+      "necesita": "menus-contextuales",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-control.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "A local variable of the cluster.",
+      "necesita": "variables-y-feedback"
+    },
+    {
+      "id": "context.cluster-control.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "A reference to the cluster.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-control.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "A Property Node of the cluster.",
+      "necesita": "nodos-de-propiedades"
+    },
+    {
+      "id": "context.cluster-control.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "An Invoke Node of the cluster.",
+      "necesita": "nodos-de-metodos"
+    },
+    {
+      "id": "context.cluster-control.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Bundles the selected controls into a cluster.",
+      "necesita": "tipo-cluster"
+    },
+    {
+      "id": "context.cluster-control.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the cluster with another object of the Controls palette.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-control.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Operations on the cluster's data.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-control.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "todo",
+      "labview": "Gives the cluster its default value.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-control.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "todo",
+      "labview": "Makes the current value the default one.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-control.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the cluster's data to the clipboard (greyed in LabVIEW for a control that is not being edited).",
+      "necesita": "menus-contextuales",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-control.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the cluster's data to the clipboard.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-control.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes data into the cluster (greyed in LabVIEW with nothing to paste).",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-control.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced settings of the cluster.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-control.advanced.key-navigation",
+      "etiqueta": "Key Navigation...",
+      "estado": "todo",
+      "labview": "Opens the key navigation dialog.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-control.advanced.synchronous-display",
+      "etiqueta": "Synchronous Display",
+      "estado": "todo",
+      "labview": "Updates the cluster synchronously while running.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-control.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Opens the control editor.",
+      "necesita": "estilos-de-controles"
+    },
+    {
+      "id": "context.cluster-control.advanced.run-time-shortcut-menu",
+      "etiqueta": "Run-Time Shortcut Menu",
+      "estado": "todo",
+      "labview": "Chooses the menu the cluster gives while running.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-control.advanced.hide-control",
+      "etiqueta": "Hide Control",
+      "estado": "todo",
+      "labview": "Hides the cluster on the panel.",
+      "necesita": "panel-frontal",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-control.advanced.enabled-state",
+      "etiqueta": "Enabled State",
+      "estado": "todo",
+      "labview": "Enables, disables or greys the cluster.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-control.advanced.show-hidden-element",
+      "etiqueta": "Show Hidden Element",
+      "estado": "todo",
+      "labview": "Shows an element hidden in the cluster (greyed in LabVIEW when none is hidden).",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-control.fit-control-to-pane",
+      "etiqueta": "Fit Control to Pane",
+      "estado": "todo",
+      "labview": "Resizes the cluster to the pane.",
+      "necesita": "panel-frontal"
+    },
+    {
+      "id": "context.cluster-control.scale-object-with-pane",
+      "etiqueta": "Scale Object with Pane",
+      "estado": "todo",
+      "labview": "Scales the cluster when the window is resized.",
+      "necesita": "panel-frontal"
+    },
+    {
+      "id": "context.cluster-control.reorder-controls-in-cluster",
+      "etiqueta": "Reorder Controls In Cluster...",
+      "estado": "todo",
+      "labview": "Changes the order of the elements: the cluster order, which is the order of its type and of Bundle and Unbundle.",
+      "necesita": "reordenar-cluster",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-control.autosizing",
+      "etiqueta": "AutoSizing",
+      "estado": "todo",
+      "labview": "How the shell follows its elements: None (the default, ticked), Size to Fit, Arrange Horizontally or Arrange Vertically.",
+      "necesita": "autosizing-de-cluster"
+    },
+    {
+      "id": "context.cluster-control.autosizing.none",
+      "etiqueta": "None",
+      "estado": "todo",
+      "labview": "The shell keeps its size when elements are dropped in.",
+      "necesita": "autosizing-de-cluster"
+    },
+    {
+      "id": "context.cluster-control.autosizing.size-to-fit",
+      "etiqueta": "Size to Fit",
+      "estado": "todo",
+      "labview": "The shell grows to hold its elements.",
+      "necesita": "autosizing-de-cluster"
+    },
+    {
+      "id": "context.cluster-control.autosizing.arrange-horizontally",
+      "etiqueta": "Arrange Horizontally",
+      "estado": "todo",
+      "labview": "The elements are laid out in a row.",
+      "necesita": "autosizing-de-cluster"
+    },
+    {
+      "id": "context.cluster-control.autosizing.arrange-vertically",
+      "etiqueta": "Arrange Vertically",
+      "estado": "todo",
+      "labview": "The elements are laid out in a column.",
+      "necesita": "autosizing-de-cluster"
+    },
+    {
+      "id": "context.cluster-control.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the object's properties dialog.",
+      "necesita": "propiedades",
       "separado": true
     },
     {

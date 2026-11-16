@@ -9,6 +9,16 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- The `.ovi` format is version 6 (DT-095): a cluster can hold its elements, each a control or constant of its own, in
+  cluster order. Files of earlier versions open unchanged; this version's files do not open in 0.13 or earlier. The
+  editor's side of the clusters made by the user comes next.
+
+- Controls ▸ Modern ▸ Array, Matrix & Cluster ▸ Cluster puts a cluster on the Front Panel (DT-095): a 100 × 100 shell
+  with LabVIEW's bevel into which controls are dropped, or dragged, and become its elements in drop order; the shell
+  resizes by its handles and has its measured right-click menu (Visible Items ▸ Label works, the rest is greyed with its
+  reason). Its terminal is the 38 × 38 icon, magenta for mixed contents and brown for numbers only, and a cluster wire
+  is 3 px with a dotted core. Reordering, Change to Indicator and AutoSizing come next.
+
 - OVIs are saved as `.ovi` files, the name of Solder's program unit (DT-094). Files saved as `.sdg` or `.qvi` still open,
   and Ctrl+S keeps their name, because the OVIs that call them name them so; Save As offers the same name with `.ovi`.
   The examples, ovi.lib and the DAQ add-on are renamed: an OVI saved with an earlier version that calls

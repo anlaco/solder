@@ -822,6 +822,23 @@ the order of the parts are taken. Code: `editor/src/block-diagram/call-library-n
   fields under the third of the Parameters tab are placed by analogy (unmeasured).
 - **Palette icon:** the node itself, drawn anew; System Exec.vi's, a console window. The Connectivity folders carry a short word.
 
+## 22. A user's cluster (2026-11-16, DT-095, stage a)
+
+Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-11-16-cluster-panel.md` §1, §5, §6 and `2026-11-16-cluster-diagram.md` Q6).
+Editor rules 135–137 (`05-editor.md` §26). Tests: `test/editor/cluster-panel.test.mjs`.
+
+- **Shell:** 100 × 100, a 4 px bevel (left and top inward `#C9C9C9`/`#D3D3D3`, `#C2C2C2`, `#B7B7B7`, `#B1B1B1`; right and bottom
+  `#E0E0E0`/`#EAEAEA`, `#EDEDED`, `#F2F2F2`, `#EEEEEE`) round a `#B3B3B3` interior; the label above, left-aligned, 2 px away. Old School
+  draws it in CSS over Plain (`.sd-cluster`, `.sd-cluster-interior`, which clips the elements); Plain draws a quiet recessed box.
+- **Terminal:** 38 × 38 with View As Icon, 32 × 16 without; the frame is **magenta `#FF00FF`** when the elements are of mixed kinds
+  and **brown `#993300`** when all are numeric and when the cluster is empty; the picture inside is fixed whatever it holds (grey
+  `#BBBBBB`, `#444444` border, five coloured boxes, drawn anew) with the type tab at the bottom; a control's arrow is on the right
+  (an indicator's, on the left).
+- **Wire:** 3 px; the outer rows in the cluster's colour and the middle row alternating the colour and white every pixel (`aspecto`
+  gives `{ color, dimension: 0, cluster: true }`; the error cluster keeps its olive wire and its own terminal).
+- **Unverified:** the colour of a cluster of strings only or of clusters (taken as mixed: not all numeric), the arrow's place on a
+  View As Icon off terminal of an indicator, and the shell's smallest size.
+
 ## History
 
 | Date       | Change |

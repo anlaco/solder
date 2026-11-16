@@ -20,12 +20,13 @@
 import { ambitoDe, crearEstructura, crearNodo, esSuelto, marcoDe, nuevo } from "./graph.mjs";
 import { DEFAULT_PATTERN } from "./connector-patterns.mjs";
 import { FREE_LABEL, isFreeLabel } from "./free-label.mjs";
+import { storedClusterConfig, withDerivedCluster } from "./user-cluster.mjs";
 
 /** A free label in the file: where it is, its text, its structure and frame, and its size once it was resized. */
 const freeLabelToFile = (n, place, inside, frame) => limpio({ x: place.x, y: place.y, text: n.label?.text ?? "", inside, frame, width: n.tam?.ancho, height: n.tam?.alto });
 const freeLabelSize = (label) => (label.width === undefined ? undefined : limpio({ ancho: label.width, alto: label.height }));
 
-export const VERSION = 5;
+export const VERSION = 6;
 
 /** Solder's own numbering of 4-2-2-4's cells in version 1: 0–3 the left column down, 4–7 the middle, 8–11 the right column down. */
 const VERSION_1_PATTERN = "4-2-2-4";
@@ -82,7 +83,10 @@ function withRingPairsVersion(vi) {
  * function that turns a file of the version before into one of the new version, so every file a released Solder
  * saved still opens. `MIGRATIONS[n - 1]` migrates version n to n + 1.
  */
-export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion, withFreeLabelsVersion, withRingPairsVersion];
+/** Version 5 → 6 (DT-095): a cluster panel object or a cluster constant may hold `elements`. Optional: nothing to change. */
+const withUserClustersVersion = (vi) => ({ ...vi, solder: 6 });
+
+export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion, withFreeLabelsVersion, withRingPairsVersion, withUserClustersVersion];
 
 /** A file of an older version brought up to `version`, one migration after another. */
 export function migrar(vi, migrations = MIGRATIONS, version = VERSION) {
@@ -106,6 +110,23 @@ const aGrafo = (config) => {
   const r = {};
   for (const [k, v] of Object.entries(config)) r[k === "default" ? "value" : k] = v;
   return r;
+};
+
+/** A user cluster's element in the file (DT-095): its block as `kind`, its label, its configuration and its place. */
+const elementToFile = (element) => limpio({ kind: element.tipo, label: element.label?.text, ...aFichero(element.config), x: element.x, y: element.y });
+
+/** An element of the file, as the graph holds it. */
+function elementFromFile(item, cat) {
+  const { kind, label, x, y, ...config } = item;
+  if (!cat.tiene(kind)) throw new ErrorQvi(`the block "${kind}" of a cluster element is not in the catalog`);
+  const read = aGrafo(config);
+  return limpio({ tipo: kind, label: label !== undefined ? { text: label } : undefined, config: Object.keys(read).length ? read : undefined, x: x ?? 0, y: y ?? 0 });
+}
+
+/** A node's configuration in the file: a user cluster's elements written as elements, its derived type and value left out. */
+const configToFile = (config) => {
+  const stored = storedClusterConfig(config);
+  return aFichero(stored?.elements ? { ...stored, elements: stored.elements.map(elementToFile) } : stored);
 };
 
 /**
@@ -190,7 +211,7 @@ export function escribir(g, cat) {
       continue;
     }
     const esPanel = !!b.panel;
-    const config = esPanel ? undefined : aFichero(n.config);
+    const config = esPanel ? undefined : configToFile(n.config);
     ambito(n.dentro, n.marco).nodes.push(limpio({ name: n.name, type: n.tipo, config }));
     diagram[n.name] = limpio({
       x: n.x,
@@ -206,8 +227,9 @@ export function escribir(g, cat) {
     if (esPanel) {
       const salida = cat.puertos(n).out.length > 0;
       const tipoBase = b.config?.default?.type ?? "number";
-      panel.push(limpio({ name: n.name, role: salida ? "control" : "indicator", type: n.config?.type ?? tipoBase, default: n.config?.value, style: n.config?.style, "ring-items": n.config?.items, "allow-undefined": n.config?.["allow-undefined"], "visible-elements": n.config?.visibles, index: n.config?.indice || undefined, "mechanical-action": n.config?.mechanical, graph: graphToFile(n.config) }));
-      if (n.panel) placPanel[n.name] = limpio({ x: n.panel.x, y: n.panel.y, label: etiqueta, "label-offset": n.panel.etiqueta });
+      const elements = n.config?.elements?.map(elementToFile);
+      panel.push(limpio({ name: n.name, role: salida ? "control" : "indicator", type: elements ? undefined : n.config?.type ?? tipoBase, default: elements ? undefined : n.config?.value, elements, style: n.config?.style, "ring-items": n.config?.items, "allow-undefined": n.config?.["allow-undefined"], "visible-elements": n.config?.visibles, index: n.config?.indice || undefined, "mechanical-action": n.config?.mechanical, graph: graphToFile(n.config) }));
+      if (n.panel) placPanel[n.name] = limpio({ x: n.panel.x, y: n.panel.y, w: n.panel.w, h: n.panel.h, label: etiqueta, "label-offset": n.panel.etiqueta });
     }
   }
   /** La referencia de un puerto en el fichero (spec/02 §5.1). */
@@ -322,9 +344,15 @@ export function leer(datos, cat) {
           const tipoBase = cat.bloque(nodo.type).config?.default?.type ?? "number";
           // Lo que no es de fábrica del bloque se conserva; lo demás lo pone el bloque al crearse.
           const config = limpio({ type: item && item.type !== tipoBase ? item.type : undefined, value: item?.default, style: item?.style, items: item?.["ring-items"], "allow-undefined": item?.["allow-undefined"], visibles: item?.["visible-elements"], indice: item?.index, mechanical: item?.["mechanical-action"], ...graphFromFile(item?.graph) });
-          n.config = { ...n.config, ...config };
+          const elements = item?.elements?.map((element) => elementFromFile(element, cat));
+          n.config = { ...n.config, ...config, ...(elements && { elements }) };
           if (!Object.keys(n.config).length) delete n.config;
-        } else if (nodo.config) n.config = { ...n.config, ...aGrafo(nodo.config) };
+        } else if (nodo.config) {
+          const read = aGrafo(nodo.config);
+          if (Array.isArray(read.elements)) read.elements = read.elements.map((element) => elementFromFile(element, cat));
+          n.config = { ...n.config, ...read };
+        }
+        Object.assign(n, withDerivedCluster(cat, n));
         const p = lay.panel?.[nodo.name];
         const texto = d.label?.text ?? p?.label?.text;
         if (texto !== undefined) n.label = { text: texto };
@@ -332,7 +360,7 @@ export function leer(datos, cat) {
         if (d["show-terminals"] || d["view-as-icon"] !== undefined || d.rows) {
           n.vista = limpio({ terminales: d["show-terminals"] || undefined, compacto: d["view-as-icon"] === Boolean(cat.bloque(nodo.type).express) || undefined, rows: d.rows || undefined });
         }
-        if (p) n.panel = limpio({ x: p.x, y: p.y, etiqueta: p["label-offset"] });
+        if (p) n.panel = limpio({ x: p.x, y: p.y, w: p.w, h: p.h, etiqueta: p["label-offset"] });
         return n;
       });
       porNombre.set(nodo.name, n);

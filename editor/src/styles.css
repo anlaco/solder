@@ -437,6 +437,9 @@ svg { display: block; overflow: visible; }
   font-size: var(--fuente); line-height: 15px; white-space: pre; color: var(--canvas-text);
 }
 .etiqueta.editando { cursor: text; }
+/* An element of a user's cluster and its label: only drawn, inside the cluster's clipped interior (DT-095). */
+.sd-cluster-element { position: absolute; }
+.sd-cluster-label { position: absolute; box-sizing: border-box; padding: 0 1px; font-size: var(--fuente); line-height: 15px; white-space: pre; color: var(--canvas-text); pointer-events: none; }
 .etiqueta .caret { display: inline-block; vertical-align: -2px; }
 .glifo-terminal-panel { position: absolute; inset: 0; pointer-events: none; }
 .glifo-terminal-panel svg { width: 100%; height: 100%; display: block; }
@@ -483,10 +486,10 @@ svg { display: block; overflow: visible; }
 .texto-etiqueta-libre.editando { cursor: text; }
 /* Resized, the text wraps inside the box, at words or inside a word that does not fit, and what does not fit is cut. */
 .texto-etiqueta-libre.con-tamano { white-space: pre-wrap; overflow-wrap: anywhere; overflow: hidden; }
-.asa-estructura[data-asa-libre="nw"], .asa-estructura[data-asa-libre="se"] { cursor: nwse-resize; }
-.asa-estructura[data-asa-libre="ne"], .asa-estructura[data-asa-libre="sw"] { cursor: nesw-resize; }
-.asa-estructura[data-asa-libre="n"], .asa-estructura[data-asa-libre="s"] { cursor: ns-resize; }
-.asa-estructura[data-asa-libre="e"], .asa-estructura[data-asa-libre="w"] { cursor: ew-resize; }
+.asa-estructura[data-asa-libre="nw"], .asa-estructura[data-asa-libre="se"], .asa-estructura[data-asa-cluster="nw"], .asa-estructura[data-asa-cluster="se"] { cursor: nwse-resize; }
+.asa-estructura[data-asa-libre="ne"], .asa-estructura[data-asa-libre="sw"], .asa-estructura[data-asa-cluster="ne"], .asa-estructura[data-asa-cluster="sw"] { cursor: nesw-resize; }
+.asa-estructura[data-asa-libre="n"], .asa-estructura[data-asa-libre="s"], .asa-estructura[data-asa-cluster="n"], .asa-estructura[data-asa-cluster="s"] { cursor: ns-resize; }
+.asa-estructura[data-asa-libre="e"], .asa-estructura[data-asa-libre="w"], .asa-estructura[data-asa-cluster="e"], .asa-estructura[data-asa-cluster="w"] { cursor: ew-resize; }
 .texto-etiqueta-libre .caret { display: inline-block; vertical-align: -2px; }
 /* On the panel: no border, white while typed and only the text once confirmed. */
 .objeto-panel.etiqueta-libre .texto-etiqueta-libre.editando { background: var(--free-label-typing-fill); }

@@ -872,9 +872,11 @@ function trazo(r, tipo) {
   // An array with no element yet: 2 px like any 1D wire, each pixel row dashed 2 on and 2 off in black, the second
   // row one pixel ahead of the first (measured at 1:1 on labview-captures/array-typing/const-wire.png).
   if (isUndefinedArray(tipo)) return UNDEFINED_ARRAY_ROWS.map(([shift, dashOffset]) => `<polyline points="${puntos(r)}" transform="translate(${shift} ${shift})" stroke="#000" stroke-width="1" stroke-dasharray="2 2" stroke-dashoffset="${dashOffset}" shape-rendering="crispEdges"/>`).join("");
-  const { color, dimension, error, squiggle, dashed } = aspecto(tipo);
+  const { color, dimension, error, squiggle, dashed, cluster } = aspecto(tipo);
   if (squiggle) return squiggleRows(r, color);
   if (dashed && PATH_WIRE_ROWS[dimension]) return dashedRows(r, color, PATH_WIRE_ROWS[dimension]);
+  // A user's cluster: 3 px, the outer rows in its colour and the middle row alternating colour and white every pixel (measured, DT-095).
+  if (cluster) return `<polyline points="${puntos(r)}" stroke="${color}" stroke-width="3"/><polyline points="${puntos(r)}" stroke="#fff" stroke-width="1" stroke-dasharray="1 1" shape-rendering="crispEdges"/>`;
   // Un cable de error mide 3 px: borde oliva y, en el centro, trazos de 2 px amarillos y negros (YYKK).
   if (error) return `<polyline points="${puntos(r)}" stroke="${color}" stroke-width="3"/><polyline points="${puntos(r)}" stroke="#ffff00" stroke-width="1" stroke-dasharray="2 2"/><polyline points="${puntos(r)}" stroke="#000" stroke-width="1" stroke-dasharray="2 2" stroke-dashoffset="-2"/>`;
   if (dimension === 0) return `<polyline points="${puntos(r)}" stroke="${color}" stroke-width="1.33"/>`;
@@ -1331,6 +1333,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
       ? (n.vista?.compacto ? G.terminalArrayCompacto(control, aspecto(tipo).color, COMPACT_ARRAY_TAGS[hoja] ?? nombre(hoja)) : G.terminalPanelIcono(control, aspecto(tipo).color, nombre(hoja), G.dibujoArray(control)))
       : esError(tipo)
       ? (n.vista?.compacto ? G.terminalPanelCompacto(control, COLORES.error, "") : G.terminalPanelIcono(control, COLORES.error, "", G.dibujoError(control), "cluster"))
+      : esCluster(tipo)
+      ? (n.vista?.compacto ? G.terminalPanelCompacto(control, aspecto(tipo).color, "") : G.terminalPanelIcono(control, aspecto(tipo).color, "cluster", G.dibujoCluster()))
       : isPanelRing(n)
       ? (n.vista?.compacto ? G.terminalPanelCompacto(control, aspecto(tipo).color, nombre(tipo)) : G.terminalPanelIcono(control, aspecto(tipo).color, nombre(tipo), G.dibujoRing(control)))
       : tipo === "boolean"
