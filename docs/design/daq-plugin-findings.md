@@ -310,8 +310,9 @@ defaults (measured that day: NI's are modern Text Rings, I32), on cells 3 and 9;
 - S11-#1 Replace ▸ is greyed on a numeric control, so a control is changed by adding, deleting and rewiring. *Fixed
   2026-11-15 (DT-092, measured in [`delete-replace`](../../labview-captures/reports/2026-11-15-delete-replace.md) §C):
   Replace ▸ opens the Controls palette and keeps the node, wires, label, representation, value and role
-  (`test/editor/panel-replace.test.mjs`), tried by hand in the editor the same day. Open: a Text Ring that replaced a
-  numeric keeps the numeric's terminal icon (whether LabVIEW draws a ring's, unmeasured); Replace on an indicator's panel
+  (`test/editor/panel-replace.test.mjs`), tried by hand in the editor the same day. A Text Ring that replaced a
+  numeric now draws a ring's terminal in the numeric's colour, as measured (editing-small Q3, fixed 2026-11-16,
+  `test/editor/panel-replace.test.mjs`). Open: Replace on an indicator's panel
   menu (not captured), on graphs, arrays and diagram constants.*
 - S11-#2 A click on a numeric's text does not select it for Delete; only its edge does. *As LabVIEW (measured 2026-10-18,
   numeric-hover-selected.md §3: a click in the value box of an unselected control puts the caret; the 4 px band selects); pinned in
@@ -357,22 +358,31 @@ Numbered S14-#n.
 
 - **S14-#1 The add-on's `libnilvaiu` was stale until `node scripts/build-native.mjs`** (high, tooling); replacing it under
   a running editor gave 1097 until a restart.
-- S14-#2 Edit Items on a new ring saved two items as 0 and did not grey OK. S14-#3 Edit Items and the node dialog's
+- S14-#2 Edit Items on a new ring saved two items as 0 and did not grey OK. *Fixed 2026-11-15: the duplicate check
+  ignored the item still being typed and, with Sequential values ticked, the new item kept its 0; it now checks what OK
+  would save (`test/editor/rings.test.mjs`).* S14-#3 Edit Items and the node dialog's
   Parameters list select a row only on its text. S14-#4 a new Text Ring is U16 (LabVIEW's default, measured in DT-091);
   a ring cannot be resized by its handle. S14-#5 a marquee starting in a label drags the label. S14-#7 a new control
   keeps its automatic name in the connector beside its label. S14-#8 Add… stored `<ovilib>/DAQ/…` again (S12-#3).
 - S14-#10 deleting controls left broken wires and tunnels: *as LabVIEW, measured
   ([`delete-replace`](../../labview-captures/reports/2026-11-15-delete-replace.md)).*
 - S14-#13 No plugin OVI marks its required inputs Required, as NI's do in bold (lines, physical channels, source).
+  *Fixed 2026-11-16 by hand in the editor (stages R1–R3): every plugin OVI weighs its inputs as NI's VI, measured over
+  VI Server ([`daqmx-weights`](../../labview-captures/reports/2026-11-15-daqmx-weights.md)); kept by
+  `test/core/daq-plugin-connections.test.mjs`. Making Fill In Error Info's extended error info Required showed that the
+  two digital Create Virtual Channel OVIs never passed the driver's extended error text on: now wired, as AO's.*
 
 Stage 15, 2026-11-15 ([report](../../labview-captures/reports/2026-11-15-daq-plugin-stage15.md)): DAQ Read (Digital
 Bool 1Line 1Point), DAQ Read (Digital U32 1Chan 1Samp) and DAQ Write (Digital Bool 1Line 1Point) built by hand, in DAQ
 Read and DAQ Write with DAQmx's menu names; they run as measured. Numbered S15-#n.
 
 - **S15-#1 The Polymorphic OVI window's instance list shows four rows and does not scroll** (high): rows 5 and later are
-  unreachable by the mouse.
+  unreachable by the mouse. *Fixed 2026-11-15: the list had no scroll state; it now scrolls by wheel with a thumb and
+  keeps the selected row in view (`test/editor/polymorphic-window.test.mjs`).*
 - S15-#2 Tab does not move from Menu Name to Selector Name in Edit Instance Name; Shift+Enter in Menu Name closed the
-  dialog. S15-#3 resizing the Polymorphic OVI window moved its dialog. S15-#4 a click on a Boolean's centre does not
+  dialog. *Fixed 2026-11-16 as measured ([`editing-small`](../../labview-captures/reports/2026-11-15-editing-small.md)
+  Q1): Tab order Menu Name, Selector Name, OK, Cancel, Help, selecting the field's text; Enter types a line break
+  (`test/editor/polymorphic-window.test.mjs`).* S15-#3 resizing the Polymorphic OVI window moved its dialog. S15-#4 a click on a Boolean's centre does not
   assign a connector cell, its border does (S1-#9). S15-#7 one run of the scratch test failed with no message: *the
   plugin's tests wait on `cargo build` when another build holds its lock, measured 117 s against 24 s alone.*
 
@@ -382,8 +392,31 @@ Stage 16, 2026-11-15 ([report](../../labview-captures/reports/2026-11-15-daq-plu
 Numbered S16-#n.
 
 - S16-#2 after the node dialog closed the node stayed selected, so Delete removed it and not the clicked constant.
+  *Fixed 2026-11-16: the node stays selected as in LabVIEW (editing-small Q2), but the click on the constant's right half
+  began a wire; a constant now wires only by LabVIEW's measured 6 x 12 px patch outside its right edge, and not when
+  selected ([`constant-wiring-zone`](../../labview-captures/reports/2026-11-16-constant-wiring-zone.md);
+  `test/editor/diagram-editing.test.mjs`,
+  `call-library-nodes.test.mjs`).*
 - S16-#4 a new String parameter of the node defaults to C String Pointer (LabVIEW's unmeasured). S16-#5 Select Item…
   does not change a ring's default until Make Current Value Default (as LabVIEW, unmeasured). S16-#6 a control dropped on
   the panel put its terminal inside the Case at the same coordinates.
-- S16-#9 DAQ Timing (Sample Clock)'s active edge is a plain I32, not NI's ring.
+- S16-#9 DAQ Timing (Sample Clock)'s active edge is a plain I32, not NI's ring. *Fixed 2026-11-16 by hand in the
+  editor (Replace ▸ Text Ring): sample mode and active edge are I32 Text Rings with NI's items and defaults, measured
+  ([`daqmx-weights`](../../labview-captures/reports/2026-11-15-daqmx-weights.md)), kept by
+  `test/core/daq-plugin-connections.test.mjs`.*
 
+Acquisition by hand, 2026-11-16 ([report](../../labview-captures/reports/2026-11-16-daq-acquisition.md)): analog in
+(1000 Hz finite, 100 samples), analog out (2.5 V), a digital line written and one read, and a start trigger on Dev2,
+each built from the palette and run without an error. Numbered A-#n.
+
+- **A-#1 Create ▸ Constant on a subOVI input made a numeric 0** (high: the trigger's edge then gave -200077) - *fixed
+  2026-11-16 as measured ([`create-constant`](../../labview-captures/reports/2026-11-16-create-constant.md)): the
+  control's class and default, a Ring Constant with its items for a ring, 8 px left of the node
+  (`test/editor/terminal-creation-subovi.test.mjs`).*
+- A-#2 With no add-on installed, Measurement I/O is greyed "not yet" with no word on how to install one. For stage B.
+- A-#3 Constants made on adjacent terminals overlap each other (*as LabVIEW, measured the same day*).
+- A-#4 A Boolean constant's first click after ending a text edit once did not toggle (not reproduced). For stage B.
+- A-#5 "Boolean (1 line)" in Write and "Boolean (1 Line)" in Read: *as NI's (daq-poly-names).* Look: menus flip near
+  the window's edges, a drag by a terminal moved its label, the panel opens scrolled (S10), saved polymorphic nodes'
+  `instance`/`selected` (S10-#15). For stage B.
+- Editor saves rewrite layout bends' order and raise `solder` 4 to 5 (expected since DT-091).

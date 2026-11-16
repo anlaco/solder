@@ -135,7 +135,7 @@ test("Edit Name opens the dialog over the selected row and an empty name goes ba
   assert.equal(State.openNameDialog(State.emptyState()).nameDialog, null, "greyed with nothing selected");
   let state = withInstances(State.emptyState(), "Step (I64).sdg", "Step (DBL).sdg");
   state = State.openNameDialog(State.select(state, 0));
-  assert.deepEqual(state.nameDialog, { index: 0, menuName: "", selectorName: "", focus: "menuName" });
+  assert.deepEqual(state.nameDialog, { index: 0, menuName: "", selectorName: "", focus: "menuName", caret: 0, selected: false });
   const html = draw(state);
   // "Edit Instance Name", 353 x 237, with "Menu Name" and "Polymorphic OVI Selector Name" fields of 300 x 32, OK, Cancel, Help.
   assert.deepEqual([View.NAME_DIALOG_LAYOUT.width, View.NAME_DIALOG_LAYOUT.height], [353, 237]);
@@ -145,7 +145,8 @@ test("Edit Name opens the dialog over the selected row and an empty name goes ba
 
   state = State.typeInNameDialog(State.typeInNameDialog(state, "menuName", "Integer"), "selectorName", "Whole");
   assert.equal(state.nameDialog.focus, "selectorName");
-  assert.deepEqual([State.typedText("ab", "c"), State.typedText("ab", "Backspace"), State.typedText("ab", "Enter")], ["abc", "a", "ab"]);
+  const typedKeys = (text, key) => State.typeKeyInNameDialog(State.typeInNameDialog(state, "menuName", text), key).nameDialog.menuName;
+  assert.deepEqual([typedKeys("ab", "c"), typedKeys("ab", "Backspace"), typedKeys("ab", "Enter")], ["abc", "a", "ab"]);
   const accepted = State.acceptNameDialog(state);
   assert.equal(accepted.nameDialog, null);
   assert.deepEqual(State.rowCells(accepted.instances[0]), ["Step (I64).sdg", "Integer", "Whole"]);
@@ -306,7 +307,7 @@ test("a saved sdp refreshes the callers that have it open, and the window reads 
 
 // ——— Line breaks in the selector name (reports/2026-11-15-poly-selector.md §4) ———
 
-test("Enter and Shift+Enter in the Selector Name field type a line break; in Menu Name, Enter is OK", () => {
+test("Enter and Shift+Enter type a line break in Selector Name and in Menu Name, and never close the dialog (editing-small Q1)", () => {
   let state = State.openNameDialog(State.select(withInstances(State.emptyState(), "Step (I64).sdg"), 0));
   state = State.typeInNameDialog(State.typeInNameDialog(state, "menuName", "Top"), "selectorName", "Top");
   const afterEnter = State.pressEnterInNameDialog(state);
@@ -321,9 +322,43 @@ test("Enter and Shift+Enter in the Selector Name field type a line break; in Men
   assert.equal(Poly.readPolymorphic(State.toText(accepted)).instances[0].selectorName, "Top\nBot", "and read back as it was");
 
   const inMenuName = State.pressEnterInNameDialog(State.typeInNameDialog(state, "menuName", "Top2"));
-  assert.equal(inMenuName.nameDialog, null, "Enter in Menu Name accepts");
-  assert.equal(inMenuName.instances[0].menuName, "Top2");
+  assert.equal(inMenuName.nameDialog.menuName, "Top2\n", "Enter in Menu Name is a line break too, the dialog stays open");
   assert.equal(State.pressEnterInNameDialog(accepted), accepted, "nothing to do without a dialog");
+});
+
+test("Edit Instance Name opens with the caret at the start of Menu Name, nothing selected, and typing goes in front of the text", () => {
+  const instanceState = State.select(withInstances(State.emptyState(), "Step (I64).sdg"), 0);
+  const withText = State.acceptNameDialog(State.typeInNameDialog(State.openNameDialog(instanceState), "menuName", "Integer"));
+  const dialog = State.openNameDialog(withText).nameDialog;
+  assert.deepEqual([dialog.focus, dialog.caret, dialog.selected], ["menuName", 0, false]);
+  assert.equal(State.typeKeyInNameDialog(State.openNameDialog(withText), "X").nameDialog.menuName, "XInteger");
+  assert.match(draw(State.openNameDialog(withText)), /<span class="po-field-text"><\/span><span class="caret"><\/span><span class="po-field-text">Integer<\/span>/);
+});
+
+test("Tab cycles Menu Name, Selector Name, OK, Cancel, Help and wraps; Shift+Tab goes back; a field entered is all selected", () => {
+  let state = State.openNameDialog(State.select(withInstances(State.emptyState(), "Step (I64).sdg"), 0));
+  state = State.typeInNameDialog(State.typeInNameDialog(state, "menuName", "Top"), "selectorName", "Sel");
+  const focusAfter = (...backwards) => backwards.reduce((current, back) => State.moveNameDialogFocus(current, back), State.focusNameDialogField(state, "menuName"));
+  const order = [false, false, false, false, false, false].map((_, steps) => focusAfter(...Array(steps).fill(false)).nameDialog.focus);
+  assert.deepEqual(order, ["menuName", "selectorName", "ok", "cancel", "help", "menuName"]);
+  assert.equal(focusAfter(true).nameDialog.focus, "help", "Shift+Tab from Menu Name wraps to Help");
+  const intoSelector = focusAfter(false).nameDialog;
+  assert.equal(intoSelector.selected, true, "entering a field by Tab selects its text");
+  assert.equal(State.typeKeyInNameDialog({ ...state, nameDialog: intoSelector }, "Z").nameDialog.selectorName, "Z", "typing replaces the selection");
+  assert.equal(focusAfter(false, false).nameDialog.selected, false, "a button has no selection");
+  assert.equal(State.typeKeyInNameDialog({ ...state, nameDialog: focusAfter(false, false).nameDialog }, "q").nameDialog.menuName, "Top", "typing on a button changes nothing");
+  assert.match(draw(focusAfter(false, false)), /pv-boton defecto enfocado[^"]*" data-id="dialog\.edit-instance-name\.ok"/, "the focused button shows its focus rectangle");
+});
+
+test("Enter and Space on a focused button press it: OK accepts, Cancel leaves the names", () => {
+  let state = State.openNameDialog(State.select(withInstances(State.emptyState(), "Step (I64).sdg"), 0));
+  state = State.typeInNameDialog(state, "menuName", "Top");
+  const onButton = (button) => ({ ...state, nameDialog: { ...state.nameDialog, focus: button } });
+  assert.equal(State.pressEnterInNameDialog(onButton("ok")).instances[0].menuName, "Top");
+  assert.equal(State.pressFocusedNameDialogButton(onButton("ok")).nameDialog, null);
+  const cancelled = State.pressEnterInNameDialog(onButton("cancel"));
+  assert.deepEqual([cancelled.nameDialog, cancelled.instances[0].menuName], [null, ""]);
+  assert.equal(State.pressEnterInNameDialog(onButton("help")).nameDialog.focus, "help", "Help's explanation belongs to the page");
 });
 
 test("a selector name with two lines shows both in the list and its row grows from 18 to about 33 px", () => {
@@ -335,4 +370,37 @@ test("a selector name with two lines shows both in the list and its row grows fr
   assert.deepEqual(rows, [[0, 17, 33], [1, 50, 18]], "the second row follows the taller first one");
   assert.match(html, /<span class="po-cell po-lines" style="left:\d+px;width:81px">Top\nBot<\/span>/, "the Selector Name cell holds both lines");
   assert.equal((html.match(/class="po-row vacia"/g) ?? []).length, 4, "the empty rows fill what is left of the box");
+});
+
+test("the instance list scrolls by wheel, shows a thumb, and keeps the selected row in view (S15-#1, 2026-11-15)", () => {
+  const names = Array.from({ length: 10 }, (_, k) => `Read ${k}.sdg`);
+  const full = withInstances(State.emptyState(), ...names.slice(0, 7));
+  assert.equal(State.maxListScroll(full), 0, "seven rows fit under the header");
+  assert.doesNotMatch(draw(full), /po-scrollbar/);
+  // Ten rows overflow by 4 x 18 px: the wheel scrolls to the end and no further.
+  let state = withInstances(State.emptyState(), ...names);
+  assert.equal(State.maxListScroll(state), 10 * 18 - 126);
+  assert.match(draw(state), /po-scrollbar/, "a thumb appears when the rows overflow");
+  const atTop = State.scrollList(state, -100000);
+  assert.equal(atTop.listScroll, 0);
+  assert.equal(State.scrollList(atTop, 40).listScroll, 40);
+  assert.equal(State.scrollList(atTop, 100000).listScroll, 54);
+  assert.equal(State.scrollList(atTop, -5).listScroll, 0);
+  // Add... selected the last row and brought it into view; a click on a row that is visible after scrolling selects that row.
+  assert.equal(state.selected, 9);
+  assert.equal(state.listScroll, 54, "the added row is the last one in view");
+  state = State.scrollList(state, -54);
+  assert.match(draw(state), /data-row="9" style="top:179px/, "row 9 is below the visible rows until scrolled");
+  state = State.scrollList(state, 36);
+  assert.match(draw(state), /data-row="9" style="top:143px/, "the row moves up by the scroll");
+  assert.match(draw(state), /data-row="0" style="top:-19px/);
+  // Selecting a row above or below the view scrolls just enough to show it; Move Up follows its row.
+  assert.equal(State.select(State.scrollList(state, 100), 0).listScroll, 0);
+  assert.equal(State.select(State.scrollList(state, -100), 8).listScroll, 9 * 18 - 126, "row 8 ends at 162");
+  const moved = State.moveSelected(State.select(State.scrollList(state, -100), 7), 1);
+  assert.equal(moved.selected, 8);
+  assert.equal(moved.listScroll, 36, "row 8 ends at 162 = 36 + 126: in view");
+  // Remove shrinks the list and the scroll never stays past its end.
+  const removed = State.removeSelected(State.select(State.scrollList(state, 18), 9));
+  assert.equal(removed.listScroll, State.maxListScroll(removed), "nine rows overflow by 36 px: the scroll is pulled back to it");
 });

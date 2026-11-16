@@ -39,8 +39,8 @@ import { GRAPH_KINDS, labelShown } from "../front-panel/graph-state.mjs";
 import { elementMenuRoot } from "../common/array-typing.mjs";
 import { MAX_EDITOR_DIMENSIONS, cellAddress, dimensionsOfNode, firstShown, isDefined, readCell, visibleGrid } from "../common/array-grid.mjs";
 import { ringItems, ringText } from "../../../core/model/ring.mjs";
-import { isRingConstant, ringMenuRoot } from "../common/ring-editing.mjs";
-import { panelTerminalZone } from "./panel-terminal-zone.mjs";
+import { isPanelRing, isRingConstant, ringMenuRoot } from "../common/ring-editing.mjs";
+import { constantTerminalZone, panelTerminalZone } from "./panel-terminal-zone.mjs";
 
 const esNumericoNoEntero = (t) => typeof t === "string" && esNumerico(t) && !esEntero(t);
 
@@ -633,13 +633,6 @@ function constantBox(n, ctx, edicion, size) {
 /** The least width of a terminal's hot zone, so that a small node's terminals can still be hit. */
 const MIN_TERMINAL_ZONE = 6;
 /**
- * A constant boxes its value and is moved by it, so only its right edge wires: with half of it, a
- * short constant (`5`, `%f`) could not be dragged at all (real-programs-0.3.md B11). LabVIEW's own
- * width is unverified.
- */
-const CONSTANT_OUTPUT_ZONE = MIN_TERMINAL_ZONE;
-
-/**
  * How wide the hot zone of each terminal of `n` is. Each side takes somewhat more than a third of
  * the node and the middle is the body, which is what is grabbed to move it; a border object is
  * split between its two faces.
@@ -647,7 +640,6 @@ const CONSTANT_OUTPUT_ZONE = MIN_TERMINAL_ZONE;
 function terminalZoneWidth(n, k, ctx, ins, outs) {
   if (esBorde(n)) return k.ancho / (ins.length && outs.length ? 2 : 1);
   if (esCompuesto(n, ctx)) return medidasCompuesto(n, ctx).izquierda * 0.7;
-  if (CONSTANTES[n.tipo]) return CONSTANT_OUTPUT_ZONE;
   return Math.max(MIN_TERMINAL_ZONE, k.ancho * (ins.length ? 0.36 : 0.5));
 }
 
@@ -703,7 +695,7 @@ export function terminales(n, ctx, edicion) {
       const fija = dir === "in" && tieneDosDimensiones(n);
       const alto = fija ? PASO_ENTRADAS_DOS_DIMENSIONES : k.alto / cuantos;
       const arriba = fija ? k.y + ENTRADAS_DOS_DIMENSIONES[i] - alto / 2 : k.y + alto * i;
-      const faceZone = flecha !== null ? panelTerminalZone(k, dir, flecha) : { x: dir === "in" ? k.x : k.x + k.ancho - anchoZona, y: arriba, ancho: anchoZona, alto };
+      const faceZone = flecha !== null ? panelTerminalZone(k, dir, flecha) : CONSTANTES[n.tipo] && dir === "out" ? constantTerminalZone(k) : { x: dir === "in" ? k.x : k.x + k.ancho - anchoZona, y: arriba, ancho: anchoZona, alto };
       const zona = esBorde(n) ? widenTowardWire(faceZone, dir) : faceZone;
       return {
         puerto: p.name,
@@ -1339,6 +1331,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
       ? (n.vista?.compacto ? G.terminalArrayCompacto(control, aspecto(tipo).color, COMPACT_ARRAY_TAGS[hoja] ?? nombre(hoja)) : G.terminalPanelIcono(control, aspecto(tipo).color, nombre(hoja), G.dibujoArray(control)))
       : esError(tipo)
       ? (n.vista?.compacto ? G.terminalPanelCompacto(control, COLORES.error, "") : G.terminalPanelIcono(control, COLORES.error, "", G.dibujoError(control), "cluster"))
+      : isPanelRing(n)
+      ? (n.vista?.compacto ? G.terminalPanelCompacto(control, aspecto(tipo).color, nombre(tipo)) : G.terminalPanelIcono(control, aspecto(tipo).color, nombre(tipo), G.dibujoRing(control)))
       : tipo === "boolean"
       ? G.terminalBooleano(n.config?.style, control, aspecto(tipo).color, !!n.vista?.compacto, !!CV.currentValue(n))
       : tipo === "string"
@@ -1377,7 +1371,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
     cuerpo = `<div class="glifo-nodo" style="left:${px(-k.dx)};top:${px(-k.dy)}${gw ? `;width:${px(gw)};height:${px(gh)}` : ""}">${glifo}</div>`;
   }
   let zonas = terminales(n, ctx, d.edicion)
-    .filter((t) => terminalVisible(n, t, d.g) && !(elegido && esDelPanel(n, ctx)))
+    .filter((t) => terminalVisible(n, t, d.g) && !(elegido && (esDelPanel(n, ctx) || CONSTANTES[n.tipo])))
     .map(
       (t) =>
         `<div class="terminal" data-nodo="${esc(n.id)}" data-puerto="${esc(t.puerto)}" data-dir="${t.dir}"${t.etiqueta ? ` data-tip="${esc(t.etiqueta)}"` : ""} style="left:${px(t.zona.x - k.x)};top:${px(t.zona.y - k.y)};width:${px(t.zona.ancho)};height:${px(t.zona.alto)}"></div>`,

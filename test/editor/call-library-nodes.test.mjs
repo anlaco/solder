@@ -546,3 +546,22 @@ test("the spec rules and the schema agree with the inventory of the dialog and t
   assert.equal(CLD.UNDO_STEP_NAME, "Change Attribute", "the name of the undo step, as the Express VI's dialogs");
   assert.ok(CAT.bloque("call-library"), "the block is in the catalog");
 });
+
+// ——— A click after the dialog closed (editing-small Q2, S16-#2) ———
+
+test("after the dialog closes the node stays selected, and one click on a constant selects only it: Delete removes the constant", () => {
+  const { g, n } = node(MEAN_LIKE);
+  const constant = Gr.crearNodo(g, CAT, "const", 0, 100);
+  const base = { ...ED.inicial(), g: constant.g };
+  for (const closeDialog of [(d) => ({ ...d, callLibraryDialog: null }), (d) => ({ ...d, g: accept(d), callLibraryDialog: null })]) {
+    const closed = closeDialog(ED.openCallLibraryConfiguration(base, n.id));
+    assert.deepEqual(closed.seleccion, [n.id], "LabVIEW leaves the node selected after OK and after Cancel");
+    const clickPoint = { x: 5, y: 105 };
+    const pressed = ED.pulsar(closed, CTX, { tipo: "nodo", id: constant.id }, clickPoint);
+    const released = ED.soltar(pressed, CTX, { tipo: "nodo", id: constant.id }, clickPoint);
+    assert.deepEqual(released.seleccion, [constant.id], "only the constant is selected");
+    const afterDelete = ED.borrarSeleccion(released, CTX);
+    assert.equal(nodeOf(afterDelete.g, constant.id), undefined, "the constant is gone");
+    assert.ok(nodeOf(afterDelete.g, n.id), "and the node is kept");
+  }
+});

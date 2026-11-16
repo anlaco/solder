@@ -20,9 +20,11 @@ import { daqNameText, isDaqName } from "../../../core/model/daq-name.mjs";
  * measured on Add, Quotient & Remainder and And; 8 px on Index Array's index,
  * String Length, Array Size, Unbundle and Simple Error Handler
  * (create-constant-on-*-result.png). Why those two differ is unknown, so the
- * blocks that were not measured use the 16 of the first group (unverified).
+ * blocks that were not measured use the 16 of the first group (unverified). A subOVI call is 8 too: the constant's
+ * right edge ends 9 px (pixels counted inclusively) left of the node's border, with an 8 px wire between
+ * (reports/2026-11-16-create-constant.md, Placement); a wide constant grows to the left, so it never covers the node.
  */
-export const CONSTANT_GAP_BY_BLOCK = { "index-array": 8, "string-length": 8, "array-size": 8, unbundle: 8, "simple-error-handler": 8 };
+export const CONSTANT_GAP_BY_BLOCK = { "index-array": 8, "string-length": 8, "array-size": 8, unbundle: 8, "simple-error-handler": 8, subvi: 8 };
 export const DEFAULT_CONSTANT_GAP = 16;
 
 /** The gap of a new control or indicator, measured on Add only (create-control-on-x-diagram-result.png). */
@@ -101,6 +103,16 @@ export const borderTerminalPort = (node, ctx) => (node.tipo.startsWith("loop-") 
 export const bodyTerminalPort = (node) => BODY_TERMINAL[node?.tipo];
 const BODY_TERMINAL = { "control-reference": "reference", "daq-name-constant": "result" };
 
+/**
+ * The panel object that an input terminal of a subOVI call stands for (the selected instance's, for a polymorphic
+ * OVI), or undefined for any other terminal; what Create ▸ makes on the terminal takes its class and default from it.
+ */
+function sourceOfInput(ctx, node, terminal) {
+  if (node.tipo !== "subvi" || terminal.dir !== "in") return undefined;
+  const port = ctx.cat.puertos(node).in.find((candidate) => candidate.name === terminal.puerto);
+  return port && ctx.cat.calleeOf(node)?.g.nodos.find((candidate) => candidate.id === port.nodo);
+}
+
 /** The type that reaches or leaves a terminal, or undefined when it is not known yet. */
 const terminalType = (g, cat, terminal) => (terminal.dir === "in" ? Gr.tipos(g, cat).entradas : Gr.tipos(g, cat).salidas).get(`${terminal.nodo}.${terminal.puerto}`);
 
@@ -169,7 +181,8 @@ export function createForTerminal(g, ctx, { nodo, puerto, kind, panelSize, stack
   const terminal = { ...terminales(node, ctx).find((t) => t.puerto === puerto), nodo };
   const type = terminalType(g, ctx.cat, terminal);
   if (type === undefined) return { g, motivo: "The type of this terminal is not known yet: wire it first." };
-  const block = blockForTerminal(type, kind);
+  const source = sourceOfInput(ctx, node, terminal);
+  const block = blockForTerminal(type, kind, source);
   if (!block) return { g, motivo: `There is no ${kind} for this type yet.` };
   const isPanelObject = kind !== "constant";
   const special = kind === "control" && node.tipo === "loop-condition" ? LOOP_CONDITION_CONTROL : null;
@@ -177,7 +190,7 @@ export function createForTerminal(g, ctx, { nodo, puerto, kind, panelSize, stack
   const scope = scopeOfTerminal(g, ctx.cat, node, terminal);
   // A terminal with no name (a control reference constant's) gives the object the label it is born with (unverified).
   const label = special?.label ?? (terminal.etiqueta || defaultLabel(block));
-  const created = createOnTerminal(g, ctx.cat, { terminal: { nodo, puerto, dir: terminal.dir }, type, kind, x: 0, y: 0, panelX: slot.x, panelY: slot.y, label, scope, configOverride: special?.configOverride });
+  const created = createOnTerminal(g, ctx.cat, { terminal: { nodo, puerto, dir: terminal.dir }, type, kind, x: 0, y: 0, panelX: slot.x, panelY: slot.y, label, scope, configOverride: special?.configOverride, source });
   if (created.motivo) return created;
   const size = caja(nodeOf(created.g, created.id), ctx);
   const gap = kind === "constant" ? (CONSTANT_GAP_BY_BLOCK[node.tipo] ?? DEFAULT_CONSTANT_GAP) : TERMINAL_GAP;

@@ -5,7 +5,8 @@
     "inputs": [
       {
         "name": "daq-name-control_1",
-        "cell": 0
+        "cell": 0,
+        "connection": "required"
       },
       {
         "name": "bool-control_1",
@@ -13,11 +14,13 @@
       },
       {
         "name": "bool-control_2",
-        "cell": 7
+        "cell": 7,
+        "connection": "required"
       },
       {
         "name": "control_1",
-        "cell": 9
+        "cell": 9,
+        "connection": "optional"
       },
       {
         "name": "cluster-control_1",

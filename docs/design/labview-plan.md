@@ -45,6 +45,10 @@ When the developer says "keep going":
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
 
+*2026-11-16: DAQ's stage A ready for 0.13.0-beta: the plugin OVIs' Required inputs and rings as NI's, Create ▸
+Constant on a subOVI input with the control's class and default, the Polymorphic OVI window's list scrolls, and a whole
+acquisition tried by hand from the palette. Next: DAQ's stage B.*
+
 *2026-11-15: DAQ's stage A closed: digital lines (Create Virtual Channel Digital Input and Output, the Bool and U32
 reads, the Bool write) and the start triggers (None, Digital Edge) on the simulated devices, on the palette; Delete on a
 click-selected terminal and Replace ▸ on panel objects (DT-092). Next: DAQ's stage B.*
@@ -834,9 +838,19 @@ array or string read by a local variable while another loop writes it is never t
       ([`delete-replace`](../../labview-captures/reports/2026-11-15-delete-replace.md),
       [`terminal-hot-zones`](../../labview-captures/reports/2026-11-15-terminal-hot-zones.md)): Delete on a terminal
       selected by a click (S13-#3), the input tunnel's wire to a deleted node (S13-#4; the rest, and S11-#7, as LabVIEW),
-      Replace ▸ on panel objects (S11-#1, DT-092). Open: S15-#1 (the Polymorphic OVI window does not scroll), S14-#13
-      (no input marked Required), S16-#9 (Timing's active edge not a ring). Left: the Windows `nilvaiu.dll` in the VM,
-      at the next release. Next: stage B, from the waveform and timestamp types (DT-076 §10).*
+      Replace ▸ on panel objects (S11-#1, DT-092).*
+      *2026-11-16, closing stage A for 0.13.0-beta: S15-#1 (the Polymorphic OVI window's list scrolls), S14-#13 (every
+      plugin OVI weighs its inputs as NI's, measured over VI Server,
+      [`daqmx-weights`](../../labview-captures/reports/2026-11-15-daqmx-weights.md); the digital Create Virtual Channels
+      now pass the extended error text on), S16-#9 (Timing's sample mode and active edge are I32 Text Rings), S15-#2,
+      S14-#2, S16-#2 and the ring's terminal after Replace, measured in
+      [`editing-small`](../../labview-captures/reports/2026-11-15-editing-small.md) and
+      [`constant-wiring-zone`](../../labview-captures/reports/2026-11-16-constant-wiring-zone.md). A whole acquisition
+      tried by hand from the palette ([`daq-acquisition`](../../labview-captures/reports/2026-11-16-daq-acquisition.md)):
+      analog in and out, a digital line written and read, a start trigger, all without an error once Create ▸ Constant on
+      a subOVI input took the control's class and default ([`create-constant`](../../labview-captures/reports/2026-11-16-create-constant.md)).
+      Left for stage B: a hint when no add-on is installed (A-#2) and the findings marked so in
+      [`daq-plugin-findings.md`](daq-plugin-findings.md). Next: stage B, from the waveform and timestamp types (DT-076 §10).*
    6a. **The two doors for libraries** (DT-079 §3): the Call Library Function Node (how an OVI calls compiled code when
       everything compiles to WebAssembly) and an add-ons folder like `LVAddons` (a library's OVIs, palette files, help and
       compiled code, installed as a package). Each is measured in LabVIEW first and decided in its own DT; then DAQ's

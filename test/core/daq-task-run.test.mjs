@@ -14,6 +14,7 @@ import { compilar } from "../../core/compiler/compiler.mjs";
 import { defaultCallLibraryConfig } from "../../core/model/call-library.mjs";
 import { DAQ_TASK, daqName } from "../../core/model/daq-name.mjs";
 import { conversion, inMemory, nombre } from "../../core/model/types.mjs";
+import { SOLDER_VERSION } from "./daq-plugin-harness.mjs";
 import { ejecutar } from "../../core/runtime/runtime.mjs";
 import { addonLibraryLocator, loadInstalledAddons } from "../../editor/electron/installed-addons.mjs";
 import { loadSolderIo, withLibraryLocator } from "../../native/solder-io-node/solder-io.mjs";
@@ -130,7 +131,7 @@ test("a node naming NI's nilvaiu.* loads the DAQ add-on's copy by its full path"
     const platformPart = `daq-${process.platform === "win32" ? "windows" : process.platform}-${process.arch}`;
     for (const part of ["daq", platformPart]) cpSync(path.resolve("addons", part), path.join(addonsFolder, part), { recursive: true });
     cpSync(library, path.join(addonsFolder, platformPart, "1", "resource", LIBRARY_FILE));
-    const { libraryFolders } = loadInstalledAddons({ oviLibRoot: path.resolve("ovi.lib"), nodePlatform: process.platform, architecture: process.arch, homeDirectory: tmpdir(), environment: {}, solderVersion: "0.12.0-beta", folders: [addonsFolder] });
+    const { libraryFolders } = loadInstalledAddons({ oviLibRoot: path.resolve("ovi.lib"), nodePlatform: process.platform, architecture: process.arch, homeDirectory: tmpdir(), environment: {}, solderVersion: SOLDER_VERSION, folders: [addonsFolder] });
     const shown = await run(createStartDestroy(namingNi), withLibraryLocator(loadSolderIo(), addonLibraryLocator(libraryFolders)));
     assert.equal(shown.created, 0);
     assert.equal(shown.started, TASK_HAS_NO_CHANNELS);

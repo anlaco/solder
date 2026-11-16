@@ -1,4 +1,4 @@
-// The wiring zone of a control's or indicator's diagram terminal.
+// The wiring zones of a control's or indicator's diagram terminal and of a constant's output.
 
 /**
  * A control's or indicator's terminal wires only by a patch at its data side, 16 × 12 px, vertically centred on the
@@ -20,4 +20,19 @@ export function panelTerminalZone(box, dir, arrowY) {
   // The report gives the patch as rows centred on the arrow's row: the half row of an arrow at 19.5 or 8.5 is dropped.
   const y = box.y + Math.floor(arrowY - height / 2);
   return { x, y, ancho: width, alto: height };
+}
+
+/**
+ * A constant wires only by a patch entirely OUTSIDE its box, 6 px wide (R+1 to R+6) and 12 px high, centred on the box's
+ * middle row (top+3 to top+14 of a 19 px box); the whole box, frame included, selects and moves. A SELECTED constant has
+ * no wiring zone at all (labview-captures/reports/2026-11-16-constant-wiring-zone.md; measured on unselected I32
+ * constants 13 and 31 px wide; other representations and zoom unverified, and string, ring, path and other constants were
+ * not measured: they take the numeric's).
+ */
+export const CONSTANT_WIRING_ZONE = { width: 6, height: 12 };
+
+/** The zone of the output of a constant of `box`. */
+export function constantTerminalZone(box) {
+  const { width, height } = CONSTANT_WIRING_ZONE;
+  return { x: box.x + box.ancho, y: box.y + Math.floor((box.alto - height) / 2), ancho: width, alto: height };
 }

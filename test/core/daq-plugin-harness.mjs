@@ -18,6 +18,9 @@ import { addonLibraryLocator, loadInstalledAddons } from "../../editor/electron/
 import { loadSolderIo, withLibraryLocator } from "../../native/solder-io-node/solder-io.mjs";
 import { CAT } from "../helpers.mjs";
 
+/** The version this tree is: the real add-on is loaded as the Solder of this tree would load it, whatever its MinimumSupportedSolderVersion. */
+export const SOLDER_VERSION = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")).version;
+
 export const PLUGIN_FOLDER = path.resolve("addons/daq/1/ovi.lib/DAQ");
 const LIBRARY_FILE = { linux: "libnilvaiu.so", darwin: "libnilvaiu.dylib", win32: "nilvaiu.dll" }[process.platform];
 const PLATFORM_PART = `daq-${process.platform === "win32" ? "windows" : process.platform}-${process.arch}`;
@@ -44,7 +47,7 @@ export function installAddonForTheseTests() {
     addonsFolder = mkdtempSync(path.join(tmpdir(), "solder-addons-"));
     for (const part of ["daq", PLATFORM_PART]) cpSync(path.resolve("addons", part), path.join(addonsFolder, part), { recursive: true });
     cpSync(path.resolve("target/debug", LIBRARY_FILE), path.join(addonsFolder, PLATFORM_PART, "1", "resource", LIBRARY_FILE));
-    const { libraryFolders } = loadInstalledAddons({ oviLibRoot: path.resolve("ovi.lib"), nodePlatform: process.platform, architecture: process.arch, homeDirectory: tmpdir(), environment: {}, solderVersion: "0.12.0-beta", folders: [addonsFolder] });
+    const { libraryFolders } = loadInstalledAddons({ oviLibRoot: path.resolve("ovi.lib"), nodePlatform: process.platform, architecture: process.arch, homeDirectory: tmpdir(), environment: {}, solderVersion: SOLDER_VERSION, folders: [addonsFolder] });
     io = withLibraryLocator(loadSolderIo(), addonLibraryLocator(libraryFolders));
   });
   after(() => {

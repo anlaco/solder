@@ -21,7 +21,8 @@
       },
       {
         "name": "daq-name-control_2",
-        "cell": 5
+        "cell": 5,
+        "connection": "required"
       },
       {
         "name": "str-control_1",

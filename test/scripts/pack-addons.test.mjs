@@ -16,6 +16,8 @@ const scratch = mkdtempSync(path.join(tmpdir(), "solder-pack-"));
 after(() => rmSync(scratch, { recursive: true, force: true }));
 
 const ON_LINUX = process.platform === "linux";
+/** The packing shells out to `zip`, which releases have where they are made (Linux) and a Windows machine may lack. */
+const HAS_ZIP = spawnSync("zip", ["-v"]).status === 0;
 
 /** Writes `files` (`{ relative path: text }`) under `folder`. */
 function writeTree(folder, files) {
@@ -27,7 +29,7 @@ function writeTree(folder, files) {
 
 const manifest = (extra = {}) => JSON.stringify({ AddonName: "DAQ", ApiVersion: "v1", MinimumSupportedSolderVersion: "0.12.0-beta", ...extra });
 
-test("an archive per built platform part, named after the add-on, the version and the platform; an unbuilt part is skipped", () => {
+test("an archive per built platform part, named after the add-on, the version and the platform; an unbuilt part is skipped", { skip: !HAS_ZIP && "no zip on this machine" }, () => {
   const addons = path.join(scratch, "addons");
   writeTree(addons, {
     "daq/1/sdaddoninfo.json": manifest(),

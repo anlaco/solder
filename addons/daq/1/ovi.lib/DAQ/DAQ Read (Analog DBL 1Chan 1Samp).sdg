@@ -1,15 +1,17 @@
 {
-  "solder": 4,
+  "solder": 5,
   "connector": {
     "pattern": 4833,
     "inputs": [
       {
         "name": "daq-name-control_1",
-        "cell": 0
+        "cell": 0,
+        "connection": "required"
       },
       {
         "name": "control_1",
-        "cell": 9
+        "cell": 9,
+        "connection": "optional"
       },
       {
         "name": "cluster-control_1",

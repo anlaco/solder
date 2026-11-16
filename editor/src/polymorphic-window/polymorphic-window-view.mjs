@@ -8,7 +8,7 @@ import * as D from "../block-diagram/diagram-view.mjs";
 import { esHueco } from "../common/labview-inventory.mjs";
 import { ownIconHtml } from "../block-diagram/polymorphic-nodes.mjs";
 import * as V from "../window/window-view.mjs";
-import { DRAW_ICON, buttonStates, rowCells, rowHeightOf, showsEmptyMarker } from "./polymorphic-window-state.mjs";
+import { DRAW_ICON, LIST_BOX, buttonStates, listThumb, rowCells, rowHeightOf, showsEmptyMarker } from "./polymorphic-window-state.mjs";
 
 export const PREFIX = "window.polymorphic-ovi";
 export const NAME_DIALOG = "dialog.edit-instance-name";
@@ -29,9 +29,9 @@ export const LAYOUT = Object.freeze({
   editIcon: { x: 314, y: 75, ...BUTTON_SIZE },
   icon: { x: 427, y: 70, width: 32, height: 32 },
   listLabel: { x: 10, y: 101 },
-  list: { x: 9, y: 114, width: 418, height: 145 },
-  headerHeight: 17,
-  rowHeight: 18,
+  list: { x: 9, y: 114, width: 418, height: LIST_BOX.height },
+  headerHeight: LIST_BOX.headerHeight,
+  rowHeight: LIST_BOX.rowHeight,
   // The columns of the list: OVI Name 10-237, Menu Name 237-320, Selector Name 320-401, a blank one up to 427.
   columns: { fileName: [10, 237], menuName: [237, 320], selectorName: [320, 401] },
   fileNameIndent: 17,
@@ -108,7 +108,7 @@ function instanceList(state) {
   const { list, headerHeight, rowHeight, columns, fileNameIndent } = LAYOUT;
   const cell = ([left, right], text, indent = 0, className = "") => `<span class="po-cell${className}" style="left:${px(left - list.x + indent)};width:${px(right - left - indent)}">${esc(text)}</span>`;
   const header = `<div class="po-header" style="height:${px(headerHeight)}">${cell(columns.fileName, "OVI Name", 0)}${cell(columns.menuName, "Menu Name")}${cell(columns.selectorName, "Selector Name")}</div>`;
-  let top = headerHeight;
+  let top = headerHeight - state.listScroll;
   const rowHtml = (instance, index) => {
     const [fileName, menuName, selectorName] = instance ? rowCells(instance) : ["", "", ""];
     const height = instance ? rowHeightOf(instance, rowHeight) : rowHeight;
@@ -121,16 +121,24 @@ function instanceList(state) {
   };
   const rows = state.instances.map(rowHtml);
   const emptyRowCount = Math.max(0, Math.floor((list.height - top) / rowHeight));
+  const thumb = listThumb(state);
+  const scrollbar = thumb ? `<div class="po-scrollbar" style="top:${px(headerHeight + thumb.top)};height:${px(thumb.height)}"></div>` : "";
   rows.push(...Array.from({ length: emptyRowCount }, (_, index) => rowHtml(undefined, state.instances.length + index)));
-  return `<div class="po-list" data-id="${PREFIX}.instances" style="${place(list)}">${header}${rows.join("")}</div>`;
+  return `<div class="po-list" data-id="${PREFIX}.instances" style="${place(list)}">${rows.join("")}${header}${scrollbar}</div>`;
 }
 
 /** The "Edit Instance Name" dialog, modal over the window: the two fields, with the caret in the one being typed. */
 function nameDialog(inv, dialog) {
   const L = NAME_DIALOG_LAYOUT;
-  const field = (name, box) => `<div class="pv-campo po-field${dialog.focus === name ? " activo" : ""}" data-field="${name}" style="left:${px(box.x)};top:${px(box.y)};width:${px(box.width)};height:${px(box.height)}"><span class="po-field-text">${esc(dialog[name])}</span>${dialog.focus === name ? '<span class="caret"></span>' : ""}</div>`;
+  const fieldContent = (name) => {
+    if (dialog.focus !== name) return `<span class="po-field-text">${esc(dialog[name])}</span>`;
+    if (dialog.selected) return `<span class="po-field-text po-selected">${esc(dialog[name])}</span>`;
+    const caretAt = dialog.caret;
+    return `<span class="po-field-text">${esc(dialog[name].slice(0, caretAt))}</span><span class="caret"></span><span class="po-field-text">${esc(dialog[name].slice(caretAt))}</span>`;
+  };
+  const field = (name, box) => `<div class="pv-campo po-field${dialog.focus === name ? " activo" : ""}" data-field="${name}" style="left:${px(box.x)};top:${px(box.y)};width:${px(box.width)};height:${px(box.height)}">${fieldContent(name)}</div>`;
   const dialogButton = (key, label, box, defaultButton = false) =>
-    `<div class="pv-boton${defaultButton ? " defecto" : ""}${holeClass(inv, `${NAME_DIALOG}.${key}`)}" data-id="${NAME_DIALOG}.${key}" style="left:${px(box.x)};top:${px(box.y)};width:${px(box.width)};height:${px(box.height)}">${label}</div>`;
+    `<div class="pv-boton${defaultButton ? " defecto" : ""}${dialog.focus === key ? " enfocado" : ""}${holeClass(inv, `${NAME_DIALOG}.${key}`)}" data-id="${NAME_DIALOG}.${key}" style="left:${px(box.x)};top:${px(box.y)};width:${px(box.width)};height:${px(box.height)}">${label}</div>`;
   return `<div class="pv-velo"><div class="pv-dialogo po-name-dialog" style="width:${px(L.width)};height:${px(L.height)}">` +
     `<div class="pv-titulo" style="height:${px(TITLE_BAR_HEIGHT - 2)}"><span>Edit Instance Name</span><span class="pv-cerrar" data-id="${NAME_DIALOG}.cancel">✕</span></div>` +
     `<div class="pv-etiqueta" style="left:${px(L.menuLabel.x)};top:${px(L.menuLabel.y)}">Menu Name</div>${field("menuName", L.menuField)}` +

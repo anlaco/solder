@@ -2290,6 +2290,12 @@ Object.assign(CONTROLES, { "waveform-chart": graphPaletteIcon("waveform-chart"),
 const RING_TEXT_SIZE = 8.5;
 const ringBox = (x0, y0, x1, y1, text, fill = PAPER) =>
   caja(x0, y0, x1, y1, fill, 1.2, "#7a7a7a") + texto48((x0 + x1) / 2, (y0 + y1) / 2 + 0.3, text, RING_TEXT_SIZE, INK, 600);
+/**
+ * What a ring's diagram terminal draws inside the icon, whatever its representation: the ring glyph with "Ring" (measured:
+ * reports/2026-11-15-editing-small.md Q3; a Text Ring replacing a DBL control draws it too, with the DBL colour and tab).
+ * Drawn anew, like the control's glyph.
+ */
+export const dibujoRing = (control) => (control ? incrementador(6, 9, 13) + ringBox(12.5, 11, 29, 20, "Ring") : ringBox(9, 11, 27.5, 20, "Ring", "#d6d6d6"));
 const ringPicture = (x0, y0, x1, y1) => {
   const width = x1 - x0;
   const height = y1 - y0;

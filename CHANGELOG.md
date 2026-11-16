@@ -9,6 +9,35 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+## 0.13.0-beta — 2026-11-16
+
+Solder's DAQ add-on closes its first stage: besides analog input, it now writes analog outputs, reads and writes digital
+lines and starts a task on a digital trigger, on the simulated devices, and its OVIs mark their inputs Required as NI's
+do. The add-on is `Solder-DAQ-0.13.0-beta-<platform>.zip`: unzip it into `~/.local/share/solder/addons` on Linux or
+`%APPDATA%\Solder\Addons` on Windows and restart Solder. It needs this version: its OVIs use rings, which 0.12 cannot
+open.
+
+- Create ▸ Constant and Create ▸ Control on a subOVI input make the control's own class with its default value, not a 0: a
+  numeric constant holding the default (Timing's rate gives 1000) and, for a Text or Menu Ring input, a Ring Constant (or ring
+  control) carrying the items, the default and Allow Undefined Values (Trigger's edge gives Rising). The constant sits 8 px
+  left of the node, right-aligned, as LabVIEW places it.
+- The Polymorphic OVI window's instance list scrolls, by the mouse wheel and with a scrollbar when its rows overflow, and
+  keeps the selected row in view; rows past the fourth two-line row used to be out of reach (DAQ Read has six).
+- A ring's Edit Items no longer saves two items with the same value: an item still being typed, or a new item with
+  "Sequential values" ticked, is counted before OK, so the warning appears and OK is greyed as in LabVIEW.
+- Edit Name... in the Polymorphic OVI window takes LabVIEW's keyboard: Tab and Shift+Tab go round Menu Name, Selector
+  Name, OK, Cancel and Help, selecting the text of the field they enter; Enter and Shift+Enter type a line break in
+  either field and no longer close the dialog; a focused button is pressed by Enter or Space.
+- A click anywhere on a diagram constant selects it: as in LabVIEW, a constant wires only by a 6 x 12 px patch just
+  outside its right edge, and not while selected (its right half used to begin a wire, so Delete after a node's dialog
+  removed the node that stayed selected instead of the clicked constant).
+- A Text Ring or Menu Ring's terminal on the diagram draws a ring, coloured by its representation: a ring that replaced
+  a DBL control keeps DBL, its orange terminal and its wire, as in LabVIEW.
+- The DAQ OVIs weigh their inputs as NI's DAQmx VIs do (measured): task/channels in, physical channels, lines, rate,
+  a trigger's source and a write's data are Required (bold in Context Help, and a call is broken without them); Read's
+  and Write's timeout are Optional. DAQ Timing (Sample Clock) takes sample mode and active edge as I32 Text Rings
+  (Finite Samples, Continuous Samples, Hardware Timed Single Point; Rising, Falling). The digital Create Virtual Channel
+  OVIs pass the driver's extended error information on into their error out, as the analog ones do.
 - Replace ▸ on a front-panel object (DT-092): the row opens the Controls palette as a submenu and picking an item
   replaces the object in place, keeping its terminal and wires, label, representation, value and its role of control
   or indicator (what Solder lacks is greyed, as in the palette); a change of data type leaves the wires that no longer

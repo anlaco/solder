@@ -9,7 +9,8 @@
       },
       {
         "name": "daq-name-control_2",
-        "cell": 5
+        "cell": 5,
+        "connection": "required"
       },
       {
         "name": "str-control_1",
@@ -374,6 +375,10 @@
                 {
                   "from": "case-structure_1.tunnel-in_3",
                   "to": "call-library_1.arg-4-in"
+                },
+                {
+                  "from": "call-library_1.arg-6-out",
+                  "to": "subvi_1.str-control_1"
                 }
               ]
             }
@@ -591,6 +596,16 @@
           339
         ]
       },
+      "call-library_1.arg-6-in": {
+        "bends": [
+          318
+        ]
+      },
+      "call-library_1.arg-5-in": {
+        "bends": [
+          318
+        ]
+      },
       "case-structure_1.selector": {
         "bends": [
           68
@@ -608,14 +623,9 @@
           192
         ]
       },
-      "call-library_1.arg-6-in": {
+      "subvi_1.str-control_1": {
         "bends": [
-          318
-        ]
-      },
-      "call-library_1.arg-5-in": {
-        "bends": [
-          318
+          406
         ]
       }
     },

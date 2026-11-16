@@ -519,3 +519,24 @@ test("the Text Ring's down arrow from a value with no item goes to the first ite
   const down = P.pulsar(ring.p, CTX, { tipo: "paso", id: ring.id, paso: -1 }, { x: 0, y: 0 });
   assert.equal(CV.currentValue(nodeOf(down, ring.id)), 0);
 });
+
+test("an item still being typed counts for the duplicate check and takes its sequential value (S14-#2, 2026-11-15)", () => {
+  const typeText = (dialog, text) => [...text].reduce(RI.type, dialog);
+  const afterEnter = (dialog) => RI.type(RI.act(RI.act(dialog, `${ID}.row-0`), `${ID}.row-0`), "Enter");
+  // Sequential values: a new item typed and not yet committed is not saved as a second 0.
+  const ticked = typeText(afterEnter(freeRing([{ text: "a", value: 0 }])), "b");
+  const placed = ringPanel(MENU_RING, { items: [{ text: "a", value: 0 }], value: 0 });
+  const saved = nodeOf({ g: RI.apply(placed.p.g, { ...ticked, nodo: placed.id }) }, placed.id);
+  assert.deepEqual(saved.config.items, [{ text: "a", value: 0 }, { text: "b", value: 1 }], "OK with the text still in the editor");
+  // Unticked: the new item is born with 0, which a is already using, and OK must not let it through while it is typed.
+  const unticked = typeText(afterEnter(RI.act(freeRing([{ text: "a", value: 0 }]), `${ID}.sequential-values`)), "b");
+  assert.ok(RI.duplicateValues(unticked), "the item being typed is checked");
+  assert.equal(RI.click(unticked, `${ID}.ok`), null);
+  assert.equal(RI.key({ ...RI.type(unticked, "Enter"), edicion: null, listFocused: false }, { key: "Enter" }), null);
+  assert.match(RI.view(INV, unticked), /pv-boton defecto desactivado" data-id=""[^>]*>OK</);
+  // A value being typed that equals another item's counts too, before it is committed.
+  const retyped = RI.type(RI.act(RI.act(RI.act(RI.act(freeRing([{ text: "a", value: 0 }, { text: "b", value: 1 }]), `${ID}.sequential-values`), `${ID}.value-1`), `${ID}.value-1`), `${ID}.value-1`), "0");
+  assert.ok(retyped.edicion, "the value is still being typed");
+  assert.ok(RI.duplicateValues(retyped));
+  assert.equal(RI.click(retyped, `${ID}.ok`), null);
+});

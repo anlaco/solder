@@ -1,11 +1,12 @@
 {
-  "solder": 4,
+  "solder": 5,
   "connector": {
     "pattern": 4833,
     "inputs": [
       {
         "name": "daq-name-control_1",
-        "cell": 0
+        "cell": 0,
+        "connection": "required"
       },
       {
         "name": "control_3",
@@ -17,7 +18,8 @@
       },
       {
         "name": "control_1",
-        "cell": 5
+        "cell": 5,
+        "connection": "required"
       },
       {
         "name": "daq-name-control_2",
@@ -122,13 +124,41 @@
       "name": "control_2",
       "role": "control",
       "type": "i32",
-      "default": 10280
+      "default": 10280,
+      "style": "text-ring",
+      "ring-items": [
+        {
+          "text": "Rising",
+          "value": 10280
+        },
+        {
+          "text": "Falling",
+          "value": 10171
+        }
+      ],
+      "allow-undefined": false
     },
     {
       "name": "control_3",
       "role": "control",
       "type": "i32",
-      "default": 10178
+      "default": 10178,
+      "style": "text-ring",
+      "ring-items": [
+        {
+          "text": "Finite Samples",
+          "value": 10178
+        },
+        {
+          "text": "Continuous Samples",
+          "value": 10123
+        },
+        {
+          "text": "Hardware Timed Single Point",
+          "value": 12522
+        }
+      ],
+      "allow-undefined": false
     },
     {
       "name": "control_4",

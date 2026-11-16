@@ -19,6 +19,8 @@ body.polymorphic-window { background: var(--polymorphic-window-background); colo
 
 .po-list { box-sizing: border-box; border: 1px solid var(--polymorphic-window-list-border); background: var(--polymorphic-window-list-background); overflow: hidden; }
 .po-header { position: absolute; left: 0; right: 0; top: 0; background: var(--polymorphic-window-header-background); border-bottom: 1px solid var(--polymorphic-window-row-line); }
+/* The header is drawn after the rows so that the ones scrolled up under it are hidden. */
+.po-scrollbar { position: absolute; right: 1px; width: 6px; background: var(--scrollbar-thumb); border-radius: 3px; pointer-events: none; } /* Width and look unmeasured: the Edit Items list's. */
 .po-row { position: absolute; left: 0; right: 0; border-bottom: 1px solid var(--polymorphic-window-row-line); box-sizing: border-box; }
 .po-row.seleccionada { background: var(--polymorphic-window-selected-background); color: var(--polymorphic-window-selected-text); }
 .po-cell { position: absolute; top: 0; bottom: 0; line-height: 17px; padding-left: 2px; white-space: pre; overflow: hidden; box-sizing: border-box; }
@@ -36,3 +38,6 @@ body.polymorphic-window { background: var(--polymorphic-window-background); colo
 /* A selector name with line breaks: its lines are 15 px apart (2026-11-15-poly-selector.md §4), in the list and in the dialog's field. */
 .po-cell.po-lines { line-height: 15px; padding-top: 1px; }
 .po-field-text { white-space: pre; line-height: 15px; }
+/* Tab-focused button: a dotted focus rectangle inside its border (the shape was seen in the measurement, Q1; its pixels were not). */
+.pv-boton.enfocado { outline: 1px dotted var(--caret); outline-offset: -4px; }
+.po-field-text.po-selected { background: var(--polymorphic-window-selected-background); color: var(--polymorphic-window-selected-text); }

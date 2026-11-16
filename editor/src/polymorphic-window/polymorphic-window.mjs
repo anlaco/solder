@@ -122,7 +122,7 @@ function clickNameDialog(target) {
     return show(E.clic(state, inventory, part, { x: box.left, y: box.bottom + 2 }));
   }
   const field = target.closest("[data-field]")?.dataset.field;
-  if (field) show({ ...state, nameDialog: { ...state.nameDialog, focus: field } });
+  if (field) show(State.focusNameDialogField(state, field));
 }
 
 document.addEventListener("click", (event) => {
@@ -147,6 +147,17 @@ document.addEventListener("click", (event) => {
   handler();
 });
 
+// The wheel over the instance list scrolls it; over the rest of the window it does nothing.
+document.addEventListener(
+  "wheel",
+  (event) => {
+    if (state.nameDialog || !event.target.closest(".po-list")) return;
+    event.preventDefault();
+    show(State.scrollList(state, event.deltaY));
+  },
+  { passive: false },
+);
+
 document.addEventListener("mouseover", (event) => {
   if (!state.menuBarra) return;
   const title = event.target.closest(".menu");
@@ -155,17 +166,32 @@ document.addEventListener("mouseover", (event) => {
   }
 });
 
-document.addEventListener("keydown", (event) => {
-  if (state.nameDialog) {
-    if (event.key === "Enter") {
-      const next = State.pressEnterInNameDialog(state);
-      return next.nameDialog ? show(next) : change(next);
-    }
-    if (event.key === "Escape") return show(State.cancelNameDialog(state));
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
-    const field = state.nameDialog.focus;
-    return show(State.typeInNameDialog(state, field, State.typedText(state.nameDialog[field], event.key)));
+/** Help's explanation, opened from the keyboard where the click would put it. */
+function showNameDialogHelp() {
+  const box = document.querySelector(`[data-id="${NAME_DIALOG}.help"]`).getBoundingClientRect();
+  show(E.clic(state, inventory, `${NAME_DIALOG}.help`, { x: box.left, y: box.bottom + 2 }));
+}
+
+const isButtonFocused = () => !["menuName", "selectorName"].includes(state.nameDialog.focus);
+
+function nameDialogKey(event) {
+  if (event.key === "Escape") return show(State.cancelNameDialog(state));
+  if (event.key === "Tab") {
+    event.preventDefault();
+    return show(State.moveNameDialogFocus(state, event.shiftKey));
   }
+  const presses = event.key === "Enter" || (event.key === " " && isButtonFocused());
+  if (presses && state.nameDialog.focus === "help") return showNameDialogHelp();
+  if (presses) {
+    const next = event.key === "Enter" ? State.pressEnterInNameDialog(state) : State.pressFocusedNameDialogButton(state);
+    return next.nameDialog ? show(next) : change(next);
+  }
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+  show(State.typeKeyInNameDialog(state, event.key));
+}
+
+document.addEventListener("keydown", (event) => {
+  if (state.nameDialog) return nameDialogKey(event);
   if (event.key === "Escape") return show(E.escape(state));
   const pressed = { ctrl: event.ctrlKey || event.metaKey, shift: event.shiftKey, alt: event.altKey, tecla: event.key };
   if (!pressed.ctrl) return;

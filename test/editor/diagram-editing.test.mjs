@@ -1918,14 +1918,24 @@ test("a tunnel made by a wire does not land on top of a shift register", () => {
   assert.ok(tunnel.y >= right.y + registerHeight || tunnel.y + tunnelHeight <= right.y, `tunnel at ${tunnel.y}, shift register at ${right.y}`);
 });
 
-test("a short constant is wired by its right edge and moved by the rest of it", () => {
-  // real-programs-0.3.md B11: the output took half the constant, all of a short one like `5`.
+test("a constant wires by a 6 x 12 patch outside its box, none when selected; its whole box selects (constant-wiring-zone report)", () => {
+  // labview-captures/reports/2026-11-16-constant-wiring-zone.md; S16-#2: a click right of the middle started a wire.
   const d = poner(ED.inicial(), "const", { x: 100, y: 100 });
   const constant = d.g.nodos[0];
   const box = caja(constant, CTX);
   const [output] = terminales(constant, CTX);
-  assert.ok(output.zona.ancho <= 6, `the output's zone is ${output.zona.ancho} px wide`);
-  assert.ok(box.ancho - output.zona.ancho >= box.ancho / 2, "most of the constant is body");
+  const right = box.x + box.ancho;
+  assert.deepEqual([output.zona.x, output.zona.ancho, output.zona.alto], [right, 6, 12], "R+1 to R+6, 12 px high");
+  assert.equal(output.zona.y, box.y + Math.floor((box.alto - 12) / 2), "centred on the box's middle row");
+  const zoneOf = (state) => (contenido(state, CTX, tipos(state.g, CAT)).match(/class="terminal"/g) ?? []).length;
+  assert.equal(zoneOf({ ...d, seleccion: [] }), 1, "unselected: it wires");
+  assert.equal(zoneOf({ ...d, seleccion: [constant.id] }), 0, "selected: no wiring zone at all");
+  // A click anywhere on the box, its right edge included, is on the node and selects it.
+  const selected = ED.pulsar({ ...d, seleccion: [] }, CTX, { tipo: "nodo", id: constant.id }, { x: right - 1, y: box.y + 9 });
+  assert.deepEqual(selected.seleccion, [constant.id]);
+  // A press at R+3 on the middle row begins a wire.
+  const wiring = ED.pulsar({ ...d, seleccion: [] }, CTX, { tipo: "terminal", nodo: constant.id, puerto: output.puerto, dir: "out" }, { x: right + 3, y: box.y + 9 });
+  assert.equal(wiring.accion?.tipo, "cablear");
 });
 
 test("hovering the border of an unselected structure shows its eight handles, and the interior shows none", () => {

@@ -29,7 +29,7 @@ test("a constant created on Add's input sits 16 px to its left, centred on the t
 });
 
 test("the nodes measured at 8 px have that gap in the table, and the others use 16", () => {
-  assert.deepEqual(Object.keys(CONSTANT_GAP_BY_BLOCK).sort(), ["array-size", "index-array", "simple-error-handler", "string-length", "unbundle"]);
+  assert.deepEqual(Object.keys(CONSTANT_GAP_BY_BLOCK).sort(), ["array-size", "index-array", "simple-error-handler", "string-length", "subvi", "unbundle"]);
   const { g, id: length } = nodeAt("string-length", 300, 100);
   const r = createForTerminal(g, CTX, { nodo: length, puerto: "string", kind: "constant" });
   const constant = box(r.g, r.id);

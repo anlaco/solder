@@ -66,8 +66,12 @@ export function open(node) {
   });
 }
 
-/** Is OK allowed? Not while two items share a value (measured: the warning appears and OK is greyed; Cancel works). */
-export const duplicateValues = (dialog) => hasDuplicateValues(itemsOf(dialog));
+/**
+ * Is OK blocked? While two items share a value (measured: the warning appears and OK is greyed; Cancel works). What is
+ * still being typed is committed first, because OK and Enter commit it before saving (S14-#2: a new item typed and not
+ * yet committed was invisible to this check and was saved as a second 0).
+ */
+export const duplicateValues = (dialog) => hasDuplicateValues(itemsOf(commit(dialog)));
 
 /** With "Sequential values" the values follow the positions; unticked they are the user's. */
 function renumbered(dialog) {
@@ -78,8 +82,11 @@ function renumbered(dialog) {
 
 const withRow = (dialog, index, changes) => ({ ...dialog, filas: dialog.filas.map((row, k) => (k === index ? { ...row, ...changes } : row)) });
 
-/** What was being typed goes into its row: a text as it is; a value as the representation takes it (a typed -1 on U16 gives 0, measured). */
-function commit(dialog) {
+/** What was being typed goes into its row, and with "Sequential values" ticked the new item takes its position as its value (S14-#2). */
+const commit = (dialog) => renumbered(commitEdit(dialog));
+
+/** The edit alone: a text as it is; a value as the representation takes it (a typed -1 on U16 gives 0, measured). */
+function commitEdit(dialog) {
   const { edicion } = dialog;
   if (!edicion) return dialog;
   const closed = { ...dialog, edicion: null };

@@ -11,6 +11,7 @@ import * as CV from "../../core/model/control-values.mjs";
 import * as H from "../../editor/src/block-diagram/undo-history.mjs";
 import * as P from "../../editor/src/front-panel/front-panel.mjs";
 import { shownRingText } from "../../editor/src/common/ring-editing.mjs";
+import { DBL } from "../../core/model/types.mjs";
 import { CAT, INV } from "../helpers.mjs";
 
 const CTX = D.contexto(CAT, D.glifosPorBloque(INV), ",");
@@ -128,4 +129,25 @@ test("an item the object's role cannot take is greyed, and one Solder lacks does
   assert.ok(variants.desactivados.has(pick(NUMERIC_ROOT, "modern.graph.waveform-chart")), "Solder has no graph as a control yet");
   assert.equal(replaceWith(g, NUMERIC_ROOT, control, "modern.graph.waveform-chart").g, g);
   assert.equal(replaceWith(g, NUMERIC_ROOT, control, "modern.numeric.knob").g, g, "Knob is not built");
+});
+
+test("a Text Ring that replaced a DBL control keeps DBL and draws the ring terminal, with the DBL colour and tab (editing-small Q3)", () => {
+  const { g, control } = wiredControl();
+  const asDouble = Gr.fijarRepresentacion(g, control, DBL);
+  const replaced = replaceWith(asDouble, NUMERIC_ROOT, control, "modern.ring-and-enum.text-ring").g;
+  assert.equal(nodeOf(replaced, control).config.type, DBL, "DBL kept by the Text Ring");
+  assert.equal(replaced.cables.length, asDouble.cables.length, "and the wire");
+
+  const terminalOf = (graph) => {
+    const html = D.contenido({ ...ED.inicial(), g: graph }, CTX, Gr.tipos(graph, CAT));
+    const [, glyph] = html.match(new RegExp(`data-nodo="${control}"[^]*?<div class="glifo-terminal-panel">([^]*?)</div>`)) ?? assert.fail("the terminal is drawn");
+    return decodeURIComponent(glyph);
+  };
+  const ringTerminal = terminalOf(replaced);
+  assert.match(ringTerminal, />Ring</, "the ring glyph");
+  assert.doesNotMatch(ringTerminal, />1\.23</, "not the numeric's");
+  assert.match(ringTerminal, />DBL</, "with the DBL tab");
+  const border = ringTerminal.match(/<rect x="1" y="1"[^>]*stroke="(#[0-9a-f]{6})"/i)?.[1];
+  const numericBorder = terminalOf(asDouble).match(/<rect x="1" y="1"[^>]*stroke="(#[0-9a-f]{6})"/i)?.[1];
+  assert.ok(border && border === numericBorder, "the border is the representation's colour, as the numeric's");
 });

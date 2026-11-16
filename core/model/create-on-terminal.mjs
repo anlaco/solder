@@ -4,6 +4,8 @@
 // A pure module. Where the new node goes is the editor's business (measured in
 // LabVIEW); this module decides what is created and wires it.
 
+import * as CV from "./control-values.mjs";
+import { RING_STYLES, ringItems } from "./ring.mjs";
 import { conectar, crearEnPanel, crearNodo, fijarConfig } from "./graph.mjs";
 import { isDaqName } from "./daq-name.mjs";
 import { PATH, VISA_RESOURCE, esArray, esCluster, esEnum, esError, esNumerico, esRefnum } from "./types.mjs";
@@ -12,11 +14,38 @@ import { PATH, VISA_RESOURCE, esArray, esCluster, esEnum, esError, esNumerico, e
  * The block and configuration that Create ▸ `kind` ("constant", "control" or
  * "indicator") makes for a terminal of type `type`, or null when there is no
  * such block yet. Numbers keep the terminal's representation.
+ *
+ * `source` is the panel object a subOVI's input stands for, when the terminal is one: a constant or a control made on
+ * it is of the object's own class with its default value, not a blank one (measured, reports/2026-11-16-create-constant.md:
+ * Timing's rate gives a constant holding 1000, Trigger's edge a Ring Constant with Rising and Falling showing Rising).
  */
-export function blockForTerminal(type, kind) {
+export function blockForTerminal(type, kind, source) {
+  const block = plainBlockForTerminal(type, kind);
+  return block && source ? withSourceOfInput(block, kind, source) : block;
+}
+
+function plainBlockForTerminal(type, kind) {
   if (kind === "constant") return constantBlock(type);
   if (kind === "control" || kind === "indicator") return panelBlock(type, kind === "control");
   return null;
+}
+
+/** A text or menu ring, which is a numeric control with a style and items (DT-091 §2). */
+const isRingControl = (source) => source.tipo === "control" && Object.values(RING_STYLES).includes(source.config?.style);
+
+/** The configuration of a ring that a constant or a control made on a ring input keeps: the items and the undefined values. */
+const ringConfiguration = (source) => ({ items: ringItems(source.config), "allow-undefined": !!source.config["allow-undefined"] });
+
+function withSourceOfInput(block, kind, source) {
+  if (kind === "indicator") return block;
+  const value = CV.defaultValue(source);
+  if (isRingControl(source)) {
+    const ring = { ...block.config, ...ringConfiguration(source), value };
+    if (kind === "constant") return { tipo: "ring-const", config: ring };
+    return { ...block, config: { ...ring, style: source.config.style } };
+  }
+  if (!block.config || kind !== "constant" || typeof value !== typeof block.config.value) return block;
+  return { ...block, config: { ...block.config, value } };
 }
 
 function constantBlock(type) {
@@ -65,8 +94,8 @@ function panelBlock(type, isControl) {
  * (labview-captures/create-paste/, report §A4). Returns `{ g, id, wired }`, or
  * `{ g, motivo }` when there is no block for that type.
  */
-export function createOnTerminal(g, cat, { terminal, type, kind, x, y, panelX = x, panelY = y, label, scope, configOverride }) {
-  const baseBlock = blockForTerminal(type, kind);
+export function createOnTerminal(g, cat, { terminal, type, kind, x, y, panelX = x, panelY = y, label, scope, configOverride, source }) {
+  const baseBlock = blockForTerminal(type, kind, source);
   if (!baseBlock) return { g, motivo: `There is no ${kind} for this type yet.` };
   const block = configOverride ? { ...baseBlock, config: { ...baseBlock.config, ...configOverride } } : baseBlock;
   const created = kind === "constant" ? crearNodo(g, cat, block.tipo, x, y) : crearEnPanel(g, cat, block.tipo, panelX, panelY, label, block.config);
