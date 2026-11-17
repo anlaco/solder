@@ -24,7 +24,7 @@ function elementsHtml(cluster, { drawElement, boxOf, measure, value }) {
   return cluster.config.elements
     .map((element, index) => {
       const node = elementNode(cluster, element, index);
-      const withRunValue = value(cluster, node);
+      const withRunValue = value(cluster, node, index);
       const label = node.label?.text ? elementLabelHtml(node.label.text, elementLabelBox(node, boxOf(node), measure)) : "";
       return drawElement(withRunValue) + label;
     })
@@ -44,7 +44,7 @@ function reorderHtml(cluster, { boxOf, measure, reorder }) {
 
 /**
  * The cluster's HTML. `frame`: as the other objects'; `tools`: `drawElement(node)`, `boxOf(node)` (an element's box
- * from its place), `measure` (the text measure), `value(cluster, node)` (the element as it holds its value now) and
+ * from its place), `measure` (the text measure), `value(cluster, node, index)` (element `index` as it holds its value now) and
  * `reorder`, the panel's Reorder Controls In Cluster state, if any (cluster-reorder.mjs).
  */
 export function clusterObject(cluster, frame, tools) {

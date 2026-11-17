@@ -31,6 +31,8 @@
 import { CONSTANTES, MEDIDAS_ARRAY_2D, MEDIDAS_ARRAY_INDEFINIDA, MEDIDAS_ESTRUCTURA, PANEL_ARRAY_TERMINAL_MENU, PASO_ENTRADAS_DOS_DIMENSIONES, anchoElementoArray, tipoElementoArray, valoresArray, MEDIDAS_SECUENCIA, TAM_BORDE, ERROR_SELECTOR, activoDe, anchoSecuencia, anchosMarcos, borderFaceFor, caja, cajaEtiqueta, codosPorDefecto, dentroDe, esApilada, esBooleano, esBorde, esCase, esEstructura, esFlat, esSecuencia, etiquetaMarco, selectorKind, extremos, visibles, izquierdasMarcos, marcoEnX, marcosDe, medidasCompuesto, moverTramo, rama, ruta, terminales } from "./diagram-view.mjs";
 import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
+import * as BN from "./bundle-nodes.mjs";
+import * as BM from "./bundle-menus.mjs";
 import { ANY_ERROR, NO_ERROR, errorValuesFromBoolean, isAnyErrorValue, isNoError } from "../../../core/model/error-case.mjs";
 import * as PN from "./property-nodes.mjs";
 import * as PNM from "./property-node-menus.mjs";
@@ -94,7 +96,9 @@ const grabPoint = (block, ctx, config) => {
   // A Cluster Constant hangs by its centre (unverified: LabVIEW's drop was only measured with the point on a constant's centre).
   if (block === CC.BLOCK) return { x: CC.MEASURES.size / 2, y: CC.MEASURES.size / 2 };
   // Unbundle By Name hangs by its centre too (cluster palette, stage 1: dropped at the click, centred).
-  return block === UN.BLOCK || block === UN.BUNDLE_BLOCK ? UN.grabPoint(ctx.cat, ctx.medir, block) : AGARRE;
+  if (block === UN.BLOCK || block === UN.BUNDLE_BLOCK) return UN.grabPoint(ctx.cat, ctx.medir, block);
+  // Bundle and Unbundle too (unverified: not measured how they hang).
+  return block === BN.BUNDLE || block === BN.UNBUNDLE ? BN.grabPoint(block) : AGARRE;
 };
 
 const lejos = (a, p) => Math.abs(p.x - a.x) > UMBRAL || Math.abs(p.y - a.y) > UMBRAL;
@@ -1103,6 +1107,7 @@ export function moverA(d, ctx, p) {
       if (esEstructura(accion.g0.nodos.find((k) => k.id === accion.nodo), ctx)) return { ...d, g: estirarEstructura(accion, p, ctx) };
       if (arr && ExpressNodes.isExpressNode(arr, ctx.cat)) return { ...d, g: ExpressNodes.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / ExpressNodes.ROW_PITCH)) };
       if (UN.isByName(arr)) return { ...d, g: UN.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / UN.ROW_STEP)) };
+      if (BN.isBundle(arr)) return { ...d, g: BN.stretchedRows(accion.g0, accion.nodo, Math.round((p.y - accion.y0) / BN.ROW_PITCH)) };
       if (arr && FN.isFormatNode(arr, ctx.cat)) return { ...d, g: FN.stretchedRows(accion.g0, accion.nodo, ctx.cat, Math.round((p.y - accion.y0) / FN.FORMAT_ROW_STEP)) };
       // Cada celda que se estira es una entrada más; por arriba, las nuevas
       // entran encima y las que había conservan sus cables.
@@ -1538,6 +1543,9 @@ export function orden(d, id, ctx, inv) {
   // A Cluster Constant's menus (cluster-constant-menus.mjs).
   const clusterConstantResult = CCM.menuCommand(d, id, ctx);
   if (clusterConstantResult) return clusterConstantResult;
+  // Add Input and Remove Input of a Bundle's input row (bundle-menus.mjs).
+  const bundleResult = BM.menuCommand(d, id);
+  if (bundleResult) return bundleResult;
   const { nodo, puerto } = d.menu;
   const cerrar = (g) => ({ ...d, g, menu: null });
   if (id.endsWith(".size-to-text") && isFreeLabel(nodoPor(d.g, nodo))) return cerrar(FL.toggleSizeToText(d.g, nodo, ctx.medir, FL.canvasOf(nodoPor(d.g, nodo))));
@@ -1827,6 +1835,7 @@ function nodeVariants(d, ctx) {
   // Remove Parameter on the only row of Scan From String does nothing: there is always one.
   if (n?.tipo === "scan-from-string" && (n.config?.inputs ?? 1) <= 1) return { desactivados: new Set([`${r}.remove-parameter`]) };
   if (UN.isByName(n)) return unbundleVariants(d, ctx, n);
+  if (n && BN.isBundleNode(n) && ctx) return BM.menuVariants(d, ctx, n);
   if (PN.isPropertyNode(n) && ctx) return PNM.nodeVariants(d, ctx);
   if (VSR.isOviServerReference(n)) return VSR.menuVariants(n);
   if (n && (r === PolymorphicNodes.MENU_ROOT || r === PolymorphicNodes.RING_MENU_ROOT) && ctx) return PolymorphicNodes.menuVariants(n, ctx.cat, r === PolymorphicNodes.MENU_ROOT ? PolymorphicNodes.SELECT_TYPE_ROW : r);

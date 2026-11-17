@@ -843,6 +843,14 @@ Editor rules 135–137 (`05-editor.md` §26). Tests: `test/editor/cluster-panel.
   or not (`--cluster-constant-frame`, `--cluster-constant-frame-mixed`, `--cluster-constant-interior`); elements drawn as the diagram
   draws that constant, with no label, clipped by the interior; the output glyph (9 × 6: a black diamond and a 3 × 3 ring) only while
   the frame is hovered; eight 6 × 6 `#0078D4` handles while selected. Unverified: the ring's colour on a magenta frame.
+- **Bundle and Unbundle (diagram, stage d, rules 143-144):** 32 px wide, 9 / 17 / 25 / 33 / 41 px tall for 1-5 rows (a 1 px
+  frame `--format-node-border` and 8 px a row), fill `--node-fill`. Bundle: a white 14 px cell on the left with 1 px black
+  separators (`--bundle-separator`), a black divider at x 15, the yellow cell the cluster enters, a divider at x 23 and the arrow
+  cell; Unbundle is its mirror (arrow cell left, white cell right from x 17). A 5 px type mark per row, no labels: I32
+  `--bundle-mark-integer` (#0000ff), DBL `--bundle-mark-float` (#ff7f00), TF `--bundle-mark-boolean` (#007f00), abc
+  `--bundle-mark-string` (#ff00ff), a three-cell cluster glyph in the cluster's wire colour. Unverified: the other
+  representations' marks (their name, in their family's colour), the mark of a type with none (a small outline square), the
+  exact arrow and the pixels of the I32 mark.
 
 ## History
 

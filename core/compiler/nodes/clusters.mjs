@@ -15,11 +15,23 @@ function writeField(node, field, input, address) {
   return [ins("i32.const", address), ...node.entrada(input), ins(`${wasmTypeOf(field.tipo)}.store`)];
 }
 
-/** Bundle: each element input into its field of a new block. */
+/** Bundle's inputs: the top cluster first, then one per element (cluster-node-ports.mjs). */
+const BUNDLE_CLUSTER_INPUT = 0;
+const bundleRowInput = (row) => row + 1;
+
+/**
+ * Bundle (DT-098): with the top cluster wired, a copy of it in a block of its own with each wired row's element written
+ * over, the others passing through (2026-11-17 Q3: 3, TRUE, "hi" with row 2 wired to "yo" gives 3 True yo); without it,
+ * every row into its field of a new block.
+ */
 export function bundle(node) {
   const layout = clusterLayout(node.tOut(0));
   const block = node.bufer(layout.tam);
-  const code = layout.campos.flatMap((field, input) => writeField(node, field, input, block + field.off));
+  const topWired = node.cableada(BUNDLE_CLUSTER_INPUT);
+  const code = topWired ? copyValue(node.tOut(0), node.entrada(BUNDLE_CLUSTER_INPUT), block, node.temporal) : [];
+  layout.campos.forEach((field, row) => {
+    if (!topWired || node.cableada(bundleRowInput(row))) code.push(...writeField(node, field, bundleRowInput(row), block + field.off));
+  });
   return [...code, ins("i32.const", block)];
 }
 

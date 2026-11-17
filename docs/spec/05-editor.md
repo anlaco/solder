@@ -1995,3 +1995,44 @@ Change to Control, Create and Reorder on the diagram are stage (c2), rules 141 a
 > without Representation and Display Format), the children of an element's Visible Items ▸ and Create ▸, and View Cluster As Icon's
 > effect. Code: `cluster-constant-menus.mjs`, `cluster-constant-reorder-view.mjs`; hooks: the diagram's `contenido`, the window's
 > press, key and right-click handlers (shared with the panel's mode).
+
+Stage (d), 2026-11-17: Bundle and Unbundle on the Block Diagram, measured in `labview-captures/reports/2026-11-16-cluster-diagram.md`
+(Q3, Q4) and `2026-11-17-bundle-unbundle.md` (Q1-Q6); the core is DT-098.
+
+> **Rule 143 — Bundle.** Functions ▸ Programming ▸ Cluster, Class & Variant ▸ **Bundle** is a live node (`bundle`), 32 px wide and
+> 9 + 8 (rows − 1) px tall, with the cluster input on the top edge, one input per row on the left edge and `output cluster` at the
+> middle of the right edge; unwired it shows **two rows** (32 × 17). Wired at the top it follows the wired cluster at once: its
+> `config.type` is a copy of the cluster's type (DT-098), the rows are its elements, each may stay unwired and a wire stays on its
+> **row index**, not on its element. An unwired-top Bundle is stretched by a 6 × 6 handle at the middle of its bottom edge, which
+> changes `config.rows` (never below 1; the wires of rows that go away go too, unverified); a Bundle wired at the top shows the handle
+> and a drag changes nothing (Q1). Its output with every row wired is a cluster of the rows' types, unnamed; with a row unwired the
+> output has no type and the Error list reads "Bundle: Contains unwired or bad terminal" (Q2, the generic unwired-input row, whose
+> Details are Solder's own words). Menus (`context.bundle` for the node and its output, `context.bundle-row` for an input): Visible
+> Items ▸, Help, Examples, Description and Tip..., |, Add Breakpoint, |, Cluster, Class, & Variant Palette ▸, **[Numeric Palette ▸ on a
+> typed numeric row, Add Input, Remove Input on a row]**, Create ▸ (Constant, Control, Indicator, Channel Writer..., |, All Controls and
+> Indicators, All Constants), |, Replace ▸, |, Remove and Rewire, |, Properties; built: Visible Items (the row only), Add Breakpoint,
+> Create ▸ and **Add Input / Remove Input on an unwired-top Bundle** (insert a row after, or remove, the clicked row, the wires of
+> the rows below moving with them); the rest greyed with its need. Create ▸ Constant, Control and Indicator are **greyed while the
+> terminal's type is undefined**: LabVIEW crashed on Create ▸ Indicator on an undefined output, so Solder never offers it. On a typed
+> output, Create ▸ Indicator (or Control) makes a **cluster panel object** named "output cluster" whose elements are panel objects of
+> the types, in order, with empty labels, stacked with 1 px between them (108 × 58 for a DBL and a String, Q3). Unverified: the order
+> of Numeric Palette, Add Input and Remove Input among the rows, where Add Input puts its new row, **Add Input and Remove Input on a
+> Bundle wired at the top (Add Input did nothing, Remove Input untried: here both do nothing)**, Remove Input on the last row (greyed),
+> Create on an untyped input row (greyed), the unwired Bundle's Create ▸ Constant. Verified by `test/editor/bundle-unbundle.test.mjs`
+> (sizes, terminals, stretching, rows, menus, Create and the run of a Cluster Constant (3, TRUE, "hi") with "yo" on row 2: `[3, true,
+> "yo"]`). Code: `bundle-nodes.mjs`, `bundle-menus.mjs`, `cluster-from-type.mjs`; hooks in `diagram-view.mjs` (box, terminals, body,
+> handle, menu root), `diagram-editing.mjs` (stretch, menu rows and commands, grab point) and `editor-window.mjs` (`settleEdit`).
+
+> **Rule 144 — Unbundle, and keeping both in step with the wired cluster.** **Unbundle** is a live node (`unbundle`), 32 px wide, one
+> output per element of the wired cluster on the right edge in cluster order, with a type mark at each (the mirror of Bundle's
+> drawing); unwired it is 32 × 17 with two empty cells and **no output** (LabVIEW shows one output: unverified how it is drawn); it has
+> no handle and cannot be resized (Q4). Its menu `context.unbundle` is the same for the body and an output row: Visible Items ▸, Help,
+> Examples, Description and Tip..., |, Add Breakpoint, |, Cluster, Class, & Variant Palette ▸, [Numeric Palette ▸ on a numeric row],
+> Create ▸, |, Replace ▸, |, Remove and Rewire, |, Properties; on the body Create ▸ Constant, Control and Indicator are greyed (no
+> terminal under the pointer; unverified), on an output row they work as on any output and name the indicator after the element's label.
+> **Both nodes follow the cluster wired to them after every change of the graph**: `settleEdit` of the editor window, through which
+> `cambiarDiagrama` and `cambiarPanel` pass every edit (a wire, a deleted node or control, an element dropped into or deleted from a
+> Cluster Constant, a reorder, Change to, a paste), calls `followWiredClusters` (core). Undo and redo restore graphs that were already
+> settled and the settling is part of the edit, so a gesture stays one step. Verified by the editor-state tests of the same file
+> (dropping an element into the constant adds a last row to both; deleting the first leaves each wire on its index, broken against the
+> Boolean) and by a check that `settleEdit` calls it. Unverified: what LabVIEW does with the wires of rows that vanish.

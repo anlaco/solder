@@ -11,6 +11,7 @@
 //
 // A pure module with no mutation: every operation returns a new diagram.
 
+import { bundlePorts, rowsClusterType, unbundlePorts } from "./cluster-node-ports.mjs";
 import { connectorPattern, connectorTerminals } from "./connector.mjs";
 import { LINKED_CONTROL_TYPE, isImplicit, loadProperties } from "./property-node.mjs";
 import { callLibraryPorts } from "./call-library.mjs";
@@ -44,11 +45,9 @@ export function cargarCatalogo(datos, propertiesData) {
       if (b[dir] === "dynamic:property-rows") return (properties?.ports(nodo) ?? { in: [{ name: "error-in", label: "error in (no error)", type: "error", default: 0 }], out: [{ name: "error-out", label: "error out", type: "error" }] })[dir].map((p) => ({ ...p, dir }));
       // The Call Library Function Node: path, error, the return value and a row per parameter (DT-080).
       if (b[dir] === "dynamic:call-library") return callLibraryPorts(nodo)[dir].map((p) => ({ ...p, dir }));
-      // Bundle y Unbundle: un puerto por campo del cluster de `config.type`.
-      if (b[dir] === "dynamic:cluster-fields") {
-        const campos = nodo.config?.type?.cluster ?? [];
-        return campos.map((f, i) => ({ name: `campo-${i}`, label: f.name, type: f.type, dir }));
-      }
+      // Bundle and Unbundle: one row per element of the wired cluster's copied type (DT-098, cluster-node-ports.mjs).
+      if (b[dir] === "dynamic:bundle-rows") return bundlePorts(nodo, dir).map((p) => ({ ...p, dir }));
+      if (b[dir] === "dynamic:unbundle-rows") return unbundlePorts(nodo, dir).map((p) => ({ ...p, dir }));
       // Unbundle By Name: one output per named row; a row not named yet has no terminal (DT-050).
       if (b[dir] === "dynamic:named-fields") {
         const rows = nodo.config?.items ?? b.config.items.value;
@@ -916,6 +915,8 @@ function sustituir(t, vars) {
     if ("ifWired" in t) return sustituir(vars[t.ifWired] ? t.then : t.else, vars);
     if ("var" in t) return vars[t.var];
     if ("clusterOf" in t) return vars[t.clusterOf];
+    // An unwired Bundle's output: the cluster of its rows' types (DT-098).
+    if ("rowsCluster" in t) return rowsClusterType(t.rowsCluster, vars);
     // An element looked up by name in the cluster wired in; none of that name, no type (DT-050).
     if ("fieldOf" in t) return vars[t.fieldOf]?.cluster.find((f) => f.name === t.field)?.type;
     if ("array" in t) {

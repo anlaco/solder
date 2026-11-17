@@ -30,6 +30,7 @@ import * as DC from "../block-diagram/diagram-clipboard.mjs";
 import * as ED from "../block-diagram/diagram-editing.mjs";
 import { DAQ_NAME_DROPDOWN_MENU } from "../common/daq-name-menus.mjs";
 import * as UN from "../block-diagram/unbundle-by-name.mjs";
+import { followWiredClusters } from "../../../core/model/wired-clusters.mjs";
 import * as PN from "../block-diagram/property-nodes.mjs";
 import * as EM from "./edit-menu.mjs";
 import * as Et from "../common/labels.mjs";
@@ -1355,11 +1356,14 @@ function cambiar(nuevo) {
  * The one place where an edit is settled before it is drawn and kept: a deleted control or indicator leaves the
  * connector pane too (its terminal goes with it), and a polymorphic node on Automatic calls the instance its wires
  * pick, its wires to terminals the new instance lacks left loose (DT-074). The adaptation belongs to the edit that
- * caused it, not to an undo step of its own. `before` is the view the edit started from.
+ * caused it, not to an undo step of its own. A Bundle or Unbundle follows the cluster wired to it, so after every edit —a
+ * wire, a deleted node, an element of a Cluster Constant, a reorder, a Change to, a paste— it takes the wired cluster's
+ * type again (DT-098); the undo and redo restore graphs that were already settled. `before` is the view the edit started from.
  */
 function settleEdit(before, view) {
   const pruned = pruneConnector(view.g, cat);
-  const g = PolymorphicNodes.settlePolymorphicNodes(before.g, pruned, cat, ED.terminalPlacer(ctx));
+  const followed = followWiredClusters(pruned, cat);
+  const g = PolymorphicNodes.settlePolymorphicNodes(before.g, followed, cat, ED.terminalPlacer(ctx));
   return g === view.g ? view : { ...view, g };
 }
 

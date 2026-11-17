@@ -349,6 +349,17 @@
   --cluster-constant-glyph-diamond: #000000;
 }
 
+/* Bundle and Unbundle on the Block Diagram (DT-095 stage d; reports/2026-11-17-bundle-unbundle.md Q5): black lines between the
+   rows of the white cell, and the type marks in it: I32 blue, DBL orange, TF green, abc magenta (the other representations
+   take the colour of their family; a cluster's mark takes its wire's colour). */
+:root {
+  --bundle-separator: #000000;
+  --bundle-mark-integer: #0000ff;
+  --bundle-mark-float: #ff7f00;
+  --bundle-mark-boolean: #007f00;
+  --bundle-mark-string: #ff00ff;
+}
+
 /* Reorder Controls In Cluster... (reports/2026-11-17-cluster-reorder.md §1-2): the darkened panel, the frames and badges,
    and the toolbar's ✓ and ✗ (✗ grey until the order changes). */
 :root {

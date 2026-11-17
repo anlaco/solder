@@ -13,6 +13,8 @@ import { CONTROLES, MEDIDAS_PANEL, cajaObjeto, caja as panelBox } from "../front
 import * as Gr from "../../../core/model/graph.mjs";
 import { blockForTerminal, createOnTerminal } from "../../../core/model/create-on-terminal.mjs";
 import { daqNameText, isDaqName } from "../../../core/model/daq-name.mjs";
+import { esCluster, esError } from "../../../core/model/types.mjs";
+import { withElementsOfType } from "./cluster-from-type.mjs";
 
 /**
  * Gap in px between a new constant and the node it is wired to (from the right
@@ -97,11 +99,11 @@ export const borderTerminalPort = (node, ctx) => (node.tipo.startsWith("loop-") 
 /**
  * The terminal a Create row means when the menu was opened on a node's body: a control reference is all terminal, so
  * its body is its one terminal (seen: its Create ▸ Constant, Control and Indicator are enabled, reports/2026-11-03-
- * control-references.md Q3); so is a DAQ name constant's, whose menu has Create ▸ (reports/2026-11-06-daqmx-types.md); other
- * nodes have none.
+ * control-references.md Q3); so is a DAQ name constant's, whose menu has Create ▸ (reports/2026-11-06-daqmx-types.md); and a
+ * Bundle's body stands for its output cluster (reports/2026-11-17-bundle-unbundle.md Q6). Other nodes have none.
  */
 export const bodyTerminalPort = (node) => BODY_TERMINAL[node?.tipo];
-const BODY_TERMINAL = { "control-reference": "reference", "daq-name-constant": "result" };
+const BODY_TERMINAL = { "control-reference": "reference", "daq-name-constant": "result", bundle: "result" };
 
 /**
  * The panel object that an input terminal of a subOVI call stands for (the selected instance's, for a polymorphic
@@ -165,6 +167,9 @@ function unwiredBox(size, nodeBox, kind) {
   return { x: Math.round(nodeBox.x), y: Math.round(nodeBox.y - size.alto), ancho: size.ancho, alto: size.alto };
 }
 
+/** Does Create ▸ `kind` on a terminal of `type` make a user's cluster, whose elements are the type's? (The error cluster has a style of its own.) */
+const isUserClusterPanelObject = (type, kind) => kind !== "constant" && esCluster(type) && !esError(type);
+
 /** Moves a diagram node (not its panel object) so that its box starts at (x, y). */
 const moveTo = (g, id, x, y) => ({ ...g, nodos: g.nodos.map((n) => (n.id === id ? { ...n, x, y } : n)) });
 
@@ -190,8 +195,11 @@ export function createForTerminal(g, ctx, { nodo, puerto, kind, panelSize, stack
   const scope = scopeOfTerminal(g, ctx.cat, node, terminal);
   // A terminal with no name (a control reference constant's) gives the object the label it is born with (unverified).
   const label = special?.label ?? (terminal.etiqueta || defaultLabel(block));
-  const created = createOnTerminal(g, ctx.cat, { terminal: { nodo, puerto, dir: terminal.dir }, type, kind, x: 0, y: 0, panelX: slot.x, panelY: slot.y, label, scope, configOverride: special?.configOverride, source });
+  let created = createOnTerminal(g, ctx.cat, { terminal: { nodo, puerto, dir: terminal.dir }, type, kind, x: 0, y: 0, panelX: slot.x, panelY: slot.y, label, scope, configOverride: special?.configOverride, source });
   if (created.motivo) return created;
+  const typed = isUserClusterPanelObject(type, kind) ? withElementsOfType(created.g, ctx.cat, created.id, type, kind) : { g: created.g };
+  if (typed.motivo) return { g, motivo: typed.motivo };
+  created = { ...created, g: typed.g };
   const size = caja(nodeOf(created.g, created.id), ctx);
   const gap = kind === "constant" ? (CONSTANT_GAP_BY_BLOCK[node.tipo] ?? DEFAULT_CONSTANT_GAP) : TERMINAL_GAP;
   const wantedBox = created.wired ? wiredBox(size, terminal, gap) : unwiredBox(size, caja(node, ctx), kind);
@@ -263,8 +271,11 @@ export function createOnWire(g, ctx, { cable, kind, point, panelSize }) {
   const label = sourceName || (defaultLabel(block) ?? "Numeric");
   // The wire's source output: an indicator fits it and is wired; a constant or a control does not and is left unwired.
   const terminal = { nodo: wire.de.nodo, puerto: wire.de.puerto, dir: "out" };
-  const created = createOnTerminal(g, ctx.cat, { terminal, type, kind, x: 0, y: 0, panelX: slot.x, panelY: slot.y, label, scope: { dentro: source.dentro, marco: source.marco } });
+  let created = createOnTerminal(g, ctx.cat, { terminal, type, kind, x: 0, y: 0, panelX: slot.x, panelY: slot.y, label, scope: { dentro: source.dentro, marco: source.marco } });
   if (created.motivo) return created;
+  const typed = isUserClusterPanelObject(type, kind) ? withElementsOfType(created.g, ctx.cat, created.id, type, kind) : { g: created.g };
+  if (typed.motivo) return { g, motivo: typed.motivo };
+  created = { ...created, g: typed.g };
   const size = caja(nodeOf(created.g, created.id), ctx);
   const top = point.y + (kind === "constant" ? BELOW_WIRE.constant : BELOW_WIRE.panelObject);
   return { g: moveTo(created.g, created.id, Math.round(point.x - size.ancho / 2), Math.round(top)), id: created.id };

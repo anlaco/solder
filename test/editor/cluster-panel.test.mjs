@@ -8,6 +8,7 @@ import { test } from "node:test";
 import * as CV from "../../core/model/control-values.mjs";
 import * as Gr from "../../core/model/graph.mjs";
 import { aTexto, leer } from "../../core/model/qvi-format.mjs";
+import { setClusterElements } from "../../core/model/user-cluster.mjs";
 import { aspecto, COLORES } from "../../core/model/types.mjs";
 import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
 import * as ED from "../../editor/src/block-diagram/diagram-editing.mjs";
@@ -297,4 +298,18 @@ test("Change to Indicator flips the shell, every element and the terminal, and C
   assert.deepEqual(shellBack.config.elements.map((e) => e.tipo), ["control", "bool-control", "str-control"]);
   assert.equal(shellBack.config.elements[1].config.style, "push-button");
   assert.equal(leer(aTexto({ ...flipped.g, cables: [] }, CAT), CAT).nodos.find((n) => n.id === cluster.id).config.elements[2].tipo, "str-indicator", "it survives the file");
+});
+
+test("while running, each element shows the value at its place in the cluster's list, whatever its label", () => {
+  // A cluster's value is its elements' values in cluster order (DT-095 §1); two unlabelled elements, as Create ▸ Indicator
+  // on a Bundle makes them, would share one value if it were looked up by label.
+  const { p, cluster } = panelWithCluster();
+  const elements = [
+    { tipo: "str-control", label: { text: "" }, config: { value: "" }, x: 2, y: 2 },
+    { tipo: "str-control", label: { text: "" }, config: { value: "" }, x: 2, y: 40 },
+  ];
+  const withElements = { ...p, g: setClusterElements(p.g, CAT, cluster.id, elements) };
+  const html = P.contenido({ ...withElements, valores: { [cluster.id]: ["first run value", "second run value"] } }, CTX);
+  assert.match(html, /first run value/);
+  assert.match(html, /second run value/);
 });

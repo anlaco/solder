@@ -23,7 +23,7 @@
 <!-- coverage:summary -->
 | Area | Covered | |
 |------|---------|---|
-| Language and types | 13 / 25 (52 %) | `█████░░░░░` |
+| Language and types | 14 / 25 (56 %) | `██████░░░░` |
 | Structures | 9 / 22 (41 %) | `████░░░░░░` |
 | Execution | 8 / 15 (53 %) | `█████░░░░░` |
 | Diagram editing | 13 / 30 (43 %) | `████░░░░░░` |
@@ -32,10 +32,10 @@
 | Debugging | 8 / 16 (50 %) | `█████░░░░░` |
 | Files | 5 / 15 (33 %) | `███░░░░░░░` |
 | Instruments and communication | 14 / 30 (47 %) | `█████░░░░░` |
-| Functions palette | 212 / 563 (38 %) | `████░░░░░░` |
+| Functions palette | 214 / 563 (38 %) | `████░░░░░░` |
 | Controls palette | 34 / 92 (37 %) | `████░░░░░░` |
 | Windows and dialogs | 143 / 399 (36 %) | `████░░░░░░` |
-| Right-click menus | 615 / 2270 (27 %) | `███░░░░░░░` |
+| Right-click menus | 638 / 2322 (27 %) | `███░░░░░░░` |
 <!-- /coverage:summary -->
 
 ## Features
@@ -54,7 +54,7 @@
 - [x] Arrays of one and two dimensions
 - [ ] Arrays of three or more dimensions
 - [x] The error cluster
-- [ ] Clusters made by the user (cluster control, indicator and constant done, 2026-11-17; Bundle and Unbundle taking the wired cluster left; Unbundle By Name and Bundle By Name exist)
+- [x] Clusters made by the user (cluster control, indicator and constant done, 2026-11-17; Bundle and Unbundle following the wired cluster done, 2026-11-17; Unbundle By Name and Bundle By Name exist)
 - [x] Path
 - [x] File refnum
 - [x] VISA resource name
@@ -275,7 +275,7 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 |------------|---------|---|
 | Programming ▸ Structures | 4 / 16 (25 %) | `███░░░░░░░` |
 | Programming ▸ Array | 17 / 34 (50 %) | `█████░░░░░` |
-| Programming ▸ Cluster, Class, & Variant | 3 / 19 (16 %) | `██░░░░░░░░` |
+| Programming ▸ Cluster, Class, & Variant | 5 / 19 (26 %) | `███░░░░░░░` |
 | Programming ▸ Numeric | 71 / 92 (77 %) | `████████░░` |
 | Programming ▸ Boolean | 16 / 16 (100 %) | `██████████` |
 | Programming ▸ String | 35 / 66 (53 %) | `█████░░░░░` |
@@ -353,5 +353,5 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Menus | Covered | |
 |-------|---------|---|
-| Every right-click menu captured | 615 / 2270 (27 %) | `███░░░░░░░` |
+| Every right-click menu captured | 638 / 2322 (27 %) | `███░░░░░░░` |
 <!-- /coverage:inventory -->

@@ -482,9 +482,14 @@ function freeLabelObject(n, ctx, selected, p) {
   return `<div class="${classes}" data-nodo="${FL.esc(n.id)}" style="left:${FL.px(box.x)};top:${FL.px(box.y)};width:${FL.px(box.ancho)};height:${FL.px(box.alto)}"><div class="${FL.textClass(n, p.edicion)}">${FL.contentHtml(n, p.edicion)}</div>${handles}</div>`;
 }
 
-/** An element of a cluster as it holds its value now: while running, the value its cluster received under its name. */
-function elementHoldingValue(cluster, node, valores) {
-  const running = valores?.[cluster.id]?.[node.label?.text ?? ""];
+/**
+ * Element `index` of a cluster as it holds its value now: while running, the value at its place in the list its cluster
+ * received, since a cluster's value is its elements' values in cluster order (DT-095 §1); never by label, which
+ * elements may share or lack.
+ */
+function elementHoldingValue(cluster, node, index, valores) {
+  const received = valores?.[cluster.id];
+  const running = Array.isArray(received) ? received[index] : undefined;
   return running === undefined ? node : { ...node, config: { ...node.config, value: running } };
 }
 
@@ -495,7 +500,7 @@ function panelObject(n, ctx, selected, p, resolvedTypes, asElement = false) {
   const frame = { id: asElement ? "" : n.id, box: caja(n), label: n.label?.text ?? "", selected, editing: !!editing, isControl: isControlNode(n), classes: disabledClasses(p.runProps, n.id), element: asElement };
   const control = CONTROLES[n.tipo];
   if (isUserCluster(n)) {
-    const tools = { drawElement: (node) => panelObject(node, ctx, false, p, resolvedTypes, true), boxOf: (node) => caja(node), measure: ctx.medir, value: (cluster, node) => elementHoldingValue(cluster, node, p.valores), reorder: p.reorder };
+    const tools = { drawElement: (node) => panelObject(node, ctx, false, p, resolvedTypes, true), boxOf: (node) => caja(node), measure: ctx.medir, value: (cluster, node, index) => elementHoldingValue(cluster, node, index, p.valores), reorder: p.reorder };
     return clusterObject(n, frame, tools);
   }
   if (isGraph(n)) {

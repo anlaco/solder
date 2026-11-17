@@ -4873,3 +4873,48 @@ and shows a cluster serves them.**
 | Round To Nearest of a Time Stamp rounds a half toward +∞ | the eight measured cases as a test | Measured, not built |
 | A sum of a Time Stamp and a number is exact | a test that adds 2^-30 s to a date of 2026 and reads both integers | Not built |
 | The Waveform's layout is LabVIEW's flattened order | the measurement of §6, then a test | **Unverified** in LabVIEW |
+
+## DT-098
+
+**Bundle and Unbundle keep in `config.type` a copy of the type of the cluster wired to them, refreshed by the core
+after each change of the diagram; their rows are that copy's elements, named by index, so a wire stays on its row
+when the cluster changes, as in LabVIEW.**
+
+- **Status:** Accepted on 2026-11-17 by the developer, between the two options proposed the same day (a copy in the
+  configuration, or terminals derived from the wired type while types are resolved), for stage (d) of
+  [DT-095](#dt-095) after measuring LabVIEW 2026 Q3
+  ([`bundle-unbundle`](../../labview-captures/reports/2026-11-17-bundle-unbundle.md)).
+- **Why:** an Unbundle, and a Bundle wired at the top, have as many rows as the wired cluster has elements and
+  reshape at once when an element is added to or removed from the source; a wire stays on its row's index, not on the
+  element, so removing the first element leaves row 0's wire on what was the second, broken if its type no longer
+  fits (measured). A node's terminals come from its configuration alone today (`cat.puertos`): Index Array keeps its
+  dimensions in `config.dims` the same way, and DT-096 keeps a copy of a type definition on the object.
+
+### Decision
+
+1. **The copy.** `config.type` of a Bundle wired at the top, or of a wired Unbundle, is the wired cluster's type. The
+   terminals come from it (`core/model/cluster-node-ports.mjs`): rows `campo-0`, `campo-1`… in cluster order, an
+   Unbundle's named after their elements. Without it an Unbundle has no rows, and a Bundle has `config.rows` element
+   inputs (two by default, as measured), each taking the type wired to it.
+2. **The refresh.** `followWiredClusters` (`core/model/wired-clusters.mjs`) sets each copy from what is wired, repeating
+   until nothing changes (a change reaches an Unbundle fed by a Bundle). The editor calls it after each change of the
+   graph; the compiler never does. Wires of rows that no longer exist go away, as Index Array's do (unverified for
+   Bundle and Unbundle).
+3. **A stale copy breaks, it is never read.** The cluster terminal's type is the copy, so a wire whose cluster differs
+   from it (an `.ovi` edited by hand) is a broken wire instead of a read with the wrong layout.
+4. **Bundle's two modes, as measured.** Wired at the top, every row is optional: the cluster is copied and each wired
+   row's element written over (3, TRUE, "hi" with row 2 wired to "yo" gives 3 True yo). Unwired at the top, every row
+   is required and the output is a cluster of the rows' types in row order with unnamed elements; while one is unwired
+   the output has no type ("Contains unwired or bad terminal").
+5. **The format.** Nothing new: `config.type` and `config.rows` are configuration the `.ovi` already stores.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| An Unbundle takes one output per element of the wired cluster, in cluster order | `test/core/bundle-unbundle.test.mjs` | **Verified** (2026-11-17) |
+| A Bundle wired at the top passes its unwired rows through: 3 True yo | the same, a run | **Verified** (measured and built, 2026-11-17) |
+| An unwired Bundle's output is its rows' cluster in row order; one row unwired, no type | the same | **Verified** |
+| Wires stay on their row's index when the source changes | the same | **Verified** (measured and built) |
+| A copy that does not match the wired cluster breaks the wire | the same | **Verified** |
+| Wires of rows that vanish go away | — | **Unverified** in LabVIEW |

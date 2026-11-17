@@ -17,6 +17,8 @@ import { PANE_SIZE } from "../../../core/model/connector.mjs";
 import { isSubOVI, portsWithAnchors } from "./subovi-nodes.mjs";
 import * as FN from "./format-nodes.mjs";
 import * as UN from "./unbundle-by-name.mjs";
+import * as BN from "./bundle-nodes.mjs";
+import * as BM from "./bundle-menus.mjs";
 import * as VN from "./visa-nodes.mjs";
 import * as CL from "./call-library-nodes.mjs";
 import * as CLT from "./call-library-terminal-menu.mjs";
@@ -576,6 +578,7 @@ export function caja(n, ctx, edicion) {
   if (FN.isFormatNode(n, ctx.cat)) return { x: n.x, y: n.y, ...FN.formatNodeSize(n, ctx.cat) };
   if (ExpressNodes.isExpressNode(n, ctx.cat)) return ExpressNodes.expressBox(n, ctx.cat);
   if (UN.isByName(n)) return { x: n.x, y: n.y, ...UN.unbundleSize(n, ctx.cat, ctx.medir) };
+  if (BN.isBundleNode(n)) return { x: n.x, y: n.y, ...BN.size(n) };
   if (PN.isPropertyNode(n)) return { x: n.x, y: n.y, ...PN.propertyNodeSize(n, ctx.cat, ctx.medir) };
   if (CL.isCallLibraryNode(n)) return { x: n.x, y: n.y, ...CL.callLibrarySize(n) };
   if (CR.isControlReference(n)) return { x: n.x, y: n.y, ...CR.referenceSize(n, ctx.medir) };
@@ -683,6 +686,7 @@ export function terminales(n, ctx, edicion) {
   if (FN.isFormatNode(n, ctx.cat)) return FN.formatNodeTerminals(n, k, ctx.cat);
   if (ExpressNodes.isExpressNode(n, ctx.cat)) return ExpressNodes.expressTerminals(n, k, ctx.cat);
   if (UN.isByName(n)) return UN.unbundleTerminals(n, k, ctx.cat);
+  if (BN.isBundleNode(n)) return BN.terminals(n, k, ctx.cat);
   if (VN.isVisaNode(n)) return VN.visaTerminals(n, k, ctx.cat);
   if (PN.isPropertyNode(n)) return PN.propertyNodeTerminals(n, k, ctx.cat);
   if (CL.isCallLibraryNode(n)) return CL.callLibraryTerminals(n, k);
@@ -1362,6 +1366,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
     cuerpo = ExpressNodes.expressBody(n, k, ctx.cat, resueltos, ctx.medir);
   } else if (UN.isByName(n)) {
     cuerpo = `<div class="glifo-formato">${UN.unbundleBody(n, k, ctx.cat, resueltos)}</div>${UN.nameRowZones(n, k, ctx.cat)}`;
+  } else if (BN.isBundleNode(n)) {
+    cuerpo = `<div class="glifo-formato">${BN.body(n, k, resueltos)}</div>`;
   } else if (PN.isPropertyNode(n)) {
     const graph = d.completo ?? d.g;
     cuerpo = `<div class="glifo-formato">${PN.propertyNodeBody(graph, ctx.cat, n, k)}</div>${PN.linkedLabel(graph, n)}${PN.rowZones(n, k)}`;
@@ -1417,6 +1423,11 @@ function nodo(n, d, ctx, resueltos, elegido) {
   if (UN.isByName(n)) {
     const handle = UN.unbundleHandle(k);
     asas = `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(handle.x)};top:${px(handle.y)};width:${px(UN.HANDLE_SIZE)};height:${px(UN.HANDLE_SIZE)}"></div>`;
+  }
+  // Bundle is stretched downwards by a handle at the middle of its bottom edge; Unbundle has none (reports/2026-11-17-bundle-unbundle.md Q1).
+  if (BN.isBundle(n)) {
+    const handle = BN.handle(k);
+    asas = `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(handle.x)};top:${px(handle.y)};width:${px(BN.HANDLE_SIZE)};height:${px(BN.HANDLE_SIZE)}"></div>`;
   }
   if (esCompuesto(n, ctx)) {
     const M = medidasCompuesto(n, ctx);
@@ -1802,6 +1813,7 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   // The right-click menu of the terminal of a graph was not captured.
   if (GRAPH_KINDS.includes(n.tipo)) return null;
   if (UN.isByName(n)) return UN.rowHasName(n, UN.rowOfPort(puerto)) ? UN.ROW_MENU : UN.BODY_MENU;
+  if (BN.isBundleNode(n)) return BM.menuRoot(n, puerto);
   // The VISA functions: the menu of the resource name terminal and the one of the rest of the node (reports/2026-10-26-visa-nodes.md Q4, visa-resource-name-look.md Q5).
   if (VN.isVisaNode(n)) return puerto === VN.RESOURCE_PORT ? VN.RESOURCE_TERMINAL_MENU : VN.BODY_MENU;
   // The Property Node: one menu for its header and its rows, the rows of a row shown only on a row (DT-072 §7).

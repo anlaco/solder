@@ -21,6 +21,13 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   order of its elements by clicks on the diagram (Reorder Controls In Cluster...); each element has a menu of its own,
   whose Representation ▸ changes that element's type. The rows not built yet are greyed with their reason.
 
+- Bundle and Unbundle (Functions ▸ Programming ▸ Cluster, Class & Variant) are built on the Block Diagram: each follows the
+  cluster wired to it at once (Bundle at its top), with one row per element, so adding or removing an element of the
+  source reshapes them and a wire stays on its row (DT-098). They look as LabVIEW draws them (32 px wide, 8 px a row, a
+  type mark per row) and an unwired Bundle is stretched by its bottom handle. Their menus are LabVIEW's, with Add Input
+  and Remove Input on an unwired Bundle's rows. Create ▸ Control and Indicator on a cluster make a panel cluster whose
+  elements have the cluster's types; they are greyed while a Bundle's output type is still undefined.
+
 - Change to Indicator and Change to Control on a cluster's shell flip the cluster, every element in it and its
   terminal together, as LabVIEW does (DT-095).
 

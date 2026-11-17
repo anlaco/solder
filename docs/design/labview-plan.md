@@ -17,8 +17,8 @@ When the developer says "keep going":
    (DT-076), has its stage A done (2026-11-15), built on step **6a, the two doors for libraries** (DT-079): the Call
    Library Function Node and the add-ons folder. "OVI files are `.ovi`" (DT-094) is done (2026-11-16). **DT-093 (2026-11-16)
    closes the hardware stage here**: next is **"The language's everyday types"** below. Its step 1 (the compiler's
-   split) is done; step 2, clusters made by the user (DT-095), has its core and editor stages (a), (b) and (c) done
-   (2026-11-16 and 2026-11-17): **continue with its stage (d)**, Bundle and Unbundle from the palette. DAQ's stage B waits for the
+   split) and step 2, clusters made by the user (DT-095, DT-098), are done (2026-11-16 and 2026-11-17): **continue with
+   step 3, type definitions** (DT-096), starting with the measurements it lists. DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
@@ -995,6 +995,18 @@ to it go on, new fronts wait for step 6.
    indicator created from the constant shows its values before a run (unmeasured); the broken wire after a reorder says
    "expects cluster and the wire carries cluster", which does not say the order differs; once, after Error list dialogs,
    Create ▸ Constant did nothing and a loose-end wire appeared (not reproduced).*
+   *Stage (d) measured and built on 2026-11-17 ([`bundle-unbundle`](../../labview-captures/reports/2026-11-17-bundle-unbundle.md);
+   DT-098; spec/05 rules 143–144): Bundle and Unbundle keep a copy of the wired cluster's type and follow it after every
+   edit (`core/model/wired-clusters.mjs`), their rows by index; Bundle wired at the top passes its unwired rows through
+   (3 True yo, as LabVIEW's run), unwired it builds a cluster of its rows and stretches; type marks, menus with Add Input
+   and Remove Input, Create ▸ on a cluster terminal giving a cluster of its elements. **Step 2 is done.** Left: the
+   unwired Unbundle's one empty output, Add/Remove Input on a Bundle wired at the top, marks of types other than I32,
+   DBL, Boolean, String and cluster, the wires of rows that vanish (unverified), Create ▸ on an Unbundle's body. Tried by
+   hand under Xvfb ([`bundle-editor-try`](../../labview-captures/reports/2026-11-17-bundle-editor-try.md)): it found that
+   a user's cluster on the panel showed no run values (read by label after DT-095 §1 made the value a list; fixed the
+   same day, by index). Found and left: Create ▸ Indicator on several outputs stacks the terminals upward to the
+   toolbar; once, deleting a created indicator left a wire with no source (steps unclear); a body Create ▸ Indicator that
+   did nothing once was not reproduced.*
    *Amended on 2026-11-16 (DT-095 §1): a cluster's value is the list of its elements' values in cluster order, not a
    record by name (a Cluster Constant holding 1 and 2 gave 2 and 2); Solder's own clusters stay records. Stages (c) and
    (d) build on it.*
