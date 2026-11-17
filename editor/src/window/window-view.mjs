@@ -9,6 +9,7 @@
 // 2 px a la derecha y 38 px por debajo de la esquina de la captura.
 
 import * as G from "../common/glyphs.mjs";
+import { reorderToolbarHtml } from "../front-panel/cluster-reorder-view.mjs";
 import { esHueco, nombreVeredicto, ultimo } from "../common/labview-inventory.mjs";
 import { PALETTE_FOOT_ENTRIES, PALETTE_TITLE_ENTRIES, paletteElements } from "../common/palette-elements.mjs";
 import { CODIGOS, explicar } from "../../../core/runtime/error-codes.mjs";
@@ -283,6 +284,9 @@ function elementoBarra(inv, e, sitio, extra) {
 
 const NO_SCROLL = { x: 0, y: 0 };
 
+/** While a cluster is reordered, the Edit menu is greyed (reports/2026-11-16-cluster-panel.md §3). */
+export const greyedWhileReordering = (menuId, extra) => !!extra.reorder && menuId.endsWith(".menu.edit");
+
 /**
  * What is drawn on a canvas, shifted by its scroll `origin` (scrolling.mjs). The layer is the frame every object of
  * the canvas is placed in, so a point of the page minus the layer's corner is a point of the canvas.
@@ -295,7 +299,8 @@ const scrolledLayer = (content, origin) => `<div class="capa-desplazada" style="
  * `runRoto`, si el OVI no se puede ejecutar; `ejecutando`, si corre (modo Run),
  * `editandoTexto`, `conectorGlifo`, the connector pane drawn with its assigned cells,
  * `numeroOVI`, the number on the OVI's icon, `propiedades`, the OVI Properties dialog, and `panelStyle`, the style
- * the Front Panel is drawn in, and `origin`, the point of the canvas at the top left of its visible area.
+ * the Front Panel is drawn in, `origin`, the point of the canvas at the top left of its visible area, and `reorder`,
+ * the state of Reorder Controls In Cluster... while it is on (front-panel/cluster-reorder.mjs).
  */
 export function ventana(inv, nombre, estado, extra = {}) {
   const { lienzo = "", encima = "", origin = NO_SCROLL } = extra;
@@ -307,11 +312,12 @@ export function ventana(inv, nombre, estado, extra = {}) {
     .hijos(`${pre}.menu`)
     // El texto va dos veces: el derecho, invisible, fija el ancho, para que la
     // cursiva de un hueco no desplace a los menús siguientes.
-    .map((e) => `<div class="${clases(inv, e.id, `menu${estado.menuBarra?.id === e.id ? " abierto" : ""}`)}" data-id="${esc(e.id)}"><span class="medida">${esc(e.etiqueta)}</span><span class="texto">${esc(e.etiqueta)}</span></div>`)
+    .map((e) => `<div class="${clases(inv, e.id, `menu${estado.menuBarra?.id === e.id ? " abierto" : ""}${greyedWhileReordering(e.id, extra) ? " desactivado" : ""}`)}" data-id="${esc(e.id)}"><span class="medida">${esc(e.etiqueta)}</span><span class="texto">${esc(e.etiqueta)}</span></div>`)
     .join("");
 
   const { elementos, sitios } = disposicionBarra(inv, nombre);
-  const barra = elementos.map((e) => elementoBarra(inv, e, sitios.get(e.id), extra)).join("");
+  // Reorder Controls In Cluster... replaces the whole toolbar with its own (reports/2026-11-17-cluster-reorder.md §2).
+  const barra = extra.reorder ? `<div class="sd-reorder-toolbar">${reorderToolbarHtml(extra.reorder)}</div>` : elementos.map((e) => elementoBarra(inv, e, sitios.get(e.id), extra)).join("");
 
   const iconos = [];
   let x = 1.3;
@@ -334,7 +340,7 @@ export function ventana(inv, nombre, estado, extra = {}) {
     <div class="borde-barra" style="top:${px(M.altoMenus + M.altoSurco + M.altoBarra)};height:${px(M.altoBordeBarra)}"></div>
     <div class="zona-iconos" style="width:${px(zona)};height:${px(M.altoMenus + M.altoSurco + M.altoBarra)}">${iconos.join("")}</div>
   </div>
-  <div class="lienzo lienzo-${nombre}${extra.resaltando ? " resaltando" : ""}${panelStyleClasses(extra.panelStyle)}" data-id="${pre}.workspace" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};right:${px(M.anchoCanalon)};background-position:${px(-origin.x)} ${px(-origin.y)}">${scrolledLayer(lienzo, origin)}</div>
+  <div class="lienzo lienzo-${nombre}${extra.resaltando ? " resaltando" : ""}${extra.reorder ? " reordenando" : ""}${panelStyleClasses(extra.panelStyle)}" data-id="${pre}.workspace" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};right:${px(M.anchoCanalon)};background-position:${px(-origin.x)} ${px(-origin.y)}">${scrolledLayer(lienzo, origin)}</div>
   <div class="canalon" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};width:${px(M.anchoCanalon)}"><div class="barra-desplazamiento vertical" data-axis="y"></div></div>
   <div class="barra-estado" style="height:${px(M.altoEstado)}">${estadoHTML}<div class="barra-desplazamiento horizontal" data-axis="x" style="left:${px(instancia ? M.anchoInstancia : 0)};right:${px(M.anchoCanalon)}"></div></div>
   ${estado.paleta ? paleta(inv, estado.paleta) + subpaletas(inv, estado.paleta) : ""}

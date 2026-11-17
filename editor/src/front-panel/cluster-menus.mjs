@@ -4,6 +4,8 @@
 
 import * as Gr from "../../../core/model/graph.mjs";
 import { labelShown, toggledItem } from "./graph-state.mjs";
+import { flipCluster } from "./cluster-panel.mjs";
+import { startReorder } from "./cluster-reorder.mjs";
 
 export const CLUSTER_MENU_ROOT = "context.cluster-control";
 
@@ -23,9 +25,30 @@ export function clusterMenuMarks(d) {
   return marks;
 }
 
-/** Runs a row of the cluster's menu that is built (Visible Items ▸ Label); undefined for any other row, which only explains itself. */
-export function clusterCommand(d, id) {
+const LABEL_ROW = `${CLUSTER_MENU_ROOT}.visible-items.label`;
+const CHANGE_TO_INDICATOR_ROW = `${CLUSTER_MENU_ROOT}.change-to-indicator`;
+const REORDER_ROW = `${CLUSTER_MENU_ROOT}.reorder-controls-in-cluster`;
+
+/**
+ * The rows that change with the cluster: Change to Control on an indicator (report §6), and Reorder Controls In
+ * Cluster... greyed while the cluster is empty (report §3).
+ */
+export function clusterMenuVariants(d) {
+  const node = menuNode(d);
+  const rotulos = new Map(node?.tipo === "cluster-indicator" ? [[CHANGE_TO_INDICATOR_ROW, "Change to Control"]] : []);
+  const desactivados = new Set(node?.config?.elements?.length ? [] : [REORDER_ROW]);
+  return { rotulos, desactivados };
+}
+
+/**
+ * Runs a row of the cluster's menu that is built (Visible Items ▸ Label, Change to Indicator or to Control, Reorder
+ * Controls In Cluster..., which puts the panel in its mode); undefined for any other row, which only explains itself.
+ */
+export function clusterCommand(d, id, cat) {
   const node = isClusterMenu(d) && menuNode(d);
-  if (!node || id !== `${CLUSTER_MENU_ROOT}.visible-items.label`) return undefined;
-  return { ...d, g: Gr.fijarConfig(d.g, node.id, toggledItem(node, "label")), menu: null };
+  if (!node) return undefined;
+  if (id === LABEL_ROW) return { ...d, g: Gr.fijarConfig(d.g, node.id, toggledItem(node, "label")), menu: null };
+  if (id === CHANGE_TO_INDICATOR_ROW) return { ...d, g: flipCluster(d.g, cat, node.id), menu: null };
+  if (id === REORDER_ROW && node.config.elements.length) return { ...d, menu: null, seleccion: [], reorder: startReorder(node) };
+  return undefined;
 }

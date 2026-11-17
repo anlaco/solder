@@ -35,7 +35,7 @@
 | Functions palette | 211 / 563 (37 %) | `████░░░░░░` |
 | Controls palette | 34 / 92 (37 %) | `████░░░░░░` |
 | Windows and dialogs | 143 / 399 (36 %) | `████░░░░░░` |
-| Right-click menus | 594 / 2218 (27 %) | `███░░░░░░░` |
+| Right-click menus | 596 / 2218 (27 %) | `███░░░░░░░` |
 <!-- /coverage:summary -->
 
 ## Features
@@ -353,5 +353,5 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Menus | Covered | |
 |-------|---------|---|
-| Every right-click menu captured | 594 / 2218 (27 %) | `███░░░░░░░` |
+| Every right-click menu captured | 596 / 2218 (27 %) | `███░░░░░░░` |
 <!-- /coverage:inventory -->

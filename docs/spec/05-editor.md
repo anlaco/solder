@@ -1854,8 +1854,8 @@ Measured in LabVIEW 2026 Q3 (`labview-captures/reports/2026-11-16-cluster-panel.
 `editor/src/front-panel/cluster-panel.mjs` (geometry and drops), `cluster-view.mjs` (drawing), `cluster-menus.mjs` (the menu). Tests:
 `test/editor/cluster-panel.test.mjs`. A cluster made by the user is a `cluster-control` whose `config.elements` is the list of its
 elements in cluster order (`core/model/user-cluster.mjs`); its type and value follow them. The error clusters keep their style and are
-not touched. This stage is the shell, dropping controls into it, its terminal and wire and its menu; Reorder Controls In Cluster...,
-Change to Indicator, AutoSizing, the Cluster Constant, Bundle and Unbundle are the next stages.
+not touched. Stage (a) is the shell, dropping controls into it, its terminal and wire and its menu; stage (b), Change to Indicator and
+Reorder Controls In Cluster..., is below; AutoSizing, the Cluster Constant, Bundle and Unbundle are the next stages.
 
 > **Rule 135 — The Cluster control (palette, shell, label).** Controls ▸ Modern ▸ **Array, Matrix & Cluster** ▸ **Cluster** (row 1,
 > column 2) is done: it drops a `cluster-control` with `elements: []`, a **100 × 100** shell hanging from the cursor by its centre, with
@@ -1885,6 +1885,30 @@ Change to Indicator, AutoSizing, the Cluster Constant, Bundle and Unbundle are t
 > Run-Time Shortcut Menu ▸, —, Hide Control, Enabled State ▸, Show Hidden Element ▸), Fit Control to Pane, Scale Object with Pane, —,
 > Reorder Controls In Cluster..., AutoSizing ▸ (None ✓, Size to Fit, Arrange Horizontally, Arrange Vertically), —, Properties: 15 rows
 > and 5 separators, the 20 measured. **Done:** Visible Items ▸ Label; the ticks (Caption, as measured; Label while shown; AutoSizing ▸
-> None). Every other row is greyed with its reason (rule 54); Reorder Controls In Cluster... (`reordenar-cluster`), Change to Indicator
-> and AutoSizing's other modes (`autosizing-de-cluster`) wait for their stages. **Unverified:** which of Label and Caption LabVIEW ticks
+> None); Change to Indicator (rule 138) and Reorder Controls In Cluster... (rule 139), from stage (b). Every other row is greyed with
+> its reason (rule 54); AutoSizing's other modes (`autosizing-de-cluster`) wait for their stage. **Unverified:** which of Label and Caption LabVIEW ticks
 > (the report reads "Label, ✓ Caption"; its label's class is unclear). Find Terminal stays greyed, as every control's.
+
+Stage (b), 2026-11-17: measured in `labview-captures/reports/2026-11-17-cluster-reorder.md` and `2026-11-17-cluster-indicator.md`.
+Code: `cluster-reorder.mjs` (the mode's state and rules), `cluster-reorder-view.mjs` (frames, badges, toolbar), `flipCluster` in
+`cluster-panel.mjs`. Tests: `test/editor/cluster-reorder.test.mjs` and the Change to Indicator test in `cluster-panel.test.mjs`.
+
+> **Rule 138 — Change to Indicator / Change to Control.** On the shell's menu it flips the shell (`cluster-control` ↔
+> `cluster-indicator`), **every element** (a Boolean taking its kind's style: a button becomes an LED and back) and the terminal, whose
+> wire keeps its node with the port renamed (broken if it now faces the wrong way, and saved and opened so). The row reads **Change to
+> Control** on an indicator. It is live on an empty cluster too. LabVIEW does the same from an element's own menu and from the diagram
+> terminal's; those menus are not built yet (an element's press opens the shell's menu).
+
+> **Rule 139 — Reorder Controls In Cluster...** Greyed on an empty cluster. Chosen, the panel enters the mode (`reorder` on the panel's
+> state: the order on entry, the new order, the field): the canvas turns plain `#5A5A5A` (`--reorder-panel-background`); each element
+> is framed **1 px black**, its label included, with a **17 × 16 badge** flush in the frame's bottom-right corner: the **new** number white
+> on a black 8 × 16 cell, the **current** one black on a white 8 × 14 cell. The whole toolbar is replaced by **✓** (11 × 10, black), **✗**
+> (13 × 12, `#666666` until the order changes, then black), the text "Click to set to" and a **32 × 17 field** with a 1 px black frame and
+> no arrows, which reads **0, selected,** on every entry. The Edit menu is greyed. A press on an element (body or label) gives it the
+> field's number; the others renumber **keeping their relative order**, and the field advances by one, **stopping at the last number**
+> (no wrap). A press anywhere else does nothing; there is no right-click menu. The field takes digits (replacing its text while it is
+> selected) and Backspace/Delete; Up and Down do not step it; **Escape and Enter do nothing**. **✗** brings back the order on entry and
+> **stays in the mode**, keeping the field. **✓** leaves the mode, applying the new order to `elements` (one undo step), so the type
+> follows. **Unverified:** a typed number above the last (taken as the last), an empty field (taken as 0), which digit Backspace takes
+> from a longer number, the font of the badges' digits, the frame's offset from the element (taken as 0). **Not built:** the darkened
+> shell bevel (`#454545`, `#1E1E1E`; it keeps its colours), the title losing " Front Panel", LabVIEW's hand-with-# cursor (a pointer).

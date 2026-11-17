@@ -102,6 +102,21 @@ svg { display: block; overflow: visible; }
 }
 /* En modo Run el panel pierde la rejilla: gris liso (labview-captures/run/r1.png). */
 .ejecutando .lienzo-front-panel { background-image: none; }
+/* Reorder Controls In Cluster...: the panel goes plain dark grey and only the elements' frames answer (reports/2026-11-17-cluster-reorder.md). */
+.lienzo-front-panel.reordenando { background: var(--reorder-panel-background); cursor: pointer; }
+.lienzo-front-panel.reordenando * { cursor: inherit !important; }
+.sd-reorder-frame { position: absolute; box-sizing: border-box; border: 1px solid var(--reorder-frame); }
+.sd-reorder-badge { position: absolute; right: -1px; bottom: -1px; width: 17px; height: 16px; display: flex; background: var(--reorder-frame); font-size: 12px; line-height: 15px; }
+.sd-reorder-new { width: 8px; height: 16px; background: var(--reorder-new-background); color: var(--reorder-new-text); text-align: center; }
+.sd-reorder-current { width: 8px; height: 14px; margin-top: 1px; background: var(--reorder-current-background); color: var(--reorder-current-text); text-align: center; line-height: 13px; }
+.sd-reorder-toolbar { left: 0; right: 0; }
+.sd-reorder-toolbar > div { position: absolute; }
+.sd-reorder-button { color: var(--reorder-button); }
+.sd-reorder-button.desactivado { color: var(--reorder-button-disabled); }
+.sd-reorder-button.desactivado svg { opacity: 1; }
+.sd-reorder-text { font-size: var(--fuente); line-height: 15px; white-space: pre; }
+.sd-reorder-field { box-sizing: border-box; background: var(--reorder-field-background); border: 1px solid var(--reorder-field-border); padding: 0 2px; font-size: var(--fuente); line-height: 15px; }
+.sd-reorder-field-text.seleccionado { background: var(--reorder-field-selection); color: var(--reorder-field-selection-text); }
 .canalon { position: absolute; right: 0; background: var(--chrome-background); border-left: 1px solid var(--chrome-highlight); }
 
 /* Scrollbars (scrolling.mjs): Windows 11 overlay bars. A 2 px thumb in the middle of the strip, 6 px with the arrows

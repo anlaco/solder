@@ -11,6 +11,7 @@ import * as Gr from "../../../core/model/graph.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 import { hasElements, setClusterElements } from "../../../core/model/user-cluster.mjs";
 import { BOOLEANOS } from "../common/glyphs.mjs";
+import { flipArrayKind } from "../common/array-typing.mjs";
 
 export { hasElements as isUserCluster };
 
@@ -122,3 +123,18 @@ export const withShellBox = (g, id, box) => ({
 
 /** A cluster's element as a node of the panel, so that the objects' drawing and measures serve it: its id says where it is. */
 export const elementNode = (cluster, element, index) => ({ ...element, id: `${cluster.id}.elements.${index}`, panel: { x: element.x, y: element.y } });
+
+/**
+ * Change to Indicator (or to Control) of cluster `id`: the shell and every element in it flip together, since all the
+ * elements of a cluster are controls or all indicators (reports/2026-11-16-cluster-panel.md §6). The terminal flips and
+ * its wires keep their node with the port renamed, as for any panel object (`flipArrayKind`).
+ */
+export function flipCluster(g, cat, id) {
+  const flipped = flipArrayKind(g, id);
+  const cluster = flipped.nodos.find((node) => node.id === id);
+  const elements = cluster.config.elements.map((element) => {
+    const block = elementBlock(element.tipo, cluster.tipo);
+    return { ...element, tipo: block, config: elementConfig(element.config, block) };
+  });
+  return setClusterElements(flipped, cat, id, elements);
+}

@@ -47,7 +47,7 @@ import { sharedSegmentCount } from "./wire-tree.mjs";
 import * as CP from "../front-panel/connector-pane.mjs";
 import * as PanelReplace from "../common/panel-replace.mjs";
 import { graphCommand, graphMenuMarks, graphMenuVariants, isGraphMenu } from "../front-panel/graph-menus.mjs";
-import { clusterCommand, clusterMenuMarks, isClusterMenu } from "../front-panel/cluster-menus.mjs";
+import { clusterCommand, clusterMenuMarks, clusterMenuVariants, isClusterMenu } from "../front-panel/cluster-menus.mjs";
 import * as Et from "../common/labels.mjs";
 import * as FL from "../common/free-labels.mjs";
 import { FREE_LABEL, isFreeLabel } from "../../../core/model/free-label.mjs";
@@ -1518,7 +1518,7 @@ export function orden(d, id, ctx, inv) {
   const graphResult = graphCommand(d, id, ctx);
   if (graphResult) return graphResult;
   // A user's cluster's menu (cluster-menus.mjs).
-  const clusterResult = clusterCommand(d, id);
+  const clusterResult = clusterCommand(d, id, ctx?.cat);
   if (clusterResult) return clusterResult;
   const { nodo, puerto } = d.menu;
   const cerrar = (g) => ({ ...d, g, menu: null });
@@ -1766,6 +1766,7 @@ function pathIndicatorVariants(root) {
  */
 function nodeVariants(d, ctx) {
   if (CP.hasConnectorMenu(d)) return CP.menuVariants(d);
+  if (isClusterMenu(d)) return clusterMenuVariants(d);
   const n = d.menu && d.g.nodos.find((k) => k.id === d.menu.nodo);
   const r = d.menu?.raiz;
   const fila = (...ids) => new Set(ids.map((i) => `${r}.${i}`));

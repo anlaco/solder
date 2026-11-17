@@ -236,16 +236,15 @@ test("the cluster shell has its measured menu with the rows that are not built g
   assert.deepEqual(shown(rows), ["Visible Items", "Find Terminal", "Change to Indicator", "Change to Array", "---", "Make Type Def.", "---", "Description and Tip...", "---", "Create", "Replace", "Data Operations", "Advanced",
     "Fit Control to Pane", "Scale Object with Pane", "---", "Reorder Controls In Cluster...", "AutoSizing", "---", "Properties"]);
   assert.equal(shown(rows).length, 20);
-  assert.deepEqual(rows.filter((row) => !row.greyed).map((row) => row.label), ["Visible Items"], "only what is built is live: the rest says why it is not");
+  assert.deepEqual(rows.filter((row) => !row.greyed).map((row) => row.label), ["Visible Items", "Change to Indicator"], "only what is built is live (Reorder is greyed on an empty cluster): the rest says why it is not");
   const labels = (id) => INV.hijos(`${root}.${id}`).map((entry) => entry.etiqueta);
   assert.deepEqual(labels("visible-items"), ["Label", "Caption"]);
   assert.deepEqual(labels("create"), ["Local Variable", "Reference", "Property Node", "Invoke Node", "Cluster from Selection"]);
   assert.deepEqual(labels("data-operations"), ["Reinitialize to Default Value", "Make Current Value Default", "Cut Data", "Copy Data", "Paste Data"]);
   assert.deepEqual(labels("advanced"), ["Key Navigation...", "Synchronous Display", "Customize...", "Run-Time Shortcut Menu", "Hide Control", "Enabled State", "Show Hidden Element"]);
   assert.deepEqual(labels("autosizing"), ["None", "Size to Fit", "Arrange Horizontally", "Arrange Vertically"]);
-  // Reorder, Change to Indicator and AutoSizing are later stages: greyed with their own reasons.
-  for (const row of ["reorder-controls-in-cluster", "change-to-indicator", "autosizing", "autosizing.size-to-fit"]) assert.equal(INV.entrada(`${root}.${row}`).estado, "todo", row);
-  assert.equal(INV.entrada(`${root}.reorder-controls-in-cluster`).necesita, "reordenar-cluster");
+  // AutoSizing is a later stage: greyed with its own reason.
+  for (const row of ["autosizing", "autosizing.size-to-fit"]) assert.equal(INV.entrada(`${root}.${row}`).estado, "todo", row);
   assert.equal(INV.entrada(`${root}.autosizing.size-to-fit`).necesita, "autosizing-de-cluster");
   // The ticks: AutoSizing None, Caption (measured ticked) and the Label while shown.
   const marks = ED.marcados(menu, CTX);
@@ -265,7 +264,37 @@ test("Visible Items Label hides the label of a cluster", () => {
   const shownAgain = ED.orden(shellMenu({ ...p, g: hidden.g }, cluster.id), `${root}.visible-items.label`, CTX, INV);
   assert.equal(labelShown(shownAgain.g.nodos[0]), true);
   // A row that is not built does nothing.
-  assert.equal(ED.orden(shellMenu(p, cluster.id), `${root}.reorder-controls-in-cluster`, CTX, INV).g, p.g);
+  assert.equal(ED.orden(shellMenu(p, cluster.id), `${root}.change-to-array`, CTX, INV).g, p.g);
   // It survives the file.
   assert.equal(labelShown(leer(aTexto(hidden.g, CAT), CAT).nodos[0]), false);
+});
+
+test("Change to Indicator flips the shell, every element and the terminal, and Change to Control flips them back", () => {
+  let { p, cluster } = panelWithCluster();
+  p = place(p, "control", { x: 300, y: 300 });
+  p = place(p, "bool-control", { x: 300, y: 330 });
+  p = place(p, "str-control", { x: 300, y: 270 });
+  const root = "context.cluster-control";
+  const sink = Gr.crearEnPanel(p.g, CAT, "cluster-indicator", 600, 300, "Out", { elements: [] });
+  const wired = Gr.conectar(sink.g, CAT, { nodo: cluster.id, puerto: "result", dir: "out" }, { nodo: sink.id, puerto: "value", dir: "in" }).g;
+  p = { ...p, g: wired };
+  const flipped = ED.orden(shellMenu(p, cluster.id), `${root}.change-to-indicator`, CTX, INV);
+  assert.equal(flipped.menu, null);
+  const shell = flipped.g.nodos.find((n) => n.id === cluster.id);
+  assert.equal(shell.tipo, "cluster-indicator");
+  // Every element becomes an indicator together with the shell, a Boolean taking an indicator's style (report §6).
+  assert.deepEqual(shell.config.elements.map((e) => e.tipo), ["indicator", "bool-indicator", "str-indicator"]);
+  assert.equal(shell.config.elements[1].config.style, "round-led");
+  assert.deepEqual(shell.config.type, p.g.nodos.find((n) => n.id === cluster.id).config.type, "the type does not change");
+  // The terminal's wire keeps its node with the port renamed; now facing the wrong way, it is broken, as in LabVIEW.
+  assert.deepEqual(flipped.g.cables[0].de, { nodo: cluster.id, puerto: "value" });
+  const rows = menuRows(shellMenu({ ...p, g: flipped.g }, cluster.id));
+  assert.ok(rows.some((row) => row.label === "Change to Control" && !row.greyed), "report §6: the row reads Change to Control");
+  assert.ok(!rows.some((row) => row.label === "Change to Indicator"));
+  const back = ED.orden(shellMenu({ ...p, g: flipped.g }, cluster.id), `${root}.change-to-indicator`, CTX, INV);
+  const shellBack = back.g.nodos.find((n) => n.id === cluster.id);
+  assert.equal(shellBack.tipo, "cluster-control");
+  assert.deepEqual(shellBack.config.elements.map((e) => e.tipo), ["control", "bool-control", "str-control"]);
+  assert.equal(shellBack.config.elements[1].config.style, "push-button");
+  assert.equal(leer(aTexto({ ...flipped.g, cables: [] }, CAT), CAT).nodos.find((n) => n.id === cluster.id).config.elements[2].tipo, "str-indicator", "it survives the file");
 });

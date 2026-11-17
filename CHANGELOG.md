@@ -13,6 +13,13 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   opened again ("has no output port"). The wire, broken because it now faces the wrong way, is saved and opens as it
   was, as in LabVIEW.
 
+- Change to Indicator and Change to Control on a cluster's shell flip the cluster, every element in it and its
+  terminal together, as LabVIEW does (DT-095).
+
+- Reorder Controls In Cluster... sets the order of a cluster's elements as LabVIEW does: the panel darkens, each element
+  shows its new and current number, a click gives it the toolbar field's number, ✗ restores the order and ✓ applies it
+  (DT-095).
+
 - Fixed: a cluster's value was a record by element name, so two elements with the same label or none, as in a
   Cluster Constant holding 1 and 2, gave one value twice (2 and 2). A cluster's value is now the list of its elements'
   values in cluster order, as LabVIEW gives it; the error cluster, a VISA resource name and a DAQ task are still read

@@ -19,6 +19,7 @@
 // replaces the plain catalog everywhere (`cat`).
 
 import * as CP from "../front-panel/connector-pane.mjs";
+import * as CR from "../front-panel/cluster-reorder.mjs";
 import * as DS from "../debugging/debug-state.mjs";
 import * as DV from "../debugging/debug-view.mjs";
 import * as EL from "../debugging/error-list.mjs";
@@ -1316,6 +1317,7 @@ function pintar() {
     extra.conectorGlifo = CP.paneGlyph(pan.g, cat, pan.conector?.celda ?? null);
     extra.encima = pan.menu ? D.menuContextual(inv, pan.menu, ED.marcados(pan, ctx), medirMenu, ED.variantes(pan, ctx, inv), windowSize()) : "";
     extra.editandoTexto = !!pan.edicion;
+    extra.reorder = pan.reorder;
   }
   // El menú de la barra que está abierto, bajo su título.
   if (estado.menuBarra) {
@@ -1558,6 +1560,7 @@ addEventListener("mousedown", (ev) => {
   if (visaDropdown && !ev.target.closest(".menu-contextual")) return toggleNameDropdown(ev, visaDropdown);
   const daqDropdown = ev.target.closest?.("[data-daq-dropdown]");
   if (daqDropdown && !ev.target.closest(".menu-contextual")) return toggleNameDropdown(ev, daqDropdown, DAQ_NAME_DROPDOWN_MENU);
+  if (conPanel && pan.reorder) return pressWhileReordering(ev);
   if (ejecutando && !pan.menu) return pulsarEnRun(ev);
   if (dia.menu) {
     if (ev.target.closest(".menu-contextual")) return;
@@ -1636,6 +1639,19 @@ addEventListener("mousedown", (ev) => {
 // su acción mecánica: los «When Pressed» al pulsar, los «When Released» al
 // soltar; un Switch alterna y un Latch pasa a TRUE hasta que el diagrama lo lee.
 // Un numérico se escribe en su casilla o con sus flechas, como parado.
+
+/**
+ * A press while Reorder Controls In Cluster... is on: an element's frame takes the field's number, ✓ and ✗ answer, and
+ * anything else does nothing (front-panel/cluster-reorder.mjs).
+ */
+function pressWhileReordering(ev) {
+  if (ev.target.closest(".menus")) return;
+  ev.preventDefault();
+  const frame = ev.target.closest("[data-reorder-element]");
+  const button = ev.target.closest("[data-reorder]");
+  const hit = frame ? { element: Number(frame.dataset.reorderElement) } : button ? { button: button.dataset.reorder } : null;
+  cambiarPanel(CR.pressInReorder(pan, cat, hit));
+}
 
 /** El booleano pulsado, para cambiarlo al soltar si su acción es «When Released». */
 let pulsado = null;
@@ -1982,6 +1998,8 @@ addEventListener("click", (ev) => {
     return;
   }
   if (conDiagrama && clickFloating(ev)) return;
+  // The Edit menu is greyed while a cluster is reordered.
+  if (ev.target.closest(".menu.desactivado")) return;
   const boton = ev.target.closest(".modal-error .boton-dialogo:not([disabled])");
   if (boton) return responderDialogo(boton.dataset.boton);
   if (ev.target.closest(".modal-error")) return;
@@ -2044,6 +2062,8 @@ addEventListener("contextmenu", (ev) => {
   if (propiedades || dialogoModal()) return;
   // In Run mode LabVIEW gives another menu (the run-time one): captured only for the graphs.
   if (ejecutando) return runModeMenu(ev);
+  // Reorder Controls In Cluster... answers only to presses (reports/2026-11-17-cluster-reorder.md §4).
+  if (conPanel && pan.reorder) return;
   // The connector pane and the icon have menus of their own.
   const iconoOVI = ev.target.closest(".icono-vi");
   if (iconoOVI) return menuDelIcono(ev, iconoOVI);
@@ -2109,6 +2129,11 @@ addEventListener("keydown", (ev) => {
     // above: otherwise closing the explanation of a greyed tab closed the whole dialog with it.
     if (ev.key === "Escape" && (estado.abierta || estado.menuBarra)) return cambiar(E.escape(estado));
     return aplicarEnDialogo(MD.keyIntent(conTeclaEnDialogo, ev), conTeclaEnDialogo);
+  }
+  // While a cluster is reordered every key goes to the field: digits and deletions; Escape and Enter do nothing (§4-5).
+  if (conPanel && pan.reorder) {
+    ev.preventDefault();
+    return cambiarPanel({ ...pan, reorder: CR.typeInField(pan.reorder, ev.key) });
   }
   // Ctrl+Intro confirma lo escrito en el source de un control de error (labview-captures/errores/35.png).
   if (conPanel && pan.edicion?.campo === "source" && ctrl && ev.key === "Enter") {

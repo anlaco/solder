@@ -339,6 +339,23 @@
   --cluster-interior: #b3b3b3;
 }
 
+/* Reorder Controls In Cluster... (reports/2026-11-17-cluster-reorder.md §1-2): the darkened panel, the frames and badges,
+   and the toolbar's ✓ and ✗ (✗ grey until the order changes). */
+:root {
+  --reorder-panel-background: #5a5a5a;
+  --reorder-frame: #000000;
+  --reorder-new-background: #000000;
+  --reorder-new-text: #ffffff;
+  --reorder-current-background: #ffffff;
+  --reorder-current-text: #000000;
+  --reorder-button: #000000;
+  --reorder-button-disabled: #666666;
+  --reorder-field-background: #ffffff;
+  --reorder-field-border: #000000;
+  --reorder-field-selection: #0078d7;
+  --reorder-field-selection-text: #ffffff;
+}
+
 /* Debugging: Highlight Execution, probes, breakpoints, the Debug Window and the Error list. */
 :root {
   --debug-label-background: #ccffff;

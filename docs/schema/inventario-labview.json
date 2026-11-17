@@ -611,17 +611,9 @@
       "desc": "the DAQ task configuration tool, where LabVIEW makes and edits DAQ tasks in a separate application: New DAQ Task, Edit DAQ Task and Generate Code of a DAQ Task Name need it; Solder has none, tasks are made on the diagram",
       "ref": "labview-captures/reports/2026-11-15-daqname-menus.md"
     },
-    "reordenar-cluster": {
-      "desc": "Reorder Controls In Cluster...: the darkened panel with its two-cell badges, to change the order of a cluster's elements",
-      "ref": "design/05-decisions.md DT-095 §4"
-    },
     "autosizing-de-cluster": {
       "desc": "a cluster's AutoSizing other than None: Size to Fit, Arrange Horizontally and Arrange Vertically",
       "ref": "design/05-decisions.md DT-095 §6"
-    },
-    "elementos-de-cluster": {
-      "desc": "the menu of an element inside a cluster, and the rest of a user's cluster that is built after its shell: Change to Indicator, dragging an element out",
-      "ref": "design/05-decisions.md DT-095"
     }
   },
   "entradas": [
@@ -15518,9 +15510,8 @@
     {
       "id": "context.cluster-control.change-to-indicator",
       "etiqueta": "Change to Indicator",
-      "estado": "todo",
-      "labview": "Turns the cluster and every element in it into an indicator.",
-      "necesita": "elementos-de-cluster"
+      "estado": "built",
+      "prueba": "test/editor/cluster-panel.test.mjs::Change to Indicator flips the shell, every element and the terminal, and Change to Control flips them back"
     },
     {
       "id": "context.cluster-control.change-to-array",
@@ -15712,9 +15703,8 @@
     {
       "id": "context.cluster-control.reorder-controls-in-cluster",
       "etiqueta": "Reorder Controls In Cluster...",
-      "estado": "todo",
-      "labview": "Changes the order of the elements: the cluster order, which is the order of its type and of Bundle and Unbundle.",
-      "necesita": "reordenar-cluster",
+      "estado": "built",
+      "prueba": "test/editor/cluster-reorder.test.mjs::Reorder Controls In Cluster sets the cluster order by clicks, as measured",
       "separado": true
     },
     {

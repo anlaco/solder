@@ -4724,8 +4724,13 @@ of the elements in the file. The `.ovi` format stores the elements inside the co
    marks; Unbundle cannot be resized (no resize cursor, measured). An indicator created from an Unbundle output is
    named after its element.
 4. **Reorder Controls In Cluster...** is built as measured: the darkened panel, the two-cell badges (new, current),
-   ✓ and ✗ and "Click to set to" in the toolbar, live renumbering; it is one undo step.
-5. **Change to Indicator / Change to Control** on the shell changes every element.
+   ✓ and ✗ and "Click to set to" in the toolbar, live renumbering; it is one undo step. *Measured on 2026-11-17
+   ([`cluster-reorder`](../../labview-captures/reports/2026-11-17-cluster-reorder.md)) and built the same day (spec/05
+   rule 139): the field advances and stops at the last number; ✗ restores the order and stays in the mode; Escape and
+   Enter do nothing; ✓ applies the order.*
+5. **Change to Indicator / Change to Control** on the shell changes every element. *Built on 2026-11-17 (spec/05 rule
+   138); LabVIEW does the same from an element's menu and from the terminal's, and on an empty cluster
+   ([`cluster-indicator`](../../labview-captures/reports/2026-11-17-cluster-indicator.md)).*
 6. **Left greyed with their reason** (DT-035): AutoSizing other than None, Cluster from Selection, Make Type Def.
    (step 3), Change to Array of a cluster, View Cluster As Icon on the constant, Bundle with fewer rows than the
    cluster (unmeasured).
@@ -4738,7 +4743,7 @@ of the elements in the file. The `.ovi` format stores the elements inside the co
 | A version-5 file opens unchanged; a version-6 file is refused by version-5 rules | `test/fixtures/released/`, `qvi-round-trip` | Not built |
 | Bundle and Unbundle take the wired cluster's elements, in cluster order | an editor test and a run: Numeric 3, Boolean TRUE, String "hi" reversed give "hi", TRUE, 3, as LabVIEW | Measured (2026-11-16), not built |
 | The shell, terminal, constant, wire and menus look as measured | editor tests on the measured sizes and colours; a comparison under Xvfb | Not built |
-| ✗ discards a pending reorder | — | **Unverified** in LabVIEW |
+| ✗ restores the order on entry and stays in the mode; the field stops at the last number | `test/editor/cluster-reorder.test.mjs` | **Verified** (measured and built, 2026-11-17) |
 | Elements of one name, or of none, keep each its own value | `test/core/user-clusters.test.mjs` (a Cluster Constant of two unlabelled numbers; a control of two elements labelled alike) | **Verified** (2026-11-16) |
 
 ## DT-096

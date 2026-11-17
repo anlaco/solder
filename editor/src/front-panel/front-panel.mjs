@@ -495,7 +495,7 @@ function panelObject(n, ctx, selected, p, resolvedTypes, asElement = false) {
   const frame = { id: asElement ? "" : n.id, box: caja(n), label: n.label?.text ?? "", selected, editing: !!editing, isControl: isControlNode(n), classes: disabledClasses(p.runProps, n.id), element: asElement };
   const control = CONTROLES[n.tipo];
   if (isUserCluster(n)) {
-    const tools = { drawElement: (node) => panelObject(node, ctx, false, p, resolvedTypes, true), boxOf: (node) => caja(node), measure: ctx.medir, value: (cluster, node) => elementHoldingValue(cluster, node, p.valores) };
+    const tools = { drawElement: (node) => panelObject(node, ctx, false, p, resolvedTypes, true), boxOf: (node) => caja(node), measure: ctx.medir, value: (cluster, node) => elementHoldingValue(cluster, node, p.valores), reorder: p.reorder };
     return clusterObject(n, frame, tools);
   }
   if (isGraph(n)) {
