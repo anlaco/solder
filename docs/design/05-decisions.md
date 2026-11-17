@@ -4760,8 +4760,9 @@ structural, and a control, indicator or constant made from an `.octl` file carri
 defined.**
 
 - **Status:** Accepted on 2026-11-16 by the developer, as proposed the same day, **subject to one measurement** in
-  LabVIEW 2026 Q3 (below): if a type definition and an equal cluster that is not one do not wire as one type, this
-  decision is amended before step 3 of "The language's everyday types" ([DT-093](#dt-093) §3.2) starts.
+  LabVIEW 2026 Q3 (below): if a type definition and an equal cluster that is not one did not wire as one type, this
+  decision was to be amended before step 3 of "The language's everyday types" ([DT-093](#dt-093) §3.2) started.
+  Measured on 2026-11-17: they wire as one type, so §1 holds, amended with the red dot LabVIEW draws.
 - **Why:** every comparison of types in the resolver (`iguales`, `comun`, the coercions of [DT-038](#dt-038)) and in
   the compiler (`inMemory`, the layouts of [DT-042](#dt-042)) is structural today. A type with a name of its own
   would have to be known by each of them, and by every function of the catalog that takes "a cluster". What a type
@@ -4770,23 +4771,60 @@ defined.**
 
 ### Decision
 
-1. **On wires the type is structural.** Two clusters with the same elements are one type whether or not either comes
-   from a type definition; no function, tunnel or subOVI call sees the difference. *Unmeasured: see the table.*
+1. **On wires the type is structural.** Two clusters with the same element types in the same order are one type
+   whether or not either comes from a type definition, and whatever their elements are named; no function, tunnel or
+   subOVI call refuses the wire (measured 2026-11-17,
+   [`typedef-wiring`](../../labview-captures/reports/2026-11-17-typedef-wiring.md): a type definition to an equal
+   plain cluster, either way, to one with other element names, to another `.ctl` with equal elements, and strict to
+   non-strict, all run). Two enums still need the same items ([DT-049](#dt-049)): a type definition of one wired to
+   an enum with other items is a broken wire, "enumeration conflict", as between two plain enums.
+   *Amended on 2026-11-17 by that measurement:* the wire is not broken, but LabVIEW draws a **red dot at the
+   destination** whenever the two ends do not follow the same file in the same kind (type definition to plain, plain
+   to type definition, one file to another, strict to non-strict); two ends that follow the same file as the same
+   kind, and two plain ends, draw none. The dot is a mark of the editor, decided from the links of §2 and §5, never
+   from the type; it is a **coercion dot**: NI's help on coercion dots says LabVIEW places one on the terminal that receives an
+   instance of a type definition from an object not linked to the same one, to warn that editing the definition
+   could break the VI (read 2026-11-17, ni.com "coercion dots"; no tip shows on hover, measured).
 2. **The link lives on the object.** A panel object or a constant that follows a type definition has, in its
    configuration, `typedef: { path, strict }`: the `.octl` file ([DT-093](#dt-093) §5), by a path resolved as a
    subOVI's is ([DT-045](#dt-045)), and whether it is a strict type definition. A cluster's elements
    ([DT-095](#dt-095)), an enum's items ([DT-049](#dt-049)) or a ring's ([DT-091](#dt-091)) are still stored in the
    object: they are the copy of what the file defined when the object was last updated.
-3. **The copy opens the OVI alone.** An `.ovi` whose `.octl` is missing opens, compiles and runs with the copy, and
-   says which file it did not find, as a missing subOVI does. Nothing of the `.octl` is needed to compile.
-4. **Updating is the editor's work, when an OVI is loaded and when the `.octl` is saved:** each object that follows
-   the file takes its definition again, keeping its own label, place and value where the new type still has them. How
-   values are kept across a change of the definition (an element added, removed or reordered; an enum item renamed)
-   is measured with step 3 and written then.
+3. **The copy keeps the OVI whole, but a missing `.octl` breaks it.** An `.ovi` whose `.octl` is missing opens with
+   the copy and says which file it did not find; nothing of the `.octl` is needed to read or draw it. *Amended on
+   2026-11-17 by measurement* ([`typedef-update`](../../labview-captures/reports/2026-11-17-typedef-update.md)):
+   LabVIEW first asks for the file (a file dialog titled `Find the Control Named "Name.ctl"`, in the OVI's folder);
+   on Cancel the VI opens **broken**, each instance drawn greyed with its stored value, Context Help still naming
+   the file, and the Error list says per instance "Type definition not found or contains errors", fixed by finding
+   the file or by Disconnect from Type Def. Solder does the same: the copy keeps the object, but the OVI does not run
+   until the link is found or removed. (Unlike a missing subOVI, which has no copy, the OVI stays editable.)
+4. **Updating is the editor's work, when an OVI is loaded and when the `.octl` is applied** (measured 2026-11-17, same
+   report). Saving or File ▸ Apply Changes in the control editor shows no dialog. Each object that follows the file
+   takes its definition again, keeping its label, place and size:
+   - **Silent:** an element added (empty value), elements reordered (values follow the element, not the index), an
+     enum item added or moved (the held item is followed). The OVI is not marked modified.
+   - **Review:** an element removed, a representation changed, an enum item renamed or the held one removed, on an
+     object whose stored default would change: the object does not update and the OVI is broken, "cannot update from
+     type definition without incorrectly preserving default values", until Review and Update from Type Def... (its
+     window: Instance / VI Name, Previous and New Default Value, Approve All, Approve, Apply Changes, Cancel)
+     approves the new default. LabVIEW proposes 3.7 → 4 for DBL → I32 and, for a removed enum item, the item now at
+     the same value. An object whose default would not change (an indicator at 0) updates silently.
+   - **Strict and non-strict:** a cosmetic change (an element's size) reaches a strict instance and not a non-strict
+     one; a strict `.ctl` saved but not applied breaks the OVIs that follow it ("This type definition has unapplied
+     changes"). A non-strict instance has ✓ Auto-Update from Type Def. in its menu; a strict one has not.
+   Unverified: values followed by name or by an element's identity (no rename measured), colour as a cosmetic change,
+   ties of the rounding, the strict cases of Review.
 5. **The type's name is shown, not compared.** The Context Help of a wire and of a terminal names the type
-   definition when its source object has one; it is found by following the wire to its source, not carried in the type.
+   definition when its source object has one, in a line before the type, `(typedef 'Name.ctl'[non-strict])` or
+   `[strict]` in LabVIEW (measured). It is found by following the wire back to its source through what keeps the
+   cluster whole (a structure's tunnel, a Bundle wired at the top, measured); a cluster built anew (Unbundle then
+   Bundle) follows nothing, though its elements keep their names. The same walk gives the source end of §1's dot.
 6. **A `.octl` file** holds one panel object as an `.ovi` holds it, with the format's version ([DT-055](#dt-055)), and
    which of the three it is: control, type definition or strict type definition. Its schema is written with step 3.
+   *Written on 2026-11-17* (`docs/schema/octl.schema.json`, `core/model/type-definition.mjs`, spec/02 §4.4): the object
+   is stored as a user's cluster stores an element (its block as `kind`, label, configuration, place), the kind is the
+   ring's `control`, `type-def` or `strict-type-def`, and the link of §2 goes into the `.ovi` as format version 7. An
+   object made from a plain `control` file follows nothing, as in LabVIEW.
 
 ### What is measured before step 3
 
@@ -4804,9 +4842,10 @@ defined.**
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| A type definition and an equal type that is not one are one type on a wire | the measurement above, then a test over `tipos` | **Unverified** in LabVIEW |
-| An OVI whose `.octl` is missing opens and runs with its copy | a test over a fixture with the file absent | Not built |
-| Updating keeps what the new definition still has | the measurement, then editor tests | Not built |
+| A type definition and an equal type that is not one are one type on a wire | measured 2026-11-17, then a test over `tipos` | Measured, not built |
+| A red dot where the ends follow different files or kinds | measured 2026-11-17, then an editor test | Measured, not built |
+| An OVI whose `.octl` is missing opens with its copy, broken | measured 2026-11-17, then a test over a fixture with the file absent | Measured, not built |
+| Updating keeps what the new definition still has; a changed default waits for Review | measured 2026-11-17, then editor tests | Measured, not built |
 
 ## DT-097
 

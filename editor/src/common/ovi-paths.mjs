@@ -140,17 +140,44 @@ export function rebaseStoredPath(storedPath, fromKey, toKey) {
 
 const isSubOVINode = (node) => node?.tipo === "subvi" && typeof node.config?.vi === "string";
 
-/** The graph of an OVI with the subOVI paths of its nodes rebased from one location to another. */
+/** An object's type definition link (DT-096), stored like a subOVI's path: relative to the OVI that follows it. */
+const hasTypeDefinitionPath = (holder) => typeof holder?.typedef?.path === "string";
+
+/** A node's configuration with its stored paths (subOVI, type definition) rebased; the same object when nothing moved. */
+function rebasedConfig(node, fromKey, toKey) {
+  let config = node.config;
+  if (isSubOVINode(node)) config = { ...config, vi: rebaseStoredPath(config.vi, fromKey, toKey) };
+  if (hasTypeDefinitionPath(config)) config = { ...config, typedef: { ...config.typedef, path: rebaseStoredPath(config.typedef.path, fromKey, toKey) } };
+  const moved = config.vi !== node.config?.vi || config.typedef?.path !== node.config?.typedef?.path;
+  return moved ? config : node.config;
+}
+
+/** The graph of an OVI with the subOVI and type definition paths of its nodes rebased from one location to another. */
 export function rebaseGraph(g, fromKey, toKey) {
   let changed = false;
   const nodos = g.nodos.map((node) => {
-    if (!isSubOVINode(node)) return node;
-    const vi = rebaseStoredPath(node.config.vi, fromKey, toKey);
-    if (vi === node.config.vi) return node;
+    if (!node.config) return node;
+    const config = rebasedConfig(node, fromKey, toKey);
+    if (config === node.config) return node;
     changed = true;
-    return { ...node, config: { ...node.config, vi } };
+    return { ...node, config };
   });
   return changed ? { ...g, nodos } : g;
+}
+
+/** Calls `visit` with every object of a file that holds a type definition link: front-panel items and node configurations. */
+function eachFileTypeDefinitionHolder(value, visit) {
+  if (Array.isArray(value)) return value.forEach((item) => eachFileTypeDefinitionHolder(item, visit));
+  if (!value || typeof value !== "object") return;
+  if (hasTypeDefinitionPath(value)) visit(value);
+  for (const inner of Object.values(value)) eachFileTypeDefinitionHolder(inner, visit);
+}
+
+/** The paths of the type definitions (`.octl`, DT-096) an `.ovi` (as an object) follows, in the order they appear. */
+export function typeDefinitionPathsInFile(file) {
+  const paths = [];
+  eachFileTypeDefinitionHolder([file["front-panel"], file["block-diagram"]], (holder) => paths.push(holder.typedef.path));
+  return paths;
 }
 
 /** Calls `visit` with every `subvi` node of a `.qvi` as an object (its structures and frames included). */
@@ -173,6 +200,12 @@ export function rebaseText(text, fromKey, toKey) {
   const file = JSON.parse(text);
   if (file["solder-polymorphic"] !== undefined) return rebasePolymorphicText(file, text, fromKey, toKey);
   let changed = false;
+  eachFileTypeDefinitionHolder([file["front-panel"], file["block-diagram"]], (holder) => {
+    const rebased = rebaseStoredPath(holder.typedef.path, fromKey, toKey);
+    if (rebased === holder.typedef.path) return;
+    holder.typedef.path = rebased;
+    changed = true;
+  });
   eachFileSubOVINode(file["block-diagram"], (node) => {
     const vi = rebaseStoredPath(node.config.vi, fromKey, toKey);
     if (vi === node.config.vi) return;
@@ -215,8 +248,9 @@ export async function readHierarchyTexts(rootKey, rootText, readText, oviLibRoot
     } catch {
       continue;
     }
-    // A polymorphic OVI (DT-074) reaches its instances, each stored relative to the `.sdp`.
-    const reached = isPolymorphicPath(key) ? (Array.isArray(file.instances) ? file.instances.map((instance) => instance?.ovi).filter((path) => typeof path === "string") : []) : subOVIPathsInFile(file);
+    // A polymorphic OVI (DT-074) reaches its instances, each stored relative to the `.sdp`; an OVI reaches its subOVIs
+    // and the type definitions it follows (DT-096), whose `.octl` reaches nothing further.
+    const reached = isPolymorphicPath(key) ? (Array.isArray(file.instances) ? file.instances.map((instance) => instance?.ovi).filter((path) => typeof path === "string") : []) : [...subOVIPathsInFile(file), ...typeDefinitionPathsInFile(file)];
     for (const stored of reached) {
       const calleeKey = resolveRelative(key, stored, oviLibRoot);
       if (visited.has(calleeKey)) continue;

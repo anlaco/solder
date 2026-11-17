@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solder.dev/schema/octl-1.json",
+  "title": "Solder type definition",
+  "description": "A custom control, type definition or strict type definition (DT-096 §6): one panel object, held as a user's cluster holds an element. Normative: an .octl file that does not validate against this schema is not conformant. Read and written by core/model/type-definition.mjs.",
+  "type": "object",
+  "required": ["solder", "type-definition", "object"],
+  "additionalProperties": false,
+  "properties": {
+    "solder": {
+      "description": "The version of the format, shared with the .ovi (DT-055). A reader MUST refuse a version newer than the one it knows.",
+      "type": "integer",
+      "minimum": 7,
+      "maximum": 7
+    },
+    "type-definition": {
+      "description": "Which of the control editor's three it is, as its ring names them: Control, Type Def., Strict Type Def. (measured, reports/2026-11-17-typedef-update.md Q4). Only the last two are followed by the objects made from them.",
+      "enum": ["control", "type-def", "strict-type-def"]
+    },
+    "object": {
+      "description": "The panel object: its block (`kind`), its label, its configuration as a front-panel item's (a cluster's `elements`, an enum's type, a default) and its place in the control editor's panel.",
+      "type": "object",
+      "required": ["kind", "x", "y"],
+      "not": { "required": ["typedef"] },
+      "properties": {
+        "kind": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "label": { "type": "string" },
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      }
+    }
+  }
+}

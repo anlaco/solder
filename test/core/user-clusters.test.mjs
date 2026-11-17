@@ -94,7 +94,7 @@ test("a Cluster Constant holds constants and gives its derived value", async () 
   assert.equal(aTexto(leer(text, CAT), CAT), text);
 });
 
-test("a file of version 5 with an error cluster opens unchanged and is saved as version 6", () => {
+test("a file of version 5 with an error cluster opens unchanged and is saved in the current version", () => {
   const version5 = {
     solder: 5,
     "front-panel": [{ name: "cluster-control_1", role: "control", type: { cluster: [{ name: "status", type: "boolean" }, { name: "code", type: "i32" }, { name: "source", type: "string" }] }, style: "error-in" }],
@@ -104,11 +104,11 @@ test("a file of version 5 with an error cluster opens unchanged and is saved as 
   const node = read.nodos.find((candidate) => candidate.tipo === "cluster-control");
   assert.equal(node.config.elements, undefined, "an error cluster has no elements");
   assert.deepEqual(node.config.type, version5["front-panel"][0].type);
-  assert.equal(JSON.parse(aTexto(read, CAT)).solder, 6);
+  assert.equal(JSON.parse(aTexto(read, CAT)).solder, VERSION);
 });
 
-test("a file of a version after 6 is refused", () => {
-  assert.throws(() => leer({ solder: VERSION + 1, "block-diagram": { nodes: [] } }, CAT), /this Solder reads versions 1 to 6/);
+test("a file of a version after the current one is refused", () => {
+  assert.throws(() => leer({ solder: VERSION + 1, "block-diagram": { nodes: [] } }, CAT), new RegExp(`this Solder reads versions 1 to ${VERSION}`));
 });
 
 /** A cluster of two I32 elements valued 1 and 2, held in `block` and unbundled into the indicators "first" and "second". */
@@ -151,4 +151,17 @@ test("two elements of a cluster control with the same label keep each its own va
   const ovi = twoNumbers("cluster-control", [numeric(1), numeric(2)]);
   assert.deepEqual(ovi.g.nodos.find((node) => node.id === ovi.id.cluster).config.value, [1, 2], "the cluster's default value");
   assert.deepEqual(await firstAndSecond(ovi, { [ovi.id.cluster]: [7, 8] }), [7, 8], "the values the panel holds");
+});
+
+test("a cluster inside a user's cluster is saved with its own elements in file form and opens the same", () => {
+  const inner = { tipo: "cluster-control", label: { text: "inner" }, config: { elements: [{ tipo: "control", label: { text: "x" }, config: { type: "number", value: 2 }, x: 4, y: 19 }] }, x: 3, y: 5 };
+  const ovi = buildOVI(CAT, (b) => b.node("outer", "cluster-control"));
+  ovi.g = setClusterElements(ovi.g, CAT, ovi.id.outer, [inner]);
+  const text = aTexto(ovi.g, CAT);
+  const innerInFile = JSON.parse(text)["front-panel"][0].elements[0];
+  assert.deepEqual(innerInFile.elements, [{ kind: "control", label: "x", type: "number", default: 2, x: 4, y: 19 }], "the file's names, not the graph's");
+  assert.equal(innerInFile.type, undefined, "the inner type is derived, not written");
+  const reread = leer(text, CAT);
+  assert.deepEqual(reread.nodos[0].config.type, { cluster: [{ name: "inner", type: { cluster: [{ name: "x", type: "number" }] } }] });
+  assert.equal(aTexto(reread, CAT), text);
 });

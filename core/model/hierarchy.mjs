@@ -11,6 +11,9 @@
 //   core/model/polymorphic.mjs `readPolymorphic`, or `null` if it cannot be found.
 //   Its instances, resolved relative to the `.sdp`, are loaded with it: Automatic
 //   needs all their connectors.
+// - `loadTypeDefinition(key)`: a type definition (`.octl`, DT-096) read with
+//   core/model/type-definition.mjs `readTypeDefinition`, or `null` if it cannot be
+//   found or read. Its path is resolved relative to the OVI that follows it.
 // Each OVI gets its own view of the catalog, in which the ports of its `subvi`
 // nodes come from the connector of the OVI they call (spec/03 Rule 4). A subOVI
 // is loaded the first time its caller needs its ports, which can be while the
@@ -18,16 +21,23 @@
 
 import { conSubOVIs } from "./graph.mjs";
 import { isPolymorphicPath } from "./polymorphic.mjs";
+import { missingTypeDefinitionReason, typeDefinitionInstances } from "./type-definition.mjs";
 
 /**
- * Loads the hierarchy under `rootKey`. Returns `{ root, ovis, errors }`: `ovis`
+ * Loads the hierarchy under `rootKey`. Returns `{ root, ovis, typeDefinitions, errors }`: `ovis`
  * maps each key to `{ key, g, cat }` (callees before callers), or for a
  * polymorphic OVI to `{ key, polymorphic, instances }` with each instance's
- * entry (null if it could not be loaded); `errors` lists the OVIs that could not
- * be loaded and the recursive cycles, which are not supported yet (DT-045 §4).
+ * entry (null if it could not be loaded); `typeDefinitions` maps the key of each
+ * `.octl` followed to what it holds, or null when it is missing; `errors` lists the
+ * OVIs that could not be loaded, the recursive cycles, which are not supported yet
+ * (DT-045 §4), and each object whose type definition is missing (DT-096 §3).
+ * @param {string} rootKey
+ * @param {object} baseCatalog
+ * @param {{ resolvePath: (callerKey: string, storedPath: string) => string, loadOVI: (key: string, cat: object) => any, loadPolymorphic?: (key: string) => any, loadTypeDefinition?: (key: string) => any }} loaders
  */
-export function loadHierarchy(rootKey, baseCatalog, { resolvePath, loadOVI, loadPolymorphic = () => null }) {
+export function loadHierarchy(rootKey, baseCatalog, { resolvePath, loadOVI, loadPolymorphic = () => null, loadTypeDefinition = () => null }) {
   const ovis = new Map();
+  const typeDefinitions = new Map();
   const loading = new Set();
   const errors = [];
   const fail = (vi, motivo) => {
@@ -43,6 +53,14 @@ export function loadHierarchy(rootKey, baseCatalog, { resolvePath, loadOVI, load
     const entry = { key, polymorphic, instances };
     ovis.set(key, entry);
     return entry;
+  };
+  // A missing `.octl` breaks the OVI that follows it, once per object, as LabVIEW's Error list (DT-096 §3).
+  const loadTypeDefinitionsOf = (oviKey, g) => {
+    for (const node of typeDefinitionInstances(g)) {
+      const definitionKey = resolvePath(oviKey, node.config.typedef.path);
+      if (!typeDefinitions.has(definitionKey)) typeDefinitions.set(definitionKey, loadTypeDefinition(definitionKey));
+      if (!typeDefinitions.get(definitionKey)) errors.push({ vi: oviKey, motivo: missingTypeDefinitionReason(node.label?.text), node: node.name });
+    }
   };
   const load = (key, callerKey) => {
     if (ovis.has(key)) return ovis.get(key);
@@ -61,11 +79,12 @@ export function loadHierarchy(rootKey, baseCatalog, { resolvePath, loadOVI, load
     }
     // Subvi nodes whose ports nobody asked for while reading (no wires) are loaded too.
     for (const node of g.nodos.filter((n) => n.tipo === "subvi")) cat.findSubOVI(node.config?.vi);
+    loadTypeDefinitionsOf(key, g);
     loading.delete(key);
     const entry = { key, g, cat };
     ovis.set(key, entry);
     return entry;
   };
   load(rootKey, null);
-  return { root: rootKey, ovis, errors };
+  return { root: rootKey, ovis, typeDefinitions, errors };
 }

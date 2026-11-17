@@ -26,7 +26,7 @@ import { storedClusterConfig, withDerivedCluster } from "./user-cluster.mjs";
 const freeLabelToFile = (n, place, inside, frame) => limpio({ x: place.x, y: place.y, text: n.label?.text ?? "", inside, frame, width: n.tam?.ancho, height: n.tam?.alto });
 const freeLabelSize = (label) => (label.width === undefined ? undefined : limpio({ ancho: label.width, alto: label.height }));
 
-export const VERSION = 6;
+export const VERSION = 7;
 
 /** Solder's own numbering of 4-2-2-4's cells in version 1: 0–3 the left column down, 4–7 the middle, 8–11 the right column down. */
 const VERSION_1_PATTERN = "4-2-2-4";
@@ -86,7 +86,10 @@ function withRingPairsVersion(vi) {
 /** Version 5 → 6 (DT-095): a cluster panel object or a cluster constant may hold `elements`. Optional: nothing to change. */
 const withUserClustersVersion = (vi) => ({ ...vi, solder: 6 });
 
-export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion, withFreeLabelsVersion, withRingPairsVersion, withUserClustersVersion];
+/** Version 6 → 7 (DT-096): a panel object or a constant may follow a type definition, `typedef`. Optional: nothing to change. */
+const withTypeDefinitionsVersion = (vi) => ({ ...vi, solder: 7 });
+
+export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion, withFreeLabelsVersion, withRingPairsVersion, withUserClustersVersion, withTypeDefinitionsVersion];
 
 /** A file of an older version brought up to `version`, one migration after another. */
 export function migrar(vi, migrations = MIGRATIONS, version = VERSION) {
@@ -113,14 +116,17 @@ const aGrafo = (config) => {
 };
 
 /** A user cluster's element in the file (DT-095): its block as `kind`, its label, its configuration and its place. */
-const elementToFile = (element) => limpio({ kind: element.tipo, label: element.label?.text, ...aFichero(element.config), x: element.x, y: element.y });
+export const elementToFile = (element) => limpio({ kind: element.tipo, label: element.label?.text, ...configToFile(element.config), x: element.x, y: element.y });
 
 /** An element of the file, as the graph holds it. */
-function elementFromFile(item, cat) {
+export function elementFromFile(item, cat) {
   const { kind, label, x, y, ...config } = item;
   if (!cat.tiene(kind)) throw new ErrorQvi(`the block "${kind}" of a cluster element is not in the catalog`);
   const read = aGrafo(config);
-  return limpio({ tipo: kind, label: label !== undefined ? { text: label } : undefined, config: Object.keys(read).length ? read : undefined, x: x ?? 0, y: y ?? 0 });
+  // An element that is itself a user's cluster holds its own elements (DT-095), its type and value derived from them.
+  if (Array.isArray(read.elements)) read.elements = read.elements.map((inner) => elementFromFile(inner, cat));
+  const element = limpio({ tipo: kind, label: label !== undefined ? { text: label } : undefined, config: Object.keys(read).length ? read : undefined, x: x ?? 0, y: y ?? 0 });
+  return withDerivedCluster(cat, element);
 }
 
 /** A node's configuration in the file: a user cluster's elements written as elements, its derived type and value left out. */
@@ -231,7 +237,7 @@ export function escribir(g, cat) {
       const salida = cat.puertos(n).out.length > 0;
       const tipoBase = b.config?.default?.type ?? "number";
       const elements = n.config?.elements?.map(elementToFile);
-      panel.push(limpio({ name: n.name, role: salida ? "control" : "indicator", type: elements ? undefined : n.config?.type ?? tipoBase, default: elements ? undefined : n.config?.value, elements, style: n.config?.style, "ring-items": n.config?.items, "allow-undefined": n.config?.["allow-undefined"], "visible-elements": n.config?.visibles, index: n.config?.indice || undefined, "mechanical-action": n.config?.mechanical, graph: graphToFile(n.config) }));
+      panel.push(limpio({ name: n.name, role: salida ? "control" : "indicator", type: elements ? undefined : n.config?.type ?? tipoBase, default: elements ? undefined : n.config?.value, elements, style: n.config?.style, "ring-items": n.config?.items, "allow-undefined": n.config?.["allow-undefined"], "visible-elements": n.config?.visibles, index: n.config?.indice || undefined, "mechanical-action": n.config?.mechanical, graph: graphToFile(n.config), typedef: n.config?.typedef }));
       if (n.panel) placPanel[n.name] = limpio({ x: n.panel.x, y: n.panel.y, w: n.panel.w, h: n.panel.h, label: etiqueta, "label-offset": n.panel.etiqueta });
     }
   }
@@ -356,7 +362,7 @@ export function leer(datos, cat) {
           const item = fp.get(nodo.name);
           const tipoBase = cat.bloque(nodo.type).config?.default?.type ?? "number";
           // Lo que no es de fábrica del bloque se conserva; lo demás lo pone el bloque al crearse.
-          const config = limpio({ type: item && item.type !== tipoBase ? item.type : undefined, value: item?.default, style: item?.style, items: item?.["ring-items"], "allow-undefined": item?.["allow-undefined"], visibles: item?.["visible-elements"], indice: item?.index, mechanical: item?.["mechanical-action"], ...graphFromFile(item?.graph) });
+          const config = limpio({ type: item && item.type !== tipoBase ? item.type : undefined, value: item?.default, style: item?.style, items: item?.["ring-items"], "allow-undefined": item?.["allow-undefined"], visibles: item?.["visible-elements"], indice: item?.index, mechanical: item?.["mechanical-action"], typedef: item?.typedef, ...graphFromFile(item?.graph) });
           const elements = item?.elements?.map((element) => elementFromFile(element, cat));
           n.config = { ...n.config, ...config, ...(elements && { elements }) };
           if (!Object.keys(n.config).length) delete n.config;

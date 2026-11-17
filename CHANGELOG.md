@@ -9,6 +9,14 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- An OVI can follow a type definition (DT-096): a control, indicator or constant stores the `.octl` file it follows and a
+  copy of its definition, and the `.ovi` format goes to version 7 (older files open unchanged). An OVI whose `.octl` is
+  missing opens with its copy but does not run, and the Error list says, as LabVIEW does, "Type Definition '<label>':
+  Type definition not found or contains errors." Making and editing type definitions in the editor comes next.
+
+- Fixed: a Cluster Constant saved with its elements did not validate against the format's schema, and a cluster inside
+  a cluster was saved with internal names.
+
 - Fixed: an OVI saved after Change to Indicator or Change to Control on a wired array, ring or DAQ name could not be
   opened again ("has no output port"). The wire, broken because it now faces the wrong way, is saved and opens as it
   was, as in LabVIEW.

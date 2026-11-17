@@ -18,7 +18,7 @@ When the developer says "keep going":
    Library Function Node and the add-ons folder. "OVI files are `.ovi`" (DT-094) is done (2026-11-16). **DT-093 (2026-11-16)
    closes the hardware stage here**: next is **"The language's everyday types"** below. Its step 1 (the compiler's
    split) and step 2, clusters made by the user (DT-095, DT-098), are done (2026-11-16 and 2026-11-17): **continue with
-   step 3, type definitions** (DT-096), starting with the measurements it lists. DAQ's stage B waits for the
+   step 3, type definitions** (DT-096), measured on 2026-11-17 and its core's first part done: next the core's second part. DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
@@ -1012,7 +1012,19 @@ to it go on, new fronts wait for step 6.
    (d) build on it.*
 3. **Type definitions** and strict type definitions, in `.octl` files (DT-093 §5): Make Type Def., the control editor,
    updating the instances. *Decided in DT-096 (2026-11-16): the type on a wire stays structural and the link to the
-   `.octl` lives on the object, with a copy of the definition. First, the measurements DT-096 lists.*
+   `.octl` lives on the object, with a copy of the definition. First, the measurements DT-096 lists.* *Measured on
+   2026-11-17 ([`typedef-wiring`](../../labview-captures/reports/2026-11-17-typedef-wiring.md),
+   [`typedef-update`](../../labview-captures/reports/2026-11-17-typedef-update.md)); DT-096 amended: wires stay
+   structural with a red dot where the ends follow different files or kinds, a missing `.octl` breaks the OVI, and an
+   update that would change a stored default waits for Review and Update from Type Def.... Next: the core (the link,
+   the `.octl` format and schema, the broken state of a missing file), then the editor in stages.*
+   *Core, first part, on 2026-11-17: the link `typedef: { path, strict }` on a panel object or a constant (format
+   version 7, spec/02 §4.4), the `.octl` file and its schema (`core/model/type-definition.mjs`,
+   `docs/schema/octl.schema.json`), the `.octl` files read with the hierarchy (command line and editor) and rebased by
+   Save As, and a missing one breaking the OVI with LabVIEW's words (`test/core/type-definitions.test.mjs`). Found on
+   the way and fixed: the schema refused a Cluster Constant's `elements`, and a cluster inside a cluster was written
+   with the graph's names. Next, the core's second part: updating an object from its definition (silent or waiting for
+   Review, DT-096 §4) and the source a wire's coercion dot and Context Help follow (§1, §5); then the editor.*
 4. **Time stamp**: control, constant, Get Date/Time, conversions. *Decided in DT-097 (2026-11-16) and measured the
    same day ([`time-stamp`](../../labview-captures/reports/2026-11-16-time-stamp.md)): 16 bytes laid out as a cluster,
    and the arithmetic LabVIEW takes, exact.*

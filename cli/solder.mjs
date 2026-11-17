@@ -27,6 +27,7 @@ import { wat } from "../core/compiler/wasm-encoder.mjs";
 import { loadSolderIo, withLibraryLocator } from "../native/solder-io-node/solder-io.mjs";
 import { isOviLibPath, resolveOviLibPath } from "../core/model/ovi-lib.mjs";
 import { readPolymorphic } from "../core/model/polymorphic.mjs";
+import { readTypeDefinition } from "../core/model/type-definition.mjs";
 import { addonLibraryLocator, loadInstalledAddons } from "../editor/electron/installed-addons.mjs";
 
 const AQUI = path.dirname(fileURLToPath(import.meta.url));
@@ -88,7 +89,15 @@ const loadPolymorphic = (key) => {
     process.exit(1);
   }
 };
-const hierarchy = loadHierarchy(path.resolve(fichero), cat, { resolvePath, loadOVI, loadPolymorphic });
+// A type definition that is missing or cannot be read breaks the OVI that follows it, as LabVIEW's does (DT-096 §3).
+const loadTypeDefinition = (key) => {
+  try {
+    return readTypeDefinition(readFileSync(key, "utf8"), cat);
+  } catch {
+    return null;
+  }
+};
+const hierarchy = loadHierarchy(path.resolve(fichero), cat, { resolvePath, loadOVI, loadPolymorphic, loadTypeDefinition });
 for (const e of hierarchy.errors) console.error(`${e.vi ?? fichero}: ${e.motivo}`);
 if (hierarchy.errors.length) process.exit(1);
 const { g, cat: rootCatalog } = hierarchy.ovis.get(hierarchy.root);

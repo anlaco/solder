@@ -5,7 +5,6 @@
   "core/compiler/node-table.mjs TS2741": 1,
   "core/model/clipboard.mjs TS2339": 1,
   "core/model/graph.mjs TS2554": 2,
-  "core/model/hierarchy.mjs TS2554": 1,
   "core/model/paths.mjs TS2591": 3,
   "core/model/ring.mjs TS2365": 1,
   "core/runtime/file-dialogs.mjs TS2339": 1,

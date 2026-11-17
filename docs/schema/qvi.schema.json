@@ -12,7 +12,7 @@
       "description": "Versión del formato. Un lector DEBE rechazar una versión mayor que la que conoce.",
       "type": "integer",
       "minimum": 1,
-      "maximum": 6
+      "maximum": 7
     },
 
     "meta": {
@@ -343,6 +343,17 @@
       }
     },
 
+    "typeDefinitionLink": {
+      "description": "The type definition this object follows (DT-096): the `.octl` file, by a path relative to this OVI's file (absolute while the OVI has none), and whether it is a strict type definition. The object still stores the copy of what the file defined.",
+      "type": "object",
+      "required": ["path", "strict"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "strict": { "type": "boolean" }
+      }
+    },
+
     "clusterElement": {
       "description": "An element of a user's cluster or Cluster Constant (DT-095): its block, label, configuration (as a node's) and place.",
       "type": "object",
@@ -369,6 +380,7 @@
           "description": "A user's cluster (DT-095): its elements in cluster order, each a panel object with its block (`kind`), label, configuration and place relative to the cluster's interior.",
           "type": "array", "items": { "$ref": "#/$defs/clusterElement" }
         },
+        "typedef": { "$ref": "#/$defs/typeDefinitionLink" },
         "type": { "$ref": "#/$defs/dataType" },
         "default": {
           "description": "Valor inicial. SEMÁNTICO: forma parte del programa, no de la presentación."
@@ -476,6 +488,11 @@
           "additionalProperties": false,
           "properties": {
             "default": { "description": "Para bloques constante: su valor." },
+            "typedef": { "$ref": "#/$defs/typeDefinitionLink" },
+            "elements": {
+              "description": "For a Cluster Constant (DT-095): its elements in cluster order, as a user's cluster on the panel holds them.",
+              "type": "array", "items": { "$ref": "#/$defs/clusterElement" }
+            },
             "type": {
               "description": "Para bundle/unbundle: el tipo de cluster que construye o descompone.",
               "$ref": "#/$defs/dataType"

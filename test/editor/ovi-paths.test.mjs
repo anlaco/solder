@@ -134,3 +134,23 @@ test("the window names the VI by its current name, not the one it was opened wit
   assert.equal(namesRead.length, 1, "only currentOVIName() reads the name the window was opened with");
   assert.match(source, /const currentOVIName = \(\) => Paths\.oviDisplayName\(oviKey, oviInfo\.name\)/);
 });
+
+// DT-096: an object that follows a type definition stores the `.octl`'s path as a caller stores a subOVI's.
+const followingFile = (typedefPath) => ({
+  solder: Q.VERSION,
+  "front-panel": [{ name: "Pt", role: "control", elements: [], typedef: { path: typedefPath, strict: false } }],
+  "block-diagram": { nodes: [{ name: "Pt", type: "cluster-control" }, { name: "k", type: "cluster-constant", config: { elements: [], typedef: { path: typedefPath, strict: true } } }] },
+});
+
+test("the type definitions an OVI follows are read with its hierarchy and rebased by Save As", async () => {
+  const file = followingFile("defs/PointTD.octl");
+  assert.deepEqual(Paths.typeDefinitionPathsInFile(file), ["defs/PointTD.octl", "defs/PointTD.octl"], "the panel object's and the constant's");
+  const files = { "/ovis/defs/PointTD.octl": '{"solder":7}' };
+  const { texts, missing } = await Paths.readHierarchyTexts("/ovis/main.ovi", JSON.stringify(file), async (key) => files[key] ?? null);
+  assert.deepEqual(Object.keys(texts), ["/ovis/defs/PointTD.octl"]);
+  assert.deepEqual(missing, []);
+  const rebased = JSON.parse(Paths.rebaseText(JSON.stringify(file), "/ovis/main.ovi", "/ovis/sub/main.ovi"));
+  assert.deepEqual(Paths.typeDefinitionPathsInFile(rebased), ["../defs/PointTD.octl", "../defs/PointTD.octl"]);
+  const graph = { nodos: [{ id: 1, tipo: "cluster-control", config: { typedef: { path: "defs/PointTD.octl", strict: false } } }] };
+  assert.equal(Paths.rebaseGraph(graph, "/ovis/main.ovi", "/ovis/sub/main.ovi").nodos[0].config.typedef.path, "../defs/PointTD.octl");
+});

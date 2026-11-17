@@ -118,7 +118,8 @@ entities: they are the two faces of one. That is why `layout` needs to separate 
 
 ### 4.1 `solder` *(required)*
 
-Format version. Its value is `6` (version 1 until DT-075, 2 until DT-078, 3 until DT-085, 4 until DT-091, 5 until DT-095).
+Format version. Its value is `7` (version 1 until DT-075, 2 until DT-078, 3 until DT-085, 4 until DT-091, 5 until DT-095,
+6 until DT-096).
 A reader **MUST** reject a value greater than the one it knows, instead of trying to read it halfway.
 
 **The format is frozen from `0.4.0-beta` on** (DT-055). Any later change to it
@@ -195,6 +196,23 @@ A Cluster Constant (`cluster-constant`) stores its constants the same way in its
 ```
 
 An error cluster, which has a `style`, keeps its stored `type` (DT-043).
+
+**An object that follows a type definition** (DT-096, version 7) — a front-panel item, or a constant in its node's
+`config` — carries `typedef`: `{ "path": "PointTD.octl", "strict": false }`, the `.octl` file by a path stored as a
+subOVI's is (relative to this file, absolute while it has none) and whether it is a strict type definition. It still
+stores its whole definition (its `elements`, its enum `type`…), the copy of what the file defined when it was last
+updated: the file is needed to keep the object up to date, not to read it. An `.ovi` whose `.octl` is missing is read
+with its copy and is **not executable**: one error per object, `Type Definition '<label>': Type definition not found
+or contains errors.`, as LabVIEW reports it.
+
+An `.octl` file ([`../schema/octl.schema.json`](../schema/octl.schema.json)) holds one panel object as a cluster holds
+an element, with the format's version and its kind, the control editor's ring: `control`, `type-def` or
+`strict-type-def`.
+
+```json
+{ "solder": 7, "type-definition": "type-def", "object": { "kind": "cluster-control", "label": "PointTD", "elements": [
+    { "kind": "control", "label": "a", "type": "number", "default": 3, "x": 4, "y": 19 } ], "x": 10, "y": 10 } }
+```
 
 ### 4.5 `connector` *(optional)*
 
