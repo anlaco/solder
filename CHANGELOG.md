@@ -9,6 +9,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Fixed: an OVI saved after Change to Indicator or Change to Control on a wired array, ring or DAQ name could not be
+  opened again ("has no output port"). The wire, broken because it now faces the wrong way, is saved and opens as it
+  was, as in LabVIEW.
+
 - Fixed: a cluster's value was a record by element name, so two elements with the same label or none, as in a
   Cluster Constant holding 1 and 2, gave one value twice (2 and 2). A cluster's value is now the list of its elements'
   values in cluster order, as LabVIEW gives it; the error cluster, a VISA resource name and a DAQ task are still read

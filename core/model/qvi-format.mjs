@@ -307,6 +307,16 @@ export class ErrorQvi extends Error {}
  * Lee un OVI. `datos` es el objeto del fichero (o su texto). Las estructuras se
  * reconstruyen planas, con `dentro` (DT-041).
  */
+/** Does node `n` have port `port` facing `direction` in the catalog? */
+function hasPort(cat, n, port, direction) {
+  try {
+    cat.puerto(n, port, direction);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function leer(datos, cat) {
   const read = typeof datos === "string" ? JSON.parse(datos) : datos;
   // A newer file is refused rather than read halfway; an older one is migrated first.
@@ -452,6 +462,9 @@ export function leer(datos, cat) {
     } catch (err) {
       // A subOVI that lost this connector terminal: the OVI still opens, with this wire broken (DT-046).
       if (n.tipo === "subvi") return { suelto: [n.x ?? 0, n.y ?? 0] };
+      // A terminal flipped after it was wired (Change to Indicator or to Control): the wire was saved broken, facing
+      // the wrong way, and opens as it was saved.
+      if (hasPort(cat, n, puerto, dir === "out" ? "in" : "out")) return { nodo: n.id, puerto };
       throw new ErrorQvi(err.message);
     }
     return { nodo: n.id, puerto };

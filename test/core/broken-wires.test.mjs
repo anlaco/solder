@@ -113,3 +113,20 @@ test("a wire from a loop's output back into the same loop closes a cycle and is 
   assert.equal(Gr.ejecutable(back.g, CAT, resolved), false);
   assert.ok(compilar(back.g, CAT).errores, "the compiler refuses it instead of emitting invalid WebAssembly");
 });
+
+test("a terminal flipped after it was wired keeps its wire broken, and the OVI saves and opens again", () => {
+  const { g, x, add } = adder();
+  // Change to Indicator on the control x, as the editor does it: the node flips and the wire keeps its port renamed.
+  const flipped = {
+    ...g,
+    nodos: g.nodos.map((node) => (node.id === x ? { ...node, tipo: "indicator" } : node)),
+    cables: g.cables.map((wire) => (wire.de.nodo === x ? { ...wire, de: { nodo: x, puerto: "value" } } : wire)),
+  };
+  const wire = flipped.cables.find((c) => c.a.nodo === add && c.a.puerto === "a");
+  assert.ok(Gr.tipos(flipped, CAT).cables.get(wire.id).roto, "the wire faces the wrong way: broken");
+  assert.equal(Gr.ejecutable(flipped, CAT, Gr.tipos(flipped, CAT)), false);
+  const text = aTexto(flipped, CAT);
+  const read = leer(text, CAT);
+  assert.equal(aTexto(read, CAT), text, "it opens as it was saved");
+  assert.deepEqual(read.cables.find((c) => c.a.puerto === "a").de, { nodo: x, puerto: "value" });
+});
