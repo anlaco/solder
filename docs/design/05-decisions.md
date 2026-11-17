@@ -4814,11 +4814,21 @@ defined.**
      changes"). A non-strict instance has ✓ Auto-Update from Type Def. in its menu; a strict one has not.
    Unverified: values followed by name or by an element's identity (no rename measured), colour as a cosmetic change,
    ties of the rounding, the strict cases of Review.
+   *Built in the core on 2026-11-17* (`core/model/type-definition-update.mjs`, `test/core/type-definition-update.test.mjs`):
+   elements are matched by label; the definition's data (`type`, ring `items`, `allow-undefined`, `elements`) reaches
+   every instance and the rest of its configuration (look: places, styles) only a strict one; a loss is a held default
+   that is not the type's zero (0, FALSE, empty) and would be removed or changed, which generalizes the measured
+   indicator at 0. The block an element takes in an indicator or a constant is given by the editor.
 5. **The type's name is shown, not compared.** The Context Help of a wire and of a terminal names the type
    definition when its source object has one, in a line before the type, `(typedef 'Name.ctl'[non-strict])` or
    `[strict]` in LabVIEW (measured). It is found by following the wire back to its source through what keeps the
    cluster whole (a structure's tunnel, a Bundle wired at the top, measured); a cluster built anew (Unbundle then
    Bundle) follows nothing, though its elements keep their names. The same walk gives the source end of §1's dot.
+   *Built in the core on 2026-11-17* (`core/model/type-definition-wires.mjs`): the walk goes back through tunnels (not
+   indexed) and a Bundle wired at the top, and through a Case's output tunnel only when every wired frame brings the
+   same definition (unverified); a shift register, an indexed tunnel and a subOVI's terminal carry none (unmeasured).
+   The coercion dot of §1 is drawn on a wire entering a panel object or a constant whose link differs from it.
+
 6. **A `.octl` file** holds one panel object as an `.ovi` holds it, with the format's version ([DT-055](#dt-055)), and
    which of the three it is: control, type definition or strict type definition. Its schema is written with step 3.
    *Written on 2026-11-17* (`docs/schema/octl.schema.json`, `core/model/type-definition.mjs`, spec/02 §4.4): the object

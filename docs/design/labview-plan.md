@@ -18,7 +18,7 @@ When the developer says "keep going":
    Library Function Node and the add-ons folder. "OVI files are `.ovi`" (DT-094) is done (2026-11-16). **DT-093 (2026-11-16)
    closes the hardware stage here**: next is **"The language's everyday types"** below. Its step 1 (the compiler's
    split) and step 2, clusters made by the user (DT-095, DT-098), are done (2026-11-16 and 2026-11-17): **continue with
-   step 3, type definitions** (DT-096), measured on 2026-11-17 and its core's first part done: next the core's second part. DAQ's stage B waits for the
+   step 3, type definitions** (DT-096), measured and its core done on 2026-11-17: next the editor, in the stages listed there. DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
@@ -1025,6 +1025,16 @@ to it go on, new fronts wait for step 6.
    the way and fixed: the schema refused a Cluster Constant's `elements`, and a cluster inside a cluster was written
    with the graph's names. Next, the core's second part: updating an object from its definition (silent or waiting for
    Review, DT-096 §4) and the source a wire's coercion dot and Context Help follow (§1, §5); then the editor.*
+   *Core, second part, on 2026-11-17: `core/model/type-definition-update.mjs` updates an object from its definition
+   (silent, or a review with the previous and proposed defaults and what is lost), `core/model/type-definition-wires.mjs`
+   finds the definition a wire carries, its coercion dot and its Context Help line
+   (`test/core/type-definition-update.test.mjs`, the measured cases). **The core is done.** Next, the editor, in stages:
+   (a) Make Type Def. / Open Type Def. and the control editor window (title, ring, File ▸ Apply Changes, Save) writing
+   the `.octl`; (b) the instances' menus (Open Type Def., Disconnect from Type Def., Auto-Update from Type Def., Review
+   and Update from Type Def...) and updating the open OVIs on Apply Changes; (c) the Review and Update window; (d) the
+   coercion dot and the Context Help line; then a placed `.octl` from Select a Control... First, measure what the
+   editor stages need and the reports do not say (how Make Type Def. is reached, what the control editor opens with,
+   where a new instance is placed).*
 4. **Time stamp**: control, constant, Get Date/Time, conversions. *Decided in DT-097 (2026-11-16) and measured the
    same day ([`time-stamp`](../../labview-captures/reports/2026-11-16-time-stamp.md)): 16 bytes laid out as a cluster,
    and the arithmetic LabVIEW takes, exact.*

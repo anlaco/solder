@@ -1,0 +1,107 @@
+// Updating an object from the type definition it follows (DT-096 §4), as LabVIEW does when the `.ctl` is applied
+// (measured: reports/2026-11-17-typedef-update.md Q3).
+//
+// - The object keeps its block (control, indicator or constant), its label, its place and its own default value; it
+//   takes the definition's data: types, enum and ring items, elements.
+// - A cluster's elements are matched by label, so a value follows its element when the elements are reordered
+//   (measured); a new element takes the definition's value. Whether LabVIEW matches by name or by an element's own
+//   identity is unverified (no rename was measured).
+// - An enum's value follows its item by text when the item moves (measured); a numeric's is converted to the new
+//   representation (3.7 becomes 4 in an I32, measured).
+// - A non-strict instance keeps its own look (the elements' places and styles); a strict one takes the definition's
+//   (measured: an element's size reached a strict instance only).
+// - When the update would lose or change a default the object holds (an element with a value removed, a value
+//   converted, a held enum item renamed or removed), it is not applied: LabVIEW breaks the VI until Review and Update
+//   from Type Def... approves the new default. An object whose defaults are all zero updates silently (measured: the
+//   indicator at 0).
+//
+// Pure. The block an element takes in the instance (a control's elements are controls, an indicator's indicators, a
+// constant's constants) is the editor's knowledge: it passes `toInstanceElement`.
+
+import { convertirValor, esEnum, esNumerico } from "./types.mjs";
+import { hasElements, withDerivedCluster } from "./user-cluster.mjs";
+import { typeDefinitionLink } from "./type-definition.mjs";
+
+/** The keys of a configuration that are data, which every instance follows; the rest is look, which only a strict one follows. */
+const DATA_KEYS = ["type", "items", "allow-undefined", "elements"];
+
+/** A value whose loss LabVIEW does not ask about: the type's zero, or none stored. */
+const isZeroDefault = (value) => value === undefined || value === 0 || value === false || value === "";
+
+/** `config` with only its data keys. */
+const dataOf = (config = {}) => Object.fromEntries(DATA_KEYS.filter((key) => key in config).map((key) => [key, config[key]]));
+
+/** The value an enum holds after its items change: the same item where it still is, else the same number, within the items. */
+function followedEnumValue(ownValue, ownItems, newItems) {
+  const index = ownValue ?? 0;
+  const followed = newItems.indexOf(ownItems[index]);
+  if (followed >= 0) return { value: followed, kept: true };
+  return { value: Math.min(index, newItems.length - 1), kept: false };
+}
+
+/** A scalar's value under its new type, and whether it is the value it had. */
+function convertedValue(ownConfig, newType) {
+  const ownValue = ownConfig?.value;
+  if (ownValue === undefined) return { value: undefined, kept: true };
+  if (esEnum(newType) && esEnum(ownConfig.type)) return followedEnumValue(ownValue, ownConfig.type.enum, newType.enum);
+  if (esNumerico(newType) && typeof ownValue === "number") {
+    const value = convertirValor(ownValue, newType);
+    return { value, kept: Object.is(value, ownValue) };
+  }
+  return { value: ownValue, kept: true };
+}
+
+/**
+ * An object (the instance, or one of its elements) updated from its counterpart in the definition. Returns the object
+ * and the defaults it would lose, each `{ label, previous, proposed }`.
+ */
+function updatedObject(own, definition, context) {
+  const base = context.strict ? { ...definition.config } : { ...own.config, ...dataOf(definition.config) };
+  const { value: _definitionValue, ...config } = base;
+  const losses = [];
+  if (hasElements(definition)) {
+    const updated = updatedElements(own.config?.elements ?? [], definition.config.elements, context);
+    config.elements = updated.elements;
+    losses.push(...updated.losses);
+  } else {
+    const converted = convertedValue(own.config, definition.config?.type);
+    if (converted.value !== undefined) config.value = converted.value;
+    if (!converted.kept && !isZeroDefault(own.config?.value)) losses.push({ label: own.label?.text ?? "", previous: own.config.value, proposed: converted.value });
+  }
+  return { object: withDerivedCluster(context.catalog, { ...own, config }), losses };
+}
+
+/** A cluster's elements updated from the definition's, matched by label; the removed ones that held a value are losses. */
+function updatedElements(ownElements, definitionElements, context) {
+  const ownByLabel = new Map(ownElements.map((element) => [element.label?.text ?? "", element]));
+  const losses = [];
+  const elements = definitionElements.map((definitionElement) => {
+    const fresh = context.toInstanceElement(definitionElement);
+    const own = ownByLabel.get(definitionElement.label?.text ?? "");
+    if (!own) return withDerivedCluster(context.catalog, fresh);
+    const updated = updatedObject({ ...own, tipo: fresh.tipo }, fresh, context);
+    losses.push(...updated.losses);
+    const place = context.strict ? { x: fresh.x, y: fresh.y } : { x: own.x, y: own.y };
+    return { ...updated.object, ...place };
+  });
+  const kept = new Set(definitionElements.map((element) => element.label?.text ?? ""));
+  for (const removed of ownElements.filter((element) => !kept.has(element.label?.text ?? ""))) {
+    if (!isZeroDefault(removed.config?.value)) losses.push({ label: removed.label?.text ?? "", previous: removed.config.value, proposed: undefined });
+  }
+  return { elements, losses };
+}
+
+/**
+ * `instance` updated from `definition` (the object of its `.octl`, core/model/type-definition.mjs). Returns
+ * `{ node, review }`: with nothing lost, `node` is the updated instance and `review` null; otherwise `node` is the
+ * instance unchanged and `review` is `{ updated, previous, proposed, losses }`, what Review and Update from Type
+ * Def... shows and applies once approved: the update, the previous and the new default, and what changes in it.
+ */
+export function updateFromDefinition(catalog, instance, definition, toInstanceElement = (element) => element) {
+  const link = typeDefinitionLink(instance);
+  const context = { catalog, strict: !!link?.strict, toInstanceElement };
+  const { object, losses } = updatedObject(instance, definition, context);
+  const updated = { ...object, config: { ...object.config, ...(link && { typedef: link }) } };
+  if (!losses.length) return { node: updated, review: null };
+  return { node: instance, review: { updated, previous: instance.config?.value, proposed: updated.config?.value, losses } };
+}
