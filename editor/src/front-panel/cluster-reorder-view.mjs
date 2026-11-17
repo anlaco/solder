@@ -15,22 +15,27 @@ function union(a, b) {
   return { x, y, ancho: Math.max(a.x + a.ancho, b.x + b.ancho) - x, alto: Math.max(a.y + a.alto, b.y + b.alto) - y };
 }
 
-/** One element's frame and badge, at `box` inside the cluster's interior; a click on it gives it the field's number. */
-function frameHtml(index, box, newNumber, currentNumber) {
-  const badge = `<span class="sd-reorder-badge"><span class="sd-reorder-new">${newNumber}</span><span class="sd-reorder-current">${currentNumber}</span></span>`;
+/**
+ * One element's frame and badge, at `box` inside the cluster's interior; a click on it gives it the field's number. On the
+ * Block Diagram a 3 px bar in the element's type colour sits on top of the badge (reports/2026-11-17-cluster-constant-elements.md
+ * Q5); the panel's has none.
+ */
+function frameHtml(index, box, newNumber, currentNumber, barColor) {
+  const bar = barColor ? `<span class="sd-reorder-bar" style="background:${barColor}"></span>` : "";
+  const badge = `<span class="sd-reorder-badge">${bar}<span class="sd-reorder-new">${newNumber}</span><span class="sd-reorder-current">${currentNumber}</span></span>`;
   return `<div class="sd-reorder-frame" data-reorder-element="${index}" style="${boxStyle(box)}">${badge}</div>`;
 }
 
 /**
  * The frames of a cluster's elements in reorder mode, drawn over them in cluster order. `boxes(index)` gives element
- * `index`'s box and its label's box (or null) inside the interior.
+ * `index`'s box and its label's box (or null) inside the interior, and, on the diagram, the colour of its type.
  */
 export function reorderFramesHtml(cluster, reorder, boxes) {
   const numbers = newNumbers(reorder);
   return cluster.config.elements
     .map((_, index) => {
-      const { element, label } = boxes(index);
-      return frameHtml(index, label ? union(element, label) : element, numbers[index], index);
+      const { element, label, barColor } = boxes(index);
+      return frameHtml(index, label ? union(element, label) : element, numbers[index], index, barColor);
     })
     .join("");
 }

@@ -17,8 +17,8 @@ When the developer says "keep going":
    (DT-076), has its stage A done (2026-11-15), built on step **6a, the two doors for libraries** (DT-079): the Call
    Library Function Node and the add-ons folder. "OVI files are `.ovi`" (DT-094) is done (2026-11-16). **DT-093 (2026-11-16)
    closes the hardware stage here**: next is **"The language's everyday types"** below. Its step 1 (the compiler's
-   split) is done; step 2, clusters made by the user (DT-095), has its core and editor stages (a) and (b) done (2026-11-16
-   and 2026-11-17): **continue with its stage (c)**, the Cluster Constant. DAQ's stage B waits for the
+   split) is done; step 2, clusters made by the user (DT-095), has its core and editor stages (a), (b) and (c) done
+   (2026-11-16 and 2026-11-17): **continue with its stage (d)**, Bundle and Unbundle from the palette. DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
@@ -981,6 +981,20 @@ to it go on, new fronts wait for step 6.
    Change to Indicator / Control on the shell, and Reorder Controls In Cluster... with its frames, badges and toolbar.
    Left: an element's own menu and the terminal's (where LabVIEW also has Change to Indicator), the darkened shell bevel,
    the title without " Front Panel", LabVIEW's reorder cursor.*
+   *Stage (c) measured and built on 2026-11-17 ([`cluster-constant-geometry`](../../labview-captures/reports/2026-11-17-cluster-constant-geometry.md),
+   [`cluster-constant-elements`](../../labview-captures/reports/2026-11-17-cluster-constant-elements.md); spec/05 rules
+   140–142): the Cluster Constant on the diagram (`editor/src/block-diagram/cluster-constant*.mjs`), its elements dropped,
+   dragged in and out, typed into and deleted, its terminal shown on hover of the frame, its eight handles, its frame menu
+   (Label, Change to Control / Indicator, Create ▸ Constant / Control / Indicator, Reorder Controls In Cluster... on the
+   diagram) and the element's menu (Representation ▸). Two facts of 2026-11-16 corrected: the terminal shows only while the
+   pointer is over the frame, and a Boolean-only constant is magenta. Left: the element menu's Visible Items ▸ and Create ▸,
+   Display Format..., AutoSizing's other modes, View Cluster As Icon, the panel place of Change to (unverified); Undo of
+   Change to works in Solder where LabVIEW greys it; Create ▸ Control crashed LabVIEW and is built as on any constant. Tried by hand under Xvfb
+   ([`cluster-constant-editor-try`](../../labview-captures/reports/2026-11-17-cluster-constant-editor-try.md)); found and
+   left: a rubber band touching the interior selects the cluster, not the elements in the band (LabVIEW unmeasured); an
+   indicator created from the constant shows its values before a run (unmeasured); the broken wire after a reorder says
+   "expects cluster and the wire carries cluster", which does not say the order differs; once, after Error list dialogs,
+   Create ▸ Constant did nothing and a loose-end wire appeared (not reproduced).*
    *Amended on 2026-11-16 (DT-095 §1): a cluster's value is the list of its elements' values in cluster order, not a
    record by name (a Cluster Constant holding 1 and 2 gave 2 and 2); Solder's own clusters stay records. Stages (c) and
    (d) build on it.*

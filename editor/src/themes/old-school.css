@@ -339,6 +339,16 @@
   --cluster-interior: #b3b3b3;
 }
 
+/* A Cluster Constant on the Block Diagram (DT-095 stage c; reports/2026-11-17-cluster-constant-geometry.md Q1, Q5): two 1 px
+   frame lines round a white interior, brown (#993300) when it holds numbers only or nothing and magenta (#ff00ff) for
+   anything else; the hover glyph of its output is a black diamond and a ring in the frame's colour. */
+:root {
+  --cluster-constant-frame: #993300;
+  --cluster-constant-frame-mixed: #ff00ff;
+  --cluster-constant-interior: #ffffff;
+  --cluster-constant-glyph-diamond: #000000;
+}
+
 /* Reorder Controls In Cluster... (reports/2026-11-17-cluster-reorder.md §1-2): the darkened panel, the frames and badges,
    and the toolbar's ✓ and ✗ (✗ grey until the order changes). */
 :root {
@@ -354,6 +364,12 @@
   --reorder-field-border: #000000;
   --reorder-field-selection: #0078d7;
   --reorder-field-selection-text: #ffffff;
+}
+
+/* The same mode on the Block Diagram (reports/2026-11-17-cluster-constant-elements.md Q5): the white diagram goes #666666,
+   which is white under a 60% black layer; the bars on the badges are the colours of the element types (types.mjs). */
+:root {
+  --reorder-diagram-darkening: rgba(0, 0, 0, 0.6);
 }
 
 /* Debugging: Highlight Execution, probes, breakpoints, the Debug Window and the Error list. */

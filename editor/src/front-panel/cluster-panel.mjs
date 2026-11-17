@@ -56,7 +56,7 @@ function booleanStyleFor(style, isControl) {
 }
 
 /** An element's configuration for the block it takes: a Boolean changes style if its kind changed. */
-function elementConfig(config, block) {
+export function elementConfig(config, block) {
   const isBoolean = KIND_OF_BLOCK[block] === "boolean";
   return isBoolean ? { ...config, style: booleanStyleFor(config?.style, block === "bool-control") } : config;
 }

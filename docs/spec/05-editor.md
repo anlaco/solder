@@ -1912,3 +1912,86 @@ Code: `cluster-reorder.mjs` (the mode's state and rules), `cluster-reorder-view.
 > follows. **Unverified:** a typed number above the last (taken as the last), an empty field (taken as 0), which digit Backspace takes
 > from a longer number, the font of the badges' digits, the frame's offset from the element (taken as 0). **Not built:** the darkened
 > shell bevel (`#454545`, `#1E1E1E`; it keeps its colours), the title losing " Front Panel", LabVIEW's hand-with-# cursor (a pointer).
+
+Stage (c), 2026-11-17: the Cluster Constant on the Block Diagram, measured in `labview-captures/reports/2026-11-17-cluster-constant-geometry.md`
+and `2026-11-17-cluster-constant-elements.md`. Code: `block-diagram/cluster-constant.mjs` (drops, element operations, resize),
+`cluster-constant-geometry.mjs` (box, interior, terminal, handles), `cluster-constant-view.mjs` (drawing). Tests:
+`test/editor/cluster-constant.test.mjs`. The first half of the stage (c1) is the constant and its elements; its right-click menus,
+Change to Control, Create and Reorder on the diagram are stage (c2), rules 141 and 142.
+
+> **Rule 140 — The Cluster Constant (palette, elements, terminal, resize).** Functions ▸ Programming ▸ **Cluster, Class & Variant** ▸
+> **Cluster Constant** is done: it drops a `cluster-constant` with `elements: []`, **100 × 100**, no label shown, hanging from the cursor by
+> its centre (**unverified**). **Elements:** a numeric, Boolean or string constant from the palette whose box **centre** lands inside the
+> interior (the box less its two frame lines and the white between, 3 px each side) becomes an element: its box is **centred on the drop
+> point** (a 13 × 19 numeric dropped at (1000, 500) covers 994..1006 × 491..509), **not pushed inside** (it is clipped by the interior),
+> appended to `elements` (cluster order is drop order) through `setClusterElements`, also when dropped over an existing element (its
+> cluster position, last, is **unverified**), and it is in text edit right after the drop (a Boolean is not). A drop whose centre is on
+> the frame lines or outside stays a free constant. A **free constant dragged** so that its box's centre is inside the interior
+> becomes an element with its value; its wires stay, with a **loose end where its terminal was** (the broken wire). The cluster **never
+> grows** (AutoSizing None). **Operating an element:** a press selects the element alone (drawn selected as a free constant is, no
+> handles; the ids are `<cluster>.elements.<index>`); a double click types its value as a free constant's (a number with decimals
+> makes an integer a DBL; a string as typed); a Boolean toggles on a click that does not drag; **Delete** takes the selected element
+> out of the cluster; **dragged out** (the box's centre outside the interior on release; **unverified** whether LabVIEW judges the
+> centre or the pointer) it becomes a free constant with its value, the cluster's type shrinks and the frame and the other elements
+> do not move; dragged inside it moves. Moving the cluster moves its elements. **Terminal:** the output wire attaches at the right
+> edge, at `x = right edge + 1` read as the first column outside the box (as the other constants' wires), `y = top + floor(height / 2)`;
+> the terminal glyph (a black 6 × 6 diamond centred on the right edge and a 3 × 3 ring of the frame's colour to its right) is
+> drawn **only while the pointer hovers the frame itself**, never over the interior and never for being selected; which part of the
+> glyph is the terminal is **unverified**. The wire's type and colour follow the derived cluster type (rule 135's wire). **Resize:**
+> only while selected, **eight 6 × 6 handles** inside the frame's bounds (corners and middles of the edges), smallest **11 × 11**
+> (measured by the corner; the edge handles and each side apart are **unverified**); the size is saved in the diagram placement (`w`,
+> `h`); resizing **never moves the elements** (they keep their place on the diagram, so their place relative to the interior changes
+> when the top-left moves) and one left outside **stays an element** (whether it comes back when the frame grows again is
+> **unverified**); growing over a free constant does not adopt it. A drag that starts on the **interior** of an unselected constant
+> is a rubber band; on its **frame** it moves the constant. Right-click on the interior opens the Functions palette; on the frame
+> it opens the constant's menu and on an element the element's (rule 141). **Unverified:** whether a selected constant shows its
+> handles and its ants together (LabVIEW showed ants only after a click on the frame), the selection of an element being clipped by
+> the interior, the constant's behaviour inside a structure, and elements other than the numeric, Boolean and string constants.
+
+> **Rule 141 — The Cluster Constant's menu, Change to, Create ▸.** Right-click on the **frame** (its two lines, or the terminal) opens
+> `context.cluster-constant`, **20 rows** in the measured order, none greyed in LabVIEW: Visible Items ▸ (Label), Change to Control,
+> Change to Indicator, Change to Array, | Make Type Def., | Description and Tip..., | Cluster, Class, & Variant Palette ▸, Create ▸
+> (Constant, Control, Indicator, Channel Writer..., Cluster from Selection), Replace ▸, Data Operations ▸ (Cut Data, Copy Data, Paste
+> Data), Advanced ▸ (Customize...), | Reorder Controls In Cluster..., View Cluster As Icon, AutoSizing ▸ (✓ None, Size to Fit, Arrange
+> Horizontally, Arrange Vertically), | Properties (reports/2026-11-16-cluster-diagram.md Q2). Built: **Visible Items ▸ Label**, **Change to
+> Control**, **Change to Indicator**, **Create ▸ Constant / Control / Indicator** and **Reorder Controls In Cluster...** (rule 142); the
+> rest is greyed with its reason (DT-035), AutoSizing None ticked as on the panel's cluster. **Label** shows the constant's label,
+> empty and in text edit as a new one, or hides it (a constant has none until shown; the text a shown label starts with is
+> **unverified**, the report did not show it; its place is the default of a node with an output, left of it). **Change to Control /
+> Change to Indicator** (also from an element's menu: they turn the whole constant, report Q6) replace the constant by the terminal of a
+> panel `cluster-control` / `cluster-indicator` whose elements are the constant's elements turned into panel objects in cluster order
+> (a numeric constant keeps its representation and value, a Boolean one takes its kind's style, a string its text), **with empty
+> labels, so hidden**; the cluster's label is "Cluster" ("Cluster 2"... as the panel numbers its objects), in text edit, **left** of a
+> control's terminal and **right** of an indicator's; the constant's wires go to the terminal with the port renamed, so those of an
+> indicator face the wrong way and break, as for any panel object flipped. The panel place is the first free slot that Create ▸ Control
+> gives any object (the report did not measure LabVIEW's rule: **unverified**); the terminal's right edge is the constant's and its middle
+> row the constant's (**unverified**: the report gives the terminal's size, 36 × 38 and 35 × 38, not its corner). **Deviation:** LabVIEW
+> cannot undo Change to (Undo greyed); Solder's undo is the graph's own, so one Undo brings the constant back. **Create ▸ Constant** is a
+> copy of the whole constant with its elements, values and size, no label, **180 px left** of it (read from a half-scale picture:
+> **unverified**), not wired. **Create ▸ Indicator** is a `cluster-indicator` terminal **25 px right of the frame** on the output's row,
+> wired to the constant, label "Cluster" in text edit, its panel object with the elements as indicators with empty hidden labels.
+> **Create ▸ Control: LabVIEW crashed** (Fatal Internal Error on the placing click, report Q7), so it is what Solder's Create ▸ Control
+> does on the output of any other constant: a cluster control made **unwired** above the node's upper left corner, its elements
+> controls (unverified for LabVIEW). **Channel Writer...** (`canales`) and **Cluster from Selection** (`tipo-cluster`) are greyed.
+> Code: `block-diagram/cluster-constant-menus.mjs` (rows, ticks, commands), `cluster-constant-panel.mjs` (the conversions); hooks:
+> `menuDe`, `orden`, `variantes` and `marcados` of the diagram and the window's right-click. Tests:
+> `test/editor/cluster-constant-menus.test.mjs`. **Not built:** the other rows of the menu (each with its need in the inventory).
+
+> **Rule 142 — Reorder Controls In Cluster... on the diagram; the element's menu.** The row is **greyed while the constant is empty**
+> and otherwise puts the **Block Diagram** in the same mode as the panel's (rule 139: `front-panel/cluster-reorder.mjs`'s state, kept
+> as the diagram's `reorder`): the diagram is darkened (**#666666** over the white: a 60 % black layer, token
+> `--reorder-diagram-darkening`), the cluster is drawn again over it white and undarkened with its elements in colour, each element has
+> the frame and **17 × 16 badge** (new number black, current white) with a **3 px bar** on top in the colour of its type (numeric blue,
+> string `#ff00ff`; Boolean green: **unverified**), the toolbar becomes ✓ ✗ "Click to set to" and the field, and the Edit menu is greyed;
+> the rules are rule 139's (✗ restores and stays, ✓ applies as one step of undo, Escape and Enter do nothing, right-click does
+> nothing). Verified by a run in LabVIEW (reversed Numeric 1, String "a" gives `Cluster = a 1`) and by the test that reorders a
+> constant, creates an indicator from it and runs it: `["a", 1]`. **The element's menu** (right-click on an element, which selects it
+> alone) is `context.cluster-constant-element`, **19 rows**: Visible Items ▸, Change to Control, Change to Indicator, Change to Array, |
+> Make Type Def., | Description and Tip..., | Cluster, Class, & Variant Palette ▸, Create ▸, Replace ▸, Data Operations ▸, Advanced ▸, |
+> Representation ▸, Display Format..., | Properties (reports/2026-11-17-cluster-constant-elements.md Q2); no Adapt To Entered Data, which
+> a free Numeric Constant has. Built: **Representation ▸** on a numeric element (that element takes the type, its value converted, and the
+> cluster's type follows; a DBL constant becomes the general numeric one, as for a free constant), and **Change to Control / Indicator**
+> (the whole cluster). Everything else is greyed with its reason. **Unverified:** the last group for a string or Boolean element (shown
+> without Representation and Display Format), the children of an element's Visible Items ▸ and Create ▸, and View Cluster As Icon's
+> effect. Code: `cluster-constant-menus.mjs`, `cluster-constant-reorder-view.mjs`; hooks: the diagram's `contenido`, the window's
+> press, key and right-click handlers (shared with the panel's mode).

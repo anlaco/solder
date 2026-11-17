@@ -35,6 +35,8 @@ import { ANY_ERROR, NO_ERROR, errorValuesFromBoolean, isAnyErrorValue, isNoError
 import * as PN from "./property-nodes.mjs";
 import * as PNM from "./property-node-menus.mjs";
 import * as CR from "./control-references.mjs";
+import * as CC from "./cluster-constant.mjs";
+import * as CCM from "./cluster-constant-menus.mjs";
 import * as VSR from "./ovi-server-references.mjs";
 import * as EI from "./edit-items-dialog.mjs";
 import { RING_REPRESENTATION } from "../../../core/model/ring.mjs";
@@ -89,6 +91,8 @@ const grabPoint = (block, ctx, config) => {
   if (FN.isFormatNode({ tipo: block }, ctx.cat)) return FN.formatNodeGrabPoint(block, ctx.cat);
   // An Express OVI hangs by the middle of its node (DT-069).
   if (ExpressNodes.isExpressNode({ tipo: block }, ctx.cat)) return ExpressNodes.expressGrabPoint(block);
+  // A Cluster Constant hangs by its centre (unverified: LabVIEW's drop was only measured with the point on a constant's centre).
+  if (block === CC.BLOCK) return { x: CC.MEASURES.size / 2, y: CC.MEASURES.size / 2 };
   // Unbundle By Name hangs by its centre too (cluster palette, stage 1: dropped at the click, centred).
   return block === UN.BLOCK || block === UN.BUNDLE_BLOCK ? UN.grabPoint(ctx.cat, ctx.medir, block) : AGARRE;
 };
@@ -185,6 +189,9 @@ function colocar(d, ctx, p) {
   const shellId = emptyShellAt(g, ctx, p, new Set([id]));
   const elementType = shellId && constantElementType(g.nodos.find((n) => n.id === id));
   if (elementType) return { ...d, g: typeEmptyArray(d.g, shellId, elementType), seleccion: [shellId], accion: null, aviso: null };
+  // Dropped on a Cluster Constant's interior, a numeric, Boolean or string constant becomes its element (DT-095).
+  const absorbed = CC.absorbDropped({ ...d, g }, ctx, id, p);
+  if (absorbed) return absorbed;
   // Soltarlo dentro de un bucle lo mete en él (DT-041).
   const placed = { ...d, g: alojar(g, ctx, [id]), seleccion: [id], accion: null, aviso: null, edicion: typingAfterDrop(d, id) };
   // An Express OVI asks for its configuration as it is dropped (DT-069 §3); cancelling it keeps the node, unconfigured.
@@ -1013,6 +1020,7 @@ export function pulsar(d, ctx, sobre, p, shift = false, duplicate = false) {
     // Regla 22: el clic selecciona sólo ese; con Shift, se suma o se quita.
     return shift ? (ya ? d.seleccion.filter((s) => s !== id) : [...d.seleccion, id]) : ya ? d.seleccion : [id];
   };
+  if (sobre.tipo === "nodo" && CC.isElementId(sobre.id)) return CC.pressElement(d0, sobre.id, p);
   if (sobre.tipo === "nodo") {
     // Una constante de enum o de ring que no está seleccionada abre con un clic su lista de
     // ítems; seleccionada, el clic sólo la vuelve a elegir (medido, herramienta automática).
@@ -1059,6 +1067,8 @@ export function moverA(d, ctx, p) {
       const nodos = dragged.seleccion.filter((id) => dragged.g.nodos.some((n) => n.id === id));
       return { ...dragged, g: desplazar(dragged.g, ctx, nodos, dx, dy), accion: { ...accion, x: accion.x + dx, y: accion.y + dy, movido: true, ...(accion.duplicar ? { duplicado: true } : {}) } };
     }
+    case "elemento":
+      return CC.dragElement(d, ctx, p);
     case "cablear":
     case "recablear":
       return { ...d, accion: { ...accion, x: p.x, y: p.y, arrastrado: accion.arrastrado || lejos({ x: accion.x0, y: accion.y0 }, p) } };
@@ -1084,6 +1094,7 @@ export function moverA(d, ctx, p) {
     case "estirar": {
       const arr = accion.g0.nodos.find((k) => k.id === accion.nodo);
       if (arr?.tipo === "arr-const") return { ...d, g: Gr.fijarConfig(accion.g0, accion.nodo, stretchedArrayConstant(arr, ctx, accion, p)) };
+      if (CC.isClusterConstant(arr)) return { ...d, g: CC.resized(accion.g0, ctx, accion.nodo, accion.lado, Math.round(p.x - accion.x0), Math.round(p.y - accion.y0)) };
       if (arr?.tipo === "initialize-array") return { ...d, g: stretchedInitializeArray(accion, p, ctx) };
       if (isFreeLabel(arr)) {
         const stretched = FL.resized(arr, "diagrama", caja(arr, ctx), accion.lado, p.x - accion.x0, p.y - accion.y0);
@@ -1276,8 +1287,10 @@ export function soltar(d, ctx, sobre, p) {
       }
       if (accion.movido && elementPulledFrom(d, accion)) return pullElementOut(d, ctx, p);
       // Lo soltado dentro o fuera de un bucle entra o sale de él.
-      if (accion.movido) return nestDraggedConstant(d, ctx, p) ?? { ...d, g: alojar(d.g, ctx, d.seleccion.filter((id) => d.g.nodos.some((n) => n.id === id))), accion: null };
+      if (accion.movido) return nestDraggedConstant(d, ctx, p) ?? CC.absorbDragged(d, ctx) ?? { ...d, g: alojar(d.g, ctx, d.seleccion.filter((id) => d.g.nodos.some((n) => n.id === id))), accion: null };
       return { ...d, accion: null };
+    case "elemento":
+      return CC.releaseElement(d, ctx, alojar);
     case "tramo":
     case "estirar":
     case "etiqueta":
@@ -1323,6 +1336,7 @@ export function sobrevolar(d, sobre) {
 
 /** Doble clic en una constante: se escribe en ella, con todo el texto seleccionado. */
 export function editar(d, ctx, id, campo) {
+  if (CC.isElementId(id)) return CC.editElement(d, ctx, id);
   const n = d.g.nodos.find((k) => k.id === id);
   // La constante de error: se escribe en code (un número) o en source (varias líneas); el status se alterna con un clic.
   if (n?.tipo === "error-cluster-constant") {
@@ -1422,6 +1436,7 @@ function keepRightEdge(before, after, ctx) {
 function commitTyping(d, ctx) {
   const e = d.edicion;
   if (!e) return d;
+  if (CC.isElementId(e.nodo)) return CC.commitElementEdit(d, ctx, e);
   if (e.libre) return commitFreeLabel(d, e);
   if (e.etiqueta) return { ...d, g: Gr.fijarEtiqueta(d.g, e.nodo, e.texto), edicion: null };
   if (e.marco) return { ...d, g: escribirMarco(d.g, ctx, e.nodo, e.texto), edicion: null };
@@ -1520,6 +1535,9 @@ export function orden(d, id, ctx, inv) {
   // A user's cluster's menu (cluster-menus.mjs).
   const clusterResult = clusterCommand(d, id, ctx?.cat);
   if (clusterResult) return clusterResult;
+  // A Cluster Constant's menus (cluster-constant-menus.mjs).
+  const clusterConstantResult = CCM.menuCommand(d, id, ctx);
+  if (clusterConstantResult) return clusterConstantResult;
   const { nodo, puerto } = d.menu;
   const cerrar = (g) => ({ ...d, g, menu: null });
   if (id.endsWith(".size-to-text") && isFreeLabel(nodoPor(d.g, nodo))) return cerrar(FL.toggleSizeToText(d.g, nodo, ctx.medir, FL.canvasOf(nodoPor(d.g, nodo))));
@@ -1944,6 +1962,8 @@ const mergeVariants = (a, b) => ({
 export const variantes = (d, ctx, inv) =>
   isGraphMenu(d)
     ? graphMenuVariants(d)
+    : CCM.isClusterConstantMenu(d)
+    ? CCM.menuVariants(d)
     : [createVariants(d, ctx), wireMenuVariants(d, ctx), d.menu && ctx ? PNM.createVariants(d, ctx) : {}, PanelReplace.replaceVariants(d, inv, ctx)].reduce(mergeVariants, nodeVariants(d, ctx));
 
 /**
@@ -1975,6 +1995,7 @@ export function marcados(d, ctx) {
   if (CP.hasConnectorMenu(d)) return CP.menuMarks(d);
   if (isGraphMenu(d)) return graphMenuMarks(d);
   if (isClusterMenu(d)) return clusterMenuMarks(d);
+  if (CCM.isClusterConstantMenu(d)) return CCM.menuMarks(d);
   const n = d.menu && d.g.nodos.find((k) => k.id === d.menu.nodo);
   if (!n) return new Set();
   const r = d.menu.raiz;
@@ -2135,6 +2156,8 @@ export function terminalPlacer(ctx) {
  * (`borrarConCables`).
  */
 export function borrarSeleccion(d, ctx) {
+  const elementsDeleted = CC.deleteSelectedElements(d, ctx);
+  if (elementsDeleted) return elementsDeleted;
   const { wires, nodes } = selectionToDelete(d);
   if (!wires.length && !nodes.length) return d;
   const withoutWires = wires.length ? Gr.borrar(d.g, wires) : d.g;

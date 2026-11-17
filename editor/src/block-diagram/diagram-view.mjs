@@ -41,6 +41,9 @@ import { MAX_EDITOR_DIMENSIONS, cellAddress, dimensionsOfNode, firstShown, isDef
 import { ringItems, ringText } from "../../../core/model/ring.mjs";
 import { isPanelRing, isRingConstant, ringMenuRoot } from "../common/ring-editing.mjs";
 import { constantTerminalZone, panelTerminalZone } from "./panel-terminal-zone.mjs";
+import { ELEMENT_MENU, FRAME_MENU, clusterBox, isClusterConstant, isElementNode, outputTerminal } from "./cluster-constant-geometry.mjs";
+import { clusterConstantBody, clusterConstantHandles } from "./cluster-constant-view.mjs";
+import { reorderLayerHtml } from "./cluster-constant-reorder-view.mjs";
 
 const esNumericoNoEntero = (t) => typeof t === "string" && esNumerico(t) && !esEntero(t);
 
@@ -475,6 +478,8 @@ export function oculto(g, n) {
 
 /** Un terminal del túnel de salida de un Case que no es el del marco que se ve no se pinta ni se pulsa. */
 const terminalVisible = (n, t, g) => {
+  // An element of a Cluster Constant has no terminal of its own.
+  if (isElementNode(n)) return false;
   if (n.tipo !== "case-tunnel-out" || t.dir !== "in") return true;
   const caso = g.nodos.find((k) => k.id === n.dentro);
   return !caso || Number(t.puerto.slice(2)) === activoDe(caso);
@@ -560,6 +565,7 @@ export function cajaEtiqueta(n, ctx, edicion) {
 /** La caja de un nodo: su posición es la esquina de la tinta de su icono. */
 export function caja(n, ctx, edicion) {
   if (isFreeLabel(n)) return FL.box(n, "diagrama", ctx.medir, edicion);
+  if (isClusterConstant(n)) return clusterBox(n);
   if (esEstructura(n, ctx)) return { x: n.x, y: n.y, ancho: n.tam.ancho, alto: n.tam.alto };
   if (esBorde(n)) return { x: n.x, y: n.y, ancho: TAM_BORDE[n.tipo][0], alto: TAM_BORDE[n.tipo][1] };
   if (esDelPanel(n, ctx)) {
@@ -672,6 +678,7 @@ const fixedTerminalRows = (n) => FIXED_TERMINAL_ROWS[n.tipo];
  */
 export function terminales(n, ctx, edicion) {
   const k = caja(n, ctx, edicion);
+  if (isClusterConstant(n)) return [outputTerminal(n, "")];
   if (isSubOVI(n)) return terminalesSubOVI(n, k, ctx);
   if (FN.isFormatNode(n, ctx.cat)) return FN.formatNodeTerminals(n, k, ctx.cat);
   if (ExpressNodes.isExpressNode(n, ctx.cat)) return ExpressNodes.expressTerminals(n, k, ctx.cat);
@@ -1022,8 +1029,10 @@ export function contenido(d0, ctx, resueltos) {
   const lista = d.lista ? listaAbierta(d, ctx, resueltos) : "";
   const aviso = d.aviso ? `<div class="aviso" style="left:${px(d.aviso.x + 8)};top:${px(d.aviso.y + 8)}">${esc(d.aviso.texto)}</div>` : "";
   const pistas = sobre ? pistasTerminales(g.nodos.find((n) => n.id === sobre.nodo), d, ctx, resueltos) : "";
+  // Reorder Controls In Cluster... darkens all of this and draws the cluster over it (cluster-constant-reorder-view.mjs).
+  const reordenando = d.reorder ? reorderLayerHtml(g, d.reorder, { cat: ctx.cat, drawNode: (n) => nodo(n, { ...d, seleccion: [], sobre: null, accion: null }, ctx, resueltos, false), boxOf: (n) => caja(n, ctx) }) : "";
   // Las cuñas de coerción y las pistas de los terminales, encima de los nodos.
-  return `${estructuras}<svg class="cables">${cables}</svg>${tuneles}${locales.cajas}${nodos}${etiquetas}<svg class="cables encima">${cunas}${pistas}${nuevo}</svg>${rect}${fantasma}${lista}${aviso}`;
+  return `${estructuras}<svg class="cables">${cables}</svg>${tuneles}${locales.cajas}${nodos}${etiquetas}<svg class="cables encima">${cunas}${pistas}${nuevo}</svg>${reordenando}${rect}${fantasma}${lista}${aviso}`;
 }
 
 /** El marco de la Flat `s` en que está el nodo `n` —el suyo, o el de la estructura de `s` que lo contiene—, o nada si no está en `s`. */
@@ -1293,6 +1302,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
   let cuerpo;
   if (isFreeLabel(n)) {
     cuerpo = `<div class="${FL.textClass(n, d.edicion)}">${FL.contentHtml(n, d.edicion)}</div>`;
+  } else if (isClusterConstant(n)) {
+    cuerpo = clusterConstantBody(n, k, { mixed: aspecto(n.config?.type).color === COLORES.clusterMixed, hovered: d.sobre?.nodo === n.id && !d.accion, drawElement: (element) => nodo(element, d, ctx, resueltos, (d.seleccion ?? []).includes(element.id)) });
   } else if (esBorde(n)) {
     cuerpo = `<div class="glifo-borde">${glifoBorde(n, resueltos, d.completo ?? d.g)}</div>`;
   } else if (c?.error) {
@@ -1375,7 +1386,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
     cuerpo = `<div class="glifo-nodo" style="left:${px(-k.dx)};top:${px(-k.dy)}${gw ? `;width:${px(gw)};height:${px(gh)}` : ""}">${glifo}</div>`;
   }
   let zonas = terminales(n, ctx, d.edicion)
-    .filter((t) => terminalVisible(n, t, d.g) && !(elegido && (esDelPanel(n, ctx) || CONSTANTES[n.tipo])))
+    .filter((t) => terminalVisible(n, t, d.g) && !(elegido && (esDelPanel(n, ctx) || CONSTANTES[n.tipo] || isClusterConstant(n))))
     .map(
       (t) =>
         `<div class="terminal" data-nodo="${esc(n.id)}" data-puerto="${esc(t.puerto)}" data-dir="${t.dir}"${t.etiqueta ? ` data-tip="${esc(t.etiqueta)}"` : ""} style="left:${px(t.zona.x - k.x)};top:${px(t.zona.y - k.y)};width:${px(t.zona.ancho)};height:${px(t.zona.alto)}"></div>`,
@@ -1388,6 +1399,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
   if (c?.array && !isUndefinedArray(n.config?.type)) asas = asasArray(n, k, ctx, d.edicion, handleClass);
   // A free label's 1 px border shifts what it holds: its handles are put back on the box's corners.
   if (isFreeLabel(n)) asas = FL.handlesHtml(n, k, { shown: structureShowsStretchHandles(n, d, elegido), inset: 1 });
+  // A Cluster Constant shows its eight handles only while it is selected (cluster-constant-view.mjs).
+  if (isClusterConstant(n) && elegido) asas = clusterConstantHandles(n, k);
   // Initialize Array is stretched downwards to add a dimension size (array-2d/initializearray-contexthelp.png).
   if (n.tipo === "initialize-array") asas = `<div class="${handleClass}" data-nodo="${esc(n.id)}" data-asa="abajo" style="left:${px(k.ancho / 2 - 3)};top:${px(k.alto - 3)}"></div>`;
   // Format Into String and Scan From String are stretched downwards to add rows (format-scan/16-node-stretched.png).
@@ -1419,7 +1432,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
   const escribiendo = d.edicion?.nodo === n.id && !d.edicion.etiqueta;
   if (n.tipo === SpreadsheetNodes.READ_DELIMITED) zonas += instanceRing(n);
   if (PolymorphicNodes.selectorShown(n, ctx.cat)) zonas += polymorphicSelector(n, ctx);
-  const freeLabelClass = isFreeLabel(n) ? " etiqueta-libre" : "";
+  const freeLabelClass = isFreeLabel(n) ? " etiqueta-libre" : isClusterConstant(n) ? " cluster-constant" : "";
   return `<div class="nodo${freeLabelClass}${elegido || escribiendo ? " seleccionado" : ""}${editable}${litByDebugger(d, n.id)}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${cuerpo}${circulos}${zonas}${asas}</div>`;
 }
 
@@ -1746,6 +1759,9 @@ export function dentroDe(g0, ctx, r) {
 
 /** El menú de clic derecho de cada clase de nodo, en el inventario. */
 export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
+  // A Cluster Constant's frame and each of its elements have a menu of their own (cluster-constant-menus.mjs).
+  if (isElementNode(n)) return ELEMENT_MENU;
+  if (isClusterConstant(n)) return FRAME_MENU;
   // Un túnel de entrada de un Case tiene otro menú que el de un bucle (case-menu-tunel-entrada.png).
   if (n.tipo === "tunnel-in" && g?.nodos.find((k) => k.id === n.dentro)?.tipo === "case-structure") return "context.case-tunnel-input";
   if (isFreeLabel(n)) return FL.DIAGRAM_MENU_ROOT;

@@ -70,7 +70,7 @@ test("Unbundle By Name is placed from the palette with its terminals", () => {
   assert.equal(entry.estado, "built");
   assert.equal(entry.bloque, "unbundle-by-name");
   const built = INV.entradas.filter((e) => e.id.startsWith(`${MENU_ID.slice(0, MENU_ID.lastIndexOf("."))}.`) && !esHueco(e)).map((e) => e.bloque);
-  assert.deepEqual(built.sort(), ["bundle-by-name", "unbundle-by-name"], "the other entries of the folder stay holes");
+  assert.deepEqual(built.sort(), ["bundle-by-name", "cluster-constant", "unbundle-by-name"], "the other entries of the folder stay holes");
   const { d, unbundle } = freshDiagram();
   // Fresh and unwired: 30 by 17, centred on the click (stage 1, d1.png), only the input terminal.
   assert.deepEqual(sizeOf(d, unbundle), [30, 17]);

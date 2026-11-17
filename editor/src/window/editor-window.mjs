@@ -51,6 +51,7 @@ import * as Q from "../../../core/model/qvi-format.mjs";
 import * as SN from "../block-diagram/subovi-nodes.mjs";
 import * as PolymorphicNodes from "../block-diagram/polymorphic-nodes.mjs";
 import * as ExpressNodes from "../block-diagram/express-nodes.mjs";
+import * as ClusterConstant from "../block-diagram/cluster-constant.mjs";
 import * as CallLibraryNodes from "../block-diagram/call-library-nodes.mjs";
 import * as CallLibraryDialog from "../block-diagram/call-library-dialog.mjs";
 import { commandForCtrlKey } from "./shortcuts.mjs";
@@ -1311,6 +1312,7 @@ function pintar() {
     extra.lienzo = D.contenido({ ...dia, debug: DV.canvasView(debug, dia.g, ejecutando) }, ctx, resueltos) + DV.overlay(debug, dia.g, ctx, resueltos, { now: Date.now(), separator: separador, running: ejecutando, pausedAt: debug.run.paused, errorFocus });
     extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia, ctx), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx, inv), DV.menuVariants(debug, dia.g, resueltos, dia.menu)), windowSize()) : "") + floating.popup;
     extra.editandoTexto = !!dia.edicion;
+    extra.reorder = dia.reorder;
   } else {
     extra.lienzo = P.contenido(pan, ctx, resueltos);
     extra.panelStyle = panelStyle;
@@ -1560,7 +1562,7 @@ addEventListener("mousedown", (ev) => {
   if (visaDropdown && !ev.target.closest(".menu-contextual")) return toggleNameDropdown(ev, visaDropdown);
   const daqDropdown = ev.target.closest?.("[data-daq-dropdown]");
   if (daqDropdown && !ev.target.closest(".menu-contextual")) return toggleNameDropdown(ev, daqDropdown, DAQ_NAME_DROPDOWN_MENU);
-  if (conPanel && pan.reorder) return pressWhileReordering(ev);
+  if (reorderOfWindow()) return pressWhileReordering(ev);
   if (ejecutando && !pan.menu) return pulsarEnRun(ev);
   if (dia.menu) {
     if (ev.target.closest(".menu-contextual")) return;
@@ -1628,6 +1630,8 @@ addEventListener("mousedown", (ev) => {
   if (ev.detail >= 2 && sobreDiagrama.tipo === "fondo" && !dia.accion?.tipo?.startsWith("colocar")) return cambiarDiagrama(ED.startFreeLabel(dia, ctx, punto(ev)));
   if (doubleClicked && isFreeLabel(doubleClicked) && !dia.edicion) return cambiarDiagrama(ED.editFreeLabel(dia, doubleClicked.id));
   const id = ev.detail >= 2 && nodoDe(sobreDiagrama);
+  // A double click on an element of a Cluster Constant types into it as into a free constant (DT-095).
+  if (id && ClusterConstant.isEditableElement(dia.g, id)) return cambiarDiagrama(ED.editar(dia, ctx, id));
   if (id && (D.CONSTANTES[dia.g.nodos.find((n) => n.id === id)?.tipo]?.editable || dia.g.nodos.find((n) => n.id === id)?.tipo === "expression-node")) return cambiarDiagrama(ED.editar(dia, ctx, id, sobreDiagrama.campo));
   cambiarDiagrama(ED.pulsar(dia, ctx, sobreDiagrama, punto(ev), ev.shiftKey, ev.ctrlKey || ev.metaKey));
 });
@@ -1650,8 +1654,12 @@ function pressWhileReordering(ev) {
   const frame = ev.target.closest("[data-reorder-element]");
   const button = ev.target.closest("[data-reorder]");
   const hit = frame ? { element: Number(frame.dataset.reorderElement) } : button ? { button: button.dataset.reorder } : null;
-  cambiarPanel(CR.pressInReorder(pan, cat, hit));
+  if (conPanel) cambiarPanel(CR.pressInReorder(pan, cat, hit));
+  else cambiarDiagrama(CR.pressInReorder(dia, cat, hit));
 }
+
+/** The state of Reorder Controls In Cluster... of the window in view, on the panel or on a Cluster Constant, or null. */
+const reorderOfWindow = () => (conPanel ? pan : dia).reorder ?? null;
 
 /** El booleano pulsado, para cambiarlo al soltar si su acción es «When Released». */
 let pulsado = null;
@@ -2063,7 +2071,7 @@ addEventListener("contextmenu", (ev) => {
   // In Run mode LabVIEW gives another menu (the run-time one): captured only for the graphs.
   if (ejecutando) return runModeMenu(ev);
   // Reorder Controls In Cluster... answers only to presses (reports/2026-11-17-cluster-reorder.md §4).
-  if (conPanel && pan.reorder) return;
+  if (reorderOfWindow()) return;
   // The connector pane and the icon have menus of their own.
   const iconoOVI = ev.target.closest(".icono-vi");
   if (iconoOVI) return menuDelIcono(ev, iconoOVI);
@@ -2093,13 +2101,15 @@ addEventListener("contextmenu", (ev) => {
     return cambiarDiagrama(ED.abrirMenu(ED.confirmar(dia, ctx), ED.WIRE_MENU_ROOT, cable.id, ev.clientX, ev.clientY, null, punto(ev)));
   }
   const id = nodoDe(o);
-  const n = id && dia.g.nodos.find((k) => k.id === id);
+  // An element of a Cluster Constant is no node of the graph: its menu is its own and the right-click selects it alone.
+  const n = id && (dia.g.nodos.find((k) => k.id === id) ?? ClusterConstant.elementNodeAt(dia.g, id));
   // A name row of an Unbundle By Name has the menu of its output terminal; a row of a Property Node, its row's menu.
   const puerto = o?.tipo === "terminal" ? o.puerto : o?.fila !== undefined ? UN.portOfRow(o.fila) : o?.filaPropiedad !== undefined ? PN.portOfRow(o.filaPropiedad) : null;
   const raiz = n && D.menuDe(n, puerto, dia.g, o?.campo !== undefined, cat);
   if (raiz) {
     estado = { ...estado, paleta: null, abierta: null };
-    return cambiarDiagrama(ED.abrirMenu(ED.confirmar(dia, ctx), raiz, id, ev.clientX, ev.clientY, puerto, punto(ev)));
+    const opened = ED.abrirMenu(ED.confirmar(dia, ctx), raiz, id, ev.clientX, ev.clientY, puerto, punto(ev));
+    return cambiarDiagrama(ClusterConstant.isElementId(id) ? { ...opened, seleccion: [id] } : opened);
   }
   if (dia.menu) dia = { ...dia, menu: null };
   cambiar(E.clicDerecho(estado, inv, nombre, { x: ev.clientX, y: ev.clientY }));
@@ -2131,9 +2141,10 @@ addEventListener("keydown", (ev) => {
     return aplicarEnDialogo(MD.keyIntent(conTeclaEnDialogo, ev), conTeclaEnDialogo);
   }
   // While a cluster is reordered every key goes to the field: digits and deletions; Escape and Enter do nothing (§4-5).
-  if (conPanel && pan.reorder) {
+  if (reorderOfWindow()) {
     ev.preventDefault();
-    return cambiarPanel({ ...pan, reorder: CR.typeInField(pan.reorder, ev.key) });
+    const typed = { reorder: CR.typeInField(reorderOfWindow(), ev.key) };
+    return conPanel ? cambiarPanel({ ...pan, ...typed }) : cambiarDiagrama({ ...dia, ...typed });
   }
   // Ctrl+Intro confirma lo escrito en el source de un control de error (labview-captures/errores/35.png).
   if (conPanel && pan.edicion?.campo === "source" && ctrl && ev.key === "Enter") {

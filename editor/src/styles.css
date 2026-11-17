@@ -109,6 +109,12 @@ svg { display: block; overflow: visible; }
 .sd-reorder-badge { position: absolute; right: -1px; bottom: -1px; width: 17px; height: 16px; display: flex; background: var(--reorder-frame); font-size: 12px; line-height: 15px; }
 .sd-reorder-new { width: 8px; height: 16px; background: var(--reorder-new-background); color: var(--reorder-new-text); text-align: center; }
 .sd-reorder-current { width: 8px; height: 14px; margin-top: 1px; background: var(--reorder-current-background); color: var(--reorder-current-text); text-align: center; line-height: 13px; }
+/* On the Block Diagram: a dark layer over everything, the cluster over it, and a 3 px bar in the element's type colour on its badge. */
+.lienzo-block-diagram.reordenando { cursor: pointer; }
+.lienzo-block-diagram.reordenando * { cursor: inherit !important; }
+.cc-reorder-dark { position: absolute; background: var(--reorder-diagram-darkening); pointer-events: none; }
+.cc-reorder-frames { position: absolute; overflow: hidden; }
+.sd-reorder-bar { position: absolute; left: 0; top: -3px; width: 17px; height: 3px; }
 .sd-reorder-toolbar { left: 0; right: 0; }
 .sd-reorder-toolbar > div { position: absolute; }
 .sd-reorder-button { color: var(--reorder-button); }
@@ -866,3 +872,18 @@ svg { display: block; overflow: visible; }
 
 /* The label under a folder of Functions ▸ Connectivity: two lines at most, clipped as LabVIEW clips "Windows Registry Acces…". */
 .etiqueta-carpeta { position: absolute; left: -4px; width: 48px; font-size: 8px; line-height: 9px; text-align: center; overflow: hidden; pointer-events: none; }
+
+/* A Cluster Constant (DT-095 stage c). Only its frame, its elements, its handles and its terminal take the mouse: a press
+   on the interior is a press on the diagram (a rubber band), as on a structure. */
+.nodo.cluster-constant { pointer-events: none; }
+.nodo.cluster-constant .cc-frame { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 1px solid var(--cluster-constant-frame); background: var(--cluster-constant-interior); }
+.nodo.cluster-constant .cc-frame.cc-mixed { border-color: var(--cluster-constant-frame-mixed); }
+.nodo.cluster-constant .cc-line { position: absolute; inset: 1px; border: 1px solid var(--cluster-constant-frame); }
+.nodo.cluster-constant .cc-mixed .cc-line { border-color: var(--cluster-constant-frame-mixed); }
+.nodo.cluster-constant .cc-interior { position: absolute; overflow: hidden; }
+.nodo.cluster-constant .cc-interior .nodo { pointer-events: auto; }
+.nodo.cluster-constant .cc-band, .nodo.cluster-constant .terminal, .nodo.cluster-constant .asa { position: absolute; pointer-events: auto; }
+.nodo.cluster-constant .cc-terminal-glyph { position: absolute; pointer-events: none; overflow: visible; }
+.nodo.cluster-constant .cc-glyph-diamond { fill: var(--cluster-constant-glyph-diamond); }
+.nodo.cluster-constant .cc-glyph-ring { fill: var(--cluster-constant-interior); stroke: var(--cluster-constant-frame); stroke-width: 1; }
+.nodo.cluster-constant .cc-mixed .cc-glyph-ring { stroke: var(--cluster-constant-frame-mixed); }

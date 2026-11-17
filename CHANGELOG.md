@@ -13,6 +13,14 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   opened again ("has no output port"). The wire, broken because it now faces the wrong way, is saved and opens as it
   was, as in LabVIEW.
 
+- The Cluster Constant (Functions ▸ Programming ▸ Cluster, Class & Variant) is built on the Block Diagram: a 100 × 100 frame
+  into which numeric, Boolean and string constants are dropped or dragged as its elements, which are typed into, deleted,
+  dragged out and moved with it; its wire follows the cluster's type and the frame is resized by eight handles (DT-095).
+  Its right-click menu, as LabVIEW has it, shows or hides its label, turns it into a cluster control or indicator on the
+  panel (Change to Control, Change to Indicator), creates a copy, a wired indicator or a control (Create ▸), and sets the
+  order of its elements by clicks on the diagram (Reorder Controls In Cluster...); each element has a menu of its own,
+  whose Representation ▸ changes that element's type. The rows not built yet are greyed with their reason.
+
 - Change to Indicator and Change to Control on a cluster's shell flip the cluster, every element in it and its
   terminal together, as LabVIEW does (DT-095).
 

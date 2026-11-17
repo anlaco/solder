@@ -3156,10 +3156,13 @@
     {
       "id": "palette.functions.programming.cluster-class-and-variant.cluster-constant",
       "etiqueta": "Cluster Constant",
-      "estado": "todo",
-      "labview": "A constant cluster on the diagram, a frame into which constants are dropped as its elements.",
-      "necesita": "tipo-cluster",
-      "captura": "cluster/s4.png"
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant.test.mjs::the Cluster Constant of the Cluster, Class & Variant palette drops a 100 x 100 frame with no elements",
+      "captura": "cluster/s4.png",
+      "bloque": "cluster-constant",
+      "config": {
+        "elements": []
+      }
     },
     {
       "id": "palette.functions.programming.cluster-class-and-variant.build-cluster-array",
@@ -15744,6 +15747,412 @@
     },
     {
       "id": "context.cluster-control.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the object's properties dialog.",
+      "necesita": "propiedades",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-constant",
+      "etiqueta": "Cluster Constant",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the Cluster Constant's frame has its measured menu with the rows that are not built greyed"
+    },
+    {
+      "id": "context.cluster-constant.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the Cluster Constant's frame has its measured menu with the rows that are not built greyed"
+    },
+    {
+      "id": "context.cluster-constant.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::Visible Items Label shows and hides the label of the constant"
+    },
+    {
+      "id": "context.cluster-constant.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::Change to Control replaces the constant by a cluster control whose elements are its constants"
+    },
+    {
+      "id": "context.cluster-constant.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::Change to Indicator replaces the constant by a cluster indicator with its label on the right"
+    },
+    {
+      "id": "context.cluster-constant.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the constant into an array constant of its type.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-constant.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the constant into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-constant.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-constant.cluster-class-and-variant-palette",
+      "etiqueta": "Cluster, Class, & Variant Palette",
+      "estado": "todo",
+      "labview": "Opens the Cluster, Class & Variant palette as a submenu.",
+      "necesita": "menus-contextuales",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-constant.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the Cluster Constant's frame has its measured menu with the rows that are not built greyed"
+    },
+    {
+      "id": "context.cluster-constant.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::Create Constant makes a copy of the constant with its elements and values, to its left and unwired"
+    },
+    {
+      "id": "context.cluster-constant.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::Create Control makes an unwired cluster control above the constant, as Create Control does on any constant's output"
+    },
+    {
+      "id": "context.cluster-constant.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::Create Indicator makes a cluster indicator 25 px right of the frame, wired, with its label in edit"
+    },
+    {
+      "id": "context.cluster-constant.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Creates a channel writer for the cluster.",
+      "necesita": "canales"
+    },
+    {
+      "id": "context.cluster-constant.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Bundles the selected objects into a cluster.",
+      "necesita": "tipo-cluster"
+    },
+    {
+      "id": "context.cluster-constant.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the constant with another function of the Functions palette.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-constant.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Operations on the constant's data.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-constant.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cuts the constant's data to the clipboard (greyed in LabVIEW).",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-constant.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copies the constant's data to the clipboard.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-constant.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Pastes data into the constant (greyed in LabVIEW with nothing to paste).",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-constant.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced settings of the constant.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-constant.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Opens the control editor.",
+      "necesita": "estilos-de-controles"
+    },
+    {
+      "id": "context.cluster-constant.reorder-controls-in-cluster",
+      "etiqueta": "Reorder Controls In Cluster...",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::Reorder Controls In Cluster is greyed while the constant is empty and sets the cluster order by clicks on the diagram",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-constant.view-cluster-as-icon",
+      "etiqueta": "View Cluster As Icon",
+      "estado": "todo",
+      "labview": "Shows the constant as an icon instead of its frame (unticked by default).",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-constant.autosizing",
+      "etiqueta": "AutoSizing",
+      "estado": "todo",
+      "labview": "How the frame follows its elements: None (the default, ticked), Size to Fit, Arrange Horizontally or Arrange Vertically.",
+      "necesita": "autosizing-de-cluster"
+    },
+    {
+      "id": "context.cluster-constant.autosizing.none",
+      "etiqueta": "None",
+      "estado": "todo",
+      "labview": "The frame keeps its size when elements are dropped in.",
+      "necesita": "autosizing-de-cluster"
+    },
+    {
+      "id": "context.cluster-constant.autosizing.size-to-fit",
+      "etiqueta": "Size to Fit",
+      "estado": "todo",
+      "labview": "The frame grows to hold its elements.",
+      "necesita": "autosizing-de-cluster"
+    },
+    {
+      "id": "context.cluster-constant.autosizing.arrange-horizontally",
+      "etiqueta": "Arrange Horizontally",
+      "estado": "todo",
+      "labview": "The elements are laid out in a row.",
+      "necesita": "autosizing-de-cluster"
+    },
+    {
+      "id": "context.cluster-constant.autosizing.arrange-vertically",
+      "etiqueta": "Arrange Vertically",
+      "estado": "todo",
+      "labview": "The elements are laid out in a column.",
+      "necesita": "autosizing-de-cluster"
+    },
+    {
+      "id": "context.cluster-constant.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the object's properties dialog.",
+      "necesita": "propiedades",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-constant-element",
+      "etiqueta": "Cluster Constant Element",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the element of a Cluster Constant has its own menu, and Representation retypes that element and the cluster"
+    },
+    {
+      "id": "context.cluster-constant-element.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the element are shown (its children were not read).",
+      "necesita": "etiquetas"
+    },
+    {
+      "id": "context.cluster-constant-element.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::Change to Control from an element's menu turns the whole constant, and one Undo gives it back"
+    },
+    {
+      "id": "context.cluster-constant-element.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::Change to Control from an element's menu turns the whole constant, and one Undo gives it back"
+    },
+    {
+      "id": "context.cluster-constant-element.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the cluster into an array of its type.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-constant-element.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the element into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-constant-element.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-constant-element.cluster-class-and-variant-palette",
+      "etiqueta": "Cluster, Class, & Variant Palette",
+      "estado": "todo",
+      "labview": "Opens the Cluster, Class & Variant palette as a submenu.",
+      "necesita": "menus-contextuales",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-constant-element.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to the element (its children were not read).",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-constant-element.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Replaces the element with another object of the Functions palette.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-constant-element.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Operations on the element's data.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-constant-element.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced settings of the element.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-constant-element.representation",
+      "etiqueta": "Representation",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the element of a Cluster Constant has its own menu, and Representation retypes that element and the cluster",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-constant-element.representation.ext",
+      "etiqueta": "EXT",
+      "estado": "todo",
+      "labview": "Extended precision, 80 bits.",
+      "necesita": "tipos-numericos"
+    },
+    {
+      "id": "context.cluster-constant-element.representation.dbl",
+      "etiqueta": "DBL",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the element of a Cluster Constant has its own menu, and Representation retypes that element and the cluster"
+    },
+    {
+      "id": "context.cluster-constant-element.representation.sgl",
+      "etiqueta": "SGL",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the element of a Cluster Constant has its own menu, and Representation retypes that element and the cluster"
+    },
+    {
+      "id": "context.cluster-constant-element.representation.fxp",
+      "etiqueta": "FXP",
+      "estado": "todo",
+      "labview": "Fixed point, with the chosen word length and integer part.",
+      "necesita": "tipos-numericos"
+    },
+    {
+      "id": "context.cluster-constant-element.representation.i64",
+      "etiqueta": "I64",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the element of a Cluster Constant has its own menu, and Representation retypes that element and the cluster"
+    },
+    {
+      "id": "context.cluster-constant-element.representation.i32",
+      "etiqueta": "I32",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the element of a Cluster Constant has its own menu, and Representation retypes that element and the cluster"
+    },
+    {
+      "id": "context.cluster-constant-element.representation.i16",
+      "etiqueta": "I16",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the element of a Cluster Constant has its own menu, and Representation retypes that element and the cluster"
+    },
+    {
+      "id": "context.cluster-constant-element.representation.i8",
+      "etiqueta": "I8",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the element of a Cluster Constant has its own menu, and Representation retypes that element and the cluster"
+    },
+    {
+      "id": "context.cluster-constant-element.representation.u64",
+      "etiqueta": "U64",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the element of a Cluster Constant has its own menu, and Representation retypes that element and the cluster"
+    },
+    {
+      "id": "context.cluster-constant-element.representation.u32",
+      "etiqueta": "U32",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the element of a Cluster Constant has its own menu, and Representation retypes that element and the cluster"
+    },
+    {
+      "id": "context.cluster-constant-element.representation.u16",
+      "etiqueta": "U16",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the element of a Cluster Constant has its own menu, and Representation retypes that element and the cluster"
+    },
+    {
+      "id": "context.cluster-constant-element.representation.u8",
+      "etiqueta": "U8",
+      "estado": "built",
+      "prueba": "test/editor/cluster-constant-menus.test.mjs::the element of a Cluster Constant has its own menu, and Representation retypes that element and the cluster"
+    },
+    {
+      "id": "context.cluster-constant-element.representation.cxt",
+      "etiqueta": "CXT",
+      "estado": "todo",
+      "labview": "Extended-precision complex.",
+      "necesita": "tipos-numericos"
+    },
+    {
+      "id": "context.cluster-constant-element.representation.cdb",
+      "etiqueta": "CDB",
+      "estado": "todo",
+      "labview": "Double-precision complex.",
+      "necesita": "tipos-numericos"
+    },
+    {
+      "id": "context.cluster-constant-element.representation.csg",
+      "etiqueta": "CSG",
+      "estado": "todo",
+      "labview": "Single-precision complex.",
+      "necesita": "tipos-numericos"
+    },
+    {
+      "id": "context.cluster-constant-element.display-format",
+      "etiqueta": "Display Format...",
+      "estado": "todo",
+      "labview": "How the value is shown.",
+      "necesita": "formato-de-presentacion"
+    },
+    {
+      "id": "context.cluster-constant-element.properties",
       "etiqueta": "Properties",
       "estado": "todo",
       "labview": "Opens the object's properties dialog.",

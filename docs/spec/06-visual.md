@@ -838,6 +838,11 @@ Editor rules 135–137 (`05-editor.md` §26). Tests: `test/editor/cluster-panel.
   gives `{ color, dimension: 0, cluster: true }`; the error cluster keeps its olive wire and its own terminal).
 - **Unverified:** the colour of a cluster of strings only or of clusters (taken as mixed: not all numeric), the arrow's place on a
   View As Icon off terminal of an indicator, and the shell's smallest size.
+- **Cluster Constant (diagram, stage c, rule 140):** a white interior inside a frame of two 1 px lines (offsets 0 and 2 from the
+  outside), `#993300` when empty or all elements are numeric and `#FF00FF` otherwise (Boolean only, String only, mixed), whether selected
+  or not (`--cluster-constant-frame`, `--cluster-constant-frame-mixed`, `--cluster-constant-interior`); elements drawn as the diagram
+  draws that constant, with no label, clipped by the interior; the output glyph (9 × 6: a black diamond and a 3 × 3 ring) only while
+  the frame is hovered; eight 6 × 6 `#0078D4` handles while selected. Unverified: the ring's colour on a magenta frame.
 
 ## History
 

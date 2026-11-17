@@ -4731,6 +4731,13 @@ of the elements in the file. The `.ovi` format stores the elements inside the co
 5. **Change to Indicator / Change to Control** on the shell changes every element. *Built on 2026-11-17 (spec/05 rule
    138); LabVIEW does the same from an element's menu and from the terminal's, and on an empty cluster
    ([`cluster-indicator`](../../labview-captures/reports/2026-11-17-cluster-indicator.md)).*
+   *Amended on 2026-11-17 after measuring the constant
+   ([`cluster-constant-geometry`](../../labview-captures/reports/2026-11-17-cluster-constant-geometry.md),
+   [`cluster-constant-elements`](../../labview-captures/reports/2026-11-17-cluster-constant-elements.md)): the constant's
+   output terminal is drawn only while the pointer is over its frame (not while placed or selected); a constant holding
+   only Booleans or only strings is magenta, brown only when empty or all numeric; a constant becomes an element when its
+   box's centre lands in the interior, centred there and clipped, never pushed in; an element has its own menu. Built the
+   same day (spec/05 rules 140–142).*
 6. **Left greyed with their reason** (DT-035): AutoSizing other than None, Cluster from Selection, Make Type Def.
    (step 3), Change to Array of a cluster, View Cluster As Icon on the constant, Bundle with fewer rows than the
    cluster (unmeasured).
@@ -4742,7 +4749,7 @@ of the elements in the file. The `.ovi` format stores the elements inside the co
 | A cluster's type is its elements' types in the file's order, and reordering changes the value's order | a core test over a version-6 file, compiled and run | Not built |
 | A version-5 file opens unchanged; a version-6 file is refused by version-5 rules | `test/fixtures/released/`, `qvi-round-trip` | Not built |
 | Bundle and Unbundle take the wired cluster's elements, in cluster order | an editor test and a run: Numeric 3, Boolean TRUE, String "hi" reversed give "hi", TRUE, 3, as LabVIEW | Measured (2026-11-16), not built |
-| The shell, terminal, constant, wire and menus look as measured | editor tests on the measured sizes and colours; a comparison under Xvfb | Not built |
+| The shell, terminal, constant, wire and menus look as measured | editor tests on the measured sizes and colours (`cluster-panel`, `cluster-constant`, `cluster-constant-menus`); a comparison under Xvfb | **Verified** for the shell and the constant by editor tests (2026-11-17); the Xvfb comparison of the constant is a hand try |
 | ✗ restores the order on entry and stays in the mode; the field stops at the last number | `test/editor/cluster-reorder.test.mjs` | **Verified** (measured and built, 2026-11-17) |
 | Elements of one name, or of none, keep each its own value | `test/core/user-clusters.test.mjs` (a Cluster Constant of two unlabelled numbers; a control of two elements labelled alike) | **Verified** (2026-11-16) |
 

@@ -437,6 +437,7 @@ test("the cluster, class & variant folder opens its subpalette", () => {
     [4, 4, "Variant"],
   ]);
   const html = subpaletas(INV, opened.paleta);
-  for (const hole of ["call-parent-class-method", "get-lv-class-name", "cluster-constant"]) assert.match(html, new RegExp(`class="icono-funcion hueco" data-id="${id}\\.${hole}"`), `${hole} is a hole`);
+  for (const hole of ["call-parent-class-method", "get-lv-class-name"]) assert.match(html, new RegExp(`class="icono-funcion hueco" data-id="${id}\\.${hole}"`), `${hole} is a hole`);
+  assert.doesNotMatch(html, new RegExp(`hueco[^>]*data-id="${id}\\.cluster-constant"`), "the Cluster Constant is built (DT-095 stage c)");
   assert.match(html, new RegExp(`hueco[^>]*data-id="${id}\\.variant"`), "the Variant folder is a hole");
 });

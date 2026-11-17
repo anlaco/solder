@@ -216,6 +216,9 @@ export function escribir(g, cat) {
     diagram[n.name] = limpio({
       x: n.x,
       y: n.y,
+      // A Cluster Constant that was resized keeps its size (DT-095 stage c), as a structure does.
+      w: n.tam?.ancho,
+      h: n.tam?.alto,
       label: etiqueta,
       "label-offset": n.etiqueta,
       "show-terminals": n.vista?.terminales || undefined,
@@ -363,6 +366,7 @@ export function leer(datos, cat) {
           n.config = { ...n.config, ...read };
         }
         Object.assign(n, withDerivedCluster(cat, n));
+        if (d.w && d.h && nodo.type === "cluster-constant") n.tam = { ancho: d.w, alto: d.h };
         const p = lay.panel?.[nodo.name];
         const texto = d.label?.text ?? p?.label?.text;
         if (texto !== undefined) n.label = { text: texto };
