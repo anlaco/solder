@@ -20,12 +20,8 @@ export const elementType = (catalog, element) => panelObjectType(catalog, { tipo
 /** The cluster type of a list of elements, in their order (the cluster order, DT-095 §1). */
 export const clusterTypeOf = (catalog, elements) => ({ cluster: elements.map((element) => ({ name: elementName(element), type: elementType(catalog, element) })) });
 
-/** The cluster's value: each element's value under its name; an element with no value of its own gives none. */
-export function clusterValueOf(elements) {
-  const value = {};
-  for (const element of elements) if (element.config?.value !== undefined) value[elementName(element)] = element.config.value;
-  return value;
-}
+/** The cluster's value: each element's value, in cluster order (cluster-values.mjs); an element with no value of its own gives none. */
+export const clusterValueOf = (elements) => elements.map((element) => element.config?.value);
 
 /** The node with its type and value derived from its elements; a node with no elements as it is. */
 export function withDerivedCluster(catalog, node) {

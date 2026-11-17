@@ -294,8 +294,9 @@ test("Position and Bounds go as clusters: the caller's panel answers them, and a
     b.wire("moveTo.result", "node.row-2");
   });
   const shown = await run(vi, { moveTo: { Left: 300, Top: 40 } }, { panel });
-  assert.deepEqual(shown.where, { Left: 10, Top: 20 });
-  assert.deepEqual(shown.size, { Width: 50, Height: 18 });
+  // The indicators show a cluster as any other, its elements' values in order; the panel answered records by name.
+  assert.deepEqual(shown.where, [10, 20]);
+  assert.deepEqual(shown.size, [50, 18]);
   assert.deepEqual(asked.at(-1), ["set", "Position", { Left: 300, Top: 40 }]);
   assert.deepEqual(shown.errorOut, NO_ERROR);
 });

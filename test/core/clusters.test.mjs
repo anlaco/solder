@@ -51,14 +51,17 @@ test("bundle junta un numero, un booleano y una cadena, y unbundle los separa", 
     [["x.result", "b.campo-0"], ["ok.result", "b.campo-1"], ["s.result", "b.campo-2"], ["b.result", "u.value"], ["b.result", "todo.value"],
      ["u.campo-0", "rx.value"], ["u.campo-1", "rok.value"], ["u.campo-2", "rs.value"]],
   );
-  assert.deepEqual(await correr(v), { rx: 2.5, rok: true, rs: "año", todo: { x: 2.5, ok: true, nombre: "año" } });
+  assert.deepEqual(await correr(v), { rx: 2.5, rok: true, rs: "año", todo: [2.5, true, "año"] });
 });
 
 test("un control de cluster, con otro cluster dentro, llega igual a un indicador", async () => {
   const T = { cluster: [{ name: "a", type: "i32" }, { name: "p", type: PUNTO }, { name: "z", type: "i64" }] };
   const v = vi([["c", "cluster-control", { type: T }], ["r", "cluster-indicator", { type: T }]], [["c.result", "r.value"]]);
-  const valor = { a: -7, p: { x: 1.25, ok: false, nombre: "hola" }, z: 123456789012 };
+  // A cluster's value is the list of its elements' values, in cluster order (DT-095 §1, amended); a record by
+  // element name, as the files of version 5 hold it, is still taken where a value comes in.
+  const valor = [-7, [1.25, false, "hola"], 123456789012];
   assert.deepEqual(await correr(v, { c: valor }), { r: valor });
+  assert.deepEqual(await correr(v, { c: { a: -7, p: { x: 1.25, ok: false, nombre: "hola" }, z: 123456789012 } }), { r: valor });
 });
 
 test("un shift register de cluster acumula con su propia copia", async () => {
@@ -76,7 +79,7 @@ test("un shift register de cluster acumula con su propia copia", async () => {
   const cat = CAT.puertos(v.g.nodos.find((n) => n.id === v.id.cat));
   for (const [de, a] of [["ini.result", "izq.init"], ["izq.value", "u.value"], ["u.campo-0", "mas.x"], ["u.campo-1", `cat.${cat.in[0].name}`], ["x.result", `cat.${cat.in[1].name}`],
     ["mas.result", "b.campo-0"], [`cat.${cat.out[0].name}`, "b.campo-1"], ["b.result", "der.value"], ["der.result", "r.value"]]) v.con(de, a);
-  assert.deepEqual(await correr(v), { r: { n: 3, s: "ababab" } });
+  assert.deepEqual(await correr(v), { r: [3, "ababab"] });
 });
 
 test("un tunel de case sin cablear con use default da el cluster vacio", async () => {
@@ -90,7 +93,7 @@ test("un tunel de case sin cablear con use default da el cluster vacio", async (
   v.id.tun = tun.id;
   v.con("b.result", "tun.x-1");
   v.con("tun.y", "r.value");
-  assert.deepEqual(await correr(v), { r: { x: 0, ok: false, nombre: "" } }, "corre el marco False, que no lo cablea");
+  assert.deepEqual(await correr(v), { r: [0, false, ""] }, "corre el marco False, que no lo cablea");
 });
 
 test("dos clusters distintos no se cablean", () => {

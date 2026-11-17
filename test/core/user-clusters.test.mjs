@@ -53,14 +53,14 @@ test("a user's cluster takes its type and value from its elements, in their orde
   const ovi = clusterToUnbundle();
   const cluster = ovi.g.nodos.find((node) => node.id === ovi.id.cluster);
   assert.deepEqual(cluster.config.type, REVERSED_TYPE);
-  assert.deepEqual(cluster.config.value, { Numeric: 7 }, "only an element with a value of its own gives one");
+  assert.deepEqual(cluster.config.value, [undefined, undefined, 7], "the elements' values in cluster order; only one has a value of its own");
 });
 
 test("Unbundle of a user's cluster gives its elements in cluster order, as LabVIEW's run does", async () => {
   const ovi = clusterToUnbundle();
   const compiled = compilar(ovi.g, CAT);
   assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
-  const written = await ejecutar(compiled, { [ovi.id.cluster]: { Numeric: 3, Boolean: true, String: "hi" } });
+  const written = await ejecutar(compiled, { [ovi.id.cluster]: ["hi", true, 3] });
   assert.equal(written[ovi.id.text], "hi");
   assert.equal(written[ovi.id.flag], true);
   assert.equal(written[ovi.id.number], 3);
@@ -109,4 +109,46 @@ test("a file of version 5 with an error cluster opens unchanged and is saved as 
 
 test("a file of a version after 6 is refused", () => {
   assert.throws(() => leer({ solder: VERSION + 1, "block-diagram": { nodes: [] } }, CAT), /this Solder reads versions 1 to 6/);
+});
+
+/** A cluster of two I32 elements valued 1 and 2, held in `block` and unbundled into the indicators "first" and "second". */
+function twoNumbers(block, elements) {
+  const ovi = buildOVI(CAT, (b) => {
+    b.node("cluster", block);
+    b.node("first", "indicator");
+    b.node("second", "indicator");
+  });
+  ovi.g = setClusterElements(ovi.g, CAT, ovi.id.cluster, elements);
+  const type = ovi.g.nodos.find((node) => node.id === ovi.id.cluster).config.type;
+  const unbundle = Gr.crearNodo(ovi.g, CAT, "unbundle", 0, 0);
+  ovi.g = Gr.fijarConfig(unbundle.g, unbundle.id, { type });
+  const wire = (from, fromPort, to, toPort) => {
+    const result = Gr.conectar(ovi.g, CAT, { nodo: from, puerto: fromPort, dir: "out" }, { nodo: to, puerto: toPort, dir: "in" });
+    assert.ok(!result.motivo, result.motivo);
+    ovi.g = result.g;
+  };
+  wire(ovi.id.cluster, "result", unbundle.id, "value");
+  wire(unbundle.id, "campo-0", ovi.id.first, "value");
+  wire(unbundle.id, "campo-1", ovi.id.second, "value");
+  return ovi;
+}
+
+async function firstAndSecond(ovi, panel = {}) {
+  const compiled = compilar(ovi.g, CAT);
+  assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
+  const written = await ejecutar(compiled, panel);
+  return [written[ovi.id.first], written[ovi.id.second]];
+}
+
+// The value was a record by element name, so elements of one name were one value: the constant gave 2 and 2.
+test("the elements of a Cluster Constant, which have no labels, keep each its own value", async () => {
+  const unlabelled = (value) => ({ tipo: "num-const", config: { type: "i32", value } });
+  assert.deepEqual(await firstAndSecond(twoNumbers("cluster-constant", [unlabelled(1), unlabelled(2)])), [1, 2]);
+});
+
+test("two elements of a cluster control with the same label keep each its own value", async () => {
+  const numeric = (value) => ({ tipo: "control", label: { text: "Numeric" }, config: { type: "i32", value } });
+  const ovi = twoNumbers("cluster-control", [numeric(1), numeric(2)]);
+  assert.deepEqual(ovi.g.nodos.find((node) => node.id === ovi.id.cluster).config.value, [1, 2], "the cluster's default value");
+  assert.deepEqual(await firstAndSecond(ovi, { [ovi.id.cluster]: [7, 8] }), [7, 8], "the values the panel holds");
 });

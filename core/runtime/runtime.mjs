@@ -23,6 +23,7 @@ import { formatIntoString, scanFromString } from "./format-string.mjs";
 import { arrayToSpreadsheetString, endOfLineFor, spreadsheetStringToArray } from "./spreadsheet.mjs";
 import { abortedError, createRealHost } from "./scheduler.mjs";
 import { CLUMP, CLUMP_BYTES, HEADER, PARK_KIND, RUN_STATUS, STATE } from "../compiler/pool-scheduler.mjs";
+import { elementValueIn } from "../model/cluster-values.mjs";
 import { SCHEDULER } from "../compiler/linear-memory.mjs";
 import { PANEL_RECORD } from "../compiler/panel-memory.mjs";
 import { VISA_FUNCTION_NAMES, createVisaFunctions } from "./instrument-io.mjs";
@@ -242,9 +243,10 @@ export function createHostFunctions({ compilado, separador = ".", pathRules = ho
   };
   const ponerCadena = (celda, texto) => putBytes(celda, new TextEncoder().encode(String(texto ?? "")));
   const leerCadena = (handle) => new TextDecoder().decode(readBytes(handle));
-  const ponerCluster = (dir, d, v = {}) => {
-    for (const c of d.campos) {
-      const x = v[c.nombre];
+  // A cluster's value is a list in cluster order, or a record by name for Solder's own clusters (cluster-values.mjs).
+  const ponerCluster = (dir, d, v = []) => {
+    for (const [index, c] of d.campos.entries()) {
+      const x = elementValueIn(v, index, c.nombre);
       const a = dir + c.off;
       if (c.disposicion) ponerCluster(a, c.disposicion, x);
       else if (c.tipo === "string") ponerCadena(a, x);
@@ -255,20 +257,17 @@ export function createHostFunctions({ compilado, separador = ".", pathRules = ho
       }
     }
   };
+  const readClusterField = (a, c) => {
+    if (c.disposicion) return leerCluster(a, c.disposicion);
+    if (c.array) return leerArray(a, c.array.elemento, c.array.dims);
+    if (c.tipo === "string") return leerCadena(a);
+    const m = memoria();
+    const w = { i32: () => m.getInt32(a, true), i64: () => m.getBigInt64(a, true), f32: () => m.getFloat32(a, true), f64: () => m.getFloat64(a, true) }[c.wasm]();
+    return deWasm(w, c.tipo);
+  };
   const leerCluster = (dir, d) => {
-    const r = {};
-    for (const c of d.campos) {
-      const a = dir + c.off;
-      if (c.disposicion) r[c.nombre] = leerCluster(a, c.disposicion);
-      else if (c.array) r[c.nombre] = leerArray(a, c.array.elemento, c.array.dims);
-      else if (c.tipo === "string") r[c.nombre] = leerCadena(a);
-      else {
-        const m = memoria();
-        const w = { i32: () => m.getInt32(a, true), i64: () => m.getBigInt64(a, true), f32: () => m.getFloat32(a, true), f64: () => m.getFloat64(a, true) }[c.wasm]();
-        r[c.nombre] = deWasm(w, c.tipo);
-      }
-    }
-    return r;
+    const values = d.campos.map((c) => readClusterField(dir + c.off, c));
+    return d.byName ? Object.fromEntries(d.campos.map((c, index) => [c.nombre, values[index]])) : values;
   };
   // Los arrays (DT-042): [n][relleno][elementos] en el bloque de la celda; un
   // valor de array es un array de JavaScript. Lo nuevo de un array de cadenas o

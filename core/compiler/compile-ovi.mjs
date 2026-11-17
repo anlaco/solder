@@ -8,6 +8,7 @@ import { ARRAY_HEADER_BYTES, arrayElement, SECOND_SIZE_OFFSET } from "./memory-o
 import { constantOf, setZeroClusterAddress } from "./constants.mjs";
 import { subOVIInstance } from "./subovi-calls.mjs";
 import { dimensionsOf, esCluster, flattenArrayValue, inMemory } from "../model/types.mjs";
+import { elementValueIn } from "../model/cluster-values.mjs";
 import { clusterLayout, wasmTypeOf } from "./wasm-types.mjs";
 import { bloqueCadena, i32 } from "./linear-memory.mjs";
 import { splitIntoClumps, topologicalOrder } from "./clumps.mjs";
@@ -182,8 +183,8 @@ export function compileOVI(withDecorations, cat, module, asSubOVI, instanceKey, 
   const clusterConstante = (t, v, dir = null) => {
     const d = clusterLayout(t);
     const b = dir ?? bufer(d.tam);
-    for (const c of d.campos) {
-      const x = v?.[c.nombre];
+    d.campos.forEach((c, index) => {
+      const x = elementValueIn(v, index, c.nombre);
       if (esCluster(c.tipo)) clusterConstante(c.tipo, x, b + c.off);
       else if (c.tipo === "string") constantes.push({ celda: b + c.off, bytes: bloqueCadena(String(x ?? "")) });
       else {
@@ -196,7 +197,7 @@ export function compileOVI(withDecorations, cat, module, asSubOVI, instanceKey, 
         else dv.setInt32(0, c.tipo === "boolean" ? (x ? 1 : 0) : Number(x ?? 0) | 0, true);
         datosFijos.push({ desde: b + c.off, bytes });
       }
-    }
+    });
     return b;
   };
   // Manejo automático de errores, activo de fábrica (OVI Properties ▸ Execution).

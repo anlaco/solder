@@ -60,8 +60,8 @@ test("a graph receives its data when the VI runs: a timed array and an XY plot",
   const compiled = compilar(vi.g, CAT);
   assert.ok(!compiled.errores, JSON.stringify(compiled.errores));
   const written = await ejecutar(compiled, {});
-  assert.deepEqual(written[vi.id.graph], { f0: 10, f1: 2, f2: [1, 2, 3] });
-  assert.deepEqual(written[vi.id.xyGraph], { f0: [0, 1], f1: [1, 2, 3] });
+  assert.deepEqual(written[vi.id.graph], [10, 2, [1, 2, 3]]);
+  assert.deepEqual(written[vi.id.xyGraph], [[0, 1], [1, 2, 3]]);
   assert.equal(written[vi.id.chart], 0.5);
 });
 

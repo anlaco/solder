@@ -13,6 +13,12 @@ import { fullClusterLayout } from "../panel-data.mjs";
 import { clusterLayout } from "../wasm-types.mjs";
 import { FORMAT_ROW_BYTES, ROW_BITS_OFFSET, ROW_VALUE_OFFSET, readRow, writeRow } from "./host-rows.mjs";
 
+/**
+ * What the host needs of a property's value when it is a cluster (Position, Bounds): one of LabVIEW's own type
+ * definitions, whose names are fixed, so the host answers and takes it as a record by name (cluster-values.mjs).
+ */
+const propertyClusterLayout = (type) => (esCluster(type) ? { disposicion: { ...fullClusterLayout(type), byName: true } } : {});
+
 /** A Property Node: its read rows, in order, and its error out. */
 export function propertyNode(node) {
   const { class: className, link = null, rows = [], "ignore-errors": ignoreErrors = false } = node.nodo.config ?? {};
@@ -25,17 +31,16 @@ export function propertyNode(node) {
     const property = node.cat.properties?.find(className, row.property);
     if (!property?.done) throw new Error(`The property "${row.property}" of the Property Node cannot run yet.`);
     const portName = `row-${index}`;
-    const layout = (type) => (esCluster(type) ? { disposicion: fullClusterLayout(type) } : {});
     if (row.write) {
       const input = inputs.findIndex((port) => port.name === portName);
       const type = node.tIn(input);
       code.push(...(esCluster(type) ? [i32Const(rowRecord(index)), ...node.entrada(input), ins("i32.store", ROW_VALUE_OFFSET)] : writeRow(type, rowRecord(index), node.entrada(input))));
-      return { property: row.property, write: true, tipo: type, ...layout(type) };
+      return { property: row.property, write: true, tipo: type, ...propertyClusterLayout(type) };
     }
     const type = node.tOut(outputs.findIndex((port) => port.name === portName));
     if (type === "string") code.push(i32Const(rowRecord(index)), i32Const(node.celda()), ins("i32.store", ROW_BITS_OFFSET));
     if (esCluster(type)) code.push(i32Const(rowRecord(index)), i32Const(node.bufer(clusterLayout(type).tam)), ins("i32.store", ROW_VALUE_OFFSET));
-    return { property: row.property, write: false, tipo: type, ...layout(type) };
+    return { property: row.property, write: false, tipo: type, ...propertyClusterLayout(type) };
   });
   const index = node.registerPropertyNode({ class: className, link, rows: hostRows, ignoreErrors });
   const errorIn = inputs.findIndex((port) => port.name === "error-in");

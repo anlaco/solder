@@ -4701,7 +4701,14 @@ of the elements in the file. The `.ovi` format stores the elements inside the co
    as any panel object (kind, label, configuration, value), with its position relative to the cluster's interior.
    The array's order is the cluster order. Its type is derived from the elements (`{ cluster: [{ name: label, type }] }`)
    and is no longer written by hand; the error clusters keep their style and stored type as today. An element has no
-   terminal of its own. The diagram's Cluster Constant (`cluster-constant`) is the same over constants, with no labels
+   terminal of its own.
+   *Amended on 2026-11-16, accepted by the developer the same day:* **a cluster's value is the list of its elements'
+   values, in cluster order**, as LabVIEW gives it over VI Server (`["", false, 0]`), on the panel, in a constant and
+   wherever the host reads or writes one (`core/model/cluster-values.mjs`). It was a record by element name, and
+   elements of one name were one value: a Cluster Constant, whose elements have no labels, holding 1 and 2 gave 2
+   and 2. Solder's own clusters, whose names are fixed and distinct, stay records by name: the error cluster, a VISA
+   resource name and a DAQ task in memory, and the clusters of a Property Node (Position, Bounds). A record is still
+   taken wherever a value comes in, so a file of version 5 or earlier opens unchanged. The diagram's Cluster Constant (`cluster-constant`) is the same over constants, with no labels
    shown (measured).
 2. **The format** (DT-055): version 6 adds `elements` to a cluster panel object and to a cluster constant. A file of
    version 5 or earlier opens unchanged (its clusters have no elements and keep their stored type); a file of version 6
@@ -4732,3 +4739,125 @@ of the elements in the file. The `.ovi` format stores the elements inside the co
 | Bundle and Unbundle take the wired cluster's elements, in cluster order | an editor test and a run: Numeric 3, Boolean TRUE, String "hi" reversed give "hi", TRUE, 3, as LabVIEW | Measured (2026-11-16), not built |
 | The shell, terminal, constant, wire and menus look as measured | editor tests on the measured sizes and colours; a comparison under Xvfb | Not built |
 | ✗ discards a pending reorder | — | **Unverified** in LabVIEW |
+| Elements of one name, or of none, keep each its own value | `test/core/user-clusters.test.mjs` (a Cluster Constant of two unlabelled numbers; a control of two elements labelled alike) | **Verified** (2026-11-16) |
+
+## DT-096
+
+**A type definition is a property of the object that follows it, not a type of its own: the type on a wire stays
+structural, and a control, indicator or constant made from an `.octl` file carries a link to it and a copy of what it
+defined.**
+
+- **Status:** Accepted on 2026-11-16 by the developer, as proposed the same day, **subject to one measurement** in
+  LabVIEW 2026 Q3 (below): if a type definition and an equal cluster that is not one do not wire as one type, this
+  decision is amended before step 3 of "The language's everyday types" ([DT-093](#dt-093) §3.2) starts.
+- **Why:** every comparison of types in the resolver (`iguales`, `comun`, the coercions of [DT-038](#dt-038)) and in
+  the compiler (`inMemory`, the layouts of [DT-042](#dt-042)) is structural today. A type with a name of its own
+  would have to be known by each of them, and by every function of the catalog that takes "a cluster". What a type
+  definition gives in LabVIEW is elsewhere: one file that many objects follow, and an editor that updates them. That
+  is a relation between an object and a file, and it can be kept there.
+
+### Decision
+
+1. **On wires the type is structural.** Two clusters with the same elements are one type whether or not either comes
+   from a type definition; no function, tunnel or subOVI call sees the difference. *Unmeasured: see the table.*
+2. **The link lives on the object.** A panel object or a constant that follows a type definition has, in its
+   configuration, `typedef: { path, strict }`: the `.octl` file ([DT-093](#dt-093) §5), by a path resolved as a
+   subOVI's is ([DT-045](#dt-045)), and whether it is a strict type definition. A cluster's elements
+   ([DT-095](#dt-095)), an enum's items ([DT-049](#dt-049)) or a ring's ([DT-091](#dt-091)) are still stored in the
+   object: they are the copy of what the file defined when the object was last updated.
+3. **The copy opens the OVI alone.** An `.ovi` whose `.octl` is missing opens, compiles and runs with the copy, and
+   says which file it did not find, as a missing subOVI does. Nothing of the `.octl` is needed to compile.
+4. **Updating is the editor's work, when an OVI is loaded and when the `.octl` is saved:** each object that follows
+   the file takes its definition again, keeping its own label, place and value where the new type still has them. How
+   values are kept across a change of the definition (an element added, removed or reordered; an enum item renamed)
+   is measured with step 3 and written then.
+5. **The type's name is shown, not compared.** The Context Help of a wire and of a terminal names the type
+   definition when its source object has one; it is found by following the wire to its source, not carried in the type.
+6. **A `.octl` file** holds one panel object as an `.ovi` holds it, with the format's version ([DT-055](#dt-055)), and
+   which of the three it is: control, type definition or strict type definition. Its schema is written with step 3.
+
+### What is measured before step 3
+
+| Question | Why it decides |
+|----------|----------------|
+| A cluster type definition wired to an equal cluster that is not one: one type, a coercion dot, or a broken wire? | §1 |
+| Two different type definitions with equal elements, wired to each other | §1 |
+| A strict type definition wired to a non-strict instance of the same file | §1 |
+| An enum type definition wired to an equal enum that is not one (enums already compare by items, [DT-049](#dt-049)) | §1 |
+| What an OVI shows and whether it runs when its `.ctl` is missing | §3 |
+| What Context Help says of a wire that leaves a type definition, and of one that has passed through a function | §5 |
+| What an instance keeps (label, value, size) when the definition gains, loses or reorders an element | §4 |
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| A type definition and an equal type that is not one are one type on a wire | the measurement above, then a test over `tipos` | **Unverified** in LabVIEW |
+| An OVI whose `.octl` is missing opens and runs with its copy | a test over a fixture with the file absent | Not built |
+| Updating keeps what the new definition still has | the measurement, then editor tests | Not built |
+
+## DT-097
+
+**A Time Stamp is a type of its own, kept in memory as LabVIEW keeps it: 16 bytes, an I64 of seconds since 1904-01-01
+UTC and a U64 fraction. A Waveform is `{ waveform: T }`, kept as a cluster of its four components, the attributes'
+place reserved from the start. Both live by reference and are laid out as clusters, so what already copies, passes
+and shows a cluster serves them.**
+
+- **Status:** Accepted on 2026-11-16 by the developer, as proposed the same day for steps 4 and 5 of "The language's
+  everyday types" ([DT-093](#dt-093) §3.3–§3.4). The Time Stamp is measured
+  ([`time-stamp`](../../labview-captures/reports/2026-11-16-time-stamp.md)); the Waveform's own behavior is not, and
+  is measured with its step (below).
+- **Why:** WebAssembly has no value of 128 bits, and the compiler gives every type one value ([DT-039](#dt-039)): a
+  Time Stamp cannot travel as a scalar. A cluster already travels as the address of its block ([DT-042](#dt-042)), is
+  copied where a shift register, a tunnel or a subOVI call keeps it, and is read and written by the panel. A VISA
+  resource name ([DT-066](#dt-066)) and a DAQ task ([DT-087](#dt-087)) are already "a type of their own on wires, a
+  cluster in memory" (`inMemory`). DAQmx Read gives waveforms ([DT-076](#dt-076)), whose attributes are a variant:
+  leaving that place out now would change the layout, and every compiled reader of it, when the variant comes.
+
+### Decision
+
+1. **The type.** `"timestamp"`, a scalar name in the catalog, on wires and in the `.ovi`, as `"path"` is. In memory
+   (`inMemory`) it is the cluster `{ seconds: I64, fraction: U64 }`, 16 bytes: whole seconds since 1904-01-01
+   00:00:00 UTC and the fraction in units of 2^-64 s, split by floor (−1.5 s is −2 and one half), which is LabVIEW's
+   flattened form field by field (measured). It is one of Solder's own clusters, read and written by name
+   ([DT-095](#dt-095) §1). Its default value is 0.
+2. **It never coerces.** A Time Stamp wired where a number is expected, or the reverse, is a broken wire, except in
+   the functions of §3. The conversions are functions: To Time Stamp takes any number (a NaN or +∞ gives the largest
+   Time Stamp, −∞ the smallest); To Double Precision Float and To Quad Integer take a Time Stamp; To Long Integer
+   breaks (measured). The other integer conversions are measured with step 4.
+3. **The arithmetic is what was measured, and nothing else resolves:**
+
+   | Function | Inputs | Output |
+   |----------|--------|--------|
+   | Subtract | Time Stamp − Time Stamp | DBL, in seconds |
+   | Add | Time Stamp + number, number + Time Stamp | Time Stamp |
+   | Subtract | Time Stamp − number | Time Stamp |
+   | Increment | Time Stamp | Time Stamp, one second later |
+   | Round To Nearest | Time Stamp | Time Stamp, a half rounded toward +∞ (not to even, as a DBL's is) |
+   | Equal?, Less?, Greater Or Equal? and the other comparisons | two Time Stamps | Boolean |
+   | Equal To 0? | Time Stamp | Boolean |
+   | Max & Min, Select, In Range and Coerce | Time Stamps | Time Stamp |
+
+   Number − Time Stamp, Time Stamp + Time Stamp, any product or quotient, Negate and Absolute Value are broken wires.
+   Decrement and the comparisons not in the report are measured with step 4.
+4. **Its arithmetic is exact.** A sum or a difference is computed over the two integers, with the carry between them,
+   and only Time Stamp − Time Stamp ends as a DBL: through a DBL a date of today keeps about half a microsecond.
+5. **The Waveform.** `{ waveform: T }`, with T a numeric type; in memory, the cluster
+   `{ t0: timestamp, dt: DBL, Y: array of T, attributes: handle }`. `attributes` is a variant's place: 4 bytes that
+   hold 0, "no attributes", until the variant exists (DT-093 §3.6); nothing reads or writes it before then, and Get
+   and Set Waveform Attribute stay greyed out with that reason ([DT-035](#dt-035)). Arrays of waveforms are arrays of
+   clusters, as today. The digital waveform is not part of this decision.
+6. **What is measured before step 5:** Build Waveform's defaults (t0, dt, an empty Y); the types Get Waveform
+   Components gives; a waveform flattened to a string, to check the order and sizes of §5; which arithmetic and
+   comparison functions take a waveform (waveform + number, waveform + waveform with different dt or lengths) and what
+   they give; what a Waveform Chart and a Waveform Graph draw from one, and from an array of them.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| A Time Stamp is an I64 of seconds since 1904 UTC and a U64 fraction, split by floor | the measured bytes of 0, 1, 1.5, −1, 0.1 and 3786825600 s as a test over the memory | Measured (2026-11-16), not built |
+| Only the functions of §3 take a Time Stamp, with those outputs | a test over `tipos` for each row and each broken case | Measured, not built |
+| Round To Nearest of a Time Stamp rounds a half toward +∞ | the eight measured cases as a test | Measured, not built |
+| A sum of a Time Stamp and a number is exact | a test that adds 2^-30 s to a date of 2026 and reads both integers | Not built |
+| The Waveform's layout is LabVIEW's flattened order | the measurement of §6, then a test | **Unverified** in LabVIEW |

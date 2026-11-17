@@ -976,10 +976,17 @@ to it go on, new fronts wait for step 6.
    ([`cluster-shell-editor-try`](../../labview-captures/reports/2026-11-16-cluster-shell-editor-try.md)). Left: the
    subpalette's title says "Data Containers" where LabVIEW says "Data Container"; an element's own menu, label editing,
    value operating and dragging it out of the shell.*
+   *Amended on 2026-11-16 (DT-095 §1): a cluster's value is the list of its elements' values in cluster order, not a
+   record by name (a Cluster Constant holding 1 and 2 gave 2 and 2); Solder's own clusters stay records. Stages (c) and
+   (d) build on it.*
 3. **Type definitions** and strict type definitions, in `.octl` files (DT-093 §5): Make Type Def., the control editor,
-   updating the instances.
-4. **Time stamp**: control, constant, Get Date/Time, conversions.
-5. **Waveform**: the type, Build and Get Waveform Components, charts and graphs fed by it.
+   updating the instances. *Decided in DT-096 (2026-11-16): the type on a wire stays structural and the link to the
+   `.octl` lives on the object, with a copy of the definition. First, the measurements DT-096 lists.*
+4. **Time stamp**: control, constant, Get Date/Time, conversions. *Decided in DT-097 (2026-11-16) and measured the
+   same day ([`time-stamp`](../../labview-captures/reports/2026-11-16-time-stamp.md)): 16 bytes laid out as a cluster,
+   and the arithmetic LabVIEW takes, exact.*
+5. **Waveform**: the type, Build and Get Waveform Components, charts and graphs fed by it. *Its layout is decided in
+   DT-097 §5, with the attributes' place reserved; its behavior is measured first (DT-097 §6).*
 6. **DAQ on waveforms**: DAQmx Read's waveform instances; the hardware stage may reopen here.
 7. **Variant.**
 8. **The rest of OVI Server** (hardware step 7 above), with Core 2.

@@ -5,6 +5,7 @@
 //
 // A pure module: the front panel calls it with the indicator's value and type.
 
+import { elementValueIn } from "../../../core/model/cluster-values.mjs";
 import { dimensionsOf, esArray, esCluster } from "../../../core/model/types.mjs";
 import { DEFAULT_CHART_HISTORY } from "../../../core/compiler/panel-memory.mjs";
 
@@ -38,7 +39,7 @@ export function chartAppend(history, value, type, historyLength = DEFAULT_CHART_
 }
 
 function chartAdditions(value, type) {
-  if (esCluster(type)) return type.cluster.map((field) => [Number(value?.[field.name] ?? 0)]);
+  if (esCluster(type)) return clusterValues(value, type).map((element) => [Number(element ?? 0)]);
   if (esArray(type) && dimensionsOf(type) === 2) return (value ?? []).map((row) => row.map(Number));
   if (esArray(type)) return [(value ?? []).map(Number)];
   return [[Number(value ?? 0)]];
@@ -76,10 +77,13 @@ export function graphPlots(value, type) {
   return [indexedPlot(value ?? [])];
 }
 
+/** The values of the elements of a cluster of type `type`, in cluster order (core/model/cluster-values.mjs). */
+const clusterValues = (value, type) => type.cluster.map((field, index) => elementValueIn(value, index, field.name));
+
 const indexedPlot = (values) => values.map((y, x) => ({ x, y: Number(y) }));
 
 function timedPlot(value, type) {
-  const [x0, dx, values] = type.cluster.map((field) => value?.[field.name]);
+  const [x0, dx, values] = clusterValues(value, type);
   return (values ?? []).map((y, i) => ({ x: Number(x0 ?? 0) + i * Number(dx ?? 1), y: Number(y) }));
 }
 
@@ -90,15 +94,10 @@ function timedPlot(value, type) {
  */
 export function xyPlots(value, type) {
   const pairs = (xs = [], ys = []) => Array.from({ length: Math.min(xs.length, ys.length) }, (_, i) => ({ x: Number(xs[i]), y: Number(ys[i]) }));
-  const fieldsOf = (cluster) => cluster.cluster.map((field) => field.name);
-  if (esCluster(type)) {
-    const [xName, yName] = fieldsOf(type);
-    return [pairs(value?.[xName], value?.[yName])];
-  }
+  if (esCluster(type)) return [pairs(...clusterValues(value, type))];
   const item = type.array;
-  const [xName, yName] = fieldsOf(item);
-  if (esArray(item.cluster[0].type)) return (value ?? []).map((plot) => pairs(plot[xName], plot[yName]));
-  return [(value ?? []).map((point) => ({ x: Number(point[xName]), y: Number(point[yName]) }))];
+  if (esArray(item.cluster[0].type)) return (value ?? []).map((plot) => pairs(...clusterValues(plot, item)));
+  return [(value ?? []).map((point) => clusterValues(point, item)).map(([x, y]) => ({ x: Number(x), y: Number(y) }))];
 }
 
 // ——— Scales ———

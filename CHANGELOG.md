@@ -9,6 +9,11 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Fixed: a cluster's value was a record by element name, so two elements with the same label or none, as in a
+  Cluster Constant holding 1 and 2, gave one value twice (2 and 2). A cluster's value is now the list of its elements'
+  values in cluster order, as LabVIEW gives it; the error cluster, a VISA resource name and a DAQ task are still read
+  by name (DT-095 §1).
+
 - Fixed, each as measured in LabVIEW: Quotient & Remainder of integers divided by zero gave the largest integer (it
   gives quotient 0 and remainder x) and lost the last digits of a large I64; a NaN converted to an integer gave 0 (it
   gives the largest value of the type); Scale By Power Of 2 of an integer by the width of its type or more gave a

@@ -114,7 +114,8 @@ test("arrays de cadenas, de enteros de 64 bits, de bytes y de clusters van y vue
      ["c8", "arr-control", { type: A("u8") }], indicador("r8", "u8"), ["cc", "arr-control", { type: A(P) }], indicador("rc", P)],
     [["cs.result", "rs.value"], ["c64.result", "r64.value"], ["c8.result", "r8.value"], ["cc.result", "rc.value"]],
   );
-  const valores = { cs: ["año", "", "x"], c64: [1, -2, 123456789012], c8: [0, 255, 7], cc: [{ x: 1.5, s: "a" }, { x: -2, s: "bé" }] };
+  // A cluster's value is the list of its elements' values, in cluster order (DT-095 §1, amended).
+  const valores = { cs: ["año", "", "x"], c64: [1, -2, 123456789012], c8: [0, 255, 7], cc: [[1.5, "a"], [-2, "bé"]] };
   assert.deepEqual(await correr(v, valores), { rs: valores.cs, r64: valores.c64, r8: valores.c8, rc: valores.cc });
 });
 

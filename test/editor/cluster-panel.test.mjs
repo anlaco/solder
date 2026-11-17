@@ -121,7 +121,7 @@ test("a control dragged on the panel onto the interior becomes an element and le
   assert.equal(p.g.cables.length, 0, "an element has no terminal, so its wire goes with it");
   const [element] = elementsOf(p);
   assert.deepEqual([element.tipo, element.label.text, element.config.value], ["control", "Numeric", 5]);
-  assert.deepEqual(p.g.nodos[0].config.value, { Numeric: 5 });
+  assert.deepEqual(p.g.nodos[0].config.value, [5], "the cluster's value is its elements' values, in cluster order");
   // Released outside any cluster it is only moved.
   let q = place(P.inicial(), "control", { x: 100, y: 100 });
   q = P.pulsar(q, CTX, { tipo: "objeto", id: q.g.nodos[0].id }, { x: 120, y: 101 });

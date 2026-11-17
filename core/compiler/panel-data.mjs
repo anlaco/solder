@@ -1,6 +1,7 @@
 // What the host needs to read and write a panel value that is not a scalar (DT-063 §10): a cluster's full layout, an
 // array's element and dimensions, and whether a value is a DAQ task (DT-087 §7). The keys are read by the runtime.
 
+import { isNamedCluster } from "../model/cluster-values.mjs";
 import { isDaqTask } from "../model/daq-name.mjs";
 import { PATH, dimensionsOf, esArray, esCluster } from "../model/types.mjs";
 import { arrayElement } from "./memory-ops.mjs";
@@ -30,5 +31,6 @@ export const taskPanelData = (logicalType) => (isDaqTask(logicalType) ? { task: 
 export function fullClusterLayout(t) {
   const d = clusterLayout(t);
   // A field that is an array carries what the host needs to read it (its element and dimensions).
-  return { ...d, campos: d.campos.map((c) => ({ ...c, wasm: wasmTypeOf(c.tipo), ...(esCluster(c.tipo) ? { disposicion: fullClusterLayout(c.tipo) } : {}), ...(esArray(c.tipo) ? { array: panelData(c.tipo) } : {}) })) };
+  // The host reads one of Solder's own clusters as a record by name, and any other as a list (cluster-values.mjs).
+  return { ...d, byName: isNamedCluster(t), campos: d.campos.map((c) => ({ ...c, wasm: wasmTypeOf(c.tipo), ...(esCluster(c.tipo) ? { disposicion: fullClusterLayout(c.tipo) } : {}), ...(esArray(c.tipo) ? { array: panelData(c.tipo) } : {}) })) };
 }
