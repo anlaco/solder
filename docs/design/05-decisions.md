@@ -4798,6 +4798,12 @@ defined.**
    the file, and the Error list says per instance "Type definition not found or contains errors", fixed by finding
    the file or by Disconnect from Type Def. Solder does the same: the copy keeps the object, but the OVI does not run
    until the link is found or removed. (Unlike a missing subOVI, which has no copy, the OVI stays editable.)
+   *Amended on 2026-11-17 by the developer, after measuring Make Type Def.*
+   ([`typedef-editor-entry`](../../labview-captures/reports/2026-11-17-typedef-editor-entry.md)): LabVIEW links an
+   object at once to a type definition that has no file yet ("Control N"). Its `path` is then an untitled key,
+   `untitled:…`, as an OVI that was never saved has one (`editor/src/common/ovi-paths.mjs` `untitledKey`); saving the
+   `.octl` moves every link to its file, stored relative to each OVI, as a subOVI's path moves on its first save. What
+   LabVIEW asks when an OVI is saved while its type definition is still untitled is measured with the editor stage.
 4. **Updating is the editor's work, when an OVI is loaded and when the `.octl` is applied** (measured 2026-11-17, same
    report). Saving or File ▸ Apply Changes in the control editor shows no dialog. Each object that follows the file
    takes its definition again, keeping its label, place and size:
@@ -4967,3 +4973,88 @@ when the cluster changes, as in LabVIEW.**
 | Wires stay on their row's index when the source changes | the same | **Verified** (measured and built) |
 | A copy that does not match the wired cluster breaks the wire | the same | **Verified** |
 | Wires of rows that vanish go away | — | **Unverified** in LabVIEW |
+
+## DT-099
+
+**Projects come now, before the editor of type definitions: the Project Explorer is cloned one to one, and a project
+is saved as `.sdproj`, LabVIEW's `.lvproj` copied one to one in JSON.**
+
+- **Status:** Accepted on 2026-11-17 by the developer ("vamos a pensar en hacer ya el Project Explorer y el archivo
+  sdproj"; "creo que el lvproj es texto, podemos copiarlo pero en JSON"). It moves "Projects" from "Afterwards" in the
+  plan to the step after the core of type definitions ([DT-096](#dt-096)); the editor stages of type definitions
+  follow it. The time stamp and the waveform ([DT-097](#dt-097)) stay after both.
+- **Why:** NI's Core 1 starts from a project (lessons 3 and 4), and Core 2 organizes one (lessons 3 and 4); every
+  `.sdproj` waits on it since [DT-051](#dt-051). A `.lvproj` is XML text (read on 2026-11-17 from LabVIEW 2026 Q3's
+  examples): its structure can be read, and so copied, without guessing.
+
+### What a `.lvproj` is (read on 2026-11-17, LabVIEW 2026 Q3's `examples/`, 182 files)
+
+- A `Project` holds `Property` rows and one `Item` tree. Each `Item` has a `Name`, a `Type` and, when it is a file
+  or a folder on disk, a `URL` relative to the project file itself (`../Word Finder.vi` for a VI beside it).
+- The tree's top item is the target, `Type="My Computer"`, with its OVI Server settings as properties. Under it come
+  the user's items, then always `Dependencies` (`Type="Dependencies"`) and `Build Specifications` (`Type="Build"`),
+  in that order.
+- Item types seen: `VI`, `Document` (any other file), `Folder` (virtual; with the property `NI.DISK` true and a `URL`
+  it is an auto-populating folder that mirrors a folder on disk), `Library`, and under Build Specifications `EXE` and
+  `Packed Library` with their many properties. Real-time targets appear in two examples.
+- The examples are saved "source only" and their `Dependencies` are empty: what LabVIEW stores there for a project
+  that calls `vi.lib` and the user's subVIs is measured first (below).
+
+### Decision
+
+1. **The file.** A project is a `.sdproj`, JSON indented by two spaces like an `.ovi`, with its own version and schema
+   (`docs/schema/sdproj.schema.json`), read and written by the core (`core/model/project.mjs`). It holds what the
+   `.lvproj` holds, in the same tree and order: the project, its target `My Computer`, the user's items, Dependencies
+   and Build Specifications.
+2. **One to one, in Solder's words.** Each item keeps LabVIEW's kind, written in the file as Solder writes keys
+   (kebab-case): `my-computer`, `ovi` (for LabVIEW's `VI`, [DT-071](#dt-071)), `document`, `folder`, `dependencies`,
+   `build`, and later `library` ([DT-051](#dt-051)'s `.sdlib`), `exe`. A property is written only when Solder does
+   something with it, under a name of its own (`NI.DISK` is `"auto-populating": true`); NI's property names are not
+   copied, as NI's texts are not (CLAUDE.md rule 3).
+3. **Paths.** An item's path is stored relative to the `.sdproj`'s folder, as a caller stores a subOVI's
+   (`editor/src/common/ovi-paths.mjs`), and `<ovilib>/…` for Solder's library; LabVIEW's form relative to the file
+   (`../X.vi`) is an encoding detail that is not copied, so one rule serves every Solder file.
+4. **Dependencies and Build Specifications** are in the file as in LabVIEW. What Dependencies holds, and when it is
+   refreshed, is written after the measurement; Build Specifications is empty and greyed until the Application Builder
+   exists (DT-035), its place in the file reserved.
+   *Amended on 2026-11-17 by measurement*
+   ([`project-explorer-s1`](../../labview-captures/reports/2026-11-17-project-explorer-s1.md)): LabVIEW never writes
+   Dependencies' contents; the element stays empty, and the tree computes it on load as the transitive closure of the
+   items' callees (subOVIs, type definitions), Solder's library grouped in one folder item (LabVIEW's "vi.lib"). Solder
+   does the same: `dependencies` is an empty item in the file, filled by the core from the hierarchy
+   (`core/model/hierarchy.mjs`), `ovi.lib` and the add-ons' libraries in a folder item of their own. The user's items
+   are written sorted by name, as LabVIEW writes them, before Dependencies. Saving with no change gives the same text.
+   LabVIEW's side files (`.aliases`, the window's place in `.lvlps`, a `.UserState` folder) are not copied: where a
+   project's window was is kept as an OVI keeps its windows ([DT-078](#dt-078)), decided with the window.
+4b. **Folders and order** (measured on 2026-11-17,
+   [`project-explorer-s2`](../../labview-captures/reports/2026-11-17-project-explorer-s2.md)): a virtual folder (New ▸
+   Virtual Folder, named "New Folder") has no path; Add ▸ Folder (Snapshot)... is stored exactly as a virtual folder
+   holding the folder's files; Add ▸ Folder (Auto-populating)... has the folder's path and `"auto-populating": true`
+   and its contents are not written, being read again from the disk (LabVIEW shows a new file within 3 s). Items are
+   written and shown folders first, then the rest, each by name whatever the case (Arrange By ▸ Name, the default). A
+   file already in the project is refused ("Unable to Add Items", "An item with this path already exists in the
+   project.") and the others are added. A control is an `ovi` item, as LabVIEW writes a `.ctl` `Type="VI"`. Built in
+   `core/model/project.mjs`, `docs/schema/sdproj.schema.json`, `test/core/project.test.mjs`.
+5. **Targets.** Only `My Computer` for now. Other targets (an ESP32 DAQ, Solder's own hardware, [DT-064](#dt-064)) take
+   their place beside it later; the file keeps the target level from the start so that adding one changes nothing.
+6. **The window.** The Project Explorer is measured and cloned one to one (menus, toolbars, the Items and Files
+   tabs, each item's right-click menu); what is not built yet is greyed with its reason. An OVI opened from a project
+   belongs to it, as in LabVIEW (its window title and the paths it resolves): measured with the window.
+
+### What is measured first
+
+| Question | Why it decides |
+|----------|----------------|
+| The window of a new blank project: size, tabs, tree, menus, toolbars | §6 |
+| The `.lvproj` of a saved project with an OVI, a subVI of the user's, a `vi.lib` VI, a `.ctl` and a text file | §1, §4 |
+| Each item's right-click menu (project, My Computer, a VI, a folder, Dependencies, Build Specifications) | §6 |
+| Add ▸ File / Folder (Snapshot) / Folder (Auto-populating), New ▸ VI and Virtual Folder, Save and Close | §1, §6 |
+| What an OVI opened from a project shows (title, Context Help, its paths) | §6 |
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| A `.lvproj` is an `Item` tree under My Computer, with Dependencies and Build Specifications last | read from 182 example files | **Measured** (2026-11-17) |
+| A `.sdproj` holds the same tree, round trip exact | `docs/schema/sdproj.schema.json`, `test/core/project.test.mjs` | **Built** (2026-11-17) |
+| Dependencies is not written; it is computed from the items' callees | measured 2026-11-17, `test/core/project.test.mjs` (`dependencyKeys`) | **Built** in the core |

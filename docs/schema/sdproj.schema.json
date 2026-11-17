@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://solder.dev/schema/sdproj-1.json",
+  "title": "Solder project",
+  "description": "A project (DT-099): LabVIEW's .lvproj copied one to one in JSON. One item tree under the target My Computer: the user's items (folders first, then the rest, each by name), then Dependencies and Build Specifications. Normative: a .sdproj file that does not validate against this schema is not conformant. Read and written by core/model/project.mjs.",
+  "type": "object",
+  "required": ["solder-project", "items"],
+  "additionalProperties": false,
+  "properties": {
+    "solder-project": {
+      "description": "The version of the format. A reader MUST refuse a version newer than the one it knows.",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 1
+    },
+    "items": {
+      "description": "The project's targets; for now only My Computer (DT-099 §5).",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/item" }
+    }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "required": ["name", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "description": "The item's name in the tree.", "type": "string", "minLength": 1 },
+        "kind": {
+          "description": "LabVIEW's item type in Solder's words (DT-099 §2): the target, an OVI (LabVIEW's VI, which also covers controls and polymorphic OVIs), any other file, a folder, and the two fixed items.",
+          "enum": ["my-computer", "ovi", "document", "folder", "dependencies", "build"]
+        },
+        "path": { "description": "The file or the mirrored folder, relative to the .sdproj's folder (absolute on another disk), or `<ovilib>/…`.", "type": "string", "minLength": 1 },
+        "auto-populating": { "description": "A folder that mirrors the folder at `path` (LabVIEW's Folder (Auto-populating)); its contents are not written.", "const": true },
+        "items": { "description": "What a target or a virtual folder holds. Dependencies is never written with contents.", "type": "array", "items": { "$ref": "#/$defs/item" } }
+      },
+      "allOf": [
+        { "if": { "properties": { "kind": { "enum": ["ovi", "document"] } } }, "then": { "required": ["path"], "not": { "required": ["items"] } } },
+        { "if": { "required": ["auto-populating"] }, "then": { "required": ["path"], "properties": { "kind": { "const": "folder" } }, "not": { "required": ["items"] } } },
+        { "if": { "properties": { "kind": { "const": "dependencies" } } }, "then": { "not": { "required": ["items"] } } }
+      ]
+    }
+  }
+}

@@ -18,7 +18,8 @@ When the developer says "keep going":
    Library Function Node and the add-ons folder. "OVI files are `.ovi`" (DT-094) is done (2026-11-16). **DT-093 (2026-11-16)
    closes the hardware stage here**: next is **"The language's everyday types"** below. Its step 1 (the compiler's
    split) and step 2, clusters made by the user (DT-095, DT-098), are done (2026-11-16 and 2026-11-17): **continue with
-   step 3, type definitions** (DT-096), measured and its core done on 2026-11-17: next the editor, in the stages listed there. DAQ's stage B waits for the
+   step 3, type definitions** (DT-096), measured and its core done on 2026-11-17. **DT-099 (2026-11-17) brings projects first: continue with
+   step 2b**, then the editor stages of type definitions. DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
@@ -1010,6 +1011,21 @@ to it go on, new fronts wait for step 6.
    *Amended on 2026-11-16 (DT-095 §1): a cluster's value is the list of its elements' values in cluster order, not a
    record by name (a Cluster Constant holding 1 and 2 gave 2 and 2); Solder's own clusters stay records. Stages (c) and
    (d) build on it.*
+2b. **Projects: the Project Explorer and `.sdproj`** (DT-099, decided on 2026-11-17), brought before the editor of
+   type definitions: the `.sdproj` is the `.lvproj` one to one in JSON. First the measurements DT-099 lists; then the
+   core (`core/model/project.mjs`, the schema), then the window in stages.
+   *Measured on 2026-11-17 ([`project-explorer-s1`](../../labview-captures/reports/2026-11-17-project-explorer-s1.md):
+   the window, its eight menus, the toolbar, saving, the `.lvproj` text, Dependencies never written;
+   [`project-explorer-s2`](../../labview-captures/reports/2026-11-17-project-explorer-s2.md): each item's menu, virtual,
+   snapshot and auto-populating folders, the order, a VI's window title "… on P1.lvproj/My Computer", the Files tab,
+   Remove From Project and the close prompt). Core done the same day: `core/model/project.mjs` (blank project, read and
+   write in LabVIEW's order, Add ▸ File / Folder (Snapshot) / Folder (Auto-populating), New ▸ Virtual Folder, the
+   Dependencies closure), `docs/schema/sdproj.schema.json`, spec/02 §9, `test/core/project.test.mjs`. Next, the editor,
+   in stages: (a) the Project Explorer window (Items tab, tree, menus and toolbar with the rows not built greyed),
+   File ▸ Create Project... / Open Project... / Save Project / Close Project with the Create Project dialog and the
+   close prompt; (b) Add ▸ and New ▸ VI / Virtual Folder, Remove From Project, rename, drag into folders; (c)
+   Dependencies filled from the hierarchy, refreshed, and auto-populating folders watching the disk; (d) OVIs opened
+   from the project ("… on P.sdproj/My Computer", Window ▸ Show Project) and the Files tab.*
 3. **Type definitions** and strict type definitions, in `.octl` files (DT-093 §5): Make Type Def., the control editor,
    updating the instances. *Decided in DT-096 (2026-11-16): the type on a wire stays structural and the link to the
    `.octl` lives on the object, with a copy of the definition. First, the measurements DT-096 lists.* *Measured on
@@ -1034,7 +1050,12 @@ to it go on, new fronts wait for step 6.
    and Update from Type Def...) and updating the open OVIs on Apply Changes; (c) the Review and Update window; (d) the
    coercion dot and the Context Help line; then a placed `.octl` from Select a Control... First, measure what the
    editor stages need and the reports do not say (how Make Type Def. is reached, what the control editor opens with,
-   where a new instance is placed).*
+   where a new instance is placed).* *Measured on 2026-11-17
+   ([`typedef-editor-entry`](../../labview-captures/reports/2026-11-17-typedef-editor-entry.md)): Make Type Def. (on
+   panel controls and on Cluster and Numeric constants) links the object at once to an unsaved typedef "Control N",
+   opening nothing; Open Type Def. opens the 616 × 413 editor `Control N Type Def *`; Advanced ▸ Customize... opens a
+   panel-sized `Control N Control *` that never links; Save names the file (`Name the Control (Control N)`) and the
+   link moves to it. Open question before stage (a): how an unsaved typedef is linked (DT-096 has a path only).*
 4. **Time stamp**: control, constant, Get Date/Time, conversions. *Decided in DT-097 (2026-11-16) and measured the
    same day ([`time-stamp`](../../labview-captures/reports/2026-11-16-time-stamp.md)): 16 bytes laid out as a cluster,
    and the arithmetic LabVIEW takes, exact.*
@@ -1416,7 +1437,7 @@ right-click menus of the panel and the 19 missing Numeric controls.
 - **SubOVIs:** connector pane, icon editor, compiled call (R6).
 - **Dialog & User Interface**, **File I/O** (with their gates, R7).
 - **Instrument I/O:** serial and VISA, with the host in Rust (DT-039 §5).
-- **Projects:** `.qproj` and Project Explorer.
+- **Projects:** `.sdproj` and Project Explorer — *brought forward to step 2b of "The language's everyday types" (DT-099).*
 - **Classes** (LVOOP), libraries and everything else LabVIEW shows.
 
 ### Cross-cutting, when a module asks for it

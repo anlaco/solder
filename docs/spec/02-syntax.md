@@ -419,7 +419,25 @@ cases are rejected, against `jsonschema` 0.49.
 | Issue | Where it is resolved |
 |----------|-------------------|
 | Closed catalog of block types (a node's `type`) | `schema/blocks.json`, defined in `04-dynamic-semantics.md` |
-| Format of `.sdlib` and `.sdproj` | This document, when `03` fixes the dependency model |
+| Format of `.sdlib` | This document, when `03` fixes the dependency model (`.sdproj`: §9) |
 | Indirection of capabilities (§4.3) | `design/03-seguridad.md` |
 | How the `default` values of array and cluster are represented | `03-static-semantics.md` |
 | Auto-indexing of tunnels (§5.1.1) | Deliberately open; the `mode` field is reserved |
+
+## 9. Projects: `.sdproj` (DT-099)
+
+A project is LabVIEW's `.lvproj` copied one to one in JSON ([`../schema/sdproj.schema.json`](../schema/sdproj.schema.json),
+`core/model/project.mjs`): `solder-project`, the format's version, and `items`, one tree under the target
+`my-computer`. Each item has a `name` and a `kind` (`ovi` for an OVI, a polymorphic OVI or a control; `document` for
+any other file; `folder`; and the fixed `dependencies` and `build`), and a file or an auto-populating folder its
+`path`, relative to the `.sdproj`'s folder. The user's items are written folders first, then the rest, each by name
+whatever the case; Dependencies and Build Specifications always last. Dependencies and an auto-populating folder are
+written with no contents: the editor reads them again (the callees of the items; the folder on disk).
+
+```json
+{ "solder-project": 1, "items": [ { "name": "My Computer", "kind": "my-computer", "items": [
+    { "name": "Sub", "kind": "folder", "items": [ { "name": "main1.ovi", "kind": "ovi", "path": "main1.ovi" } ] },
+    { "name": "notes.txt", "kind": "document", "path": "notes.txt" },
+    { "name": "Dependencies", "kind": "dependencies" },
+    { "name": "Build Specifications", "kind": "build" } ] } ] }
+```

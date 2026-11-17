@@ -9,6 +9,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Projects begin (DT-099): Solder's core reads and writes a project as `.sdproj`, LabVIEW's `.lvproj` copied one to one
+  in JSON: My Computer with its items, virtual, snapshot and auto-populating folders, Dependencies and Build
+  Specifications, in LabVIEW's order. The Project Explorer window comes next.
+
 - An OVI can follow a type definition (DT-096): a control, indicator or constant stores the `.octl` file it follows and a
   copy of its definition, and the `.ovi` format goes to version 7 (older files open unchanged). An OVI whose `.octl` is
   missing opens with its copy but does not run, and the Error list says, as LabVIEW does, "Type Definition '<label>':
