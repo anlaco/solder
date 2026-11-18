@@ -13,6 +13,13 @@
       "minimum": 1,
       "maximum": 1
     },
+    "window": {
+      "description": "Where the Project Explorer window was when the project was saved (DT-099 §4), in pixels; without it the window opens as a new project's.",
+      "type": "object",
+      "required": ["x", "y", "width", "height"],
+      "additionalProperties": false,
+      "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "width": { "type": "number", "minimum": 1 }, "height": { "type": "number", "minimum": 1 } }
+    },
     "items": {
       "description": "The project's targets; for now only My Computer (DT-099 §5).",
       "type": "array",

@@ -63,7 +63,7 @@ test("a file already in the project is refused with LabVIEW's reason, and the re
   const { project, refused } = Project.addFiles(first, ["td/q1.ovi", "td/q3.ovi"], "td");
   assert.deepEqual(refused, ["td/q1.ovi"]);
   assert.equal(Project.ALREADY_IN_PROJECT, "An item with this path already exists in the project.");
-  assert.deepEqual(Project.itemsWithPaths(project).map((item) => item.path), ["td/q1.ovi", "td/q3.ovi"]);
+  assert.deepEqual(Project.itemsWithPaths(project).map((item) => item.path).sort(), ["td/q1.ovi", "td/q3.ovi"]);
 });
 
 test("an OVI, a polymorphic OVI and a control are OVI items, as LabVIEW lists its VIs and controls; other files are documents", () => {
@@ -84,4 +84,18 @@ test("a newer project file, or one with no target, is refused", () => {
   assert.throws(() => Project.readProject({ "solder-project": Project.PROJECT_VERSION + 1, items: [] }), Project.ProjectFileError);
   assert.throws(() => Project.readProject({ "solder-project": 1, items: [] }), Project.ProjectFileError);
   assert.throws(() => Project.readProject("not json"), Project.ProjectFileError);
+});
+
+test("the tree is kept in LabVIEW's order after every change, so the window draws what the file holds", () => {
+  let project = Project.addFiles(Project.blankProject(), ["zeta.ovi", "Alpha.txt"]).project;
+  project = Project.addVirtualFolder(project, "Sub");
+  assert.deepEqual(Project.myComputer(project).items.map((item) => item.name), ["Sub", "Alpha.txt", "zeta.ovi", "Dependencies", "Build Specifications"]);
+});
+
+test("a project keeps where its window was, and one without it reads without it", () => {
+  const placed = { ...Project.blankProject(), window: { x: 41, y: 32, width: 374, height: 434 } };
+  const text = Project.writeProject(placed);
+  assert.deepEqual(validFile(text).window, placed.window);
+  assert.deepEqual(Project.readProject(text).window, placed.window);
+  assert.equal(Project.readProject(Project.writeProject(Project.blankProject())).window, undefined);
 });

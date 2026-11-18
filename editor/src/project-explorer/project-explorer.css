@@ -1,0 +1,41 @@
+/* The Project Explorer window (positions and sizes are set here and by project-explorer-view.mjs). Colours are tokens
+ * of the theme; the shades are read off the capture, not measured. */
+
+body.project-explorer { background: var(--project-explorer-background); color: var(--project-explorer-text); margin: 0; overflow: hidden; }
+.pe-window { position: absolute; inset: 0; background: var(--project-explorer-background); font-size: var(--fuente); display: flex; flex-direction: column; }
+.pe-menubar { z-index: 30; }
+.pe-client { position: absolute; left: 0; right: 0; top: var(--menu-bar); bottom: 0; display: flex; flex-direction: column; z-index: 1; }
+
+.pe-toolbar { flex: none; height: 28px; display: flex; align-items: center; padding: 0 2px; overflow: hidden; white-space: nowrap; }
+.pe-group { display: flex; }
+.pe-separator { width: 1px; height: 20px; margin: 0 4px; background: var(--project-explorer-separator); flex: none; }
+.pe-button { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; flex: none; border: 1px solid transparent; box-sizing: border-box; cursor: default; }
+.pe-button:hover { border-color: var(--toolbar-hover-outline); border-radius: 2px; }
+/* Not built or not usable: the same icon, faded. */
+.pe-button.hueco svg, .pe-button.desactivado svg { opacity: 0.4; }
+.pe-button.desactivado:hover { border-color: transparent; }
+
+.pe-tabs { flex: none; display: flex; padding: 2px 4px 0; }
+.pe-tab { padding: 2px 12px; border: 1px solid var(--project-explorer-border); border-bottom: 0; margin-right: 2px; background: var(--project-explorer-background); }
+.pe-tab.seleccionada { background: var(--project-explorer-tree-background); }
+.pe-tab.hueco { font-style: italic; color: var(--placeholder-text); }
+
+.pe-tree { flex: 1; min-height: 0; overflow: auto; margin: 0 4px 4px; background: var(--project-explorer-tree-background); border: 1px solid var(--project-explorer-border); }
+.pe-row { display: flex; align-items: center; height: 18px; white-space: nowrap; cursor: default; }
+.pe-row.seleccionada .pe-label { background: var(--project-explorer-selected-background); color: var(--project-explorer-selected-text); }
+.pe-label { padding: 0 3px; line-height: 16px; }
+.pe-expander { display: flex; align-items: center; justify-content: center; flex: none; box-sizing: border-box; border: 1px solid var(--project-explorer-expander-border); background: var(--project-explorer-tree-background); font-size: 9px; line-height: 1; margin-right: 4px; }
+.pe-expander-space { flex: none; margin-right: 4px; }
+.pe-icon { flex: none; display: flex; margin-right: 2px; }
+.pe-icon svg { width: 16px; height: 16px; }
+
+/* The icons' colours: their shapes are in project-explorer-icons.mjs. */
+.pe-line { stroke: var(--project-explorer-icon-ink); stroke-width: 1; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.pe-paper { fill: var(--project-explorer-icon-paper); }
+.pe-fold { fill: var(--project-explorer-icon-fold); }
+.pe-folder { fill: var(--project-explorer-icon-folder); }
+.pe-grey { fill: var(--project-explorer-icon-grey); }
+.pe-blue { fill: var(--project-explorer-icon-blue); }
+.pe-green { fill: var(--project-explorer-icon-green); }
+.pe-green-line { stroke: var(--project-explorer-icon-green); stroke-width: 1.6; fill: none; }
+.pe-red-line { stroke: var(--project-explorer-icon-red); stroke-width: 1.6; fill: none; }

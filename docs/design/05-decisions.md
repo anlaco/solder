@@ -5026,6 +5026,9 @@ is saved as `.sdproj`, LabVIEW's `.lvproj` copied one to one in JSON.**
    are written sorted by name, as LabVIEW writes them, before Dependencies. Saving with no change gives the same text.
    LabVIEW's side files (`.aliases`, the window's place in `.lvlps`, a `.UserState` folder) are not copied: where a
    project's window was is kept as an OVI keeps its windows ([DT-078](#dt-078)), decided with the window.
+   *Decided on 2026-11-18 by the developer:* the `.sdproj` holds it, as `"window": { "x", "y", "width", "height" }`
+   beside `items`, written when the project is saved; a project without it opens where LabVIEW opens a new one
+   (measured: 374 × 434). The expand state of the tree is not kept (LabVIEW does not keep it, measured).
 4b. **Folders and order** (measured on 2026-11-17,
    [`project-explorer-s2`](../../labview-captures/reports/2026-11-17-project-explorer-s2.md)): a virtual folder (New ▸
    Virtual Folder, named "New Folder") has no path; Add ▸ Folder (Snapshot)... is stored exactly as a virtual folder

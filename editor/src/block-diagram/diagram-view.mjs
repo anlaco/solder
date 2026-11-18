@@ -1948,8 +1948,12 @@ export function menuScroll(height, limit, wanted = 0) {
 const MENU_EDGE_GAP = 2;
 const GRID_EDGE_GAP = 6;
 
-/** The top of a box of `height` that starts at `top`, moved up to end `gap` px above `limit` when it does not fit, never above 0. */
-const shiftedUp = (top, height, limit, gap) => (top + height > limit ? Math.max(0, limit - height - gap) : top);
+/**
+ * The top of a box of `height` that starts at `top`, moved up to end `gap` px above `limit` when it does not fit, never
+ * above `floor`. A window with a bar of its own across the top of the page (the Project Explorer's menu bar) passes the
+ * bar's height as `limits.top`; the OVI windows pass none and the floor is 0.
+ */
+const shiftedUp = (top, height, limit, gap, floor = 0) => (top + height > limit ? Math.max(floor, limit - height - gap) : top);
 
 /**
  * Where a right-click menu of `size` opens for a click at `click`, inside a window of `limits`, as LabVIEW
@@ -1961,7 +1965,7 @@ const shiftedUp = (top, height, limit, gap) => (top + height > limit ? Math.max(
  */
 export function placeMenu(click, size, limits) {
   const x = click.x + size.width > limits.width ? Math.max(0, click.x - size.width - MENU_EDGE_GAP) : click.x;
-  return { x, y: shiftedUp(click.y, size.height, limits.height, MENU_EDGE_GAP) };
+  return { x, y: shiftedUp(click.y, size.height, limits.height, MENU_EDGE_GAP, limits.top) };
 }
 
 /**
@@ -1972,7 +1976,7 @@ export function placeMenu(click, size, limits) {
 export function placeSubmenu(parent, size, limits, grid = false) {
   const right = parent.x + parent.width - MEDIDAS_MENU.solape;
   const x = right + size.width > limits.width ? Math.max(0, parent.x - size.width + MEDIDAS_MENU.solape) : right;
-  return { x, y: shiftedUp(parent.y, size.height, limits.height, grid ? GRID_EDGE_GAP : MENU_EDGE_GAP) };
+  return { x, y: shiftedUp(parent.y, size.height, limits.height, grid ? GRID_EDGE_GAP : MENU_EDGE_GAP, limits.top) };
 }
 
 /** El ancho de un texto de menú, a falta de medirlo en pantalla (la ventana pasa el suyo). */
@@ -1982,7 +1986,8 @@ const anchoMenuAproximado = (t) => [...t].reduce((s, c) => s + (/[A-Z]/.test(c) 
  * Un menú de clic derecho y, si hay uno abierto, su submenú. `menu`:
  * `{ raiz, x, y, abierto }`, en coordenadas de la ventana; `marcados`, los
  * ids que llevan la marca de activado. `limites`, the size of the window: a menu that does not fit
- * is moved to stay inside it (`placeMenu`, `placeSubmenu`).
+ * is moved to stay inside it (`placeMenu`, `placeSubmenu`); `limites.top`, when given, is the height of a bar across the
+ * top of the window that no menu may start above: a menu that does not fit below it keeps its top there and scrolls.
  */
 export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMenuAproximado, variante = {}, limites = NO_LIMITS) {
   const M = MEDIDAS_MENU;
@@ -1992,7 +1997,9 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
   // Rows can also be greyed by context (`desactivados`, as Remove Dimension on a 1D array) or stand for a hole
   // that explains a limit of Solder (`redirigidos`: the row id to the inventory entry it explains).
   // `submenus`: the rows of a submenu that the diagram decides, as the names of the cluster in Unbundle By Name's Select Item.
-  const { ocultos = new Set(), rotulos = new Map(), desactivados = new Set(), redirigidos = new Map(), mostrados = new Set(), submenus = new Map() } = variante;
+  // `conFlecha`: rows that show the submenu arrow though their contents are not declared (the Project Explorer's menus, whose
+  // submenus LabVIEW has and Solder has not measured yet).
+  const { ocultos = new Set(), rotulos = new Map(), desactivados = new Set(), redirigidos = new Map(), mostrados = new Set(), submenus = new Map(), conFlecha = new Set() } = variante;
   // Disable Breakpoint only exists in the menu of something that has a breakpoint (debugging/debug-view.mjs `menuVariants`).
   const { separadores = new Map() } = variante;
   const separadoEn = (e) => separadores.get(e.id) ?? !!e.separado;
@@ -2026,7 +2033,7 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
     const ancho = anchoDe(padre);
     // A menu taller than the window shows what fits and scrolls (Create ▸ Property Node ▸ is ~1000 px in LabVIEW,
     // which scrolls it, reports/2026-10-30-panel-property-node.md Q1); `menu.desplazados` keeps each menu's offset.
-    const scroll = menuScroll(altoDe(padre), limites.height, menu.desplazados?.[padre]);
+    const scroll = menuScroll(altoDe(padre), limites.height - (limites.top ?? 0), menu.desplazados?.[padre]);
     let top = M.arriba - scroll.offset;
     let filas = "";
     let sub = "";
@@ -2036,7 +2043,7 @@ export function menuContextual(inv, menu, marcados = new Set(), medir = anchoMen
         top += M.separador;
       }
       // A row that opens a window ends in "..." and has no arrow, though it shares its name with a submenu (the enum's Select Item... and Unbundle By Name's Select Item ▸).
-      const conSub = inv.tieneContenido(e.id) || submenus.has(e.id) || (CON_SUBMENU.includes(ultimo(e.id)) && !e.etiqueta.endsWith("..."));
+      const conSub = inv.tieneContenido(e.id) || submenus.has(e.id) || conFlecha.has(e.id) || (CON_SUBMENU.includes(ultimo(e.id)) && !e.etiqueta.endsWith("..."));
       // An open submenu stays open while one of its own submenus is (menu.abierto is the deepest one).
       const abierto = menu.abierto === e.id || !!menu.abierto?.startsWith(`${e.id}.`);
       const hueco = esHueco(e) || redirigidos.has(e.id);

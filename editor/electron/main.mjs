@@ -15,6 +15,7 @@ import { POLYMORPHIC_EXTENSION, isPolymorphicPath } from "../../core/model/polym
 import { OVI_EXTENSIONS, isOVIFile, pathKey, polymorphicSavePathFor, polymorphicSaveProposal, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey } from "../src/common/ovi-paths.mjs";
 import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
+import { PROJECT_WINDOW_SIZE, projectWindowTitle, untitledProjectName } from "./project-window.mjs";
 import { newOVIBounds, otherWindowKind, tiledBounds } from "./window-layout.mjs";
 import { restoredBounds, savedWindows, windowRecord, withWindows } from "./saved-windows.mjs";
 import { CHOSEN_THEME_ROUTE, THEMES, chosenThemeName } from "./theme.mjs";
@@ -206,6 +207,11 @@ const registry = createRegistry();
 const openOVIs = new Map();
 /** Web contents id → the open OVI whose window it is. */
 const oviOfContents = new Map();
+/** Web contents id → `{ window, name, text }` of each open Project Explorer window (DT-099). */
+const projectWindows = new Map();
+let untitledProjectCount = 0;
+/** Whether any window of an OVI or a project is open: when none is, the Getting Started window comes back. */
+const anyDocumentOpen = () => openOVIs.size > 0 || projectWindows.size > 0;
 // Both extensions open (DT-051); the dialogs list the new one first.
 const FILTERS = [{ name: "Solder OVI", extensions: OVI_EXTENSIONS.map((extension) => extension.slice(1)) }];
 // Open and Select an OVI... also take a polymorphic OVI (DT-074), listed first so that the dialog shows both kinds.
@@ -301,11 +307,46 @@ function openPolymorphicWindow(entry) {
   window.on("closed", () => {
     registry.close(entry.id);
     openOVIs.delete(entry.id);
-    if (openOVIs.size) return;
+    if (anyDocumentOpen()) return;
     if (quitting || process.env.SOLDER_CAPTURAS) app.quit();
     else showGettingStarted();
   });
   return open;
+}
+
+/**
+ * A Project Explorer window (DT-099 §6): `text` is the `.sdproj` to show, or null for a blank project. Stage a1 only draws it
+ * and lets the window react inside itself; File ▸ Create Project... and Open Project... of the other windows call this
+ * in stage a2.
+ */
+function openProjectExplorer({ text = null, name = untitledProjectName(++untitledProjectCount) } = {}) {
+  const { x, y } = screen.getPrimaryDisplay().workArea;
+  const window = new BrowserWindow({
+    x: x + 40 + 24 * (projectWindows.size % 8),
+    y: y + 40 + 24 * (projectWindows.size % 8),
+    ...PROJECT_WINDOW_SIZE,
+    useContentSize: true,
+    title: projectWindowTitle({ name, modified: text === null }),
+    backgroundColor: THEME.windowBackground.color,
+    icon: APP_ICON,
+    show: false,
+    webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(HERE, "preload.cjs") },
+  });
+  window.on("page-title-updated", (event) => event.preventDefault());
+  window.loadURL("solder://editor/project.html");
+  const webContentsId = window.webContents.id;
+  projectWindows.set(webContentsId, { window, name, text });
+  window.once("ready-to-show", () => {
+    window.show();
+    gettingStarted?.hide();
+  });
+  window.on("closed", () => {
+    projectWindows.delete(webContentsId);
+    if (anyDocumentOpen()) return;
+    if (quitting || process.env.SOLDER_CAPTURAS) app.quit();
+    else showGettingStarted();
+  });
+  return window;
 }
 
 /** Opens the windows of an OVI the registry has just created. */
@@ -605,13 +646,13 @@ function createGettingStarted() {
   window.on("page-title-updated", (event) => event.preventDefault());
   // With no VI open, closing it quits; with VIs open it only hides (unverified in LabVIEW).
   window.on("close", (event) => {
-    if (quitting || !openOVIs.size) return;
+    if (quitting || !anyDocumentOpen()) return;
     event.preventDefault();
     window.hide();
   });
   window.on("closed", () => {
     gettingStarted = null;
-    if (!openOVIs.size) app.quit();
+    if (!anyDocumentOpen()) app.quit();
   });
   window.loadURL("solder://editor/getting-started.html");
   return window;
@@ -641,6 +682,16 @@ function handleRequests() {
   const openOf = (event) => oviOfContents.get(event.sender.id);
   const ownerOf = (event) => BrowserWindow.fromWebContents(event.sender);
 
+  // The Project Explorer window's page: the project it shows, and the ways out that need the main process.
+  ipcMain.handle("project:init", (event) => {
+    const { name, text } = projectWindows.get(event.sender.id);
+    return { name, text };
+  });
+  ipcMain.on("project:close", (event) => projectWindows.get(event.sender.id)?.window.close());
+  ipcMain.on("project:error", (event, message) => {
+    const { window } = projectWindows.get(event.sender.id);
+    dialog.showMessageBox(window, { type: "error", title: "Project Explorer", message: "The project could not be opened.", detail: message }).then(() => window.close());
+  });
   ipcMain.handle("ovi:init", async (event) => {
     const { entry } = openOf(event);
     return { ...describe(entry), windowStyle: await readWindowStyle(entry.path), oviLibRoot: OVI_LIB };
@@ -846,7 +897,9 @@ app.whenReady().then(async () => {
   // LabVIEW starts on its Getting Started window; started with a VI file it opens only that VI (REPORT.md §3).
   // The captures for the comparisons start on a new OVI.
   const fileToOpen = process.env.SOLDER_ABRIR ?? oviFileInArguments(process.argv);
-  if (fileToOpen) {
+  // SOLDER_PROJECT=1: starts on a blank project's Project Explorer (stage a1 of DT-099, until File ▸ Create Project... opens it).
+  if (process.env.SOLDER_PROJECT) openProjectExplorer();
+  else if (fileToOpen) {
     const first = await openFirstFile(path.resolve(fileToOpen));
     if (process.env.SOLDER_CAPTURAS) capture(first.windows, process.env.SOLDER_CAPTURAS);
   } else if (process.env.SOLDER_CAPTURAS) capture(openNewOVI().windows, process.env.SOLDER_CAPTURAS);

@@ -55,6 +55,26 @@
   --polymorphic-window-disabled-background: #f4f4f4;
 }
 
+/* The Project Explorer window (shades read off labview-captures/project-explorer/proyecto-nuevo.png, not measured). */
+:root {
+  --project-explorer-background: #f0f0f0;
+  --project-explorer-text: #000;
+  --project-explorer-tree-background: #fff;
+  --project-explorer-border: #828790;
+  --project-explorer-selected-background: #0078d7;
+  --project-explorer-selected-text: #fff;
+  --project-explorer-separator: #a0a0a0;
+  --project-explorer-expander-border: #8a8a8a;
+  --project-explorer-icon-ink: #2a2a2a;
+  --project-explorer-icon-paper: #fff;
+  --project-explorer-icon-fold: #d8d8d8;
+  --project-explorer-icon-folder: #f2cf2c;
+  --project-explorer-icon-grey: #9a9a9a;
+  --project-explorer-icon-blue: #5b8bd6;
+  --project-explorer-icon-green: #3f9f3f;
+  --project-explorer-icon-red: #c8281e;
+}
+
 /* A polymorphic OVI's selector ring: a blue border and triangle (the shade is unverified: only "blue" was noted). */
 :root {
   --selector-border: #3b6ed6;

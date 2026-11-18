@@ -56,7 +56,7 @@ const byName = (first, second) => first.localeCompare(second, "en", { sensitivit
  * The items of a target or folder as LabVIEW writes and shows them (measured, Arrange By ▸ Name): folders first, then
  * the other items, each group by name; the fixed items last in their order.
  */
-function inFileOrder(items) {
+export function inFileOrder(items) {
   const fixed = FIXED_KINDS.map((kind) => items.find((item) => item.kind === kind)).filter(Boolean);
   const own = items.filter((item) => !FIXED_KINDS.includes(item.kind));
   const sorted = (group) => group.sort((first, second) => byName(first.name, second.name));
@@ -75,8 +75,13 @@ function itemToFile(item) {
 
 /** The text of a project: JSON indented by two spaces; saving an unchanged project gives the same text (measured in LabVIEW). */
 export function writeProject(project) {
-  return `${JSON.stringify({ "solder-project": PROJECT_VERSION, items: project.items.map(itemToFile) }, null, 2)}\n`;
+  const file = { "solder-project": PROJECT_VERSION, items: project.items.map(itemToFile), ...(project.window && { window: project.window }) };
+  return `${JSON.stringify(file, null, 2)}\n`;
 }
+
+/** Where the project's window was, as the `.sdproj` keeps it (DT-099 §4): its place and size, in pixels. */
+const WINDOW_KEYS = ["x", "y", "width", "height"];
+const windowFromFile = (window) => (window && WINDOW_KEYS.every((key) => Number.isFinite(window[key])) ? Object.fromEntries(WINDOW_KEYS.map((key) => [key, window[key]])) : undefined);
 
 /** An item read from the file, checked as far as the core needs. */
 function itemFromFile(file, where) {
@@ -84,7 +89,7 @@ function itemFromFile(file, where) {
   const item = { name: file.name, kind: file.kind };
   if (typeof file.path === "string") item.path = file.path;
   if (file["auto-populating"] === true) item.autoPopulating = true;
-  if (Array.isArray(file.items)) item.items = file.items.map((inner) => itemFromFile(inner, `${where}/${file.name}`));
+  if (Array.isArray(file.items)) item.items = inFileOrder(file.items.map((inner) => itemFromFile(inner, `${where}/${file.name}`)));
   return item;
 }
 
@@ -99,7 +104,8 @@ export function readProject(text) {
   const version = file?.["solder-project"];
   if (!Number.isInteger(version) || version < 1 || version > PROJECT_VERSION) throw new ProjectFileError(`project format version ${version}: this Solder reads versions 1 to ${PROJECT_VERSION}`);
   if (!Array.isArray(file.items) || !file.items.some((item) => item?.kind === ITEM_KINDS.TARGET)) throw new ProjectFileError("a project holds the target My Computer");
-  return { items: file.items.map((item) => itemFromFile(item, "")) };
+  const window = windowFromFile(file.window);
+  return { items: file.items.map((item) => itemFromFile(item, "")), ...(window && { window }) };
 }
 
 /** The target My Computer of a project. */
@@ -123,7 +129,9 @@ export function itemsWithPaths(project) {
 export const ALREADY_IN_PROJECT = "An item with this path already exists in the project.";
 
 /** The project with `added` appended to the target's items. */
-const withTargetItem = (project, added) => ({ ...project, items: project.items.map((item) => (item.kind === ITEM_KINDS.TARGET ? { ...item, items: [...item.items, added] } : item)) });
+// The tree is kept in LabVIEW's order (Arrange By ▸ Name, the default), so the window draws it as it is and the file
+// is written the same.
+const withTargetItem = (project, added) => ({ ...project, items: project.items.map((item) => (item.kind === ITEM_KINDS.TARGET ? { ...item, items: inFileOrder([...item.items, added]) } : item)) });
 
 /** A file item for `storedPath`. */
 const fileItem = (storedPath) => ({ name: fileNameOf(storedPath), kind: itemKindOf(storedPath), path: storedPath });
@@ -138,7 +146,7 @@ export function addFiles(project, storedPaths, folderName) {
   const refused = storedPaths.filter((path) => present.has(path));
   const files = storedPaths.filter((path) => !present.has(path)).map(fileItem);
   if (!files.length && folderName === undefined) return { project, refused };
-  const added = folderName === undefined ? files : [{ name: folderName, kind: ITEM_KINDS.FOLDER, items: files }];
+  const added = folderName === undefined ? files : [{ name: folderName, kind: ITEM_KINDS.FOLDER, items: inFileOrder(files) }];
   return { project: added.reduce(withTargetItem, project), refused };
 }
 

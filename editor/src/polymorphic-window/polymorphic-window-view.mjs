@@ -6,6 +6,7 @@
 
 import * as D from "../block-diagram/diagram-view.mjs";
 import { esHueco } from "../common/labview-inventory.mjs";
+import { MENU_BAR_HEIGHT, menuBarHtml } from "../common/window-menu-bar.mjs";
 import { ownIconHtml } from "../block-diagram/polymorphic-nodes.mjs";
 import * as V from "../window/window-view.mjs";
 import { DRAW_ICON, LIST_BOX, buttonStates, listThumb, rowCells, rowHeightOf, showsEmptyMarker } from "./polymorphic-window-state.mjs";
@@ -15,8 +16,7 @@ export const NAME_DIALOG = "dialog.edit-instance-name";
 
 /** The height of the title bar the measured y's include (p1_s.png: its rows 0 to 32). */
 export const TITLE_BAR_HEIGHT = 33;
-/** The menu bar the page draws itself, as the Getting Started window's. */
-export const MENU_BAR_HEIGHT = 20;
+export { MENU_BAR_HEIGHT };
 /** The window's size, title bar included (measured). */
 export const WINDOW_SIZE = Object.freeze({ width: 482, height: 391 });
 
@@ -73,18 +73,10 @@ const EMPTY_MARKER = `<svg viewBox="0 0 27 25" width="27" height="25" aria-hidde
 const ARROW_UP = `<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M6 1 1 6.5h3V11h4V6.5h3z" class="po-arrow"/></svg>`;
 const ARROW_DOWN = `<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M6 11 1 5.5h3V1h4v4.5h3z" class="po-arrow"/></svg>`;
 
-function menuBar(inv, state) {
-  const titles = inv
-    .hijos(`${PREFIX}.menu`)
-    .map((entry) => `<div class="menu${holeClass(inv, entry.id)}${state.menuBarra?.id === entry.id ? " abierto" : ""}" data-id="${esc(entry.id)}"><span class="medida">${esc(entry.etiqueta)}</span><span class="texto">${esc(entry.etiqueta)}</span></div>`)
-    .join("");
-  return `<div class="cabecera po-menubar" style="height:${MENU_BAR_HEIGHT}px"><div class="menus" style="height:${MENU_BAR_HEIGHT - 1}px">${titles}</div></div>`;
-}
-
 function openMenu(inv, state, measure, windowSize) {
   if (!state.menuBarra) return "";
   const { id, x, y, abierto } = state.menuBarra;
-  return D.menuContextual(inv, { raiz: id, x, y, abierto }, new Set(), measure, {}, windowSize);
+  return D.menuContextual(inv, { raiz: id, x, y, abierto }, new Set(), measure, {}, { ...windowSize, top: MENU_BAR_HEIGHT });
 }
 
 function button(inv, id, label, box, enabled = true) {
@@ -158,7 +150,7 @@ export function polymorphicWindow(inv, state, measure, windowSize) {
   const buttons = buttonStates(state);
   const id = (name) => `${PREFIX}.${name}`;
   return `<div class="po-window" style="--menu-bar:${MENU_BAR_HEIGHT}px">
-  ${menuBar(inv, state)}
+  ${menuBarHtml(inv, state, PREFIX, "po-menubar")}
   <div class="po-client">
     ${showsEmptyMarker(state) ? `<div class="po-empty-marker" data-id="${id("empty-marker")}" style="${place(L.emptyMarker)}">${EMPTY_MARKER}</div>` : ""}
     ${button(inv, id("edit-icon"), "Edit Icon...", L.editIcon)}

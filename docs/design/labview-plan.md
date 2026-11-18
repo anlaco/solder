@@ -1026,6 +1026,16 @@ to it go on, new fronts wait for step 6.
    close prompt; (b) Add ▸ and New ▸ VI / Virtual Folder, Remove From Project, rename, drag into folders; (c)
    Dependencies filled from the hierarchy, refreshed, and auto-populating folders watching the disk; (d) OVIs opened
    from the project ("… on P.sdproj/My Computer", Window ▸ Show Project) and the Files tab.*
+   *Stage (a), first part (a1), on 2026-11-18: the Project Explorer window as a page of its own
+   (`editor/src/project-explorer/`, `editor/project.html`, `editor/electron/project-window.mjs`): the eight menus row by
+   row, the toolbar, the Items and Files tabs (Files greyed), the tree with its expanders, selection and the measured
+   right-click menus, Expand All and Collapse All; every row not built greyed with its reason (inventory: 268 rows).
+   The `.sdproj` keeps the window's place (DT-099 §4) and the tree is kept in LabVIEW's order. A tall menu stays under
+   the menu bar and scrolls (shared `menuContextual`). Opened for now with `SOLDER_PROJECT=1`. Tried under Xvfb
+   ([`project-explorer-editor-try`](../../labview-captures/reports/2026-11-18-project-explorer-editor-try.md)). Next,
+   (a2): File ▸ Create Project... (the Create Project dialog, Blank Project) in every window and in Getting Started,
+   Open Project..., Save Project with "Name the Project", Close Project with its prompt, the window list of Window ▸,
+   and no Getting Started after Close Project (LabVIEW shows none).*
 3. **Type definitions** and strict type definitions, in `.octl` files (DT-093 §5): Make Type Def., the control editor,
    updating the instances. *Decided in DT-096 (2026-11-16): the type on a wire stays structural and the link to the
    `.octl` lives on the object, with a copy of the definition. First, the measurements DT-096 lists.* *Measured on

@@ -140,8 +140,8 @@
       "ref": "spec/02-syntax.md §8: pending the dependency model"
     },
     "modelo-de-dependencias": {
-      "desc": "a dependency model between OVIs, libraries and projects",
-      "ref": "spec/02-syntax.md §8: set by spec/03, not yet written"
+      "desc": "filling Dependencies in the tree from the items' callees: the core computes it (core/model/project.mjs, dependencyKeys) and the window does not read the files yet",
+      "ref": "design/05-decisions.md DT-099 §4"
     },
     "construir-distribuible": {
       "desc": "building a distributable from an OVI or a project (solder build)",
@@ -614,87 +614,972 @@
     "autosizing-de-cluster": {
       "desc": "a cluster's AutoSizing other than None: Size to Fit, Arrange Horizontally and Arrange Vertically",
       "ref": "design/05-decisions.md DT-095 §6"
+    },
+    "flujos-del-proyecto": {
+      "desc": "the Project Explorer's flows: creating, opening, saving and closing a project, adding and removing its items, and the commands that act on them (stage a2 of DT-099 and what follows)",
+      "ref": "design/05-decisions.md DT-099 §6; design/labview-plan.md step 2b"
+    },
+    "pruebas-unitarias": {
+      "desc": "unit tests of OVIs: LabVIEW's Unit Test Framework, with its test vectors and its results window"
     }
   },
   "entradas": [
     {
       "id": "window.project-explorer",
       "etiqueta": "Project Explorer",
-      "estado": "todo",
-      "labview": "Organises a project: its VIs and other files, the targets they run on, their dependencies and how it is built.",
-      "necesita": "formato-sdproj",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_Project_Explorer_draws_a_blank_project_as_LabVIEW_does",
       "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.menu",
+      "etiqueta": "Menu bar",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands"
     },
     {
       "id": "window.project-explorer.menu.file",
       "etiqueta": "File",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands"
+    },
+    {
+      "id": "window.project-explorer.menu.file.new-vi",
+      "etiqueta": "New OVI",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands",
+      "atajo": "Ctrl+N"
+    },
+    {
+      "id": "window.project-explorer.menu.file.new",
+      "etiqueta": "New...",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands"
+    },
+    {
+      "id": "window.project-explorer.menu.file.open",
+      "etiqueta": "Open...",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands",
+      "atajo": "Ctrl+O"
+    },
+    {
+      "id": "window.project-explorer.menu.file.close",
+      "etiqueta": "Close",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands",
+      "atajo": "Ctrl+W"
+    },
+    {
+      "id": "window.project-explorer.menu.file.close-all",
+      "etiqueta": "Close All",
       "estado": "todo",
-      "labview": "File operations: VIs and projects. Contents not captured.",
-      "necesita": "editor-escritorio",
-      "captura": "project-explorer/proyecto-nuevo.png"
+      "labview": "Closes every open VI and project window.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.file.close-all-this-project",
+      "etiqueta": "Close All (this Project)",
+      "estado": "todo",
+      "labview": "Closes every window of the VIs that belong to this project.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.file.save",
+      "etiqueta": "Save",
+      "estado": "todo",
+      "labview": "Saves the project.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+S",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.file.save-as",
+      "etiqueta": "Save As...",
+      "estado": "todo",
+      "labview": "Saves the project under another name.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.file.save-all",
+      "etiqueta": "Save All",
+      "estado": "todo",
+      "labview": "Saves every open VI that has changes.",
+      "necesita": "varios-vis",
+      "atajo": "Ctrl+Shift+S"
+    },
+    {
+      "id": "window.project-explorer.menu.file.save-all-this-project",
+      "etiqueta": "Save All (this Project)",
+      "estado": "todo",
+      "labview": "Saves the project and every open VI that belongs to it.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.file.save-for-previous-version",
+      "etiqueta": "Save for Previous Version...",
+      "estado": "todo",
+      "labview": "Saves a copy in the format of an earlier LabVIEW version.",
+      "necesita": "versiones-del-formato"
+    },
+    {
+      "id": "window.project-explorer.menu.file.revert",
+      "etiqueta": "Revert...",
+      "estado": "todo",
+      "labview": "Discards the changes and goes back to the last saved version.",
+      "necesita": "leer-escribir-qvi"
+    },
+    {
+      "id": "window.project-explorer.menu.file.create-project",
+      "etiqueta": "Create Project...",
+      "estado": "todo",
+      "labview": "Opens the Create Project dialog to start a project from a template.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.file.open-project",
+      "etiqueta": "Open Project...",
+      "estado": "todo",
+      "labview": "Opens an existing project in its own window.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.file.save-project",
+      "etiqueta": "Save Project",
+      "estado": "todo",
+      "labview": "Saves the project file.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.file.close-project",
+      "etiqueta": "Close Project",
+      "estado": "todo",
+      "labview": "Closes the project and its window.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.file.page-setup",
+      "etiqueta": "Page Setup...",
+      "estado": "todo",
+      "labview": "Sets up the page for printing.",
+      "necesita": "imprimir",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.file.print",
+      "etiqueta": "Print...",
+      "estado": "todo",
+      "labview": "Prints the documentation of the selected item.",
+      "necesita": "imprimir"
+    },
+    {
+      "id": "window.project-explorer.menu.file.print-window",
+      "etiqueta": "Print Window...",
+      "estado": "todo",
+      "labview": "Prints the window as it looks.",
+      "necesita": "imprimir",
+      "atajo": "Ctrl+P"
+    },
+    {
+      "id": "window.project-explorer.menu.file.vi-properties",
+      "etiqueta": "OVI Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the selected VI.",
+      "necesita": "propiedades-del-vi",
+      "atajo": "Ctrl+I",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.file.recent-projects",
+      "etiqueta": "Recent Projects",
+      "estado": "todo",
+      "labview": "Lists the projects opened lately.",
+      "necesita": "recientes",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.file.recent-files",
+      "etiqueta": "Recent Files",
+      "estado": "todo",
+      "labview": "Lists the files opened lately.",
+      "necesita": "recientes"
+    },
+    {
+      "id": "window.project-explorer.menu.file.exit",
+      "etiqueta": "Exit",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands",
+      "atajo": "Ctrl+Q",
+      "separado": true
     },
     {
       "id": "window.project-explorer.menu.edit",
       "etiqueta": "Edit",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands"
+    },
+    {
+      "id": "window.project-explorer.menu.edit.undo",
+      "etiqueta": "Undo",
       "estado": "todo",
-      "labview": "Editing: undo, clipboard and search. Contents not captured.",
-      "necesita": "editor-escritorio",
-      "captura": "project-explorer/proyecto-nuevo.png"
+      "labview": "Undoes the last change to the project.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+Z"
+    },
+    {
+      "id": "window.project-explorer.menu.edit.redo",
+      "etiqueta": "Redo",
+      "estado": "todo",
+      "labview": "Redoes the change that was undone.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+Shift+Z"
+    },
+    {
+      "id": "window.project-explorer.menu.edit.find-project-items",
+      "etiqueta": "Find Project Items...",
+      "estado": "todo",
+      "labview": "Opens the search of the project's items by name.",
+      "necesita": "buscar-y-reemplazar",
+      "atajo": "Ctrl+F",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.edit.show-search-results",
+      "etiqueta": "Show Search Results",
+      "estado": "todo",
+      "labview": "Shows the list of the last search's results.",
+      "necesita": "buscar-y-reemplazar",
+      "atajo": "Ctrl+Shift+F"
+    },
+    {
+      "id": "window.project-explorer.menu.edit.find-next",
+      "etiqueta": "Find Next",
+      "estado": "todo",
+      "labview": "Goes to the next result of the search.",
+      "necesita": "buscar-y-reemplazar"
+    },
+    {
+      "id": "window.project-explorer.menu.edit.find-previous",
+      "etiqueta": "Find Previous",
+      "estado": "todo",
+      "labview": "Goes to the previous result of the search.",
+      "necesita": "buscar-y-reemplazar"
+    },
+    {
+      "id": "window.project-explorer.menu.edit.cut",
+      "etiqueta": "Cut",
+      "estado": "todo",
+      "labview": "Cuts the selected items to the clipboard.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+X",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.edit.copy",
+      "etiqueta": "Copy",
+      "estado": "todo",
+      "labview": "Copies the selected items to the clipboard.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+C"
+    },
+    {
+      "id": "window.project-explorer.menu.edit.paste",
+      "etiqueta": "Paste",
+      "estado": "todo",
+      "labview": "Pastes the clipboard's items into the selected folder or target.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+V"
+    },
+    {
+      "id": "window.project-explorer.menu.edit.remove-from-project",
+      "etiqueta": "Remove From Project",
+      "estado": "todo",
+      "labview": "Takes the selected items out of the project without deleting their files.",
+      "necesita": "flujos-del-proyecto"
     },
     {
       "id": "window.project-explorer.menu.view",
       "etiqueta": "View",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands"
+    },
+    {
+      "id": "window.project-explorer.menu.view.controls-palette",
+      "etiqueta": "Controls Palette",
       "estado": "todo",
-      "labview": "What is shown: auxiliary windows and toolbars. Contents not captured.",
+      "labview": "Shows the Controls palette.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.view.functions-palette",
+      "etiqueta": "Functions Palette",
+      "estado": "todo",
+      "labview": "Shows the Functions palette.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.view.tools-palette",
+      "etiqueta": "Tools Palette",
+      "estado": "todo",
+      "labview": "Shows the Tools palette.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.view.quick-drop",
+      "etiqueta": "Quick Drop",
+      "estado": "todo",
+      "labview": "Opens Quick Drop, the search box that places an object by its name.",
       "necesita": "editor-escritorio",
-      "captura": "project-explorer/proyecto-nuevo.png"
+      "atajo": "Ctrl+Space"
+    },
+    {
+      "id": "window.project-explorer.menu.view.debug-window",
+      "etiqueta": "Debug Window",
+      "estado": "todo",
+      "labview": "Shows the window that lists the debugging output.",
+      "necesita": "editor-escritorio",
+      "atajo": "Ctrl+D",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.view.event-inspector-window",
+      "etiqueta": "Event Inspector Window",
+      "estado": "todo",
+      "labview": "Shows the window that lists the events of the running VI.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.view.error-list",
+      "etiqueta": "Error List",
+      "estado": "todo",
+      "labview": "Shows the list of the errors that keep a VI from running.",
+      "necesita": "editor-escritorio",
+      "atajo": "Ctrl+L"
+    },
+    {
+      "id": "window.project-explorer.menu.view.load-and-save-warning-list",
+      "etiqueta": "Load and Save Warning List",
+      "estado": "todo",
+      "labview": "Shows the warnings raised when VIs were loaded or saved.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.view.externally-changed-files-list",
+      "etiqueta": "Externally Changed Files List",
+      "estado": "todo",
+      "labview": "Lists the project's files that changed on disk.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.view.manage-trusted-files",
+      "etiqueta": "Manage Trusted Files...",
+      "estado": "todo",
+      "labview": "Chooses the files that are trusted when loaded.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.view.vi-hierarchy",
+      "etiqueta": "OVI Hierarchy",
+      "estado": "todo",
+      "labview": "Shows which VIs call which.",
+      "necesita": "jerarquia-de-vis",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.view.solder-class-hierarchy",
+      "etiqueta": "Solder Class Hierarchy",
+      "estado": "todo",
+      "labview": "Shows the inheritance between classes.",
+      "necesita": "clases-de-labview"
+    },
+    {
+      "id": "window.project-explorer.menu.view.browse-relationships",
+      "etiqueta": "Browse Relationships",
+      "estado": "todo",
+      "labview": "Opens the views of the relationships between items.",
+      "necesita": "jerarquia-de-vis"
+    },
+    {
+      "id": "window.project-explorer.menu.view.bookmark-manager",
+      "etiqueta": "Bookmark Manager",
+      "estado": "todo",
+      "labview": "Manages the bookmarks of the diagram.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.view.this-vi-in-project",
+      "etiqueta": "This OVI in Project",
+      "estado": "todo",
+      "labview": "Selects the VI in the project's tree.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+Shift+E"
+    },
+    {
+      "id": "window.project-explorer.menu.view.zoom-in",
+      "etiqueta": "Zoom In",
+      "estado": "todo",
+      "labview": "Enlarges the view.",
+      "necesita": "editor-escritorio",
+      "atajo": "Ctrl++",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.view.zoom-out",
+      "etiqueta": "Zoom Out",
+      "estado": "todo",
+      "labview": "Reduces the view.",
+      "necesita": "editor-escritorio",
+      "atajo": "Ctrl+-"
+    },
+    {
+      "id": "window.project-explorer.menu.view.actual-size",
+      "etiqueta": "Actual Size",
+      "estado": "todo",
+      "labview": "Goes back to the normal size.",
+      "necesita": "editor-escritorio",
+      "atajo": "Ctrl+0"
+    },
+    {
+      "id": "window.project-explorer.menu.view.toggle-zoom",
+      "etiqueta": "Toggle Zoom",
+      "estado": "todo",
+      "labview": "Switches between the normal size and the last zoom.",
+      "necesita": "editor-escritorio",
+      "atajo": "F2"
+    },
+    {
+      "id": "window.project-explorer.menu.view.class-browser",
+      "etiqueta": "Class Browser",
+      "estado": "todo",
+      "labview": "Shows the classes and their members.",
+      "necesita": "clases-de-labview",
+      "atajo": "Ctrl+Shift+B",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.view.net-assemblies-in-memory",
+      "etiqueta": ".NET Assemblies in Memory",
+      "estado": "todo",
+      "labview": "Lists the .NET assemblies loaded.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.view.activex-control-property-browser",
+      "etiqueta": "ActiveX Control Property Browser",
+      "estado": "todo",
+      "labview": "Shows the properties of the ActiveX controls.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.view.getting-started-window",
+      "etiqueta": "Getting Started Window...",
+      "estado": "todo",
+      "labview": "Shows the Getting Started window.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.view.navigation-window",
+      "etiqueta": "Navigation Window",
+      "estado": "todo",
+      "labview": "Shows the overview that moves the view.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.view.toolbars",
+      "etiqueta": "Toolbars",
+      "estado": "todo",
+      "labview": "Chooses which toolbars are shown.",
+      "necesita": "editor-escritorio"
     },
     {
       "id": "window.project-explorer.menu.project",
       "etiqueta": "Project",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands"
+    },
+    {
+      "id": "window.project-explorer.menu.project.create-project",
+      "etiqueta": "Create Project...",
       "estado": "todo",
-      "labview": "Operations on the project. Contents not captured.",
-      "necesita": "editor-escritorio",
-      "captura": "project-explorer/proyecto-nuevo.png"
+      "labview": "Opens the Create Project dialog to start a project from a template.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.project.open-project",
+      "etiqueta": "Open Project...",
+      "estado": "todo",
+      "labview": "Opens an existing project in its own window.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.project.save-project",
+      "etiqueta": "Save Project",
+      "estado": "todo",
+      "labview": "Saves the project file.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.project.close-project",
+      "etiqueta": "Close Project",
+      "estado": "todo",
+      "labview": "Closes the project and its window.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.project.add-to-project",
+      "etiqueta": "Add To Project",
+      "estado": "todo",
+      "labview": "Adds a file, a folder, a hyperlink or a new item to the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.project.package-dependencies",
+      "etiqueta": "Package Dependencies...",
+      "estado": "todo",
+      "labview": "Opens the dialog that gathers the items' dependencies into a package.",
+      "necesita": "construir-distribuible",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.project.filter-view",
+      "etiqueta": "Filter View",
+      "estado": "todo",
+      "labview": "Chooses which kinds of items the tree shows.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.project.show-item-paths",
+      "etiqueta": "Show Item Paths",
+      "estado": "todo",
+      "labview": "Adds a column with each item's path to the tree.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.project.file-information",
+      "etiqueta": "File Information",
+      "estado": "todo",
+      "labview": "Shows the file of the selected item: where it is and when it changed.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.project.resolve-conflicts",
+      "etiqueta": "Resolve Conflicts...",
+      "estado": "todo",
+      "labview": "Lists the items that conflict, such as two files with the same name, and resolves them.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.project.project-environment-settings",
+      "etiqueta": "Project Environment Settings...",
+      "estado": "todo",
+      "labview": "Opens the settings of the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.project.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
     },
     {
       "id": "window.project-explorer.menu.operate",
       "etiqueta": "Operate",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands"
+    },
+    {
+      "id": "window.project-explorer.menu.operate.connect-to-remote-panel",
+      "etiqueta": "Connect to Remote Panel...",
       "estado": "todo",
-      "labview": "Running VIs. Contents not captured.",
-      "necesita": "editor-escritorio",
-      "captura": "project-explorer/proyecto-nuevo.png"
+      "labview": "Connects to the front panel of a VI running on another computer.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.operate.debug-application-or-shared-library",
+      "etiqueta": "Debug Application or Shared Library...",
+      "estado": "todo",
+      "labview": "Attaches the debugger to a running application or library.",
+      "necesita": "construir-distribuible"
     },
     {
       "id": "window.project-explorer.menu.tools",
       "etiqueta": "Tools",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.measurement-automation-explorer",
+      "etiqueta": "Measurement & Automation Explorer...",
       "estado": "todo",
-      "labview": "Environment utilities. Contents not captured.",
+      "labview": "Opens the tool that configures the hardware.",
+      "necesita": "drivers-de-adquisicion"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.instrumentation",
+      "etiqueta": "Instrumentation",
+      "estado": "todo",
+      "labview": "Instrumentation: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "drivers-de-adquisicion"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.real-time-module",
+      "etiqueta": "Real-Time Module",
+      "estado": "todo",
+      "labview": "Real-Time Module: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
       "necesita": "editor-escritorio",
-      "captura": "project-explorer/proyecto-nuevo.png"
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.tools.compare",
+      "etiqueta": "Compare",
+      "estado": "todo",
+      "labview": "Compare: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.tools.merge",
+      "etiqueta": "Merge",
+      "estado": "todo",
+      "labview": "Merge: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.profile",
+      "etiqueta": "Profile",
+      "estado": "todo",
+      "labview": "Profile: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.security",
+      "etiqueta": "Security",
+      "estado": "todo",
+      "labview": "Security: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.user-name",
+      "etiqueta": "User Name...",
+      "estado": "todo",
+      "labview": "User Name...: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.build-application-exe-from-vi",
+      "etiqueta": "Build Application (EXE) from OVI...",
+      "estado": "todo",
+      "labview": "Build Application (EXE) from OVI...: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "construir-distribuible",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.tools.source-control",
+      "etiqueta": "Source Control",
+      "estado": "todo",
+      "labview": "Source Control: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.vi-analyzer",
+      "etiqueta": "OVI Analyzer",
+      "estado": "todo",
+      "labview": "OVI Analyzer: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.llb-manager",
+      "etiqueta": "LLB Manager...",
+      "estado": "todo",
+      "labview": "LLB Manager...: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "librerias",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.tools.import",
+      "etiqueta": "Import",
+      "estado": "todo",
+      "labview": "Brings items in from another place.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.shared-variable",
+      "etiqueta": "Shared Variable",
+      "estado": "todo",
+      "labview": "Shared Variable: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "variables-y-feedback"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.distributed-system-manager",
+      "etiqueta": "Distributed System Manager",
+      "estado": "todo",
+      "labview": "Distributed System Manager: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "variables-y-feedback"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.create-data-link",
+      "etiqueta": "Create Data Link...",
+      "estado": "todo",
+      "labview": "Create Data Link...: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.tools.find-vis-on-disk",
+      "etiqueta": "Find OVIs on Disk...",
+      "estado": "todo",
+      "labview": "Find OVIs on Disk...: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.prepare-example-vis-for-ni-example-finder",
+      "etiqueta": "Prepare Example OVIs for NI Example Finder...",
+      "estado": "todo",
+      "labview": "Prepare Example OVIs for NI Example Finder...: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "ejemplos"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.remote-panel-connection-manager",
+      "etiqueta": "Remote Panel Connection Manager...",
+      "estado": "todo",
+      "labview": "Remote Panel Connection Manager...: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.web-publishing-tool",
+      "etiqueta": "Web Publishing Tool...",
+      "estado": "todo",
+      "labview": "Web Publishing Tool...: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.control-and-simulation",
+      "etiqueta": "Control and Simulation",
+      "estado": "todo",
+      "labview": "Control and Simulation: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.find-solder-add-ons",
+      "etiqueta": "Find Solder Add-ons...",
+      "estado": "todo",
+      "labview": "Find Solder Add-ons...: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "paginas-web"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.hobbyist",
+      "etiqueta": "Hobbyist",
+      "estado": "todo",
+      "labview": "Opens the entries for hobbyists.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.utf-8-migration-tool",
+      "etiqueta": "UTF-8 Migration Tool...",
+      "estado": "todo",
+      "labview": "UTF-8 Migration Tool...: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.tools.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Advanced: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.tools.options",
+      "etiqueta": "Options...",
+      "estado": "todo",
+      "labview": "Options...: a row of LabVIEW's Tools menu in the Project Explorer; what it does was not captured.",
+      "necesita": "editor-escritorio"
     },
     {
       "id": "window.project-explorer.menu.window",
       "etiqueta": "Window",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands"
+    },
+    {
+      "id": "window.project-explorer.menu.window.show-other-project-view",
+      "etiqueta": "Show Other Project View",
       "estado": "todo",
-      "labview": "Switching between open windows. Contents not captured.",
-      "necesita": "editor-escritorio",
-      "captura": "project-explorer/proyecto-nuevo.png"
+      "labview": "Switches between the Items and the Files view.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "window.project-explorer.menu.window.show-project",
+      "etiqueta": "Show Project",
+      "estado": "todo",
+      "labview": "Brings the project window forward.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.project-explorer.menu.window.tile-left-and-right",
+      "etiqueta": "Tile Left and Right",
+      "estado": "todo",
+      "labview": "Places the open windows side by side.",
+      "necesita": "varios-vis",
+      "atajo": "Ctrl+T",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.window.tile-up-and-down",
+      "etiqueta": "Tile Up and Down",
+      "estado": "todo",
+      "labview": "Places the open windows one above the other.",
+      "necesita": "varios-vis"
+    },
+    {
+      "id": "window.project-explorer.menu.window.full-size",
+      "etiqueta": "Full Size",
+      "estado": "todo",
+      "labview": "Makes the window as big as the screen.",
+      "necesita": "varios-vis",
+      "atajo": "Ctrl+/"
+    },
+    {
+      "id": "window.project-explorer.menu.window.all-windows",
+      "etiqueta": "All Windows...",
+      "estado": "todo",
+      "labview": "Lists every open window to choose one.",
+      "necesita": "varios-vis",
+      "atajo": "Ctrl+Shift+W",
+      "separado": true
     },
     {
       "id": "window.project-explorer.menu.help",
       "etiqueta": "Help",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_menu_bar_has_LabVIEW's_eight_titles_and_the_File_rows_run_the_window's_commands"
+    },
+    {
+      "id": "window.project-explorer.menu.help.show-context-help",
+      "etiqueta": "Show Context Help",
       "estado": "todo",
-      "labview": "LabVIEW help. Contents not captured.",
+      "labview": "Shows the window that describes what is under the mouse.",
+      "necesita": "ayuda-contextual",
+      "atajo": "Ctrl+H"
+    },
+    {
+      "id": "window.project-explorer.menu.help.lock-context-help",
+      "etiqueta": "Lock Context Help",
+      "estado": "todo",
+      "labview": "Keeps the Context Help on what it shows.",
+      "necesita": "ayuda-contextual",
+      "atajo": "Ctrl+Shift+L"
+    },
+    {
+      "id": "window.project-explorer.menu.help.solder-help",
+      "etiqueta": "Solder Help...",
+      "estado": "todo",
+      "labview": "Opens the help.",
+      "necesita": "paginas-web",
+      "atajo": "Ctrl+?",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.help.explain-error",
+      "etiqueta": "Explain Error...",
+      "estado": "todo",
+      "labview": "Explains an error code.",
+      "necesita": "dialogos-de-usuario"
+    },
+    {
+      "id": "window.project-explorer.menu.help.help-for-this-vi",
+      "etiqueta": "Help for This OVI",
+      "estado": "todo",
+      "labview": "Opens the help of the selected VI.",
+      "necesita": "ayuda-contextual"
+    },
+    {
+      "id": "window.project-explorer.menu.help.find-examples",
+      "etiqueta": "Find Examples...",
+      "estado": "todo",
+      "labview": "Opens the example finder.",
+      "necesita": "ejemplos",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.help.find-instrument-drivers",
+      "etiqueta": "Find Instrument Drivers...",
+      "estado": "todo",
+      "labview": "Looks for instrument drivers.",
+      "necesita": "drivers-de-adquisicion"
+    },
+    {
+      "id": "window.project-explorer.menu.help.web-resources",
+      "etiqueta": "Web Resources...",
+      "estado": "todo",
+      "labview": "Opens the pages of help on the web.",
+      "necesita": "paginas-web"
+    },
+    {
+      "id": "window.project-explorer.menu.help.hobbyist",
+      "etiqueta": "Hobbyist",
+      "estado": "todo",
+      "labview": "Opens the entries for hobbyists.",
       "necesita": "editor-escritorio",
-      "captura": "project-explorer/proyecto-nuevo.png"
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.help.activate-solder-components",
+      "etiqueta": "Activate Solder Components...",
+      "estado": "todo",
+      "labview": "Activates the licensed components.",
+      "necesita": "editor-escritorio",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.help.activate-add-ons",
+      "etiqueta": "Activate Add-ons...",
+      "estado": "todo",
+      "labview": "Activates the add-ons installed.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.help.check-for-updates",
+      "etiqueta": "Check for Updates",
+      "estado": "todo",
+      "labview": "Checks whether there is a newer version.",
+      "necesita": "paginas-web"
+    },
+    {
+      "id": "window.project-explorer.menu.help.customer-experience-improvement-program",
+      "etiqueta": "Customer Experience Improvement Program...",
+      "estado": "todo",
+      "labview": "Opens the settings of the usage program.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.project-explorer.menu.help.patents",
+      "etiqueta": "Patents...",
+      "estado": "todo",
+      "labview": "Shows the patents notice.",
+      "necesita": "editor-escritorio",
+      "separado": true
+    },
+    {
+      "id": "window.project-explorer.menu.help.about-solder",
+      "etiqueta": "About Solder...",
+      "estado": "todo",
+      "labview": "Shows the version and the credits.",
+      "necesita": "editor-escritorio"
     },
     {
       "id": "window.project-explorer.toolbar.standard",
       "etiqueta": "Standard",
       "estado": "todo",
       "labview": "Standard toolbar: new, open, save and clipboard.",
-      "necesita": "formato-sdproj",
+      "necesita": "flujos-del-proyecto",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -702,7 +1587,7 @@
       "etiqueta": "New",
       "estado": "todo",
       "labview": "Opens the dialog to create a new document: a VI, a project or others.",
-      "necesita": "editor-escritorio",
+      "necesita": "flujos-del-proyecto",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -710,7 +1595,7 @@
       "etiqueta": "Open",
       "estado": "todo",
       "labview": "Opens an existing LabVIEW file.",
-      "necesita": "leer-escribir-qvi",
+      "necesita": "flujos-del-proyecto",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -718,7 +1603,7 @@
       "etiqueta": "Save All (this Project)",
       "estado": "todo",
       "labview": "Saves all the project's open documents, and the project itself.",
-      "necesita": "formato-sdproj",
+      "necesita": "flujos-del-proyecto",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -726,7 +1611,7 @@
       "etiqueta": "Cut",
       "estado": "todo",
       "labview": "Cuts the selection to the clipboard.",
-      "necesita": "formato-sdproj",
+      "necesita": "flujos-del-proyecto",
       "captura": "project-explorer/proyecto-nuevo.png",
       "separado": true
     },
@@ -735,7 +1620,7 @@
       "etiqueta": "Copy",
       "estado": "todo",
       "labview": "Copies the selection to the clipboard.",
-      "necesita": "formato-sdproj",
+      "necesita": "flujos-del-proyecto",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -743,7 +1628,7 @@
       "etiqueta": "Paste",
       "estado": "todo",
       "labview": "Pastes the clipboard contents into the active document.",
-      "necesita": "formato-sdproj",
+      "necesita": "flujos-del-proyecto",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -751,7 +1636,7 @@
       "etiqueta": "Remove From Project",
       "estado": "todo",
       "labview": "Removes the selection from the project without going through the clipboard. It does not delete the files from disk.",
-      "necesita": "formato-sdproj",
+      "necesita": "flujos-del-proyecto",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -759,7 +1644,7 @@
       "etiqueta": "Project",
       "estado": "todo",
       "labview": "Project toolbar: open it, save it, filter its view, its properties and its conflicts.",
-      "necesita": "formato-sdproj",
+      "necesita": "flujos-del-proyecto",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -767,15 +1652,16 @@
       "etiqueta": "Open Project",
       "estado": "todo",
       "labview": "Opens an existing project.",
-      "necesita": "formato-sdproj",
-      "captura": "project-explorer/proyecto-nuevo.png"
+      "necesita": "flujos-del-proyecto",
+      "captura": "project-explorer/proyecto-nuevo.png",
+      "separado": true
     },
     {
       "id": "window.project-explorer.toolbar.project.save-project",
       "etiqueta": "Save Project",
       "estado": "todo",
       "labview": "Saves the project.",
-      "necesita": "formato-sdproj",
+      "necesita": "flujos-del-proyecto",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -783,7 +1669,7 @@
       "etiqueta": "Filter Project View",
       "estado": "todo",
       "labview": "Chooses which node types the project tree shows.",
-      "necesita": "formato-sdproj",
+      "necesita": "flujos-del-proyecto",
       "captura": "project-explorer/proyecto-nuevo.png",
       "separado": true
     },
@@ -792,16 +1678,40 @@
       "etiqueta": "Project Properties",
       "estado": "todo",
       "labview": "Opens the project properties dialog.",
-      "necesita": "formato-sdproj",
+      "necesita": "flujos-del-proyecto",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
       "id": "window.project-explorer.toolbar.project.resolve-conflicts",
-      "etiqueta": "Resolve Conflicts",
+      "etiqueta": "Resolve Conflicts...",
       "estado": "todo",
       "labview": "Opens the dialog to resolve the project's conflicts: items with the same qualified name that point to different files.",
-      "necesita": "formato-sdproj",
+      "necesita": "flujos-del-proyecto",
       "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.unit-tests",
+      "etiqueta": "Unit Tests",
+      "estado": "todo",
+      "labview": "Unit tests toolbar: run the tests of the project and see their results.",
+      "necesita": "pruebas-unitarias",
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.unit-tests.run-unit-tests",
+      "etiqueta": "Run Unit Tests",
+      "estado": "todo",
+      "labview": "Runs the unit tests of the selected item or of the whole project.",
+      "necesita": "pruebas-unitarias",
+      "separado": true,
+      "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "window.project-explorer.toolbar.unit-tests.results",
+      "etiqueta": "Unit Test Framework Results",
+      "estado": "todo",
+      "labview": "Shows the results of the last run of the unit tests. It sits beyond the right edge of a new project's window and appears when the window is wider.",
+      "necesita": "pruebas-unitarias"
     },
     {
       "id": "window.project-explorer.toolbar.build",
@@ -825,7 +1735,8 @@
       "estado": "todo",
       "labview": "Builds the selected specifications.",
       "necesita": "construir-distribuible",
-      "captura": "project-explorer/proyecto-nuevo.png"
+      "captura": "project-explorer/proyecto-nuevo.png",
+      "separado": true
     },
     {
       "id": "window.project-explorer.toolbar.build.run-from-build",
@@ -879,32 +1790,29 @@
     {
       "id": "window.project-explorer.items",
       "etiqueta": "Items",
-      "estado": "todo",
-      "labview": "Page with the project's logical tree: targets, folders and items, as they are organised in the project.",
-      "necesita": "formato-sdproj",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_Project_Explorer_draws_a_blank_project_as_LabVIEW_does",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
       "id": "window.project-explorer.items.project",
       "etiqueta": "Project: <nombre>",
-      "estado": "todo",
-      "labview": "Root of the tree: the project.",
-      "necesita": "formato-sdproj",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_Project_Explorer_draws_a_blank_project_as_LabVIEW_does",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
       "id": "window.project-explorer.items.project.my-computer",
       "etiqueta": "My Computer",
-      "estado": "todo",
-      "labview": "The local computer as a target: whatever hangs from it runs here.",
-      "necesita": "formato-sdproj",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_Project_Explorer_draws_a_blank_project_as_LabVIEW_does",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
       "id": "window.project-explorer.items.project.my-computer.dependencies",
       "etiqueta": "Dependencies",
       "estado": "todo",
-      "labview": "What the target's items need (subVIs, libraries) and LabVIEW adds on its own.",
+      "labview": "What the target's items call, computed from them (the transitive closure of their callees); the tree shows it empty because the window does not read the items' files yet.",
       "necesita": "modelo-de-dependencias",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
@@ -920,9 +1828,784 @@
       "id": "window.project-explorer.files",
       "etiqueta": "Files",
       "estado": "todo",
-      "labview": "Page with the project's files as they are on disk.",
-      "necesita": "formato-sdproj",
+      "labview": "The project's files as they are on disk, from the drive down to the project's folder, with the side files left out.",
+      "necesita": "flujos-del-proyecto",
       "captura": "project-explorer/proyecto-nuevo.png"
+    },
+    {
+      "id": "context.project-explorer.project",
+      "etiqueta": "Project",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_right-click_menus_of_the_tree_are_declared_and_Expand_All_and_Collapse_All_work"
+    },
+    {
+      "id": "context.project-explorer.project.new",
+      "etiqueta": "New",
+      "estado": "todo",
+      "labview": "Creates a new item in the project.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.project.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder that holds the item's file.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.project.show-in-files-view",
+      "etiqueta": "Show in Files View",
+      "estado": "todo",
+      "labview": "Switches to the Files view with the item selected.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "context.project-explorer.project.save",
+      "etiqueta": "Save",
+      "estado": "todo",
+      "labview": "Saves the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.project.save-as",
+      "etiqueta": "Save As...",
+      "estado": "todo",
+      "labview": "Saves the project under another name.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.project.save-all-this-project",
+      "etiqueta": "Save All (this Project)",
+      "estado": "todo",
+      "labview": "Saves the project and every open VI that belongs to it.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.project.mass-compile",
+      "etiqueta": "Mass Compile...",
+      "estado": "todo",
+      "labview": "Compiles every VI of a folder.",
+      "necesita": "ejecutar-vi"
+    },
+    {
+      "id": "context.project-explorer.project.view",
+      "etiqueta": "View",
+      "estado": "todo",
+      "labview": "Chooses what the tree shows.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.project.find-items-with-no-callers",
+      "etiqueta": "Find Items with No Callers",
+      "estado": "todo",
+      "labview": "Lists the items that no other item calls.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.project.find-missing-items",
+      "etiqueta": "Find Missing Items",
+      "estado": "todo",
+      "labview": "Lists the items whose file is not found.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.project.find-items-incorrectly-claimed-by-a-library",
+      "etiqueta": "Find Items Incorrectly Claimed by a Library",
+      "estado": "todo",
+      "labview": "Lists the items that a library claims although they are in another place.",
+      "necesita": "librerias"
+    },
+    {
+      "id": "context.project-explorer.project.find-project-items",
+      "etiqueta": "Find Project Items...",
+      "estado": "todo",
+      "labview": "Opens the search of the project's items by name.",
+      "necesita": "buscar-y-reemplazar",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.project.arrange-by",
+      "etiqueta": "Arrange By",
+      "estado": "todo",
+      "labview": "Chooses how the items of a folder are ordered: by name, type, path or by hand.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.project.expand-all",
+      "etiqueta": "Expand All",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_right-click_menus_of_the_tree_are_declared_and_Expand_All_and_Collapse_All_work"
+    },
+    {
+      "id": "context.project-explorer.project.collapse-all",
+      "etiqueta": "Collapse All",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_right-click_menus_of_the_tree_are_declared_and_Expand_All_and_Collapse_All_work"
+    },
+    {
+      "id": "context.project-explorer.project.rename",
+      "etiqueta": "Rename...",
+      "estado": "todo",
+      "labview": "Renames the item.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "F2",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.project.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the selected item.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.my-computer",
+      "etiqueta": "My Computer",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_right-click_menus_of_the_tree_are_declared_and_Expand_All_and_Collapse_All_work"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new",
+      "etiqueta": "New",
+      "estado": "todo",
+      "labview": "Creates a new item in the project.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.vi",
+      "etiqueta": "OVI",
+      "estado": "todo",
+      "labview": "Creates a new blank VI under the target.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.virtual-folder",
+      "etiqueta": "Virtual Folder",
+      "estado": "todo",
+      "labview": "Creates a folder that exists only in the project.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.type-definition",
+      "etiqueta": "Type Definition",
+      "estado": "todo",
+      "labview": "Creates a new type definition.",
+      "necesita": "definiciones-de-tipo",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.library",
+      "etiqueta": "Library",
+      "estado": "todo",
+      "labview": "Creates a new library.",
+      "necesita": "librerias"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.class",
+      "etiqueta": "Class",
+      "estado": "todo",
+      "labview": "Creates a new class.",
+      "necesita": "clases-de-labview"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.interface",
+      "etiqueta": "Interface",
+      "estado": "todo",
+      "labview": "Creates a new interface.",
+      "necesita": "clases-de-labview"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.actor",
+      "etiqueta": "Actor",
+      "estado": "todo",
+      "labview": "Creates a new actor.",
+      "necesita": "clases-de-labview"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.xcontrol",
+      "etiqueta": "XControl",
+      "estado": "todo",
+      "labview": "Creates a new XControl.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.variable",
+      "etiqueta": "Variable",
+      "estado": "todo",
+      "labview": "Creates a new shared variable.",
+      "necesita": "variables-y-feedback"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.web-service",
+      "etiqueta": "Web Service",
+      "estado": "todo",
+      "labview": "Creates a new web service.",
+      "necesita": "paginas-web"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.ni-daqmx-task",
+      "etiqueta": "NI-DAQmx Task",
+      "estado": "todo",
+      "labview": "Creates a new acquisition task.",
+      "necesita": "drivers-de-adquisicion",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.ni-daqmx-channel",
+      "etiqueta": "NI-DAQmx Channel",
+      "estado": "todo",
+      "labview": "Creates a new acquisition channel.",
+      "necesita": "drivers-de-adquisicion"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.ni-daqmx-scale",
+      "etiqueta": "NI-DAQmx Scale",
+      "estado": "todo",
+      "labview": "Creates a new scale for a channel.",
+      "necesita": "drivers-de-adquisicion"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.package-dependencies",
+      "etiqueta": "Package Dependencies",
+      "estado": "todo",
+      "labview": "Creates a new package of dependencies.",
+      "necesita": "construir-distribuible"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.unit-test",
+      "etiqueta": "Unit Test",
+      "estado": "todo",
+      "labview": "Creates a new unit test.",
+      "necesita": "pruebas-unitarias"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.test-vectors",
+      "etiqueta": "Test Vectors",
+      "estado": "todo",
+      "labview": "Creates a new table of test vectors.",
+      "necesita": "pruebas-unitarias"
+    },
+    {
+      "id": "context.project-explorer.my-computer.new.new",
+      "etiqueta": "New...",
+      "estado": "todo",
+      "labview": "Opens the New dialog to create a VI, a project or another document.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.my-computer.add",
+      "etiqueta": "Add",
+      "estado": "todo",
+      "labview": "Adds an existing file or folder to the project.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.add.file",
+      "etiqueta": "File...",
+      "estado": "todo",
+      "labview": "Adds a file to the project.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.add.folder-snapshot",
+      "etiqueta": "Folder (Snapshot)...",
+      "estado": "todo",
+      "labview": "Adds the files of a folder as they are now, in a virtual folder.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.add.folder-auto-populating",
+      "etiqueta": "Folder (Auto-populating)...",
+      "estado": "todo",
+      "labview": "Adds a folder whose files the project follows as they appear on disk.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.add.hyperlink",
+      "etiqueta": "Hyperlink...",
+      "estado": "todo",
+      "labview": "Adds a link to a web page.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.trace-execution",
+      "etiqueta": "Trace Execution...",
+      "estado": "todo",
+      "labview": "Traces the calls of the VIs of this target while they run.",
+      "necesita": "ejecutar-vi",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.my-computer.export",
+      "etiqueta": "Export",
+      "estado": "todo",
+      "labview": "Writes the items of the project out to another place.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.import",
+      "etiqueta": "Import",
+      "estado": "todo",
+      "labview": "Brings items in from another place.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.find-project-items",
+      "etiqueta": "Find Project Items...",
+      "estado": "todo",
+      "labview": "Opens the search of the project's items by name.",
+      "necesita": "buscar-y-reemplazar",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.my-computer.arrange-by",
+      "etiqueta": "Arrange By",
+      "estado": "todo",
+      "labview": "Chooses how the items of a folder are ordered: by name, type, path or by hand.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.my-computer.arrange-by.name",
+      "etiqueta": "Name",
+      "estado": "todo",
+      "labview": "Orders the items by name.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.arrange-by.type",
+      "etiqueta": "Type",
+      "estado": "todo",
+      "labview": "Orders the items by type.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.arrange-by.path",
+      "etiqueta": "Path",
+      "estado": "todo",
+      "labview": "Orders the items by path.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.arrange-by.custom",
+      "etiqueta": "Custom",
+      "estado": "todo",
+      "labview": "Keeps the order the user gave the items.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.expand-all",
+      "etiqueta": "Expand All",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_right-click_menus_of_the_tree_are_declared_and_Expand_All_and_Collapse_All_work"
+    },
+    {
+      "id": "context.project-explorer.my-computer.collapse-all",
+      "etiqueta": "Collapse All",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_right-click_menus_of_the_tree_are_declared_and_Expand_All_and_Collapse_All_work"
+    },
+    {
+      "id": "context.project-explorer.my-computer.override-vi-properties-to-enable-debugging",
+      "etiqueta": "Override OVI Properties to Enable Debugging",
+      "estado": "todo",
+      "labview": "Turns debugging on for the VIs of the target whatever they say.",
+      "necesita": "ejecutar-vi",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.my-computer.project-environment-settings",
+      "etiqueta": "Project Environment Settings...",
+      "estado": "todo",
+      "labview": "Opens the settings of the project.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.my-computer.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the selected item.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.ovi-item",
+      "etiqueta": "OVI item",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_right-click_menus_of_the_tree_are_declared_and_Expand_All_and_Collapse_All_work"
+    },
+    {
+      "id": "context.project-explorer.ovi-item.open",
+      "etiqueta": "Open",
+      "estado": "todo",
+      "labview": "Opens the item in its own windows.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.ovi-item.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder that holds the item's file.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.ovi-item.show-in-files-view",
+      "etiqueta": "Show in Files View",
+      "estado": "todo",
+      "labview": "Switches to the Files view with the item selected.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "context.project-explorer.ovi-item.print",
+      "etiqueta": "Print...",
+      "estado": "todo",
+      "labview": "Prints the documentation of the selected item.",
+      "necesita": "imprimir",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.ovi-item.run",
+      "etiqueta": "Run",
+      "estado": "todo",
+      "labview": "Runs the VI.",
+      "necesita": "ejecutar-vi",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.ovi-item.find",
+      "etiqueta": "Find",
+      "estado": "todo",
+      "labview": "Finds where the item is used and what it uses.",
+      "necesita": "jerarquia-de-vis",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.ovi-item.save",
+      "etiqueta": "Save",
+      "estado": "todo",
+      "labview": "Saves the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.ovi-item.save-as",
+      "etiqueta": "Save As...",
+      "estado": "todo",
+      "labview": "Saves the project under another name.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.ovi-item.unit-tests",
+      "etiqueta": "Unit Tests",
+      "estado": "todo",
+      "labview": "Creates and runs the tests of the VI.",
+      "necesita": "pruebas-unitarias",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.ovi-item.analyze-vis",
+      "etiqueta": "Analyze OVIs...",
+      "estado": "todo",
+      "labview": "Checks the VI against a set of rules.",
+      "necesita": "ejecutar-vi",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.ovi-item.arrange-by",
+      "etiqueta": "Arrange By",
+      "estado": "todo",
+      "labview": "Chooses how the items of a folder are ordered: by name, type, path or by hand.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.ovi-item.remove-from-project",
+      "etiqueta": "Remove from Project",
+      "estado": "todo",
+      "labview": "Remove from Project: a row of LabVIEW's right-click menu of OVI item in the Project Explorer; what it does was not captured.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.ovi-item.rename",
+      "etiqueta": "Rename...",
+      "estado": "todo",
+      "labview": "Renames the item.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "F2"
+    },
+    {
+      "id": "context.project-explorer.ovi-item.replace-with",
+      "etiqueta": "Replace with...",
+      "estado": "todo",
+      "labview": "Replaces the item by another file.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.ovi-item.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the selected item.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.document-item",
+      "etiqueta": "Document item",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_right-click_menus_of_the_tree_are_declared_and_Expand_All_and_Collapse_All_work"
+    },
+    {
+      "id": "context.project-explorer.document-item.open",
+      "etiqueta": "Open",
+      "estado": "todo",
+      "labview": "Opens the item in its own windows.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.document-item.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder that holds the item's file.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.document-item.show-in-files-view",
+      "etiqueta": "Show in Files View",
+      "estado": "todo",
+      "labview": "Switches to the Files view with the item selected.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "context.project-explorer.document-item.print",
+      "etiqueta": "Print...",
+      "estado": "todo",
+      "labview": "Prints the documentation of the selected item.",
+      "necesita": "imprimir",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.document-item.find",
+      "etiqueta": "Find",
+      "estado": "todo",
+      "labview": "Finds where the item is used and what it uses.",
+      "necesita": "jerarquia-de-vis",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.document-item.remove-from-project",
+      "etiqueta": "Remove from Project",
+      "estado": "todo",
+      "labview": "Remove from Project: a row of LabVIEW's right-click menu of Document item in the Project Explorer; what it does was not captured.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.document-item.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the selected item.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependencies",
+      "etiqueta": "Dependencies",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_right-click_menus_of_the_tree_are_declared_and_Expand_All_and_Collapse_All_work"
+    },
+    {
+      "id": "context.project-explorer.dependencies.refresh",
+      "etiqueta": "Refresh",
+      "estado": "todo",
+      "labview": "Computes Dependencies again.",
+      "necesita": "modelo-de-dependencias"
+    },
+    {
+      "id": "context.project-explorer.dependencies.find-project-items",
+      "etiqueta": "Find Project Items...",
+      "estado": "todo",
+      "labview": "Opens the search of the project's items by name.",
+      "necesita": "buscar-y-reemplazar",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependencies.arrange-by",
+      "etiqueta": "Arrange By",
+      "estado": "todo",
+      "labview": "Chooses how the items of a folder are ordered: by name, type, path or by hand.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependencies.arrange-by.name",
+      "etiqueta": "Name",
+      "estado": "todo",
+      "labview": "Orders the items by name.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.dependencies.arrange-by.type",
+      "etiqueta": "Type",
+      "estado": "todo",
+      "labview": "Orders the items by type.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.dependencies.arrange-by.path",
+      "etiqueta": "Path",
+      "estado": "todo",
+      "labview": "Orders the items by path.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.dependencies.arrange-by.custom",
+      "etiqueta": "Custom",
+      "estado": "todo",
+      "labview": "Keeps the order the user gave the items.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.dependencies.expand-all",
+      "etiqueta": "Expand All",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_right-click_menus_of_the_tree_are_declared_and_Expand_All_and_Collapse_All_work"
+    },
+    {
+      "id": "context.project-explorer.dependencies.collapse-all",
+      "etiqueta": "Collapse All",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_right-click_menus_of_the_tree_are_declared_and_Expand_All_and_Collapse_All_work"
+    },
+    {
+      "id": "context.project-explorer.dependencies.help",
+      "etiqueta": "Help...",
+      "estado": "todo",
+      "labview": "Opens the help of this item.",
+      "necesita": "paginas-web",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.build-specifications",
+      "etiqueta": "Build Specifications",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_right-click_menus_of_the_tree_are_declared_and_Expand_All_and_Collapse_All_work"
+    },
+    {
+      "id": "context.project-explorer.build-specifications.new",
+      "etiqueta": "New",
+      "estado": "todo",
+      "labview": "Creates a new item in the project.",
+      "necesita": "construir-distribuible"
+    },
+    {
+      "id": "context.project-explorer.build-specifications.new.application-exe",
+      "etiqueta": "Application (EXE)",
+      "estado": "todo",
+      "labview": "Creates a build specification for an executable.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.build-specifications.new.installer",
+      "etiqueta": "Installer",
+      "estado": "todo",
+      "labview": "Creates a build specification for an installer.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.build-specifications.new.net-framework-assembly",
+      "etiqueta": ".NET Framework Assembly",
+      "estado": "todo",
+      "labview": "Creates a build specification for a .NET assembly.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.build-specifications.new.package",
+      "etiqueta": "Package",
+      "estado": "todo",
+      "labview": "Creates a build specification for a package.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.build-specifications.new.packed-library",
+      "etiqueta": "Packed Library",
+      "estado": "todo",
+      "labview": "Creates a build specification for a packed library.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.build-specifications.new.shared-library-dll",
+      "etiqueta": "Shared Library (DLL)",
+      "estado": "todo",
+      "labview": "Creates a build specification for a shared library.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.build-specifications.new.source-distribution",
+      "etiqueta": "Source Distribution",
+      "estado": "todo",
+      "labview": "Creates a build specification that copies the sources.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.build-specifications.new.zip-file",
+      "etiqueta": "Zip File",
+      "estado": "todo",
+      "labview": "Creates a build specification that gathers files in a zip.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.build-specifications.arrange-by",
+      "etiqueta": "Arrange By",
+      "estado": "todo",
+      "labview": "Chooses how the items of a folder are ordered: by name, type, path or by hand.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.build-specifications.arrange-by.name",
+      "etiqueta": "Name",
+      "estado": "todo",
+      "labview": "Orders the items by name.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.build-specifications.arrange-by.type",
+      "etiqueta": "Type",
+      "estado": "todo",
+      "labview": "Orders the items by type.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.build-specifications.arrange-by.path",
+      "etiqueta": "Path",
+      "estado": "todo",
+      "labview": "Orders the items by path.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.build-specifications.arrange-by.custom",
+      "etiqueta": "Custom",
+      "estado": "todo",
+      "labview": "Keeps the order the user gave the items.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.build-specifications.help",
+      "etiqueta": "Help...",
+      "estado": "todo",
+      "labview": "Opens the help of this item.",
+      "necesita": "paginas-web",
+      "separado": true
     },
     {
       "id": "window.front-panel",

@@ -103,6 +103,15 @@ contextBridge.exposeInMainWorld("solder", {
     /** The I/O process ended: `callback()`. A Run waiting for an instrument must fail. */
     alTerminar: (callback) => ipcRenderer.on("io:exited", () => callback()),
   },
+  /** The Project Explorer window (DT-099). */
+  project: {
+    /** The project this window shows: `{ name, text }`; `text` is the `.sdproj`'s text, or null for a blank project. */
+    start: () => ipcRenderer.invoke("project:init"),
+    /** File ▸ Close: closes this window. */
+    close: () => ipcRenderer.send("project:close"),
+    /** The project could not be read: the main process says why and closes the window. */
+    error: (message) => ipcRenderer.send("project:error", message),
+  },
   /** Some OVI was saved, at this absolute path: `callback({ id, key })`. The callers of a saved subOVI must see its new connector. */
   alGuardar: (callback) => ipcRenderer.on("ovi:saved", (_event, saved) => callback(saved)),
 });
