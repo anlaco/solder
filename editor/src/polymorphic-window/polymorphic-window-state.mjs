@@ -281,4 +281,4 @@ export const setIcon = (state, iconText) => (isIconDocument(iconText) ? { ...sta
 // ——— The menu bar ———
 
 /** What each built row of the window's File menu does, by the last segment of its id; the page runs it through window.solder. */
-export const MENU_COMMANDS = Object.freeze({ "new-vi": "newOvi", new: "newDialog", open: "open", close: "close", save: "save", "save-as": "saveAs", exit: "exit" });
+export const MENU_COMMANDS = Object.freeze({ "new-vi": "newOvi", new: "newDialog", "create-project": "createProject", "open-project": "openProject", open: "open", close: "close", save: "save", "save-as": "saveAs", exit: "exit" });

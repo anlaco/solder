@@ -36,6 +36,8 @@ const anchorBelow = (element) => {
 const COMMANDS = {
   newOVI: () => solder?.nuevoOVI(),
   newDialog: () => solder?.nuevo(),
+  createProject: () => solder?.project.create(),
+  openProject: () => solder?.project.open(),
   open: () => solder?.abrir(),
   exit: () => solder?.salir(),
 };
@@ -66,6 +68,7 @@ function clickElement(target, filterWasOpen) {
   if (action === "next") return change(State.stepCarousel(state, 1)), true;
   if (action === "collapse") return change(State.toggleCollapsed(state)), true;
   if (action === "open-existing") return solder?.abrir(), false;
+  if (action === "create-project") return solder?.project.create(), false;
   if (target.closest("[data-combo]")) return filterWasOpen ? false : (change(State.toggleFilterList(state)), true);
   const filter = target.closest("[data-filter]");
   if (filter) return change(State.chooseFilter(state, filter.dataset.filter)), true;

@@ -1,0 +1,25 @@
+/* The Create Project dialog, from labview-captures/project-explorer/s3-b-dialog.png (positions are set by create-project-view.mjs). */
+
+body.create-project { background: var(--polymorphic-window-background); color: var(--polymorphic-window-text); margin: 0; overflow: hidden; font-size: var(--fuente); }
+.cp-window { position: absolute; inset: 0; }
+.cp-window > * { position: absolute; }
+.cp-banner { box-sizing: border-box; padding: 0 3px; line-height: 20px; font-weight: bold; background: linear-gradient(var(--create-project-banner-top), var(--create-project-banner-bottom)); border-bottom: 1px solid var(--create-project-separator); }
+.cp-tree, .cp-list { box-sizing: border-box; border: 1px solid var(--polymorphic-window-list-border); background: var(--polymorphic-window-list-background); }
+.cp-tree { overflow: hidden; }
+.cp-tree-row { position: absolute; left: 0; right: 0; line-height: 16px; white-space: nowrap; box-sizing: border-box; border: 1px solid transparent; }
+.cp-tree-row.seleccionada, .cp-row.seleccionada { background: var(--create-project-selected-background); border: 1px solid var(--create-project-selected-border); }
+.cp-tree-row.hueco { font-style: italic; color: var(--placeholder-text); }
+.cp-additional-search, .cp-keyword { position: absolute; color: var(--placeholder-text); box-sizing: border-box; }
+.cp-keyword { border: 1px solid var(--polymorphic-window-disabled-border); background: var(--polymorphic-window-disabled-background); padding: 2px 3px; }
+.cp-list { overflow-y: scroll; }
+.cp-row { box-sizing: border-box; height: 49px; margin: 1px 2px 8px; border: 1px solid transparent; display: flex; gap: 8px; padding: 3px 6px; overflow: hidden; }
+.cp-row svg { flex: none; }
+.cp-name em { margin-left: 8px; color: var(--create-project-muted-text); }
+.cp-description { color: var(--create-project-muted-text); line-height: 16px; max-height: 32px; overflow: hidden; }
+.cp-row.hueco .cp-name strong { color: var(--placeholder-text); }
+.cp-separator { background: var(--create-project-separator); }
+.cp-button { box-sizing: border-box; }
+.cp-button.defecto { border-color: var(--button-default-border); }
+.cp-explanation { z-index: 60; }
+.cp-check { display: flex; align-items: center; gap: 5px; }
+.cp-check.hueco { font-style: italic; color: var(--placeholder-text); }

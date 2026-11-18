@@ -21,7 +21,26 @@ export const ROOT_KEY = "project";
 export const ROW_KINDS = Object.freeze({ PROJECT: "project", ...ITEM_KINDS, AUTO_POPULATING_FOLDER: "auto-populating-folder" });
 
 /** The window's own commands, by the last segment of the menu row's id; the main process runs them. */
-export const MENU_COMMANDS = Object.freeze({ "new-vi": "newOvi", new: "newDialog", open: "open", close: "close", exit: "exit" });
+export const MENU_COMMANDS = Object.freeze({
+  "new-vi": "newOvi",
+  new: "newDialog",
+  open: "open",
+  close: "close",
+  "create-project": "createProject",
+  "open-project": "openProject",
+  "save-project": "saveProject",
+  "close-project": "close",
+  exit: "exit",
+});
+
+/** The toolbar's built buttons, by the last segment of their id (s1 Q1: Open Project and Save Project). */
+export const TOOLBAR_COMMANDS = Object.freeze({ "open-project": "openProject", "save-project": "saveProject" });
+
+/** The built rows of a right-click menu that run a command of the window; Expand All and Collapse All are the state's own. */
+export const CONTEXT_COMMANDS = Object.freeze({ "context.project-explorer.project.save": "saveProject" });
+
+/** The project was saved under another name: the root of the tree says so. */
+export const rename = (state, name) => ({ ...state, name });
 
 /** The right-click menus of the tree, by the kind of row (s2 report, Q1). A virtual folder's was not measured. */
 const CONTEXT_MENU_OF_KIND = Object.freeze({
@@ -68,7 +87,7 @@ const targetKeyOf = (project) => `${ROOT_KEY}/${project.items.findIndex((item) =
 export function fromProject(project, name, { opened = false } = {}) {
   const nodes = nodesFrom(treeOf(project, name));
   const expanded = nodes.filter((node) => hasChildren(node) && !(opened && node.kind === ROW_KINDS.DEPENDENCIES)).map((node) => node.key);
-  return { project, name, tab: TABS.ITEMS, selected: targetKeyOf(project), expanded, ...windowState() };
+  return { project, name, tab: TABS.ITEMS, selected: targetKeyOf(project), expanded, windowRows: [], ...windowState() };
 }
 
 /** One row of the tree as drawn: `{ key, kind, label, depth, expandable, expanded }`. */

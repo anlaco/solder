@@ -1031,11 +1031,30 @@ to it go on, new fronts wait for step 6.
    row, the toolbar, the Items and Files tabs (Files greyed), the tree with its expanders, selection and the measured
    right-click menus, Expand All and Collapse All; every row not built greyed with its reason (inventory: 268 rows).
    The `.sdproj` keeps the window's place (DT-099 §4) and the tree is kept in LabVIEW's order. A tall menu stays under
-   the menu bar and scrolls (shared `menuContextual`). Opened for now with `SOLDER_PROJECT=1`. Tried under Xvfb
+   the menu bar and scrolls (shared `menuContextual`). Tried under Xvfb
    ([`project-explorer-editor-try`](../../labview-captures/reports/2026-11-18-project-explorer-editor-try.md)). Next,
    (a2): File ▸ Create Project... (the Create Project dialog, Blank Project) in every window and in Getting Started,
    Open Project..., Save Project with "Name the Project", Close Project with its prompt, the window list of Window ▸,
    and no Getting Started after Close Project (LabVIEW shows none).*
+   *Stage (a2) on 2026-11-18, after measuring what it lacked
+   ([`project-explorer-s3`](../../labview-captures/reports/2026-11-18-project-explorer-s3.md)): File ▸ Create Project...
+   in every window and in Getting Started with the Create Project dialog (Blank Project and Blank OVI built; templates,
+   sample projects, filters and Keyword greyed) and the Open Items question (Add unmeasured, a hole); several projects
+   open at once, "Untitled Project N" never reusing a number; Open Project... and File ▸ Open... of a `.sdproj`; Save
+   Project with "Name the Project (…)" keeping the window's place; Close Project with its question; Exit asking about
+   projects; Getting Started minimized after the last project; the Window menu's list in the explorer
+   (`editor/electron/project-manager.mjs` and its pure modules, `editor/src/create-project/`). Tried under Xvfb
+   ([`project-flows-editor-try`](../../labview-captures/reports/2026-11-18-project-flows-editor-try.md)). Unverified
+   there: the minimized Getting Started (no window manager). Left: Recent Projects / Recent Files, the "List unsaved
+   changes..." link, the Window list's underlined numbers and the OVI windows' own Window list. **Stage (a) is done.**
+   Next, (b): Add ▸ and New ▸ OVI / Virtual Folder, Remove From Project, rename, drag into folders.* *Stage (a2), on 2026-11-18: File ▸ Create Project...
+   in the Project Explorer, the OVI windows, the Polymorphic window and Getting Started (menu and button), with the Create
+   Project dialog (`editor/src/create-project/`, `editor/create-project.html`) and the Open Items question; Open Project...
+   and File ▸ Open... for `.sdproj`; Save Project ("Name the Project"); Close Project with its prompt and Getting Started
+   minimized after the last one; the Window menu's list; the `SOLDER_PROJECT` switch is gone. The windows and dialogs
+   are `editor/electron/project-manager.mjs`, the rules pure in `project-registry.mjs`, `project-dialogs.mjs` and
+   `project-window-list.mjs`. Unmeasured and greyed: what Add does in Open Items, its "Do not show again" box, the dialog's
+   tree filters and Keyword, Save Project and Close Project of an OVI window (no OVI belongs to a project until (b)).*
 3. **Type definitions** and strict type definitions, in `.octl` files (DT-093 §5): Make Type Def., the control editor,
    updating the instances. *Decided in DT-096 (2026-11-16): the type on a wire stays structural and the link to the
    `.octl` lives on the object, with a copy of the definition. First, the measurements DT-096 lists.* *Measured on

@@ -88,7 +88,7 @@ test("the captions are written about Solder", () => {
 test("Getting Started greyed items explain themselves through the inventory", () => {
   const html = draw(start());
   const greyed = [...html.matchAll(/class="[^"]*\bhueco\b[^"]*" data-id="([^"]+)"/g)].map((match) => match[1]);
-  for (const id of [`${PREFIX}.create-project`, `${PREFIX}.recent-project-templates.blank-project`, `${PREFIX}.carousel-link`, `${PREFIX}.caption-link`]) {
+  for (const id of [`${PREFIX}.recent-project-templates.blank-project`, `${PREFIX}.carousel-link`, `${PREFIX}.caption-link`]) {
     assert.ok(greyed.includes(id), `${id} is greyed`);
   }
   for (const id of greyed) {
@@ -98,8 +98,8 @@ test("Getting Started greyed items explain themselves through the inventory", ()
     assert.ok(labview && solder, `${id} says what LabVIEW does and what Solder lacks`);
   }
   // Clicking one opens the explanation, as in the OVI windows.
-  const clicked = E.clic(start(), INV, `${PREFIX}.create-project`, { x: 60, y: 160 });
-  assert.match(draw(clicked), /class="explicacion" data-explicacion="window\.getting-started\.create-project"[\s\S]*In Solder: Missing/);
+  const clicked = E.clic(start(), INV, `${PREFIX}.recent-project-templates.blank-project`, { x: 60, y: 160 });
+  assert.match(draw(clicked), /class="explicacion" data-explicacion="window\.getting-started\.recent-project-templates\.blank-project"[\s\S]*In Solder: Missing/);
 });
 
 test("File menu rows run the commands of the window", () => {
@@ -108,8 +108,8 @@ test("File menu rows run the commands of the window", () => {
   assert.deepEqual(rows.filter((row) => row.separado).map((row) => row.etiqueta), ["Create Project...", "Recent Projects", "Exit"]);
   assert.deepEqual(rows.map((row) => row.atajo ?? null), ["Ctrl+N", null, "Ctrl+O", null, null, null, null, "Ctrl+Q"]);
   const built = rows.filter((row) => !esHueco(row)).map((row) => ultimo(row.id));
-  assert.deepEqual(built, ["new-vi", "new", "open", "recent-files", "exit"]);
-  assert.deepEqual(Object.keys(MENU_COMMANDS).sort(), ["exit", "new", "new-vi", "open"], "every built row except Recent Files has a command");
+  assert.deepEqual(built, ["new-vi", "new", "open", "create-project", "open-project", "recent-files", "exit"]);
+  assert.deepEqual(Object.keys(MENU_COMMANDS).sort(), ["create-project", "exit", "new", "new-vi", "open", "open-project"], "every built row except Recent Files has a command");
   assert.deepEqual(INV.hijos(`${PREFIX}.menu`).map((menu) => menu.etiqueta), ["File", "Operate", "Tools", "Help"]);
   // The open menu draws every row, in order, with its shortcut.
   const state = E.abrirMenuBarra(start(), INV, `${PREFIX}.menu.file`, { x: 0, y: 20 });

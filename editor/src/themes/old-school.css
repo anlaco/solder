@@ -55,6 +55,16 @@
   --polymorphic-window-disabled-background: #f4f4f4;
 }
 
+/* The Create Project dialog (shades sampled from labview-captures/project-explorer/s3-b-dialog.png). */
+:root {
+  --create-project-banner-top: #fdf2d4;
+  --create-project-banner-bottom: #f7d986;
+  --create-project-selected-background: #f7da85;
+  --create-project-selected-border: #ad995d;
+  --create-project-separator: #bcbcbc;
+  --create-project-muted-text: #808080;
+}
+
 /* The Project Explorer window (shades read off labview-captures/project-explorer/proyecto-nuevo.png, not measured). */
 :root {
   --project-explorer-background: #f0f0f0;

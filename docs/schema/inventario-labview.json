@@ -621,6 +621,26 @@
     },
     "pruebas-unitarias": {
       "desc": "unit tests of OVIs: LabVIEW's Unit Test Framework, with its test vectors and its results window"
+    },
+    "ovis-en-proyecto": {
+      "desc": "an OVI that belongs to a project: adding OVIs to a project, the \"on P.sdproj/My Computer\" windows and knowing which project an open OVI is in. Until then Save Project and Close Project of an OVI window have no project to act on",
+      "ref": "design/05-decisions.md DT-099, stage a3"
+    },
+    "plantillas-de-proyecto": {
+      "desc": "project templates and sample projects for the Create Project dialog: Solder has none yet, only Blank Project and a blank OVI",
+      "ref": "design/05-decisions.md DT-099 §6"
+    },
+    "filtros-crear-proyecto": {
+      "desc": "unmeasured: what the tree's filters (Templates, Sample Projects, Desktop, Real-Time) and the Keyword search of the Create Project dialog do in LabVIEW",
+      "ref": "labview-captures/reports/2026-11-18-project-explorer-s3.md, Not verified"
+    },
+    "open-items-add": {
+      "desc": "unmeasured: what Add does in LabVIEW's Open Items dialog (it was not tried). Solder shows the dialog and Don't Add and Cancel work",
+      "ref": "labview-captures/reports/2026-11-18-project-explorer-s3.md Q1, Not verified"
+    },
+    "recordar-avisos": {
+      "desc": "remembering a dialog's \"Do not show this dialog again.\" box between sessions: Solder keeps no per-dialog settings yet",
+      "ref": "design/05-decisions.md DT-099 §6"
     }
   },
   "entradas": [
@@ -732,31 +752,27 @@
     {
       "id": "window.project-explorer.menu.file.create-project",
       "etiqueta": "Create Project...",
-      "estado": "todo",
-      "labview": "Opens the Create Project dialog to start a project from a template.",
-      "necesita": "flujos-del-proyecto",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_Project_Explorer_runs_the_project_commands_from_its_menus,_toolbar_and_the_root's_right-click_menu",
       "separado": true
     },
     {
       "id": "window.project-explorer.menu.file.open-project",
       "etiqueta": "Open Project...",
-      "estado": "todo",
-      "labview": "Opens an existing project in its own window.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/projects.test.mjs::Open_Project_asks_for_a_sdproj_in_the_last_folder_and_a_project_already_open_is_the_same_project"
     },
     {
       "id": "window.project-explorer.menu.file.save-project",
       "etiqueta": "Save Project",
-      "estado": "todo",
-      "labview": "Saves the project file.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/projects.test.mjs::Save_Project_proposes_Name_the_Project_with_the_untitled_name_and_the_sdproj_filter,_and_writes_the_window's_place"
     },
     {
       "id": "window.project-explorer.menu.file.close-project",
       "etiqueta": "Close Project",
-      "estado": "todo",
-      "labview": "Closes the project and its window.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/projects.test.mjs::closing_a_project_asks_only_when_it_has_changes,_with_the_text_and_buttons_of_LabVIEW's_question"
     },
     {
       "id": "window.project-explorer.menu.file.page-setup",
@@ -1101,30 +1117,26 @@
     {
       "id": "window.project-explorer.menu.project.create-project",
       "etiqueta": "Create Project...",
-      "estado": "todo",
-      "labview": "Opens the Create Project dialog to start a project from a template.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_Project_Explorer_runs_the_project_commands_from_its_menus,_toolbar_and_the_root's_right-click_menu"
     },
     {
       "id": "window.project-explorer.menu.project.open-project",
       "etiqueta": "Open Project...",
-      "estado": "todo",
-      "labview": "Opens an existing project in its own window.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/projects.test.mjs::Open_Project_asks_for_a_sdproj_in_the_last_folder_and_a_project_already_open_is_the_same_project"
     },
     {
       "id": "window.project-explorer.menu.project.save-project",
       "etiqueta": "Save Project",
-      "estado": "todo",
-      "labview": "Saves the project file.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/projects.test.mjs::Save_Project_proposes_Name_the_Project_with_the_untitled_name_and_the_sdproj_filter,_and_writes_the_window's_place"
     },
     {
       "id": "window.project-explorer.menu.project.close-project",
       "etiqueta": "Close Project",
-      "estado": "todo",
-      "labview": "Closes the project and its window.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/projects.test.mjs::closing_a_project_asks_only_when_it_has_changes,_with_the_text_and_buttons_of_LabVIEW's_question"
     },
     {
       "id": "window.project-explorer.menu.project.add-to-project",
@@ -1642,26 +1654,23 @@
     {
       "id": "window.project-explorer.toolbar.project",
       "etiqueta": "Project",
-      "estado": "todo",
-      "labview": "Project toolbar: open it, save it, filter its view, its properties and its conflicts.",
-      "necesita": "flujos-del-proyecto",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer.test.mjs::the_Project_Explorer_runs_the_project_commands_from_its_menus,_toolbar_and_the_root's_right-click_menu",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
       "id": "window.project-explorer.toolbar.project.open-project",
       "etiqueta": "Open Project",
-      "estado": "todo",
-      "labview": "Opens an existing project.",
-      "necesita": "flujos-del-proyecto",
+      "estado": "built",
+      "prueba": "test/editor/projects.test.mjs::Open_Project_asks_for_a_sdproj_in_the_last_folder_and_a_project_already_open_is_the_same_project",
       "captura": "project-explorer/proyecto-nuevo.png",
       "separado": true
     },
     {
       "id": "window.project-explorer.toolbar.project.save-project",
       "etiqueta": "Save Project",
-      "estado": "todo",
-      "labview": "Saves the project.",
-      "necesita": "flujos-del-proyecto",
+      "estado": "built",
+      "prueba": "test/editor/projects.test.mjs::Save_Project_proposes_Name_the_Project_with_the_untitled_name_and_the_sdproj_filter,_and_writes_the_window's_place",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -1864,9 +1873,8 @@
     {
       "id": "context.project-explorer.project.save",
       "etiqueta": "Save",
-      "estado": "todo",
-      "labview": "Saves the project.",
-      "necesita": "flujos-del-proyecto",
+      "estado": "built",
+      "prueba": "test/editor/projects.test.mjs::Save_Project_proposes_Name_the_Project_with_the_untitled_name_and_the_sdproj_filter,_and_writes_the_window's_place",
       "separado": true
     },
     {
@@ -2703,18 +2711,16 @@
     {
       "id": "window.front-panel.menu.file.create-project",
       "etiqueta": "Create Project...",
-      "estado": "todo",
-      "labview": "Creates a new project.",
-      "necesita": "formato-sdproj",
+      "estado": "built",
+      "prueba": "test/editor/create-project.test.mjs::File_Create_Project_and_Open_Project_are_built_rows_of_every_window_that_has_them,_and_so_is_Getting_Started's_button",
       "captura": "front-panel/menu-file.png",
       "separado": true
     },
     {
       "id": "window.front-panel.menu.file.open-project",
       "etiqueta": "Open Project...",
-      "estado": "todo",
-      "labview": "Opens a project.",
-      "necesita": "formato-sdproj",
+      "estado": "built",
+      "prueba": "test/editor/projects.test.mjs::Open_Project_asks_for_a_sdproj_in_the_last_folder_and_a_project_already_open_is_the_same_project",
       "captura": "front-panel/menu-file.png"
     },
     {
@@ -2722,7 +2728,7 @@
       "etiqueta": "Save Project",
       "estado": "todo",
       "labview": "Saves the project the VI belongs to.",
-      "necesita": "formato-sdproj",
+      "necesita": "ovis-en-proyecto",
       "captura": "front-panel/menu-file.png"
     },
     {
@@ -2730,7 +2736,7 @@
       "etiqueta": "Close Project",
       "estado": "todo",
       "labview": "Closes the project the VI belongs to.",
-      "necesita": "formato-sdproj",
+      "necesita": "ovis-en-proyecto",
       "captura": "front-panel/menu-file.png"
     },
     {
@@ -3322,18 +3328,16 @@
     {
       "id": "window.block-diagram.menu.file.create-project",
       "etiqueta": "Create Project...",
-      "estado": "todo",
-      "labview": "Creates a new project.",
-      "necesita": "formato-sdproj",
+      "estado": "built",
+      "prueba": "test/editor/create-project.test.mjs::File_Create_Project_and_Open_Project_are_built_rows_of_every_window_that_has_them,_and_so_is_Getting_Started's_button",
       "captura": "block-diagram/menu-file.png",
       "separado": true
     },
     {
       "id": "window.block-diagram.menu.file.open-project",
       "etiqueta": "Open Project...",
-      "estado": "todo",
-      "labview": "Opens a project.",
-      "necesita": "formato-sdproj",
+      "estado": "built",
+      "prueba": "test/editor/projects.test.mjs::Open_Project_asks_for_a_sdproj_in_the_last_folder_and_a_project_already_open_is_the_same_project",
       "captura": "block-diagram/menu-file.png"
     },
     {
@@ -3341,7 +3345,7 @@
       "etiqueta": "Save Project",
       "estado": "todo",
       "labview": "Saves the project the VI belongs to.",
-      "necesita": "formato-sdproj",
+      "necesita": "ovis-en-proyecto",
       "captura": "block-diagram/menu-file.png"
     },
     {
@@ -3349,7 +3353,7 @@
       "etiqueta": "Close Project",
       "estado": "todo",
       "labview": "Closes the project the VI belongs to.",
-      "necesita": "formato-sdproj",
+      "necesita": "ovis-en-proyecto",
       "captura": "block-diagram/menu-file.png"
     },
     {
@@ -26408,9 +26412,8 @@
     {
       "id": "window.getting-started.create-project",
       "etiqueta": "Create Project",
-      "estado": "todo",
-      "labview": "Opens the Create Project dialog to start a new project from a template.",
-      "necesita": "formato-sdproj",
+      "estado": "built",
+      "prueba": "test/editor/create-project.test.mjs::File_Create_Project_and_Open_Project_are_built_rows_of_every_window_that_has_them,_and_so_is_Getting_Started's_button",
       "captura": "getting-started/window.png"
     },
     {
@@ -26470,18 +26473,16 @@
     {
       "id": "window.getting-started.menu.file.create-project",
       "etiqueta": "Create Project...",
-      "estado": "todo",
-      "labview": "Opens the Create Project dialog.",
-      "necesita": "formato-sdproj",
+      "estado": "built",
+      "prueba": "test/editor/create-project.test.mjs::File_Create_Project_and_Open_Project_are_built_rows_of_every_window_that_has_them,_and_so_is_Getting_Started's_button",
       "captura": "getting-started/menu_File.png",
       "separado": true
     },
     {
       "id": "window.getting-started.menu.file.open-project",
       "etiqueta": "Open Project...",
-      "estado": "todo",
-      "labview": "Opens a project.",
-      "necesita": "formato-sdproj",
+      "estado": "built",
+      "prueba": "test/editor/projects.test.mjs::Open_Project_asks_for_a_sdproj_in_the_last_folder_and_a_project_already_open_is_the_same_project",
       "captura": "getting-started/menu_File.png"
     },
     {
@@ -32236,30 +32237,28 @@
     {
       "id": "window.polymorphic-ovi.menu.file.create-project",
       "etiqueta": "Create Project...",
-      "estado": "todo",
-      "labview": "Creates a new project.",
-      "necesita": "formato-sdproj"
+      "estado": "built",
+      "prueba": "test/editor/create-project.test.mjs::File_Create_Project_and_Open_Project_are_built_rows_of_every_window_that_has_them,_and_so_is_Getting_Started's_button"
     },
     {
       "id": "window.polymorphic-ovi.menu.file.open-project",
       "etiqueta": "Open Project...",
-      "estado": "todo",
-      "labview": "Opens a project.",
-      "necesita": "formato-sdproj"
+      "estado": "built",
+      "prueba": "test/editor/projects.test.mjs::Open_Project_asks_for_a_sdproj_in_the_last_folder_and_a_project_already_open_is_the_same_project"
     },
     {
       "id": "window.polymorphic-ovi.menu.file.save-project",
       "etiqueta": "Save Project",
       "estado": "todo",
       "labview": "Saves the project the VI belongs to.",
-      "necesita": "formato-sdproj"
+      "necesita": "ovis-en-proyecto"
     },
     {
       "id": "window.polymorphic-ovi.menu.file.close-project",
       "etiqueta": "Close Project",
       "estado": "todo",
       "labview": "Closes the project the VI belongs to.",
-      "necesita": "formato-sdproj"
+      "necesita": "ovis-en-proyecto"
     },
     {
       "id": "window.polymorphic-ovi.menu.file.page-setup",
@@ -32593,6 +32592,253 @@
       "labview": "Opens the help of this dialog.",
       "necesita": "ayuda-contextual",
       "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.create-project",
+      "etiqueta": "Create Project",
+      "estado": "built",
+      "prueba": "test/editor/create-project.test.mjs::the_Create_Project_dialog_lists_LabVIEW's_tree_and_its_17_rows_and_opens_on_Blank_Project",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.tree.all",
+      "etiqueta": "All",
+      "estado": "built",
+      "prueba": "test/editor/create-project.test.mjs::the_Create_Project_dialog_lists_LabVIEW's_tree_and_its_17_rows_and_opens_on_Blank_Project",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.tree.templates",
+      "etiqueta": "Templates",
+      "estado": "todo",
+      "labview": "Lists only the starting points of the kind Templates.",
+      "necesita": "filtros-crear-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.tree.sample-projects",
+      "etiqueta": "Sample Projects",
+      "estado": "todo",
+      "labview": "Lists only the starting points of the kind Sample Projects.",
+      "necesita": "filtros-crear-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.tree.desktop",
+      "etiqueta": "Desktop",
+      "estado": "todo",
+      "labview": "Lists only the starting points of the kind Desktop.",
+      "necesita": "filtros-crear-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.tree.real-time",
+      "etiqueta": "Real-Time",
+      "estado": "todo",
+      "labview": "Lists only the starting points of the kind Real-Time.",
+      "necesita": "filtros-crear-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.blank-project",
+      "etiqueta": "Blank Project",
+      "estado": "built",
+      "prueba": "test/editor/create-project.test.mjs::only_Blank_Project_and_Blank_OVI_are_built_and_the_other_rows_explain_themselves_without_taking_the_selection",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.blank-ovi",
+      "etiqueta": "Blank OVI",
+      "estado": "built",
+      "prueba": "test/editor/create-project.test.mjs::only_Blank_Project_and_Blank_OVI_are_built_and_the_other_rows_explain_themselves_without_taking_the_selection",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.my-first-daq-measurement",
+      "etiqueta": "My First DAQ Measurement",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.simple-state-machine",
+      "etiqueta": "Simple State Machine",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.simple-state-machine-utf-8",
+      "etiqueta": "Simple State Machine (UTF-8)",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.channeled-message-handler",
+      "etiqueta": "Channeled Message Handler",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.queued-message-handler",
+      "etiqueta": "Queued Message Handler",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.queued-message-handler-utf-8",
+      "etiqueta": "Queued Message Handler (UTF-8)",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.actor-framework",
+      "etiqueta": "Actor Framework",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.finite-measurement",
+      "etiqueta": "Finite Measurement",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.continuous-measurement-and-logging",
+      "etiqueta": "Continuous Measurement and Logging",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.feedback-evaporative-cooler",
+      "etiqueta": "Feedback Evaporative Cooler",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.instrument-driver-project",
+      "etiqueta": "Instrument Driver Project",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.continuous-measurement-and-logging-ni-daqmx",
+      "etiqueta": "Continuous Measurement and Logging (NI-DAQmx)",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.finite-measurement-ni-daqmx",
+      "etiqueta": "Finite Measurement (NI-DAQmx)",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.real-time-control-ni-daqmx",
+      "etiqueta": "Solder Real-Time Control (NI-DAQmx)",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.list.real-time-waveform-acquisition-ni-daqmx",
+      "etiqueta": "Solder Real-Time Waveform Acquisition and Logging (NI-DAQmx)",
+      "estado": "todo",
+      "labview": "Creates a project from this template or sample.",
+      "necesita": "plantillas-de-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.keyword",
+      "etiqueta": "Keyword",
+      "estado": "todo",
+      "labview": "A box under Additional Search, greyed in the captures, to search the list by a word.",
+      "necesita": "filtros-crear-proyecto",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.finish",
+      "etiqueta": "Finish",
+      "estado": "built",
+      "prueba": "test/editor/create-project.test.mjs::Finish_creates_what_is_selected_and_a_project_asks_the_Open_Items_question_first_when_OVIs_are_open",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.cancel",
+      "etiqueta": "Cancel",
+      "estado": "built",
+      "prueba": "test/editor/create-project.test.mjs::Finish_creates_what_is_selected_and_a_project_asks_the_Open_Items_question_first_when_OVIs_are_open",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.create-project.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of this dialog.",
+      "necesita": "ayuda-contextual",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.open-items",
+      "etiqueta": "Open Items",
+      "estado": "built",
+      "prueba": "test/editor/create-project.test.mjs::Finish_creates_what_is_selected_and_a_project_asks_the_Open_Items_question_first_when_OVIs_are_open",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.open-items.do-not-show-again",
+      "etiqueta": "Do not show this dialog again.",
+      "estado": "todo",
+      "labview": "A box: with it checked, the dialog is not asked again.",
+      "necesita": "recordar-avisos",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.open-items.add",
+      "etiqueta": "Add",
+      "estado": "todo",
+      "labview": "The default button: what it does was not tried.",
+      "necesita": "open-items-add",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.open-items.dont-add",
+      "etiqueta": "Don't Add",
+      "estado": "built",
+      "prueba": "test/editor/create-project.test.mjs::Finish_creates_what_is_selected_and_a_project_asks_the_Open_Items_question_first_when_OVIs_are_open",
+      "captura": "project-explorer/s3-b-dialog.png"
+    },
+    {
+      "id": "dialog.open-items.cancel",
+      "etiqueta": "Cancel",
+      "estado": "built",
+      "prueba": "test/editor/create-project.test.mjs::Finish_creates_what_is_selected_and_a_project_asks_the_Open_Items_question_first_when_OVIs_are_open",
+      "captura": "project-explorer/s3-b-dialog.png"
     },
     {
       "id": "context.call-library",

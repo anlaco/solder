@@ -4,6 +4,8 @@
 // none of it needs a browser or Electron.
 
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { test } from "node:test";
 
 import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
@@ -13,7 +15,7 @@ import * as Project from "../../core/model/project.mjs";
 import { PROJECT_WINDOW_SIZE, projectWindowTitle, untitledProjectName } from "../../editor/electron/project-window.mjs";
 import * as State from "../../editor/src/project-explorer/project-explorer-state.mjs";
 import * as View from "../../editor/src/project-explorer/project-explorer-view.mjs";
-import { INV } from "../helpers.mjs";
+import { INV, RAIZ } from "../helpers.mjs";
 
 const measure = (text) => text.length * 6;
 const windowSize = { width: 374, height: 401 };
@@ -124,9 +126,9 @@ test("the menu bar has LabVIEW's eight titles and the File rows run the window's
   assert.deepEqual(rowsOf("tools"), ["Measurement & Automation Explorer...", "Instrumentation", "| Real-Time Module", "| Compare", "Merge", "Profile", "Security", "User Name...", "| Build Application (EXE) from OVI...", "Source Control", "OVI Analyzer", "| LLB Manager...", "Import", "Shared Variable", "Distributed System Manager", "| Create Data Link...", "Find OVIs on Disk...", "Prepare Example OVIs for NI Example Finder...", "Remote Panel Connection Manager...", "Web Publishing Tool...", "Control and Simulation", "Find Solder Add-ons...", "Hobbyist", "UTF-8 Migration Tool...", "| Advanced", "Options..."]);
   assert.deepEqual(rowsOf("window"), ["Show Other Project View Ctrl+E", "Show Project", "| Tile Left and Right Ctrl+T", "Tile Up and Down", "Full Size Ctrl+/", "| All Windows... Ctrl+Shift+W"]);
   assert.deepEqual(rowsOf("help"), ["Show Context Help Ctrl+H", "Lock Context Help Ctrl+Shift+L", "| Solder Help... Ctrl+?", "Explain Error...", "Help for This OVI", "| Find Examples...", "Find Instrument Drivers...", "Web Resources...", "| Hobbyist", "| Activate Solder Components...", "Activate Add-ons...", "Check for Updates", "Customer Experience Improvement Program...", "| Patents...", "About Solder..."]);
-  // What is built: the rows of File that open or close windows, as in the other windows; the rest is a hole with its reason.
+  // What is built: the rows of File that open, create, save or close windows and projects; the rest is a hole with its reason.
   const built = INV.hijos("window.project-explorer.menu.file").filter((entry) => entry.estado === "built").map((entry) => State.MENU_COMMANDS[entry.id.split(".").pop()]);
-  assert.deepEqual(built, ["newOvi", "newDialog", "open", "close", "exit"]);
+  assert.deepEqual(built, ["newOvi", "newDialog", "open", "close", "createProject", "openProject", "saveProject", "close", "exit"]);
   assert.match(INV.explicacion(INV.entrada("window.project-explorer.menu.file.save")).solder, /Missing/);
 });
 
@@ -162,7 +164,8 @@ test("the toolbar has LabVIEW's buttons in the measured order, each with its too
   // Greyed because of the selection (My Computer: nothing to cut, copy or remove, nothing copied, no conflicts); every other one is a hole.
   const disabled = buttons.filter((button) => button.classes.includes("desactivado")).map((button) => button.title);
   assert.deepEqual(disabled, ["Cut", "Copy", "Paste", "Remove From Project", "Resolve Conflicts..."]);
-  assert.ok(buttons.every((button) => button.classes.includes("hueco")), "none of the buttons is built yet");
+  // Open Project and Save Project are built; every other button is a hole.
+  assert.deepEqual(buttons.filter((button) => !button.classes.includes("hueco")).map((button) => button.title), ["Open Project", "Save Project"]);
   // With a file selected, Cut, Copy and Remove From Project are not greyed by the selection (they are still not built).
   const onFile = State.select(State.fromProject(projectWithFiles(), "P1.sdproj"), "project/0/3");
   assert.deepEqual([...State.disabledButtons(onFile)].sort(), ["paste", "resolve-conflicts"]);
@@ -261,4 +264,22 @@ test("the menu bar titles are drawn as done, not as holes", () => {
   assert.equal(INV.entrada("window.project-explorer.menu.tools").estado, "built");
   // Their rows keep their own state: Tools ▸ Options... is still not built.
   assert.equal(INV.resolver("window.project-explorer.menu.tools.options").estado, "todo");
+});
+
+test("the Project Explorer runs the project commands from its menus, toolbar and the root's right-click menu", () => {
+  const rowsBuilt = (menu) => INV.hijos(`window.project-explorer.menu.${menu}`).filter((entry) => entry.estado === "built" && State.MENU_COMMANDS[entry.id.split(".").pop()]).map((entry) => `${entry.etiqueta} -> ${State.MENU_COMMANDS[entry.id.split(".").pop()]}`);
+  assert.deepEqual(rowsBuilt("project"), ["Create Project... -> createProject", "Open Project... -> openProject", "Save Project -> saveProject", "Close Project -> close"]);
+  assert.deepEqual(rowsBuilt("file").slice(-5, -1), ["Create Project... -> createProject", "Open Project... -> openProject", "Save Project -> saveProject", "Close Project -> close"]);
+  // The toolbar's Open Project and Save Project, and Save in the right-click menu of the root, run the same commands.
+  assert.deepEqual(State.TOOLBAR_COMMANDS, { "open-project": "openProject", "save-project": "saveProject" });
+  for (const name of Object.keys(State.TOOLBAR_COMMANDS)) assert.equal(INV.entrada(`window.project-explorer.toolbar.project.${name}`).estado, "built");
+  assert.deepEqual(State.CONTEXT_COMMANDS, { "context.project-explorer.project.save": "saveProject" });
+  assert.equal(INV.entrada("context.project-explorer.project.save").estado, "built");
+  assert.equal(INV.entrada("context.project-explorer.project.save-as").estado, "todo", "Save As... of the root is not built");
+  // The page runs each command through the main process, and the root of the tree takes the name a Save gives.
+  const page = readFileSync(path.join(RAIZ, "editor/src/project-explorer/project-explorer.mjs"), "utf8");
+  for (const call of ["solder?.project.create()", "solder?.project.open()", "solder?.project.save()", "solder?.project.close()", "solder?.project.onRenamed("]) assert.ok(page.includes(call), call);
+  assert.equal(State.visibleRows(State.rename(blankState(), "P1.sdproj"))[0].label, "Project: P1.sdproj");
+  // The other holes of File and Project keep their reason: Save As... and Add To Project are still waiting for the project's flows.
+  assert.equal(INV.entrada("window.project-explorer.menu.file.save-as").necesita, "flujos-del-proyecto");
 });

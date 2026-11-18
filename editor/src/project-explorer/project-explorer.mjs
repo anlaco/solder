@@ -1,6 +1,6 @@
 // The Project Explorer window's page (DT-099 §6): it takes the project the main process gives it (or a blank one), paints
-// it with project-explorer-view.mjs and turns clicks and keys into project-explorer-state.mjs. In this stage the window
-// only reacts inside itself (select, expand and collapse, menus); creating, opening and saving a project are the next one.
+// it with project-explorer-view.mjs and turns clicks and keys into project-explorer-state.mjs. What touches windows and
+// files (creating, opening, saving and closing a project, the Window menu's list) is asked of the main process.
 
 import { ProjectFileError, blankProject, readProject } from "../../../core/model/project.mjs";
 import { atajo, cargarInventario, esHueco, pulsa, ultimo } from "../common/labview-inventory.mjs";
@@ -8,6 +8,7 @@ import { installPageFont } from "../common/page-font.mjs";
 import * as E from "../window/window-state.mjs";
 import * as State from "./project-explorer-state.mjs";
 import { PREFIX, projectExplorerWindow } from "./project-explorer-view.mjs";
+import { WINDOW_MENU, listedIndexOf } from "./window-menu.mjs";
 
 const measure = installPageFont();
 const windowSize = () => ({ width: innerWidth, height: innerHeight });
@@ -40,6 +41,12 @@ const show = (newState) => {
   paint();
 };
 
+/** The window list the Window menu shows, as the main process gave it when the menu was opened. */
+const openBarMenu = async (title) => {
+  const windowRows = title.dataset.id === WINDOW_MENU ? ((await solder?.project.windowList()) ?? []) : [];
+  show(E.abrirMenuBarra({ ...state, abierta: null, windowRows }, inventory, title.dataset.id, anchorBelow(title)));
+};
+
 const anchorBelow = (element) => {
   const box = element.getBoundingClientRect();
   return { x: box.left, y: box.bottom };
@@ -51,24 +58,36 @@ const explain = (id, element) => {
   return show(E.clic({ ...state, menuBarra: null }, inventory, id, { x: box.left, y: box.bottom + 2 }));
 };
 
-/** What the built rows of the File menu do: each asks the main process, which owns the windows. */
+/** What the built rows of the menus and the toolbar do: each asks the main process, which owns the windows. */
 const MENU_ACTIONS = {
   newOvi: () => solder?.nuevoOVI(),
   newDialog: () => solder?.nuevo(),
   open: () => solder?.abrir(),
+  createProject: () => solder?.project.create(),
+  openProject: () => solder?.project.open(),
+  saveProject: () => solder?.project.save(),
   close: () => solder?.project.close(),
   exit: () => solder?.salir(),
 };
 
 function runMenuCommand(id) {
-  if (id.startsWith("context.")) return show(State.runContextCommand(state, id));
+  const contextCommand = State.CONTEXT_COMMANDS[id];
+  if (id.startsWith("context.") && !contextCommand) return show(State.runContextCommand(state, id));
   show({ ...state, menuBarra: null });
-  MENU_ACTIONS[State.MENU_COMMANDS[ultimo(id)]]?.();
+  MENU_ACTIONS[contextCommand ?? State.MENU_COMMANDS[ultimo(id)]]?.();
+}
+
+/** A row of the list of windows in the Window menu: its window comes to the front. */
+function activateListedWindow(row) {
+  const listed = state.windowRows[listedIndexOf(row.dataset.id)];
+  show({ ...state, menuBarra: null });
+  if (listed) solder?.project.activateWindow(listed.key);
 }
 
 function clickMenuRow(row) {
   const id = row.dataset.id;
   if (row.classList.contains("desactivado")) return;
+  if (listedIndexOf(id) >= 0) return activateListedWindow(row);
   if (inventory.tieneContenido(id)) return show(State.openSubmenu(state, id));
   if (!esHueco(inventory.resolver(id))) return runMenuCommand(id);
   explain(id, row);
@@ -84,6 +103,8 @@ function clickControl(target) {
   if (!control || control.classList.contains("desactivado")) return;
   const tab = control.dataset.tab;
   if (tab && !esHueco(inventory.resolver(control.dataset.id))) return show(State.setTab(state, tab));
+  const toolbarCommand = control.dataset.id.startsWith(`${PREFIX}.toolbar.`) && !esHueco(inventory.resolver(control.dataset.id)) && State.TOOLBAR_COMMANDS[ultimo(control.dataset.id)];
+  if (toolbarCommand) return MENU_ACTIONS[toolbarCommand]?.();
   if (esHueco(inventory.resolver(control.dataset.id) ?? { estado: "todo" })) explain(control.dataset.id, control);
 }
 
@@ -92,7 +113,7 @@ document.addEventListener("click", (event) => {
   const menuRow = state.menuBarra && event.target.closest(".item-menu");
   if (menuRow) return clickMenuRow(menuRow);
   const title = event.target.closest(".menu");
-  if (title) return show(E.abrirMenuBarra({ ...state, abierta: null }, inventory, title.dataset.id, anchorBelow(title)));
+  if (title) return openBarMenu(title);
   const wasOpen = state.abierta || state.menuBarra;
   state = { ...state, abierta: null, menuBarra: null };
   clickControl(event.target);
@@ -111,7 +132,7 @@ document.addEventListener("mouseover", (event) => {
   if (!state.menuBarra) return;
   const title = event.target.closest(".menu");
   if (title && title.dataset.id !== state.menuBarra.id && inventory.tieneContenido(title.dataset.id)) {
-    return show(E.abrirMenuBarra({ ...state, menuBarra: null }, inventory, title.dataset.id, anchorBelow(title)));
+    return openBarMenu(title);
   }
   const row = event.target.closest(".item-menu");
   if (row && !row.classList.contains("desactivado")) {
@@ -132,4 +153,5 @@ document.addEventListener("keydown", (event) => {
   runMenuCommand(entry.id);
 });
 
+solder?.project.onRenamed((name) => show(State.rename(state, name)));
 if (state) paint();

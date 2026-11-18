@@ -559,6 +559,8 @@ const ORDENES_MENU = {
   open: abrirOVI,
   "new-vi": () => window.solder?.nuevoOVI(),
   new: () => window.solder?.nuevo(),
+  "create-project": () => window.solder?.project.create(),
+  "open-project": () => window.solder?.project.open(),
   close: () => (confirmarEscritura(), window.solder?.cerrarVentana()),
   "close-all": () => (confirmarEscritura(), window.solder?.cerrarTodos()),
   exit: () => (confirmarEscritura(), window.solder?.salir()),

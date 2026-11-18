@@ -34,8 +34,8 @@
 | Instruments and communication | 14 / 30 (47 %) | `█████░░░░░` |
 | Functions palette | 214 / 563 (38 %) | `████░░░░░░` |
 | Controls palette | 34 / 92 (37 %) | `████░░░░░░` |
-| Windows and dialogs | 148 / 512 (29 %) | `███░░░░░░░` |
-| Right-click menus | 644 / 2417 (27 %) | `███░░░░░░░` |
+| Windows and dialogs | 174 / 542 (32 %) | `███░░░░░░░` |
+| Right-click menus | 645 / 2417 (27 %) | `███░░░░░░░` |
 <!-- /coverage:summary -->
 
 ## Features
@@ -334,24 +334,26 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Window | Covered | |
 |--------|---------|---|
-| Project Explorer | 5 / 139 (4 %) | `░░░░░░░░░░` |
-| Front Panel | 27 / 73 (37 %) | `████░░░░░░` |
-| Block Diagram | 38 / 102 (37 %) | `████░░░░░░` |
+| Project Explorer | 15 / 139 (11 %) | `█░░░░░░░░░` |
+| Front Panel | 29 / 73 (40 %) | `████░░░░░░` |
+| Block Diagram | 40 / 102 (39 %) | `████░░░░░░` |
 | Debug Window | 10 / 18 (56 %) | `██████░░░░` |
 | Error list | 7 / 8 (88 %) | `█████████░` |
 | OVI Properties | 6 / 26 (23 %) | `██░░░░░░░░` |
 | Chart History Length | 2 / 3 (67 %) | `███████░░░` |
 | Configure Express OVI | 9 / 11 (82 %) | `████████░░` |
 | Enum Constant Properties | 10 / 15 (67 %) | `███████░░░` |
-| Getting Started | 5 / 51 (10 %) | `█░░░░░░░░░` |
-| Polymorphic OVI | 20 / 42 (48 %) | `█████░░░░░` |
+| Getting Started | 8 / 51 (16 %) | `██░░░░░░░░` |
+| Polymorphic OVI | 22 / 42 (52 %) | `█████░░░░░` |
 | Edit Instance Name | 2 / 3 (67 %) | `███████░░░` |
 | New | 5 / 12 (42 %) | `████░░░░░░` |
+| Create Project | 5 / 26 (19 %) | `██░░░░░░░░` |
+| Open Items | 2 / 4 (50 %) | `█████░░░░░` |
 | Call Library Function | 2 / 9 (22 %) | `██░░░░░░░░` |
 
 ### Right-click menus
 
 | Menus | Covered | |
 |-------|---------|---|
-| Every right-click menu captured | 644 / 2417 (27 %) | `███░░░░░░░` |
+| Every right-click menu captured | 645 / 2417 (27 %) | `███░░░░░░░` |
 <!-- /coverage:inventory -->

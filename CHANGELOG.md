@@ -18,6 +18,14 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   measured in LabVIEW. Rows select, expand and collapse, and Expand All and Collapse All work; what is not built yet is
   greyed and says why. Creating, opening and saving a project comes next.
 
+- Creating, opening, saving and closing projects (DT-099, stage a2): File ▸ Create Project... (also from Getting Started's
+  Create Project button) opens the Create Project dialog with LabVIEW's tree and its 17 rows; Blank Project opens a new
+  "Untitled Project N" and Blank OVI a new OVI, the other rows are greyed until templates exist. With OVIs open, a new
+  project first asks LabVIEW's "Open Items" question. Open Project... and File ▸ Open... open a `.sdproj` at the place
+  its file kept; Save Project asks "Name the Project" the first time; closing a project with changes asks "Save changes?
+  (Close Project)" and closing the last one leaves Getting Started minimized, as LabVIEW does. The Project Explorer's
+  Window menu lists the open windows. Several projects can be open at once.
+
 - An OVI can follow a type definition (DT-096): a control, indicator or constant stores the `.octl` file it follows and a
   copy of its definition, and the `.ovi` format goes to version 7 (older files open unchanged). An OVI whose `.octl` is
   missing opens with its copy but does not run, and the Error list says, as LabVIEW does, "Type Definition '<label>':

@@ -270,7 +270,8 @@ test("Save writes a sdp with its instances relative to it and the paths are reba
 
 test("File Open takes a sdp and Open Polymorphic OVI on a node opens its window", () => {
   const main = readFileSync(path.join(RAIZ, "editor/electron/main.mjs"), "utf8");
-  assert.match(main, /title: "Open", properties: \["openFile"\], filters: OVI_AND_POLYMORPHIC_FILTERS/, "the Open dialog lists .sdp");
+  assert.match(main, /title: "Open", properties: \["openFile"\], filters: OPEN_FILTERS/, "the Open dialog lists .sdp");
+  assert.match(main, /const OPEN_FILTERS = \[\{ name: "All Solder files", extensions: \[\.\.\.OVI_EXTENSIONS, POLYMORPHIC_EXTENSION, PROJECT_EXTENSION\]/);
   assert.match(main, /kind: kindOfFile\(filePath\)/, "a .sdp opens as a polymorphic OVI");
   assert.match(main, /const kindOfFile = \(filePath\) => \(isPolymorphicPath\(filePath\) \? ENTRY_KINDS\.POLYMORPHIC : ENTRY_KINDS\.OVI\)/);
   assert.match(main, /new-dialog:accept/);

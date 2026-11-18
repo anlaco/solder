@@ -103,14 +103,36 @@ contextBridge.exposeInMainWorld("solder", {
     /** The I/O process ended: `callback()`. A Run waiting for an instrument must fail. */
     alTerminar: (callback) => ipcRenderer.on("io:exited", () => callback()),
   },
-  /** The Project Explorer window (DT-099). */
+  /** Projects (DT-099): the Project Explorer window, and File ▸ Create Project... and Open Project... of any window. */
   project: {
     /** The project this window shows: `{ name, text }`; `text` is the `.sdproj`'s text, or null for a blank project. */
     start: () => ipcRenderer.invoke("project:init"),
-    /** File ▸ Close: closes this window. */
+    /** File ▸ Close Project, Ctrl+W: closes this window, asking first if the project has unsaved changes. */
     close: () => ipcRenderer.send("project:close"),
     /** The project could not be read: the main process says why and closes the window. */
     error: (message) => ipcRenderer.send("project:error", message),
+    /** File ▸ Save Project: asks where for a project never saved ("Name the Project"); true when it was saved. */
+    save: () => ipcRenderer.invoke("project:save"),
+    /** The project has become this text: the main process decides whether it has unsaved changes. */
+    changed: (text) => ipcRenderer.send("project:changed", text),
+    /** File ▸ Create Project...: the Create Project dialog, over this window. */
+    create: () => ipcRenderer.send("project:create"),
+    /** File ▸ Open Project...: "Select the Project to Open", then its Project Explorer. */
+    open: () => ipcRenderer.send("project:open"),
+    /** The rows of the Window menu's list, `{ key, kind, number, label, startsGroup }` (s3 Q6). */
+    windowList: () => ipcRenderer.invoke("project:window-list"),
+    /** A row of that list: its window comes to the front. */
+    activateWindow: (key) => ipcRenderer.send("project:activate-window", key),
+    /** The project was saved under a new name: `callback(name)`. */
+    onRenamed: (callback) => ipcRenderer.on("project:renamed", (_event, name) => callback(name)),
+  },
+  /** The Create Project dialog's own page. */
+  createProject: {
+    /** What it needs to know: `{ oviOpen }`, whether OVIs are open outside a project (the Open Items question). */
+    start: () => ipcRenderer.invoke("create-project:init"),
+    /** Finish with what was chosen ("blank-project" or "blank-ovi"). */
+    finish: (creation) => ipcRenderer.send("create-project:finish", creation),
+    cancel: () => ipcRenderer.send("create-project:cancel"),
   },
   /** Some OVI was saved, at this absolute path: `callback({ id, key })`. The callers of a saved subOVI must see its new connector. */
   alGuardar: (callback) => ipcRenderer.on("ovi:saved", (_event, saved) => callback(saved)),

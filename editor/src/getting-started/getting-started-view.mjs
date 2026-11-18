@@ -116,7 +116,7 @@ export function gettingStartedWindow(inv, state, measure, windowSize) {
     <header class="gs-header"><img src="src/getting-started/logo.svg" alt="" width="36" height="36"><span class="gs-product">Solder ${esc(releaseNumber(state.version))}</span><span class="gs-channel">${esc(channel)}</span></header>
     <div class="gs-panels">
       <section class="gs-panel gs-left">
-        <div class="gs-strip"><button class="gs-button${greyClass(inv, `${PREFIX}.create-project`)}" data-id="${PREFIX}.create-project">Create Project</button></div>
+        <div class="gs-strip"><button class="gs-button${greyClass(inv, `${PREFIX}.create-project`)}" data-id="${PREFIX}.create-project" data-action="create-project">Create Project</button></div>
         <div class="gs-body"><div class="gs-list-area"><div class="gs-templates-header">Recent Project Templates</div><div class="gs-template${greyClass(inv, `${PREFIX}.recent-project-templates.blank-project`)}" data-id="${PREFIX}.recent-project-templates.blank-project">Blank Project</div></div><div class="gs-track"></div></div>
       </section>
       <section class="gs-panel gs-middle">

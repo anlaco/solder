@@ -8,6 +8,7 @@ import { MENU_BAR_HEIGHT, menuBarHtml } from "../common/window-menu-bar.mjs";
 import * as V from "../window/window-view.mjs";
 import { TOOLBAR_ICONS, TREE_ICONS } from "./project-explorer-icons.mjs";
 import { PREFIX, ROW_KINDS, TABS, disabledButtons, visibleRows } from "./project-explorer-state.mjs";
+import { WINDOW_MENU, windowMenuVariant } from "./window-menu.mjs";
 
 export { MENU_BAR_HEIGHT, PREFIX };
 
@@ -48,7 +49,8 @@ function openMenu(inventory, state, measure, windowSize) {
   if (!state.menuBarra) return "";
   const { id, x, y, abierto } = state.menuBarra;
   const ticked = new Set(inventory.entradas.filter((entry) => entry.id.startsWith(`${id}.`) && entry.id.endsWith(`.${ARRANGE_BY_TICKED}`)).map((entry) => entry.id));
-  return D.menuContextual(inventory, { raiz: id, x, y, abierto }, ticked, measure, { conFlecha: rowsWithArrow(inventory, id) }, { ...windowSize, top: MENU_BAR_HEIGHT });
+  const listed = id === WINDOW_MENU ? windowMenuVariant(inventory, state.windowRows ?? []) : {};
+  return D.menuContextual(inventory, { raiz: id, x, y, abierto }, ticked, measure, { conFlecha: rowsWithArrow(inventory, id), ...listed }, { ...windowSize, top: MENU_BAR_HEIGHT });
 }
 
 function toolbarButton(inventory, disabled, name) {
