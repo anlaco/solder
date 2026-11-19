@@ -33,11 +33,20 @@ export function paneGlyph(g, cat, selectedCell = null) {
   return conectorPane(cells, selectedCell, patternOf(g));
 }
 
+/** The pane is drawn on a 32 × 32 grid, as LabVIEW's connector pane is. */
+const PANE_GRID = 32;
+
 /** The cell of `pattern` under a click on the pane, given the pane's on-screen box and the click position. */
 export function cellUnderPointer(paneBox, pointer, pattern) {
-  const scale = 32 / paneBox.width;
+  const scale = PANE_GRID / paneBox.width;
   return cellAt({ x: (pointer.clientX - paneBox.left) * scale, y: (pointer.clientY - paneBox.top) * scale }, pattern);
 }
+
+/** The cell of `pattern` at `place`, given as fractions of the pane's width and height (a click from the docked toolbar row, DT-101 §7). */
+export const cellAtFraction = (place, pattern) => cellAt({ x: place.x * PANE_GRID, y: place.y * PANE_GRID }, pattern);
+
+/** The cell a click on the pane picked: by where it fell in the docked toolbar row's copy, or on the page's own pane. */
+export const clickedCell = (paneElement, event, pattern) => (event.dockedAt ? cellAtFraction(event.dockedAt, pattern) : cellUnderPointer(paneElement.getBoundingClientRect(), event, pattern));
 
 // ——— Assigning ———
 

@@ -4,6 +4,7 @@
 
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { readFileSync } from "node:fs";
 import { oldSchoolToken } from "./old-school-theme.mjs";
 
 import * as CP from "../../editor/src/front-panel/connector-pane.mjs";
@@ -162,4 +163,19 @@ test("a pane with pattern 4833 is drawn with its 16 cells and a click finds LabV
   assert.equal(CP.cellUnderPointer({ left: 0, top: 0, width: 32 }, { clientX: 20, clientY: 20 }, 4833), 14);
   assert.deepEqual(cellAnchor(15, 4833), { side: "right", x: 32, y: 28.5 });
   assert.equal(CP.currentPatternRow(with4833), `${CP.MENU_ROOT}.patterns.pattern-34`, "4833 is the grid's 34th place");
+});
+
+// Docked (DT-101 §7), the pane is clicked in the toolbar row's copy while the page's own pane is hidden and has no box:
+// the click carries where it fell, as fractions of the pane, and picks the same cell as a click on the page's pane.
+test("a click on the docked toolbar row's pane picks the cell under it, as a click on the page's own pane", () => {
+  const hiddenPane = { getBoundingClientRect: () => ({ left: 0, top: 0, width: 0, height: 0 }) };
+  for (const [x, y, pattern] of [[3, 15, 4833], [20, 20, 4833], [4, 12, 4815], [28, 28, 4815]]) {
+    const onPage = CP.cellUnderPointer({ left: 0, top: 0, width: 32 }, { clientX: x, clientY: y }, pattern);
+    assert.equal(CP.clickedCell(hiddenPane, { dockedAt: { x: x / 32, y: y / 32 } }, pattern), onPage, `(${x}, ${y}) in ${pattern}`);
+  }
+  const source = (file) => readFileSync(new URL(`../../editor/${file}`, import.meta.url), "utf8");
+  assert.match(source("src/dock/dock-toolbar.mjs"), /toolbarClick\(id, "toolbar", placeInButton\(event\)\)/, "the row sends where the click fell");
+  assert.match(source("src/common/docked-page.mjs"), /defineProperty\(event, "dockedAt"/, "the page's event carries it");
+  assert.match(source("src/common/docked-page.mjs"), /click: \["mousedown", "mouseup", "click"\]/, "as a real press: the pane answers the mousedown");
+  assert.match(source("src/window/editor-window.mjs"), /CP\.clickedCell\(panelConector, ev,/, "the pane's handler reads it");
 });

@@ -1228,7 +1228,7 @@ function abrirSubOVI(nodeId) {
 function menuDelIcono(ev, elemento) {
   const esConector = elemento.dataset.id === `${prefijo}.connector-pane`;
   const raiz = esConector ? CP.MENU_ROOT : CP.ICON_MENU_ROOT;
-  const celda = esConector ? CP.cellUnderPointer(elemento.getBoundingClientRect(), ev, patternOf(grafo())) : null;
+  const celda = esConector ? CP.clickedCell(elemento, ev, patternOf(grafo())) : null;
   estado = { ...estado, paleta: null, abierta: null };
   if (conDiagrama) return cambiarDiagrama(CP.openMenu(dia, raiz, ev.clientX, ev.clientY, celda));
   cambiarPanel(CP.openMenu(pan, raiz, ev.clientX, ev.clientY, celda));
@@ -1645,7 +1645,7 @@ addEventListener("mousedown", (ev) => {
   const panelConector = conPanel && ev.target.closest(`[data-id="${prefijo}.connector-pane"]`);
   if (panelConector) {
     ev.preventDefault();
-    return cambiarPanel(CP.selectCell(pan, CP.cellUnderPointer(panelConector.getBoundingClientRect(), ev, patternOf(grafo()))));
+    return cambiarPanel(CP.selectCell(pan, CP.clickedCell(panelConector, ev, patternOf(grafo()))));
   }
   if (conPanel) return pulsarPanel(ev);
   const sobreDiagrama = objetivoEn(ev.clientX, ev.clientY);

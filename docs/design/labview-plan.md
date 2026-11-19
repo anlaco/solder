@@ -46,6 +46,12 @@ When the developer says "keep going":
       `sub.ovi.ovi` when `sub.ovi` was typed (`savePathFor` adds no second extension: the GTK dialog's filter is the
       suspect); a subOVI node's terminals named `control_1`/`indicator_1` instead of their labels (compare with what
       LabVIEW shows).
+      *Checked on 2026-11-19 (reports/2026-11-19-subovi-checks-0.14-editor.md, -subvi-checks-0.14-labview.md): Solder
+      neither fails nor loses anything in the four; fixed, a terminal with no label named `control_1` (LabVIEW shows
+      nothing) and, found on the way, the docked toolbar row's connector pane, which assigned no cell. Save As under Xvfb
+      wrote `sub2.ovi` (no double extension): tried again on the desktop in step 3. Left for the developer to decide: LabVIEW
+      refuses edits to a running subVI, breaks a caller (Bad linkage) when the connector changes unsaved, and offers Defer
+      Decision instead of Don't Save while a caller holds the subVI.*
    3. **Try the package by hand** (DT-057 §7): `npm run dist`, start the AppImage, and walk through what is new:
       create, save and reopen a project and edit its tree, a type definition, resizing controls in Plain and Old School,
       a caller with an open subOVI edited without saving, and the docked view (switch on and off with unsaved edits, tabs,

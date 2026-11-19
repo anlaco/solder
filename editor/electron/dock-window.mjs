@@ -98,10 +98,10 @@ export function createDock(options) {
     chrome.show(frame, page?.chromeModel ?? null, (id) => runOnActive(id, "menu"));
   }
 
-  /** A row of the native menu or a button of the toolbar row: run by the page it belongs to, as if clicked there. */
-  function runOnActive(id, from) {
+  /** A row of the native menu or a button of the toolbar row (`at`: where in it): run by the page it belongs to, as if clicked there. */
+  function runOnActive(id, from, at) {
     const page = activePage();
-    if (page && !page.isDestroyed()) page.webContents.send("dock:run", { id, from });
+    if (page && !page.isDestroyed()) page.webContents.send("dock:run", { id, from, at });
   }
 
   // The menus change through layout(): a menu bar put on or taken off changes the room the parts have.

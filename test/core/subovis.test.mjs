@@ -300,3 +300,22 @@ test("a subOVI keeps its state from one Run to the next while it stays loaded", 
     assert.deepEqual([recompiled.r1, recompiled.r2].sort(), runs[0], "an edited VI is another module and starts afresh");
   }
 });
+
+// Measured in LabVIEW 2026 Q3 (reports/2026-11-19-subvi-checks-0.14-labview.md §2): a subVI node's terminal is named
+// by its control's label, hidden or not, and by nothing when the label is empty. A control a hand-written file gave no
+// label showed its internal name ("control_1") on the caller's node.
+test("a subOVI node's terminal is named by its control's label, and by nothing when it has none", async () => {
+  const { leer } = await import("../../core/model/qvi-format.mjs");
+  const { connectorPorts } = await import("../../core/model/graph.mjs");
+  const subOVI = (label) => ({
+    solder: 8,
+    connector: { pattern: 4815, inputs: [{ name: "control_1", cell: 10 }], outputs: [] },
+    "front-panel": [{ name: "control_1", role: "control", type: "number", default: 0 }],
+    "block-diagram": { nodes: [{ name: "control_1", type: "control" }] },
+    layout: { diagram: { control_1: { x: 0, y: 0, ...(label !== undefined && { label: { text: label } }) } } },
+  });
+  const labelOf = (label) => connectorPorts({ g: leer(subOVI(label), CAT), cat: CAT }).in[0].label;
+  assert.equal(labelOf("gain"), "gain");
+  assert.equal(labelOf(""), "");
+  assert.equal(labelOf(undefined), "", "no internal name");
+});

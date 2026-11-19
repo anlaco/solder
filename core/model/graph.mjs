@@ -173,8 +173,8 @@ const connectorPortsCache = new WeakMap();
 
 /**
  * The ports of a call to an OVI: one input for each control on its connector and
- * one output for each indicator, named after the panel element and of its
- * type. An input that is not Required may stay unwired: the subOVI then uses
+ * one output for each indicator, named after the panel element, labelled with its
+ * label and of its type. An input that is not Required may stay unwired: the subOVI then uses
  * its control's default value (DT-045). A terminal is the name of a panel
  * element or `{ name, cell, connection }`; Recommended when not said.
  */
@@ -189,7 +189,9 @@ export function connectorPorts({ g, cat }) {
     const own = cat.puertos(node)[dir === "in" ? "out" : "in"][0];
     const type = dir === "in" ? resolved.salidas.get(`${node.id}.${own.name}`) : resolved.entradas.get(`${node.id}.${own.name}`);
     const defaultValue = dir === "in" ? node.config?.value : undefined;
-    return { name, label: node.label?.text ?? name, type, dir, cell, pattern, connection, nodo: node.id, defaultValue, ...(dir === "in" && !required ? { optional: true } : {}) };
+    // A control with no label shows no name on the caller's node, as LabVIEW shows none for an empty label (measured:
+    // reports/2026-11-19-subvi-checks-0.14-labview.md §2); its internal name is never the user's.
+    return { name, label: node.label?.text ?? "", type, dir, cell, pattern, connection, nodo: node.id, defaultValue, ...(dir === "in" && !required ? { optional: true } : {}) };
   };
   const pattern = connectorPattern(g.vi?.connector);
   const terminals = connectorTerminals(g.vi?.connector);
@@ -1114,7 +1116,11 @@ function polymorphicWireReason(g, cat, wire, outputTypes, expected) {
   const callee = cat.polymorphicOf?.(node);
   if (!callee) return null;
   const inputs = cat.puertos(node).in;
-  const labelOf = (portName) => inputs.find((port) => port.name === portName)?.label ?? portName;
+  // Solder's own words (DT-074 §5): a terminal with no label is named by the instance's terminal, so the reason still says where.
+  const labelOf = (portName) => {
+    const port = inputs.find((candidate) => candidate.name === portName);
+    return port?.label || port?.calleeName || portName;
+  };
   if (!isAutomatic(node, callee.polymorphic)) {
     const instance = callee.polymorphic.instances[selectedInstance(node, callee.polymorphic)];
     return `${DIFFERENT_TYPES_MESSAGE} The instance "${instance.menuName}" expects ${nombre(expected)} at "${labelOf(wire.a.puerto)}" and the wire carries ${nombre(outputTypes.get(`${wire.de.nodo}.${wire.de.puerto}`))}.`;

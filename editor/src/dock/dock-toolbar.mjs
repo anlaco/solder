@@ -15,15 +15,25 @@ layout.onToolbar((toolbar) => {
 
 const commandOf = (event) => event.target.closest("[data-id]")?.dataset.id;
 
+/**
+ * Where the click fell: in its button, as fractions of the button's width and height, which a button whose cells mean
+ * different things (the connector pane) needs, since the page's own button is hidden and has no box to measure; and
+ * across the row, `clientX`, where the page opens a menu the click asks for, just under the row.
+ */
+function placeInButton(event) {
+  const box = event.target.closest("[data-id]").getBoundingClientRect();
+  return { x: (event.clientX - box.left) / box.width, y: (event.clientY - box.top) / box.height, clientX: event.clientX };
+}
+
 document.addEventListener("click", (event) => {
   const id = commandOf(event);
-  if (id) layout.toolbarClick(id, "toolbar");
+  if (id) layout.toolbarClick(id, "toolbar", placeInButton(event));
 });
 
 document.addEventListener("contextmenu", (event) => {
   event.preventDefault();
   const id = commandOf(event);
-  if (id) layout.toolbarClick(id, "toolbar-context");
+  if (id) layout.toolbarClick(id, "toolbar-context", placeInButton(event));
 });
 
 layout.requestToolbar();

@@ -84,7 +84,7 @@ export function createLayoutManager(host) {
       page.chromeModel = model;
       dock.modelChanged();
     });
-    ipcMain.on("dock:toolbar-click", (_event, id, from) => dock.runOnActive(id, from));
+    ipcMain.on("dock:toolbar-click", (_event, id, from, at) => dock.runOnActive(id, from, at));
     ipcMain.on("dock:request-toolbar", () => dock.resendToolbar());
   }
 

@@ -152,12 +152,13 @@ contextBridge.exposeInMainWorld("solder", {
     toggleSplit: () => ipcRenderer.send("dock:toggle-split"),
     /** A docked page: its menus and toolbar `{ menus, toolbar }` for the docked window's own (DT-101 §7). */
     sendModel: (model) => ipcRenderer.send("dock:page-model", model),
-    /** A docked page: a row or button chosen in the docked window's menus or toolbar, `{ id, from }`. */
+    /** A docked page: a row or button chosen in the docked window's menus or toolbar, `{ id, from, at? }`. */
     onRun: (callback) => ipcRenderer.on("dock:run", (_event, command) => callback(command)),
     /** The toolbar row: the active page's toolbar to show, and a click on it. */
     onToolbar: (callback) => ipcRenderer.on("dock:toolbar", (_event, toolbar) => callback(toolbar)),
     requestToolbar: () => ipcRenderer.send("dock:request-toolbar"),
-    toolbarClick: (id, from) => ipcRenderer.send("dock:toolbar-click", id, from),
+    /** `at`: where in the button the click fell, as fractions of its size (the connector pane's cells). */
+    toolbarClick: (id, from, at) => ipcRenderer.send("dock:toolbar-click", id, from, at),
   },
   /** The Create Project dialog's own page. */
   createProject: {

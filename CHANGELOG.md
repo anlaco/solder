@@ -22,6 +22,12 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   live, keeping unsaved edits and undo, and is remembered. LabVIEW's floating windows stay the default: "if you come from LabVIEW, use the
   floating windows; if you start from scratch, use the docked view".
 
+- Fix: in the docked view, the connector pane of the toolbar row picks the cell that is clicked, so a control can be
+  given a terminal, and its right-click menu acts on that cell; before, a click there assigned nothing.
+
+- Fix: a subOVI node's terminal whose control has no label shows no name, as LabVIEW shows none for an empty label,
+  instead of the control's internal name (`control_1`).
+
 - Fix (#20): a caller sees and runs an open subOVI as it is in memory, with its unsaved edits, as LabVIEW looks for a
   subVI in memory first (DT-045 §8). An edit to a subOVI redraws its open callers at once, and closing it without
   saving takes them back to the saved file.
