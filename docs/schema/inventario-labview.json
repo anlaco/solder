@@ -624,7 +624,7 @@
     },
     "ovis-en-proyecto": {
       "desc": "an OVI that belongs to a project: adding OVIs to a project, the \"on P.sdproj/My Computer\" windows and knowing which project an open OVI is in. Until then Save Project and Close Project of an OVI window have no project to act on",
-      "ref": "design/05-decisions.md DT-099, stage a3"
+      "ref": "design/05-decisions.md DT-099; design/labview-plan.md step 2b, stage (d)"
     },
     "plantillas-de-proyecto": {
       "desc": "project templates and sample projects for the Create Project dialog: Solder has none yet, only Blank Project and a blank OVI",
@@ -641,6 +641,26 @@
     "recordar-avisos": {
       "desc": "remembering a dialog's \"Do not show this dialog again.\" box between sessions: Solder keeps no per-dialog settings yet",
       "ref": "design/05-decisions.md DT-099 §6"
+    },
+    "nuevo-ovi-de-proyecto": {
+      "desc": "a new OVI that belongs to a project, made from the tree (an OVI that belongs to a project: stage d of DT-099)",
+      "ref": "design/05-decisions.md DT-099; design/labview-plan.md step 2b"
+    },
+    "renombrar-ovi-de-proyecto": {
+      "desc": "renaming an OVI item: LabVIEW renames the file on disk through \"Save the OVI As\" and its callers follow (stage d of DT-099)",
+      "ref": "design/05-decisions.md DT-099; design/labview-plan.md step 2b"
+    },
+    "hipervinculos-de-proyecto": {
+      "desc": "Hyperlink items: an address kept in the project as an item (not measured beyond its row)",
+      "ref": "design/05-decisions.md DT-099; design/labview-plan.md step 2b"
+    },
+    "carpetas-autopobladas": {
+      "desc": "auto-populating folders that read their files from the disk, converting a virtual folder to one and stopping it (stage c of DT-099)",
+      "ref": "design/05-decisions.md DT-099; design/labview-plan.md step 2b"
+    },
+    "avisos-que-no-se-repiten": {
+      "desc": "the \"Do not show this dialog again.\" checkbox of a dialog, which would keep the choice (the page does not store it yet)",
+      "ref": "design/05-decisions.md DT-099; design/labview-plan.md step 2b"
     }
   },
   "entradas": [
@@ -910,9 +930,8 @@
     {
       "id": "window.project-explorer.menu.edit.remove-from-project",
       "etiqueta": "Remove From Project",
-      "estado": "todo",
-      "labview": "Takes the selected items out of the project without deleting their files.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::Remove_From_Project_asks_first,_removes_the_item_with_its_items_and_selects_the_next_row"
     },
     {
       "id": "window.project-explorer.menu.view",
@@ -1589,9 +1608,8 @@
     {
       "id": "window.project-explorer.toolbar.standard",
       "etiqueta": "Standard",
-      "estado": "todo",
-      "labview": "Standard toolbar: new, open, save and clipboard.",
-      "necesita": "flujos-del-proyecto",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::Remove_From_Project_asks_first,_removes_the_item_with_its_items_and_selects_the_next_row",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -1646,9 +1664,8 @@
     {
       "id": "window.project-explorer.toolbar.standard.remove-from-project",
       "etiqueta": "Remove From Project",
-      "estado": "todo",
-      "labview": "Removes the selection from the project without going through the clipboard. It does not delete the files from disk.",
-      "necesita": "flujos-del-proyecto",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::Remove_From_Project_asks_first,_removes_the_item_with_its_items_and_selects_the_next_row",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -1981,23 +1998,21 @@
     {
       "id": "context.project-explorer.my-computer.new",
       "etiqueta": "New",
-      "estado": "todo",
-      "labview": "Creates a new item in the project.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::the_right-click_menus_of_virtual_and_auto-populating_folders_and_of_the_items_inside_them_are_declared_with_their_state"
     },
     {
       "id": "context.project-explorer.my-computer.new.vi",
       "etiqueta": "OVI",
       "estado": "todo",
       "labview": "Creates a new blank VI under the target.",
-      "necesita": "flujos-del-proyecto"
+      "necesita": "nuevo-ovi-de-proyecto"
     },
     {
       "id": "context.project-explorer.my-computer.new.virtual-folder",
       "etiqueta": "Virtual Folder",
-      "estado": "todo",
-      "labview": "Creates a folder that exists only in the project.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::New_Virtual_Folder_opens_an_in-place_edit_that_Enter_commits_and_Escape_cancels"
     },
     {
       "id": "context.project-explorer.my-computer.new.type-definition",
@@ -2110,37 +2125,33 @@
     {
       "id": "context.project-explorer.my-computer.add",
       "etiqueta": "Add",
-      "estado": "todo",
-      "labview": "Adds an existing file or folder to the project.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::the_right-click_menus_of_virtual_and_auto-populating_folders_and_of_the_items_inside_them_are_declared_with_their_state"
     },
     {
       "id": "context.project-explorer.my-computer.add.file",
       "etiqueta": "File...",
-      "estado": "todo",
-      "labview": "Adds a file to the project.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::Add_File,_Folder_(Snapshot)_and_Folder_(Auto-populating)_put_the_items_into_the_target_and_list_the_refused_files"
     },
     {
       "id": "context.project-explorer.my-computer.add.folder-snapshot",
       "etiqueta": "Folder (Snapshot)...",
-      "estado": "todo",
-      "labview": "Adds the files of a folder as they are now, in a virtual folder.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::Add_File,_Folder_(Snapshot)_and_Folder_(Auto-populating)_put_the_items_into_the_target_and_list_the_refused_files"
     },
     {
       "id": "context.project-explorer.my-computer.add.folder-auto-populating",
       "etiqueta": "Folder (Auto-populating)...",
-      "estado": "todo",
-      "labview": "Adds a folder whose files the project follows as they appear on disk.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::Add_File,_Folder_(Snapshot)_and_Folder_(Auto-populating)_put_the_items_into_the_target_and_list_the_refused_files"
     },
     {
       "id": "context.project-explorer.my-computer.add.hyperlink",
       "etiqueta": "Hyperlink...",
       "estado": "todo",
       "labview": "Adds a link to a web page.",
-      "necesita": "flujos-del-proyecto"
+      "necesita": "hipervinculos-de-proyecto"
     },
     {
       "id": "context.project-explorer.my-computer.trace-execution",
@@ -2337,17 +2348,16 @@
     {
       "id": "context.project-explorer.ovi-item.remove-from-project",
       "etiqueta": "Remove from Project",
-      "estado": "todo",
-      "labview": "Remove from Project: a row of LabVIEW's right-click menu of OVI item in the Project Explorer; what it does was not captured.",
-      "necesita": "flujos-del-proyecto",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::Remove_From_Project_asks_first,_removes_the_item_with_its_items_and_selects_the_next_row",
       "separado": true
     },
     {
       "id": "context.project-explorer.ovi-item.rename",
       "etiqueta": "Rename...",
       "estado": "todo",
-      "labview": "Renames the item.",
-      "necesita": "flujos-del-proyecto",
+      "labview": "Renames the item: a file dialog \"Save the VI (name) As\" renames the file on disk, and the item's name and path follow (measured: s4).",
+      "necesita": "renombrar-ovi-de-proyecto",
       "atajo": "F2"
     },
     {
@@ -2412,13 +2422,374 @@
     {
       "id": "context.project-explorer.document-item.remove-from-project",
       "etiqueta": "Remove from Project",
-      "estado": "todo",
-      "labview": "Remove from Project: a row of LabVIEW's right-click menu of Document item in the Project Explorer; what it does was not captured.",
-      "necesita": "flujos-del-proyecto",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::Remove_From_Project_asks_first,_removes_the_item_with_its_items_and_selects_the_next_row",
       "separado": true
     },
     {
       "id": "context.project-explorer.document-item.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the selected item.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.virtual-folder",
+      "etiqueta": "Virtual folder",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::the_right-click_menus_of_virtual_and_auto-populating_folders_and_of_the_items_inside_them_are_declared_with_their_state"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.new",
+      "etiqueta": "New",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::the_right-click_menus_of_virtual_and_auto-populating_folders_and_of_the_items_inside_them_are_declared_with_their_state"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.new.vi",
+      "etiqueta": "OVI",
+      "estado": "todo",
+      "labview": "Creates a new blank VI in the folder.",
+      "necesita": "nuevo-ovi-de-proyecto"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.new.virtual-folder",
+      "etiqueta": "Virtual Folder",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::New_Virtual_Folder_opens_an_in-place_edit_that_Enter_commits_and_Escape_cancels"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.add",
+      "etiqueta": "Add",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::the_right-click_menus_of_virtual_and_auto-populating_folders_and_of_the_items_inside_them_are_declared_with_their_state"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.add.file",
+      "etiqueta": "File...",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::Add_File,_Folder_(Snapshot)_and_Folder_(Auto-populating)_put_the_items_into_the_target_and_list_the_refused_files"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.add.folder-snapshot",
+      "etiqueta": "Folder (Snapshot)...",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::Add_File,_Folder_(Snapshot)_and_Folder_(Auto-populating)_put_the_items_into_the_target_and_list_the_refused_files"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.add.folder-auto-populating",
+      "etiqueta": "Folder (Auto-populating)...",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::Add_File,_Folder_(Snapshot)_and_Folder_(Auto-populating)_put_the_items_into_the_target_and_list_the_refused_files"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.add.hyperlink",
+      "etiqueta": "Hyperlink...",
+      "estado": "todo",
+      "labview": "Adds an address as an item of the folder.",
+      "necesita": "hipervinculos-de-proyecto"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.convert-to-auto-populating-folder",
+      "etiqueta": "Convert to Auto-populating Folder...",
+      "estado": "todo",
+      "labview": "Makes the folder mirror a folder on disk.",
+      "necesita": "carpetas-autopobladas",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.convert-to-library",
+      "etiqueta": "Convert to Library",
+      "estado": "todo",
+      "labview": "Turns the folder into a library that owns its items.",
+      "necesita": "librerias",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.find-items-with-no-callers",
+      "etiqueta": "Find Items with No Callers",
+      "estado": "todo",
+      "labview": "Lists the items that no other item calls.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.items-incorrectly-claimed-by-a-library",
+      "etiqueta": "Items incorrectly claimed by a library",
+      "estado": "todo",
+      "labview": "Lists the items that a library claims although they are in another place.",
+      "necesita": "librerias"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.unit-tests",
+      "etiqueta": "Unit Tests",
+      "estado": "todo",
+      "labview": "Creates and runs the tests of the items.",
+      "necesita": "pruebas-unitarias",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.analyze-vis",
+      "etiqueta": "Analyze OVIs...",
+      "estado": "todo",
+      "labview": "Checks the OVIs under the folder against a set of rules.",
+      "necesita": "ejecutar-vi",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.find-project-items",
+      "etiqueta": "Find Project Items...",
+      "estado": "todo",
+      "labview": "Opens the search of the project's items by name.",
+      "necesita": "buscar-y-reemplazar",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.arrange-by",
+      "etiqueta": "Arrange By",
+      "estado": "todo",
+      "labview": "Chooses how the items of a folder are ordered: by name, type, path or by hand.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.arrange-by.name",
+      "etiqueta": "Name",
+      "estado": "todo",
+      "labview": "Orders the items by name.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.arrange-by.type",
+      "etiqueta": "Type",
+      "estado": "todo",
+      "labview": "Orders the items by type.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.arrange-by.path",
+      "etiqueta": "Path",
+      "estado": "todo",
+      "labview": "Orders the items by path.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.arrange-by.custom",
+      "etiqueta": "Custom",
+      "estado": "todo",
+      "labview": "Orders the items by hand.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.expand-all",
+      "etiqueta": "Expand All",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::the_right-click_menus_of_virtual_and_auto-populating_folders_and_of_the_items_inside_them_are_declared_with_their_state"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.collapse-all",
+      "etiqueta": "Collapse All",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::the_right-click_menus_of_virtual_and_auto-populating_folders_and_of_the_items_inside_them_are_declared_with_their_state"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.remove-from-project",
+      "etiqueta": "Remove from Project",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::Remove_From_Project_asks_first,_removes_the_item_with_its_items_and_selects_the_next_row",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.rename",
+      "etiqueta": "Rename...",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::F2_and_Rename_edit_a_virtual_folder_in_place_and_do_nothing_useful_on_the_other_rows",
+      "atajo": "F2"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder",
+      "etiqueta": "Auto-populating folder",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::the_right-click_menus_of_virtual_and_auto-populating_folders_and_of_the_items_inside_them_are_declared_with_their_state"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.new",
+      "etiqueta": "New",
+      "estado": "todo",
+      "labview": "Creates a new item in the folder (the rows of its submenu were not measured).",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder on disk.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.show-in-files-view",
+      "etiqueta": "Show in Files View",
+      "estado": "todo",
+      "labview": "Switches to the Files view with the folder selected.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.add",
+      "etiqueta": "Add",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::the_right-click_menus_of_virtual_and_auto-populating_folders_and_of_the_items_inside_them_are_declared_with_their_state",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.stop-auto-populating",
+      "etiqueta": "Stop Auto-populating",
+      "estado": "todo",
+      "labview": "Turns the folder into a virtual folder that keeps the files it has.",
+      "necesita": "carpetas-autopobladas",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.find-items-with-no-callers",
+      "etiqueta": "Find Items with No Callers",
+      "estado": "todo",
+      "labview": "Lists the items that no other item calls.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.items-incorrectly-claimed-by-a-library",
+      "etiqueta": "Items incorrectly claimed by a library",
+      "estado": "todo",
+      "labview": "Lists the items that a library claims although they are in another place.",
+      "necesita": "librerias"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.unit-tests",
+      "etiqueta": "Unit Tests",
+      "estado": "todo",
+      "labview": "Creates and runs the tests of the items.",
+      "necesita": "pruebas-unitarias",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.analyze-vis",
+      "etiqueta": "Analyze OVIs...",
+      "estado": "todo",
+      "labview": "Checks the OVIs under the folder against a set of rules.",
+      "necesita": "ejecutar-vi",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.find-project-items",
+      "etiqueta": "Find Project Items...",
+      "estado": "todo",
+      "labview": "Opens the search of the project's items by name.",
+      "necesita": "buscar-y-reemplazar",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.arrange-by",
+      "etiqueta": "Arrange By",
+      "estado": "todo",
+      "labview": "Chooses how the items of a folder are ordered: by name, type, path or by hand.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.arrange-by.name",
+      "etiqueta": "Name",
+      "estado": "todo",
+      "labview": "Orders the items by name.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.arrange-by.type",
+      "etiqueta": "Type",
+      "estado": "todo",
+      "labview": "Orders the items by type.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.arrange-by.path",
+      "etiqueta": "Path",
+      "estado": "todo",
+      "labview": "Orders the items by path.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.arrange-by.custom",
+      "etiqueta": "Custom",
+      "estado": "todo",
+      "labview": "Orders the items by hand.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.expand-all",
+      "etiqueta": "Expand All",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::the_right-click_menus_of_virtual_and_auto-populating_folders_and_of_the_items_inside_them_are_declared_with_their_state"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.collapse-all",
+      "etiqueta": "Collapse All",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::the_right-click_menus_of_virtual_and_auto-populating_folders_and_of_the_items_inside_them_are_declared_with_their_state"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-folder.remove-from-project",
+      "etiqueta": "Remove from Project",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::Remove_From_Project_asks_first,_removes_the_item_with_its_items_and_selects_the_next_row",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populated-file",
+      "etiqueta": "File in an auto-populating folder",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::the_right-click_menus_of_virtual_and_auto-populating_folders_and_of_the_items_inside_them_are_declared_with_their_state"
+    },
+    {
+      "id": "context.project-explorer.auto-populated-file.open",
+      "etiqueta": "Open",
+      "estado": "todo",
+      "labview": "Opens the item in its own windows.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.auto-populated-file.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder that holds the item's file.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.auto-populated-file.show-in-files-view",
+      "etiqueta": "Show in Files View",
+      "estado": "todo",
+      "labview": "Switches to the Files view with the item selected.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "context.project-explorer.auto-populated-file.print",
+      "etiqueta": "Print...",
+      "estado": "todo",
+      "labview": "Prints the documentation of the selected item.",
+      "necesita": "imprimir",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populated-file.find",
+      "etiqueta": "Find",
+      "estado": "todo",
+      "labview": "Finds where the item is used and what it uses.",
+      "necesita": "jerarquia-de-vis",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populated-file.properties",
       "etiqueta": "Properties",
       "estado": "todo",
       "labview": "Opens the properties of the selected item.",
@@ -33229,6 +33600,13 @@
       "labview": "Chooses the ActiveX type of a parameter (not measured).",
       "necesita": "clfn-activex",
       "captura": "clfn/e2.png"
+    },
+    {
+      "id": "window.project-explorer.dialog.remove-items.do-not-show-again",
+      "etiqueta": "Do not show this dialog again.",
+      "estado": "todo",
+      "labview": "Keeps the choice of the question \"Remove Items\" so that it is not asked again (measured: s2 Q6; it stays greyed here).",
+      "necesita": "avisos-que-no-se-repiten"
     }
   ]
 }

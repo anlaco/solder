@@ -1,11 +1,14 @@
 // The Project Explorer window's page (DT-099 §6): it takes the project the main process gives it (or a blank one), paints
 // it with project-explorer-view.mjs and turns clicks and keys into project-explorer-state.mjs. What touches windows and
-// files (creating, opening, saving and closing a project, the Window menu's list) is asked of the main process.
+// files (creating, opening, saving and closing a project, the Window menu's list, the dialogs that choose what to add) is
+// asked of the main process; the tree's own edits are project-explorer-edit.mjs's, run through project-explorer-commands.mjs.
 
 import { ProjectFileError, blankProject, readProject } from "../../../core/model/project.mjs";
 import { atajo, cargarInventario, esHueco, pulsa, ultimo } from "../common/labview-inventory.mjs";
 import { installPageFont } from "../common/page-font.mjs";
 import * as E from "../window/window-state.mjs";
+import * as Edit from "./project-explorer-edit.mjs";
+import { createTreeCommands } from "./project-explorer-commands.mjs";
 import * as State from "./project-explorer-state.mjs";
 import { PREFIX, projectExplorerWindow } from "./project-explorer-view.mjs";
 import { WINDOW_MENU, listedIndexOf } from "./window-menu.mjs";
@@ -33,6 +36,10 @@ try {
 
 const paint = () => {
   document.body.innerHTML = projectExplorerWindow(inventory, state, measure, windowSize());
+  // A name being edited in place opens with its text selected (measured: s2 Q2).
+  const textBox = document.querySelector(".pe-edit");
+  textBox?.focus();
+  textBox?.select();
 };
 
 /** Every change here is only of the window's own state, painted at once. */
@@ -40,6 +47,16 @@ const show = (newState) => {
   state = newState;
   paint();
 };
+
+/** Typing in the name being edited changes the state without painting, which would take the focus from the text box. */
+const update = (newState) => {
+  state = newState;
+};
+
+/** Where a shortcut's explanation opens, as for the shortcuts of the menus. */
+const explainHole = (id) => show({ ...state, menuBarra: null, abierta: { id, x: 40, y: 40 } });
+
+const treeCommands = createTreeCommands({ getState: () => state, show, update, explainHole, solder });
 
 /** The window list the Window menu shows, as the main process gave it when the menu was opened. */
 const openBarMenu = async (title) => {
@@ -68,6 +85,7 @@ const MENU_ACTIONS = {
   saveProject: () => solder?.project.save(),
   close: () => solder?.project.close(),
   exit: () => solder?.salir(),
+  ...Object.fromEntries(["addFile", "addSnapshotFolder", "addAutoPopulatingFolder", "newVirtualFolder", "rename", "removeFromProject"].map((name) => [name, () => treeCommands[name]()])),
 };
 
 function runMenuCommand(id) {
@@ -108,8 +126,20 @@ function clickControl(target) {
   if (esHueco(inventory.resolver(control.dataset.id) ?? { estado: "todo" })) explain(control.dataset.id, control);
 }
 
+/** The question of Remove From Project is modal: its buttons answer it, its checkbox (a hole) explains itself, and the rest of the window is shut. */
+function clickDialog(target) {
+  const answer = target.closest("[data-answer]")?.dataset.answer;
+  if (answer === "ok") return treeCommands.confirmRemove();
+  if (answer === "cancel") return treeCommands.cancelDialog();
+  const hole = target.closest("[data-id]");
+  if (hole) explain(hole.dataset.id, hole);
+}
+
 document.addEventListener("click", (event) => {
   if (event.target.closest(".explicacion")) return;
+  if (state.dialog) return clickDialog(event.target);
+  // A click anywhere but in the text box ends the edit of a name, keeping what was typed.
+  if (state.edit && !event.target.closest(".pe-edit")) treeCommands.commitEdit();
   const menuRow = state.menuBarra && event.target.closest(".item-menu");
   if (menuRow) return clickMenuRow(menuRow);
   const title = event.target.closest(".menu");
@@ -141,9 +171,49 @@ document.addEventListener("mouseover", (event) => {
   }
 });
 
-/** Ctrl+N, Ctrl+O, Ctrl+W and Ctrl+Q run the built rows; the shortcut of one that is not built shows its explanation (rule 53). */
+document.addEventListener("input", (event) => {
+  if (event.target.classList.contains("pe-edit")) treeCommands.typeEdit(event.target.value);
+});
+
+// Dragging a row: it is dropped only where it can go (My Computer or a virtual folder), which is what allows the drop.
+let draggedKey = null;
+document.addEventListener("dragstart", (event) => {
+  draggedKey = event.target.closest?.("[data-key]")?.dataset.key ?? null;
+  event.dataTransfer?.setData("text/plain", draggedKey ?? "");
+});
+document.addEventListener("dragover", (event) => {
+  const key = event.target.closest?.("[data-key]")?.dataset.key;
+  if (draggedKey && key && Edit.canDrop(state, draggedKey, key)) event.preventDefault();
+});
+document.addEventListener("drop", (event) => {
+  event.preventDefault();
+  const key = event.target.closest?.("[data-key]")?.dataset.key;
+  if (draggedKey && key) treeCommands.drop(draggedKey, key);
+  draggedKey = null;
+});
+document.addEventListener("dragend", () => {
+  draggedKey = null;
+});
+
+/** The keys of the open question (Enter is OK, the default button; Escape cancels) and of a name being edited (Enter commits, Escape cancels). */
+function modalKey(event) {
+  if (event.key !== "Enter" && event.key !== "Escape") return;
+  event.preventDefault();
+  if (state.dialog) return event.key === "Enter" ? treeCommands.confirmRemove() : treeCommands.cancelDialog();
+  return event.key === "Enter" ? treeCommands.commitEdit() : treeCommands.cancelEdit();
+}
+
+/**
+ * Ctrl+N, Ctrl+O, Ctrl+W and Ctrl+Q run the built rows; the shortcut of one that is not built shows its explanation (rule 53).
+ * F2 renames. The Delete key does not remove: LabVIEW's Edit ▸ Remove From Project has no shortcut (inventory), so none is kept.
+ */
 document.addEventListener("keydown", (event) => {
+  if (state.dialog || state.edit) return modalKey(event);
   if (event.key === "Escape") return show(E.escape(state));
+  if (event.key === "F2") {
+    event.preventDefault();
+    return treeCommands.rename();
+  }
   const pressed = { ctrl: event.ctrlKey || event.metaKey, shift: event.shiftKey, alt: event.altKey, tecla: event.key };
   if (!pressed.ctrl) return;
   const entry = inventory.entradas.find((candidate) => candidate.id.startsWith(`${PREFIX}.menu.`) && candidate.atajo && pulsa(atajo(candidate.atajo), pressed));
@@ -154,4 +224,6 @@ document.addEventListener("keydown", (event) => {
 });
 
 solder?.project.onRenamed((name) => show(State.rename(state, name)));
+// The main process rebased the stored paths when an untitled project was first saved: the window holds the project it now keeps.
+solder?.project.onRebased((text) => show({ ...state, project: readProject(text) }));
 if (state) paint();

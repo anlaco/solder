@@ -7,7 +7,8 @@ import { esHueco, ultimo } from "../common/labview-inventory.mjs";
 import { MENU_BAR_HEIGHT, menuBarHtml } from "../common/window-menu-bar.mjs";
 import * as V from "../window/window-view.mjs";
 import { TOOLBAR_ICONS, TREE_ICONS } from "./project-explorer-icons.mjs";
-import { PREFIX, ROW_KINDS, TABS, disabledButtons, visibleRows } from "./project-explorer-state.mjs";
+import { canRemove } from "./project-explorer-edit.mjs";
+import { EDITABLE_KINDS, PREFIX, ROW_KINDS, TABS, disabledButtons, visibleRows } from "./project-explorer-state.mjs";
 import { WINDOW_MENU, windowMenuVariant } from "./window-menu.mjs";
 
 export { MENU_BAR_HEIGHT, PREFIX };
@@ -32,6 +33,8 @@ export const TOOLBAR_GROUPS = Object.freeze([
 /** The rows of the menus that open a submenu whose rows are not declared yet; they show the arrow and explain themselves when clicked. */
 const SUBMENU_ROWS = new Set(["recent-projects", "recent-files", "browse-relationships", "toolbars", "add-to-project", "filter-view", "instrumentation", "real-time-module", "compare", "merge", "profile", "security", "source-control", "vi-analyzer", "import", "shared-variable", "control-and-simulation", "hobbyist", "advanced", "new", "add", "export", "find", "unit-tests", "view", "arrange-by"]);
 
+const AUTO_POPULATING_MENU = "context.project-explorer.auto-populating-folder";
+
 /** Arrange By's default, as LabVIEW marks it with a tick (s2 Q1). */
 const ARRANGE_BY_TICKED = "arrange-by.name";
 
@@ -45,12 +48,23 @@ function rowsWithArrow(inventory, menuId) {
   );
 }
 
+/**
+ * The rows of the open menu that are greyed by what is selected: Edit ▸ Remove From Project on a row that cannot be removed
+ * (as the toolbar's button is), and Add ▸ of an auto-populating folder, which mirrors the disk (measured: s4 Menus).
+ */
+function greyedRows(state, menuId) {
+  const removeRow = `${PREFIX}.menu.edit.remove-from-project`;
+  if (menuId === `${PREFIX}.menu.edit`) return canRemove(state) ? new Set() : new Set([removeRow]);
+  if (menuId === AUTO_POPULATING_MENU) return new Set([`${AUTO_POPULATING_MENU}.add`]);
+  return new Set();
+}
+
 function openMenu(inventory, state, measure, windowSize) {
   if (!state.menuBarra) return "";
   const { id, x, y, abierto } = state.menuBarra;
   const ticked = new Set(inventory.entradas.filter((entry) => entry.id.startsWith(`${id}.`) && entry.id.endsWith(`.${ARRANGE_BY_TICKED}`)).map((entry) => entry.id));
   const listed = id === WINDOW_MENU ? windowMenuVariant(inventory, state.windowRows ?? []) : {};
-  return D.menuContextual(inventory, { raiz: id, x, y, abierto }, ticked, measure, { conFlecha: rowsWithArrow(inventory, id), ...listed }, { ...windowSize, top: MENU_BAR_HEIGHT });
+  return D.menuContextual(inventory, { raiz: id, x, y, abierto }, ticked, measure, { conFlecha: rowsWithArrow(inventory, id), desactivados: greyedRows(state, id), ...listed }, { ...windowSize, top: MENU_BAR_HEIGHT });
 }
 
 function toolbarButton(inventory, disabled, name) {
@@ -83,13 +97,20 @@ const FIXED_ROW_IDS = Object.freeze({
   [ROW_KINDS.BUILD]: `${PREFIX}.items.project.my-computer.build-specifications`,
 });
 
+/** The name of a row: its label, or the text box while it is being edited in place (a virtual folder's name, selected when it opens). */
+function rowName(state, row) {
+  if (state.edit?.key !== row.key) return `<span class="pe-label">${escapeHtml(row.label)}</span>`;
+  return `<input class="pe-edit" data-edit="${row.key}" value="${escapeHtml(state.edit.text)}" spellcheck="false" />`;
+}
+
 function treeRow(state, row) {
   const expander = row.expandable
     ? `<span class="pe-expander" data-expander="${row.key}" style="width:${EXPANDER_SIZE}px;height:${EXPANDER_SIZE}px">${row.expanded ? "−" : "+"}</span>`
     : `<span class="pe-expander-space" style="width:${EXPANDER_SIZE}px"></span>`;
   const selected = state.selected === row.key ? " seleccionada" : "";
   const fixedId = FIXED_ROW_IDS[row.kind];
-  return `<div class="pe-row${selected}" data-key="${row.key}" data-kind="${row.kind}"${fixedId ? ` data-row-id="${fixedId}"` : ""} style="padding-left:${row.depth * INDENT + 4}px">${expander}<span class="pe-icon">${TREE_ICONS[row.kind]}</span><span class="pe-label">${escapeHtml(row.label)}</span></div>`;
+  const draggable = EDITABLE_KINDS.includes(row.kind) ? ' draggable="true"' : "";
+  return `<div class="pe-row${selected}" data-key="${row.key}" data-kind="${row.kind}"${draggable}${fixedId ? ` data-row-id="${fixedId}"` : ""} style="padding-left:${row.depth * INDENT + 4}px">${expander}<span class="pe-icon">${TREE_ICONS[row.kind]}</span>${rowName(state, row)}</div>`;
 }
 
 const tree = (state) => `<div class="pe-tree" data-id="${PREFIX}.items">${visibleRows(state).map((row) => treeRow(state, row)).join("")}</div>`;
@@ -98,6 +119,18 @@ function explanation(inventory, opened) {
   const entry = opened && inventory.resolver(opened.id);
   if (!entry) return "";
   return `<div class="explicacion" data-explicacion="${escapeHtml(opened.id)}" style="left:${opened.x}px;top:${opened.y}px">${V.explicacion(inventory, entry)}</div>`;
+}
+
+/** The id of the hole drawn in the question of Remove From Project (its checkbox). */
+export const REMOVE_ITEMS_CHECKBOX = `${PREFIX}.dialog.remove-items.do-not-show-again`;
+
+/** The question that is open over the window, if any: its text, the checkbox that is a hole, OK (the default) and Cancel (s2 Q6). */
+function dialog(state) {
+  if (!state.dialog) return "";
+  const { id, title, text, checkbox } = state.dialog;
+  return `<div class="pe-backdrop"><div class="pe-dialog" data-dialog="${id}"><div class="pe-dialog-title">${escapeHtml(title)}</div><div class="pe-dialog-text">${escapeHtml(text)}</div>
+<div class="pe-check hueco" data-id="${REMOVE_ITEMS_CHECKBOX}"><span class="pe-checkbox"></span>${escapeHtml(checkbox)}</div>
+<div class="pe-dialog-buttons"><button class="pe-dialog-button default" data-answer="ok">OK</button><button class="pe-dialog-button" data-answer="cancel">Cancel</button></div></div></div>`;
 }
 
 /** The whole window. `measure`: the width of a text in the window's font; `windowSize`: the page's size, to keep a menu inside it. */
@@ -110,6 +143,7 @@ export function projectExplorerWindow(inventory, state, measure, windowSize) {
     ${tree(state)}
   </div>
   ${openMenu(inventory, state, measure, windowSize)}
+  ${dialog(state)}
   ${explanation(inventory, state.abierta)}
 </div>`;
 }

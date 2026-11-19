@@ -5061,3 +5061,57 @@ is saved as `.sdproj`, LabVIEW's `.lvproj` copied one to one in JSON.**
 | A `.lvproj` is an `Item` tree under My Computer, with Dependencies and Build Specifications last | read from 182 example files | **Measured** (2026-11-17) |
 | A `.sdproj` holds the same tree, round trip exact | `docs/schema/sdproj.schema.json`, `test/core/project.test.mjs` | **Built** (2026-11-17) |
 | Dependencies is not written; it is computed from the items' callees | measured 2026-11-17, `test/core/project.test.mjs` (`dependencyKeys`) | **Built** in the core |
+
+## DT-100
+
+**Solder's files stay JSON, and before the format is promised in 1.0 ([DT-077](#dt-077) §3) it is reshaped where it
+serves diffs, merges and readers: stable ids, one element per line, a move touching only the layout, English keys,
+and a `comment` any object may carry.**
+
+- **Status:** Accepted on 2026-11-18 by the developer as the list of changes to make before 1.0 ("vamos a hacer
+  decisiones de modificaciones no compatibles antes de la versión 1 oficial del estándar, así que apunta todo esto"),
+  with §6 decided by them ("yo pondría una etiqueta comment… que por lo general será ignorada o usada en ciertos
+  sitios", after a user asked to comment OVIs). Each of §2–§5 is designed and asked about before it is built; §6 can be
+  built at once.
+- **Why:** the format came from the Red stage in JSON and no decision ever said why; this one does. LabVIEW's VIs are
+  binary and cannot be compared or merged; Solder's files can, and the format should make the most of it before 1.0
+  freezes it. Until then a change may reshape the structure, but [DT-055](#dt-055) still holds: it raises the version
+  and comes with a migration, so every beta's file keeps opening.
+
+### Decision
+
+1. **JSON stays** for `.ovi`, `.octl`, `.sdp` and `.sdproj`. JavaScript reads and writes it with nothing added; JSON
+   Schema 2020-12 is the normative check (spec/02 §1); the writer's text is canonical, so an unchanged file saves
+   identical. Not chosen: XML (heavier, a parser in JS, nothing JSON Schema lacks), YAML (meaningful indentation,
+   `no` read as false, parsers that disagree: ambiguity in a format machines and AIs write), binary (CBOR,
+   MessagePack, SQLite: files that cannot be diffed or merged, LabVIEW's flaw), a textual language as the saved form
+   (a diagram's places and bends do not belong in it; the textual twin stays separate, [DT-094](#dt-094) §5).
+2. **Stable ids.** Today a node's `name` (`add_1`) is reassigned and the graph renumbered on reading, so a small
+   edit can rename many lines. Each node, structure and wire gets a short id that never changes once given; wires
+   refer to ids.
+3. **One element per line.** The writer puts each node, wire and panel item on one line, so adding a wire is a
+   one-line diff and two people editing different things do not collide in a merge. Today two-space indentation spreads
+   each object over many lines.
+4. **A move touches only the layout.** The `.ovi` already splits `block-diagram` from `layout`; it becomes a rule,
+   checked by a test, that moving, resizing or bending changes nothing outside `layout` (and `windows`).
+5. **English keys.** The keys that cross into the runtime or the file in Spanish (`tam`, `campos`, `dentro`,
+   `marcos`… listed in the plan's style debts) are renamed in the same version change.
+6. **Comments.** Any object of any Solder file — the file itself, a front-panel item, a node, a structure, a wire, a
+   cluster element, a project item, an `.octl`'s object, a polymorphic instance — may hold `"comment": "<text>"`. It is
+   the user's: readers ignore it for meaning (the compiler never reads it), the writer keeps it where it was, and a round
+   trip leaves it unchanged. The editor may show it where it helps (Context Help, a tooltip, a Description field);
+   where, is decided when each place is built. It is a field of the file, not LabVIEW's free labels ([DT-085](#dt-085)),
+   which stay what the diagram draws. The schemas allow it everywhere.
+7. **When:** §6 in the next version change of each format. §2–§5 together in one version change of the `.ovi`, before
+   the first release candidate of 1.0, with a migration from the version before; their design (the id's shape, the
+   line layout's exact form) is proposed first.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| A `comment` on any object survives a round trip and changes nothing compiled | a round-trip test per format, and the compiled module compared with and without comments | Not built |
+| An edit of one element changes one line of the file | a test that adds one wire and diffs the text | Not built |
+| A move changes only `layout` | a test that moves a node and compares everything else | Not built |
+| Ids do not change across save and open | a round-trip test | Not built |
+| Every beta's file still opens after §2–§5 | `test/end-to-end/format-versions.test.mjs` | Built (the mechanism) |

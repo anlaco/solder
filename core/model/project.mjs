@@ -134,7 +134,7 @@ export const ALREADY_IN_PROJECT = "An item with this path already exists in the 
 const withTargetItem = (project, added) => ({ ...project, items: project.items.map((item) => (item.kind === ITEM_KINDS.TARGET ? { ...item, items: inFileOrder([...item.items, added]) } : item)) });
 
 /** A file item for `storedPath`. */
-const fileItem = (storedPath) => ({ name: fileNameOf(storedPath), kind: itemKindOf(storedPath), path: storedPath });
+export const fileItem = (storedPath) => ({ name: fileNameOf(storedPath), kind: itemKindOf(storedPath), path: storedPath });
 
 /**
  * The project with the files at `storedPaths` added under the target (Add ▸ File...), or, given `folderName`, inside a

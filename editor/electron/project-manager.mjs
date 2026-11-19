@@ -12,6 +12,8 @@ import { ProjectFileError, blankProject, readProject } from "../../core/model/pr
 import { CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS } from "./close-flow.mjs";
 import { EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, EXIT_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
 import { closeProjectDialogText, hasOVIsOutsideProjects, openProjectDialog, projectSavePathFor, saveProjectDialog } from "./project-dialogs.mjs";
+import { registerItemRequests } from "./project-item-requests.mjs";
+import { rebaseProjectBody } from "./project-paths.mjs";
 import { createProjectRegistry, isModified, projectBody, projectFileText, projectName, recordChange, recordSave } from "./project-registry.mjs";
 import { CREATE_PROJECT_DIALOG_SIZE, PROJECT_WINDOW_SIZE, cascadedPosition, projectWindowTitle } from "./project-window.mjs";
 import { windowListRows } from "./project-window-list.mjs";
@@ -121,16 +123,21 @@ export function createProjectManager(host) {
       target = projectSavePathFor(result.filePath);
     }
     const { x, y, width, height } = windowOf(entry).getNormalBounds();
+    // Every stored path is relative to the folder of the file (DT-099 §3): a project that was never saved held absolute ones.
+    const body = rebaseProjectBody(entry.current, entry.path, target);
     try {
-      await writeFile(target, projectFileText(entry.current, { x, y, width, height }));
+      await writeFile(target, projectFileText(body, { x, y, width, height }));
     } catch (error) {
       dialog.showMessageBox(owner, { type: "error", title: "Save Project", message: "The project could not be saved.", detail: error.message });
       return false;
     }
     lastFolder = path.dirname(target);
+    const rebased = body !== entry.current;
+    recordChange(entry, body);
     recordSave(entry, target);
     refreshTitle(entry);
     windowOf(entry).webContents.send("project:renamed", projectName(entry));
+    if (rebased) windowOf(entry).webContents.send("project:rebased", body);
     return true;
   }
 
@@ -243,6 +250,7 @@ export function createProjectManager(host) {
       recordChange(entry, text);
       refreshTitle(entry);
     });
+    registerItemRequests({ ipcMain, dialog, entryOf, ownerOf, lastFolder: () => lastFolder, rememberFolder: (folder) => (lastFolder = folder) });
     ipcMain.on("project:create", (event) => showCreateDialog(ownerOf(event)));
     ipcMain.on("project:open", (event) => chooseAndOpen(ownerOf(event)));
     ipcMain.handle("project:window-list", () => currentWindowList());

@@ -125,6 +125,16 @@ contextBridge.exposeInMainWorld("solder", {
     activateWindow: (key) => ipcRenderer.send("project:activate-window", key),
     /** The project was saved under a new name: `callback(name)`. */
     onRenamed: (callback) => ipcRenderer.on("project:renamed", (_event, name) => callback(name)),
+    /** The project's stored paths were rebased to the folder it was first saved in: `callback(text)` with the project's new text. */
+    onRebased: (callback) => ipcRenderer.on("project:rebased", (_event, text) => callback(text)),
+    /** Add ▸ File...: the dialog "Select a File to Insert"; the paths to store, or null if cancelled. */
+    chooseFiles: () => ipcRenderer.invoke("project:choose-files"),
+    /** Add ▸ Folder (Snapshot)...: `{ folderName, storedPaths }` of the folder's top-level files, or null. */
+    chooseSnapshotFolder: () => ipcRenderer.invoke("project:choose-snapshot-folder"),
+    /** Add ▸ Folder (Auto-populating)...: the path to store, or null. */
+    chooseAutoPopulatingFolder: () => ipcRenderer.invoke("project:choose-auto-populating-folder"),
+    /** "Unable to Add Items": the stored paths of the files that were refused. */
+    unableToAdd: (storedPaths) => ipcRenderer.send("project:unable-to-add", storedPaths),
   },
   /** The Create Project dialog's own page. */
   createProject: {

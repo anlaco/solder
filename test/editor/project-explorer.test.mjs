@@ -164,8 +164,8 @@ test("the toolbar has LabVIEW's buttons in the measured order, each with its too
   // Greyed because of the selection (My Computer: nothing to cut, copy or remove, nothing copied, no conflicts); every other one is a hole.
   const disabled = buttons.filter((button) => button.classes.includes("desactivado")).map((button) => button.title);
   assert.deepEqual(disabled, ["Cut", "Copy", "Paste", "Remove From Project", "Resolve Conflicts..."]);
-  // Open Project and Save Project are built; every other button is a hole.
-  assert.deepEqual(buttons.filter((button) => !button.classes.includes("hueco")).map((button) => button.title), ["Open Project", "Save Project"]);
+  // Remove From Project (stage b), Open Project and Save Project are built; every other button is a hole.
+  assert.deepEqual(buttons.filter((button) => !button.classes.includes("hueco")).map((button) => button.title), ["Remove From Project", "Open Project", "Save Project"]);
   // With a file selected, Cut, Copy and Remove From Project are not greyed by the selection (they are still not built).
   const onFile = State.select(State.fromProject(projectWithFiles(), "P1.sdproj"), "project/0/3");
   assert.deepEqual([...State.disabledButtons(onFile)].sort(), ["paste", "resolve-conflicts"]);
@@ -189,17 +189,15 @@ test("the right-click menus of the tree are declared and Expand All and Collapse
   assert.deepEqual(under("my-computer", "arrange-by"), ["Name", "Type", "Path", "Custom"]);
   assert.deepEqual(under("build-specifications", "new"), ["Application (EXE)", "Installer", ".NET Framework Assembly", "Package", "Packed Library", "Shared Library (DLL)", "Source Distribution", "Zip File"]);
 
-  // Right-click opens the menu of the row's kind and selects it; a virtual folder's menu was not measured, so it only selects.
+  // Right-click opens the menu of the row's kind and selects it; the folders' menus are s4's.
   let state = State.fromProject(projectWithFiles(), "P1.sdproj");
-  const kindsMenus = { "project": "project", "project/0": "my-computer", "project/0/2": "ovi-item", "project/0/3": "document-item", "project/0/4": "dependencies", "project/0/5": "build-specifications" };
+  const kindsMenus = { "project": "project", "project/0": "my-computer", "project/0/0": "auto-populating-folder", "project/0/1": "virtual-folder", "project/0/2": "ovi-item", "project/0/3": "document-item", "project/0/4": "dependencies", "project/0/5": "build-specifications" };
   assert.deepEqual(State.visibleRows(state).map((row) => row.key).slice(0, 3), ["project", "project/0", "project/0/0"]);
   for (const [key, menu] of Object.entries(kindsMenus)) {
     const opened = State.openContextMenu(state, INV, key, { x: 10, y: 10 });
     assert.equal(opened.selected, key);
     assert.equal(opened.menuBarra?.id, `context.project-explorer.${menu}`, key);
   }
-  const onFolder = State.openContextMenu(state, INV, "project/0/1", { x: 10, y: 10 });
-  assert.deepEqual([onFolder.selected, onFolder.menuBarra], ["project/0/1", null]);
 
   // Collapse All on a row collapses it and everything under it; Expand All opens them again, and a sibling is left alone.
   state = State.select(state, "project/0");
@@ -271,9 +269,9 @@ test("the Project Explorer runs the project commands from its menus, toolbar and
   assert.deepEqual(rowsBuilt("project"), ["Create Project... -> createProject", "Open Project... -> openProject", "Save Project -> saveProject", "Close Project -> close"]);
   assert.deepEqual(rowsBuilt("file").slice(-5, -1), ["Create Project... -> createProject", "Open Project... -> openProject", "Save Project -> saveProject", "Close Project -> close"]);
   // The toolbar's Open Project and Save Project, and Save in the right-click menu of the root, run the same commands.
-  assert.deepEqual(State.TOOLBAR_COMMANDS, { "open-project": "openProject", "save-project": "saveProject" });
-  for (const name of Object.keys(State.TOOLBAR_COMMANDS)) assert.equal(INV.entrada(`window.project-explorer.toolbar.project.${name}`).estado, "built");
-  assert.deepEqual(State.CONTEXT_COMMANDS, { "context.project-explorer.project.save": "saveProject" });
+  assert.deepEqual(State.TOOLBAR_COMMANDS, { "open-project": "openProject", "save-project": "saveProject", "remove-from-project": "removeFromProject" });
+  for (const name of ["open-project", "save-project"]) assert.equal(INV.entrada(`window.project-explorer.toolbar.project.${name}`).estado, "built");
+  assert.equal(State.CONTEXT_COMMANDS["context.project-explorer.project.save"], "saveProject");
   assert.equal(INV.entrada("context.project-explorer.project.save").estado, "built");
   assert.equal(INV.entrada("context.project-explorer.project.save-as").estado, "todo", "Save As... of the root is not built");
   // The page runs each command through the main process, and the root of the tree takes the name a Save gives.

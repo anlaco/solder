@@ -3,7 +3,7 @@
 // Pure: the dialogs and the disk are the main process's.
 
 import path from "node:path";
-import { PROJECT_EXTENSION, isProjectPath } from "../../core/model/project.mjs";
+import { ALREADY_IN_PROJECT, PROJECT_EXTENSION, isProjectPath } from "../../core/model/project.mjs";
 import { closeDialogText } from "./close-flow.mjs";
 import { untitledProjectName } from "./project-window.mjs";
 
@@ -35,3 +35,25 @@ export const closeProjectDialogText = (name) => ({ ...closeDialogText(name), tit
  * An OVI cannot belong to a project yet (stage a3 brings that), so every open one counts.
  */
 export const hasOVIsOutsideProjects = (oviEntries) => oviEntries.some((entry) => !entry.project);
+
+/** Add ▸ File...: "Select a File to Insert", button "Add File", several files at once (measured: s4 Add ▸ File...). */
+export const addFileDialog = (folder) => ({ title: "Select a File to Insert", buttonLabel: "Add File", defaultPath: folder, properties: ["openFile", "multiSelections"] });
+
+/**
+ * Add ▸ Folder (Snapshot)... and Add ▸ Folder (Auto-populating)...: the folder picker "Select a Folder to Insert", the
+ * title of both (measured: 2026-11-17 s2 Q3).
+ */
+export const addFolderDialog = (folder) => ({ title: "Select a Folder to Insert", defaultPath: folder, properties: ["openDirectory"] });
+
+/** The reason LabVIEW gives for a file that is already an item (measured: s2 Q3, "(Hex 0xDAC2) An item with this path already exists in the project."). */
+export const UNABLE_TO_ADD_REASON = `(Hex 0xDAC2) ${ALREADY_IN_PROJECT}`;
+
+/**
+ * "Unable to Add Items": the items that were refused with their paths, and the reason (measured: s2 Q3 gives the list, the
+ * path and the reason, with OK and Help; the wording around them and the Help button are not built). `items` are `{ name, path }`.
+ */
+export const unableToAddDialogText = (items) => ({
+  title: "Unable to Add Items",
+  message: "The following items could not be added to the project.",
+  detail: `${items.map((item) => `${item.name}\n${item.path}`).join("\n\n")}\n\n${UNABLE_TO_ADD_REASON}`,
+});

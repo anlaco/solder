@@ -18,8 +18,11 @@ When the developer says "keep going":
    Library Function Node and the add-ons folder. "OVI files are `.ovi`" (DT-094) is done (2026-11-16). **DT-093 (2026-11-16)
    closes the hardware stage here**: next is **"The language's everyday types"** below. Its step 1 (the compiler's
    split) and step 2, clusters made by the user (DT-095, DT-098), are done (2026-11-16 and 2026-11-17): **continue with
-   step 3, type definitions** (DT-096), measured and its core done on 2026-11-17. **DT-099 (2026-11-17) brings projects first: continue with
-   step 2b**, then the editor stages of type definitions. DAQ's stage B waits for the
+   step 3, type definitions** (DT-096), measured and its core done on 2026-11-17. **DT-099 (2026-11-17) brings projects first:
+   step 2b**, measured and its core done on 2026-11-17, editor stages (a) and (b) done on 2026-11-18. **Next, first of
+   all: DT-100 §6, the `comment` field** on any object of every Solder file (schemas, readers, writers, a round-trip test
+   per format, and the compiled module unchanged by comments; the next version of each format, with its migration), as
+   the developer asked on 2026-11-18. Then stage (c) of step 2b; then the editor stages of type definitions. DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
@@ -1047,7 +1050,19 @@ to it go on, new fronts wait for step 6.
    ([`project-flows-editor-try`](../../labview-captures/reports/2026-11-18-project-flows-editor-try.md)). Unverified
    there: the minimized Getting Started (no window manager). Left: Recent Projects / Recent Files, the "List unsaved
    changes..." link, the Window list's underlined numbers and the OVI windows' own Window list. **Stage (a) is done.**
-   Next, (b): Add ▸ and New ▸ OVI / Virtual Folder, Remove From Project, rename, drag into folders.* *Stage (a2), on 2026-11-18: File ▸ Create Project...
+   Next, (b): Add ▸ and New ▸ OVI / Virtual Folder, Remove From Project, rename, drag into folders.*
+   *Stage (b) on 2026-11-18, after measuring it
+   ([`project-explorer-s4`](../../labview-captures/reports/2026-11-18-project-explorer-s4.md)): the core edits the tree
+   by an item's place (`core/model/project-tree.mjs`: remove, rename, move, add into a folder, always in LabVIEW's
+   order); the window has Add ▸ File / Folder (Snapshot) / Folder (Auto-populating) with "Unable to Add Items", New ▸
+   Virtual Folder with in-place naming, F2 on folders, Remove From Project with "Remove Items", dragging into folders,
+   and paths stored relative to the `.sdproj` and rebased on its first save (`editor/electron/project-paths.mjs`,
+   `editor/src/project-explorer/project-explorer-edit.mjs`). Tried under Xvfb
+   ([`project-tree-editor-try`](../../labview-captures/reports/2026-11-18-project-tree-editor-try.md)). Decided without
+   LabVIEW's rule: a folder dropped on a folder always nests; Solder's asterisk marks every change (LabVIEW's omits Add
+   and Remove, measured). Left for (d): New ▸ OVI and renaming an OVI item (LabVIEW renames its file through "Save the
+   VI (…) As"). Next, (c): Dependencies filled from the hierarchy, Refresh, auto-populating folders read from the disk
+   and watched, Stop Auto-populating and Convert to Auto-populating Folder....* *Stage (a2), on 2026-11-18: File ▸ Create Project...
    in the Project Explorer, the OVI windows, the Polymorphic window and Getting Started (menu and button), with the Create
    Project dialog (`editor/src/create-project/`, `editor/create-project.html`) and the Open Items question; Open Project...
    and File ▸ Open... for `.sdproj`; Save Project ("Name the Project"); Close Project with its prompt and Getting Started
@@ -1099,6 +1114,10 @@ lesson of NI's Core 1 course can be done in Solder, the hardware lessons on the 
 The outline is in `labview-captures/core-courses/README.md`; first, list which lessons Solder misses.
 
 *The split of `core/compiler/compiler.mjs` (DT-089) moved to step 1 of "The language's everyday types" (DT-093 §2).*
+
+**Before 1.0, the file formats (DT-100, 2026-11-18):** stable ids, one element per line, a move touching only the
+layout, English keys, in one version change of the `.ovi` with its migration, designed and asked about first; and a
+`comment` on any object of any Solder file, built at the next version change of each format.
 
 **Before 1.0:** *inplaceness* (DT-042 §5), which changes memory and speed but not
 results. It was postponed until a real program ran slowly; since 2026-11-05 it is a

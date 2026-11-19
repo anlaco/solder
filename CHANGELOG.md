@@ -37,6 +37,12 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   (Close Project)" and closing the last one leaves Getting Started minimized, as LabVIEW does. The Project Explorer's
   Window menu lists the open windows. Several projects can be open at once.
 
+- Editing a project's tree (DT-099, stage b), as measured in LabVIEW: Add ▸ File, Folder (Snapshot) and Folder
+  (Auto-populating), with "Unable to Add Items" for what cannot be added; New ▸ Virtual Folder named in place; F2 renames
+  a folder; Remove From Project asks "Remove Items"; items are dragged into folders. Items always keep LabVIEW's order,
+  and their paths are stored relative to the `.sdproj`, rebased when it is first saved. Adding a new OVI and renaming an
+  OVI item come later.
+
 - An OVI can follow a type definition (DT-096): a control, indicator or constant stores the `.octl` file it follows and a
   copy of its definition, and the `.ovi` format goes to version 7 (older files open unchanged). An OVI whose `.octl` is
   missing opens with its copy but does not run, and the Error list says, as LabVIEW does, "Type Definition '<label>':

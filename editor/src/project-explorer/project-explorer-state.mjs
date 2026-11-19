@@ -10,6 +10,7 @@ import { ITEM_KINDS } from "../../../core/model/project.mjs";
 import { inicial as windowState } from "../window/window-state.mjs";
 
 export const PREFIX = "window.project-explorer";
+const CONTEXT_PREFIX = "context.project-explorer";
 
 /** The two tabs of the window; only Items is built (Files shows the disk tree, stage a2 of DT-099). */
 export const TABS = Object.freeze({ ITEMS: "items", FILES: "files" });
@@ -31,21 +32,41 @@ export const MENU_COMMANDS = Object.freeze({
   "save-project": "saveProject",
   "close-project": "close",
   exit: "exit",
+  // Edit ▸ Remove From Project (and the same row of the item menus, by their last segment).
+  "remove-from-project": "removeFromProject",
 });
 
-/** The toolbar's built buttons, by the last segment of their id (s1 Q1: Open Project and Save Project). */
-export const TOOLBAR_COMMANDS = Object.freeze({ "open-project": "openProject", "save-project": "saveProject" });
+/** The toolbar's built buttons, by the last segment of their id (s1 Q1: Open Project and Save Project; s4: Remove From Project). */
+export const TOOLBAR_COMMANDS = Object.freeze({ "open-project": "openProject", "save-project": "saveProject", "remove-from-project": "removeFromProject" });
 
-/** The built rows of a right-click menu that run a command of the window; Expand All and Collapse All are the state's own. */
-export const CONTEXT_COMMANDS = Object.freeze({ "context.project-explorer.project.save": "saveProject" });
+/** The built rows of the right-click menus, per menu: what each runs. The tree edits are the page's (project-explorer-edit.mjs). */
+const TREE_ROWS = { "new.virtual-folder": "newVirtualFolder", "add.file": "addFile", "add.folder-snapshot": "addSnapshotFolder", "add.folder-auto-populating": "addAutoPopulatingFolder" };
+const CONTEXT_ROWS_BY_MENU = {
+  project: { save: "saveProject" },
+  "my-computer": TREE_ROWS,
+  "virtual-folder": { ...TREE_ROWS, "remove-from-project": "removeFromProject", rename: "rename" },
+  "auto-populating-folder": { "remove-from-project": "removeFromProject" },
+  "ovi-item": { "remove-from-project": "removeFromProject" },
+  "document-item": { "remove-from-project": "removeFromProject" },
+};
+
+/** The built rows of a right-click menu that run a command of the window, by id; Expand All and Collapse All are the state's own. */
+export const CONTEXT_COMMANDS = Object.freeze(
+  Object.fromEntries(Object.entries(CONTEXT_ROWS_BY_MENU).flatMap(([menu, rows]) => Object.entries(rows).map(([row, command]) => [`${CONTEXT_PREFIX}.${menu}.${row}`, command]))),
+);
+
+/** Rename's row for a kind of row that has one that is not built: F2 on it shows why (the other kinds do nothing, measured for a document). */
+export const RENAME_HOLE_OF_KIND = Object.freeze({ project: `${CONTEXT_PREFIX}.project.rename`, ovi: `${CONTEXT_PREFIX}.ovi-item.rename` });
 
 /** The project was saved under another name: the root of the tree says so. */
 export const rename = (state, name) => ({ ...state, name });
 
-/** The right-click menus of the tree, by the kind of row (s2 report, Q1). A virtual folder's was not measured. */
+/** The right-click menus of the tree, by the kind of row (s2 report Q1; the folders' are s4's). An OVI inside a folder has the menu of one at the root (s4). */
 const CONTEXT_MENU_OF_KIND = Object.freeze({
   [ROW_KINDS.PROJECT]: "project",
   [ROW_KINDS.TARGET]: "my-computer",
+  [ROW_KINDS.FOLDER]: "virtual-folder",
+  [ROW_KINDS.AUTO_POPULATING_FOLDER]: "auto-populating-folder",
   [ROW_KINDS.OVI]: "ovi-item",
   [ROW_KINDS.DOCUMENT]: "document-item",
   [ROW_KINDS.DEPENDENCIES]: "dependencies",
@@ -53,7 +74,7 @@ const CONTEXT_MENU_OF_KIND = Object.freeze({
 });
 
 /** The inventory id of the menu a row opens with the right button, or undefined when none was measured. */
-export const contextMenuOf = (kind) => (kind in CONTEXT_MENU_OF_KIND ? `context.project-explorer.${CONTEXT_MENU_OF_KIND[kind]}` : undefined);
+export const contextMenuOf = (kind) => (kind in CONTEXT_MENU_OF_KIND ? `${CONTEXT_PREFIX}.${CONTEXT_MENU_OF_KIND[kind]}` : undefined);
 
 const rowKindOf = (item) => (item.kind === ITEM_KINDS.FOLDER && item.autoPopulating ? ROW_KINDS.AUTO_POPULATING_FOLDER : item.kind);
 
@@ -77,8 +98,17 @@ const hasChildren = (node) => node.children.length > 0;
 /** The node with `key`, or undefined. */
 const findNode = (state, key) => nodesFrom(treeOf(state.project, state.name)).find((node) => node.key === key);
 
+/** A row's place in the project, the list of indices from the top items down: `project/0/2` is `[0, 2]`, and the root `project` is `[]`. */
+export const placeOfKey = (key) => key.split("/").slice(1).map(Number);
+
+/** The row key of a place. */
+export const keyOfPlace = (place) => [ROOT_KEY, ...place].join("/");
+
+/** The rows the user can drag, remove and (for a virtual folder) rename: everything but the project, the target and the two fixed items. */
+export const EDITABLE_KINDS = Object.freeze([ROW_KINDS.OVI, ROW_KINDS.DOCUMENT, ROW_KINDS.FOLDER, ROW_KINDS.AUTO_POPULATING_FOLDER]);
+
 /** The key of the target My Computer, which a new project opens with selected (measured). */
-const targetKeyOf = (project) => `${ROOT_KEY}/${project.items.findIndex((item) => item.kind === ITEM_KINDS.TARGET)}`;
+export const targetKeyOf = (project) => `${ROOT_KEY}/${project.items.findIndex((item) => item.kind === ITEM_KINDS.TARGET)}`;
 
 /**
  * The window for a project called `name`. A new project opens with every row expanded (measured); one opened from its file
@@ -87,7 +117,7 @@ const targetKeyOf = (project) => `${ROOT_KEY}/${project.items.findIndex((item) =
 export function fromProject(project, name, { opened = false } = {}) {
   const nodes = nodesFrom(treeOf(project, name));
   const expanded = nodes.filter((node) => hasChildren(node) && !(opened && node.kind === ROW_KINDS.DEPENDENCIES)).map((node) => node.key);
-  return { project, name, tab: TABS.ITEMS, selected: targetKeyOf(project), expanded, windowRows: [], ...windowState() };
+  return { project, name, tab: TABS.ITEMS, selected: targetKeyOf(project), expanded, windowRows: [], edit: null, dialog: null, ...windowState() };
 }
 
 /** One row of the tree as drawn: `{ key, kind, label, depth, expandable, expanded }`. */
