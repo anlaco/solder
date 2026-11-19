@@ -21,8 +21,10 @@ export const BOOLEAN_ART_MARGIN = 12;
 /** A Boolean's text font, which the old drawing took from styles.css and an SVG file must carry. */
 const BOOLEAN_TEXT_FONT = `<style>text{font-family:Arial,"Liberation Sans",sans-serif}</style>`;
 
+// `preserveAspectRatio="none"`: a resized Boolean stretches its drawing to its box (control-resize.mjs); the other files
+// are shown at their own size, where it changes nothing.
 const svgFile = ({ x = 0, y = 0, width, height, drawing }) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${x} ${y} ${width} ${height}">${drawing}</svg>\n`;
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${x} ${y} ${width} ${height}" preserveAspectRatio="none">${drawing}</svg>\n`;
 
 /** The file of a Boolean in one state, by its style (glyphs.mjs, BOOLEANOS). */
 export const booleanArtName = (style, on) => `boolean-${style}-${on ? "on" : "off"}.svg`;

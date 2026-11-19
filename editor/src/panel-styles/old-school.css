@@ -164,7 +164,7 @@
 /* The drawing goes under the selection's marching ants, as the old unpositioned SVG did: it sits at z-index -1
    inside the object, which isolation makes a stacking context of its own. */
 .sd-panel .sd-boolean { display: block; isolation: isolate; }
-.sd-panel .sd-boolean > :not(.sd-art) { display: none; }
+.sd-panel .sd-boolean > :not(.sd-art, .asa) { display: none; }
 /* The drawing is the box with 12 px round it for the shadow; a resized Boolean stretches it to the box (unverified). */
 .sd-panel .sd-boolean .sd-art { position: absolute; inset: -12px; z-index: -1; display: block; background: 0 0 / 100% 100% no-repeat; pointer-events: none; }
 .sd-panel .sd-boolean[data-style="push-button"] .sd-art { background-image: url("old-school/boolean-push-button-off.svg"); }
@@ -198,10 +198,12 @@
 
 /* A grey cluster in a 2 px bevel; each caption and field sits where LabVIEW puts it (errores/301-panel-error-out-1a1.png). */
 .sd-panel .sd-error-cluster {
-  display: block; padding: 0; overflow: hidden; border-radius: 0; line-height: 14px; font-size: var(--fuente);
+  display: block; padding: 0; overflow: visible; border-radius: 0; line-height: 14px; font-size: var(--fuente);
   background: var(--error-cluster-background); border: 2px solid;
   border-color: var(--error-cluster-bevel-light) var(--error-cluster-bevel-dark) var(--error-cluster-bevel-dark) var(--error-cluster-bevel-light);
 }
+/* The resize handles sit on the corners of the bevel, not 2 px inside it (control-resize.mjs). */
+.sd-panel .sd-error-cluster > .asa { margin: -2px 0 0 -2px; }
 .sd-panel .sd-error-cluster .sd-caption { position: absolute; color: var(--canvas-text); font-size: inherit; white-space: nowrap; pointer-events: none; }
 .sd-panel .sd-error-status .sd-caption { left: 4px; top: 2px; }
 .sd-panel .sd-error-code .sd-caption { left: 52px; top: 0; }

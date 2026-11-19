@@ -2,6 +2,7 @@
 // labview-captures/reports/2026-11-19-control-resizing.md.
 
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { aTexto, leer } from "../../core/model/qvi-format.mjs";
@@ -139,4 +140,15 @@ test("a string or VISA resource name made taller wraps its text; a numeric never
   const numeric = place("control");
   const reread = { ...numeric, g: { ...numeric.g, nodos: [{ ...numeric.g.nodos[0], panel: { ...numeric.g.nodos[0].panel, h: 80 } }] } };
   assert.equal(boxOf(reread).alto, boxOf(numeric).alto, "a stored height does not make a numeric taller");
+});
+
+test("Old School shows a Boolean's and an error cluster's handles and stretches a Boolean's drawing", () => {
+  // Found in the editor: Old School hid every child of a Boolean but its drawing, the handles too, and clipped an error
+  // cluster's right and bottom handles; its Boolean drawings kept their aspect ratio inside a resized box.
+  const css = readFileSync(new URL("../../editor/src/panel-styles/old-school.css", import.meta.url), "utf8");
+  assert.match(css, /\.sd-boolean > :not\(\.sd-art, \.asa\) \{ display: none; \}/);
+  assert.match(css, /\.sd-error-cluster \{[^}]*overflow: visible/);
+  assert.match(css, /\.sd-error-cluster > \.asa \{ margin: -2px 0 0 -2px; \}/);
+  const art = readFileSync(new URL("../../editor/src/panel-styles/old-school/boolean-round-led-off.svg", import.meta.url), "utf8");
+  assert.match(art, /preserveAspectRatio="none"/);
 });
