@@ -388,10 +388,13 @@ test("Old School's File Path Control has the measured bevel, cell, divider, text
   const css = readFileSync(new URL("../../editor/src/panel-styles/old-school.css", import.meta.url), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
   const rule = (selector) => css.match(new RegExp(`${selector.replaceAll(".", "\\.")} \\{([^}]*)\\}`))[1];
   assert.match(rule(".sd-panel .sd-path-cell"), /left: 4px; top: 4px; display: block; width: 8px; height: 17px; background: #b3b3b3/);
-  assert.match(rule(".sd-panel .sd-path .sd-field"), /left: 13px; top: 4px; width: 83px; height: 17px; padding: 0 0 0 2px[^}]*background: #fafafa/, "the divider is the 1 px at x = 12");
+  // The field follows a resized box (control-resize.mjs); in the default 100 × 25 box it is the measured 83 × 17.
+  const field = rule(".sd-panel .sd-path .sd-field");
+  assert.match(field, /left: 13px; top: 4px; width: calc\(100% - 17px\); height: calc\(100% - 8px\); padding: 0 0 0 2px[^}]*background: #fafafa/, "the divider is the 1 px at x = 12");
+  assert.equal(P.MEDIDAS_PATH_PANEL.ancho - 17, 83);
   assert.match(rule(".sd-panel .sd-path.sd-indicator .sd-field"), /background: #d2d2d2/);
   assert.match(rule(".sd-panel .sd-path-glyph"), /left: 1px; top: 3px; display: block; width: 6px; height: 10px/, "the glyph is black, 6 x 10, at y +7..+16 of the box");
-  assert.match(rule(".sd-panel .sd-browse"), /left: 102px; top: 0; width: 28px; height: 17px[^}]*background: linear-gradient\(#cbcbcb, #c2c2c2\)/, "top-aligned with the box, a vertical gradient");
+  assert.match(rule(".sd-panel .sd-browse"), /left: calc\(100% \+ 2px\); top: 0; width: 28px; height: 17px[^}]*background: linear-gradient\(#cbcbcb, #c2c2c2\)/, "top-aligned with the box, a vertical gradient");
   const bevel = rule(".sd-panel .sd-path");
   assert.deepEqual([...bevel.matchAll(/inset 0 (\d)px 0 (#[0-9a-f]{6})/g)].map(([, , color]) => color), ["#c9c9c9", "#c2c2c2", "#b7b7b7", "#b1b1b1"], "top rows 1-4");
   assert.deepEqual([...bevel.matchAll(/inset 0 -(\d)px 0 (#[0-9a-f]{6})/g)].map(([, , color]) => color), ["#e4e4e4", "#f2f2f2", "#ededed", "#eaeaea"], "bottom rows 1-4, from the edge in");

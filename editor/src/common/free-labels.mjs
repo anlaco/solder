@@ -78,11 +78,12 @@ export function handleBox(side, box) {
 
 /**
  * The handles of a free label as HTML. `shown`: selected or hovered; hidden ones are still drawn to catch the mouse.
- * `inset`: what the element's own border shifts its children by, so the handles sit on the box's corners.
+ * `inset`: what the element's own border shifts its children by, so the handles sit on the box's corners. `sides`: the
+ * handles drawn, all eight unless an object stretches along one axis only (a numeric control, control-resize.mjs).
  */
-export function handlesHtml(node, box, { shown, inset = 0, attribute = "data-asa" }) {
+export function handlesHtml(node, box, { shown, inset = 0, attribute = "data-asa", sides = HANDLE_SIDES }) {
   const handleClass = shown ? "asa asa-estructura" : "asa asa-estructura oculta";
-  return HANDLE_SIDES.map((side) => {
+  return sides.map((side) => {
     const place = handleBox(side, box);
     return `<div class="${handleClass}" data-nodo="${esc(node.id)}" ${attribute}="${side}" style="left:${px(place.x - inset)};top:${px(place.y - inset)}"></div>`;
   }).join("");

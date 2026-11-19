@@ -102,8 +102,12 @@ test("the HTML of a DAQ name is a VISA resource name's with its own class, and i
 test("old school draws the control's arrow button 64 px to the right of a VISA resource name's, the indicator is the same", () => {
   const css = readFileSync(new URL("../../editor/src/panel-styles/old-school.css", import.meta.url), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
   const rule = (selector) => css.match(new RegExp(`${selector.replaceAll(".", "\\.")} \\{([^}]*)\\}`))[1];
-  assert.match(rule(".sd-panel .sd-daq-name.sd-control .sd-field"), /width: 133px/, "69 + the 64 px the box is wider");
-  assert.match(rule(".sd-panel .sd-daq-name .sd-dropdown"), /left: 147px/, "83 + 64: the button stays at the right bevel");
+  // A VISA resource name's field and button follow the box, so the 64 px more go to the field (69 + 64 = 133) and the
+  // button stays at the right bevel (83 + 64 = 147), with no rule of the DAQ name's own.
+  const field = rule(".sd-panel .sd-visa.sd-control .sd-field");
+  assert.equal(P.MEDIDAS_DAQ_NAME_PANEL.anchoControl - Number(field.match(/width: calc\(100% - (\d+)px\)/)[1]), 133);
+  assert.match(rule(".sd-panel .sd-visa .sd-dropdown"), /right: 4px/);
+  assert.doesNotMatch(css, /\.sd-daq-name\.sd-control \.sd-field|\.sd-daq-name \.sd-dropdown/);
   assert.doesNotMatch(css, /\.sd-daq-name\.sd-indicator/, "104 wide, as a VISA resource name's");
 });
 

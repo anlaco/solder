@@ -1,0 +1,142 @@
+// Resizing controls and indicators by their handles (GitHub issue #21), against what was measured in LabVIEW 2026 Q3:
+// labview-captures/reports/2026-11-19-control-resizing.md.
+
+import assert from "node:assert/strict";
+import { test } from "node:test";
+
+import { aTexto, leer } from "../../core/model/qvi-format.mjs";
+import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
+import * as P from "../../editor/src/front-panel/front-panel.mjs";
+import { DAQ_TASK } from "../../core/model/daq-name.mjs";
+import { GRAPH_MEASURES, graphMeasures } from "../../editor/src/front-panel/graph-view.mjs";
+import { CAT, INV } from "../helpers.mjs";
+
+const CTX = D.contexto(CAT, D.glifosPorBloque(INV), ",");
+const FONDO = { tipo: "fondo" };
+const START = { x: 300, y: 300 };
+
+/** Take a control from the palette, carry it to `point` and click, as the editor does. */
+function place(block, config) {
+  const carried = P.moverA(P.coger(P.inicial(), block, config), CTX, START);
+  const p = P.confirmar(P.pulsar(carried, CTX, FONDO, START));
+  return { ...p, seleccion: [p.g.nodos[0].id] };
+}
+
+/** Drag the `side` handle of the panel's only object by (dx, dy) and let go. */
+function drag(p, side, dx, dy) {
+  const id = p.g.nodos[0].id;
+  const pressed = P.pulsar(p, CTX, { tipo: "asa-control", id, lado: side }, START);
+  const end = { x: START.x + dx, y: START.y + dy };
+  return P.soltar(P.moverA(pressed, CTX, end), CTX, FONDO, end);
+}
+
+const handles = (p) => [...P.contenido(p, CTX).matchAll(/data-asa-control="(\w+)"/g)].map((match) => match[1]);
+const boxOf = (p) => P.caja(p.g.nodos[0]);
+const size = (p) => [boxOf(p).ancho, boxOf(p).alto];
+const labelX = (p) => P.cajaEtiqueta(p.g.nodos[0], CTX.medir).x;
+
+test("a selected VISA resource name, string or path has eight handles, a numeric only the left and right ones", () => {
+  for (const block of ["visa-control", "visa-indicator", "str-control", "str-indicator", "path-control", "path-indicator"]) {
+    assert.deepEqual(handles(place(block)), ["nw", "n", "ne", "e", "se", "s", "sw", "w"], `${block}: report §1`);
+  }
+  assert.deepEqual(handles(place("control")), ["e", "w"], "report §1: a numeric never grows taller");
+  assert.deepEqual(handles(place("indicator")), ["e", "w"]);
+  assert.deepEqual(handles({ ...place("visa-control"), seleccion: [] }), [], "only a selected object shows them");
+});
+
+const TEXT_RING = { type: "u16", style: "text-ring", items: [{ text: "Bake", value: 0 }] };
+const MENU_RING = { ...TEXT_RING, style: "menu-ring" };
+const EIGHT = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+
+test("every other control and indicator has handles too (unverified: pending a review in LabVIEW)", () => {
+  const cases = [
+    ["bool-control", undefined, EIGHT],
+    ["bool-indicator", { style: "round-led" }, EIGHT],
+    ["refnum-control", undefined, EIGHT],
+    ["cluster-control", { style: "error-in" }, EIGHT],
+    ["daq-name-control", { type: DAQ_TASK }, EIGHT],
+    ["waveform-chart", undefined, EIGHT],
+    ["waveform-graph", undefined, EIGHT],
+    ["xy-graph", undefined, EIGHT],
+    ["control", { type: { enum: ["a", "b"] } }, ["e", "w"]],
+    ["control", TEXT_RING, ["e", "w"]],
+    ["indicator", MENU_RING, ["e", "w"]],
+  ];
+  for (const [block, config, sides] of cases) assert.deepEqual(handles(place(block, config)), sides, `${block} ${JSON.stringify(config ?? {})}`);
+});
+
+test("a widened enum, ring or Boolean keeps its new size; an error cluster and a refnum only grow", () => {
+  for (const config of [{ type: { enum: ["a", "b"] } }, TEXT_RING]) {
+    const p = place("control", config);
+    assert.equal(boxOf(drag(p, "e", 40, 0)).ancho, boxOf(p).ancho + 40);
+    assert.equal(boxOf(drag(p, "s", 0, 40)).alto, boxOf(p).alto, "they never grow taller");
+  }
+  const button = place("bool-control");
+  assert.deepEqual(size(drag(button, "se", 20, 10)), [boxOf(button).ancho + 20, boxOf(button).alto + 10]);
+  assert.deepEqual(size(drag(button, "se", -500, -500)), [8, 8]);
+  for (const [block, config] of [["cluster-control", { style: "error-in" }], ["refnum-control", undefined]]) {
+    const p = place(block, config);
+    assert.deepEqual(size(drag(p, "se", -500, -500)), size(p), block);
+    assert.deepEqual(size(drag(p, "se", 30, 20)), [boxOf(p).ancho + 30, boxOf(p).alto + 20], block);
+  }
+});
+
+test("a resized graph draws its frame at the new size and gives the plot area what it grew by", () => {
+  const p = place("waveform-graph");
+  assert.deepEqual(size(p), [GRAPH_MEASURES["waveform-graph"].width, GRAPH_MEASURES["waveform-graph"].height]);
+  const grown = drag(p, "se", 100, 50);
+  const { plot } = GRAPH_MEASURES["waveform-graph"];
+  assert.deepEqual(graphMeasures(grown.g.nodos[0]).plot, { ...plot, width: plot.width + 100, height: plot.height + 50 });
+  assert.match(P.contenido(grown, CTX), /<svg class="sd-graph-art" width="428" height="268"/);
+  assert.deepEqual(size(drag(p, "se", -1000, -1000)), [150, 100], "it stops at a plot of about 50 × 50");
+});
+
+test("widening a VISA resource name keeps the size in the .ovi and shows the whole resource string's room", () => {
+  const p = place("visa-control");
+  assert.deepEqual(size(p), [104, 26], "report §3");
+  const widened = drag(p, "e", 100, 0);
+  assert.deepEqual(size(widened), [204, 26]);
+  assert.equal(boxOf(widened).x, boxOf(p).x, "the right handle leaves the left edge");
+  assert.match(P.contenido(widened, CTX), /class="objeto-panel sd-control sd-visa[^"]*"[^>]*style="left:[^;]+;top:[^;]+;width:204px;height:26px"/);
+  const reread = leer(aTexto(widened.g, CAT), CAT).nodos[0];
+  assert.equal(reread.panel.w, 204);
+  assert.equal(reread.panel.h, undefined, "a default height is not kept");
+});
+
+test("each object stops at LabVIEW's narrowest box and at its default height", () => {
+  // Report §3: VISA control 43, indicator 26, string 16, path 25, numeric control 13 and indicator 18 (counted after
+  // the control's incrementer, which Solder's box holds and LabVIEW's does not).
+  const narrowest = { "visa-control": 43, "visa-indicator": 26, "str-control": 16, "str-indicator": 16, "path-control": 25, "path-indicator": 25, control: 25, indicator: 18 };
+  for (const [block, width] of Object.entries(narrowest)) {
+    const p = place(block);
+    assert.equal(boxOf(drag(p, "e", -500, 0)).ancho, width, block);
+    if (block !== "control" && block !== "indicator") assert.equal(boxOf(drag(p, "s", 0, -500)).alto, boxOf(p).alto, `${block}: the shortest is the default`);
+  }
+});
+
+test("dragging the left handle moves a string's label with the edge, but not a VISA resource name's", () => {
+  // Report §5.
+  const string = place("str-control");
+  const stringWidened = drag(string, "w", -40, 0);
+  assert.equal(boxOf(stringWidened).x, boxOf(string).x - 40);
+  assert.equal(labelX(stringWidened), labelX(string) - 40);
+  const visa = place("visa-control");
+  const visaWidened = drag(visa, "w", -40, 0);
+  assert.equal(boxOf(visaWidened).x, boxOf(visa).x - 40);
+  assert.equal(labelX(visaWidened), labelX(visa), "the label stays where it was");
+  assert.equal(labelX(drag(visa, "e", 40, 0)), labelX(visa), "the right handle never moves it");
+});
+
+test("a string or VISA resource name made taller wraps its text; a numeric never grows taller", () => {
+  // Report §6.
+  for (const block of ["str-control", "visa-control"]) {
+    const p = place(block);
+    assert.doesNotMatch(P.contenido(p, CTX), /sd-tall/);
+    const taller = drag(p, "s", 0, 34);
+    assert.equal(boxOf(taller).alto, boxOf(p).alto + 34);
+    assert.match(P.contenido(taller, CTX), /class="objeto-panel[^"]*sd-tall/, block);
+  }
+  const numeric = place("control");
+  const reread = { ...numeric, g: { ...numeric.g, nodos: [{ ...numeric.g.nodos[0], panel: { ...numeric.g.nodos[0].panel, h: 80 } }] } };
+  assert.equal(boxOf(reread).alto, boxOf(numeric).alto, "a stored height does not make a numeric taller");
+});

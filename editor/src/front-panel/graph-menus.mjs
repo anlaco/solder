@@ -8,7 +8,7 @@
 
 import * as Gr from "../../../core/model/graph.mjs";
 import { clearedChart, displayedGraph, graphSettings, isGraph, toggledItem, wireTypeOf } from "./graph-state.mjs";
-import { GRAPH_MEASURES } from "./graph-view.mjs";
+import { graphMeasures } from "./graph-view.mjs";
 import { open as openHistoryDialog } from "./chart-history-dialog.mjs";
 
 const lastSegment = (id) => id.slice(id.lastIndexOf(".") + 1);
@@ -79,7 +79,7 @@ function autoscalePatch(node, axis, d, ctx) {
   const patch = { [key]: false };
   if (axis === "x" && node.tipo === "waveform-chart") return patch;
   const type = wireTypeOf(d.g, Gr.tipos(d.g, ctx.cat), node.id);
-  const shown = displayedGraph(node, type, d.valores?.[node.id], d.charts, GRAPH_MEASURES[node.tipo].plot);
+  const shown = displayedGraph(node, type, d.valores?.[node.id], d.charts, graphMeasures(node).plot);
   return { ...patch, [axis === "x" ? "scaleX" : "scaleY"]: axis === "x" ? shown.scaleX : shown.scaleY };
 }
 

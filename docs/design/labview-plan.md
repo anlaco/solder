@@ -1475,6 +1475,14 @@ Edit menu (undo, copy, paste), View, Window (Ctrl+E), Operate (Run
 Continuously, Abort), Tools ▸ Options, the context help window, the error list,
 probes and execution highlighting.
 
+**Pending review in LabVIEW: resizing controls (issue #21, 2026-11-19).** Every control and indicator has resize handles
+(`editor/src/front-panel/control-resize.mjs`). Measured: VISA resource name, String, Numeric, File Path
+(labview-captures/reports/2026-11-19-control-resizing.md). Built by analogy and unverified, to measure when convenient:
+enum and Text/Menu Ring (horizontal only?, narrowest), DAQ names (as a VISA resource name?), Booleans (does the drawing
+stretch, the smallest size), refnum (resizable at all?), error cluster (do its elements stretch or keep their place?),
+graphs and charts (does the plot area take all the growth, the smallest size), and whether the VISA dropdown grows when
+the control is made taller.
+
 ## 5. Log
 
 - 2026-09-30 — Plan written. Vertical slice closed: save, open and Run.

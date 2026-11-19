@@ -373,13 +373,20 @@ test("every panel style dresses the VISA resource name", () => {
   assert.match(sheet("solder.css"), /\.sd-panel \.sd-visa \.sd-dropdown/);
 });
 
+/** What a CSS length that follows its box (`calc(100% - Npx)`) comes to in a box `size` px wide or tall. */
+const lengthIn = (rule, property, size) => size - Number(rule.match(new RegExp(`${property}: calc\\(100% - (\\d+)px\\)`))[1]);
+
 test("Old School's VISA resource name has the measured bevel, cells and button", () => {
   const css = readFileSync(new URL("../../editor/src/panel-styles/old-school.css", import.meta.url), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
   const rule = (selector) => css.match(new RegExp(`${selector.replaceAll(".", "\\.")} \\{([^}]*)\\}`))[1];
   assert.match(rule(".sd-panel .sd-visa-icon"), /left: 4px; top: 4px; width: 9px; height: 18px; background: #b3b3b3/);
-  assert.match(rule(".sd-panel .sd-visa .sd-field"), /left: 14px; top: 5px; width: 86px; height: 17px/);
-  assert.match(rule(".sd-panel .sd-visa.sd-control .sd-field"), /width: 69px/);
-  assert.match(rule(".sd-panel .sd-visa .sd-dropdown"), /left: 83px; top: 5px; width: 17px; height: 17px; padding: 0; border: 0; border-radius: 0; background: #b3b3b3/);
+  // The field follows a resized box (control-resize.mjs); in the default 104 × 26 box it is the measured 86 × 17, 69 beside the button.
+  assert.match(rule(".sd-panel .sd-visa .sd-field"), /left: 14px; top: 5px;/);
+  assert.equal(lengthIn(rule(".sd-panel .sd-visa .sd-field"), "width", 104), 86);
+  assert.equal(lengthIn(rule(".sd-panel .sd-visa .sd-field"), "height", 26), 17);
+  assert.equal(lengthIn(rule(".sd-panel .sd-visa.sd-control .sd-field"), "width", 104), 69);
+  // The button keeps to the right bevel: 4 px from the right edge is x = 83 in the default box.
+  assert.match(rule(".sd-panel .sd-visa .sd-dropdown"), /right: 4px; top: 5px; width: 17px; height: 17px; padding: 0; border: 0; border-radius: 0; background: #b3b3b3/);
   assert.match(rule(".sd-panel .sd-visa .sd-dropdown"), /#e3e3e3[^;]*#696969[^;]*#fff[^;]*#a0a0a0/);
   assert.match(rule(".sd-panel .sd-visa"), /#c9c9c9[\s\S]*#d3d3d3[\s\S]*#eaeaea[\s\S]*#c2c2c2[\s\S]*#b7b7b7[\s\S]*#adadad[\s\S]*#f2f2f2[\s\S]*#b1b1b1[\s\S]*#eeeeee/, "the four rows of the bevel");
 });

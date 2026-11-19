@@ -95,6 +95,10 @@
 
 .sd-panel .sd-string { display: flex; }
 .sd-panel .sd-string .sd-field { flex: 1; align-items: flex-start; padding-top: 4px; white-space: pre; line-height: 15px; }
+/* Made taller than its default, a string or a VISA resource name wraps its text onto more rows at the field's edge; one
+   row cuts it (measured, labview-captures/reports/2026-11-19-control-resizing.md §6, §7). */
+.sd-panel .sd-tall:is(.sd-string, .sd-visa) .sd-field { align-items: flex-start; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sd-panel .sd-tall:is(.sd-string, .sd-visa) .sd-value { white-space: inherit; }
 
 /* ——— Control refnum ——— */
 

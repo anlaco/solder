@@ -43,7 +43,8 @@ const boxStyle = (box) => `left:${px(box.x)};top:${px(box.y)};width:${px(box.anc
 
 /**
  * The root of an object: its box on the panel, the public classes and the editor's hooks. `frame`:
- * `{ id, kind, isControl, box, label, selected, editing, classes, attributes, element }`. An `element` is an object
+ * `{ id, kind, isControl, box, label, selected, editing, classes, attributes, element, handles }`; `handles` is the HTML
+ * of the handles a selected object is resized by, if it has any. An `element` is an object
  * inside a user's cluster (DT-095): it is only drawn, so it has none of the editor's hooks, and a press on it is a
  * press on the cluster that holds it.
  */
@@ -57,7 +58,7 @@ function objectFrame(frame, inner) {
     ...(frame.editing ? ["editando-valor", "sd-editing"] : []),
   ];
   const node = frame.element ? "" : ` data-nodo="${escapeHtml(frame.id)}"`;
-  return `<div class="${classes.join(" ")}"${node} data-label="${escapeHtml(frame.label ?? "")}"${frame.attributes ?? ""} style="${boxStyle(frame.box)}">${inner}</div>`;
+  return `<div class="${classes.join(" ")}"${node} data-label="${escapeHtml(frame.label ?? "")}"${frame.attributes ?? ""} style="${boxStyle(frame.box)}">${inner}${frame.handles ?? ""}</div>`;
 }
 
 /** The two arrows of an incrementer; `axis` names the index of an array they move. */

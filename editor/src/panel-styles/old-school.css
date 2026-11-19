@@ -37,6 +37,10 @@
   font-size: var(--fuente); line-height: 1; font-variant-numeric: normal;
 }
 .sd-panel :is(.sd-numeric, .sd-enum) .sd-incrementer + .sd-field { left: 12px; }
+/* A numeric's field fills its box, so a widened numeric widens its field (reports/2026-11-19-control-resizing.md §4);
+   an enum's stays 6 px wider than its box, as drawn (unverified). */
+.sd-panel .sd-numeric .sd-field { width: auto; right: 0; }
+.sd-panel .sd-enum .sd-field { width: auto; right: -6px; }
 .sd-panel .sd-indicator:is(.sd-numeric, .sd-enum, .sd-string) .sd-field { background: var(--numeric-indicator-background); }
 .sd-panel :is(.sd-numeric, .sd-enum, .sd-string) .sd-value { flex: initial; min-width: auto; overflow: visible; }
 /* The old drawing showed no caret in a field, nor in an array's element: an inline element with no content. */
@@ -61,6 +65,8 @@
     inset 4px 0 0 #b1b1b1, inset 0 4px 0 #b1b1b1, inset -4px 0 0 #eeeeee, inset 0 -4px 0 #eeeeee;
 }
 .sd-panel .sd-ring .sd-incrementer + .sd-field { left: 12px; }
+/* A widened Text Ring's field fills its box (unverified, as a numeric's). */
+.sd-panel .sd-text-ring .sd-field { width: auto; right: 0; }
 .sd-panel .sd-text-ring.sd-indicator .sd-field {
   background: #d2d2d2;
   box-shadow:
@@ -102,22 +108,22 @@
 .sd-panel .sd-visa-glyph { position: absolute; left: 1px; top: 2.5px; display: block; width: 7px; height: 13px; color: #000; }
 .sd-panel .sd-visa-glyph svg { display: block; width: 7px; height: 13px; }
 .sd-panel .sd-visa .sd-field {
-  position: absolute; left: 14px; top: 5px; width: 86px; height: 17px; padding: 0 0 0 2px; border: 0; border-radius: 0;
+  position: absolute; left: 14px; top: 5px; width: calc(100% - 18px); height: calc(100% - 9px); padding: 0 0 0 2px; border: 0; border-radius: 0;
   background: #fff; font-size: var(--fuente); line-height: 1;
 }
-.sd-panel .sd-visa.sd-control .sd-field { width: 69px; }
+/* The field takes all of a widened box; the icon cell keeps its place on the left and a control's button on the right
+   (reports/2026-11-19-control-resizing.md §4): at the default 104 the field is 86 wide, 69 beside the button. */
+.sd-panel .sd-visa.sd-control .sd-field { width: calc(100% - 35px); }
 .sd-panel .sd-visa .sd-value { flex: initial; min-width: auto; overflow: visible; }
 .sd-panel .sd-visa .caret { display: inline; vertical-align: baseline; }
 .sd-panel .sd-visa .sd-dropdown {
-  position: absolute; left: 83px; top: 5px; width: 17px; height: 17px; padding: 0; border: 0; border-radius: 0; background: #b3b3b3;
+  position: absolute; right: 4px; top: 5px; width: 17px; height: 17px; padding: 0; border: 0; border-radius: 0; background: #b3b3b3;
   box-shadow: inset 1px 1px 0 #e3e3e3, inset -1px -1px 0 #696969, inset 2px 2px 0 #fff, inset -2px -2px 0 #a0a0a0;
 }
 .sd-panel .sd-visa .sd-dropdown::before { position: absolute; left: 5px; top: 7px; border-top-color: #000; }
 .sd-panel .sd-visa .sd-dropdown:hover::before { border-top-color: #000; }
 /* A DAQ name's control is 168 wide (reports/2026-11-06-daqmx-types.md, "Panel"), 64 more than a VISA resource name's:
-   the extra width goes to the field and the button moves right by as much; the indicator, 104 wide, is the same. */
-.sd-panel .sd-daq-name.sd-control .sd-field { width: 133px; }
-.sd-panel .sd-daq-name .sd-dropdown { left: 147px; }
+   the field and the button follow the box as they do on a widened VISA resource name. */
 
 /* ——— File path ———
    Measured (reports/2026-10-26-path-type.md §1): a 100 × 25 box with a 4 px bevel round the same #e2e2e2 inside as the
@@ -139,14 +145,14 @@
 .sd-panel .sd-path-glyph { position: absolute; left: 1px; top: 3px; display: block; width: 6px; height: 10px; }
 .sd-panel .sd-path-glyph svg { display: block; width: 6px; height: 10px; }
 .sd-panel .sd-path .sd-field {
-  position: absolute; left: 13px; top: 4px; width: 83px; height: 17px; padding: 0 0 0 2px; border: 0; border-radius: 0;
+  position: absolute; left: 13px; top: 4px; width: calc(100% - 17px); height: calc(100% - 8px); padding: 0 0 0 2px; border: 0; border-radius: 0;
   background: #fafafa; font-size: var(--fuente); line-height: 1; justify-content: flex-start;
 }
 .sd-panel .sd-path.sd-indicator .sd-field { background: #d2d2d2; }
 .sd-panel .sd-path .sd-value { flex: initial; min-width: auto; overflow: hidden; white-space: pre; }
 .sd-panel .sd-path .caret { display: inline; vertical-align: baseline; }
 .sd-panel .sd-browse {
-  position: absolute; left: 102px; top: 0; width: 28px; height: 17px; padding: 0; border: 0; border-radius: 0; background: linear-gradient(#cbcbcb, #c2c2c2);
+  position: absolute; left: calc(100% + 2px); top: 0; width: 28px; height: 17px; padding: 0; border: 0; border-radius: 0; background: linear-gradient(#cbcbcb, #c2c2c2);
   box-shadow: inset 1px 1px 0 #e3e3e3, inset -1px -1px 0 #696969, inset 2px 2px 0 #fff, inset -2px -2px 0 #a0a0a0;
 }
 .sd-panel .sd-browse svg { position: absolute; left: 6px; top: 2px; width: 16px; height: 13px; }
@@ -159,7 +165,8 @@
    inside the object, which isolation makes a stacking context of its own. */
 .sd-panel .sd-boolean { display: block; isolation: isolate; }
 .sd-panel .sd-boolean > :not(.sd-art) { display: none; }
-.sd-panel .sd-boolean .sd-art { position: absolute; inset: -12px; z-index: -1; display: block; background: 0 0 no-repeat; pointer-events: none; }
+/* The drawing is the box with 12 px round it for the shadow; a resized Boolean stretches it to the box (unverified). */
+.sd-panel .sd-boolean .sd-art { position: absolute; inset: -12px; z-index: -1; display: block; background: 0 0 / 100% 100% no-repeat; pointer-events: none; }
 .sd-panel .sd-boolean[data-style="push-button"] .sd-art { background-image: url("old-school/boolean-push-button-off.svg"); }
 .sd-panel .sd-boolean.sd-on[data-style="push-button"] .sd-art { background-image: url("old-school/boolean-push-button-on.svg"); }
 .sd-panel .sd-boolean[data-style="rocker"] .sd-art { background-image: url("old-school/boolean-rocker-off.svg"); }

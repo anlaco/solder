@@ -47,6 +47,7 @@ import { CLUSTER_MEASURES, clusterAt, dropObjects, isUserCluster, newElement, pl
 import { clusterObject } from "./cluster-view.mjs";
 import { CLUSTER_MENU_ROOT } from "./cluster-menus.mjs";
 import * as HC from "./html-controls.mjs";
+import { controlHandlesHtml, isTall, resizeRule, sizedBox, stretchedControl } from "./control-resize.mjs";
 import { DISABLED, disabledOf, isVisible } from "./panel-properties.mjs";
 import { isGraph, labelShown, wireTypeOf } from "./graph-state.mjs";
 import { cellAddress, dimensionsOfNode, firstShown, indexSetting, isDefined, parseCellAddress, readCell, valueFitsDimensions, visibleGrid, visibleSetting, writeCell } from "../common/array-grid.mjs";
@@ -278,7 +279,26 @@ export function cajaObjeto(tipo, x, y, config) {
 export function caja(n, measure, edicion) {
   if (isFreeLabel(n)) return { ...FL.box(n, "panel", measure, edicion), casilla: 0 };
   // A user's cluster keeps the size it was resized to (a shell is never refitted: AutoSizing None).
-  return isUserCluster(n) ? { ...shellBox(n), casilla: 0 } : cajaObjeto(n.tipo, n.panel.x, n.panel.y, n.config);
+  if (isUserCluster(n)) return { ...shellBox(n), casilla: 0 };
+  const defaultBox = cajaObjeto(n.tipo, n.panel.x, n.panel.y, n.config);
+  const rule = resizeRuleOf(n);
+  return rule ? sizedBox(n, rule, defaultBox) : defaultBox;
+}
+
+/** How a node resizes by its handles (control-resize.mjs), or null. Enums, rings and error clusters are blocks drawn otherwise. */
+function resizeRuleOf(n) {
+  if (esEnum(n?.config?.type)) return resizeRule("enum");
+  if (isPanelRing(n)) return resizeRule(n.config.style);
+  if (claseError(n?.tipo, n?.config)) return resizeRule("error-cluster");
+  return resizeRule(n?.tipo);
+}
+
+/** The handles of a selected resizable object, and the class of one made taller than its default (its text wraps). */
+function resizeParts(n, selected, box) {
+  const rule = resizeRuleOf(n);
+  if (!rule) return { handles: "", classes: [] };
+  const tall = isTall(box, cajaObjeto(n.tipo, box.x, box.y, n.config));
+  return { handles: selected ? controlHandlesHtml(n, rule, box) : "", classes: tall ? ["sd-tall"] : [] };
 }
 
 /** How deep inside a numeric or string control's edge a press moves it instead of typing (2026-10-17-panel-move-zones.md). */
@@ -497,7 +517,9 @@ function elementHoldingValue(cluster, node, index, valores) {
 function panelObject(n, ctx, selected, p, resolvedTypes, asElement = false) {
   if (isFreeLabel(n)) return freeLabelObject(n, ctx, selected, p);
   const editing = p.edicion?.valor && p.edicion.nodo === n.id ? p.edicion : null;
-  const frame = { id: asElement ? "" : n.id, box: caja(n), label: n.label?.text ?? "", selected, editing: !!editing, isControl: isControlNode(n), classes: disabledClasses(p.runProps, n.id), element: asElement };
+  const box = caja(n);
+  const resize = asElement ? { handles: "", classes: [] } : resizeParts(n, selected, box);
+  const frame = { id: asElement ? "" : n.id, box, label: n.label?.text ?? "", selected, editing: !!editing, isControl: isControlNode(n), classes: [...disabledClasses(p.runProps, n.id), ...resize.classes], handles: resize.handles, element: asElement };
   const control = CONTROLES[n.tipo];
   if (isUserCluster(n)) {
     const tools = { drawElement: (node) => panelObject(node, ctx, false, p, resolvedTypes, true), boxOf: (node) => caja(node), measure: ctx.medir, value: (cluster, node, index) => elementHoldingValue(cluster, node, index, p.valores), reorder: p.reorder };
@@ -654,6 +676,8 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
     const node = p.g.nodos.find((m) => m.id === sobre.id);
     return { ...p, seleccion: [sobre.id], accion: { tipo: "estirar-libre", nodo: sobre.id, lado: sobre.lado, x0: pt.x, y0: pt.y, g0: p.g, box0: caja(node, ctx.medir) } };
   }
+  // A handle of a control resizes it (issue #21, control-resize.mjs).
+  if (sobre.tipo === "asa-control") return { ...p, seleccion: [sobre.id], accion: startControlStretch(p.g, ctx, sobre, pt) };
   // A handle of a user's cluster resizes its shell (DT-095).
   if (sobre.tipo === "asa-cluster") return { ...p, seleccion: [sobre.id], accion: { tipo: "estirar-cluster", nodo: sobre.id, lado: sobre.lado, x0: pt.x, y0: pt.y, g0: p.g, box0: shellBox(p.g.nodos.find((m) => m.id === sobre.id)) } };
   if (sobre.tipo === "asa-array") {
@@ -671,6 +695,15 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
   if (sobre.tipo === "etiqueta" && !shift && p.seleccion.includes(sobre.id)) return { ...p, accion: { tipo: "mover", x: pt.x, y: pt.y, nodo: sobre.id, movido: false, byLabel: true } };
   if (sobre.tipo === "etiqueta") return { ...p, seleccion: elegir(idEtiqueta(sobre.id)), accion: { tipo: "etiqueta", nodo: sobre.id, x: pt.x, y: pt.y } };
   return { ...p, seleccion: shift ? p.seleccion : [], accion: { tipo: "rectangulo", x0: pt.x, y0: pt.y, x1: pt.x, y1: pt.y, base: shift ? p.seleccion : [] } };
+}
+
+/** The drag a control's handle starts: its box, its default box and its label's offset when it began. */
+function startControlStretch(g, ctx, handle, pt) {
+  const node = g.nodos.find((m) => m.id === handle.id);
+  const box = caja(node);
+  const label = cajaEtiqueta(node, ctx.medir);
+  const start = { box, defaultBox: cajaObjeto(node.tipo, box.x, box.y, node.config), labelOffset: [label.dx, label.dy] };
+  return { tipo: "estirar-control", nodo: handle.id, lado: handle.lado, x0: pt.x, y0: pt.y, g0: g, start };
 }
 
 /** El ratón se mueve por el lienzo con el botón pulsado o con algo a medias. */
@@ -708,6 +741,11 @@ export function moverA(p, ctx, pt) {
     case "estirar-cluster": {
       const smallest = { ancho: CLUSTER_MEASURES.smallest, alto: CLUSTER_MEASURES.smallest };
       return { ...p, g: withShellBox(accion.g0, accion.nodo, FL.stretchedBox(accion.box0, accion.lado, pt.x - accion.x0, pt.y - accion.y0, smallest)) };
+    }
+    case "estirar-control": {
+      const node = accion.g0.nodos.find((m) => m.id === accion.nodo);
+      const stretched = stretchedControl(node, resizeRuleOf(node), accion.start, accion.lado, Math.round(pt.x - accion.x0), Math.round(pt.y - accion.y0));
+      return { ...p, g: { ...accion.g0, nodos: accion.g0.nodos.map((m) => (m.id === node.id ? stretched : m)) } };
     }
     case "estirar-libre": {
       const node = accion.g0.nodos.find((m) => m.id === accion.nodo);

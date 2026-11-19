@@ -25,6 +25,18 @@ export const GRAPH_MEASURES = {
   "xy-graph": { width: 342, height: 300, plot: { x: 70, y: 10, width: 248, height: 248 } },
 };
 
+/**
+ * The measures of a graph as it was resized (`w` and `h` of its placement, control-resize.mjs): the plot area takes
+ * all the frame grows by, and the scales and the legend keep their distance to it (unverified, pending a review in LabVIEW).
+ */
+export function graphMeasures(node) {
+  const measures = GRAPH_MEASURES[node.tipo];
+  const width = node.panel?.w ?? measures.width;
+  const height = node.panel?.h ?? measures.height;
+  const plot = { ...measures.plot, width: measures.plot.width + width - measures.width, height: measures.plot.height + height - measures.height };
+  return { width, height, plot };
+}
+
 /** The legend: 100 × 22 (101 in the report: the 101st pixel of the capture is a line of the panel grid), right-aligned and 3 px above the frame (03: rows 82–103 over a frame from 107). */
 export const LEGEND = { width: 100, height: 22, gap: 3, textX: 16, textBaseline: 15, swatch: { x: 57, y: 2, width: 28, height: 18 } };
 
@@ -205,7 +217,7 @@ function scaleX(scale, plot, separator) {
  * the last value written to it and the histories of the charts. `separator` is the decimal separator of the system.
  */
 export function graphSvg(node, { type, value, charts, separator }) {
-  const measures = GRAPH_MEASURES[node.tipo];
+  const measures = graphMeasures(node);
   const { plot } = measures;
   const { plots, scaleX: xScale, scaleY: yScale } = displayedGraph(node, type, value, charts, plot);
 

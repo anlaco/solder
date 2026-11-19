@@ -9,6 +9,13 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Fix (#21): every control and indicator on the front panel can be resized by its handles, as in LabVIEW. VISA resource
+  name, string, numeric and path behave as measured: eight handles (a numeric only the left and right ones, it never
+  grows taller), LabVIEW's narrowest width and the default height as the smallest, the text field taking the extra
+  room, and a taller string or VISA resource name wrapping its text onto more rows. Enums, rings, DAQ names, Booleans,
+  refnums, error clusters and graphs resize too, by analogy, pending a check against LabVIEW. The size is kept in the
+  `.ovi`.
+
 - Projects begin (DT-099): Solder's core reads and writes a project as `.sdproj`, LabVIEW's `.lvproj` copied one to one
   in JSON: My Computer with its items, virtual, snapshot and auto-populating folders, Dependencies and Build
   Specifications, in LabVIEW's order. The Project Explorer window comes next.
