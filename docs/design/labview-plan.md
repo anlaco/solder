@@ -19,11 +19,38 @@ When the developer says "keep going":
    closes the hardware stage here**: next is **"The language's everyday types"** below. Its step 1 (the compiler's
    split) and step 2, clusters made by the user (DT-095, DT-098), are done (2026-11-16 and 2026-11-17): **continue with
    step 3, type definitions** (DT-096), measured and its core done on 2026-11-17. **DT-099 (2026-11-17) brings projects first:
-   step 2b**, measured and its core done on 2026-11-17, editor stages (a) and (b) done on 2026-11-18. **Next, first of
-   all: DT-100 §6, the `comment` field** on any object of every Solder file (schemas, readers, writers, a round-trip test
-   per format, and the compiled module unchanged by comments; the next version of each format, with its migration), as
-   the developer asked on 2026-11-18. Then stage (c) of step 2b; then the editor stages of type definitions. DAQ's stage B waits for the
+   step 2b**, measured and its core done on 2026-11-17, editor stages (a) and (b) done on 2026-11-18. **Next: the
+   release 0.14.0-beta**, following "Release 0.14" just below. Then stage (c) of step 2b; then the editor stages of type
+   definitions. DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
+   **Release 0.14 (decided by the developer on 2026-11-19).** `main` holds, unreleased: projects (DT-099, core and
+   editor stages a1, a2, b), type definitions (DT-096), resizing every control (#21) and callers seeing an open subOVI's
+   unsaved edits (#20); the CHANGELOG's "Unreleased" lists them. The developer wants the `comment` field in this release
+   too. In this order:
+   1. **DT-100 §6, the `comment` field**, built at once: any object of `.ovi`, `.octl`, `.sdp` and `.sdproj` may hold
+      `"comment": "<text>"`. The schemas (`docs/schema/qvi`, `octl`, `sdp`, `sdproj` `.schema.json`) allow it
+      everywhere; the readers keep it and the writers write it back where it was (`core/model/qvi-format.mjs`,
+      `type-definition.mjs`, `polymorphic.mjs`, `project.mjs`); the compiler never reads it. Each format goes to its next
+      version (`.ovi`/`.octl` `VERSION` 7 → 8, `POLYMORPHIC_VERSION` and `PROJECT_VERSION` 1 → 2) with its entry in
+      `test/end-to-end/format-versions.test.mjs`; older files open unchanged. Verified by a round-trip test per format
+      and the compiled module compared with and without comments (DT-100 "How it is verified"). The editor shows
+      nothing of it yet: where it shows is decided when each place is built. Run the long property hunt after it.
+   2. **Checks left open on 2026-11-19, in the editor under Xvfb** (`labview` skill):
+      editing a subOVI while a caller is running (LabVIEW reserves a running subVI and refuses edits; Solder now
+      refreshes callers on every edit, #20: see what happens and match LabVIEW if it breaks); whether a terminal added to
+      a subOVI without saving leaves the caller's node when the subOVI is closed with Don't Save; a Save As that wrote
+      `sub.ovi.ovi` when `sub.ovi` was typed (`savePathFor` adds no second extension: the GTK dialog's filter is the
+      suspect); a subOVI node's terminals named `control_1`/`indicator_1` instead of their labels (compare with what
+      LabVIEW shows).
+   3. **Try the package by hand** (DT-057 §7): `npm run dist`, start the AppImage, and walk through what is new:
+      create, save and reopen a project and edit its tree, a type definition, resizing controls in Plain and Old School,
+      a caller with an open subOVI edited without saving. The developer also opens it before publishing.
+   4. **Release** as CLAUDE.md "Branches and releases" says: version 0.14.0-beta in `package.json` and the CHANGELOG,
+      `npm test`, tag, `npm run dist`, publish as a pre-release with the update files. Tag, push and publish only when
+      the developer asks. Then answer and close issues #20 and #21 on GitHub (asking first): both are fixed on `main`.
+
+   After the release, also pending: measuring in LabVIEW the controls resized by analogy ("Pending review in LabVIEW:
+   resizing controls", in "Cross-cutting" below), and Old School's enum field, 6 px wider than its box (as before).
 2. To capture LabVIEW, the method is in
    [`../reference/capturing-labview.md`](../reference/capturing-labview.md):
    `win11 encender`, `tools/vm_control.py foto|clic|arrastrar|tecla|texto`.
