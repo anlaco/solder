@@ -69,6 +69,8 @@ import { compilar, runnableOVI } from "../../../core/compiler/compiler.mjs";
 import { patternOf, pruneConnector } from "../../../core/model/connector.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 import { pathFromText } from "../../../core/model/paths.mjs";
+import { connectDockedPage, outerHtmlOf } from "../common/docked-page.mjs";
+import { menuBarModel } from "../common/native-menu-model.mjs";
 
 const nombre = new URLSearchParams(location.search).get("ventana") ?? "front-panel";
 /** The style the Front Panel is drawn in (DT-058), chosen by the main process. */
@@ -142,6 +144,8 @@ let publicado = dia.g;
 let stamp = Sync.initialStamp();
 /** The window answers the other one only once it has loaded its OVI: before that, its graph is an empty one. */
 let listo = false;
+/** Its part of the docked view (common/docked-page.mjs), connected once everything is declared. */
+let docking = null;
 
 /**
  * Sends the graph this window holds to the other one, stamped as a newer copy,
@@ -1346,7 +1350,33 @@ function pintar() {
   for (const el of document.querySelectorAll(".explicacion, .lista-marcos")) dentro(el, tam);
   if (tip.visible) ponerTip();
   if (conPanel) showPanelCursor();
+  docking?.afterPaint();
 }
+
+/**
+ * This window's menus and toolbar for the docked window's own (DT-101 §7): the menu rows with the variants and ticks the
+ * drawn menus have, and the toolbar and icons as drawn here, with the window's classes (running, broken arrow…).
+ */
+function dockedChromeModel() {
+  const variantOf = (id) => (id === EM.editMenuId(nombre) ? variantesDelMenuEdit() : {});
+  return {
+    menus: menuBarModel(inv, `window.${nombre}`, { variantOf, marksOf: marcasDelMenuBarra }),
+    toolbar: { kind: nombre, windowClasses: document.querySelector(".ventana")?.className ?? "", html: outerHtmlOf(".ventana > .cabecera > .barra, .ventana > .cabecera > .zona-iconos") },
+  };
+}
+
+/** A row of the menu bar: what is done is done; a hole is explained at `where`. Clicked here, or chosen in the docked window's menu. */
+function runBarMenuRow(id, where) {
+  const orden = !esHueco(inv.resolver(id)) && ORDENES_MENU[id.slice(id.lastIndexOf(".") + 1)];
+  if (orden) {
+    cambiar({ ...estado, menuBarra: null });
+    return orden();
+  }
+  return cambiar(E.clic({ ...estado, menuBarra: null }, inv, id, where));
+}
+
+/** Where an explanation opens for a row chosen in the docked window's native menu: near the top left of the page. */
+const DOCKED_EXPLANATION_POINT = { x: 40, y: 40 };
 
 /** The check marks of a menu opened from the page and not from the menu bar: the current page of OVI Properties. */
 const marcasDelMenuBarra = (id) => new Set(id === VP.CATEGORIES_ID ? [`${VP.CATEGORIES_ID}.execution`] : id === HIGHLIGHT_BUTTON_ID ? [`${HIGHLIGHT_BUTTON_ID}.${debug.highlight.speed}`] : []);
@@ -2032,14 +2062,7 @@ addEventListener("click", (ev) => {
   if (filaBarra) {
     // A row greyed by the state of the window (Cut with nothing selected) does nothing and leaves the menu open.
     if (filaBarra.classList.contains("desactivado")) return;
-    const id = filaBarra.dataset.id;
-    const e = inv.resolver(id);
-    const orden = !esHueco(e) && ORDENES_MENU[id.slice(id.lastIndexOf(".") + 1)];
-    if (orden) {
-      cambiar({ ...estado, menuBarra: null });
-      return orden();
-    }
-    return cambiar(E.clic({ ...estado, menuBarra: null }, inv, id, ancla(filaBarra)));
+    return runBarMenuRow(filaBarra.dataset.id, ancla(filaBarra));
   }
   // Una fila de un menú de clic derecho: un submenú se abre, lo hecho se hace y
   // un hueco se explica (regla 53).
@@ -2366,6 +2389,9 @@ function mostrarTip(ev) {
     ponerTip();
   }, 150);
 }
+
+// Docked (DT-101 §7), the window's menus and toolbar are the docked window's: it sends here what is chosen there.
+docking = connectDockedPage({ layoutApi: window.solder?.layout, buildModel: dockedChromeModel, runMenuRow: (id) => runBarMenuRow(id, DOCKED_EXPLANATION_POINT), repaint: () => listo && pintar() });
 
 // Everything above is declared: now the OVI is loaded and the window starts to talk to the other one.
 window.solder?.portapapeles.alCambiar(recibirPortapapeles);

@@ -5149,6 +5149,14 @@ experimental.**
 5. **Experimental:** the layout of the docked window (the left column's width, no splitter yet) is a first version.
 6. **The switch** sits in a strip of Solder's own at the foot of the Project Explorer, under the tree: LabVIEW's toolbar
    is wider than the explorer's default 374 px and is clipped, so at its end the switch could not be seen.
+7. **One menu bar and one toolbar** (amended on 2026-11-19, after the developer tried it: "no quiero que cada ventana
+   tenga una fila de tools… que haya una sola… y el botón de run pasa a estar en la toolbar", with Eclipse as the
+   reference). Docked, no page draws its own menus or toolbar: the docked window has a native menu bar with the menus of
+   the active window (the shown Front Panel or Block Diagram, or the Project Explorer when it was clicked last), built
+   from the same inventory as LabVIEW's, and under it one toolbar row with the whole toolbar of that window, Run
+   included. Both change when another window becomes active, and each command is run by its page as if it had been
+   clicked there; a row not done yet is explained when chosen, as in the page. Both were chosen by the developer on the
+   same day (native menus; the whole toolbar, not only execution).
 
 ### How it is verified
 
@@ -5159,4 +5167,7 @@ experimental.**
 | The preference is read back, and a bad file falls back to floating | `test/editor/dock-layout.test.mjs` | Built |
 | Switching keeps an OVI's unsaved edits and undo | tried in the editor under Xvfb on 2026-11-19: the edits stay, Ctrl+Z undoes after switching back | Tried by hand |
 | Closing a docked tab asks "Save changes?" as closing a Front Panel does, and Cancel keeps it | tried in the editor under Xvfb on 2026-11-19 | Tried by hand |
+| Docked, one native menu bar and one toolbar row, of the active window; pages hide their own; menu rows and buttons run on their page | `test/editor/docked-chrome.test.mjs`; tried in the editor under Xvfb on 2026-11-19 (Run from the row ran the OVI, File ▸ New OVI and a "not yet" row's explanation from the native menu, the row following FP, BD and explorer) | Tried by hand; Edit ▸ Undo from the native menu unverified |
+| The docked and floating windows fill their content area after docking, maximizing, unmaximizing and restoring from minimized | On Linux "resize" comes before the content area's new size and the menu bar takes its room with no event (measured on 2026-11-19 under Mutter with a throwaway script: 900 × 573 at the maximize's "resize", 1920 × 984 some 800 ms later); the parts are laid out on the content view's "bounds-changed". `test/editor/docked-chrome.test.mjs`; tried on the desktop under Mutter on 2026-11-19 with captures | Tried by hand |
+| Quitting, docked or floating, closes at once: the docked window and each page's own window do not turn the close into a later one | The editor hung on quitting, docked (main process at 100 % inside `app.quit()`, paused with the inspector on 2026-11-19). `test/editor/docked-chrome.test.mjs`; tried on the desktop on 2026-11-19: docked or floating, with unsaved changes or a project, the application quits 0.14–0.29 s after Don't Save, and Cancel keeps everything open | Tried by hand |
 | Electron 40 crashes when a window goes in the task its message box returned, so pages go a tick later | a throwaway script (SIGSEGV 3/3 at once, 0/3 deferred), and `test/editor/dock-layout.test.mjs` pins the deferral | Built |

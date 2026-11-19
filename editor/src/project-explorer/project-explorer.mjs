@@ -10,9 +10,11 @@ import * as E from "../window/window-state.mjs";
 import * as Edit from "./project-explorer-edit.mjs";
 import { createTreeCommands } from "./project-explorer-commands.mjs";
 import * as State from "./project-explorer-state.mjs";
-import { PREFIX, projectExplorerWindow } from "./project-explorer-view.mjs";
+import { PREFIX, greyedRows, projectExplorerWindow } from "./project-explorer-view.mjs";
 import { WINDOW_MENU, listedIndexOf } from "./window-menu.mjs";
 import { nextLayout } from "./layout-switch.mjs";
+import { connectDockedPage, outerHtmlOf } from "../common/docked-page.mjs";
+import { menuBarModel } from "../common/native-menu-model.mjs";
 
 const measure = installPageFont();
 const windowSize = () => ({ width: innerWidth, height: innerHeight });
@@ -28,6 +30,8 @@ function initialState() {
 }
 
 let state;
+/** Its part of the docked view (common/docked-page.mjs), connected once everything is declared. */
+let docking = null;
 try {
   state = initialState();
 } catch (error) {
@@ -41,6 +45,7 @@ const paint = () => {
   const textBox = document.querySelector(".pe-edit");
   textBox?.focus();
   textBox?.select();
+  docking?.afterPaint();
 };
 
 /** Every change here is only of the window's own state, painted at once. */
@@ -229,6 +234,19 @@ document.addEventListener("keydown", (event) => {
 solder?.project.onRenamed((name) => show(State.rename(state, name)));
 // The main process rebased the stored paths when an untitled project was first saved: the window holds the project it now keeps.
 solder?.project.onRebased((text) => show({ ...state, project: readProject(text) }));
+/** The explorer's menus and toolbar for the docked window's own (DT-101 §7). */
+const dockedChromeModel = () => ({
+  menus: menuBarModel(inventory, PREFIX, { variantOf: (id) => ({ desactivados: greyedRows(state, id) }) }),
+  toolbar: { kind: "project", windowClasses: "pe-window", html: outerHtmlOf(".pe-toolbar") },
+});
+
+/** A row chosen in the docked window's native menu: done as a click on it here; a hole is explained near the top left. */
+function runDockedMenuRow(id) {
+  if (!esHueco(inventory.resolver(id))) return runMenuCommand(id);
+  explainHole(id);
+}
+
+docking = connectDockedPage({ layoutApi: solder?.layout, buildModel: dockedChromeModel, runMenuRow: runDockedMenuRow, repaint: () => state && paint() });
 solder?.layout.onChanged((layout) => show({ ...state, layout }));
 if (state) paint();
 solder?.layout.get().then((layout) => show({ ...state, layout }));

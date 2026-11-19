@@ -5,7 +5,7 @@
 import path from "node:path";
 import { readFile, writeFile } from "node:fs/promises";
 import { ipcMain, screen, webContents } from "electron";
-import { PageWindow, allPages } from "./page-window.mjs";
+import { PageWindow, allPages, pageOfContents } from "./page-window.mjs";
 import { createDock } from "./dock-window.mjs";
 import { LAYOUTS, preferencesText, readPreferences } from "./dock-layout.mjs";
 
@@ -38,6 +38,7 @@ export function createLayoutManager(host) {
     icon: host.icon,
     webPreferences: host.webPreferences,
     tabBarUrl: "solder://editor/dock.html",
+    toolbarUrl: "solder://editor/dock-toolbar.html",
     tabLabel: host.tabLabel,
     onCloseTab: host.closeOVI,
     onCloseWindow: host.exit,
@@ -76,6 +77,15 @@ export function createLayoutManager(host) {
     ipcMain.on("dock:close-tab", (_event, id) => dock.closeTab(id));
     ipcMain.on("dock:toggle-shown", () => dock.toggleShown());
     ipcMain.on("dock:toggle-split", () => dock.toggleSplit());
+    // DT-101 §7: a docked page's menus and toolbar, and what is chosen in the docked window's own.
+    ipcMain.on("dock:page-model", (event, model) => {
+      const page = pageOfContents(event.sender);
+      if (!page) return;
+      page.chromeModel = model;
+      dock.modelChanged();
+    });
+    ipcMain.on("dock:toolbar-click", (_event, id, from) => dock.runOnActive(id, from));
+    ipcMain.on("dock:request-toolbar", () => dock.resendToolbar());
   }
 
   return {

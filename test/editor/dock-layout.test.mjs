@@ -11,12 +11,13 @@ import { LAYOUT_ADVICE, layoutSwitchHtml, nextLayout } from "../../editor/src/pr
 const SIZE = { width: 1200, height: 800 };
 const { FRONT_PANEL: FP, BLOCK_DIAGRAM: BD } = Dock;
 
-test("docked, the explorer takes the left column and the active OVI the middle, under the bar of tabs", () => {
+test("docked, one toolbar row across the top; under it the explorer on the left and the active OVI under its tabs", () => {
   const bounds = Dock.dockBounds(SIZE, { hasExplorer: true, split: false });
-  const left = Dock.LEFT_COLUMN_WIDTH;
-  assert.deepEqual(bounds.explorer, { x: 0, y: 0, width: left, height: 800 });
-  assert.deepEqual(bounds.tabBar, { x: left, y: 0, width: 1200 - left, height: Dock.TAB_BAR_HEIGHT });
-  const middle = { x: left, y: Dock.TAB_BAR_HEIGHT, width: 1200 - left, height: 800 - Dock.TAB_BAR_HEIGHT };
+  const [left, top] = [Dock.LEFT_COLUMN_WIDTH, Dock.TOOLBAR_HEIGHT];
+  assert.deepEqual(bounds.toolbar, { x: 0, y: 0, width: 1200, height: top });
+  assert.deepEqual(bounds.explorer, { x: 0, y: top, width: left, height: 800 - top });
+  assert.deepEqual(bounds.tabBar, { x: left, y: top, width: 1200 - left, height: Dock.TAB_BAR_HEIGHT });
+  const middle = { x: left, y: top + Dock.TAB_BAR_HEIGHT, width: 1200 - left, height: 800 - top - Dock.TAB_BAR_HEIGHT };
   assert.deepEqual([bounds[FP], bounds[BD]], [middle, middle], "unsplit, one of the two is shown in the whole middle");
 });
 

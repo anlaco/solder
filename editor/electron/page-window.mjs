@@ -4,11 +4,20 @@
 // project-manager.mjs keep talking to "its window".
 
 import { EventEmitter } from "node:events";
-import { BaseWindow, WebContentsView } from "electron";
+import { BaseWindow, WebContentsView, app } from "electron";
 
 /** Every page alive, so the layout can be switched for all of them at once. */
 const pages = new Set();
 export const allPages = () => [...pages];
+
+/**
+ * Whether the application is quitting. Then a window's close button must not be turned into a page's own close:
+ * app.quit() closes every window in a loop that does not return, so a close prevented and left to a later tick is
+ * retried forever (the editor hung on quitting, docked, on 2026-11-19: the main process at 100 % inside app.quit()).
+ */
+let quitting = false;
+export const isAppQuitting = () => quitting;
+app.on("before-quit", () => (quitting = true));
 
 /** The page whose web contents sent something, for a dialog's owner and the like. */
 export const pageOfContents = (contents) => allPages().find((page) => !page.isDestroyed() && page.webContents.id === contents.id) ?? null;
@@ -35,7 +44,8 @@ export class PageWindow extends EventEmitter {
     this.frame = new BaseWindow({ ...frame, show: false });
     this.frame.contentView.addChildView(this.view);
     this.fitToFrame();
-    this.frame.on("resize", () => this.fitToFrame());
+    // Not "resize": on Linux it comes before the content area has its new size (see dock-window.mjs).
+    this.frame.contentView.on("bounds-changed", () => this.fitToFrame());
     this.frame.on("close", (event) => this.frameClosing(event));
     this.view.webContents.once("did-finish-load", () => this.emit("ready-to-show"));
     this.view.webContents.on("focus", () => this.emit("focus"));
@@ -56,14 +66,17 @@ export class PageWindow extends EventEmitter {
     return this.dock ? this.dock.window() : this.frame;
   }
 
+  /** Fills its own window; docked, where it goes is the dock's (its own hidden window can still change size). */
   fitToFrame() {
-    const [width, height] = this.frame.getContentSize();
+    if (this.dock) return;
+    const { width, height } = this.frame.contentView.getBounds();
     this.view.setBounds({ x: 0, y: 0, width, height });
   }
 
   /** Its own window's close button: the same `close` event a BrowserWindow gives, which a listener may prevent. */
   frameClosing(event) {
     if (this.destroyed) return;
+    if (quitting) return this.destroy();
     event.preventDefault();
     this.close();
   }

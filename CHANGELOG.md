@@ -11,8 +11,9 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 - Solder's docked view, experimental (DT-101): a switch at the foot of the Project Explorer puts every window into one,
   the Project Explorer on the left and one tab per open OVI in the middle, with a switch between its Front Panel and
-  Block Diagram at the top left (Ctrl+E) and Ctrl+T splitting the middle in half. It switches live, keeping unsaved
-  edits and undo, and is remembered. LabVIEW's floating windows stay the default: "if you come from LabVIEW, use the
+  Block Diagram at the top left (Ctrl+E) and Ctrl+T splitting the middle in half. As in Eclipse, the docked window has
+  one native menu bar and one toolbar row, Run included, for the active window, instead of one per window. It switches
+  live, keeping unsaved edits and undo, and is remembered. LabVIEW's floating windows stay the default: "if you come from LabVIEW, use the
   floating windows; if you start from scratch, use the docked view".
 
 - Fix (#20): a caller sees and runs an open subOVI as it is in memory, with its unsaved edits, as LabVIEW looks for a

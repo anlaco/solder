@@ -887,3 +887,8 @@ svg { display: block; overflow: visible; }
 .nodo.cluster-constant .cc-glyph-diamond { fill: var(--cluster-constant-glyph-diamond); }
 .nodo.cluster-constant .cc-glyph-ring { fill: var(--cluster-constant-interior); stroke: var(--cluster-constant-frame); stroke-width: 1; }
 .nodo.cluster-constant .cc-mixed .cc-glyph-ring { stroke: var(--cluster-constant-frame-mixed); }
+
+/* Solder's docked view (DT-101 §7): the docked window has the one menu bar and toolbar, so a docked OVI window hides its
+   own and its canvas starts at the top. */
+body.docked .ventana > .cabecera { display: none; }
+body.docked .ventana > .lienzo, body.docked .ventana > .canalon { top: 0 !important; }

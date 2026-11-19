@@ -64,3 +64,7 @@ body.project-explorer { background: var(--project-explorer-background); color: v
 .pe-layout-switch.on .pe-switch-track { background: var(--toolbar-hover-outline); }
 .pe-layout-switch.on .pe-switch-thumb { left: 14px; }
 .pe-experimental { color: #d40000; font-weight: 600; }
+
+/* Docked (DT-101 §7), the docked window has the one menu bar and toolbar: the explorer hides its own. */
+body.docked .pe-menubar, body.docked .pe-toolbar { display: none; }
+body.docked .pe-client { top: 0; }

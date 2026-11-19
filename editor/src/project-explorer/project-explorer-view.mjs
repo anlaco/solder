@@ -53,7 +53,7 @@ function rowsWithArrow(inventory, menuId) {
  * The rows of the open menu that are greyed by what is selected: Edit ▸ Remove From Project on a row that cannot be removed
  * (as the toolbar's button is), and Add ▸ of an auto-populating folder, which mirrors the disk (measured: s4 Menus).
  */
-function greyedRows(state, menuId) {
+export function greyedRows(state, menuId) {
   const removeRow = `${PREFIX}.menu.edit.remove-from-project`;
   if (menuId === `${PREFIX}.menu.edit`) return canRemove(state) ? new Set() : new Set([removeRow]);
   if (menuId === AUTO_POPULATING_MENU) return new Set([`${AUTO_POPULATING_MENU}.add`]);

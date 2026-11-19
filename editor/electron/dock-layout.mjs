@@ -9,22 +9,27 @@ export const BLOCK_DIAGRAM = "block-diagram";
 /** The Project Explorer's column on the left and the bar of tabs above the middle: a first version (DT-101 §5). */
 export const LEFT_COLUMN_WIDTH = 300;
 export const TAB_BAR_HEIGHT = 32;
+/** The one toolbar row across the top, under the native menu bar (DT-101 §7): room for LabVIEW's 22 px buttons and the icons. */
+export const TOOLBAR_HEIGHT = 36;
 
 /**
- * The rectangles of the docked window's parts, in its content area of `width` × `height`: the explorer (null when no
- * project is open), the bar of tabs, and the Front Panel and Block Diagram of the active OVI. Unsplit, both take the
- * whole middle and only one is shown; split (Ctrl+T), the Front Panel takes the left half and the Block Diagram the right.
+ * The rectangles of the docked window's parts, in its content area of `width` × `height`: the toolbar row across the top,
+ * the explorer under it on the left (null when no project is open), the bar of tabs, and the Front Panel and Block
+ * Diagram of the active OVI. Unsplit, both take the whole middle and only one is shown; split (Ctrl+T), the Front Panel
+ * takes the left half and the Block Diagram the right.
  */
 export function dockBounds({ width, height }, { hasExplorer, split }) {
   const left = hasExplorer ? Math.min(LEFT_COLUMN_WIDTH, Math.floor(width / 2)) : 0;
   const middleWidth = Math.max(0, width - left);
-  const middleHeight = Math.max(0, height - TAB_BAR_HEIGHT);
-  const explorer = hasExplorer ? { x: 0, y: 0, width: left, height } : null;
-  const tabBar = { x: left, y: 0, width: middleWidth, height: TAB_BAR_HEIGHT };
-  const middle = { x: left, y: TAB_BAR_HEIGHT, width: middleWidth, height: middleHeight };
-  if (!split) return { explorer, tabBar, [FRONT_PANEL]: middle, [BLOCK_DIAGRAM]: middle };
+  const belowToolbar = Math.max(0, height - TOOLBAR_HEIGHT);
+  const toolbar = { x: 0, y: 0, width, height: TOOLBAR_HEIGHT };
+  const explorer = hasExplorer ? { x: 0, y: TOOLBAR_HEIGHT, width: left, height: belowToolbar } : null;
+  const tabBar = { x: left, y: TOOLBAR_HEIGHT, width: middleWidth, height: TAB_BAR_HEIGHT };
+  const middle = { x: left, y: TOOLBAR_HEIGHT + TAB_BAR_HEIGHT, width: middleWidth, height: Math.max(0, belowToolbar - TAB_BAR_HEIGHT) };
+  if (!split) return { toolbar, explorer, tabBar, [FRONT_PANEL]: middle, [BLOCK_DIAGRAM]: middle };
   const half = Math.floor(middleWidth / 2);
   return {
+    toolbar,
     explorer,
     tabBar,
     [FRONT_PANEL]: { ...middle, width: half },

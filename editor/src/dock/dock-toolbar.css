@@ -1,0 +1,8 @@
+/* The docked window's one toolbar row (DT-101 §7): the active window's toolbar, drawn by the page's own stylesheets. */
+body.dock-toolbar { margin: 0; height: 36px; overflow: hidden; background: var(--chrome-background); border-bottom: 1px solid var(--toolbar-box-border); user-select: none; }
+.dock-toolbar-row { position: relative; height: 100%; }
+/* An OVI's toolbar: LabVIEW places it under the menus; here it starts at the row's top, with the icons at the right. */
+.dock-toolbar-row .barra { top: 6px !important; }
+.dock-toolbar-row .zona-iconos { top: 1px !important; height: 34px !important; transform: scale(0.97); transform-origin: top right; }
+/* The Project Explorer's toolbar, as in its window. */
+.dock-toolbar-row .pe-toolbar { height: 36px; }
