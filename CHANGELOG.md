@@ -9,6 +9,8 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+## 0.14.0-beta — 2026-11-19
+
 - Comments in Solder's files (DT-100 §6): any object of an `.ovi`, `.octl`, `.sdp` or `.sdproj` (the file itself, a
   front-panel item, a node, a structure, a wire, a cluster element, a project item, an instance) may hold
   `"comment": "<text>"`. Solder keeps it on its object when it saves, a node's comment goes with the node, and the

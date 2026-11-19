@@ -70,6 +70,8 @@ When the developer says "keep going":
    4. **Release** as CLAUDE.md "Branches and releases" says: version 0.14.0-beta in `package.json` and the CHANGELOG,
       `npm test`, tag, `npm run dist`, publish as a pre-release with the update files. Tag, push and publish only when
       the developer asks. Then answer and close issues #20 and #21 on GitHub (asking first): both are fixed on `main`.
+      *Version 0.14.0-beta set in `package.json` and the CHANGELOG on 2026-11-19, tests green; tag, push, `npm run dist`,
+      the pre-release and the issues wait for the developer.*
 
    After the release, also pending: measuring in LabVIEW the controls resized by analogy ("Pending review in LabVIEW:
    resizing controls", in "Cross-cutting" below), and Old School's enum field, 6 px wider than its box (as before).
