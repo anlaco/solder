@@ -9,6 +9,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Fix (#20): a caller sees and runs an open subOVI as it is in memory, with its unsaved edits, as LabVIEW looks for a
+  subVI in memory first (DT-045 §8). An edit to a subOVI redraws its open callers at once, and closing it without
+  saving takes them back to the saved file.
+
 - Fix (#21): every control and indicator on the front panel can be resized by its handles, as in LabVIEW. VISA resource
   name, string, numeric and path behave as measured: eight handles (a numeric only the left and right ones, it never
   grows taller), LabVIEW's narrowest width and the default height as the smallest, the text field taking the extra

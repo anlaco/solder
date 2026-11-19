@@ -136,6 +136,8 @@ contextBridge.exposeInMainWorld("solder", {
   },
   /** Some OVI was saved, at this absolute path: `callback({ id, key })`. The callers of a saved subOVI must see its new connector. */
   alGuardar: (callback) => ipcRenderer.on("ovi:saved", (_event, saved) => callback(saved)),
+  // Another open OVI changed in memory or was closed (issue #20): `{ id, key }`.
+  onOVIEdited: (callback) => ipcRenderer.on("ovi:edited", (_event, edited) => callback(edited)),
 });
 
 ipcRenderer.on("io:port", (event) => window.postMessage({ solderIoPort: true }, "*", event.ports));

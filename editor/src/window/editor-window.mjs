@@ -251,6 +251,10 @@ function alGuardarOtroOVI({ id, key }) {
   pintar();
 }
 window.solder?.alGuardar(alGuardarOtroOVI);
+// A subOVI open elsewhere changed in memory or was closed: this caller shows and runs it as it is now (issue #20).
+window.solder?.onOVIEdited(({ id, key }) => {
+  if (id !== oviInfo.id && hierarchyKeys.includes(key)) refrescarJerarquia();
+});
 // Leaving this window (switching to the other one) commits what is being typed, as clicking outside does.
 addEventListener("blur", () => confirmarEscritura());
 

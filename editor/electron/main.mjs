@@ -23,6 +23,7 @@ import { CHOSEN_THEME_ROUTE, THEMES, chosenThemeName } from "./theme.mjs";
 import { CHOSEN_PANEL_STYLE_ROUTE, PANEL_STYLES, chosenPanelStyleName } from "../src/front-panel/panel-style.mjs";
 import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from "../src/getting-started/start-state.mjs";
 import { ENTRY_KINDS, POLYMORPHIC_WINDOW_KIND, WINDOW_KINDS, createRegistry, isDirty, primaryWindowKind, recordChange, recordSave, oviName, windowKindsOf, windowTitle } from "./ovi-registry.mjs";
+import { changesWhatCallersSee, memoryFirstReader } from "./memory-first.mjs";
 import { readWindowStyle, watchWindowStyle } from "./window-style.mjs";
 import { createInstrumentIoProcess } from "./instrument-io-process.mjs";
 import { chosenFileOf, chosenFilesOf, confirmationBoxFor, confirmedBy, fileDialogFor, folderAfter, systemDialogFor } from "./file-dialog-options.mjs";
@@ -204,6 +205,16 @@ async function capture(windows, directory) {
 // this file has the windows.
 
 const registry = createRegistry();
+/** OVI texts as a caller reaches them: an open OVI's, with its unsaved edits, before the file's (issue #20). */
+const readOVIText = memoryFirstReader(registry, readTextOrNull);
+
+/** Tells the other windows that an OVI's content changed in memory, so its callers redraw and run it as it is now. */
+function announceEdit(entry) {
+  if (!entry.path) return;
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (oviOfContents.get(window.webContents.id)?.entry.id !== entry.id) window.webContents.send("ovi:edited", { id: entry.id, key: keyOf(entry) });
+  }
+}
 /** Open OVI id → `{ entry, windows: { kind: BrowserWindow }, closing }`. */
 const openOVIs = new Map();
 /** Web contents id → the open OVI whose window it is. */
@@ -325,6 +336,8 @@ function openPolymorphicWindow(entry) {
   window.on("closed", () => {
     registry.close(entry.id);
     openOVIs.delete(entry.id);
+    // Its callers go back to the file: closing without saving discards the edits they were showing.
+    announceEdit(entry);
     if (anyDocumentOpen()) return;
     if (quitting || process.env.SOLDER_CAPTURAS) app.quit();
     else showGettingStarted();
@@ -379,6 +392,8 @@ function openOviWindows(entry) {
     open.stopWatchingStyle();
     registry.close(entry.id);
     openOVIs.delete(entry.id);
+    // Its callers go back to the file: closing without saving discards the edits they were showing.
+    announceEdit(entry);
     for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.destroy();
     if (openOVIs.size) return;
     // LabVIEW does not quit when its last VI closes: the Getting Started window comes back (DT-052).
@@ -702,8 +717,10 @@ function handleRequests() {
   });
   ipcMain.on("ovi:cambio", (event, text) => {
     const open = openOf(event);
+    const previous = open.entry.current;
     recordChange(open.entry, text);
     setTitles(open);
+    if (changesWhatCallersSee(previous, text)) announceEdit(open.entry);
   });
   ipcMain.handle("ovi:guardar", async (event, text, saveAs) => {
     const open = openOf(event);
@@ -759,16 +776,16 @@ function handleRequests() {
   });
   // A Run's confirmation (op 5, Delete with confirm): whether OK was pressed.
   ipcMain.handle("run:confirm", async (event, question) => confirmedBy(await dialog.showMessageBox(ownerOf(event), confirmationBoxFor(question))));
-  // The text of every OVI that an OVI reaches, from the disk (not from the other open OVIs: a caller sees a subOVI when it is saved).
+  // The text of every OVI that an OVI reaches, as it is in memory: an open subOVI with its unsaved edits (issue #20).
   ipcMain.handle("ovi:subovi-texts", (event, text) => {
     const entry = openOf(event).entry;
-    return readHierarchyTexts(keyOf(entry), text, readTextOrNull, OVI_LIB);
+    return readHierarchyTexts(keyOf(entry), text, readOVIText, OVI_LIB);
   });
   // The same for an OVI that is about to be placed as a subOVI: its own text and that of its subOVIs.
   ipcMain.handle("ovi:subovi-texts-of", async (_event, key) => {
-    const text = await readTextOrNull(key);
+    const text = await readOVIText(key);
     if (text === null) return { texts: {}, missing: [key] };
-    const { texts, missing } = await readHierarchyTexts(key, text, readTextOrNull, OVI_LIB);
+    const { texts, missing } = await readHierarchyTexts(key, text, readOVIText, OVI_LIB);
     return { texts: { [key]: text, ...texts }, missing };
   });
   // One clipboard for all the open OVIs, kept as text: what a window copies reaches every window (spec/05 rule 73).
