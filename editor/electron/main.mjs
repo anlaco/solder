@@ -255,6 +255,10 @@ const projects = createProjectManager({
   hideGettingStarted: () => gettingStarted?.hide(),
   createPage: (options) => layouts.createPage(options),
   afterLastProjectClosed: () => afterLastProjectClosed(),
+  openNewOVIIn: (project) => openNewOVIIn(project),
+  saveNewOVI: (entryId, owner) => saveNewOVI(entryId, owner),
+  instanceChanged: (projectId, instance) => setInstanceOfProject(projectId, instance),
+  projectClosed: (projectId) => setInstanceOfProject(projectId, null),
 });
 /** Whether any window of an OVI or a project is open: when none is, the Getting Started window comes back. */
 const anyDocumentOpen = () => openOVIs.size > 0 || projects.count() > 0;
@@ -428,6 +432,8 @@ function leaveMemoryOrDefer(open) {
   openOVIs.delete(open.entry.id);
   if (open.deferring) return deferredEntries.set(open.entry.id, open.entry);
   registry.close(open.entry.id);
+  // A new OVI of a project leaves it with its windows when it was never saved (measured: reports/2026-11-19-project-new-vi.md Q4).
+  if (open.entry.project !== undefined && !open.entry.path) projects.newOVISettled(open.entry.project, open.entry.id, null);
   // Its callers go back to the file: closing without saving discards the edits they were showing.
   announceEdit(open.entry);
 }
@@ -563,6 +569,34 @@ function openNewOVI() {
   return openWindows(entry);
 }
 
+/**
+ * New ▸ OVI in a project (`{ id, instance, folder }`): an untitled OVI that belongs to it, whose titles say where it is
+ * and whose first Save proposes the project's folder (measured: reports/2026-11-19-project-new-vi.md Q1, Q3).
+ */
+function openNewOVIIn(project) {
+  const { entry } = registry.open();
+  Object.assign(entry, { project: project.id, instance: project.instance, projectFolder: project.folder });
+  openWindows(entry);
+  return { id: entry.id, name: oviName(entry) };
+}
+
+/** Save Project saves a new OVI of the project first: its Save, asking where. The path it was saved at, or null. */
+async function saveNewOVI(entryId, owner) {
+  const open = openOVIs.get(entryId);
+  if (!open) return null;
+  return (await writeOVI(open, owner, open.entry.current, false)) === null ? null : open.entry.path;
+}
+
+/** The OVIs open in the project `projectId` say where they are in their titles; a closed project's OVIs (null) are in none. */
+function setInstanceOfProject(projectId, instance) {
+  for (const open of openOVIs.values()) {
+    if (open.entry.project !== projectId) continue;
+    if (instance) open.entry.instance = instance;
+    else Object.assign(open.entry, { project: undefined, instance: undefined, projectFolder: undefined });
+    setTitles(open);
+  }
+}
+
 /** File ▸ New... ▸ Polymorphic OVI: an empty polymorphic OVI, numbered after every Untitled before it (measured). */
 function openNewPolymorphic() {
   const { entry } = registry.open({ kind: ENTRY_KINDS.POLYMORPHIC });
@@ -676,7 +710,9 @@ async function writeOVI(open, owner, text, saveAs) {
   const polymorphic = entry.kind === ENTRY_KINDS.POLYMORPHIC;
   let target = entry.path;
   if (!target || saveAs) {
-    const defaultPath = polymorphic ? polymorphicSaveProposal(target, oviName(entry)) : saveAsProposal(target, oviName(entry));
+    const proposal = polymorphic ? polymorphicSaveProposal(target, oviName(entry)) : saveAsProposal(target, oviName(entry));
+    // A new OVI of a saved project is first saved in the project's folder (measured: reports/2026-11-19-project-new-vi.md Q3).
+    const defaultPath = !target && entry.projectFolder ? path.join(entry.projectFolder, proposal) : proposal;
     const result = await dialog.showSaveDialog(owner, { title: "Save As", defaultPath, filters: polymorphic ? POLYMORPHIC_FILTERS : FILTERS });
     if (result.canceled || !result.filePath) return null;
     target = polymorphic ? polymorphicSavePathFor(result.filePath) : savePathFor(result.filePath);
@@ -684,7 +720,9 @@ async function writeOVI(open, owner, text, saveAs) {
   const rebased = rebaseText(polymorphic ? text : withWindows(text, windowsToSave(open)), keyOf(entry), pathKey(target));
   await writeFile(target, rebased);
   const moved = target !== entry.path;
+  const wasNewInProject = entry.project !== undefined && !entry.path;
   recordSave(entry, target, rebased);
+  if (wasNewInProject) projects.newOVISettled(entry.project, entry.id, target);
   // Saved somewhere else, the OVI takes the style that is next to its new file.
   if (moved && !polymorphic) await restyle(open);
   rememberRecentFile(target);

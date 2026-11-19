@@ -127,6 +127,12 @@ contextBridge.exposeInMainWorld("solder", {
     onRenamed: (callback) => ipcRenderer.on("project:renamed", (_event, name) => callback(name)),
     /** The project's stored paths were rebased to the folder it was first saved in: `callback(text)` with the project's new text. */
     onRebased: (callback) => ipcRenderer.on("project:rebased", (_event, text) => callback(text)),
+    /** New ▸ OVI and File ▸ New OVI: a new OVI opened in this project, `{ entryId, name }` ("Untitled N"). */
+    newOvi: () => ipcRenderer.invoke("project:new-ovi"),
+    /** A new OVI of this project was saved: `callback({ entryId, storedPath })`. */
+    onNewOviSaved: (callback) => ipcRenderer.on("project:new-ovi-saved", (_event, saved) => callback(saved)),
+    /** A new OVI of this project left memory unsaved: `callback(entryId)`. */
+    onNewOviClosed: (callback) => ipcRenderer.on("project:new-ovi-closed", (_event, entryId) => callback(entryId)),
     /** Add ▸ File...: the dialog "Select a File to Insert"; the paths to store, or null if cancelled. */
     chooseFiles: () => ipcRenderer.invoke("project:choose-files"),
     /** Add ▸ Folder (Snapshot)...: `{ folderName, storedPaths }` of the folder's top-level files, or null. */

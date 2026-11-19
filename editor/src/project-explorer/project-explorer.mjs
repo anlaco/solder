@@ -83,7 +83,8 @@ const explain = (id, element) => {
 
 /** What the built rows of the menus and the toolbar do: each asks the main process, which owns the windows. */
 const MENU_ACTIONS = {
-  newOvi: () => solder?.nuevoOVI(),
+  // The explorer's File ▸ New OVI makes the OVI in this project (measured: reports/2026-11-19-project-new-vi.md Q6).
+  newOvi: () => treeCommands.newOvi(),
   newDialog: () => solder?.nuevo(),
   open: () => solder?.abrir(),
   createProject: () => solder?.project.create(),
@@ -91,7 +92,7 @@ const MENU_ACTIONS = {
   saveProject: () => solder?.project.save(),
   close: () => solder?.project.close(),
   exit: () => solder?.salir(),
-  ...Object.fromEntries(["addFile", "addSnapshotFolder", "addAutoPopulatingFolder", "newVirtualFolder", "rename", "removeFromProject"].map((name) => [name, () => treeCommands[name]()])),
+  ...Object.fromEntries(["addFile", "addSnapshotFolder", "addAutoPopulatingFolder", "newVirtualFolder", "newOviInto", "rename", "removeFromProject"].map((name) => [name, () => treeCommands[name]()])),
 };
 
 function runMenuCommand(id) {
@@ -234,6 +235,8 @@ document.addEventListener("keydown", (event) => {
 solder?.project.onRenamed((name) => show(State.rename(state, name)));
 // The main process rebased the stored paths when an untitled project was first saved: the window holds the project it now keeps.
 solder?.project.onRebased((text) => show({ ...state, project: readProject(text) }));
+solder?.project.onNewOviSaved?.((saved) => treeCommands.newOviSaved(saved));
+solder?.project.onNewOviClosed?.((entryId) => treeCommands.newOviClosed(entryId));
 /** The explorer's menus and toolbar for the docked window's own (DT-101 §7). */
 const dockedChromeModel = () => ({
   menus: menuBarModel(inventory, PREFIX, { variantOf: (id) => ({ desactivados: greyedRows(state, id) }) }),

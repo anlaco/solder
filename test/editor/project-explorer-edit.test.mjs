@@ -59,7 +59,7 @@ test("New Virtual Folder opens an in-place edit that Enter commits and Escape ca
   // Not into a file, a document or Dependencies.
   for (const key of ["project/0/2", "project/0/4", "project"]) assert.equal(Edit.newVirtualFolder(sampleState(), key).edit, null);
   assert.equal(INV.entrada("context.project-explorer.my-computer.new.virtual-folder").estado, "built");
-  assert.equal(INV.entrada("context.project-explorer.my-computer.new.vi").necesita, "nuevo-ovi-de-proyecto", "New ▸ OVI waits for an OVI that belongs to a project");
+  assert.equal(INV.entrada("context.project-explorer.my-computer.new.vi").estado, "built", "New ▸ OVI makes an OVI of the project (test/editor/project-new-ovi.test.mjs)");
 });
 
 /** The page's glue on a fake of the preload's API: what it asks of the main process and what it reports back. */
@@ -249,7 +249,7 @@ test("the right-click menus of virtual and auto-populating folders and of the it
   const under = (menu, row) => INV.hijos(`context.project-explorer.${menu}.${row}`).map((entry) => `${entry.etiqueta}${entry.estado === "built" ? " +" : ""}`);
   assert.deepEqual(under("virtual-folder", "add"), ["File... +", "Folder (Snapshot)... +", "Folder (Auto-populating)... +", "Hyperlink..."]);
   assert.deepEqual(under("my-computer", "add"), ["File... +", "Folder (Snapshot)... +", "Folder (Auto-populating)... +", "Hyperlink..."]);
-  assert.deepEqual(under("virtual-folder", "new").slice(0, 2), ["OVI", "Virtual Folder +"]);
+  assert.deepEqual(under("virtual-folder", "new").slice(0, 2), ["OVI +", "Virtual Folder +"]);
   // An OVI inside a folder has the menu of one at the root: Remove from Project is built, Rename... waits for stage d.
   assert.equal(State.contextMenuOf(State.treeOf(Tree.addInto(sample(), [0, 0], []), "P").children[0].children[0].children[0].kind), "context.project-explorer.ovi-item");
   assert.deepEqual(["ovi-item", "document-item"].map((menu) => INV.entrada(`context.project-explorer.${menu}.remove-from-project`).estado), ["built", "built"]);
@@ -259,7 +259,7 @@ test("the right-click menus of virtual and auto-populating folders and of the it
   assert.equal(State.openContextMenu(withAuto, INV, "project/0/0", { x: 10, y: 10 }).menuBarra.id, "context.project-explorer.auto-populating-folder");
   assert.equal(State.openContextMenu(withAuto, INV, "project/0/1", { x: 10, y: 10 }).menuBarra.id, "context.project-explorer.virtual-folder");
   const builtCommands = Object.entries(State.CONTEXT_COMMANDS).filter(([id]) => !id.includes(".project."));
-  assert.equal(builtCommands.length, 13, "four on each of My Computer and the virtual folder, Remove on four menus, Rename");
+  assert.equal(builtCommands.length, 15, "five on each of My Computer and the virtual folder (New ▸ OVI, 2026-11-19), Remove on four menus, Rename");
   for (const [id, command] of Object.entries(State.CONTEXT_COMMANDS)) {
     assert.equal(INV.entrada(id).estado, "built", id);
     assert.ok(typeof command === "string");

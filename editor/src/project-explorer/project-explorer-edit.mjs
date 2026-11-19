@@ -8,7 +8,8 @@
 // items, not the keys.
 
 import { ITEM_KINDS, NEW_FOLDER_NAME, withoutWindow, writeProject } from "../../../core/model/project.mjs";
-import { addAutoPopulatingFolderInto, addFilesInto, addSnapshotFolderInto, addVirtualFolderInto, isEditable, itemAt, moveItem, removeItem, renameItem } from "../../../core/model/project-tree.mjs";
+import { addAutoPopulatingFolderInto, addFilesInto, addInto, addSnapshotFolderInto, addVirtualFolderInto, holdsItems, isEditable, itemAt, moveItem, removeItem, renameItem } from "../../../core/model/project-tree.mjs";
+import { newOviItem, withNewOviSaved, withoutNewOvi } from "../../../core/model/project-new-ovis.mjs";
 import { ROOT_KEY, keyOfPlace, placeOfKey, targetKeyOf, visibleRows } from "./project-explorer-state.mjs";
 
 /**
@@ -192,3 +193,24 @@ export function dropOnto(state, fromKey, targetKey) {
 
 /** Can the row `fromKey` be dropped on the row `targetKey`? The page allows the drop only then. */
 export const canDrop = (state, fromKey, targetKey) => dropOnto(state, fromKey, targetKey) !== state;
+
+// ——— New ▸ OVI (core/model/project-new-ovis.mjs) ———
+
+/**
+ * The new OVI `name`, open as `entryId`, as an item of the row `key` when it holds items, else of My Computer (the
+ * explorer's File ▸ New OVI puts it at My Computer's top, measured: reports/2026-11-19-project-new-vi.md Q6). The new
+ * item is selected and its folder opened, as LabVIEW shows it (Q1, Q2).
+ */
+export function addNewOvi(state, key, name, entryId) {
+  const asked = key === ROOT_KEY ? [] : placeOfKey(key);
+  const into = holdsItems(itemAt(state.project, asked)) ? asked : placeOfKey(targetKeyOf(state.project));
+  const project = addInto(state.project, into, [newOviItem(name, entryId)]);
+  return followEdit(state, project, { open: into, select: newItemPlace(state.project, project, into) });
+}
+
+/** The new OVI `entryId` was saved at `storedPath`: its item becomes that file. */
+export const newOviSaved = (state, entryId, storedPath) => followEdit(state, withNewOviSaved(state.project, entryId, storedPath));
+
+/** The new OVI `entryId` left memory unsaved: its item goes. */
+export const newOviClosed = (state, entryId) => followEdit(state, withoutNewOvi(state.project, entryId));
+

@@ -57,3 +57,14 @@ export const unableToAddDialogText = (items) => ({
   message: "The following items could not be added to the project.",
   detail: `${items.map((item) => `${item.name}\n${item.path}`).join("\n\n")}\n\n${UNABLE_TO_ADD_REASON}`,
 });
+
+/**
+ * Save Project while new OVIs of the project were never saved (measured: reports/2026-11-19-project-new-vi.md Q5): a box
+ * with no title, Yes (the default) and Cancel; Yes saves each new OVI, asking where, and then the project.
+ */
+export const NEW_FILES_BUTTONS = ["Yes", "Cancel"];
+export const newUnsavedFilesText = (projectName) => ({
+  title: "",
+  message: `"${projectName}" refers to new, unsaved files. You must save these files in order to save "${projectName}".`,
+  detail: "Do you want to save the new, unsaved files?",
+});

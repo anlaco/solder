@@ -66,6 +66,14 @@ export function inFileOrder(items) {
   return [...sorted(own.filter((item) => item.kind === ITEM_KINDS.FOLDER)), ...sorted(own.filter((item) => item.kind !== ITEM_KINDS.FOLDER)), ...fixed];
 }
 
+/**
+ * An OVI made in the project and never saved (My Computer ▸ New ▸ OVI, project-new-ovis.mjs) has no path: it names the
+ * editor's open entry instead. It lives only in the text the editor compares to tell whether the project changed; no
+ * saved file holds it, since Save Project saves every new OVI first, as LabVIEW does (measured:
+ * reports/2026-11-19-project-new-vi.md Q5).
+ */
+const UNSAVED_OVI_KEY = "unsaved-ovi";
+
 /** The `comment` of an object read from the file (DT-100 §6), as the keys to spread into what is read. */
 const commentOf = (object) => (typeof object?.comment === "string" ? { comment: object.comment } : {});
 
@@ -74,6 +82,7 @@ function itemToFile(item) {
   /** @type {Record<string, any>} */
   const file = { ...commentOf(item), name: item.name, kind: item.kind };
   if (item.path !== undefined) file.path = item.path;
+  if (item.unsavedOvi !== undefined) file[UNSAVED_OVI_KEY] = item.unsavedOvi;
   if (item.autoPopulating) file["auto-populating"] = true;
   // Dependencies and an auto-populating folder are written with no contents: both are read again from the disk (measured).
   if (item.items && item.kind !== ITEM_KINDS.DEPENDENCIES && !item.autoPopulating) file.items = inFileOrder(item.items).map(itemToFile);
@@ -100,6 +109,7 @@ function itemFromFile(file, where) {
   /** @type {Record<string, any>} */
   const item = { ...commentOf(file), name: file.name, kind: file.kind };
   if (typeof file.path === "string") item.path = file.path;
+  if (typeof file[UNSAVED_OVI_KEY] === "string") item.unsavedOvi = file[UNSAVED_OVI_KEY];
   if (file["auto-populating"] === true) item.autoPopulating = true;
   if (Array.isArray(file.items)) item.items = inFileOrder(file.items.map((inner) => itemFromFile(inner, `${where}/${file.name}`)));
   return item;

@@ -207,8 +207,12 @@ test("a Stop button pressed while a loop runs on the pool stops it and is releas
   const released = [];
   const compiled = compilar(vi.g, CAT);
   const values = { [vi.id.stop]: false };
-  setTimeout(() => (values[vi.id.stop] = true), 40);
-  const written = await ejecutar(compiled, values, { poolPorts: pool.connect(), alSoltar: (nodeId) => released.push(nodeId) });
+  // Stop is pressed once the loop has shown a turn, not after a time: a pool that starts slowly (alone, or under load)
+  // would otherwise see Stop before its first turn (rule 6).
+  const pressStopAfterATurn = (nodeId, value) => {
+    if (nodeId === vi.id.turns && value > 0) values[vi.id.stop] = true;
+  };
+  const written = await ejecutar(compiled, values, { poolPorts: pool.connect(), alSoltar: (nodeId) => released.push(nodeId), alEscribir: pressStopAfterATurn });
   assert.ok(written[vi.id.turns] > 0, "it went round until Stop");
   assert.deepEqual(released, [vi.id.stop]);
   assert.equal(values[vi.id.stop], false);

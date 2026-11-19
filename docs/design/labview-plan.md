@@ -53,6 +53,10 @@ When the developer says "keep going":
       refuses edits to a running subVI, breaks a caller (Bad linkage) when the connector changes unsaved, and offers Defer
       Decision instead of Don't Save while a caller holds the subVI.* *The developer decided the same day (DT-102): the
       reservation and Defer Decision built before 0.14 (tried in the editor under Xvfb); the broken caller after 0.14.*
+      *Also before 0.14, asked by the developer on 2026-11-19 ("no he podido añadir OVIs al proyecto"): New ▸ OVI in a project,
+      measured (reports/2026-11-19-project-new-vi.md) and tried under Xvfb. Left: Close Project leaves the project's
+      OVIs open (LabVIEW closes them, with "Save changes? (Close Project)", Save - All / Don't Save - All); the footer's
+      Application Instance is still the greyed sample.*
    3. **Try the package by hand** (DT-057 §7): `npm run dist`, start the AppImage, and walk through what is new:
       create, save and reopen a project and edit its tree, a type definition, resizing controls in Plain and Old School,
       a caller with an open subOVI edited without saving, and the docked view (switch on and off with unsaved edits, tabs,

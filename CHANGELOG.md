@@ -22,6 +22,11 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   live, keeping unsaved edits and undo, and is remembered. LabVIEW's floating windows stay the default: "if you come from LabVIEW, use the
   floating windows; if you start from scratch, use the docked view".
 
+- New ▸ OVI in a project (DT-099): right-click My Computer or a virtual folder ▸ New ▸ OVI, or the Project Explorer's
+  File ▸ New OVI, makes an "Untitled N" item and opens the OVI, whose titles say "on <project>/My Computer", as in
+  LabVIEW. Its first Save proposes the project's folder and turns the item into the file; closed unsaved, the item goes;
+  Save Project first asks to save the new OVIs.
+
 - A subOVI behaves as LabVIEW's subVI in memory (DT-102): while a caller runs, the subOVI's open windows are in run
   mode and refuse edits until the caller stops; and closing a subOVI with unsaved changes while a caller is open offers
   Save, Defer Decision and Cancel, keeping the changes in memory for the callers until the last one closes, when it is

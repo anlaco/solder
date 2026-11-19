@@ -63,8 +63,12 @@ export const isDirty = (entry) => entry.saved !== null && withoutWindows(entry.c
 /** The name LabVIEW gives the VI in its titles and dialogs: its file name, or «Untitled N». */
 export const oviName = (entry) => (entry.path ? basename(entry.path) : `Untitled ${entry.untitledNumber}`);
 
-/** The title of one of the windows of an OVI, with the asterisk of unsaved changes. */
-export const windowTitle = (entry, kind) => `${oviName(entry)} ${WINDOW_TITLES[kind]}${isDirty(entry) ? " *" : ""}`;
+/**
+ * The title of one of the windows of an OVI, with the asterisk of unsaved changes. An OVI open in a project says where:
+ * "Untitled 3 Front Panel on NewVI14.lvproj/My Computer" (measured: reports/2026-11-19-project-new-vi.md Q1); `instance`
+ * is that "project/target".
+ */
+export const windowTitle = (entry, kind) => `${oviName(entry)} ${WINDOW_TITLES[kind]}${entry.instance ? ` on ${entry.instance}` : ""}${isDirty(entry) ? " *" : ""}`;
 
 /** The windows report the OVI as it is now. The first report is its saved version. */
 export function recordChange(entry, text) {

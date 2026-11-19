@@ -642,10 +642,6 @@
       "desc": "remembering a dialog's \"Do not show this dialog again.\" box between sessions: Solder keeps no per-dialog settings yet",
       "ref": "design/05-decisions.md DT-099 §6"
     },
-    "nuevo-ovi-de-proyecto": {
-      "desc": "a new OVI that belongs to a project, made from the tree (an OVI that belongs to a project: stage d of DT-099)",
-      "ref": "design/05-decisions.md DT-099; design/labview-plan.md step 2b"
-    },
     "renombrar-ovi-de-proyecto": {
       "desc": "renaming an OVI item: LabVIEW renames the file on disk through \"Save the OVI As\" and its callers follow (stage d of DT-099)",
       "ref": "design/05-decisions.md DT-099; design/labview-plan.md step 2b"
@@ -2004,9 +2000,8 @@
     {
       "id": "context.project-explorer.my-computer.new.vi",
       "etiqueta": "OVI",
-      "estado": "todo",
-      "labview": "Creates a new blank VI under the target.",
-      "necesita": "nuevo-ovi-de-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/project-new-ovi.test.mjs::New_OVI_puts_an_Untitled_item_in_the_row_or_in_My_Computer_selected_and_sorted"
     },
     {
       "id": "context.project-explorer.my-computer.new.virtual-folder",
@@ -2449,9 +2444,8 @@
     {
       "id": "context.project-explorer.virtual-folder.new.vi",
       "etiqueta": "OVI",
-      "estado": "todo",
-      "labview": "Creates a new blank VI in the folder.",
-      "necesita": "nuevo-ovi-de-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/project-new-ovi.test.mjs::New_OVI_puts_an_Untitled_item_in_the_row_or_in_My_Computer_selected_and_sorted"
     },
     {
       "id": "context.project-explorer.virtual-folder.new.virtual-folder",

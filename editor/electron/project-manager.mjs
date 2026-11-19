@@ -9,12 +9,13 @@ import os from "node:os";
 import path from "node:path";
 import { BrowserWindow, dialog, ipcMain, screen } from "electron";
 import { dialogOwner, hostWindowOf } from "./page-window.mjs";
-import { ProjectFileError, blankProject, readProject } from "../../core/model/project.mjs";
+import { MY_COMPUTER, ProjectFileError, blankProject, readProject } from "../../core/model/project.mjs";
+import { unsavedOviIds, withNewOviSaved } from "../../core/model/project-new-ovis.mjs";
 import { CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS } from "./close-flow.mjs";
 import { EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, EXIT_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
-import { closeProjectDialogText, hasOVIsOutsideProjects, openProjectDialog, projectSavePathFor, saveProjectDialog } from "./project-dialogs.mjs";
+import { NEW_FILES_BUTTONS, closeProjectDialogText, hasOVIsOutsideProjects, newUnsavedFilesText, openProjectDialog, projectSavePathFor, saveProjectDialog } from "./project-dialogs.mjs";
 import { registerItemRequests } from "./project-item-requests.mjs";
-import { rebaseProjectBody } from "./project-paths.mjs";
+import { rebaseProjectBody, storedProjectPath } from "./project-paths.mjs";
 import { createProjectRegistry, isModified, projectBody, projectFileText, projectName, recordChange, recordSave } from "./project-registry.mjs";
 import { CREATE_PROJECT_DIALOG_SIZE, PROJECT_WINDOW_SIZE, cascadedPosition, projectWindowTitle } from "./project-window.mjs";
 import { windowListRows } from "./project-window-list.mjs";
@@ -26,7 +27,9 @@ const CREATIONS = { BLANK_PROJECT: "blank-project", BLANK_OVI: "blank-ovi" };
  * `host` is what the main process lends: `backgroundColor`, `appIcon` and `preload` for the windows; `quitting()` and
  * `captureMode()`; `anyDocumentOpen()`; `openNewOVI()`; `openOVIEntries()`, the open OVIs; `oviWindowList()` and
  * `activateOVIWindow(key)` for the Window menu; `hideGettingStarted()`; `createPage(options)`, the explorer's page,
- * floating or docked (layout-manager.mjs, DT-101); `afterLastProjectClosed()`.
+ * floating or docked (layout-manager.mjs, DT-101); `afterLastProjectClosed()`; and for the OVIs made in a project,
+ * `openNewOVIIn(project)` (gives the new entry), `saveNewOVI(entryId, owner)` (gives the path it was saved at, or null),
+ * `instanceChanged(projectId, instance)` and `projectClosed(projectId)`.
  */
 export function createProjectManager(host) {
   const registry = createProjectRegistry();
@@ -39,6 +42,8 @@ export function createProjectManager(host) {
   let createDialog = null;
 
   const windowOf = (entry) => windows.get(entry.id);
+  /** Where an OVI open in a project is, as its titles say: "NewVI14.sdproj/My Computer". */
+  const instanceOf = (entry) => `${projectName(entry)}/${MY_COMPUTER}`;
   const titleOf = (entry) => projectWindowTitle({ name: projectName(entry), modified: isModified(entry) });
   const refreshTitle = (entry) => windowOf(entry)?.setTitle(titleOf(entry));
   const webPreferences = () => ({ contextIsolation: true, sandbox: true, preload: host.preload });
@@ -76,6 +81,7 @@ export function createProjectManager(host) {
       closeProject(entry);
     });
     window.on("closed", () => {
+      host.projectClosed(entry.id);
       windows.delete(entry.id);
       entryOfContents.delete(contentsId);
       closing.delete(entry.id);
@@ -115,8 +121,29 @@ export function createProjectManager(host) {
     if (!result.canceled && result.filePaths.length) await openPath(result.filePaths[0], owner);
   }
 
+  /**
+   * The project's new OVIs that were never saved are saved first, after LabVIEW's question (Yes, Cancel), each asking
+   * where; their items become their files. Returns false when the question or a save was cancelled.
+   */
+  async function saveNewOVIsOf(entry, owner) {
+    const ids = unsavedOviIds(readProject(entry.current));
+    if (!ids.length) return true;
+    const { title, message, detail } = newUnsavedFilesText(projectName(entry));
+    const { response } = await dialog.showMessageBox(owner, { type: "question", title, message, detail, buttons: NEW_FILES_BUTTONS, defaultId: 0, cancelId: NEW_FILES_BUTTONS.length - 1 });
+    if (response !== 0) return false;
+    let project = readProject(entry.current);
+    for (const entryId of ids) {
+      const savedAt = await host.saveNewOVI(entryId, owner);
+      if (!savedAt) return false;
+      project = withNewOviSaved(project, entryId, storedProjectPath(entry.path, savedAt));
+    }
+    recordChange(entry, projectBody(project));
+    return true;
+  }
+
   /** Save Project: asks where for a project that was never saved, then writes the project with the window's place. Returns whether it was saved. */
   async function saveProject(entry, owner) {
+    if (!(await saveNewOVIsOf(entry, owner))) return false;
     let target = entry.path;
     if (!target) {
       const result = await dialog.showSaveDialog(owner, saveProjectDialog({ untitledNumber: entry.untitledNumber, folder: lastFolder }));
@@ -139,6 +166,7 @@ export function createProjectManager(host) {
     recordChange(entry, body);
     recordSave(entry, target);
     refreshTitle(entry);
+    host.instanceChanged(entry.id, instanceOf(entry));
     windowOf(entry).webContents.send("project:renamed", projectName(entry));
     if (rebased) windowOf(entry).webContents.send("project:rebased", body);
     return true;
@@ -247,6 +275,12 @@ export function createProjectManager(host) {
       });
     });
     ipcMain.handle("project:save", (event) => saveProject(entryOf(event), ownerOf(event)));
+    // New ▸ OVI: an untitled OVI opened in this project, whose item the page adds.
+    ipcMain.handle("project:new-ovi", (event) => {
+      const project = entryOf(event);
+      const created = host.openNewOVIIn({ id: project.id, instance: instanceOf(project), folder: project.path ? path.dirname(project.path) : null });
+      return { entryId: created.id, name: created.name };
+    });
     // The page's project became this text (the title's star follows whether it differs from the saved one).
     ipcMain.on("project:changed", (event, text) => {
       const entry = entryOf(event);
@@ -263,5 +297,14 @@ export function createProjectManager(host) {
     ipcMain.on("create-project:cancel", () => closeCreateDialog());
   }
 
-  return { openPath, chooseAndOpen, showCreateDialog, confirmQuit, registerRequests, count: () => windows.size };
+  /** A new OVI of the project `projectId` was saved at `absolutePath`, or left memory unsaved (null): its item follows. */
+  function newOVISettled(projectId, entryId, absolutePath) {
+    const entry = registry.get(projectId);
+    const window = entry && windowOf(entry);
+    if (!window || window.isDestroyed()) return;
+    if (absolutePath) window.webContents.send("project:new-ovi-saved", { entryId, storedPath: storedProjectPath(entry.path, absolutePath) });
+    else window.webContents.send("project:new-ovi-closed", entryId);
+  }
+
+  return { openPath, chooseAndOpen, showCreateDialog, confirmQuit, registerRequests, newOVISettled, count: () => windows.size };
 }

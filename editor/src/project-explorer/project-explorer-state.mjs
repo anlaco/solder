@@ -40,7 +40,7 @@ export const MENU_COMMANDS = Object.freeze({
 export const TOOLBAR_COMMANDS = Object.freeze({ "open-project": "openProject", "save-project": "saveProject", "remove-from-project": "removeFromProject" });
 
 /** The built rows of the right-click menus, per menu: what each runs. The tree edits are the page's (project-explorer-edit.mjs). */
-const TREE_ROWS = { "new.virtual-folder": "newVirtualFolder", "add.file": "addFile", "add.folder-snapshot": "addSnapshotFolder", "add.folder-auto-populating": "addAutoPopulatingFolder" };
+const TREE_ROWS = { "new.vi": "newOviInto", "new.virtual-folder": "newVirtualFolder", "add.file": "addFile", "add.folder-snapshot": "addSnapshotFolder", "add.folder-auto-populating": "addAutoPopulatingFolder" };
 const CONTEXT_ROWS_BY_MENU = {
   project: { save: "saveProject" },
   "my-computer": TREE_ROWS,
