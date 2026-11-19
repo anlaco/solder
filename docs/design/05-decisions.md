@@ -38,6 +38,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [077](#dt-077) | When Solder is 1.0: what a LabVIEW developer certified on Core 1 and Core 2 does, reliably, with nothing lost; not a coverage figure | Accepted · not implemented |
 | [089](#dt-089) | The compiler is split into modules of one responsibility each, after everything native and before 1.0 | Proposed · not implemented |
 | [091](#dt-091) | Rings are plain numerics of their representation with items as text–value pairs, saved as pairs from `.sdg` version 5 | Accepted · core built |
+| [101](#dt-101) | Solder's docked view: the Project Explorer and the OVIs in one window, switched live from the floating LabVIEW view | Accepted · experimental, being built |
 
 ## The 34 Red decisions
 
@@ -5115,3 +5116,47 @@ and a `comment` any object may carry.**
 | A move changes only `layout` | a test that moves a node and compares everything else | Not built |
 | Ids do not change across save and open | a round-trip test | Not built |
 | Every beta's file still opens after §2–§5 | `test/end-to-end/format-versions.test.mjs` | Built (the mechanism) |
+
+## DT-101
+
+**Besides LabVIEW's floating windows, Solder has its own docked view: one window with the Project Explorer on the left
+and the open OVIs in the middle, one tab each. A switch on the Project Explorer turns it on and off, live; it is marked
+experimental.**
+
+- **Status:** Accepted on 2026-11-19 by the developer, who asked for it now (the note that it waited for 1.0 is
+  withdrawn): "la idea es distanciarnos de LabVIEW y esta es la vista de Solder", a single window like Eclipse's, Capital's
+  or Xpedition Designer's, "un poco parecido a VB6", so that not everything floats. The choices below were asked about
+  and answered on the same day.
+- **Why:** LabVIEW's floating windows suit who comes from LabVIEW; who starts from scratch is used to one window. Both
+  stay: the switch says "If you come from LabVIEW, use the floating windows; if you start from scratch, use the docked
+  view", with "Experimental" in red. It is the one place where Solder departs from [DT-035](#dt-035) on purpose, and the
+  floating view stays LabVIEW's, one to one.
+
+### Decision
+
+1. **Live, with nothing reloaded.** Every Front Panel, Block Diagram and Project Explorer is a page that can move from a
+   window of its own to the docked window and back (Electron's `WebContentsView` in a `BaseWindow`), so switching keeps
+   undo, unsaved edits and everything typed. The rest of the main process sees each page as it saw its window.
+2. **The docked window:** the Project Explorer on the left (the active project's, if several are open; none, if no
+   project is open) and, in the middle, a row of tabs, one per open OVI, the newest last. The active OVI shows one of its
+   two windows, Front Panel or Block Diagram, chosen by a switch at the top left of the middle; **Ctrl+E** changes it, as
+   it changes window in LabVIEW, and **Ctrl+T** splits the middle in half, the Front Panel left and the Block Diagram
+   right, and joins it again. Opening an OVI brings its tab forward; closing the tab closes the OVI, asking first if it
+   has unsaved changes, as closing its Front Panel does.
+3. **What stays floating:** Getting Started, the dialogs, the polymorphic OVI's window and the palettes. Where each one
+   docks, if it does, is decided when it is built.
+4. **Remembered** as an application preference (`preferences.json` in the user's data folder), not per project.
+5. **Experimental:** the layout of the docked window (the left column's width, no splitter yet) is a first version.
+6. **The switch** sits in a strip of Solder's own at the foot of the Project Explorer, under the tree: LabVIEW's toolbar
+   is wider than the explorer's default 374 px and is clipped, so at its end the switch could not be seen.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The docked window's layout (left column, tabs, one window or split) | `test/editor/dock-layout.test.mjs` | Built |
+| Which OVI is active after opening and closing tabs | `test/editor/dock-layout.test.mjs` | Built |
+| The preference is read back, and a bad file falls back to floating | `test/editor/dock-layout.test.mjs` | Built |
+| Switching keeps an OVI's unsaved edits and undo | tried in the editor under Xvfb on 2026-11-19: the edits stay, Ctrl+Z undoes after switching back | Tried by hand |
+| Closing a docked tab asks "Save changes?" as closing a Front Panel does, and Cancel keeps it | tried in the editor under Xvfb on 2026-11-19 | Tried by hand |
+| Electron 40 crashes when a window goes in the task its message box returned, so pages go a tick later | a throwaway script (SIGSEGV 3/3 at once, 0/3 deferred), and `test/editor/dock-layout.test.mjs` pins the deferral | Built |

@@ -12,6 +12,7 @@ import { createTreeCommands } from "./project-explorer-commands.mjs";
 import * as State from "./project-explorer-state.mjs";
 import { PREFIX, projectExplorerWindow } from "./project-explorer-view.mjs";
 import { WINDOW_MENU, listedIndexOf } from "./window-menu.mjs";
+import { nextLayout } from "./layout-switch.mjs";
 
 const measure = installPageFont();
 const windowSize = () => ({ width: innerWidth, height: innerHeight });
@@ -142,6 +143,8 @@ document.addEventListener("click", (event) => {
   if (state.edit && !event.target.closest(".pe-edit")) treeCommands.commitEdit();
   const menuRow = state.menuBarra && event.target.closest(".item-menu");
   if (menuRow) return clickMenuRow(menuRow);
+  // Solder's docked view on or off (DT-101): every window moves, and every Project Explorer's switch follows.
+  if (event.target.closest("[data-layout-switch]")) return solder?.layout.set(nextLayout(state.layout));
   const title = event.target.closest(".menu");
   if (title) return openBarMenu(title);
   const wasOpen = state.abierta || state.menuBarra;
@@ -226,4 +229,6 @@ document.addEventListener("keydown", (event) => {
 solder?.project.onRenamed((name) => show(State.rename(state, name)));
 // The main process rebased the stored paths when an untitled project was first saved: the window holds the project it now keeps.
 solder?.project.onRebased((text) => show({ ...state, project: readProject(text) }));
+solder?.layout.onChanged((layout) => show({ ...state, layout }));
 if (state) paint();
+solder?.layout.get().then((layout) => show({ ...state, layout }));

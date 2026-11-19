@@ -55,3 +55,12 @@ body.project-explorer { background: var(--project-explorer-background); color: v
 .pe-dialog-button { min-width: 64px; font: inherit; padding: 2px 8px; background: var(--project-explorer-background); color: var(--project-explorer-text); border: 1px solid var(--project-explorer-border); }
 .pe-dialog-button.default { border-color: var(--project-explorer-selected-background); box-shadow: 0 0 0 1px var(--project-explorer-selected-background); }
 .pe-backdrop ~ .explicacion { z-index: 50; }
+
+/* Solder's docked view switch (DT-101): a strip of Solder's own under the tree, where it always shows (LabVIEW's toolbar
+   is wider than the window and is clipped), with "Experimental" in red. */
+.pe-layout-switch { flex: none; display: flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px 2px; cursor: default; font-size: 11px; }
+.pe-switch-track { position: relative; width: 26px; height: 14px; border-radius: 7px; background: var(--toolbar-box-border); transition: background 0.15s; }
+.pe-switch-thumb { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: #fff; transition: left 0.15s; }
+.pe-layout-switch.on .pe-switch-track { background: var(--toolbar-hover-outline); }
+.pe-layout-switch.on .pe-switch-thumb { left: 14px; }
+.pe-experimental { color: #d40000; font-weight: 600; }

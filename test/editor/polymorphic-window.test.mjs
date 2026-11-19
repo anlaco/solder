@@ -301,9 +301,9 @@ test("a saved sdp refreshes the callers that have it open, and the window reads 
   assert.ok(result.keys.includes("/lib/Step.sdp"), "so a save of the .sdp rebuilds this caller's hierarchy");
   const page = readFileSync(path.join(RAIZ, "editor/src/window/editor-window.mjs"), "utf8");
   assert.match(page, /if \(hierarchyKeys\.includes\(key\)\) refrescarJerarquia\(\)/);
-  // writeOVI tells every window which key was saved, the .sdp's included.
+  // writeOVI tells every page which key was saved, the .sdp's included, docked or floating (DT-101).
   const main = readFileSync(path.join(RAIZ, "editor/electron/main.mjs"), "utf8");
-  assert.match(main, /send\("ovi:saved", \{ id: entry\.id, key: pathKey\(target\) \}\)/);
+  assert.match(main, /broadcast\("ovi:saved", \{ id: entry\.id, key: pathKey\(target\) \}\)/);
 });
 
 // ——— Line breaks in the selector name (reports/2026-11-15-poly-selector.md §4) ———

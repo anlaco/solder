@@ -10,6 +10,7 @@ import { TOOLBAR_ICONS, TREE_ICONS } from "./project-explorer-icons.mjs";
 import { canRemove } from "./project-explorer-edit.mjs";
 import { EDITABLE_KINDS, PREFIX, ROW_KINDS, TABS, disabledButtons, visibleRows } from "./project-explorer-state.mjs";
 import { WINDOW_MENU, windowMenuVariant } from "./window-menu.mjs";
+import { layoutSwitchHtml } from "./layout-switch.mjs";
 
 export { MENU_BAR_HEIGHT, PREFIX };
 
@@ -141,6 +142,7 @@ export function projectExplorerWindow(inventory, state, measure, windowSize) {
     ${toolbar(inventory, state)}
     ${tabs(inventory, state)}
     ${tree(state)}
+    ${layoutSwitchHtml(state.layout)}
   </div>
   ${openMenu(inventory, state, measure, windowSize)}
   ${dialog(state)}

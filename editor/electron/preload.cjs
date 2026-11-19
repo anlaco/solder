@@ -136,6 +136,21 @@ contextBridge.exposeInMainWorld("solder", {
     /** "Unable to Add Items": the stored paths of the files that were refused. */
     unableToAdd: (storedPaths) => ipcRenderer.send("project:unable-to-add", storedPaths),
   },
+  /** Solder's docked view (DT-101): the switch on the Project Explorer and the docked window's bar of tabs. */
+  layout: {
+    /** "floating" or "docked". */
+    get: () => ipcRenderer.invoke("layout:get"),
+    set: (layout) => ipcRenderer.send("layout:set", layout),
+    /** The layout was switched, from any window: `callback(layout)`. */
+    onChanged: (callback) => ipcRenderer.on("layout:changed", (_event, layout) => callback(layout)),
+    /** The bar of tabs: its state `{ tabs: [{ id, label, active }], shown, split }`, and what it asks for. */
+    onState: (callback) => ipcRenderer.on("dock:state", (_event, state) => callback(state)),
+    requestState: () => ipcRenderer.send("dock:request-state"),
+    activateTab: (id) => ipcRenderer.send("dock:activate", id),
+    closeTab: (id) => ipcRenderer.send("dock:close-tab", id),
+    toggleShown: () => ipcRenderer.send("dock:toggle-shown"),
+    toggleSplit: () => ipcRenderer.send("dock:toggle-split"),
+  },
   /** The Create Project dialog's own page. */
   createProject: {
     /** What it needs to know: `{ oviOpen }`, whether OVIs are open outside a project (the Open Items question). */

@@ -10,7 +10,7 @@ import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { app, BrowserWindow, dialog, ipcMain, Menu, MessageChannelMain, protocol, screen, utilityProcess } from "electron";
+import { app, BaseWindow, BrowserWindow, dialog, ipcMain, Menu, MessageChannelMain, protocol, screen, utilityProcess, webContents } from "electron";
 import { POLYMORPHIC_EXTENSION, isPolymorphicPath } from "../../core/model/polymorphic.mjs";
 import { OVI_EXTENSIONS, isOVIFile, pathKey, polymorphicSavePathFor, polymorphicSaveProposal, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey } from "../src/common/ovi-paths.mjs";
 import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll } from "./close-flow.mjs";
@@ -24,6 +24,8 @@ import { CHOSEN_PANEL_STYLE_ROUTE, PANEL_STYLES, chosenPanelStyleName } from "..
 import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from "../src/getting-started/start-state.mjs";
 import { ENTRY_KINDS, POLYMORPHIC_WINDOW_KIND, WINDOW_KINDS, createRegistry, isDirty, primaryWindowKind, recordChange, recordSave, oviName, windowKindsOf, windowTitle } from "./ovi-registry.mjs";
 import { changesWhatCallersSee, memoryFirstReader } from "./memory-first.mjs";
+import { broadcast, createLayoutManager, preferencesFileIn } from "./layout-manager.mjs";
+import { dialogOwner, hostWindowOf } from "./page-window.mjs";
 import { readWindowStyle, watchWindowStyle } from "./window-style.mjs";
 import { createInstrumentIoProcess } from "./instrument-io-process.mjs";
 import { chosenFileOf, chosenFilesOf, confirmationBoxFor, confirmedBy, fileDialogFor, folderAfter, systemDialogFor } from "./file-dialog-options.mjs";
@@ -143,21 +145,14 @@ function boundsForNewOVI(index) {
   return Object.fromEntries(Object.entries(bounds).map(([kind, place]) => [kind, { ...place, width, height }]));
 }
 
+/** A window of an OVI: a page that floats in its own window or sits in the docked one (DT-101). */
 function createWindow(entry, kind, bounds) {
-  const window = new BrowserWindow({
-    ...bounds,
-    minWidth: 700,
-    minHeight: 360,
-    useContentSize: !!CAPTURE_CLIENT_SIZE,
-    title: windowTitle(entry, kind),
-    backgroundColor: THEME.windowBackground.color,
-    icon: APP_ICON,
-    show: false,
-    webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(HERE, "preload.cjs") },
+  return layouts.createPage({
+    frame: { ...bounds, minWidth: 700, minHeight: 360, useContentSize: !!CAPTURE_CLIENT_SIZE, title: windowTitle(entry, kind) },
+    url: `solder://editor/index.html?ventana=${kind}&vi=${entry.id}&panelStyle=${PANEL_STYLE_NAME}`,
+    kind,
+    group: entry.id,
   });
-  window.on("page-title-updated", (event) => event.preventDefault());
-  window.loadURL(`solder://editor/index.html?ventana=${kind}&vi=${entry.id}&panelStyle=${PANEL_STYLE_NAME}`);
-  return window;
 }
 
 /**
@@ -211,12 +206,28 @@ const readOVIText = memoryFirstReader(registry, readTextOrNull);
 /** Tells the other windows that an OVI's content changed in memory, so its callers redraw and run it as it is now. */
 function announceEdit(entry) {
   if (!entry.path) return;
-  for (const window of BrowserWindow.getAllWindows()) {
-    if (oviOfContents.get(window.webContents.id)?.entry.id !== entry.id) window.webContents.send("ovi:edited", { id: entry.id, key: keyOf(entry) });
+  for (const contents of webContents.getAllWebContents()) {
+    if (!contents.isDestroyed() && oviOfContents.get(contents.id)?.entry.id !== entry.id) contents.send("ovi:edited", { id: entry.id, key: keyOf(entry) });
   }
 }
-/** Open OVI id → `{ entry, windows: { kind: BrowserWindow }, closing }`. */
+/** Open OVI id → `{ entry, windows: { kind: PageWindow or BrowserWindow }, closing }`. */
 const openOVIs = new Map();
+/** LabVIEW's floating windows or Solder's docked window (DT-101): the OVIs' and projects' pages come from here. */
+const layouts = createLayoutManager({
+  preferencesFile: preferencesFileIn(app.getPath("userData")),
+  backgroundColor: THEME.windowBackground.color,
+  icon: APP_ICON,
+  webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(HERE, "preload.cjs") },
+  tabLabel: (id) => {
+    const entry = openOVIs.get(id)?.entry;
+    return entry ? `${oviName(entry)}${isDirty(entry) ? " *" : ""}` : "";
+  },
+  closeOVI: (id) => {
+    const open = openOVIs.get(id);
+    if (open) primaryWindow(open).close();
+  },
+  exit: () => exitApplication(),
+});
 /** Web contents id → the open OVI whose window it is. */
 const oviOfContents = new Map();
 /**
@@ -235,6 +246,7 @@ const projects = createProjectManager({
   oviWindowList: () => oviWindowList(),
   activateOVIWindow: (key) => activateOVIWindow(key),
   hideGettingStarted: () => gettingStarted?.hide(),
+  createPage: (options) => layouts.createPage(options),
   afterLastProjectClosed: () => afterLastProjectClosed(),
 });
 /** Whether any window of an OVI or a project is open: when none is, the Getting Started window comes back. */
@@ -439,6 +451,8 @@ function activateOVIWindow(key) {
 
 /** Window ▸ Tile Left and Right: the Front Panel and the Block Diagram of an OVI side by side, both shown. */
 function tileWindows(open) {
+  // Docked, Ctrl+T splits the middle in half, Front Panel left and Block Diagram right, or joins it (DT-101 §2).
+  if (layouts.isDocked()) return layouts.toggleSplit();
   const bounds = tiledBounds(screen.getPrimaryDisplay().workArea);
   for (const kind of WINDOW_KINDS) {
     if (open.windows[kind].isMaximized()) open.windows[kind].unmaximize();
@@ -453,13 +467,13 @@ function tileWindows(open) {
  * a blank OVI (labview-captures/editor-checks/REPORT.md §3).
  */
 async function exitApplication() {
-  const owner = BrowserWindow.getFocusedWindow() ?? undefined;
+  const owner = BaseWindow.getFocusedWindow() ?? undefined;
   const ask = async (open) => {
     const { title, message, detail } = exitDialogText(oviName(open.entry));
     const { response } = await dialog.showMessageBox(owner, { type: "question", title, message, detail, buttons: EXIT_BUTTONS, defaultId: 0, cancelId: EXIT_BUTTONS.length - 1 });
     return EXIT_BUTTON_ANSWERS[response] ?? EXIT_ANSWERS.cancel;
   };
-  const save = async (open) => (await writeOVI(open, primaryWindow(open), open.entry.current, false)) !== null;
+  const save = async (open) => (await writeOVI(open, dialogOwner(primaryWindow(open)), open.entry.current, false)) !== null;
   if (!(await confirmExit([...openOVIs.values()], { isDirty: (open) => isDirty(open.entry), ask, save }))) return;
   if (!(await projects.confirmQuit(owner))) return;
   quitting = true;
@@ -552,7 +566,7 @@ async function canDiscard(open, owner) {
 
 /** Closes an OVI and its windows, after asking about unsaved changes unless `force`. Returns whether it closed. */
 async function closeOVI(open, { force = false } = {}) {
-  if (!force && !(await canDiscard(open, primaryWindow(open)))) return false;
+  if (!force && !(await canDiscard(open, dialogOwner(primaryWindow(open))))) return false;
   open.closing = true;
   for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.close();
   return true;
@@ -573,7 +587,7 @@ async function closeAllOVIs(owner) {
     });
     return { answer: CLOSE_BUTTON_ANSWERS[response] ?? CLOSE_ANSWERS.cancel, applyToRemaining: !!checkboxLabel && checkboxChecked };
   };
-  const save = async (open) => (await writeOVI(open, primaryWindow(open), open.entry.current, false)) !== null;
+  const save = async (open) => (await writeOVI(open, dialogOwner(primaryWindow(open)), open.entry.current, false)) !== null;
   const order = closeAllOrder(openOVIs.values(), (open) => Number(open.entry.id));
   if (!(await confirmCloseAll(order, { isDirty: (open) => isDirty(open.entry), ask, save }))) return;
   for (const open of order) await closeOVI(open, { force: true });
@@ -604,7 +618,7 @@ async function writeOVI(open, owner, text, saveAs) {
   rememberRecentFile(target);
   setTitles(open);
   // The callers of this OVI that are open must see its new connector.
-  for (const other of BrowserWindow.getAllWindows()) other.webContents.send("ovi:saved", { id: entry.id, key: pathKey(target) });
+  broadcast("ovi:saved", { id: entry.id, key: pathKey(target) });
   return rebased;
 }
 
@@ -702,7 +716,8 @@ async function readTextOrNull(key) {
 
 function handleRequests() {
   const openOf = (event) => oviOfContents.get(event.sender.id);
-  const ownerOf = (event) => BrowserWindow.fromWebContents(event.sender);
+  // A page's owner is the window it is in now, its own or the docked one (DT-101).
+  const ownerOf = (event) => hostWindowOf(event.sender) ?? BrowserWindow.fromWebContents(event.sender);
 
   projects.registerRequests();
   ipcMain.handle("ovi:init", async (event) => {
@@ -792,12 +807,12 @@ function handleRequests() {
   ipcMain.handle("clipboard:read", () => sharedClipboard);
   ipcMain.on("clipboard:write", (_event, text) => {
     sharedClipboard = text;
-    for (const window of BrowserWindow.getAllWindows()) window.webContents.send("clipboard:changed", text);
+    broadcast("clipboard:changed", text);
   });
   ipcMain.handle("error-list:show-warnings", () => showWarnings);
   ipcMain.on("error-list:set-show-warnings", (_event, on) => {
     showWarnings = !!on;
-    for (const window of BrowserWindow.getAllWindows()) window.webContents.send("error-list:show-warnings-changed", showWarnings);
+    broadcast("error-list:show-warnings-changed", showWarnings);
   });
   ipcMain.on("ovi:error", (event, message) => {
     dialog.showMessageBox(ownerOf(event), { type: "error", message: "The OVI cannot be opened.", detail: message });
@@ -863,7 +878,7 @@ const instrumentIo = createInstrumentIoProcess({
   createChannel: () => new MessageChannelMain(),
   onExit: () => {
     if (quitting) return;
-    for (const window of BrowserWindow.getAllWindows()) window.webContents.send("io:exited");
+    broadcast("io:exited");
   },
 });
 
@@ -879,7 +894,7 @@ app.on("second-instance", (_event, argv) => {
 
 /** A message box over the window in front, or on its own when none is. */
 const showMessageBoxInFront = (options) => {
-  const owner = BrowserWindow.getFocusedWindow();
+  const owner = BaseWindow.getFocusedWindow();
   return owner ? dialog.showMessageBox(owner, options) : dialog.showMessageBox(options);
 };
 
@@ -903,6 +918,8 @@ app.whenReady().then(async () => {
   Menu.setApplicationMenu(null);
   serve();
   handleRequests();
+  layouts.registerRequests();
+  await layouts.load();
   // SOLDER_ABRIR=<file.ovi>: starts with that OVI open instead of a new one (for the comparisons of capturing-labview.md §5).
   await loadStartState();
   app.on("before-quit", () => {

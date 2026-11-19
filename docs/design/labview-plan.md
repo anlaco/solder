@@ -24,8 +24,9 @@ When the developer says "keep going":
    definitions. DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
    **Release 0.14 (decided by the developer on 2026-11-19).** `main` holds, unreleased: projects (DT-099, core and
-   editor stages a1, a2, b), type definitions (DT-096), resizing every control (#21) and callers seeing an open subOVI's
-   unsaved edits (#20); the CHANGELOG's "Unreleased" lists them. The developer wants the `comment` field in this release
+   editor stages a1, a2, b), type definitions (DT-096), resizing every control (#21), callers seeing an open subOVI's
+   unsaved edits (#20) and Solder's docked view (DT-101, experimental: "un gran avance de marca", the developer); the
+   CHANGELOG's "Unreleased" lists them. The developer wants the `comment` field in this release
    too. In this order:
    1. **DT-100 §6, the `comment` field**, built at once: any object of `.ovi`, `.octl`, `.sdp` and `.sdproj` may hold
       `"comment": "<text>"`. The schemas (`docs/schema/qvi`, `octl`, `sdp`, `sdproj` `.schema.json`) allow it
@@ -44,7 +45,9 @@ When the developer says "keep going":
       LabVIEW shows).
    3. **Try the package by hand** (DT-057 §7): `npm run dist`, start the AppImage, and walk through what is new:
       create, save and reopen a project and edit its tree, a type definition, resizing controls in Plain and Old School,
-      a caller with an open subOVI edited without saving. The developer also opens it before publishing.
+      a caller with an open subOVI edited without saving, and the docked view (switch on and off with unsaved edits, tabs,
+      Ctrl+E, Ctrl+T, closing a tab with Save / Don't Save / Cancel, and Save, never tried; Getting Started does not come
+      back when the view is switched off). The developer also opens it before publishing.
    4. **Release** as CLAUDE.md "Branches and releases" says: version 0.14.0-beta in `package.json` and the CHANGELOG,
       `npm test`, tag, `npm run dist`, publish as a pre-release with the update files. Tag, push and publish only when
       the developer asks. Then answer and close issues #20 and #21 on GitHub (asking first): both are fixed on `main`.

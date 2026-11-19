@@ -8,6 +8,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { BrowserWindow, dialog, ipcMain, screen } from "electron";
+import { dialogOwner, hostWindowOf } from "./page-window.mjs";
 import { ProjectFileError, blankProject, readProject } from "../../core/model/project.mjs";
 import { CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS } from "./close-flow.mjs";
 import { EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, EXIT_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
@@ -24,7 +25,8 @@ const CREATIONS = { BLANK_PROJECT: "blank-project", BLANK_OVI: "blank-ovi" };
 /**
  * `host` is what the main process lends: `backgroundColor`, `appIcon` and `preload` for the windows; `quitting()` and
  * `captureMode()`; `anyDocumentOpen()`; `openNewOVI()`; `openOVIEntries()`, the open OVIs; `oviWindowList()` and
- * `activateOVIWindow(key)` for the Window menu; `hideGettingStarted()`; `afterLastProjectClosed()`.
+ * `activateOVIWindow(key)` for the Window menu; `hideGettingStarted()`; `createPage(options)`, the explorer's page,
+ * floating or docked (layout-manager.mjs, DT-101); `afterLastProjectClosed()`.
  */
 export function createProjectManager(host) {
   const registry = createProjectRegistry();
@@ -58,9 +60,8 @@ export function createProjectManager(host) {
   }
 
   function openExplorer(entry) {
-    const window = new BrowserWindow({ ...placementOf(entry), title: titleOf(entry), backgroundColor: host.backgroundColor, icon: host.appIcon, show: false, webPreferences: webPreferences() });
-    window.on("page-title-updated", (event) => event.preventDefault());
-    window.loadURL("solder://editor/project.html");
+    // A page that floats in its own window or sits on the left of the docked one (DT-101).
+    const window = host.createPage({ frame: { ...placementOf(entry), title: titleOf(entry) }, url: "solder://editor/project.html", kind: "project", group: entry.id });
     const contentsId = window.webContents.id;
     windows.set(entry.id, window);
     entryOfContents.set(contentsId, entry);
@@ -156,7 +157,7 @@ export function createProjectManager(host) {
     if (asking.has(entry.id)) return false;
     asking.add(entry.id);
     try {
-      if (!(await confirmDiscard(entry, windowOf(entry)))) return false;
+      if (!(await confirmDiscard(entry, dialogOwner(windowOf(entry))))) return false;
     } finally {
       asking.delete(entry.id);
     }
@@ -172,7 +173,7 @@ export function createProjectManager(host) {
       const { response } = await dialog.showMessageBox(owner, { type: "question", title, message, detail, buttons: EXIT_BUTTONS, defaultId: 0, cancelId: EXIT_BUTTONS.length - 1 });
       return EXIT_BUTTON_ANSWERS[response] ?? EXIT_ANSWERS.cancel;
     };
-    return confirmExit(registry.list(), { isDirty: isModified, ask, save: (entry) => saveProject(entry, windowOf(entry)) });
+    return confirmExit(registry.list(), { isDirty: isModified, ask, save: (entry) => saveProject(entry, dialogOwner(windowOf(entry))) });
   }
 
   // ——— The Create Project dialog ———
@@ -229,7 +230,7 @@ export function createProjectManager(host) {
 
   function registerRequests() {
     const entryOf = (event) => entryOfContents.get(event.sender.id);
-    const ownerOf = (event) => BrowserWindow.fromWebContents(event.sender) ?? undefined;
+    const ownerOf = (event) => hostWindowOf(event.sender) ?? BrowserWindow.fromWebContents(event.sender) ?? undefined;
     // The page of a project: what it shows (a project that was never saved is blank, with no text), and the ways out that need the main process.
     ipcMain.handle("project:init", (event) => {
       const entry = entryOf(event);
@@ -238,7 +239,7 @@ export function createProjectManager(host) {
     ipcMain.on("project:close", (event) => closeProject(entryOf(event)));
     ipcMain.on("project:error", (event, message) => {
       const entry = entryOf(event);
-      dialog.showMessageBox(windowOf(entry), { type: "error", title: "Project Explorer", message: "The project could not be opened.", detail: message }).then(() => {
+      dialog.showMessageBox(dialogOwner(windowOf(entry)), { type: "error", title: "Project Explorer", message: "The project could not be opened.", detail: message }).then(() => {
         closing.add(entry.id);
         windowOf(entry).close();
       });
