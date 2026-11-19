@@ -184,6 +184,18 @@ document.addEventListener("input", (event) => {
   if (event.target.classList.contains("pe-edit")) treeCommands.typeEdit(event.target.value);
 });
 
+// The wheel over a menu taller than the window scrolls it.
+document.addEventListener(
+  "wheel",
+  (event) => {
+    const list = event.target.closest?.(".menu-contextual.desplazable");
+    if (!list) return;
+    event.preventDefault();
+    show(State.scrollMenu(state, list.dataset.menu, event.deltaY, Number(list.dataset.scrollMax)));
+  },
+  { passive: false },
+);
+
 // Dragging a row: it is dropped only where it can go (My Computer or a virtual folder), which is what allows the drop.
 let draggedKey = null;
 document.addEventListener("dragstart", (event) => {

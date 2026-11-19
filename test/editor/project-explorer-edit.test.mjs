@@ -283,3 +283,21 @@ test("the page wires the tree's edits to the keys, the mouse and the main proces
   const manager = readFileSync(path.join(RAIZ, "editor/electron/project-manager.mjs"), "utf8");
   assert.ok(manager.includes("rebaseProjectBody(entry.current, entry.path, target)"), "Save Project rebases the paths to the new file's folder");
 });
+
+// Found on the desktop on 2026-11-19: in the explorer's 374 × 401 window the File menu is taller than the window, was cut
+// off and did not scroll, so File ▸ Exit could not be reached. The wheel scrolls it, as the windows' menus scroll.
+test("a menu taller than the explorer scrolls with the wheel, so File ▸ Exit can be reached", () => {
+  const file = "window.project-explorer.menu.file";
+  const exitRow = `${file}.exit`;
+  const opened = { ...State.fromProject(sample(), "P"), menuBarra: { id: file, x: 0, y: 19 } };
+  const html = draw(opened);
+  const scrollMax = Number(/data-menu="window\.project-explorer\.menu\.file" data-scroll-max="(\d+)"/.exec(html)?.[1]);
+  assert.ok(scrollMax > 0, "the File menu does not fit and scrolls");
+  const exitTop = (state) => Number(new RegExp(`data-id="${exitRow.replaceAll(".", "\\.")}" style="top:([\\d.]+)px`).exec(draw(state))[1]);
+  const menuHeight = Number(/class="menu-contextual desplazable"[^>]*height:([\d.]+)px/.exec(html)[1]);
+  assert.ok(exitTop(opened) > menuHeight, "unscrolled, Exit is below what shows");
+  const scrolled = State.scrollMenu(opened, file, 10_000, scrollMax);
+  assert.equal(scrolled.menuBarra.desplazados[file], scrollMax, "the scroll stops at the end");
+  assert.ok(exitTop(scrolled) < menuHeight, "scrolled to the end, Exit shows");
+  assert.match(readFileSync(path.join(RAIZ, "editor/src/project-explorer/project-explorer.mjs"), "utf8"), /State\.scrollMenu\(state, list\.dataset\.menu, event\.deltaY/, "the page scrolls it on the wheel");
+});

@@ -62,10 +62,10 @@ export function greyedRows(state, menuId) {
 
 function openMenu(inventory, state, measure, windowSize) {
   if (!state.menuBarra) return "";
-  const { id, x, y, abierto } = state.menuBarra;
+  const { id, x, y, abierto, desplazados } = state.menuBarra;
   const ticked = new Set(inventory.entradas.filter((entry) => entry.id.startsWith(`${id}.`) && entry.id.endsWith(`.${ARRANGE_BY_TICKED}`)).map((entry) => entry.id));
   const listed = id === WINDOW_MENU ? windowMenuVariant(inventory, state.windowRows ?? []) : {};
-  return D.menuContextual(inventory, { raiz: id, x, y, abierto }, ticked, measure, { conFlecha: rowsWithArrow(inventory, id), desactivados: greyedRows(state, id), ...listed }, { ...windowSize, top: MENU_BAR_HEIGHT });
+  return D.menuContextual(inventory, { raiz: id, x, y, abierto, desplazados }, ticked, measure, { conFlecha: rowsWithArrow(inventory, id), desactivados: greyedRows(state, id), ...listed }, { ...windowSize, top: MENU_BAR_HEIGHT });
 }
 
 function toolbarButton(inventory, disabled, name) {

@@ -189,6 +189,17 @@ export function hoverMenuRow(state, inventory, rowId) {
 }
 
 /** A click on a row that has a submenu opens it, as the hover does (the keyboard and a touch have no hover). */
+/**
+ * The wheel over an open menu taller than the window: it scrolls by `delta`, up to `max` (the drawn menu says it), as the
+ * windows' menus do (diagram-editing.mjs `desplazarMenu`). The explorer is small, 374 × 401 by default, and its File
+ * menu is taller: without it Exit could not be reached.
+ */
+export function scrollMenu(state, menuId, delta, max) {
+  if (!state.menuBarra) return state;
+  const offset = Math.min(max, Math.max(0, (state.menuBarra.desplazados?.[menuId] ?? 0) + delta));
+  return { ...state, menuBarra: { ...state.menuBarra, desplazados: { ...state.menuBarra.desplazados, [menuId]: offset } } };
+}
+
 export const openSubmenu = (state, rowId) => (state.menuBarra ? { ...state, menuBarra: { ...state.menuBarra, abierto: rowId } } : state);
 
 /** The row of a right-click menu that was clicked, by its id: Expand All or Collapse All, the two that are built. */

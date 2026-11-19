@@ -62,6 +62,11 @@ When the developer says "keep going":
       a caller with an open subOVI edited without saving, and the docked view (switch on and off with unsaved edits, tabs,
       Ctrl+E, Ctrl+T, closing a tab with Save / Don't Save / Cancel, and Save, never tried; Getting Started does not come
       back when the view is switched off). The developer also opens it before publishing.
+      *Done on 2026-11-19 (labview-captures/reports/2026-11-19-package-0.14.md): under Xvfb projects, resizing in the three
+      styles, a caller with an edited subOVI and Defer Decision, Save As and the whole docked view; on the desktop
+      maximize, minimize, Exit (0.38 s) docked and floating, Save As through the portal (no `.ovi.ovi`) and Getting
+      Started. Fixed: the explorer's File menu, cut off with Exit out of reach, scrolls with the wheel. Type definitions
+      have no editor path yet (their editor stages come after the release).*
    4. **Release** as CLAUDE.md "Branches and releases" says: version 0.14.0-beta in `package.json` and the CHANGELOG,
       `npm test`, tag, `npm run dist`, publish as a pre-release with the update files. Tag, push and publish only when
       the developer asks. Then answer and close issues #20 and #21 on GitHub (asking first): both are fixed on `main`.

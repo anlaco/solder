@@ -32,6 +32,9 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   Save, Defer Decision and Cancel, keeping the changes in memory for the callers until the last one closes, when it is
   asked about again with Don't Save.
 
+- Fix: a menu taller than the Project Explorer's window scrolls with the wheel; before, its File menu was cut off and
+  File ▸ Exit could not be reached.
+
 - Fix: in the docked view, the connector pane of the toolbar row picks the cell that is clicked, so a control can be
   given a terminal, and its right-click menu acts on that cell; before, a click there assigned nothing.
 
