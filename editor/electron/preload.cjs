@@ -170,6 +170,13 @@ contextBridge.exposeInMainWorld("solder", {
   },
   /** Some OVI was saved, at this absolute path: `callback({ id, key })`. The callers of a saved subOVI must see its new connector. */
   alGuardar: (callback) => ipcRenderer.on("ovi:saved", (_event, saved) => callback(saved)),
+  /** The keys this OVI's hierarchy calls (`keys`): a subOVI closed with Defer Decision stays in memory while a caller is open. */
+  reportCallees: (keys) => ipcRenderer.send("ovi:callees", keys),
+  /** This page's Run started, calling the OVIs at `keys`, or stopped (`null`): the OVIs it calls are reserved meanwhile. */
+  runState: (keys) => ipcRenderer.send("ovi:run-state", keys),
+  /** The keys of the OVIs reserved by a running caller, now and whenever they change (`callback(keys)`). */
+  reservedKeys: () => ipcRenderer.invoke("ovi:reserved-keys"),
+  onReserved: (callback) => ipcRenderer.on("ovi:reserved", (_event, keys) => callback(keys)),
   // Another open OVI changed in memory or was closed (issue #20): `{ id, key }`.
   onOVIEdited: (callback) => ipcRenderer.on("ovi:edited", (_event, edited) => callback(edited)),
 });

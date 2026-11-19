@@ -105,7 +105,7 @@ test("found in the editor: what kept the docked view from starting, showing its 
   // Electron crashed when a page's window was destroyed in the task its "Save changes?" box returned: a tick later.
   assert.match(source("electron/page-window.mjs"), /this\.emit\("closed"\);[\s\S]*setTimeout\(\(\) => \{\s*dock\?\.detach\(this\);[\s\S]*this\.frame\.destroy\(\);\s*\}, 0\);/);
   // A dialog given a page instead of a window came out as an empty box with one Ok button.
-  assert.match(source("electron/main.mjs"), /canDiscard\(open, dialogOwner\(primaryWindow\(open\)\)\)/);
+  assert.match(source("electron/main.mjs"), /const owner = dialogOwner\(primaryWindow\(open\)\);\n\s+if \(!force && !\(await canDiscard\(open, owner\)\)\)/);
   assert.doesNotMatch(source("electron/main.mjs"), /writeOVI\(open, primaryWindow\(open\)/);
   assert.match(source("electron/project-manager.mjs"), /confirmDiscard\(entry, dialogOwner\(windowOf\(entry\)\)\)/);
   assert.match(source("electron/page-window.mjs"), /addChildView\(this\.view\);\s*\/\/[^\n]*\n\s*this\.view\.setVisible\(true\)/);

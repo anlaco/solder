@@ -32,6 +32,8 @@ import { chosenFileOf, chosenFilesOf, confirmationBoxFor, confirmedBy, fileDialo
 import { UPDATE_BUTTONS, UPDATE_BUTTON_ANSWERS, checkForUpdatesAtStart, shouldCheckForUpdates } from "./update-check.mjs";
 import { ADDON_LIBRARY_FOLDERS_VARIABLE, loadInstalledAddons } from "./installed-addons.mjs";
 import { mergeAddonPalettes } from "../../core/model/palette.mjs";
+import { registerRunReservations } from "./run-reservations.mjs";
+import { DEFER_ANSWERS, DEFER_BUTTONS, DEFER_BUTTON_ANSWERS, canDefer, heldInMemoryText, releasedBy } from "./deferred-close.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // Solder's library of OVIs (DT-073): next to the repository's editor while developing, and among the application's
@@ -210,8 +212,13 @@ function announceEdit(entry) {
     if (!contents.isDestroyed() && oviOfContents.get(contents.id)?.entry.id !== entry.id) contents.send("ovi:edited", { id: entry.id, key: keyOf(entry) });
   }
 }
-/** Open OVI id → `{ entry, windows: { kind: PageWindow or BrowserWindow }, closing }`. */
+/** Open OVI id → `{ entry, windows: { kind: PageWindow or BrowserWindow }, closing, calls }`; `calls`, the keys its hierarchy calls. */
 const openOVIs = new Map();
+/**
+ * The OVIs closed with Defer Decision (deferred-close.mjs): their windows are gone, their entries stay in the registry
+ * with their unsaved changes, which their callers go on using, until the last caller closes. Id → entry.
+ */
+const deferredEntries = new Map();
 /** LabVIEW's floating windows or Solder's docked window (DT-101): the OVIs' and projects' pages come from here. */
 const layouts = createLayoutManager({
   preferencesFile: preferencesFileIn(app.getPath("userData")),
@@ -346,10 +353,7 @@ function openPolymorphicWindow(entry) {
     closeOVI(open);
   });
   window.on("closed", () => {
-    registry.close(entry.id);
-    openOVIs.delete(entry.id);
-    // Its callers go back to the file: closing without saving discards the edits they were showing.
-    announceEdit(entry);
+    leaveMemoryOrDefer(open);
     if (anyDocumentOpen()) return;
     if (quitting || process.env.SOLDER_CAPTURAS) app.quit();
     else showGettingStarted();
@@ -402,10 +406,7 @@ function openOviWindows(entry) {
   });
   panel.on("closed", () => {
     open.stopWatchingStyle();
-    registry.close(entry.id);
-    openOVIs.delete(entry.id);
-    // Its callers go back to the file: closing without saving discards the edits they were showing.
-    announceEdit(entry);
+    leaveMemoryOrDefer(open);
     for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.destroy();
     if (openOVIs.size) return;
     // LabVIEW does not quit when its last VI closes: the Getting Started window comes back (DT-052).
@@ -420,6 +421,53 @@ function openOviWindows(entry) {
     open.windows["block-diagram"].hide();
   });
   return open;
+}
+
+/** An entry's windows are gone: it leaves memory, or, closed with Defer Decision, stays there for its callers. */
+function leaveMemoryOrDefer(open) {
+  openOVIs.delete(open.entry.id);
+  if (open.deferring) return deferredEntries.set(open.entry.id, open.entry);
+  registry.close(open.entry.id);
+  // Its callers go back to the file: closing without saving discards the edits they were showing.
+  announceEdit(open.entry);
+}
+
+/** A deferred entry leaves memory at last, and its callers go back to its file. */
+function forgetDeferred(entry) {
+  deferredEntries.delete(entry.id);
+  registry.close(entry.id);
+  announceEdit(entry);
+}
+
+/** Saves a deferred entry, which has no windows: its text as its windows last reported it, where it is saved. */
+async function saveDeferred(entry, owner) {
+  try {
+    await writeFile(entry.path, entry.current);
+  } catch (error) {
+    dialog.showMessageBox(owner, { type: "error", message: "The OVI could not be saved.", detail: error.message });
+    return false;
+  }
+  recordSave(entry, entry.path, entry.current);
+  broadcast("ovi:saved", { id: entry.id, key: keyOf(entry) });
+  return true;
+}
+
+/**
+ * The deferred entries the closing of `closingId` (all, for `null`) leaves with no caller are about to leave memory:
+ * each with unsaved changes is asked about with LabVIEW's Close dialog. Returns false when one was cancelled.
+ */
+async function releaseDeferred(closingId, owner) {
+  for (const entry of releasedBy([...deferredEntries.values()], [...openOVIs.values()], keyOf, closingId)) {
+    if (isDirty(entry)) {
+      const { title, message, detail } = closeDialogText(oviName(entry));
+      const { response } = await dialog.showMessageBox(owner, { type: "question", title, message, detail, buttons: CLOSE_BUTTONS, defaultId: 0, cancelId: CLOSE_BUTTONS.length - 1 });
+      const answer = CLOSE_BUTTON_ANSWERS[response] ?? CLOSE_ANSWERS.cancel;
+      if (answer === CLOSE_ANSWERS.cancel) return false;
+      if (answer === CLOSE_ANSWERS.save && !(await saveDeferred(entry, owner))) return false;
+    }
+    forgetDeferred(entry);
+  }
+  return true;
 }
 
 /** The window that stands for an open entry: the Front Panel of an OVI, the only window of a polymorphic OVI. */
@@ -475,6 +523,7 @@ async function exitApplication() {
   };
   const save = async (open) => (await writeOVI(open, dialogOwner(primaryWindow(open)), open.entry.current, false)) !== null;
   if (!(await confirmExit([...openOVIs.values()], { isDirty: (open) => isDirty(open.entry), ask, save }))) return;
+  if (!(await releaseDeferred(null, owner))) return;
   if (!(await projects.confirmQuit(owner))) return;
   quitting = true;
   for (const open of openOVIs.values()) open.closing = true;
@@ -488,6 +537,8 @@ const kindOfFile = (filePath) => (isPolymorphicPath(filePath) ? ENTRY_KINDS.POLY
 async function openPath(filePath, owner) {
   if (isProjectPath(filePath)) return projects.openPath(filePath, owner);
   const existing = registry.findByPath(filePath);
+  // An OVI closed with Defer Decision opens again as it is in memory, with its unsaved changes.
+  if (existing && deferredEntries.delete(existing.id)) return openWindows(Object.assign(existing, { initialText: existing.current }));
   if (existing) return focusPanel(openOVIs.get(existing.id));
   let text;
   try {
@@ -556,6 +607,7 @@ function closeNewDialog() {
 /** The VI has unsaved changes: LabVIEW's Close dialog (Save, Don't Save, Cancel). Returns whether to go on. */
 async function canDiscard(open, owner) {
   if (!isDirty(open.entry)) return true;
+  if (canDefer(open, [...openOVIs.values()], keyOf)) return askToDefer(open, owner);
   const { title, message, detail } = closeDialogText(oviName(open.entry));
   const { response } = await dialog.showMessageBox(owner, { type: "question", title, message, detail, buttons: CLOSE_BUTTONS, defaultId: 0, cancelId: CLOSE_BUTTONS.length - 1 });
   const answer = CLOSE_BUTTON_ANSWERS[response] ?? CLOSE_ANSWERS.cancel;
@@ -564,9 +616,28 @@ async function canDiscard(open, owner) {
   return (await writeOVI(open, owner, open.entry.current, false)) !== null;
 }
 
+/**
+ * An OVI with unsaved changes that an open caller calls: LabVIEW's Save, Defer Decision, Cancel (deferred-close.mjs).
+ * Defer Decision lets it close, keeping its changes in memory. Returns whether to go on.
+ */
+async function askToDefer(open, owner) {
+  const { title, message, detail } = heldInMemoryText(oviName(open.entry));
+  const { response } = await dialog.showMessageBox(owner, { type: "question", title, message, detail, buttons: DEFER_BUTTONS, defaultId: 0, cancelId: DEFER_BUTTONS.length - 1 });
+  const answer = DEFER_BUTTON_ANSWERS[response] ?? DEFER_ANSWERS.cancel;
+  if (answer === DEFER_ANSWERS.cancel) return false;
+  if (answer === DEFER_ANSWERS.defer) return (open.deferring = true);
+  return (await writeOVI(open, owner, open.entry.current, false)) !== null;
+}
+
 /** Closes an OVI and its windows, after asking about unsaved changes unless `force`. Returns whether it closed. */
 async function closeOVI(open, { force = false } = {}) {
-  if (!force && !(await canDiscard(open, dialogOwner(primaryWindow(open))))) return false;
+  const owner = dialogOwner(primaryWindow(open));
+  if (!force && !(await canDiscard(open, owner))) return false;
+  // What it called and nothing else calls, closed with Defer Decision, is about to leave memory now (measured).
+  if (!force && !(await releaseDeferred(open.entry.id, owner))) {
+    open.deferring = false;
+    return false;
+  }
   open.closing = true;
   for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.close();
   return true;
@@ -590,6 +661,7 @@ async function closeAllOVIs(owner) {
   const save = async (open) => (await writeOVI(open, dialogOwner(primaryWindow(open)), open.entry.current, false)) !== null;
   const order = closeAllOrder(openOVIs.values(), (open) => Number(open.entry.id));
   if (!(await confirmCloseAll(order, { isDirty: (open) => isDirty(open.entry), ask, save }))) return;
+  if (!(await releaseDeferred(null, owner))) return;
   for (const open of order) await closeOVI(open, { force: true });
 }
 
@@ -723,6 +795,12 @@ function handleRequests() {
   ipcMain.handle("ovi:init", async (event) => {
     const { entry } = openOf(event);
     return { ...describe(entry), windowStyle: await readWindowStyle(entry.path), oviLibRoot: OVI_LIB };
+  });
+  registerRunReservations({ ipcMain, webContents });
+  // What an OVI's hierarchy calls, as its page sees it: an open caller keeps a subOVI closed with Defer Decision in memory.
+  ipcMain.on("ovi:callees", (event, keys) => {
+    const open = openOf(event);
+    if (open) open.calls = keys;
   });
   // Scrolling is saved with the OVI and never marks it modified (DT-078).
   ipcMain.on("ovi:scrolled", (event, origin) => {

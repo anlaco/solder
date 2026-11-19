@@ -189,6 +189,12 @@ let hierarchyErrors = [];
 /** The keys of the subOVIs this OVI reaches. */
 let hierarchyKeys = [];
 
+/** The keys this OVI's hierarchy calls, told to the main process too: an open caller keeps a deferred subOVI in memory. */
+function setHierarchyKeys(keys) {
+  hierarchyKeys = keys;
+  window.solder?.reportCallees?.(keys.filter((key) => key !== oviKey));
+}
+
 /**
  * Builds the catalog view of this OVI over `g` and the subOVI texts held now, and
  * returns `g` with the wires to ports a subOVI no longer has left broken, with a
@@ -201,7 +207,7 @@ function rebuildHierarchy(g) {
   cat = result.catalog;
   ctx = D.contexto(cat, glifos, separador, medirMenu);
   hierarchyErrors = result.errors;
-  hierarchyKeys = result.keys;
+  setHierarchyKeys(result.keys);
   // A polymorphic node on Automatic follows what is wired, with the new hierarchy (DT-074).
   return Gr.aflojarCablesHuerfanos(Gr.adaptPolymorphicNodes(g, cat), cat, placeOfOldTerminal);
 }
@@ -305,7 +311,7 @@ async function cargarTexto(text) {
     cat = result.catalog;
     ctx = D.contexto(cat, glifos, separador, medirMenu);
     hierarchyErrors = result.errors;
-    hierarchyKeys = result.keys;
+    setHierarchyKeys(result.keys);
     cargar(Gr.adaptPolymorphicNodes(result.graph, cat));
   } catch (e) {
     window.solder.error(e.message);
@@ -364,11 +370,29 @@ function appendSeries(charts, series) {
 
 const valoresDeControles = (g) => Object.fromEntries(g.nodos.filter(RV.isControl).map((n) => [n.id, CV.startValue(n)]));
 
-/** Las dos ventanas entran en modo Run o salen de él. */
-function modoRun(si) {
+/**
+ * A caller that calls this OVI runs: LabVIEW reserves the subVI, whose windows are in run mode and refuse every edit,
+ * silently, until the caller stops (labview-captures/reports/2026-11-19-subvi-checks-0.14-labview.md §1).
+ */
+let reservado = false;
+
+/** Este OVI pasa a reservado por un llamador que corre, o deja de estarlo; su propio Run no se toca. */
+function reservar(si) {
+  if (si === reservado || (si && ejecutando)) return;
+  reservado = si;
+  modoRun(si, { reserved: true });
+}
+window.solder?.reservedKeys?.().then((keys) => reservar(keys.includes(oviKey)));
+window.solder?.onReserved?.((keys) => reservar(keys.includes(oviKey)));
+
+/**
+ * Las dos ventanas entran en modo Run o salen de él. `reserved`: the Run is a caller's, so this OVI's own values were
+ * not touched and its leaving is no step to undo.
+ */
+function modoRun(si, { reserved = false } = {}) {
   ejecutando = si;
   if (si) descartarTip();
-  if (!si) {
+  if (!si && !reserved) {
     // The controls keep what was operated; the indicators keep what they show, as their current value
     // (run-values.mjs). Each window does it with the same values, so nothing is shared; it is one step to undo.
     const after = RV.afterRun(grafo(), pan.valores);
@@ -487,6 +511,7 @@ function acabar(data) {
   dialogoError = null;
   lanzado = false;
   canal.postMessage({ ejecutando: false });
+  window.solder?.runState?.(null);
   modoRun(false);
   if (data.error) window.solder?.avisar("The OVI stopped with an error.", data.error);
 }
@@ -515,6 +540,7 @@ async function ejecutarOVI({ stepFirst = false } = {}) {
   const poolPorts = pool.connect();
   lanzado = true;
   canal.postMessage({ ejecutando: true });
+  window.solder?.runState?.(hierarchyKeys.filter((key) => key !== oviKey));
   modoRun(true);
   const transferred = ioPort ? [...poolPorts, ioPort] : poolPorts;
   trabajador.postMessage({ orden: "run", clave: oviKey, compilado: runnableOVI(c), depuracion: debugging, valores: valoresDeControles(g), separador, charts: g.nodos.filter((n) => n.tipo === "waveform-chart").map((n) => n.id), poolPorts, ioPort }, transferred);
@@ -546,7 +572,8 @@ window.solder?.io?.alTerminar(() => trabajador?.postMessage({ orden: "io-exited"
  * worker no contesta —un cálculo que no cede—, se termina el worker entero.
  */
 function abortar() {
-  if (!ejecutando) return;
+  // A reserved OVI does not run itself: its caller is aborted from the caller's windows.
+  if (!ejecutando || reservado) return;
   if (!lanzado) return canal.postMessage({ abortar: true });
   trabajador.postMessage({ orden: "abort" });
   clearTimeout(plazoAbort);

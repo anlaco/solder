@@ -5171,3 +5171,37 @@ experimental.**
 | The docked and floating windows fill their content area after docking, maximizing, unmaximizing and restoring from minimized | On Linux "resize" comes before the content area's new size and the menu bar takes its room with no event (measured on 2026-11-19 under Mutter with a throwaway script: 900 × 573 at the maximize's "resize", 1920 × 984 some 800 ms later); the parts are laid out on the content view's "bounds-changed". `test/editor/docked-chrome.test.mjs`; tried on the desktop under Mutter on 2026-11-19 with captures | Tried by hand |
 | Quitting, docked or floating, closes at once: the docked window and each page's own window do not turn the close into a later one | The editor hung on quitting, docked (main process at 100 % inside `app.quit()`, paused with the inspector on 2026-11-19). `test/editor/docked-chrome.test.mjs`; tried on the desktop on 2026-11-19: docked or floating, with unsaved changes or a project, the application quits 0.14–0.29 s after Don't Save, and Cancel keeps everything open | Tried by hand |
 | Electron 40 crashes when a window goes in the task its message box returned, so pages go a tick later | a throwaway script (SIGSEGV 3/3 at once, 0/3 deferred), and `test/editor/dock-layout.test.mjs` pins the deferral | Built |
+
+## DT-102
+
+**A subOVI behaves in memory as LabVIEW's subVI: reserved while a caller runs, held in memory by its open callers with
+Defer Decision, and, after 0.14, breaking its callers when its connector changes unsaved.**
+
+- **Status:** Accepted on 2026-11-19 by the developer, after the checks of release 0.14's step 2 measured LabVIEW
+  (labview-captures/reports/2026-11-19-subvi-checks-0.14-labview.md): "Igualarlo ya" for §1, "Antes de la 0.14" for §2,
+  "Igualar a LabVIEW" for §3, whose option said it is done in a later version.
+- **Why:** #20 made callers use an open subOVI's unsaved edits (DT-045 §8); what LabVIEW does around that had not been
+  measured, and Solder differed in three places without failing.
+
+### Decision
+
+1. **Reserved while a caller runs.** While an OVI runs, every open OVI its hierarchy calls is in run mode: its windows
+   refuse every edit silently, as LabVIEW's do, and its own Run and Abort do nothing; it is editable again when the
+   caller stops (`editor/electron/run-reservations.mjs`).
+2. **Defer Decision.** Closing an OVI with unsaved changes that another open OVI calls offers LabVIEW's Save, Defer
+   Decision and Cancel, with "<name> has unsaved changes that will remain in memory until all references to it are
+   closed." Defer Decision closes its windows and keeps its changes in memory, where callers go on using them and from
+   where it opens again. When the last caller closes (or Close All, or Exit), it is about to leave memory and is asked
+   about with Save, Don't Save and Cancel (`editor/electron/deferred-close.mjs`).
+3. **A changed connector breaks the caller (after 0.14).** LabVIEW does not grow the caller's node when a subVI's
+   connector changes unsaved: the caller breaks with "SubVI '<name>': Bad linkage to subVI" until the subVI is saved.
+   Solder grows the node at once (#20). Matched in a later version; how the relinking after a save looks is measured
+   first.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| The OVIs a running caller calls are reserved until it stops | `test/editor/run-reservations.test.mjs`; tried in the editor under Xvfb | Built |
+| Defer Decision keeps a subOVI in memory for its callers, and the last caller's close asks with Don't Save | `test/editor/deferred-close.test.mjs`; tried in the editor under Xvfb | Built |
+| A changed connector breaks the caller | — | Not built (after 0.14) |

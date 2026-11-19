@@ -51,7 +51,8 @@ When the developer says "keep going":
       nothing) and, found on the way, the docked toolbar row's connector pane, which assigned no cell. Save As under Xvfb
       wrote `sub2.ovi` (no double extension): tried again on the desktop in step 3. Left for the developer to decide: LabVIEW
       refuses edits to a running subVI, breaks a caller (Bad linkage) when the connector changes unsaved, and offers Defer
-      Decision instead of Don't Save while a caller holds the subVI.*
+      Decision instead of Don't Save while a caller holds the subVI.* *The developer decided the same day (DT-102): the
+      reservation and Defer Decision built before 0.14 (tried in the editor under Xvfb); the broken caller after 0.14.*
    3. **Try the package by hand** (DT-057 §7): `npm run dist`, start the AppImage, and walk through what is new:
       create, save and reopen a project and edit its tree, a type definition, resizing controls in Plain and Old School,
       a caller with an open subOVI edited without saving, and the docked view (switch on and off with unsaved edits, tabs,

@@ -22,6 +22,11 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   live, keeping unsaved edits and undo, and is remembered. LabVIEW's floating windows stay the default: "if you come from LabVIEW, use the
   floating windows; if you start from scratch, use the docked view".
 
+- A subOVI behaves as LabVIEW's subVI in memory (DT-102): while a caller runs, the subOVI's open windows are in run
+  mode and refuse edits until the caller stops; and closing a subOVI with unsaved changes while a caller is open offers
+  Save, Defer Decision and Cancel, keeping the changes in memory for the callers until the last one closes, when it is
+  asked about again with Don't Save.
+
 - Fix: in the docked view, the connector pane of the toolbar row picks the cell that is clicked, so a control can be
   given a terminal, and its right-click menu acts on that cell; before, a click there assigned nothing.
 
