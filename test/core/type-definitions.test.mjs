@@ -68,7 +68,7 @@ test("an object's link is saved with it, valid against the schema, and opens the
   const text = aTexto(ovi.g, CAT);
   const file = JSON.parse(text);
   assert.equal(file.solder, VERSION);
-  assert.equal(VERSION, 7, "DT-096 raised the format to version 7");
+  assert.ok(VERSION >= 7, "DT-096 raised the format to version 7");
   const linked = file["front-panel"].filter((item) => item.typedef);
   assert.deepEqual(linked.map((item) => item.typedef), [{ path: "PointTD.octl", strict: false }], "only the object that follows the file has the link");
   assert.equal(linked[0].elements.length, 2, "the copy of the definition is stored with the link (DT-096 §2)");

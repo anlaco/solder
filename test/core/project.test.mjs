@@ -21,7 +21,7 @@ const targetOf = (text) => JSON.parse(text).items[0];
 test("a blank project is My Computer holding Dependencies and Build Specifications, as LabVIEW saves one", () => {
   const file = validFile(Project.writeProject(Project.blankProject()));
   assert.deepEqual(file, {
-    "solder-project": 1,
+    "solder-project": 2,
     items: [{ name: "My Computer", kind: "my-computer", items: [{ name: "Dependencies", kind: "dependencies" }, { name: "Build Specifications", kind: "build" }] }],
   });
 });

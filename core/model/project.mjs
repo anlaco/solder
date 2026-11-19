@@ -6,6 +6,9 @@
 // An item is `{ name, kind, path?, autoPopulating?, items? }`: its name in the tree, its kind (LabVIEW's item types
 // in Solder's words, DT-099 §2), the file or folder it stands for by a path relative to the `.sdproj`'s folder (DT-099
 // §3), whether a folder mirrors a folder on disk, and the items a folder or a target holds. Pure: no files are read.
+//
+// The project, its window and each item may hold the user's `comment` (DT-100 §6): it is kept on its object, so it goes
+// where the item goes when the tree is edited, and it is written first in the object, as file-comments.mjs writes it.
 
 import { isPolymorphicPath } from "./polymorphic.mjs";
 import { OVI_EXTENSIONS } from "./ovi-lib.mjs";
@@ -13,7 +16,7 @@ import { OVI_EXTENSIONS } from "./ovi-lib.mjs";
 export const PROJECT_EXTENSION = ".sdproj";
 
 /** The version of the `.sdproj` format this Solder reads and writes; a newer one is refused. */
-export const PROJECT_VERSION = 1;
+export const PROJECT_VERSION = 2;
 
 /** LabVIEW's item types, as the `.sdproj` writes them (DT-099 §2). */
 export const ITEM_KINDS = Object.freeze({ TARGET: "my-computer", OVI: "ovi", DOCUMENT: "document", FOLDER: "folder", DEPENDENCIES: "dependencies", BUILD: "build" });
@@ -63,9 +66,13 @@ export function inFileOrder(items) {
   return [...sorted(own.filter((item) => item.kind === ITEM_KINDS.FOLDER)), ...sorted(own.filter((item) => item.kind !== ITEM_KINDS.FOLDER)), ...fixed];
 }
 
+/** The `comment` of an object read from the file (DT-100 §6), as the keys to spread into what is read. */
+const commentOf = (object) => (typeof object?.comment === "string" ? { comment: object.comment } : {});
+
 /** An item as the file holds it; Dependencies is written with no contents, whatever the tree shows (measured). */
 function itemToFile(item) {
-  const file = { name: item.name, kind: item.kind };
+  /** @type {Record<string, any>} */
+  const file = { ...commentOf(item), name: item.name, kind: item.kind };
   if (item.path !== undefined) file.path = item.path;
   if (item.autoPopulating) file["auto-populating"] = true;
   // Dependencies and an auto-populating folder are written with no contents: both are read again from the disk (measured).
@@ -75,18 +82,23 @@ function itemToFile(item) {
 
 /** The text of a project: JSON indented by two spaces; saving an unchanged project gives the same text (measured in LabVIEW). */
 export function writeProject(project) {
-  const file = { "solder-project": PROJECT_VERSION, items: project.items.map(itemToFile), ...(project.window && { window: project.window }) };
+  const window = project.window && { ...commentOf(project.window), ...project.window };
+  const file = { ...commentOf(project), "solder-project": PROJECT_VERSION, items: project.items.map(itemToFile), ...(window && { window }) };
   return `${JSON.stringify(file, null, 2)}\n`;
 }
 
 /** Where the project's window was, as the `.sdproj` keeps it (DT-099 §4): its place and size, in pixels. */
 const WINDOW_KEYS = ["x", "y", "width", "height"];
-const windowFromFile = (window) => (window && WINDOW_KEYS.every((key) => Number.isFinite(window[key])) ? Object.fromEntries(WINDOW_KEYS.map((key) => [key, window[key]])) : undefined);
+const windowFromFile = (window) => (window && WINDOW_KEYS.every((key) => Number.isFinite(window[key])) ? { ...commentOf(window), ...Object.fromEntries(WINDOW_KEYS.map((key) => [key, window[key]])) } : undefined);
+
+/** The project without its window's place: what the editor compares to tell whether it changed (DT-099 §4). */
+export const withoutWindow = ({ window: _place, ...project }) => project;
 
 /** An item read from the file, checked as far as the core needs. */
 function itemFromFile(file, where) {
   if (typeof file?.name !== "string" || !Object.values(ITEM_KINDS).includes(file.kind)) throw new ProjectFileError(`${where}: an item has a name and one of the kinds ${Object.values(ITEM_KINDS).join(", ")}`);
-  const item = { name: file.name, kind: file.kind };
+  /** @type {Record<string, any>} */
+  const item = { ...commentOf(file), name: file.name, kind: file.kind };
   if (typeof file.path === "string") item.path = file.path;
   if (file["auto-populating"] === true) item.autoPopulating = true;
   if (Array.isArray(file.items)) item.items = inFileOrder(file.items.map((inner) => itemFromFile(inner, `${where}/${file.name}`)));
@@ -105,7 +117,7 @@ export function readProject(text) {
   if (!Number.isInteger(version) || version < 1 || version > PROJECT_VERSION) throw new ProjectFileError(`project format version ${version}: this Solder reads versions 1 to ${PROJECT_VERSION}`);
   if (!Array.isArray(file.items) || !file.items.some((item) => item?.kind === ITEM_KINDS.TARGET)) throw new ProjectFileError("a project holds the target My Computer");
   const window = windowFromFile(file.window);
-  return { items: file.items.map((item) => itemFromFile(item, "")), ...(window && { window }) };
+  return { ...commentOf(file), items: file.items.map((item) => itemFromFile(item, "")), ...(window && { window }) };
 }
 
 /** The target My Computer of a project. */

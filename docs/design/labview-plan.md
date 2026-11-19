@@ -36,6 +36,9 @@ When the developer says "keep going":
       `test/end-to-end/format-versions.test.mjs`; older files open unchanged. Verified by a round-trip test per format
       and the compiled module compared with and without comments (DT-100 "How it is verified"). The editor shows
       nothing of it yet: where it shows is decided when each place is built. Run the long property hunt after it.
+      *Done on 2026-11-19: `core/model/file-comments.mjs` (places by identity: `name`, `ovi`, a wire's ends) and
+      `ovi-comments.mjs` (a node's comments go with the node), `test/end-to-end/comments.test.mjs`; the long hunt (2000
+      diagrams) passed.*
    2. **Checks left open on 2026-11-19, in the editor under Xvfb** (`labview` skill):
       editing a subOVI while a caller is running (LabVIEW reserves a running subVI and refuses edits; Solder now
       refreshes callers on every edit, #20: see what happens and match LabVIEW if it breaks); whether a terminal added to
@@ -82,6 +85,9 @@ When the developer says "keep going":
   organizes programs (subOVIs, projects, classes).
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
+
+*2026-11-19: release 0.14's first step: the `comment` any object of Solder's files may hold (DT-100 §6), with `.ovi`/`.octl`
+version 8 and `.sdp`/`.sdproj` version 2. Next: the checks left open on subOVIs, in the editor.*
 
 *2026-11-16: DAQ's stage A ready for 0.13.0-beta: the plugin OVIs' Required inputs and rings as NI's, Create ▸
 Constant on a subOVI input with the control's class and default, the Polymorphic OVI window's list scrolls, and a whole

@@ -41,6 +41,8 @@ function fromPolymorphic(polymorphic) {
     adaptToDataType: polymorphic.adaptToDataType,
     drawIcon: polymorphic.drawIcon,
     icon: polymorphic.icon,
+    // The user's comments (DT-100 §6): the window shows none yet, but saving keeps them.
+    comments: polymorphic.comments,
     selected: null,
     listScroll: 0,
     nameDialog: null,
@@ -62,6 +64,7 @@ export const toText = (state) =>
     adaptToDataType: state.adaptToDataType,
     drawIcon: state.drawIcon,
     icon: state.icon,
+    comments: state.comments,
   });
 
 // ——— The list ———

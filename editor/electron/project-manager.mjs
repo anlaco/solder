@@ -127,7 +127,9 @@ export function createProjectManager(host) {
     // Every stored path is relative to the folder of the file (DT-099 §3): a project that was never saved held absolute ones.
     const body = rebaseProjectBody(entry.current, entry.path, target);
     try {
-      await writeFile(target, projectFileText(body, { x, y, width, height }));
+      // The window's comment (DT-100 §6) stays on the window, whose place is the window's as it is now.
+      const comment = entry.place?.comment === undefined ? {} : { comment: entry.place.comment };
+      await writeFile(target, projectFileText(body, { ...comment, x, y, width, height }));
     } catch (error) {
       dialog.showMessageBox(owner, { type: "error", title: "Save Project", message: "The project could not be saved.", detail: error.message });
       return false;

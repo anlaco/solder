@@ -61,3 +61,24 @@ test("a version 1 connector is migrated to LabVIEW's indices of 4-2-2-4, and its
   }
   assert.throws(() => migrar({ solder: 1, connector: { pattern: "5-3-3-5", inputs: [], outputs: [] } }), ErrorQvi);
 });
+
+// DT-100 §6: version 8 of the .ovi and .octl, and version 2 of the .sdp and .sdproj, allow a `comment` on any object.
+// The change is only allowed, so an older file opens unchanged and is saved in the new version.
+test("an .ovi or .octl of version 7 opens as version 8 with nothing else changed", () => {
+  assert.equal(VERSION, 8);
+  const version7 = { solder: 7, "block-diagram": { nodes: [] }, layout: { diagram: {} } };
+  assert.deepEqual(migrar(version7), { ...version7, solder: 8 });
+});
+
+test("a .sdp and a .sdproj of version 1 open unchanged and are saved as version 2; version 3 is refused", async () => {
+  const Polymorphic = await import("../../core/model/polymorphic.mjs");
+  const Project = await import("../../core/model/project.mjs");
+  assert.deepEqual([Polymorphic.POLYMORPHIC_VERSION, Project.PROJECT_VERSION], [2, 2]);
+  const polymorphic = Polymorphic.readPolymorphic({ "solder-polymorphic": 1, instances: [{ ovi: "Add I32.ovi" }] });
+  assert.equal(JSON.parse(Polymorphic.writePolymorphic(polymorphic))["solder-polymorphic"], 2);
+  assert.throws(() => Polymorphic.readPolymorphic({ "solder-polymorphic": 3, instances: [] }), Polymorphic.PolymorphicFileError);
+  const blank = JSON.parse(Project.writeProject(Project.blankProject()));
+  const project = Project.readProject({ ...blank, "solder-project": 1 });
+  assert.deepEqual(JSON.parse(Project.writeProject(project)), blank);
+  assert.throws(() => Project.readProject({ ...blank, "solder-project": 3 }), Project.ProjectFileError);
+});

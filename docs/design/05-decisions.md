@@ -5111,7 +5111,7 @@ and a `comment` any object may carry.**
 
 | Statement | Mechanism | Status |
 |-----------|-----------|--------|
-| A `comment` on any object survives a round trip and changes nothing compiled | a round-trip test per format, and the compiled module compared with and without comments | Not built |
+| A `comment` on any object survives a round trip and changes nothing compiled | `test/end-to-end/comments.test.mjs`: a round-trip test per format (an `.ovi` with a comment on every object, against its schema), the compiled module compared with and without comments, a node's comment going with the node; `test/end-to-end/format-versions.test.mjs` for the versions | Built (2026-11-19) |
 | An edit of one element changes one line of the file | a test that adds one wire and diffs the text | Not built |
 | A move changes only `layout` | a test that moves a node and compares everything else | Not built |
 | Ids do not change across save and open | a round-trip test | Not built |

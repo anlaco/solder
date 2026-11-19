@@ -7,13 +7,13 @@
 // was never saved has them always, which is why a new project's title has the asterisk (measured: "Untitled Project 1 *").
 
 import { basename } from "node:path";
-import { readProject, writeProject } from "../../core/model/project.mjs";
+import { readProject, withoutWindow, writeProject } from "../../core/model/project.mjs";
 import { untitledProjectName } from "./project-window.mjs";
 
 /** A project's text as the registry compares it: the file's text without the window's place. */
-export const projectBody = (project) => writeProject({ items: project.items });
+export const projectBody = (project) => writeProject(withoutWindow(project));
 
-/** What a Save writes: the project's body with the window's `place` (x, y, width, height) in it (DT-099 §4). */
+/** What a Save writes: the project's body with the window's `place` (x, y, width, height, and its comment if it had one) in it (DT-099 §4). */
 export const projectFileText = (body, place) => writeProject({ ...readProject(body), window: place });
 
 export function createProjectRegistry() {

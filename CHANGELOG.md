@@ -9,6 +9,12 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Comments in Solder's files (DT-100 §6): any object of an `.ovi`, `.octl`, `.sdp` or `.sdproj` (the file itself, a
+  front-panel item, a node, a structure, a wire, a cluster element, a project item, an instance) may hold
+  `"comment": "<text>"`. Solder keeps it on its object when it saves, a node's comment goes with the node, and the
+  compiler never reads it. The editor shows none yet. The formats go to `.ovi`/`.octl` version 8 and `.sdp` and
+  `.sdproj` version 2; older files open unchanged.
+
 - Solder's docked view, experimental (DT-101): a switch at the foot of the Project Explorer puts every window into one,
   the Project Explorer on the left and one tab per open OVI in the middle, with a switch between its Front Panel and
   Block Diagram at the top left (Ctrl+E) and Ctrl+T splitting the middle in half. As in Eclipse, the docked window has

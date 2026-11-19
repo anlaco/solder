@@ -68,7 +68,7 @@ test("the .sdp file reads with its defaults and writes back the same, and its sc
   // A menu name left out is the file name; a selector name left out is the menu name.
   const bare = Poly.readPolymorphic({ "solder-polymorphic": 1, instances: [{ ovi: "sub/Write (string).sdg" }] });
   assert.deepEqual(bare.instances[0], { path: "sub/Write (string).sdg", menuName: "Write (string)", selectorName: "Write (string)" });
-  assert.throws(() => Poly.readPolymorphic({ "solder-polymorphic": 2, instances: [] }), /version 2/);
+  assert.throws(() => Poly.readPolymorphic({ "solder-polymorphic": Poly.POLYMORPHIC_VERSION + 1, instances: [] }), new RegExp(`version ${Poly.POLYMORPHIC_VERSION + 1}`));
   assert.throws(() => Poly.readPolymorphic("{"), Poly.PolymorphicFileError);
 
   const validate = new Ajv2020({ allErrors: true, strict: false }).compile(JSON.parse(readFileSync(path.join(RAIZ, "docs/schema/sdp.schema.json"), "utf8")));

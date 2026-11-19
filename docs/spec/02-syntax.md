@@ -118,8 +118,8 @@ entities: they are the two faces of one. That is why `layout` needs to separate 
 
 ### 4.1 `solder` *(required)*
 
-Format version. Its value is `7` (version 1 until DT-075, 2 until DT-078, 3 until DT-085, 4 until DT-091, 5 until DT-095,
-6 until DT-096).
+Format version. Its value is `8` (version 1 until DT-075, 2 until DT-078, 3 until DT-085, 4 until DT-091, 5 until DT-095,
+6 until DT-096, 7 until DT-100 §6, which allowed a `comment` on any object: §10).
 A reader **MUST** reject a value greater than the one it knows, instead of trying to read it halfway.
 
 **The format is frozen from `0.4.0-beta` on** (DT-055). Any later change to it
@@ -210,7 +210,7 @@ an element, with the format's version and its kind, the control editor's ring: `
 `strict-type-def`.
 
 ```json
-{ "solder": 7, "type-definition": "type-def", "object": { "kind": "cluster-control", "label": "PointTD", "elements": [
+{ "solder": 8, "type-definition": "type-def", "object": { "kind": "cluster-control", "label": "PointTD", "elements": [
     { "kind": "control", "label": "a", "type": "number", "default": 3, "x": 4, "y": 19 } ], "x": 10, "y": 10 } }
 ```
 
@@ -435,9 +435,29 @@ whatever the case; Dependencies and Build Specifications always last. Dependenci
 written with no contents: the editor reads them again (the callees of the items; the folder on disk).
 
 ```json
-{ "solder-project": 1, "items": [ { "name": "My Computer", "kind": "my-computer", "items": [
+{ "solder-project": 2, "items": [ { "name": "My Computer", "kind": "my-computer", "items": [
     { "name": "Sub", "kind": "folder", "items": [ { "name": "main1.ovi", "kind": "ovi", "path": "main1.ovi" } ] },
     { "name": "notes.txt", "kind": "document", "path": "notes.txt" },
     { "name": "Dependencies", "kind": "dependencies" },
     { "name": "Build Specifications", "kind": "build" } ] } ] }
 ```
+
+## 10. Comments (DT-100 §6)
+
+Any object of an `.ovi`, `.octl`, `.sdp` or `.sdproj` — the file itself, a front-panel item, a node, a structure, a
+wire, a cluster element, a project item, an instance — may hold `"comment": "<text>"`. It is the user's: readers give
+it no meaning and the compiler never reads it (the compiled module is the same with and without comments), and the
+writer keeps it on its object, written as the object's first key. A value is not an object in this sense: inside a
+`default` (a cluster's value is keyed by its fields' names) a `comment` key is data. The schemas allow `comment`
+everywhere. It came with `.ovi`/`.octl` version 8, `.sdp` version 2 and `.sdproj` version 2; older files open
+unchanged. Where the editor shows a comment is decided when each place is built.
+
+```json
+{ "comment": "Reads the oven's temperature once a second.", "solder": 8, "block-diagram": { "nodes": [
+    { "comment": "LabVIEW's Add: wraps on overflow.", "name": "add_1", "type": "add" } ] } }
+```
+
+The reader keeps each comment by the place of its object (`core/model/file-comments.mjs`): an element of a list is
+named by its `name`, an instance by its `ovi`, a wire by its two ends, anything else by its position. In an `.ovi`
+a comment on any object of a node (its entry, its front-panel item, its places in `layout`, its configuration) goes
+with the node in the editor's graph (`core/model/ovi-comments.mjs`); a project item keeps its own.

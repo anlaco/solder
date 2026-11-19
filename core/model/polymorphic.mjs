@@ -9,12 +9,13 @@
 // stays on its terminal when another instance is chosen: as in LabVIEW, the instances share one connector and a
 // terminal is a place on it (DT-074 §2).
 
+import { commentTable, fromTable, putComments, takeComments } from "./file-comments.mjs";
 import { conversion } from "./types.mjs";
 
 export const POLYMORPHIC_EXTENSION = ".sdp";
 
 /** The version of the `.sdp` format this Solder reads and writes; a newer one is refused. */
-export const POLYMORPHIC_VERSION = 1;
+export const POLYMORPHIC_VERSION = 2;
 
 /** Which icon the node draws: the polymorphic OVI's own, or the chosen instance's (measured option names). */
 export const DRAW_ICON = Object.freeze({ POLYMORPHIC: "polymorphic", INSTANCE: "instance" });
@@ -32,16 +33,19 @@ export class PolymorphicFileError extends Error {}
 
 /**
  * A polymorphic OVI read from its text: `{ instances: [{ path, menuName, selectorName }], showSelectorByDefault,
- * adaptToDataType, drawIcon, icon }`. A menu name left out is the instance's file name; a selector name left out is
- * its menu name. Throws `PolymorphicFileError` when the text is not a `.sdp` this Solder reads.
+ * adaptToDataType, drawIcon, icon, comments? }`. A menu name left out is the instance's file name; a selector name left
+ * out is its menu name. `comments` holds the user's comments by place (DT-100 §6, file-comments.mjs: an instance is
+ * named by its OVI, so its comment follows it when the list is reordered). Throws `PolymorphicFileError` when the text
+ * is not a `.sdp` this Solder reads.
  */
 export function readPolymorphic(text) {
-  let file;
+  let read;
   try {
-    file = typeof text === "string" ? JSON.parse(text) : text;
+    read = typeof text === "string" ? JSON.parse(text) : text;
   } catch (error) {
     throw new PolymorphicFileError(`not a polymorphic OVI: ${error.message}`);
   }
+  const { file, comments } = read && typeof read === "object" ? takeComments(read) : { file: read, comments: [] };
   const version = file?.["solder-polymorphic"];
   if (!Number.isInteger(version) || version < 1 || version > POLYMORPHIC_VERSION) throw new PolymorphicFileError(`polymorphic format version ${version}: this Solder reads versions 1 to ${POLYMORPHIC_VERSION}`);
   if (!Array.isArray(file.instances)) throw new PolymorphicFileError("a polymorphic OVI lists its instances");
@@ -56,6 +60,7 @@ export function readPolymorphic(text) {
     adaptToDataType: file["adapt-to-data-type"] !== false,
     drawIcon: file["draw-icon"] === DRAW_ICON.INSTANCE ? DRAW_ICON.INSTANCE : DRAW_ICON.POLYMORPHIC,
     icon: typeof file.icon === "string" ? file.icon : null,
+    ...(comments.length && { comments: commentTable(comments) }),
   };
 }
 
@@ -76,7 +81,7 @@ export function writePolymorphic(polymorphic) {
     "draw-icon": polymorphic.drawIcon,
     ...(polymorphic.icon ? { icon: polymorphic.icon } : {}),
   };
-  return `${JSON.stringify(file, null, 2)}\n`;
+  return `${JSON.stringify(putComments(file, fromTable(polymorphic.comments)), null, 2)}\n`;
 }
 
 // ——— The node ———

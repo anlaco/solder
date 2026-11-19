@@ -7,7 +7,7 @@
 // every edit re-sorts a list, so a row's key (its place) may change, and the selection and the expanded rows follow the
 // items, not the keys.
 
-import { ITEM_KINDS, NEW_FOLDER_NAME, writeProject } from "../../../core/model/project.mjs";
+import { ITEM_KINDS, NEW_FOLDER_NAME, withoutWindow, writeProject } from "../../../core/model/project.mjs";
 import { addAutoPopulatingFolderInto, addFilesInto, addSnapshotFolderInto, addVirtualFolderInto, isEditable, itemAt, moveItem, removeItem, renameItem } from "../../../core/model/project-tree.mjs";
 import { ROOT_KEY, keyOfPlace, placeOfKey, targetKeyOf, visibleRows } from "./project-explorer-state.mjs";
 
@@ -16,7 +16,7 @@ import { ROOT_KEY, keyOfPlace, placeOfKey, targetKeyOf, visibleRows } from "./pr
  * window place). The page sends it after every edit and the title's asterisk follows "differs from the saved text". LabVIEW
  * leaves the asterisk off after Add and Remove, yet asks on close (measured: s4 "Asterisk"); Solder shows it after every edit.
  */
-export const projectText = (project) => writeProject({ items: project.items });
+export const projectText = (project) => writeProject(withoutWindow(project));
 
 const parentOf = (place) => place.slice(0, -1);
 const itemOf = (state, key) => itemAt(state.project, placeOfKey(key));

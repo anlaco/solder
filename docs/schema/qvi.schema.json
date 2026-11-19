@@ -8,17 +8,19 @@
   "additionalProperties": false,
 
   "properties": {
+    "comment": { "$ref": "#/$defs/comment" },
     "solder": {
       "description": "Versión del formato. Un lector DEBE rechazar una versión mayor que la que conoce.",
       "type": "integer",
       "minimum": 1,
-      "maximum": 7
+      "maximum": 8
     },
 
     "meta": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "title": { "type": "string" },
         "description": { "type": "string" },
         "author": { "type": "string" },
@@ -31,6 +33,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "tcp": { "$ref": "#/$defs/allowList" },
         "serial": { "$ref": "#/$defs/allowList" },
         "usbtmc": { "$ref": "#/$defs/allowList" },
@@ -38,6 +41,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "comment": { "$ref": "#/$defs/comment" },
             "read": { "type": "array", "items": { "type": "string" } },
             "write": { "type": "array", "items": { "type": "string" } }
           }
@@ -57,6 +61,7 @@
       "required": ["inputs", "outputs"],
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "pattern": {
           "description": "The connector pattern by LabVIEW's number, 4800–4835 (DT-075); left out, LabVIEW's default 4815 (4-2-2-4). A terminal's `cell` is LabVIEW's connector index in that pattern (core/model/connector-patterns.mjs). Version 1 wrote \"4-2-2-4\" and numbered its cells its own way: 0–3 the left column down, 4–7 the middle, 8–11 the right column down; reading migrates it.",
           "oneOf": [{ "type": "integer", "minimum": 4800, "maximum": 4835 }, { "const": "4-2-2-4" }]
@@ -71,6 +76,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "reentrancy": { "enum": ["non-reentrant", "preallocated"] },
         "allow-debugging": { "description": "Allow debugging (DT-047). Only written when it is false: the compiler then emits no debug hooks and the debugging buttons are greyed.", "const": false }
       }
@@ -83,16 +89,19 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "diagram": { "$ref": "#/$defs/placements" },
         "panel": { "$ref": "#/$defs/placements" },
         "wires": {
           "description": "Por dónde va cada wire en el diagrama. Se indexa por su destino (`to`), que es único porque una entrada recibe un solo wire.",
           "type": "object",
-          "propertyNames": { "$ref": "#/$defs/endpoint" },
+          "propertyNames": { "anyOf": [{ "$ref": "#/$defs/endpoint" }, { "const": "comment" }] },
+          "properties": { "comment": { "$ref": "#/$defs/comment" } },
           "additionalProperties": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
+              "comment": { "$ref": "#/$defs/comment" },
               "bends": {
                 "description": "Los codos: una lista que alterna x e y y empieza y acaba en x. El wire sale en horizontal, gira en cada x hacia la y siguiente y entra en horizontal.",
                 "type": "array", "items": { "type": "number" }
@@ -109,6 +118,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "comment": { "$ref": "#/$defs/comment" },
             "diagram": { "type": "array", "items": { "$ref": "#/$defs/freeLabel" } },
             "panel": { "type": "array", "items": { "$ref": "#/$defs/freeLabel" } }
           }
@@ -118,6 +128,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "comment": { "$ref": "#/$defs/comment" },
             "front-panel": { "$ref": "#/$defs/window" },
             "block-diagram": { "$ref": "#/$defs/window" }
           }
@@ -127,12 +138,13 @@
   },
 
   "$defs": {
+    "comment": { "description": "The user's comment (DT-100 §6): any object may hold one. Readers give it no meaning, the compiler never reads it, and writers keep it on its object.", "type": "string" },
     "ringItem": {
       "description": "An item of a ring (DT-091): the text it shows and its value, unique within the ring.",
       "type": "object",
       "required": ["text", "value"],
       "additionalProperties": false,
-      "properties": { "text": { "type": "string" }, "value": { "type": "number" } }
+      "properties": { "comment": { "$ref": "#/$defs/comment" }, "text": { "type": "string" }, "value": { "type": "number" } }
     },
 
     "freeLabel": {
@@ -141,6 +153,7 @@
       "additionalProperties": false,
       "required": ["x", "y", "text"],
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "x": { "type": "number" },
         "y": { "type": "number" },
         "text": { "type": "string" },
@@ -157,13 +170,14 @@
       "additionalProperties": false,
       "required": ["x", "y", "width", "height"],
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "x": { "type": "integer" },
         "y": { "type": "integer" },
         "width": { "type": "integer", "minimum": 1 },
         "height": { "type": "integer", "minimum": 1 },
         "origin": {
           "type": "object", "additionalProperties": false, "required": ["x", "y"],
-          "properties": { "x": { "type": "number" }, "y": { "type": "number" } }
+          "properties": { "comment": { "$ref": "#/$defs/comment" }, "x": { "type": "number" }, "y": { "type": "number" } }
         }
       }
     },
@@ -197,6 +211,7 @@
           "required": ["name"],
           "additionalProperties": false,
           "properties": {
+            "comment": { "$ref": "#/$defs/comment" },
             "name": { "$ref": "#/$defs/name" },
             "cell": { "type": "integer", "minimum": 0, "maximum": 27 },
             "connection": { "enum": ["required", "recommended", "optional"] }
@@ -222,7 +237,7 @@
       "type": "object",
       "required": ["daq-name"],
       "additionalProperties": false,
-      "properties": { "daq-name": { "enum": ["task", "global-channel", "physical-channel", "terminal", "scale", "device", "switch"] } }
+      "properties": { "comment": { "$ref": "#/$defs/comment" }, "daq-name": { "enum": ["task", "global-channel", "physical-channel", "terminal", "scale", "device", "switch"] } }
     },
 
     "refnumType": {
@@ -230,7 +245,7 @@
       "type": "object",
       "required": ["refnum"],
       "additionalProperties": false,
-      "properties": { "refnum": { "type": "string" }, "of": { "$ref": "#/$defs/dataType" } }
+      "properties": { "comment": { "$ref": "#/$defs/comment" }, "refnum": { "type": "string" }, "of": { "$ref": "#/$defs/dataType" } }
     },
 
     "enumType": {
@@ -238,7 +253,7 @@
       "type": "object",
       "required": ["enum"],
       "additionalProperties": false,
-      "properties": { "enum": { "type": "array", "items": { "type": "string" } } }
+      "properties": { "comment": { "$ref": "#/$defs/comment" }, "enum": { "type": "array", "items": { "type": "string" } } }
     },
 
     "scalarType": {
@@ -257,6 +272,7 @@
       "required": ["array"],
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "array": { "oneOf": [{ "$ref": "#/$defs/scalarType" }, { "$ref": "#/$defs/clusterType" }, { "$ref": "#/$defs/enumType" }, { "const": "void", "description": "An array with no element yet: a new Array or Array Constant (DT-060)." }] },
         "dims": { "type": "integer", "minimum": 2 }
       }
@@ -268,6 +284,7 @@
       "required": ["cluster"],
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "cluster": {
           "type": "array",
           "minItems": 1,
@@ -281,6 +298,7 @@
       "required": ["allow"],
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "allow": {
           "description": "Destinos concedidos. Una lista vacía concede nada.",
           "type": "array",
@@ -294,6 +312,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "text": { "type": "string" },
         "visible": { "type": "boolean", "default": true }
       }
@@ -302,7 +321,8 @@
     "placements": {
       "description": "Por nombre; lo del borde de una estructura que no tiene nombre propio, por su referencia: `bucle.i`, `bucle.condition`, `bucle.N`, `registro.right` (DT-041).",
       "type": "object",
-      "propertyNames": { "anyOf": [{ "$ref": "#/$defs/name" }, { "$ref": "#/$defs/endpoint" }] },
+      "propertyNames": { "anyOf": [{ "$ref": "#/$defs/name" }, { "$ref": "#/$defs/endpoint" }, { "const": "comment" }] },
+      "properties": { "comment": { "$ref": "#/$defs/comment" } },
       "additionalProperties": { "$ref": "#/$defs/placement" }
     },
 
@@ -311,6 +331,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "x": { "type": "number" },
         "y": { "type": "number" },
         "w": { "type": "number", "exclusiveMinimum": 0 },
@@ -349,6 +370,7 @@
       "required": ["path", "strict"],
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "path": { "type": "string", "minLength": 1 },
         "strict": { "type": "boolean" }
       }
@@ -359,6 +381,7 @@
       "type": "object",
       "required": ["kind", "x", "y"],
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "kind": { "type": "string" },
         "label": { "type": "string" },
         "x": { "type": "number" },
@@ -374,6 +397,7 @@
       "then": { "required": ["type"] },
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "name": { "$ref": "#/$defs/name" },
         "role": { "type": "string", "enum": ["control", "indicator"] },
         "elements": {
@@ -416,6 +440,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "comment": { "$ref": "#/$defs/comment" },
             "autoscale-x": { "description": "Whether the X axis autoscales. By default it does, except on a chart, whose X is the Strip window.", "type": "boolean" },
             "autoscale-y": { "description": "Whether the Y axis autoscales (by default, yes).", "type": "boolean" },
             "loose-fit-x": { "description": "AutoScale X with Loose Fit: the ends go out to whole steps (by default, yes).", "type": "boolean" },
@@ -444,6 +469,7 @@
       "required": ["min", "max", "step"],
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "min": { "type": "number" },
         "max": { "type": "number" },
         "step": { "type": "number", "exclusiveMinimum": 0 }
@@ -455,6 +481,7 @@
       "required": ["name", "type"],
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "name": { "$ref": "#/$defs/name" },
         "type": { "$ref": "#/$defs/dataType" }
       }
@@ -465,6 +492,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "nodes": { "type": "array", "items": { "$ref": "#/$defs/node" } },
         "wires": { "type": "array", "items": { "$ref": "#/$defs/wire" } },
         "structures": { "type": "array", "items": { "$ref": "#/$defs/structure" } }
@@ -476,6 +504,7 @@
       "required": ["name", "type"],
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "name": { "$ref": "#/$defs/name" },
         "type": {
           "description": "Tipo de bloque. El catálogo cerrado está en schema/blocks.json.",
@@ -487,6 +516,7 @@
           "type": "object",
           "additionalProperties": false,
           "properties": {
+            "comment": { "$ref": "#/$defs/comment" },
             "default": { "description": "Para bloques constante: su valor." },
             "typedef": { "$ref": "#/$defs/typeDefinitionLink" },
             "elements": {
@@ -589,7 +619,7 @@
               "type": "array",
               "items": {
                 "type": "object", "required": ["property"], "additionalProperties": false,
-                "properties": { "property": { "type": "string" }, "write": { "type": "boolean" } }
+                "properties": { "comment": { "$ref": "#/$defs/comment" }, "property": { "type": "string" }, "write": { "type": "boolean" } }
               }
             },
             "ignore-errors": {
@@ -612,6 +642,7 @@
               "description": "For call-library: the return value, Void, Numeric (with its data type) or String (with its format).",
               "type": "object", "required": ["type"], "additionalProperties": false,
               "properties": {
+                "comment": { "$ref": "#/$defs/comment" },
                 "type": { "enum": ["void", "numeric", "string"] },
                 "data-type": { "$ref": "#/$defs/callLibraryDataType" },
                 "string-format": { "$ref": "#/$defs/callLibraryStringFormat" }
@@ -623,6 +654,7 @@
               "items": {
                 "type": "object", "required": ["name", "type"], "additionalProperties": false,
                 "properties": {
+                  "comment": { "$ref": "#/$defs/comment" },
                   "name": { "type": "string" },
                   "type": { "enum": ["numeric", "array", "string", "waveform", "digital-waveform", "digital-data", "activex", "adapt-to-type", "instance-data-pointer"] },
                   "constant": { "type": "boolean" },
@@ -656,6 +688,7 @@
       "required": ["from", "to"],
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "from": { "$ref": "#/$defs/wireEnd" },
         "to": { "$ref": "#/$defs/wireEnd" },
         "label": { "$ref": "#/$defs/label" }
@@ -670,7 +703,7 @@
           "type": "object",
           "required": ["loose"],
           "additionalProperties": false,
-          "properties": { "loose": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 } }
+          "properties": { "comment": { "$ref": "#/$defs/comment" }, "loose": { "type": "array", "items": { "type": "number" }, "minItems": 2, "maxItems": 2 } }
         }
       ]
     },
@@ -680,6 +713,7 @@
       "required": ["name", "kind"],
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "name": { "$ref": "#/$defs/name" },
         "kind": { "type": "string", "enum": ["while-loop", "for-loop", "case-structure", "flat-sequence", "stacked-sequence"] },
 
@@ -702,6 +736,7 @@
             "required": ["name"],
             "additionalProperties": false,
             "properties": {
+              "comment": { "$ref": "#/$defs/comment" },
               "name": { "$ref": "#/$defs/structureMemberName" },
               "type": { "description": "Opcional: se deduce de los cables.", "$ref": "#/$defs/dataType" }
             }
@@ -716,6 +751,7 @@
             "required": ["name", "dir"],
             "additionalProperties": false,
             "properties": {
+              "comment": { "$ref": "#/$defs/comment" },
               "name": { "$ref": "#/$defs/structureMemberName" },
               "type": { "description": "Opcional: se deduce de los cables.", "$ref": "#/$defs/dataType" },
               "indexed": { "description": "Túnel de un bucle con autoindexado (Indexing): reparte o reúne un elemento por vuelta.", "type": "boolean" },
@@ -742,6 +778,7 @@
             "required": ["body"],
             "additionalProperties": false,
             "properties": {
+              "comment": { "$ref": "#/$defs/comment" },
               "match": {
                 "description": "Selector values that select this frame: a Boolean, an integer, a string, an enum item by its name (DT-049; a name that no longer names an item stays, drawn in red, and breaks the Case), or a range {min, max}. An integer and an enum range include both ends; a string range includes min and excludes max (spec/04 Rules 17b, 17d and 17e).",
                 "type": "array", "minItems": 1

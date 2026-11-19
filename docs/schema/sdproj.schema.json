@@ -7,18 +7,19 @@
   "required": ["solder-project", "items"],
   "additionalProperties": false,
   "properties": {
+    "comment": { "$ref": "#/$defs/comment" },
     "solder-project": {
       "description": "The version of the format. A reader MUST refuse a version newer than the one it knows.",
       "type": "integer",
       "minimum": 1,
-      "maximum": 1
+      "maximum": 2
     },
     "window": {
       "description": "Where the Project Explorer window was when the project was saved (DT-099 §4), in pixels; without it the window opens as a new project's.",
       "type": "object",
       "required": ["x", "y", "width", "height"],
       "additionalProperties": false,
-      "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "width": { "type": "number", "minimum": 1 }, "height": { "type": "number", "minimum": 1 } }
+      "properties": { "comment": { "$ref": "#/$defs/comment" }, "x": { "type": "number" }, "y": { "type": "number" }, "width": { "type": "number", "minimum": 1 }, "height": { "type": "number", "minimum": 1 } }
     },
     "items": {
       "description": "The project's targets; for now only My Computer (DT-099 §5).",
@@ -28,11 +29,13 @@
     }
   },
   "$defs": {
+    "comment": { "description": "The user's comment (DT-100 §6): any object may hold one. Readers give it no meaning, the compiler never reads it, and writers keep it on its object.", "type": "string" },
     "item": {
       "type": "object",
       "required": ["name", "kind"],
       "additionalProperties": false,
       "properties": {
+        "comment": { "$ref": "#/$defs/comment" },
         "name": { "description": "The item's name in the tree.", "type": "string", "minLength": 1 },
         "kind": {
           "description": "LabVIEW's item type in Solder's words (DT-099 §2): the target, an OVI (LabVIEW's VI, which also covers controls and polymorphic OVIs), any other file, a folder, and the two fixed items.",

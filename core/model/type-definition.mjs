@@ -7,6 +7,7 @@
 // its configuration and its place; and which of LabVIEW's three it is, the control editor's ring (Control, Type Def.,
 // Strict Type Def., measured: reports/2026-11-17-typedef-update.md Q4). A pure module: it reads no files.
 
+import { commentTable, fromTable, putComments, takeComments } from "./file-comments.mjs";
 import { elementFromFile, elementToFile, ErrorQvi, VERSION } from "./qvi-format.mjs";
 
 /** The control editor's three kinds, in the ring's order (measured), as the `.octl` stores them. */
@@ -21,24 +22,30 @@ export const typeDefinitionLink = (node) => node?.config?.typedef ?? null;
 /** The link an object takes when it is made from an `.octl` of `kind` stored at `path`; null for a plain control. */
 export const linkFor = (path, kind) => (FOLLOWED_KINDS.has(kind) ? { path, strict: kind === "strict-type-def" } : null);
 
-/** The `.octl` file of `object` (`{ tipo, label?, config?, x, y }`, as a cluster element) as `kind`, as an object for JSON. */
-export function writeTypeDefinition(kind, object) {
+/**
+ * The `.octl` file of `object` (`{ tipo, label?, config?, x, y }`, as a cluster element) as `kind`, as an object for JSON,
+ * with the user's `comments` as `readTypeDefinition` gave them (DT-100 §6).
+ */
+export function writeTypeDefinition(kind, object, comments) {
   if (!TYPE_DEFINITION_KINDS.includes(kind)) throw new ErrorQvi(`"${kind}" is not one of the control editor's kinds`);
   const { typedef: _ownLink, ...config } = object.config ?? {};
-  return { solder: VERSION, "type-definition": kind, object: elementToFile({ ...object, config }) };
+  return putComments({ solder: VERSION, "type-definition": kind, object: elementToFile({ ...object, config }) }, fromTable(comments));
 }
 
 /** The text of an `.octl`: JSON indented by two spaces, as an `.ovi` is written. */
-export const typeDefinitionText = (kind, object) => `${JSON.stringify(writeTypeDefinition(kind, object), null, 2)}\n`;
+export const typeDefinitionText = (kind, object, comments) => `${JSON.stringify(writeTypeDefinition(kind, object, comments), null, 2)}\n`;
 
-/** An `.octl` read from its text or object: `{ kind, object }`, the object as a cluster holds an element. */
+/**
+ * An `.octl` read from its text or object: `{ kind, object, comments? }`, the object as a cluster holds an element and
+ * the user's comments by place (file-comments.mjs), which nothing reads but the writer.
+ */
 export function readTypeDefinition(data, catalog) {
-  const read = typeof data === "string" ? JSON.parse(data) : data;
+  const { file: read, comments } = takeComments(typeof data === "string" ? JSON.parse(data) : data);
   if (!Number.isInteger(read.solder) || read.solder < 1 || read.solder > VERSION) throw new ErrorQvi(`format version ${read.solder}: this Solder reads versions 1 to ${VERSION}`);
   const kind = read["type-definition"];
   if (!TYPE_DEFINITION_KINDS.includes(kind)) throw new ErrorQvi(`"${kind}" is not one of the control editor's kinds`);
   if (!read.object || typeof read.object !== "object") throw new ErrorQvi("a type definition holds one object");
-  return { kind, object: elementFromFile(read.object, catalog) };
+  return { kind, object: elementFromFile(read.object, catalog), ...(comments.length && { comments: commentTable(comments) }) };
 }
 
 /**

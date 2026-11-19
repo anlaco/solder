@@ -21,12 +21,13 @@ import { ambitoDe, crearEstructura, crearNodo, esSuelto, marcoDe, nuevo } from "
 import { DEFAULT_PATTERN } from "./connector-patterns.mjs";
 import { FREE_LABEL, isFreeLabel } from "./free-label.mjs";
 import { storedClusterConfig, withDerivedCluster } from "./user-cluster.mjs";
+import { putOviComments, separateOviComments, withOviComments } from "./ovi-comments.mjs";
 
 /** A free label in the file: where it is, its text, its structure and frame, and its size once it was resized. */
 const freeLabelToFile = (n, place, inside, frame) => limpio({ x: place.x, y: place.y, text: n.label?.text ?? "", inside, frame, width: n.tam?.ancho, height: n.tam?.alto });
 const freeLabelSize = (label) => (label.width === undefined ? undefined : limpio({ ancho: label.width, alto: label.height }));
 
-export const VERSION = 7;
+export const VERSION = 8;
 
 /** Solder's own numbering of 4-2-2-4's cells in version 1: 0–3 the left column down, 4–7 the middle, 8–11 the right column down. */
 const VERSION_1_PATTERN = "4-2-2-4";
@@ -78,18 +79,21 @@ function withRingPairsVersion(vi) {
   return { ...withEachNode(vi, toPairs), solder: 5 };
 }
 
-/**
- * The format is frozen from 0.4.0-beta on (DT-055, spec/02 §4.1): a change to it raises VERSION and adds here the
- * function that turns a file of the version before into one of the new version, so every file a released Solder
- * saved still opens. `MIGRATIONS[n - 1]` migrates version n to n + 1.
- */
 /** Version 5 → 6 (DT-095): a cluster panel object or a cluster constant may hold `elements`. Optional: nothing to change. */
 const withUserClustersVersion = (vi) => ({ ...vi, solder: 6 });
 
 /** Version 6 → 7 (DT-096): a panel object or a constant may follow a type definition, `typedef`. Optional: nothing to change. */
 const withTypeDefinitionsVersion = (vi) => ({ ...vi, solder: 7 });
 
-export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion, withFreeLabelsVersion, withRingPairsVersion, withUserClustersVersion, withTypeDefinitionsVersion];
+/** Version 7 → 8 (DT-100 §6): any object may hold a `comment`. Optional: nothing to change. */
+const withCommentsVersion = (vi) => ({ ...vi, solder: 8 });
+
+/**
+ * The format is frozen from 0.4.0-beta on (DT-055, spec/02 §4.1): a change to it raises VERSION and adds here the
+ * function that turns a file of the version before into one of the new version, so every file a released Solder
+ * saved still opens. `MIGRATIONS[n - 1]` migrates version n to n + 1.
+ */
+export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion, withFreeLabelsVersion, withRingPairsVersion, withUserClustersVersion, withTypeDefinitionsVersion, withCommentsVersion];
 
 /** A file of an older version brought up to `version`, one migration after another. */
 export function migrar(vi, migrations = MIGRATIONS, version = VERSION) {
@@ -297,13 +301,14 @@ export function escribir(g, cat) {
     windows: g.windows,
   });
   const raiz = ambitos.get("");
-  return limpio({
+  const file = limpio({
     solder: VERSION,
     ...(g.vi ?? {}),
     "front-panel": panel.length ? panel : undefined,
     "block-diagram": limpio({ nodes: raiz.nodes ?? [], wires: raiz.wires, structures: raiz.structures }),
     layout,
   });
+  return putOviComments(file, g);
 }
 
 /** El texto del fichero: JSON con sangría de dos espacios, siempre igual para el mismo OVI. */
@@ -330,7 +335,8 @@ export function leer(datos, cat) {
   const read = typeof datos === "string" ? JSON.parse(datos) : datos;
   // A newer file is refused rather than read halfway; an older one is migrated first.
   if (!Number.isInteger(read.solder) || read.solder < 1 || read.solder > VERSION) throw new ErrorQvi(`format version ${read.solder}: this Solder reads versions 1 to ${VERSION}`);
-  const vi = migrar(read);
+  // The comments are the user's (DT-100 §6): taken out here, so that nothing read below sees them, and put on the graph at the end.
+  const { file: vi, ...comments } = separateOviComments(migrar(read));
   const bd = vi["block-diagram"] ?? {};
   const lay = vi.layout ?? {};
   const fp = new Map((vi["front-panel"] ?? []).map((i) => [i.name, i]));
@@ -491,5 +497,5 @@ export function leer(datos, cat) {
   if (Object.keys(extra).length) g.vi = extra;
   // The windows are the main process's (editor/electron/window-layout.mjs); the graph only carries them to the next save.
   if (lay.windows) g.windows = lay.windows;
-  return g;
+  return withOviComments(g, comments);
 }
