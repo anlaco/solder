@@ -9,6 +9,8 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+## 0.14.1-beta — 2026-11-20
+
 - Fix: a double click on an OVI of the Project Explorer's tree, or its menu's Open, opens it in the project, its
   titles saying "on <project>/My Computer" as in LabVIEW. A new OVI not saved yet comes to the front. Before, the
   OVIs of a project could only be opened with File ▸ Open....
