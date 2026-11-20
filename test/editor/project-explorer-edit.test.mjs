@@ -259,7 +259,7 @@ test("the right-click menus of virtual and auto-populating folders and of the it
   assert.equal(State.openContextMenu(withAuto, INV, "project/0/0", { x: 10, y: 10 }).menuBarra.id, "context.project-explorer.auto-populating-folder");
   assert.equal(State.openContextMenu(withAuto, INV, "project/0/1", { x: 10, y: 10 }).menuBarra.id, "context.project-explorer.virtual-folder");
   const builtCommands = Object.entries(State.CONTEXT_COMMANDS).filter(([id]) => !id.includes(".project."));
-  assert.equal(builtCommands.length, 15, "five on each of My Computer and the virtual folder (New ▸ OVI, 2026-11-19), Remove on four menus, Rename");
+  assert.equal(builtCommands.length, 16, "five on each of My Computer and the virtual folder (New ▸ OVI, 2026-11-19), Remove on four menus, Rename, an OVI's Open");
   for (const [id, command] of Object.entries(State.CONTEXT_COMMANDS)) {
     assert.equal(INV.entrada(id).estado, "built", id);
     assert.ok(typeof command === "string");

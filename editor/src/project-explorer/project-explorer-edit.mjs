@@ -214,3 +214,18 @@ export const newOviSaved = (state, entryId, storedPath) => followEdit(state, wit
 /** The new OVI `entryId` left memory unsaved: its item goes. */
 export const newOviClosed = (state, entryId) => followEdit(state, withoutNewOvi(state.project, entryId));
 
+// ——— Open (a double click on the row, or its menu's Open) ———
+
+/**
+ * What opening the row `key` asks of the main process: an OVI saved in a file opens from its stored path, and a new OVI
+ * not saved yet brings its windows forward. Any other row opens nothing here (a document's Open is not built; a folder's
+ * double click was not measured). LabVIEW opens a VI of the tree in the project, "main1.vi Front Panel on
+ * P1.lvproj/My Computer" (measured: reports/2026-11-17-project-explorer-s2.md Q4).
+ */
+export function openRequestOf(state, key) {
+  const item = itemOf(state, key);
+  if (item?.kind !== ITEM_KINDS.OVI) return null;
+  if (item.unsavedOvi !== undefined) return { unsavedOvi: item.unsavedOvi };
+  return item.path === undefined ? null : { storedPath: item.path };
+}
+

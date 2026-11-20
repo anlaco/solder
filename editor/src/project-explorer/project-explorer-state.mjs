@@ -46,7 +46,7 @@ const CONTEXT_ROWS_BY_MENU = {
   "my-computer": TREE_ROWS,
   "virtual-folder": { ...TREE_ROWS, "remove-from-project": "removeFromProject", rename: "rename" },
   "auto-populating-folder": { "remove-from-project": "removeFromProject" },
-  "ovi-item": { "remove-from-project": "removeFromProject" },
+  "ovi-item": { open: "openItem", "remove-from-project": "removeFromProject" },
   "document-item": { "remove-from-project": "removeFromProject" },
 };
 

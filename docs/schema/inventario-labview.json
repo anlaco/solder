@@ -2258,9 +2258,8 @@
     {
       "id": "context.project-explorer.ovi-item.open",
       "etiqueta": "Open",
-      "estado": "todo",
-      "labview": "Opens the item in its own windows.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/project-open-item.test.mjs::Open_and_a_double_click_open_an_OVI_of_the_tree_in_the_project"
     },
     {
       "id": "context.project-explorer.ovi-item.explore",

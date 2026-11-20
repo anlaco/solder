@@ -92,7 +92,7 @@ const MENU_ACTIONS = {
   saveProject: () => solder?.project.save(),
   close: () => solder?.project.close(),
   exit: () => solder?.salir(),
-  ...Object.fromEntries(["addFile", "addSnapshotFolder", "addAutoPopulatingFolder", "newVirtualFolder", "newOviInto", "rename", "removeFromProject"].map((name) => [name, () => treeCommands[name]()])),
+  ...Object.fromEntries(["addFile", "addSnapshotFolder", "addAutoPopulatingFolder", "newVirtualFolder", "newOviInto", "openItem", "rename", "removeFromProject"].map((name) => [name, () => treeCommands[name]()])),
 };
 
 function runMenuCommand(id) {
@@ -118,12 +118,24 @@ function clickMenuRow(row) {
   explain(id, row);
 }
 
-/** A click on the window's own controls: the tree's rows, the tabs and the toolbar. */
-function clickControl(target) {
+/** `event.detail` of the second click of a double click. */
+const DOUBLE_CLICK = 2;
+
+/**
+ * A click on the window's own controls: the tree's rows, the tabs and the toolbar. The second click of a double click on a
+ * row (`clickCount` 2) also opens it, as its menu's Open (measured: s2 Q4). It is read here and not from a `dblclick`
+ * listener because the first click repaints the tree: the row under the mouse is a new element, and Chromium sends no
+ * `dblclick` to it (tried under Xvfb: reports/2026-11-20-project-open-item-editor-try.md).
+ */
+function clickControl(target, clickCount) {
   const expander = target.closest("[data-expander]");
   if (expander) return show(State.toggleExpanded(state, expander.dataset.expander));
   const row = target.closest("[data-key]");
-  if (row) return show(State.select(state, row.dataset.key));
+  if (row) {
+    show(State.select(state, row.dataset.key));
+    if (clickCount === DOUBLE_CLICK) treeCommands.openItem(row.dataset.key);
+    return;
+  }
   const control = target.closest("[data-id]");
   if (!control || control.classList.contains("desactivado")) return;
   const tab = control.dataset.tab;
@@ -155,7 +167,7 @@ document.addEventListener("click", (event) => {
   if (title) return openBarMenu(title);
   const wasOpen = state.abierta || state.menuBarra;
   state = { ...state, abierta: null, menuBarra: null };
-  clickControl(event.target);
+  clickControl(event.target, event.detail);
   if (wasOpen) paint();
 });
 

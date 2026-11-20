@@ -47,6 +47,12 @@ export function createTreeCommands({ getState, show, update, explainHole, solder
     if (created) edited(Edit.addNewOvi(getState(), key, created.name, created.entryId));
   }
 
+  /** A double click on a row, or an OVI's Open: the main process opens the OVI in this project (project-explorer-edit.mjs `openRequestOf`). */
+  function openItem(key = getState().selected) {
+    const request = Edit.openRequestOf(getState(), key);
+    if (request) solder?.project.openItem(request);
+  }
+
   /** F2 and Rename...: a virtual folder is edited in place, an OVI explains that it is not built, a document does nothing (measured: s4 "Rename"). */
   function rename() {
     const kind = State.selectedKind(getState());
@@ -63,6 +69,7 @@ export function createTreeCommands({ getState, show, update, explainHole, solder
     newOvi: () => newOviInto(State.ROOT_KEY),
     newOviSaved: ({ entryId, storedPath }) => edited(Edit.newOviSaved(getState(), entryId, storedPath)),
     newOviClosed: (entryId) => edited(Edit.newOviClosed(getState(), entryId)),
+    openItem,
     rename,
     removeFromProject: () => show(Edit.askRemove(getState())),
     confirmRemove: () => edited(Edit.confirmRemove(getState())),

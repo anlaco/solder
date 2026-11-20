@@ -5,11 +5,14 @@
 // main process's.
 
 import { readProject } from "../../core/model/project.mjs";
-import { directoryOf, pathKey, rebaseStoredPath, relativeBetween } from "../src/common/ovi-paths.mjs";
+import { directoryOf, pathKey, rebaseStoredPath, relativeBetween, resolveRelative } from "../src/common/ovi-paths.mjs";
 import { projectBody } from "./project-registry.mjs";
 
 /** The path to store for the file or folder the user chose at `absolutePath`, in a project saved at `projectPath` (or never saved: null). */
 export const storedProjectPath = (projectPath, absolutePath) => (projectPath ? relativeBetween(directoryOf(pathKey(projectPath)), pathKey(absolutePath)) : pathKey(absolutePath));
+
+/** Where the file of an item stored as `storedPath` is, in a project saved at `projectPath` (or never saved: null, its paths absolute). */
+export const projectItemPath = (projectPath, storedPath) => (projectPath ? resolveRelative(pathKey(projectPath), storedPath) : pathKey(storedPath));
 
 /**
  * The text of a project (as `projectBody` writes it) with every stored path rebased from where the project was (`fromPath`,

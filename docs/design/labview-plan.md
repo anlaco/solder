@@ -73,6 +73,14 @@ When the developer says "keep going":
       *Version 0.14.0-beta set in `package.json` and the CHANGELOG on 2026-11-19, tests green; tag, push, `npm run dist`,
       the pre-release and the issues wait for the developer.*
 
+   *After the release, reported by the developer on 2026-11-20 ("los .ovi no se pueden abrir haciendo doble click en el
+   ovi de la estructura del proyecto"): the first part of stage (d) brought forward. A double click on an OVI of the
+   tree, or its menu's Open, opens it in the project ("… on P.sdproj/My Computer", s2 Q4); a new OVI not saved yet comes
+   forward (`test/editor/project-open-item.test.mjs`). Unverified: what LabVIEW does with a VI already open outside the
+   project (Solder brings it forward as it is) and a double click on a document or a folder (nothing here). Tried under
+   Xvfb (reports/2026-11-20-project-open-item-editor-try.md), which found a `dblclick` listener never firing on a row the
+   first click had repainted: the second click (`event.detail` 2) opens it now. Released as 0.14.1-beta the same day.*
+
    After the release, also pending: measuring in LabVIEW the controls resized by analogy ("Pending review in LabVIEW:
    resizing controls", in "Cross-cutting" below), and Old School's enum field, 6 px wider than its box (as before).
 2. To capture LabVIEW, the method is in

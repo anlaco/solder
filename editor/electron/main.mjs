@@ -256,6 +256,11 @@ const projects = createProjectManager({
   createPage: (options) => layouts.createPage(options),
   afterLastProjectClosed: () => afterLastProjectClosed(),
   openNewOVIIn: (project) => openNewOVIIn(project),
+  openPathIn: (filePath, project, owner) => openPathIn(filePath, project, owner),
+  focusOVI: (entryId) => {
+    const open = openOVIs.get(entryId);
+    if (open) focusPanel(open);
+  },
   saveNewOVI: (entryId, owner) => saveNewOVI(entryId, owner),
   instanceChanged: (projectId, instance) => setInstanceOfProject(projectId, instance),
   projectClosed: (projectId) => setInstanceOfProject(projectId, null),
@@ -542,6 +547,15 @@ const kindOfFile = (filePath) => (isPolymorphicPath(filePath) ? ENTRY_KINDS.POLY
 /** Opens an OVI from disk in its own windows, or brings its windows forward if it is already open; a `.sdproj` opens its Project Explorer. */
 async function openPath(filePath, owner) {
   if (isProjectPath(filePath)) return projects.openPath(filePath, owner);
+  return openPathIn(filePath, null, owner);
+}
+
+/**
+ * Opens the OVI at `filePath` in `project` (`{ id, instance, folder }`, or null for none), whose titles then say where it is:
+ * "main1.vi Front Panel on P1.lvproj/My Computer" for a VI opened from the tree (measured: s2 Q4). An OVI already open comes
+ * forward as it is; what LabVIEW does with one open outside the project was not measured.
+ */
+async function openPathIn(filePath, project, owner) {
   const existing = registry.findByPath(filePath);
   // An OVI closed with Defer Decision opens again as it is in memory, with its unsaved changes.
   if (existing && deferredEntries.delete(existing.id)) return openWindows(Object.assign(existing, { initialText: existing.current }));
@@ -554,6 +568,7 @@ async function openPath(filePath, owner) {
     return;
   }
   const { entry } = registry.open({ path: filePath, initialText: text, kind: kindOfFile(filePath) });
+  if (project) Object.assign(entry, { project: project.id, instance: project.instance, projectFolder: project.folder });
   rememberRecentFile(filePath);
   openWindows(entry);
 }

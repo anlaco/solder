@@ -127,6 +127,8 @@ contextBridge.exposeInMainWorld("solder", {
     onRenamed: (callback) => ipcRenderer.on("project:renamed", (_event, name) => callback(name)),
     /** The project's stored paths were rebased to the folder it was first saved in: `callback(text)` with the project's new text. */
     onRebased: (callback) => ipcRenderer.on("project:rebased", (_event, text) => callback(text)),
+    /** A double click on an OVI of the tree, or its Open: `{ storedPath }` opens its file in this project, `{ unsavedOvi }` brings a new OVI's windows forward. */
+    openItem: (request) => ipcRenderer.send("project:open-item", request),
     /** New ▸ OVI and File ▸ New OVI: a new OVI opened in this project, `{ entryId, name }` ("Untitled N"). */
     newOvi: () => ipcRenderer.invoke("project:new-ovi"),
     /** A new OVI of this project was saved: `callback({ entryId, storedPath })`. */

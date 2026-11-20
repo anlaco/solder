@@ -15,7 +15,7 @@ import { CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS } from "./close-flow
 import { EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, EXIT_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
 import { NEW_FILES_BUTTONS, closeProjectDialogText, hasOVIsOutsideProjects, newUnsavedFilesText, openProjectDialog, projectSavePathFor, saveProjectDialog } from "./project-dialogs.mjs";
 import { registerItemRequests } from "./project-item-requests.mjs";
-import { rebaseProjectBody, storedProjectPath } from "./project-paths.mjs";
+import { projectItemPath, rebaseProjectBody, storedProjectPath } from "./project-paths.mjs";
 import { createProjectRegistry, isModified, projectBody, projectFileText, projectName, recordChange, recordSave } from "./project-registry.mjs";
 import { CREATE_PROJECT_DIALOG_SIZE, PROJECT_WINDOW_SIZE, cascadedPosition, projectWindowTitle } from "./project-window.mjs";
 import { windowListRows } from "./project-window-list.mjs";
@@ -28,7 +28,8 @@ const CREATIONS = { BLANK_PROJECT: "blank-project", BLANK_OVI: "blank-ovi" };
  * `captureMode()`; `anyDocumentOpen()`; `openNewOVI()`; `openOVIEntries()`, the open OVIs; `oviWindowList()` and
  * `activateOVIWindow(key)` for the Window menu; `hideGettingStarted()`; `createPage(options)`, the explorer's page,
  * floating or docked (layout-manager.mjs, DT-101); `afterLastProjectClosed()`; and for the OVIs made in a project,
- * `openNewOVIIn(project)` (gives the new entry), `saveNewOVI(entryId, owner)` (gives the path it was saved at, or null),
+ * `openNewOVIIn(project)` (gives the new entry), `openPathIn(filePath, project, owner)` and `focusOVI(entryId)` for the
+ * OVIs of the tree, `saveNewOVI(entryId, owner)` (gives the path it was saved at, or null),
  * `instanceChanged(projectId, instance)` and `projectClosed(projectId)`.
  */
 export function createProjectManager(host) {
@@ -278,9 +279,11 @@ export function createProjectManager(host) {
     // New ▸ OVI: an untitled OVI opened in this project, whose item the page adds.
     ipcMain.handle("project:new-ovi", (event) => {
       const project = entryOf(event);
-      const created = host.openNewOVIIn({ id: project.id, instance: instanceOf(project), folder: project.path ? path.dirname(project.path) : null });
+      const created = host.openNewOVIIn(placeInProject(project));
       return { entryId: created.id, name: created.name };
     });
+    // A double click on an OVI of the tree, or its Open: the OVI opens in this project.
+    ipcMain.on("project:open-item", (event, request) => openItem(entryOf(event), request, ownerOf(event)));
     // The page's project became this text (the title's star follows whether it differs from the saved one).
     ipcMain.on("project:changed", (event, text) => {
       const entry = entryOf(event);
@@ -295,6 +298,15 @@ export function createProjectManager(host) {
     ipcMain.handle("create-project:init", () => ({ oviOpen: hasOVIsOutsideProjects(host.openOVIEntries()) }));
     ipcMain.on("create-project:finish", (_event, creation) => finishCreateDialog(creation));
     ipcMain.on("create-project:cancel", () => closeCreateDialog());
+  }
+
+  /** Where an OVI opened from the project `entry` belongs: the project, the place its titles say and the folder its first Save proposes. */
+  const placeInProject = (entry) => ({ id: entry.id, instance: instanceOf(entry), folder: entry.path ? path.dirname(entry.path) : null });
+
+  /** Opens an OVI of the tree of `entry` in the project; a new OVI not saved yet only comes forward. */
+  function openItem(entry, request, owner) {
+    if (request.unsavedOvi !== undefined) return host.focusOVI(request.unsavedOvi);
+    return host.openPathIn(projectItemPath(entry.path, request.storedPath), placeInProject(entry), owner);
   }
 
   /** A new OVI of the project `projectId` was saved at `absolutePath`, or left memory unsaved (null): its item follows. */
