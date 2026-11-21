@@ -5,6 +5,7 @@
 
 import { EventEmitter } from "node:events";
 import { BaseWindow, WebContentsView, app } from "electron";
+import { createFirstPaintGate } from "./first-paint.mjs";
 
 /** Every page alive, so the layout can be switched for all of them at once. */
 const pages = new Set();
@@ -47,10 +48,17 @@ export class PageWindow extends EventEmitter {
     // Not "resize": on Linux it comes before the content area has its new size (see dock-window.mjs).
     this.frame.contentView.on("bounds-changed", () => this.fitToFrame());
     this.frame.on("close", (event) => this.frameClosing(event));
-    this.view.webContents.once("did-finish-load", () => this.emit("ready-to-show"));
+    // "ready-to-show" once the page has painted itself (first-paint.mjs), as a BrowserWindow's comes once it has drawn.
+    this.firstPaint = createFirstPaintGate({ onReady: () => this.emit("ready-to-show") });
+    this.view.webContents.once("did-finish-load", () => this.firstPaint.loaded());
     this.view.webContents.on("focus", () => this.emit("focus"));
     this.view.webContents.loadURL(url);
     pages.add(this);
+  }
+
+  /** The page says it has painted itself for the first time (`page:painted`). */
+  markPainted() {
+    this.firstPaint.painted();
   }
 
   get webContents() {

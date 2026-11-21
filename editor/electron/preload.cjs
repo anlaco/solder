@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld("solder", {
    * OVI, and `windowStyle` is the text of the `.css` next to its file, or "" (DT-058 §2).
    */
   iniciar: () => ipcRenderer.invoke("ovi:init"),
+  /** The page has painted itself for the first time: its window is shown now, not blank before (first-paint.mjs). */
+  pagePainted: () => ipcRenderer.send("page:painted"),
   /** Saves the text of the OVI; `como`, Save As. Returns `{ ruta, nombre, texto }` (the text as written), or nothing if cancelled. */
   guardar: (texto, como) => ipcRenderer.invoke("ovi:guardar", texto, como),
   /** File ▸ Open: another OVI, in its own windows. */

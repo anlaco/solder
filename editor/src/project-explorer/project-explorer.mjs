@@ -276,4 +276,6 @@ function runDockedMenuRow(id) {
 docking = connectDockedPage({ layoutApi: solder?.layout, buildModel: dockedChromeModel, runMenuRow: runDockedMenuRow, repaint: () => state && paint() });
 solder?.layout.onChanged((layout) => show({ ...state, layout }));
 if (state) paint();
+// Its window is shown once it has painted (electron/first-paint.mjs); a project that could not be read is shown too.
+solder?.pagePainted();
 solder?.layout.get().then((layout) => show({ ...state, layout }));

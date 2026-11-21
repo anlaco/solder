@@ -47,6 +47,17 @@ export function activateTab(dock, id, kind) {
   return { ...dock, tabs, active: id, shown };
 }
 
+/**
+ * An OVI's page joins the docked window before it has painted: its tab opens behind the active one, which stays on
+ * screen until the page is shown (`activateTab`); with no tab active it becomes the active one, as there is nothing
+ * else to show (reports/2026-11-21-visual-faults-editor.md: the new tab was blank for ~700 ms).
+ */
+export function openTabBehind(dock, id) {
+  if (dock.active === null) return activateTab(dock, id);
+  if (dock.tabs.includes(id)) return dock;
+  return { ...dock, tabs: [...dock.tabs, id], shown: { ...dock.shown, [id]: dock.shown[id] ?? FRONT_PANEL } };
+}
+
 /** An OVI's tab is closed: the tab after it becomes active, or the one before when it was the last. */
 export function closeTab(dock, id) {
   const index = dock.tabs.indexOf(id);

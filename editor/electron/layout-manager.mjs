@@ -70,6 +70,7 @@ export function createLayoutManager(host) {
 
   function registerRequests() {
     ipcMain.handle("layout:get", () => layout);
+    ipcMain.on("page:painted", (event) => pageOfContents(event.sender)?.markPainted());
     ipcMain.on("layout:set", (_event, newLayout) => setLayout(newLayout));
     // The bar asks once it is listening, so its first state is never lost while it loads.
     ipcMain.on("dock:request-state", () => dock.refresh());

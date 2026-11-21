@@ -5,7 +5,7 @@
 import { BaseWindow, WebContentsView } from "electron";
 import { createDockChrome } from "./dock-chrome.mjs";
 import { isAppQuitting } from "./page-window.mjs";
-import { BLOCK_DIAGRAM, FRONT_PANEL, activateTab, closeTab, dockBounds, emptyDock, isOnScreen, toggleShown, toggleSplit } from "./dock-layout.mjs";
+import { BLOCK_DIAGRAM, FRONT_PANEL, activateTab, closeTab, dockBounds, emptyDock, isOnScreen, openTabBehind, toggleShown, toggleSplit } from "./dock-layout.mjs";
 
 const OVI_KINDS = new Set([FRONT_PANEL, BLOCK_DIAGRAM]);
 const DOCK_TITLE = "Solder";
@@ -95,6 +95,8 @@ export function createDock(options) {
   function showActiveChrome() {
     if (!frame || frame.isDestroyed()) return;
     const page = activePage();
+    // A page that has not painted yet has sent no menus or toolbar: the ones on screen stay until it sends its own.
+    if (page && !page.chromeModel) return;
     chrome.show(frame, page?.chromeModel ?? null, (id) => runOnActive(id, "menu"));
   }
 
@@ -118,7 +120,8 @@ export function createDock(options) {
     page.on("focus", page.dockFocusListener);
     if (isOVIPage(page)) {
       ovis.set(page.group, { ...ovis.get(page.group), [page.kind]: page });
-      if (page.wanted || !state.tabs.includes(page.group)) state = activateTab(state, page.group, page.wanted ? page.kind : undefined);
+      if (page.wanted) state = activateTab(state, page.group, page.kind);
+      else state = openTabBehind(state, page.group);
     } else if (!explorers.includes(page)) {
       explorers = [...explorers, page];
     }

@@ -9,6 +9,13 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Fix: a running OVI's values reach the Front Panel once per frame of the display, and the Block Diagram no longer
+  repaints itself, whole, for each of them. Before, every value message (every 16 ms) repainted both windows; a
+  diagram that took longer than that fell further and further behind, and a busy panel could stall.
+- Fix: an OVI's windows are shown once they have drawn themselves, not blank before (100 to 320 ms), and the first
+  drawing no longer compiles the OVI. Docked, a new OVI's tab opens behind the current one until it has drawn, and
+  the toolbar row and the menus no longer go empty for ~0.7 s while it loads.
+
 ## 0.14.1-beta — 2026-11-20
 
 - Fix: a double click on an OVI of the Project Explorer's tree, or its menu's Open, opens it in the project, its

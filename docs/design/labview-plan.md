@@ -19,10 +19,40 @@ When the developer says "keep going":
    closes the hardware stage here**: next is **"The language's everyday types"** below. Its step 1 (the compiler's
    split) and step 2, clusters made by the user (DT-095, DT-098), are done (2026-11-16 and 2026-11-17): **continue with
    step 3, type definitions** (DT-096), measured and its core done on 2026-11-17. **DT-099 (2026-11-17) brings projects first:
-   step 2b**, measured and its core done on 2026-11-17, editor stages (a) and (b) done on 2026-11-18. **Next: the
-   release 0.14.0-beta**, following "Release 0.14" just below. Then stage (c) of step 2b; then the editor stages of type
+   step 2b**, measured and its core done on 2026-11-17, editor stages (a) and (b) done on 2026-11-18. Releases
+   0.14.0-beta (2026-11-19) and 0.14.1-beta (2026-11-20) are out. "Diagnose two visual faults" just below is done
+   (2026-11-21). **Next: stage (c) of step 2b; then the editor stages of type
    definitions. DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
+   **Diagnose two visual faults (asked by the developer on 2026-11-20), diagnosis only, no fix yet.** The developer
+   reported two things that do not stop the work but look wrong, and agreed with this rule: a purely cosmetic fault goes
+   to a list fixed before each MINOR release; one that may come from the architecture is diagnosed at once, because
+   later work builds on it. For each, find the cause (reproduce under Xvfb with the `labview` skill, measure the same
+   case in LabVIEW where it applies), say whether it is a detail or a fault of the base, and ask the developer before
+   fixing:
+   1. **The toolbar disappears while an OVI loads** and the new one takes a moment to show. Suspect: the page repaints
+      the whole window (`document.body.innerHTML = ...`), the same pattern that swallowed the tree's `dblclick` in 0.14.1.
+      If so, decide whether the windows should update only what changed.
+   2. **An indicator wired to a While Loop's `i` counts at an uneven rate**, and sometimes stops for about a second.
+      Suspect: how and when the panel receives values from the running code (refresh rate, the main thread busy, garbage
+      collection, the pool's messages). Measure LabVIEW's own behavior (an unthrottled loop and one with a Wait) and
+      Solder's update path before the waveform charts and DAQ build on it.
+
+   *Diagnosed on 2026-11-21 (reports/2026-11-21-visual-faults-editor.md, -indicator-redraw-labview.md), waiting for the
+   developer's decision.* (1) Not the whole-body repaint (OVI windows morph): a window is shown at `load`, before its
+   first paint, and is blank for 100–320 ms; that first paint compiles the OVI only to build the error list (≈ 80 of
+   140–180 ms). Docked, a new OVI empties the toolbar row and the menu bar for ≈ 700 ms, because the dock shows a null
+   model until the page's first paint. (2) The ~1 s stop was not reproduced under Xvfb; LabVIEW redraws ≥ 31 times a
+   second, evenly, never stopping ≥ 100 ms. What is a fault of the base: every value message repaints the whole window
+   in both windows (FP ≈ 9 ms, 13 ms docked; the diagram 9–39 ms, though nothing on it changes, even hidden); the
+   diagram's BroadcastChannel queue has no bound, so a diagram slower than 16 ms falls further behind for ever; docked,
+   every paint rebuilds the whole menu model. The uneven count with a Wait (ms) 10 is aliasing of the 16 ms pass.
+   *Fixed on 2026-11-21, as the developer asked ("Fix both"; reports/2026-11-21-visual-faults-fixed-editor.md): a Run's
+   values are painted once per frame in the Front Panel and not at all in the Block Diagram (`frame-painter.mjs`); a
+   page's window is shown after its first paint (`electron/first-paint.mjs`), which no longer compiles; docked, a new
+   tab opens behind and the toolbar row keeps the old one until the new page sends its own. Left: docked, a new OVI's
+   Block Diagram shows for 11–15 ms before its Front Panel (the main process shows the diagram first).*
+
    **Release 0.14 (decided by the developer on 2026-11-19).** `main` holds, unreleased: projects (DT-099, core and
    editor stages a1, a2, b), type definitions (DT-096), resizing every control (#21), callers seeing an open subOVI's
    unsaved edits (#20) and Solder's docked view (DT-101, experimental: "un gran avance de marca", the developer); the

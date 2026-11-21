@@ -45,6 +45,7 @@ import * as MD from "./modal-dialog.mjs";
 import * as GM from "../front-panel/graph-menus.mjs";
 import * as GS from "../front-panel/graph-state.mjs";
 import { morphInnerHtml } from "./dom-morph.mjs";
+import { createFramePainter } from "./frame-painter.mjs";
 import * as P from "../front-panel/front-panel.mjs";
 import * as PC from "../front-panel/panel-clipboard.mjs";
 import * as Paths from "../common/ovi-paths.mjs";
@@ -351,10 +352,20 @@ let plazoAbort = null;
  * written to a Waveform Chart since the last time, in order; the chart adds them to its history, which
  * outlives the Run (labview-captures/graphs/REPORT.md §4).
  */
+/**
+ * What a Run sent reaches the panel at the next frame (frame-painter.mjs). The Block Diagram draws none of it: it only
+ * keeps the values, which become the indicators' current values when the Run ends, so it never repaints for them (it
+ * did, whole, on every message, and fell further behind the bigger it was: reports/2026-11-21-visual-faults-editor.md).
+ */
 function mostrarValores(valores, series = {}) {
-  pan = { ...pan, valores: { ...(pan.valores ?? {}), ...valores }, charts: appendSeries(pan.charts, series) };
-  pintar();
+  const shown = { ...(pan.valores ?? {}), ...valores };
+  if (conDiagrama) return void (pan = { ...pan, valores: shown });
+  pan = { ...pan, valores: shown, charts: appendSeries(pan.charts, series) };
+  valuePainter.request();
 }
+
+/** A paint for values only changes no menu and no toolbar, so the docked window is not sent them again. */
+const valuePainter = createFramePainter({ paint: () => pintar({ chromeChanged: false }), requestFrame: requestAnimationFrame });
 
 /** The charts with what the OVI wrote to them appended, by the type their wire carries now. */
 function appendSeries(charts, series) {
@@ -778,19 +789,31 @@ function openDebugWindow() {
   setDebug(DS.openDebugWindow(debug));
 }
 
-/** The errors of the OVI now (cached by graph: compiling on each repaint would be wasteful). Only these stop Run. */
-let errorRowsCache = { graph: null, hierarchy: null, rows: [], warnings: [] };
+/**
+ * The errors of the OVI now, cached by graph. They need a compile (≈ 80 ms for an example OVI), so only what shows
+ * them asks: Run and the Error list, never a paint of the toolbar (the first paint spent half its time on it:
+ * reports/2026-11-21-visual-faults-editor.md). Only these stop Run.
+ */
+let errorRowsCache = { graph: null, hierarchy: null, rows: [] };
 function errorRows() {
   const g = grafo();
   if (errorRowsCache.graph === g && errorRowsCache.hierarchy === hierarchyErrors) return errorRowsCache.rows;
   const compiled = compilar(g, cat);
   const rows = EL.collect({ graph: g, catalog: cat, resolved: Gr.tipos(g, cat), hierarchyErrors, compileErrors: compiled.errores ?? [], inventory: inv });
-  errorRowsCache = { graph: g, hierarchy: hierarchyErrors, rows, warnings: EL.collectWarnings({ graph: g, catalog: cat }) };
+  errorRowsCache = { graph: g, hierarchy: hierarchyErrors, rows };
   return rows;
 }
 
+/** The warnings of the OVI now, cached by graph: they need no compile, so the toolbar's warning button asks them. */
+let warningRowsCache = { graph: null, rows: [] };
+function warningRows() {
+  const g = grafo();
+  if (warningRowsCache.graph !== g) warningRowsCache = { graph: g, rows: EL.collectWarnings({ graph: g, catalog: cat }) };
+  return warningRowsCache.rows;
+}
+
 /** Everything the Error list may show: the errors and, after them, the warnings. */
-const listRows = () => [...errorRows(), ...errorRowsCache.warnings];
+const listRows = () => [...errorRows(), ...warningRows()];
 /** The rows the Error list shows now, with or without the warnings. */
 const shownRows = () => EL.visibleRows(listRows(), errorList.showWarnings);
 
@@ -1337,7 +1360,9 @@ function placePalettes(room) {
   });
 }
 
-function pintar() {
+/** Draws the whole window from its state; `chromeChanged` false when only the values a Run sent changed. */
+function pintar({ chromeChanged = true } = {}) {
+  valuePainter.painted();
   ctx.panelSize = tamanoDelLienzo();
   ctx.panelStyle = panelStyle;
   const resueltos = Gr.tipos(grafo(), cat);
@@ -1345,7 +1370,7 @@ function pintar() {
   const charts = GS.reconciledCharts(pan.charts, grafo(), resueltos);
   if (charts !== pan.charts) pan = { ...pan, charts };
   const floating = floatingWindows();
-  const extra = { toolbar: toolbarButtons(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, conAvisos: !ejecutando && EL.showsWarningButton(listRows(), errorList.showWarnings), dialogo: dialogoError, numeroOVI: oviInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
+  const extra = { toolbar: toolbarButtons(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, conAvisos: !ejecutando && EL.showsWarningButton(warningRows(), errorList.showWarnings), dialogo: dialogoError, numeroOVI: oviInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
   if (conDiagrama) {
     extra.lienzo = D.contenido({ ...dia, debug: DV.canvasView(debug, dia.g, ejecutando) }, ctx, resueltos) + DV.overlay(debug, dia.g, ctx, resueltos, { now: Date.now(), separator: separador, running: ejecutando, pausedAt: debug.run.paused, errorFocus });
     extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia, ctx), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx, inv), DV.menuVariants(debug, dia.g, resueltos, dia.menu)), windowSize()) : "") + floating.popup;
@@ -1377,7 +1402,7 @@ function pintar() {
   for (const el of document.querySelectorAll(".explicacion, .lista-marcos")) dentro(el, tam);
   if (tip.visible) ponerTip();
   if (conPanel) showPanelCursor();
-  docking?.afterPaint();
+  if (chromeChanged) docking?.afterPaint();
 }
 
 /**
@@ -2427,6 +2452,8 @@ receiveShowWarnings(await window.solder?.listaDeErrores.mostrarAvisos());
 recibirPortapapeles(await window.solder?.portapapeles.leer());
 if (oviInfo.text) await cargarTexto(oviInfo.text);
 pintar();
+// Only now is the window shown: before, its body was empty (electron/first-paint.mjs).
+window.solder?.pagePainted();
 avisar(grafo());
 listo = true;
 canal.postMessage({ pide: true });

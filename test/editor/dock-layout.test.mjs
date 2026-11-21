@@ -110,3 +110,13 @@ test("found in the editor: what kept the docked view from starting, showing its 
   assert.match(source("electron/project-manager.mjs"), /confirmDiscard\(entry, dialogOwner\(windowOf\(entry\)\)\)/);
   assert.match(source("electron/page-window.mjs"), /addChildView\(this\.view\);\s*\/\/[^\n]*\n\s*this\.view\.setVisible\(true\)/);
 });
+
+test("an OVI page that joins before it has painted opens its tab behind the active one, which stays on screen", () => {
+  let dock = Dock.activateTab(Dock.emptyDock(), "a");
+  dock = Dock.openTabBehind(dock, "b");
+  assert.deepEqual([dock.tabs, dock.active, dock.shown.b], [["a", "b"], "a", FP]);
+  assert.equal(Dock.openTabBehind(dock, "b"), dock, "a tab already open is left as it is");
+  dock = Dock.activateTab(dock, "b");
+  assert.equal(dock.active, "b", "shown once painted");
+  assert.equal(Dock.openTabBehind(Dock.emptyDock(), "c").active, "c", "with no tab active there is nothing else to show");
+});
