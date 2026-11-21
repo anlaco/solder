@@ -39,6 +39,8 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [089](#dt-089) | The compiler is split into modules of one responsibility each, after everything native and before 1.0 | Proposed · not implemented |
 | [091](#dt-091) | Rings are plain numerics of their representation with items as text–value pairs, saved as pairs from `.sdg` version 5 | Accepted · core built |
 | [101](#dt-101) | Solder's docked view: the Project Explorer and the OVIs in one window, switched live from the floating LabVIEW view | Accepted · experimental, being built |
+| [102](#dt-102) | A subOVI behaves in memory as LabVIEW's subVI: reserved while a caller runs, held by Defer Decision, broken by an unsaved connector change | Accepted · partly built |
+| [103](#dt-103) | A compiled application is the Solder Runtime: wasmtime, a web server and a desktop window at once, with the HTML front panel reachable from any browser and from a remote viewer built with it | Accepted as the end result · not built |
 
 ## The 34 Red decisions
 
@@ -608,6 +610,8 @@ I/O subpalette (step 4 of the roadmap) or phase R7.
 3. **The compiled VI runs in the page's WASM engine**, inside a *Web
    Worker*: the interface does not freeze while the VI works, and Abort terminates the
    *worker*. `solder run` does the same in Node. wasmtime leaves the project.
+   *(Revisited by [DT-103](#dt-103) for compiled applications, which will run on wasmtime in the Solder Runtime;
+   the editor is not affected.)*
 4. **The gates do not change.** The module only touches what is imported into it, and
    the host validates each import against the manifest (plan §4). What changes is
    who acts as host: the *worker*, not a wasmtime `Store`.
@@ -5205,3 +5209,157 @@ Defer Decision, and, after 0.14, breaking its callers when its connector changes
 | The OVIs a running caller calls are reserved until it stops | `test/editor/run-reservations.test.mjs`; tried in the editor under Xvfb | Built |
 | Defer Decision keeps a subOVI in memory for its callers, and the last caller's close asks with Don't Save | `test/editor/deferred-close.test.mjs`; tried in the editor under Xvfb | Built |
 | A changed connector breaks the caller | — | Not built (after 0.14) |
+
+## DT-103
+
+**A compiled Solder application is one executable of our own, the Solder Runtime: it runs the compiled OVI in
+wasmtime and is at the same time a web server and a desktop application. Its interface is the same HTML/CSS/JS
+front panel the editor draws, shown in its own window and reachable from any browser with a URL and a key.**
+
+- **Status:** Accepted on 2026-11-20 by the developer as the end result to aim at · **not built**. It is written down
+  now so that what is built before it does not close the way; the details are decided when the Application Builder is
+  built, and much of it will probably be options of its build specifications ("es probable que todo esto vaya como
+  opciones de compilación en App Builder, ya veremos, pero deja este resultado final apuntado").
+- **How it was decided:** in a conversation with the developer on 2026-11-20, step by step: whether LabVIEW builds
+  DLLs and what Solder could do; which runtime (wasmtime was chosen: "elegiremos wasmtime"); then that a compiled
+  application must not be an Electron or Tauri application ("quiero que Solder sea Solder… nos da todo el control que
+  creo necesario para una aplicación industrial… si te viene un cliente… ¿Tauri, se partiría usted un brazo por él?");
+  then that its interface must be web technology, so that a tablet with a USB-Ethernet adapter and Chrome reaches the
+  test bench's application with a URL and a key ("nos basamos en la tecnología web llevada a la industria"); and
+  then that it is a real desktop application, an executable packaged like Solder, server and application at once; and
+  last, that the build also gives a viewer-only executable for the remote PCs, for end-to-end security ("que Solder
+  expulse tanto el ejecutable del PC industrial como un ejecutable que solo sirva para visualización"), with SCADA as
+  the industrial reference.
+- **Revisits:** [DT-039](#dt-039) §3 ("wasmtime leaves the project") **for compiled applications only**: the editor
+  keeps running OVIs in its worker until something else is decided (Open d).
+
+### Why
+
+1. **Who vouches for what is deployed.** An industrial customer asks the supplier to answer for everything inside the
+   application. An application framework (Electron, Tauri) cannot be answered for; the Runtime can, because it is
+   ours, and what it carries is a few libraries we can read, pin and maintain (§8).
+2. **Remote access is the point of web technology.** Because the panel is HTML served by the application itself, any
+   browser on the plant's network, or on a tablet wired straight to the bench, sees and operates the same panel, with
+   nothing installed on it. Industrial HMIs have gone this way (Ignition Perspective, WinCC Unified, CODESYS
+   WebVisu, B&R mapp View; NI had Remote Panels and later WebVI): *unverified, from memory, not measured*.
+   **SCADA is the industrial reference** for the whole shape: a server next to the process, and thin clients on other
+   PCs that only show and operate it (§6). Ignition, for one, wraps its web interface in a desktop application of its
+   own (*unverified, from memory*).
+3. **One drawing.** The panel of a compiled application is the editor's own HTML/CSS (DT-058: Plain is the only
+   drawing, styles are CSS over it), not a second renderer that would drift from it.
+4. **Like LabVIEW.** A LabVIEW application is an executable plus its run-time engine, with NI answering for both;
+   LabVIEW also builds shared libraries and packed libraries (§7). Solder keeps that shape with its own pieces.
+5. **The hardware from native code.** Serial, VISA and DAQ are called from Rust in the Runtime, with native threads
+   and steadier timing than a browser's event loop; in the editor that needs a separate process today.
+
+### Decision
+
+1. **The Solder Runtime**, written in Rust, ours. No application framework (Electron, Tauri, CEF as a framework) is
+   what a compiled application *is*; a web engine appears only as the window's content (§4).
+2. **wasmtime runs the compiled `.wasm`.** Compared on 2026-11-20 with WAMR and with a runtime of our own:
+   - wasmtime: Rust like the Runtime; asynchronous host functions that suspend the guest's stack on a fiber, the
+     equivalent of the JSPI the core relies on (DT-039 d), so the compiler's output need not change; epoch
+     interruption for Abort; ahead-of-time compilation; shared memory and threads for the clump pool (DT-061); the
+     Bytecode Alliance's reference runtime. Costs 10–20 MB and does not reach microcontrollers.
+   - WAMR: tiny (≈100 KB–1 MB), runs on ESP32 and Zephyr, but its asynchronous suspension and threads are less mature.
+     **Kept as a later second target** for small boards, in the spirit of LabVIEW Real-Time: the same `.wasm`.
+   - Our own runtime: rejected. A serious one is a native code generator per architecture with threads, memory safety
+     and stack switching; an interpreter would be slow and against the spirit of rule 4. What is "ours" is already the
+     encoder.
+3. **A web server inside the Runtime:** HTTPS and WebSocket, serving the front panel's HTML/CSS/JS and carrying
+   control and indicator values. TLS with a memory-safe, audited library (`rustls` is the candidate).
+4. **A desktop application at the same time.** Double-clicking the executable opens its own native window, whose
+   content is a webview loading the panel from the Runtime's own server: the window is the first client, with more
+   privileges than a remote one (file dialogs, printing, local hardware, no key). The Runtime does not know what shows
+   it; a *window host* has three implementations:
+   - **the system's webview** (WebView2 on Windows, distributed in its *Fixed Version* mode so the engine is pinned;
+     WebKitGTK on Linux; WKWebView on macOS) — the default: small and light;
+   - **CEF** (Chromium inside): ≈150 MB and Electron-like memory, but the same pinned engine everywhere — for the
+     customer who demands it, or for Linux if WebKitGTK does not draw the panel faithfully;
+   - **headless**: no window, server only (a PC with no screen in a cabinet).
+   The window layer is thin and ours, or the `wry` library pinned and vendored (it is Tauri's window layer, not its
+   framework); decided when built.
+5. **Remote clients** reach the panel with a URL and a key: the plant network, or a tablet with a USB-Ethernet adapter
+   wired straight to the bench.
+6. **A remote viewer executable.** The same build gives a second executable that only shows: the Runtime without
+   wasmtime and without hardware, its window and webview alone, for the PCs that watch or operate the bench from
+   elsewhere (SCADA's thin client). Built together with the application, it starts with trust already set up, and the
+   two speak mutual TLS end to end with no plant CA and no QR:
+   - it carries only the **fingerprint of its application's certificate** (pinned: no other server is accepted) and an
+     **enrollment code that expires**, never a client key: a key inside the file would let any copy of the file in;
+   - on its first run it **makes its own key on that machine** and keeps it in the system's secure store (TPM or
+     keychain), where it cannot be copied, and asks to be enrolled; the application **approves it** (for example on its
+     own screen: "New viewer: PC-Quality-2. Allow?"), and can **revoke** one viewer without touching the others;
+   - it **does not carry the panel**: it fetches it from the application on every connection, so rebuilding the
+     application with a changed panel leaves the viewers valid; a new viewer is needed only when trust or the protocol
+     change;
+   - devices are not users: the login with roles and the audit log (Open b) still apply.
+   It runs on PCs and Windows tablets. Android and iPad would need a packaged app (stores, device management), so the
+   **browser stays** as the less strict way in (§5). The application's master key, which signs everything, lives where
+   the project is built: it is protected, and can be renewed without redoing the installation.
+7. **Libraries for other programs** come from the same Runtime, as LabVIEW's Application Builder makes them
+   (*unverified in the virtual machine*; to be measured before building: LabVIEW builds a *Shared Library* — `.dll`,
+   `.so`, `.framework` — with a `.h`, each exported VI a C function whose prototype comes from its connector pane,
+   needing the LabVIEW Run-Time Engine; and a *Packed Project Library*, `.lvlibp`, for other LabVIEW programs):
+   - **Shared library:** a native library with wasmtime and the `.wasm` inside, exporting C functions and a generated
+     `.h`, with no separate run-time to install. How strings, arrays, clusters and the error cluster cross the C ABI
+     follows what LabVIEW's `.h` does.
+   - **Packed library:** the `.wasm` with its interface (connectors and types), for other Solder programs.
+   - Later options, not chosen: translating the `.wasm` to C (`wasm2c`) for a library with no runtime; a WASI
+     component with a WIT interface.
+8. **Dependency policy:** small libraries that can be read, pinned to a version, vendored and, if needed, maintained by
+   us; never a framework that cannot be opened. wasmtime passes it (to verify: its long-term-support releases).
+9. **Build options of the Application Builder.** Which of the above are options of which build specification (window
+   host, headless, remote access on or off, the remote viewer, library kinds) is decided when the Application Builder is cloned, from its
+   dialogs measured in LabVIEW.
+
+### Open: what has to be solved before it is built
+
+a. **The same look in every browser.** A tablet may be an iPad (WebKit) and someone will open Firefox: the panel's CSS
+   keeps to standard features (nothing Chromium-only), Solder serves its own fonts (Segoe UI is not on a tablet, and
+   the metrics change with the font), and the panel is tested on Chromium, WebKit and Gecko (Playwright does all
+   three). Pixel-identical antialiasing is not reachable; identical layout and behavior is.
+b. **Security.** HTTPS always; on a local network self-signed certificates warn on tablets, so pairing is needed (a QR
+   on the bench's screen with the certificate's fingerprint, or our own CA installed on the clients). Users and roles
+   (view or operate), sessions that expire, lock-out after failed keys, an audit log of who pressed what and when
+   (required in regulated sectors), IEC 62443 as the reference; remote access off by default and listening only on the
+   interface chosen. In levels, all of them standard: a key; pairing plus passkeys (WebAuthn, keys in the tablet's
+   security chip, immune to phishing); mutual TLS with client certificates on managed devices; the remote viewer (§6).
+   Across sites, the plant's VPN and network segmentation, never the Runtime open to the Internet; if access ever goes
+   through a relay outside the plant, it is end-to-end encrypted so the relay cannot read it (WebRTC does it in a
+   browser). No cryptography or protocol of our own.
+c. **Several clients at once.** One operates and the others watch, as LabVIEW's Remote Panels had "request control";
+   decided explicitly.
+d. **One execution engine.** If the editor runs OVIs in V8 and applications in wasmtime, they will drift. Either the
+   editor's Run also goes through the Rust host with wasmtime, or a test battery runs on both (rule 5).
+e. **Safe state.** A heartbeat between client and Runtime; losing the network or unplugging the tablet takes the bench
+   to a defined safe state; an emergency stop never depends on a remote panel (that is hardware).
+f. **Data rate.** A chart at kHz is not sent value by value: the Runtime batches and decimates to the screen's refresh
+   rate, binary over WebSocket, as LabVIEW decouples execution from panel updates. A cheap tablet has little CPU.
+g. **The direct cable.** Wired point to point there is no DHCP server: a fixed address, or the Runtime hands out one,
+   plus a QR with the URL; `.local` names (mDNS) do not resolve alike on every tablet.
+h. **The desktop window's life.** Whether closing the window stops the program or the server keeps serving the tablets
+   (probably configurable, with a warning when clients are connected); one instance only (opening the executable again
+   brings its window forward rather than starting a second server on the same port).
+i. **wasmtime, proved first** by a prototype: WasmGC (the core uses it, DT-039 §3), asynchronous host functions and
+   shared memory between threads together; the library's size on Windows and Linux.
+
+### Noted, not proposed
+
+- The same architecture (Runtime, server and a window with a webview) could someday host the editor itself, so that
+  Solder and its applications share a base and Electron is no longer needed. That would revisit [DT-037](#dt-037); it is
+  only noted.
+- `~/Proyectos/ovi-viewer` (outside the repository, 2026-11-20) is a small prototype of the idea: a local server that
+  serves Solder's own panel and diagram to the system browser, read-only.
+
+### How it is verified
+
+| Statement | Mechanism | Status |
+|-----------|-----------|--------|
+| wasmtime runs Solder's compiled modules (WasmGC, async imports, shared memory) | a prototype (Open i) | Not built |
+| LabVIEW's Shared Library and Packed Library build specifications, and the `.h` it generates | measured in the virtual machine | Unverified |
+| The panel looks and behaves the same on Chromium, WebKit and Gecko | Playwright on the three engines (Open a) | Not built |
+| A remote client needs the key, and a viewer cannot operate | tests of the Runtime's server (Open b) | Not built |
+| Losing the client takes the program to its safe state | a test on the virtual host (Open e) | Not built |
+| The remote viewer accepts only its application's certificate, and the application only enrolled viewers | tests of the Runtime and the viewer (§6) | Not built |
+| A copied viewer cannot get in without being enrolled, and a revoked one is refused | tests of the Runtime and the viewer (§6) | Not built |
