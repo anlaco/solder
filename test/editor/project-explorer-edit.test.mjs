@@ -277,8 +277,8 @@ test("the right-click menus of virtual and auto-populating folders and of the it
   const rows = (menu) => INV.hijos(`context.project-explorer.${menu}`).map((entry) => `${entry.separado ? "| " : ""}${entry.etiqueta}${entry.atajo ? ` ${entry.atajo}` : ""}${entry.estado === "built" ? " +" : ""}`);
   // s4 "Menus", with "|" before the first row of a group and "+" on what is built; a VI is an OVI here.
   assert.deepEqual(rows("virtual-folder"), ["New +", "Add +", "| Convert to Auto-populating Folder... +", "| Convert to Library", "Find Items with No Callers", "Items incorrectly claimed by a library", "| Unit Tests", "| Analyze OVIs...", "| Find Project Items...", "| Arrange By", "Expand All +", "Collapse All +", "| Remove from Project +", "Rename... F2 +"]);
-  assert.deepEqual(rows("auto-populating-folder"), ["New", "| Explore...", "Show in Files View Ctrl+E", "| Add +", "| Stop Auto-populating +", "| Find Items with No Callers", "Items incorrectly claimed by a library", "| Unit Tests", "| Analyze OVIs...", "| Find Project Items...", "| Arrange By", "Expand All +", "Collapse All +", "| Remove from Project +"]);
-  assert.deepEqual(rows("auto-populated-file"), ["Open +", "Explore...", "Show in Files View Ctrl+E", "| Print...", "| Find", "| Properties"], "no Remove and no Rename (s4)");
+  assert.deepEqual(rows("auto-populating-folder"), ["New", "| Explore...", "Show in Files View Ctrl+E +", "| Add +", "| Stop Auto-populating +", "| Find Items with No Callers", "Items incorrectly claimed by a library", "| Unit Tests", "| Analyze OVIs...", "| Find Project Items...", "| Arrange By", "Expand All +", "Collapse All +", "| Remove from Project +"]);
+  assert.deepEqual(rows("auto-populated-file"), ["Open +", "Explore...", "Show in Files View Ctrl+E +", "| Print...", "| Find", "| Properties"], "no Remove and no Rename (s4)");
   const under = (menu, row) => INV.hijos(`context.project-explorer.${menu}.${row}`).map((entry) => `${entry.etiqueta}${entry.estado === "built" ? " +" : ""}`);
   assert.deepEqual(under("virtual-folder", "add"), ["File... +", "Folder (Snapshot)... +", "Folder (Auto-populating)... +", "Hyperlink..."]);
   assert.deepEqual(under("my-computer", "add"), ["File... +", "Folder (Snapshot)... +", "Folder (Auto-populating)... +", "Hyperlink..."]);
@@ -292,7 +292,7 @@ test("the right-click menus of virtual and auto-populating folders and of the it
   assert.equal(State.openContextMenu(withAuto, INV, "project/0/0", { x: 10, y: 10 }).menuBarra.id, "context.project-explorer.auto-populating-folder");
   assert.equal(State.openContextMenu(withAuto, INV, "project/0/1", { x: 10, y: 10 }).menuBarra.id, "context.project-explorer.virtual-folder");
   const builtCommands = Object.entries(State.CONTEXT_COMMANDS).filter(([id]) => !id.includes(".project."));
-  assert.equal(builtCommands.length, 22, "five on each of My Computer and the virtual folder (New ▸ OVI, 2026-11-19), Remove on four menus, Rename on a folder and (stage d) an OVI, an OVI's Open; stage c: Dependencies' Refresh, a dependency's Open, Convert, Stop and an auto-populated OVI's Open");
+  assert.equal(builtCommands.length, 42, "five on each of My Computer and the virtual folder (New ▸ OVI, 2026-11-19), Remove on four menus, Rename on a folder and (stage d) an OVI, an OVI's Open; stage c: Dependencies' Refresh, a dependency's Open, Convert, Stop and an auto-populated OVI's Open; stage d: six Show in Files View and the Files tab's fourteen (project-files-tab.test.mjs)");
   for (const [id, command] of Object.entries(State.CONTEXT_COMMANDS)) {
     assert.equal(INV.entrada(id).estado, "built", id);
     assert.ok(typeof command === "string");

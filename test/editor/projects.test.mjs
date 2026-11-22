@@ -65,6 +65,7 @@ test("Save Project proposes Name the Project with the untitled name and the sdpr
   assert.deepEqual(options.filters, [{ name: "Projects (*.sdproj)", extensions: ["sdproj"] }]);
   // The extension is added when the name has none (as the OVI's Save As does) and kept when it has.
   assert.equal(projectSavePathFor("/work/P1"), "/work/P1.sdproj");
+  assert.equal(projectSavePathFor("/work/P1.sdproj.sdproj"), "/work/P1.sdproj", "the extension the dialog adds again");
   assert.equal(projectSavePathFor("/work/P1.sdproj"), "/work/P1.sdproj");
   assert.equal(PROJECT_EXTENSION, ".sdproj");
   // What is written is the project with the window's current place and size.

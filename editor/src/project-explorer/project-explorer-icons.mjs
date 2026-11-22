@@ -3,6 +3,7 @@
 
 import { ROW_KINDS } from "./project-explorer-state.mjs";
 import { ROW_ICONS } from "./disk-rows.mjs";
+import { FILE_ROW_KINDS } from "./files-tree.mjs";
 
 const svg = (body) => `<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">${body}</svg>`;
 
@@ -37,12 +38,17 @@ const TYPE_DEFINITION_ICON = svg(`${PAGE}<rect class="pe-folder pe-line" x="5.5"
 // A folder inside an auto-populating one has the same icon (measured: s5 Q1).
 const AUTO_POPULATING_ICON = svg(`<path class="pe-blue pe-line" d="M1.5 4.5h5l1.5 1.5h6.5v7.5h-13z"/><circle class="pe-folder pe-line" cx="12" cy="4" r="2.3"/>`);
 
+const PROJECT_ICON = svg(`<path class="pe-paper pe-line" d="M2.5 1.5h11v13h-11z"/><path class="pe-blue pe-line" d="M4.5 4.5h7M4.5 7.5h7M4.5 10.5h4"/>`);
+const DOCUMENT_ICON = svg(`${PAGE}<path class="pe-line" d="M5.5 7.5h5M5.5 9.5h5M5.5 11.5h5"/>`);
+// In the Files tab every drive and folder, an auto-populating one too, is the plain folder (measured: reports/2026-11-22-files-tab.md Q1).
+const DISK_FOLDER_ICON = svg(FOLDER);
+
 /** The tree's icons by the kind of row. */
 export const TREE_ICONS = Object.freeze({
-  [ROW_KINDS.PROJECT]: svg(`<path class="pe-paper pe-line" d="M2.5 1.5h11v13h-11z"/><path class="pe-blue pe-line" d="M4.5 4.5h7M4.5 7.5h7M4.5 10.5h4"/>`),
+  [ROW_KINDS.PROJECT]: PROJECT_ICON,
   [ROW_KINDS.TARGET]: svg(`<rect class="pe-paper pe-line" x="1.5" y="2.5" width="13" height="8"/><path class="pe-line" d="M5.5 13.5h5M8 10.5v3"/>`),
   [ROW_KINDS.OVI]: OVI_ICON,
-  [ROW_KINDS.DOCUMENT]: svg(`${PAGE}<path class="pe-line" d="M5.5 7.5h5M5.5 9.5h5M5.5 11.5h5"/>`),
+  [ROW_KINDS.DOCUMENT]: DOCUMENT_ICON,
   [ROW_KINDS.FOLDER]: svg(`<path class="pe-grey pe-line" d="M1.5 4.5h5l1.5 1.5h6.5v7.5h-13z"/>`),
   [ROW_KINDS.AUTO_POPULATING_FOLDER]: AUTO_POPULATING_ICON,
   [ROW_KINDS.DEPENDENCIES]: svg(`<path class="pe-paper pe-line" d="M1.5 2.5h5v4h-5zM9.5 9.5h5v4h-5z"/><path class="pe-line" d="M4 6.5v5h5.5"/>`),
@@ -51,5 +57,12 @@ export const TREE_ICONS = Object.freeze({
   [ROW_KINDS.DEPENDENCY_TYPE_DEFINITION]: TYPE_DEFINITION_ICON,
   [ROW_KINDS.AUTO_POPULATING_SUBFOLDER]: AUTO_POPULATING_ICON,
   [ROW_ICONS.TYPE_DEFINITION]: TYPE_DEFINITION_ICON,
+  [FILE_ROW_KINDS.DRIVE]: DISK_FOLDER_ICON,
+  [FILE_ROW_KINDS.FOLDER]: DISK_FOLDER_ICON,
+  [FILE_ROW_KINDS.AUTO_POPULATING_FOLDER]: DISK_FOLDER_ICON,
+  [FILE_ROW_KINDS.OVI]: OVI_ICON,
+  [FILE_ROW_KINDS.DOCUMENT]: DOCUMENT_ICON,
+  [FILE_ROW_KINDS.PROJECT]: PROJECT_ICON,
+  [FILE_ROW_KINDS.DEPENDENCY]: OVI_ICON,
   [ROW_KINDS.BUILD]: svg(`<path class="pe-folder pe-line" d="M2 12.5l6-6 2 2-6 6z"/><path class="pe-grey pe-line" d="M9 2.5l4.5 4.5-2 2L7 4.5z"/>`),
 });

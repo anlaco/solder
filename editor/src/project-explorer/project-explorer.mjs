@@ -10,6 +10,7 @@ import * as E from "../window/window-state.mjs";
 import * as Edit from "./project-explorer-edit.mjs";
 import { createTreeCommands } from "./project-explorer-commands.mjs";
 import * as State from "./project-explorer-state.mjs";
+import * as Files from "./files-view.mjs";
 import { PREFIX, greyedRows, projectExplorerWindow } from "./project-explorer-view.mjs";
 import { WINDOW_MENU, listedIndexOf } from "./window-menu.mjs";
 import { nextLayout } from "./layout-switch.mjs";
@@ -103,6 +104,12 @@ const MENU_ACTIONS = {
   close: () => solder?.project.close(),
   exit: () => solder?.salir(),
   refreshDependencies: () => readDisk(),
+  // The Files tab (files-view.mjs).
+  showOtherView: () => show(Files.showOtherView(state)),
+  expandAllFiles: () => show(Files.expandAllFiles(state)),
+  collapseAllFiles: () => show(Files.collapseAllFiles(state)),
+  openFile: () => openFileRow(state.files?.selected),
+  renameFile: () => renameFileRow(),
   ...Object.fromEntries(["addFile", "addSnapshotFolder", "addAutoPopulatingFolder", "convertToAutoPopulating", "stopAutoPopulating", "newVirtualFolder", "newOviInto", "openItem", "rename", "removeFromProject"].map((name) => [name, () => treeCommands[name]()])),
 };
 
@@ -129,6 +136,38 @@ function clickMenuRow(row) {
   explain(id, row);
 }
 
+/** Open, or a double click, on a Files row: an OVI opens in the project, a folder opens or closes (Q4). */
+function openFileRow(key) {
+  const request = Files.fileOpenRequest(state, key);
+  if (request) return solder?.project.openItem(request);
+  if (Files.isFolderRow(Files.fileNodeAt(state, key)?.kind)) show(Files.toggleFileRow(state, key));
+}
+
+/** Rename... (F2) of an OVI's file in Files is its item's (s4 "Rename"): the Items selection moves to it, the tab stays. */
+function renameFileRow() {
+  const node = Files.fileNodeAt(state, state.files?.selected);
+  if (node?.kind !== Files.FILE_ROW_KINDS.OVI || !node.itemsKey) return;
+  show(State.select(state, node.itemsKey));
+  treeCommands.rename();
+}
+
+/** A click on a row of the Files tab: its +/−, or the row, which the second click of a double click opens. */
+function clickFileRow(target, clickCount) {
+  const expander = target.closest("[data-file-expander]");
+  if (expander) {
+    show(Files.toggleFileRow(state, expander.dataset.fileExpander));
+    return true;
+  }
+  const row = target.closest("[data-file-key]");
+  if (!row) return false;
+  show(Files.selectFile(state, row.dataset.fileKey));
+  if (clickCount === DOUBLE_CLICK) openFileRow(row.dataset.fileKey);
+  return true;
+}
+
+/** A click on a tab: Files is built from the Items tree the first time it shows (Q1). */
+const showTab = (tab) => show(tab === State.TABS.FILES ? Files.showFilesTab(state) : State.setTab(state, tab));
+
 /** `event.detail` of the second click of a double click. */
 const DOUBLE_CLICK = 2;
 
@@ -139,6 +178,7 @@ const DOUBLE_CLICK = 2;
  * `dblclick` to it (tried under Xvfb: reports/2026-11-20-project-open-item-editor-try.md).
  */
 function clickControl(target, clickCount) {
+  if (clickFileRow(target, clickCount)) return;
   const expander = target.closest("[data-expander]");
   if (expander) return show(State.toggleExpanded(state, expander.dataset.expander));
   const row = target.closest("[data-key]");
@@ -150,7 +190,7 @@ function clickControl(target, clickCount) {
   const control = target.closest("[data-id]");
   if (!control || control.classList.contains("desactivado")) return;
   const tab = control.dataset.tab;
-  if (tab && !esHueco(inventory.resolver(control.dataset.id))) return show(State.setTab(state, tab));
+  if (tab && !esHueco(inventory.resolver(control.dataset.id))) return showTab(tab);
   const toolbarCommand = control.dataset.id.startsWith(`${PREFIX}.toolbar.`) && !esHueco(inventory.resolver(control.dataset.id)) && State.TOOLBAR_COMMANDS[ultimo(control.dataset.id)];
   if (toolbarCommand) return MENU_ACTIONS[toolbarCommand]?.();
   if (esHueco(inventory.resolver(control.dataset.id) ?? { estado: "todo" })) explain(control.dataset.id, control);
@@ -185,6 +225,8 @@ document.addEventListener("click", (event) => {
 // The right button on a row selects it and opens the menu of its kind.
 document.addEventListener("contextmenu", (event) => {
   event.preventDefault();
+  const fileRow = event.target.closest("[data-file-key]");
+  if (fileRow) return show(Files.openFileContextMenu({ ...state, abierta: null }, inventory, fileRow.dataset.fileKey, { x: event.clientX, y: event.clientY }));
   const row = event.target.closest("[data-key]");
   if (row) show(State.openContextMenu({ ...state, abierta: null }, inventory, row.dataset.key, { x: event.clientX, y: event.clientY }));
 });
@@ -256,7 +298,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") return show(E.escape(state));
   if (event.key === "F2") {
     event.preventDefault();
-    return treeCommands.rename();
+    return state.tab === State.TABS.FILES ? renameFileRow() : treeCommands.rename();
   }
   const pressed = { ctrl: event.ctrlKey || event.metaKey, shift: event.shiftKey, alt: event.altKey, tecla: event.key };
   if (!pressed.ctrl) return;

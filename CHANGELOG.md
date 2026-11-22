@@ -22,6 +22,12 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 - The OVI windows have LabVIEW's Window menu (Show Block Diagram / Show Front Panel, Show Project, Tile Left and Right,
   the open windows with the most recently active first) and Project menu; Show Project brings the OVI's Project
   Explorer forward, and Save Project and Close Project, in the File and Project menus, act on the OVI's project.
+- Projects: the Files tab shows the project's files as they are on disk, from the drive down (items, auto-populating
+  folders, dependencies and the project file), with LabVIEW's menus; Ctrl+E (Window ▸ Show Other Project View), Show in
+  Files View and Show in Items View switch tabs keeping the selection.
+- An OVI open in a project says where in its window's footer ("P.sdproj/My Computer"), as in LabVIEW.
+- Fix: on Linux, saving with the extension typed ("first.ovi") no longer writes `first.ovi.ovi`; the same for a
+  polymorphic OVI and a project.
 
 - Fix: a running OVI's values reach the Front Panel once per frame of the display, and the Block Diagram no longer
   repaints itself, whole, for each of them. Before, every value message (every 16 ms) repainted both windows; a

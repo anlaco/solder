@@ -92,6 +92,10 @@ test("Save As writes .ovi unless the chosen path already names an OVI file, of a
   assert.equal(Paths.savePathFor("/ovis/old.sdg"), "/ovis/old.sdg", "an old name chosen on purpose is kept");
   assert.equal(Paths.savePathFor("/ovis/older.qvi"), "/ovis/older.qvi", "an old name chosen on purpose is kept");
   assert.equal(Paths.savePathFor("/ovis/MAIN.OVI"), "/ovis/MAIN.OVI", "in any case");
+  // The extension Linux's save dialog adds to a name typed with one (found under Xvfb, 2026-11-22: first.ovi.ovi).
+  assert.equal(Paths.savePathFor("/ovis/first.ovi.ovi"), "/ovis/first.ovi");
+  assert.equal(Paths.savePathFor("/ovis/old.sdg.ovi"), "/ovis/old.sdg", "an old extension typed keeps its file");
+  assert.equal(Paths.savePathFor("/ovis/v1.2.ovi"), "/ovis/v1.2.ovi", "a dot in the name is not an extension");
   assert.equal(Paths.saveAsProposal("/ovis/old.sdg", "old.sdg"), "/ovis/old.ovi", "an old file is offered under the new extension");
   assert.equal(Paths.saveAsProposal("/ovis/older.qvi", "older.qvi"), "/ovis/older.ovi");
   assert.equal(Paths.saveAsProposal(null, "Untitled 1"), "Untitled 1.ovi");

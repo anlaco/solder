@@ -10,6 +10,7 @@ import { TOOLBAR_ICONS, TREE_ICONS } from "./project-explorer-icons.mjs";
 import { canRemove } from "./project-explorer-edit.mjs";
 import { EDITABLE_KINDS, PREFIX, ROW_KINDS, TABS, disabledButtons, visibleRows } from "./project-explorer-state.mjs";
 import { WINDOW_MENU, windowMenuVariant } from "./window-menu.mjs";
+import { visibleFileRows } from "./files-view.mjs";
 import { layoutSwitchHtml } from "./layout-switch.mjs";
 
 export { MENU_BAR_HEIGHT, PREFIX };
@@ -118,7 +119,19 @@ function treeRow(state, row) {
   return `<div class="pe-row${selected}${missing}" data-key="${escapeHtml(row.key)}" data-kind="${row.kind}"${draggable}${fixedId ? ` data-row-id="${fixedId}"` : ""} style="padding-left:${row.depth * INDENT + 4}px">${expander}<span class="pe-icon">${TREE_ICONS[row.icon]}</span>${rowName(state, row)}</div>`;
 }
 
-const tree = (state) => `<div class="pe-tree" data-id="${PREFIX}.items">${visibleRows(state).map((row) => treeRow(state, row)).join("")}</div>`;
+/** A row of the Files tab: a file or folder on disk, with its own keys so that a click never reaches an Items row. */
+function fileRow(state, row) {
+  const expander = row.expandable
+    ? `<span class="pe-expander" data-file-expander="${escapeHtml(row.key)}" style="width:${EXPANDER_SIZE}px;height:${EXPANDER_SIZE}px">${row.expanded ? "−" : "+"}</span>`
+    : `<span class="pe-expander-space" style="width:${EXPANDER_SIZE}px"></span>`;
+  const selected = state.files.selected === row.key ? " seleccionada" : "";
+  return `<div class="pe-row${selected}" data-file-key="${escapeHtml(row.key)}" data-kind="${row.kind}" style="padding-left:${row.depth * INDENT + 4}px">${expander}<span class="pe-icon">${TREE_ICONS[row.kind]}</span><span class="pe-label">${escapeHtml(row.label)}</span></div>`;
+}
+
+function tree(state) {
+  if (state.tab === TABS.FILES && state.files) return `<div class="pe-tree" data-id="${PREFIX}.files">${visibleFileRows(state).map((row) => fileRow(state, row)).join("")}</div>`;
+  return `<div class="pe-tree" data-id="${PREFIX}.items">${visibleRows(state).map((row) => treeRow(state, row)).join("")}</div>`;
+}
 
 function explanation(inventory, opened) {
   const entry = opened && inventory.resolver(opened.id);

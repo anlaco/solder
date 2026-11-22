@@ -55,10 +55,9 @@ test("the Project Explorer draws a blank project as LabVIEW does", () => {
   assert.equal(selectedLabel(html), "My Computer");
   assert.deepEqual([View.WINDOW_SIZE.width, View.WINDOW_SIZE.height], [374, 434]);
   assert.deepEqual(PROJECT_WINDOW_SIZE, { width: 374, height: 401 });
-  // The tabs: Items is shown, Files is a hole that explains itself.
+  // The tabs: Items is shown, Files beside it (test/editor/project-files-tab.test.mjs).
   assert.match(html, /<div class="pe-tab seleccionada" data-tab="items" data-id="window\.project-explorer\.items">Items<\/div>/);
-  assert.match(html, /<div class="pe-tab hueco" data-tab="files" data-id="window\.project-explorer\.files">Files<\/div>/);
-  assert.equal(INV.resolver("window.project-explorer.files").estado, "todo");
+  assert.match(html, /<div class="pe-tab" data-tab="files" data-id="window\.project-explorer\.files">Files<\/div>/);
   // The title is the main process's: the star while the project was never saved, then the file's name (measured).
   assert.equal(projectWindowTitle({ name: untitledProjectName(2), modified: true }), "Untitled Project 2 * - Project Explorer");
   assert.equal(projectWindowTitle({ name: "P1.sdproj", modified: false }), "P1.sdproj - Project Explorer");

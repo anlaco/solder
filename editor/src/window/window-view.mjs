@@ -327,9 +327,10 @@ export function ventana(inv, nombre, estado, extra = {}) {
   }
   iconos.push(icono(inv, `${pre}.icon`, x, G.iconoOVI(extra.numeroOVI)));
 
+  // The project and target the OVI is open in ("NewVI14.lvproj/My Computer", reports/2026-11-19-project-new-vi.md Q1); its menu is not built.
   const instancia = inv.entrada(`${pre}.application-instance`);
   const estadoHTML = instancia
-    ? `<div class="${clases(inv, instancia.id, "instancia")}" data-id="${esc(instancia.id)}" style="width:${px(M.anchoInstancia)}">${esc(rotulo(instancia))}</div>`
+    ? `<div class="${clases(inv, instancia.id, "instancia")}" data-id="${esc(instancia.id)}" style="width:${px(M.anchoInstancia)}">${esc(extra.applicationInstance ?? rotulo(instancia))}</div>`
     : "";
 
   return `<div class="ventana ventana-${nombre}${extra.ejecutando ? " ejecutando" : ""}" data-id="${pre}">

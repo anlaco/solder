@@ -260,6 +260,7 @@ test("Save writes a sdp with its instances relative to it and the paths are reba
   // Save As adds .sdp, as the polymorphic OVI's own extension (a Solder choice: LabVIEW saves it as a .vi).
   assert.equal(Paths.polymorphicSavePathFor("/lib/Step"), "/lib/Step.sdp");
   assert.equal(Paths.polymorphicSavePathFor("/lib/Step.sdp"), "/lib/Step.sdp");
+  assert.equal(Paths.polymorphicSavePathFor("/lib/Step.sdp.sdp"), "/lib/Step.sdp", "the extension the dialog adds again");
   assert.equal(Paths.polymorphicSaveProposal(null, "Untitled 2"), "Untitled 2.sdp");
   assert.equal(Paths.polymorphicSaveProposal("/lib/Step.sdp", "Step.sdp"), "/lib/Step.sdp");
   // The main process asks Save As with the .sdp filter, and the text written is what rebaseText gives back to the page.

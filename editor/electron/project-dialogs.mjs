@@ -4,7 +4,7 @@
 
 import path from "node:path";
 import { ALREADY_IN_PROJECT, PROJECT_EXTENSION, isProjectPath } from "../../core/model/project.mjs";
-import { OVI_EXTENSION } from "../src/common/ovi-paths.mjs";
+import { OVI_EXTENSION, withoutDoubledExtension } from "../src/common/ovi-paths.mjs";
 import { closeAllDialogText } from "./close-flow.mjs";
 import { untitledProjectName } from "./project-window.mjs";
 
@@ -20,8 +20,11 @@ export const saveProjectDialog = ({ untitledNumber, folder }) => {
   return { title: `Name the Project (${name})`, defaultPath: path.join(folder, name), filters: PROJECT_FILTERS };
 };
 
-/** Where the project is written: the path chosen, with `.sdproj` added if it does not end so (as the OVI's Save As does). */
-export const projectSavePathFor = (chosen) => (isProjectPath(chosen) ? chosen : `${chosen}${PROJECT_EXTENSION}`);
+/** Where the project is written: the path chosen, with `.sdproj` added if it does not end so and a doubled one undone (as the OVI's Save As does). */
+export function projectSavePathFor(chosen) {
+  const path = withoutDoubledExtension(chosen, [PROJECT_EXTENSION]);
+  return isProjectPath(path) ? path : `${path}${PROJECT_EXTENSION}`;
+}
 
 /**
  * The question for each item with unsaved changes when a project is closed: the project itself or one of its OVIs, which

@@ -188,7 +188,7 @@ contextBridge.exposeInMainWorld("solder", {
   },
   /** Some OVI was saved, at this absolute path: `callback({ id, key })`. The callers of a saved subOVI must see its new connector. */
   alGuardar: (callback) => ipcRenderer.on("ovi:saved", (_event, saved) => callback(saved)),
-  /** The OVI joined or left a project: `callback(inProject)`. */
+  /** The OVI joined or left a project, or its project was renamed: `callback(instance)`, "P.sdproj/My Computer" or null. */
   onInProject: (callback) => ipcRenderer.on("ovi:in-project", (_event, inProject) => callback(inProject)),
   /** A row of the File, Project or Window menu that acts on the OVI's project: "show", "save" or "close". */
   projectCommand: (command) => ipcRenderer.send("ovi:project-command", command),

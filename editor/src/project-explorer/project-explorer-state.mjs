@@ -13,7 +13,7 @@ import { inicial as windowState } from "../window/window-state.mjs";
 export const PREFIX = "window.project-explorer";
 const CONTEXT_PREFIX = "context.project-explorer";
 
-/** The two tabs of the window; only Items is built (Files shows the disk tree, stage a2 of DT-099). */
+/** The two tabs of the window: the project's items, and its files as they are on disk (files-view.mjs). */
 export const TABS = Object.freeze({ ITEMS: "items", FILES: "files" });
 
 /** The key of the row that stands for the project itself, the root of the tree. */
@@ -41,6 +41,8 @@ export const MENU_COMMANDS = Object.freeze({
   exit: "exit",
   // Edit ▸ Remove From Project (and the same row of the item menus, by their last segment).
   "remove-from-project": "removeFromProject",
+  // Window ▸ Show Other Project View (Ctrl+E): Items and Files, the selection carried over (reports/2026-11-22-files-tab.md Q3).
+  "show-other-project-view": "showOtherView",
 });
 
 /** The toolbar's built buttons, by the last segment of their id (s1 Q1: Open Project and Save Project; s4: Remove From Project). */
@@ -48,16 +50,28 @@ export const TOOLBAR_COMMANDS = Object.freeze({ "open-project": "openProject", "
 
 /** The built rows of the right-click menus, per menu: what each runs. The tree edits are the page's (project-explorer-edit.mjs). */
 const TREE_ROWS = { "new.vi": "newOviInto", "new.virtual-folder": "newVirtualFolder", "add.file": "addFile", "add.folder-snapshot": "addSnapshotFolder", "add.folder-auto-populating": "addAutoPopulatingFolder" };
+const SHOW_IN_FILES = { "show-in-files-view": "showOtherView" };
+const SHOW_IN_ITEMS = { "show-in-items-view": "showOtherView" };
+const FILES_FOLDER_ROWS = { "expand-all": "expandAllFiles", "collapse-all": "collapseAllFiles" };
 const CONTEXT_ROWS_BY_MENU = {
-  project: { save: "saveProject" },
+  project: { save: "saveProject", ...SHOW_IN_FILES },
   "my-computer": TREE_ROWS,
   "virtual-folder": { ...TREE_ROWS, "remove-from-project": "removeFromProject", rename: "rename", "convert-to-auto-populating-folder": "convertToAutoPopulating" },
-  "auto-populating-folder": { "remove-from-project": "removeFromProject", "stop-auto-populating": "stopAutoPopulating" },
-  "ovi-item": { open: "openItem", "remove-from-project": "removeFromProject", rename: "rename" },
-  "document-item": { "remove-from-project": "removeFromProject" },
+  "auto-populating-folder": { "remove-from-project": "removeFromProject", "stop-auto-populating": "stopAutoPopulating", ...SHOW_IN_FILES },
+  "ovi-item": { open: "openItem", "remove-from-project": "removeFromProject", rename: "rename", ...SHOW_IN_FILES },
+  "document-item": { "remove-from-project": "removeFromProject", ...SHOW_IN_FILES },
   dependencies: { refresh: "refreshDependencies" },
-  "dependency-ovi": { open: "openItem" },
-  "auto-populated-file": { open: "openItem" },
+  "dependency-ovi": { open: "openItem", ...SHOW_IN_FILES },
+  "dependency-type-definition": SHOW_IN_FILES,
+  "auto-populated-file": { open: "openItem", ...SHOW_IN_FILES },
+  // The Files tab's menus (reports/2026-11-22-files-tab.md Q2).
+  "files-drive": FILES_FOLDER_ROWS,
+  "files-folder": FILES_FOLDER_ROWS,
+  "files-auto-populating-folder": { ...FILES_FOLDER_ROWS, ...SHOW_IN_ITEMS },
+  "files-ovi": { open: "openFile", rename: "renameFile", ...SHOW_IN_ITEMS },
+  "files-document": SHOW_IN_ITEMS,
+  "files-project": SHOW_IN_ITEMS,
+  "files-dependency-ovi": { open: "openFile", ...SHOW_IN_ITEMS },
 };
 
 /** The built rows of a right-click menu that run a command of the window, by id; Expand All and Collapse All are the state's own. */
@@ -161,6 +175,9 @@ export function visibleRows(state) {
   walk(treeOfState(state), 0);
   return rows;
 }
+
+/** Every node of the Items tree, parents before children (the Files tab is built from them, files-tree.mjs). */
+export const itemNodesOf = (state) => nodesFrom(treeOfState(state));
 
 /** The node of the row `key` (`{ key, kind, label, children }`, and `path` and `icon` for a row read from the disk), or undefined. */
 export const nodeAt = (state, key) => findNode(state, key);

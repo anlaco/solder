@@ -11,6 +11,8 @@ import { test } from "node:test";
 import { listedIndexOf } from "../../editor/src/common/window-list-menu.mjs";
 import { windowListRows } from "../../editor/electron/project-window-list.mjs";
 import * as PM from "../../editor/src/window/project-menus.mjs";
+import * as V from "../../editor/src/window/window-view.mjs";
+import * as E from "../../editor/src/window/window-state.mjs";
 import { INV, RAIZ } from "../helpers.mjs";
 
 const source = (file) => readFileSync(path.join(RAIZ, file), "utf8");
@@ -73,8 +75,14 @@ test("the OVI windows' Project menu has LabVIEW's rows, and outside a project on
   assert.deepEqual(PM.PROJECT_COMMANDS, { "show-project": "show", "save-project": "save", "close-project": "close" });
   const main = source("editor/electron/main.mjs");
   assert.match(main, /ipcMain\.on\("ovi:project-command"[\s\S]*?projects\.runForProject\(projectId, command, ownerOf\(event\)\)/);
-  assert.match(main, /inProject: entry\.project !== undefined/);
-  assert.match(main, /window\.webContents\.send\("ovi:in-project", open\.entry\.project !== undefined\)/);
+  assert.match(main, /instance: entry\.instance \?\? null \}\);/);
+  assert.match(main, /window\.webContents\.send\("ovi:in-project", open\.entry\.instance \?\? null\)/);
+  // The footer says where the OVI is open (reports/2026-11-19-project-new-vi.md Q1), and follows a Save Project that renames it
+  // (found under Xvfb: it kept "Untitled Project 1/My Computer", reports/2026-11-22-files-tab-editor-try.md).
+  assert.match(source("editor/src/window/editor-window.mjs"), /applicationInstance: projectInstance \?\? undefined/);
+  const footer = (extra) => V.ventana(INV, "front-panel", E.inicial(), extra).match(/data-id="window\.front-panel\.application-instance"[^>]*>([^<]*)</)[1];
+  assert.equal(footer({ applicationInstance: "P.sdproj/My Computer" }), "P.sdproj/My Computer");
+  assert.equal(footer({}), INV.entrada("window.front-panel.application-instance").muestra);
   const manager = source("editor/electron/project-manager.mjs");
   assert.match(manager, /if \(command === "show"\) return bringToFront\(entry\);/);
   // A second Save Project while the first one asks does nothing (found under Xvfb: four questions piled up).

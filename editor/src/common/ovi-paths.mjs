@@ -28,14 +28,32 @@ export const isOVIFile = (path) => OVI_EXTENSIONS.some((extension) => path.toLow
 /** An OVI's name without its extension, as the error chain and the debugger show it. */
 export const withoutOVIExtension = (name) => OVI_EXTENSIONS.reduce((rest, extension) => (rest.toLowerCase().endsWith(extension) ? rest.slice(0, -extension.length) : rest), name);
 
+/**
+ * The path a save dialog gave, without the extension the dialog added to a name that already had one of `extensions`:
+ * Linux's dialog wrote `first.ovi.ovi` for "first.ovi" typed with the OVI filter chosen (found under Xvfb,
+ * labview-captures/reports/2026-11-22-files-tab-editor-try.md). A name typed with a doubled extension on purpose loses
+ * the last one too: no Solder file is named so.
+ */
+export function withoutDoubledExtension(chosen, extensions) {
+  const lower = chosen.toLowerCase();
+  const added = extensions.find((extension) => lower.endsWith(extension) && extensions.some((first) => lower.slice(0, -extension.length).endsWith(first)));
+  return added ? chosen.slice(0, -added.length) : chosen;
+}
+
 /** Where Save As writes the path the user chose: as it is if it already names an OVI file, with `.ovi` added if not. */
-export const savePathFor = (chosen) => (isOVIFile(chosen) ? chosen : `${chosen}${OVI_EXTENSION}`);
+export function savePathFor(chosen) {
+  const path = withoutDoubledExtension(chosen, OVI_EXTENSIONS);
+  return isOVIFile(path) ? path : `${path}${OVI_EXTENSION}`;
+}
 
 /**
  * Where Save As writes a polymorphic OVI (DT-074): the path the user chose, with `.sdp` added if it does not end so.
  * LabVIEW writes a `.vi`; Solder's polymorphic OVI is a file of its own.
  */
-export const polymorphicSavePathFor = (chosen) => (isPolymorphicPath(chosen) ? chosen : `${chosen}${POLYMORPHIC_EXTENSION}`);
+export function polymorphicSavePathFor(chosen) {
+  const path = withoutDoubledExtension(chosen, [POLYMORPHIC_EXTENSION]);
+  return isPolymorphicPath(path) ? path : `${path}${POLYMORPHIC_EXTENSION}`;
+}
 
 /** What Save As proposes for a polymorphic OVI: its name with `.sdp`. */
 export const polymorphicSaveProposal = (currentPath, name) => `${(currentPath ?? name).replace(/\.[^./\\]+$/, "")}${POLYMORPHIC_EXTENSION}`;

@@ -317,8 +317,8 @@ function setTitles(open) {
   for (const [kind, window] of Object.entries(open.windows)) {
     if (window.isDestroyed()) continue;
     window.setTitle(windowTitle(open.entry, kind));
-    // The project rows of its menus follow whether it belongs to a project (project-menus.mjs).
-    window.webContents.send("ovi:in-project", open.entry.project !== undefined);
+    // The project rows of its menus and its footer follow the project it is open in (project-menus.mjs), null for none.
+    window.webContents.send("ovi:in-project", open.entry.instance ?? null);
   }
 }
 
@@ -892,7 +892,7 @@ function afterLastProjectClosed() {
 }
 
 /** What a page learns about its OVI when it starts. */
-const describe = (entry) => ({ id: entry.id, kind: entry.kind, text: entry.initialText, key: keyOf(entry), name: oviName(entry), untitledNumber: entry.untitledNumber, inProject: entry.project !== undefined });
+const describe = (entry) => ({ id: entry.id, kind: entry.kind, text: entry.initialText, key: keyOf(entry), name: oviName(entry), untitledNumber: entry.untitledNumber, instance: entry.instance ?? null });
 
 async function readTextOrNull(key) {
   try {

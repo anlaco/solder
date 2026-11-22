@@ -1429,10 +1429,9 @@
     {
       "id": "window.project-explorer.menu.window.show-other-project-view",
       "etiqueta": "Show Other Project View",
-      "estado": "todo",
-      "labview": "Switches between the Items and the Files view.",
-      "necesita": "flujos-del-proyecto",
-      "atajo": "Ctrl+E"
+      "estado": "built",
+      "atajo": "Ctrl+E",
+      "prueba": "test/editor/project-files-tab.test.mjs::Ctrl+E_and_Show_in_Items_or_Files_View_switch_tabs_carrying_the_selection_over"
     },
     {
       "id": "window.project-explorer.menu.window.show-project",
@@ -1840,10 +1839,9 @@
     {
       "id": "window.project-explorer.files",
       "etiqueta": "Files",
-      "estado": "todo",
-      "labview": "The project's files as they are on disk, from the drive down to the project's folder, with the side files left out.",
-      "necesita": "flujos-del-proyecto",
-      "captura": "project-explorer/proyecto-nuevo.png"
+      "estado": "built",
+      "captura": "project-explorer/proyecto-nuevo.png",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_tab_shows_the_project's_files_from_the_drive_down,_folders_first,_without_virtual_folders_or_side_files"
     },
     {
       "id": "context.project-explorer.project",
@@ -1869,10 +1867,9 @@
     {
       "id": "context.project-explorer.project.show-in-files-view",
       "etiqueta": "Show in Files View",
-      "estado": "todo",
-      "labview": "Switches to the Files view with the item selected.",
-      "necesita": "flujos-del-proyecto",
-      "atajo": "Ctrl+E"
+      "estado": "built",
+      "atajo": "Ctrl+E",
+      "prueba": "test/editor/project-files-tab.test.mjs::Ctrl+E_and_Show_in_Items_or_Files_View_switch_tabs_carrying_the_selection_over"
     },
     {
       "id": "context.project-explorer.project.save",
@@ -2262,10 +2259,9 @@
     {
       "id": "context.project-explorer.ovi-item.show-in-files-view",
       "etiqueta": "Show in Files View",
-      "estado": "todo",
-      "labview": "Switches to the Files view with the item selected.",
-      "necesita": "flujos-del-proyecto",
-      "atajo": "Ctrl+E"
+      "estado": "built",
+      "atajo": "Ctrl+E",
+      "prueba": "test/editor/project-files-tab.test.mjs::Ctrl+E_and_Show_in_Items_or_Files_View_switch_tabs_carrying_the_selection_over"
     },
     {
       "id": "context.project-explorer.ovi-item.print",
@@ -2382,10 +2378,9 @@
     {
       "id": "context.project-explorer.document-item.show-in-files-view",
       "etiqueta": "Show in Files View",
-      "estado": "todo",
-      "labview": "Switches to the Files view with the item selected.",
-      "necesita": "flujos-del-proyecto",
-      "atajo": "Ctrl+E"
+      "estado": "built",
+      "atajo": "Ctrl+E",
+      "prueba": "test/editor/project-files-tab.test.mjs::Ctrl+E_and_Show_in_Items_or_Files_View_switch_tabs_carrying_the_selection_over"
     },
     {
       "id": "context.project-explorer.document-item.print",
@@ -2612,10 +2607,9 @@
     {
       "id": "context.project-explorer.auto-populating-folder.show-in-files-view",
       "etiqueta": "Show in Files View",
-      "estado": "todo",
-      "labview": "Switches to the Files view with the folder selected.",
-      "necesita": "flujos-del-proyecto",
-      "atajo": "Ctrl+E"
+      "estado": "built",
+      "atajo": "Ctrl+E",
+      "prueba": "test/editor/project-files-tab.test.mjs::Ctrl+E_and_Show_in_Items_or_Files_View_switch_tabs_carrying_the_selection_over"
     },
     {
       "id": "context.project-explorer.auto-populating-folder.add",
@@ -2870,10 +2864,9 @@
     {
       "id": "context.project-explorer.auto-populated-file.show-in-files-view",
       "etiqueta": "Show in Files View",
-      "estado": "todo",
-      "labview": "Switches to the Files view with the item selected.",
-      "necesita": "flujos-del-proyecto",
-      "atajo": "Ctrl+E"
+      "estado": "built",
+      "atajo": "Ctrl+E",
+      "prueba": "test/editor/project-files-tab.test.mjs::Ctrl+E_and_Show_in_Items_or_Files_View_switch_tabs_carrying_the_selection_over"
     },
     {
       "id": "context.project-explorer.auto-populated-file.print",
@@ -3054,10 +3047,9 @@
     {
       "id": "context.project-explorer.dependency-ovi.show-in-files-view",
       "etiqueta": "Show in Files View",
-      "estado": "todo",
-      "labview": "Switches to the Files view with the item selected.",
-      "necesita": "flujos-del-proyecto",
-      "atajo": "Ctrl+E"
+      "estado": "built",
+      "atajo": "Ctrl+E",
+      "prueba": "test/editor/project-files-tab.test.mjs::Ctrl+E_and_Show_in_Items_or_Files_View_switch_tabs_carrying_the_selection_over"
     },
     {
       "id": "context.project-explorer.dependency-ovi.print",
@@ -3168,10 +3160,9 @@
     {
       "id": "context.project-explorer.dependency-type-definition.show-in-files-view",
       "etiqueta": "Show in Files View",
-      "estado": "todo",
-      "labview": "Switches to the Files view with the item selected.",
-      "necesita": "flujos-del-proyecto",
-      "atajo": "Ctrl+E"
+      "estado": "built",
+      "atajo": "Ctrl+E",
+      "prueba": "test/editor/project-files-tab.test.mjs::Ctrl+E_and_Show_in_Items_or_Files_View_switch_tabs_carrying_the_selection_over"
     },
     {
       "id": "context.project-explorer.dependency-type-definition.print",
@@ -3369,6 +3360,338 @@
       "estado": "todo",
       "labview": "Opens the help of this item.",
       "necesita": "paginas-web",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-drive",
+      "etiqueta": "Files: drive",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-drive.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder in the system's file manager.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "context.project-explorer.files-drive.arrange-by",
+      "etiqueta": "Arrange By",
+      "estado": "todo",
+      "labview": "Orders the rows by name or by type.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-drive.expand-all",
+      "etiqueta": "Expand All",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-drive.collapse-all",
+      "etiqueta": "Collapse All",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-folder",
+      "etiqueta": "Files: folder",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-folder.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder in the system's file manager.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "context.project-explorer.files-folder.arrange-by",
+      "etiqueta": "Arrange By",
+      "estado": "todo",
+      "labview": "Orders the rows by name or by type.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-folder.expand-all",
+      "etiqueta": "Expand All",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-folder.collapse-all",
+      "etiqueta": "Collapse All",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-auto-populating-folder",
+      "etiqueta": "Files: auto-populating folder",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-auto-populating-folder.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder in the system's file manager.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "context.project-explorer.files-auto-populating-folder.show-in-items-view",
+      "etiqueta": "Show in Items View",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::Ctrl+E_and_Show_in_Items_or_Files_View_switch_tabs_carrying_the_selection_over",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "context.project-explorer.files-auto-populating-folder.arrange-by",
+      "etiqueta": "Arrange By",
+      "estado": "todo",
+      "labview": "Orders the rows by name or by type.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-auto-populating-folder.expand-all",
+      "etiqueta": "Expand All",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-auto-populating-folder.collapse-all",
+      "etiqueta": "Collapse All",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-auto-populating-folder.remove-from-project",
+      "etiqueta": "Remove from Project",
+      "estado": "todo",
+      "labview": "Removes the item from the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-auto-populating-folder.move-on-disk",
+      "etiqueta": "Move on Disk...",
+      "estado": "todo",
+      "labview": "Moves the file to another folder and updates the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-ovi",
+      "etiqueta": "Files: OVI",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-ovi.open",
+      "etiqueta": "Open",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-ovi.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder in the system's file manager.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "context.project-explorer.files-ovi.show-in-items-view",
+      "etiqueta": "Show in Items View",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::Ctrl+E_and_Show_in_Items_or_Files_View_switch_tabs_carrying_the_selection_over",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "context.project-explorer.files-ovi.print",
+      "etiqueta": "Print...",
+      "estado": "todo",
+      "labview": "Prints the file.",
+      "necesita": "imprimir",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-ovi.remove-from-project",
+      "etiqueta": "Remove from Project",
+      "estado": "todo",
+      "labview": "Removes the item from the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-ovi.rename",
+      "etiqueta": "Rename...",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them",
+      "atajo": "F2"
+    },
+    {
+      "id": "context.project-explorer.files-ovi.move-on-disk",
+      "etiqueta": "Move on Disk...",
+      "estado": "todo",
+      "labview": "Moves the file to another folder and updates the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-ovi.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the item.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-document",
+      "etiqueta": "Files: other file",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-document.open",
+      "etiqueta": "Open",
+      "estado": "todo",
+      "labview": "Opens the file with the program the system gives it.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "context.project-explorer.files-document.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder in the system's file manager.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "context.project-explorer.files-document.show-in-items-view",
+      "etiqueta": "Show in Items View",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::Ctrl+E_and_Show_in_Items_or_Files_View_switch_tabs_carrying_the_selection_over",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "context.project-explorer.files-document.print",
+      "etiqueta": "Print...",
+      "estado": "todo",
+      "labview": "Prints the file.",
+      "necesita": "imprimir",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-document.remove-from-project",
+      "etiqueta": "Remove from Project",
+      "estado": "todo",
+      "labview": "Removes the item from the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-document.move-on-disk",
+      "etiqueta": "Move on Disk...",
+      "estado": "todo",
+      "labview": "Moves the file to another folder and updates the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-document.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the item.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-project",
+      "etiqueta": "Files: project file",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-project.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder in the system's file manager.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "context.project-explorer.files-project.show-in-items-view",
+      "etiqueta": "Show in Items View",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::Ctrl+E_and_Show_in_Items_or_Files_View_switch_tabs_carrying_the_selection_over",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "context.project-explorer.files-project.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the item.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-dependency-ovi",
+      "etiqueta": "Files: dependency",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-dependency-ovi.open",
+      "etiqueta": "Open",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::the_Files_rows_have_LabVIEW's_menus,_and_Open,_a_double_click_and_Expand_All_work_on_them"
+    },
+    {
+      "id": "context.project-explorer.files-dependency-ovi.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder in the system's file manager.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "context.project-explorer.files-dependency-ovi.show-in-items-view",
+      "etiqueta": "Show in Items View",
+      "estado": "built",
+      "prueba": "test/editor/project-files-tab.test.mjs::Ctrl+E_and_Show_in_Items_or_Files_View_switch_tabs_carrying_the_selection_over",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "context.project-explorer.files-dependency-ovi.print",
+      "etiqueta": "Print...",
+      "estado": "todo",
+      "labview": "Prints the file.",
+      "necesita": "imprimir",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-dependency-ovi.rename",
+      "etiqueta": "Rename...",
+      "estado": "todo",
+      "labview": "Renames the dependency's file.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "F2",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.files-dependency-ovi.help",
+      "etiqueta": "Help...",
+      "estado": "todo",
+      "labview": "Opens the help of the OVI.",
+      "necesita": "ayuda-contextual"
+    },
+    {
+      "id": "context.project-explorer.files-dependency-ovi.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the item.",
+      "necesita": "flujos-del-proyecto",
       "separado": true
     },
     {

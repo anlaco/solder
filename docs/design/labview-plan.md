@@ -21,8 +21,8 @@ When the developer says "keep going":
    step 3, type definitions** (DT-096), measured and its core done on 2026-11-17. **DT-099 (2026-11-17) brings projects first:
    step 2b**, measured and its core done on 2026-11-17, editor stages (a) and (b) done on 2026-11-18. Releases
    0.14.0-beta (2026-11-19) and 0.14.1-beta (2026-11-20) are out. "Diagnose two visual faults" just below is done
-   (2026-11-21). Stage (c) of step 2b is done (2026-11-21), stage (d) is half done (2026-11-22). **Next: the rest of stage (d) of step 2b (the Files tab); then the editor stages of type
-   definitions. DAQ's stage B waits for the
+   (2026-11-21). Stage (c) of step 2b is done (2026-11-21), stage (d) is done (2026-11-22), and with it step 2b. **Next: the editor stages of type
+   definitions (step 3). DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
    **Diagnose two visual faults (asked by the developer on 2026-11-20), diagnosis only, no fix yet.** The developer
    reported two things that do not stop the work but look wrong, and agreed with this rule: a purely cosmetic fault goes
@@ -142,8 +142,8 @@ When the developer says "keep going":
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
 
-*2026-11-22: projects' stage (d): Close Project closes the project's OVIs; Rename... of an OVI item; the OVI windows'
-Window and Project menus with Show Project. Next: the Files tab.*
+*2026-11-22: projects' stage (d), and step 2b, done: Close Project closes the project's OVIs; Rename... of an OVI item;
+the OVI windows' Window and Project menus with Show Project; the Files tab. Next: the editor stages of type definitions.*
 
 *2026-11-21: projects' stage (c): Dependencies read from the items' files, auto-populating folders that show and watch
 the disk, Stop Auto-populating and Convert to Auto-populating Folder.... Next: stage (d).*
@@ -1207,6 +1207,21 @@ to it go on, new fronts wait for step 6.
    up when clicked again (both fixed). Unverified: Show Project with two projects
    open; docked, the Window menu's list is the one read when the page last had the focus. Left for (d): the Files tab
    (Show Other Project View, Ctrl+E in the explorer).*
+   *Stage (d), third part, on 2026-11-22, after measuring it ([`files-tab`](../../labview-captures/reports/2026-11-22-files-tab.md)):
+   the Files tab, built from the Items tree and the project file's path (`editor/src/project-explorer/files-tree.mjs`,
+   `files-view.mjs`): the drive at the root, the folders down to every file of the items, the auto-populating folders,
+   the dependencies and the project file, folders first and by name; the chains to the project's folder and the
+   dependencies' open the first time; its seven measured menus with Open, Show in Items View, Rename... of an OVI, Expand
+   All and Collapse All built; Window ▸ Show Other Project View (Ctrl+E) and every Show in Files View carrying the
+   selection; a double click opens an OVI or a folder (`test/editor/project-files-tab.test.mjs`). Decided without
+   LabVIEW, which runs on Windows only: a POSIX root is drawn "/". Not built: Remove from Project, Move on Disk...,
+   Explore..., Arrange By, Properties in the Files menus; the toolbar's greying follows the Items selection. Tried under
+   Xvfb ([`files-tab-editor-try`](../../labview-captures/reports/2026-11-22-files-tab-editor-try.md)): as measured; it
+   found the OVI window's footer showing the greyed sample instead of its project (now "P.sdproj/My Computer", its menu
+   still a hole) and a Save through the GTK dialog with "first.ovi" typed writing `first.ovi.ovi`, now undone for OVIs,
+   polymorphic OVIs and projects (`withoutDoubledExtension`, ovi-paths.mjs; unverified which part of the dialog adds it).
+   **Stage (d) is done, and with it step 2b** (left: Recent Projects / Recent Files, Open Items' Add, the project
+   rows not built).*
 3. **Type definitions** and strict type definitions, in `.octl` files (DT-093 §5): Make Type Def., the control editor,
    updating the instances. *Decided in DT-096 (2026-11-16): the type on a wire stays structural and the link to the
    `.octl` lives on the object, with a copy of the definition. First, the measurements DT-096 lists.* *Measured on

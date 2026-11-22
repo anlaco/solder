@@ -52,7 +52,7 @@ async function readFolders(project, projectPath) {
 }
 
 /**
- * What the page of the project `entry` shows from the disk: `{ dependencies, folders }`. The files of an auto-populating
+ * What the page of the project `entry` shows from the disk: `{ dependencies, folders, projectFile }`. The files of an auto-populating
  * folder are items, so what they call is in Dependencies (measured: s5 Q6). `oviLib` is what `<ovilib>/…` resolves with.
  */
 export async function readProjectDisk(entry, oviLib) {
@@ -61,7 +61,8 @@ export async function readProjectDisk(entry, oviLib) {
   const storedPaths = [...itemsWithPaths(project), ...Object.values(folders).flatMap((folder) => filesOfListing(folder.entries))].map((item) => item.path);
   const itemKeys = storedPaths.map((stored) => projectItemPath(entry.path, stored));
   const dependencies = await projectDependencies(itemKeys, readTextOrNull, oviLib, (key) => isInOviLib(key, oviLib));
-  return { dependencies, folders };
+  // The Files tab shows the project file itself, at its place on disk (reports/2026-11-22-files-tab.md Q1).
+  return { dependencies, folders, projectFile: entry.path ? pathKey(entry.path) : null };
 }
 
 /** Watches the auto-populating folders of each open project; `notify(entry)` tells its page to read the disk again. */

@@ -34,8 +34,8 @@
 | Instruments and communication | 14 / 30 (47 %) | `█████░░░░░` |
 | Functions palette | 214 / 563 (38 %) | `████░░░░░░` |
 | Controls palette | 34 / 92 (37 %) | `████░░░░░░` |
-| Windows and dialogs | 195 / 585 (33 %) | `███░░░░░░░` |
-| Right-click menus | 677 / 2511 (27 %) | `███░░░░░░░` |
+| Windows and dialogs | 197 / 585 (34 %) | `███░░░░░░░` |
+| Right-click menus | 698 / 2551 (27 %) | `███░░░░░░░` |
 <!-- /coverage:summary -->
 
 ## Features
@@ -334,7 +334,7 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Window | Covered | |
 |--------|---------|---|
-| Project Explorer | 18 / 140 (13 %) | `█░░░░░░░░░` |
+| Project Explorer | 20 / 140 (14 %) | `█░░░░░░░░░` |
 | Front Panel | 38 / 94 (40 %) | `████░░░░░░` |
 | Block Diagram | 49 / 123 (40 %) | `████░░░░░░` |
 | Debug Window | 10 / 18 (56 %) | `██████░░░░` |
@@ -355,5 +355,5 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Menus | Covered | |
 |-------|---------|---|
-| Every right-click menu captured | 677 / 2511 (27 %) | `███░░░░░░░` |
+| Every right-click menu captured | 698 / 2551 (27 %) | `███░░░░░░░` |
 <!-- /coverage:inventory -->

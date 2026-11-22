@@ -267,12 +267,14 @@ window.solder?.alGuardar(alGuardarOtroOVI);
 
 // ——— The OVI's project (DT-099 stage d) ———
 
-/** Whether this OVI belongs to a project: its project rows are greyed outside one (project-menus.mjs). */
-let inProject = !!oviInfo.inProject;
+/** Where this OVI is open, "P.sdproj/My Computer", or null outside a project: its project rows are greyed outside one (project-menus.mjs). */
+let projectInstance = oviInfo.instance ?? null;
+let inProject = projectInstance !== null;
 /** The open windows the Window menu lists, as the main process gave them when it was last asked. */
 let windowRows = [];
-window.solder?.onInProject?.((value) => {
-  inProject = value;
+window.solder?.onInProject?.((instance) => {
+  projectInstance = instance ?? null;
+  inProject = projectInstance !== null;
   pintar();
 });
 
@@ -1394,7 +1396,7 @@ function pintar({ chromeChanged = true } = {}) {
   const charts = GS.reconciledCharts(pan.charts, grafo(), resueltos);
   if (charts !== pan.charts) pan = { ...pan, charts };
   const floating = floatingWindows();
-  const extra = { toolbar: toolbarButtons(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, conAvisos: !ejecutando && EL.showsWarningButton(warningRows(), errorList.showWarnings), dialogo: dialogoError, numeroOVI: oviInfo.untitledNumber ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
+  const extra = { toolbar: toolbarButtons(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, conAvisos: !ejecutando && EL.showsWarningButton(warningRows(), errorList.showWarnings), dialogo: dialogoError, numeroOVI: oviInfo.untitledNumber ?? undefined, applicationInstance: projectInstance ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
   if (conDiagrama) {
     extra.lienzo = D.contenido({ ...dia, debug: DV.canvasView(debug, dia.g, ejecutando) }, ctx, resueltos) + DV.overlay(debug, dia.g, ctx, resueltos, { now: Date.now(), separator: separador, running: ejecutando, pausedAt: debug.run.paused, errorFocus });
     extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia, ctx), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx, inv), DV.menuVariants(debug, dia.g, resueltos, dia.menu)), windowSize()) : "") + floating.popup;
