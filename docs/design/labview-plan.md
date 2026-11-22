@@ -22,7 +22,12 @@ When the developer says "keep going":
    step 2b**, measured and its core done on 2026-11-17, editor stages (a) and (b) done on 2026-11-18. Releases
    0.14.0-beta (2026-11-19) and 0.14.1-beta (2026-11-20) are out. "Diagnose two visual faults" just below is done
    (2026-11-21). Stage (c) of step 2b is done (2026-11-21), stage (d) is done (2026-11-22), and with it step 2b. **Next: the editor stages of type
-   definitions (step 3), from part (a1) of stage (a) (DT-104). DAQ's stage B waits for the
+   definitions (step 3), from part (a1) of stage (a) (DT-104). **Stage (a1), the control editor window, done on 2026-11-22**
+   (on `feature/control-editor-window`: the registry's `ENTRY_KINDS.CONTROL` with its own "Control N" count and one 616 × 413
+   window cascaded, the page `ventana=control-editor` reading the `.octl` with `controlEditorGraph` and reporting it with
+   `controlEditorText`, the toolbar's "Control Type" ring and no Run, and the inventory's `window.control-editor` with the
+   measured rows, reports/2026-11-22-control-editor-window.md). **Next: stage (a2), Make Type Def. and Open Type Def.**
+   DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
    **Diagnose two visual faults (asked by the developer on 2026-11-20), diagnosis only, no fix yet.** The developer
    reported two things that do not stop the work but look wrong, and agreed with this rule: a purely cosmetic fault goes
@@ -141,6 +146,11 @@ When the developer says "keep going":
   organizes programs (subOVIs, projects, classes).
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
+
+*2026-11-22: type definitions' stage (a1), the control editor window, done on `feature/control-editor-window`:
+`ENTRY_KINDS.CONTROL` in the registry with its own "Control N" count, one 616 × 413 window cascaded, the page
+`ventana=control-editor` over `controlEditorGraph`/`controlEditorText`, the toolbar's "Control Type" ring and no Run, and the
+inventory's `window.control-editor` with the measured rows. Next: stage (a2), Make Type Def. and Open Type Def.*
 
 *2026-11-22: projects' stage (d), and step 2b, done: Close Project closes the project's OVIs; Rename... of an OVI item;
 the OVI windows' Window and Project menus with Show Project; the Files tab. Next: the editor stages of type definitions.*
@@ -1264,6 +1274,16 @@ to it go on, new fronts wait for step 6.
      `controlEditorGraph` and reports it with `controlEditorText`; its menus and toolbar are a prefix of their own in
      the inventory, `window.control-editor`, with the measured rows (File's Apply Changes and Control Properties,
      Window's Show Parts Window, Operate's Change to Customize Mode, the toolbar's ring "Control Type" and no Run).*
+     *Done on 2026-11-22 (`feature/control-editor-window`): `ENTRY_KINDS.CONTROL` and `CONTROL_WINDOW_KIND` in
+     ovi-registry.mjs (counter "Control N", title from `entry.controlKind`), main.mjs opens the one 616 × 413 window
+     cascaded and a `.octl` opens as CONTROL (`kindOfFile`, `noteControlKind`), writing it back with `writeControl`; the
+     page `ventana=control-editor` is a Front Panel over `controlEditorGraph`/`controlEditorText`, with the ring
+     `window.control-editor.toolbar.control-type` and no Run; the inventory declares `window.control-editor.*` from
+     reports/2026-11-22-control-editor-window.md. Reviewed the same day: the page saves the `.octl`'s text (not an
+     OVI's), the Ctrl shortcuts whose rows are holes or never do nothing in that window (Ctrl+E, Ctrl+S, Ctrl+I, Ctrl+R,
+     Ctrl+T — `shortcutBlocked` in labview-inventory.mjs, and `hasOviWindows` guards Ctrl+E/Ctrl+T in the main process),
+     and the title keeps the kind it was opened with until reopening. Tests: test/editor/control-editor-window.test.mjs
+     (each fix shown to fail with the bug put back), test/editor/ovi-registry.test.mjs; 1827 green. Next: (a2).*
    - *(a2) Make Type Def. and Open Type Def. Make Type Def. on a panel control or a Cluster or Numeric constant asks
      the main process for an untitled control entry holding the object (`definitionObjectOf`) and links the object to
      its key `untitled:…`, opening nothing; Open Type Def. opens the entry's window (616 × 413, cascaded), from memory

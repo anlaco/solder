@@ -31,6 +31,7 @@ export const MEDIDAS = {
   anchoBotonDesplegable: 36.5,
   espacioSeparado: 4,
   anchoTextSettings: 146.7, // 399–619 px
+  anchoControlType: 122, // the control editor's ring: "Strict Type Def." is its widest row
   anchoBusqueda: 300, // 1340–1790 px
   antesDeBusqueda: 25.3, // entre el indicador de versión y la búsqueda
   entreDerecha: 1.5,
@@ -203,6 +204,7 @@ const ORDENES = ["select-a-vi", "select-a-control"];
 export const TITULOS = {
   "front-panel": "Untitled 1 Front Panel",
   "block-diagram": "Untitled 1 Block Diagram",
+  "control-editor": "Control 1 Type Def",
 };
 
 const px = (n) => `${Number(n.toFixed(2))}px`;
@@ -214,6 +216,7 @@ const clases = (inv, id, base) => `${base}${esHueco(inv.resolver(id) ?? { estado
 export function anchoDe(e) {
   const n = ultimo(e.id);
   if (n === "text-settings") return MEDIDAS.anchoTextSettings;
+  if (n === "control-type") return MEDIDAS.anchoControlType;
   if (n === "search") return MEDIDAS.anchoBusqueda;
   if (G.CON_DESPLEGABLE.has(n)) return MEDIDAS.anchoBotonDesplegable;
   if (G.BARRA[n]) return MEDIDAS.anchoBoton;
@@ -265,6 +268,9 @@ function elementoBarra(inv, e, sitio, extra) {
   const id = `data-id="${esc(e.id)}"`;
   if (n === "text-settings")
     return `<div class="${clases(inv, e.id, "caja-valor")}" ${id} ${estilo}><span class="valor">${esc(rotulo(e))}</span><span class="triangulo">${G.TRIANGULO}</span></div>`;
+  // The control editor's ring (DT-104): a value box showing the kind it has now, with its three kinds as the menu.
+  if (n === "control-type")
+    return `<div class="${clases(inv, e.id, "caja-valor")}" ${id} ${estilo}><span class="valor">${esc(extra.controlTypeLabel ?? rotulo(e))}</span><span class="triangulo">${G.TRIANGULO}</span></div>`;
   if (n === "search")
     return `<div class="${clases(inv, e.id, "caja-busqueda")}" ${id} ${estilo}><span class="selector">${G.SELECTOR}</span><span class="valor">${esc(rotulo(e))}</span><span class="lupa">${G.LUPA}</span></div>`;
   if (n === "save-version") return `<div class="${clases(inv, e.id, "texto-barra")}" ${id} ${estilo}>${esc(rotulo(e))}</div>`;

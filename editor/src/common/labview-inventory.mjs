@@ -99,3 +99,22 @@ export function pulsa(atajoLeido, { ctrl, shift, alt, tecla }) {
     atajoLeido.tecla === tecla.toUpperCase()
   );
 }
+
+/**
+ * Rule 53 with the keyboard, per window: a Ctrl+`key` shortcut is blocked when the window's inventory declares that
+ * shortcut only on holes or "never" rows — the key does nothing there (measured in the control editor: Ctrl+E, Ctrl+S,
+ * Ctrl+I, Ctrl+R and Ctrl+T do nothing, their rows are never or holes). When no row of the window declares the
+ * shortcut, it is not blocked: the OVI windows keep their Run with Ctrl+R, whose row is not declared yet.
+ */
+export function shortcutBlocked(inventory, prefix, key) {
+  const hit = { ctrl: true, shift: false, alt: false, tecla: key.toUpperCase() };
+  let declared = false;
+  for (const entry of inventory.entradas) {
+    if (!entry.id.startsWith(`${prefix}.`) || !entry.atajo) continue;
+    const parsed = atajo(entry.atajo);
+    if (!parsed || !pulsa(parsed, hit)) continue;
+    declared = true;
+    if (!esHueco(entry)) return false;
+  }
+  return declared;
+}

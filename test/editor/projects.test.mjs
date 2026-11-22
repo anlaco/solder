@@ -98,7 +98,7 @@ test("Open Project asks for a sdproj in the last folder and a project already op
   // File ▸ Open... accepts a .sdproj and the main process routes it to the project (s3 Q3).
   const main = readFileSync(path.join(RAIZ, "editor/electron/main.mjs"), "utf8");
   assert.match(main, /if \(isProjectPath\(filePath\)\) return projects\.openPath\(filePath, owner\)/);
-  assert.match(main, /const OPEN_FILTERS = \[\{ name: "All Solder files", extensions: \[\.\.\.OVI_EXTENSIONS, POLYMORPHIC_EXTENSION, PROJECT_EXTENSION\]/);
+  assert.match(main, /const OPEN_FILTERS = \[\{ name: "All Solder files", extensions: \[\.\.\.OVI_EXTENSIONS, POLYMORPHIC_EXTENSION, PROJECT_EXTENSION, CONTROL_FILE_EXTENSION\]/);
 });
 
 test("closing a project asks only when it has changes, with the text and buttons of LabVIEW's question", async () => {

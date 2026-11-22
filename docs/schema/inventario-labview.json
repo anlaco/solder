@@ -649,6 +649,34 @@
     "avisos-que-no-se-repiten": {
       "desc": "the \"Do not show this dialog again.\" checkbox of a dialog, which would keep the choice (the page does not store it yet)",
       "ref": "design/05-decisions.md DT-099; design/labview-plan.md step 2b"
+    },
+    "apply-changes": {
+      "desc": "File ▸ Apply Changes of the control editor: updating every open object that follows the type definition. Stage (b) of the type definitions",
+      "ref": "design/05-decisions.md DT-096 §4; design/labview-plan.md step 3, stage (b)"
+    },
+    "guardar-octl": {
+      "desc": "saving a type definition's .octl from the control editor, naming an untitled one \"Name the Control (Control N)\" and moving the links of its instances. Stage (a3) of the type definitions",
+      "ref": "design/05-decisions.md DT-104; design/labview-plan.md step 3, stage (a3)"
+    },
+    "control-properties": {
+      "desc": "the Control Properties dialog (Ctrl+I) of the control editor",
+      "ref": "labview-captures/reports/2026-11-22-control-editor-window.md"
+    },
+    "menus-control-editor": {
+      "desc": "the Edit, View, Project, Tools and Help menus of the control editor window, declared row by row as the Front Panel's are",
+      "ref": "labview-captures/reports/2026-11-22-control-editor-window.md"
+    },
+    "customize-mode": {
+      "desc": "Operate ▸ Change to Customize Mode and the toolbar's wrench: the same control opened as a plain custom control, unlinked",
+      "ref": "labview-captures/reports/2026-11-17-typedef-editor-entry.md"
+    },
+    "parts-window": {
+      "desc": "the Parts Window of the control editor (Window ▸ Show Parts Window)",
+      "ref": "labview-captures/reports/2026-11-22-control-editor-window.md"
+    },
+    "icono-control-editor": {
+      "desc": "the control editor's own icon in the top right icon pane",
+      "ref": "labview-captures/reports/2026-11-22-control-editor-window.md"
     }
   },
   "entradas": [
@@ -34653,6 +34681,399 @@
       "estado": "todo",
       "labview": "Keeps the choice of the question \"Remove Items\" so that it is not asked again (measured: s2 Q6; it stays greyed here).",
       "necesita": "avisos-que-no-se-repiten"
+    },
+    {
+      "id": "window.control-editor",
+      "etiqueta": "Control Editor",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor_window_is_declared_with_LabVIEW's_eight_menu_titles_and_the_measured_File_rows"
+    },
+    {
+      "id": "window.control-editor.menu",
+      "etiqueta": "Menu bar",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor_window_is_declared_with_LabVIEW's_eight_menu_titles_and_the_measured_File_rows"
+    },
+    {
+      "id": "window.control-editor.menu.file",
+      "etiqueta": "File",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor_window_is_declared_with_LabVIEW's_eight_menu_titles_and_the_measured_File_rows"
+    },
+    {
+      "id": "window.control-editor.menu.file.new-vi",
+      "etiqueta": "New OVI",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor_window_is_declared_with_LabVIEW's_eight_menu_titles_and_the_measured_File_rows",
+      "atajo": "Ctrl+N"
+    },
+    {
+      "id": "window.control-editor.menu.file.new",
+      "etiqueta": "New...",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor_window_is_declared_with_LabVIEW's_eight_menu_titles_and_the_measured_File_rows"
+    },
+    {
+      "id": "window.control-editor.menu.file.open",
+      "etiqueta": "Open...",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor_window_is_declared_with_LabVIEW's_eight_menu_titles_and_the_measured_File_rows",
+      "atajo": "Ctrl+O"
+    },
+    {
+      "id": "window.control-editor.menu.file.close",
+      "etiqueta": "Close",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor_window_is_declared_with_LabVIEW's_eight_menu_titles_and_the_measured_File_rows",
+      "atajo": "Ctrl+W"
+    },
+    {
+      "id": "window.control-editor.menu.file.close-all",
+      "etiqueta": "Close All",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor_window_is_declared_with_LabVIEW's_eight_menu_titles_and_the_measured_File_rows"
+    },
+    {
+      "id": "window.control-editor.menu.file.apply-changes",
+      "etiqueta": "Apply Changes",
+      "estado": "todo",
+      "separado": true,
+      "labview": "Applies the control editor's changes to every object that follows the type definition; greyed until the ring or the object changes (measured).",
+      "necesita": "apply-changes"
+    },
+    {
+      "id": "window.control-editor.menu.file.save",
+      "etiqueta": "Save",
+      "estado": "todo",
+      "separado": true,
+      "atajo": "Ctrl+S",
+      "necesita": "guardar-octl",
+      "labview": "Saves the .octl; an untitled one asks \"Name the Control (Control N)\" first (measured). Stage (a3) of the type definitions."
+    },
+    {
+      "id": "window.control-editor.menu.file.save-as",
+      "etiqueta": "Save As...",
+      "estado": "todo",
+      "necesita": "guardar-octl",
+      "labview": "Saves the .octl under another name; the instances keep following the file they were linked to until stage (a3) moves them."
+    },
+    {
+      "id": "window.control-editor.menu.file.save-all",
+      "etiqueta": "Save All",
+      "estado": "todo",
+      "atajo": "Ctrl+Shift+S",
+      "necesita": "varios-vis",
+      "labview": "Saves all open documents that have changes (measured: Ctrl+Shift+S)."
+    },
+    {
+      "id": "window.control-editor.menu.file.save-for-previous-version",
+      "etiqueta": "Save for Previous Version...",
+      "estado": "todo",
+      "necesita": "versiones-del-formato",
+      "labview": "Saves a copy of the .octl in the format of an earlier version."
+    },
+    {
+      "id": "window.control-editor.menu.file.revert",
+      "etiqueta": "Revert...",
+      "estado": "todo",
+      "necesita": "leer-escribir-qvi",
+      "labview": "Discards the changes and goes back to the last saved version; greyed with none (measured)."
+    },
+    {
+      "id": "window.control-editor.menu.file.create-project",
+      "etiqueta": "Create Project...",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor_window_is_declared_with_LabVIEW's_eight_menu_titles_and_the_measured_File_rows",
+      "separado": true
+    },
+    {
+      "id": "window.control-editor.menu.file.open-project",
+      "etiqueta": "Open Project...",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor_window_is_declared_with_LabVIEW's_eight_menu_titles_and_the_measured_File_rows"
+    },
+    {
+      "id": "window.control-editor.menu.file.save-project",
+      "etiqueta": "Save Project",
+      "estado": "todo",
+      "necesita": "ovis-en-proyecto",
+      "labview": "Saves the project; greyed outside one (measured)."
+    },
+    {
+      "id": "window.control-editor.menu.file.close-project",
+      "etiqueta": "Close Project",
+      "estado": "todo",
+      "necesita": "ovis-en-proyecto",
+      "labview": "Closes the project; greyed outside one (measured)."
+    },
+    {
+      "id": "window.control-editor.menu.file.page-setup",
+      "etiqueta": "Page Setup...",
+      "estado": "todo",
+      "separado": true,
+      "necesita": "imprimir",
+      "labview": "Sets up the page for printing."
+    },
+    {
+      "id": "window.control-editor.menu.file.print",
+      "etiqueta": "Print...",
+      "estado": "todo",
+      "necesita": "imprimir",
+      "labview": "Prints the document's documentation."
+    },
+    {
+      "id": "window.control-editor.menu.file.print-window",
+      "etiqueta": "Print Window...",
+      "estado": "todo",
+      "atajo": "Ctrl+P",
+      "necesita": "imprimir",
+      "labview": "Prints the window as it looks (measured: Ctrl+P)."
+    },
+    {
+      "id": "window.control-editor.menu.file.control-properties",
+      "etiqueta": "Control Properties",
+      "estado": "todo",
+      "separado": true,
+      "atajo": "Ctrl+I",
+      "necesita": "control-properties",
+      "labview": "The control's properties dialog (measured: Ctrl+I)."
+    },
+    {
+      "id": "window.control-editor.menu.file.recent-projects",
+      "etiqueta": "Recent Projects",
+      "estado": "todo",
+      "separado": true,
+      "necesita": "recientes",
+      "labview": "Recently opened projects; with none, it is greyed out."
+    },
+    {
+      "id": "window.control-editor.menu.file.recent-files",
+      "etiqueta": "Recent Files",
+      "estado": "todo",
+      "necesita": "recientes",
+      "labview": "Recently opened files; with none, it is greyed out."
+    },
+    {
+      "id": "window.control-editor.menu.file.exit",
+      "etiqueta": "Exit",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor_window_is_declared_with_LabVIEW's_eight_menu_titles_and_the_measured_File_rows",
+      "atajo": "Ctrl+Q",
+      "separado": true
+    },
+    {
+      "id": "window.control-editor.menu.edit",
+      "etiqueta": "Edit",
+      "estado": "todo",
+      "necesita": "menus-control-editor",
+      "labview": "The same rows as the Front Panel's Edit menu (window.front-panel.menu.edit), with Customize Control... greyed (measured); not declared for the control editor yet."
+    },
+    {
+      "id": "window.control-editor.menu.view",
+      "etiqueta": "View",
+      "estado": "todo",
+      "necesita": "menus-control-editor",
+      "labview": "The same rows as the Front Panel's View menu (window.front-panel.menu.view); not declared for the control editor yet."
+    },
+    {
+      "id": "window.control-editor.menu.project",
+      "etiqueta": "Project",
+      "estado": "todo",
+      "necesita": "menus-control-editor",
+      "labview": "As an OVI's outside a project: only Create and Open enabled (measured)."
+    },
+    {
+      "id": "window.control-editor.menu.operate",
+      "etiqueta": "Operate",
+      "estado": "todo",
+      "necesita": "menus-control-editor",
+      "labview": "Run and Stop are greyed: the control editor runs nothing (measured)."
+    },
+    {
+      "id": "window.control-editor.menu.operate.run",
+      "etiqueta": "Run",
+      "estado": "never",
+      "atajo": "Ctrl+R",
+      "porque": "The control editor has no Block Diagram and runs nothing: Run is greyed. labview-captures/reports/2026-11-22-control-editor-window.md (DT-104)",
+      "labview": "Run, greyed in the control editor (measured)."
+    },
+    {
+      "id": "window.control-editor.menu.operate.stop",
+      "etiqueta": "Stop",
+      "estado": "never",
+      "porque": "The control editor runs nothing: Stop is greyed. labview-captures/reports/2026-11-22-control-editor-window.md (DT-104)",
+      "labview": "Stop, greyed in the control editor (measured)."
+    },
+    {
+      "id": "window.control-editor.menu.operate.change-to-customize-mode",
+      "etiqueta": "Change to Customize Mode",
+      "estado": "todo",
+      "atajo": "Ctrl+M",
+      "necesita": "customize-mode",
+      "labview": "Opens the same control as a plain custom control, unlinked (measured: Advanced ▸ Customize...)."
+    },
+    {
+      "id": "window.control-editor.menu.tools",
+      "etiqueta": "Tools",
+      "estado": "todo",
+      "necesita": "menus-control-editor",
+      "labview": "The Tools menu of the control editor window; not declared yet."
+    },
+    {
+      "id": "window.control-editor.menu.window",
+      "etiqueta": "Window",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor_window_is_declared_with_LabVIEW's_eight_menu_titles_and_the_measured_File_rows"
+    },
+    {
+      "id": "window.control-editor.menu.window.show-parts-window",
+      "etiqueta": "Show Parts Window",
+      "estado": "todo",
+      "necesita": "parts-window",
+      "labview": "Opens the Parts Window, which shows the control's parts as LabVIEW names them."
+    },
+    {
+      "id": "window.control-editor.menu.window.show-block-diagram",
+      "etiqueta": "Show Block Diagram",
+      "estado": "never",
+      "atajo": "Ctrl+E",
+      "porque": "The control editor has no Block Diagram: Ctrl+E does nothing. labview-captures/reports/2026-11-22-control-editor-window.md (DT-104)",
+      "labview": "Show Block Diagram Ctrl+E, greyed in the control editor (measured)."
+    },
+    {
+      "id": "window.control-editor.menu.window.show-project",
+      "etiqueta": "Show Project",
+      "estado": "todo",
+      "necesita": "ovis-en-proyecto",
+      "labview": "Opens the Project Explorer; greyed outside a project (measured)."
+    },
+    {
+      "id": "window.control-editor.menu.window.tile-left-and-right",
+      "etiqueta": "Tile Left and Right",
+      "estado": "todo",
+      "necesita": "menus-control-editor",
+      "labview": "Greyed with a single window (measured).",
+      "atajo": "Ctrl+T"
+    },
+    {
+      "id": "window.control-editor.menu.window.tile-up-and-down",
+      "etiqueta": "Tile Up and Down",
+      "estado": "todo",
+      "necesita": "menus-control-editor",
+      "labview": "Greyed with a single window (measured)."
+    },
+    {
+      "id": "window.control-editor.menu.window.full-size",
+      "etiqueta": "Full Size",
+      "estado": "todo",
+      "atajo": "Ctrl+/",
+      "necesita": "menus-control-editor",
+      "labview": "Maximizes the window (measured: Ctrl+/)."
+    },
+    {
+      "id": "window.control-editor.menu.window.all-windows",
+      "etiqueta": "All Windows...",
+      "estado": "todo",
+      "atajo": "Ctrl+Shift+W",
+      "necesita": "menus-control-editor",
+      "labview": "Lists every open window (measured: Ctrl+Shift+W)."
+    },
+    {
+      "id": "window.control-editor.menu.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "necesita": "menus-control-editor",
+      "labview": "The same rows as the Front Panel's Help menu (window.front-panel.menu.help); not declared for the control editor yet."
+    },
+    {
+      "id": "window.control-editor.toolbar",
+      "etiqueta": "Toolbar",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor's_toolbar_has_the_Control_Type_ring_with_its_three_kinds_and_no_Run"
+    },
+    {
+      "id": "window.control-editor.toolbar.customize-mode",
+      "etiqueta": "Change to Customize Mode",
+      "estado": "todo",
+      "necesita": "customize-mode",
+      "labview": "The wrench: opens the same control as a plain custom control, unlinked (measured: Advanced ▸ Customize...)."
+    },
+    {
+      "id": "window.control-editor.toolbar.control-type",
+      "etiqueta": "Control Type",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor's_toolbar_has_the_Control_Type_ring_with_its_three_kinds_and_no_Run",
+      "muestra": "Type Def."
+    },
+    {
+      "id": "window.control-editor.toolbar.control-type.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor's_toolbar_has_the_Control_Type_ring_with_its_three_kinds_and_no_Run"
+    },
+    {
+      "id": "window.control-editor.toolbar.control-type.type-def",
+      "etiqueta": "Type Def.",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor's_toolbar_has_the_Control_Type_ring_with_its_three_kinds_and_no_Run"
+    },
+    {
+      "id": "window.control-editor.toolbar.control-type.strict-type-def",
+      "etiqueta": "Strict Type Def.",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-window.test.mjs::the_control_editor's_toolbar_has_the_Control_Type_ring_with_its_three_kinds_and_no_Run"
+    },
+    {
+      "id": "window.control-editor.toolbar.text-settings",
+      "etiqueta": "Text Settings",
+      "estado": "todo",
+      "separado": true,
+      "necesita": "formato-de-texto",
+      "muestra": "15pt Application Font",
+      "labview": "Changes the font, size and style of the selected text."
+    },
+    {
+      "id": "window.control-editor.toolbar.align-objects",
+      "etiqueta": "Align Objects",
+      "estado": "todo",
+      "necesita": "panel-frontal",
+      "labview": "Aligns the selected objects along an axis."
+    },
+    {
+      "id": "window.control-editor.toolbar.distribute-objects",
+      "etiqueta": "Distribute Objects",
+      "estado": "todo",
+      "necesita": "panel-frontal",
+      "labview": "Spaces the selected objects at equal intervals."
+    },
+    {
+      "id": "window.control-editor.toolbar.resize-objects",
+      "etiqueta": "Resize Objects",
+      "estado": "todo",
+      "necesita": "panel-frontal",
+      "labview": "Gives several panel objects the same size."
+    },
+    {
+      "id": "window.control-editor.toolbar.reorder",
+      "etiqueta": "Reorder",
+      "estado": "todo",
+      "necesita": "panel-frontal",
+      "labview": "Changes which object is in front or behind when they overlap."
+    },
+    {
+      "id": "window.control-editor.toolbar.show-context-help-window",
+      "etiqueta": "Show Context Help Window",
+      "estado": "todo",
+      "separado": true,
+      "necesita": "ayuda-contextual",
+      "labview": "Opens the Context Help window, which describes what is under the mouse."
+    },
+    {
+      "id": "window.control-editor.icon",
+      "etiqueta": "Control editor's icon",
+      "estado": "todo",
+      "necesita": "icono-control-editor",
+      "labview": "The icon pane at the top right of the control editor window (measured)."
     }
   ]
 }

@@ -13,6 +13,25 @@ import { elementFromFile, elementToFile, ErrorQvi, VERSION } from "./qvi-format.
 /** The control editor's three kinds, in the ring's order (measured), as the `.octl` stores them. */
 export const TYPE_DEFINITION_KINDS = Object.freeze(["control", "type-def", "strict-type-def"]);
 
+/** The extension of a type definition's file (DT-096 §3, DT-104). */
+export const CONTROL_FILE_EXTENSION = ".octl";
+
+/** Whether a path names a type definition's `.octl` file, in any case. */
+export const isControlPath = (path) => path.toLowerCase().endsWith(CONTROL_FILE_EXTENSION);
+
+/** The title the control editor's window carries for each kind, from the kind it was opened with (measured: the title follows the ring only on reopening). */
+export const KIND_TITLES = Object.freeze({ control: "Control", "type-def": "Type Def", "strict-type-def": "Strict Type Def" });
+
+/** The kind an `.octl`'s text stores, for the window's title before its page reads the file; null when unreadable. */
+export function kindOfText(text) {
+  try {
+    const kind = JSON.parse(text)?.["type-definition"];
+    return TYPE_DEFINITION_KINDS.includes(kind) ? kind : null;
+  } catch {
+    return null;
+  }
+}
+
 /** The kinds an object can follow: a plain custom control is copied when placed, not followed (DT-096 §2). */
 const FOLLOWED_KINDS = new Set(["type-def", "strict-type-def"]);
 

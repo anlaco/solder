@@ -12,6 +12,7 @@
 
 import { isPolymorphicPath } from "./polymorphic.mjs";
 import { OVI_EXTENSIONS } from "./ovi-lib.mjs";
+import { CONTROL_FILE_EXTENSION } from "./type-definition.mjs";
 
 export const PROJECT_EXTENSION = ".sdproj";
 
@@ -35,7 +36,7 @@ export class ProjectFileError extends Error {}
 export const isProjectPath = (path) => typeof path === "string" && path.toLowerCase().endsWith(PROJECT_EXTENSION);
 
 /** The extension of a control file (DT-093 §5), which LabVIEW lists as a VI item (measured: a `.ctl` is written `Type="VI"`). */
-const CONTROL_EXTENSION = ".octl";
+const CONTROL_EXTENSION = CONTROL_FILE_EXTENSION;
 
 /** The kind of item a file becomes when it is added: an OVI (a polymorphic OVI and a control too, as LabVIEW's are VIs), or a document. */
 export function itemKindOf(path) {

@@ -9,6 +9,11 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Type definitions: the control editor's window (DT-104, stage a1). An `.octl` opens in its own 616 × 413 window, titled
+  "Control N Type Def" / "Point.octl Type Def", cascaded, as the Front Panel page editing the file's one object; its
+  toolbar has the "Control Type" ring (Control, Type Def., Strict Type Def.) and no Run, and its menus are declared from
+  the measurements (File's Apply Changes and Control Properties, Window's Show Parts Window and Operate's Change to
+  Customize Mode greyed with their reason).
 - Projects: Dependencies lists what the project's OVIs call, at any depth (subOVIs, polymorphic instances, type
   definitions), with Solder's library in an `ovi.lib` folder first, as LabVIEW's vi.lib; it follows every edit and
   every saved OVI, and Refresh reads it again. A dependency opens from its row.

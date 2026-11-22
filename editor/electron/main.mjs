@@ -12,7 +12,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BaseWindow, BrowserWindow, dialog, ipcMain, Menu, MessageChannelMain, protocol, screen, utilityProcess, webContents } from "electron";
 import { POLYMORPHIC_EXTENSION, isPolymorphicPath } from "../../core/model/polymorphic.mjs";
-import { OVI_EXTENSIONS, isOVIFile, pathKey, polymorphicSavePathFor, polymorphicSaveProposal, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey } from "../src/common/ovi-paths.mjs";
+import { CONTROL_FILE_EXTENSION, isControlPath, kindOfText } from "../../core/model/type-definition.mjs";
+import { OVI_EXTENSIONS, isOVIFile, pathKey, polymorphicSavePathFor, polymorphicSaveProposal, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey, withoutDoubledExtension } from "../src/common/ovi-paths.mjs";
 import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
 import { moveOVIFile, rebaserFor } from "./ovi-file-rename.mjs";
@@ -23,7 +24,7 @@ import { restoredBounds, savedWindows, windowRecord, withWindows } from "./saved
 import { CHOSEN_THEME_ROUTE, THEMES, chosenThemeName } from "./theme.mjs";
 import { CHOSEN_PANEL_STYLE_ROUTE, PANEL_STYLES, chosenPanelStyleName } from "../src/front-panel/panel-style.mjs";
 import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from "../src/getting-started/start-state.mjs";
-import { ENTRY_KINDS, POLYMORPHIC_WINDOW_KIND, WINDOW_KINDS, createRegistry, isDirty, primaryWindowKind, recordChange, recordSave, oviName, windowKindsOf, windowTitle } from "./ovi-registry.mjs";
+import { CONTROL_WINDOW_KIND, ENTRY_KINDS, POLYMORPHIC_WINDOW_KIND, WINDOW_KINDS, createRegistry, hasOviWindows, isDirty, primaryWindowKind, recordChange, recordSave, oviName, windowKindsOf, windowTitle } from "./ovi-registry.mjs";
 import { changesWhatCallersSee, memoryFirstReader } from "./memory-first.mjs";
 import { broadcast, createLayoutManager, preferencesFileIn } from "./layout-manager.mjs";
 import { dialogOwner, hostWindowOf } from "./page-window.mjs";
@@ -277,7 +278,7 @@ const FILTERS = [{ name: "Solder OVI", extensions: OVI_EXTENSIONS.map((extension
 // Open and Select an OVI... also take a polymorphic OVI (DT-074), listed first so that the dialog shows both kinds.
 const OVI_AND_POLYMORPHIC_FILTERS = [{ name: "Solder OVI and polymorphic OVI", extensions: [...OVI_EXTENSIONS, POLYMORPHIC_EXTENSION].map((extension) => extension.slice(1)) }, ...FILTERS];
 /** File ▸ Open... also opens a project (measured: s3 Q3, a `.lvproj` chosen there opens its Project Explorer), so its first filter lists every kind of file Solder opens. */
-const OPEN_FILTERS = [{ name: "All Solder files", extensions: [...OVI_EXTENSIONS, POLYMORPHIC_EXTENSION, PROJECT_EXTENSION].map((extension) => extension.slice(1)) }, ...FILTERS];
+const OPEN_FILTERS = [{ name: "All Solder files", extensions: [...OVI_EXTENSIONS, POLYMORPHIC_EXTENSION, PROJECT_EXTENSION, CONTROL_FILE_EXTENSION].map((extension) => extension.slice(1)) }, ...FILTERS];
 /** What Save As offers for a polymorphic OVI, which LabVIEW saves as a `.vi` and Solder as a file of its own (DT-074). */
 const POLYMORPHIC_FILTERS = [{ name: "Solder polymorphic OVI", extensions: [POLYMORPHIC_EXTENSION.slice(1)] }];
 /** The Call Library Function Node's browse dialog: shared libraries first (LabVIEW's "Shared Libraries (*.dll)"), then WebAssembly modules (DT-080 §3) and every file. */
@@ -329,9 +330,11 @@ function watchStyleOf(open) {
   });
 }
 
-/** Opens the windows of an entry the registry has just created: an OVI's two, or a polymorphic OVI's one. */
+/** Opens the windows of an entry the registry has just created: an OVI's two, a polymorphic OVI's one, a control's one. */
 function openWindows(entry) {
-  return entry.kind === ENTRY_KINDS.POLYMORPHIC ? openPolymorphicWindow(entry) : openOviWindows(entry);
+  if (entry.kind === ENTRY_KINDS.POLYMORPHIC) return openPolymorphicWindow(entry);
+  if (entry.kind === ENTRY_KINDS.CONTROL) return openControlWindow(entry);
+  return openOviWindows(entry);
 }
 
 /** Where a new window of the polymorphic kind opens: cascaded as the OVIs' are, from the work area's corner. */
@@ -341,23 +344,24 @@ const polymorphicWindowPosition = (index) => {
 };
 
 /**
- * The Polymorphic OVI window (DT-074 §5): one window, 482 x 391 with its title bar, that stands for the entry. Closing it
- * closes the entry, asking first if it has unsaved changes, as the Front Panel does.
+ * A standalone window that stands for its entry — the Polymorphic OVI window (DT-074 §5), the control editor's (DT-104
+ * stage a1): one window of `size` with its title bar, cascaded as the OVIs' are. Closing it closes the entry, asking
+ * first if it has unsaved changes, as the Front Panel does.
  */
-function openPolymorphicWindow(entry) {
+function openStandaloneWindow(entry, windowKind, size, url) {
   const window = new BrowserWindow({
     ...polymorphicWindowPosition(openOVIs.size),
-    ...POLYMORPHIC_WINDOW_SIZE,
+    ...size,
     useContentSize: true,
-    title: windowTitle(entry, POLYMORPHIC_WINDOW_KIND),
+    title: windowTitle(entry, windowKind),
     backgroundColor: THEME.windowBackground.color,
     icon: APP_ICON,
     show: false,
     webPreferences: { contextIsolation: true, sandbox: true, preload: path.join(HERE, "preload.cjs") },
   });
   window.on("page-title-updated", (event) => event.preventDefault());
-  window.loadURL(`solder://editor/polymorphic.html?vi=${entry.id}`);
-  const open = { entry, windows: { [POLYMORPHIC_WINDOW_KIND]: window }, closing: false };
+  window.loadURL(url);
+  const open = { entry, windows: { [windowKind]: window }, closing: false };
   openOVIs.set(entry.id, open);
   oviOfContents.set(window.webContents.id, open);
   window.once("ready-to-show", () => {
@@ -376,6 +380,17 @@ function openPolymorphicWindow(entry) {
     else showGettingStarted();
   });
   return open;
+}
+
+/** The Polymorphic OVI window (DT-074 §5): one window, 482 x 391 with its title bar. */
+function openPolymorphicWindow(entry) {
+  return openStandaloneWindow(entry, POLYMORPHIC_WINDOW_KIND, POLYMORPHIC_WINDOW_SIZE, `solder://editor/polymorphic.html?vi=${entry.id}`);
+}
+
+/** The control editor's window (DT-104 stage a1): the 616 x 413 editor measured, the Front Panel page of the `.octl`'s one object. */
+const CONTROL_WINDOW_SIZE = { width: 616, height: 413 - 33 };
+function openControlWindow(entry) {
+  return openStandaloneWindow(entry, CONTROL_WINDOW_KIND, CONTROL_WINDOW_SIZE, `solder://editor/index.html?ventana=${CONTROL_WINDOW_KIND}&vi=${entry.id}&panelStyle=${PANEL_STYLE_NAME}`);
 }
 
 /**
@@ -564,8 +579,8 @@ async function exitApplication() {
   app.quit();
 }
 
-/** What a file opens as: a `.sdp` is a polymorphic OVI, anything else an OVI. */
-const kindOfFile = (filePath) => (isPolymorphicPath(filePath) ? ENTRY_KINDS.POLYMORPHIC : ENTRY_KINDS.OVI);
+/** What a file opens as: a `.sdp` is a polymorphic OVI, an `.octl` a control of a type definition (DT-104), anything else an OVI. */
+const kindOfFile = (filePath) => (isPolymorphicPath(filePath) ? ENTRY_KINDS.POLYMORPHIC : isControlPath(filePath) ? ENTRY_KINDS.CONTROL : ENTRY_KINDS.OVI);
 
 /** Opens an OVI from disk in its own windows, or brings its windows forward if it is already open; a `.sdproj` opens its Project Explorer. */
 async function openPath(filePath, owner) {
@@ -591,15 +606,23 @@ async function openPathIn(filePath, project, owner) {
     return;
   }
   const { entry } = registry.open({ path: filePath, initialText: text, kind: kindOfFile(filePath) });
+  noteControlKind(entry, text);
   if (project) Object.assign(entry, { project: project.id, instance: project.instance, projectFolder: project.folder });
   rememberRecentFile(filePath);
   openWindows(entry);
 }
 
 async function openFirstFile(filePath) {
-  const { entry } = registry.open({ path: filePath, initialText: await readFile(filePath, "utf8"), kind: kindOfFile(filePath) });
+  const text = await readFile(filePath, "utf8");
+  const { entry } = registry.open({ path: filePath, initialText: text, kind: kindOfFile(filePath) });
+  noteControlKind(entry, text);
   rememberRecentFile(filePath);
   return openWindows(entry);
+}
+
+/** A control's title carries the kind its `.octl` stores (measured: the title follows the ring only on reopening). */
+function noteControlKind(entry, text) {
+  if (entry.kind === ENTRY_KINDS.CONTROL) entry.controlKind = kindOfText(text) ?? "type-def";
 }
 
 function openNewOVI() {
@@ -784,6 +807,7 @@ async function closeAllOVIs(owner) {
  */
 async function writeOVI(open, owner, text, saveAs) {
   const { entry } = open;
+  if (entry.kind === ENTRY_KINDS.CONTROL) return writeControl(open, owner, text, saveAs);
   const polymorphic = entry.kind === ENTRY_KINDS.POLYMORPHIC;
   let target = entry.path;
   if (!target || saveAs) {
@@ -808,6 +832,39 @@ async function writeOVI(open, owner, text, saveAs) {
   broadcast("ovi:saved", { id: entry.id, key: pathKey(target) });
   projects.filesChanged();
   return rebased;
+}
+
+/** What Save As offers for a type definition: LabVIEW's "Controls (*.ctl;*.ctt)" (measured). */
+const CONTROL_FILTERS = [{ name: "Controls", extensions: [CONTROL_FILE_EXTENSION.slice(1)] }];
+
+/** The `.octl` a save dialog's name becomes: the extension added once, never doubled (as `savePathFor` does for OVIs). */
+const controlSavePathFor = (chosen) => {
+  const without = withoutDoubledExtension(chosen, [CONTROL_FILE_EXTENSION]);
+  return without.toLowerCase().endsWith(CONTROL_FILE_EXTENSION) ? without : without + CONTROL_FILE_EXTENSION;
+};
+
+/** What Save As proposes for a type definition: the file it is saved at, or «Control N.octl» for an untitled one ("Name the Control (Control N)", measured). */
+const controlSaveProposal = (currentPath, name) => currentPath ?? `${name}${CONTROL_FILE_EXTENSION}`;
+
+/**
+ * Writes a type definition's `.octl` (DT-104 stage a1; naming an untitled one and moving the links of its instances are
+ * stage a3). The text the page reports is already the file's, so it is written as it is.
+ */
+async function writeControl(open, owner, text, saveAs) {
+  const { entry } = open;
+  let target = entry.path;
+  if (!target || saveAs) {
+    const result = await dialog.showSaveDialog(owner, { title: "Save As", defaultPath: controlSaveProposal(target, oviName(entry)), filters: CONTROL_FILTERS });
+    if (result.canceled || !result.filePath) return null;
+    target = controlSavePathFor(result.filePath);
+  }
+  await writeFile(target, text);
+  recordSave(entry, target, text);
+  rememberRecentFile(target);
+  setTitles(open);
+  broadcast("ovi:saved", { id: entry.id, key: pathKey(target) });
+  projects.filesChanged();
+  return text;
 }
 
 /** Points the window style at the OVI's current file and sends what is there. */
@@ -1054,14 +1111,18 @@ function handleRequests() {
   ipcMain.on("ovi:close", (event) => closeOVI(openOf(event), { force: true }));
   // File ▸ Exit: asks about each OVI with unsaved changes, then quits (REPORT.md §3).
   ipcMain.on("ovi:salir", exitApplication);
-  // Ctrl+E: the other window of the OVI, from either (REPORT.md §7).
+  // Ctrl+E: the other window of the OVI, from either (REPORT.md §7). A control's one window has no other: it does nothing (measured).
   ipcMain.on("ovi:toggle-window", (event) => {
     const open = openOf(event);
+    if (!hasOviWindows(open.entry)) return;
     const kind = WINDOW_KINDS.find((candidate) => open.windows[candidate].webContents.id === event.sender.id);
     showWindow(open.windows[otherWindowKind(kind)]);
   });
-  // Ctrl+T: Window ▸ Tile Left and Right (REPORT.md §4).
-  ipcMain.on("ovi:tile", (event) => tileWindows(openOf(event)));
+  // Ctrl+T: Window ▸ Tile Left and Right (REPORT.md §4). A control's one window is not tiled: it does nothing (measured).
+  ipcMain.on("ovi:tile", (event) => {
+    const open = openOf(event);
+    if (hasOviWindows(open.entry)) tileWindows(open);
+  });
   // A Run that talks to instruments gets its own port to the I/O process (DT-065 §3).
   ipcMain.on("io:connect", (event) => event.sender.postMessage("io:port", null, [instrumentIo.connect()]));
 }

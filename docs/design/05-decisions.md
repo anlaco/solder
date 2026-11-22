@@ -5398,6 +5398,6 @@ own: an entry of the OVI registry of its own kind, whose file is an `.octl` and 
 
 | What | Test | State |
 |------|------|-------|
-| An `.octl` opens as a panel of one object and is written back unchanged | a round trip of the page's model and the file | Not built |
-| Save moves the links of every open OVI from the untitled key to the file | an editor test of the registry | Not built |
+| An `.octl` opens as a panel of one object and is written back unchanged | a round trip of the page's model and the file | Built: `test/core/control-editor.test.mjs` (2026-11-22), and stage (a1)'s window over it in `test/editor/control-editor-window.test.mjs` (2026-11-22) |
+| Save moves the links of every open OVI from the untitled key to the file | an editor test of the registry | Not built (stage a3) |
 

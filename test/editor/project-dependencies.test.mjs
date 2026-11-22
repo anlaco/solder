@@ -129,5 +129,5 @@ test("the page reads the files when it opens, after each edit, on Refresh and wh
   assert.match(page, /refreshDependencies: \(\) => readDisk\(\)/);
   assert.match(source("editor/src/project-explorer/project-explorer-commands.mjs"), /changed\(Edit\.projectText\(next\.project\)\);\s*readDisk\?\.\(\);/);
   const main = source("editor/electron/main.mjs");
-  assert.equal(main.match(/broadcast\("ovi:saved"[^\n]*\n\s*projects\.filesChanged\(\);/g)?.length, 2, "both ways of saving an OVI");
+  assert.equal(main.match(/broadcast\("ovi:saved"[^\n]*\n\s*projects\.filesChanged\(\);/g)?.length, 3, "the OVI's, the deferred OVI's and the control's ways of saving");
 });

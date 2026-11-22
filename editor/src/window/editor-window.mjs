@@ -41,7 +41,7 @@ import * as G from "../common/glyphs.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { isFreeLabel } from "../../../core/model/free-label.mjs";
 import * as H from "../block-diagram/undo-history.mjs";
-import { cargarInventario, esHueco, ultimo } from "../common/labview-inventory.mjs";
+import { cargarInventario, esHueco, shortcutBlocked, ultimo } from "../common/labview-inventory.mjs";
 import { addressFromText } from "../common/array-grid.mjs";
 import * as MD from "./modal-dialog.mjs";
 import * as GM from "../front-panel/graph-menus.mjs";
@@ -52,6 +52,8 @@ import * as P from "../front-panel/front-panel.mjs";
 import * as PC from "../front-panel/panel-clipboard.mjs";
 import * as Paths from "../common/ovi-paths.mjs";
 import * as Q from "../../../core/model/qvi-format.mjs";
+import { controlEditorGraph, controlEditorText, editedObjectOf } from "../../../core/model/control-editor.mjs";
+import { KIND_TITLES, TYPE_DEFINITION_KINDS } from "../../../core/model/type-definition.mjs";
 import * as SN from "../block-diagram/subovi-nodes.mjs";
 import * as PolymorphicNodes from "../block-diagram/polymorphic-nodes.mjs";
 import * as ExpressNodes from "../block-diagram/express-nodes.mjs";
@@ -93,9 +95,10 @@ window.solder?.alCambiarEstiloVentana((text) => applyWindowStyle(document, text)
 /** The catalog of this OVI: the blocks, and for each subOVI node the connector of the OVI it calls. */
 let cat = baseCatalog;
 const glifos = D.glifosPorBloque(inv);
-/** El Block Diagram edita el diagrama; el Front Panel, el panel. */
+/** El Block Diagram edita el diagrama; el Front Panel, el panel. The control editor (DT-104) is the Front Panel page of the `.octl`'s one object. */
 const conDiagrama = nombre === "block-diagram";
-const conPanel = nombre === "front-panel";
+const esEditorControl = nombre === "control-editor";
+const conPanel = nombre === "front-panel" || esEditorControl;
 
 /** ¿Está instalada esta fuente? `document.fonts.check` no sirve para las del sistema. */
 function existe(fuente) {
@@ -183,6 +186,9 @@ function quieto(g, stepName) {
 
 /** The path this OVI is saved at, or the key of an untitled one (see common/ovi-paths.mjs). */
 let oviKey = oviInfo.key;
+/** The control editor's ring (DT-104): the `.octl`'s kind, and the comments it was read with. */
+let controlKind = "type-def";
+let controlComments = null;
 /** Where this Solder's ovi.lib is, which `<ovilib>/…` subOVI paths lead to (DT-073). */
 const oviLibRoot = oviInfo.oviLibRoot ?? "";
 /** The text of every other OVI of the hierarchy, by absolute path. */
@@ -246,7 +252,8 @@ const currentOVIName = () => Paths.oviDisplayName(oviKey, oviInfo.name);
  * tools that find a window by its page, as the tests under Xvfb do, saw "Untitled 1" in every OVI
  * (real-programs-0.3.md B16).
  */
-const showOVINameInPageTitle = () => (document.title = `${currentOVIName()} ${conPanel ? "Front Panel" : "Block Diagram"}`);
+const showOVINameInPageTitle = () =>
+  (document.title = `${currentOVIName()} ${esEditorControl ? KIND_TITLES[controlKind] : conPanel ? "Front Panel" : "Block Diagram"}`);
 showOVINameInPageTitle();
 
 /** Some OVI was saved, here or elsewhere (preload `alGuardar`). */
@@ -297,8 +304,16 @@ addEventListener("blur", () => confirmarEscritura());
 // and the asterisk in the title belong to the main process
 // (electron/main.mjs), which receives every change to know if anything is unsaved.
 
-/** The OVI has changed: the main process compares it with what was saved. */
-const avisar = (g) => window.solder?.cambio(Q.aTexto(g, cat));
+/** The entry has changed: the main process compares it with what was saved. The control editor reports its `.octl`'s text (DT-104). */
+const avisar = (g) => {
+  if (!window.solder) return;
+  if (esEditorControl) {
+    if (!editedObjectOf(g, cat)) return;
+    window.solder.cambio(controlEditorText(controlKind, g, cat, controlComments));
+    return;
+  }
+  window.solder.cambio(Q.aTexto(g, cat));
+};
 
 /** What is being typed is confirmed before saving, as with Enter Text. */
 function confirmarEscritura() {
@@ -306,11 +321,12 @@ function confirmarEscritura() {
   if (conPanel && pan.edicion) cambiarPanel(P.confirmar(pan));
 }
 
-/** File ▸ Save and Save As. */
+/** File ▸ Save and Save As. The control editor sends its `.octl`'s text, not an OVI's (DT-104). */
 async function guardarOVI(como) {
   if (!window.solder) return;
   confirmarEscritura();
-  await window.solder.guardar(Q.aTexto(grafo(), cat), como);
+  const texto = esEditorControl ? controlEditorText(controlKind, grafo(), cat, controlComments) : Q.aTexto(grafo(), cat);
+  await window.solder.guardar(texto, como);
 }
 
 /** An OVI just opened or created: it starts with no history and nothing selected. */
@@ -340,6 +356,18 @@ async function cargarTexto(text) {
     window.solder.error(e.message);
     window.solder.cerrar();
   }
+}
+
+/** Loads the control editor's `.octl` (DT-104 stage a1): this page is the Front Panel editing the file's one object, with no hierarchy. */
+async function cargarEditorControl(text) {
+  const read = controlEditorGraph(text, baseCatalog);
+  controlKind = read.kind;
+  controlComments = read.comments ?? null;
+  cat = baseCatalog;
+  ctx = D.contexto(cat, glifos, separador, medirMenu);
+  hierarchyErrors = [];
+  setHierarchyKeys([]);
+  cargar(read.g);
 }
 
 /** File ▸ Open: another OVI, in its own windows (or those it already has). */
@@ -761,7 +789,30 @@ const TOOLBAR_ACTIONS = {
   "step-out": () => clickStep("out"),
   // The triangle opens the Error list, as Ctrl+L does, with the warnings shown (warnings-frame-stops §A2).
   "list-warnings": () => openErrorList(),
+  // The control editor's ring: its rows are the inventory's three kinds (DT-104).
+  "control-type": () => openControlTypeMenu(),
 };
+
+/** The control editor's ring (DT-104): "Control Type", with Control, Type Def. and Strict Type Def. as its rows. */
+const CONTROL_TYPE_BUTTON_ID = "window.control-editor.toolbar.control-type";
+
+function openControlTypeMenu() {
+  const button = document.querySelector(`[data-id="${CSS.escape(CONTROL_TYPE_BUTTON_ID)}"]`);
+  if (button) cambiar(E.abrirMenuBarra({ ...estado, menuBarra: null }, inv, CONTROL_TYPE_BUTTON_ID, anclaMenu(button)));
+}
+
+/** Releasing over one of the ring's kinds sets it: the `.octl`'s kind changes and the entry is marked modified. */
+function finishControlTypeMenu(ev) {
+  const row = ev.target.closest?.(".item-menu");
+  const kind = row && TYPE_DEFINITION_KINDS.find((candidate) => row.dataset.id === `${CONTROL_TYPE_BUTTON_ID}.${candidate}`);
+  estado = { ...estado, menuBarra: null };
+  if (kind && kind !== controlKind) {
+    // The window's title keeps the kind it was opened with until reopening (measured), so the page's does not change here either.
+    controlKind = kind;
+    quieto(grafo(), "control-type");
+  }
+  pintar();
+}
 
 /** The speed menu hangs from the Highlight Execution button; its rows are the inventory's. */
 const HIGHLIGHT_BUTTON_ID = "window.block-diagram.toolbar.highlight-execution";
@@ -1396,7 +1447,7 @@ function pintar({ chromeChanged = true } = {}) {
   const charts = GS.reconciledCharts(pan.charts, grafo(), resueltos);
   if (charts !== pan.charts) pan = { ...pan, charts };
   const floating = floatingWindows();
-  const extra = { toolbar: toolbarButtons(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, conAvisos: !ejecutando && EL.showsWarningButton(warningRows(), errorList.showWarnings), dialogo: dialogoError, numeroOVI: oviInfo.untitledNumber ?? undefined, applicationInstance: projectInstance ?? undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
+  const extra = { toolbar: toolbarButtons(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, conAvisos: !ejecutando && EL.showsWarningButton(warningRows(), errorList.showWarnings), dialogo: dialogoError, numeroOVI: oviInfo.untitledNumber ?? undefined, applicationInstance: projectInstance ?? undefined, controlTypeLabel: esEditorControl ? KIND_TITLES[controlKind] : undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
   if (conDiagrama) {
     extra.lienzo = D.contenido({ ...dia, debug: DV.canvasView(debug, dia.g, ejecutando) }, ctx, resueltos) + DV.overlay(debug, dia.g, ctx, resueltos, { now: Date.now(), separator: separador, running: ejecutando, pausedAt: debug.run.paused, errorFocus });
     extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia, ctx), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx, inv), DV.menuVariants(debug, dia.g, resueltos, dia.menu)), windowSize()) : "") + floating.popup;
@@ -1466,7 +1517,16 @@ function runBarMenuRow(id, where) {
 const DOCKED_EXPLANATION_POINT = { x: 40, y: 40 };
 
 /** The check marks of a menu opened from the page and not from the menu bar: the current page of OVI Properties. */
-const marcasDelMenuBarra = (id) => new Set(id === VP.CATEGORIES_ID ? [`${VP.CATEGORIES_ID}.execution`] : id === HIGHLIGHT_BUTTON_ID ? [`${HIGHLIGHT_BUTTON_ID}.${debug.highlight.speed}`] : []);
+const marcasDelMenuBarra = (id) =>
+  new Set(
+    id === VP.CATEGORIES_ID
+      ? [`${VP.CATEGORIES_ID}.execution`]
+      : id === HIGHLIGHT_BUTTON_ID
+        ? [`${HIGHLIGHT_BUTTON_ID}.${debug.highlight.speed}`]
+        : id === CONTROL_TYPE_BUTTON_ID
+          ? [`${CONTROL_TYPE_BUTTON_ID}.${controlKind}`]
+          : [],
+  );
 
 function cambiar(nuevo) {
   if (nuevo === estado) return;
@@ -2125,6 +2185,7 @@ addEventListener("mouseup", (ev) => {
   clearTimeout(debugUi.speedMenuTimer);
   if (debugUi.drag) debugUi.drag = null;
   if (estado.menuBarra?.id === HIGHLIGHT_BUTTON_ID) return finishSpeedMenu(ev);
+  if (estado.menuBarra?.id === CONTROL_TYPE_BUTTON_ID) return finishControlTypeMenu(ev);
   if (pulsado) return soltarEnRun();
   if (conPanel && pan.accion) return cambiarPanel(P.soltar(pan, ctx, objetivoPanel(document.elementFromPoint(ev.clientX, ev.clientY)), punto(ev)));
   if (!conDiagrama || !dia.accion) return;
@@ -2288,13 +2349,14 @@ addEventListener("keydown", (ev) => {
   }
   // LabVIEW's Ctrl shortcuts that run a menu command (shortcuts.mjs).
   if (ctrl && !ev.shiftKey && !ev.altKey) {
+    // A shortcut whose rows in this window's inventory are all holes or never does nothing (measured in the control editor: Ctrl+E, Ctrl+S, Ctrl+I, Ctrl+R, Ctrl+T).
     const orden = commandForCtrlKey(ev.key);
-    if (orden) {
+    if (orden && !shortcutBlocked(inv, prefijo, ev.key)) {
       ev.preventDefault();
       return ORDENES_MENU[orden]();
     }
     // Ctrl+R: Run, y Ctrl+.: Abort, los atajos de LabVIEW.
-    if (ev.key.toLowerCase() === "r") {
+    if (ev.key.toLowerCase() === "r" && !shortcutBlocked(inv, prefijo, "r")) {
       ev.preventDefault();
       return ejecutarOVI();
     }
@@ -2487,7 +2549,9 @@ window.solder?.portapapeles.alCambiar(recibirPortapapeles);
 window.solder?.listaDeErrores.alCambiar(receiveShowWarnings);
 receiveShowWarnings(await window.solder?.listaDeErrores.mostrarAvisos());
 recibirPortapapeles(await window.solder?.portapapeles.leer());
-if (oviInfo.text) await cargarTexto(oviInfo.text);
+if (esEditorControl) {
+  if (oviInfo.text) await cargarEditorControl(oviInfo.text);
+} else if (oviInfo.text) await cargarTexto(oviInfo.text);
 pintar();
 // Only now is the window shown: before, its body was empty (electron/first-paint.mjs).
 window.solder?.pagePainted();
