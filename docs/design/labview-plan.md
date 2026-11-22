@@ -26,7 +26,8 @@ When the developer says "keep going":
    (on `feature/control-editor-window`: the registry's `ENTRY_KINDS.CONTROL` with its own "Control N" count and one 616 × 413
    window cascaded, the page `ventana=control-editor` reading the `.octl` with `controlEditorGraph` and reporting it with
    `controlEditorText`, the toolbar's "Control Type" ring and no Run, and the inventory's `window.control-editor` with the
-   measured rows, reports/2026-11-22-control-editor-window.md). **Next: stage (a2), Make Type Def. and Open Type Def.**
+   measured rows, reports/2026-11-22-control-editor-window.md). **Stage (a2) done for the panel cluster on 2026-11-22**
+   (Make Type Def. and Open Type Def.), and (a2b), the Cluster and Numeric constants, the same day. **Next: stage (a3).**
    DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
    **Diagnose two visual faults (asked by the developer on 2026-11-20), diagnosis only, no fix yet.** The developer
@@ -146,6 +147,10 @@ When the developer says "keep going":
   organizes programs (subOVIs, projects, classes).
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
+
+*2026-11-22: type definitions' stage (a2) done for the panel cluster: Make Type Def. links it to an untitled "Control N"
+kept in memory, Open Type Def. opens its editor, the linked instance's menu, links moved when it is saved. Next: (a2b),
+the constants, then (a3).*
 
 *2026-11-22: type definitions' stage (a1), the control editor window, done on `feature/control-editor-window`:
 `ENTRY_KINDS.CONTROL` in the registry with its own "Control N" count, one 616 × 413 window cascaded, the page
@@ -1288,6 +1293,31 @@ to it go on, new fronts wait for step 6.
      the main process for an untitled control entry holding the object (`definitionObjectOf`) and links the object to
      its key `untitled:…`, opening nothing; Open Type Def. opens the entry's window (616 × 413, cascaded), from memory
      or from the `.octl` on disk.*
+     *Done on 2026-11-22 for the panel cluster (`context.cluster-control`): the page's `makeTypeDefinition` asks the
+     main process (`typedef:make`) for an untitled CONTROL entry holding `definitionObjectOf`'s `.octl`, kept in
+     `deferredEntries` with no window and always unsaved, and links the cluster to its key `untitled:N`; untitled keys
+     pass through `resolveRelative`/`rebaseStoredPath` and the memory-first reader serves them; the caller reports the
+     definitions it follows with its callees, so closing the editor offers Defer Decision; `openTypeDefinition` sends
+     the key to `openPath`, which reopens an untitled entry from memory (`openUntitled`). The menu's linked rows are in
+     the inventory, hidden or shown by `front-panel/type-definition-menus.mjs`. Saving an untitled control already
+     moves the open OVIs' links (`relinkTypeDefinition`, `ovi:saved`'s `from`), brought forward from (a3) so that a save
+     does not break them. Tests: test/editor/type-definition-menus.test.mjs; 1831 green. Not done: the Cluster and
+     Numeric constants (a2b: an `.octl` holds a control, so a constant needs its control first), Make Type Def. on the
+     other panel objects (their linked menus are not measured), Find ▸ in place of Find Terminal. Unverified: Make Type
+     Def. greyed on an indicator (measured at half scale), where the object sits in the new editor (LabVIEW: 31,109).*
+   - *(a2b) Make Type Def. on a Cluster Constant and a Numeric Constant: the `.octl` holds the control the constant
+     becomes (Change to Control), the linked constant's menu as measured (reports/2026-11-17-typedef-editor-entry.md Q7).*
+     *Done on 2026-11-22: `controlOfConstant` (cluster-constant-panel.mjs) turns a Cluster Constant into a cluster
+     control of its elements and a Numeric Constant into a numeric control, values as defaults; the type definition's
+     rows of the three menus are one place now (`typeDefinitionVariants`/`typeDefinitionMarks`, merged by
+     diagram-editing's `variantes`/`marcados`), with Make Type Def. greyed on the other constants that share the Numeric
+     Constant's menu. Measured in LabVIEW (reports/2026-11-22-typedef-from-constants.md): a constant gives a control,
+     labelled "Numeric" or "Cluster" and shown, with the constant's values; a linked Numeric Constant greys Adapt To
+     Entered Data and Representation. Tests: test/editor/type-definition-menus.test.mjs. Found and not done: the dark
+     corner triangle of a linked constant (Q4); Find ▸ after Change to Array in every linked menu; Description and
+     Tip... moving after Replace ▸ in a linked menu; closing a caller with an unsaved definition asks LabVIEW's "about
+     to leave memory" dialog with Save - All, Don't Save - All and the affected items (Q5), Solder still asks the plain
+     Close dialog (stage a3).*
    - *(a3) Saving and closing. Save names the file ("Name the Control (Control N)", Controls (*.octl)) and moves every
      open OVI's link from the untitled key to the file, relative to each OVI; saving an OVI whose definition is
      untitled asks LabVIEW's '"p1.vi" refers to new, unsaved files' (Yes / Cancel) first; closing the editor asks

@@ -9,6 +9,12 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Type definitions: Make Type Def. and Open Type Def. on a panel cluster, a Cluster Constant and a Numeric Constant
+  (DT-104, stages a2 and a2b); a constant's type definition holds the control it becomes. Make Type Def. links the
+  object at once to an unsaved "Control N" kept in memory, with no window, and the OVI is modified; the cluster's menu
+  then has Open Type Def. and the measured rows of a linked instance in Make Type Def.'s place, and Open Type Def. opens
+  the control editor from memory or from its `.octl`. Closing that editor while an OVI follows it offers Defer Decision;
+  saving it moves the links of the open OVIs to its file.
 - Type definitions: the control editor's window (DT-104, stage a1). An `.octl` opens in its own 616 × 413 window, titled
   "Control N Type Def" / "Point.octl Type Def", cascaded, as the Front Panel page editing the file's one object; its
   toolbar has the "Control Type" ring (Control, Type Def., Strict Type Def.) and no Run, and its menus are declared from

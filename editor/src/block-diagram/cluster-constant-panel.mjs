@@ -11,7 +11,7 @@ import { DBL } from "../../../core/model/types.mjs";
 import { elementBlock, elementConfig, freshLabel, withShellBox } from "../front-panel/cluster-panel.mjs";
 import { caja } from "./diagram-view.mjs";
 import { nextPanelSlot } from "./terminal-creation.mjs";
-import { clusterBox } from "./cluster-constant-geometry.mjs";
+import { BLOCK, clusterBox } from "./cluster-constant-geometry.mjs";
 
 /** The label a new panel cluster is born with (report Q6, Q7: "Cluster"); a repeated one is numbered as the panel does. */
 const PANEL_CLUSTER_LABEL = "Cluster";
@@ -34,6 +34,26 @@ function panelConfig(element) {
   if (element.tipo === "str-const") return { value: value ?? "" };
   if (element.tipo === "bool-const") return { value: !!value };
   return { type: element.config?.type ?? DBL, value: value ?? 0 };
+}
+
+/** The label of the numeric control a Numeric Constant's type definition holds, shown (reports/2026-11-22-typedef-from-constants.md Q2). */
+const NUMERIC_CONTROL_LABEL = "Numeric";
+
+/**
+ * The control a constant is turned into for the `.octl` that Make Type Def. makes of it (DT-104 stage a2b), as measured
+ * (reports/2026-11-22-typedef-from-constants.md Q2, Q3): a control, not a constant. A Cluster Constant gives a cluster
+ * control labelled "Cluster" whose elements are controls with no label shown; a Numeric Constant a numeric control
+ * labelled "Numeric" of its representation; each with the constant's values as defaults, at the panel's top left. Null
+ * for any other constant. Unverified: whether a label the user gave the constant is kept. As the object of an `.octl`,
+ * `{ tipo, label, config, x, y }`.
+ */
+export function controlOfConstant(node) {
+  if (node.tipo === BLOCK) {
+    const elements = node.config.elements.map((element) => panelElement(element, "cluster-control"));
+    return { tipo: "cluster-control", label: { text: PANEL_CLUSTER_LABEL }, config: { elements }, x: 0, y: 0 };
+  }
+  if (node.tipo === "num-const" || node.tipo === "const") return { tipo: PANEL_BLOCK[node.tipo], label: { text: NUMERIC_CONTROL_LABEL }, config: panelConfig(node), x: 0, y: 0 };
+  return null;
 }
 
 /** The panel element that `element` of a constant becomes inside a cluster of block `clusterBlock`: same place, an empty label. */

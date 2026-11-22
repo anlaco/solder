@@ -52,6 +52,7 @@ import * as CP from "../front-panel/connector-pane.mjs";
 import * as PanelReplace from "../common/panel-replace.mjs";
 import { graphCommand, graphMenuMarks, graphMenuVariants, isGraphMenu } from "../front-panel/graph-menus.mjs";
 import { clusterCommand, clusterMenuMarks, clusterMenuVariants, isClusterMenu } from "../front-panel/cluster-menus.mjs";
+import { typeDefinitionMarks, typeDefinitionVariants } from "../front-panel/type-definition-menus.mjs";
 import * as Et from "../common/labels.mjs";
 import * as FL from "../common/free-labels.mjs";
 import { FREE_LABEL, isFreeLabel } from "../../../core/model/free-label.mjs";
@@ -1967,8 +1968,13 @@ const mergeVariants = (a, b) => ({
   separadores: new Map([...(a.separadores ?? []), ...(b.separadores ?? [])]),
 });
 
-/** What changes in the rows of the open menu: the node's own variants and those of Create ▸. `ctx` is needed for the terminal's type, `inv` for the submenu of Replace ▸. */
-export const variantes = (d, ctx, inv) =>
+/**
+ * What changes in the rows of the open menu: the node's own variants, those of Create ▸ and those of a type definition
+ * (DT-104). `ctx` is needed for the terminal's type, `inv` for the submenu of Replace ▸.
+ */
+export const variantes = (d, ctx, inv) => mergeVariants(ownVariants(d, ctx, inv), typeDefinitionVariants(d));
+
+const ownVariants = (d, ctx, inv) =>
   isGraphMenu(d)
     ? graphMenuVariants(d)
     : CCM.isClusterConstantMenu(d)
@@ -1999,8 +2005,11 @@ function pathMenuMarks(root, node) {
   return root === "context.path-constant" ? PATH_CONSTANT_MARKS : [];
 }
 
-/** Qué filas del menú llevan la marca: Terminals si el nodo los enseña, el modo actual, Invert si lo está, la representación de un número. */
-export function marcados(d, ctx) {
+/** The rows of the open menu that carry a tick: the node's own, and Auto-Update from Type Def. on an instance (DT-104). */
+export const marcados = (d, ctx) => new Set([...ownMarks(d, ctx), ...typeDefinitionMarks(d)]);
+
+/** Which rows carry a tick: Terminals if the node shows them, the current mode, Invert if inverted, a number's representation. */
+function ownMarks(d, ctx) {
   if (CP.hasConnectorMenu(d)) return CP.menuMarks(d);
   if (isGraphMenu(d)) return graphMenuMarks(d);
   if (isClusterMenu(d)) return clusterMenuMarks(d);

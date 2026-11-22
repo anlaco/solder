@@ -27,16 +27,20 @@ export function clusterMenuMarks(d) {
 
 const LABEL_ROW = `${CLUSTER_MENU_ROOT}.visible-items.label`;
 const CHANGE_TO_INDICATOR_ROW = `${CLUSTER_MENU_ROOT}.change-to-indicator`;
+const MAKE_TYPE_DEF_ROW = `${CLUSTER_MENU_ROOT}.make-type-def`;
 const REORDER_ROW = `${CLUSTER_MENU_ROOT}.reorder-controls-in-cluster`;
 
 /**
- * The rows that change with the cluster: Change to Control on an indicator (report §6), and Reorder Controls In
- * Cluster... greyed while the cluster is empty (report §3).
+ * The rows that change with the cluster: Change to Control on an indicator (report §6), Reorder Controls In
+ * Cluster... greyed while the cluster is empty (report §3), and Make Type Def. greyed on an indicator. The rows of a
+ * type definition are type-definition-menus.mjs's, as for every object that has them.
  */
 export function clusterMenuVariants(d) {
   const node = menuNode(d);
   const rotulos = new Map(node?.tipo === "cluster-indicator" ? [[CHANGE_TO_INDICATOR_ROW, "Change to Control"]] : []);
   const desactivados = new Set(node?.config?.elements?.length ? [] : [REORDER_ROW]);
+  // On an indicator Make Type Def. looked greyed (reports/2026-11-17-typedef-editor-entry.md Q1, at half scale: unverified).
+  if (node?.tipo === "cluster-indicator") desactivados.add(MAKE_TYPE_DEF_ROW);
   return { rotulos, desactivados };
 }
 

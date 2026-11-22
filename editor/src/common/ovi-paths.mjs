@@ -75,6 +75,12 @@ export const isAbsolutePath = (path) => withSlashes(path).startsWith("/") || WIN
 /** The key of an OVI that has no file yet. It is not a path: it never contains a folder. */
 export const untitledKey = (id) => `untitled:${id}`;
 
+/**
+ * Is this the key of an entry with no file yet? A type definition made by Make Type Def. is linked by it until it is
+ * saved (DT-096 §3, DT-104 §1), so a link may hold one: it names the entry, never a place, and is never rebased.
+ */
+export const isUntitledKey = (key) => typeof key === "string" && key.startsWith("untitled:");
+
 /** Does this key stand for an OVI saved in a file? */
 export const isSavedKey = (key) => typeof key === "string" && isAbsolutePath(key);
 
@@ -113,6 +119,7 @@ export function directoryOf(key) {
  * resolved against `oviLibRoot`, the ovi.lib folder of this Solder.
  */
 export function resolveRelative(callerKey, storedPath, oviLibRoot = "") {
+  if (isUntitledKey(storedPath)) return storedPath;
   if (isOviLibPath(storedPath)) {
     const resolved = resolveOviLibPath(storedPath, oviLibRoot);
     return isAbsolutePath(resolved) ? joinPath(collapse(splitPath(resolved))) : resolved;
@@ -151,7 +158,7 @@ export function storedPathFor(callerKey, absolutePath, oviLibRoot = "") {
  * OVI it points to is the same one.
  */
 export function rebaseStoredPath(storedPath, fromKey, toKey) {
-  if (isOviLibPath(storedPath) || !isSavedKey(toKey)) return storedPath;
+  if (isOviLibPath(storedPath) || isUntitledKey(storedPath) || !isSavedKey(toKey)) return storedPath;
   if (!isSavedKey(fromKey) && !isAbsolutePath(storedPath)) return storedPath;
   return relativeBetween(directoryOf(toKey), resolveRelative(fromKey, storedPath));
 }
@@ -179,6 +186,24 @@ export function rebaseGraph(g, fromKey, toKey) {
     if (config === node.config) return node;
     changed = true;
     return { ...node, config };
+  });
+  return changed ? { ...g, nodos } : g;
+}
+
+/**
+ * `g` with every object that follows the type definition at `fromKey` following it at `toKey` instead, stored as any
+ * link of the OVI at `oviKey` is: relative to its file, or as it is while the OVI has none. An untitled type definition
+ * that is saved moves its instances' links to its file (measured: "(typedef 'TDa.ctl'[non-strict])" after Save,
+ * reports/2026-11-17-typedef-editor-entry.md Q5). The same graph when nothing followed it.
+ */
+export function relinkTypeDefinition(g, fromKey, toKey, oviKey) {
+  const stored = isSavedKey(oviKey) && isSavedKey(toKey) ? relativeBetween(directoryOf(oviKey), toKey) : toKey;
+  let changed = false;
+  const nodos = g.nodos.map((node) => {
+    const link = node.config?.typedef;
+    if (typeof link?.path !== "string" || resolveRelative(oviKey, link.path) !== fromKey) return node;
+    changed = true;
+    return { ...node, config: { ...node.config, typedef: { ...link, path: stored } } };
   });
   return changed ? { ...g, nodos } : g;
 }

@@ -25,10 +25,11 @@ export const heldInMemoryText = (name) => ({
 export const isCalledByAnother = (key, opens, exceptId) => opens.some((open) => open.entry.id !== exceptId && open.calls?.includes(key));
 
 /**
- * May closing `open` defer its question? Only an OVI saved somewhere (a caller reaches a subOVI by its path) and called
- * by another open OVI.
+ * May closing `open` defer its question? Only when another open OVI calls it by its key: a subOVI by its path, an untitled
+ * type definition by its untitled key, which the objects made with Make Type Def. follow (measured: closing an unsaved
+ * control editor offers Defer Decision, reports/2026-11-22-control-editor-window.md). An untitled OVI is called by no one.
  */
-export const canDefer = (open, opens, keyOf) => !!open.entry.path && isCalledByAnother(keyOf(open.entry), opens, open.entry.id);
+export const canDefer = (open, opens, keyOf) => isCalledByAnother(keyOf(open.entry), opens, open.entry.id);
 
 /**
  * The deferred entries that nothing would call once the OVI with id `closingId` closes (all of them for `null`, as Close

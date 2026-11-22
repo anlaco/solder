@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 import { app, BaseWindow, BrowserWindow, dialog, ipcMain, Menu, MessageChannelMain, protocol, screen, utilityProcess, webContents } from "electron";
 import { POLYMORPHIC_EXTENSION, isPolymorphicPath } from "../../core/model/polymorphic.mjs";
 import { CONTROL_FILE_EXTENSION, isControlPath, kindOfText } from "../../core/model/type-definition.mjs";
-import { OVI_EXTENSIONS, isOVIFile, pathKey, polymorphicSavePathFor, polymorphicSaveProposal, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey, withoutDoubledExtension } from "../src/common/ovi-paths.mjs";
+import { OVI_EXTENSIONS, isOVIFile, isUntitledKey, pathKey, polymorphicSavePathFor, polymorphicSaveProposal, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey, withoutDoubledExtension } from "../src/common/ovi-paths.mjs";
 import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
 import { moveOVIFile, rebaserFor } from "./ovi-file-rename.mjs";
@@ -361,7 +361,8 @@ function openStandaloneWindow(entry, windowKind, size, url) {
   });
   window.on("page-title-updated", (event) => event.preventDefault());
   window.loadURL(url);
-  const open = { entry, windows: { [windowKind]: window }, closing: false };
+  // `activations`: the Window menu orders the windows by it (noteWindowActivated); the control editor's page asks for it.
+  const open = { entry, windows: { [windowKind]: window }, closing: false, activations: {} };
   openOVIs.set(entry.id, open);
   oviOfContents.set(window.webContents.id, open);
   window.once("ready-to-show", () => {
@@ -477,6 +478,8 @@ function forgetDeferred(entry) {
 
 /** Saves a deferred entry, which has no windows: its text as its windows last reported it, where it is saved. */
 async function saveDeferred(entry, owner) {
+  // An untitled type definition has no file yet: it asks where, as its editor's Save does.
+  if (!entry.path) return (await writeControl({ entry, windows: {} }, owner, entry.current, false)) !== null;
   try {
     await writeFile(entry.path, entry.current);
   } catch (error) {
@@ -585,7 +588,33 @@ const kindOfFile = (filePath) => (isPolymorphicPath(filePath) ? ENTRY_KINDS.POLY
 /** Opens an OVI from disk in its own windows, or brings its windows forward if it is already open; a `.sdproj` opens its Project Explorer. */
 async function openPath(filePath, owner) {
   if (isProjectPath(filePath)) return projects.openPath(filePath, owner);
+  if (isUntitledKey(filePath)) return openUntitled(filePath);
   return openPathIn(filePath, null, owner);
+}
+
+/**
+ * Open Type Def. on an object that follows an untitled type definition (DT-104): its control editor opens from memory,
+ * as it was left, or comes forward if it is open (measured: reports/2026-11-22-control-editor-window.md).
+ */
+function openUntitled(key) {
+  const entry = registry.list().find((candidate) => keyOf(candidate) === key);
+  if (!entry) return;
+  if (deferredEntries.delete(entry.id)) return openWindows(Object.assign(entry, { initialText: entry.current }));
+  const open = openOVIs.get(entry.id);
+  if (open) focusPanel(open);
+}
+
+/**
+ * Make Type Def. (DT-104 stage a2): an untitled control entry, "Control N", holding the object's `.octl` text, kept in
+ * memory with no window, as one closed with Defer Decision; the object follows it by its untitled key, which is returned.
+ * Measured: no dialog and no window open (reports/2026-11-17-typedef-editor-entry.md Q2).
+ */
+function makeTypeDefinition(text) {
+  const { entry } = registry.open({ kind: ENTRY_KINDS.CONTROL, initialText: text });
+  noteControlKind(entry, text);
+  recordChange(entry, text);
+  deferredEntries.set(entry.id, entry);
+  return keyOf(entry);
 }
 
 /**
@@ -858,11 +887,13 @@ async function writeControl(open, owner, text, saveAs) {
     if (result.canceled || !result.filePath) return null;
     target = controlSavePathFor(result.filePath);
   }
+  const from = keyOf(entry);
   await writeFile(target, text);
   recordSave(entry, target, text);
   rememberRecentFile(target);
   setTitles(open);
-  broadcast("ovi:saved", { id: entry.id, key: pathKey(target) });
+  // `from`: the objects that followed it by its untitled key follow its file now (measured, Q5 of the editor-entry report).
+  broadcast("ovi:saved", { id: entry.id, key: pathKey(target), from });
   projects.filesChanged();
   return text;
 }
@@ -1000,7 +1031,12 @@ function handleRequests() {
     if (!result.canceled && result.filePaths.length) await openPath(result.filePaths[0], owner);
   });
   // A subOVI opened by double click or Open Front Panel; `key` is its absolute path.
-  ipcMain.handle("ovi:open-path", (event, key) => openPath(key, ownerOf(event)));
+  // Nothing goes back: what openPath returns may hold windows, which cannot cross to the page.
+  ipcMain.handle("ovi:open-path", async (event, key) => {
+    await openPath(key, ownerOf(event));
+  });
+  // Make Type Def.: the object's .octl text in, the untitled key its object follows out (DT-104 stage a2).
+  ipcMain.handle("typedef:make", (_event, text) => makeTypeDefinition(text));
   // Select an OVI...: the file dialog; returns the absolute path or nothing.
   ipcMain.handle("ovi:choose-subovi", async (event) => {
     const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select an OVI", properties: ["openFile"], filters: OVI_AND_POLYMORPHIC_FILTERS });

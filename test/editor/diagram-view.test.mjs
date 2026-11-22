@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { typeDefinitionVariants } from "../../editor/src/front-panel/type-definition-menus.mjs";
 
 import { COLORES } from "../../core/model/types.mjs";
 import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
@@ -102,7 +103,9 @@ test("el menú de una función pinta lo declarado en su orden", () => {
 // Add (334 px del vídeo frente a 246) porque «Change to Shared Variable Node»
 // es más largo; el texto no se sale.
 test("un menú se ajusta a su texto más largo", () => {
-  const ancho = (raiz) => Number(D.menuContextual(INV, { raiz, x: 0, y: 0 }).match(/width:([\d.]+)px/)[1]);
+  // The rows of a linked type definition are hidden on an object that follows none, as the page hides them (DT-104).
+  const unlinked = (raiz) => typeDefinitionVariants({ g: { nodos: [] }, menu: { raiz, nodo: null } });
+  const ancho = (raiz) => Number(D.menuContextual(INV, { raiz, x: 0, y: 0 }, undefined, undefined, unlinked(raiz)).match(/width:([\d.]+)px/)[1]);
   const [funcion, constante] = [ancho("context.function"), ancho("context.numeric-constant")];
   assert.ok(Math.abs(funcion - 246 / 1.5) <= 8, `el de Add mide ${funcion}; en el vídeo, 164`);
   assert.ok(Math.abs(constante - 334 / 1.5) <= 10, `el de la constante mide ${constante}; en el vídeo, 223`);

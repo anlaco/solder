@@ -52,8 +52,9 @@ import * as P from "../front-panel/front-panel.mjs";
 import * as PC from "../front-panel/panel-clipboard.mjs";
 import * as Paths from "../common/ovi-paths.mjs";
 import * as Q from "../../../core/model/qvi-format.mjs";
-import { controlEditorGraph, controlEditorText, editedObjectOf } from "../../../core/model/control-editor.mjs";
-import { KIND_TITLES, TYPE_DEFINITION_KINDS } from "../../../core/model/type-definition.mjs";
+import { controlEditorGraph, controlEditorText, definitionObjectOf, editedObjectOf } from "../../../core/model/control-editor.mjs";
+import { controlOfConstant } from "../block-diagram/cluster-constant-panel.mjs";
+import { KIND_TITLES, TYPE_DEFINITION_KINDS, linkFor, typeDefinitionLink, typeDefinitionText } from "../../../core/model/type-definition.mjs";
 import * as SN from "../block-diagram/subovi-nodes.mjs";
 import * as PolymorphicNodes from "../block-diagram/polymorphic-nodes.mjs";
 import * as ExpressNodes from "../block-diagram/express-nodes.mjs";
@@ -198,7 +199,13 @@ let hierarchyErrors = [];
 /** The keys of the subOVIs this OVI reaches. */
 let hierarchyKeys = [];
 
-/** The keys this OVI's hierarchy calls, told to the main process too: an open caller keeps a deferred subOVI in memory. */
+/** What a hierarchy reaches: its subOVIs and the type definitions its objects follow (DT-096), each by its key. */
+const calledKeys = (hierarchy) => [...hierarchy.keys, ...hierarchy.typeDefinitions.keys()];
+
+/**
+ * The keys this OVI's hierarchy calls, told to the main process too: an open caller keeps a deferred subOVI in memory,
+ * and an untitled type definition its objects follow (DT-104).
+ */
 function setHierarchyKeys(keys) {
   hierarchyKeys = keys;
   window.solder?.reportCallees?.(keys.filter((key) => key !== oviKey));
@@ -216,7 +223,7 @@ function rebuildHierarchy(g) {
   cat = result.catalog;
   ctx = D.contexto(cat, glifos, separador, medirMenu);
   hierarchyErrors = result.errors;
-  setHierarchyKeys(result.keys);
+  setHierarchyKeys(calledKeys(result));
   // A polymorphic node on Automatic follows what is wired, with the new hierarchy (DT-074).
   return Gr.aflojarCablesHuerfanos(Gr.adaptPolymorphicNodes(g, cat), cat, placeOfOldTerminal);
 }
@@ -235,10 +242,15 @@ function ponerGrafo(g, { share = false } = {}) {
 
 /** Reads the subOVI files again and redraws: a subOVI was saved, or a Run is about to start. */
 async function refrescarJerarquia() {
-  const { texts } = await window.solder.textosDeSubOVIs(Q.aTexto(grafo(), cat));
-  subOVITexts = texts;
-  ponerGrafo(rebuildHierarchy(grafo()), { share: true });
+  ponerGrafo(await withHierarchyTextsOf(grafo()), { share: true });
   pintar();
+}
+
+/** Reads the texts of what `g` calls and follows, and returns `g` over that hierarchy; the texts are kept for both windows. */
+async function withHierarchyTextsOf(g) {
+  const { texts } = await window.solder.textosDeSubOVIs(Q.aTexto(g, cat));
+  subOVITexts = texts;
+  return rebuildHierarchy(g);
 }
 
 /** Does this graph have a subOVI node whose callee this window does not know yet? */
@@ -257,8 +269,9 @@ const showOVINameInPageTitle = () =>
 showOVINameInPageTitle();
 
 /** Some OVI was saved, here or elsewhere (preload `alGuardar`). */
-function alGuardarOtroOVI({ id, key }) {
+function alGuardarOtroOVI({ id, key, from }) {
   if (id !== oviInfo.id) {
+    if (from && from !== key && hierarchyKeys.includes(from)) return followSavedTypeDefinition(from, key);
     if (hierarchyKeys.includes(key)) refrescarJerarquia();
     return;
   }
@@ -271,6 +284,24 @@ function alGuardarOtroOVI({ id, key }) {
   pintar();
 }
 window.solder?.alGuardar(alGuardarOtroOVI);
+
+/** An untitled type definition this OVI follows was saved: its objects now follow the file, an edit of this OVI (DT-104). */
+async function followSavedTypeDefinition(fromKey, toKey) {
+  // Both windows hear of the save; the Front Panel makes the edit and sends it, with the new texts, to the Block Diagram.
+  if (nombre !== "front-panel") return;
+  const g = Paths.relinkTypeDefinition(grafo(), fromKey, toKey, oviKey);
+  if (g === grafo()) return refrescarJerarquia();
+  setGraphAndRest(await withHierarchyTextsOf(g), "relink-type-def");
+  pintar();
+}
+
+/** Puts `g` in this window's view as an edit that has come to rest: one step to undo, the OVI marked modified. */
+function setGraphAndRest(g, stepName) {
+  // Not ponerGrafo: it takes `g` as already published, and quieto would then neither send it nor mark the OVI.
+  if (conDiagrama) dia = { ...dia, g };
+  else pan = { ...pan, g };
+  quieto(g, stepName);
+}
 
 // ——— The OVI's project (DT-099 stage d) ———
 
@@ -350,7 +381,7 @@ async function cargarTexto(text) {
     cat = result.catalog;
     ctx = D.contexto(cat, glifos, separador, medirMenu);
     hierarchyErrors = result.errors;
-    setHierarchyKeys(result.keys);
+    setHierarchyKeys(calledKeys(result));
     cargar(Gr.adaptPolymorphicNodes(result.graph, cat));
   } catch (e) {
     window.solder.error(e.message);
@@ -688,7 +719,43 @@ const ORDENES_MENU = {
 };
 
 /** The orders of the context menus (subOVI node, connector pane, icon) that act on the window and not on the graph; they receive the node the menu was opened on. */
-const ORDENES_CONTEXTUALES = { "vi-properties": () => abrirPropiedades(), "open-front-panel": (nodeId) => abrirSubOVI(nodeId), "open-polymorphic-ovi": (nodeId) => abrirPolimorfico(nodeId), "list-errors": (wireId) => openErrorList(`wire.${wireId}`) };
+const ORDENES_CONTEXTUALES = {
+  "vi-properties": () => abrirPropiedades(),
+  "open-front-panel": (nodeId) => abrirSubOVI(nodeId),
+  "open-polymorphic-ovi": (nodeId) => abrirPolimorfico(nodeId),
+  "list-errors": (wireId) => openErrorList(`wire.${wireId}`),
+  "make-type-def": (nodeId) => makeTypeDefinition(nodeId),
+  "open-type-def": (nodeId) => openTypeDefinition(nodeId),
+};
+
+// ——— Type definitions (DT-096, DT-104 stage a2) ———
+
+/** The kind Make Type Def. gives: a Type Def., not strict (measured: the ring reads Type Def., Context Help "[non-strict]"). */
+const MADE_TYPE_DEFINITION_KIND = "type-def";
+
+/**
+ * Make Type Def.: the main process keeps the object's `.octl` in memory as "Control N", with no window, and the object
+ * follows it by its untitled key at once; the OVI is modified (measured: reports/2026-11-17-typedef-editor-entry.md Q2).
+ */
+async function makeTypeDefinition(nodeId) {
+  const node = grafo().nodos.find((candidate) => candidate.id === nodeId);
+  // A panel object is held as it is; a constant as the control it becomes (stage a2b).
+  const object = node && (node.panel ? definitionObjectOf(node) : controlOfConstant(node));
+  if (!object || !window.solder) return;
+  const key = await window.solder.makeTypeDefinition(typeDefinitionText(MADE_TYPE_DEFINITION_KIND, object));
+  const link = linkFor(key, MADE_TYPE_DEFINITION_KIND);
+  const g = grafo();
+  const linked = { ...g, nodos: g.nodos.map((candidate) => (candidate.id === nodeId ? { ...candidate, config: { ...candidate.config, typedef: link } } : candidate)) };
+  // The new `.octl`'s text goes with the edit, so that the Block Diagram finds it too.
+  setGraphAndRest(await withHierarchyTextsOf(linked), "make-type-def");
+  pintar();
+}
+
+/** Open Type Def.: the control editor of the `.octl` the object follows, from memory when it is untitled or open. */
+function openTypeDefinition(nodeId) {
+  const link = typeDefinitionLink(grafo().nodos.find((candidate) => candidate.id === nodeId));
+  if (link?.path) window.solder?.abrirRuta(Paths.resolveRelative(oviKey, link.path, oviLibRoot));
+}
 
 // ——— Debugging (DT-047) ———
 //

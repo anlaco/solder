@@ -16252,11 +16252,51 @@
     {
       "id": "context.numeric-constant.make-type-def",
       "etiqueta": "Make Type Def.",
-      "estado": "todo",
-      "labview": "Turns the constant into a type definition saved separately.",
-      "necesita": "definiciones-de-tipo",
-      "captura": "block-diagram/numeric-menu-constante.png",
+      "estado": "built",
+      "prueba": "test/editor/type-definition-menus.test.mjs::Make Type Def. on a Cluster Constant or a Numeric Constant links it to an untitled control holding the control it becomes",
       "separado": true
+    },
+    {
+      "id": "context.numeric-constant.review-and-update-from-type-def",
+      "etiqueta": "Review and Update from Type Def...",
+      "estado": "todo",
+      "labview": "Shows what changed in the type definition and updates the instance; greyed while nothing is pending (reports/2026-11-17-typedef-editor-entry.md Q7).",
+      "necesita": "definiciones-de-tipo",
+      "separado": true
+    },
+    {
+      "id": "context.numeric-constant.auto-update-from-type-def",
+      "etiqueta": "Auto-Update from Type Def.",
+      "estado": "todo",
+      "labview": "Ticked: the instance follows every change of its type definition at once; a strict one has no such row (reports/2026-11-17-typedef-editor-entry.md Q7).",
+      "necesita": "definiciones-de-tipo"
+    },
+    {
+      "id": "context.numeric-constant.open-type-def",
+      "etiqueta": "Open Type Def.",
+      "estado": "built",
+      "prueba": "test/editor/type-definition-menus.test.mjs::Open Type Def. opens the control editor of the type definition the cluster follows"
+    },
+    {
+      "id": "context.numeric-constant.disconnect-from-type-def",
+      "etiqueta": "Disconnect from Type Def.",
+      "estado": "todo",
+      "labview": "Asks to confirm and turns the instance into a plain control that no longer follows the file.",
+      "necesita": "definiciones-de-tipo"
+    },
+    {
+      "id": "context.numeric-constant.show-vi-hierarchy",
+      "etiqueta": "Show OVI Hierarchy",
+      "estado": "todo",
+      "labview": "Opens the hierarchy window with the type definition selected.",
+      "necesita": "definiciones-de-tipo"
+    },
+    {
+      "id": "context.numeric-constant.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder that holds the type definition's file.",
+      "necesita": "definiciones-de-tipo"
     },
     {
       "id": "context.numeric-constant.change-to-shared-variable-node",
@@ -19071,10 +19111,51 @@
     {
       "id": "context.cluster-control.make-type-def",
       "etiqueta": "Make Type Def.",
+      "estado": "built",
+      "prueba": "test/editor/type-definition-menus.test.mjs::Make Type Def. on a cluster control links it to an untitled control and its menu becomes the linked instance's",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-control.review-and-update-from-type-def",
+      "etiqueta": "Review and Update from Type Def...",
       "estado": "todo",
-      "labview": "Turns the cluster into a type definition saved separately.",
+      "labview": "Shows what changed in the type definition and updates the instance; greyed while nothing is pending (reports/2026-11-17-typedef-update.md Q4).",
       "necesita": "definiciones-de-tipo",
       "separado": true
+    },
+    {
+      "id": "context.cluster-control.auto-update-from-type-def",
+      "etiqueta": "Auto-Update from Type Def.",
+      "estado": "todo",
+      "labview": "Ticked: the instance follows every change of its type definition at once; a strict one has no such row (reports/2026-11-17-typedef-update.md Q4).",
+      "necesita": "definiciones-de-tipo"
+    },
+    {
+      "id": "context.cluster-control.open-type-def",
+      "etiqueta": "Open Type Def.",
+      "estado": "built",
+      "prueba": "test/editor/type-definition-menus.test.mjs::Open Type Def. opens the control editor of the type definition the cluster follows"
+    },
+    {
+      "id": "context.cluster-control.disconnect-from-type-def",
+      "etiqueta": "Disconnect from Type Def.",
+      "estado": "todo",
+      "labview": "Asks to confirm and turns the instance into a plain control that no longer follows the file.",
+      "necesita": "definiciones-de-tipo"
+    },
+    {
+      "id": "context.cluster-control.show-vi-hierarchy",
+      "etiqueta": "Show OVI Hierarchy",
+      "estado": "todo",
+      "labview": "Opens the hierarchy window with the type definition selected.",
+      "necesita": "definiciones-de-tipo"
+    },
+    {
+      "id": "context.cluster-control.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder that holds the type definition's file.",
+      "necesita": "definiciones-de-tipo"
     },
     {
       "id": "context.cluster-control.description-and-tip",
@@ -19338,10 +19419,51 @@
     {
       "id": "context.cluster-constant.make-type-def",
       "etiqueta": "Make Type Def.",
+      "estado": "built",
+      "prueba": "test/editor/type-definition-menus.test.mjs::Make Type Def. on a Cluster Constant or a Numeric Constant links it to an untitled control holding the control it becomes",
+      "separado": true
+    },
+    {
+      "id": "context.cluster-constant.review-and-update-from-type-def",
+      "etiqueta": "Review and Update from Type Def...",
       "estado": "todo",
-      "labview": "Turns the constant into a type definition saved separately.",
+      "labview": "Shows what changed in the type definition and updates the instance; greyed while nothing is pending (reports/2026-11-17-typedef-editor-entry.md Q7).",
       "necesita": "definiciones-de-tipo",
       "separado": true
+    },
+    {
+      "id": "context.cluster-constant.auto-update-from-type-def",
+      "etiqueta": "Auto-Update from Type Def.",
+      "estado": "todo",
+      "labview": "Ticked: the instance follows every change of its type definition at once; a strict one has no such row (reports/2026-11-17-typedef-editor-entry.md Q7).",
+      "necesita": "definiciones-de-tipo"
+    },
+    {
+      "id": "context.cluster-constant.open-type-def",
+      "etiqueta": "Open Type Def.",
+      "estado": "built",
+      "prueba": "test/editor/type-definition-menus.test.mjs::Open Type Def. opens the control editor of the type definition the cluster follows"
+    },
+    {
+      "id": "context.cluster-constant.disconnect-from-type-def",
+      "etiqueta": "Disconnect from Type Def.",
+      "estado": "todo",
+      "labview": "Asks to confirm and turns the instance into a plain control that no longer follows the file.",
+      "necesita": "definiciones-de-tipo"
+    },
+    {
+      "id": "context.cluster-constant.show-vi-hierarchy",
+      "etiqueta": "Show OVI Hierarchy",
+      "estado": "todo",
+      "labview": "Opens the hierarchy window with the type definition selected.",
+      "necesita": "definiciones-de-tipo"
+    },
+    {
+      "id": "context.cluster-constant.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder that holds the type definition's file.",
+      "necesita": "definiciones-de-tipo"
     },
     {
       "id": "context.cluster-constant.description-and-tip",

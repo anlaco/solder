@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld("solder", {
   abrir: () => ipcRenderer.invoke("ovi:abrir"),
   /** Opens the windows of the OVI at an absolute path (a subOVI), or brings them forward if it is already open. */
   abrirRuta: (ruta) => ipcRenderer.invoke("ovi:open-path", ruta),
+  makeTypeDefinition: (text) => ipcRenderer.invoke("typedef:make", text),
   /** The file dialog of Select an OVI...: the absolute path chosen, or nothing. */
   elegirOVI: () => ipcRenderer.invoke("ovi:choose-subovi"),
   /** The file dialog of a File Path Control's browse button: the absolute path chosen, or nothing. */

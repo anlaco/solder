@@ -80,7 +80,7 @@ test("the Cluster Constant's frame has its measured menu with the rows that are 
   assert.deepEqual(shown(rows), ["Visible Items", "Change to Control", "Change to Indicator", "Change to Array", "---", "Make Type Def.", "---", "Description and Tip...", "---", "Cluster, Class, & Variant Palette", "Create", "Replace", "Data Operations", "Advanced",
     "---", "Reorder Controls In Cluster...", "View Cluster As Icon", "AutoSizing", "---", "Properties"]);
   assert.equal(shown(rows).length, 20);
-  assert.deepEqual(rows.filter((row) => !row.greyed).map((row) => row.label), ["Visible Items", "Change to Control", "Change to Indicator", "Create", "Reorder Controls In Cluster..."], "only what is built is live: the rest says why it is not");
+  assert.deepEqual(rows.filter((row) => !row.greyed).map((row) => row.label), ["Visible Items", "Change to Control", "Change to Indicator", "Make Type Def.", "Create", "Reorder Controls In Cluster..."], "only what is built is live (Make Type Def., DT-104 stage a2b): the rest says why it is not");
   const labels = (id) => INV.hijos(`${FRAME_MENU}.${id}`).map((item) => item.etiqueta);
   assert.deepEqual(labels("visible-items"), ["Label"]);
   assert.deepEqual(labels("create"), ["Constant", "Control", "Indicator", "Channel Writer...", "Cluster from Selection"]);

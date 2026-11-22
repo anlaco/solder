@@ -5,13 +5,16 @@
 // Unlike LabVIEW, an OVI is found in memory by its path, not by its name alone: two open OVIs with the same name in
 // different folders are not cross-linked (unverified how LabVIEW resolves that case in 2026 Q3).
 
-import { pathKey } from "../src/common/ovi-paths.mjs";
+import { pathKey, untitledKey } from "../src/common/ovi-paths.mjs";
 import { withoutWindows } from "./saved-windows.mjs";
 
-/** A reader of OVI texts by key: an open OVI's current text, with its unsaved changes, else the file's (`readFromDisk`). */
+/** The key an entry is reached by: its path, or, with no file yet, its untitled key (a type definition made by Make Type Def. is linked by it, DT-104). */
+const keyOfEntry = (entry) => (entry.path ? pathKey(entry.path) : untitledKey(entry.id));
+
+/** A reader of OVI texts by key: an open entry's current text, with its unsaved changes, else the file's (`readFromDisk`). */
 export function memoryFirstReader(registry, readFromDisk) {
   return async (key) => {
-    const open = registry.list().find((entry) => entry.path && pathKey(entry.path) === key && entry.current !== null);
+    const open = registry.list().find((entry) => entry.current !== null && keyOfEntry(entry) === key);
     return open ? open.current : readFromDisk(key);
   };
 }

@@ -62,7 +62,7 @@ test("a control entry has the one control editor window, its own Control N count
   assert.equal(oviName(control), "Control 1");
   assert.equal(oviName(ovi), "Untitled 1", "the OVI's count does not follow the control's");
   assert.deepEqual(windowKindsOf(control), [CONTROL_WINDOW_KIND]);
-  assert.equal(windowTitle(control, CONTROL_WINDOW_KIND), "Control 1 Type Def");
+  assert.equal(windowTitle(control, CONTROL_WINDOW_KIND), "Control 1 Type Def *", "an untitled control is unsaved at once (measured: Control 5 Type Def *)");
   recordChange(control, "a");
   recordChange(control, "b");
   assert.equal(windowTitle(control, CONTROL_WINDOW_KIND), "Control 1 Type Def *", "unsaved changes, as any window");

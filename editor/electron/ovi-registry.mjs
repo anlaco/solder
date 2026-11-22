@@ -67,8 +67,12 @@ export function createRegistry() {
   };
 }
 
-/** Where the windows are is saved with the OVI but is never an unsaved change (DT-078). */
-export const isDirty = (entry) => entry.saved !== null && withoutWindows(entry.current) !== withoutWindows(entry.saved);
+/**
+ * Where the windows are is saved with the OVI but is never an unsaved change (DT-078). A control with no file yet is
+ * always unsaved (measured: "Control 5 Type Def *" as soon as Make Type Def. makes it, reports/2026-11-17-typedef-editor-entry.md Q2).
+ */
+export const isDirty = (entry) =>
+  (entry.kind === ENTRY_KINDS.CONTROL && !entry.path) || (entry.saved !== null && withoutWindows(entry.current) !== withoutWindows(entry.saved));
 
 /** The name LabVIEW gives the entry in its titles and dialogs: its file name, «Untitled N», or «Control N» for a control of a type definition. */
 export const oviName = (entry) =>
