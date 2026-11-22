@@ -4,16 +4,18 @@
 // this file has the windows and the dialogs. Measured in LabVIEW 2026 Q3 (labview-captures/reports/2026-11-17-project-explorer-s1.md,
 // -s2.md and 2026-11-18-project-explorer-s3.md).
 
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, stat, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { BrowserWindow, dialog, ipcMain, screen } from "electron";
 import { dialogOwner, hostWindowOf } from "./page-window.mjs";
 import { MY_COMPUTER, ProjectFileError, blankProject, readProject } from "../../core/model/project.mjs";
 import { unsavedOviIds, withNewOviSaved } from "../../core/model/project-new-ovis.mjs";
-import { CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS } from "./close-flow.mjs";
+import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, EXIT_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
-import { NEW_FILES_BUTTONS, closeProjectDialogText, hasOVIsOutsideProjects, newUnsavedFilesText, openProjectDialog, projectSavePathFor, saveProjectDialog } from "./project-dialogs.mjs";
+import { NEW_FILES_BUTTONS, closeProjectDialogText, hasOVIsOutsideProjects, newUnsavedFilesText, openProjectDialog, projectSavePathFor, renameOviDialog, saveProjectDialog } from "./project-dialogs.mjs";
+import { savePathFor } from "../src/common/ovi-paths.mjs";
+import { registerDiskRequests } from "./project-disk-requests.mjs";
 import { registerItemRequests } from "./project-item-requests.mjs";
 import { projectItemPath, rebaseProjectBody, storedProjectPath } from "./project-paths.mjs";
 import { createProjectRegistry, isModified, projectBody, projectFileText, projectName, recordChange, recordSave } from "./project-registry.mjs";
@@ -30,7 +32,10 @@ const CREATIONS = { BLANK_PROJECT: "blank-project", BLANK_OVI: "blank-ovi" };
  * floating or docked (layout-manager.mjs, DT-101); `afterLastProjectClosed()`; and for the OVIs made in a project,
  * `openNewOVIIn(project)` (gives the new entry), `openPathIn(filePath, project, owner)` and `focusOVI(entryId)` for the
  * OVIs of the tree, `saveNewOVI(entryId, owner)` (gives the path it was saved at, or null),
- * `instanceChanged(projectId, instance)` and `projectClosed(projectId)`.
+ * `instanceChanged(projectId, instance)` and `projectClosed(projectId)`; `projectOVIs(projectId)`, the OVIs open in the
+ * project as Close Project asks about them (`{ name, isDirty(), save(), close() }`, created last first);
+ * `renameOVIFile(oldPath, newPath)`, Rename... of an OVI item on the disk and in memory; `oviLib`, what
+ * `<ovilib>/…` paths resolve with.
  */
 export function createProjectManager(host) {
   const registry = createProjectRegistry();
@@ -41,6 +46,8 @@ export function createProjectManager(host) {
   const asking = new Set();
   let lastFolder = os.homedir();
   let createDialog = null;
+  /** What the pages read from the disk, and the watchers of their auto-populating folders (project-disk-requests.mjs). */
+  let diskRequests = null;
 
   const windowOf = (entry) => windows.get(entry.id);
   /** Where an OVI open in a project is, as its titles say: "NewVI14.sdproj/My Computer". */
@@ -83,6 +90,7 @@ export function createProjectManager(host) {
     });
     window.on("closed", () => {
       host.projectClosed(entry.id);
+      diskRequests?.forget(entry.id);
       windows.delete(entry.id);
       entryOfContents.delete(contentsId);
       closing.delete(entry.id);
@@ -173,25 +181,47 @@ export function createProjectManager(host) {
     return true;
   }
 
-  /** The close question for a project with unsaved changes: Save, Don't Save or Cancel. Returns whether the project may go. */
-  function confirmDiscard(entry, owner) {
-    const ask = async () => {
-      const { title, message, detail } = closeProjectDialogText(projectName(entry));
-      const { response } = await dialog.showMessageBox(owner, { type: "question", title, message, detail, buttons: CLOSE_BUTTONS, defaultId: 0, cancelId: CLOSE_BUTTONS.length - 1 });
-      return CLOSE_BUTTON_ANSWERS[response] ?? CLOSE_ANSWERS.cancel;
-    };
-    return confirmExit([entry], { isDirty: isModified, ask, save: (project) => saveProject(project, owner) });
+  /**
+   * What leaves memory when the project closes: its OVIs, created last first, and then the project itself (the order the
+   * s3 "Extras" capture shows, an OVI asked about first; the order among several was not measured).
+   */
+  function closingItems(entry, owner) {
+    const project = { name: projectName(entry), isDirty: () => isModified(entry), save: () => saveProject(entry, owner) };
+    return [...host.projectOVIs(entry.id), project];
   }
 
-  /** File ▸ Close Project, Ctrl+W and the close box: silent without changes, with the question when there are. */
+  /**
+   * The close question for each of `items` with unsaved changes ("Save changes? (Close Project)"), which can answer for the
+   * rest while its box is checked (Save - All, Don't Save - All). Returns whether the project may go.
+   */
+  function confirmDiscard(items, owner) {
+    const ask = async (item, remaining) => {
+      const { title, message, detail, checkboxLabel } = closeProjectDialogText(item.name, remaining);
+      const buttons = checkboxLabel ? CLOSE_ALL_BUTTONS : CLOSE_BUTTONS;
+      const { response, checkboxChecked } = await dialog.showMessageBox(owner, {
+        type: "question", title, message, detail, buttons, defaultId: 0, cancelId: buttons.length - 1,
+        ...(checkboxLabel && { checkboxLabel, checkboxChecked: true }),
+      });
+      return { answer: CLOSE_BUTTON_ANSWERS[response] ?? CLOSE_ANSWERS.cancel, applyToRemaining: !!checkboxLabel && checkboxChecked };
+    };
+    return confirmCloseAll(items, { isDirty: (item) => item.isDirty(), ask, save: (item) => item.save() });
+  }
+
+  /**
+   * File ▸ Close Project, Ctrl+W and the close box: silent without changes, with the question when there are. The
+   * project's OVIs close with it (measured: s3 "Extras", reports/2026-11-19-project-new-vi.md Q5).
+   */
   async function closeProject(entry) {
     if (asking.has(entry.id)) return false;
     asking.add(entry.id);
+    const owner = dialogOwner(windowOf(entry));
+    const items = closingItems(entry, owner);
     try {
-      if (!(await confirmDiscard(entry, dialogOwner(windowOf(entry))))) return false;
+      if (!(await confirmDiscard(items, owner))) return false;
     } finally {
       asking.delete(entry.id);
     }
+    for (const item of items) await item.close?.();
     closing.add(entry.id);
     windowOf(entry).close();
     return true;
@@ -284,13 +314,17 @@ export function createProjectManager(host) {
     });
     // A double click on an OVI of the tree, or its Open: the OVI opens in this project.
     ipcMain.on("project:open-item", (event, request) => openItem(entryOf(event), request, ownerOf(event)));
+    ipcMain.handle("project:rename-ovi", (event, storedPath) => renameOVIItem(entryOf(event), storedPath, ownerOf(event)));
     // The page's project became this text (the title's star follows whether it differs from the saved one).
     ipcMain.on("project:changed", (event, text) => {
       const entry = entryOf(event);
+      // Close Project's OVIs leaving memory edit the tree (a new OVI's item goes) while the project's window goes too.
+      if (!entry) return;
       recordChange(entry, text);
       refreshTitle(entry);
     });
     registerItemRequests({ ipcMain, dialog, entryOf, ownerOf, lastFolder: () => lastFolder, rememberFolder: (folder) => (lastFolder = folder) });
+    diskRequests = registerDiskRequests({ ipcMain, entryOf, oviLib: host.oviLib, notify: (entry) => sendDiskChanged(windowOf(entry)) });
     ipcMain.on("project:create", (event) => showCreateDialog(ownerOf(event)));
     ipcMain.on("project:open", (event) => chooseAndOpen(ownerOf(event)));
     ipcMain.handle("project:window-list", () => currentWindowList());
@@ -298,6 +332,30 @@ export function createProjectManager(host) {
     ipcMain.handle("create-project:init", () => ({ oviOpen: hasOVIsOutsideProjects(host.openOVIEntries()) }));
     ipcMain.on("create-project:finish", (_event, creation) => finishCreateDialog(creation));
     ipcMain.on("create-project:cancel", () => closeCreateDialog());
+  }
+
+  /**
+   * Rename... on an OVI item: "Save the OVI (…) As", and the file is renamed on disk at once (measured: s4 "Rename"). Gives
+   * the path the item stores now, or null when cancelled or refused. A name taken by another file is refused, so that
+   * nothing is overwritten (unverified: what LabVIEW does then).
+   */
+  async function renameOVIItem(entry, storedPath, owner) {
+    const oldPath = projectItemPath(entry.path, storedPath);
+    const result = await dialog.showSaveDialog(owner, renameOviDialog(oldPath));
+    if (result.canceled || !result.filePath) return null;
+    const newPath = savePathFor(result.filePath);
+    if (newPath === oldPath) return null;
+    if (await stat(newPath).then(() => true, () => false)) {
+      dialog.showMessageBox(owner, { type: "error", title: "Rename", message: "The OVI cannot be renamed.", detail: `${newPath} already exists.` });
+      return null;
+    }
+    try {
+      await host.renameOVIFile(oldPath, newPath);
+    } catch (error) {
+      dialog.showMessageBox(owner, { type: "error", title: "Rename", message: "The OVI cannot be renamed.", detail: error.message });
+      return null;
+    }
+    return storedProjectPath(entry.path, newPath);
   }
 
   /** Where an OVI opened from the project `entry` belongs: the project, the place its titles say and the folder its first Save proposes. */
@@ -318,5 +376,13 @@ export function createProjectManager(host) {
     else window.webContents.send("project:new-ovi-closed", entryId);
   }
 
-  return { openPath, chooseAndOpen, showCreateDialog, confirmQuit, registerRequests, newOVISettled, count: () => windows.size };
+  /** The page of `window` reads the disk again. */
+  const sendDiskChanged = (window) => {
+    if (window && !window.isDestroyed()) window.webContents.send("project:disk-changed");
+  };
+
+  /** A file was saved: every project reads its Dependencies again, since what an OVI calls may have changed. */
+  const filesChanged = () => windows.forEach(sendDiskChanged);
+
+  return { openPath, chooseAndOpen, showCreateDialog, confirmQuit, registerRequests, newOVISettled, filesChanged, count: () => windows.size };
 }

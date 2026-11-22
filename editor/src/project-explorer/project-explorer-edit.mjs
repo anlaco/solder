@@ -8,9 +8,11 @@
 // items, not the keys.
 
 import { ITEM_KINDS, NEW_FOLDER_NAME, withoutWindow, writeProject } from "../../../core/model/project.mjs";
-import { addAutoPopulatingFolderInto, addFilesInto, addInto, addSnapshotFolderInto, addVirtualFolderInto, holdsItems, isEditable, itemAt, moveItem, removeItem, renameItem } from "../../../core/model/project-tree.mjs";
+import { addAutoPopulatingFolderInto, addFilesInto, addInto, addSnapshotFolderInto, addVirtualFolderInto, holdsItems, isEditable, itemAt, moveItem, removeItem, renameFileItem, renameItem } from "../../../core/model/project-tree.mjs";
 import { newOviItem, withNewOviSaved, withoutNewOvi } from "../../../core/model/project-new-ovis.mjs";
-import { ROOT_KEY, keyOfPlace, placeOfKey, targetKeyOf, visibleRows } from "./project-explorer-state.mjs";
+import { ROOT_KEY, ROW_KINDS, keyOfPlace, nodeAt, placeOfKey, targetKeyOf, visibleRows } from "./project-explorer-state.mjs";
+import { ROW_ICONS } from "./disk-rows.mjs";
+import { autoPopulatingPlaces, convertToAutoPopulating as convertFolder, stopAutoPopulating as stopFolder, withFolderGone } from "../../../core/model/auto-populating.mjs";
 
 /**
  * The project as the main process compares it with the saved one (editor/electron/project-registry.mjs `projectBody`: no
@@ -63,6 +65,14 @@ function placeAfterEdit(before, after, place, alias) {
   return item && sameSpot?.name === item.name && sameSpot.kind === item.kind ? place : undefined;
 }
 
+/** A key split into the item's part (the indices of its place) and what a row read from the disk adds after it. */
+function splitDiskKey(key) {
+  const segments = key.split("/");
+  const firstDiskSegment = segments.findIndex((segment, index) => index > 0 && !/^\d+$/.test(segment));
+  if (firstDiskSegment < 0) return { itemKey: key, diskSuffix: "" };
+  return { itemKey: segments.slice(0, firstDiskSegment).join("/"), diskSuffix: `/${segments.slice(firstDiskSegment).join("/")}` };
+}
+
 /** `expanded` with the rows of `place` and of everything above it, so that the row at `place` is open and its children shown. */
 const withPathExpanded = (expanded, place) => [...new Set([...expanded, ...place.map((_index, depth) => keyOfPlace(place.slice(0, depth + 1)))])];
 
@@ -74,8 +84,10 @@ const withPathExpanded = (expanded, place) => [...new Set([...expanded, ...place
 function followEdit(state, project, { select, open, alias } = {}) {
   const follow = (key) => {
     if (key === ROOT_KEY) return key;
-    const place = placeAfterEdit(state.project, project, placeOfKey(key), alias);
-    return place && keyOfPlace(place);
+    // A row read from the disk (under Dependencies or in an auto-populating folder) follows the item it hangs from.
+    const { itemKey, diskSuffix } = splitDiskKey(key);
+    const place = placeAfterEdit(state.project, project, placeOfKey(itemKey), alias);
+    return place && `${keyOfPlace(place)}${diskSuffix}`;
   };
   const expanded = state.expanded.map(follow).filter(Boolean);
   const selected = select ? keyOfPlace(select) : (follow(state.selected) ?? targetKeyOf(project));
@@ -119,7 +131,7 @@ export function newVirtualFolder(state, key) {
   return { ...followEdit(state, project, { select: place, open: into }), edit: { key: keyOfPlace(place), text: NEW_FOLDER_NAME } };
 }
 
-/** F2 and Rename... on a virtual folder: its name in edit. An OVI is renamed through "Save the VI As" and is not built (stage d); a document has no Rename. */
+/** F2 and Rename... on a virtual folder: its name in edit. An OVI is renamed through "Save the OVI As" instead (`renameRequestOf`); a document has no Rename. */
 export function startEdit(state) {
   const item = selectedItem(state);
   const isVirtualFolder = item?.kind === ITEM_KINDS.FOLDER && !item.autoPopulating;
@@ -214,6 +226,23 @@ export const newOviSaved = (state, entryId, storedPath) => followEdit(state, wit
 /** The new OVI `entryId` left memory unsaved: its item goes. */
 export const newOviClosed = (state, entryId) => followEdit(state, withoutNewOvi(state.project, entryId));
 
+// ——— Rename... of an OVI item (measured: reports/2026-11-18-project-explorer-s4.md "Rename") ———
+
+/** The stored path Rename... asks the main process to rename for the row `key`: an OVI saved in a file, or null (a new OVI is not measured). */
+export function renameRequestOf(state, key) {
+  const item = itemOf(state, key);
+  return item?.kind === ITEM_KINDS.OVI && item.unsavedOvi === undefined && item.path !== undefined ? item.path : null;
+}
+
+/** The OVI item at `key` was renamed on disk to `storedPath`: its name and path follow and it stays selected wherever its new name puts it. */
+export function oviItemRenamed(state, key, storedPath) {
+  const place = placeOfKey(key);
+  const project = renameFileItem(state.project, place, storedPath);
+  if (project === state.project) return state;
+  const renamed = newItemPlace(state.project, project, parentOf(place));
+  return followEdit(state, project, { select: renamed, alias: { from: place, to: renamed } });
+}
+
 // ——— Open (a double click on the row, or its menu's Open) ———
 
 /**
@@ -223,9 +252,44 @@ export const newOviClosed = (state, entryId) => followEdit(state, withoutNewOvi(
  * P1.lvproj/My Computer" (measured: reports/2026-11-17-project-explorer-s2.md Q4).
  */
 export function openRequestOf(state, key) {
+  // A dependency and an OVI of an auto-populating folder are opened in the project too (unverified: LabVIEW's title for
+  // them was not measured); a type definition has no window to open in yet.
+  const row = nodeAt(state, key);
+  if (row?.kind === ROW_KINDS.DEPENDENCY_OVI || (row?.kind === ROW_KINDS.AUTO_POPULATED_FILE && row.icon === ROW_ICONS.OVI)) return { storedPath: row.path };
   const item = itemOf(state, key);
   if (item?.kind !== ITEM_KINDS.OVI) return null;
   if (item.unsavedOvi !== undefined) return { unsavedOvi: item.unsavedOvi };
   return item.path === undefined ? null : { storedPath: item.path };
 }
 
+
+// ——— Auto-populating folders (stage c; measured: reports/2026-11-21-project-explorer-s5.md) ———
+
+/** Stop Auto-populating on the selected folder: it becomes virtual folders holding what the disk holds now, with no question (s5 Q4). */
+export function stopAutoPopulating(state) {
+  const item = selectedItem(state);
+  const project = stopFolder(state.project, placeOfKey(state.selected), state.disk.folders[item?.path]?.entries ?? []);
+  return project === state.project ? state : followEdit(state, project);
+}
+
+/** Convert to Auto-populating Folder... on the selected virtual folder, with the folder chosen at `storedFolderPath` (s5 Q5). */
+export function convertToAutoPopulating(state, storedFolderPath) {
+  const place = placeOfKey(state.selected);
+  const project = convertFolder(state.project, place, storedFolderPath);
+  if (project === state.project) return state;
+  // It takes the disk folder's name, so its place in the order may change.
+  const index = itemsAt(project, parentOf(place)).findIndex((item) => item.autoPopulating && item.path === storedFolderPath);
+  const converted = [...parentOf(place), index];
+  return followEdit(state, project, { select: converted, alias: { from: place, to: converted } });
+}
+
+/**
+ * What the disk said was read (`state.disk`): an auto-populating folder whose folder is gone becomes a plain virtual
+ * folder, with no question (s5 Q3). The same state when none is gone.
+ */
+export function withGoneFoldersVirtual(state) {
+  const gone = autoPopulatingPlaces(state.project).filter(({ item }) => state.disk.folders[item.path]?.exists === false);
+  if (!gone.length) return state;
+  const project = gone.reduce((changed, { place }) => withFolderGone(changed, place), state.project);
+  return { ...followEdit(state, project), menuBarra: state.menuBarra };
+}

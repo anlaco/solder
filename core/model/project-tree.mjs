@@ -50,10 +50,20 @@ export function removeItems(project, places) {
   return deepestLast.reduce(removeItem, project);
 }
 
-/** The project with the item at `place` renamed in the tree (a folder's name; LabVIEW's rename of a file is not measured here). */
+/** The project with the folder at `place` renamed in the tree; a file item is renamed with its file (`renameFileItem`). */
 export function renameItem(project, place, name) {
   if (!isEditable(itemAt(project, place)) || !name) return project;
   return withItemsAt(project, parentOf(place), (items) => items.map((item, index) => (index === lastOf(place) ? { ...item, name } : item)));
+}
+
+/**
+ * The project with the file item at `place` (an OVI) pointing at `storedPath`, its name the new file's: LabVIEW's Rename of
+ * a VI renames its file, and the item's name and URL follow (measured: reports/2026-11-18-project-explorer-s4.md "Rename").
+ */
+export function renameFileItem(project, place, storedPath) {
+  const item = itemAt(project, place);
+  if (!isEditable(item) || item.path === undefined || !storedPath) return project;
+  return replaceItem(project, place, { ...item, name: fileNameOf(storedPath), path: storedPath });
 }
 
 /** Is `inner` the place `outer` or one below it? */
@@ -81,6 +91,9 @@ export function moveItem(project, from, into) {
   if (parentOf(from).join("/") === into.join("/")) return project;
   return withItemsAt(removeItem(project, from), placeAfterRemoving(into, from), (items) => [...items, moved]);
 }
+
+/** The project with the item at `place` replaced by `replacement`, its list put back in order. */
+export const replaceItem = (project, place, replacement) => withItemsAt(project, parentOf(place), (items) => items.map((item, index) => (index === lastOf(place) ? replacement : item)));
 
 /** The project with `added` put into the target or virtual folder at `into`; refused when `into` cannot hold items. */
 export function addInto(project, into, added) {

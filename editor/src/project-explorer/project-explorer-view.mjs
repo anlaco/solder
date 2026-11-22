@@ -35,6 +35,7 @@ export const TOOLBAR_GROUPS = Object.freeze([
 const SUBMENU_ROWS = new Set(["recent-projects", "recent-files", "browse-relationships", "toolbars", "add-to-project", "filter-view", "instrumentation", "real-time-module", "compare", "merge", "profile", "security", "source-control", "vi-analyzer", "import", "shared-variable", "control-and-simulation", "hobbyist", "advanced", "new", "add", "export", "find", "unit-tests", "view", "arrange-by"]);
 
 const AUTO_POPULATING_MENU = "context.project-explorer.auto-populating-folder";
+const AUTO_POPULATING_SUBFOLDER_MENU = "context.project-explorer.auto-populating-subfolder";
 
 /** Arrange By's default, as LabVIEW marks it with a tick (s2 Q1). */
 const ARRANGE_BY_TICKED = "arrange-by.name";
@@ -51,12 +52,14 @@ function rowsWithArrow(inventory, menuId) {
 
 /**
  * The rows of the open menu that are greyed by what is selected: Edit ▸ Remove From Project on a row that cannot be removed
- * (as the toolbar's button is), and Add ▸ of an auto-populating folder, which mirrors the disk (measured: s4 Menus).
+ * (as the toolbar's button is), and Add ▸ of an auto-populating folder and of a folder in it, which mirror the disk
+ * (measured: s4 Menus, s5 Q1).
  */
 export function greyedRows(state, menuId) {
   const removeRow = `${PREFIX}.menu.edit.remove-from-project`;
   if (menuId === `${PREFIX}.menu.edit`) return canRemove(state) ? new Set() : new Set([removeRow]);
   if (menuId === AUTO_POPULATING_MENU) return new Set([`${AUTO_POPULATING_MENU}.add`]);
+  if (menuId === AUTO_POPULATING_SUBFOLDER_MENU) return new Set([`${AUTO_POPULATING_SUBFOLDER_MENU}.add`]);
   return new Set();
 }
 
@@ -111,7 +114,8 @@ function treeRow(state, row) {
   const selected = state.selected === row.key ? " seleccionada" : "";
   const fixedId = FIXED_ROW_IDS[row.kind];
   const draggable = EDITABLE_KINDS.includes(row.kind) ? ' draggable="true"' : "";
-  return `<div class="pe-row${selected}" data-key="${row.key}" data-kind="${row.kind}"${draggable}${fixedId ? ` data-row-id="${fixedId}"` : ""} style="padding-left:${row.depth * INDENT + 4}px">${expander}<span class="pe-icon">${TREE_ICONS[row.kind]}</span>${rowName(state, row)}</div>`;
+  const missing = row.missing ? " pe-missing" : "";
+  return `<div class="pe-row${selected}${missing}" data-key="${escapeHtml(row.key)}" data-kind="${row.kind}"${draggable}${fixedId ? ` data-row-id="${fixedId}"` : ""} style="padding-left:${row.depth * INDENT + 4}px">${expander}<span class="pe-icon">${TREE_ICONS[row.icon]}</span>${rowName(state, row)}</div>`;
 }
 
 const tree = (state) => `<div class="pe-tree" data-id="${PREFIX}.items">${visibleRows(state).map((row) => treeRow(state, row)).join("")}</div>`;

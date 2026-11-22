@@ -131,6 +131,8 @@ contextBridge.exposeInMainWorld("solder", {
     onRebased: (callback) => ipcRenderer.on("project:rebased", (_event, text) => callback(text)),
     /** A double click on an OVI of the tree, or its Open: `{ storedPath }` opens its file in this project, `{ unsavedOvi }` brings a new OVI's windows forward. */
     openItem: (request) => ipcRenderer.send("project:open-item", request),
+    /** Rename... on an OVI item: "Save the OVI (…) As" renames its file; the path to store now, or null if cancelled or refused. */
+    renameOvi: (storedPath) => ipcRenderer.invoke("project:rename-ovi", storedPath),
     /** New ▸ OVI and File ▸ New OVI: a new OVI opened in this project, `{ entryId, name }` ("Untitled N"). */
     newOvi: () => ipcRenderer.invoke("project:new-ovi"),
     /** A new OVI of this project was saved: `callback({ entryId, storedPath })`. */
@@ -145,6 +147,12 @@ contextBridge.exposeInMainWorld("solder", {
     chooseAutoPopulatingFolder: () => ipcRenderer.invoke("project:choose-auto-populating-folder"),
     /** "Unable to Add Items": the stored paths of the files that were refused. */
     unableToAdd: (storedPaths) => ipcRenderer.send("project:unable-to-add", storedPaths),
+    /** Convert to Auto-populating Folder...: the folder chosen in "Select Folder to Connect", as the project stores it, or null. */
+    chooseFolderToConnect: () => ipcRenderer.invoke("project:choose-folder-to-connect"),
+    /** What the project shows from the disk, read now: `{ dependencies: { library, others, missing }, folders }` (project-disk-requests.mjs). */
+    readDisk: () => ipcRenderer.invoke("project:read-disk"),
+    /** Files changed (an OVI was saved, a watched folder changed): `callback()`, which reads the disk again. */
+    onDiskChanged: (callback) => ipcRenderer.on("project:disk-changed", () => callback()),
   },
   /** Solder's docked view (DT-101): the switch on the Project Explorer and the docked window's bar of tabs. */
   layout: {

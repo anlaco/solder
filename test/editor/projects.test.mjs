@@ -10,7 +10,7 @@ import { test } from "node:test";
 
 import { PROJECT_EXTENSION, blankProject, readProject } from "../../core/model/project.mjs";
 import { EXIT_ANSWERS } from "../../editor/electron/exit-flow.mjs";
-import { CLOSE_BUTTONS } from "../../editor/electron/close-flow.mjs";
+import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, confirmCloseAll } from "../../editor/electron/close-flow.mjs";
 import { PROJECT_FILTERS, closeProjectDialogText, hasOVIsOutsideProjects, openProjectDialog, projectSavePathFor, saveProjectDialog } from "../../editor/electron/project-dialogs.mjs";
 import { createProjectRegistry, isModified, projectBody, projectFileText, projectName, recordChange, recordSave } from "../../editor/electron/project-registry.mjs";
 import { projectWindowTitle } from "../../editor/electron/project-window.mjs";
@@ -108,6 +108,7 @@ test("closing a project asks only when it has changes, with the text and buttons
     title: "Save changes? (Close Project)",
     message: "P1.sdproj has unsaved changes.",
     detail: "P1.sdproj is about to leave memory. Its unsaved changes will be lost.",
+    checkboxLabel: null,
   });
   assert.deepEqual(CLOSE_BUTTONS, ["Save", "Don't Save", "Cancel"]);
   const asked = [];
@@ -124,6 +125,36 @@ test("closing a project asks only when it has changes, with the text and buttons
   // A Save As that is cancelled keeps the project open.
   const another = registry.open({ text: blankText() }).entry;
   assert.equal(await confirmExit([another], { ...flow(EXIT_ANSWERS.save), save: async () => false }), false);
+});
+
+test("Close Project asks about its OVIs first and the project last, and one answer can serve the rest", async () => {
+  // Measured (s3 "Extras"): an OVI of the project first, "Untitled 1 has unsaved changes.", with the box for the remaining 2.
+  assert.deepEqual(closeProjectDialogText("Untitled 1", 2), {
+    title: "Save changes? (Close Project)",
+    message: "Untitled 1 has unsaved changes.",
+    detail: "Untitled 1 is about to leave memory. Its unsaved changes will be lost.",
+    checkboxLabel: "Apply same action to the remaining 2 affected items",
+  });
+  assert.deepEqual(CLOSE_ALL_BUTTONS, ["Save - All", "Don't Save - All", "Cancel"]);
+  const items = ["Untitled 2", "Untitled 1", "clean.ovi", "P1.sdproj"].map((name) => ({ name, dirty: name !== "clean.ovi" }));
+  const asked = [];
+  const saved = [];
+  const hooks = (reply) => ({ isDirty: (item) => item.dirty, ask: async (item, remaining) => (asked.push([item.name, remaining]), reply), save: async (item) => (saved.push(item.name), true) });
+  assert.equal(await confirmCloseAll(items, hooks({ answer: CLOSE_ANSWERS.save, applyToRemaining: true })), true);
+  assert.deepEqual(asked, [["Untitled 2", 2]], "Save - All answers for the other OVI and the project");
+  assert.deepEqual(saved, ["Untitled 2", "Untitled 1", "P1.sdproj"], "the project is saved after its OVIs");
+});
+
+test("Close Project closes the project's OVIs before its own window, and the last OVI does not bring Getting Started back while a project is open", () => {
+  const main = readFileSync(path.join(RAIZ, "editor/electron/main.mjs"), "utf8");
+  const manager = readFileSync(path.join(RAIZ, "editor/electron/project-manager.mjs"), "utf8");
+  assert.match(manager, /return \[\.\.\.host\.projectOVIs\(entry\.id\), project\];/);
+  assert.match(manager, /for \(const item of items\) await item\.close\?\.\(\);\n    closing\.add\(entry\.id\);\n    windowOf\(entry\)\.close\(\);/);
+  assert.match(main, /function projectOVIs\(projectId\)[\s\S]*open\.entry\.project === projectId[\s\S]*closeAllOrder\(/);
+  assert.match(main, /panel\.on\("closed"[\s\S]*if \(anyDocumentOpen\(\)\) return;\n[\s\S]*showGettingStarted\(\)/);
+  // Found under Xvfb (reports/2026-11-22-project-stage-d-editor-try.md): the page's last messages arrive after its entry is gone.
+  assert.match(manager, /"project:changed", \(event, text\) => \{\n      const entry = entryOf\(event\);\n[^\n]*\n      if \(!entry\) return;/);
+  assert.match(readFileSync(path.join(RAIZ, "editor/electron/project-disk-requests.mjs"), "utf8"), /const entry = entryOf\(event\);\n[^\n]*\n    if \(!entry\) return null;/);
 });
 
 test("the Window menu lists the OVI windows, then the Project Explorers most recently activated first, numbered continuously", () => {

@@ -4,12 +4,14 @@
 // the page's glue takes the preload's API as a parameter, so none of it needs a browser or Electron.
 
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
 import * as Project from "../../core/model/project.mjs";
 import * as Tree from "../../core/model/project-tree.mjs";
+import { moveOVIFile } from "../../editor/electron/ovi-file-rename.mjs";
 import * as Dialogs from "../../editor/electron/project-dialogs.mjs";
 import * as Paths from "../../editor/electron/project-paths.mjs";
 import { projectBody } from "../../editor/electron/project-registry.mjs";
@@ -82,23 +84,54 @@ test("F2 and Rename edit a virtual folder in place and do nothing useful on the 
   // Renaming moves the folder in the order; the selection and the open folders follow their items.
   const edited = Edit.commitEdit(Edit.typeEdit(Edit.startEdit(State.select(sampleState(), "project/0/1")), "Alpha"));
   assert.deepEqual([rowLabels(edited).slice(2, 5), edited.selected], [["Alpha", "Sub", "main1.ovi"], "project/0/0"]);
-  // The page: a virtual folder is edited, an OVI explains that its rename is not built, a document does nothing (F2 on it, s4).
-  const page = fakePage();
+  // The page: a virtual folder is edited, an OVI goes to the main process (the next test), a document does nothing (F2 on it, s4).
+  const page = fakePage(sample(), { renameOvi: async () => null });
   page.commands.rename();
   assert.equal(page.state.edit, null, "My Computer is selected: nothing");
   page.state = State.select(page.state, "project/0/0");
   page.commands.rename();
   assert.equal(page.state.edit.text, "Sub");
-  page.state = State.select(Edit.cancelEdit(page.state), "project/0/3");
+  page.state = State.select(Edit.cancelEdit(page.state), "project/0/2");
   page.commands.rename();
-  assert.deepEqual(page.explained, ["context.project-explorer.ovi-item.rename"]);
-  assert.equal(INV.entrada(page.explained[0]).necesita, "renombrar-ovi-de-proyecto");
-  assert.match(INV.explicacion(INV.entrada(page.explained[0])).solder, /Save the OVI As/);
-  page.state = State.select(page.state, "project/0/2");
-  page.commands.rename();
-  assert.equal(page.explained.length, 1, "a document has no Rename");
+  assert.deepEqual([page.explained, page.state.edit], [[], null], "a document has no Rename");
   assert.equal(INV.entrada("context.project-explorer.virtual-folder.rename").atajo, "F2");
   assert.equal(INV.entrada("context.project-explorer.virtual-folder.rename").estado, "built");
+});
+
+test("Rename of an OVI renames its file through Save the OVI As, and the item's name and path follow", async () => {
+  // Measured (s4 "Rename"): "Save the VI (main1.vi) As" in the VI's folder, the name without its extension, the VIs filter.
+  assert.deepEqual(Dialogs.renameOviDialog("/work/Sub/main1.ovi"), { title: "Save the OVI (main1.ovi) As", defaultPath: "/work/Sub/main1", filters: [{ name: "OVIs (*.ovi)", extensions: ["ovi"] }] });
+  const asked = [];
+  const page = fakePage(sample(), { renameOvi: async (storedPath) => (asked.push(storedPath), "Sub/a-first.ovi") });
+  page.state = State.select(page.state, "project/0/3");
+  await page.commands.rename();
+  assert.deepEqual(asked, ["q1.ovi"], "the item's stored path goes to the main process");
+  // q1.ovi became a-first.ovi: still at My Computer (the item stays where it was in the tree), sorted by its new name, selected.
+  assert.deepEqual(rowLabels(page.state).slice(2, 7), ["Sub", "main1.ovi", "Tools", "a-first.ovi", "notes.txt"]);
+  assert.equal(page.state.selected, "project/0/2");
+  assert.deepEqual(Tree.itemAt(page.state.project, [0, 2]), { name: "a-first.ovi", kind: "ovi", path: "Sub/a-first.ovi" });
+  assert.equal(page.changed.length, 1, "the project has a change (s4: the title gets ' *')");
+  // Cancelled or refused, nothing changes; a new OVI never saved asks nothing (not measured).
+  const cancelled = fakePage(sample(), { renameOvi: async () => null });
+  cancelled.state = State.select(cancelled.state, "project/0/3");
+  await cancelled.commands.rename();
+  assert.deepEqual([cancelled.changed, rowLabels(cancelled.state)], [[], rowLabels(sampleState())]);
+  const withNew = Edit.addNewOvi(sampleState(), "project/0", "Untitled 3", "7");
+  const newKey = State.visibleRows(withNew).find((row) => row.label === "Untitled 3").key;
+  assert.equal(Edit.renameRequestOf(withNew, newKey), null);
+  assert.equal(INV.entrada("context.project-explorer.ovi-item.rename").estado, "built");
+});
+
+test("an OVI renamed into another folder moves on disk with its subOVIs' paths rebased, and one renamed in place keeps its text", async () => {
+  const folder = mkdtempSync(path.join(os.tmpdir(), "solder-rename-"));
+  mkdirSync(path.join(folder, "Sub"));
+  const text = `${JSON.stringify({ "block-diagram": { nodes: [{ type: "subvi", config: { vi: "helper.ovi" } }] } }, null, 2)}\n`;
+  writeFileSync(path.join(folder, "main1.ovi"), text);
+  await moveOVIFile(path.join(folder, "main1.ovi"), path.join(folder, "renamed.ovi"));
+  assert.equal(existsSync(path.join(folder, "main1.ovi")), false, "the old file is gone (s4: renamed at once)");
+  assert.equal(readFileSync(path.join(folder, "renamed.ovi"), "utf8"), text);
+  await moveOVIFile(path.join(folder, "renamed.ovi"), path.join(folder, "Sub", "deeper.ovi"));
+  assert.equal(JSON.parse(readFileSync(path.join(folder, "Sub", "deeper.ovi"), "utf8"))["block-diagram"].nodes[0].config.vi, "../helper.ovi");
 });
 
 test("Add File, Folder (Snapshot) and Folder (Auto-populating) put the items into the target and list the refused files", () => {
@@ -243,23 +276,23 @@ test("the dialogs ask what LabVIEW asks", () => {
 test("the right-click menus of virtual and auto-populating folders and of the items inside them are declared with their state", () => {
   const rows = (menu) => INV.hijos(`context.project-explorer.${menu}`).map((entry) => `${entry.separado ? "| " : ""}${entry.etiqueta}${entry.atajo ? ` ${entry.atajo}` : ""}${entry.estado === "built" ? " +" : ""}`);
   // s4 "Menus", with "|" before the first row of a group and "+" on what is built; a VI is an OVI here.
-  assert.deepEqual(rows("virtual-folder"), ["New +", "Add +", "| Convert to Auto-populating Folder...", "| Convert to Library", "Find Items with No Callers", "Items incorrectly claimed by a library", "| Unit Tests", "| Analyze OVIs...", "| Find Project Items...", "| Arrange By", "Expand All +", "Collapse All +", "| Remove from Project +", "Rename... F2 +"]);
-  assert.deepEqual(rows("auto-populating-folder"), ["New", "| Explore...", "Show in Files View Ctrl+E", "| Add +", "| Stop Auto-populating", "| Find Items with No Callers", "Items incorrectly claimed by a library", "| Unit Tests", "| Analyze OVIs...", "| Find Project Items...", "| Arrange By", "Expand All +", "Collapse All +", "| Remove from Project +"]);
-  assert.deepEqual(rows("auto-populated-file"), ["Open", "Explore...", "Show in Files View Ctrl+E", "| Print...", "| Find", "| Properties"], "no Remove and no Rename (s4)");
+  assert.deepEqual(rows("virtual-folder"), ["New +", "Add +", "| Convert to Auto-populating Folder... +", "| Convert to Library", "Find Items with No Callers", "Items incorrectly claimed by a library", "| Unit Tests", "| Analyze OVIs...", "| Find Project Items...", "| Arrange By", "Expand All +", "Collapse All +", "| Remove from Project +", "Rename... F2 +"]);
+  assert.deepEqual(rows("auto-populating-folder"), ["New", "| Explore...", "Show in Files View Ctrl+E", "| Add +", "| Stop Auto-populating +", "| Find Items with No Callers", "Items incorrectly claimed by a library", "| Unit Tests", "| Analyze OVIs...", "| Find Project Items...", "| Arrange By", "Expand All +", "Collapse All +", "| Remove from Project +"]);
+  assert.deepEqual(rows("auto-populated-file"), ["Open +", "Explore...", "Show in Files View Ctrl+E", "| Print...", "| Find", "| Properties"], "no Remove and no Rename (s4)");
   const under = (menu, row) => INV.hijos(`context.project-explorer.${menu}.${row}`).map((entry) => `${entry.etiqueta}${entry.estado === "built" ? " +" : ""}`);
   assert.deepEqual(under("virtual-folder", "add"), ["File... +", "Folder (Snapshot)... +", "Folder (Auto-populating)... +", "Hyperlink..."]);
   assert.deepEqual(under("my-computer", "add"), ["File... +", "Folder (Snapshot)... +", "Folder (Auto-populating)... +", "Hyperlink..."]);
   assert.deepEqual(under("virtual-folder", "new").slice(0, 2), ["OVI +", "Virtual Folder +"]);
-  // An OVI inside a folder has the menu of one at the root: Remove from Project is built, Rename... waits for stage d.
+  // An OVI inside a folder has the menu of one at the root, Remove from Project and Rename... built.
   assert.equal(State.contextMenuOf(State.treeOf(Tree.addInto(sample(), [0, 0], []), "P").children[0].children[0].children[0].kind), "context.project-explorer.ovi-item");
   assert.deepEqual(["ovi-item", "document-item"].map((menu) => INV.entrada(`context.project-explorer.${menu}.remove-from-project`).estado), ["built", "built"]);
-  assert.equal(INV.entrada("context.project-explorer.ovi-item.rename").estado, "todo");
+  assert.equal(INV.entrada("context.project-explorer.ovi-item.rename").estado, "built");
   // The rows open on the menus of their kind, and each built row runs the command of its name.
   const withAuto = State.fromProject(Project.addAutoPopulatingFolder(sample(), "auto"), "P");
   assert.equal(State.openContextMenu(withAuto, INV, "project/0/0", { x: 10, y: 10 }).menuBarra.id, "context.project-explorer.auto-populating-folder");
   assert.equal(State.openContextMenu(withAuto, INV, "project/0/1", { x: 10, y: 10 }).menuBarra.id, "context.project-explorer.virtual-folder");
   const builtCommands = Object.entries(State.CONTEXT_COMMANDS).filter(([id]) => !id.includes(".project."));
-  assert.equal(builtCommands.length, 16, "five on each of My Computer and the virtual folder (New ▸ OVI, 2026-11-19), Remove on four menus, Rename, an OVI's Open");
+  assert.equal(builtCommands.length, 22, "five on each of My Computer and the virtual folder (New ▸ OVI, 2026-11-19), Remove on four menus, Rename on a folder and (stage d) an OVI, an OVI's Open; stage c: Dependencies' Refresh, a dependency's Open, Convert, Stop and an auto-populated OVI's Open");
   for (const [id, command] of Object.entries(State.CONTEXT_COMMANDS)) {
     assert.equal(INV.entrada(id).estado, "built", id);
     assert.ok(typeof command === "string");

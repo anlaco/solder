@@ -229,6 +229,15 @@ function rebasePolymorphicText(file, text, fromKey, toKey) {
 }
 
 /**
+ * The paths a file (as an object) stores for what it calls: a polymorphic OVI (DT-074) its instances, each stored
+ * relative to the `.sdp`; an OVI its subOVIs and the type definitions it follows (DT-096); a `.octl`, nothing.
+ */
+export function storedCalleePaths(key, file) {
+  if (isPolymorphicPath(key)) return Array.isArray(file.instances) ? file.instances.map((instance) => instance?.ovi).filter((path) => typeof path === "string") : [];
+  return [...subOVIPathsInFile(file), ...typeDefinitionPathsInFile(file)];
+}
+
+/**
  * Reads an OVI and, one level after another, every subOVI it calls: `readText(key)`
  * gives the text of a file or `null`; `oviLibRoot` is where `<ovilib>` paths lead. Returns `{ texts, missing }`, with the
  * text of each file that was found by its key (the absolute path) and the keys
@@ -248,10 +257,7 @@ export async function readHierarchyTexts(rootKey, rootText, readText, oviLibRoot
     } catch {
       continue;
     }
-    // A polymorphic OVI (DT-074) reaches its instances, each stored relative to the `.sdp`; an OVI reaches its subOVIs
-    // and the type definitions it follows (DT-096), whose `.octl` reaches nothing further.
-    const reached = isPolymorphicPath(key) ? (Array.isArray(file.instances) ? file.instances.map((instance) => instance?.ovi).filter((path) => typeof path === "string") : []) : [...subOVIPathsInFile(file), ...typeDefinitionPathsInFile(file)];
-    for (const stored of reached) {
+    for (const stored of storedCalleePaths(key, file)) {
       const calleeKey = resolveRelative(key, stored, oviLibRoot);
       if (visited.has(calleeKey)) continue;
       visited.add(calleeKey);

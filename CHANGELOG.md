@@ -9,6 +9,17 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Projects: Dependencies lists what the project's OVIs call, at any depth (subOVIs, polymorphic instances, type
+  definitions), with Solder's library in an `ovi.lib` folder first, as LabVIEW's vi.lib; it follows every edit and
+  every saved OVI, and Refresh reads it again. A dependency opens from its row.
+- Projects: an auto-populating folder shows the folder on disk and follows its changes; Stop Auto-populating turns it
+  into virtual folders, Convert to Auto-populating Folder... connects a virtual folder to a disk folder, and a folder
+  deleted on disk becomes a virtual folder, as in LabVIEW.
+- Projects: Close Project closes the project's OVIs too, asking about each one with unsaved changes ("Save changes?
+  (Close Project)", with Save - All and Don't Save - All for the rest), and the project last.
+- Projects: Rename... (F2) on an OVI of the tree renames its file through "Save the OVI (…) As"; the item and an open
+  OVI's windows follow.
+
 - Fix: a running OVI's values reach the Front Panel once per frame of the display, and the Block Diagram no longer
   repaints itself, whole, for each of them. Before, every value message (every 16 ms) repainted both windows; a
   diagram that took longer than that fell further and further behind, and a busy panel could stall.

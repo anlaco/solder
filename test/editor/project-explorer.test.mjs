@@ -79,16 +79,14 @@ test("a project with folders and files shows the folders first, then the files, 
 });
 
 test("a project opened from its file opens with Dependencies collapsed and a new one with everything expanded", () => {
-  // Dependencies is computed when a project is open (DT-099 §4), so this one is given the callees it will have.
-  const project = Project.blankProject();
-  const target = Project.myComputer(project);
-  const dependencies = target.items.find((item) => item.kind === Project.ITEM_KINDS.DEPENDENCIES);
-  dependencies.items = [{ name: "callee.ovi", kind: Project.ITEM_KINDS.OVI }];
-  const dependenciesKey = "project/0/0";
-  assert.ok(State.fromProject(project, "x").expanded.includes(dependenciesKey), "a new project: everything expanded");
-  const opened = State.fromProject(project, "x", { opened: true });
+  const project = Project.addFiles(Project.blankProject(), ["Folder/a.ovi"], "Folder").project;
+  const folderKey = "project/0/0";
+  assert.ok(State.fromProject(project, "x").expanded.includes(folderKey), "a new project: everything expanded");
+  // Dependencies is read from the files while a project is open (DT-099 §4), after the window opens: it stays collapsed.
+  const dependenciesKey = "project/0/1";
+  const opened = State.withDisk(State.fromProject(project, "x", { opened: true }), { dependencies: { library: [], others: ["/callee.ovi"], missing: [] } });
   assert.equal(opened.expanded.includes(dependenciesKey), false, "opened from its file: Dependencies collapsed (s1 Q5)");
-  assert.deepEqual(opened.expanded, ["project", "project/0"], "the rest as a new one");
+  assert.deepEqual(opened.expanded, ["project", "project/0", folderKey], "the rest as a new one");
   assert.equal(State.visibleRows(opened).some((row) => row.label === "callee.ovi"), false);
   assert.equal(State.visibleRows(State.toggleExpanded(opened, dependenciesKey)).some((row) => row.label === "callee.ovi"), true);
 });

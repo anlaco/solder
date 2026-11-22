@@ -139,10 +139,6 @@
       "desc": "The format of the project file, .sdproj (.qproj before DT-051): its schema, reading and writing. Without it there is no project to show",
       "ref": "spec/02-syntax.md §8: pending the dependency model"
     },
-    "modelo-de-dependencias": {
-      "desc": "filling Dependencies in the tree from the items' callees: the core computes it (core/model/project.mjs, dependencyKeys) and the window does not read the files yet",
-      "ref": "design/05-decisions.md DT-099 §4"
-    },
     "construir-distribuible": {
       "desc": "building a distributable from an OVI or a project (solder build)",
       "ref": "reference/history/00-provisional-plan.md §9: undecided"
@@ -648,10 +644,6 @@
     },
     "hipervinculos-de-proyecto": {
       "desc": "Hyperlink items: an address kept in the project as an item (not measured beyond its row)",
-      "ref": "design/05-decisions.md DT-099; design/labview-plan.md step 2b"
-    },
-    "carpetas-autopobladas": {
-      "desc": "auto-populating folders that read their files from the disk, converting a virtual folder to one and stopping it (stage c of DT-099)",
       "ref": "design/05-decisions.md DT-099; design/labview-plan.md step 2b"
     },
     "avisos-que-no-se-repiten": {
@@ -1833,9 +1825,8 @@
     {
       "id": "window.project-explorer.items.project.my-computer.dependencies",
       "etiqueta": "Dependencies",
-      "estado": "todo",
-      "labview": "What the target's items call, computed from them (the transitive closure of their callees); the tree shows it empty because the window does not read the items' files yet.",
-      "necesita": "modelo-de-dependencias",
+      "estado": "built",
+      "prueba": "test/editor/project-dependencies.test.mjs::the_rows_under_Dependencies:_the_ovi.lib_folder_first,_then_the_others,_collapsed_as_an_opened_project",
       "captura": "project-explorer/proyecto-nuevo.png"
     },
     {
@@ -2349,9 +2340,8 @@
     {
       "id": "context.project-explorer.ovi-item.rename",
       "etiqueta": "Rename...",
-      "estado": "todo",
-      "labview": "Renames the item: a file dialog \"Save the VI (name) As\" renames the file on disk, and the item's name and path follow (measured: s4).",
-      "necesita": "renombrar-ovi-de-proyecto",
+      "estado": "built",
+      "prueba": "test/editor/project-explorer-edit.test.mjs::Rename_of_an_OVI_renames_its_file_through_Save_the_OVI_As,_and_the_item's_name_and_path_follow",
       "atajo": "F2"
     },
     {
@@ -2486,9 +2476,8 @@
     {
       "id": "context.project-explorer.virtual-folder.convert-to-auto-populating-folder",
       "etiqueta": "Convert to Auto-populating Folder...",
-      "estado": "todo",
-      "labview": "Makes the folder mirror a folder on disk.",
-      "necesita": "carpetas-autopobladas",
+      "estado": "built",
+      "prueba": "test/editor/project-auto-populating.test.mjs::Convert_to_Auto-populating_Folder_takes_the_disk_folder's_name_and_moves_the_files_outside_it_to_My_Computer",
       "separado": true
     },
     {
@@ -2638,9 +2627,8 @@
     {
       "id": "context.project-explorer.auto-populating-folder.stop-auto-populating",
       "etiqueta": "Stop Auto-populating",
-      "estado": "todo",
-      "labview": "Turns the folder into a virtual folder that keeps the files it has.",
-      "necesita": "carpetas-autopobladas",
+      "estado": "built",
+      "prueba": "test/editor/project-auto-populating.test.mjs::Stop_Auto-populating_turns_the_folder_and_its_folders_into_virtual_folders_with_the_files_as_items",
       "separado": true
     },
     {
@@ -2738,6 +2726,129 @@
       "separado": true
     },
     {
+      "id": "context.project-explorer.auto-populating-subfolder",
+      "etiqueta": "Folder inside an auto-populating folder",
+      "estado": "built",
+      "prueba": "test/editor/project-auto-populating.test.mjs::the_menus_of_a_folder_inside_an_auto-populating_folder_and_of_its_files"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.new",
+      "etiqueta": "New",
+      "estado": "todo",
+      "labview": "Creates a new item in the folder (the rows of its submenu were not measured).",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder on disk.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.show-in-files-view",
+      "etiqueta": "Show in Files View",
+      "estado": "todo",
+      "labview": "Switches to the Files view with the folder selected.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.add",
+      "etiqueta": "Add",
+      "estado": "built",
+      "prueba": "test/editor/project-auto-populating.test.mjs::the_menus_of_a_folder_inside_an_auto-populating_folder_and_of_its_files",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.find-items-with-no-callers",
+      "etiqueta": "Find Items with No Callers",
+      "estado": "todo",
+      "labview": "Lists the items that no other item calls.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.items-incorrectly-claimed-by-a-library",
+      "etiqueta": "Items incorrectly claimed by a library",
+      "estado": "todo",
+      "labview": "Lists the items that a library claims although they are in another place.",
+      "necesita": "librerias"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.unit-tests",
+      "etiqueta": "Unit Tests",
+      "estado": "todo",
+      "labview": "Creates and runs the tests of the items.",
+      "necesita": "pruebas-unitarias",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.analyze-vis",
+      "etiqueta": "Analyze OVIs...",
+      "estado": "todo",
+      "labview": "Checks the OVIs under the folder against a set of rules.",
+      "necesita": "ejecutar-vi",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.find-project-items",
+      "etiqueta": "Find Project Items...",
+      "estado": "todo",
+      "labview": "Opens the search of the project's items by name.",
+      "necesita": "buscar-y-reemplazar",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.arrange-by",
+      "etiqueta": "Arrange By",
+      "estado": "todo",
+      "labview": "Chooses how the items of a folder are ordered: by name, type, path or by hand.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.arrange-by.name",
+      "etiqueta": "Name",
+      "estado": "todo",
+      "labview": "Orders the items by name.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.arrange-by.type",
+      "etiqueta": "Type",
+      "estado": "todo",
+      "labview": "Orders the items by type.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.arrange-by.path",
+      "etiqueta": "Path",
+      "estado": "todo",
+      "labview": "Orders the items by path.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.arrange-by.custom",
+      "etiqueta": "Custom",
+      "estado": "todo",
+      "labview": "Orders the items by hand.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.expand-all",
+      "etiqueta": "Expand All",
+      "estado": "built",
+      "prueba": "test/editor/project-auto-populating.test.mjs::the_menus_of_a_folder_inside_an_auto-populating_folder_and_of_its_files"
+    },
+    {
+      "id": "context.project-explorer.auto-populating-subfolder.collapse-all",
+      "etiqueta": "Collapse All",
+      "estado": "built",
+      "prueba": "test/editor/project-auto-populating.test.mjs::the_menus_of_a_folder_inside_an_auto-populating_folder_and_of_its_files"
+    },
+    {
       "id": "context.project-explorer.auto-populated-file",
       "etiqueta": "File in an auto-populating folder",
       "estado": "built",
@@ -2746,9 +2857,8 @@
     {
       "id": "context.project-explorer.auto-populated-file.open",
       "etiqueta": "Open",
-      "estado": "todo",
-      "labview": "Opens the item in its own windows.",
-      "necesita": "flujos-del-proyecto"
+      "estado": "built",
+      "prueba": "test/editor/project-auto-populating.test.mjs::Open_on_an_OVI_of_an_auto-populating_folder_opens_it_in_the_project"
     },
     {
       "id": "context.project-explorer.auto-populated-file.explore",
@@ -2798,9 +2908,8 @@
     {
       "id": "context.project-explorer.dependencies.refresh",
       "etiqueta": "Refresh",
-      "estado": "todo",
-      "labview": "Computes Dependencies again.",
-      "necesita": "modelo-de-dependencias"
+      "estado": "built",
+      "prueba": "test/editor/project-dependencies.test.mjs::the_rows_under_Dependencies_have_their_measured_menus"
     },
     {
       "id": "context.project-explorer.dependencies.find-project-items",
@@ -2864,6 +2973,289 @@
       "estado": "todo",
       "labview": "Opens the help of this item.",
       "necesita": "paginas-web",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-library",
+      "etiqueta": "ovi.lib folder",
+      "estado": "built",
+      "prueba": "test/editor/project-dependencies.test.mjs::the_rows_under_Dependencies_have_their_measured_menus"
+    },
+    {
+      "id": "context.project-explorer.dependency-library.items-incorrectly-claimed-by-a-library",
+      "etiqueta": "Items incorrectly claimed by a library",
+      "estado": "todo",
+      "labview": "Lists the items a library claims that are not in it.",
+      "necesita": "librerias"
+    },
+    {
+      "id": "context.project-explorer.dependency-library.unit-tests",
+      "etiqueta": "Unit Tests",
+      "estado": "todo",
+      "labview": "Creates and runs the tests of the items.",
+      "necesita": "pruebas-unitarias",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-library.analyze-vis",
+      "etiqueta": "Analyze OVIs...",
+      "estado": "todo",
+      "labview": "Checks the OVIs against a set of rules.",
+      "necesita": "ejecutar-vi",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-library.find-project-items",
+      "etiqueta": "Find Project Items...",
+      "estado": "todo",
+      "labview": "Opens the search of the project's items by name.",
+      "necesita": "buscar-y-reemplazar",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-library.arrange-by",
+      "etiqueta": "Arrange By",
+      "estado": "todo",
+      "labview": "Chooses how the items of a folder are ordered: by name, type, path or by hand.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-library.expand-all",
+      "etiqueta": "Expand All",
+      "estado": "built",
+      "prueba": "test/editor/project-dependencies.test.mjs::the_rows_under_Dependencies_have_their_measured_menus"
+    },
+    {
+      "id": "context.project-explorer.dependency-library.collapse-all",
+      "etiqueta": "Collapse All",
+      "estado": "built",
+      "prueba": "test/editor/project-dependencies.test.mjs::the_rows_under_Dependencies_have_their_measured_menus"
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi",
+      "etiqueta": "Dependency OVI",
+      "estado": "built",
+      "prueba": "test/editor/project-dependencies.test.mjs::the_rows_under_Dependencies_have_their_measured_menus"
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi.open",
+      "etiqueta": "Open",
+      "estado": "built",
+      "prueba": "test/editor/project-dependencies.test.mjs::Open_on_a_dependency_opens_its_file_in_the_project"
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder that holds the item's file.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi.show-in-files-view",
+      "etiqueta": "Show in Files View",
+      "estado": "todo",
+      "labview": "Switches to the Files view with the item selected.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi.print",
+      "etiqueta": "Print...",
+      "estado": "todo",
+      "labview": "Prints the documentation of the selected item.",
+      "necesita": "imprimir",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi.run",
+      "etiqueta": "Run",
+      "estado": "todo",
+      "labview": "Runs the OVI.",
+      "necesita": "ejecutar-vi",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi.find",
+      "etiqueta": "Find",
+      "estado": "todo",
+      "labview": "Finds where the item is used and what it uses.",
+      "necesita": "jerarquia-de-vis",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi.why-is-this-item-in-dependencies",
+      "etiqueta": "Why is this item in Dependencies?",
+      "estado": "todo",
+      "labview": "Shows the items of the project that call this one.",
+      "necesita": "jerarquia-de-vis"
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi.save",
+      "etiqueta": "Save",
+      "estado": "todo",
+      "labview": "Saves the item (greyed in LabVIEW when it has no changes).",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi.save-as",
+      "etiqueta": "Save As...",
+      "estado": "todo",
+      "labview": "Saves the item under another name (greyed in LabVIEW when it has no changes).",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi.analyze-vis",
+      "etiqueta": "Analyze OVIs...",
+      "estado": "todo",
+      "labview": "Checks the OVI against a set of rules.",
+      "necesita": "ejecutar-vi",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi.arrange-by",
+      "etiqueta": "Arrange By",
+      "estado": "todo",
+      "labview": "Chooses how the items of a folder are ordered (greyed in LabVIEW on a file).",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi.rename",
+      "etiqueta": "Rename...",
+      "estado": "todo",
+      "labview": "Renames the file on disk and its callers follow.",
+      "necesita": "renombrar-ovi-de-proyecto",
+      "atajo": "F2",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi.replace-with",
+      "etiqueta": "Replace with...",
+      "estado": "todo",
+      "labview": "Replaces the item by another file.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.dependency-ovi.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the selected item.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition",
+      "etiqueta": "Dependency type definition",
+      "estado": "built",
+      "prueba": "test/editor/project-dependencies.test.mjs::the_rows_under_Dependencies_have_their_measured_menus"
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition.open",
+      "etiqueta": "Open",
+      "estado": "todo",
+      "labview": "Opens the type definition in the control editor.",
+      "necesita": "definiciones-de-tipo"
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder that holds the item's file.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition.show-in-files-view",
+      "etiqueta": "Show in Files View",
+      "estado": "todo",
+      "labview": "Switches to the Files view with the item selected.",
+      "necesita": "flujos-del-proyecto",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition.print",
+      "etiqueta": "Print...",
+      "estado": "todo",
+      "labview": "Prints the documentation of the selected item.",
+      "necesita": "imprimir",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition.convert-contents-of-control-to-class",
+      "etiqueta": "Convert Contents of Control to Class",
+      "estado": "todo",
+      "labview": "Makes a class whose private data is the control's contents.",
+      "necesita": "clases-de-labview"
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition.find",
+      "etiqueta": "Find",
+      "estado": "todo",
+      "labview": "Finds where the item is used and what it uses.",
+      "necesita": "jerarquia-de-vis",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition.why-is-this-item-in-dependencies",
+      "etiqueta": "Why is this item in Dependencies?",
+      "estado": "todo",
+      "labview": "Shows the items of the project that call this one.",
+      "necesita": "jerarquia-de-vis"
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition.save",
+      "etiqueta": "Save",
+      "estado": "todo",
+      "labview": "Saves the item (greyed in LabVIEW when it has no changes).",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition.save-as",
+      "etiqueta": "Save As...",
+      "estado": "todo",
+      "labview": "Saves the item under another name (greyed in LabVIEW when it has no changes).",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition.analyze-vis",
+      "etiqueta": "Analyze OVIs...",
+      "estado": "todo",
+      "labview": "Checks the OVI against a set of rules.",
+      "necesita": "ejecutar-vi",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition.arrange-by",
+      "etiqueta": "Arrange By",
+      "estado": "todo",
+      "labview": "Chooses how the items of a folder are ordered (greyed in LabVIEW on a file).",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition.rename",
+      "etiqueta": "Rename...",
+      "estado": "todo",
+      "labview": "Renames the file on disk and its callers follow.",
+      "necesita": "renombrar-ovi-de-proyecto",
+      "atajo": "F2",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition.replace-with",
+      "etiqueta": "Replace with...",
+      "estado": "todo",
+      "labview": "Replaces the item by another file.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "context.project-explorer.dependency-type-definition.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the selected item.",
+      "necesita": "flujos-del-proyecto",
       "separado": true
     },
     {

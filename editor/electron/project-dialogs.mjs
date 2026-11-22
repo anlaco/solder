@@ -4,7 +4,8 @@
 
 import path from "node:path";
 import { ALREADY_IN_PROJECT, PROJECT_EXTENSION, isProjectPath } from "../../core/model/project.mjs";
-import { closeDialogText } from "./close-flow.mjs";
+import { OVI_EXTENSION } from "../src/common/ovi-paths.mjs";
+import { closeAllDialogText } from "./close-flow.mjs";
 import { untitledProjectName } from "./project-window.mjs";
 
 /** The filter of both dialogs: LabVIEW's "Projects (*.lvproj)" with Solder's extension (measured: s1 Q3, s3 Q3). */
@@ -23,11 +24,13 @@ export const saveProjectDialog = ({ untitledNumber, folder }) => {
 export const projectSavePathFor = (chosen) => (isProjectPath(chosen) ? chosen : `${chosen}${PROJECT_EXTENSION}`);
 
 /**
- * The question when a project with unsaved changes is closed (measured, s2 Q6: "Save changes? (Close Project)", "P1.lvproj
- * has unsaved changes." and that it is about to leave memory). Its buttons are the Close dialog's: Save, Don't Save, Cancel.
- * The "List unsaved changes..." link of LabVIEW's is not built.
+ * The question for each item with unsaved changes when a project is closed: the project itself or one of its OVIs, which
+ * leave memory with it (measured, s2 Q6: "Save changes? (Close Project)", "P1.lvproj has unsaved changes." and that it is
+ * about to leave memory; s3 "Extras": with a project OVI, "Untitled 1 has unsaved changes." and the box "Apply same action
+ * to the remaining 2 affected items", while checked Save - All, Don't Save - All, Cancel). Without others left there is no
+ * box and the buttons are the Close dialog's. Not built: LabVIEW's "List unsaved changes..." link and "Affected items" list.
  */
-export const closeProjectDialogText = (name) => ({ ...closeDialogText(name), title: "Save changes? (Close Project)" });
+export const closeProjectDialogText = (name, remaining = 0) => ({ ...closeAllDialogText(name, remaining), title: "Save changes? (Close Project)" });
 
 /**
  * Whether Create Project asks about the OVIs that are open (measured, s3 Q1: "when a VI is open outside any project";
@@ -44,6 +47,9 @@ export const addFileDialog = (folder) => ({ title: "Select a File to Insert", bu
  * title of both (measured: 2026-11-17 s2 Q3).
  */
 export const addFolderDialog = (folder) => ({ title: "Select a Folder to Insert", defaultPath: folder, properties: ["openDirectory"] });
+
+/** Convert to Auto-populating Folder...: the folder picker "Select Folder to Connect", in the project's folder (measured: s5 Q5). */
+export const connectFolderDialog = (folder) => ({ title: "Select Folder to Connect", defaultPath: folder, properties: ["openDirectory"] });
 
 /** The reason LabVIEW gives for a file that is already an item (measured: s2 Q3, "(Hex 0xDAC2) An item with this path already exists in the project."). */
 export const UNABLE_TO_ADD_REASON = `(Hex 0xDAC2) ${ALREADY_IN_PROJECT}`;
@@ -68,3 +74,13 @@ export const newUnsavedFilesText = (projectName) => ({
   message: `"${projectName}" refers to new, unsaved files. You must save these files in order to save "${projectName}".`,
   detail: "Do you want to save the new, unsaved files?",
 });
+
+/**
+ * Rename... on an OVI item: the file dialog "Save the VI (main1.vi) As" in the OVI's folder, proposing its name without the
+ * extension, with the filter "VIs (*.vi;*.vit;*.vim)" (measured: reports/2026-11-18-project-explorer-s4.md "Rename"),
+ * here "Save the OVI (main1.ovi) As" and Solder's extension (DT-071, DT-094). Its New LLB... button is not built.
+ */
+export const renameOviDialog = (filePath) => {
+  const name = path.basename(filePath);
+  return { title: `Save the OVI (${name}) As`, defaultPath: path.join(path.dirname(filePath), path.parse(name).name), filters: [{ name: `OVIs (*${OVI_EXTENSION})`, extensions: [OVI_EXTENSION.slice(1)] }] };
+};

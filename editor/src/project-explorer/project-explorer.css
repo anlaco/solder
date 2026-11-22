@@ -24,6 +24,8 @@ body.project-explorer { background: var(--project-explorer-background); color: v
 .pe-row { display: flex; align-items: center; height: 18px; white-space: nowrap; cursor: default; }
 .pe-row.seleccionada .pe-label { background: var(--project-explorer-selected-background); color: var(--project-explorer-selected-text); }
 .pe-label { padding: 0 3px; line-height: 16px; }
+/* A dependency whose file could not be read (how LabVIEW marks one was not measured). */
+.pe-missing .pe-label { font-style: italic; }
 .pe-expander { display: flex; align-items: center; justify-content: center; flex: none; box-sizing: border-box; border: 1px solid var(--project-explorer-expander-border); background: var(--project-explorer-tree-background); font-size: 9px; line-height: 1; margin-right: 4px; }
 .pe-expander-space { flex: none; margin-right: 4px; }
 .pe-icon { flex: none; display: flex; margin-right: 2px; }

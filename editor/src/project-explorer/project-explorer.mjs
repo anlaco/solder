@@ -62,7 +62,17 @@ const update = (newState) => {
 /** Where a shortcut's explanation opens, as for the shortcuts of the menus. */
 const explainHole = (id) => show({ ...state, menuBarra: null, abierta: { id, x: 40, y: 40 } });
 
-const treeCommands = createTreeCommands({ getState: () => state, show, update, explainHole, solder });
+/** How many times the disk was asked for: only the latest answer is shown, since an earlier one may come back later. */
+let diskReads = 0;
+
+/** Reads again what the tree shows from the files: Dependencies and the auto-populating folders. */
+async function readDisk() {
+  const read = ++diskReads;
+  const disk = await solder?.project.readDisk?.();
+  if (disk && read === diskReads && state) treeCommands.diskRead(disk);
+}
+
+const treeCommands = createTreeCommands({ getState: () => state, show, update, explainHole, solder, readDisk });
 
 /** The window list the Window menu shows, as the main process gave it when the menu was opened. */
 const openBarMenu = async (title) => {
@@ -92,7 +102,8 @@ const MENU_ACTIONS = {
   saveProject: () => solder?.project.save(),
   close: () => solder?.project.close(),
   exit: () => solder?.salir(),
-  ...Object.fromEntries(["addFile", "addSnapshotFolder", "addAutoPopulatingFolder", "newVirtualFolder", "newOviInto", "openItem", "rename", "removeFromProject"].map((name) => [name, () => treeCommands[name]()])),
+  refreshDependencies: () => readDisk(),
+  ...Object.fromEntries(["addFile", "addSnapshotFolder", "addAutoPopulatingFolder", "convertToAutoPopulating", "stopAutoPopulating", "newVirtualFolder", "newOviInto", "openItem", "rename", "removeFromProject"].map((name) => [name, () => treeCommands[name]()])),
 };
 
 function runMenuCommand(id) {
@@ -258,7 +269,11 @@ document.addEventListener("keydown", (event) => {
 
 solder?.project.onRenamed((name) => show(State.rename(state, name)));
 // The main process rebased the stored paths when an untitled project was first saved: the window holds the project it now keeps.
-solder?.project.onRebased((text) => show({ ...state, project: readProject(text) }));
+solder?.project.onRebased((text) => {
+  show({ ...state, project: readProject(text) });
+  readDisk();
+});
+solder?.project.onDiskChanged?.(() => readDisk());
 solder?.project.onNewOviSaved?.((saved) => treeCommands.newOviSaved(saved));
 solder?.project.onNewOviClosed?.((entryId) => treeCommands.newOviClosed(entryId));
 /** The explorer's menus and toolbar for the docked window's own (DT-101 §7). */
@@ -279,3 +294,4 @@ if (state) paint();
 // Its window is shown once it has painted (electron/first-paint.mjs); a project that could not be read is shown too.
 solder?.pagePainted();
 solder?.layout.get().then((layout) => show({ ...state, layout }));
+if (state) readDisk();

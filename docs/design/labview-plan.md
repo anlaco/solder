@@ -21,7 +21,7 @@ When the developer says "keep going":
    step 3, type definitions** (DT-096), measured and its core done on 2026-11-17. **DT-099 (2026-11-17) brings projects first:
    step 2b**, measured and its core done on 2026-11-17, editor stages (a) and (b) done on 2026-11-18. Releases
    0.14.0-beta (2026-11-19) and 0.14.1-beta (2026-11-20) are out. "Diagnose two visual faults" just below is done
-   (2026-11-21). **Next: stage (c) of step 2b; then the editor stages of type
+   (2026-11-21). Stage (c) of step 2b is done (2026-11-21), stage (d) is half done (2026-11-22). **Next: the rest of stage (d) of step 2b (measure the OVI windows' Window menu; Show Project; the Files tab); then the editor stages of type
    definitions. DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
    **Diagnose two visual faults (asked by the developer on 2026-11-20), diagnosis only, no fix yet.** The developer
@@ -141,6 +141,12 @@ When the developer says "keep going":
   organizes programs (subOVIs, projects, classes).
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
+
+*2026-11-22: projects' stage (d), first part: Close Project closes the project's OVIs; Rename... of an OVI item. Next:
+measure the OVI window's Window menu, then Show Project and the Files tab.*
+
+*2026-11-21: projects' stage (c): Dependencies read from the items' files, auto-populating folders that show and watch
+the disk, Stop Auto-populating and Convert to Auto-populating Folder.... Next: stage (d).*
 
 *2026-11-19: release 0.14's first step: the `comment` any object of Solder's files may hold (DT-100 §6), with `.ovi`/`.octl`
 version 8 and `.sdp`/`.sdproj` version 2. Next: the checks left open on subOVIs, in the editor.*
@@ -1162,6 +1168,33 @@ to it go on, new fronts wait for step 6.
    are `editor/electron/project-manager.mjs`, the rules pure in `project-registry.mjs`, `project-dialogs.mjs` and
    `project-window-list.mjs`. Unmeasured and greyed: what Add does in Open Items, its "Do not show again" box, the dialog's
    tree filters and Keyword, Save Project and Close Project of an OVI window (no OVI belongs to a project until (b)).*
+   *Stage (c) on 2026-11-21, after measuring the auto-populating folders
+   ([`project-explorer-s5`](../../labview-captures/reports/2026-11-21-project-explorer-s5.md)): Dependencies read from
+   the items' files whenever the project opens, is edited, refreshed or an OVI is saved (the closure of subOVIs,
+   polymorphic instances and `.octl`, `ovi.lib` in its folder first; `editor/electron/project-dependencies.mjs`), with the
+   measured menus of its rows, Refresh and a dependency's Open; an auto-populating folder shows the disk (folders first,
+   hidden files not, its folders with their own menu) and is watched (`editor/electron/project-disk-requests.mjs`); Stop
+   Auto-populating, Convert to Auto-populating Folder... ("Select Folder to Connect", files outside it moved to My
+   Computer) and a folder deleted on disk turning virtual (`core/model/auto-populating.mjs`); Open on an OVI of the
+   folder. Tests: `test/editor/project-dependencies.test.mjs`, `project-auto-populating.test.mjs`; tried under Xvfb
+   ([`project-stage-c-editor-try`](../../labview-captures/reports/2026-11-21-project-stage-c-editor-try.md)). Left, differing from
+   LabVIEW: a watched change does not make the project unsaved (LabVIEW asks on close, with no asterisk); "Undo File
+   Rename?" for a file renamed on disk; a folder created while open is sorted, not appended. Unverified: whether
+   Dependencies follows unsaved edits of an open OVI (Solder reads the files), how LabVIEW marks a missing dependency
+   (Solder: italics) and the titles of an OVI opened from Dependencies or an auto-populating folder. Next, (d): the Files
+   tab, Window ▸ Show Project, renaming an OVI item, and Close Project closing the project's OVIs.*
+   *Stage (d), first part, on 2026-11-22: Close Project closes the project's OVIs, asking about each with unsaved changes
+   ("Save changes? (Close Project)", the box "Apply same action to the remaining N affected items" with Save - All /
+   Don't Save - All, the OVIs created last first and the project last: s3 "Extras"), and the last OVI closing no longer
+   shows Getting Started while a project is open (unverified in LabVIEW); Rename... of an OVI item ("Save the OVI (…) As",
+   the file moved at once with its subOVIs' paths rebased, `editor/electron/ovi-file-rename.mjs`; s4 "Rename"). Tests in
+   `projects.test.mjs` and `project-explorer-edit.test.mjs`. Tried under Xvfb
+   ([`project-stage-d-editor-try`](../../labview-captures/reports/2026-11-22-project-stage-d-editor-try.md)), which found
+   the page's last messages reaching the main process after its project was gone (fixed); the GTK dialog proposes
+   "a.ovi" with the extension, where LabVIEW selects "a". Unverified: the order among several affected items, a
+   renamed OVI's callers (Solder's keep the old path), renaming onto a file that exists (Solder refuses), Rename of a new
+   OVI never saved (nothing). Left for (d): Window ▸ Show Project and the OVI windows' Window and Project menus, which
+   need the OVI window's Window menu measured first, and the Files tab.*
 3. **Type definitions** and strict type definitions, in `.octl` files (DT-093 §5): Make Type Def., the control editor,
    updating the instances. *Decided in DT-096 (2026-11-16): the type on a wire stays structural and the link to the
    `.octl` lives on the object, with a copy of the definition. First, the measurements DT-096 lists.* *Measured on

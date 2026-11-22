@@ -7,6 +7,7 @@
 // share one.
 
 import { ITEM_KINDS } from "../../../core/model/project.mjs";
+import { DISK_ROW_KINDS, EMPTY_DISK, dependencyNodes, folderNodes } from "./disk-rows.mjs";
 import { inicial as windowState } from "../window/window-state.mjs";
 
 export const PREFIX = "window.project-explorer";
@@ -19,7 +20,13 @@ export const TABS = Object.freeze({ ITEMS: "items", FILES: "files" });
 export const ROOT_KEY = "project";
 
 /** What a row stands for, which decides its icon and its right-click menu. */
-export const ROW_KINDS = Object.freeze({ PROJECT: "project", ...ITEM_KINDS, AUTO_POPULATING_FOLDER: "auto-populating-folder" });
+export const ROW_KINDS = Object.freeze({
+  PROJECT: "project",
+  ...ITEM_KINDS,
+  AUTO_POPULATING_FOLDER: "auto-populating-folder",
+  // The rows under Dependencies and in an auto-populating folder, read from the files and never stored.
+  ...DISK_ROW_KINDS,
+});
 
 /** The window's own commands, by the last segment of the menu row's id; the main process runs them. */
 export const MENU_COMMANDS = Object.freeze({
@@ -44,10 +51,13 @@ const TREE_ROWS = { "new.vi": "newOviInto", "new.virtual-folder": "newVirtualFol
 const CONTEXT_ROWS_BY_MENU = {
   project: { save: "saveProject" },
   "my-computer": TREE_ROWS,
-  "virtual-folder": { ...TREE_ROWS, "remove-from-project": "removeFromProject", rename: "rename" },
-  "auto-populating-folder": { "remove-from-project": "removeFromProject" },
-  "ovi-item": { open: "openItem", "remove-from-project": "removeFromProject" },
+  "virtual-folder": { ...TREE_ROWS, "remove-from-project": "removeFromProject", rename: "rename", "convert-to-auto-populating-folder": "convertToAutoPopulating" },
+  "auto-populating-folder": { "remove-from-project": "removeFromProject", "stop-auto-populating": "stopAutoPopulating" },
+  "ovi-item": { open: "openItem", "remove-from-project": "removeFromProject", rename: "rename" },
   "document-item": { "remove-from-project": "removeFromProject" },
+  dependencies: { refresh: "refreshDependencies" },
+  "dependency-ovi": { open: "openItem" },
+  "auto-populated-file": { open: "openItem" },
 };
 
 /** The built rows of a right-click menu that run a command of the window, by id; Expand All and Collapse All are the state's own. */
@@ -56,7 +66,7 @@ export const CONTEXT_COMMANDS = Object.freeze(
 );
 
 /** Rename's row for a kind of row that has one that is not built: F2 on it shows why (the other kinds do nothing, measured for a document). */
-export const RENAME_HOLE_OF_KIND = Object.freeze({ project: `${CONTEXT_PREFIX}.project.rename`, ovi: `${CONTEXT_PREFIX}.ovi-item.rename` });
+export const RENAME_HOLE_OF_KIND = Object.freeze({ project: `${CONTEXT_PREFIX}.project.rename` });
 
 /** The project was saved under another name: the root of the tree says so. */
 export const rename = (state, name) => ({ ...state, name });
@@ -71,6 +81,11 @@ const CONTEXT_MENU_OF_KIND = Object.freeze({
   [ROW_KINDS.DOCUMENT]: "document-item",
   [ROW_KINDS.DEPENDENCIES]: "dependencies",
   [ROW_KINDS.BUILD]: "build-specifications",
+  [ROW_KINDS.DEPENDENCY_LIBRARY]: "dependency-library",
+  [ROW_KINDS.DEPENDENCY_OVI]: "dependency-ovi",
+  [ROW_KINDS.DEPENDENCY_TYPE_DEFINITION]: "dependency-type-definition",
+  [ROW_KINDS.AUTO_POPULATING_SUBFOLDER]: "auto-populating-subfolder",
+  [ROW_KINDS.AUTO_POPULATED_FILE]: "auto-populated-file",
 });
 
 /** The inventory id of the menu a row opens with the right button, or undefined when none was measured. */
@@ -79,14 +94,22 @@ export const contextMenuOf = (kind) => (kind in CONTEXT_MENU_OF_KIND ? `${CONTEX
 const rowKindOf = (item) => (item.kind === ITEM_KINDS.FOLDER && item.autoPopulating ? ROW_KINDS.AUTO_POPULATING_FOLDER : item.kind);
 
 /**
- * The tree as nested nodes `{ key, kind, label, children }`. An auto-populating folder has no children here: its files
- * are read from the disk, which the window does not do yet. Dependencies is written empty and computed when a project
- * is open (DT-099 §4); filling it is the next step, so it has no children yet either.
+ * The tree as nested nodes `{ key, kind, label, children }`, and `path` (and `icon`) for a row read from the files. What
+ * the files say comes in `disk` (EMPTY_DISK until the main process has read them): Dependencies and the contents of an
+ * auto-populating folder are written empty and read while a project is open (DT-099 §4; s5 Q1).
  */
-export function treeOf(project, name) {
-  const nodeOf = (item, key) => ({ key, kind: rowKindOf(item), label: item.name, children: (item.items ?? []).map((inner, index) => nodeOf(inner, `${key}/${index}`)) });
+export function treeOf(project, name, disk = EMPTY_DISK) {
+  const childrenOf = (item, key) => {
+    if (item.kind === ITEM_KINDS.DEPENDENCIES) return dependencyNodes(disk.dependencies, key);
+    if (item.autoPopulating) return folderNodes(disk.folders[item.path]?.entries ?? [], key);
+    return (item.items ?? []).map((inner, index) => nodeOf(inner, `${key}/${index}`));
+  };
+  const nodeOf = (item, key) => ({ key, kind: rowKindOf(item), label: item.name, children: childrenOf(item, key) });
   return { key: ROOT_KEY, kind: ROW_KINDS.PROJECT, label: `Project: ${name}`, children: project.items.map((item, index) => nodeOf(item, `${ROOT_KEY}/${index}`)) };
 }
+
+/** The tree of a window's state. */
+const treeOfState = (state) => treeOf(state.project, state.name, state.disk);
 
 /** Every node of the tree below `node`, `node` included, parents before children. */
 function nodesFrom(node) {
@@ -96,7 +119,7 @@ function nodesFrom(node) {
 const hasChildren = (node) => node.children.length > 0;
 
 /** The node with `key`, or undefined. */
-const findNode = (state, key) => nodesFrom(treeOf(state.project, state.name)).find((node) => node.key === key);
+const findNode = (state, key) => nodesFrom(treeOfState(state)).find((node) => node.key === key);
 
 /** A row's place in the project, the list of indices from the top items down: `project/0/2` is `[0, 2]`, and the root `project` is `[]`. */
 export const placeOfKey = (key) => key.split("/").slice(1).map(Number);
@@ -117,23 +140,36 @@ export const targetKeyOf = (project) => `${ROOT_KEY}/${project.items.findIndex((
 export function fromProject(project, name, { opened = false } = {}) {
   const nodes = nodesFrom(treeOf(project, name));
   const expanded = nodes.filter((node) => hasChildren(node) && !(opened && node.kind === ROW_KINDS.DEPENDENCIES)).map((node) => node.key);
-  return { project, name, tab: TABS.ITEMS, selected: targetKeyOf(project), expanded, windowRows: [], edit: null, dialog: null, ...windowState() };
+  return { project, name, disk: EMPTY_DISK, tab: TABS.ITEMS, selected: targetKeyOf(project), expanded, windowRows: [], edit: null, dialog: null, ...windowState() };
 }
 
-/** One row of the tree as drawn: `{ key, kind, label, depth, expandable, expanded }`. */
+/** What the main process read from the files changed: the rows follow, and a selected row that is gone gives way to the target. */
+export function withDisk(state, disk) {
+  const changed = { ...state, disk };
+  return findNode(changed, state.selected) ? changed : { ...changed, selected: targetKeyOf(state.project) };
+}
+
+
+/** One row of the tree as drawn: `{ key, kind, label, depth, expandable, expanded }`, and `missing` for a dependency that could not be read. */
 export function visibleRows(state) {
   const rows = [];
   const walk = (node, depth) => {
     const expanded = state.expanded.includes(node.key);
-    rows.push({ key: node.key, kind: node.kind, label: node.label, depth, expandable: hasChildren(node), expanded });
+    rows.push({ key: node.key, kind: node.kind, icon: node.icon ?? node.kind, label: node.label, depth, expandable: hasChildren(node), expanded, ...(node.missing && { missing: true }) });
     if (expanded) node.children.forEach((child) => walk(child, depth + 1));
   };
-  walk(treeOf(state.project, state.name), 0);
+  walk(treeOfState(state), 0);
   return rows;
 }
 
+/** The node of the row `key` (`{ key, kind, label, children }`, and `path` and `icon` for a row read from the disk), or undefined. */
+export const nodeAt = (state, key) => findNode(state, key);
+
+/** The kind of the row `key`, or undefined. */
+export const rowKindAt = (state, key) => findNode(state, key)?.kind;
+
 /** The kind of the selected row. */
-export const selectedKind = (state) => findNode(state, state.selected)?.kind;
+export const selectedKind = (state) => rowKindAt(state, state.selected);
 
 /** Selecting a row closes whatever was open over the tree. */
 export const select = (state, key) => (findNode(state, key) ? { ...state, selected: key, abierta: null, menuBarra: null } : state);
@@ -213,7 +249,7 @@ export function runContextCommand(state, rowId) {
 
 /** The buttons of the toolbar that are greyed because of what is selected or because there is nothing to act on (measured on My Computer). */
 export function disabledButtons(state) {
-  const fixed = [ROW_KINDS.PROJECT, ROW_KINDS.TARGET, ROW_KINDS.DEPENDENCIES, ROW_KINDS.BUILD].includes(selectedKind(state));
+  const fixed = !EDITABLE_KINDS.includes(selectedKind(state));
   // Paste: nothing was copied. Resolve Conflicts: a new project has none (pale in the capture).
   const names = ["paste", "resolve-conflicts", ...(fixed ? ["cut", "copy", "remove-from-project"] : [])];
   return new Set(names);

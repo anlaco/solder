@@ -7,7 +7,7 @@ import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileNameOf } from "../../core/model/project.mjs";
 import { pathKey, resolveRelative } from "../src/common/ovi-paths.mjs";
-import { addFileDialog, addFolderDialog, unableToAddDialogText } from "./project-dialogs.mjs";
+import { addFileDialog, addFolderDialog, connectFolderDialog, unableToAddDialogText } from "./project-dialogs.mjs";
 import { snapshotOfFolder, storedProjectPath } from "./project-paths.mjs";
 
 /**
@@ -38,6 +38,14 @@ export function registerItemRequests({ ipcMain, dialog, entryOf, ownerOf, lastFo
   ipcMain.handle("project:choose-auto-populating-folder", async (event) => {
     const chosen = await choose(event, addFolderDialog);
     return chosen && storedProjectPath(entryOf(event).path, chosen[0]);
+  });
+
+  // It starts in the project's folder, not the last one (measured: s5 Q5); a project never saved has none.
+  ipcMain.handle("project:choose-folder-to-connect", async (event) => {
+    const projectPath = entryOf(event).path;
+    const result = await dialog.showOpenDialog(ownerOf(event), connectFolderDialog(projectPath ? path.dirname(projectPath) : lastFolder()));
+    if (result.canceled || !result.filePaths.length) return null;
+    return storedProjectPath(projectPath, result.filePaths[0]);
   });
 
   ipcMain.on("project:unable-to-add", (event, refusedStoredPaths) => {

@@ -15,6 +15,7 @@ import { POLYMORPHIC_EXTENSION, isPolymorphicPath } from "../../core/model/polym
 import { OVI_EXTENSIONS, isOVIFile, pathKey, polymorphicSavePathFor, polymorphicSaveProposal, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey } from "../src/common/ovi-paths.mjs";
 import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
+import { moveOVIFile, rebaserFor } from "./ovi-file-rename.mjs";
 import { createProjectManager } from "./project-manager.mjs";
 import { PROJECT_EXTENSION, isProjectPath } from "../../core/model/project.mjs";
 import { newOVIBounds, otherWindowKind, tiledBounds } from "./window-layout.mjs";
@@ -264,6 +265,9 @@ const projects = createProjectManager({
   saveNewOVI: (entryId, owner) => saveNewOVI(entryId, owner),
   instanceChanged: (projectId, instance) => setInstanceOfProject(projectId, instance),
   projectClosed: (projectId) => setInstanceOfProject(projectId, null),
+  projectOVIs: (projectId) => projectOVIs(projectId),
+  renameOVIFile: (oldPath, newPath) => renameOVIFile(oldPath, newPath),
+  oviLib: OVI_LIB,
 });
 /** Whether any window of an OVI or a project is open: when none is, the Getting Started window comes back. */
 const anyDocumentOpen = () => openOVIs.size > 0 || projects.count() > 0;
@@ -417,7 +421,8 @@ function openOviWindows(entry) {
     open.stopWatchingStyle();
     leaveMemoryOrDefer(open);
     for (const window of Object.values(open.windows)) if (!window.isDestroyed()) window.destroy();
-    if (openOVIs.size) return;
+    // A Project Explorer still open keeps it away (unverified in LabVIEW, where DT-052 was measured with no project open).
+    if (anyDocumentOpen()) return;
     // LabVIEW does not quit when its last VI closes: the Getting Started window comes back (DT-052).
     if (quitting || process.env.SOLDER_CAPTURAS) app.quit();
     else showGettingStarted();
@@ -460,6 +465,7 @@ async function saveDeferred(entry, owner) {
   }
   recordSave(entry, entry.path, entry.current);
   broadcast("ovi:saved", { id: entry.id, key: keyOf(entry) });
+  projects.filesChanged();
   return true;
 }
 
@@ -612,6 +618,45 @@ function setInstanceOfProject(projectId, instance) {
   }
 }
 
+/** The OVIs open in the project `projectId`, created last first, as its Close Project asks about them and closes them. */
+function projectOVIs(projectId) {
+  const inProject = [...openOVIs.values()].filter((open) => open.entry.project === projectId);
+  return closeAllOrder(inProject, (open) => Number(open.entry.id)).map((open) => ({
+    name: oviName(open.entry),
+    isDirty: () => isDirty(open.entry),
+    save: async () => (await writeOVI(open, dialogOwner(primaryWindow(open)), open.entry.current, false)) !== null,
+    close: () => closeAndWait(open),
+  }));
+}
+
+/** Closes an OVI without asking, and resolves once its windows are gone, so that what closes after it finds it gone. */
+function closeAndWait(open) {
+  const gone = new Promise((resolve) => primaryWindow(open).once("closed", resolve));
+  closeOVI(open, { force: true });
+  return gone;
+}
+
+/**
+ * Rename... of an OVI item of a project: its file moves to `newPath` at once (measured: reports/2026-11-18-project-explorer-s4.md
+ * "Rename") with its subOVIs' relative paths rebased (ovi-file-rename.mjs), and an open OVI follows with its unsaved changes kept.
+ * Unverified: whether LabVIEW points the callers at the new file; Solder's callers keep the old path.
+ */
+async function renameOVIFile(oldPath, newPath) {
+  await moveOVIFile(oldPath, newPath);
+  const rebase = rebaserFor(oldPath, newPath);
+  const moved = registry.findByPath(oldPath);
+  const open = moved && openOVIs.get(moved.id);
+  if (moved) Object.assign(moved, { path: newPath, saved: rebase(moved.saved), current: rebase(moved.current) });
+  if (open) {
+    if (path.dirname(oldPath) !== path.dirname(newPath)) await restyle(open);
+    setTitles(open);
+  }
+  // Its own windows rebase their subOVI paths to the new file, as after a Save As.
+  if (moved) broadcast("ovi:saved", { id: moved.id, key: pathKey(newPath) });
+  rememberRecentFile(newPath);
+  projects.filesChanged();
+}
+
 /** File ▸ New... ▸ Polymorphic OVI: an empty polymorphic OVI, numbered after every Untitled before it (measured). */
 function openNewPolymorphic() {
   const { entry } = registry.open({ kind: ENTRY_KINDS.POLYMORPHIC });
@@ -744,6 +789,7 @@ async function writeOVI(open, owner, text, saveAs) {
   setTitles(open);
   // The callers of this OVI that are open must see its new connector.
   broadcast("ovi:saved", { id: entry.id, key: pathKey(target) });
+  projects.filesChanged();
   return rebased;
 }
 
