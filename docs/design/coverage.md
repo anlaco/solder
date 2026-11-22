@@ -34,7 +34,7 @@
 | Instruments and communication | 14 / 30 (47 %) | `█████░░░░░` |
 | Functions palette | 214 / 563 (38 %) | `████░░░░░░` |
 | Controls palette | 34 / 92 (37 %) | `████░░░░░░` |
-| Windows and dialogs | 177 / 543 (33 %) | `███░░░░░░░` |
+| Windows and dialogs | 195 / 585 (33 %) | `███░░░░░░░` |
 | Right-click menus | 677 / 2511 (27 %) | `███░░░░░░░` |
 <!-- /coverage:summary -->
 
@@ -335,8 +335,8 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 | Window | Covered | |
 |--------|---------|---|
 | Project Explorer | 18 / 140 (13 %) | `█░░░░░░░░░` |
-| Front Panel | 29 / 73 (40 %) | `████░░░░░░` |
-| Block Diagram | 40 / 102 (39 %) | `████░░░░░░` |
+| Front Panel | 38 / 94 (40 %) | `████░░░░░░` |
+| Block Diagram | 49 / 123 (40 %) | `████░░░░░░` |
 | Debug Window | 10 / 18 (56 %) | `██████░░░░` |
 | Error list | 7 / 8 (88 %) | `█████████░` |
 | OVI Properties | 6 / 26 (23 %) | `██░░░░░░░░` |

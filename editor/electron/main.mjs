@@ -267,6 +267,7 @@ const projects = createProjectManager({
   projectClosed: (projectId) => setInstanceOfProject(projectId, null),
   projectOVIs: (projectId) => projectOVIs(projectId),
   renameOVIFile: (oldPath, newPath) => renameOVIFile(oldPath, newPath),
+  windowActivated: (contentsId) => noteWindowActivated(contentsId),
   oviLib: OVI_LIB,
 });
 /** Whether any window of an OVI or a project is open: when none is, the Getting Started window comes back. */
@@ -314,7 +315,10 @@ const keyOf = (entry) => (entry.path ? pathKey(entry.path) : untitledKey(entry.i
 
 function setTitles(open) {
   for (const [kind, window] of Object.entries(open.windows)) {
-    if (!window.isDestroyed()) window.setTitle(windowTitle(open.entry, kind));
+    if (window.isDestroyed()) continue;
+    window.setTitle(windowTitle(open.entry, kind));
+    // The project rows of its menus follow whether it belongs to a project (project-menus.mjs).
+    window.webContents.send("ovi:in-project", open.entry.project !== undefined);
   }
 }
 
@@ -394,12 +398,14 @@ function openOviWindows(entry) {
   const bounds = boundsForOvi(entry);
   const saved = savedWindows(entry.initialText);
   const origins = Object.fromEntries(WINDOW_KINDS.map((kind) => [kind, saved?.[kind]?.origin ?? null]));
-  const open = { entry, windows: {}, origins, closing: false };
+  const open = { entry, windows: {}, origins, closing: false, activations: {} };
   openOVIs.set(entry.id, open);
   // The Block Diagram is created first so that the Front Panel is shown over it.
   for (const kind of [...WINDOW_KINDS].reverse()) {
     const window = createWindow(entry, kind, bounds[kind]);
     open.windows[kind] = window;
+    open.activations[kind] = ++windowActivations;
+    window.on("focus", () => (open.activations[kind] = ++windowActivations));
     oviOfContents.set(window.webContents.id, open);
   }
   watchStyleOf(open);
@@ -427,8 +433,7 @@ function openOviWindows(entry) {
     if (quitting || process.env.SOLDER_CAPTURAS) app.quit();
     else showGettingStarted();
   });
-  // Closing the diagram only hides it, as in LabVIEW; showing it again is
-  // Window ▸ Show Block Diagram, which has not been captured yet.
+  // Closing the diagram only hides it, as in LabVIEW; Window ▸ Show Block Diagram (Ctrl+E) shows it again.
   open.windows["block-diagram"].on("close", (event) => {
     if (open.closing || quitting) return;
     event.preventDefault();
@@ -504,8 +509,20 @@ function showWindow(window) {
 }
 
 /** The OVI windows for the Window menu of a Project Explorer: the newest OVI first, its Front Panel before its Block Diagram. */
+/** How many times an OVI window was brought to the front: the Window menu lists the most recent first (reports/2026-11-22-vi-window-menu.md). */
+let windowActivations = 0;
 const oviWindowList = () =>
-  [...openOVIs.values()].reverse().flatMap((open) => windowKindsOf(open.entry).map((kind) => ({ key: `ovi:${open.entry.id}:${kind}`, title: windowTitle(open.entry, kind) })));
+  [...openOVIs.values()]
+    .flatMap((open) => windowKindsOf(open.entry).map((kind) => ({ key: `ovi:${open.entry.id}:${kind}`, title: windowTitle(open.entry, kind), activation: open.activations?.[kind] ?? 0 })))
+    .sort((first, second) => second.activation - first.activation)
+    .map(({ key, title }) => ({ key, title }));
+
+/** The OVI window of the page `contentsId` is the active one now. */
+function noteWindowActivated(contentsId) {
+  const open = oviOfContents.get(contentsId);
+  const kind = open && Object.keys(open.windows).find((windowKind) => !open.windows[windowKind].isDestroyed() && open.windows[windowKind].webContents.id === contentsId);
+  if (kind) open.activations[kind] = ++windowActivations;
+}
 
 /** A row of that list was chosen: its window comes to the front. */
 function activateOVIWindow(key) {
@@ -875,7 +892,7 @@ function afterLastProjectClosed() {
 }
 
 /** What a page learns about its OVI when it starts. */
-const describe = (entry) => ({ id: entry.id, kind: entry.kind, text: entry.initialText, key: keyOf(entry), name: oviName(entry), untitledNumber: entry.untitledNumber });
+const describe = (entry) => ({ id: entry.id, kind: entry.kind, text: entry.initialText, key: keyOf(entry), name: oviName(entry), untitledNumber: entry.untitledNumber, inProject: entry.project !== undefined });
 
 async function readTextOrNull(key) {
   try {
@@ -1028,6 +1045,11 @@ function handleRequests() {
   });
   // File ▸ Close All.
   ipcMain.on("ovi:close-all", (event) => closeAllOVIs(ownerOf(event)));
+  // Window ▸ Show Project and the File and Project menus' Save Project and Close Project act on the OVI's project.
+  ipcMain.on("ovi:project-command", (event, command) => {
+    const projectId = openOf(event)?.entry.project;
+    if (projectId !== undefined) projects.runForProject(projectId, command, ownerOf(event));
+  });
   // An OVI that could not be read closes without asking: there is nothing to save.
   ipcMain.on("ovi:close", (event) => closeOVI(openOf(event), { force: true }));
   // File ▸ Exit: asks about each OVI with unsaved changes, then quits (REPORT.md §3).

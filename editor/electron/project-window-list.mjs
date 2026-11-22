@@ -7,8 +7,8 @@
 export const LISTED_KINDS = Object.freeze({ OVI: "ovi", PROJECT: "project" });
 
 /**
- * The rows of the list. `oviWindows` are `{ key, title }` in the order they are shown (unmeasured beyond the one example of
- * the report, where the newest OVI came first); `explorers` are `{ key, title, activation }`, a higher activation being
+ * The rows of the list. `oviWindows` are `{ key, title }` in the order they are shown, the most recently active first
+ * (measured: reports/2026-11-22-vi-window-menu.md Q1, Q4); `explorers` are `{ key, title, activation }`, a higher activation being
  * more recent. Each row is `{ key, kind, number, label, startsGroup }`; `startsGroup` is where a separator is drawn.
  */
 export function windowListRows({ oviWindows, explorers }) {

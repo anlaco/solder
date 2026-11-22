@@ -21,7 +21,7 @@ When the developer says "keep going":
    step 3, type definitions** (DT-096), measured and its core done on 2026-11-17. **DT-099 (2026-11-17) brings projects first:
    step 2b**, measured and its core done on 2026-11-17, editor stages (a) and (b) done on 2026-11-18. Releases
    0.14.0-beta (2026-11-19) and 0.14.1-beta (2026-11-20) are out. "Diagnose two visual faults" just below is done
-   (2026-11-21). Stage (c) of step 2b is done (2026-11-21), stage (d) is half done (2026-11-22). **Next: the rest of stage (d) of step 2b (measure the OVI windows' Window menu; Show Project; the Files tab); then the editor stages of type
+   (2026-11-21). Stage (c) of step 2b is done (2026-11-21), stage (d) is half done (2026-11-22). **Next: the rest of stage (d) of step 2b (the Files tab); then the editor stages of type
    definitions. DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
    **Diagnose two visual faults (asked by the developer on 2026-11-20), diagnosis only, no fix yet.** The developer
@@ -142,8 +142,8 @@ When the developer says "keep going":
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
 
-*2026-11-22: projects' stage (d), first part: Close Project closes the project's OVIs; Rename... of an OVI item. Next:
-measure the OVI window's Window menu, then Show Project and the Files tab.*
+*2026-11-22: projects' stage (d): Close Project closes the project's OVIs; Rename... of an OVI item; the OVI windows'
+Window and Project menus with Show Project. Next: the Files tab.*
 
 *2026-11-21: projects' stage (c): Dependencies read from the items' files, auto-populating folders that show and watch
 the disk, Stop Auto-populating and Convert to Auto-populating Folder.... Next: stage (d).*
@@ -1195,6 +1195,18 @@ to it go on, new fronts wait for step 6.
    renamed OVI's callers (Solder's keep the old path), renaming onto a file that exists (Solder refuses), Rename of a new
    OVI never saved (nothing). Left for (d): Window ▸ Show Project and the OVI windows' Window and Project menus, which
    need the OVI window's Window menu measured first, and the Files tab.*
+   *Stage (d), second part, on 2026-11-22, after measuring the menus
+   ([`vi-window-menu`](../../labview-captures/reports/2026-11-22-vi-window-menu.md)): the OVI windows' Window menu (Show
+   Block Diagram / Show Front Panel, Show Project, Tile Left and Right, the open windows most recently active first, the
+   Project Explorers as a group) and Project menu (Create, Open, Save and Close Project built, the rest greyed with its
+   reason; outside a project only Create and Open enabled), File ▸ Save Project and Close Project acting on the OVI's
+   project, Show Project bringing its explorer forward, restored (`editor/src/window/project-menus.mjs`,
+   `common/window-list-menu.mjs`; `test/editor/ovi-project-menus.test.mjs`). Tried under Xvfb
+   ([`ovi-project-menus-editor-try`](../../labview-captures/reports/2026-11-22-ovi-project-menus-editor-try.md)), which
+   found the window asking for the list not counted as active without a focus event, and Save Project's questions piling
+   up when clicked again (both fixed). Unverified: Show Project with two projects
+   open; docked, the Window menu's list is the one read when the page last had the focus. Left for (d): the Files tab
+   (Show Other Project View, Ctrl+E in the explorer).*
 3. **Type definitions** and strict type definitions, in `.octl` files (DT-093 §5): Make Type Def., the control editor,
    updating the instances. *Decided in DT-096 (2026-11-16): the type on a wire stays structural and the link to the
    `.octl` lives on the object, with a copy of the definition. First, the measurements DT-096 lists.* *Measured on

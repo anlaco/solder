@@ -33,6 +33,8 @@ import * as UN from "../block-diagram/unbundle-by-name.mjs";
 import { followWiredClusters } from "../../../core/model/wired-clusters.mjs";
 import * as PN from "../block-diagram/property-nodes.mjs";
 import * as EM from "./edit-menu.mjs";
+import * as PM from "./project-menus.mjs";
+import { listedIndexOf } from "../common/window-list-menu.mjs";
 import * as Et from "../common/labels.mjs";
 import * as E from "./window-state.mjs";
 import * as G from "../common/glyphs.mjs";
@@ -262,6 +264,24 @@ function alGuardarOtroOVI({ id, key }) {
   pintar();
 }
 window.solder?.alGuardar(alGuardarOtroOVI);
+
+// ——— The OVI's project (DT-099 stage d) ———
+
+/** Whether this OVI belongs to a project: its project rows are greyed outside one (project-menus.mjs). */
+let inProject = !!oviInfo.inProject;
+/** The open windows the Window menu lists, as the main process gave them when it was last asked. */
+let windowRows = [];
+window.solder?.onInProject?.((value) => {
+  inProject = value;
+  pintar();
+});
+
+/** Asks the main process for the open windows; a Window menu open meanwhile is drawn again with them. */
+async function refreshWindowRows() {
+  windowRows = (await window.solder?.project.windowList()) ?? [];
+  if (estado.menuBarra?.id === PM.windowMenuId(nombre)) pintar();
+}
+addEventListener("focus", refreshWindowRows);
 // A subOVI open elsewhere changed in memory or was closed: this caller shows and runs it as it is now (issue #20).
 window.solder?.onOVIEdited(({ id, key }) => {
   if (id !== oviInfo.id && hierarchyKeys.includes(key)) refrescarJerarquia();
@@ -612,6 +632,10 @@ const ORDENES_MENU = {
   exit: () => (confirmarEscritura(), window.solder?.salir()),
   "getting-started-window": () => window.solder?.inicio.mostrar(),
   "toggle-window": () => (confirmarEscritura(), window.solder?.alternarVentana()),
+  // Window ▸ Show Block Diagram on the panel, Show Front Panel on the diagram: Ctrl+E's switch (reports/2026-11-22-vi-window-menu.md).
+  "show-block-diagram": () => (confirmarEscritura(), window.solder?.alternarVentana()),
+  "show-front-panel": () => (confirmarEscritura(), window.solder?.alternarVentana()),
+  ...Object.fromEntries(Object.entries(PM.PROJECT_COMMANDS).map(([row, command]) => [row, () => window.solder?.projectCommand(command)])),
   "tile-left-and-right": () => (confirmarEscritura(), window.solder?.teselar()),
   "vi-properties": abrirPropiedades,
   // Edit menu (the same commands as the shortcuts):
@@ -1386,7 +1410,7 @@ function pintar({ chromeChanged = true } = {}) {
   }
   // El menú de la barra que está abierto, bajo su título.
   if (estado.menuBarra) {
-    const variantes = estado.menuBarra.id === EM.editMenuId(nombre) ? variantesDelMenuEdit() : {};
+    const variantes = menuBarVariant(estado.menuBarra.id);
     extra.encima = (extra.encima ?? "") + D.menuContextual(inv, { raiz: estado.menuBarra.id, x: estado.menuBarra.x, y: estado.menuBarra.y }, marcasDelMenuBarra(estado.menuBarra.id), medirMenu, variantes, windowSize());
   }
   extra.origin = scrollOrigin;
@@ -1410,15 +1434,24 @@ function pintar({ chromeChanged = true } = {}) {
  * drawn menus have, and the toolbar and icons as drawn here, with the window's classes (running, broken arrow…).
  */
 function dockedChromeModel() {
-  const variantOf = (id) => (id === EM.editMenuId(nombre) ? variantesDelMenuEdit() : {});
   return {
-    menus: menuBarModel(inv, `window.${nombre}`, { variantOf, marksOf: marcasDelMenuBarra }),
+    menus: menuBarModel(inv, `window.${nombre}`, { variantOf: menuBarVariant, marksOf: marcasDelMenuBarra }),
     toolbar: { kind: nombre, windowClasses: document.querySelector(".ventana")?.className ?? "", html: outerHtmlOf(".ventana > .cabecera > .barra, .ventana > .cabecera > .zona-iconos") },
   };
 }
 
+/** What a menu of the bar greys, renames and lists, from what this window knows now: the Edit menu's state and the project's. */
+function menuBarVariant(id) {
+  return DV.mergeVariants(id === EM.editMenuId(nombre) ? variantesDelMenuEdit() : {}, PM.projectMenuVariant(inv, nombre, id, { inProject, windowRows }));
+}
+
 /** A row of the menu bar: what is done is done; a hole is explained at `where`. Clicked here, or chosen in the docked window's menu. */
 function runBarMenuRow(id, where) {
+  const listed = windowRows[listedIndexOf(id)];
+  if (listed) {
+    cambiar({ ...estado, menuBarra: null });
+    return window.solder?.project.activateWindow(listed.key);
+  }
   const orden = !esHueco(inv.resolver(id)) && ORDENES_MENU[id.slice(id.lastIndexOf(".") + 1)];
   if (orden) {
     cambiar({ ...estado, menuBarra: null });
@@ -1435,7 +1468,9 @@ const marcasDelMenuBarra = (id) => new Set(id === VP.CATEGORIES_ID ? [`${VP.CATE
 
 function cambiar(nuevo) {
   if (nuevo === estado) return;
+  const windowMenuOpened = nuevo.menuBarra?.id === PM.windowMenuId(nombre) && estado.menuBarra?.id !== nuevo.menuBarra.id;
   estado = nuevo;
+  if (windowMenuOpened) refreshWindowRows();
   ocultarEmergente();
   pintar();
 }

@@ -113,10 +113,12 @@ test("File Create Project and Open Project are built rows of every window that h
   for (const window of ["front-panel", "block-diagram", "polymorphic-ovi", "getting-started", "project-explorer"]) {
     for (const row of ["create-project", "open-project"]) assert.equal(INV.entrada(`window.${window}.menu.file.${row}`).estado, "built", `${window} ${row}`);
   }
-  // Save Project and Close Project of an OVI window act on the project the OVI belongs to, which no OVI does yet.
-  for (const window of ["front-panel", "block-diagram", "polymorphic-ovi"]) {
-    for (const row of ["save-project", "close-project"]) assert.equal(INV.entrada(`window.${window}.menu.file.${row}`).necesita, "ovis-en-proyecto");
+  // Save Project and Close Project of an OVI window act on the project the OVI belongs to (test/editor/ovi-project-menus.test.mjs);
+  // a polymorphic OVI belongs to none yet.
+  for (const window of ["front-panel", "block-diagram"]) {
+    for (const row of ["save-project", "close-project"]) assert.equal(INV.entrada(`window.${window}.menu.file.${row}`).estado, "built");
   }
+  for (const row of ["save-project", "close-project"]) assert.equal(INV.entrada(`window.polymorphic-ovi.menu.file.${row}`).necesita, "ovis-en-proyecto");
   assert.equal(INV.entrada("window.getting-started.create-project").estado, "built");
   assert.equal(GETTING_STARTED_COMMANDS["create-project"], "createProject");
   assert.equal(GETTING_STARTED_COMMANDS["open-project"], "openProject");

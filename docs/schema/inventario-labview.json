@@ -3482,18 +3482,16 @@
     {
       "id": "window.front-panel.menu.file.save-project",
       "etiqueta": "Save Project",
-      "estado": "todo",
-      "labview": "Saves the project the VI belongs to.",
-      "necesita": "ovis-en-proyecto",
-      "captura": "front-panel/menu-file.png"
+      "estado": "built",
+      "captura": "front-panel/menu-file.png",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Project_menu_has_LabVIEW's_rows,_and_outside_a_project_only_Create_and_Open_are_enabled"
     },
     {
       "id": "window.front-panel.menu.file.close-project",
       "etiqueta": "Close Project",
-      "estado": "todo",
-      "labview": "Closes the project the VI belongs to.",
-      "necesita": "ovis-en-proyecto",
-      "captura": "front-panel/menu-file.png"
+      "estado": "built",
+      "captura": "front-panel/menu-file.png",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Project_menu_has_LabVIEW's_rows,_and_outside_a_project_only_Create_and_Open_are_enabled"
     },
     {
       "id": "window.front-panel.menu.file.page-setup",
@@ -3802,10 +3800,137 @@
     {
       "id": "window.front-panel.menu.project",
       "etiqueta": "Project",
+      "estado": "built",
+      "captura": "front-panel/vi-nuevo.png",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Project_menu_has_LabVIEW's_rows,_and_outside_a_project_only_Create_and_Open_are_enabled"
+    },
+    {
+      "id": "window.front-panel.menu.project.create-project",
+      "etiqueta": "Create Project...",
+      "estado": "built",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Project_menu_has_LabVIEW's_rows,_and_outside_a_project_only_Create_and_Open_are_enabled"
+    },
+    {
+      "id": "window.front-panel.menu.project.open-project",
+      "etiqueta": "Open Project...",
+      "estado": "built",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Project_menu_has_LabVIEW's_rows,_and_outside_a_project_only_Create_and_Open_are_enabled"
+    },
+    {
+      "id": "window.front-panel.menu.project.save-project",
+      "etiqueta": "Save Project",
+      "estado": "built",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Project_menu_has_LabVIEW's_rows,_and_outside_a_project_only_Create_and_Open_are_enabled"
+    },
+    {
+      "id": "window.front-panel.menu.project.close-project",
+      "etiqueta": "Close Project",
+      "estado": "built",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Project_menu_has_LabVIEW's_rows,_and_outside_a_project_only_Create_and_Open_are_enabled"
+    },
+    {
+      "id": "window.front-panel.menu.project.add-to-project",
+      "etiqueta": "Add To Project",
       "estado": "todo",
-      "labview": "Operations on the project. Contents not captured.",
-      "necesita": "editor-escritorio",
-      "captura": "front-panel/vi-nuevo.png"
+      "labview": "Adds a file, a folder, a hyperlink or a new item to the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.menu.project.add-to-project.new-vi",
+      "etiqueta": "New OVI",
+      "estado": "todo",
+      "labview": "Makes a new OVI in the project.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.front-panel.menu.project.add-to-project.new",
+      "etiqueta": "New...",
+      "estado": "todo",
+      "labview": "Opens the New dialog to make an item in the project.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.front-panel.menu.project.add-to-project.file",
+      "etiqueta": "File...",
+      "estado": "todo",
+      "labview": "Adds a file to the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.menu.project.add-to-project.folder-snapshot",
+      "etiqueta": "Folder (Snapshot)...",
+      "estado": "todo",
+      "labview": "Adds a folder's files as a virtual folder.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.front-panel.menu.project.add-to-project.folder-auto-populating",
+      "etiqueta": "Folder (Auto-populating)...",
+      "estado": "todo",
+      "labview": "Adds a folder that follows the disk.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.front-panel.menu.project.add-to-project.hyperlink",
+      "etiqueta": "Hyperlink...",
+      "estado": "todo",
+      "labview": "Adds a link to a web page or file.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.front-panel.menu.project.package-dependencies",
+      "etiqueta": "Package Dependencies...",
+      "estado": "todo",
+      "labview": "Opens the dialog that gathers the items' dependencies into a package.",
+      "necesita": "construir-distribuible",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.menu.project.filter-view",
+      "etiqueta": "Filter View",
+      "estado": "todo",
+      "labview": "Chooses which kinds of items the tree shows.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.menu.project.show-item-paths",
+      "etiqueta": "Show Item Paths",
+      "estado": "todo",
+      "labview": "Adds a column with each item's path to the tree.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.front-panel.menu.project.file-information",
+      "etiqueta": "File Information",
+      "estado": "todo",
+      "labview": "Shows the file of the selected item: where it is and when it changed.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.front-panel.menu.project.resolve-conflicts",
+      "etiqueta": "Resolve Conflicts...",
+      "estado": "todo",
+      "labview": "Lists the items that conflict, such as two files with the same name, and resolves them.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.front-panel.menu.project.project-environment-settings",
+      "etiqueta": "Project Environment Settings...",
+      "estado": "todo",
+      "labview": "Opens the settings of the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.menu.project.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
     },
     {
       "id": "window.front-panel.menu.operate",
@@ -3826,10 +3951,54 @@
     {
       "id": "window.front-panel.menu.window",
       "etiqueta": "Window",
+      "estado": "built",
+      "captura": "front-panel/vi-nuevo.png",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Window_menu_has_LabVIEW's_rows,_Show_Project_only_in_a_project,_and_lists_the_windows"
+    },
+    {
+      "id": "window.front-panel.menu.window.show-block-diagram",
+      "etiqueta": "Show Block Diagram",
+      "estado": "built",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Window_menu_has_LabVIEW's_rows,_Show_Project_only_in_a_project,_and_lists_the_windows",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "window.front-panel.menu.window.show-project",
+      "etiqueta": "Show Project",
+      "estado": "built",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Window_menu_has_LabVIEW's_rows,_Show_Project_only_in_a_project,_and_lists_the_windows"
+    },
+    {
+      "id": "window.front-panel.menu.window.tile-left-and-right",
+      "etiqueta": "Tile Left and Right",
+      "estado": "built",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Window_menu_has_LabVIEW's_rows,_Show_Project_only_in_a_project,_and_lists_the_windows",
+      "atajo": "Ctrl+T",
+      "separado": true
+    },
+    {
+      "id": "window.front-panel.menu.window.tile-up-and-down",
+      "etiqueta": "Tile Up and Down",
       "estado": "todo",
-      "labview": "Switching between open windows. Contents not captured; only its shortcuts have been measured, and they already work: Ctrl+E switches from the panel window to the diagram window and back, and Ctrl+T tiles the two side by side (editor-checks/REPORT.md §4 and §7).",
-      "necesita": "editor-escritorio",
-      "captura": "front-panel/vi-nuevo.png"
+      "labview": "Places the Front Panel above the Block Diagram.",
+      "necesita": "varios-vis"
+    },
+    {
+      "id": "window.front-panel.menu.window.full-size",
+      "etiqueta": "Full Size",
+      "estado": "todo",
+      "labview": "Makes the window fill the screen.",
+      "necesita": "varios-vis",
+      "atajo": "Ctrl+/"
+    },
+    {
+      "id": "window.front-panel.menu.window.all-windows",
+      "etiqueta": "All Windows...",
+      "estado": "todo",
+      "labview": "Lists every open window to choose one.",
+      "necesita": "varios-vis",
+      "atajo": "Ctrl+Shift+W",
+      "separado": true
     },
     {
       "id": "window.front-panel.menu.help",
@@ -4099,18 +4268,16 @@
     {
       "id": "window.block-diagram.menu.file.save-project",
       "etiqueta": "Save Project",
-      "estado": "todo",
-      "labview": "Saves the project the VI belongs to.",
-      "necesita": "ovis-en-proyecto",
-      "captura": "block-diagram/menu-file.png"
+      "estado": "built",
+      "captura": "block-diagram/menu-file.png",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Project_menu_has_LabVIEW's_rows,_and_outside_a_project_only_Create_and_Open_are_enabled"
     },
     {
       "id": "window.block-diagram.menu.file.close-project",
       "etiqueta": "Close Project",
-      "estado": "todo",
-      "labview": "Closes the project the VI belongs to.",
-      "necesita": "ovis-en-proyecto",
-      "captura": "block-diagram/menu-file.png"
+      "estado": "built",
+      "captura": "block-diagram/menu-file.png",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Project_menu_has_LabVIEW's_rows,_and_outside_a_project_only_Create_and_Open_are_enabled"
     },
     {
       "id": "window.block-diagram.menu.file.page-setup",
@@ -4611,10 +4778,137 @@
     {
       "id": "window.block-diagram.menu.project",
       "etiqueta": "Project",
+      "estado": "built",
+      "captura": "block-diagram/vi-nuevo.png",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Project_menu_has_LabVIEW's_rows,_and_outside_a_project_only_Create_and_Open_are_enabled"
+    },
+    {
+      "id": "window.block-diagram.menu.project.create-project",
+      "etiqueta": "Create Project...",
+      "estado": "built",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Project_menu_has_LabVIEW's_rows,_and_outside_a_project_only_Create_and_Open_are_enabled"
+    },
+    {
+      "id": "window.block-diagram.menu.project.open-project",
+      "etiqueta": "Open Project...",
+      "estado": "built",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Project_menu_has_LabVIEW's_rows,_and_outside_a_project_only_Create_and_Open_are_enabled"
+    },
+    {
+      "id": "window.block-diagram.menu.project.save-project",
+      "etiqueta": "Save Project",
+      "estado": "built",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Project_menu_has_LabVIEW's_rows,_and_outside_a_project_only_Create_and_Open_are_enabled"
+    },
+    {
+      "id": "window.block-diagram.menu.project.close-project",
+      "etiqueta": "Close Project",
+      "estado": "built",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Project_menu_has_LabVIEW's_rows,_and_outside_a_project_only_Create_and_Open_are_enabled"
+    },
+    {
+      "id": "window.block-diagram.menu.project.add-to-project",
+      "etiqueta": "Add To Project",
       "estado": "todo",
-      "labview": "Operations on the project. Contents not captured.",
-      "necesita": "editor-escritorio",
-      "captura": "block-diagram/vi-nuevo.png"
+      "labview": "Adds a file, a folder, a hyperlink or a new item to the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.project.add-to-project.new-vi",
+      "etiqueta": "New OVI",
+      "estado": "todo",
+      "labview": "Makes a new OVI in the project.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.block-diagram.menu.project.add-to-project.new",
+      "etiqueta": "New...",
+      "estado": "todo",
+      "labview": "Opens the New dialog to make an item in the project.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.block-diagram.menu.project.add-to-project.file",
+      "etiqueta": "File...",
+      "estado": "todo",
+      "labview": "Adds a file to the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.project.add-to-project.folder-snapshot",
+      "etiqueta": "Folder (Snapshot)...",
+      "estado": "todo",
+      "labview": "Adds a folder's files as a virtual folder.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.block-diagram.menu.project.add-to-project.folder-auto-populating",
+      "etiqueta": "Folder (Auto-populating)...",
+      "estado": "todo",
+      "labview": "Adds a folder that follows the disk.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.block-diagram.menu.project.add-to-project.hyperlink",
+      "etiqueta": "Hyperlink...",
+      "estado": "todo",
+      "labview": "Adds a link to a web page or file.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.block-diagram.menu.project.package-dependencies",
+      "etiqueta": "Package Dependencies...",
+      "estado": "todo",
+      "labview": "Opens the dialog that gathers the items' dependencies into a package.",
+      "necesita": "construir-distribuible",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.project.filter-view",
+      "etiqueta": "Filter View",
+      "estado": "todo",
+      "labview": "Chooses which kinds of items the tree shows.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.project.show-item-paths",
+      "etiqueta": "Show Item Paths",
+      "estado": "todo",
+      "labview": "Adds a column with each item's path to the tree.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.block-diagram.menu.project.file-information",
+      "etiqueta": "File Information",
+      "estado": "todo",
+      "labview": "Shows the file of the selected item: where it is and when it changed.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.block-diagram.menu.project.resolve-conflicts",
+      "etiqueta": "Resolve Conflicts...",
+      "estado": "todo",
+      "labview": "Lists the items that conflict, such as two files with the same name, and resolves them.",
+      "necesita": "flujos-del-proyecto"
+    },
+    {
+      "id": "window.block-diagram.menu.project.project-environment-settings",
+      "etiqueta": "Project Environment Settings...",
+      "estado": "todo",
+      "labview": "Opens the settings of the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.project.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "Opens the properties of the project.",
+      "necesita": "flujos-del-proyecto",
+      "separado": true
     },
     {
       "id": "window.block-diagram.menu.operate",
@@ -4635,10 +4929,54 @@
     {
       "id": "window.block-diagram.menu.window",
       "etiqueta": "Window",
+      "estado": "built",
+      "captura": "block-diagram/vi-nuevo.png",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Window_menu_has_LabVIEW's_rows,_Show_Project_only_in_a_project,_and_lists_the_windows"
+    },
+    {
+      "id": "window.block-diagram.menu.window.show-front-panel",
+      "etiqueta": "Show Front Panel",
+      "estado": "built",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Window_menu_has_LabVIEW's_rows,_Show_Project_only_in_a_project,_and_lists_the_windows",
+      "atajo": "Ctrl+E"
+    },
+    {
+      "id": "window.block-diagram.menu.window.show-project",
+      "etiqueta": "Show Project",
+      "estado": "built",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Window_menu_has_LabVIEW's_rows,_Show_Project_only_in_a_project,_and_lists_the_windows"
+    },
+    {
+      "id": "window.block-diagram.menu.window.tile-left-and-right",
+      "etiqueta": "Tile Left and Right",
+      "estado": "built",
+      "prueba": "test/editor/ovi-project-menus.test.mjs::the_OVI_windows'_Window_menu_has_LabVIEW's_rows,_Show_Project_only_in_a_project,_and_lists_the_windows",
+      "atajo": "Ctrl+T",
+      "separado": true
+    },
+    {
+      "id": "window.block-diagram.menu.window.tile-up-and-down",
+      "etiqueta": "Tile Up and Down",
       "estado": "todo",
-      "labview": "Switching between open windows. Contents not captured; only its shortcuts have been measured, and they already work: Ctrl+E switches from the panel window to the diagram window and back, and Ctrl+T tiles the two side by side (editor-checks/REPORT.md §4 and §7).",
-      "necesita": "editor-escritorio",
-      "captura": "block-diagram/vi-nuevo.png"
+      "labview": "Places the Front Panel above the Block Diagram.",
+      "necesita": "varios-vis"
+    },
+    {
+      "id": "window.block-diagram.menu.window.full-size",
+      "etiqueta": "Full Size",
+      "estado": "todo",
+      "labview": "Makes the window fill the screen.",
+      "necesita": "varios-vis",
+      "atajo": "Ctrl+/"
+    },
+    {
+      "id": "window.block-diagram.menu.window.all-windows",
+      "etiqueta": "All Windows...",
+      "estado": "todo",
+      "labview": "Lists every open window to choose one.",
+      "necesita": "varios-vis",
+      "atajo": "Ctrl+Shift+W",
+      "separado": true
     },
     {
       "id": "window.block-diagram.menu.help",

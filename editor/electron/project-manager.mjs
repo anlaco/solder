@@ -34,7 +34,8 @@ const CREATIONS = { BLANK_PROJECT: "blank-project", BLANK_OVI: "blank-ovi" };
  * OVIs of the tree, `saveNewOVI(entryId, owner)` (gives the path it was saved at, or null),
  * `instanceChanged(projectId, instance)` and `projectClosed(projectId)`; `projectOVIs(projectId)`, the OVIs open in the
  * project as Close Project asks about them (`{ name, isDirty(), save(), close() }`, created last first);
- * `renameOVIFile(oldPath, newPath)`, Rename... of an OVI item on the disk and in memory; `oviLib`, what
+ * `renameOVIFile(oldPath, newPath)`, Rename... of an OVI item on the disk and in memory; `windowActivated(contentsId)`, an
+ * OVI window that opened its Window menu; `oviLib`, what
  * `<ovilib>/…` paths resolve with.
  */
 export function createProjectManager(host) {
@@ -44,6 +45,7 @@ export function createProjectManager(host) {
   const entryOfContents = new Map();
   const closing = new Set();
   const asking = new Set();
+  const saving = new Set();
   let lastFolder = os.homedir();
   let createDialog = null;
   /** What the pages read from the disk, and the watchers of their auto-populating folders (project-disk-requests.mjs). */
@@ -150,8 +152,22 @@ export function createProjectManager(host) {
     return true;
   }
 
-  /** Save Project: asks where for a project that was never saved, then writes the project with the window's place. Returns whether it was saved. */
+  /**
+   * Save Project: asks where for a project that was never saved, then writes the project with the window's place. Returns
+   * whether it was saved. A second Save Project while the first is still asking does nothing, so its questions do not pile
+   * up (found under Xvfb: the menu row stays clickable from another window).
+   */
   async function saveProject(entry, owner) {
+    if (saving.has(entry.id)) return false;
+    saving.add(entry.id);
+    try {
+      return await writeProjectOf(entry, owner);
+    } finally {
+      saving.delete(entry.id);
+    }
+  }
+
+  async function writeProjectOf(entry, owner) {
     if (!(await saveNewOVIsOf(entry, owner))) return false;
     let target = entry.path;
     if (!target) {
@@ -327,7 +343,13 @@ export function createProjectManager(host) {
     diskRequests = registerDiskRequests({ ipcMain, entryOf, oviLib: host.oviLib, notify: (entry) => sendDiskChanged(windowOf(entry)) });
     ipcMain.on("project:create", (event) => showCreateDialog(ownerOf(event)));
     ipcMain.on("project:open", (event) => chooseAndOpen(ownerOf(event)));
-    ipcMain.handle("project:window-list", () => currentWindowList());
+    // The window whose Window menu opens is the active one, listed first, even if its focus event never came (no window manager).
+    ipcMain.handle("project:window-list", (event) => {
+      const explorer = entryOf(event);
+      if (explorer) registry.activate(explorer.id);
+      else host.windowActivated(event.sender.id);
+      return currentWindowList();
+    });
     ipcMain.on("project:activate-window", (_event, key) => activateListed(key));
     ipcMain.handle("create-project:init", () => ({ oviOpen: hasOVIsOutsideProjects(host.openOVIEntries()) }));
     ipcMain.on("create-project:finish", (_event, creation) => finishCreateDialog(creation));
@@ -384,5 +406,18 @@ export function createProjectManager(host) {
   /** A file was saved: every project reads its Dependencies again, since what an OVI calls may have changed. */
   const filesChanged = () => windows.forEach(sendDiskChanged);
 
-  return { openPath, chooseAndOpen, showCreateDialog, confirmQuit, registerRequests, newOVISettled, filesChanged, count: () => windows.size };
+  /**
+   * A row of an OVI window's menus that acts on its project: Show Project brings the Project Explorer to the front,
+   * restored when minimized (measured: reports/2026-11-22-vi-window-menu.md Q2); Save Project and Close Project as the
+   * explorer's own.
+   */
+  function runForProject(projectId, command, owner) {
+    const entry = registry.get(projectId);
+    if (!entry) return;
+    if (command === "show") return bringToFront(entry);
+    if (command === "save") return saveProject(entry, owner);
+    if (command === "close") return closeProject(entry);
+  }
+
+  return { openPath, chooseAndOpen, showCreateDialog, confirmQuit, registerRequests, newOVISettled, filesChanged, runForProject, count: () => windows.size };
 }

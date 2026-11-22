@@ -78,7 +78,7 @@ test("the titles say the project and target, and Save Project asks LabVIEW's que
   });
   assert.deepEqual(NEW_FILES_BUTTONS, ["Yes", "Cancel"]);
   const manager = source("electron/project-manager.mjs");
-  assert.match(manager, /async function saveProject\(entry, owner\) \{\n    if \(!\(await saveNewOVIsOf\(entry, owner\)\)\) return false;/);
+  assert.match(manager, /async function writeProjectOf\(entry, owner\) \{\n    if \(!\(await saveNewOVIsOf\(entry, owner\)\)\) return false;/);
   const main = source("electron/main.mjs");
   assert.match(main, /if \(open\.entry\.project !== undefined && !open\.entry\.path\) projects\.newOVISettled\(open\.entry\.project, open\.entry\.id, null\);/, "closed unsaved, the page drops the item");
   assert.match(main, /if \(wasNewInProject\) projects\.newOVISettled\(entry\.project, entry\.id, target\);/, "saved, the page turns it into the file");

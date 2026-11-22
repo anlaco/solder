@@ -19,6 +19,9 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   (Close Project)", with Save - All and Don't Save - All for the rest), and the project last.
 - Projects: Rename... (F2) on an OVI of the tree renames its file through "Save the OVI (…) As"; the item and an open
   OVI's windows follow.
+- The OVI windows have LabVIEW's Window menu (Show Block Diagram / Show Front Panel, Show Project, Tile Left and Right,
+  the open windows with the most recently active first) and Project menu; Show Project brings the OVI's Project
+  Explorer forward, and Save Project and Close Project, in the File and Project menus, act on the OVI's project.
 
 - Fix: a running OVI's values reach the Front Panel once per frame of the display, and the Block Diagram no longer
   repaints itself, whole, for each of them. Before, every value message (every 16 ms) repainted both windows; a
