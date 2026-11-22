@@ -22,7 +22,7 @@ When the developer says "keep going":
    step 2b**, measured and its core done on 2026-11-17, editor stages (a) and (b) done on 2026-11-18. Releases
    0.14.0-beta (2026-11-19) and 0.14.1-beta (2026-11-20) are out. "Diagnose two visual faults" just below is done
    (2026-11-21). Stage (c) of step 2b is done (2026-11-21), stage (d) is done (2026-11-22), and with it step 2b. **Next: the editor stages of type
-   definitions (step 3). DAQ's stage B waits for the
+   definitions (step 3), from part (a1) of stage (a) (DT-104). DAQ's stage B waits for the
    waveform step. After Core 1, everything native, then Core 2 (DT-079 §1).
    **Diagnose two visual faults (asked by the developer on 2026-11-20), diagnosis only, no fix yet.** The developer
    reported two things that do not stop the work but look wrong, and agreed with this rule: a purely cosmetic fault goes
@@ -1252,6 +1252,27 @@ to it go on, new fronts wait for step 6.
    opening nothing; Open Type Def. opens the 616 × 413 editor `Control N Type Def *`; Advanced ▸ Customize... opens a
    panel-sized `Control N Control *` that never links; Save names the file (`Name the Control (Control N)`) and the
    link moves to it. Open question before stage (a): how an unsaved typedef is linked (DT-096 has a path only).*
+   *Answered the same day by the developer in DT-096 §3: an untitled key `untitled:…`, moved to the file on its first
+   save. Before stage (a), on 2026-11-22: the control editor window's menus and toolbar measured
+   ([`control-editor-window`](../../labview-captures/reports/2026-11-22-control-editor-window.md)).*
+   *DT-104 (2026-11-22): the control editor is the Front Panel page editing one object. Its pure part is done the same
+   day: `core/model/control-editor.mjs` opens an `.octl` as the graph of a panel holding its one object and writes it
+   back (`test/core/control-editor.test.mjs`). Stage (a) goes on in three parts:*
+   - *(a1) The window. The registry gets `ENTRY_KINDS.CONTROL` (one window, the Front Panel; its own counter "Control
+     N", shared with Customize...; its title "Control N Type Def *", from the kind it was opened with, measured: the
+     title follows the ring only on reopening). The page, told the entry's kind, reads its text with
+     `controlEditorGraph` and reports it with `controlEditorText`; its menus and toolbar are a prefix of their own in
+     the inventory, `window.control-editor`, with the measured rows (File's Apply Changes and Control Properties,
+     Window's Show Parts Window, Operate's Change to Customize Mode, the toolbar's ring "Control Type" and no Run).*
+   - *(a2) Make Type Def. and Open Type Def. Make Type Def. on a panel control or a Cluster or Numeric constant asks
+     the main process for an untitled control entry holding the object (`definitionObjectOf`) and links the object to
+     its key `untitled:…`, opening nothing; Open Type Def. opens the entry's window (616 × 413, cascaded), from memory
+     or from the `.octl` on disk.*
+   - *(a3) Saving and closing. Save names the file ("Name the Control (Control N)", Controls (*.octl)) and moves every
+     open OVI's link from the untitled key to the file, relative to each OVI; saving an OVI whose definition is
+     untitled asks LabVIEW's '"p1.vi" refers to new, unsaved files' (Yes / Cancel) first; closing the editor asks
+     "Save changes before closing?" with Save, Defer Decision, Cancel, the entry kept in memory on Defer Decision.
+     Apply Changes and the updates of the open OVIs are stage (b).*
 4. **Time stamp**: control, constant, Get Date/Time, conversions. *Decided in DT-097 (2026-11-16) and measured the
    same day ([`time-stamp`](../../labview-captures/reports/2026-11-16-time-stamp.md)): 16 bytes laid out as a cluster,
    and the arithmetic LabVIEW takes, exact.*

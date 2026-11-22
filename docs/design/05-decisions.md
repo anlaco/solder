@@ -41,6 +41,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [101](#dt-101) | Solder's docked view: the Project Explorer and the OVIs in one window, switched live from the floating LabVIEW view | Accepted · experimental, being built |
 | [102](#dt-102) | A subOVI behaves in memory as LabVIEW's subVI: reserved while a caller runs, held by Defer Decision, broken by an unsaved connector change | Accepted · partly built |
 | [103](#dt-103) | A compiled application is the Solder Runtime: wasmtime, a web server and a desktop window at once, with the HTML front panel reachable from any browser and from a remote viewer built with it | Accepted as the end result · not built |
+| [104](#dt-104) | The control editor is the Front Panel page editing one object: an entry of its own kind with an `.octl`, one window, the Control / Type Def. / Strict Type Def. ring | Accepted · being built |
 
 ## The 34 Red decisions
 
@@ -5363,3 +5364,40 @@ i. **wasmtime, proved first** by a prototype: WasmGC (the core uses it, DT-039 �
 | Losing the client takes the program to its safe state | a test on the virtual host (Open e) | Not built |
 | The remote viewer accepts only its application's certificate, and the application only enrolled viewers | tests of the Runtime and the viewer (§6) | Not built |
 | A copied viewer cannot get in without being enrolled, and a revoked one is refused | tests of the Runtime and the viewer (§6) | Not built |
+
+## DT-104
+
+**The control editor (Open Type Def., Customize...) is the Front Panel page editing one panel object, not a page of its
+own: an entry of the OVI registry of its own kind, whose file is an `.octl` and whose only window is a Front Panel.**
+
+- **Status:** Accepted on 2026-11-22 by the developer ("Front Panel page"), proposed the same day with the other
+  option, a page of its own as the Polymorphic OVI window is · being built with step 3, stage (a), of "The language's
+  everyday types" ([DT-093](#dt-093)).
+- **Why:** in LabVIEW the control editor is a front panel holding the one control it edits, with the panel's tools,
+  menus and right-click menus (measured: labview-captures/reports/2026-11-17-typedef-editor-entry.md,
+  2026-11-17-typedef-update.md Q4). Everything an object can be edited with on a panel (its size, its properties, a
+  cluster's elements, an enum's items, its styles) is already the Front Panel page's; a page of its own would repeat
+  it or lag behind it.
+
+### Decision
+
+1. **An entry of its own kind.** The registry of open documents (`editor/electron/ovi-registry.mjs`) gets a kind for
+   an `.octl`, beside the OVI and the polymorphic OVI. Its key is its path, or an untitled key `untitled:…` for a
+   type definition made by Make Type Def. and not saved yet ([DT-096](#dt-096) §3), named "Control N" from LabVIEW's
+   counter, which Customize... shares (measured).
+2. **One window, the Front Panel page.** The page (`editor/src/window/editor-window.mjs`) opens it as a panel of one
+   object, read from and written to the `.octl` (`core/model/type-definition.mjs`); there is no Block Diagram, and
+   what an OVI has that a control has not (Run, the connector pane, the icon's OVI parts) is drawn as LabVIEW draws it
+   in the control editor, measured before it is built.
+3. **The ring and the file.** The toolbar's ring sets the file's kind (`control`, `type-def`, `strict-type-def`) and
+   the title ("PointTD.ctl Type Def", measured; "Control N Type Def *" untitled). Save names the file ("Name the
+   Control (Control N)") and moves every link from the untitled key to it; File ▸ Apply Changes and Save update the
+   open OVIs that follow it, as [DT-096](#dt-096) §4 says (stage b).
+
+### How it is verified
+
+| What | Test | State |
+|------|------|-------|
+| An `.octl` opens as a panel of one object and is written back unchanged | a round trip of the page's model and the file | Not built |
+| Save moves the links of every open OVI from the untitled key to the file | an editor test of the registry | Not built |
+
