@@ -8,7 +8,10 @@
 
 When the developer says "keep going":
 
-1. Read this document: §2 (where we are) and §3b (what is next). The execution scheduler
+1. Read this document: §2 (where we are) and §3b (what is next). **Since 2026-11-23 the order is DT-105's, at the
+   top of §3b ("The order by importance for programming"): continue with its first step not done.** A fault reported
+   in an issue goes before that step. What follows in this item is the history of the order before DT-105.
+   The execution scheduler
    at the end of the road in §3b (DT-061, DT-063) is done and merged into `main`
    (2026-10-25); continue with **"Then: hardware"** right after it (DT-064, which moved Core 1
    behind it), and keep in mind its list "Pending from the pool of threads". §4 gives the
@@ -148,6 +151,10 @@ When the developer says "keep going":
 
 ## 2. Where we are (2026-10-17, 0.4.0-beta)
 
+*2026-11-23: the whole Functions palette counted from LabVIEW's palette files (`programming-gap.md`): about 2,272
+unique functions, about 198 in Solder. DT-105 orders the work by importance for programming, in seven phases (§3b).
+Next: phase 0, type definitions' stage (a3).*
+
 *2026-11-22: type definitions' stage (a2) done for the panel cluster: Make Type Def. links it to an untitled "Control N"
 kept in memory, Open Type Def. opens its editor, the linked instance's menu, links moved when it is saved. Next: (a2b),
 the constants, then (a3).*
@@ -238,6 +245,72 @@ such as the structures— is finished when:
 7. **Tested and written:** tests for all of the above; new rules in `spec/`.
 
 ## 3b. Priority: first a language that can program (decided 2026-10-01)
+
+### The order by importance for programming (DT-105, decided 2026-11-23)
+
+This order replaces everything below it in §3b, which stays as the history of how Solder got here (what it says about
+how each thing is built still holds). It comes from counting what Solder misses of LabVIEW
+([`programming-gap.md`](programming-gap.md)): what every program needs first, the libraries of VIs and what few users
+touch last; the goal stays 100 %. **A fault reported in an issue** (not a request for something new) **is fixed before
+the next step here**; a request for something new goes to its phase, and bringing it forward is asked. Each phase
+goes out in several MINOR releases; a milestone is tried by hand before its release. Alongside every phase, one or two
+of the editor's tools that weigh most when programming (Create SubOVI from Selection, Clean Up Diagram, Quick Drop,
+Find and Replace).
+
+0. **Close what is half done.**
+   1. Type definitions, stage (a3): Save names the file and moves the links; saving an OVI whose definition is
+      untitled asks first; closing the editor asks Save / Defer Decision / Cancel (detail in "The language's everyday
+      types" step 3 below).
+   2. Type definitions, stage (b): the instances' menus (Open, Disconnect from, Auto-Update from, Review and Update
+      from Type Def.) and Apply Changes updating the open OVIs.
+   3. The cosmetic list for the MINOR (Old School's enum field 6 px wide, the docked diagram shown 11–15 ms before its
+      panel, a linked constant's corner triangle, Find ▸ and Description/Tip... in the linked menus, the footer's
+      Application Instance) and the controls resized by analogy, measured.
+   4. Release 0.15.0-beta.
+1. **The core of the language** (≈ 200 functions). *Milestone: Core 1 but its hardware lessons.*
+   1. Structures: Feedback Node; local variables; global variables; the For Loop's conditional terminal;
+      concatenating and conditional tunnels; stacked shift registers; Diagram Disable and Conditional Disable;
+      Formula Node.
+   2. Mathematics ▸ Elementary & Special Functions: trigonometric, exponential and logarithmic, hyperbolic; then the
+      special functions.
+   3. Array: Reshape, Transpose 2D, Sort 2D, Shuffle, Interleave, Decimate, Interpolate, Threshold, Remove Duplicates,
+      Array ↔ Cluster, Empty Array?, Build Cluster Array, Index & Bundle Cluster Array; Sorted and Unsorted.
+   4. String: Match Pattern, Match Regular Expression, the Additional String Functions, Format Value, Scan Value,
+      Build Text, Normalize End Of Line, byte arrays and UTF-8; Type Cast, Flatten/Unflatten To String (binary).
+   5. Comparison: Printable?, Lexical Class, Assert Type, Is Value Changed, Is Path and Not Empty?.
+   6. The time stamp (DT-097): the type, its control and constant, Get Date/Time In Seconds and String, the
+      conversions, Format Date/Time String, Elapsed Time, High Resolution Relative Seconds.
+   7. Errors: General Error Handler, Find First Error, Error Ring, automatic error handling; Run Continuously.
+   8. Core 1, lesson by lesson: list what it still misses and close it.
+2. **Concurrency and events** (≈ 130). *Milestone: Core 2's lessons 1 to 3.*
+   1. Queue Operations (9), then Notifier Operations, Occurrences, Semaphore, Rendezvous, Synchronize Data Flow.
+   2. The Event Structure: panel events, timeout, Value Change; dynamic registration, user events, Flush Event Queue.
+   3. Variant (To Variant, Variant To Data, attributes, Data Type Parsing); Map and Set.
+   4. The user dialogs: One, Two and Three Button Dialog, Prompt User for Input, Display Message to User.
+   5. References: Invoke Node, Open/Close Reference, Static OVI Reference, Call By Reference, Start and Wait On
+      Asynchronous Call; recursion and shared clones.
+   6. The panel controls an interface needs: Listbox, Multicolumn Listbox, Table, Tree, Tab Control.
+   7. Core 2's lessons 1 to 3 tried in Solder: producer/consumer, the event-driven state machine, a queued message
+      handler.
+3. **Measurement data and files** (≈ 250).
+   1. Waveform: the type (DT-097 §5), its functions, Waveform Chart and Graph complete, basic signal generation.
+   2. DAQ on waveforms (DT-076 stage B).
+   3. File I/O: binary files, Format Into / Scan From File, configuration files, folders (List, Create, Move, Copy,
+      File/Directory Info), datalog; then TDMS.
+   4. Type definitions, stages (c) and (d): the Review and Update window; the coercion dot and Context Help line.
+4. **Organising large code.** *Milestone: Core 3.*
+   1. Solder libraries (`.lvlib`): namespace, public and private scope, their palette.
+   2. Solder classes (LVOOP): private data, inheritance, dynamic dispatch, To More Specific/Generic, Call Parent
+      Method, the class functions of the Cluster, Class, & Variant palette.
+   3. Malleable OVIs (`.vim`) and the Type Specialization Structure.
+5. **Communication** (≈ 340): TCP, UDP, HTTP Client, Network Streams, Shared Variables; the rest of VISA and Serial,
+   GPIB; SMTP, FTP, SFTP, WebSockets; the Actor Framework.
+6. **Mathematics and Signal Processing** (≈ 870), as OVIs of `ovi.lib` written in Solder: statistics, linear algebra,
+   fitting and interpolation, filters, FFT and windows, Point By Point, the rest.
+7. **The rest:** Report Generation, Graphics & Sound, Express VIs, Connectivity (Python and Database first), VI
+   Scripting, Application Builder with the Solder Runtime (DT-103).
+
+### Before DT-105
 
 Before polishing each module, the goal is a **complete basic visual language**: one
 where, with what is done, a real program can be written —data, decisions and

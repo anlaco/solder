@@ -38,6 +38,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [077](#dt-077) | When Solder is 1.0: what a LabVIEW developer certified on Core 1 and Core 2 does, reliably, with nothing lost; not a coverage figure | Accepted · not implemented |
 | [089](#dt-089) | The compiler is split into modules of one responsibility each, after everything native and before 1.0 | Proposed · not implemented |
 | [091](#dt-091) | Rings are plain numerics of their representation with items as text–value pairs, saved as pairs from `.sdg` version 5 | Accepted · core built |
+| [105](#dt-105) | The work goes in order of importance for programming, in seven phases; fixes reported in issues go first | Accepted · in use |
 | [101](#dt-101) | Solder's docked view: the Project Explorer and the OVIs in one window, switched live from the floating LabVIEW view | Accepted · experimental, being built |
 | [102](#dt-102) | A subOVI behaves in memory as LabVIEW's subVI: reserved while a caller runs, held by Defer Decision, broken by an unsaved connector change | Accepted · partly built |
 | [103](#dt-103) | A compiled application is the Solder Runtime: wasmtime, a web server and a desktop window at once, with the HTML front panel reachable from any browser and from a remote viewer built with it | Accepted as the end result · not built |
@@ -5401,3 +5402,72 @@ own: an entry of the OVI registry of its own kind, whose file is an `.octl` and 
 | An `.octl` opens as a panel of one object and is written back unchanged | a round trip of the page's model and the file | Built: `test/core/control-editor.test.mjs` (2026-11-22), and stage (a1)'s window over it in `test/editor/control-editor-window.test.mjs` (2026-11-22) |
 | Save moves the links of every open OVI from the untitled key to the file | an editor test of the registry | Not built (stage a3) |
 
+
+## DT-105
+
+**From 2026-11-23 the work goes in order of importance for programming: what every program needs first, what organises
+large programs after, the libraries of VIs and what only some users touch last. Seven phases, measured against the
+count of what is missing (`programming-gap.md`); the goal stays 100 % of LabVIEW. A fault reported in an issue goes
+before the phase's next step.**
+
+- **Status:** Accepted on 2026-11-23 by the developer ("nos olvidemos del plan actual … lo más esencial primero"; and
+  "cuando lleguen issues no propios de peticiones de implementación los vamos adelantando"). It replaces the order of
+  "The language's everyday types" ([DT-093](#dt-093)) and the place of Core 1 and Core 2 in [DT-064](#dt-064) and
+  [DT-079](#dt-079) §1; what those decided about how things are built stays. [DT-077](#dt-077) (1.0 is what a
+  developer certified on Core 1 and Core 2 does) is unchanged: phases 1 and 2 reach it.
+- **Why:** on 2026-11-23 the whole Functions palette was counted from LabVIEW's palette files
+  ([`programming-gap.md`](programming-gap.md); labview-captures/reports/2026-11-23-programming-palettes-gap.md,
+  -other-palettes-gap.md): about 2,272 unique functions, about 198 in Solder; in Programming 1,007, about 190 done.
+  The order kept until then followed fronts (hardware, then types) and left out things every program uses (sine and
+  cosine, local variables, the Feedback Node, regular expressions, queues, the Event Structure). Counting what is
+  missing showed where a user is stopped first.
+
+### Decision
+
+0. **Close what is half done.** Type definitions' stages (a3) and (b) (saving, closing, Apply Changes, updating the
+   instances), the cosmetic list of the next MINOR, release 0.15.
+1. **The core of the language** (≈ 200 functions). The structures left: Feedback Node, local and global variables,
+   the For Loop's conditional terminal, concatenating and conditional tunnels, stacked shift registers, Formula Node,
+   Diagram Disable and Conditional Disable. Mathematics ▸ Elementary & Special Functions (trigonometric, exponential,
+   logarithmic, hyperbolic first). The rest of Array, String (Match Pattern, Match Regular Expression, Additional
+   String Functions, Format/Scan Value, byte arrays, UTF-8, Type Cast, binary Flatten/Unflatten) and Comparison. The
+   time stamp with date and time ([DT-097](#dt-097)). Errors: General Error Handler, Find First Error, Error Ring,
+   automatic error handling. *Milestone: every lesson of Core 1 but the hardware ones.*
+2. **Concurrency and events** (≈ 130). Synchronization (queues first, then notifiers, occurrences, semaphores,
+   rendezvous); the Event Structure with timeout, dynamic registration and user events; Variant with attributes and
+   Data Type Parsing; Map and Set; the user dialogs; control references, Invoke Node, Open/Close Reference, Call By
+   Reference and asynchronous calls, recursion and shared clones; the panel controls an interface needs (Listbox,
+   Table, Tree, Tab Control). These are built together because a producer/consumer or a queued message handler needs
+   all of them, and because they touch the core's base (state shared by the pool's threads, the scheduler waiting on
+   events): they come before more is built on it. *Milestone: Core 2's lessons 1 to 3.*
+3. **Measurement data and files** (≈ 250). Waveform (the type, its functions, charts and graphs, basic signal
+   generation), with DAQ's waveform reads ([DT-076](#dt-076) stage B); File I/O (binary, Format Into / Scan From File,
+   configuration files, folders, datalog, then TDMS); type definitions' stages (c) and (d).
+4. **Organising large code.** Solder libraries (`.lvlib`'s namespace, scope and palette) first, then Solder classes
+   (LVOOP: private data, inheritance, dynamic dispatch, To More Specific/Generic, Call Parent Method), malleable OVIs
+   (`.vim`) and the Type Specialization Structure. A library first because a class is a library with data; classes
+   after phase 2 because they need Variant, references and asynchronous calls. *Milestone: Core 3.*
+5. **Communication** (≈ 340). TCP, UDP, HTTP Client, Network Streams, Shared Variables, the rest of VISA and Serial,
+   GPIB; then SMTP, FTP, SFTP, WebSockets; the Actor Framework.
+6. **Mathematics and Signal Processing** (≈ 870). Almost all VIs over primitives in LabVIEW, so written as OVIs of
+   `ovi.lib` in Solder itself ([DT-073](#dt-073)), in volume. Order: statistics, linear algebra, fitting and
+   interpolation, filters, FFT and windows, Point By Point, the rest.
+7. **The rest.** Report Generation, Graphics & Sound, Express VIs, Connectivity (Python and Database first; .NET and
+   ActiveX decided then), VI Scripting, Application Builder with the Solder Runtime ([DT-103](#dt-103)).
+
+**Alongside every phase:** one or two of the editor's tools that weigh most when programming (Create SubOVI from
+Selection, Clean Up Diagram, Quick Drop, Find and Replace), so they do not all wait for the end.
+
+**Issues.** A fault reported in an issue (something the beta does wrong or differently from LabVIEW, CLAUDE.md "Fix or
+feature?") is fixed before the phase's next step, and released as [DT-057](#dt-057) §7 says. A request to implement
+something new goes to the phase it belongs to; if it blocks a user, bringing it forward is asked.
+
+**Releases** stay as [DT-062](#dt-062) says: each phase goes out in several MINORs, and each milestone is tried by hand
+before its release.
+
+### How it is verified
+
+| What | Test | State |
+|------|------|-------|
+| The count of what is missing stays true | `node scripts/coverage.mjs --check` in `npm test`, over the inventory | Built for the palettes in the inventory; the palettes counted on 2026-11-23 are not in it yet |
+| Each milestone is reached | every lesson of the course done in Solder, tried by hand | Not built |

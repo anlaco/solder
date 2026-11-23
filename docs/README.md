@@ -56,6 +56,7 @@ specification is corrected.
 |-----|----------|
 | [`design/labview-plan.md`](design/labview-plan.md) | The living plan: cloning LabVIEW module by module |
 | [`design/coverage.md`](design/coverage.md) | How much of LabVIEW Solder covers, area by area, updated as each step is finished |
+| [`design/programming-gap.md`](design/programming-gap.md) | Snapshot of 2026-11-23: every programming function and language feature of LabVIEW Solder still misses, counted |
 | [`design/05-decisions.md`](design/05-decisions.md) | The technical decisions (DT-035 on) |
 | [`design/real-programs-0.2.md`](design/real-programs-0.2.md) | Three real programs written with 0.2.1-alpha and what they found (step 3 of the road to the maintainable version) |
 
