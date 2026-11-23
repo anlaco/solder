@@ -41,6 +41,14 @@ test("el clic derecho en el panel abre la paleta de controles con modern despleg
   assert.ok(!ids.includes("palette.controls.user-controls"), "las categorías ocultas no salen hasta pedirlas");
 });
 
+// The control editor's panel is a VI panel's (reports/2026-11-23-cluster-elements.md Q7): it used to open no palette.
+test("a right click on the background of the control editor opens the Controls palette too", () => {
+  const e = clicDerecho(inicial(), INV, "control-editor", AQUI);
+  assert.equal(e.paleta?.raiz, "palette.controls");
+  assert.equal(e.abierta, null, "no explanation of a missing palette");
+  assert.deepEqual(e.paleta.desplegadas, ["palette.controls.modern"]);
+});
+
 // paletas/controls-numeric.png: la subpaleta, en una rejilla de cuatro columnas,
 // con el control y el indicador numéricos hechos y el resto como huecos.
 test("la carpeta numeric de controls abre su subpaleta", () => {

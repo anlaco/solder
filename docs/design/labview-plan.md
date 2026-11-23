@@ -161,6 +161,9 @@ first and saves the definition, as LabVIEW does. Next: stage (b).*
 *2026-11-23: phase 0 step 2, type definitions' stage (b), done: instances follow their definition on open and on Apply
 Changes, Disconnect and Auto-Update, as LabVIEW. Next: step 2b, editing a panel cluster's elements.*
 
+*2026-11-23: phase 0 step 2b done: a panel cluster's elements are edited one by one, as in LabVIEW (DT-106). Next:
+step 3, the cosmetic list for the MINOR.*
+
 *2026-11-22: type definitions' stage (a2) done for the panel cluster: Make Type Def. links it to an untitled "Control N"
 kept in memory, Open Type Def. opens its editor, the linked instance's menu, links moved when it is saved. Next: (a2b),
 the constants, then (a3).*
@@ -299,6 +302,19 @@ Find and Replace).
       clicked or typed into, on the panel or in the control editor, and the control editor has no Controls palette on a
       right click, so a type definition's contents cannot be edited in Solder. Measure in LabVIEW what selecting and
       editing an element does (value, label, menu, Delete, the palette inside a cluster), then build it.
+      *Done on 2026-11-23. Measured (reports/2026-11-23-cluster-elements.md), decided as DT-106 (the panel edits a
+      cluster unfolded: each element a panel object `inside` its cluster, folded back after each edit;
+      `editor/src/front-panel/cluster-unfolding.mjs`, `cluster-elements.mjs`, `editor/src/window/panel-graphs.mjs`) and
+      built: an element is selected alone, operated (arrows, Boolean, typed value, which do not mark the OVI modified),
+      deleted, cut, copied and pasted (in the cluster under the mouse, last), nudged, dragged within, out (a free control
+      with its terminal) and in (last, label made unique), clipped at the frame; the Controls palette on a right click
+      in a cluster's interior and on the control editor's background; the control editor's Edit menu; an `.octl` keeps
+      its cluster's size (optional `w`, `h`). Tried under Xvfb (reports/2026-11-23-cluster-elements-editor-try.md); its
+      four faults fixed after (an interior click selected the cluster, the empty Edit menu, the lost size, Ctrl+S
+      stacking the save question). Not done or unmeasured: resize zones on hover without selection; Shift+arrow's
+      distance; Ctrl+V with an element selected pastes (LabVIEW ignored it); Ctrl+drag copies nothing; an element of a
+      linked cluster cannot be dragged out; Ctrl+A selects a cluster with its elements; a resize enables Apply Changes;
+      a Boolean element's handles overlap.*
    3. The cosmetic list for the MINOR (Old School's enum field 6 px wide, the docked diagram shown 11–15 ms before its
       panel, a linked constant's corner triangle, Find ▸ and Description/Tip... in the linked menus, the footer's
       Application Instance) and the controls resized by analogy, measured.

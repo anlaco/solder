@@ -8,9 +8,12 @@
 //
 // Pure functions. The state lives on the panel as `reorder`: { cluster, order, fieldText, typed }, where `order` lists
 // the elements' indices (their place when the mode began) in the new order, `fieldText` is what the field shows and
-// `typed` says whether it was typed into since it was last selected.
+// `typed` says whether it was typed into since it was last selected. The Front Panel's graph is unfolded while it is
+// edited (DT-106) and the mode reorders the cluster's own list, so the panel folds its graph on entering and, with
+// `unfoldAfter`, unfolds it when ✓ leaves the mode.
 
 import { setClusterElements } from "../../../core/model/user-cluster.mjs";
+import { unfoldClusters } from "./cluster-unfolding.mjs";
 
 /** The state on entering the mode for cluster node `cluster`: its order as it is, and the field at 0 with its text selected (report §2). */
 export function startReorder(cluster) {
@@ -71,6 +74,8 @@ export function applyReorder(g, cat, reorder) {
   return setClusterElements(g, cat, cluster.id, elements);
 }
 
+const unfoldedAfter = (reorder, g) => (reorder.unfoldAfter ? unfoldClusters(g) : g);
+
 /**
  * A press while the mode is on, on `hit`: { element } (an element's index when the mode began), { button: "ok" } or
  * { button: "cancel" }, or nothing (anywhere else, which does nothing). ✗ answers only once the order changed.
@@ -78,7 +83,7 @@ export function applyReorder(g, cat, reorder) {
 export function pressInReorder(p, cat, hit) {
   const { reorder } = p;
   if (hit?.element !== undefined) return { ...p, reorder: clickElement(reorder, hit.element) };
-  if (hit?.button === "ok") return { ...p, g: applyReorder(p.g, cat, reorder), reorder: null };
+  if (hit?.button === "ok") return { ...p, g: unfoldedAfter(reorder, applyReorder(p.g, cat, reorder)), reorder: null };
   if (hit?.button === "cancel" && hasChanged(reorder)) return { ...p, reorder: discardReorder(reorder) };
   return p;
 }

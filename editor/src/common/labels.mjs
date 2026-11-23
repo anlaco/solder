@@ -79,9 +79,9 @@ function contenido(texto, e) {
   return `${lineas.join("<br>")}<span class="caret"></span>`;
 }
 
-/** Pinta la etiqueta de un nodo en su caja. `publicClass`: the class the panel styles give it (DT-058), if any. */
-export function pintar(n, k, { edicion, elegida, publicClass }) {
+/** Pinta la etiqueta de un nodo en su caja. `publicClass`: the class the panel styles give it (DT-058), if any. `clipPath`: a CSS clip for the label of a cluster's element (DT-106). */
+export function pintar(n, k, { edicion, elegida, publicClass, clipPath }) {
   const e = edicion?.etiqueta && edicion.nodo === n.id ? edicion : null;
   const clases = `etiqueta${publicClass ? ` ${publicClass}` : ""}${elegida ? " seleccionada" : ""}${e ? " editando" : ""}`;
-  return `<div class="${clases}" data-etiqueta="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${contenido(textoDe(n, edicion), e)}</div>`;
+  return `<div class="${clases}" data-etiqueta="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}${clipPath ? `;clip-path:${clipPath}` : ""}">${contenido(textoDe(n, edicion), e)}</div>`;
 }

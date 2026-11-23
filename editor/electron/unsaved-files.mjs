@@ -74,3 +74,24 @@ export function createTextWaiters() {
     },
   };
 }
+
+/**
+ * One save at a time for each entry: Ctrl+S pressed again while a save is still asking (the "refers to new, unsaved
+ * files" box or a Save As dialog) must not stack another question for the same OVI (reports/2026-11-23-typedef-save-editor-try.md,
+ * the GTK box piled up one per press). `runOnce(entry, task)` runs `task` and resolves to its result; while one is
+ * running for the same entry it does not run another and resolves to null, as a cancelled save does.
+ */
+export function createSaveGuard() {
+  const saving = new Set();
+  return {
+    async runOnce(entry, task) {
+      if (saving.has(entry)) return null;
+      saving.add(entry);
+      try {
+        return await task();
+      } finally {
+        saving.delete(entry);
+      }
+    },
+  };
+}

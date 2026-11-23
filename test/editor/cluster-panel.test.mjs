@@ -14,6 +14,7 @@ import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
 import * as ED from "../../editor/src/block-diagram/diagram-editing.mjs";
 import * as P from "../../editor/src/front-panel/front-panel.mjs";
 import { CLUSTER_MEASURES, clusterAt, interiorBox, shellBox } from "../../editor/src/front-panel/cluster-panel.mjs";
+import { foldClusters } from "../../editor/src/front-panel/cluster-unfolding.mjs";
 import { labelShown } from "../../editor/src/front-panel/graph-state.mjs";
 import { CAT, INV } from "../helpers.mjs";
 import { menuRows, shown } from "./menu-rows.mjs";
@@ -35,7 +36,9 @@ function panelWithCluster() {
   const p = placeCluster(P.inicial(), { x: 300, y: 300 });
   return { p, cluster: p.g.nodos[0] };
 }
-const elementsOf = (p) => p.g.nodos.find((n) => n.config?.elements).config.elements;
+/** The graph as the diagram and the file see it: the objects inside a cluster are its elements (DT-106). */
+const folded = (g) => foldClusters(g, CAT);
+const elementsOf = (p) => folded(p.g).nodos.find((n) => n.config?.elements).config.elements;
 
 test("the Cluster of the Data Containers palette drops a 100 x 100 shell with no elements", () => {
   const entry = clusterEntry();
@@ -75,12 +78,14 @@ test("a control dropped on the interior becomes an element at the drop point, in
   p = place(p, "control", { x: 300, y: 300 });
   p = place(p, "bool-control", { x: 300, y: 330 });
   p = place(p, "str-control", { x: 300, y: 270 });
-  assert.equal(p.g.nodos.length, 1, "an element is no panel object of its own and has no terminal on the diagram");
+  assert.equal(folded(p.g).nodos.length, 1, "an element has no terminal on the diagram: folded, it is only inside its cluster");
+  assert.deepEqual(p.g.nodos.map((node) => node.inside), [undefined, cluster.id, cluster.id, cluster.id], "while the panel is edited each is an object inside it (DT-106)");
+  assert.ok(p.g.nodos.slice(1).every((node) => node.x === undefined && node.name === undefined), "with no terminal");
   const elements = elementsOf(p);
   assert.deepEqual(elements.map((e) => [e.tipo, e.label.text]), [["control", "Numeric"], ["bool-control", "Boolean"], ["str-control", "String"]], "the cluster order is the drop order (report §3)");
   // Centred on the drop point (as the control hangs from the cursor): a numeric's corner is (261, 288) on the panel, so (7, 34) inside the interior at (254, 254).
   assert.deepEqual([elements[0].x, elements[0].y], [7, 34]);
-  assert.deepEqual(p.g.nodos[0].config.type, { cluster: [{ name: "Numeric", type: "number" }, { name: "Boolean", type: "boolean" }, { name: "String", type: "string" }] });
+  assert.deepEqual(folded(p.g).nodos[0].config.type, { cluster: [{ name: "Numeric", type: "number" }, { name: "Boolean", type: "boolean" }, { name: "String", type: "string" }] });
   assert.deepEqual(shellBox(p.g.nodos[0]), { x: cluster.panel.x, y: cluster.panel.y, ancho: 100, alto: 100 }, "the shell does not grow (AutoSizing None, report §2)");
 });
 
@@ -90,7 +95,7 @@ test("an element dropped near the inner left edge is pushed inside it, and one o
   assert.equal(elementsOf(p)[0].x, 0, "report §2: pushed inside the inner left edge");
   // On the 4 px bevel, outside the interior, the control stays on the panel.
   p = place(p, "control", { x: 251, y: 300 });
-  assert.equal(p.g.nodos.length, 2);
+  assert.equal(folded(p.g).nodos.length, 2);
   assert.equal(elementsOf(p).length, 1);
   assert.equal(clusterAt(p.g, { x: 251, y: 300 }), undefined);
   assert.ok(clusterAt(p.g, { x: 254, y: 254 }));
@@ -118,11 +123,11 @@ test("a control dragged on the panel onto the interior becomes an element and le
   p = P.pulsar(p, CTX, { tipo: "objeto", id: control.id }, edge);
   p = P.moverA(p, CTX, { x: 300, y: 300 });
   p = P.soltar(p, CTX, FONDO, { x: 300, y: 300 });
-  assert.deepEqual(p.g.nodos.map((n) => n.id), [p.g.nodos[0].id, indicator.id], "no longer a top-level object");
+  assert.deepEqual(folded(p.g).nodos.map((n) => n.id), [p.g.nodos[0].id, indicator.id], "no longer a top-level object");
   assert.equal(p.g.cables.length, 0, "an element has no terminal, so its wire goes with it");
   const [element] = elementsOf(p);
-  assert.deepEqual([element.tipo, element.label.text, element.config.value], ["control", "Numeric", 5]);
-  assert.deepEqual(p.g.nodos[0].config.value, [5], "the cluster's value is its elements' values, in cluster order");
+  assert.deepEqual([element.tipo, element.label.text, element.config.value], ["control", "Numeric", 0]);
+  assert.deepEqual(folded(p.g).nodos[0].currentValue, [5], "it keeps the value it held, and the cluster's is its elements', in cluster order");
   // Released outside any cluster it is only moved.
   let q = place(P.inicial(), "control", { x: 100, y: 100 });
   q = P.pulsar(q, CTX, { tipo: "objeto", id: q.g.nodos[0].id }, { x: 120, y: 101 });
@@ -131,22 +136,25 @@ test("a control dragged on the panel onto the interior becomes an element and le
   assert.equal(q.g.nodos[0].config?.elements, undefined);
 });
 
-test("each element is drawn as the editor draws that control, inside the interior and with no hooks of its own", () => {
+test("each element is drawn as the control it is, over its cluster and clipped by the interior, with the hooks of any panel object", () => {
   let { p } = panelWithCluster();
   p = place(p, "control", { x: 300, y: 300 });
   p = place(p, "bool-control", { x: 300, y: 330 });
   p = place(p, "str-control", { x: 300, y: 270 });
   const html = P.contenido(p, CTX);
-  const interior = html.slice(html.indexOf("sd-cluster-interior"));
-  assert.match(interior, /class="sd-cluster-element sd-control sd-numeric" data-label="Numeric" style="left:7px;top:34px;width:67px;height:25px"/);
-  assert.match(interior, /class="sd-cluster-element sd-control sd-boolean sd-boolean-button"/);
-  assert.match(interior, /class="sd-cluster-element sd-control sd-string"/);
-  assert.match(interior, /class="sd-label sd-cluster-label"[^>]*>Numeric</, "each element carries its label");
-  assert.equal((html.match(/class="objeto-panel/g) ?? []).length, 1, "only the shell answers the editor's presses");
-  assert.doesNotMatch(interior, /data-paso|data-casilla|data-nodo/, "an element is drawn only: its arrows and field do not act");
-  // A press on an element is a press on its cluster: the shell is selected and moves.
-  const pressed = P.pulsar(p, CTX, { tipo: "objeto", id: p.g.nodos[0].id }, { x: 300, y: 300 });
-  assert.deepEqual(pressed.seleccion, [p.g.nodos[0].id]);
+  assert.doesNotMatch(html, /sd-cluster-element/, "the shell holds none while unfolded");
+  assert.equal((html.match(/class="objeto-panel/g) ?? []).length, 4, "the shell and its three elements answer the editor's presses");
+  assert.match(html, /class="objeto-panel sd-control sd-numeric" data-nodo="n2" data-label="Numeric" style="left:261px;top:288px;width:67px;height:25px"/, "at its place on the panel: the interior's corner (254, 254) and its place in it");
+  assert.match(html, /data-paso/, "its arrows act");
+  assert.ok(html.indexOf("sd-cluster-interior") < html.indexOf('data-label="Numeric"'), "above the cluster");
+  assert.match(html, /data-etiqueta="n2"[^>]*>Numeric</, "each one has its own label");
+  // Dragged over the frame, it is cut there; the part inside is whole.
+  const partly = { ...p, g: { ...p.g, nodos: p.g.nodos.map((node) => (node.label?.text === "Numeric" ? { ...node, panel: { x: 320, y: 288 } } : node)) } };
+  assert.match(P.contenido(partly, CTX), /data-label="Numeric" style="left:320px;top:288px;width:67px;height:25px;clip-path:inset\(-100px 41px -100px -100px\)"/, "the interior ends at x = 346");
+  // A press on it selects it, not the cluster.
+  const element = p.g.nodos.find((node) => node.label?.text === "Numeric");
+  const pressed = P.pulsar(p, CTX, { tipo: "objeto", id: element.id }, { x: element.panel.x + 20, y: element.panel.y + 1 });
+  assert.deepEqual(pressed.seleccion, [element.id]);
 });
 
 test("the shell is resized by its handles and never grows by itself", () => {
@@ -182,20 +190,20 @@ test("the cluster's terminal is the 38 x 38 icon, magenta for mixed contents and
   let { p } = panelWithCluster();
   const id = p.g.nodos[0].id;
   assert.deepEqual([COLORES.cluster, COLORES.clusterMixed], ["#993300", "#ff00ff"]);
-  const empty = terminalOf(p.g, id);
+  const empty = terminalOf(folded(p.g), id);
   assert.match(empty, /<svg[^>]*viewBox="0 0 38 38"/);
   assert.match(empty, /stroke="#993300"/, "empty: brown");
   p = place(p, "control", { x: 300, y: 300 });
-  assert.match(terminalOf(p.g, id), /stroke="#993300"/, "numeric only: brown");
+  assert.match(terminalOf(folded(p.g), id), /stroke="#993300"/, "numeric only: brown");
   p = place(p, "str-control", { x: 300, y: 330 });
-  const mixed = terminalOf(p.g, id);
+  const mixed = terminalOf(folded(p.g), id);
   assert.match(mixed, /stroke="#ff00ff"/, "mixed: magenta");
   assert.doesNotMatch(mixed, /stroke="#993300"/);
   assert.match(mixed, /fill="#bbbbbb" stroke="#444444"/, "the fixed cluster picture, whatever it holds (report §5)");
   // A control's arrow is on the right edge, at 19 px from the top, 5 x 9 (the numeric terminal's).
   assert.match(mixed, /<path d="M32.5 15.5 V23.5 L36.5 19.5 Z"/);
   // View As Icon off: 32 x 16.
-  assert.match(terminalOf(p.g, id, true), /<svg[^>]*viewBox="0 0 32 16"/);
+  assert.match(terminalOf(folded(p.g), id, true), /<svg[^>]*viewBox="0 0 32 16"/);
 });
 
 test("the cluster's wire is 3 px, the outer rows in the colour and the middle one alternating with white", () => {
@@ -281,23 +289,23 @@ test("Change to Indicator flips the shell, every element and the terminal, and C
   p = { ...p, g: wired };
   const flipped = ED.orden(shellMenu(p, cluster.id), `${root}.change-to-indicator`, CTX, INV);
   assert.equal(flipped.menu, null);
-  const shell = flipped.g.nodos.find((n) => n.id === cluster.id);
+  const shell = folded(flipped.g).nodos.find((n) => n.id === cluster.id);
   assert.equal(shell.tipo, "cluster-indicator");
   // Every element becomes an indicator together with the shell, a Boolean taking an indicator's style (report §6).
   assert.deepEqual(shell.config.elements.map((e) => e.tipo), ["indicator", "bool-indicator", "str-indicator"]);
   assert.equal(shell.config.elements[1].config.style, "round-led");
-  assert.deepEqual(shell.config.type, p.g.nodos.find((n) => n.id === cluster.id).config.type, "the type does not change");
+  assert.deepEqual(shell.config.type, folded(p.g).nodos.find((n) => n.id === cluster.id).config.type, "the type does not change");
   // The terminal's wire keeps its node with the port renamed; now facing the wrong way, it is broken, as in LabVIEW.
   assert.deepEqual(flipped.g.cables[0].de, { nodo: cluster.id, puerto: "value" });
   const rows = menuRows(shellMenu({ ...p, g: flipped.g }, cluster.id));
   assert.ok(rows.some((row) => row.label === "Change to Control" && !row.greyed), "report §6: the row reads Change to Control");
   assert.ok(!rows.some((row) => row.label === "Change to Indicator"));
   const back = ED.orden(shellMenu({ ...p, g: flipped.g }, cluster.id), `${root}.change-to-indicator`, CTX, INV);
-  const shellBack = back.g.nodos.find((n) => n.id === cluster.id);
+  const shellBack = folded(back.g).nodos.find((n) => n.id === cluster.id);
   assert.equal(shellBack.tipo, "cluster-control");
   assert.deepEqual(shellBack.config.elements.map((e) => e.tipo), ["control", "bool-control", "str-control"]);
   assert.equal(shellBack.config.elements[1].config.style, "push-button");
-  assert.equal(leer(aTexto({ ...flipped.g, cables: [] }, CAT), CAT).nodos.find((n) => n.id === cluster.id).config.elements[2].tipo, "str-indicator", "it survives the file");
+  assert.equal(leer(aTexto({ ...folded(flipped.g), cables: [] }, CAT), CAT).nodos.find((n) => n.id === cluster.id).config.elements[2].tipo, "str-indicator", "it survives the file");
 });
 
 test("while running, each element shows the value at its place in the cluster's list, whatever its label", () => {

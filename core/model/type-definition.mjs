@@ -42,13 +42,25 @@ export const typeDefinitionLink = (node) => node?.config?.typedef ?? null;
 export const linkFor = (path, kind) => (FOLLOWED_KINDS.has(kind) ? { path, strict: kind === "strict-type-def" } : null);
 
 /**
+ * The size the control editor's object was given, `w` and `h` of the object in the file, only when it has one: a type
+ * definition of a cluster resized to 293 × 223 keeps that size (measured: reports/2026-11-23-cluster-elements-editor-try.md
+ * Q9, the editor opened a 100 × 100 shell with the elements clipped). Optional, so an older file reads as before.
+ */
+const sizeToFile = (object) => (Number.isFinite(object.w) && Number.isFinite(object.h) ? { w: object.w, h: object.h } : {});
+
+/** The object of the file without its size, and the size apart (see `sizeToFile`). */
+function splitSize({ w, h, ...rest }) {
+  return { rest, size: Number.isFinite(w) && Number.isFinite(h) ? { w, h } : {} };
+}
+
+/**
  * The `.octl` file of `object` (`{ tipo, label?, config?, x, y }`, as a cluster element) as `kind`, as an object for JSON,
  * with the user's `comments` as `readTypeDefinition` gave them (DT-100 §6).
  */
 export function writeTypeDefinition(kind, object, comments) {
   if (!TYPE_DEFINITION_KINDS.includes(kind)) throw new ErrorQvi(`"${kind}" is not one of the control editor's kinds`);
   const { typedef: _ownLink, ...config } = object.config ?? {};
-  return putComments({ solder: VERSION, "type-definition": kind, object: elementToFile({ ...object, config }) }, fromTable(comments));
+  return putComments({ solder: VERSION, "type-definition": kind, object: { ...elementToFile({ ...object, config }), ...sizeToFile(object) } }, fromTable(comments));
 }
 
 /** The text of an `.octl`: JSON indented by two spaces, as an `.ovi` is written. */
@@ -64,7 +76,8 @@ export function readTypeDefinition(data, catalog) {
   const kind = read["type-definition"];
   if (!TYPE_DEFINITION_KINDS.includes(kind)) throw new ErrorQvi(`"${kind}" is not one of the control editor's kinds`);
   if (!read.object || typeof read.object !== "object") throw new ErrorQvi("a type definition holds one object");
-  return { kind, object: elementFromFile(read.object, catalog), ...(comments.length && { comments: commentTable(comments) }) };
+  const { rest, size } = splitSize(read.object);
+  return { kind, object: { ...elementFromFile(rest, catalog), ...size }, ...(comments.length && { comments: commentTable(comments) }) };
 }
 
 /**

@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
-import { createTextWaiters, newUnsavedFilesText, saveUntitledDefinitionsFirst, untitledDefinitionsOf } from "../../editor/electron/unsaved-files.mjs";
+import { createSaveGuard, createTextWaiters, newUnsavedFilesText, saveUntitledDefinitionsFirst, untitledDefinitionsOf } from "../../editor/electron/unsaved-files.mjs";
 import { rebaseText, relinkTypeDefinitionText, typeDefinitionPathsInFile } from "../../editor/src/common/ovi-paths.mjs";
 
 /** An `.ovi` text with a panel cluster and a constant that follow the given type definition paths. */
@@ -105,8 +105,33 @@ test("every save of an OVI, and of one closed with Defer Decision, goes through 
     const asked = body.indexOf("saveDefinitionsItFollows(");
     return asked >= 0 && asked < body.indexOf("writeFile(");
   };
-  assert.ok(asksBeforeWriting("writeOVI"), "writeOVI asks before it writes");
+  assert.ok(asksBeforeWriting("askAndWriteOVI"), "askAndWriteOVI asks before it writes");
   assert.ok(asksBeforeWriting("saveDeferred"), "saveDeferred asks before it writes");
   assert.match(main, /textWaiters\.changed\(open\.entry\)/, "the page's reports reach the waiting saves");
   assert.match(main, /`Name the Control \(\$\{oviName\(entry\)\}\)`/);
+});
+
+test("Ctrl+S pressed again while a save is asking does not stack another question for the same OVI", async () => {
+  const guard = createSaveGuard();
+  const entry = {};
+  const other = {};
+  let asked = 0;
+  let answer;
+  const question = () => new Promise((resolve) => { asked += 1; answer = resolve; });
+  const first = guard.runOnce(entry, question);
+  assert.equal(await guard.runOnce(entry, question), null, "the second press is a cancelled save");
+  assert.equal(await guard.runOnce(entry, question), null);
+  assert.equal(asked, 1, "one question open");
+  const another = guard.runOnce(other, async () => "other saved");
+  assert.equal(await another, "other saved", "another OVI saves meanwhile");
+  answer("saved");
+  assert.equal(await first, "saved");
+  const second = guard.runOnce(entry, question);
+  assert.equal(asked, 2, "once the first is answered a new save asks again");
+  answer("x");
+  await second;
+  const failing = guard.runOnce(entry, async () => { throw new Error("disk full"); });
+  await assert.rejects(failing, /disk full/);
+  assert.equal(await guard.runOnce(entry, async () => "again"), "again", "a failed save does not lock the OVI");
+  assert.match(readFileSync(new URL("../../editor/electron/main.mjs", import.meta.url), "utf8"), /function writeOVI\(open, owner, text, saveAs\) \{\n  return saveGuard\.runOnce\(open\.entry, /, "every save goes through the guard");
 });

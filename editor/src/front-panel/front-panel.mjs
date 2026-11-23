@@ -38,12 +38,14 @@ import { controlForElement, elementMenuRoot, emptyArrayAgain, isEmptyArrayShell,
 import * as Gr from "../../../core/model/graph.mjs";
 import { setClusterElements } from "../../../core/model/user-cluster.mjs";
 import { REPEATED_PASTE_STEP } from "../common/paste-memory.mjs";
-import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
+import { duplicated } from "./cluster-element-clipboard.mjs";
 import { EMPTY_PATH, hostPathRules, isNotAPath, pathFromText, pathToText } from "../../../core/model/paths.mjs";
 import { abbreviatePath } from "../common/path-text.mjs";
 import { PATH, convertirValor, elementoPorDefecto, esEnum, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import { GRAPH_MEASURES, LABEL_PLACEMENT, graphSvg } from "./graph-view.mjs";
-import { CLUSTER_MEASURES, clusterAt, dropObjects, isUserCluster, newElement, placeInside, selectsLockedElement, shellBox, withElement, withShellBox, canBeElement } from "./cluster-panel.mjs";
+import { CLUSTER_MEASURES, interiorBox, isUserCluster, selectsLockedElement, shellBox, withShellBox } from "./cluster-panel.mjs";
+import { clusterTaking, createdInCluster, graftedOnto, movedWithTheirElements, settleDrop, topLevelOf, withDescendants, withShellAndElements } from "./cluster-elements.mjs";
+import { clipPathOf, handlesHost } from "./cluster-element-view.mjs";
 import { clusterObject } from "./cluster-view.mjs";
 import { CLUSTER_MENU_ROOT } from "./cluster-menus.mjs";
 import * as HC from "./html-controls.mjs";
@@ -513,13 +515,30 @@ function elementHoldingValue(cluster, node, index, valores) {
   return running === undefined ? node : { ...node, config: { ...node.config, value: running } };
 }
 
-/** The object `n` of the panel, or, with `asElement`, an element of a user's cluster: drawn the same, with no hooks of its own. */
+/**
+ * The object `n` of the panel, or, with `asElement`, an element of a user's cluster drawn inside its shell (a folded one,
+ * while a Run shows it): drawn the same, with no hooks of its own. An unfolded element (DT-106) is an object of its own,
+ * clipped by the interior of its cluster, with its handles drawn outside the clip.
+ */
 function panelObject(n, ctx, selected, p, resolvedTypes, asElement = false) {
+  const html = drawObject(n, ctx, selected, p, resolvedTypes, asElement);
+  if (n.inside === undefined || asElement) return html;
+  return html + handlesHost(caja(n), selected ? resizeParts(n, true, caja(n)).handles : "");
+}
+
+/** The CSS clip of an unfolded element: what lies outside its cluster's interior is not drawn. */
+function clipOf(g, n, box) {
+  const holder = n.inside === undefined ? undefined : g.nodos.find((candidate) => candidate.id === n.inside);
+  const clip = holder && clipPathOf(box, interiorBox(shellBox(holder)));
+  return clip ? `clip-path:${clip}` : undefined;
+}
+
+function drawObject(n, ctx, selected, p, resolvedTypes, asElement) {
   if (isFreeLabel(n)) return freeLabelObject(n, ctx, selected, p);
   const editing = p.edicion?.valor && p.edicion.nodo === n.id ? p.edicion : null;
   const box = caja(n);
   const resize = asElement ? { handles: "", classes: [] } : resizeParts(n, selected, box);
-  const frame = { id: asElement ? "" : n.id, box, label: n.label?.text ?? "", selected, editing: !!editing, isControl: isControlNode(n), classes: [...disabledClasses(p.runProps, n.id), ...resize.classes], handles: resize.handles, element: asElement };
+  const frame = { id: asElement ? "" : n.id, box, label: n.label?.text ?? "", selected, editing: !!editing, isControl: isControlNode(n), classes: [...disabledClasses(p.runProps, n.id), ...resize.classes], handles: n.inside === undefined ? resize.handles : "", style: clipOf(p.g, n, box), element: asElement };
   const control = CONTROLES[n.tipo];
   if (isUserCluster(n)) {
     const tools = { drawElement: (node) => panelObject(node, ctx, false, p, resolvedTypes, true), boxOf: (node) => caja(node), measure: ctx.medir, value: (cluster, node, index) => elementHoldingValue(cluster, node, index, p.valores), reorder: p.reorder };
@@ -566,7 +585,7 @@ export function contenido(p, ctx, resueltos) {
     const selected = elegidos.has(n.id);
     html += panelObject(n, ctx, selected, p, tipos);
     const labelClass = disabledOf(p.runProps, n.id) === DISABLED.grayed ? "sd-label sd-grayed" : "sd-label";
-    if (labelShown(n)) html += Et.pintar(n, cajaEtiqueta(n, ctx.medir, p.edicion), { edicion: p.edicion, elegida: elegidos.has(idEtiqueta(n.id)), publicClass: labelClass });
+    if (labelShown(n)) html += labelOf(n, ctx, p, { selected: elegidos.has(idEtiqueta(n.id)), publicClass: labelClass });
   }
   const listed = p.lista && p.g.nodos.find((n) => n.id === p.lista.nodo);
   if (listed) html += ringListHtml(listed, p.lista, p.valores, ctx);
@@ -588,6 +607,14 @@ export function contenido(p, ctx, resueltos) {
     html += `<div class="rectangulo" style="left:${px(x)};top:${px(y)};width:${px(Math.abs(accion.x1 - accion.x0))};height:${px(Math.abs(accion.y1 - accion.y0))}"></div>`;
   }
   return html;
+}
+
+/** An object's label; an element's is clipped by its cluster's interior too (DT-106). */
+function labelOf(n, ctx, p, { selected, publicClass }) {
+  const box = cajaEtiqueta(n, ctx.medir, p.edicion);
+  const holder = n.inside === undefined ? undefined : p.g.nodos.find((candidate) => candidate.id === n.inside);
+  const clipPath = holder && clipPathOf(box, interiorBox(shellBox(holder)));
+  return Et.pintar(n, box, { edicion: p.edicion, elegida: selected, publicClass, clipPath });
 }
 
 // ——— Editar ———
@@ -624,12 +651,14 @@ function colocar(p, ctx, pt) {
   const element = shellId && panelArrayFromElement(bloque, config);
   if (element) return { ...p, g: typeEmptyArray(p.g, shellId, element.elementType, element.block), seleccion: [shellId], accion: null, edicion: null };
   const corner = esquina(bloque, pt, config);
-  const cluster = canBeElement(bloque) && clusterAt(p.g, pt);
-  if (cluster) return { ...p, g: withElement(p.g, ctx.cat, cluster.id, newElement(p.g, ctx.cat, cluster.id, bloque, config, etiquetaNueva(bloque, config), placeInside(cluster, corner))), seleccion: [], accion: null, edicion: null };
+  // Dropped on a cluster's interior it becomes the cluster's last element (DT-106).
+  const cluster = clusterTaking(p.g, bloque, pt);
+  if (cluster) return { ...p, g: createdInCluster(p.g, ctx.cat, cluster.id, { block: bloque, config, label: etiquetaNueva(bloque, config), corner }).g, seleccion: [], accion: null, edicion: null };
   const { x, y } = corner;
-  const created = Gr.crearEnPanel(p.g, ctx.cat, bloque, x, y, etiquetaNueva(bloque, config), config);
+  const top = topLevelOf(p.g);
+  const created = Gr.crearEnPanel(top, ctx.cat, bloque, x, y, etiquetaNueva(bloque, config), config);
   // A user's cluster has its type and value derived from its elements, none yet.
-  const g = isUserCluster({ config }) ? setClusterElements(created.g, ctx.cat, created.id, config.elements) : created.g;
+  const g = graftedOnto(p.g, top, isUserCluster({ config }) ? setClusterElements(created.g, ctx.cat, created.id, config.elements) : created.g);
   const n = g.nodos.find((m) => m.id === created.id);
   return { ...p, g, seleccion: [], accion: null, edicion: { ...Et.editar(n), nuevo: true } };
 }
@@ -661,7 +690,11 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
     return editarValor(p, ctx, sobre.id, false, sobre.campo);
   }
   // Las flechas del incrementador suman o restan 1 por clic, como en LabVIEW; en un array, mueven el índice.
-  if (sobre.tipo === "paso") return { ...p, g: esArrayPanel(p.g.nodos.find((m) => m.id === sobre.id)) ? pasoIndice(p.g, sobre.id, sobre.paso, sobre.eje) : pasoValor(p.g, sobre.id, sobre.paso) };
+  if (sobre.tipo === "paso") {
+    const stepped = { ...p, g: esArrayPanel(p.g.nodos.find((m) => m.id === sobre.id)) ? pasoIndice(p.g, sobre.id, sobre.paso, sobre.eje) : pasoValor(p.g, sobre.id, sobre.paso) };
+    // The arrows of a cluster's element operate it and select it (measured, reports/2026-11-23-cluster-elements.md Q2).
+    return p.g.nodos.find((m) => m.id === sobre.id)?.inside === undefined ? stepped : { ...stepped, seleccion: [sobre.id] };
+  }
   // An element of a typed array: the edge of its box selects it alone and drags it (out of the array, too); inside, a
   // control's element is typed into. An indicator's element is selected wherever it is pressed (unverified).
   if (sobre.tipo === "elem") {
@@ -690,12 +723,20 @@ export function pulsar(p, ctx, sobre, pt, shift = false, duplicate = false) {
   // so does all of it once the control is selected (2026-10-18-numeric-hover-selected.md §3).
   const n = p.g.nodos.find((m) => m.id === sobre.id);
   if (sobre.tipo === "casilla" && typesInValueBox(n) && !p.seleccion.includes(n.id) && !isInMoveBand(caja(n), pt)) return editarValor(p, ctx, sobre.id, false);
+  // A Boolean element's button toggles on the press and the press selects it; its bevel moves it (measured, Q2 and Q4).
+  if (pressesElementButton(n, sobre, pt)) return { ...p, g: alternar(p.g, n), seleccion: [n.id], accion: null };
   if (sobre.tipo === "objeto" || sobre.tipo === "casilla") return { ...p, seleccion: elegir(sobre.id), accion: { tipo: "mover", x: pt.x, y: pt.y, nodo: sobre.id, movido: false, ...(duplicate ? { duplicar: true } : {}) } };
   // The label of a selected object carries the object with it; otherwise it moves alone.
   if (sobre.tipo === "etiqueta" && !shift && p.seleccion.includes(sobre.id)) return { ...p, accion: { tipo: "mover", x: pt.x, y: pt.y, nodo: sobre.id, movido: false, byLabel: true } };
   if (sobre.tipo === "etiqueta") return { ...p, seleccion: elegir(idEtiqueta(sobre.id)), accion: { tipo: "etiqueta", nodo: sobre.id, x: pt.x, y: pt.y } };
   return { ...p, seleccion: shift ? p.seleccion : [], accion: { tipo: "rectangulo", x0: pt.x, y0: pt.y, x1: pt.x, y1: pt.y, base: shift ? p.seleccion : [] } };
 }
+
+/**
+ * Whether a press is on the button of a Boolean control inside a cluster, which operates it instead of moving it: all of the
+ * box but its outer band, as for a numeric's value box (the band stands for LabVIEW's bevel and shadow, which move it).
+ */
+const pressesElementButton = (n, sobre, pt) => n?.inside !== undefined && n.tipo === "bool-control" && sobre.tipo === "objeto" && !sobre.parte && !isInMoveBand(caja(n), pt);
 
 /** The drag a control's handle starts: its box, its default box and its label's offset when it began. */
 function startControlStretch(g, ctx, handle, pt) {
@@ -717,10 +758,10 @@ export function moverA(p, ctx, pt) {
       const [dx, dy] = [Math.round(pt.x - accion.x), Math.round(pt.y - accion.y)];
       if (!dx && !dy) return p;
       // Ctrl+drag: the first move leaves the originals and carries numbered copies (REPORT.md §C).
-      const dragged = accion.duplicar && !accion.duplicado ? duplicarSeleccion(p) : p;
+      const dragged = accion.duplicar && !accion.duplicado ? duplicarSeleccion(p, ctx.cat) : p;
       // Mover un objeto se lleva su etiqueta; una etiqueta seleccionada sola se mueve sola.
       const nodos = dragged.seleccion.filter((id) => !esEtiqueta(id));
-      let g = Gr.moverEnPanel(dragged.g, nodos, dx, dy);
+      let g = movedWithTheirElements(dragged.g, nodos, dx, dy);
       for (const id of dragged.seleccion.filter(esEtiqueta)) {
         const nodo = nodoDeEtiqueta(id);
         if (!nodos.includes(nodo)) g = moverEtiqueta(g, ctx, nodo, dx, dy);
@@ -740,7 +781,7 @@ export function moverA(p, ctx, pt) {
       return { ...p, g: Gr.fijarConfig(p.g, accion.nodo, estirarArray(p.g.nodos.find((m) => m.id === accion.nodo), accion, pt)) };
     case "estirar-cluster": {
       const smallest = { ancho: CLUSTER_MEASURES.smallest, alto: CLUSTER_MEASURES.smallest };
-      return { ...p, g: withShellBox(accion.g0, accion.nodo, FL.stretchedBox(accion.box0, accion.lado, pt.x - accion.x0, pt.y - accion.y0, smallest)) };
+      return { ...p, g: withShellAndElements(accion.g0, accion.nodo, FL.stretchedBox(accion.box0, accion.lado, pt.x - accion.x0, pt.y - accion.y0, smallest)) };
     }
     case "estirar-control": {
       const node = accion.g0.nodos.find((m) => m.id === accion.nodo);
@@ -762,10 +803,10 @@ export function moverA(p, ctx, pt) {
  * numbered labels and, on the diagram, their terminals a little down and to
  * the right of the originals' (where LabVIEW puts them is unverified).
  */
-function duplicarSeleccion(p) {
+function duplicarSeleccion(p, cat) {
   const ids = p.seleccion.filter((id) => !esEtiqueta(id) && p.g.nodos.some((n) => n.id === id && n.panel));
   if (!ids.length) return p;
-  const pasted = pasteFragment(p.g, { ...copyFragment(p.g, ids), wires: [] }, { dx: REPEATED_PASTE_STEP, dy: REPEATED_PASTE_STEP, panelDx: 0, panelDy: 0 });
+  const pasted = duplicated(p.g, cat, ids, REPEATED_PASTE_STEP);
   return { ...p, g: pasted.g, seleccion: pasted.ids };
 }
 
@@ -797,8 +838,12 @@ export function soltar(p, ctx, sobre, pt) {
       // Arrastrado desde la paleta hasta el lienzo: se coloca al soltar. Si
       // sólo se pulsó, sigue colgando del cursor hasta el siguiente clic.
       return accion.arrastrado && sobre ? colocar(p, ctx, pt) : p;
-    case "rectangulo":
-      return { ...p, seleccion: [...new Set([...accion.base, ...dentroDe(p, ctx, accion)])], accion: null };
+    case "rectangulo": {
+      // A click that did not drag selects nothing: on a cluster's empty interior it must not select the cluster, which
+      // the zero-size rectangle would otherwise touch (measured, reports/2026-11-23-cluster-elements.md Q2).
+      const dragged = accion.x0 !== accion.x1 || accion.y0 !== accion.y1;
+      return { ...p, seleccion: [...new Set([...accion.base, ...(dragged ? dentroDe(p, ctx, accion) : [])])], accion: null };
+    }
     case "sacar-elemento":
       return accion.movido ? takeElementOut(p, ctx, accion, pt) : { ...p, accion: null };
     case "mover": {
@@ -806,14 +851,20 @@ export function soltar(p, ctx, sobre, pt) {
       // Pressed, la acción mecánica de fábrica de los interruptores).
       const n = p.g.nodos.find((m) => m.id === accion.nodo);
       const toggles = n?.tipo === "bool-control" && !accion.movido && !accion.byLabel;
-      // Controls dragged onto a cluster's interior become its elements (DT-095).
-      const dropped = accion.movido && dropObjects(p.g, ctx.cat, p.seleccion.filter((id) => !esEtiqueta(id)), pt);
-      if (dropped) return { ...p, g: dropped.g, seleccion: [], accion: null };
+      // Controls dragged onto a cluster's interior become its elements, and elements dragged out become free (DT-106).
+      if (accion.movido) return { ...settleMove(p, pt), accion: null };
       return { ...p, g: toggles ? alternar(p.g, n) : p.g, accion: null };
     }
     default:
       return { ...p, accion: null };
   }
+}
+
+/** The state after the dragged objects were let go at `pt`: where they belong (cluster-elements.mjs), still selected. */
+function settleMove(p, pt) {
+  const settled = settleDrop(p.g, p.seleccion.filter((id) => !esEtiqueta(id)), pt);
+  const follow = (id) => (esEtiqueta(id) ? idEtiqueta(settled.renamed.get(nodoDeEtiqueta(id)) ?? nodoDeEtiqueta(id)) : settled.renamed.get(id) ?? id);
+  return { ...p, g: settled.g, seleccion: p.seleccion.map(follow) };
 }
 
 /**
@@ -1097,7 +1148,8 @@ export function borrarSeleccion(p, placeOf) {
   const array = selectedElementArray(p);
   if (array) return { ...p, g: emptyArrayAgain(p.g, array.id), seleccion: [] };
   const nodos = p.seleccion.filter((id) => !esEtiqueta(id));
-  return nodos.length ? { ...p, g: Gr.borrarDejandoCables(p.g, nodos, placeOf), seleccion: [] } : p;
+  // A cluster takes its elements with it (DT-106).
+  return nodos.length ? { ...p, g: Gr.borrarDejandoCables(p.g, withDescendants(p.g, nodos), placeOf), seleccion: [] } : p;
 }
 
 /** Las flechas mueven la selección un píxel; con Shift, 8 (spec/05 regla 36). */

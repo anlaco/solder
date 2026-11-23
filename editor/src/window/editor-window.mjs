@@ -66,6 +66,7 @@ import * as ClusterConstant from "../block-diagram/cluster-constant.mjs";
 import * as CallLibraryNodes from "../block-diagram/call-library-nodes.mjs";
 import * as CallLibraryDialog from "../block-diagram/call-library-dialog.mjs";
 import { commandForCtrlKey } from "./shortcuts.mjs";
+import { createPanelGraphs } from "./panel-graphs.mjs";
 import * as RV from "./run-values.mjs";
 import * as Scroll from "./scrolling.mjs";
 import * as Sync from "./graph-sync.mjs";
@@ -143,8 +144,14 @@ let dia = ED.inicial();
 let pan = P.inicial(dia.g);
 let historial = H.nuevo(dia.g);
 
-/** El grafo de esta ventana. */
-const grafo = () => (conDiagrama ? dia.g : pan.g);
+/**
+ * The Front Panel edits the graph unfolded, each element of a user's cluster an object of its own (DT-106); everything
+ * else —the other window, the undo history, the file, the compiler, a Run— sees it folded (panel-graphs.mjs).
+ */
+const graphs = createPanelGraphs(() => cat);
+
+/** El grafo de esta ventana, como lo ve el OVI: con los elementos de un cluster dentro de él. */
+const grafo = () => (conDiagrama ? dia.g : graphs.fold(pan.g));
 
 // ——— The two windows, one OVI ———
 
@@ -176,11 +183,12 @@ function publicarGrafo(g, { markModified = true } = {}) {
  * step is kept to undo it and the other window receives it.
  */
 function quieto(g, stepName) {
+  const shared = conDiagrama ? g : graphs.fold(g);
   // The values of a Run are not steps to undo.
-  if (!ejecutando) historial = H.registrar(historial, g, stepName);
+  if (!ejecutando) historial = H.registrar(historial, shared, stepName);
   if (conDiagrama) setDebug(DS.pruneToGraph(debug, g));
-  if (g === publicado) return;
-  publicarGrafo(g);
+  if (shared === publicado) return;
+  publicarGrafo(shared);
 }
 
 // ——— The hierarchy: the subOVIs of this OVI ———
@@ -249,7 +257,7 @@ function rebuildHierarchy(g) {
 function ponerGrafo(g, { share = false } = {}) {
   const changed = share && JSON.stringify(g) !== JSON.stringify(grafo());
   if (conDiagrama) dia = { ...dia, g };
-  else pan = { ...pan, g };
+  else pan = { ...pan, g: graphs.unfold(g) };
   if (changed) publicarGrafo(g, { markModified: false });
   else publicado = g;
 }
@@ -318,7 +326,7 @@ async function followSavedTypeDefinition(fromKey, toKey, follow) {
 function setGraphAndRest(g, stepName) {
   // Not ponerGrafo: it takes `g` as already published, and quieto would then neither send it nor mark the OVI.
   if (conDiagrama) dia = { ...dia, g };
-  else pan = { ...pan, g };
+  else pan = { ...pan, g: graphs.unfold(g) };
   quieto(g, stepName);
 }
 
@@ -398,7 +406,7 @@ function cargar(g) {
   stamp = Sync.initialStamp();
   historial = H.nuevo(g);
   dia = { ...ED.inicial(), g };
-  pan = P.inicial(g);
+  pan = P.inicial(graphs.unfold(g));
   scrollOrigin = g.windows?.[nombre]?.origin ?? { x: 0, y: 0 };
   pintar();
   avisar(g);
@@ -517,6 +525,8 @@ window.solder?.onReserved?.((keys) => reservar(keys.includes(oviKey)));
  */
 function modoRun(si, { reserved = false } = {}) {
   ejecutando = si;
+  // A Run works on the graph folded, its clusters holding their elements, which is how it is drawn and operated then.
+  if (conPanel) pan = { ...pan, g: si ? graphs.fold(pan.g) : graphs.unfold(pan.g) };
   if (si) descartarTip();
   if (!si && !reserved) {
     // The controls keep what was operated; the indicators keep what they show, as their current value
@@ -1350,7 +1360,7 @@ function cerrarPropiedades(aceptar) {
   const nuevo = VP.apply(grafo(), dialogo);
   if (aceptar && JSON.stringify(nuevo.vi) !== JSON.stringify(grafo().vi)) {
     if (conDiagrama) cambiarDiagrama({ ...dia, g: nuevo });
-    else cambiarPanel({ ...pan, g: nuevo });
+    else cambiarPanel({ ...pan, g: graphs.unfold(nuevo) });
   }
   pintar();
 }
@@ -1540,7 +1550,7 @@ canal.onmessage = ({ data }) => {
   publicado = g;
   if (!ejecutando) historial = H.registrar(historial, g);
   if (conDiagrama) dia = ED.recibir(dia, g);
-  else pan = P.recibir(pan, g);
+  else pan = P.recibir(pan, graphs.unfold(g));
   pintar();
 };
 
@@ -1686,10 +1696,13 @@ function cambiar(nuevo) {
  * type again (DT-098); the undo and redo restore graphs that were already settled. `before` is the view the edit started from.
  */
 function settleEdit(before, view) {
-  const pruned = pruneConnector(view.g, cat);
+  // The Front Panel's graph is unfolded: these rules read the OVI as it is shared, clusters whole (DT-106).
+  const shared = (g) => (conPanel ? graphs.fold(g) : g);
+  const pruned = pruneConnector(shared(view.g), cat);
   const followed = followWiredClusters(pruned, cat);
-  const g = PolymorphicNodes.settlePolymorphicNodes(before.g, followed, cat, ED.terminalPlacer(ctx));
-  return g === view.g ? view : { ...view, g };
+  const g = PolymorphicNodes.settlePolymorphicNodes(shared(before.g), followed, cat, ED.terminalPlacer(ctx));
+  if (g === shared(view.g)) return view;
+  return { ...view, g: conPanel ? graphs.unfold(g) : g };
 }
 
 /**
@@ -1717,7 +1730,7 @@ function volver(r) {
   if (!r) return;
   historial = r.h;
   if (conDiagrama) dia = { ...dia, g: r.g, seleccion: [], accion: null, menu: null, edicion: null };
-  else pan = { ...pan, g: r.g, seleccion: [], accion: null, edicion: null };
+  else pan = { ...pan, g: graphs.unfold(r.g), seleccion: [], accion: null, edicion: null };
   publicarGrafo(r.g);
   pintar();
 }
@@ -1798,6 +1811,9 @@ function objetivoPanel(el) {
   // A row of the list of a ring's items, open in operate mode (a row that is not built carries no item).
   const ringRow = el.closest(".item-ring");
   if (ringRow) return { tipo: "fila-ring", id: ringRow.dataset.nodo, k: ringRow.dataset.ringItem === undefined ? undefined : Number(ringRow.dataset.ringItem) };
+  // A cluster's empty interior answers as the free panel does, apart from the cluster's own frame (DT-106, measured Q1-Q2).
+  const interior = el.closest(".sd-cluster-interior");
+  if (interior) return { tipo: "interior", id: interior.closest(".objeto-panel").dataset.nodo };
   const o = el.closest(".objeto-panel");
   if (o) return { tipo: "objeto", id: o.dataset.nodo };
   return { tipo: "fondo" };
@@ -2038,6 +2054,9 @@ function accionar(n, cuando, antes) {
   if (nuevo !== v) cambiarPanel({ ...pan, g: CV.setCurrentValue(pan.g, n.id, nuevo) });
 }
 
+/** Is the panel object an element of a user's cluster? It has no terminal, so no cell of the connector pane. */
+const isClusterElement = (id) => pan.g.nodos.find((node) => node.id === id)?.inside !== undefined;
+
 /** What can be clicked on a panel object to give it a cell of the connector pane. */
 const CONECTABLES = ["objeto", "casilla", "campo", "elem", "paso", "asa-array"];
 
@@ -2069,7 +2088,7 @@ function pulsarPanel(ev) {
   }
   ev.preventDefault();
   // A cell of the connector pane is waiting for a control or an indicator: this click gives it one.
-  if (pan.conector) return cambiarPanel(CP.assignClicked(pan, cat, CONECTABLES.includes(sobre.tipo) ? sobre.id : null));
+  if (pan.conector) return cambiarPanel(CP.assignClicked(pan, cat, CONECTABLES.includes(sobre.tipo) && !isClusterElement(sobre.id) ? sobre.id : null));
   if (ev.detail >= 2 && sobre.tipo === "etiqueta") return cambiarPanel(P.editar(pan, sobre.id));
   // A double click on empty space starts a free label; on a free label, types into it again (DT-085).
   if (ev.detail >= 2 && sobre.tipo === "fondo" && pan.accion?.tipo !== "colocar") return cambiarPanel(P.startFreeLabel(pan, ctx, punto(ev)));
@@ -2413,7 +2432,8 @@ addEventListener("contextmenu", (ev) => {
         return cambiarPanel(ED.abrirMenuDelPanel(pan, raizPanel, sobrePanel.id, ev.clientX, ev.clientY));
       }
     }
-    if (sobrePanel?.tipo !== "fondo") return cambiarPanel(pan);
+    // The free panel and a cluster's empty interior open the Controls palette (measured, Q6).
+    if (sobrePanel?.tipo !== "fondo" && sobrePanel?.tipo !== "interior") return cambiarPanel(pan);
     pan = { ...pan, menu: null };
     quieto(pan.g);
   }

@@ -6,6 +6,7 @@ import * as Gr from "../../../core/model/graph.mjs";
 import { labelShown, toggledItem } from "./graph-state.mjs";
 import { flipCluster } from "./cluster-panel.mjs";
 import { startReorder } from "./cluster-reorder.mjs";
+import { foldClusters } from "./cluster-unfolding.mjs";
 
 export const CLUSTER_MENU_ROOT = "context.cluster-control";
 
@@ -30,6 +31,9 @@ const CHANGE_TO_INDICATOR_ROW = `${CLUSTER_MENU_ROOT}.change-to-indicator`;
 const MAKE_TYPE_DEF_ROW = `${CLUSTER_MENU_ROOT}.make-type-def`;
 const REORDER_ROW = `${CLUSTER_MENU_ROOT}.reorder-controls-in-cluster`;
 
+/** Does the cluster hold elements: its own (folded) or the objects inside it (the panel's unfolded graph, DT-106)? */
+const hasElementsNow = (g, node) => !!node && ((node.config?.elements?.length ?? 0) > 0 || g.nodos.some((other) => other.inside === node.id));
+
 /**
  * The rows that change with the cluster: Change to Control on an indicator (report §6), Reorder Controls In
  * Cluster... greyed while the cluster is empty (report §3), and Make Type Def. greyed on an indicator. The rows of a
@@ -38,7 +42,7 @@ const REORDER_ROW = `${CLUSTER_MENU_ROOT}.reorder-controls-in-cluster`;
 export function clusterMenuVariants(d) {
   const node = menuNode(d);
   const rotulos = new Map(node?.tipo === "cluster-indicator" ? [[CHANGE_TO_INDICATOR_ROW, "Change to Control"]] : []);
-  const desactivados = new Set(node?.config?.elements?.length ? [] : [REORDER_ROW]);
+  const desactivados = new Set(hasElementsNow(d.g, node) ? [] : [REORDER_ROW]);
   // On an indicator Make Type Def. looked greyed (reports/2026-11-17-typedef-editor-entry.md Q1, at half scale: unverified).
   if (node?.tipo === "cluster-indicator") desactivados.add(MAKE_TYPE_DEF_ROW);
   return { rotulos, desactivados };
@@ -48,11 +52,21 @@ export function clusterMenuVariants(d) {
  * Runs a row of the cluster's menu that is built (Visible Items ▸ Label, Change to Indicator or to Control, Reorder
  * Controls In Cluster..., which puts the panel in its mode); undefined for any other row, which only explains itself.
  */
+/**
+ * The panel in the mode that sets the order of `node`'s elements. The mode works on the cluster's own list, so the panel's
+ * graph is folded while it lasts, and ✓ unfolds it again (`unfoldAfter`, cluster-reorder.mjs).
+ */
+function reorderingOf(d, node, cat) {
+  const folded = foldClusters(d.g, cat);
+  const unfoldAfter = d.g.nodos.some((other) => other.inside !== undefined);
+  return { ...d, g: folded, menu: null, seleccion: [], reorder: { ...startReorder(folded.nodos.find((other) => other.id === node.id)), unfoldAfter } };
+}
+
 export function clusterCommand(d, id, cat) {
   const node = isClusterMenu(d) && menuNode(d);
   if (!node) return undefined;
   if (id === LABEL_ROW) return { ...d, g: Gr.fijarConfig(d.g, node.id, toggledItem(node, "label")), menu: null };
   if (id === CHANGE_TO_INDICATOR_ROW) return { ...d, g: flipCluster(d.g, cat, node.id), menu: null };
-  if (id === REORDER_ROW && node.config.elements.length) return { ...d, menu: null, seleccion: [], reorder: startReorder(node) };
+  if (id === REORDER_ROW && hasElementsNow(d.g, node)) return reorderingOf(d, node, cat);
   return undefined;
 }

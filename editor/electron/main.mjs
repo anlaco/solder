@@ -38,7 +38,7 @@ import { ADDON_LIBRARY_FOLDERS_VARIABLE, loadInstalledAddons } from "./installed
 import { mergeAddonPalettes } from "../../core/model/palette.mjs";
 import { registerRunReservations } from "./run-reservations.mjs";
 import { DEFER_ANSWERS, DEFER_BUTTONS, DEFER_BUTTON_ANSWERS, canDefer, heldInMemoryText, releasedBy } from "./deferred-close.mjs";
-import { NEW_FILES_BUTTONS, createTextWaiters, saveUntitledDefinitionsFirst, untitledDefinitionsOf } from "./unsaved-files.mjs";
+import { NEW_FILES_BUTTONS, createSaveGuard, createTextWaiters, saveUntitledDefinitionsFirst, untitledDefinitionsOf } from "./unsaved-files.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // Solder's library of OVIs (DT-073): next to the repository's editor while developing, and among the application's
@@ -230,6 +230,8 @@ const openOVIs = new Map();
 const deferredEntries = new Map();
 /** Saves that wait for an OVI's page to report its text again (unsaved-files.mjs). */
 const textWaiters = createTextWaiters();
+/** A save in progress of each entry (unsaved-files.mjs): a second one is not started while the first still asks. */
+const saveGuard = createSaveGuard();
 /** LabVIEW's floating windows or Solder's docked window (DT-101): the OVIs' and projects' pages come from here. */
 const layouts = createLayoutManager({
   preferencesFile: preferencesFileIn(app.getPath("userData")),
@@ -846,7 +848,11 @@ async function closeAllOVIs(owner) {
  * is written now (spec/05 rule 69). Returns the text written, or `null` if the
  * user cancelled.
  */
-async function writeOVI(open, owner, text, saveAs) {
+function writeOVI(open, owner, text, saveAs) {
+  return saveGuard.runOnce(open.entry, () => askAndWriteOVI(open, owner, text, saveAs));
+}
+
+async function askAndWriteOVI(open, owner, text, saveAs) {
   const { entry } = open;
   if (entry.kind === ENTRY_KINDS.CONTROL) return writeControl(open, owner, text, saveAs);
   const polymorphic = entry.kind === ENTRY_KINDS.POLYMORPHIC;

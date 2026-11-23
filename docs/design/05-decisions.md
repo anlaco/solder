@@ -39,6 +39,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [089](#dt-089) | The compiler is split into modules of one responsibility each, after everything native and before 1.0 | Proposed · not implemented |
 | [091](#dt-091) | Rings are plain numerics of their representation with items as text–value pairs, saved as pairs from `.sdg` version 5 | Accepted · core built |
 | [105](#dt-105) | The work goes in order of importance for programming, in seven phases; fixes reported in issues go first | Accepted · in use |
+| [106](#dt-106) | While the Front Panel is edited, a cluster's elements are panel objects of their own, folded back into the cluster after each edit | Accepted · built |
 | [101](#dt-101) | Solder's docked view: the Project Explorer and the OVIs in one window, switched live from the floating LabVIEW view | Accepted · experimental, being built |
 | [102](#dt-102) | A subOVI behaves in memory as LabVIEW's subVI: reserved while a caller runs, held by Defer Decision, broken by an unsaved connector change | Accepted · partly built |
 | [103](#dt-103) | A compiled application is the Solder Runtime: wasmtime, a web server and a desktop window at once, with the HTML front panel reachable from any browser and from a remote viewer built with it | Accepted as the end result · not built |
@@ -5471,3 +5472,40 @@ before its release.
 |------|------|-------|
 | The count of what is missing stays true | `node scripts/coverage.mjs --check` in `npm test`, over the inventory | Built for the palettes in the inventory; the palettes counted on 2026-11-23 are not in it yet |
 | Each milestone is reached | every lesson of the course done in Solder, tried by hand | Not built |
+
+## DT-106
+
+**While the Front Panel is edited, a user's cluster is unfolded: each of its elements is a panel object of its own,
+marked with the cluster it is inside (`inside`), at its place on the panel. After each edit the panel is folded back:
+the objects marked inside a cluster become its elements again, in their order. The model and the `.ovi` keep the
+elements inside the cluster (DT-095).**
+
+- **Status:** Accepted on 2026-11-23 by the developer ("lo más parecido a LabVIEW"), between this and the other option,
+  teaching every panel operation an element's address (`<cluster>.elements.<index>`), as the diagram's Cluster Constant
+  does for its values · being implemented with step 2b of phase 0 ([DT-105](#dt-105)).
+- **Why:** in LabVIEW an element is a whole control: it is selected alone with its handles, operated, moved within the
+  cluster and out of it, deleted, cut, copied and pasted, nudged with the arrow keys, and its menu is its control's
+  (measured: labview-captures/reports/2026-11-23-cluster-elements.md). Solder's panel already does all of that for its
+  objects; unfolded, an element gets it whole, and a function of the panel built later reaches elements with nothing
+  more to do. Before this, an element could not be selected or edited at all, so a type definition's contents could not
+  be edited in Solder (reports/2026-11-23-typedef-b-editor-try.md).
+
+### Decision
+
+1. **Unfold** (`editor/src/front-panel/cluster-unfolding.mjs`): every panel cluster with elements, nested ones too,
+   gives one object per element, after the cluster in the graph's order, with `inside: <cluster id>`, its place on the
+   panel (the cluster's interior plus the element's place in it), its current value (the cluster's current value at its
+   index) and the id `<cluster id>.elements.<index>`, which stays the same until the next unfolding.
+2. **Fold:** the objects inside a cluster, in the graph's order, are its elements again (the cluster order), with their
+   places relative to its interior and their current values gathered into the cluster's; the innermost clusters first.
+   Putting an object in a cluster or taking it out is setting or removing its `inside`; a new object put inside comes
+   last in the order (measured).
+3. **Where:** the Front Panel page works on the unfolded graph and folds what it publishes; what it receives (opening,
+   the other window, undo) it unfolds. The Block Diagram, the compiler and the file see only the folded graph.
+
+### How it is verified
+
+| What | Test | State |
+|------|------|-------|
+| Unfolding and folding give back the same graph, nested clusters, places and current values included | round trips in `test/editor/cluster-unfolding.test.mjs` | Built (2026-11-23) |
+| Each measured interaction on an element (select, operate, move in and out, delete, clipboard, palette) | `test/editor/cluster-elements.test.mjs` (each fails with its code put back); not yet tried under Xvfb | Built (2026-11-23) |

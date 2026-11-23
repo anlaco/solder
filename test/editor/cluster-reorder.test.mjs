@@ -9,6 +9,7 @@ import * as D from "../../editor/src/block-diagram/diagram-view.mjs";
 import * as ED from "../../editor/src/block-diagram/diagram-editing.mjs";
 import * as P from "../../editor/src/front-panel/front-panel.mjs";
 import * as CR from "../../editor/src/front-panel/cluster-reorder.mjs";
+import { foldClusters } from "../../editor/src/front-panel/cluster-unfolding.mjs";
 import { REORDER_TOOLBAR, reorderToolbarHtml } from "../../editor/src/front-panel/cluster-reorder-view.mjs";
 import * as V from "../../editor/src/window/window-view.mjs";
 import { CAT, INV } from "../helpers.mjs";
@@ -34,7 +35,8 @@ function measuredCluster() {
   p = place(p, "control", { x: 300, y: 300 });
   return p;
 }
-const clusterOf = (p) => p.g.nodos.find((n) => n.config?.elements);
+/** The cluster as the diagram and the file see it, its elements inside it: the panel's graph is unfolded while it is edited (DT-106), and folded while the order is set. */
+const clusterOf = (p) => foldClusters(p.g, CAT).nodos.find((n) => n.config?.elements);
 const shellMenu = (p) => ED.abrirMenuDelPanel(p, P.menuDe(clusterOf(p)), clusterOf(p).id, 0, 0);
 const enterReorder = (p) => ED.orden(shellMenu(p), REORDER_ROW, CTX, INV);
 const namesInOrder = (p) => clusterOf(p).config.elements.map((e) => e.label.text);
@@ -85,7 +87,8 @@ test("✗ restores the order and stays in the mode; a press elsewhere does nothi
   // ✓ with no change leaves the mode with the graph as it was.
   const left = CR.pressInReorder(discarded, CAT, { button: "ok" });
   assert.equal(left.reorder, null);
-  assert.equal(left.g, discarded.g);
+  assert.deepEqual(foldClusters(left.g, CAT), discarded.g, "and, unfolded again, with the elements it had");
+  assert.ok(left.g.nodos.some((node) => node.inside !== undefined));
 });
 
 test("the field takes digits and deletions, and Escape and Enter do nothing", () => {

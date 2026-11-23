@@ -8,11 +8,11 @@
 // and gets its diagram terminal, unwired.
 
 import { ALTO_LINEA } from "../common/labels.mjs";
+import { copyFragment } from "../../../core/model/clipboard.mjs";
 import { MEDIDAS_PANEL, borrarSeleccion, caja, elementFragment, objetos, selectedElementArray } from "./front-panel.mjs";
 import { REPEATED_PASTE_STEP, remember, repeatCount } from "../common/paste-memory.mjs";
-import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
-import * as Gr from "../../../core/model/graph.mjs";
 import { selectsLockedElement } from "./cluster-panel.mjs";
+import { clusterForPaste, fragmentOf, pastedFragment, withoutObjects } from "./cluster-element-clipboard.mjs";
 
 const LABEL_SUFFIX = "#etiqueta";
 /** The panel objects selected, without their labels. */
@@ -24,16 +24,15 @@ export const hasSelection = (p) => !selectsLockedElement(p.g, p.seleccion) && (s
 /** Is the selection one the Edit menu greys Cut and Delete for: an element of a linked cluster? */
 export const selectionIsLocked = (p) => selectsLockedElement(p.g, p.seleccion);
 
-const withoutWires = (graph, ids) => ({ ...copyFragment(graph, ids), wires: [] });
 
 /**
  * Ctrl+C on the panel: the selected objects, without wires (a wire is not part of the panel). A selected element of an
  * array is copied as the loose control it would become; `ctx` is needed for it.
  */
 export function copySelection(p, ctx) {
-  if (selectedElementArray(p)) return elementFragment(p, ctx, withoutWires);
+  if (selectedElementArray(p)) return elementFragment(p, ctx, (graph, ids) => ({ ...copyFragment(graph, ids), wires: [] }));
   const ids = selectedObjects(p);
-  return ids.length ? withoutWires(p.g, ids) : null;
+  return ids.length ? fragmentOf(p.g, ctx.cat, ids) : null;
 }
 
 /**
@@ -44,7 +43,7 @@ export function cutSelection(p, ctx) {
   const fragment = copySelection(p, ctx);
   if (!fragment) return null;
   if (selectedElementArray(p)) return { fragment, p: borrarSeleccion(p) };
-  return { fragment, p: { ...p, g: Gr.borrar(p.g, selectedObjects(p)), seleccion: [] } };
+  return { fragment, p: { ...p, g: withoutObjects(p.g, selectedObjects(p)), seleccion: [] } };
 }
 
 /** Ctrl+A on the panel: every object. */
@@ -74,6 +73,7 @@ export function pasteAt(p, ctx, fragment, pointer, memory) {
   const centre = fragmentCentre(nodes);
   const [panelDx, panelDy] = [Math.round(pointer.x + count * REPEATED_PASTE_STEP - centre.x), Math.round(pointer.y + count * REPEATED_PASTE_STEP - centre.y)];
   const diagramShift = REPEATED_PASTE_STEP * (count + 1);
-  const pasted = pasteFragment(p.g, { nodes, wires: [] }, { dx: diagramShift, dy: diagramShift, panelDx, panelDy });
+  const cluster = clusterForPaste(p.g, { nodes }, pointer);
+  const pasted = pastedFragment(p.g, { nodes, wires: [] }, { dx: diagramShift, dy: diagramShift, panelDx, panelDy }, cluster);
   return { p: { ...p, g: pasted.g, seleccion: pasted.ids, accion: null, edicion: null, menu: null }, memory: remember(pointer, count) };
 }

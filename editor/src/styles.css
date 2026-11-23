@@ -460,6 +460,9 @@ svg { display: block; overflow: visible; }
 .etiqueta.editando { cursor: text; }
 /* An element of a user's cluster and its label: only drawn, inside the cluster's clipped interior (DT-095). */
 .sd-cluster-element { position: absolute; }
+/* An unfolded element's handles live outside its clipped box (DT-106); a cluster's empty interior shows the free panel's cross (measured, Q1). */
+.sd-element-handles { position: absolute; width: 0; height: 0; }
+.lienzo-front-panel .sd-cluster-interior { cursor: var(--cursor-cruz, crosshair); }
 .sd-cluster-label { position: absolute; box-sizing: border-box; padding: 0 1px; font-size: var(--fuente); line-height: 15px; white-space: pre; color: var(--canvas-text); pointer-events: none; }
 .etiqueta .caret { display: inline-block; vertical-align: -2px; }
 .glifo-terminal-panel { position: absolute; inset: 0; pointer-events: none; }

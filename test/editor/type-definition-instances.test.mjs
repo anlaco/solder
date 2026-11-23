@@ -16,7 +16,9 @@ import { setClusterElements } from "../../core/model/user-cluster.mjs";
 // The diagram's editing comes first: front-panel.mjs cannot be the first module loaded of its import cycle.
 import "../../editor/src/block-diagram/diagram-editing.mjs";
 import { CLUSTER_MENU_ROOT } from "../../editor/src/front-panel/cluster-menus.mjs";
-import { clusterAt, dropObjects, selectsLockedElement } from "../../editor/src/front-panel/cluster-panel.mjs";
+import { clusterAt, selectsLockedElement } from "../../editor/src/front-panel/cluster-panel.mjs";
+import { settleDrop } from "../../editor/src/front-panel/cluster-elements.mjs";
+import { unfoldClusters } from "../../editor/src/front-panel/cluster-unfolding.mjs";
 import * as P from "../../editor/src/front-panel/front-panel.mjs";
 import * as PC from "../../editor/src/front-panel/panel-clipboard.mjs";
 import { typeDefinitionMarks, typeDefinitionVariants } from "../../editor/src/front-panel/type-definition-menus.mjs";
@@ -238,8 +240,10 @@ test("a definition saved and not applied breaks the instances that differ until 
 });
 
 test("an element of a cluster that follows a type definition cannot be deleted or cut, takes no new element, and keeps its label editable", () => {
-  const linked = panelWithCluster([numeric("a", 4), boolean("b", true)]);
-  const plain = panelWithCluster([numeric("a", 4), boolean("b", true)], null);
+  // The panel edits the unfolded graph: each element an object inside its cluster (DT-106).
+  const unfolded = (panel) => ({ ...panel, g: unfoldClusters(panel.g) });
+  const linked = unfolded(panelWithCluster([numeric("a", 4), boolean("b", true)]));
+  const plain = unfolded(panelWithCluster([numeric("a", 4), boolean("b", true)], null));
   const elementId = `${linked.id}.elements.0`;
   assert.equal(selectsLockedElement(linked.g, [elementId]), true);
   assert.equal(selectsLockedElement(plain.g, [`${plain.id}.elements.0`]), false, "a plain cluster's elements are free");
@@ -259,8 +263,11 @@ test("an element of a cluster that follows a type definition cannot be deleted o
   assert.equal(clusterAt(linked.g, inside), undefined);
   assert.equal(clusterAt(plain.g, inside)?.id, plain.id);
   const dropped = Gr.crearEnPanel(linked.g, CAT, "control", 60, 70, "x", {});
-  assert.equal(dropObjects(dropped.g, CAT, [dropped.id], inside), null, "never added as an element");
-  assert.equal(elementLabels(dropped.g, linked.id).length, 2);
+  assert.equal(settleDrop(dropped.g, [dropped.id], inside).g, dropped.g, "never added as an element");
+  assert.equal(dropped.g.nodos.filter((node) => node.inside === linked.id).length, 2);
+  // Nor does one of its own elements leave it, dragged out: the elements are the definition's.
+  const element = linked.g.nodos.find((node) => node.id === elementId);
+  assert.equal(settleDrop(linked.g, [elementId], { x: element.panel.x + 400, y: element.panel.y }).g, linked.g);
   void definitionObjectOf;
 });
 

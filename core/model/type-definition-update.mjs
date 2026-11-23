@@ -10,7 +10,7 @@
 // - An enum's value follows its item by text when the item moves (measured); a numeric's is converted to the new
 //   representation (3.7 becomes 4 in an I32, measured).
 // - A non-strict instance keeps its own look (the elements' places and styles); a strict one takes the definition's
-//   (measured: an element's size reached a strict instance only).
+//   (measured: an element's size reached a strict instance only). The same holds for the object's own size.
 // - When the update would lose or change a default the object holds (an element with a value removed, a value
 //   converted, a held enum item renamed or removed), it is not applied: LabVIEW breaks the VI until Review and Update
 //   from Type Def... approves the new default. An object whose defaults are all zero updates silently (measured: the
@@ -105,6 +105,9 @@ function updatedElements(ownElements, definitionElements, context) {
   return { elements, losses };
 }
 
+/** A strict instance's panel with the size of the definition's object, when the definition has one; a non-strict one keeps its own (the look rule). */
+const sizeFollowed = (object, definition) => (object.panel && definition.w !== undefined ? { panel: { ...object.panel, w: definition.w, h: definition.h } } : {});
+
 /**
  * `instance` updated from `definition` (the object of its `.octl`, core/model/type-definition.mjs). Returns
  * `{ node, review }`: with nothing lost, `node` is the updated instance and `review` null; otherwise `node` is the
@@ -115,7 +118,7 @@ export function updateFromDefinition(catalog, instance, definition, toInstanceEl
   const link = typeDefinitionLink(instance);
   const context = { catalog, strict: !!link?.strict, toInstanceElement: (element) => toInstanceElement(element, instance) };
   const { object, losses } = updatedObject(instance, definition, context);
-  const updated = { ...object, config: { ...object.config, ...(link && { typedef: link }) } };
+  const updated = { ...object, config: { ...object.config, ...(link && { typedef: link }) }, ...(context.strict && sizeFollowed(object, definition)) };
   if (!losses.length) return { node: updated, review: null };
   return { node: instance, review: { updated, previous: instance.config?.value, proposed: updated.config?.value, losses } };
 }

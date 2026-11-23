@@ -9,6 +9,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Front Panel: the elements of a cluster are edited as the controls they are (DT-106): select them alone with their handles,
+  operate them, move them within the cluster and out of it, delete, cut, copy, paste, nudge them with the arrow keys, and
+  drop controls from the palette into the cluster's interior; the control editor's background opens the Controls palette.
+  A click on a cluster's empty interior selects nothing (only its frame selects the cluster).
 - Type definitions: the objects that follow one now follow it (DT-104, stage b). An OVI opens with its instances
   updated from their definitions, silently (not modified); one whose update would lose a default it holds, or that has
   Auto-Update unticked and differs, breaks the OVI and says so in the Error list. In the control editor File ▸ Apply
@@ -17,7 +21,11 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   instance's menu has Disconnect from Type Def. (asks, then unlinks the object and changes nothing else) and
   Auto-Update from Type Def. (ticking it again follows at once). The elements of a linked cluster cannot be cut or
   deleted, and an object dropped on it stays outside. Review and Update from Type Def... stays greyed until its
-  window is built. File ▸ Save and Save As work in the control editor.
+  window is built. File ▸ Save and Save As work in the control editor. Its Edit menu has the Front Panel's rows
+  (Undo, Redo, Cut, Copy, Paste, Delete, Select All, Make Current Values Default, Reinitialize Values to Default), so a
+  definition's default values can be set; changing only a default leaves Apply Changes greyed. A type definition keeps
+  its cluster's size (the `.octl` has an optional `w` and `h`); a strict instance takes it and a non-strict one keeps its
+  own. Ctrl+S pressed again while a save is still asking about new, unsaved files no longer stacks another question.
 - Fix: saving an OVI that follows a type definition made by Make Type Def. and never saved no longer writes a link to
   nothing. As in LabVIEW, it first asks '"Untitled 1" refers to new, unsaved files…' (Yes / Cancel), names each
   definition in "Name the Control (Control N)" and then saves the OVI, its objects following the files (DT-104, stage

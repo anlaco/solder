@@ -34973,9 +34973,217 @@
     {
       "id": "window.control-editor.menu.edit",
       "etiqueta": "Edit",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-edit-menu.test.mjs::the_control_editor's_Edit_menu_has_the_measured_rows_and_runs_the_ones_that_apply_to_a_panel"
+    },
+    {
+      "id": "window.control-editor.menu.edit.undo",
+      "etiqueta": "Undo",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-edit-menu.test.mjs::the_control_editor's_Edit_menu_has_the_measured_rows_and_runs_the_ones_that_apply_to_a_panel",
+      "atajo": "Ctrl+Z"
+    },
+    {
+      "id": "window.control-editor.menu.edit.redo",
+      "etiqueta": "Redo",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-edit-menu.test.mjs::the_control_editor's_Edit_menu_has_the_measured_rows_and_runs_the_ones_that_apply_to_a_panel",
+      "atajo": "Ctrl+Shift+Z"
+    },
+    {
+      "id": "window.control-editor.menu.edit.cut",
+      "etiqueta": "Cut",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-edit-menu.test.mjs::the_control_editor's_Edit_menu_has_the_measured_rows_and_runs_the_ones_that_apply_to_a_panel",
+      "atajo": "Ctrl+X",
+      "separado": true
+    },
+    {
+      "id": "window.control-editor.menu.edit.copy",
+      "etiqueta": "Copy",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-edit-menu.test.mjs::the_control_editor's_Edit_menu_has_the_measured_rows_and_runs_the_ones_that_apply_to_a_panel",
+      "atajo": "Ctrl+C"
+    },
+    {
+      "id": "window.control-editor.menu.edit.paste",
+      "etiqueta": "Paste",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-edit-menu.test.mjs::the_control_editor's_Edit_menu_has_the_measured_rows_and_runs_the_ones_that_apply_to_a_panel",
+      "atajo": "Ctrl+V"
+    },
+    {
+      "id": "window.control-editor.menu.edit.paste-special",
+      "etiqueta": "Paste Special",
       "estado": "todo",
-      "necesita": "menus-control-editor",
-      "labview": "The same rows as the Front Panel's Edit menu (window.front-panel.menu.edit), with Customize Control... greyed (measured); not declared for the control editor yet."
+      "labview": "Pastes the clipboard letting you choose how, for example without the labels.",
+      "necesita": "editor-escritorio",
+      "atajo": "Ctrl+Shift+V"
+    },
+    {
+      "id": "window.control-editor.menu.edit.delete",
+      "etiqueta": "Delete",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-edit-menu.test.mjs::the_control_editor's_Edit_menu_has_the_measured_rows_and_runs_the_ones_that_apply_to_a_panel"
+    },
+    {
+      "id": "window.control-editor.menu.edit.select-all",
+      "etiqueta": "Select All",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-edit-menu.test.mjs::the_control_editor's_Edit_menu_has_the_measured_rows_and_runs_the_ones_that_apply_to_a_panel",
+      "atajo": "Ctrl+A"
+    },
+    {
+      "id": "window.control-editor.menu.edit.make-current-values-default",
+      "etiqueta": "Make Current Values Default",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-edit-menu.test.mjs::the_control_editor's_Edit_menu_has_the_measured_rows_and_runs_the_ones_that_apply_to_a_panel",
+      "separado": true
+    },
+    {
+      "id": "window.control-editor.menu.edit.reinitialize-values-to-default",
+      "etiqueta": "Reinitialize Values to Default",
+      "estado": "built",
+      "prueba": "test/editor/control-editor-edit-menu.test.mjs::the_control_editor's_Edit_menu_has_the_measured_rows_and_runs_the_ones_that_apply_to_a_panel"
+    },
+    {
+      "id": "window.control-editor.menu.edit.customize-control",
+      "etiqueta": "Customize Control...",
+      "estado": "todo",
+      "labview": "Opens the control editor to change how the selected control looks.",
+      "necesita": "estilos-de-controles",
+      "separado": true
+    },
+    {
+      "id": "window.control-editor.menu.edit.import-picture-to-clipboard",
+      "etiqueta": "Import Picture to Clipboard...",
+      "estado": "todo",
+      "labview": "Takes a picture file and puts it on the clipboard to paste it as a decoration.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "window.control-editor.menu.edit.set-tabbing-order",
+      "etiqueta": "Set Tabbing Order...",
+      "estado": "todo",
+      "labview": "Lets you click the controls in the order the Tab key should visit them.",
+      "necesita": "panel-frontal"
+    },
+    {
+      "id": "window.control-editor.menu.edit.remove-broken-wires-from-selection",
+      "etiqueta": "Remove Broken Wires from Selection",
+      "estado": "todo",
+      "labview": "Deletes the broken wires among the selection, or in the whole diagram with nothing selected.",
+      "necesita": "diagrama",
+      "atajo": "Ctrl+B",
+      "separado": true
+    },
+    {
+      "id": "window.control-editor.menu.edit.show-hidden-controls-and-indicators",
+      "etiqueta": "Show Hidden Controls and Indicators",
+      "estado": "todo",
+      "necesita": "panel-frontal",
+      "labview": "Shows the controls and indicators that are hidden (listed in the control editor Edit menu, measured)."
+    },
+    {
+      "id": "window.control-editor.menu.edit.clean-up-panel",
+      "etiqueta": "Clean Up Panel",
+      "estado": "todo",
+      "labview": "Arranges the objects of the panel.",
+      "necesita": "panel-frontal",
+      "atajo": "Ctrl+U"
+    },
+    {
+      "id": "window.control-editor.menu.edit.remove-breakpoints-from-hierarchy",
+      "etiqueta": "Remove Breakpoints from Hierarchy",
+      "estado": "never",
+      "porque": "The control editor has no Block Diagram to run, so there is nothing to break on: the row is greyed (measured, reports/2026-11-22-control-editor-window.md)",
+      "labview": "Greyed in the control editor (measured)."
+    },
+    {
+      "id": "window.control-editor.menu.edit.create-vi-snippet-from-selection",
+      "etiqueta": "Create OVI Snippet from Selection",
+      "estado": "todo",
+      "labview": "Saves the selection as a picture that carries its diagram. Greyed with nothing selected.",
+      "necesita": "instantaneas-de-vi"
+    },
+    {
+      "id": "window.control-editor.menu.edit.create-subvi",
+      "etiqueta": "Create SubOVI",
+      "estado": "todo",
+      "labview": "Turns the selection into a new VI and puts a call to it in its place. Greyed with nothing selected.",
+      "necesita": "crear-subvi"
+    },
+    {
+      "id": "window.control-editor.menu.edit.disable-panel-grid-alignment",
+      "etiqueta": "Disable Panel Grid Alignment",
+      "estado": "todo",
+      "labview": "Turns the panel's grid alignment off, or on again.",
+      "necesita": "panel-frontal",
+      "atajo": "Ctrl+#",
+      "separado": true
+    },
+    {
+      "id": "window.control-editor.menu.edit.show-hidden-controls-while-editing",
+      "etiqueta": "Show Hidden Controls While Editing",
+      "estado": "todo",
+      "labview": "Shows the controls that are hidden while the VI is being edited.",
+      "necesita": "panel-frontal"
+    },
+    {
+      "id": "window.control-editor.menu.edit.align-items",
+      "etiqueta": "Align Items",
+      "estado": "todo",
+      "labview": "Aligns the selected objects along an edge or a centre.",
+      "necesita": "panel-frontal",
+      "atajo": "Ctrl+Shift+A"
+    },
+    {
+      "id": "window.control-editor.menu.edit.distribute-items",
+      "etiqueta": "Distribute Items",
+      "estado": "todo",
+      "labview": "Spaces the selected objects evenly.",
+      "necesita": "panel-frontal",
+      "atajo": "Ctrl+Shift+D"
+    },
+    {
+      "id": "window.control-editor.menu.edit.vi-revision-history",
+      "etiqueta": "OVI Revision History...",
+      "estado": "todo",
+      "labview": "Opens the history of changes of the VI.",
+      "necesita": "historial-de-revisiones",
+      "atajo": "Ctrl+Y",
+      "separado": true
+    },
+    {
+      "id": "window.control-editor.menu.edit.run-time-menu",
+      "etiqueta": "Run-Time Menu...",
+      "estado": "todo",
+      "labview": "Edits the menu bar the VI shows when it runs.",
+      "necesita": "historial-de-revisiones"
+    },
+    {
+      "id": "window.control-editor.menu.edit.adjust-pane-origin",
+      "etiqueta": "Adjust Pane Origin",
+      "estado": "todo",
+      "labview": "Moves the window's origin so that the objects start at the top left; greyed on the diagram.",
+      "necesita": "panel-frontal"
+    },
+    {
+      "id": "window.control-editor.menu.edit.find-and-replace",
+      "etiqueta": "Find and Replace...",
+      "estado": "todo",
+      "labview": "Searches the VI, and the VIs it calls, for an object or a text.",
+      "necesita": "buscar-y-reemplazar",
+      "atajo": "Ctrl+F",
+      "separado": true
+    },
+    {
+      "id": "window.control-editor.menu.edit.show-search-results",
+      "etiqueta": "Show Search Results",
+      "estado": "todo",
+      "labview": "Shows the list the last search found; greyed until one has been done.",
+      "necesita": "buscar-y-reemplazar",
+      "atajo": "Ctrl+Shift+F"
     },
     {
       "id": "window.control-editor.menu.view",

@@ -9,6 +9,8 @@ import { atajo, esHueco, pulsa, ultimo } from "../common/labview-inventory.mjs";
 /** La paleta que abre el clic derecho sobre el lienzo de cada ventana. */
 export const PALETA_DE = {
   "front-panel": "palette.controls",
+  // The control editor's panel is a VI panel's: a right click on its background opens the Controls palette (measured, reports/2026-11-23-cluster-elements.md Q7).
+  "control-editor": "palette.controls",
   "block-diagram": "palette.functions",
 };
 

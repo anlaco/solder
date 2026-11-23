@@ -556,7 +556,7 @@ test("the run worker sends every write to a chart and only the last one to an in
 test("a copied graph keeps its settings and starts with no history", () => {
   const { p, chart } = threeGraphs();
   const configured = { ...p, g: Gr.fijarConfig(p.g, chart.id, { autoscaleY: false, historyLength: 200 }), seleccion: [chart.id], charts: GS.appendedToChart({}, chart.id, [1, 2, 3], "number", 1024) };
-  const fragment = PC.copySelection(configured);
+  const fragment = PC.copySelection(configured, CTX);
   const { p: pasted } = PC.pasteAt(configured, CTX, fragment, { x: 700, y: 500 }, null);
   const copy = pasted.g.nodos.at(-1);
   assert.equal(copy.tipo, "waveform-chart");

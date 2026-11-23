@@ -286,7 +286,7 @@ function panelWithControl() {
 
 test("Paste on the panel centres the control on the pointer, numbers its label and makes its terminal unwired", () => {
   const { p, id } = panelWithControl();
-  const fragment = PC.copySelection(p);
+  const fragment = PC.copySelection(p, CTX);
   const pasted = PC.pasteAt(p, CTX, fragment, { x: 400, y: 300 }, null);
   const copy = pasted.p.g.nodos.find((n) => n.id === pasted.p.seleccion[0]);
   assert.equal(copy.label.text, "x 2");
@@ -302,10 +302,10 @@ test("Paste on the panel centres the control on the pointer, numbers its label a
 
 test("Cut and Delete on the panel remove the control and its terminal, and Select All takes every object", () => {
   const { p, id } = panelWithControl();
-  const cut = PC.cutSelection(p);
+  const cut = PC.cutSelection(p, CTX);
   assert.equal(cut.p.g.nodos.length, 0);
   assert.equal(cut.fragment.nodes[0].id, id);
-  assert.equal(PC.cutSelection({ ...p, seleccion: [] }), null);
+  assert.equal(PC.cutSelection({ ...p, seleccion: [] }, CTX), null);
   assert.ok(PC.hasSelection(p) && !PC.hasSelection({ ...p, seleccion: [] }));
   assert.deepEqual(PC.selectAll({ ...p, seleccion: [] }).seleccion, [id]);
 });

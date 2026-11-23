@@ -7,8 +7,6 @@
 //
 // Pure functions over the graph. The drawing is cluster-view.mjs; the press, drag and release are front-panel.mjs.
 
-import * as Gr from "../../../core/model/graph.mjs";
-import * as CV from "../../../core/model/control-values.mjs";
 import { hasElements, setClusterElements } from "../../../core/model/user-cluster.mjs";
 import { typeDefinitionLink } from "../../../core/model/type-definition.mjs";
 import { BOOLEANOS } from "../common/glyphs.mjs";
@@ -43,17 +41,15 @@ export const isLinkedCluster = (node) => hasElements(node) && typeof typeDefinit
 export const clusterAt = (g, point, except = []) =>
   g.nodos.filter((node) => node.panel && hasElements(node) && !isLinkedCluster(node) && !except.includes(node.id) && contains(interiorBox(shellBox(node)), point)).at(-1);
 
-const ELEMENT_ID = /^(.+)\.elements\.\d+$/;
-
 /**
- * Whether the selection holds an element of a linked cluster (an element's id is `<cluster>.elements.<index>`): it cannot
- * be cut, copied or deleted, the elements being the definition's (measured: Edit ▸ Cut, Copy and Delete greyed and the
- * Delete key doing nothing, Q4). Its label can still be renamed.
+ * Whether the selection holds an element of a linked cluster (an unfolded element is `inside` its cluster, DT-106): it
+ * cannot be cut, copied or deleted, the elements being the definition's (measured: Edit ▸ Cut, Copy and Delete greyed and
+ * the Delete key doing nothing, Q4). Its label can still be renamed.
  */
 export const selectsLockedElement = (g, selection) =>
   selection.some((id) => {
-    const clusterId = ELEMENT_ID.exec(id)?.[1];
-    return clusterId !== undefined && isLinkedCluster(g.nodos.find((node) => node.id === clusterId));
+    const holder = g.nodos.find((node) => node.id === id)?.inside;
+    return holder !== undefined && isLinkedCluster(g.nodos.find((node) => node.id === holder));
   });
 
 /**
@@ -96,46 +92,6 @@ export function freshLabel(g, base) {
   return `${base} ${number}`;
 }
 
-/** A new element for `block` with the catalog's defaults and the palette's `config`, placed at (x, y) inside the interior. */
-export function newElement(g, cat, clusterId, block, config, label, place) {
-  const clusterBlock = g.nodos.find((node) => node.id === clusterId).tipo;
-  const elementTipo = elementBlock(block, clusterBlock);
-  const made = Gr.crearEnPanel(Gr.nuevo(), cat, elementTipo, 0, 0, freshLabel(g, label), elementConfig(config, elementTipo)).g.nodos[0];
-  return { tipo: elementTipo, label: made.label, config: made.config, x: place.x, y: place.y };
-}
-
-/** The cluster with `element` appended: the drop order is the cluster order (report §3). */
-export const withElement = (g, cat, clusterId, element) =>
-  setClusterElements(g, cat, clusterId, [...g.nodos.find((node) => node.id === clusterId).config.elements, element]);
-
-/** Where an element's box goes so that its corner is `corner` on the panel: relative to the interior, pushed inside its left edge (report §2). */
-export function placeInside(cluster, corner) {
-  const interior = interiorBox(shellBox(cluster));
-  return { x: Math.max(0, corner.x - interior.x), y: corner.y - interior.y };
-}
-
-/** A panel object as an element of `cluster`: the same label and configuration, its current value as its value. */
-function objectAsElement(cluster, node) {
-  const block = elementBlock(node.tipo, cluster.tipo);
-  const value = CV.currentValue(node);
-  const config = elementConfig({ ...node.config, ...(value !== undefined && { value }) }, block);
-  return { tipo: block, label: node.label, config, ...placeInside(cluster, node.panel) };
-}
-
-/**
- * Dropping controls that were moved on the panel onto the interior of a cluster: each becomes an element where it lies
- * and is removed from the panel's top level and from the diagram, with its wires, since an element has no terminal of
- * its own (DT-095 §1). Returns the graph, or null when `point` is not over a cluster or nothing dragged can be an element.
- */
-export function dropObjects(g, cat, ids, point) {
-  const cluster = clusterAt(g, point, ids);
-  const dropped = g.nodos.filter((node) => ids.includes(node.id) && node.panel && canBeElement(node.tipo));
-  if (!cluster || !dropped.length) return null;
-  const elements = dropped.map((node) => objectAsElement(cluster, node));
-  const without = Gr.borrar(g, dropped.map((node) => node.id));
-  return { g: setClusterElements(without, cat, cluster.id, [...cluster.config.elements, ...elements]), id: cluster.id };
-}
-
 /** The graph with the shell of cluster `id` in `box`: its corner and its size. */
 export const withShellBox = (g, id, box) => ({
   ...g,
@@ -145,17 +101,27 @@ export const withShellBox = (g, id, box) => ({
 /** A cluster's element as a node of the panel, so that the objects' drawing and measures serve it: its id says where it is. */
 export const elementNode = (cluster, element, index) => ({ ...element, id: `${cluster.id}.elements.${index}`, panel: { x: element.x, y: element.y } });
 
+/** An element, folded or unfolded, as the block it takes when its cluster is a control or an indicator. */
+function flippedElement(element, clusterBlock) {
+  const block = elementBlock(element.tipo, clusterBlock);
+  return { ...element, tipo: block, config: elementConfig(element.config, block) };
+}
+
 /**
  * Change to Indicator (or to Control) of cluster `id`: the shell and every element in it flip together, since all the
  * elements of a cluster are controls or all indicators (reports/2026-11-16-cluster-panel.md §6). The terminal flips and
- * its wires keep their node with the port renamed, as for any panel object (`flipArrayKind`).
+ * its wires keep their node with the port renamed, as for any panel object (`flipArrayKind`). The elements are the
+ * cluster's own (folded) or the objects inside it (unfolded, DT-106), at any depth.
  */
 export function flipCluster(g, cat, id) {
   const flipped = flipArrayKind(g, id);
   const cluster = flipped.nodos.find((node) => node.id === id);
-  const elements = cluster.config.elements.map((element) => {
-    const block = elementBlock(element.tipo, cluster.tipo);
-    return { ...element, tipo: block, config: elementConfig(element.config, block) };
+  const insideIds = new Set([id]);
+  const nodos = flipped.nodos.map((node) => {
+    if (node.id === id || !insideIds.has(node.inside)) return node;
+    insideIds.add(node.id);
+    return flippedElement(node, cluster.tipo);
   });
-  return setClusterElements(flipped, cat, id, elements);
+  const withObjects = { ...flipped, nodos };
+  return setClusterElements(withObjects, cat, id, cluster.config.elements.map((element) => flippedElement(element, cluster.tipo)));
 }

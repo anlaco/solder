@@ -28,7 +28,9 @@
         "kind": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
         "label": { "type": "string" },
         "x": { "type": "number" },
-        "y": { "type": "number" }
+        "y": { "type": "number" },
+        "w": { "description": "The width of the object when it was resized (a cluster's shell), with `h`; absent for an object of its default size. Optional: a file without it reads as before. A strict instance takes it, a non-strict one keeps its own size (DT-106).", "type": "number", "exclusiveMinimum": 0 },
+        "h": { "description": "The height, as `w`.", "type": "number", "exclusiveMinimum": 0 }
       }
     }
   },
