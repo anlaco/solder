@@ -26,6 +26,8 @@ import { CHOSEN_PANEL_STYLE_ROUTE, PANEL_STYLES, chosenPanelStyleName } from "..
 import { emptyStartState, nextCarouselPage, parseStartState, rememberFile } from "../src/getting-started/start-state.mjs";
 import { CONTROL_WINDOW_KIND, ENTRY_KINDS, POLYMORPHIC_WINDOW_KIND, WINDOW_KINDS, createRegistry, hasOviWindows, isDirty, primaryWindowKind, recordChange, recordSave, oviName, windowKindsOf, windowTitle } from "./ovi-registry.mjs";
 import { changesWhatCallersSee, memoryFirstReader } from "./memory-first.mjs";
+import { appliedTextOf, applyControl, editChangesCallers, publishSavedControl } from "./type-definition-publishing.mjs";
+import { FOLLOW } from "../src/common/type-definition-publishing.mjs";
 import { broadcast, createLayoutManager, preferencesFileIn } from "./layout-manager.mjs";
 import { dialogOwner, hostWindowOf } from "./page-window.mjs";
 import { readWindowStyle, watchWindowStyle } from "./window-style.mjs";
@@ -208,11 +210,15 @@ const registry = createRegistry();
 /** OVI texts as a caller reaches them: an open OVI's, with its unsaved edits, before the file's (issue #20). */
 const readOVIText = memoryFirstReader(registry, readTextOrNull);
 
-/** Tells the other windows that an OVI's content changed in memory, so its callers redraw and run it as it is now. */
-function announceEdit(entry) {
-  if (!entry.path) return;
+/**
+ * Tells the other windows that an OVI's content changed in memory, so its callers redraw and run it as it is now. For a
+ * type definition, `follow` (type-definition-publishing.mjs) says whether its instances apply what it says or only check
+ * it. An untitled type definition is followed by its untitled key, so it is announced too.
+ */
+function announceEdit(entry, follow) {
+  if (!entry.path && entry.kind !== ENTRY_KINDS.CONTROL) return;
   for (const contents of webContents.getAllWebContents()) {
-    if (!contents.isDestroyed() && oviOfContents.get(contents.id)?.entry.id !== entry.id) contents.send("ovi:edited", { id: entry.id, key: keyOf(entry) });
+    if (!contents.isDestroyed() && oviOfContents.get(contents.id)?.entry.id !== entry.id) contents.send("ovi:edited", { id: entry.id, key: keyOf(entry), follow });
   }
 }
 /** Open OVI id → `{ entry, windows: { kind: PageWindow or BrowserWindow }, closing, calls }`; `calls`, the keys its hierarchy calls. */
@@ -941,10 +947,12 @@ async function writeControl(open, owner, text, saveAs) {
   const from = keyOf(entry);
   await writeFile(target, text);
   recordSave(entry, target, text);
+  publishSavedControl(entry, text);
   rememberRecentFile(target);
   setTitles(open);
   // `from`: the objects that followed it by its untitled key follow its file now (measured, Q5 of the editor-entry report).
-  broadcast("ovi:saved", { id: entry.id, key: pathKey(target), from });
+  // `follow`: Save does not apply, the instances recheck and the ones that differ break until Apply (Q6).
+  broadcast("ovi:saved", { id: entry.id, key: pathKey(target), from, follow: FOLLOW.check });
   projects.filesChanged();
   return text;
 }
@@ -1031,7 +1039,7 @@ function afterLastProjectClosed() {
 }
 
 /** What a page learns about its OVI when it starts. */
-const describe = (entry) => ({ id: entry.id, kind: entry.kind, text: entry.initialText, key: keyOf(entry), name: oviName(entry), untitledNumber: entry.untitledNumber, instance: entry.instance ?? null });
+const describe = (entry) => ({ id: entry.id, kind: entry.kind, text: entry.initialText, ...(entry.kind === ENTRY_KINDS.CONTROL && { applied: appliedTextOf(entry) }), key: keyOf(entry), name: oviName(entry), untitledNumber: entry.untitledNumber, instance: entry.instance ?? null });
 
 async function readTextOrNull(key) {
   try {
@@ -1069,7 +1077,8 @@ function handleRequests() {
     recordChange(open.entry, text);
     textWaiters.changed(open.entry);
     setTitles(open);
-    if (changesWhatCallersSee(previous, text)) announceEdit(open.entry);
+    // A type definition's edits reach its instances when it is applied or saved, not as they are made (published text).
+    if (editChangesCallers(open.entry) && changesWhatCallersSee(previous, text)) announceEdit(open.entry);
   });
   ipcMain.handle("ovi:guardar", async (event, text, saveAs) => {
     const open = openOf(event);
@@ -1089,6 +1098,17 @@ function handleRequests() {
   });
   // Make Type Def.: the object's .octl text in, the untitled key its object follows out (DT-104 stage a2).
   ipcMain.handle("typedef:make", (_event, text) => makeTypeDefinition(text));
+  // File ▸ Apply Changes of the control editor: its text is published and its instances apply it (DT-104 stage b).
+  ipcMain.on("typedef:apply", (event, text) => {
+    const { entry } = openOf(event);
+    applyControl(entry, text);
+    announceEdit(entry, FOLLOW.apply);
+  });
+  // The name of the type definition at `key`, as a question about it says it (Disconnect from Type Def.): "Control N" for an untitled one.
+  ipcMain.handle("typedef:name", (_event, key) => {
+    const definition = inMemoryWithKey(key);
+    return definition ? oviName(definition.entry) : null;
+  });
   // Select an OVI...: the file dialog; returns the absolute path or nothing.
   ipcMain.handle("ovi:choose-subovi", async (event) => {
     const result = await dialog.showOpenDialog(ownerOf(event), { title: "Select an OVI", properties: ["openFile"], filters: OVI_AND_POLYMORPHIC_FILTERS });

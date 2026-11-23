@@ -12,13 +12,17 @@ import { MEDIDAS_PANEL, borrarSeleccion, caja, elementFragment, objetos, selecte
 import { REPEATED_PASTE_STEP, remember, repeatCount } from "../common/paste-memory.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
+import { selectsLockedElement } from "./cluster-panel.mjs";
 
 const LABEL_SUFFIX = "#etiqueta";
 /** The panel objects selected, without their labels. */
 export const selectedObjects = (p) => p.seleccion.filter((id) => !id.endsWith(LABEL_SUFFIX) && p.g.nodos.some((n) => n.id === id && n.panel));
 
-/** Is there something Copy, Cut and Delete can act on? The element of an array, selected alone, too (measured enabled). */
-export const hasSelection = (p) => selectedObjects(p).length > 0 || !!selectedElementArray(p);
+/** Is there something Copy, Cut and Delete can act on? The element of an array, selected alone, too (measured enabled); an element of a cluster that follows a type definition, never (measured greyed). */
+export const hasSelection = (p) => !selectsLockedElement(p.g, p.seleccion) && (selectedObjects(p).length > 0 || !!selectedElementArray(p));
+
+/** Is the selection one the Edit menu greys Cut and Delete for: an element of a linked cluster? */
+export const selectionIsLocked = (p) => selectsLockedElement(p.g, p.seleccion);
 
 const withoutWires = (graph, ids) => ({ ...copyFragment(graph, ids), wires: [] });
 

@@ -198,7 +198,7 @@ A Cluster Constant (`cluster-constant`) stores its constants the same way in its
 An error cluster, which has a `style`, keeps its stored `type` (DT-043).
 
 **An object that follows a type definition** (DT-096, version 7) — a front-panel item, or a constant in its node's
-`config` — carries `typedef`: `{ "path": "PointTD.octl", "strict": false }`, the `.octl` file by a path stored as a
+`config` — carries `typedef`: `{ "path": "PointTD.octl", "strict": false }` (from version 9 also `"auto-update": false` when Auto-Update from Type Def. is unticked; absent, it is ticked), the `.octl` file by a path stored as a
 subOVI's is (relative to this file, absolute while it has none) and whether it is a strict type definition. It still
 stores its whole definition (its `elements`, its enum `type`…), the copy of what the file defined when it was last
 updated: the file is needed to keep the object up to date, not to read it. An `.ovi` whose `.octl` is missing is read

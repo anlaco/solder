@@ -13,7 +13,7 @@
       "description": "Versión del formato. Un lector DEBE rechazar una versión mayor que la que conoce.",
       "type": "integer",
       "minimum": 1,
-      "maximum": 8
+      "maximum": 9
     },
 
     "meta": {
@@ -365,14 +365,15 @@
     },
 
     "typeDefinitionLink": {
-      "description": "The type definition this object follows (DT-096): the `.octl` file, by a path relative to this OVI's file (absolute while the OVI has none), and whether it is a strict type definition. The object still stores the copy of what the file defined.",
+      "description": "The type definition this object follows (DT-096): the `.octl` file, by a path relative to this OVI's file (absolute while the OVI has none), whether it is a strict type definition, and whether it follows by itself. The object still stores the copy of what the file defined.",
       "type": "object",
       "required": ["path", "strict"],
       "additionalProperties": false,
       "properties": {
         "comment": { "$ref": "#/$defs/comment" },
         "path": { "type": "string", "minLength": 1 },
-        "strict": { "type": "boolean" }
+        "strict": { "type": "boolean" },
+        "auto-update": { "description": "Auto-Update from Type Def. unticked (false); absent, it is ticked, LabVIEW's default. Only a non-strict instance has the row (format version 9, DT-104 stage b).", "type": "boolean" }
       }
     },
 

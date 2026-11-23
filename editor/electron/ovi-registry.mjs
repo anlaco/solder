@@ -56,7 +56,8 @@ export function createRegistry() {
       const existing = path && [...entries.values()].find((entry) => entry.path === path);
       if (existing) return { entry: existing, alreadyOpen: true };
       const untitledNumber = path ? null : kind === ENTRY_KINDS.CONTROL ? ++lastControl : ++lastUntitled;
-      const entry = { id: String(++lastId), kind, path, untitledNumber, initialText, saved: null, current: null };
+      // `published` and `applied` are a control's: what its instances read, and the text last applied (type-definition-publishing.mjs).
+      const entry = { id: String(++lastId), kind, path, untitledNumber, initialText, saved: null, current: null, published: null, applied: null };
       entries.set(entry.id, entry);
       return { entry, alreadyOpen: false };
     },

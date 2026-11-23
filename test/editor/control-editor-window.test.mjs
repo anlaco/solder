@@ -25,8 +25,9 @@ test("the control editor window is declared with LabVIEW's eight menu titles and
 
   const file = menus[0];
   const rows = Object.fromEntries(file.rows.map((row) => [row.id, row]));
-  // The rows measured that wait for their stage: Apply Changes (stage b), Save (stage a3), Control Properties.
-  for (const id of ["apply-changes", "save", "control-properties"]) assert.equal(rows[`window.control-editor.menu.file.${id}`].hole, true, id);
+  // The row measured that waits for its stage: Control Properties. Apply Changes and Save are built (DT-104 stages a3 and b).
+  assert.equal(rows["window.control-editor.menu.file.control-properties"].hole, true);
+  for (const id of ["apply-changes", "save", "save-as"]) assert.equal(rows[`window.control-editor.menu.file.${id}`].hole, false, id);
   assert.equal(rows["window.control-editor.menu.file.control-properties"].shortcut, "Ctrl+I");
   assert.equal(rows["window.control-editor.menu.file.apply-changes"].separatorBefore, true);
   // The rows the page already runs, as in the OVI windows.
@@ -97,8 +98,8 @@ test("the text the control editor saves reopens as the same .octl", () => {
 });
 
 test("the Ctrl shortcuts whose rows in the control editor are holes or never do nothing there", () => {
-  for (const key of ["e", "s", "i", "r", "t"]) assert.equal(shortcutBlocked(INV, "window.control-editor", key), true, `Ctrl+${key.toUpperCase()} is blocked`);
-  for (const key of ["w", "o", "n", "q"]) assert.equal(shortcutBlocked(INV, "window.control-editor", key), false, `Ctrl+${key.toUpperCase()} still runs`);
+  for (const key of ["e", "i", "r", "t"]) assert.equal(shortcutBlocked(INV, "window.control-editor", key), true, `Ctrl+${key.toUpperCase()} is blocked`);
+  for (const key of ["s", "w", "o", "n", "q"]) assert.equal(shortcutBlocked(INV, "window.control-editor", key), false, `Ctrl+${key.toUpperCase()} still runs`);
   // The OVI windows keep their shortcuts: their rows are built, and Run's Ctrl+R is not declared there at all.
   for (const key of ["s", "i", "e", "t", "r", "w"]) assert.equal(shortcutBlocked(INV, "window.front-panel", key), false, `front-panel Ctrl+${key.toUpperCase()}`);
   const page = source(PAGE);

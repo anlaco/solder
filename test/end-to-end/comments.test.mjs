@@ -82,7 +82,7 @@ test("a comment inside a value is data: a cluster's field may be called comment"
 });
 
 test("an .octl's comments survive a round trip, valid against its schema", () => {
-  const text = asText({ comment: "the point every OVI shares", solder: 8, "type-definition": "type-def", object: { comment: "x first", kind: "cluster-control", label: "Point", elements: [{ comment: "the abscissa", kind: "control", label: "x", type: "number", default: 0, x: 4, y: 19 }], x: 10, y: 10 } });
+  const text = asText({ comment: "the point every OVI shares", solder: 9, "type-definition": "type-def", object: { comment: "x first", kind: "cluster-control", label: "Point", elements: [{ comment: "the abscissa", kind: "control", label: "x", type: "number", default: 0, x: 4, y: 19 }], x: 10, y: 10 } });
   const validate = validator("docs/schema/octl.schema.json");
   assert.ok(validate(JSON.parse(text)), JSON.stringify(validate.errors));
   const { kind, object, comments } = readTypeDefinition(text, CAT);

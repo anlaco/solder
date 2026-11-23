@@ -12,7 +12,7 @@
       "description": "The version of the format, shared with the .ovi (DT-055). A reader MUST refuse a version newer than the one it knows.",
       "type": "integer",
       "minimum": 7,
-      "maximum": 8
+      "maximum": 9
     },
     "type-definition": {
       "description": "Which of the control editor's three it is, as its ring names them: Control, Type Def., Strict Type Def. (measured, reports/2026-11-17-typedef-update.md Q4). Only the last two are followed by the objects made from them.",

@@ -301,7 +301,7 @@ test("a saved sdp refreshes the callers that have it open, and the window reads 
   assert.deepEqual(result.errors, []);
   assert.ok(result.keys.includes("/lib/Step.sdp"), "so a save of the .sdp rebuilds this caller's hierarchy");
   const page = readFileSync(path.join(RAIZ, "editor/src/window/editor-window.mjs"), "utf8");
-  assert.match(page, /if \(hierarchyKeys\.includes\(key\)\) refrescarJerarquia\(\)/);
+  assert.match(page, /if \(hierarchyKeys\.includes\(key\)\) refrescarJerarquia\(\{ follow \}\)/);
   // writeOVI tells every page which key was saved, the .sdp's included, docked or floating (DT-101).
   const main = readFileSync(path.join(RAIZ, "editor/electron/main.mjs"), "utf8");
   assert.match(main, /broadcast\("ovi:saved", \{ id: entry\.id, key: pathKey\(target\) \}\)/);

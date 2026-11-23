@@ -54,6 +54,10 @@ import * as Paths from "../common/ovi-paths.mjs";
 import * as Q from "../../../core/model/qvi-format.mjs";
 import { controlEditorGraph, controlEditorText, definitionObjectOf, editedObjectOf } from "../../../core/model/control-editor.mjs";
 import { controlOfConstant } from "../block-diagram/cluster-constant-panel.mjs";
+import { followsAutomatically } from "../../../core/model/type-definition-follow.mjs";
+import { FOLLOW } from "../common/type-definition-publishing.mjs";
+import { applyMenuVariant, createApplyTracker } from "./control-editor-apply.mjs";
+import { createFollower, disconnectQuestion, fileNameOfDefinition, withAutoUpdateToggled, withoutTypeDefinition } from "./type-definition-instances.mjs";
 import { KIND_TITLES, TYPE_DEFINITION_KINDS, linkFor, typeDefinitionLink, typeDefinitionText } from "../../../core/model/type-definition.mjs";
 import * as SN from "../block-diagram/subovi-nodes.mjs";
 import * as PolymorphicNodes from "../block-diagram/polymorphic-nodes.mjs";
@@ -190,6 +194,9 @@ let oviKey = oviInfo.key;
 /** The control editor's ring (DT-104): the `.octl`'s kind, and the comments it was read with. */
 let controlKind = "type-def";
 let controlComments = null;
+/** The control editor's File ▸ Apply Changes: the `.octl` last applied and whether the one edited now differs from it (control-editor-apply.mjs). */
+const applying = createApplyTracker(oviInfo.applied ?? null);
+const controlText = () => controlEditorText(controlKind, grafo(), cat, controlComments);
 /** Where this Solder's ovi.lib is, which `<ovilib>/…` subOVI paths lead to (DT-073). */
 const oviLibRoot = oviInfo.oviLibRoot ?? "";
 /** The text of every other OVI of the hierarchy, by absolute path. */
@@ -198,6 +205,12 @@ let subOVITexts = {};
 let hierarchyErrors = [];
 /** The keys of the subOVIs this OVI reaches. */
 let hierarchyKeys = [];
+/** The objects that follow a type definition: the definitions they were last built from, and the ones left behind (DT-104 stage b). */
+const follower = createFollower();
+/** What stops the OVI from running because of its hierarchy: the subOVIs and definitions that cannot be found, and the instances left behind their definition. */
+const hierarchyProblems = () => [...hierarchyErrors, ...follower.problems(grafo(), cat)];
+/** `g` with its instances made to follow their definitions; `apply`: updated, else only checked (a definition saved and not applied breaks them). `only`: the ids to follow. */
+const followTypeDefinitions = (g, { apply, only }) => follower.follow(g, { catalog: cat, oviKey, oviLibRoot, apply, only });
 
 /** What a hierarchy reaches: its subOVIs and the type definitions its objects follow (DT-096), each by its key. */
 const calledKeys = (hierarchy) => [...hierarchy.keys, ...hierarchy.typeDefinitions.keys()];
@@ -223,6 +236,7 @@ function rebuildHierarchy(g) {
   cat = result.catalog;
   ctx = D.contexto(cat, glifos, separador, medirMenu);
   hierarchyErrors = result.errors;
+  follower.know(result.typeDefinitions);
   setHierarchyKeys(calledKeys(result));
   // A polymorphic node on Automatic follows what is wired, with the new hierarchy (DT-074).
   return Gr.aflojarCablesHuerfanos(Gr.adaptPolymorphicNodes(g, cat), cat, placeOfOldTerminal);
@@ -240,9 +254,13 @@ function ponerGrafo(g, { share = false } = {}) {
   else publicado = g;
 }
 
-/** Reads the subOVI files again and redraws: a subOVI was saved, or a Run is about to start. */
-async function refrescarJerarquia() {
-  ponerGrafo(await withHierarchyTextsOf(grafo()), { share: true });
+/**
+ * Reads the subOVI files again and redraws: a subOVI was saved, or a Run is about to start. `follow` (FOLLOW): a type
+ * definition was applied (its instances are updated, silently) or saved (they are only checked, the ones that differ break).
+ */
+async function refrescarJerarquia({ follow } = {}) {
+  const rebuilt = await withHierarchyTextsOf(grafo());
+  ponerGrafo(follow ? followTypeDefinitions(rebuilt, { apply: follow === FOLLOW.apply }) : rebuilt, { share: true });
   pintar();
 }
 
@@ -269,10 +287,10 @@ const showOVINameInPageTitle = () =>
 showOVINameInPageTitle();
 
 /** Some OVI was saved, here or elsewhere (preload `alGuardar`). */
-function alGuardarOtroOVI({ id, key, from }) {
+function alGuardarOtroOVI({ id, key, from, follow }) {
   if (id !== oviInfo.id) {
-    if (from && from !== key && hierarchyKeys.includes(from)) return followSavedTypeDefinition(from, key);
-    if (hierarchyKeys.includes(key)) refrescarJerarquia();
+    if (from && from !== key && hierarchyKeys.includes(from)) return followSavedTypeDefinition(from, key, follow);
+    if (hierarchyKeys.includes(key)) refrescarJerarquia({ follow });
     return;
   }
   // This OVI was saved, maybe for the first time or somewhere else: its subOVI paths are now relative to the new file.
@@ -286,12 +304,13 @@ function alGuardarOtroOVI({ id, key, from }) {
 window.solder?.alGuardar(alGuardarOtroOVI);
 
 /** An untitled type definition this OVI follows was saved: its objects now follow the file, an edit of this OVI (DT-104). */
-async function followSavedTypeDefinition(fromKey, toKey) {
+async function followSavedTypeDefinition(fromKey, toKey, follow) {
   // Both windows hear of the save; the Front Panel makes the edit and sends it, with the new texts, to the Block Diagram.
   if (nombre !== "front-panel") return;
   const g = Paths.relinkTypeDefinition(grafo(), fromKey, toKey, oviKey);
-  if (g === grafo()) return refrescarJerarquia();
-  setGraphAndRest(await withHierarchyTextsOf(g), "relink-type-def");
+  if (g === grafo()) return refrescarJerarquia({ follow });
+  const relinked = await withHierarchyTextsOf(g);
+  setGraphAndRest(follow ? followTypeDefinitions(relinked, { apply: follow === FOLLOW.apply }) : relinked, "relink-type-def");
   pintar();
 }
 
@@ -323,8 +342,8 @@ async function refreshWindowRows() {
 }
 addEventListener("focus", refreshWindowRows);
 // A subOVI open elsewhere changed in memory or was closed: this caller shows and runs it as it is now (issue #20).
-window.solder?.onOVIEdited(({ id, key }) => {
-  if (id !== oviInfo.id && hierarchyKeys.includes(key)) refrescarJerarquia();
+window.solder?.onOVIEdited(({ id, key, follow }) => {
+  if (id !== oviInfo.id && hierarchyKeys.includes(key)) refrescarJerarquia({ follow });
 });
 // Leaving this window (switching to the other one) commits what is being typed, as clicking outside does.
 addEventListener("blur", () => confirmarEscritura());
@@ -350,6 +369,19 @@ const avisar = (g) => {
 function confirmarEscritura() {
   if (conDiagrama && dia.edicion) cambiarDiagrama(ED.confirmar(dia, ctx));
   if (conPanel && pan.edicion) cambiarPanel(P.confirmar(pan));
+}
+
+/**
+ * File ▸ Apply Changes of the control editor: the OVIs that follow its type definition apply what it says now, silently
+ * (the main process publishes the text). The editor keeps its asterisk: Apply does not save (measured, Q6).
+ */
+function applyControlChanges() {
+  if (!esEditorControl || !window.solder) return;
+  confirmarEscritura();
+  const text = controlText();
+  applying.applied(text);
+  window.solder.applyControl(text);
+  pintar();
 }
 
 /** File ▸ Save and Save As. The control editor sends its `.octl`'s text, not an OVI's (DT-104). */
@@ -381,8 +413,10 @@ async function cargarTexto(text) {
     cat = result.catalog;
     ctx = D.contexto(cat, glifos, separador, medirMenu);
     hierarchyErrors = result.errors;
+    follower.know(result.typeDefinitions);
     setHierarchyKeys(calledKeys(result));
-    cargar(Gr.adaptPolymorphicNodes(result.graph, cat));
+    // The OVI opens with its instances following their definitions, silently: it is not modified (measured: Q5).
+    cargar(followTypeDefinitions(Gr.adaptPolymorphicNodes(result.graph, cat), { apply: true }));
   } catch (e) {
     window.solder.error(e.message);
     window.solder.cerrar();
@@ -681,6 +715,7 @@ function abortar() {
 
 /** Las órdenes hechas del menú File, por el último segmento de su id. */
 const ORDENES_MENU = {
+  "apply-changes": applyControlChanges,
   save: () => guardarOVI(false),
   "save-as": () => guardarOVI(true),
   open: abrirOVI,
@@ -726,6 +761,8 @@ const ORDENES_CONTEXTUALES = {
   "list-errors": (wireId) => openErrorList(`wire.${wireId}`),
   "make-type-def": (nodeId) => makeTypeDefinition(nodeId),
   "open-type-def": (nodeId) => openTypeDefinition(nodeId),
+  "disconnect-from-type-def": (nodeId) => disconnectFromTypeDefinition(nodeId),
+  "auto-update-from-type-def": (nodeId) => toggleAutoUpdate(nodeId),
 };
 
 // ——— Type definitions (DT-096, DT-104 stage a2) ———
@@ -755,6 +792,39 @@ async function makeTypeDefinition(nodeId) {
 function openTypeDefinition(nodeId) {
   const link = typeDefinitionLink(grafo().nodos.find((candidate) => candidate.id === nodeId));
   if (link?.path) window.solder?.abrirRuta(Paths.resolveRelative(oviKey, link.path, oviLibRoot));
+}
+
+/** The name the question about a definition gives it: its file's, or the "Control N" of an untitled one that the main process keeps. */
+async function definitionNameOf(link) {
+  if (!Paths.isUntitledKey(link.path)) return fileNameOfDefinition(link.path);
+  return (await window.solder?.typeDefinitionName(link.path)) ?? link.path;
+}
+
+/**
+ * Disconnect from Type Def.: after the question (OK is the default), the object stops following its definition and
+ * nothing else of it changes; an edit that marks the OVI modified (measured on a panel control, a strict one and a
+ * Cluster Constant: reports/2026-11-23-typedef-instances.md Q1).
+ */
+async function disconnectFromTypeDefinition(nodeId) {
+  const node = grafo().nodos.find((candidate) => candidate.id === nodeId);
+  const link = typeDefinitionLink(node);
+  if (!link?.path || !window.solder) return;
+  const question = disconnectQuestion(node.label?.text ?? "", await definitionNameOf(link));
+  if (!(await window.solder.confirm({ message: question }))) return;
+  setGraphAndRest(await withHierarchyTextsOf(withoutTypeDefinition(grafo(), nodeId)), "disconnect-from-type-def");
+  pintar();
+}
+
+/**
+ * Auto-Update from Type Def.: unticked, the object no longer follows by itself; ticked again, it follows at once, as an
+ * edit that marks the OVI modified (measured, Q2). Both are stored on the link.
+ */
+async function toggleAutoUpdate(nodeId) {
+  const toggled = withAutoUpdateToggled(grafo(), nodeId);
+  const link = typeDefinitionLink(toggled.nodos.find((candidate) => candidate.id === nodeId));
+  // Ticked it follows now; unticked it is checked, so that one that differs breaks as LabVIEW's does (Q2).
+  setGraphAndRest(followTypeDefinitions(toggled, { apply: followsAutomatically(link), only: [nodeId] }), "auto-update-from-type-def");
+  pintar();
 }
 
 // ——— Debugging (DT-047) ———
@@ -810,7 +880,7 @@ function debugToolbar() {
   const container = paused?.container && grafo().nodos.find((candidate) => candidate.id === paused.container);
   return DS.toolbarState({
     phase: DS.phaseOf({ running: ejecutando, run: debug.run }),
-    broken: !Gr.ejecutable(grafo(), cat, Gr.tipos(grafo(), cat)) || hierarchyErrors.length > 0,
+    broken: !Gr.ejecutable(grafo(), cat, Gr.tipos(grafo(), cat)) || hierarchyProblems().length > 0,
     allowDebugging: allowsDebugging(grafo()),
     highlight: debug.highlight,
     retain: debug.retain,
@@ -941,10 +1011,12 @@ function openDebugWindow() {
 let errorRowsCache = { graph: null, hierarchy: null, rows: [] };
 function errorRows() {
   const g = grafo();
-  if (errorRowsCache.graph === g && errorRowsCache.hierarchy === hierarchyErrors) return errorRowsCache.rows;
+  const problems = hierarchyProblems();
+  const problemsKey = JSON.stringify(problems);
+  if (errorRowsCache.graph === g && errorRowsCache.hierarchy === problemsKey) return errorRowsCache.rows;
   const compiled = compilar(g, cat);
-  const rows = EL.collect({ graph: g, catalog: cat, resolved: Gr.tipos(g, cat), hierarchyErrors, compileErrors: compiled.errores ?? [], inventory: inv });
-  errorRowsCache = { graph: g, hierarchy: hierarchyErrors, rows };
+  const rows = EL.collect({ graph: g, catalog: cat, resolved: Gr.tipos(g, cat), hierarchyErrors: problems, compileErrors: compiled.errores ?? [], inventory: inv });
+  errorRowsCache = { graph: g, hierarchy: problemsKey, rows };
   return rows;
 }
 
@@ -1253,7 +1325,7 @@ function variantesDelMenuEdit() {
     undoName: H.undoName(historial),
     redoName: H.redoName(historial),
     canCopy: hayParaCopiar,
-    hasSelection: seleccion.length > 0,
+    hasSelection: seleccion.length > 0 && !(conPanel && PC.selectionIsLocked(pan)),
     clipboardFilled: !!portapapeles.paquete,
   });
 }
@@ -1514,7 +1586,7 @@ function pintar({ chromeChanged = true } = {}) {
   const charts = GS.reconciledCharts(pan.charts, grafo(), resueltos);
   if (charts !== pan.charts) pan = { ...pan, charts };
   const floating = floatingWindows();
-  const extra = { toolbar: toolbarButtons(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyErrors.length > 0, ejecutando, conAvisos: !ejecutando && EL.showsWarningButton(warningRows(), errorList.showWarnings), dialogo: dialogoError, numeroOVI: oviInfo.untitledNumber ?? undefined, applicationInstance: projectInstance ?? undefined, controlTypeLabel: esEditorControl ? KIND_TITLES[controlKind] : undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
+  const extra = { toolbar: toolbarButtons(), resaltando: debug.highlight.on && ejecutando, flotantes: floating.windows, runRoto: !Gr.ejecutable(grafo(), cat, resueltos) || hierarchyProblems().length > 0, ejecutando, conAvisos: !ejecutando && EL.showsWarningButton(warningRows(), errorList.showWarnings), dialogo: dialogoError, numeroOVI: oviInfo.untitledNumber ?? undefined, applicationInstance: projectInstance ?? undefined, controlTypeLabel: esEditorControl ? KIND_TITLES[controlKind] : undefined, propiedades: (propiedades ? VP.view(inv, propiedades) : "") + dibujarDialogoModal() };
   if (conDiagrama) {
     extra.lienzo = D.contenido({ ...dia, debug: DV.canvasView(debug, dia.g, ejecutando) }, ctx, resueltos) + DV.overlay(debug, dia.g, ctx, resueltos, { now: Date.now(), separator: separador, running: ejecutando, pausedAt: debug.run.paused, errorFocus });
     extra.encima = (dia.menu ? D.menuContextual(inv, dia.menu, ED.marcados(dia, ctx), medirMenu, DV.mergeVariants(ED.variantes(dia, ctx, inv), DV.menuVariants(debug, dia.g, resueltos, dia.menu)), windowSize()) : "") + floating.popup;
@@ -1562,7 +1634,8 @@ function dockedChromeModel() {
 
 /** What a menu of the bar greys, renames and lists, from what this window knows now: the Edit menu's state and the project's. */
 function menuBarVariant(id) {
-  return DV.mergeVariants(id === EM.editMenuId(nombre) ? variantesDelMenuEdit() : {}, PM.projectMenuVariant(inv, nombre, id, { inProject, windowRows }));
+  const apply = esEditorControl ? applyMenuVariant(id, editedObjectOf(grafo(), cat) !== undefined && applying.hasChanges(cat, grafo(), controlKind, controlText)) : {};
+  return DV.mergeVariants(DV.mergeVariants(id === EM.editMenuId(nombre) ? variantesDelMenuEdit() : {}, PM.projectMenuVariant(inv, nombre, id, { inProject, windowRows })), apply);
 }
 
 /** A row of the menu bar: what is done is done; a hole is explained at `where`. Clicked here, or chosen in the docked window's menu. */

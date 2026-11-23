@@ -5,6 +5,7 @@
 // OVI Hierarchy and Explore.... The inventory lists both groups under the menu's root; this file hides the group that
 // does not apply. Pure, as the other menu files.
 
+import { followsAutomatically } from "../../../core/model/type-definition-follow.mjs";
 import { typeDefinitionLink } from "../../../core/model/type-definition.mjs";
 
 const MAKE_ROW = "make-type-def";
@@ -31,8 +32,12 @@ export const menuTypeDefinitionLink = (d) => {
 export const typeDefinitionVariants = (d) =>
   isTypeDefinitionMenu(d) ? { ocultos: typeDefinitionHiddenRows(d), desactivados: new Set([...unbuiltMakeRow(d), ...fixedByDefinition(d)]) } : {};
 
-/** What a linked Numeric Constant may not change, its type being the definition's: greyed (reports/2026-11-22-typedef-from-constants.md Q1). */
-const FIXED_BY_DEFINITION = { "context.numeric-constant": ["adapt-to-entered-data", "representation"] };
+/**
+ * What a linked object may not change, its type being the definition's: greyed. A Numeric Constant's representation
+ * (reports/2026-11-22-typedef-from-constants.md Q1); a panel cluster's order of elements (greyed while linked, enabled
+ * after Disconnect: reports/2026-11-23-typedef-instances.md Q1).
+ */
+const FIXED_BY_DEFINITION = { "context.numeric-constant": ["adapt-to-entered-data", "representation"], "context.cluster-control": ["reorder-controls-in-cluster"] };
 const fixedByDefinition = (d) => (menuTypeDefinitionLink(d) ? (FIXED_BY_DEFINITION[d.menu.raiz] ?? []).map((name) => `${d.menu.raiz}.${name}`) : []);
 
 /**
@@ -51,8 +56,8 @@ function typeDefinitionHiddenRows(d) {
   return new Set([row(MAKE_ROW), ...(link.strict ? [row(AUTO_UPDATE_ROW)] : [])]);
 }
 
-/** The rows ticked: Auto-Update from Type Def. on an instance that is not strict (measured ticked by default). */
+/** The rows ticked: Auto-Update from Type Def. on an instance that is not strict, ticked by default and until it is unticked (measured). */
 export const typeDefinitionMarks = (d) => {
   const link = isTypeDefinitionMenu(d) && menuTypeDefinitionLink(d);
-  return new Set(link && !link.strict ? [`${d.menu.raiz}.${AUTO_UPDATE_ROW}`] : []);
+  return new Set(link && !link.strict && followsAutomatically(link) ? [`${d.menu.raiz}.${AUTO_UPDATE_ROW}`] : []);
 };

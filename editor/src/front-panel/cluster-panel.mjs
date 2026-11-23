@@ -10,6 +10,7 @@
 import * as Gr from "../../../core/model/graph.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 import { hasElements, setClusterElements } from "../../../core/model/user-cluster.mjs";
+import { typeDefinitionLink } from "../../../core/model/type-definition.mjs";
 import { BOOLEANOS } from "../common/glyphs.mjs";
 import { flipArrayKind } from "../common/array-typing.mjs";
 
@@ -31,9 +32,29 @@ export const interiorBox = (box) => ({
 
 const contains = (box, point) => point.x >= box.x && point.x < box.x + box.ancho && point.y >= box.y && point.y < box.y + box.alto;
 
-/** The topmost cluster of the panel whose interior holds the point, apart from the nodes in `except`, or undefined. */
+/** Does this cluster follow a type definition? Its elements are the definition's (reports/2026-11-23-typedef-instances.md Q4). */
+export const isLinkedCluster = (node) => hasElements(node) && typeof typeDefinitionLink(node)?.path === "string";
+
+/**
+ * The topmost cluster of the panel whose interior holds the point, apart from the nodes in `except`, or undefined. A
+ * cluster that follows a type definition takes no new element: an object dropped on it lands on the panel, outside it,
+ * and the link is untouched (measured, Q4).
+ */
 export const clusterAt = (g, point, except = []) =>
-  g.nodos.filter((node) => node.panel && hasElements(node) && !except.includes(node.id) && contains(interiorBox(shellBox(node)), point)).at(-1);
+  g.nodos.filter((node) => node.panel && hasElements(node) && !isLinkedCluster(node) && !except.includes(node.id) && contains(interiorBox(shellBox(node)), point)).at(-1);
+
+const ELEMENT_ID = /^(.+)\.elements\.\d+$/;
+
+/**
+ * Whether the selection holds an element of a linked cluster (an element's id is `<cluster>.elements.<index>`): it cannot
+ * be cut, copied or deleted, the elements being the definition's (measured: Edit ▸ Cut, Copy and Delete greyed and the
+ * Delete key doing nothing, Q4). Its label can still be renamed.
+ */
+export const selectsLockedElement = (g, selection) =>
+  selection.some((id) => {
+    const clusterId = ELEMENT_ID.exec(id)?.[1];
+    return clusterId !== undefined && isLinkedCluster(g.nodos.find((node) => node.id === clusterId));
+  });
 
 /**
  * The blocks a cluster takes as elements, by the kind of the cluster: numeric, Boolean and string objects (rings and

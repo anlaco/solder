@@ -60,6 +60,9 @@ test("Make Type Def. on a cluster control links it to an untitled control and it
   assert.deepEqual([...typeDefinitionVariants(linked).ocultos], [row("make-type-def")]);
   assert.ok(ED.variantes(linked, null, INV).ocultos.has(row("make-type-def")));
   assert.ok(ED.marcados(linked, null).has(row("auto-update-from-type-def")));
+  // The order of a linked cluster's elements is the definition's: Reorder greyed, enabled once disconnected (measured).
+  assert.ok(typeDefinitionVariants(linked).desactivados.has(row("reorder-controls-in-cluster")));
+  assert.ok(!typeDefinitionVariants(clusterMenu(null)).desactivados.has(row("reorder-controls-in-cluster")));
   // Strict: no Auto-Update row.
   const strict = clusterMenu({ path: "ctl/S.octl", strict: true });
   assert.ok(typeDefinitionVariants(strict).ocultos.has(row("auto-update-from-type-def")));
@@ -121,10 +124,10 @@ test("saving the untitled control moves its instances' links to the file", () =>
   const untitledCaller = relinkTypeDefinition(linked, key, "/work/ctl/TDa.octl", "untitled:1");
   assert.equal(untitledCaller.nodos.find((node) => node.config?.typedef).config.typedef.path, "/work/ctl/TDa.octl", "absolute while the OVI has no file");
   const main = source("editor/electron/main.mjs");
-  assert.match(main, /broadcast\("ovi:saved", \{ id: entry\.id, key: pathKey\(target\), from \}\)/);
+  assert.match(main, /broadcast\("ovi:saved", \{ id: entry\.id, key: pathKey\(target\), from, follow: FOLLOW\.check \}\)/);
   assert.match(main, /if \(!entry\.path\) return \(await writeControl\(\{ entry, windows: \{\} \}, owner, entry\.current, false\)\) !== null;/, "a deferred untitled control asks where");
   const page = source("editor/src/window/editor-window.mjs");
-  assert.match(page, /if \(from && from !== key && hierarchyKeys\.includes\(from\)\) return followSavedTypeDefinition\(from, key\);/);
+  assert.match(page, /if \(from && from !== key && hierarchyKeys\.includes\(from\)\) return followSavedTypeDefinition\(from, key, follow\);/);
 });
 
 test("the control editor's window takes part in the Window menu and Open Type Def. sends nothing back to the page", () => {

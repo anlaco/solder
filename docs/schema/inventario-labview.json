@@ -650,14 +650,6 @@
       "desc": "the \"Do not show this dialog again.\" checkbox of a dialog, which would keep the choice (the page does not store it yet)",
       "ref": "design/05-decisions.md DT-099; design/labview-plan.md step 2b"
     },
-    "apply-changes": {
-      "desc": "File ▸ Apply Changes of the control editor: updating every open object that follows the type definition. Stage (b) of the type definitions",
-      "ref": "design/05-decisions.md DT-096 §4; design/labview-plan.md step 3, stage (b)"
-    },
-    "guardar-octl": {
-      "desc": "saving a type definition's .octl from the control editor, naming an untitled one \"Name the Control (Control N)\" and moving the links of its instances. Stage (a3) of the type definitions",
-      "ref": "design/05-decisions.md DT-104; design/labview-plan.md step 3, stage (a3)"
-    },
     "control-properties": {
       "desc": "the Control Properties dialog (Ctrl+I) of the control editor",
       "ref": "labview-captures/reports/2026-11-22-control-editor-window.md"
@@ -677,6 +669,10 @@
     "icono-control-editor": {
       "desc": "the control editor's own icon in the top right icon pane",
       "ref": "labview-captures/reports/2026-11-22-control-editor-window.md"
+    },
+    "review-and-update": {
+      "desc": "the Review and Update from Type Def... window, which shows what an update would change in an instance and applies it once approved: stage (c) of the type definitions. Until then an instance whose update waits for a review is only reported in the Error list",
+      "ref": "design/05-decisions.md DT-096 §4; design/labview-plan.md step 3, stage (c)"
     }
   },
   "entradas": [
@@ -16260,16 +16256,15 @@
       "id": "context.numeric-constant.review-and-update-from-type-def",
       "etiqueta": "Review and Update from Type Def...",
       "estado": "todo",
-      "labview": "Shows what changed in the type definition and updates the instance; greyed while nothing is pending (reports/2026-11-17-typedef-editor-entry.md Q7).",
-      "necesita": "definiciones-de-tipo",
+      "labview": "Shows what changed in the type definition and updates the instance; greyed while nothing is pending (reports/2026-11-17-typedef-editor-entry.md Q7). Its window is stage (c) of the type definitions: until then the row stays greyed.",
+      "necesita": "review-and-update",
       "separado": true
     },
     {
       "id": "context.numeric-constant.auto-update-from-type-def",
       "etiqueta": "Auto-Update from Type Def.",
-      "estado": "todo",
-      "labview": "Ticked: the instance follows every change of its type definition at once; a strict one has no such row (reports/2026-11-17-typedef-editor-entry.md Q7).",
-      "necesita": "definiciones-de-tipo"
+      "estado": "built",
+      "prueba": "test/editor/type-definition-instances.test.mjs::Auto-Update from Type Def. is ticked until unticked, and ticking it again follows at once"
     },
     {
       "id": "context.numeric-constant.open-type-def",
@@ -16280,9 +16275,8 @@
     {
       "id": "context.numeric-constant.disconnect-from-type-def",
       "etiqueta": "Disconnect from Type Def.",
-      "estado": "todo",
-      "labview": "Asks to confirm and turns the instance into a plain control that no longer follows the file.",
-      "necesita": "definiciones-de-tipo"
+      "estado": "built",
+      "prueba": "test/editor/type-definition-instances.test.mjs::Disconnect from Type Def. asks LabVIEW's question and then unlinks the object, changing nothing else"
     },
     {
       "id": "context.numeric-constant.show-vi-hierarchy",
@@ -19119,16 +19113,15 @@
       "id": "context.cluster-control.review-and-update-from-type-def",
       "etiqueta": "Review and Update from Type Def...",
       "estado": "todo",
-      "labview": "Shows what changed in the type definition and updates the instance; greyed while nothing is pending (reports/2026-11-17-typedef-update.md Q4).",
-      "necesita": "definiciones-de-tipo",
+      "labview": "Shows what changed in the type definition and updates the instance; greyed while nothing is pending (reports/2026-11-17-typedef-update.md Q4). Its window is stage (c) of the type definitions: until then the row stays greyed.",
+      "necesita": "review-and-update",
       "separado": true
     },
     {
       "id": "context.cluster-control.auto-update-from-type-def",
       "etiqueta": "Auto-Update from Type Def.",
-      "estado": "todo",
-      "labview": "Ticked: the instance follows every change of its type definition at once; a strict one has no such row (reports/2026-11-17-typedef-update.md Q4).",
-      "necesita": "definiciones-de-tipo"
+      "estado": "built",
+      "prueba": "test/editor/type-definition-instances.test.mjs::Auto-Update from Type Def. is ticked until unticked, and ticking it again follows at once"
     },
     {
       "id": "context.cluster-control.open-type-def",
@@ -19139,9 +19132,8 @@
     {
       "id": "context.cluster-control.disconnect-from-type-def",
       "etiqueta": "Disconnect from Type Def.",
-      "estado": "todo",
-      "labview": "Asks to confirm and turns the instance into a plain control that no longer follows the file.",
-      "necesita": "definiciones-de-tipo"
+      "estado": "built",
+      "prueba": "test/editor/type-definition-instances.test.mjs::Disconnect from Type Def. asks LabVIEW's question and then unlinks the object, changing nothing else"
     },
     {
       "id": "context.cluster-control.show-vi-hierarchy",
@@ -19427,16 +19419,15 @@
       "id": "context.cluster-constant.review-and-update-from-type-def",
       "etiqueta": "Review and Update from Type Def...",
       "estado": "todo",
-      "labview": "Shows what changed in the type definition and updates the instance; greyed while nothing is pending (reports/2026-11-17-typedef-editor-entry.md Q7).",
-      "necesita": "definiciones-de-tipo",
+      "labview": "Shows what changed in the type definition and updates the instance; greyed while nothing is pending (reports/2026-11-17-typedef-editor-entry.md Q7). Its window is stage (c) of the type definitions: until then the row stays greyed.",
+      "necesita": "review-and-update",
       "separado": true
     },
     {
       "id": "context.cluster-constant.auto-update-from-type-def",
       "etiqueta": "Auto-Update from Type Def.",
-      "estado": "todo",
-      "labview": "Ticked: the instance follows every change of its type definition at once; a strict one has no such row (reports/2026-11-17-typedef-editor-entry.md Q7).",
-      "necesita": "definiciones-de-tipo"
+      "estado": "built",
+      "prueba": "test/editor/type-definition-instances.test.mjs::Auto-Update from Type Def. is ticked until unticked, and ticking it again follows at once"
     },
     {
       "id": "context.cluster-constant.open-type-def",
@@ -19447,9 +19438,8 @@
     {
       "id": "context.cluster-constant.disconnect-from-type-def",
       "etiqueta": "Disconnect from Type Def.",
-      "estado": "todo",
-      "labview": "Asks to confirm and turns the instance into a plain control that no longer follows the file.",
-      "necesita": "definiciones-de-tipo"
+      "estado": "built",
+      "prueba": "test/editor/type-definition-instances.test.mjs::Disconnect from Type Def. asks LabVIEW's question and then unlinks the object, changing nothing else"
     },
     {
       "id": "context.cluster-constant.show-vi-hierarchy",
@@ -34858,26 +34848,23 @@
     {
       "id": "window.control-editor.menu.file.apply-changes",
       "etiqueta": "Apply Changes",
-      "estado": "todo",
+      "estado": "built",
       "separado": true,
-      "labview": "Applies the control editor's changes to every object that follows the type definition; greyed until the ring or the object changes (measured).",
-      "necesita": "apply-changes"
+      "prueba": "test/editor/type-definition-instances.test.mjs::File ▸ Apply Changes is enabled only when the definition changed in more than its defaults, and Save does not apply"
     },
     {
       "id": "window.control-editor.menu.file.save",
       "etiqueta": "Save",
-      "estado": "todo",
+      "estado": "built",
       "separado": true,
       "atajo": "Ctrl+S",
-      "necesita": "guardar-octl",
-      "labview": "Saves the .octl; an untitled one asks \"Name the Control (Control N)\" first (measured). Stage (a3) of the type definitions."
+      "prueba": "test/editor/type-definition-instances.test.mjs::what the OVIs read of a control being edited is its published text: Apply or Save publishes it, an edit does not"
     },
     {
       "id": "window.control-editor.menu.file.save-as",
       "etiqueta": "Save As...",
-      "estado": "todo",
-      "necesita": "guardar-octl",
-      "labview": "Saves the .octl under another name; the instances keep following the file they were linked to until stage (a3) moves them."
+      "estado": "built",
+      "prueba": "test/editor/type-definition-instances.test.mjs::what the OVIs read of a control being edited is its published text: Apply or Save publishes it, an edit does not"
     },
     {
       "id": "window.control-editor.menu.file.save-all",

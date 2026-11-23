@@ -46,6 +46,17 @@ const LOOSE_WIRE_DETAILS = {
 };
 
 /**
+ * A row of what the hierarchy refuses: a text, which is its own details, or `{ text, details, node, onPanel }` for an
+ * object of the OVI (an instance left behind its type definition), which Show Error frames, under Front Panel Errors
+ * when it is a panel object.
+ */
+function hierarchyRow(problem, index) {
+  if (typeof problem === "string") return { id: `hierarchy.${index}`, text: problem, details: problem, target: null };
+  const { text, details, node, onPanel } = problem;
+  return { id: `hierarchy.${index}`, text, details: details ?? text, target: node ? { node } : null, ...(onPanel && { group: PANEL_GROUP_TITLE }) };
+}
+
+/**
  * The rows of the error list of an OVI: `{ id, text, details, target }`, where `target` is the object
  * Show Error frames: `{ node }`, `{ wire }` or nothing.
  */
@@ -54,7 +65,7 @@ export function collect({ graph, catalog, resolved, hierarchyErrors = [], compil
   const nameOf = (nodeId) => nodeDisplayName(graph.nodos.find((node) => node.id === nodeId) ?? { tipo: "node" }, inventory);
   const listedNodes = new Set();
 
-  for (const message of hierarchyErrors) rows.push({ id: `hierarchy.${rows.length}`, text: message, details: message, target: null });
+  for (const problem of hierarchyErrors) rows.push(hierarchyRow(problem, rows.length));
 
   const wired = new Set(graph.cables.map((wire) => `${wire.a.nodo}.${wire.a.puerto}`));
   for (const node of graph.nodos) {

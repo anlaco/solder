@@ -43,7 +43,7 @@ import { EMPTY_PATH, hostPathRules, isNotAPath, pathFromText, pathToText } from 
 import { abbreviatePath } from "../common/path-text.mjs";
 import { PATH, convertirValor, elementoPorDefecto, esEnum, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import { GRAPH_MEASURES, LABEL_PLACEMENT, graphSvg } from "./graph-view.mjs";
-import { CLUSTER_MEASURES, clusterAt, dropObjects, isUserCluster, newElement, placeInside, shellBox, withElement, withShellBox, canBeElement } from "./cluster-panel.mjs";
+import { CLUSTER_MEASURES, clusterAt, dropObjects, isUserCluster, newElement, placeInside, selectsLockedElement, shellBox, withElement, withShellBox, canBeElement } from "./cluster-panel.mjs";
 import { clusterObject } from "./cluster-view.mjs";
 import { CLUSTER_MENU_ROOT } from "./cluster-menus.mjs";
 import * as HC from "./html-controls.mjs";
@@ -1091,6 +1091,8 @@ export function escape(p) {
  * es ese punto del diagrama. Una etiqueta sola no se borra.
  */
 export function borrarSeleccion(p, placeOf) {
+  // An element of a cluster that follows a type definition is the definition's: Delete does nothing (measured).
+  if (selectsLockedElement(p.g, p.seleccion)) return p;
   // A selected element goes alone: the array is empty again, its wires kept to break (2026-10-23-array-remove-element.md §2).
   const array = selectedElementArray(p);
   if (array) return { ...p, g: emptyArrayAgain(p.g, array.id), seleccion: [] };

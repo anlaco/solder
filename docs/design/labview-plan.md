@@ -158,6 +158,9 @@ Next: phase 0, type definitions' stage (a3).*
 *2026-11-23: phase 0 step 1, type definitions' stage (a3), done: saving an OVI that follows an untitled definition asks
 first and saves the definition, as LabVIEW does. Next: stage (b).*
 
+*2026-11-23: phase 0 step 2, type definitions' stage (b), done: instances follow their definition on open and on Apply
+Changes, Disconnect and Auto-Update, as LabVIEW. Next: step 2b, editing a panel cluster's elements.*
+
 *2026-11-22: type definitions' stage (a2) done for the panel cluster: Make Type Def. links it to an untitled "Control N"
 kept in memory, Open Type Def. opens its editor, the linked instance's menu, links moved when it is saved. Next: (a2b),
 the constants, then (a3).*
@@ -278,6 +281,24 @@ Find and Replace).
       not LabVIEW's Save - All / Don't Save - All with the affected items (Q5 of reports/2026-11-22-typedef-from-constants.md).*
    2. Type definitions, stage (b): the instances' menus (Open, Disconnect from, Auto-Update from, Review and Update
       from Type Def.) and Apply Changes updating the open OVIs.
+      *Done on 2026-11-23. Measured first (reports/2026-11-23-typedef-instances.md). Core:
+      `core/model/type-definition-follow.mjs` (each instance matches, updates, waits for a review or does not match;
+      LabVIEW's words), format version 9 for the link's `"auto-update": false`. Editor: Disconnect from Type Def. with its
+      question; Auto-Update from Type Def.; the instances follow when the OVI opens (not modified) and on File ▸ Apply
+      Changes (enabled only for a change beyond default values), and only recheck on Save, which breaks the ones that
+      differ; what OVIs read of an open definition is its published text (`type-definition-publishing.mjs`); a dropped
+      object lands outside a linked cluster; Reorder Controls In Cluster... greyed while linked; the instance left behind
+      is a Front Panel error with its second line. Tried under Xvfb (reports/2026-11-23-typedef-b-editor-try.md): Apply,
+      Save without Apply, opening after the `.octl` changed on disk, Auto-Update and Disconnect as LabVIEW. Not done or
+      found: the Review and Update window (stage c); Apply Changes after a default-only change not tried (no way to edit
+      an element's value, below); an element's Cut/Delete lock and greyed Representation have no element selection to
+      act on; Create ▸ Indicator on a linked terminal gives an unlinked indicator (LabVIEW's not measured); an open OVI's
+      callers read its text from before it followed; closing an OVI with an unsaved definition still asks two plain
+      Close dialogs (LabVIEW: one, Save - All / Don't Save - All); matching renamed elements unmeasured.*
+   2b. **Editing a panel cluster's elements** (found trying stage b): an element of a cluster cannot be selected,
+      clicked or typed into, on the panel or in the control editor, and the control editor has no Controls palette on a
+      right click, so a type definition's contents cannot be edited in Solder. Measure in LabVIEW what selecting and
+      editing an element does (value, label, menu, Delete, the palette inside a cluster), then build it.
    3. The cosmetic list for the MINOR (Old School's enum field 6 px wide, the docked diagram shown 11–15 ms before its
       panel, a linked constant's corner triangle, Find ▸ and Description/Tip... in the linked menus, the footer's
       Application Instance) and the controls resized by analogy, measured.

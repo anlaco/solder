@@ -10,7 +10,7 @@ import { test } from "node:test";
 
 import { compilar } from "../../core/compiler/compiler.mjs";
 import { loadHierarchy } from "../../core/model/hierarchy.mjs";
-import { ErrorQvi, VERSION, aTexto, leer, migrar } from "../../core/model/qvi-format.mjs";
+import { ErrorQvi, MIGRATIONS, VERSION, aTexto, leer, migrar } from "../../core/model/qvi-format.mjs";
 import { CAT, RAIZ } from "../helpers.mjs";
 
 const RELEASED = path.join(RAIZ, "test", "fixtures", "released");
@@ -65,9 +65,15 @@ test("a version 1 connector is migrated to LabVIEW's indices of 4-2-2-4, and its
 // DT-100 §6: version 8 of the .ovi and .octl, and version 2 of the .sdp and .sdproj, allow a `comment` on any object.
 // The change is only allowed, so an older file opens unchanged and is saved in the new version.
 test("an .ovi or .octl of version 7 opens as version 8 with nothing else changed", () => {
-  assert.equal(VERSION, 8);
   const version7 = { solder: 7, "block-diagram": { nodes: [] }, layout: { diagram: {} } };
-  assert.deepEqual(migrar(version7), { ...version7, solder: 8 });
+  assert.deepEqual(migrar(version7, MIGRATIONS, 8), { ...version7, solder: 8 });
+});
+
+// DT-104 stage b: version 9 lets a type definition link say `"auto-update": false`; a link without it is ticked.
+test("an .ovi or .octl of version 8 opens as version 9 with nothing else changed", () => {
+  assert.equal(VERSION, 9);
+  const version8 = { solder: 8, "front-panel": [{ name: "Pt", typedef: { path: "PointTD.octl", strict: false } }] };
+  assert.deepEqual(migrar(version8), { ...version8, solder: 9 });
 });
 
 test("a .sdp and a .sdproj of version 1 open unchanged and are saved as version 2; version 3 is refused", async () => {

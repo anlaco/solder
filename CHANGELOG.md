@@ -9,6 +9,15 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Type definitions: the objects that follow one now follow it (DT-104, stage b). An OVI opens with its instances
+  updated from their definitions, silently (not modified); one whose update would lose a default it holds, or that has
+  Auto-Update unticked and differs, breaks the OVI and says so in the Error list. In the control editor File ▸ Apply
+  Changes (enabled once the ring or the object changes in more than default values, as measured) updates the open OVIs
+  that follow it; Save writes the file and does not apply, so the instances that differ break until Apply. The
+  instance's menu has Disconnect from Type Def. (asks, then unlinks the object and changes nothing else) and
+  Auto-Update from Type Def. (ticking it again follows at once). The elements of a linked cluster cannot be cut or
+  deleted, and an object dropped on it stays outside. Review and Update from Type Def... stays greyed until its
+  window is built. File ▸ Save and Save As work in the control editor.
 - Fix: saving an OVI that follows a type definition made by Make Type Def. and never saved no longer writes a link to
   nothing. As in LabVIEW, it first asks '"Untitled 1" refers to new, unsaved files…' (Yes / Cancel), names each
   definition in "Name the Control (Control N)" and then saves the OVI, its objects following the files (DT-104, stage

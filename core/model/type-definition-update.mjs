@@ -4,8 +4,9 @@
 // - The object keeps its block (control, indicator or constant), its label, its place and its own default value; it
 //   takes the definition's data: types, enum and ring items, elements.
 // - A cluster's elements are matched by label, so a value follows its element when the elements are reordered
-//   (measured); a new element takes the definition's value. Whether LabVIEW matches by name or by an element's own
-//   identity is unverified (no rename was measured).
+//   (measured), the unlabelled ones (a Cluster Constant's) by their place in the order; a new element takes the
+//   definition's value. Whether LabVIEW matches by name or by an element's own identity is unverified: a renamed
+//   element keeps its link (reports/2026-11-23-typedef-instances.md Q4), but what it follows then was not measured.
 // - An enum's value follows its item by text when the item moves (measured); a numeric's is converted to the new
 //   representation (3.7 becomes 4 in an I32, measured).
 // - A non-strict instance keeps its own look (the elements' places and styles); a strict one takes the definition's
@@ -16,7 +17,8 @@
 //   indicator at 0).
 //
 // Pure. The block an element takes in the instance (a control's elements are controls, an indicator's indicators, a
-// constant's constants) is the editor's knowledge: it passes `toInstanceElement`.
+// constant's constants) is the editor's knowledge: it passes `toInstanceElement(element, instance)`, given the
+// definition's element and the instance being updated, whose block says which of the three it is.
 
 import { convertirValor, esEnum, esNumerico } from "./types.mjs";
 import { hasElements, withDerivedCluster } from "./user-cluster.mjs";
@@ -71,21 +73,33 @@ function updatedObject(own, definition, context) {
   return { object: withDerivedCluster(context.catalog, { ...own, config }), losses };
 }
 
+/**
+ * The element of the instance that `definitionElement` (the one at `index` of the definition's) updates: the one with
+ * its label, or, when it has none, the one at its place of the order (a Cluster Constant's elements have no label, so
+ * matching by label would take the last for all). An element is matched once.
+ */
+function ownElementFor(ownElements, definitionElement, index, matched) {
+  const label = definitionElement.label?.text ?? "";
+  if (label !== "") return ownElements.find((own) => own.label?.text === label && !matched.has(own));
+  const positional = ownElements[index];
+  return positional && (positional.label?.text ?? "") === "" && !matched.has(positional) ? positional : undefined;
+}
+
 /** A cluster's elements updated from the definition's, matched by label; the removed ones that held a value are losses. */
 function updatedElements(ownElements, definitionElements, context) {
-  const ownByLabel = new Map(ownElements.map((element) => [element.label?.text ?? "", element]));
+  const matched = new Set();
   const losses = [];
-  const elements = definitionElements.map((definitionElement) => {
+  const elements = definitionElements.map((definitionElement, index) => {
     const fresh = context.toInstanceElement(definitionElement);
-    const own = ownByLabel.get(definitionElement.label?.text ?? "");
+    const own = ownElementFor(ownElements, definitionElement, index, matched);
     if (!own) return withDerivedCluster(context.catalog, fresh);
+    matched.add(own);
     const updated = updatedObject({ ...own, tipo: fresh.tipo }, fresh, context);
     losses.push(...updated.losses);
     const place = context.strict ? { x: fresh.x, y: fresh.y } : { x: own.x, y: own.y };
     return { ...updated.object, ...place };
   });
-  const kept = new Set(definitionElements.map((element) => element.label?.text ?? ""));
-  for (const removed of ownElements.filter((element) => !kept.has(element.label?.text ?? ""))) {
+  for (const removed of ownElements.filter((element) => !matched.has(element))) {
     if (!isZeroDefault(removed.config?.value)) losses.push({ label: removed.label?.text ?? "", previous: removed.config.value, proposed: undefined });
   }
   return { elements, losses };
@@ -97,9 +111,9 @@ function updatedElements(ownElements, definitionElements, context) {
  * instance unchanged and `review` is `{ updated, previous, proposed, losses }`, what Review and Update from Type
  * Def... shows and applies once approved: the update, the previous and the new default, and what changes in it.
  */
-export function updateFromDefinition(catalog, instance, definition, toInstanceElement = (element) => element) {
+export function updateFromDefinition(catalog, instance, definition, toInstanceElement = (element, _instance) => element) {
   const link = typeDefinitionLink(instance);
-  const context = { catalog, strict: !!link?.strict, toInstanceElement };
+  const context = { catalog, strict: !!link?.strict, toInstanceElement: (element) => toInstanceElement(element, instance) };
   const { object, losses } = updatedObject(instance, definition, context);
   const updated = { ...object, config: { ...object.config, ...(link && { typedef: link }) } };
   if (!losses.length) return { node: updated, review: null };

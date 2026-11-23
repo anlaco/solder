@@ -20,6 +20,12 @@ contextBridge.exposeInMainWorld("solder", {
   /** Opens the windows of the OVI at an absolute path (a subOVI), or brings them forward if it is already open. */
   abrirRuta: (ruta) => ipcRenderer.invoke("ovi:open-path", ruta),
   makeTypeDefinition: (text) => ipcRenderer.invoke("typedef:make", text),
+  /** File ▸ Apply Changes of the control editor: its `.octl` text is published, and the OVIs that follow it apply it. */
+  applyControl: (text) => ipcRenderer.send("typedef:apply", text),
+  /** The name of the type definition at a key ("Control N" for an untitled one), or null when it is not in memory. */
+  typeDefinitionName: (key) => ipcRenderer.invoke("typedef:name", key),
+  /** A question `{ message, detail }` with OK (the default) and Cancel, as a Run's confirmation: whether OK was pressed. */
+  confirm: (question) => ipcRenderer.invoke("run:confirm", question),
   /** The file dialog of Select an OVI...: the absolute path chosen, or nothing. */
   elegirOVI: () => ipcRenderer.invoke("ovi:choose-subovi"),
   /** The file dialog of a File Path Control's browse button: the absolute path chosen, or nothing. */

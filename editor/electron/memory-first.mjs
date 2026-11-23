@@ -7,15 +7,16 @@
 
 import { pathKey, untitledKey } from "../src/common/ovi-paths.mjs";
 import { withoutWindows } from "./saved-windows.mjs";
+import { textSeenByCallers } from "./type-definition-publishing.mjs";
 
 /** The key an entry is reached by: its path, or, with no file yet, its untitled key (a type definition made by Make Type Def. is linked by it, DT-104). */
 const keyOfEntry = (entry) => (entry.path ? pathKey(entry.path) : untitledKey(entry.id));
 
-/** A reader of OVI texts by key: an open entry's current text, with its unsaved changes, else the file's (`readFromDisk`). */
+/** A reader of OVI texts by key: an open entry's current text, with its unsaved changes (a type definition's, as published), else the file's (`readFromDisk`). */
 export function memoryFirstReader(registry, readFromDisk) {
   return async (key) => {
     const open = registry.list().find((entry) => entry.current !== null && keyOfEntry(entry) === key);
-    return open ? open.current : readFromDisk(key);
+    return open ? textSeenByCallers(open) : readFromDisk(key);
   };
 }
 

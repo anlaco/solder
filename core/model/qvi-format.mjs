@@ -27,7 +27,7 @@ import { putOviComments, separateOviComments, withOviComments } from "./ovi-comm
 const freeLabelToFile = (n, place, inside, frame) => limpio({ x: place.x, y: place.y, text: n.label?.text ?? "", inside, frame, width: n.tam?.ancho, height: n.tam?.alto });
 const freeLabelSize = (label) => (label.width === undefined ? undefined : limpio({ ancho: label.width, alto: label.height }));
 
-export const VERSION = 8;
+export const VERSION = 9;
 
 /** Solder's own numbering of 4-2-2-4's cells in version 1: 0–3 the left column down, 4–7 the middle, 8–11 the right column down. */
 const VERSION_1_PATTERN = "4-2-2-4";
@@ -89,11 +89,17 @@ const withTypeDefinitionsVersion = (vi) => ({ ...vi, solder: 7 });
 const withCommentsVersion = (vi) => ({ ...vi, solder: 8 });
 
 /**
+ * Version 8 → 9 (DT-104 stage b): a type definition link may say `"auto-update": false`, Auto-Update from Type Def.
+ * unticked; without it the box is ticked, as LabVIEW's default. Optional: nothing to change.
+ */
+const withAutoUpdateVersion = (vi) => ({ ...vi, solder: 9 });
+
+/**
  * The format is frozen from 0.4.0-beta on (DT-055, spec/02 §4.1): a change to it raises VERSION and adds here the
  * function that turns a file of the version before into one of the new version, so every file a released Solder
  * saved still opens. `MIGRATIONS[n - 1]` migrates version n to n + 1.
  */
-export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion, withFreeLabelsVersion, withRingPairsVersion, withUserClustersVersion, withTypeDefinitionsVersion, withCommentsVersion];
+export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion, withFreeLabelsVersion, withRingPairsVersion, withUserClustersVersion, withTypeDefinitionsVersion, withCommentsVersion, withAutoUpdateVersion];
 
 /** A file of an older version brought up to `version`, one migration after another. */
 export function migrar(vi, migrations = MIGRATIONS, version = VERSION) {
