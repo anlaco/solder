@@ -9,6 +9,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Fix: saving an OVI that follows a type definition made by Make Type Def. and never saved no longer writes a link to
+  nothing. As in LabVIEW, it first asks '"Untitled 1" refers to new, unsaved files…' (Yes / Cancel), names each
+  definition in "Name the Control (Control N)" and then saves the OVI, its objects following the files (DT-104, stage
+  a3); the same for an OVI closed with Defer Decision.
 - Type definitions: Make Type Def. and Open Type Def. on a panel cluster, a Cluster Constant and a Numeric Constant
   (DT-104, stages a2 and a2b); a constant's type definition holds the control it becomes. Make Type Def. links the
   object at once to an unsaved "Control N" kept in memory, with no window, and the OVI is modified; the cluster's menu

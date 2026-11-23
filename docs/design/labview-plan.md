@@ -155,6 +155,9 @@ When the developer says "keep going":
 unique functions, about 198 in Solder. DT-105 orders the work by importance for programming, in seven phases (§3b).
 Next: phase 0, type definitions' stage (a3).*
 
+*2026-11-23: phase 0 step 1, type definitions' stage (a3), done: saving an OVI that follows an untitled definition asks
+first and saves the definition, as LabVIEW does. Next: stage (b).*
+
 *2026-11-22: type definitions' stage (a2) done for the panel cluster: Make Type Def. links it to an untitled "Control N"
 kept in memory, Open Type Def. opens its editor, the linked instance's menu, links moved when it is saved. Next: (a2b),
 the constants, then (a3).*
@@ -261,6 +264,18 @@ Find and Replace).
    1. Type definitions, stage (a3): Save names the file and moves the links; saving an OVI whose definition is
       untitled asks first; closing the editor asks Save / Defer Decision / Cancel (detail in "The language's everyday
       types" step 3 below).
+      *Done on 2026-11-23. Naming, moving the links and Defer Decision had come with (a2); (a3) brought the question
+      before saving an OVI that follows an untitled definition ('"Untitled 1" refers to new, unsaved files…', Yes /
+      Cancel; `editor/electron/unsaved-files.mjs`), each definition named in "Name the Control (Control N)", then the OVI
+      saved with its links relative to its file; the same for an OVI closed with Defer Decision
+      (`relinkTypeDefinitionText`). Before, the `.ovi` was written with the untitled key, a link to nothing. Tests:
+      test/editor/unsaved-definitions.test.mjs (shown to fail with the call removed). Tried under Xvfb
+      (reports/2026-11-23-typedef-save-editor-try.md): both Cancel paths write nothing, the OVI is not modified after
+      saving. Found and not done: the box's Yes / Cancel show as the system's translated labels ("Sí", "Cancelar") on
+      a Spanish desktop, as the project's same box does (LabVIEW: English); a cluster linked by Make Type Def. accepts
+      new elements on the panel that its untitled definition never gets (what LabVIEW allows on a linked instance is
+      to be measured with stage b); closing a caller with an unsaved definition still asks the plain Close dialog,
+      not LabVIEW's Save - All / Don't Save - All with the affected items (Q5 of reports/2026-11-22-typedef-from-constants.md).*
    2. Type definitions, stage (b): the instances' menus (Open, Disconnect from, Auto-Update from, Review and Update
       from Type Def.) and Apply Changes updating the open OVIs.
    3. The cosmetic list for the MINOR (Old School's enum field 6 px wide, the docked diagram shown 11–15 ms before its

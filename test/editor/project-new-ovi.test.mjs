@@ -10,7 +10,7 @@ import { test } from "node:test";
 import * as Project from "../../core/model/project.mjs";
 import { unsavedOviIds, withNewOviSaved, withoutNewOvi } from "../../core/model/project-new-ovis.mjs";
 import { windowTitle } from "../../editor/electron/ovi-registry.mjs";
-import { NEW_FILES_BUTTONS, newUnsavedFilesText } from "../../editor/electron/project-dialogs.mjs";
+import { NEW_FILES_BUTTONS, newUnsavedFilesText } from "../../editor/electron/unsaved-files.mjs";
 import { projectBody } from "../../editor/electron/project-registry.mjs";
 import * as Edit from "../../editor/src/project-explorer/project-explorer-edit.mjs";
 import * as State from "../../editor/src/project-explorer/project-explorer-state.mjs";

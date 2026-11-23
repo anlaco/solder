@@ -258,6 +258,22 @@ export function rebaseText(text, fromKey, toKey) {
   return changed ? `${JSON.stringify(file, null, 2)}\n` : text;
 }
 
+/**
+ * The text of an `.ovi` whose objects that follow the untitled type definition `fromKey` follow its file at `toKey`
+ * instead, written as that absolute path: `rebaseText` then stores it relative to the OVI's file. For an OVI with no page
+ * to follow the save itself (closed with Defer Decision); an open one follows it in its page (`relinkTypeDefinition`).
+ */
+export function relinkTypeDefinitionText(text, fromKey, toKey) {
+  const file = JSON.parse(text);
+  let changed = false;
+  eachFileTypeDefinitionHolder([file["front-panel"], file["block-diagram"]], (holder) => {
+    if (holder.typedef.path !== fromKey) return;
+    holder.typedef.path = toKey;
+    changed = true;
+  });
+  return changed ? `${JSON.stringify(file, null, 2)}\n` : text;
+}
+
 /** A `.sdp` with the paths of its instances rebased (they are stored relative to the `.sdp`, like a caller's subOVIs). */
 function rebasePolymorphicText(file, text, fromKey, toKey) {
   let changed = false;

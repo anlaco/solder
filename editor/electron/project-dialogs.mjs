@@ -68,17 +68,6 @@ export const unableToAddDialogText = (items) => ({
 });
 
 /**
- * Save Project while new OVIs of the project were never saved (measured: reports/2026-11-19-project-new-vi.md Q5): a box
- * with no title, Yes (the default) and Cancel; Yes saves each new OVI, asking where, and then the project.
- */
-export const NEW_FILES_BUTTONS = ["Yes", "Cancel"];
-export const newUnsavedFilesText = (projectName) => ({
-  title: "",
-  message: `"${projectName}" refers to new, unsaved files. You must save these files in order to save "${projectName}".`,
-  detail: "Do you want to save the new, unsaved files?",
-});
-
-/**
  * Rename... on an OVI item: the file dialog "Save the VI (main1.vi) As" in the OVI's folder, proposing its name without the
  * extension, with the filter "VIs (*.vi;*.vit;*.vim)" (measured: reports/2026-11-18-project-explorer-s4.md "Rename"),
  * here "Save the OVI (main1.ovi) As" and Solder's extension (DT-071, DT-094). Its New LLB... button is not built.

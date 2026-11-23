@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 import { app, BaseWindow, BrowserWindow, dialog, ipcMain, Menu, MessageChannelMain, protocol, screen, utilityProcess, webContents } from "electron";
 import { POLYMORPHIC_EXTENSION, isPolymorphicPath } from "../../core/model/polymorphic.mjs";
 import { CONTROL_FILE_EXTENSION, isControlPath, kindOfText } from "../../core/model/type-definition.mjs";
-import { OVI_EXTENSIONS, isOVIFile, isUntitledKey, pathKey, polymorphicSavePathFor, polymorphicSaveProposal, readHierarchyTexts, rebaseText, saveAsProposal, savePathFor, untitledKey, withoutDoubledExtension } from "../src/common/ovi-paths.mjs";
+import { OVI_EXTENSIONS, isOVIFile, isUntitledKey, pathKey, polymorphicSavePathFor, polymorphicSaveProposal, readHierarchyTexts, rebaseText, relinkTypeDefinitionText, saveAsProposal, savePathFor, untitledKey, withoutDoubledExtension } from "../src/common/ovi-paths.mjs";
 import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, closeAllDialogText, closeAllOrder, closeDialogText, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_ANSWERS, EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
 import { moveOVIFile, rebaserFor } from "./ovi-file-rename.mjs";
@@ -36,6 +36,7 @@ import { ADDON_LIBRARY_FOLDERS_VARIABLE, loadInstalledAddons } from "./installed
 import { mergeAddonPalettes } from "../../core/model/palette.mjs";
 import { registerRunReservations } from "./run-reservations.mjs";
 import { DEFER_ANSWERS, DEFER_BUTTONS, DEFER_BUTTON_ANSWERS, canDefer, heldInMemoryText, releasedBy } from "./deferred-close.mjs";
+import { NEW_FILES_BUTTONS, createTextWaiters, saveUntitledDefinitionsFirst, untitledDefinitionsOf } from "./unsaved-files.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 // Solder's library of OVIs (DT-073): next to the repository's editor while developing, and among the application's
@@ -221,6 +222,8 @@ const openOVIs = new Map();
  * with their unsaved changes, which their callers go on using, until the last caller closes. Id → entry.
  */
 const deferredEntries = new Map();
+/** Saves that wait for an OVI's page to report its text again (unsaved-files.mjs). */
+const textWaiters = createTextWaiters();
 /** LabVIEW's floating windows or Solder's docked window (DT-101): the OVIs' and projects' pages come from here. */
 const layouts = createLayoutManager({
   preferencesFile: preferencesFileIn(app.getPath("userData")),
@@ -480,13 +483,16 @@ function forgetDeferred(entry) {
 async function saveDeferred(entry, owner) {
   // An untitled type definition has no file yet: it asks where, as its editor's Save does.
   if (!entry.path) return (await writeControl({ entry, windows: {} }, owner, entry.current, false)) !== null;
+  const following = entry.kind === ENTRY_KINDS.OVI ? await saveDefinitionsItFollows({ entry, windows: {} }, owner, entry.current) : entry.current;
+  if (following === null) return false;
+  const text = rebaseText(following, keyOf(entry), pathKey(entry.path));
   try {
-    await writeFile(entry.path, entry.current);
+    await writeFile(entry.path, text);
   } catch (error) {
     dialog.showMessageBox(owner, { type: "error", message: "The OVI could not be saved.", detail: error.message });
     return false;
   }
-  recordSave(entry, entry.path, entry.current);
+  recordSave(entry, entry.path, text);
   broadcast("ovi:saved", { id: entry.id, key: keyOf(entry) });
   projects.filesChanged();
   return true;
@@ -838,6 +844,11 @@ async function writeOVI(open, owner, text, saveAs) {
   const { entry } = open;
   if (entry.kind === ENTRY_KINDS.CONTROL) return writeControl(open, owner, text, saveAs);
   const polymorphic = entry.kind === ENTRY_KINDS.POLYMORPHIC;
+  if (!polymorphic) {
+    const following = await saveDefinitionsItFollows(open, owner, text);
+    if (following === null) return null;
+    text = following;
+  }
   let target = entry.path;
   if (!target || saveAs) {
     const proposal = polymorphic ? polymorphicSaveProposal(target, oviName(entry)) : saveAsProposal(target, oviName(entry));
@@ -863,6 +874,43 @@ async function writeOVI(open, owner, text, saveAs) {
   return rebased;
 }
 
+/** How long an OVI's page may take to follow the type definitions just saved: one edit, reported at once. */
+const FOLLOW_SAVED_TIMEOUT_MS = 5000;
+
+/** The open entry, or the one closed with Defer Decision, whose key is `key`; null when none is in memory. */
+function inMemoryWithKey(key) {
+  for (const open of openOVIs.values()) if (keyOf(open.entry) === key) return open;
+  for (const entry of deferredEntries.values()) if (keyOf(entry) === key) return { entry, windows: {} };
+  return null;
+}
+
+/** Does this entry have a page, which follows a saved type definition itself (editor-window.mjs)? */
+const hasPage = (open) => Object.values(open.windows).some((window) => !window.isDestroyed());
+
+/**
+ * The OVI's text once the untitled type definitions it follows have files, asked first as LabVIEW does
+ * (unsaved-files.mjs). Its page follows each save as an edit, which is waited for; an OVI with no page (closed with
+ * Defer Decision) is relinked here. Null when the question or a save was cancelled, or the page did not follow.
+ */
+function saveDefinitionsItFollows(open, owner, text) {
+  const ask = async ({ title, message, detail }) =>
+    (await dialog.showMessageBox(owner, { type: "question", title, message, detail, buttons: NEW_FILES_BUTTONS, defaultId: 0, cancelId: NEW_FILES_BUTTONS.length - 1 })).response === 0;
+  const saveDefinition = async (key) => {
+    const definition = inMemoryWithKey(key);
+    if (!definition) return null;
+    return (await writeControl(definition, owner, definition.entry.current, false)) === null ? null : keyOf(definition.entry);
+  };
+  const followedByPage = async () => {
+    const followed = await textWaiters.until(open.entry, (current) => untitledDefinitionsOf(current).length === 0, FOLLOW_SAVED_TIMEOUT_MS);
+    if (followed) return open.entry.current;
+    dialog.showMessageBox(owner, { type: "error", message: "The OVI could not be saved.", detail: "It did not follow the type definitions just saved." });
+    return null;
+  };
+  const followSaved = (followed, moves) =>
+    hasPage(open) ? followedByPage() : moves.reduce((relinked, [from, to]) => relinkTypeDefinitionText(relinked, from, to), followed);
+  return saveUntitledDefinitionsFirst(text, { ownerName: oviName(open.entry), ask, saveDefinition, followSaved });
+}
+
 /** What Save As offers for a type definition: LabVIEW's "Controls (*.ctl;*.ctt)" (measured). */
 const CONTROL_FILTERS = [{ name: "Controls", extensions: [CONTROL_FILE_EXTENSION.slice(1)] }];
 
@@ -875,15 +923,18 @@ const controlSavePathFor = (chosen) => {
 /** What Save As proposes for a type definition: the file it is saved at, or «Control N.octl» for an untitled one ("Name the Control (Control N)", measured). */
 const controlSaveProposal = (currentPath, name) => currentPath ?? `${name}${CONTROL_FILE_EXTENSION}`;
 
+/** The title of a type definition's save dialog: LabVIEW's "Name the Control (Control N)" for an untitled one (measured). */
+const controlSaveTitle = (entry) => (entry.path ? "Save As" : `Name the Control (${oviName(entry)})`);
+
 /**
- * Writes a type definition's `.octl` (DT-104 stage a1; naming an untitled one and moving the links of its instances are
- * stage a3). The text the page reports is already the file's, so it is written as it is.
+ * Writes a type definition's `.octl` (DT-104 stages a1 and a3): an untitled one is named first, and the objects that
+ * followed its untitled key follow its file. The text the page reports is already the file's, so it is written as it is.
  */
 async function writeControl(open, owner, text, saveAs) {
   const { entry } = open;
   let target = entry.path;
   if (!target || saveAs) {
-    const result = await dialog.showSaveDialog(owner, { title: "Save As", defaultPath: controlSaveProposal(target, oviName(entry)), filters: CONTROL_FILTERS });
+    const result = await dialog.showSaveDialog(owner, { title: controlSaveTitle(entry), defaultPath: controlSaveProposal(target, oviName(entry)), filters: CONTROL_FILTERS });
     if (result.canceled || !result.filePath) return null;
     target = controlSavePathFor(result.filePath);
   }
@@ -1016,6 +1067,7 @@ function handleRequests() {
     const open = openOf(event);
     const previous = open.entry.current;
     recordChange(open.entry, text);
+    textWaiters.changed(open.entry);
     setTitles(open);
     if (changesWhatCallersSee(previous, text)) announceEdit(open.entry);
   });

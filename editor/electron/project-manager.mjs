@@ -13,7 +13,8 @@ import { MY_COMPUTER, ProjectFileError, blankProject, readProject } from "../../
 import { unsavedOviIds, withNewOviSaved } from "../../core/model/project-new-ovis.mjs";
 import { CLOSE_ALL_BUTTONS, CLOSE_ANSWERS, CLOSE_BUTTONS, CLOSE_BUTTON_ANSWERS, confirmCloseAll } from "./close-flow.mjs";
 import { EXIT_BUTTONS, EXIT_BUTTON_ANSWERS, EXIT_ANSWERS, confirmExit, exitDialogText } from "./exit-flow.mjs";
-import { NEW_FILES_BUTTONS, closeProjectDialogText, hasOVIsOutsideProjects, newUnsavedFilesText, openProjectDialog, projectSavePathFor, renameOviDialog, saveProjectDialog } from "./project-dialogs.mjs";
+import { closeProjectDialogText, hasOVIsOutsideProjects, openProjectDialog, projectSavePathFor, renameOviDialog, saveProjectDialog } from "./project-dialogs.mjs";
+import { NEW_FILES_BUTTONS, newUnsavedFilesText } from "./unsaved-files.mjs";
 import { savePathFor } from "../src/common/ovi-paths.mjs";
 import { registerDiskRequests } from "./project-disk-requests.mjs";
 import { registerItemRequests } from "./project-item-requests.mjs";
