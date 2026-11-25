@@ -352,6 +352,8 @@ Find and Replace).
       shows the copy cursor (LabVIEW the "no" one); the label left in edit mode after placing; instances of a definition
       edited to 0 or 2 objects are reported as missing.*
    4. Release 0.15.0-beta.
+      *Version 0.15.0-beta set in `package.json` and the CHANGELOG on 2026-11-25, tests green; commit, tag, push,
+      `npm run dist` and the pre-release wait for the developer.*
 1. **The core of the language** (≈ 200 functions). *Milestone: Core 1 but its hardware lessons.*
    1. Structures: Feedback Node; local variables; global variables; the For Loop's conditional terminal;
       concatenating and conditional tunnels; stacked shift registers; Diagram Disable and Conditional Disable;

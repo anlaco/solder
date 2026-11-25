@@ -9,6 +9,8 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+## 0.15.0-beta — 2026-11-25
+
 - A panel Numeric control linked to a type definition shows its menu rows (Review and Update, Auto-Update, Open Type Def.,
   Disconnect, Show OVI Hierarchy, Explore...), and Make Type Def. works on a free one. A scalar instance follows its
   definition's block when it changes (a Numeric replaced by a Round LED), staying a control or an indicator. The control
