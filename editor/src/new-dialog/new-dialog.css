@@ -12,3 +12,4 @@ body.new-dialog { background: var(--polymorphic-window-background); color: var(-
 .nd-check { display: flex; align-items: center; gap: 5px; }
 .nd-button { box-sizing: border-box; }
 .nd-button.desactivado { color: var(--placeholder-text); border-color: var(--polymorphic-window-disabled-border); background: var(--polymorphic-window-disabled-background); }
+.nd-check.desactivado { color: var(--placeholder-text); }

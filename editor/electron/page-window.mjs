@@ -105,6 +105,17 @@ export class PageWindow extends EventEmitter {
     else this.frame.show();
   }
 
+  /**
+   * Shown behind the page shown next, as an OVI's Block Diagram behind its Front Panel: in its own window it is shown
+   * now and the next show() comes in front; docked it is only marked shown, for the dock already holds it in its tab
+   * behind the Front Panel. Showing it there too would put it on screen first, 11–15 ms before the panel replaced it
+   * (reports/2026-11-21-visual-faults-fixed-editor.md).
+   */
+  showBehind() {
+    this.wanted = true;
+    if (!this.dock) this.frame.show();
+  }
+
   hide() {
     this.wanted = false;
     if (this.dock) this.dock.hidePage(this);

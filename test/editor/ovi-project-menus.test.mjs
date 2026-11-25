@@ -80,9 +80,9 @@ test("the OVI windows' Project menu has LabVIEW's rows, and outside a project on
   // The footer says where the OVI is open (reports/2026-11-19-project-new-vi.md Q1), and follows a Save Project that renames it
   // (found under Xvfb: it kept "Untitled Project 1/My Computer", reports/2026-11-22-files-tab-editor-try.md).
   assert.match(source("editor/src/window/editor-window.mjs"), /applicationInstance: projectInstance \?\? undefined/);
-  const footer = (extra) => V.ventana(INV, "front-panel", E.inicial(), extra).match(/data-id="window\.front-panel\.application-instance"[^>]*>([^<]*)</)[1];
+  const footer = (extra) => V.ventana(INV, "front-panel", E.inicial(), extra).match(/data-id="window\.front-panel\.application-instance"[^>]*>([^<]*)</)?.[1] ?? null;
   assert.equal(footer({ applicationInstance: "P.sdproj/My Computer" }), "P.sdproj/My Computer");
-  assert.equal(footer({}), INV.entrada("window.front-panel.application-instance").muestra);
+  assert.equal(footer({}), null, "outside a project the strip is empty (reports/2026-11-24-typedef-mark-and-footer.md Q3)");
   const manager = source("editor/electron/project-manager.mjs");
   assert.match(manager, /if \(command === "show"\) return bringToFront\(entry\);/);
   // A second Save Project while the first one asks does nothing (found under Xvfb: four questions piled up).

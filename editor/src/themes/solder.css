@@ -27,6 +27,9 @@
   --disabled-text: #b4b9c3;
   --placeholder-corner-light: #e3e6ec;
   --placeholder-corner-dark: #9aa0ab;
+  /* The corner mark of a linked constant and of a linked control's terminal (reports/2026-11-24-typedef-mark-and-footer.md Q1). */
+  --typedef-mark-constant: #464646;
+  --typedef-mark-terminal: #000000;
   --chrome-background: #ffffff;
   --scrollbar-thumb: #9aa0aa; /* The overlay scrollbar's thumb and arrows (2026-11-05 report). */
   --status-instance-border: #2b2f36;

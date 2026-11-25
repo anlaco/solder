@@ -15,7 +15,8 @@ const dentroDeUnMenu = (id) => (id.split(".menu.")[1] ?? "").includes(".") || /\
 
 test("lo pintado está declarado y lo declarado se pinta", () => {
   for (const v of VENTANAS) {
-    const pintados = idsPintados(ventana(INV, v, inicial()));
+    // In a project, so that the Application Instance box, empty outside one, is painted too.
+    const pintados = idsPintados(ventana(INV, v, inicial(), { applicationInstance: "P.sdproj/My Computer" }));
     for (const id of pintados) assert.ok(INV.entrada(id), `${id} se pinta y no está en el inventario`);
     const prefijo = `window.${v}`;
     for (const e of INV.entradas) {

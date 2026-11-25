@@ -12,41 +12,43 @@ const DEFAULT = null;
 /**
  * How each kind of object resizes: the sides it has handles on, the smallest box (`DEFAULT` for the default box) and
  * whether its label stays put when the left handle is dragged (every other label follows the left edge, as Solder's
- * stored offset does). `measured` rules come from LabVIEW 2026 Q3 (labview-captures/reports/2026-11-19-control-resizing.md
- * §1, §3, §5); the rest are unverified, pending a review in LabVIEW (docs/design/labview-plan.md, "Cross-cutting"), and
- * follow the measured kind they look most like.
+ * stored offset does). All measured in LabVIEW 2026 Q3 (labview-captures/reports/2026-11-19-control-resizing.md
+ * §1, §3, §5; 2026-11-24-control-resizing-2.md; 2026-11-24-control-resizing-3.md).
  */
 const RULES = {
-  "visa-control": { sides: BOTH_AXES, smallest: { width: 43, height: DEFAULT }, labelStaysOnLeftDrag: true, measured: true },
-  "visa-indicator": { sides: BOTH_AXES, smallest: { width: 26, height: DEFAULT }, labelStaysOnLeftDrag: true, measured: true },
-  "str-control": { sides: BOTH_AXES, smallest: { width: 16, height: DEFAULT }, measured: true },
-  "str-indicator": { sides: BOTH_AXES, smallest: { width: 16, height: DEFAULT }, measured: true },
-  "path-control": { sides: BOTH_AXES, smallest: { width: 25, height: DEFAULT }, measured: true },
-  "path-indicator": { sides: BOTH_AXES, smallest: { width: 25, height: DEFAULT }, measured: true },
+  "visa-control": { sides: BOTH_AXES, smallest: { width: 43, height: DEFAULT }, labelStaysOnLeftDrag: true },
+  "visa-indicator": { sides: BOTH_AXES, smallest: { width: 26, height: DEFAULT }, labelStaysOnLeftDrag: true },
+  "str-control": { sides: BOTH_AXES, smallest: { width: 16, height: DEFAULT } },
+  "str-indicator": { sides: BOTH_AXES, smallest: { width: 16, height: DEFAULT } },
+  "path-control": { sides: BOTH_AXES, smallest: { width: 25, height: DEFAULT } },
+  "path-indicator": { sides: BOTH_AXES, smallest: { width: 25, height: DEFAULT } },
   // A numeric never grows taller; its narrowest is counted after a control's incrementer (Solder's box holds it, LabVIEW's does not).
-  control: { sides: HORIZONTAL_ONLY, smallest: { width: 13, height: DEFAULT }, afterIncrementer: true, measured: true },
-  indicator: { sides: HORIZONTAL_ONLY, smallest: { width: 18, height: DEFAULT }, measured: true },
-  // Unverified: an enum and the rings as a numeric.
-  enum: { sides: HORIZONTAL_ONLY, smallest: { width: 13, height: DEFAULT }, afterIncrementer: true },
-  "text-ring": { sides: HORIZONTAL_ONLY, smallest: { width: 13, height: DEFAULT }, afterIncrementer: true },
-  "menu-ring": { sides: HORIZONTAL_ONLY, smallest: { width: 30, height: DEFAULT } },
-  // Unverified: a DAQ name as the VISA resource name it is drawn like.
+  control: { sides: HORIZONTAL_ONLY, smallest: { width: 13, height: DEFAULT }, afterIncrementer: true },
+  indicator: { sides: HORIZONTAL_ONLY, smallest: { width: 18, height: DEFAULT } },
+  // An enum and the rings grow both ways, their incrementer left outside LabVIEW's box (reports/2026-11-24-control-resizing-2.md
+  // §1, §2): the Text Ring control's narrowest is 22, its indicator's and the enum's 16 (why they differ is unmeasured).
+  enum: { sides: BOTH_AXES, smallest: { width: 16, height: DEFAULT }, afterIncrementer: true },
+  "text-ring": { sides: BOTH_AXES, smallest: { width: 22, height: DEFAULT }, afterIncrementer: true },
+  "text-ring-indicator": { sides: BOTH_AXES, smallest: { width: 16, height: DEFAULT }, afterIncrementer: true },
+  "menu-ring": { sides: BOTH_AXES, smallest: { width: 33, height: DEFAULT } },
+  // A DAQ name resizes as the VISA resource name it is drawn like (§1, §2); it has no visible label, so whether the
+  // label stays on a left drag is the VISA name's, unmeasured.
   "daq-name-control": { sides: BOTH_AXES, smallest: { width: 43, height: DEFAULT }, labelStaysOnLeftDrag: true },
   "daq-name-indicator": { sides: BOTH_AXES, smallest: { width: 26, height: DEFAULT }, labelStaysOnLeftDrag: true },
-  // Unverified: a Boolean's drawing scales to its box, both ways, down to a few pixels.
-  "bool-control": { sides: BOTH_AXES, smallest: { width: 8, height: 8 } },
-  "bool-indicator": { sides: BOTH_AXES, smallest: { width: 8, height: 8 } },
-  // Unverified: a refnum's page scales to its box; an error cluster's shell grows round elements that keep their place.
-  "refnum-control": { sides: BOTH_AXES, smallest: { width: DEFAULT, height: DEFAULT } },
-  "refnum-indicator": { sides: BOTH_AXES, smallest: { width: DEFAULT, height: DEFAULT } },
-  "error-cluster": { sides: BOTH_AXES, smallest: { width: DEFAULT, height: DEFAULT } },
-  // Unverified: a graph's plot area takes what its frame grows by; the smallest leaves a plot of about 50 × 50.
-  "waveform-chart": { sides: BOTH_AXES, smallest: { width: 150, height: 100 } },
-  "waveform-graph": { sides: BOTH_AXES, smallest: { width: 150, height: 100 } },
-  "xy-graph": { sides: BOTH_AXES, smallest: { width: 150, height: 100 } },
+  // Measured (reports/2026-11-24-control-resizing-3.md §1–§4). A Boolean's drawing stretches to its box, both ways,
+  // its aspect not kept, down to 5 × 5 (a small Round LED shows 4 handles, not drawn: Solder always shows 8).
+  "bool-control": { sides: BOTH_AXES, smallest: { width: 5, height: 5 } },
+  "bool-indicator": { sides: BOTH_AXES, smallest: { width: 5, height: 5 } },
+  // An error cluster's shell takes the growth round elements that keep their size and place, down to 13 × 13. A file
+  // refnum is not resizable (measured on the Byte Stream File Refnum), so it has no rule.
+  "error-cluster": { sides: BOTH_AXES, smallest: { width: 13, height: 13 } },
+  // A graph's plot area takes what its frame grows by, its margins kept; the smallest leaves a plot of about 3 px.
+  "waveform-chart": { sides: BOTH_AXES, smallest: { width: 99, height: 55 } },
+  "waveform-graph": { sides: BOTH_AXES, smallest: { width: 99, height: 55 } },
+  "xy-graph": { sides: BOTH_AXES, smallest: { width: 97, height: 55 } },
 };
 
-/** How a kind of object resizes (`kind`: its block, or "enum", "text-ring", "menu-ring", "error-cluster"), or null. */
+/** How a kind of object resizes (`kind`: its block, or "enum", "text-ring", "text-ring-indicator", "menu-ring", "error-cluster"), or null. */
 export const resizeRule = (kind) => RULES[kind] ?? null;
 
 const growsTaller = (rule) => rule.sides.includes("s");

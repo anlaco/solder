@@ -45,7 +45,7 @@ const string = (label) => ({ tipo: "str-control", label: { text: label }, config
 
 /** The `.octl` text of a cluster control holding `elements`, as the control editor writes it. */
 const definitionText = (elements, kind = "type-def") =>
-  typeDefinitionText(kind, { tipo: "cluster-control", label: { text: "Point" }, config: { elements }, x: 31, y: 109 });
+  typeDefinitionText(kind, [{ tipo: "cluster-control", label: { text: "Point" }, config: { elements }, x: 31, y: 109 }]);
 
 /** A panel with one cluster control "Pt" holding `elements` and following `link`, and its id. */
 function panelWithCluster(elements, link = LINK, tipo = "cluster-control") {
@@ -279,4 +279,20 @@ test("an instance left behind is a Front Panel error with LabVIEW's two lines, a
   assert.deepEqual({ text: row.text, details: row.details, target: row.target, group: row.group }, { text: problem.text, details: problem.details, target: { node: 7 }, group: PANEL_GROUP_TITLE });
   const [plain] = collect({ graph, catalog: CAT, resolved: new Map(), hierarchyErrors: ["The OVI \"x\" cannot be found."], inventory: INV });
   assert.deepEqual({ details: plain.details, target: plain.target, group: plain.group }, { details: "The OVI \"x\" cannot be found.", target: null, group: undefined });
+});
+
+test("a panel Numeric control follows a definition whose object was replaced by a Round LED, and keeps being a control", () => {
+  const placed = Gr.crearEnPanel(Gr.nuevo(), CAT, "control", 40, 50, "Numeric", { typedef: LINK });
+  const roundLed = typeDefinitionText("type-def", [{ tipo: "bool-indicator", label: { text: "Boolean" }, config: { style: "round-led" }, x: 31, y: 109 }]);
+  const followed = followedOver(placed.g, roundLed, { apply: true });
+  const node = followed.g.nodos.find((candidate) => candidate.id === placed.id);
+  assert.equal(node.tipo, "bool-control", "a control stays a control; the Round LED is an indicator's style, so it takes a control's");
+  assert.equal(node.config.style, "push-button");
+  assert.deepEqual(node.config.typedef, LINK);
+  assert.deepEqual(followed.follower.problems(followed.g, CAT), []);
+  // An indicator of the same definition stays an indicator, and a plain data change reaches both.
+  const indicator = Gr.crearEnPanel(Gr.nuevo(), CAT, "indicator", 40, 50, "Numeric", { typedef: LINK });
+  assert.equal(followedOver(indicator.g, roundLed, { apply: true }).g.nodos.find((candidate) => candidate.id === indicator.id).tipo, "bool-indicator");
+  const i32 = typeDefinitionText("type-def", [{ tipo: "control", label: { text: "Numeric" }, config: { type: "i32" }, x: 31, y: 109 }]);
+  assert.equal(followedOver(placed.g, i32, { apply: true }).g.nodos.find((candidate) => candidate.id === placed.id).config.type, "i32");
 });

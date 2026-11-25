@@ -14,8 +14,8 @@ export const EDIT_COMMANDS = ["undo", "redo", "cut", "copy", "paste", "delete", 
  */
 export const DIAGRAM_EDIT_COMMANDS = ["remove-broken-wires-from-selection", "make-current-values-default", "reinitialize-values-to-default"];
 
-/** The commands only the Front Panel's Edit menu runs: its default-value rows act on the selection, or on every object (DT-053). */
-export const PANEL_EDIT_COMMANDS = ["make-selected-values-default", "reinitialize-selected-values-to-default"];
+/** The commands only the Front Panel's Edit menu runs: its default-value rows act on the selection, or on every object (DT-053); Customize Control... needs one object (DT-107). */
+export const PANEL_EDIT_COMMANDS = ["make-selected-values-default", "reinitialize-selected-values-to-default", "customize-control"];
 
 /** The id of the Edit menu of a window ("front-panel" or "block-diagram"). */
 export const editMenuId = (windowName) => `window.${windowName}.menu.edit`;
@@ -32,11 +32,13 @@ export const editMenuId = (windowName) => `window.${windowName}.menu.edit`;
  *   canUndo, canRedo      the history has a step to go to
  *   canCopy               a node or a panel object is selected
  *   hasSelection          anything at all is selected
+ *   canCustomize          exactly one panel object is selected: Customize Control... of the panel is enabled (measured, DT-107;
+ *                         the diagram's is greyed always, and is not built)
  *   clipboardFilled       something was copied
  *   undoName, redoName    what the step to undo or to redo is called, if it has a name: the rows say "Undo Change
  *                         Attribute" (measured on an Express OVI's dialog, DT-069)
  */
-export function editMenuVariants(windowName, { canUndo, canRedo, canCopy, hasSelection, clipboardFilled, undoName, redoName }) {
+export function editMenuVariants(windowName, { canUndo, canRedo, canCopy, hasSelection, canCustomize = false, clipboardFilled, undoName, redoName }) {
   const row = (name) => `${editMenuId(windowName)}.${name}`;
   const desactivados = new Set();
   if (!canUndo) desactivados.add(row("undo"));
@@ -47,6 +49,7 @@ export function editMenuVariants(windowName, { canUndo, canRedo, canCopy, hasSel
   }
   if (!hasSelection) desactivados.add(row("delete"));
   if (!clipboardFilled) desactivados.add(row("paste"));
+  if (windowName === "front-panel" && !canCustomize) desactivados.add(row("customize-control"));
   const rotulos = new Map();
   if (canUndo && undoName) rotulos.set(row("undo"), `Undo ${undoName}`);
   if (canRedo && redoName) rotulos.set(row("redo"), `Redo ${redoName}`);

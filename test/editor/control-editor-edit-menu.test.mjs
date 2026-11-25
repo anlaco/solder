@@ -9,7 +9,7 @@ import Ajv2020 from "ajv/dist/2020.js";
 
 import * as Gr from "../../core/model/graph.mjs";
 import * as CV from "../../core/model/control-values.mjs";
-import { controlEditorGraph, controlEditorText, definitionObjectOf } from "../../core/model/control-editor.mjs";
+import { controlEditorGraph, controlEditorText, definitionObjectOf, editedObjectsOf } from "../../core/model/control-editor.mjs";
 import { readTypeDefinition, typeDefinitionText } from "../../core/model/type-definition.mjs";
 import { setClusterElements } from "../../core/model/user-cluster.mjs";
 import { updateFromDefinition } from "../../core/model/type-definition-update.mjs";
@@ -49,21 +49,22 @@ test("the control editor's Edit menu has the measured rows and runs the ones tha
 });
 
 /** The `.octl` text of a Numeric default 5 that is the control editor's object. */
-const numericText = (value) => typeDefinitionText("type-def", { tipo: "control", label: { text: "n" }, config: { type: "number", value }, x: 10, y: 10 });
+const numericText = (value) => typeDefinitionText("type-def", [{ tipo: "control", label: { text: "n" }, config: { type: "number", value }, x: 10, y: 10 }]);
 
 test("Make Current Values Default in the control editor changes a default and leaves Apply Changes greyed (measured: typedef-instances Q3, Q6)", () => {
   const opened = numericText(5);
   const read = controlEditorGraph(opened, CAT);
   const tracker = createApplyTracker(opened);
   const textOf = (g) => controlEditorText(read.kind, g, CAT, read.comments);
-  const typed = CV.setCurrentValue(read.g, read.id, 9);
-  const made = CV.makeCurrentValuesDefault(typed, [read.id]);
+  const [{ id }] = editedObjectsOf(read.g, CAT);
+  const typed = CV.setCurrentValue(read.g, id, 9);
+  const made = CV.makeCurrentValuesDefault(typed, [id]);
   const text = textOf(made);
   assert.equal(readTypeDefinition(text, CAT).object.config.value, 9, "the default is now 9");
   assert.notEqual(text, opened);
   assert.equal(tracker.hasChanges(CAT, made, read.kind, () => text), false, "a default alone has nothing to apply");
-  const structural = controlEditorGraph(typeDefinitionText("type-def", { tipo: "str-control", label: { text: "n" }, config: { value: "" }, x: 10, y: 10 }), CAT).g;
-  assert.equal(tracker.hasChanges(CAT, structural, read.kind, () => typeDefinitionText("type-def", { tipo: "str-control", label: { text: "n" }, config: { value: "" }, x: 10, y: 10 })), true, "another type is a change");
+  const structural = controlEditorGraph(typeDefinitionText("type-def", [{ tipo: "str-control", label: { text: "n" }, config: { value: "" }, x: 10, y: 10 }]), CAT).g;
+  assert.equal(tracker.hasChanges(CAT, structural, read.kind, () => typeDefinitionText("type-def", [{ tipo: "str-control", label: { text: "n" }, config: { value: "" }, x: 10, y: 10 }])), true, "another type is a change");
 });
 
 /** A cluster 293 × 223 holding one numeric. */
@@ -76,23 +77,24 @@ function bigCluster() {
 
 test("a type definition keeps its cluster's size: the .octl stores it and the control editor opens at it", () => {
   const { node } = bigCluster();
-  const text = typeDefinitionText("type-def", definitionObjectOf(node));
-  const file = JSON.parse(text).object;
+  const text = typeDefinitionText("type-def", [definitionObjectOf(node)]);
+  const [file] = JSON.parse(text).objects;
   assert.deepEqual([file.w, file.h], [293, 223]);
   const validate = new Ajv2020({ allErrors: true, strict: false }).compile(leerJson("docs/schema/octl.schema.json"));
   assert.ok(validate(JSON.parse(text)), JSON.stringify(validate.errors));
   const opened = controlEditorGraph(text, CAT);
-  const shell = opened.g.nodos.find((candidate) => candidate.id === opened.id);
+  const [shell] = editedObjectsOf(opened.g, CAT);
   assert.deepEqual([shell.panel.w, shell.panel.h], [293, 223], "not a 100 × 100 shell that clips the element");
-  assert.deepEqual([JSON.parse(controlEditorText("type-def", opened.g, CAT)).object.w, JSON.parse(controlEditorText("type-def", opened.g, CAT)).object.h], [293, 223], "and it writes it back");
+  const [written] = JSON.parse(controlEditorText("type-def", opened.g, CAT)).objects;
+  assert.deepEqual([written.w, written.h], [293, 223], "and it writes it back");
   // An object of its default size writes no size, and a file without one reads as before.
-  const plain = JSON.parse(typeDefinitionText("type-def", { tipo: "control", config: { type: "number" }, x: 0, y: 0 })).object;
+  const plain = JSON.parse(typeDefinitionText("type-def", [{ tipo: "control", config: { type: "number" }, x: 0, y: 0 }])).objects[0];
   assert.ok(!("w" in plain) && !("h" in plain));
 });
 
 test("a strict instance takes the definition's size and a non-strict one keeps its own (the look rule)", () => {
   const { node: definition } = bigCluster();
-  const definitionObject = readTypeDefinition(typeDefinitionText("type-def", definitionObjectOf(definition)), CAT).object;
+  const definitionObject = readTypeDefinition(typeDefinitionText("type-def", [definitionObjectOf(definition)]), CAT).object;
   const own = Gr.crearEnPanel(Gr.nuevo(), CAT, "cluster-control", 40, 50, "Pt", {});
   const instance = (strict) => ({ ...own.g.nodos.find((node) => node.id === own.id), panel: { x: 40, y: 50, w: 120, h: 90 }, config: { typedef: { path: "a.octl", strict } } });
   const strictSize = updateFromDefinition(CAT, instance(true), definitionObject).node.panel;

@@ -2024,9 +2024,8 @@
     {
       "id": "context.project-explorer.my-computer.new.type-definition",
       "etiqueta": "Type Definition",
-      "estado": "todo",
-      "labview": "Creates a new type definition.",
-      "necesita": "definiciones-de-tipo",
+      "estado": "built",
+      "prueba": "test/editor/project-new-control.test.mjs::New_Type_Definition_puts_a_Control_item_with_the_type_definition_icon_in_the_row_or_in_My_Computer",
       "separado": true
     },
     {
@@ -2460,6 +2459,76 @@
       "etiqueta": "Virtual Folder",
       "estado": "built",
       "prueba": "test/editor/project-explorer-edit.test.mjs::New_Virtual_Folder_opens_an_in-place_edit_that_Enter_commits_and_Escape_cancels"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.new.type-definition",
+      "etiqueta": "Type Definition",
+      "estado": "built",
+      "prueba": "test/editor/project-new-control.test.mjs::New_Type_Definition_puts_a_Control_item_with_the_type_definition_icon_in_the_row_or_in_My_Computer",
+      "separado": true
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.new.library",
+      "etiqueta": "Library",
+      "estado": "todo",
+      "labview": "Creates a new library.",
+      "necesita": "librerias"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.new.class",
+      "etiqueta": "Class",
+      "estado": "todo",
+      "labview": "Creates a new class.",
+      "necesita": "clases-de-labview"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.new.interface",
+      "etiqueta": "Interface",
+      "estado": "todo",
+      "labview": "Creates a new interface.",
+      "necesita": "clases-de-labview"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.new.xcontrol",
+      "etiqueta": "XControl",
+      "estado": "todo",
+      "labview": "Creates a new XControl.",
+      "necesita": "editor-escritorio"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.new.variable",
+      "etiqueta": "Variable",
+      "estado": "todo",
+      "labview": "Creates a new shared variable.",
+      "necesita": "variables-y-feedback"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.new.web-service",
+      "etiqueta": "Web Service",
+      "estado": "todo",
+      "labview": "Creates a new web service.",
+      "necesita": "paginas-web"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.new.package-dependencies",
+      "etiqueta": "Package Dependencies",
+      "estado": "todo",
+      "labview": "Creates a new package of dependencies.",
+      "necesita": "construir-distribuible"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.new.unit-test",
+      "etiqueta": "Unit Test",
+      "estado": "todo",
+      "labview": "Creates a new unit test.",
+      "necesita": "pruebas-unitarias"
+    },
+    {
+      "id": "context.project-explorer.virtual-folder.new.test-vectors",
+      "etiqueta": "Test Vectors",
+      "estado": "todo",
+      "labview": "Creates a new table of test vectors.",
+      "necesita": "pruebas-unitarias"
     },
     {
       "id": "context.project-explorer.virtual-folder.add",
@@ -3991,9 +4060,8 @@
     {
       "id": "window.front-panel.menu.edit.customize-control",
       "etiqueta": "Customize Control...",
-      "estado": "todo",
-      "labview": "Opens the control editor to change how the selected control looks.",
-      "necesita": "estilos-de-controles",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Customize Control... of the Front Panel is enabled with exactly one panel object selected",
       "captura": "create-paste/edit-menu-panel-with-control-selected.png",
       "separado": true
     },
@@ -4491,11 +4559,9 @@
     {
       "id": "window.front-panel.application-instance",
       "etiqueta": "Application Instance",
-      "estado": "todo",
-      "labview": "Shows which project and target (application instance) the VI is open in, and lets you change it from its menu.",
-      "necesita": "formato-sdproj",
+      "estado": "built",
       "captura": "front-panel/vi-nuevo.png",
-      "muestra": "Untitled Project 1/My Computer"
+      "prueba": "test/editor/application-instance.test.mjs::the_Application_Instance_box_shows_only_in_a_project_and_its_menu_has_LabVIEW's_two_rows"
     },
     {
       "id": "window.front-panel.workspace",
@@ -5527,11 +5593,9 @@
     {
       "id": "window.block-diagram.application-instance",
       "etiqueta": "Application Instance",
-      "estado": "todo",
-      "labview": "Shows which project and target (application instance) the VI is open in, and lets you change it from its menu.",
-      "necesita": "formato-sdproj",
+      "estado": "built",
       "captura": "block-diagram/vi-nuevo.png",
-      "muestra": "Untitled Project 1/My Computer"
+      "prueba": "test/editor/application-instance.test.mjs::the_Application_Instance_box_shows_only_in_a_project_and_its_menu_has_LabVIEW's_two_rows"
     },
     {
       "id": "window.block-diagram.workspace",
@@ -12285,9 +12349,8 @@
     {
       "id": "palette.controls.select-a-control",
       "etiqueta": "Select a Control...",
-      "estado": "todo",
-      "labview": "Opens a dialog to choose a control saved on disk and place it on the panel.",
-      "necesita": "definiciones-de-tipo",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Select a Control... places the one object of an octl, copied or linked, and nothing otherwise",
       "captura": "paletas/controls.png"
     },
     {
@@ -16246,6 +16309,13 @@
       "captura": "block-diagram/numeric-menu-constante.png"
     },
     {
+      "id": "context.numeric-constant.find",
+      "etiqueta": "Find",
+      "estado": "todo",
+      "labview": "Shown on an instance of a type definition (labview-captures/reports/2026-11-22-typedef-from-constants.md Q1): a submenu of what to find; its rows were not measured.",
+      "necesita": "buscar-y-reemplazar"
+    },
+    {
       "id": "context.numeric-constant.make-type-def",
       "etiqueta": "Make Type Def.",
       "estado": "built",
@@ -16333,6 +16403,13 @@
       "labview": "Replaces the constant with another object.",
       "necesita": "menus-contextuales",
       "captura": "block-diagram/numeric-menu-constante.png"
+    },
+    {
+      "id": "context.numeric-constant.description-and-tip-linked",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip. On an instance of a type definition the row moves after Replace (labview-captures/reports/2026-11-22-typedef-from-constants.md Q1, Q3).",
+      "necesita": "descripciones"
     },
     {
       "id": "context.numeric-constant.data-operations",
@@ -19090,6 +19167,13 @@
       "necesita": "resaltar-terminal"
     },
     {
+      "id": "context.cluster-control.find",
+      "etiqueta": "Find",
+      "estado": "todo",
+      "labview": "Shown on an instance of a type definition (labview-captures/reports/2026-11-23-typedef-instances.md Q1): a submenu of what to find; its rows were not measured.",
+      "necesita": "buscar-y-reemplazar"
+    },
+    {
       "id": "context.cluster-control.change-to-indicator",
       "etiqueta": "Change to Indicator",
       "estado": "built",
@@ -19253,9 +19337,8 @@
     {
       "id": "context.cluster-control.advanced",
       "etiqueta": "Advanced",
-      "estado": "todo",
-      "labview": "Advanced settings of the cluster.",
-      "necesita": "menus-contextuales"
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it"
     },
     {
       "id": "context.cluster-control.advanced.key-navigation",
@@ -19274,9 +19357,8 @@
     {
       "id": "context.cluster-control.advanced.customize",
       "etiqueta": "Customize...",
-      "estado": "todo",
-      "labview": "Opens the control editor.",
-      "necesita": "estilos-de-controles"
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it"
     },
     {
       "id": "context.cluster-control.advanced.run-time-shortcut-menu",
@@ -19409,6 +19491,13 @@
       "necesita": "menus-contextuales"
     },
     {
+      "id": "context.cluster-constant.find",
+      "etiqueta": "Find",
+      "estado": "todo",
+      "labview": "Shown on an instance of a type definition (labview-captures/reports/2026-11-22-typedef-from-constants.md Q3): a submenu of what to find; its rows were not measured.",
+      "necesita": "buscar-y-reemplazar"
+    },
+    {
       "id": "context.cluster-constant.make-type-def",
       "etiqueta": "Make Type Def.",
       "estado": "built",
@@ -19515,6 +19604,13 @@
       "estado": "todo",
       "labview": "Replaces the constant with another function of the Functions palette.",
       "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.cluster-constant.description-and-tip-linked",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip. On an instance of a type definition the row moves after Replace (labview-captures/reports/2026-11-22-typedef-from-constants.md Q1, Q3).",
+      "necesita": "descripciones"
     },
     {
       "id": "context.cluster-constant.data-operations",
@@ -20334,11 +20430,50 @@
     {
       "id": "context.numeric-panel-control.make-type-def",
       "etiqueta": "Make Type Def.",
-      "estado": "todo",
-      "labview": "Turns the control into a type definition.",
-      "necesita": "definiciones-de-tipo",
+      "estado": "built",
       "captura": "property-node-panel/pc2.png",
+      "separado": true,
+      "prueba": "test/editor/type-definition-menus.test.mjs::the panel Numeric control has the type definition rows of the panel cluster, and Make Type Def. holds it as it is"
+    },
+    {
+      "id": "context.numeric-panel-control.review-and-update-from-type-def",
+      "etiqueta": "Review and Update from Type Def...",
+      "estado": "todo",
+      "labview": "Shows what changed in the type definition and updates the instance; greyed while nothing is pending (reports/2026-11-17-typedef-update.md Q4). Its window is stage (c) of the type definitions: until then the row stays greyed.",
+      "necesita": "review-and-update",
       "separado": true
+    },
+    {
+      "id": "context.numeric-panel-control.auto-update-from-type-def",
+      "etiqueta": "Auto-Update from Type Def.",
+      "estado": "built",
+      "prueba": "test/editor/type-definition-instances.test.mjs::Auto-Update from Type Def. is ticked until unticked, and ticking it again follows at once"
+    },
+    {
+      "id": "context.numeric-panel-control.open-type-def",
+      "etiqueta": "Open Type Def.",
+      "estado": "built",
+      "prueba": "test/editor/type-definition-menus.test.mjs::Open Type Def. opens the control editor of the type definition the cluster follows"
+    },
+    {
+      "id": "context.numeric-panel-control.disconnect-from-type-def",
+      "etiqueta": "Disconnect from Type Def.",
+      "estado": "built",
+      "prueba": "test/editor/type-definition-instances.test.mjs::Disconnect from Type Def. asks LabVIEW's question and then unlinks the object, changing nothing else"
+    },
+    {
+      "id": "context.numeric-panel-control.show-vi-hierarchy",
+      "etiqueta": "Show OVI Hierarchy",
+      "estado": "todo",
+      "labview": "Opens the hierarchy window with the type definition selected.",
+      "necesita": "definiciones-de-tipo"
+    },
+    {
+      "id": "context.numeric-panel-control.explore",
+      "etiqueta": "Explore...",
+      "estado": "todo",
+      "labview": "Opens the folder that holds the type definition's file.",
+      "necesita": "definiciones-de-tipo"
     },
     {
       "id": "context.numeric-panel-control.description-and-tip",
@@ -20420,10 +20555,36 @@
     {
       "id": "context.numeric-panel-control.advanced",
       "etiqueta": "Advanced",
-      "estado": "todo",
-      "labview": "Key navigation, synchronous display, customizing and the other advanced settings.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "property-node-panel/pc2.png"
+    },
+    {
+      "id": "context.numeric-panel-control.advanced.key-navigation",
+      "etiqueta": "Key Navigation...",
+      "estado": "todo",
+      "labview": "Opens the key navigation dialog.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.numeric-panel-control.advanced.synchronous-display",
+      "etiqueta": "Synchronous Display",
+      "estado": "todo",
+      "labview": "Updates the control synchronously while running.",
+      "necesita": "menus-contextuales"
+    },
+    {
+      "id": "context.numeric-panel-control.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it"
+    },
+    {
+      "id": "context.numeric-panel-control.advanced.run-time-shortcut-menu",
+      "etiqueta": "Run-Time Shortcut Menu",
+      "estado": "todo",
+      "labview": "Chooses the menu the control gives while running.",
+      "necesita": "menus-contextuales"
     },
     {
       "id": "context.numeric-panel-control.fit-control-to-pane",
@@ -24084,9 +24245,8 @@
     {
       "id": "context.waveform-chart.advanced",
       "etiqueta": "Advanced",
-      "estado": "todo",
-      "labview": "Advanced options of the object.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "graphs/10-chart-menu.png"
     },
     {
@@ -24108,9 +24268,8 @@
     {
       "id": "context.waveform-chart.advanced.customize",
       "etiqueta": "Customize...",
-      "estado": "todo",
-      "labview": "Opens the object in the control editor.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "graphs/13-chart-menu-advanced.png"
     },
     {
@@ -24716,9 +24875,8 @@
     {
       "id": "context.waveform-graph.advanced",
       "etiqueta": "Advanced",
-      "estado": "todo",
-      "labview": "Advanced options of the object.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "graphs/30-graph-menu.png"
     },
     {
@@ -24740,9 +24898,8 @@
     {
       "id": "context.waveform-graph.advanced.customize",
       "etiqueta": "Customize...",
-      "estado": "todo",
-      "labview": "Opens the object in the control editor.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "graphs/33-graph-menu-advanced.png"
     },
     {
@@ -25333,9 +25490,8 @@
     {
       "id": "context.xy-graph.advanced",
       "etiqueta": "Advanced",
-      "estado": "todo",
-      "labview": "Advanced options of the object.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "graphs/40-xy-menu.png"
     },
     {
@@ -25357,9 +25513,8 @@
     {
       "id": "context.xy-graph.advanced.customize",
       "etiqueta": "Customize...",
-      "estado": "todo",
-      "labview": "Opens the object in the control editor.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "graphs/43-xy-menu-advanced.png"
     },
     {
@@ -26745,6 +26900,25 @@
       "estado": "built",
       "prueba": "test/editor/connector-pane.test.mjs::disconnecting_terminals_and_This_Connection_Is_change_the_connector_and_an_output_cannot_be_Required",
       "captura": "subvi/connector-this-connection-is-input-x.png"
+    },
+    {
+      "id": "context.application-instance",
+      "etiqueta": "Application Instance",
+      "estado": "built",
+      "prueba": "test/editor/application-instance.test.mjs::the_Application_Instance_box_shows_only_in_a_project_and_its_menu_has_LabVIEW's_two_rows"
+    },
+    {
+      "id": "context.application-instance.main-application-instance",
+      "etiqueta": "Main Application Instance",
+      "estado": "todo",
+      "labview": "Moves the OVI out of its project into LabVIEW's main application instance.",
+      "necesita": "ovis-en-proyecto"
+    },
+    {
+      "id": "context.application-instance.current",
+      "etiqueta": "Project/My Computer",
+      "estado": "built",
+      "prueba": "test/editor/application-instance.test.mjs::the_Application_Instance_box_shows_only_in_a_project_and_its_menu_has_LabVIEW's_two_rows"
     },
     {
       "id": "context.vi-icon",
@@ -29118,9 +29292,8 @@
     {
       "id": "context.visa-control.advanced",
       "etiqueta": "Advanced",
-      "estado": "todo",
-      "labview": "Advanced options for the control.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "visa/resource-name-pm0z.png"
     },
     {
@@ -29142,9 +29315,8 @@
     {
       "id": "context.visa-control.advanced.customize",
       "etiqueta": "Customize...",
-      "estado": "todo",
-      "labview": "Customize...: an option of the control.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "visa/resource-name-pm-ad-z.png"
     },
     {
@@ -31218,9 +31390,8 @@
     {
       "id": "context.daq-task-name-control.advanced",
       "etiqueta": "Advanced",
-      "estado": "todo",
-      "labview": "Advanced options for the control.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "daqname-menus/m1.png"
     },
     {
@@ -31242,9 +31413,8 @@
     {
       "id": "context.daq-task-name-control.advanced.customize",
       "etiqueta": "Customize...",
-      "estado": "todo",
-      "labview": "Opens the control editor to change how the control is drawn.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "daqname-menus/m1.png"
     },
     {
@@ -31540,9 +31710,8 @@
     {
       "id": "context.daq-name-control.advanced",
       "etiqueta": "Advanced",
-      "estado": "todo",
-      "labview": "Advanced options for the control.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "daqname-menus/m2.png"
     },
     {
@@ -31564,9 +31733,8 @@
     {
       "id": "context.daq-name-control.advanced.customize",
       "etiqueta": "Customize...",
-      "estado": "todo",
-      "labview": "Opens the control editor to change how the control is drawn.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "daqname-menus/m2.png"
     },
     {
@@ -33125,9 +33293,8 @@
     {
       "id": "context.path-control.advanced",
       "etiqueta": "Advanced",
-      "estado": "todo",
-      "labview": "Advanced options for the control.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "file-io/path/menu-ctl-subs-x2.png"
     },
     {
@@ -33149,9 +33316,8 @@
     {
       "id": "context.path-control.advanced.customize",
       "etiqueta": "Customize...",
-      "estado": "todo",
-      "labview": "Opens the control editor to change how the control is drawn.",
-      "necesita": "menus-contextuales",
+      "estado": "built",
+      "prueba": "test/editor/customize-control.test.mjs::Advanced Customize... opens a copy of the object it is on, in every panel menu that has it",
       "captura": "file-io/path/menu-ctl-subs-x2.png"
     },
     {
@@ -34115,17 +34281,83 @@
     {
       "id": "dialog.new.other-files",
       "etiqueta": "Other Files",
-      "estado": "todo",
-      "labview": "Lists the other kinds of file that can be created.",
-      "necesita": "plantillas-de-ovi",
+      "estado": "built",
+      "prueba": "test/editor/new-dialog.test.mjs::the_New_dialog's_Other_Files_lists_Custom_Control_and_Type_Definition_and_Add_to_project_follows_the_project",
       "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.shared-variable",
+      "etiqueta": "Shared Variable",
+      "estado": "todo",
+      "labview": "Creates a new shared variable.",
+      "necesita": "variables-y-feedback",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.class",
+      "etiqueta": "Class",
+      "estado": "todo",
+      "labview": "Creates a new class.",
+      "necesita": "clases-de-labview",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.global-variable",
+      "etiqueta": "Global Variable",
+      "estado": "todo",
+      "labview": "Creates a new global variable, a panel whose values every OVI shares.",
+      "necesita": "variables-y-feedback",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.interface",
+      "etiqueta": "Interface",
+      "estado": "todo",
+      "labview": "Creates a new interface.",
+      "necesita": "clases-de-labview",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.library",
+      "etiqueta": "Library",
+      "estado": "todo",
+      "labview": "Creates a new library.",
+      "necesita": "librerias",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.run-time-menu",
+      "etiqueta": "Run-Time Menu",
+      "estado": "todo",
+      "labview": "Creates a new menu for the running panel.",
+      "necesita": "historial-de-revisiones",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.xcontrol",
+      "etiqueta": "XControl",
+      "estado": "todo",
+      "labview": "Creates a new XControl.",
+      "necesita": "editor-escritorio",
+      "captura": "polymorphic-window/new2.png"
+    },
+    {
+      "id": "dialog.new.custom-control",
+      "etiqueta": "Custom Control",
+      "estado": "built",
+      "prueba": "test/editor/new-dialog.test.mjs::the_New_dialog's_Other_Files_lists_Custom_Control_and_Type_Definition_and_Add_to_project_follows_the_project"
+    },
+    {
+      "id": "dialog.new.type-definition",
+      "etiqueta": "Type Definition",
+      "estado": "built",
+      "prueba": "test/editor/new-dialog.test.mjs::the_New_dialog's_Other_Files_lists_Custom_Control_and_Type_Definition_and_Add_to_project_follows_the_project"
     },
     {
       "id": "dialog.new.add-to-project",
       "etiqueta": "Add to project",
-      "estado": "todo",
-      "labview": "Adds what is created to the open project; greyed while there is no project.",
-      "necesita": "formato-sdproj",
+      "estado": "built",
+      "prueba": "test/editor/new-dialog.test.mjs::the_New_dialog's_Other_Files_lists_Custom_Control_and_Type_Definition_and_Add_to_project_follows_the_project",
       "captura": "polymorphic-window/new2.png"
     },
     {

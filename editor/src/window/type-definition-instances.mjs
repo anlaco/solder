@@ -9,6 +9,7 @@ import { elementBlock, elementConfig } from "../front-panel/cluster-panel.mjs";
 import { BLOCK as CLUSTER_CONSTANT } from "../block-diagram/cluster-constant-geometry.mjs";
 import { DBL } from "../../../core/model/types.mjs";
 import { resolveRelative } from "../common/ovi-paths.mjs";
+import { blockWithRole, roleOf } from "../common/panel-replace.mjs";
 
 const AUTO_UPDATE_KEY = "auto-update";
 
@@ -69,6 +70,16 @@ export const toInstanceElement = (element, instance) =>
   instance.tipo === CLUSTER_CONSTANT ? constantElement(element) : panelElement(element, instance.tipo);
 
 /**
+ * The block and configuration a scalar panel object takes from its definition's object, which the `.octl` holds as a
+ * control: the definition's block in the instance's role (a control stays a control, an indicator an indicator, as in
+ * Replace ▸), a Boolean's style kept to its kind. Null when the definition's block has no counterpart in that role.
+ */
+export function toInstanceBlock(definition, instance, catalog) {
+  const tipo = blockWithRole(definition.tipo, roleOf(instance.tipo, catalog), catalog);
+  return tipo && { tipo, config: elementConfig(definition.config, tipo) };
+}
+
+/**
  * `g` with the objects it follows made to follow their definitions (core/model/type-definition-follow.mjs). `typeDefinitions`
  * is the hierarchy's map of definition keys to what each holds (null when missing, an error of the hierarchy); `apply`
  * and `only` (the ids of the objects to follow, all by default) say which are updated and which are left behind.
@@ -76,7 +87,7 @@ export const toInstanceElement = (element, instance) =>
  */
 export function followedTypeDefinitions(catalog, g, { typeDefinitions, oviKey, oviLibRoot, apply, only }) {
   const definitionOf = (node) => (only && !only.includes(node.id) ? null : typeDefinitions.get(resolveRelative(oviKey, typeDefinitionLink(node).path, oviLibRoot))?.object ?? null);
-  const followed = followDefinitions(catalog, g, definitionOf, { apply, toInstanceElement });
+  const followed = followDefinitions(catalog, g, definitionOf, { apply, toInstanceElement, toInstanceBlock: (definition, instance) => toInstanceBlock(definition, instance, catalog) });
   return { g: followed.g, broken: followed.broken };
 }
 

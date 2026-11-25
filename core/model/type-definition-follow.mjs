@@ -13,7 +13,9 @@
 //   is drawn ghosted). The words LabVIEW gives then were not read: Solder says that it does not match.
 //
 // Pure. The instance's own block of each element (a control's are controls, an indicator's indicators) is the
-// editor's knowledge: it passes `toInstanceElement`, as type-definition-update.mjs asks.
+// editor's knowledge: it passes `toInstanceElement`, and `toInstanceBlock` for a scalar instance whose definition's
+// block differs, as type-definition-update.mjs asks. An instance with no counterpart block cannot follow: it does not
+// match (the Error list says so) instead of being guessed.
 
 import { readTypeDefinition, typeDefinitionLink } from "./type-definition.mjs";
 import { updateFromDefinition } from "./type-definition-update.mjs";
@@ -53,11 +55,11 @@ const withoutOwnPlace = ({ x: _x, y: _y, ...object }) => object;
  * Whether the type definition of `currentText` has something to Apply over `appliedText`, the `.octl` last applied (File
  * ▸ Apply Changes of the control editor, measured greyed at open, after Apply, after a change of default values only, and
  * after Save; enabled after a structural change, reports/2026-11-23-typedef-instances.md Q3, Q6): its ring or its
- * object differs in anything but default values. Unmeasured: moving the object in the editor (taken as no change).
+ * objects differ in anything but default values. Unmeasured: moving the object in the editor (taken as no change).
  */
 export function hasChangesToApply(catalog, appliedText, currentText) {
   const [applied, current] = [appliedText, currentText].map((text) => readTypeDefinition(text, catalog));
-  const structure = (definition) => withoutOwnPlace(withoutDefaultValues(definition.object));
+  const structure = (definition) => definition.objects.map((object) => withoutOwnPlace(withoutDefaultValues(object)));
   return applied.kind !== current.kind || !sameObject(structure(applied), structure(current));
 }
 
@@ -65,8 +67,9 @@ export function hasChangesToApply(catalog, appliedText, currentText) {
  * What `instance` does with `definition` (the object of its `.octl`): `{ state }`, with `node` (the instance updated)
  * when it is `update`, and `review` (type-definition-update.mjs) when it is `review`.
  */
-export function followDefinition(catalog, instance, definition, toInstanceElement) {
-  const { node, review } = updateFromDefinition(catalog, instance, definition, toInstanceElement);
+export function followDefinition(catalog, instance, definition, toInstanceElement, toInstanceBlock) {
+  const { node, review, unfollowable } = updateFromDefinition(catalog, instance, definition, toInstanceElement, toInstanceBlock);
+  if (unfollowable) return { state: FOLLOWING.mismatch };
   if (review === null && sameObject(node, instance)) return { state: FOLLOWING.matches };
   if (!followsAutomatically(typeDefinitionLink(instance))) return { state: FOLLOWING.mismatch };
   if (review) return { state: FOLLOWING.review, review };
@@ -88,14 +91,14 @@ const brokenEntry = (instance, state) => {
  * broken. Returns `{ g, broken }`: the graph (the same one when nothing changed) and the Error list's entries
  * `{ node, motivo, detail }` of the instances left behind.
  */
-export function followDefinitions(catalog, g, definitionOf, { apply, toInstanceElement }) {
+export function followDefinitions(catalog, g, definitionOf, { apply, toInstanceElement, toInstanceBlock }) {
   const broken = [];
   let changed = false;
   const nodos = g.nodos.map((node) => {
     if (typeof typeDefinitionLink(node)?.path !== "string") return node;
     const definition = definitionOf(node);
     if (!definition) return node;
-    const following = followDefinition(catalog, node, definition, toInstanceElement);
+    const following = followDefinition(catalog, node, definition, toInstanceElement, toInstanceBlock);
     if (following.state === FOLLOWING.matches) return node;
     if (following.state === FOLLOWING.update && apply) {
       changed = true;

@@ -13,7 +13,7 @@ import { borrar, crearNodo, meter } from "../../core/model/graph.mjs";
 import { readPolymorphic, writePolymorphic } from "../../core/model/polymorphic.mjs";
 import { readProject, withoutWindow, writeProject } from "../../core/model/project.mjs";
 import { moveItem } from "../../core/model/project-tree.mjs";
-import { aTexto, leer } from "../../core/model/qvi-format.mjs";
+import { aTexto, leer, VERSION } from "../../core/model/qvi-format.mjs";
 import { readTypeDefinition, typeDefinitionText } from "../../core/model/type-definition.mjs";
 import { projectFileText } from "../../editor/electron/project-registry.mjs";
 import { CAT, RAIZ, leer as readJson } from "../helpers.mjs";
@@ -82,12 +82,16 @@ test("a comment inside a value is data: a cluster's field may be called comment"
 });
 
 test("an .octl's comments survive a round trip, valid against its schema", () => {
-  const text = asText({ comment: "the point every OVI shares", solder: 9, "type-definition": "type-def", object: { comment: "x first", kind: "cluster-control", label: "Point", elements: [{ comment: "the abscissa", kind: "control", label: "x", type: "number", default: 0, x: 4, y: 19 }], x: 10, y: 10 } });
+  const point = { comment: "x first", kind: "cluster-control", label: "Point", elements: [{ comment: "the abscissa", kind: "control", label: "x", type: "number", default: 0, x: 4, y: 19 }], x: 10, y: 10 };
+  const text = asText({ comment: "the point every OVI shares", solder: VERSION, "type-definition": "type-def", objects: [point] });
   const validate = validator("docs/schema/octl.schema.json");
   assert.ok(validate(JSON.parse(text)), JSON.stringify(validate.errors));
   const { kind, object, comments } = readTypeDefinition(text, CAT);
   assert.equal(object.config?.comment, undefined, "the object read holds no comment");
-  assert.equal(typeDefinitionText(kind, object, comments), text);
+  assert.equal(typeDefinitionText(kind, [object], comments), text);
+  // A version 9 file held its one `object`: its comments stay on it when it is written as version 10 (DT-107).
+  const older = readTypeDefinition(asText({ comment: "the point every OVI shares", solder: 9, "type-definition": "type-def", object: point }), CAT);
+  assert.equal(typeDefinitionText(older.kind, older.objects, older.comments), text);
 });
 
 test("a .sdp's comments survive a round trip, and an instance's follows it when the list is reordered", () => {

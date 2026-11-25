@@ -27,7 +27,7 @@ const OBJECTS = {
 test("an .octl opens as a panel holding its one object and is written back unchanged", () => {
   for (const [name, object] of Object.entries(OBJECTS)) {
     for (const kind of ["control", "type-def", "strict-type-def"]) {
-      const text = typeDefinitionText(kind, object);
+      const text = typeDefinitionText(kind, [object]);
       const opened = CE.controlEditorGraph(text, CAT);
       assert.equal(opened.kind, kind, name);
       assert.equal(opened.g.nodos.filter((node) => node.panel).length, 1, `${name}: one object on the panel`);
@@ -38,18 +38,32 @@ test("an .octl opens as a panel holding its one object and is written back uncha
     }
   }
   // The label is the file's, even when empty or when the panel would number it.
-  const { g, id } = CE.controlEditorGraph(typeDefinitionText("type-def", OBJECTS.string), CAT);
+  const { g } = CE.controlEditorGraph(typeDefinitionText("type-def", [OBJECTS.string]), CAT);
+  const [{ id }] = CE.editedObjectsOf(g, CAT);
   assert.equal(g.nodos.find((node) => node.id === id).label.text, "");
 });
 
 test("the editor's edits reach the file, and the ring's kind is the file's", () => {
-  const { g, id } = CE.controlEditorGraph(typeDefinitionText("type-def", OBJECTS.numeric), CAT);
+  const { g } = CE.controlEditorGraph(typeDefinitionText("type-def", [OBJECTS.numeric]), CAT);
+  const [{ id }] = CE.editedObjectsOf(g, CAT);
   const moved = Gr.moverEnPanel(g, [id], 10, 5);
   const written = readTypeDefinition(CE.controlEditorText("strict-type-def", moved, CAT), CAT);
   assert.deepEqual([written.kind, written.object.x, written.object.y], ["strict-type-def", 41, 114]);
   // Make Type Def. takes a panel object as it stands, without its own link (DT-096 §2: the file never holds one).
   const linked = { ...g.nodos.find((node) => node.id === id), config: { ...OBJECTS.numeric.config, typedef: { path: "untitled:3", strict: false } } };
-  const fromPanel = readTypeDefinition(typeDefinitionText("type-def", CE.definitionObjectOf(linked)), CAT).object;
+  const fromPanel = readTypeDefinition(typeDefinitionText("type-def", [CE.definitionObjectOf(linked)]), CAT).object;
   assert.equal(fromPanel.config.typedef, undefined);
-  assert.throws(() => CE.controlEditorText("type-def", Gr.nuevo(), CAT), /holds no object/);
+});
+
+test("the control editor's panel holds no object or several, and only a file of one has the definition's object (DT-107)", () => {
+  // LabVIEW saves a .ctl with zero, one or several controls, and places one only from a file of exactly one
+  // (reports/2026-11-25-empty-and-multi-control.md Q1–Q3).
+  const empty = readTypeDefinition(CE.controlEditorText("control", Gr.nuevo(), CAT), CAT);
+  assert.deepEqual([empty.kind, empty.objects, empty.object], ["control", [], null]);
+  assert.deepEqual(CE.controlEditorGraph(CE.controlEditorText("control", Gr.nuevo(), CAT), CAT).g.nodos, [], "an empty one opens empty");
+  const two = CE.controlEditorGraph(typeDefinitionText("type-def", [OBJECTS.numeric, OBJECTS.string]), CAT);
+  assert.deepEqual(CE.editedObjectsOf(two.g, CAT).map((node) => node.tipo), [OBJECTS.numeric.tipo, OBJECTS.string.tipo], "both, in the file's order");
+  const written = readTypeDefinition(CE.controlEditorText("type-def", two.g, CAT), CAT);
+  assert.equal(written.objects.length, 2, "a second control is not lost on Save");
+  assert.equal(written.object, null, "nothing to place or follow");
 });

@@ -13,7 +13,7 @@
       "description": "Versión del formato. Un lector DEBE rechazar una versión mayor que la que conoce.",
       "type": "integer",
       "minimum": 1,
-      "maximum": 9
+      "maximum": 10
     },
 
     "meta": {

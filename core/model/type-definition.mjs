@@ -3,9 +3,11 @@
 // enum's items, its representation). The type on a wire stays structural (DT-096 §1); the link is a relation between
 // an object and a file, read here and kept up to date by the editor.
 //
-// An `.octl` holds one panel object as a cluster holds an element (`elementToFile`): its block as `kind`, its label,
-// its configuration and its place; and which of LabVIEW's three it is, the control editor's ring (Control, Type Def.,
-// Strict Type Def., measured: reports/2026-11-17-typedef-update.md Q4). A pure module: it reads no files.
+// An `.octl` holds the control editor's panel: zero or more objects, each as a cluster holds an element
+// (`elementToFile`): its block as `kind`, its label, its configuration and its place; and which of LabVIEW's three it
+// is, the control editor's ring (Control, Type Def., Strict Type Def., measured: reports/2026-11-17-typedef-update.md
+// Q4). LabVIEW saves a `.ctl` with zero, one or several controls, and only one with exactly one is placed or followed
+// (reports/2026-11-25-empty-and-multi-control.md; DT-107). A pure module: it reads no files.
 
 import { commentTable, fromTable, putComments, takeComments } from "./file-comments.mjs";
 import { elementFromFile, elementToFile, ErrorQvi, VERSION } from "./qvi-format.mjs";
@@ -53,31 +55,56 @@ function splitSize({ w, h, ...rest }) {
   return { rest, size: Number.isFinite(w) && Number.isFinite(h) ? { w, h } : {} };
 }
 
-/**
- * The `.octl` file of `object` (`{ tipo, label?, config?, x, y }`, as a cluster element) as `kind`, as an object for JSON,
- * with the user's `comments` as `readTypeDefinition` gave them (DT-100 §6).
- */
-export function writeTypeDefinition(kind, object, comments) {
-  if (!TYPE_DEFINITION_KINDS.includes(kind)) throw new ErrorQvi(`"${kind}" is not one of the control editor's kinds`);
+/** The format version that gave an `.octl` its list of `objects` (DT-107); older files hold their one `object`. */
+const OBJECTS_VERSION = 10;
+
+/** One object of the file, as `elementToFile` writes it, with its size when it has one. */
+const objectToFile = (object) => {
   const { typedef: _ownLink, ...config } = object.config ?? {};
-  return putComments({ solder: VERSION, "type-definition": kind, object: { ...elementToFile({ ...object, config }), ...sizeToFile(object) } }, fromTable(comments));
+  return { ...elementToFile({ ...object, config }), ...sizeToFile(object) };
+};
+
+/**
+ * The `.octl` file of `objects` (each `{ tipo, label?, config?, x, y }`, as a cluster element; zero or more, DT-107) as
+ * `kind`, as an object for JSON, with the user's `comments` as `readTypeDefinition` gave them (DT-100 §6).
+ */
+export function writeTypeDefinition(kind, objects, comments) {
+  if (!TYPE_DEFINITION_KINDS.includes(kind)) throw new ErrorQvi(`"${kind}" is not one of the control editor's kinds`);
+  return putComments({ solder: VERSION, "type-definition": kind, objects: objects.map(objectToFile) }, fromTable(comments));
 }
 
 /** The text of an `.octl`: JSON indented by two spaces, as an `.ovi` is written. */
-export const typeDefinitionText = (kind, object, comments) => `${JSON.stringify(writeTypeDefinition(kind, object, comments), null, 2)}\n`;
+export const typeDefinitionText = (kind, objects, comments) => `${JSON.stringify(writeTypeDefinition(kind, objects, comments), null, 2)}\n`;
+
+/** A file of a version before `objects` held its one `object`: read as the list of it, before its comments are taken by place. */
+function withObjectsList(file) {
+  if (file.solder >= OBJECTS_VERSION || file.objects !== undefined) return file;
+  if (!file.object || typeof file.object !== "object") throw new ErrorQvi("a type definition of this version holds one object");
+  const { object, ...rest } = file;
+  return { ...rest, objects: [object] };
+}
+
+/** One object read from the file, its size apart from what `elementFromFile` reads. */
+function objectFromFile(stored, catalog) {
+  if (!stored || typeof stored !== "object" || Array.isArray(stored)) throw new ErrorQvi("each of a type definition's objects is an object");
+  const { rest, size } = splitSize(stored);
+  return { ...elementFromFile(rest, catalog), ...size };
+}
 
 /**
- * An `.octl` read from its text or object: `{ kind, object, comments? }`, the object as a cluster holds an element and
- * the user's comments by place (file-comments.mjs), which nothing reads but the writer.
+ * An `.octl` read from its text or object: `{ kind, objects, object, comments? }`. `objects` are the panel's, each as a
+ * cluster holds an element; `object` is the definition's one object, what is placed and followed, or null when the file
+ * holds none or several (DT-107). The user's comments come by place (file-comments.mjs), which nothing reads but the writer.
  */
 export function readTypeDefinition(data, catalog) {
-  const { file: read, comments } = takeComments(typeof data === "string" ? JSON.parse(data) : data);
-  if (!Number.isInteger(read.solder) || read.solder < 1 || read.solder > VERSION) throw new ErrorQvi(`format version ${read.solder}: this Solder reads versions 1 to ${VERSION}`);
+  const parsed = typeof data === "string" ? JSON.parse(data) : data;
+  if (!Number.isInteger(parsed.solder) || parsed.solder < 1 || parsed.solder > VERSION) throw new ErrorQvi(`format version ${parsed.solder}: this Solder reads versions 1 to ${VERSION}`);
+  const { file: read, comments } = takeComments(withObjectsList(parsed));
   const kind = read["type-definition"];
   if (!TYPE_DEFINITION_KINDS.includes(kind)) throw new ErrorQvi(`"${kind}" is not one of the control editor's kinds`);
-  if (!read.object || typeof read.object !== "object") throw new ErrorQvi("a type definition holds one object");
-  const { rest, size } = splitSize(read.object);
-  return { kind, object: { ...elementFromFile(rest, catalog), ...size }, ...(comments.length && { comments: commentTable(comments) }) };
+  if (!Array.isArray(read.objects)) throw new ErrorQvi("a type definition holds a list of objects");
+  const objects = read.objects.map((stored) => objectFromFile(stored, catalog));
+  return { kind, objects, object: objects.length === 1 ? objects[0] : null, ...(comments.length && { comments: commentTable(comments) }) };
 }
 
 /**

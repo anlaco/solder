@@ -245,7 +245,7 @@ test("the cluster shell has its measured menu with the rows that are not built g
   assert.deepEqual(shown(rows), ["Visible Items", "Find Terminal", "Change to Indicator", "Change to Array", "---", "Make Type Def.", "---", "Description and Tip...", "---", "Create", "Replace", "Data Operations", "Advanced",
     "Fit Control to Pane", "Scale Object with Pane", "---", "Reorder Controls In Cluster...", "AutoSizing", "---", "Properties"]);
   assert.equal(shown(rows).length, 20);
-  assert.deepEqual(rows.filter((row) => !row.greyed).map((row) => row.label), ["Visible Items", "Change to Indicator", "Make Type Def."], "only what is built is live (Reorder is greyed on an empty cluster; Make Type Def., DT-104 stage a2): the rest says why it is not");
+  assert.deepEqual(rows.filter((row) => !row.greyed).map((row) => row.label), ["Visible Items", "Change to Indicator", "Make Type Def.", "Advanced"], "only what is built is live (Reorder is greyed on an empty cluster; Make Type Def., DT-104 stage a2; Advanced, whose Customize... is DT-107): the rest says why it is not");
   const labels = (id) => INV.hijos(`${root}.${id}`).map((entry) => entry.etiqueta);
   assert.deepEqual(labels("visible-items"), ["Label", "Caption"]);
   assert.deepEqual(labels("create"), ["Local Variable", "Reference", "Property Node", "Invoke Node", "Cluster from Selection"]);

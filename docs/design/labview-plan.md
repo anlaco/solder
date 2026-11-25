@@ -164,6 +164,9 @@ Changes, Disconnect and Auto-Update, as LabVIEW. Next: step 2b, editing a panel 
 *2026-11-23: phase 0 step 2b done: a panel cluster's elements are edited one by one, as in LabVIEW (DT-106). Next:
 step 3, the cosmetic list for the MINOR.*
 
+*2026-11-24: phase 0 step 3 done: the cosmetic list measured and fixed, and every control resizes by LabVIEW's measured
+rules. Next: step 4, release 0.15.0-beta.*
+
 *2026-11-22: type definitions' stage (a2) done for the panel cluster: Make Type Def. links it to an untitled "Control N"
 kept in memory, Open Type Def. opens its editor, the linked instance's menu, links moved when it is saved. Next: (a2b),
 the constants, then (a3).*
@@ -318,6 +321,36 @@ Find and Replace).
    3. The cosmetic list for the MINOR (Old School's enum field 6 px wide, the docked diagram shown 11–15 ms before its
       panel, a linked constant's corner triangle, Find ▸ and Description/Tip... in the linked menus, the footer's
       Application Instance) and the controls resized by analogy, measured.
+      *Done on 2026-11-24. Measured (reports/2026-11-24-typedef-mark-and-footer.md, -control-resizing-2.md, -3.md) and
+      built: the linked constant's corner triangle (8 px legs, #464646; a linked control's terminal black, the panel
+      object none; `block-diagram/type-definition-mark.mjs`); Find ▸ and Description and Tip... where LabVIEW puts them
+      in the linked menus (new inventory rows `find`, `description-and-tip-linked`, swapped by `type-definition-menus.mjs`);
+      the Application Instance box only in a project, sized to its text, black border, the strip 16 px, its right-click
+      menu of two rows (`common/application-instance-menu.mjs`; Main Application Instance not built); Old School's enum
+      field inside its box; docked, a new OVI's Block Diagram only marked shown (`PageWindow.showBehind`). Resizing: the
+      Enum, Text Ring, Menu Ring and DAQ names both ways with LabVIEW's narrowest; Booleans to 5 × 5; the error cluster
+      to 13 × 13; graphs to 99 × 55 (XY 97 × 55); the file refnum not resizable; a taller enum or ring keeps its arrows,
+      a taller VISA or DAQ name its dropdown arrow centred. Tried under Xvfb (reports/2026-11-24-cosmetic-try-editor.md),
+      which found the footer box 15 px tall (fixed). Not done or unverified: a strict instance's mark; a long project
+      name in the box; the Menu Ring's arrow height rule; text wrapping in a taller enum; a small Round LED's 4
+      handles; other refnums; Change to Shared Variable Node in the numeric constant's menu, absent from LabVIEW's of
+      2026-11-22; docked, checked by DOM visibility only.*
+   3c. **New controls the LabVIEW way** (DT-107, asked by the developer on 2026-11-25 before the release): My
+      Computer's and a virtual folder's New ▸ Type Definition, File ▸ New... ▸ Other Files ▸ Custom Control and Type
+      Definition (Add to project), Edit ▸ Customize Control... and Advanced ▸ Customize..., the `.octl` of zero or more
+      objects (format 10), and placing an `.octl` with Select a Control... and by dragging it from the project.
+      *Done on 2026-11-25. Measured (reports/2026-11-25-project-new-type-definition.md, -new-custom-control.md,
+      -empty-and-multi-control.md, -placing-a-control.md) and built: format 10 (`core/model/type-definition.mjs`, a
+      version 9 file still opens); `editor/electron/new-controls.mjs` (an empty editor per way in, its title and
+      asterisk, 1092 × 697, the +49, +30 cascade); the project's New ▸ Type Definition with its item and icon; the New
+      dialog's Other Files and Add to project; Customize Control... and Advanced ▸ Customize...; Select a Control...,
+      Select an OVI... of a type definition on the diagram, and dragging an `.octl` from the tree
+      (`front-panel/chosen-control.mjs`, `window/chosen-constant.mjs`, `common/dropped-file.mjs`). Tried under Xvfb
+      (reports/2026-11-25-new-controls-editor-try.md, -placing-editor-try.md), which found a missing import that broke
+      every control editor (fixed, with a test). Not done or unverified: Add to project from an OVI of the project
+      (greyed, LabVIEW unmeasured); the first editor's place; the drop's exact offset; a file of 0 or 2 objects dragged
+      shows the copy cursor (LabVIEW the "no" one); the label left in edit mode after placing; instances of a definition
+      edited to 0 or 2 objects are reported as missing.*
    4. Release 0.15.0-beta.
 1. **The core of the language** (≈ 200 functions). *Milestone: Core 1 but its hardware lessons.*
    1. Structures: Feedback Node; local variables; global variables; the For Loop's conditional terminal;
@@ -1842,13 +1875,10 @@ Edit menu (undo, copy, paste), View, Window (Ctrl+E), Operate (Run
 Continuously, Abort), Tools ▸ Options, the context help window, the error list,
 probes and execution highlighting.
 
-**Pending review in LabVIEW: resizing controls (issue #21, 2026-11-19).** Every control and indicator has resize handles
-(`editor/src/front-panel/control-resize.mjs`). Measured: VISA resource name, String, Numeric, File Path
-(labview-captures/reports/2026-11-19-control-resizing.md). Built by analogy and unverified, to measure when convenient:
-enum and Text/Menu Ring (horizontal only?, narrowest), DAQ names (as a VISA resource name?), Booleans (does the drawing
-stretch, the smallest size), refnum (resizable at all?), error cluster (do its elements stretch or keep their place?),
-graphs and charts (does the plot area take all the growth, the smallest size), and whether the VISA dropdown grows when
-the control is made taller.
+**Resizing controls (issue #21, 2026-11-19), measured on 2026-11-24.** Every control and indicator has resize handles
+(`editor/src/front-panel/control-resize.mjs`), all by LabVIEW's measured rules (labview-captures/reports/
+2026-11-19-control-resizing.md, 2026-11-24-control-resizing-2.md, -3.md). Left unmeasured: the Menu Ring's arrow height
+when taller, text wrapping in a taller enum, a small Round LED's 4 handles, refnums other than the file refnum.
 
 ## 5. Log
 

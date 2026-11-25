@@ -1,8 +1,12 @@
 // Updating an object from the type definition it follows (DT-096 §4), as LabVIEW does when the `.ctl` is applied
 // (measured: reports/2026-11-17-typedef-update.md Q3).
 //
-// - The object keeps its block (control, indicator or constant), its label, its place and its own default value; it
+// - The object keeps its role (control, indicator or constant), its label, its place and its own default value; it
 //   takes the definition's data: types, enum and ring items, elements.
+// - A scalar panel object takes the definition's block when it differs (Replace ▸ Round LED in the control editor, then
+//   Apply Changes): the same node, so its wires stay, in its own role (a control stays a control). What LabVIEW does with
+//   an instance whose definition's block was replaced was not measured: unverified. The editor knows which block is the
+//   counterpart (`toInstanceBlock`); with none, the instance cannot follow and is reported (`unfollowable`), not guessed.
 // - A cluster's elements are matched by label, so a value follows its element when the elements are reordered
 //   (measured), the unlabelled ones (a Cluster Constant's) by their place in the order; a new element takes the
 //   definition's value. Whether LabVIEW matches by name or by an element's own identity is unverified: a renamed
@@ -18,7 +22,8 @@
 //
 // Pure. The block an element takes in the instance (a control's elements are controls, an indicator's indicators, a
 // constant's constants) is the editor's knowledge: it passes `toInstanceElement(element, instance)`, given the
-// definition's element and the instance being updated, whose block says which of the three it is.
+// definition's element and the instance being updated, whose block says which of the three it is. The same for the
+// block of a scalar instance: `toInstanceBlock(definition, instance)` gives `{ tipo, config }`, or null for none.
 
 import { convertirValor, esEnum, esNumerico } from "./types.mjs";
 import { hasElements, withDerivedCluster } from "./user-cluster.mjs";
@@ -51,6 +56,24 @@ function convertedValue(ownConfig, newType) {
     return { value, kept: Object.is(value, ownValue) };
   }
   return { value: ownValue, kept: true };
+}
+
+/**
+ * What a scalar panel object takes when the definition's block is not its own: `{ own, losses }`, the node with the
+ * counterpart's block and configuration (the editor gives it, in the object's role) and the default it held lost, the
+ * new block having the definition's. Null when the block is the same; `{ unfollowable: true }` when there is no
+ * counterpart. A cluster's family is its own, and a constant's block is not the definition's.
+ */
+function withDefinitionBlock(own, definition, context) {
+  const isScalarPanelObject = context.toInstanceBlock && !hasElements(definition) && !hasElements(own) && context.catalog.bloque(own.tipo)?.panel;
+  const counterpart = isScalarPanelObject && context.toInstanceBlock(definition, own);
+  if (counterpart === null) return { unfollowable: true };
+  if (!counterpart || counterpart.tipo === own.tipo) return null;
+  const { value: _definitionValue, ...config } = counterpart.config ?? {};
+  const losses = isZeroDefault(own.config?.value) ? [] : [{ label: own.label?.text ?? "", previous: own.config.value, proposed: undefined }];
+  // The new block has its own size; a size the old one was given does not carry over (as in Replace ▸, DT-092).
+  const panel = own.panel && { x: own.panel.x, y: own.panel.y };
+  return { own: { ...own, tipo: counterpart.tipo, ...(panel && { panel }), config: { ...config, ...(own.config?.typedef && { typedef: own.config.typedef }) } }, losses };
 }
 
 /**
@@ -114,10 +137,20 @@ const sizeFollowed = (object, definition) => (object.panel && definition.w !== u
  * instance unchanged and `review` is `{ updated, previous, proposed, losses }`, what Review and Update from Type
  * Def... shows and applies once approved: the update, the previous and the new default, and what changes in it.
  */
-export function updateFromDefinition(catalog, instance, definition, toInstanceElement = (element, _instance) => element) {
+export function updateFromDefinition(catalog, instance, definition, toInstanceElement = (element, _instance) => element, toInstanceBlock) {
   const link = typeDefinitionLink(instance);
-  const context = { catalog, strict: !!link?.strict, toInstanceElement: (element) => toInstanceElement(element, instance) };
-  const { object, losses } = updatedObject(instance, definition, context);
+  const context = { catalog, strict: !!link?.strict, toInstanceElement: (element) => toInstanceElement(element, instance), toInstanceBlock };
+  let own = instance;
+  const losses = [];
+  const followed = withDefinitionBlock(instance, definition, context);
+  if (followed?.unfollowable) return { node: instance, review: null, unfollowable: true };
+  if (followed) {
+    ({ own } = followed);
+    losses.push(...followed.losses);
+  }
+  const updatedOwn = updatedObject(own, definition, context);
+  losses.push(...updatedOwn.losses);
+  const { object } = updatedOwn;
   const updated = { ...object, config: { ...object.config, ...(link && { typedef: link }) }, ...(context.strict && sizeFollowed(object, definition)) };
   if (!losses.length) return { node: updated, review: null };
   return { node: instance, review: { updated, previous: instance.config?.value, proposed: updated.config?.value, losses } };

@@ -15,7 +15,7 @@ import { CLUSTER_MENU_ROOT, clusterMenuVariants } from "../../editor/src/front-p
 import { typeDefinitionMarks, typeDefinitionVariants } from "../../editor/src/front-panel/type-definition-menus.mjs";
 import * as ED from "../../editor/src/block-diagram/diagram-editing.mjs";
 import { controlOfConstant } from "../../editor/src/block-diagram/cluster-constant-panel.mjs";
-import { controlEditorGraph, editedObjectOf } from "../../core/model/control-editor.mjs";
+import { controlEditorGraph, editedObjectsOf } from "../../core/model/control-editor.mjs";
 import { setClusterElements } from "../../core/model/user-cluster.mjs";
 import { readHierarchyTexts, rebaseStoredPath, relinkTypeDefinition, resolveRelative, untitledKey } from "../../editor/src/common/ovi-paths.mjs";
 import { memoryFirstReader } from "../../editor/electron/memory-first.mjs";
@@ -41,7 +41,7 @@ function madeTypeDefinition() {
   const registry = createRegistry();
   registry.open({ path: CALLER });
   const { g, id } = clusterMenu(null);
-  const text = typeDefinitionText("type-def", definitionObjectOf(g.nodos.find((node) => node.id === id)));
+  const text = typeDefinitionText("type-def", [definitionObjectOf(g.nodos.find((node) => node.id === id))]);
   const { entry } = registry.open({ kind: ENTRY_KINDS.CONTROL, initialText: text });
   recordChange(entry, text);
   const key = untitledKey(entry.id);
@@ -57,7 +57,7 @@ test("Make Type Def. on a cluster control links it to an untitled control and it
   assert.ok(!plain.ocultos.has(row("make-type-def")));
   // Linked, not strict: the linked rows in Make Type Def.'s place, Auto-Update ticked.
   const linked = clusterMenu({ path: "untitled:7", strict: false });
-  assert.deepEqual([...typeDefinitionVariants(linked).ocultos], [row("make-type-def")]);
+  assert.deepEqual([...typeDefinitionVariants(linked).ocultos], ["make-type-def", "find-terminal", "fit-control-to-pane", "scale-object-with-pane"].map(row));
   assert.ok(ED.variantes(linked, null, INV).ocultos.has(row("make-type-def")));
   assert.ok(ED.marcados(linked, null).has(row("auto-update-from-type-def")));
   // The order of a linked cluster's elements is the definition's: Reorder greyed, enabled once disconnected (measured).
@@ -174,8 +174,8 @@ test("Make Type Def. on a Cluster Constant or a Numeric Constant links it to an 
   assert.equal(number.tipo, "control");
   assert.equal(number.label.text, "Numeric", "measured: the label Numeric, shown");
   assert.deepEqual(number.config, { type: "i32", value: 7 });
-  const opened = controlEditorGraph(typeDefinitionText("type-def", number), CAT);
-  assert.equal(editedObjectOf(opened.g, CAT).tipo, "control", "the control editor opens it as a panel object");
+  const opened = controlEditorGraph(typeDefinitionText("type-def", [number]), CAT);
+  assert.equal(editedObjectsOf(opened.g, CAT)[0].tipo, "control", "the control editor opens it as a panel object");
   // ...and a cluster control of the Cluster Constant's elements, with their values as defaults.
   const empty = constantMenu("cluster-constant", "context.cluster-constant");
   const withElements = setClusterElements(empty.g, CAT, empty.id, [
@@ -187,10 +187,90 @@ test("Make Type Def. on a Cluster Constant or a Numeric Constant links it to an 
   assert.equal(cluster.label.text, "Cluster", "measured: the label Cluster, shown");
   assert.ok(cluster.config.elements.every((element) => element.label.text === ""), "measured: no element label shown");
   assert.deepEqual(cluster.config.elements.map((element) => [element.tipo, element.config.value]), [["control", 3], ["bool-control", true]]);
-  const reopened = controlEditorGraph(typeDefinitionText("type-def", cluster), CAT);
-  assert.equal(editedObjectOf(reopened.g, CAT).config.elements.length, 2);
+  const reopened = controlEditorGraph(typeDefinitionText("type-def", [cluster]), CAT);
+  assert.equal(editedObjectsOf(reopened.g, CAT)[0].config.elements.length, 2);
   assert.equal(controlOfConstant({ tipo: "str-const", config: {} }), null);
 
   // The page holds a panel object as it is and a constant as its control.
   assert.match(source("editor/src/window/editor-window.mjs"), /const object = node && \(node\.panel \? definitionObjectOf\(node\) : controlOfConstant\(node\)\);/);
+});
+
+/** The rows a menu shows, in order, with "|" where a separator is drawn (as diagram-view.mjs draws them). */
+function shownRows(state, root) {
+  const { ocultos = new Set(), separadores = new Map(), rotulos = new Map() } = ED.variantes(state, null, INV);
+  const rows = INV.hijos(root).filter((entry) => !ocultos.has(entry.id));
+  return rows.flatMap((entry, index) => [...(index > 0 && (separadores.get(entry.id) ?? !!entry.separado) ? ["|"] : []), rotulos.get(entry.id) ?? entry.etiqueta]);
+}
+
+test("a linked object's menu orders its rows as LabVIEW's instance menu", () => {
+  const linkedTo = { typedef: { path: "untitled:3", strict: false } };
+  const linkedGroup = ["|", "Review and Update from Type Def...", "Auto-Update from Type Def.", "Open Type Def.", "Disconnect from Type Def.", "Show OVI Hierarchy", "Explore..."];
+  // reports/2026-11-22-typedef-from-constants.md Q1: Find ▸ after Change to Array, Description and Tip... after Replace ▸.
+  // Change to Shared Variable Node, from an older capture, was not in the menus of Q1: left out of the comparison.
+  const withoutSharedVariable = (rows) => rows.filter((label) => label !== "Change to Shared Variable Node");
+  const numeric = withoutSharedVariable(shownRows(constantMenu("num-const", "context.numeric-constant", linkedTo), "context.numeric-constant"));
+  assert.deepEqual(numeric.slice(0, numeric.indexOf("Adapt To Entered Data")), [
+    "Visible Items", "Change to Control", "Change to Indicator", "Change to Array", "Find", ...linkedGroup,
+    "|", "Numeric Palette", "Create", "Replace", "Description and Tip...", "|", "Data Operations", "Advanced", "|",
+  ]);
+  const unlinked = withoutSharedVariable(shownRows(constantMenu("num-const", "context.numeric-constant"), "context.numeric-constant"));
+  assert.deepEqual(unlinked.slice(unlinked.indexOf("Change to Array"), unlinked.indexOf("Create")), ["Change to Array", "|", "Make Type Def.", "|", "Description and Tip...", "|", "Numeric Palette"]);
+  // Q3: the Cluster Constant's frame, the same moves.
+  const frame = shownRows(constantMenu("cluster-constant", "context.cluster-constant", linkedTo), "context.cluster-constant");
+  assert.deepEqual(frame.slice(frame.indexOf("Change to Array"), frame.indexOf("Reorder Controls In Cluster...")), [
+    "Change to Array", "Find", ...linkedGroup, "|", "Cluster, Class, & Variant Palette", "Create", "Replace", "Description and Tip...", "|", "Data Operations", "Advanced", "|",
+  ]);
+  // reports/2026-11-23-typedef-instances.md Q1: the panel cluster's Find ▸ in Find Terminal's place, no Fit Control to Pane or Scale Object with Pane.
+  const panel = shownRows(clusterMenu({ path: "untitled:3", strict: false }), CLUSTER_MENU_ROOT);
+  assert.deepEqual(panel, ["Visible Items", "Find", "Change to Indicator", "Change to Array", ...linkedGroup, "|", "Description and Tip...", "|", "Create", "Replace", "Data Operations", "Advanced", "|", "Reorder Controls In Cluster...", "AutoSizing", "|", "Properties"]);
+  assert.deepEqual(shownRows(clusterMenu(null), CLUSTER_MENU_ROOT).slice(0, 2), ["Visible Items", "Find Terminal"]);
+});
+
+test("a linked constant and a linked control's terminal carry LabVIEW's corner mark; a free one and the panel object none", async () => {
+  const D = await import("../../editor/src/block-diagram/diagram-view.mjs");
+  const ctx = D.contexto(CAT, D.glifosPorBloque(INV), ",");
+  const drawn = (state) => D.contenido({ ...state, seleccion: [] }, ctx, Gr.tipos(state.g, CAT));
+  const linkedTo = { typedef: { path: "untitled:3", strict: false } };
+  // reports/2026-11-24-typedef-mark-and-footer.md Q1: 8 px legs from the outer corner, one flat colour.
+  for (const [tipo, root] of [["num-const", "context.numeric-constant"], ["cluster-constant", "context.cluster-constant"]]) {
+    assert.match(drawn(constantMenu(tipo, root, linkedTo)), /<svg class="typedef-mark typedef-mark-constant" width="8" height="8"[^>]*shape-rendering="crispEdges"/, tipo);
+    assert.doesNotMatch(drawn(constantMenu(tipo, root)), /typedef-mark/, `${tipo} unlinked`);
+  }
+  assert.match(drawn(clusterMenu({ path: "untitled:3", strict: false })), /typedef-mark typedef-mark-terminal/, "the terminal's mark is black");
+  const { typeDefinitionMarkHtml } = await import("../../editor/src/block-diagram/type-definition-mark.mjs");
+  assert.match(typeDefinitionMarkHtml({ tipo: "num-const", config: linkedTo }), /d="M0 0H8V1H7V2H6V3H5V4H4V5H3V6H2V7H1V8H0Z"/, "rows of 8, 7, … 1 px");
+  const styles = source("editor/src/styles.css");
+  assert.match(styles, /\.typedef-mark-constant \{ fill: var\(--typedef-mark-constant\); \}/);
+  assert.match(source("editor/src/themes/old-school.css"), /--typedef-mark-constant: #464646;\n  --typedef-mark-terminal: #000000;/);
+});
+
+/** A panel with one numeric control and its menu open at the panel Numeric control's root; `typedef` is its link, if any. */
+function numericPanelMenu(typedef) {
+  const placed = Gr.crearEnPanel(Gr.nuevo(), CAT, "control", 40, 50, "Numeric", {});
+  const g = { ...placed.g, nodos: placed.g.nodos.map((node) => (node.id === placed.id && typedef ? { ...node, config: { ...node.config, typedef } } : node)) };
+  return { g, menu: { raiz: "context.numeric-panel-control", nodo: placed.id }, id: placed.id };
+}
+
+test("the panel Numeric control has the type definition rows of the panel cluster, and Make Type Def. holds it as it is", () => {
+  const root = "context.numeric-panel-control";
+  const linkedGroup = ["|", "Review and Update from Type Def...", "Auto-Update from Type Def.", "Open Type Def.", "Disconnect from Type Def.", "Show OVI Hierarchy", "Explore..."];
+  for (const name of ["make-type-def", "auto-update-from-type-def", "open-type-def", "disconnect-from-type-def"]) assert.equal(INV.entrada(`${root}.${name}`).estado, "built", name);
+  // Unlinked: Make Type Def., and none of the linked rows; Fit Control to Pane and Scale Object with Pane are there.
+  const free = shownRows(numericPanelMenu(null), root);
+  assert.deepEqual(free.slice(free.indexOf("Change to Array"), free.indexOf("Find")), ["Change to Array", "|", "Make Type Def.", "Description and Tip..."]);
+  assert.ok(free.includes("Fit Control to Pane") && free.includes("Scale Object with Pane"));
+  // Linked (reports/2026-11-25-placing-a-control.md Q1, the order by analogy with the panel cluster).
+  const linked = shownRows(numericPanelMenu({ path: "untitled:3", strict: false }), root);
+  assert.deepEqual(linked.slice(linked.indexOf("Change to Array"), linked.indexOf("Find")), ["Change to Array", ...linkedGroup, "Description and Tip..."], "no separator before Description and Tip..., as the free menu measured (the linked one unverified)");
+  assert.ok(!linked.includes("Fit Control to Pane") && !linked.includes("Scale Object with Pane"), "by analogy with the cluster: unverified for the numeric");
+  assert.ok(ED.marcados(numericPanelMenu({ path: "untitled:3", strict: false }), null).has(`${root}.auto-update-from-type-def`));
+  // Its representation is the definition's: greyed while linked, free once disconnected (unverified for the numeric).
+  assert.ok(ED.variantes(numericPanelMenu({ path: "untitled:3", strict: false }), null, INV).desactivados.has(`${root}.representation`));
+  assert.ok(!ED.variantes(numericPanelMenu(null), null, INV).desactivados?.has(`${root}.representation`));
+  assert.ok(!ED.variantes(numericPanelMenu(null), null, INV).desactivados?.has(`${root}.make-type-def`));
+  // Make Type Def. holds the panel object as it is: the .octl's object is the numeric, as the control editor opens it.
+  const { g, id } = numericPanelMenu(null);
+  const object = definitionObjectOf(g.nodos.find((node) => node.id === id));
+  assert.equal(object.tipo, "control");
+  assert.equal(editedObjectsOf(controlEditorGraph(typeDefinitionText("type-def", [object]), CAT).g, CAT)[0].tipo, "control");
 });

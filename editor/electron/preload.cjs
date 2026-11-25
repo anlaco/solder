@@ -52,13 +52,18 @@ contextBridge.exposeInMainWorld("solder", {
   avisar: (mensaje, detalle) => ipcRenderer.send("ovi:avisar", mensaje, detalle),
   /** Closes the windows of this OVI without asking (it could not be read). */
   cerrar: () => ipcRenderer.send("ovi:close"),
+  /** Customize Control... (DT-107): opens an unlinked copy of `object` (as an `.octl` holds one) in a control editor. */
+  customizeControl: (object) => ipcRenderer.send("control:customize", object),
+  /** The file dialog of Controls ▸ Select a Control...: `{ path, text }` of the `.octl` chosen (the path absolute), or nothing. */
+  chooseControl: () => ipcRenderer.invoke("control:choose"),
   /** File ▸ New OVI: a blank OVI in its own windows. */
   nuevoOVI: () => ipcRenderer.send("ovi:new"),
   /** File ▸ New...: the New dialog, over this window; its OK opens a blank OVI or a polymorphic OVI. */
   nuevo: () => ipcRenderer.send("ovi:new-dialog"),
-  /** The New dialog's own buttons: OK with what was chosen, or Cancel. */
+  /** The New dialog's own buttons: OK with what was chosen (and whether Add to project is ticked), or Cancel; `start` names the project it was opened from, or null. */
   dialogoNuevo: {
-    aceptar: (creation) => ipcRenderer.send("new-dialog:accept", creation),
+    start: () => ipcRenderer.invoke("new-dialog:init"),
+    aceptar: (creation, addToProject) => ipcRenderer.send("new-dialog:accept", creation, addToProject),
     cancelar: () => ipcRenderer.send("new-dialog:cancel"),
   },
   /** The Polymorphic OVI window's Add...: the file dialog "Select the OVI to Open"; the absolute path chosen, or nothing. */
@@ -142,6 +147,10 @@ contextBridge.exposeInMainWorld("solder", {
     renameOvi: (storedPath) => ipcRenderer.invoke("project:rename-ovi", storedPath),
     /** New ▸ OVI and File ▸ New OVI: a new OVI opened in this project, `{ entryId, name }` ("Untitled N"). */
     newOvi: () => ipcRenderer.invoke("project:new-ovi"),
+    /** New ▸ Type Definition (DT-107): an empty control editor in this project; `{ entryId, name }` of its item. */
+    newTypeDefinition: () => ipcRenderer.invoke("project:new-type-definition"),
+    /** A new control made outside the explorer joined this project (File ▸ New... Add to project, Customize Control...). */
+    onNewControl: (callback) => ipcRenderer.on("project:new-control", (_event, created) => callback(created)),
     /** A new OVI of this project was saved: `callback({ entryId, storedPath })`. */
     onNewOviSaved: (callback) => ipcRenderer.on("project:new-ovi-saved", (_event, saved) => callback(saved)),
     /** A new OVI of this project left memory unsaved: `callback(entryId)`. */

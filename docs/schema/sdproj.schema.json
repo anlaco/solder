@@ -42,6 +42,8 @@
           "enum": ["my-computer", "ovi", "document", "folder", "dependencies", "build"]
         },
         "path": { "description": "The file or the mirrored folder, relative to the .sdproj's folder (absolute on another disk), or `<ovilib>/…`.", "type": "string", "minLength": 1 },
+        "unsaved-ovi": { "description": "A new OVI not saved yet: the id of the editor's open entry. Lives only in the text the editor compares; no saved file holds it.", "type": "string" },
+        "unsaved-control": { "description": "Marks a new, unsaved OVI as a control (DT-107), so its row shows the type definition icon. Never in a saved file.", "const": true },
         "auto-populating": { "description": "A folder that mirrors the folder at `path` (LabVIEW's Folder (Auto-populating)); its contents are not written.", "const": true },
         "items": { "description": "What a target or a virtual folder holds. Dependencies is never written with contents.", "type": "array", "items": { "$ref": "#/$defs/item" } }
       },

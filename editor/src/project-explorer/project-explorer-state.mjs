@@ -7,7 +7,8 @@
 // share one.
 
 import { ITEM_KINDS } from "../../../core/model/project.mjs";
-import { DISK_ROW_KINDS, EMPTY_DISK, dependencyNodes, folderNodes } from "./disk-rows.mjs";
+import { itemAt } from "../../../core/model/project-tree.mjs";
+import { DISK_ROW_KINDS, EMPTY_DISK, ROW_ICONS, isTypeDefinition, dependencyNodes, folderNodes } from "./disk-rows.mjs";
 import { inicial as windowState } from "../window/window-state.mjs";
 
 export const PREFIX = "window.project-explorer";
@@ -49,7 +50,7 @@ export const MENU_COMMANDS = Object.freeze({
 export const TOOLBAR_COMMANDS = Object.freeze({ "open-project": "openProject", "save-project": "saveProject", "remove-from-project": "removeFromProject" });
 
 /** The built rows of the right-click menus, per menu: what each runs. The tree edits are the page's (project-explorer-edit.mjs). */
-const TREE_ROWS = { "new.vi": "newOviInto", "new.virtual-folder": "newVirtualFolder", "add.file": "addFile", "add.folder-snapshot": "addSnapshotFolder", "add.folder-auto-populating": "addAutoPopulatingFolder" };
+const TREE_ROWS = { "new.vi": "newOviInto", "new.type-definition": "newTypeDefinitionInto", "new.virtual-folder": "newVirtualFolder", "add.file": "addFile", "add.folder-snapshot": "addSnapshotFolder", "add.folder-auto-populating": "addAutoPopulatingFolder" };
 const SHOW_IN_FILES = { "show-in-files-view": "showOtherView" };
 const SHOW_IN_ITEMS = { "show-in-items-view": "showOtherView" };
 const FILES_FOLDER_ROWS = { "expand-all": "expandAllFiles", "collapse-all": "collapseAllFiles" };
@@ -105,6 +106,9 @@ const CONTEXT_MENU_OF_KIND = Object.freeze({
 /** The inventory id of the menu a row opens with the right button, or undefined when none was measured. */
 export const contextMenuOf = (kind) => (kind in CONTEXT_MENU_OF_KIND ? `${CONTEXT_PREFIX}.${CONTEXT_MENU_OF_KIND[kind]}` : undefined);
 
+/** A new control not saved yet, or any item whose file is an `.octl`, shows the type definition's icon (DT-107). */
+const isControlItem = (item) => item.unsavedControl === true || (item.path !== undefined && isTypeDefinition(item.path));
+
 const rowKindOf = (item) => (item.kind === ITEM_KINDS.FOLDER && item.autoPopulating ? ROW_KINDS.AUTO_POPULATING_FOLDER : item.kind);
 
 /**
@@ -118,7 +122,7 @@ export function treeOf(project, name, disk = EMPTY_DISK) {
     if (item.autoPopulating) return folderNodes(disk.folders[item.path]?.entries ?? [], key);
     return (item.items ?? []).map((inner, index) => nodeOf(inner, `${key}/${index}`));
   };
-  const nodeOf = (item, key) => ({ key, kind: rowKindOf(item), label: item.name, children: childrenOf(item, key) });
+  const nodeOf = (item, key) => ({ key, kind: rowKindOf(item), ...(isControlItem(item) && { icon: ROW_ICONS.TYPE_DEFINITION }), label: item.name, children: childrenOf(item, key) });
   return { key: ROOT_KEY, kind: ROW_KINDS.PROJECT, label: `Project: ${name}`, children: project.items.map((item, index) => nodeOf(item, `${ROOT_KEY}/${index}`)) };
 }
 
@@ -181,6 +185,17 @@ export const itemNodesOf = (state) => nodesFrom(treeOfState(state));
 
 /** The node of the row `key` (`{ key, kind, label, children }`, and `path` and `icon` for a row read from the disk), or undefined. */
 export const nodeAt = (state, key) => findNode(state, key);
+
+/**
+ * The stored path of the file the row `key` stands for: an item's own, or a file read from an auto-populating folder's; undefined
+ * for a row with none (a virtual folder, the target). A node has `path` only when it is read from the disk, so an item's is read from the project.
+ */
+export function storedPathOfRow(state, key) {
+  const node = findNode(state, key);
+  if (!node) return undefined;
+  if (node.path !== undefined) return node.path;
+  return /^project(\/\d+)+$/.test(key) ? itemAt(state.project, placeOfKey(key))?.path : undefined;
+}
 
 /** The kind of the row `key`, or undefined. */
 export const rowKindAt = (state, key) => findNode(state, key)?.kind;

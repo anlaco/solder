@@ -5,6 +5,7 @@
 
 import { ProjectFileError, blankProject, readProject } from "../../../core/model/project.mjs";
 import { atajo, cargarInventario, esHueco, pulsa, ultimo } from "../common/labview-inventory.mjs";
+import { FILE_DRAG_TYPE, draggableFilePath } from "../common/dropped-file.mjs";
 import { installPageFont } from "../common/page-font.mjs";
 import * as E from "../window/window-state.mjs";
 import * as Edit from "./project-explorer-edit.mjs";
@@ -110,7 +111,7 @@ const MENU_ACTIONS = {
   collapseAllFiles: () => show(Files.collapseAllFiles(state)),
   openFile: () => openFileRow(state.files?.selected),
   renameFile: () => renameFileRow(),
-  ...Object.fromEntries(["addFile", "addSnapshotFolder", "addAutoPopulatingFolder", "convertToAutoPopulating", "stopAutoPopulating", "newVirtualFolder", "newOviInto", "openItem", "rename", "removeFromProject"].map((name) => [name, () => treeCommands[name]()])),
+  ...Object.fromEntries(["addFile", "addSnapshotFolder", "addAutoPopulatingFolder", "convertToAutoPopulating", "stopAutoPopulating", "newVirtualFolder", "newOviInto", "newTypeDefinitionInto", "openItem", "rename", "removeFromProject"].map((name) => [name, () => treeCommands[name]()])),
 };
 
 function runMenuCommand(id) {
@@ -264,8 +265,13 @@ document.addEventListener(
 // Dragging a row: it is dropped only where it can go (My Computer or a virtual folder), which is what allows the drop.
 let draggedKey = null;
 document.addEventListener("dragstart", (event) => {
-  draggedKey = event.target.closest?.("[data-key]")?.dataset.key ?? null;
+  const key = event.target.closest?.("[data-key]")?.dataset.key ?? null;
+  // Only the rows that move in the tree are dropped on it; a file of an auto-populating folder is only dragged out.
+  draggedKey = State.EDITABLE_KINDS.includes(State.rowKindAt(state, key)) ? key : null;
   event.dataTransfer?.setData("text/plain", draggedKey ?? "");
+  // An `.octl` is also dragged out to an OVI's panel or diagram, which places it (DT-107 §4); the other window reads this type.
+  const filePath = draggableFilePath(State.storedPathOfRow(state, key), state.disk.projectFile);
+  if (filePath) event.dataTransfer?.setData(FILE_DRAG_TYPE, filePath);
 });
 document.addEventListener("dragover", (event) => {
   const key = event.target.closest?.("[data-key]")?.dataset.key;
@@ -316,6 +322,7 @@ solder?.project.onRebased((text) => {
   readDisk();
 });
 solder?.project.onDiskChanged?.(() => readDisk());
+solder?.project.onNewControl?.((created) => treeCommands.newControl(created));
 solder?.project.onNewOviSaved?.((saved) => treeCommands.newOviSaved(saved));
 solder?.project.onNewOviClosed?.((entryId) => treeCommands.newOviClosed(entryId));
 /** The explorer's menus and toolbar for the docked window's own (DT-101 §7). */

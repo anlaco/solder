@@ -74,6 +74,8 @@ export function inFileOrder(items) {
  * reports/2026-11-19-project-new-vi.md Q5).
  */
 const UNSAVED_OVI_KEY = "unsaved-ovi";
+/** Marks a new, unsaved OVI as a control (My Computer ▸ New ▸ Type Definition, DT-107), so its row shows the type definition icon. */
+const UNSAVED_CONTROL_KEY = "unsaved-control";
 
 /** The `comment` of an object read from the file (DT-100 §6), as the keys to spread into what is read. */
 const commentOf = (object) => (typeof object?.comment === "string" ? { comment: object.comment } : {});
@@ -84,6 +86,7 @@ function itemToFile(item) {
   const file = { ...commentOf(item), name: item.name, kind: item.kind };
   if (item.path !== undefined) file.path = item.path;
   if (item.unsavedOvi !== undefined) file[UNSAVED_OVI_KEY] = item.unsavedOvi;
+  if (item.unsavedControl) file[UNSAVED_CONTROL_KEY] = true;
   if (item.autoPopulating) file["auto-populating"] = true;
   // Dependencies and an auto-populating folder are written with no contents: both are read again from the disk (measured).
   if (item.items && item.kind !== ITEM_KINDS.DEPENDENCIES && !item.autoPopulating) file.items = inFileOrder(item.items).map(itemToFile);
@@ -111,6 +114,7 @@ function itemFromFile(file, where) {
   const item = { ...commentOf(file), name: file.name, kind: file.kind };
   if (typeof file.path === "string") item.path = file.path;
   if (typeof file[UNSAVED_OVI_KEY] === "string") item.unsavedOvi = file[UNSAVED_OVI_KEY];
+  if (file[UNSAVED_CONTROL_KEY] === true) item.unsavedControl = true;
   if (file["auto-populating"] === true) item.autoPopulating = true;
   if (Array.isArray(file.items)) item.items = inFileOrder(file.items.map((inner) => itemFromFile(inner, `${where}/${file.name}`)));
   return item;

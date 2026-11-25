@@ -9,7 +9,7 @@
 
 import { ITEM_KINDS, NEW_FOLDER_NAME, withoutWindow, writeProject } from "../../../core/model/project.mjs";
 import { addAutoPopulatingFolderInto, addFilesInto, addInto, addSnapshotFolderInto, addVirtualFolderInto, holdsItems, isEditable, itemAt, moveItem, removeItem, renameFileItem, renameItem } from "../../../core/model/project-tree.mjs";
-import { newOviItem, withNewOviSaved, withoutNewOvi } from "../../../core/model/project-new-ovis.mjs";
+import { newControlItem, newOviItem, withNewOviSaved, withoutNewOvi } from "../../../core/model/project-new-ovis.mjs";
 import { ROOT_KEY, ROW_KINDS, keyOfPlace, nodeAt, placeOfKey, targetKeyOf, visibleRows } from "./project-explorer-state.mjs";
 import { ROW_ICONS } from "./disk-rows.mjs";
 import { autoPopulatingPlaces, convertToAutoPopulating as convertFolder, stopAutoPopulating as stopFolder, withFolderGone } from "../../../core/model/auto-populating.mjs";
@@ -213,10 +213,15 @@ export const canDrop = (state, fromKey, targetKey) => dropOnto(state, fromKey, t
  * explorer's File ▸ New OVI puts it at My Computer's top, measured: reports/2026-11-19-project-new-vi.md Q6). The new
  * item is selected and its folder opened, as LabVIEW shows it (Q1, Q2).
  */
-export function addNewOvi(state, key, name, entryId) {
+export const addNewOvi = (state, key, name, entryId) => addNewItem(state, key, newOviItem(name, entryId));
+
+/** The new control `name` (a type definition's empty editor, DT-107), open as `entryId`, placed as a new OVI is. */
+export const addNewControl = (state, key, name, entryId) => addNewItem(state, key, newControlItem(name, entryId));
+
+function addNewItem(state, key, newItem) {
   const asked = key === ROOT_KEY ? [] : placeOfKey(key);
   const into = holdsItems(itemAt(state.project, asked)) ? asked : placeOfKey(targetKeyOf(state.project));
-  const project = addInto(state.project, into, [newOviItem(name, entryId)]);
+  const project = addInto(state.project, into, [newItem]);
   return followEdit(state, project, { open: into, select: newItemPlace(state.project, project, into) });
 }
 

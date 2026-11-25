@@ -78,3 +78,12 @@ test("quitting, the docked window and each page's own window close at once inste
   const close = dock.slice(dock.indexOf('frame.on("close"'), dock.indexOf("    return frame;\n  }"));
   assert.ok(close.indexOf("if (isAppQuitting()) return;") >= 0 && close.indexOf("isAppQuitting") < close.indexOf("event.preventDefault()"));
 });
+
+test("docked, a new OVI's Block Diagram is never put on screen before its Front Panel", () => {
+  // Showing both put the diagram on screen 11–15 ms before the panel (reports/2026-11-21-visual-faults-fixed-editor.md).
+  const main = source("electron/main.mjs");
+  assert.match(main, /open\.windows\["block-diagram"\]\.showBehind\(\);\n    panel\.show\(\);/);
+  const page = source("electron/page-window.mjs");
+  const behind = page.slice(page.indexOf("  showBehind() {"), page.indexOf("  hide() {"));
+  assert.match(behind, /this\.wanted = true;\n    if \(!this\.dock\) this\.frame\.show\(\);\n  \}/, "docked, only marked shown: the dock is not asked to show it");
+});

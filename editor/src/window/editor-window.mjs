@@ -18,6 +18,7 @@
 // each `subvi` node come from the connector of the OVI it calls. That view
 // replaces the plain catalog everywhere (`cat`).
 
+import { openApplicationInstanceMenu } from "../common/application-instance-menu.mjs";
 import * as CP from "../front-panel/connector-pane.mjs";
 import * as CR from "../front-panel/cluster-reorder.mjs";
 import * as DS from "../debugging/debug-state.mjs";
@@ -50,15 +51,19 @@ import { morphInnerHtml } from "./dom-morph.mjs";
 import { createFramePainter } from "./frame-painter.mjs";
 import * as P from "../front-panel/front-panel.mjs";
 import * as PC from "../front-panel/panel-clipboard.mjs";
+import { customizableNode, customizedObject } from "../front-panel/customize-control.mjs";
+import { controlToPlace, unknownDefinitionKeys } from "../front-panel/chosen-control.mjs";
+import { constantToPlace } from "./chosen-constant.mjs";
+import { FILE_DRAG_TYPE, carriesFile, constantDroppedOnDiagram, controlDroppedOnPanel } from "../common/dropped-file.mjs";
 import * as Paths from "../common/ovi-paths.mjs";
 import * as Q from "../../../core/model/qvi-format.mjs";
-import { controlEditorGraph, controlEditorText, definitionObjectOf, editedObjectOf } from "../../../core/model/control-editor.mjs";
+import { controlEditorGraph, controlEditorText, definitionObjectOf, editedObjectsOf } from "../../../core/model/control-editor.mjs";
 import { controlOfConstant } from "../block-diagram/cluster-constant-panel.mjs";
 import { followsAutomatically } from "../../../core/model/type-definition-follow.mjs";
 import { FOLLOW } from "../common/type-definition-publishing.mjs";
 import { applyMenuVariant, createApplyTracker } from "./control-editor-apply.mjs";
 import { createFollower, disconnectQuestion, fileNameOfDefinition, withAutoUpdateToggled, withoutTypeDefinition } from "./type-definition-instances.mjs";
-import { KIND_TITLES, TYPE_DEFINITION_KINDS, linkFor, typeDefinitionLink, typeDefinitionText } from "../../../core/model/type-definition.mjs";
+import { KIND_TITLES, TYPE_DEFINITION_KINDS, isControlPath, linkFor, typeDefinitionLink, typeDefinitionText } from "../../../core/model/type-definition.mjs";
 import * as SN from "../block-diagram/subovi-nodes.mjs";
 import * as PolymorphicNodes from "../block-diagram/polymorphic-nodes.mjs";
 import * as ExpressNodes from "../block-diagram/express-nodes.mjs";
@@ -366,7 +371,7 @@ addEventListener("blur", () => confirmarEscritura());
 const avisar = (g) => {
   if (!window.solder) return;
   if (esEditorControl) {
-    if (!editedObjectOf(g, cat)) return;
+    // Even empty: LabVIEW's control editor saves with no control (DT-107).
     window.solder.cambio(controlEditorText(controlKind, g, cat, controlComments));
     return;
   }
@@ -435,6 +440,8 @@ async function cargarTexto(text) {
 async function cargarEditorControl(text) {
   const read = controlEditorGraph(text, baseCatalog);
   controlKind = read.kind;
+  // The page's title was made before the file was read, with the default kind: it takes the kind the file holds (the window's own title is the main process's).
+  showOVINameInPageTitle();
   controlComments = read.comments ?? null;
   cat = baseCatalog;
   ctx = D.contexto(cat, glifos, separador, medirMenu);
@@ -757,6 +764,7 @@ const ORDENES_MENU = {
   "make-selected-values-default": () => changeDefaults(CV.makeCurrentValuesDefault),
   "reinitialize-selected-values-to-default": () => changeDefaults(CV.reinitializeToDefault),
   "select-all": () => seleccionarTodo(),
+  "customize-control": () => customizeControl(customizableNode(pan, cat)?.id),
   "remove-breakpoints-from-hierarchy": () => removeAllBreakpoints(),
   // View menu of the diagram:
   "debug-window": () => openDebugWindow(),
@@ -770,6 +778,7 @@ const ORDENES_CONTEXTUALES = {
   "open-polymorphic-ovi": (nodeId) => abrirPolimorfico(nodeId),
   "list-errors": (wireId) => openErrorList(`wire.${wireId}`),
   "make-type-def": (nodeId) => makeTypeDefinition(nodeId),
+  customize: (nodeId) => customizeControl(nodeId),
   "open-type-def": (nodeId) => openTypeDefinition(nodeId),
   "disconnect-from-type-def": (nodeId) => disconnectFromTypeDefinition(nodeId),
   "auto-update-from-type-def": (nodeId) => toggleAutoUpdate(nodeId),
@@ -789,7 +798,7 @@ async function makeTypeDefinition(nodeId) {
   // A panel object is held as it is; a constant as the control it becomes (stage a2b).
   const object = node && (node.panel ? definitionObjectOf(node) : controlOfConstant(node));
   if (!object || !window.solder) return;
-  const key = await window.solder.makeTypeDefinition(typeDefinitionText(MADE_TYPE_DEFINITION_KIND, object));
+  const key = await window.solder.makeTypeDefinition(typeDefinitionText(MADE_TYPE_DEFINITION_KIND, [object]));
   const link = linkFor(key, MADE_TYPE_DEFINITION_KIND);
   const g = grafo();
   const linked = { ...g, nodos: g.nodos.map((candidate) => (candidate.id === nodeId ? { ...candidate, config: { ...candidate.config, typedef: link } } : candidate)) };
@@ -1336,6 +1345,7 @@ function variantesDelMenuEdit() {
     redoName: H.redoName(historial),
     canCopy: hayParaCopiar,
     hasSelection: seleccion.length > 0 && !(conPanel && PC.selectionIsLocked(pan)),
+    canCustomize: conPanel && !!customizableNode(pan, cat),
     clipboardFilled: !!portapapeles.paquete,
   });
 }
@@ -1458,6 +1468,7 @@ async function seleccionarOVI() {
   pintar();
   const absolutePath = await window.solder?.elegirOVI();
   if (!absolutePath) return;
+  if (isControlPath(absolutePath)) return carryConstantOfDefinition(absolutePath);
   const { texts } = await window.solder.textosDeOVI(absolutePath);
   const g = learnCallee(texts);
   let config;
@@ -1468,6 +1479,105 @@ async function seleccionarOVI() {
   }
   dia = ED.coger({ ...dia, g }, "subvi", config);
   pintar();
+}
+
+/**
+ * Edit ▸ Customize Control... and Advanced ▸ Customize... (DT-107): the main process opens an unlinked copy of the panel
+ * object `nodeId` in a control editor of its own.
+ */
+function customizeControl(nodeId) {
+  const object = nodeId && customizedObject(grafo(), cat, nodeId);
+  if (object) window.solder?.customizeControl(object);
+}
+
+/**
+ * Controls ▸ Select a Control... (DT-107): the file dialog, then the control of the `.octl` hangs from the cursor until a
+ * click drops it. A file with no object or several places nothing, silently (measured); a type definition is placed linked.
+ */
+async function selectControl() {
+  if (!conPanel || ejecutando) return;
+  estado = { ...estado, paleta: null, abierta: null };
+  pintar();
+  const chosen = await window.solder?.chooseControl?.();
+  if (!chosen) return;
+  let placed;
+  try {
+    placed = controlToPlace(chosen.text, cat, Paths.storedPathFor(oviKey, chosen.path, oviLibRoot));
+  } catch (error) {
+    return window.solder.error(error.message);
+  }
+  if (!placed) return;
+  pan = P.coger(pan, placed.bloque, placed.config, placed.placement);
+  pintar();
+}
+
+/**
+ * An object linked to a definition the hierarchy has not read (a chosen control just dropped, a pasted one) makes the
+ * hierarchy load it, so that the object follows it as any instance does. Each key is asked once.
+ */
+const askedDefinitionKeys = new Set();
+function learnPlacedDefinitions() {
+  const unknown = unknownDefinitionKeys(grafo(), hierarchyKeys, oviKey, oviLibRoot).filter((key) => !askedDefinitionKeys.has(key));
+  if (!unknown.length) return;
+  for (const key of unknown) askedDefinitionKeys.add(key);
+  refrescarJerarquia();
+}
+
+/** Select an OVI... on a type definition (DT-107): the constant that follows it hangs from the cursor; a file that makes none places nothing. */
+async function carryConstantOfDefinition(absolutePath) {
+  const { texts } = await window.solder.textosDeOVI(absolutePath);
+  let placed;
+  try {
+    placed = texts[absolutePath] && constantToPlace(texts[absolutePath], cat, Paths.storedPathFor(oviKey, absolutePath, oviLibRoot));
+  } catch (error) {
+    return window.solder.error(error.message);
+  }
+  if (!placed) return;
+  dia = ED.coger(dia, placed.bloque, placed.config);
+  pintar();
+}
+
+// ——— An `.octl` dragged from the Project Explorer's tree (DT-107 §4) ———
+
+const canTakeDroppedFile = () => (conDiagrama || (conPanel && !esEditorControl)) && !ejecutando;
+
+// Deviation: whether the file holds exactly one object is read on drop, so a file of none or of several shows the copy
+// cursor and places nothing (LabVIEW shows the "no" cursor).
+addEventListener("dragover", (ev) => {
+  if (!carriesFile(ev.dataTransfer?.types) || !canTakeDroppedFile() || !ev.target.closest?.(".lienzo")) return;
+  ev.preventDefault();
+  ev.dataTransfer.dropEffect = "copy";
+});
+addEventListener("drop", (ev) => {
+  if (!carriesFile(ev.dataTransfer?.types) || !canTakeDroppedFile() || !ev.target.closest?.(".lienzo")) return;
+  ev.preventDefault();
+  placeDroppedFile(ev.dataTransfer.getData(FILE_DRAG_TYPE), punto(ev));
+});
+
+/** The file `absolutePath` dropped at `point` (canvas coordinates): its object on the panel, or its constant on the diagram. */
+async function placeDroppedFile(absolutePath, point) {
+  const { texts } = await window.solder.textosDeOVI(absolutePath);
+  const storedPath = Paths.storedPathFor(oviKey, absolutePath, oviLibRoot);
+  try {
+    if (conDiagrama) return dropConstantOfDefinition(texts[absolutePath], storedPath, point);
+    dropControlOfFile(texts[absolutePath], storedPath, point);
+  } catch (error) {
+    window.solder.error(error.message);
+  }
+}
+
+function dropControlOfFile(text, storedPath, point) {
+  const placed = text && controlDroppedOnPanel(text, cat, storedPath, point);
+  if (!placed) return;
+  const carried = P.coger(pan, placed.bloque, placed.config, { ...placed.placement, arrastrado: true });
+  cambiarPanel(P.soltar(carried, ctx, true, point));
+}
+
+function dropConstantOfDefinition(text, storedPath, point) {
+  const placed = text && constantDroppedOnDiagram(text, cat, storedPath);
+  if (!placed) return;
+  const carried = ED.coger(dia, placed.bloque, placed.config);
+  cambiarDiagrama(ED.soltar({ ...carried, accion: { ...carried.accion, arrastrado: true } }, ctx, true, point));
 }
 
 /** Adds the texts of a callee (and of what it reaches) to the hierarchy and rebuilds it; returns the diagram's graph over it. */
@@ -1508,6 +1618,13 @@ function menuDelIcono(ev, elemento) {
   estado = { ...estado, paleta: null, abierta: null };
   if (conDiagrama) return cambiarDiagrama(CP.openMenu(dia, raiz, ev.clientX, ev.clientY, celda));
   cambiarPanel(CP.openMenu(pan, raiz, ev.clientX, ev.clientY, celda));
+}
+
+/** The Application Instance box's menu (it shows only in a project, with the project's instance as its text). */
+function applicationInstanceMenu(ev) {
+  estado = { ...estado, paleta: null, abierta: null };
+  if (conDiagrama) return cambiarDiagrama(openApplicationInstanceMenu(dia, ev.clientX, ev.clientY, projectInstance));
+  cambiarPanel(openApplicationInstanceMenu(pan, ev.clientX, ev.clientY, projectInstance));
 }
 
 canal.onmessage = ({ data }) => {
@@ -1644,7 +1761,7 @@ function dockedChromeModel() {
 
 /** What a menu of the bar greys, renames and lists, from what this window knows now: the Edit menu's state and the project's. */
 function menuBarVariant(id) {
-  const apply = esEditorControl ? applyMenuVariant(id, editedObjectOf(grafo(), cat) !== undefined && applying.hasChanges(cat, grafo(), controlKind, controlText)) : {};
+  const apply = esEditorControl ? applyMenuVariant(id, editedObjectsOf(grafo(), cat).length > 0 && applying.hasChanges(cat, grafo(), controlKind, controlText)) : {};
   return DV.mergeVariants(DV.mergeVariants(id === EM.editMenuId(nombre) ? variantesDelMenuEdit() : {}, PM.projectMenuVariant(inv, nombre, id, { inProject, windowRows })), apply);
 }
 
@@ -1713,7 +1830,10 @@ function cambiarDiagrama(nuevo, stepName) {
   if (nuevo === dia) return;
   dia = settleEdit(dia, nuevo);
   // What Create made is a step of undo before its value or label is typed: the typing is another one (REPORT.md §A).
-  if (Et.graphAtRest(dia)) quieto(dia.g, stepName);
+  if (Et.graphAtRest(dia)) {
+    quieto(dia.g, stepName);
+    learnPlacedDefinitions();
+  }
   pintar();
 }
 
@@ -1721,7 +1841,10 @@ function cambiarDiagrama(nuevo, stepName) {
 function cambiarPanel(nuevo) {
   if (nuevo === pan) return;
   pan = settleEdit(pan, nuevo);
-  if (Et.graphAtRest(pan)) quieto(pan.g);
+  if (Et.graphAtRest(pan)) {
+    quieto(pan.g);
+    learnPlacedDefinitions();
+  }
   mandarControles(pan.g);
   pintar();
 }
@@ -2405,6 +2528,7 @@ addEventListener("click", (ev) => {
   if (el.dataset.id === `${prefijo}.toolbar.run` && !esHueco(inv.resolver(el.dataset.id))) return ejecutarOVI();
   if (el.dataset.id === `${prefijo}.toolbar.abort-execution`) return abortar();
   if (el.dataset.id === "palette.functions.select-a-vi" && !esHueco(inv.resolver(el.dataset.id))) return seleccionarOVI();
+  if (el.dataset.id === "palette.controls.select-a-control" && !esHueco(inv.resolver(el.dataset.id))) return selectControl();
   const donde = abreSubpaleta(el) ? V.anclaSubpaleta(el.getBoundingClientRect()) : el.classList.contains("menu") ? anclaMenu(el) : ancla(el);
   cambiar(E.clic(estado, inv, el.dataset.id, donde, nivelDe(el)));
 });
@@ -2419,6 +2543,7 @@ addEventListener("contextmenu", (ev) => {
   // The connector pane and the icon have menus of their own.
   const iconoOVI = ev.target.closest(".icono-vi");
   if (iconoOVI) return menuDelIcono(ev, iconoOVI);
+  if (ev.target.closest(".instancia")) return applicationInstanceMenu(ev);
   if (!ev.target.closest(".lienzo")) return;
   // On the panel the palette comes up over the background and an object's menu over any part of it
   // (its box, arrows, elements or fields too). A numeric indicator has no captured menu yet: nothing opens.

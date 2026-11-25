@@ -24,7 +24,7 @@ export const ROW_ICONS = Object.freeze({ OVI: "ovi", DOCUMENT: "document", TYPE_
 export const EMPTY_DISK = Object.freeze({ dependencies: Object.freeze({ library: [], others: [], missing: [] }), folders: Object.freeze({}) });
 
 const TYPE_DEFINITION_EXTENSION = ".octl";
-const isTypeDefinition = (path) => path.toLowerCase().endsWith(TYPE_DEFINITION_EXTENSION);
+export const isTypeDefinition = (path) => path.toLowerCase().endsWith(TYPE_DEFINITION_EXTENSION);
 
 /** A file's icon: a type definition has its own (measured: a `.ctl` is not drawn as a VI, s5 Q1). */
 const iconOfFile = (path) => (isTypeDefinition(path) ? ROW_ICONS.TYPE_DEFINITION : itemKindOf(path) === ITEM_KINDS.OVI ? ROW_ICONS.OVI : ROW_ICONS.DOCUMENT);

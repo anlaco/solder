@@ -42,11 +42,13 @@ export function buildHierarchy({ rootKey, rootGraph, rootText, texts, baseCatalo
       return null;
     }
   };
-  // A type definition that cannot be read is reported as LabVIEW reports a missing one (DT-096 §3).
+  // A type definition that cannot be read is reported as LabVIEW reports a missing one (DT-096 §3); so is one that
+  // holds no object or several, which nothing can follow (DT-107; what LabVIEW says of it is unverified).
   const loadTypeDefinition = (key) => {
     if (!(key in texts)) return null;
     try {
-      return readTypeDefinition(texts[key], baseCatalog);
+      const definition = readTypeDefinition(texts[key], baseCatalog);
+      return definition.object ? definition : null;
     } catch {
       return null;
     }

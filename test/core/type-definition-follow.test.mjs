@@ -90,7 +90,7 @@ test("a cluster's elements with no label (a Cluster Constant's) are matched by t
 });
 
 test("Apply Changes has something to apply when the ring or the object changes in more than its default values", () => {
-  const text = (elements, kind = "type-def") => typeDefinitionText(kind, { tipo: "cluster-control", label: { text: "Pt" }, config: { elements }, x: 31, y: 109 });
+  const text = (elements, kind = "type-def") => typeDefinitionText(kind, [{ tipo: "cluster-control", label: { text: "Pt" }, config: { elements }, x: 31, y: 109 }]);
   const applied = text([numeric("a", 5), boolean("b", true)]);
   assert.equal(hasChangesToApply(CAT, applied, applied), false, "greyed at open (measured)");
   assert.equal(hasChangesToApply(CAT, applied, text([numeric("a", 7), boolean("b", false)])), false, "a default-only change (measured)");
@@ -98,5 +98,60 @@ test("Apply Changes has something to apply when the ring or the object changes i
   assert.equal(hasChangesToApply(CAT, applied, text([boolean("b", true), numeric("a", 5)])), true, "the elements reordered");
   assert.equal(hasChangesToApply(CAT, applied, text([{ ...numeric("a", 5), label: { text: "z" } }, boolean("b", true)])), true, "an element renamed");
   assert.equal(hasChangesToApply(CAT, applied, text([numeric("a", 5), boolean("b", true)], "strict-type-def")), true, "the ring");
-  assert.equal(hasChangesToApply(CAT, applied, typeDefinitionText("type-def", { tipo: "cluster-control", label: { text: "Pt" }, config: { elements: [numeric("a", 5), boolean("b", true)] }, x: 99, y: 3 })), false, "the object's place in the editor is not a change (unmeasured)");
+  assert.equal(hasChangesToApply(CAT, applied, typeDefinitionText("type-def", [{ tipo: "cluster-control", label: { text: "Pt" }, config: { elements: [numeric("a", 5), boolean("b", true)] }, x: 99, y: 3 }])), false, "the object's place in the editor is not a change (unmeasured)");
+});
+
+// A scalar panel object (a Numeric control "n" of the panel) following a definition whose object is a single control.
+const scalarInstance = (tipo, config, link = NON_STRICT) => ({ id: 5, name: "n", tipo, label: { text: "n" }, config: { ...config, typedef: link }, panel: { x: 10, y: 20, w: 90, h: 30 }, x: 0, y: 0 });
+const scalarDefinition = (tipo, config) => ({ tipo, label: { text: "n" }, config, x: 0, y: 0 });
+/** The editor's counterpart for the tests: the definition's kind in the instance's role, none for a graph. */
+const counterpartBlock = (definition, instance) => {
+  if (definition.tipo === "waveform-graph") return null;
+  const role = instance.tipo.endsWith("indicator") ? "indicator" : "control";
+  return { tipo: definition.tipo.replace(/(control|indicator)$/, role), config: definition.config };
+};
+
+test("a scalar instance follows a change of its definition's data: the representation, with its default converted and held for review", () => {
+  const instance = scalarInstance("control", { type: "dbl", value: 0 });
+  const retyped = followDefinition(CAT, instance, scalarDefinition("control", { type: "i32" }), undefined, counterpartBlock);
+  assert.equal(retyped.state, FOLLOWING.update, "a zero default is lost silently, as measured");
+  assert.equal(retyped.node.config.type, "i32");
+  assert.equal(retyped.node.config.value, 0);
+  assert.deepEqual(retyped.node.config.typedef, NON_STRICT);
+  // The instance's own default 3.7 would change to 4 in an I32: LabVIEW asks (measured on a cluster's element).
+  const held = followDefinition(CAT, scalarInstance("control", { type: "dbl", value: 3.7 }), scalarDefinition("control", { type: "i32" }), undefined, counterpartBlock);
+  assert.equal(held.state, FOLLOWING.review);
+  assert.deepEqual(held.review.losses.map((loss) => [loss.previous, loss.proposed]), [[3.7, 4]]);
+  // The definition's own default value does not reach an instance that has its own.
+  const sameType = followDefinition(CAT, scalarInstance("control", { type: "dbl", value: 3 }), scalarDefinition("control", { type: "dbl", value: 9 }), undefined, counterpartBlock);
+  assert.equal(sameType.state, FOLLOWING.matches);
+});
+
+test("a scalar instance takes the block its definition was replaced by, in its own role, keeping the node, its place and its link", () => {
+  const roundLed = scalarDefinition("bool-indicator", { style: "round-led" });
+  const control = followDefinition(CAT, scalarInstance("control", { type: "dbl", value: 0 }), roundLed, undefined, counterpartBlock);
+  assert.equal(control.state, FOLLOWING.update);
+  assert.equal(control.node.tipo, "bool-control", "a control stays a control");
+  assert.deepEqual([control.node.id, control.node.name, control.node.label.text], [5, "n", "n"], "the node stays, so its wires do");
+  assert.deepEqual(control.node.panel, { x: 10, y: 20 }, "the old block's size does not carry over");
+  assert.equal(control.node.config.type, undefined, "nothing of the numeric stays");
+  assert.deepEqual(control.node.config.typedef, NON_STRICT);
+  const indicator = followDefinition(CAT, scalarInstance("indicator", { type: "dbl" }), roundLed, undefined, counterpartBlock);
+  assert.equal(indicator.node.tipo, "bool-indicator", "an indicator stays an indicator");
+  // A default the instance held is lost with the old block: it waits for a review.
+  const held = followDefinition(CAT, scalarInstance("control", { type: "dbl", value: 7 }), roundLed, undefined, counterpartBlock);
+  assert.equal(held.state, FOLLOWING.review);
+  assert.deepEqual(held.review.losses.map((loss) => [loss.previous, loss.proposed]), [[7, undefined]]);
+  // The same through a whole graph, as the OVI opens.
+  const g = { nodos: [scalarInstance("control", { type: "dbl", value: 0 })] };
+  assert.equal(followDefinitions(CAT, g, () => roundLed, { apply: true, toInstanceBlock: counterpartBlock }).g.nodos[0].tipo, "bool-control");
+});
+
+test("a scalar instance whose definition's block has no counterpart does not follow, and does not match", () => {
+  const instance = scalarInstance("control", { type: "dbl", value: 0 });
+  const graph = scalarDefinition("waveform-graph", {});
+  assert.equal(followDefinition(CAT, instance, graph, undefined, counterpartBlock).state, FOLLOWING.mismatch);
+  const { g, broken } = followDefinitions(CAT, { nodos: [instance] }, () => graph, { apply: true, toInstanceBlock: counterpartBlock });
+  assert.equal(g.nodos[0], instance);
+  assert.deepEqual(broken.map((entry) => entry.node), ["n"]);
 });

@@ -30,9 +30,12 @@
   --disabled-text: #a0a0a0;
   --placeholder-corner-light: #c8c8c8;
   --placeholder-corner-dark: #878787;
+  /* The corner mark of a linked constant and of a linked control's terminal (reports/2026-11-24-typedef-mark-and-footer.md Q1). */
+  --typedef-mark-constant: #464646;
+  --typedef-mark-terminal: #000000;
   --chrome-background: #f0f0f0; /* The window frame: menu bar, toolbar, status bar, gutters. */
   --scrollbar-thumb: #858585; /* The overlay scrollbar's thumb and arrows (2026-11-05 report). */
-  --status-instance-border: #2a2a2a;
+  --status-instance-border: #000000; /* reports/2026-11-24-typedef-mark-and-footer.md Q4 */
   --toolbar-box-border: #7a7a7a;
   --run-arrow-fill: #fff; /* The Run arrow of the toolbar. */
   --placeholder-text: #696969; /* Greyed placeholders (DT-035: what is not done yet looks the same, greyed). */

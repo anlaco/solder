@@ -200,3 +200,10 @@ test("every panel style's sheet exists, and so does every shipped sheet it impor
     for (const [, imported] of readSheet(stylesheet).matchAll(IMPORT_STATEMENT)) assert.ok(sheets.includes(imported), `${stylesheet} imports ${imported}`);
   }
 });
+
+test("Old School's enum field stays inside its box, as a numeric's does", () => {
+  // The old drawing gave the enum a numeric's 55 px field in its 49 px box (reports/2026-10-17-panel-old-school-numeric.md).
+  const sheet = readSheet("old-school.css");
+  assert.match(sheet, /\.sd-panel :is\(\.sd-numeric, \.sd-enum\) \.sd-field \{ width: auto; right: 0; \}/);
+  assert.doesNotMatch(sheet, /right: -\d+px/, "no field reaches out of its box");
+});

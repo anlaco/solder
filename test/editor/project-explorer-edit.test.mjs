@@ -292,7 +292,7 @@ test("the right-click menus of virtual and auto-populating folders and of the it
   assert.equal(State.openContextMenu(withAuto, INV, "project/0/0", { x: 10, y: 10 }).menuBarra.id, "context.project-explorer.auto-populating-folder");
   assert.equal(State.openContextMenu(withAuto, INV, "project/0/1", { x: 10, y: 10 }).menuBarra.id, "context.project-explorer.virtual-folder");
   const builtCommands = Object.entries(State.CONTEXT_COMMANDS).filter(([id]) => !id.includes(".project."));
-  assert.equal(builtCommands.length, 42, "five on each of My Computer and the virtual folder (New ▸ OVI, 2026-11-19), Remove on four menus, Rename on a folder and (stage d) an OVI, an OVI's Open; stage c: Dependencies' Refresh, a dependency's Open, Convert, Stop and an auto-populated OVI's Open; stage d: six Show in Files View and the Files tab's fourteen (project-files-tab.test.mjs)");
+  assert.equal(builtCommands.length, 44, "six on each of My Computer and the virtual folder (New ▸ OVI, 2026-11-19, and New ▸ Type Definition, DT-107), Remove on four menus, Rename on a folder and (stage d) an OVI, an OVI's Open; stage c: Dependencies' Refresh, a dependency's Open, Convert, Stop and an auto-populated OVI's Open; stage d: six Show in Files View and the Files tab's fourteen (project-files-tab.test.mjs)");
   for (const [id, command] of Object.entries(State.CONTEXT_COMMANDS)) {
     assert.equal(INV.entrada(id).estado, "built", id);
     assert.ok(typeof command === "string");

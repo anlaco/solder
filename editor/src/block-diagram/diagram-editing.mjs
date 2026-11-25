@@ -54,6 +54,7 @@ import { graphCommand, graphMenuMarks, graphMenuVariants, isGraphMenu } from "..
 import { clusterCommand, clusterMenuMarks, clusterMenuVariants, isClusterMenu } from "../front-panel/cluster-menus.mjs";
 import { elementMenuVariants } from "../front-panel/element-menus.mjs";
 import { typeDefinitionMarks, typeDefinitionVariants } from "../front-panel/type-definition-menus.mjs";
+import { applicationInstanceVariants } from "../common/application-instance-menu.mjs";
 import * as Et from "../common/labels.mjs";
 import * as FL from "../common/free-labels.mjs";
 import { FREE_LABEL, isFreeLabel } from "../../../core/model/free-label.mjs";
@@ -1973,7 +1974,7 @@ const mergeVariants = (a, b) => ({
  * What changes in the rows of the open menu: the node's own variants, those of Create ▸ and those of a type definition
  * (DT-104). `ctx` is needed for the terminal's type, `inv` for the submenu of Replace ▸.
  */
-export const variantes = (d, ctx, inv) => [typeDefinitionVariants(d), elementMenuVariants(d)].reduce(mergeVariants, ownVariants(d, ctx, inv));
+export const variantes = (d, ctx, inv) => [typeDefinitionVariants(d), elementMenuVariants(d), applicationInstanceVariants(d)].reduce(mergeVariants, ownVariants(d, ctx, inv));
 
 const ownVariants = (d, ctx, inv) =>
   isGraphMenu(d)

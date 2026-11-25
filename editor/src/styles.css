@@ -144,15 +144,17 @@ svg { display: block; overflow: visible; }
 .capa-desplazada { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 
 /* Barra de estado */
-.barra-estado { position: absolute; left: 0; right: 0; bottom: 0; background: var(--chrome-background); border-top: 1px solid var(--chrome-highlight); }
+/* The Application Instance box comes first and the horizontal scroll bar takes the rest of the strip. */
+.barra-estado { position: absolute; left: 0; right: 0; bottom: 0; display: flex; background: var(--chrome-background); border-top: 1px solid var(--chrome-highlight); }
+.barra-estado > .barra-desplazamiento.horizontal { position: relative; flex: 1; }
+/* Measured (reports/2026-11-24-typedef-mark-and-footer.md Q4): a 1 px black box over the strip's top line, from the
+   window's second column to one row above its bottom, the text 2 px after its left border and about 8 px before its
+   right one. As wide as its text: unverified, read from two names (176 px at "Untitled Project 1/My Computer", 164 at
+   "NewVI14.lvproj/My Computer"). */
 .instancia {
-  height: calc(100% + 1px); margin-top: -1px;
-  border-top: 1px solid var(--status-instance-border);
-  box-shadow: 0 -0.7px 0 var(--toolbar-box-border);
-  border-left: 1px solid var(--status-instance-border);
-  border-right: 1px solid var(--status-instance-border);
-  margin-left: 0.667px;
-  padding-left: 2px; white-space: nowrap; overflow: hidden;
+  flex: none; box-sizing: border-box; height: calc(100% + 1px); margin: -1px 0 1px 1px;
+  border: 1px solid var(--status-instance-border);
+  padding: 0 8px 0 2px; white-space: nowrap;
   display: flex; align-items: center;
 }
 
@@ -879,6 +881,10 @@ svg { display: block; overflow: visible; }
 /* A Cluster Constant (DT-095 stage c). Only its frame, its elements, its handles and its terminal take the mouse: a press
    on the interior is a press on the diagram (a rubber band), as on a structure. */
 .nodo.cluster-constant { pointer-events: none; }
+/* A diagram object that follows a type definition: its corner mark (block-diagram/type-definition-mark.mjs). */
+.typedef-mark { position: absolute; left: 0; top: 0; pointer-events: none; }
+.typedef-mark-constant { fill: var(--typedef-mark-constant); }
+.typedef-mark-terminal { fill: var(--typedef-mark-terminal); }
 .nodo.cluster-constant .cc-frame { position: absolute; left: 0; top: 0; box-sizing: border-box; border: 1px solid var(--cluster-constant-frame); background: var(--cluster-constant-interior); }
 .nodo.cluster-constant .cc-frame.cc-mixed { border-color: var(--cluster-constant-frame-mixed); }
 .nodo.cluster-constant .cc-line { position: absolute; inset: 1px; border: 1px solid var(--cluster-constant-frame); }

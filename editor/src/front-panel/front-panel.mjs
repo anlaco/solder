@@ -290,7 +290,7 @@ export function caja(n, measure, edicion) {
 /** How a node resizes by its handles (control-resize.mjs), or null. Enums, rings and error clusters are blocks drawn otherwise. */
 function resizeRuleOf(n) {
   if (esEnum(n?.config?.type)) return resizeRule("enum");
-  if (isPanelRing(n)) return resizeRule(n.config.style);
+  if (isPanelRing(n)) return resizeRule(n.tipo === "indicator" && n.config.style === "text-ring" ? "text-ring-indicator" : n.config.style);
   if (claseError(n?.tipo, n?.config)) return resizeRule("error-cluster");
   return resizeRule(n?.tipo);
 }
@@ -594,7 +594,7 @@ export function contenido(p, ctx, resueltos) {
     // Mientras se arrastra desde la paleta, LabVIEW enseña sólo el contorno
     // del objeto y de su etiqueta, punteado.
     const k = cajaObjeto(accion.bloque, accion.x, accion.y, accion.config);
-    const t = Et.tamano(etiquetaNueva(accion.bloque, accion.config), ctx.medir);
+    const t = Et.tamano(accion.label ?? etiquetaNueva(accion.bloque, accion.config), ctx.medir);
     html += `<div class="contorno-colocar" style="left:${px(k.x + k.casilla)};top:${px(k.y - t.alto - (k.separacion ?? MEDIDAS_PANEL.separacion))};width:${px(t.ancho)};height:${px(t.alto)}"></div>`;
     html += `<div class="contorno-colocar objeto" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}"></div>`;
   }
@@ -636,8 +636,14 @@ function esquina(bloque, pt, config) {
   return { x: Math.round(pt.x - mitad), y: Math.round(pt.y - k.alto / 2) };
 }
 
-/** Coger un control de la paleta: queda colgando del cursor hasta soltarlo en el panel. */
-export const coger = (p, bloque, config) => ({ ...p, accion: { tipo: "colocar", bloque, config }, edicion: null, menu: null });
+/**
+ * Coger un control de la paleta: queda colgando del cursor hasta soltarlo en el panel. `placement`: what a control read
+ * from a file brings with it, its own `label`, its `size` (`{ w, h }`) and, when dropped from the tree, its `corner`, where the palette's gives its block's (DT-107).
+ */
+export const coger = (p, bloque, config, placement = {}) => ({ ...p, accion: { tipo: "colocar", bloque, config, ...placement }, edicion: null, menu: null });
+
+/** `g` with the panel object `id` given the size a file stored for it. */
+const withPanelSize = (g, id, { w, h }) => ({ ...g, nodos: g.nodos.map((n) => (n.id === id ? { ...n, panel: { ...n.panel, w, h } } : n)) });
 
 /**
  * Soltar el control cogido: se crea con su terminal en el diagrama y su
@@ -646,19 +652,22 @@ export const coger = (p, bloque, config) => ({ ...p, accion: { tipo: "colocar", 
  * (`edicion.nuevo`: the editor closes the step of undo before it).
  */
 function colocar(p, ctx, pt) {
-  const { bloque, config } = p.accion;
+  const { bloque, config, size } = p.accion;
+  const label = p.accion.label ?? etiquetaNueva(bloque, config);
   const shellId = emptyShellAt(p.g, pt);
   const element = shellId && panelArrayFromElement(bloque, config);
   if (element) return { ...p, g: typeEmptyArray(p.g, shellId, element.elementType, element.block), seleccion: [shellId], accion: null, edicion: null };
-  const corner = esquina(bloque, pt, config);
+  // A file dropped from the Project Explorer brings the corner of its box (DT-107); the palette's object hangs from its centre.
+  const corner = p.accion.corner ?? esquina(bloque, pt, config);
   // Dropped on a cluster's interior it becomes the cluster's last element (DT-106).
   const cluster = clusterTaking(p.g, bloque, pt);
-  if (cluster) return { ...p, g: createdInCluster(p.g, ctx.cat, cluster.id, { block: bloque, config, label: etiquetaNueva(bloque, config), corner }).g, seleccion: [], accion: null, edicion: null };
+  if (cluster) return { ...p, g: createdInCluster(p.g, ctx.cat, cluster.id, { block: bloque, config, label, corner }).g, seleccion: [], accion: null, edicion: null };
   const { x, y } = corner;
   const top = topLevelOf(p.g);
-  const created = Gr.crearEnPanel(top, ctx.cat, bloque, x, y, etiquetaNueva(bloque, config), config);
+  const created = Gr.crearEnPanel(top, ctx.cat, bloque, x, y, label, config);
   // A user's cluster has its type and value derived from its elements, none yet.
-  const g = graftedOnto(p.g, top, isUserCluster({ config }) ? setClusterElements(created.g, ctx.cat, created.id, config.elements) : created.g);
+  const derived = isUserCluster({ config }) ? setClusterElements(created.g, ctx.cat, created.id, config.elements) : created.g;
+  const g = graftedOnto(p.g, top, size ? withPanelSize(derived, created.id, size) : derived);
   const n = g.nodos.find((m) => m.id === created.id);
   return { ...p, g, seleccion: [], accion: null, edicion: { ...Et.editar(n), nuevo: true } };
 }

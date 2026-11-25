@@ -7,6 +7,7 @@
 // sacaron (numeric-cablear.mp4); las medidas, en píxeles del vídeo, que son los
 // de la pantalla a 150 %, entre 1,5.
 
+import { typeDefinitionMarkHtml } from "./type-definition-mark.mjs";
 import * as Et from "../common/labels.mjs";
 import * as FL from "../common/free-labels.mjs";
 import { isFreeLabel, isPanelFreeLabel } from "../../../core/model/free-label.mjs";
@@ -1444,7 +1445,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
   if (n.tipo === SpreadsheetNodes.READ_DELIMITED) zonas += instanceRing(n);
   if (PolymorphicNodes.selectorShown(n, ctx.cat)) zonas += polymorphicSelector(n, ctx);
   const freeLabelClass = isFreeLabel(n) ? " etiqueta-libre" : isClusterConstant(n) ? " cluster-constant" : "";
-  return `<div class="nodo${freeLabelClass}${elegido || escribiendo ? " seleccionado" : ""}${editable}${litByDebugger(d, n.id)}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${cuerpo}${circulos}${zonas}${asas}</div>`;
+  return `<div class="nodo${freeLabelClass}${elegido || escribiendo ? " seleccionado" : ""}${editable}${litByDebugger(d, n.id)}" data-nodo="${esc(n.id)}" style="left:${px(k.x)};top:${px(k.y)};width:${px(k.ancho)};height:${px(k.alto)}">${cuerpo}${circulos}${typeDefinitionMarkHtml(n)}${zonas}${asas}</div>`;
 }
 
 /** While Highlight Execution dims the diagram, the nodes that already ran in this iteration keep their colors (debugging/debug-view.mjs). */
@@ -1870,7 +1871,7 @@ const MENU_COMPARISON = {
 };
 
 /** Filas que en LabVIEW abren un submenú aunque su contenido no esté declarado. Es disposición. */
-const CON_SUBMENU = ["visible-items", "palette", "numeric-palette", "boolean-palette", "array-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "select-item", "visa-palette", "libraries-executables-palette", "property-for-class", "method-for-class", "application-control-palette", "file-i-o-palette", "synchronous-io-mode", "property-for-instr-class", "method-for-instr-class", "type-palette", "cluster-type-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
+const CON_SUBMENU = ["visible-items", "find", "palette", "numeric-palette", "boolean-palette", "array-palette", "comparison-palette", "replace-comparison", "create", "replace", "change-to-shared-variable-node", "change-mode", "data-operations", "advanced", "representation", "mechanical-action", "structures-palette", "patterns", "linked-input-tunnel", "string-palette", "dialog-and-user-interface-palette", "select-item", "visa-palette", "libraries-executables-palette", "property-for-class", "method-for-class", "application-control-palette", "file-i-o-palette", "synchronous-io-mode", "property-for-instr-class", "method-for-instr-class", "type-palette", "cluster-type-palette", "cluster-class-and-variant-palette", "swap-diagram-with-case", "shift-diagram-to-case", "radix",
   // The graphs (labview-captures/graphs/): rows whose submenus are not declared yet.
   "marker-spacing", "style", "property-node", "invoke-node", "run-time-shortcut-menu", "enabled-state", "update-mode", "export", "x-scale", "y-scale", "common-plots", "color", "line-style", "line-width", "bar-plots", "fill-base-line", "interpolation", "point-style",
   // The Getting Started window's menus (labview-captures/getting-started/).

@@ -49,37 +49,45 @@ const TEXT_RING = { type: "u16", style: "text-ring", items: [{ text: "Bake", val
 const MENU_RING = { ...TEXT_RING, style: "menu-ring" };
 const EIGHT = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
 
-test("every other control and indicator has handles too (unverified: pending a review in LabVIEW)", () => {
+test("every other control and indicator has handles too, but a file refnum (reports/2026-11-24-control-resizing-3.md §1)", () => {
   const cases = [
     ["bool-control", undefined, EIGHT],
     ["bool-indicator", { style: "round-led" }, EIGHT],
-    ["refnum-control", undefined, EIGHT],
+    ["refnum-control", undefined, []],
     ["cluster-control", { style: "error-in" }, EIGHT],
     ["daq-name-control", { type: DAQ_TASK }, EIGHT],
     ["waveform-chart", undefined, EIGHT],
     ["waveform-graph", undefined, EIGHT],
     ["xy-graph", undefined, EIGHT],
-    ["control", { type: { enum: ["a", "b"] } }, ["e", "w"]],
-    ["control", TEXT_RING, ["e", "w"]],
-    ["indicator", MENU_RING, ["e", "w"]],
+    // Measured: reports/2026-11-24-control-resizing-2.md §1.
+    ["control", { type: { enum: ["a", "b"] } }, EIGHT],
+    ["control", TEXT_RING, EIGHT],
+    ["indicator", MENU_RING, EIGHT],
   ];
   for (const [block, config, sides] of cases) assert.deepEqual(handles(place(block, config)), sides, `${block} ${JSON.stringify(config ?? {})}`);
 });
 
-test("a widened enum, ring or Boolean keeps its new size; an error cluster and a refnum only grow", () => {
-  for (const config of [{ type: { enum: ["a", "b"] } }, TEXT_RING]) {
-    const p = place("control", config);
-    assert.equal(boxOf(drag(p, "e", 40, 0)).ancho, boxOf(p).ancho + 40);
-    assert.equal(boxOf(drag(p, "s", 0, 40)).alto, boxOf(p).alto, "they never grow taller");
+test("a widened enum, ring, Boolean or error cluster keeps its new size, down to LabVIEW's smallest", () => {
+  // reports/2026-11-24-control-resizing-2.md §2, §5: both ways, down to their narrowest (after the incrementer, which
+  // Solder's box holds) and their default height.
+  const narrowest = [["control", { type: { enum: ["a", "b"] } }, 16], ["indicator", { type: { enum: ["a", "b"] } }, 16], ["control", TEXT_RING, 22], ["indicator", TEXT_RING, 16], ["control", MENU_RING, 33]];
+  for (const [block, config, width] of narrowest) {
+    const p = place(block, config);
+    const label = `${block} ${config.style ?? "enum"}`;
+    assert.equal(boxOf(drag(p, "e", 40, 0)).ancho, boxOf(p).ancho + 40, label);
+    const tall = drag(p, "s", 0, 40);
+    assert.equal(boxOf(tall).alto, boxOf(p).alto + 40, label);
+    assert.match(P.contenido(tall, CTX), /class="objeto-panel [^"]*sd-tall/, `${label}: drawn tall`);
+    const smallest = boxOf(drag(p, "se", -500, -500));
+    assert.deepEqual([smallest.ancho - (smallest.casilla ?? 0), smallest.alto], [width, boxOf(p).alto], label);
   }
+  // reports/2026-11-24-control-resizing-3.md §2: a Boolean down to 5 × 5, an error cluster to 13 × 13.
   const button = place("bool-control");
   assert.deepEqual(size(drag(button, "se", 20, 10)), [boxOf(button).ancho + 20, boxOf(button).alto + 10]);
-  assert.deepEqual(size(drag(button, "se", -500, -500)), [8, 8]);
-  for (const [block, config] of [["cluster-control", { style: "error-in" }], ["refnum-control", undefined]]) {
-    const p = place(block, config);
-    assert.deepEqual(size(drag(p, "se", -500, -500)), size(p), block);
-    assert.deepEqual(size(drag(p, "se", 30, 20)), [boxOf(p).ancho + 30, boxOf(p).alto + 20], block);
-  }
+  assert.deepEqual(size(drag(button, "se", -500, -500)), [5, 5]);
+  const error = place("cluster-control", { style: "error-in" });
+  assert.deepEqual(size(drag(error, "se", -500, -500)), [13, 13]);
+  assert.deepEqual(size(drag(error, "se", 30, 20)), [boxOf(error).ancho + 30, boxOf(error).alto + 20]);
 });
 
 test("a resized graph draws its frame at the new size and gives the plot area what it grew by", () => {
@@ -89,7 +97,9 @@ test("a resized graph draws its frame at the new size and gives the plot area wh
   const { plot } = GRAPH_MEASURES["waveform-graph"];
   assert.deepEqual(graphMeasures(grown.g.nodos[0]).plot, { ...plot, width: plot.width + 100, height: plot.height + 50 });
   assert.match(P.contenido(grown, CTX), /<svg class="sd-graph-art" width="428" height="268"/);
-  assert.deepEqual(size(drag(p, "se", -1000, -1000)), [150, 100], "it stops at a plot of about 50 × 50");
+  // reports/2026-11-24-control-resizing-3.md §2, §4: 99 × 55, a plot of about 3 px left.
+  assert.deepEqual(size(drag(p, "se", -1000, -1000)), [99, 55]);
+  assert.deepEqual(size(drag(place("xy-graph"), "se", -1000, -1000)), [97, 55]);
 });
 
 test("widening a VISA resource name keeps the size in the .ovi and shows the whole resource string's room", () => {
@@ -151,4 +161,15 @@ test("Old School shows a Boolean's and an error cluster's handles and stretches 
   assert.match(css, /\.sd-error-cluster > \.asa \{ margin: -2px 0 0 -2px; \}/);
   const art = readFileSync(new URL("../../editor/src/panel-styles/old-school/boolean-round-led-off.svg", import.meta.url), "utf8");
   assert.match(art, /preserveAspectRatio="none"/);
+});
+
+test("Old School draws a taller enum's arrows and a taller VISA name's dropdown at their own size", () => {
+  const sheet = readFileSync(new URL("../../editor/src/panel-styles/old-school.css", import.meta.url), "utf8");
+  // reports/2026-11-24-control-resizing-2.md §5: the up arrow pinned to the top, the down one to the bottom, not stretched.
+  assert.match(sheet, /\.sd-panel \.sd-tall \.sd-incrementer \{ background: none; \}/, "the SVG would stretch them");
+  assert.match(sheet, /\.sd-tall \.sd-step-up::before \{ top: 5px; border-bottom: 5px solid #7a7a7a; \}/);
+  assert.match(sheet, /\.sd-tall \.sd-step-down::before \{ bottom: 5px; border-top: 5px solid #7a7a7a; \}/);
+  // The VISA resource name's and DAQ name's cells stretch, the arrow centred.
+  assert.match(sheet, /\.sd-tall\.sd-visa \.sd-dropdown \{ bottom: 4px; height: auto; \}/);
+  assert.match(sheet, /\.sd-tall\.sd-visa \.sd-dropdown::before \{ top: calc\(50% - 2px\); \}/);
 });

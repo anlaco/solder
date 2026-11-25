@@ -29,7 +29,7 @@ export const isReplacePick = (root, id) => PANEL_REPLACE_ROOTS.has(root) && id.s
 /** The palette entry a submenu row stands for: its path under the Replace row is the palette's path under Controls. */
 const paletteIdOfRow = (root, rowId) => `${CONTROLS_PALETTE}.${rowId.slice(replaceRow(root).length + 1)}`;
 
-const roleOf = (tipo, cat) => (cat.bloque(tipo).out.length > 0 ? "control" : "indicator");
+export const roleOf = (tipo, cat) => (cat.bloque(tipo).out.length > 0 ? "control" : "indicator");
 
 /**
  * The block of the same kind as `tipo` that has `role`: `bool-indicator` as a control is `bool-control`. A control stays

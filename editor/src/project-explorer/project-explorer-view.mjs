@@ -8,6 +8,7 @@ import { MENU_BAR_HEIGHT, menuBarHtml } from "../common/window-menu-bar.mjs";
 import * as V from "../window/window-view.mjs";
 import { TOOLBAR_ICONS, TREE_ICONS } from "./project-explorer-icons.mjs";
 import { canRemove } from "./project-explorer-edit.mjs";
+import { ROW_ICONS } from "./disk-rows.mjs";
 import { EDITABLE_KINDS, PREFIX, ROW_KINDS, TABS, disabledButtons, visibleRows } from "./project-explorer-state.mjs";
 import { WINDOW_MENU, windowMenuVariant } from "./window-menu.mjs";
 import { visibleFileRows } from "./files-view.mjs";
@@ -108,13 +109,16 @@ function rowName(state, row) {
   return `<input class="pe-edit" data-edit="${row.key}" value="${escapeHtml(state.edit.text)}" spellcheck="false" />`;
 }
 
+/** A file of an auto-populating folder that is an `.octl` is dragged out to an OVI's panel (DT-107), though it is not moved in the tree. */
+const isTypeDefinitionFile = (row) => row.kind === ROW_KINDS.AUTO_POPULATED_FILE && row.icon === ROW_ICONS.TYPE_DEFINITION;
+
 function treeRow(state, row) {
   const expander = row.expandable
     ? `<span class="pe-expander" data-expander="${row.key}" style="width:${EXPANDER_SIZE}px;height:${EXPANDER_SIZE}px">${row.expanded ? "−" : "+"}</span>`
     : `<span class="pe-expander-space" style="width:${EXPANDER_SIZE}px"></span>`;
   const selected = state.selected === row.key ? " seleccionada" : "";
   const fixedId = FIXED_ROW_IDS[row.kind];
-  const draggable = EDITABLE_KINDS.includes(row.kind) ? ' draggable="true"' : "";
+  const draggable = EDITABLE_KINDS.includes(row.kind) || isTypeDefinitionFile(row) ? ' draggable="true"' : "";
   const missing = row.missing ? " pe-missing" : "";
   return `<div class="pe-row${selected}${missing}" data-key="${escapeHtml(row.key)}" data-kind="${row.kind}"${draggable}${fixedId ? ` data-row-id="${fixedId}"` : ""} style="padding-left:${row.depth * INDENT + 4}px">${expander}<span class="pe-icon">${TREE_ICONS[row.icon]}</span>${rowName(state, row)}</div>`;
 }

@@ -10,7 +10,9 @@ import { newDialog } from "./new-dialog-view.mjs";
 installPageFont();
 const solder = window.solder;
 const inventory = await fetch("/inventario.json").then((response) => response.json()).then(cargarInventario);
-let state = State.initialState();
+// The project the dialog was opened from, or null (File ▸ New... of an OVI window or Getting Started).
+const opened = await solder?.dialogoNuevo.start();
+let state = State.initialState(opened?.projectName ?? null);
 
 function paint() {
   document.body.innerHTML = newDialog(inventory, state);
@@ -18,7 +20,7 @@ function paint() {
 
 function accept() {
   const creation = State.acceptedCreation(state);
-  if (creation) solder?.dialogoNuevo.aceptar(creation);
+  if (creation) solder?.dialogoNuevo.aceptar(creation, state.addToProject);
 }
 
 document.addEventListener("click", (event) => {
@@ -30,6 +32,10 @@ document.addEventListener("click", (event) => {
   const part = target.dataset.id.slice(target.dataset.id.lastIndexOf(".") + 1);
   if (target.dataset.item) {
     state = State.select(state, inventory, target.dataset.item, anchor);
+    return paint();
+  }
+  if (part === "add-to-project") {
+    state = State.toggleAddToProject(state);
     return paint();
   }
   if (part === "ok" && !target.classList.contains("desactivado")) return accept();

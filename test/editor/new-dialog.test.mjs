@@ -20,7 +20,9 @@ test("the New dialog lists LabVIEW's tree and creates a blank OVI or a polymorph
   // LabVIEW's tree, in its order, with the folders OVI, From Template, Project and Other Files.
   assert.deepEqual(itemsDrawn(html), [
     ["folder", "OVI", false], ["item", "Blank OVI", false], ["item", "Malleable OVI", true], ["item", "Polymorphic OVI", false],
-    ["folder", "From Template", true], ["folder", "Project", true], ["item", "Empty Project", true], ["folder", "Other Files", true],
+    ["folder", "From Template", true], ["folder", "Project", true], ["item", "Empty Project", true], ["folder", "Other Files", false],
+    ["item", "Class", true], ["item", "Custom Control", false], ["item", "Global Variable", true], ["item", "Interface", true],
+    ["item", "Library", true], ["item", "Run-Time Menu", true], ["item", "Type Definition", false], ["item", "XControl", true],
   ]);
   for (const text of ["Create New", "Description", "Add to project", ">OK<", ">Cancel<", ">Help<"]) assert.ok(html.includes(text), text);
   assert.deepEqual([State.TREE[0].children.map((item) => item.label)], [["Blank OVI", "Malleable OVI", "Polymorphic OVI"]]);
@@ -52,7 +54,6 @@ test("the New dialog lists LabVIEW's tree and creates a blank OVI or a polymorph
   assert.equal(State.select(state, INV, "other-files", anchor), state, "a folder is not an item");
   // Help follows the convention of the other dialogs: a hole that explains itself.
   assert.equal(INV.entrada("dialog.new.help").estado, "todo");
-  assert.equal(INV.entrada("dialog.new.add-to-project").estado, "todo");
   // OK is greyed when nothing done is selected.
   assert.match(draw({ ...State.initialState(), selected: "malleable-ovi" }), /nd-button[^"]*desactivado[^"]*" data-id="dialog\.new\.ok"/);
   assert.equal(State.acceptedCreation({ ...State.initialState(), selected: "malleable-ovi" }), null);
@@ -65,9 +66,43 @@ test("File New... is a row of the menus of the OVI windows and of Getting Starte
   const editorWindow = readFileSync(path.join(RAIZ, "editor/src/window/editor-window.mjs"), "utf8");
   assert.match(editorWindow, /new: \(\) => window\.solder\?\.nuevo\(\)/);
   const main = readFileSync(path.join(RAIZ, "editor/electron/main.mjs"), "utf8");
-  assert.match(main, /const NEW_DIALOG_CREATIONS = \{ "blank-ovi": openNewOVI, "polymorphic-ovi": openNewPolymorphic \}/);
+  assert.match(main, /const NEW_DIALOG_CREATIONS = \{\s+"blank-ovi": openNewOVI,\s+"polymorphic-ovi": openNewPolymorphic,/);
   assert.match(main, /ipcMain\.on\("ovi:new-dialog"/);
   assert.match(main, /modal: !!owner/, "it is modal over the window that asked");
   // Every creation of the tree that is done has an opener.
-  for (const creation of Object.values(State.CREATIONS)) assert.ok(main.includes(`"${creation}": open`), creation);
+  for (const creation of Object.values(State.CREATIONS)) assert.match(main, new RegExp(`"${creation}": (\\(project\\) => )?open`), creation);
+});
+
+test("the New dialog's Other Files lists Custom Control and Type Definition and Add to project follows the project", () => {
+  const anchor = { x: 30, y: 90 };
+  // Without a project: LabVIEW's rows, no Shared Variable, Add to project greyed and unticked.
+  const alone = State.initialState();
+  assert.deepEqual(State.treeOf(alone)[3].children.map((item) => item.label), ["Class", "Custom Control", "Global Variable", "Interface", "Library", "Run-Time Menu", "Type Definition", "XControl"]);
+  assert.match(draw(alone), /class="nd-check pv-check desactivado" data-id="dialog\.new\.add-to-project"/);
+  assert.equal(State.toggleAddToProject(alone), alone, "a click on the greyed box does nothing");
+  assert.equal(alone.addToProject, false);
+  // From a project: Shared Variable comes first (it is not done), the box is ticked and a click unticks it.
+  const inProject = State.initialState("Project.sdproj");
+  assert.equal(State.treeOf(inProject)[3].children[0].label, "Shared Variable");
+  assert.deepEqual(itemsDrawn(draw(inProject)).slice(-9, -7), [["item", "Shared Variable", true], ["item", "Class", true]]);
+  assert.match(draw(inProject), /class="nd-check pv-check marcada" data-id="dialog\.new\.add-to-project"/);
+  const unticked = State.toggleAddToProject(inProject);
+  assert.equal(unticked.addToProject, false);
+  assert.doesNotMatch(draw(unticked), /pv-check marcada/);
+  assert.equal(State.toggleAddToProject(unticked).addToProject, true);
+  // Custom Control and Type Definition are created by OK, with their own text; the others explain themselves.
+  let state = State.select(alone, INV, "custom-control", anchor);
+  assert.equal(State.acceptedCreation(state), State.CREATIONS.CUSTOM_CONTROL);
+  assert.match(draw(state), /saved as an \.octl file; set its ring to Type Def\./);
+  state = State.select(state, INV, "type-definition", anchor);
+  assert.equal(State.acceptedCreation(state), State.CREATIONS.TYPE_DEFINITION);
+  assert.match(draw(state), /every copy of it follows/);
+  state = State.select(state, INV, "class", anchor);
+  assert.equal(state.selected, "type-definition", "Class is not done: the selection stays");
+  assert.equal(state.abierta.id, "dialog.new.class");
+  assert.equal(State.select(inProject, INV, "shared-variable", anchor).abierta.id, "dialog.new.shared-variable");
+  for (const id of ["custom-control", "type-definition", "add-to-project", "other-files"]) assert.equal(INV.entrada(`dialog.new.${id}`).estado, "built", id);
+  // The page sends the tick with OK.
+  const page = readFileSync(path.join(RAIZ, "editor/src/new-dialog/new-dialog.mjs"), "utf8");
+  assert.match(page, /aceptar\(creation, state\.addToProject\)/);
 });

@@ -4,7 +4,7 @@
 
 import { esHueco } from "../common/labview-inventory.mjs";
 import * as V from "../window/window-view.mjs";
-import { PREFIX, TREE, acceptedCreation, descriptionOf, entryId } from "./new-dialog-state.mjs";
+import { PREFIX, acceptedCreation, descriptionOf, entryId, treeOf } from "./new-dialog-state.mjs";
 
 export const TITLE_BAR_HEIGHT = 33;
 export const WINDOW_SIZE = Object.freeze({ width: 802, height: 632 });
@@ -40,7 +40,7 @@ function tree(inv, state) {
     top += ROW_HEIGHT;
     return drawn;
   };
-  return TREE.flatMap((folder) => [
+  return treeOf(state).flatMap((folder) => [
     row((y) => `<div class="nd-row nd-folder${holeClass(inv, entryId(folder.id))}" data-id="${entryId(folder.id)}" style="top:${px(y)};height:${px(ROW_HEIGHT)}"><span class="nd-label" style="left:0">${esc(folder.label)}</span></div>`),
     ...folder.children.map((item) =>
       row((y) => `<div class="nd-row nd-item${holeClass(inv, entryId(item.id))}${state.selected === item.id ? " seleccionada" : ""}" data-id="${entryId(item.id)}" data-item="${item.id}" style="top:${px(y)};height:${px(ROW_HEIGHT)}"><span class="nd-label" style="left:${px(INDENT)}">${esc(item.label)}</span></div>`),
@@ -54,6 +54,13 @@ function explanation(inv, opened) {
   return `<div class="explicacion" data-explicacion="${esc(opened.id)}" style="left:${opened.x}px;top:${opened.y}px">${V.explicacion(inv, entry)}</div>`;
 }
 
+/** Add to project: ticked when opened from a project, greyed and unticked with none (DT-107). */
+function addToProject(inv, state) {
+  const enabled = state.projectName != null;
+  const classes = `nd-check pv-check${state.addToProject ? " marcada" : ""}${enabled ? "" : " desactivado"}${holeClass(inv, `${PREFIX}.add-to-project`)}`;
+  return `<div class="${classes}" data-id="${PREFIX}.add-to-project" style="${at(LAYOUT.addToProject)}"><span class="pv-casilla"></span><span>Add to project</span></div>`;
+}
+
 /** The whole dialog. */
 export function newDialog(inv, state) {
   const L = LAYOUT;
@@ -64,7 +71,7 @@ export function newDialog(inv, state) {
   <div class="nd-tree" style="${at(L.tree)}">${tree(inv, state)}</div>
   <div class="nd-text" style="${caption(L.descriptionLabel)}">Description</div>
   <div class="nd-description" style="${at(L.description)}">${esc(descriptionOf(state))}</div>
-  <div class="nd-check${holeClass(inv, `${PREFIX}.add-to-project`)}" data-id="${PREFIX}.add-to-project" style="${at(L.addToProject)}"><span class="pv-casilla"></span><span>Add to project</span></div>
+  ${addToProject(inv, state)}
   ${button("ok", "OK", L.ok, acceptedCreation(state) !== null, true)}${button("cancel", "Cancel", L.cancel)}${button("help", "Help", L.help)}
   ${explanation(inv, state.abierta)}
 </div>`;

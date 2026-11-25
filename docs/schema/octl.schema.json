@@ -2,9 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://solder.dev/schema/octl-1.json",
   "title": "Solder type definition",
-  "description": "A custom control, type definition or strict type definition (DT-096 §6): one panel object, held as a user's cluster holds an element. Normative: an .octl file that does not validate against this schema is not conformant. Read and written by core/model/type-definition.mjs.",
+  "description": "A custom control, type definition or strict type definition (DT-096 §6, DT-107): the control editor's panel, zero or more objects, each held as a user's cluster holds an element; only a file with exactly one object is placed or followed. Normative: an .octl file that does not validate against this schema is not conformant. Read and written by core/model/type-definition.mjs.",
   "type": "object",
-  "required": ["solder", "type-definition", "object"],
+  "required": ["solder", "type-definition"],
+  "oneOf": [{ "required": ["objects"] }, { "required": ["object"], "properties": { "solder": { "maximum": 9 } } }],
   "additionalProperties": false,
   "properties": {
     "comment": { "$ref": "#/$defs/comment" },
@@ -12,12 +13,23 @@
       "description": "The version of the format, shared with the .ovi (DT-055). A reader MUST refuse a version newer than the one it knows.",
       "type": "integer",
       "minimum": 7,
-      "maximum": 9
+      "maximum": 10
     },
     "type-definition": {
       "description": "Which of the control editor's three it is, as its ring names them: Control, Type Def., Strict Type Def. (measured, reports/2026-11-17-typedef-update.md Q4). Only the last two are followed by the objects made from them.",
       "enum": ["control", "type-def", "strict-type-def"]
     },
+    "objects": {
+      "description": "From version 10 (DT-107): the panel's objects, in its order, none or several; LabVIEW saves a .ctl with zero, one or several controls (reports/2026-11-25-empty-and-multi-control.md).",
+      "type": "array",
+      "items": { "$ref": "#/$defs/object" }
+    },
+    "object": {
+      "description": "Versions 7 to 9: the file's one object, read as `objects` holding it.",
+      "$ref": "#/$defs/object"
+    }
+  },
+  "$defs": {
     "object": {
       "description": "The panel object: its block (`kind`), its label, its configuration as a front-panel item's (a cluster's `elements`, an enum's type, a default) and its place in the control editor's panel.",
       "type": "object",
@@ -32,9 +44,7 @@
         "w": { "description": "The width of the object when it was resized (a cluster's shell), with `h`; absent for an object of its default size. Optional: a file without it reads as before. A strict instance takes it, a non-strict one keeps its own size (DT-106).", "type": "number", "exclusiveMinimum": 0 },
         "h": { "description": "The height, as `w`.", "type": "number", "exclusiveMinimum": 0 }
       }
-    }
-  },
-  "$defs": {
+    },
     "comment": { "description": "The user's comment (DT-100 §6): any object may hold one. Readers give it no meaning, the compiler never reads it, and writers keep it on its object.", "type": "string" }
   }
 }

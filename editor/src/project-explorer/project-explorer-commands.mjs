@@ -68,6 +68,12 @@ export function createTreeCommands({ getState, show, update, explainHole, solder
     if (created) edited(Edit.addNewOvi(getState(), key, created.name, created.entryId));
   }
 
+  /** New ▸ Type Definition on the selected row (My Computer or a virtual folder): an empty control editor and its item (DT-107). */
+  async function newTypeDefinitionInto(key = getState().selected) {
+    const created = await solder?.project.newTypeDefinition();
+    if (created) edited(Edit.addNewControl(getState(), key, created.name, created.entryId));
+  }
+
   /** A double click on a row, or an OVI's Open: the main process opens the OVI in this project (project-explorer-edit.mjs `openRequestOf`). */
   function openItem(key = getState().selected) {
     const request = Edit.openRequestOf(getState(), key);
@@ -101,6 +107,9 @@ export function createTreeCommands({ getState, show, update, explainHole, solder
     newVirtualFolder,
     newOviInto,
     newOvi: () => newOviInto(State.ROOT_KEY),
+    newTypeDefinitionInto,
+    // A new control made outside the explorer (File ▸ New... Add to project, Customize Control...) goes where File ▸ New OVI puts a new OVI.
+    newControl: ({ entryId, name }) => edited(Edit.addNewControl(getState(), State.ROOT_KEY, name, entryId)),
     newOviSaved: ({ entryId, storedPath }) => edited(Edit.newOviSaved(getState(), entryId, storedPath)),
     newOviClosed: (entryId) => edited(Edit.newOviClosed(getState(), entryId)),
     openItem,

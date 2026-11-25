@@ -329,6 +329,11 @@ export function createProjectManager(host) {
       const created = host.openNewOVIIn(placeInProject(project));
       return { entryId: created.id, name: created.name };
     });
+    // New ▸ Type Definition (DT-107): an empty control editor in this project, whose item the page adds.
+    ipcMain.handle("project:new-type-definition", (event) => {
+      const created = host.openNewTypeDefinitionIn(placeInProject(entryOf(event)));
+      return { entryId: created.id, name: created.name };
+    });
     // A double click on an OVI of the tree, or its Open: the OVI opens in this project.
     ipcMain.on("project:open-item", (event, request) => openItem(entryOf(event), request, ownerOf(event)));
     ipcMain.handle("project:rename-ovi", (event, storedPath) => renameOVIItem(entryOf(event), storedPath, ownerOf(event)));
@@ -420,5 +425,21 @@ export function createProjectManager(host) {
     if (command === "close") return closeProject(entry);
   }
 
-  return { openPath, chooseAndOpen, showCreateDialog, confirmQuit, registerRequests, newOVISettled, filesChanged, runForProject, count: () => windows.size };
+  /** The project whose explorer is the page `contentsId`, as `placeInProject` with its name, or null (the New dialog's Add to project). */
+  function placeOfPage(contentsId) {
+    const entry = entryOfContents.get(contentsId);
+    return entry ? { ...placeInProject(entry), name: projectName(entry) } : null;
+  }
+
+  /**
+   * A new control made outside the explorer joined the project `projectId` (File ▸ New... with Add to project, Customize
+   * Control... on one of its OVIs): its page adds the item, as for New ▸ Type Definition (DT-107).
+   */
+  function newItemAdded(projectId, created) {
+    const entry = registry.get(projectId);
+    const window = entry && windowOf(entry);
+    if (window && !window.isDestroyed()) window.webContents.send("project:new-control", { entryId: created.id, name: created.name });
+  }
+
+  return { openPath, chooseAndOpen, showCreateDialog, confirmQuit, registerRequests, newOVISettled, newItemAdded, placeOfPage, filesChanged, runForProject, count: () => windows.size };
 }

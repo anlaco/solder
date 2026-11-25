@@ -5509,3 +5509,50 @@ elements inside the cluster (DT-095).**
 |------|------|-------|
 | Unfolding and folding give back the same graph, nested clusters, places and current values included | round trips in `test/editor/cluster-unfolding.test.mjs` | Built (2026-11-23) |
 | Each measured interaction on an element (select, operate, move in and out, delete, clipboard, palette) | `test/editor/cluster-elements.test.mjs` (each fails with its code put back); not yet tried under Xvfb | Built (2026-11-23) |
+
+## DT-107
+
+**A new control is created the ways LabVIEW creates one, and an `.octl` holds the control editor's whole panel: zero,
+one or more objects (format version 10, `objects`). Only an `.octl` with exactly one object can be placed or followed.**
+
+- **Status:** Accepted on 2026-11-25 by the developer ("Yes, all of it"), before release 0.15.0-beta: a LabVIEW user told
+  that Solder makes `.octl` files goes to New, not to Make Type Def. · built as step 3c of phase 0 ([DT-105](#dt-105)) on 2026-11-25.
+- **Why:** until now a type definition could only be made from an object already on a panel (Make Type Def., DT-104),
+  an `.octl` could not be placed on a panel at all, and a second control dropped in the control editor was lost
+  silently on Save (the file held one object). In LabVIEW 2026 Q3 (labview-captures/reports/2026-11-25-project-new-type-definition.md,
+  -new-custom-control.md, -empty-and-multi-control.md, -placing-a-control.md):
+  - the control editor starts empty from My Computer's or a virtual folder's New ▸ Type Definition, and from File ▸
+    New... ▸ Other Files ▸ Custom Control or Type Definition; Edit ▸ Customize Control... and Advanced ▸ Customize...
+    open an unlinked copy of the one selected control;
+  - a `.ctl` saves with zero, one or several controls, with no message; Select a Control... places a file's control only
+    when it holds exactly one, and with zero or several places nothing, silently.
+
+### Decision
+
+1. **Format 10:** an `.octl` stores `objects: [...]` (each as a cluster element is stored, DT-095), zero or more, in the
+   panel's order. A file of versions 1 to 9 with its one `object` is read as `objects: [object]`. The definition's
+   *object* (what is placed, followed, and what Make Type Def. links) is the one object of a file with exactly one;
+   otherwise there is none: Select a Control... does nothing, and an instance that follows such a definition does not
+   match it (*unverified*: LabVIEW's instances of a definition edited to hold 0 or 2 controls were not measured).
+2. **The ways in** (measured):
+   - My Computer ▸ New ▸ Type Definition and a virtual folder's: an empty editor, ring Type Def., titled "Control N
+     Control" until it holds an object, then by its ring; an item "Control N" at once in that place of the tree, the
+     project modified. Saved, the item becomes the file; closed unsaved, it leaves the tree.
+   - File ▸ New... ▸ Other Files: Custom Control (ring Control) and Type Definition (ring Type Def.); the other rows
+     greyed with their reason. Add to project is enabled and ticked when the dialog is opened from a project, which then
+     gets the item as above.
+   - Edit ▸ Customize Control... (enabled with exactly one panel object selected; greyed on the Block Diagram) and the
+     object's Advanced ▸ Customize...: an unlinked copy, ring Control, modified at once, an item of the OVI's project.
+   - One "Control N" count for all of them and Make Type Def.; a number is never given twice.
+3. **Windows:** a new or customized control's editor is 1092 × 697, cascaded +49, +30; Open Type Def.'s stays 616 × 413.
+   An empty editor closes with no question; one with objects asks "Save changes before closing?".
+4. **Placing:** Select a Control... (Controls palette) and dragging an `.octl` from the Project Explorer, as measured in
+   -placing-a-control.md: a plain control is copied, a type definition linked (DT-096 §2).
+
+### How it is verified
+
+| What | Test | State |
+|------|------|-------|
+| Format 10 reads and writes 0, 1 and 2 objects; version 9's `object` still reads | `test/core/type-definitions.test.mjs`, `test/core/control-editor.test.mjs`, `test/end-to-end/format-versions.test.mjs` | Built (2026-11-25) |
+| The ways in, their titles, rings, sizes and project items | `test/editor/new-controls.test.mjs`, `project-new-control.test.mjs`, `new-dialog.test.mjs`, `customize-control.test.mjs`; tried under Xvfb | Built (2026-11-25) |
+| Placing: Select a Control..., Select an OVI... of a type definition, dragging from the tree | `test/editor/customize-control.test.mjs`, `dropped-file.test.mjs`; tried under Xvfb | Built (2026-11-25) |

@@ -75,9 +75,9 @@ test("a control entry has the one control editor window, its own Control N count
 });
 
 test("an octl's kind is read from its text for the title", () => {
-  const text = typeDefinitionText("strict-type-def", { tipo: "control", label: { text: "Gain" }, config: { type: "i32", value: 7 }, x: 31, y: 109 });
+  const text = typeDefinitionText("strict-type-def", [{ tipo: "control", label: { text: "Gain" }, config: { type: "i32", value: 7 }, x: 31, y: 109 }]);
   assert.equal(kindOfText(text), "strict-type-def");
-  assert.equal(kindOfText(typeDefinitionText("control", { tipo: "control", x: 0, y: 0 })), "control");
+  assert.equal(kindOfText(typeDefinitionText("control", [{ tipo: "control", x: 0, y: 0 }])), "control");
   assert.equal(kindOfText("not json"), null);
   assert.equal(kindOfText('{"solder": 8}'), null);
 });
@@ -89,7 +89,7 @@ test("the text the control editor saves reopens as the same .octl", () => {
   assert.match(page, /esEditorControl \? controlEditorText\(controlKind, grafo\(\), cat, controlComments\) : Q\.aTexto\(grafo\(\), cat\)/, "guardarOVI sends the .octl's text");
   const object = { tipo: "control", label: { text: "Gain" }, config: { type: "i32", value: 7 }, x: 31, y: 109 };
   for (const kind of ["control", "type-def", "strict-type-def"]) {
-    const saved = controlEditorText(kind, controlEditorGraph(typeDefinitionText(kind, object), CAT).g, CAT);
+    const saved = controlEditorText(kind, controlEditorGraph(typeDefinitionText(kind, [object]), CAT).g, CAT);
     assert.equal(kindOfText(saved), kind, `the saved text keeps its kind as ${kind}`);
     const reopened = controlEditorGraph(saved, CAT);
     assert.equal(reopened.kind, kind);

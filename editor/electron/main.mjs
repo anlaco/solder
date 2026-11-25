@@ -20,6 +20,7 @@ import { moveOVIFile, rebaserFor } from "./ovi-file-rename.mjs";
 import { createProjectManager } from "./project-manager.mjs";
 import { PROJECT_EXTENSION, isProjectPath } from "../../core/model/project.mjs";
 import { newOVIBounds, otherWindowKind, tiledBounds } from "./window-layout.mjs";
+import { CONTROL_EDITOR_WINDOW_SIZE, MADE_TYPE_DEFINITION_WINDOW_SIZE, NEW_CONTROL_WAYS, SELECT_CONTROL_DIALOG, controlEditorPosition, customizedControlEntry, followFirstObject, newControlEntry } from "./new-controls.mjs";
 import { restoredBounds, savedWindows, windowRecord, withWindows } from "./saved-windows.mjs";
 import { CHOSEN_THEME_ROUTE, THEMES, chosenThemeName } from "./theme.mjs";
 import { CHOSEN_PANEL_STYLE_ROUTE, PANEL_STYLES, chosenPanelStyleName } from "../src/front-panel/panel-style.mjs";
@@ -269,6 +270,7 @@ const projects = createProjectManager({
   createPage: (options) => layouts.createPage(options),
   afterLastProjectClosed: () => afterLastProjectClosed(),
   openNewOVIIn: (project) => openNewOVIIn(project),
+  openNewTypeDefinitionIn: (project) => openNewControl({ way: NEW_CONTROL_WAYS.PROJECT_TYPE_DEFINITION, project }),
   openPathIn: (filePath, project, owner) => openPathIn(filePath, project, owner),
   focusOVI: (entryId) => {
     const open = openOVIs.get(entryId);
@@ -287,7 +289,8 @@ const anyDocumentOpen = () => openOVIs.size > 0 || projects.count() > 0;
 // Both extensions open (DT-051); the dialogs list the new one first.
 const FILTERS = [{ name: "Solder OVI", extensions: OVI_EXTENSIONS.map((extension) => extension.slice(1)) }];
 // Open and Select an OVI... also take a polymorphic OVI (DT-074), listed first so that the dialog shows both kinds.
-const OVI_AND_POLYMORPHIC_FILTERS = [{ name: "Solder OVI and polymorphic OVI", extensions: [...OVI_EXTENSIONS, POLYMORPHIC_EXTENSION].map((extension) => extension.slice(1)) }, ...FILTERS];
+// A type definition's `.octl` is chosen there too: it places a constant that follows it (DT-107).
+const OVI_AND_POLYMORPHIC_FILTERS = [{ name: "Solder OVI and polymorphic OVI", extensions: [...OVI_EXTENSIONS, POLYMORPHIC_EXTENSION, CONTROL_FILE_EXTENSION].map((extension) => extension.slice(1)) }, ...FILTERS];
 /** File ▸ Open... also opens a project (measured: s3 Q3, a `.lvproj` chosen there opens its Project Explorer), so its first filter lists every kind of file Solder opens. */
 const OPEN_FILTERS = [{ name: "All Solder files", extensions: [...OVI_EXTENSIONS, POLYMORPHIC_EXTENSION, PROJECT_EXTENSION, CONTROL_FILE_EXTENSION].map((extension) => extension.slice(1)) }, ...FILTERS];
 /** What Save As offers for a polymorphic OVI, which LabVIEW saves as a `.vi` and Solder as a file of its own (DT-074). */
@@ -354,6 +357,14 @@ const polymorphicWindowPosition = (index) => {
   return { x: x + 40 + 24 * (index % 8), y: y + 40 + 24 * (index % 8) };
 };
 
+/** Where a standalone window opens: a control editor in the control editors' cascade (new-controls.mjs), any other as the OVIs'. */
+function standaloneWindowPosition(windowKind) {
+  if (windowKind !== CONTROL_WINDOW_KIND) return polymorphicWindowPosition(openOVIs.size);
+  const { x, y } = screen.getPrimaryDisplay().workArea;
+  const openEditors = [...openOVIs.values()].filter((open) => open.entry.kind === ENTRY_KINDS.CONTROL).length;
+  return controlEditorPosition({ x: x + 40, y: y + 40 }, openEditors);
+}
+
 /**
  * A standalone window that stands for its entry — the Polymorphic OVI window (DT-074 §5), the control editor's (DT-104
  * stage a1): one window of `size` with its title bar, cascaded as the OVIs' are. Closing it closes the entry, asking
@@ -361,7 +372,7 @@ const polymorphicWindowPosition = (index) => {
  */
 function openStandaloneWindow(entry, windowKind, size, url) {
   const window = new BrowserWindow({
-    ...polymorphicWindowPosition(openOVIs.size),
+    ...standaloneWindowPosition(windowKind),
     ...size,
     useContentSize: true,
     title: windowTitle(entry, windowKind),
@@ -399,10 +410,9 @@ function openPolymorphicWindow(entry) {
   return openStandaloneWindow(entry, POLYMORPHIC_WINDOW_KIND, POLYMORPHIC_WINDOW_SIZE, `solder://editor/polymorphic.html?vi=${entry.id}`);
 }
 
-/** The control editor's window (DT-104 stage a1): the 616 x 413 editor measured, the Front Panel page of the `.octl`'s one object. */
-const CONTROL_WINDOW_SIZE = { width: 616, height: 413 - 33 };
+/** The control editor's window (DT-104 stage a1): the Front Panel page of the `.octl`'s objects, at its measured size (new-controls.mjs). */
 function openControlWindow(entry) {
-  return openStandaloneWindow(entry, CONTROL_WINDOW_KIND, CONTROL_WINDOW_SIZE, `solder://editor/index.html?ventana=${CONTROL_WINDOW_KIND}&vi=${entry.id}&panelStyle=${PANEL_STYLE_NAME}`);
+  return openStandaloneWindow(entry, CONTROL_WINDOW_KIND, entry.windowSize ?? CONTROL_EDITOR_WINDOW_SIZE, `solder://editor/index.html?ventana=${CONTROL_WINDOW_KIND}&vi=${entry.id}&panelStyle=${PANEL_STYLE_NAME}`);
 }
 
 /**
@@ -440,7 +450,7 @@ function openOviWindows(entry) {
   // Both are shown once loaded, the Front Panel last so that it is in front.
   const loaded = (window) => new Promise((resolve) => window.once("ready-to-show", resolve));
   Promise.all(Object.values(open.windows).map(loaded)).then(() => {
-    open.windows["block-diagram"].show();
+    open.windows["block-diagram"].showBehind();
     panel.show();
     gettingStarted?.hide();
   });
@@ -626,6 +636,7 @@ function openUntitled(key) {
 function makeTypeDefinition(text) {
   const { entry } = registry.open({ kind: ENTRY_KINDS.CONTROL, initialText: text });
   noteControlKind(entry, text);
+  entry.windowSize = MADE_TYPE_DEFINITION_WINDOW_SIZE;
   recordChange(entry, text);
   deferredEntries.set(entry.id, entry);
   return keyOf(entry);
@@ -740,6 +751,28 @@ async function renameOVIFile(oldPath, newPath) {
   projects.filesChanged();
 }
 
+/**
+ * A new control editor (DT-107): empty, made the way `way` says (new-controls.mjs), or, for Customize Control..., the
+ * unlinked copy `customized` holds. In `project` (`{ id, instance, folder }`) it says where in its title and is an item of
+ * the project until it is saved or closed (measured: reports/2026-11-25-project-new-type-definition.md Q1, Q6).
+ */
+function openNewControl({ way = null, customized = null, project = null }) {
+  const made = customized ?? newControlEntry(way);
+  const { entry } = registry.open({ kind: ENTRY_KINDS.CONTROL, initialText: made.text });
+  const { text: _text, ...behavior } = made;
+  Object.assign(entry, behavior);
+  if (project) Object.assign(entry, { project: project.id, instance: project.instance, projectFolder: project.folder });
+  openWindows(entry);
+  return { id: entry.id, name: oviName(entry) };
+}
+
+/** Customize Control... (DT-107): an unlinked copy of the panel object `object`, in the project of the OVI it is on. */
+function openCustomizedControl(open, object) {
+  const project = open.entry.project === undefined ? null : { id: open.entry.project, instance: open.entry.instance, folder: open.entry.projectFolder };
+  const created = openNewControl({ customized: customizedControlEntry(object), project });
+  if (project) projects.newItemAdded(project.id, created);
+}
+
 /** File ▸ New... ▸ Polymorphic OVI: an empty polymorphic OVI, numbered after every Untitled before it (measured). */
 function openNewPolymorphic() {
   const { entry } = registry.open({ kind: ENTRY_KINDS.POLYMORPHIC });
@@ -749,8 +782,15 @@ function openNewPolymorphic() {
 // ——— The New dialog (File ▸ New...) ———
 
 /** What each creation of the New dialog opens. */
-const NEW_DIALOG_CREATIONS = { "blank-ovi": openNewOVI, "polymorphic-ovi": openNewPolymorphic };
+const NEW_DIALOG_CREATIONS = {
+  "blank-ovi": openNewOVI,
+  "polymorphic-ovi": openNewPolymorphic,
+  "custom-control": (project) => openNewControl({ way: NEW_CONTROL_WAYS.CUSTOM_CONTROL, project }),
+  "type-definition": (project) => openNewControl({ way: NEW_CONTROL_WAYS.TYPE_DEFINITION, project }),
+};
 let newDialogWindow = null;
+/** The project (`placeInProject`, with its `name`) of the window the New dialog was opened from, or null. */
+let newDialogProject = null;
 
 /** The New dialog: a window of its own, modal over the one that asked, which gives its choice back through `new-dialog:accept`. */
 function showNewDialog(owner) {
@@ -951,8 +991,11 @@ async function writeControl(open, owner, text, saveAs) {
     target = controlSavePathFor(result.filePath);
   }
   const from = keyOf(entry);
+  const wasNewInProject = entry.project !== undefined && !entry.path;
   await writeFile(target, text);
   recordSave(entry, target, text);
+  // A new control of a project: its item becomes the file (measured: reports/2026-11-25-project-new-type-definition.md Q3).
+  if (wasNewInProject) projects.newOVISettled(entry.project, entry.id, target);
   publishSavedControl(entry, text);
   rememberRecentFile(target);
   setTitles(open);
@@ -1081,6 +1124,7 @@ function handleRequests() {
     const open = openOf(event);
     const previous = open.entry.current;
     recordChange(open.entry, text);
+    followFirstObject(open.entry, text);
     textWaiters.changed(open.entry);
     setTitles(open);
     // A type definition's edits reach its instances when it is applied or saved, not as they are made (published text).
@@ -1198,11 +1242,26 @@ function handleRequests() {
     closeOVI(open);
   });
   // File ▸ New...: the New dialog; its OK opens what was chosen and Cancel only closes it.
-  ipcMain.on("ovi:new-dialog", (event) => showNewDialog(ownerOf(event)));
-  ipcMain.on("new-dialog:accept", (_event, creation) => {
-    closeNewDialog();
-    NEW_DIALOG_CREATIONS[creation]?.();
+  // The New dialog remembers the project it was opened from, which Add to project adds to (measured: new-custom-control.md Q2).
+  ipcMain.on("ovi:new-dialog", (event) => {
+    newDialogProject = projects.placeOfPage(event.sender.id);
+    showNewDialog(ownerOf(event));
   });
+  ipcMain.handle("new-dialog:init", () => ({ projectName: newDialogProject?.name ?? null }));
+  ipcMain.on("new-dialog:accept", (_event, creation, addToProject) => {
+    closeNewDialog();
+    const project = addToProject ? newDialogProject : null;
+    const created = NEW_DIALOG_CREATIONS[creation]?.(project);
+    if (project && created?.id) projects.newItemAdded(project.id, created);
+  });
+  // Select a Control...: the file dialog, then the `.octl` at the path chosen, as `{ path, text }`; nothing for Cancel (DT-107).
+  ipcMain.handle("control:choose", async (event) => {
+    const result = await dialog.showOpenDialog(ownerOf(event), SELECT_CONTROL_DIALOG);
+    if (result.canceled || !result.filePaths.length) return null;
+    return { path: pathKey(result.filePaths[0]), text: await readFile(result.filePaths[0], "utf8") };
+  });
+  // Customize Control... and Advanced ▸ Customize...: the one panel object's `.octl` object, copied unlinked (DT-107).
+  ipcMain.on("control:customize", (event, object) => openCustomizedControl(openOf(event), object));
   ipcMain.on("new-dialog:cancel", () => closeNewDialog());
   // The Polymorphic OVI window's Add...: LabVIEW's dialog is titled "Select the VI to Open" (measured); ours says OVI.
   ipcMain.handle("polymorphic:choose-instance", async (event) => {

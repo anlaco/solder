@@ -9,6 +9,30 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- A panel Numeric control linked to a type definition shows its menu rows (Review and Update, Auto-Update, Open Type Def.,
+  Disconnect, Show OVI Hierarchy, Explore...), and Make Type Def. works on a free one. A scalar instance follows its
+  definition's block when it changes (a Numeric replaced by a Round LED), staying a control or an indicator. The control
+  editor's page title takes the kind of the file it opened.
+- New controls the LabVIEW way (DT-107): My Computer's or a virtual folder's New ▸ Type Definition, File ▸ New... ▸
+  Other Files ▸ Custom Control and Type Definition (with Add to project), and Edit ▸ Customize Control... or Advanced ▸
+  Customize... on one control, which opens an unlinked copy. A new control editor opens empty, 1092 × 697, and closes
+  with no question while empty; one of a project is an item of its tree until it is saved or closed. Select a
+  Control... in the Controls palette, and dragging an `.octl` from the Project Explorer, place it on the Front Panel: a
+  custom control copied, a type definition linked; on the Block Diagram, Select an OVI... or the drag places a type
+  definition of a numeric as a linked constant. A file of no object or several places nothing, as in LabVIEW.
+- Format version 10: an `.octl` holds the control editor's whole panel, `objects`, none or several, as LabVIEW saves a
+  `.ctl`; only one with exactly one object is placed or followed. Before, a second control dropped in the control
+  editor was lost on Save. Files of version 9 and older still open.
+- Fix, cosmetic (measured in LabVIEW): a constant that follows a type definition shows LabVIEW's dark corner triangle,
+  and a linked control's terminal a black one; the linked menus put Find ▸ and Description and Tip... where LabVIEW
+  does; the Application Instance box at the bottom left shows only for an OVI in a project, sized to its text with a
+  black border, and its right click opens LabVIEW's two rows; Old School's enum field no longer sticks out 6 px of its
+  box; docked, a new OVI's Block Diagram no longer flashes before its Front Panel.
+- Front Panel: the Enum, Text Ring, Menu Ring and DAQ name controls resize both ways, down to LabVIEW's narrowest
+  boxes; a taller enum or ring keeps its arrows at their size, at the top and the bottom, and a taller VISA resource
+  name or DAQ name its dropdown arrow, centred. Every resize rule is now LabVIEW's measured one: Booleans shrink to
+  5 × 5, the error cluster to 13 × 13, the graphs to 99 × 55 (the XY Graph 97 × 55), and a file refnum no longer
+  resizes.
 - Front Panel: the elements of a cluster are edited as the controls they are (DT-106): select them alone with their handles,
   operate them, move them within the cluster and out of it, delete, cut, copy, paste, nudge them with the arrow keys, and
   drop controls from the palette into the cluster's interior; the control editor's background opens the Controls palette.

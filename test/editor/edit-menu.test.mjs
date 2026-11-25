@@ -59,7 +59,7 @@ test("Cut Copy and Delete are greyed with nothing selected and Paste with nothin
     const { desactivados } = editMenuVariants(windowName, empty);
     for (const name of ["cut", "copy", "delete", "paste"]) assert.ok(desactivados.has(row(windowName, name)), `${windowName} ${name}`);
     assert.ok(!desactivados.has(row(windowName, "select-all")), "Select All is always enabled");
-    const selected = editMenuVariants(windowName, { ...empty, canCopy: true, hasSelection: true, clipboardFilled: true }).desactivados;
+    const selected = editMenuVariants(windowName, { ...empty, canCopy: true, hasSelection: true, canCustomize: true, clipboardFilled: true }).desactivados;
     assert.equal(selected.size, 0);
   }
   // A selected wire can be deleted but not copied.

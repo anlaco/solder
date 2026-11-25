@@ -22,7 +22,7 @@ export const MEDIDAS = {
   altoSurco: 5 / 1.5, // filas 29–33
   altoBarra: 33 / 1.5, // filas 34–66
   altoBordeBarra: 3 / 1.5, // filas 67–69; el lienzo empieza en la 70
-  altoEstado: 15.3, // filas 943–965
+  altoEstado: 16, // 16 rows under the strip's 1 px top line (reports/2026-11-24-typedef-mark-and-footer.md Q3)
   anchoCanalon: 16, // la franja de la barra de desplazamiento: 24 px
   pasoRejilla: 12, // la rejilla del panel: cada 18 px, desde el borde
   margenBarra: 50.5, // el centro del glifo de Run cae en 93 px
@@ -40,7 +40,6 @@ export const MEDIDAS = {
   ladoIcono: 32.7,
   iconoArriba: 5.3,
   iconoDerecha: 0.7,
-  anchoInstancia: 176, // bordes en las columnas 1 y 264
 };
 MEDIDAS.altoCabecera = MEDIDAS.altoMenus + MEDIDAS.altoSurco + MEDIDAS.altoBarra + MEDIDAS.altoBordeBarra;
 
@@ -204,7 +203,8 @@ const ORDENES = ["select-a-vi", "select-a-control"];
 export const TITULOS = {
   "front-panel": "Untitled 1 Front Panel",
   "block-diagram": "Untitled 1 Block Diagram",
-  "control-editor": "Control 1 Type Def",
+  // Before the file is read: the page then sets its own title, with the kind the file holds (editor-window.mjs).
+  "control-editor": "Control 1",
 };
 
 const px = (n) => `${Number(n.toFixed(2))}px`;
@@ -333,11 +333,10 @@ export function ventana(inv, nombre, estado, extra = {}) {
   }
   iconos.push(icono(inv, `${pre}.icon`, x, G.iconoOVI(extra.numeroOVI)));
 
-  // The project and target the OVI is open in ("NewVI14.lvproj/My Computer", reports/2026-11-19-project-new-vi.md Q1); its menu is not built.
-  const instancia = inv.entrada(`${pre}.application-instance`);
-  const estadoHTML = instancia
-    ? `<div class="${clases(inv, instancia.id, "instancia")}" data-id="${esc(instancia.id)}" style="width:${px(M.anchoInstancia)}">${esc(extra.applicationInstance ?? rotulo(instancia))}</div>`
-    : "";
+  // The project and target the OVI is open in ("NewVI14.lvproj/My Computer", reports/2026-11-19-project-new-vi.md Q1), in a
+  // box as wide as its text; an OVI in no project shows nothing there (reports/2026-11-24-typedef-mark-and-footer.md Q3, Q4).
+  const instancia = extra.applicationInstance ? inv.entrada(`${pre}.application-instance`) : null;
+  const estadoHTML = instancia ? `<div class="${clases(inv, instancia.id, "instancia")}" data-id="${esc(instancia.id)}">${esc(extra.applicationInstance)}</div>` : "";
 
   return `<div class="ventana ventana-${nombre}${extra.ejecutando ? " ejecutando" : ""}" data-id="${pre}">
   <div class="cabecera" style="height:${px(M.altoCabecera)}">
@@ -349,7 +348,7 @@ export function ventana(inv, nombre, estado, extra = {}) {
   </div>
   <div class="lienzo lienzo-${nombre}${extra.resaltando ? " resaltando" : ""}${extra.reorder ? " reordenando" : ""}${panelStyleClasses(extra.panelStyle)}" data-id="${pre}.workspace" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};right:${px(M.anchoCanalon)};background-position:${px(-origin.x)} ${px(-origin.y)}">${scrolledLayer(lienzo, origin)}</div>
   <div class="canalon" style="top:${px(M.altoCabecera)};bottom:${px(M.altoEstado)};width:${px(M.anchoCanalon)}"><div class="barra-desplazamiento vertical" data-axis="y"></div></div>
-  <div class="barra-estado" style="height:${px(M.altoEstado)}">${estadoHTML}<div class="barra-desplazamiento horizontal" data-axis="x" style="left:${px(instancia ? M.anchoInstancia : 0)};right:${px(M.anchoCanalon)}"></div></div>
+  <div class="barra-estado" style="height:${px(M.altoEstado)}">${estadoHTML}<div class="barra-desplazamiento horizontal" data-axis="x" style="margin-right:${px(M.anchoCanalon)}"></div></div>
   ${estado.paleta ? paleta(inv, estado.paleta) + subpaletas(inv, estado.paleta) : ""}
   ${extra.propiedades ?? ""}
   ${extra.flotantes ?? ""}

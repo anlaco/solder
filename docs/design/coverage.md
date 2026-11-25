@@ -27,15 +27,15 @@
 | Structures | 9 / 22 (41 %) | `████░░░░░░` |
 | Execution | 8 / 15 (53 %) | `█████░░░░░` |
 | Diagram editing | 13 / 30 (43 %) | `████░░░░░░` |
-| Front panel editing | 9 / 22 (41 %) | `████░░░░░░` |
+| Front panel editing | 10 / 22 (45 %) | `█████░░░░░` |
 | SubOVIs, libraries and projects | 8 / 22 (36 %) | `████░░░░░░` |
 | Debugging | 8 / 16 (50 %) | `█████░░░░░` |
 | Files | 5 / 15 (33 %) | `███░░░░░░░` |
 | Instruments and communication | 14 / 30 (47 %) | `█████░░░░░` |
 | Functions palette | 214 / 563 (38 %) | `████░░░░░░` |
 | Controls palette | 34 / 92 (37 %) | `████░░░░░░` |
-| Windows and dialogs | 220 / 656 (34 %) | `███░░░░░░░` |
-| Right-click menus | 710 / 2569 (28 %) | `███░░░░░░░` |
+| Windows and dialogs | 227 / 665 (34 %) | `███░░░░░░░` |
+| Right-click menus | 726 / 2595 (28 %) | `███░░░░░░░` |
 <!-- /coverage:summary -->
 
 ## Features
@@ -63,7 +63,7 @@
 - [ ] Time stamp
 - [ ] Variant
 - [ ] Classes (LVOOP)
-- [ ] Type definitions (`.ctl`)
+- [ ] Type definitions (`.ctl`) (made, linked, followed and opened in the control editor, 2026-11-23; created from New and Customize Control..., placed with Select a Control... and from the project, 2026-11-25; missing: the Review and Update window)
 - [ ] Sets and maps
 - [ ] Physical units on numbers
 - [x] Broken wires and the broken Run arrow, with the Error List
@@ -158,7 +158,7 @@
 - [ ] Properties dialog of a control (Appearance, Display Format, Data Entry…)
 - [ ] Display format and precision
 - [ ] Data Entry limits
-- [ ] Resizing every control by its handles
+- [x] Resizing every control by its handles
 - [ ] Customize Control (control editor)
 - [ ] Tabbing order and key navigation
 - [ ] Panes and splitters, Scale Object with Pane
@@ -335,8 +335,8 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 | Window | Covered | |
 |--------|---------|---|
 | Project Explorer | 20 / 140 (14 %) | `█░░░░░░░░░` |
-| Front Panel | 38 / 94 (40 %) | `████░░░░░░` |
-| Block Diagram | 49 / 123 (40 %) | `████░░░░░░` |
+| Front Panel | 40 / 94 (43 %) | `████░░░░░░` |
+| Block Diagram | 50 / 123 (41 %) | `████░░░░░░` |
 | Debug Window | 10 / 18 (56 %) | `██████░░░░` |
 | Error list | 7 / 8 (88 %) | `█████████░` |
 | OVI Properties | 6 / 26 (23 %) | `██░░░░░░░░` |
@@ -346,7 +346,7 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 | Getting Started | 8 / 51 (16 %) | `██░░░░░░░░` |
 | Polymorphic OVI | 22 / 42 (52 %) | `█████░░░░░` |
 | Edit Instance Name | 2 / 3 (67 %) | `███████░░░` |
-| New | 5 / 12 (42 %) | `████░░░░░░` |
+| New | 9 / 21 (43 %) | `████░░░░░░` |
 | Create Project | 5 / 26 (19 %) | `██░░░░░░░░` |
 | Open Items | 2 / 4 (50 %) | `█████░░░░░` |
 | Call Library Function | 2 / 9 (22 %) | `██░░░░░░░░` |
@@ -356,5 +356,5 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Menus | Covered | |
 |-------|---------|---|
-| Every right-click menu captured | 710 / 2569 (28 %) | `███░░░░░░░` |
+| Every right-click menu captured | 726 / 2595 (28 %) | `███░░░░░░░` |
 <!-- /coverage:inventory -->

@@ -89,15 +89,23 @@ test("a constant's link is saved in its configuration and opens the same", () =>
 });
 
 test("an .octl holds one object and its kind, valid against its schema, and reads back the same", () => {
-  const file = writeTypeDefinition("type-def", POINT_DEFINITION);
+  const file = writeTypeDefinition("type-def", [POINT_DEFINITION]);
   const validate = validator("docs/schema/octl.schema.json");
   assert.ok(validate(file), JSON.stringify(validate.errors));
-  assert.deepEqual(file.object.elements.map((element) => element.label), ["a", "b"], "its elements in file form, as a cluster stores them");
-  const read = readTypeDefinition(typeDefinitionText("type-def", POINT_DEFINITION), CAT);
+  assert.deepEqual(file.objects[0].elements.map((element) => element.label), ["a", "b"], "its elements in file form, as a cluster stores them");
+  const read = readTypeDefinition(typeDefinitionText("type-def", [POINT_DEFINITION]), CAT);
   assert.equal(read.kind, "type-def");
-  assert.equal(typeDefinitionText(read.kind, read.object), typeDefinitionText("type-def", POINT_DEFINITION));
-  assert.throws(() => writeTypeDefinition("typedef", POINT_DEFINITION), ErrorQvi, "only the control editor's three kinds");
+  assert.equal(typeDefinitionText(read.kind, [read.object]), typeDefinitionText("type-def", [POINT_DEFINITION]));
+  assert.throws(() => writeTypeDefinition("typedef", [POINT_DEFINITION]), ErrorQvi, "only the control editor's three kinds");
   assert.throws(() => readTypeDefinition({ ...file, solder: VERSION + 1 }, CAT), ErrorQvi, "a newer file is refused");
+  // Before version 10 the file held its one `object` (DT-107): it still reads, as the list of it.
+  const { objects: [stored], ...rest } = file;
+  const older = readTypeDefinition({ ...rest, solder: 9, object: stored }, CAT);
+  assert.deepEqual([older.objects.length, older.object.label?.text], [1, read.object.label?.text]);
+  assert.throws(() => readTypeDefinition({ ...rest, solder: 9 }, CAT), ErrorQvi, "a version 9 file without its object is refused");
+  assert.ok(validate({ ...rest, solder: 9, object: stored }), "the schema takes a version 9 file");
+  assert.ok(!validate({ ...rest, solder: 10, object: stored }), "but not `object` in version 10");
+  assert.ok(validate({ ...rest, objects: [] }), "an empty control is a valid file");
 });
 
 test("an object made from a Type Def. or a Strict Type Def. follows it; one made from a plain control follows nothing", () => {
@@ -107,7 +115,7 @@ test("an object made from a Type Def. or a Strict Type Def. follows it; one made
 });
 
 test("an OVI whose type definition is found loads with it and nothing breaks", () => {
-  const hierarchy = hierarchyOf(typeDefinitionToPlainCluster().g, { [DEFINITION_KEY]: typeDefinitionText("type-def", POINT_DEFINITION) });
+  const hierarchy = hierarchyOf(typeDefinitionToPlainCluster().g, { [DEFINITION_KEY]: typeDefinitionText("type-def", [POINT_DEFINITION]) });
   assert.deepEqual(hierarchy.errors, []);
   assert.equal(hierarchy.typeDefinitions.get(DEFINITION_KEY).kind, "type-def");
 });

@@ -22,12 +22,22 @@
 .sd-panel .sd-step-up { top: 0; }
 .sd-panel .sd-step-down { bottom: 0; }
 .sd-panel .sd-step::before { content: none; }
+/* A taller enum or ring: the capsule stretches over the full height and its arrows keep their size, the up one at the
+   top and the down one at the bottom (reports/2026-11-24-control-resizing-2.md §5). Drawn here rather than by the SVG,
+   which would stretch the arrows; its shapes are the SVG's (glyphs.mjs INCREMENTER). */
+.sd-panel .sd-tall .sd-incrementer { background: none; }
+.sd-panel .sd-tall .sd-incrementer::before {
+  content: ""; position: absolute; left: 0.5px; top: 1.5px; bottom: 1.5px; width: 12px; box-sizing: border-box;
+  border: 1px solid #9c9c9c; border-radius: 6px; background: #dedede;
+}
+.sd-panel .sd-tall .sd-step::before { content: ""; position: absolute; left: 3.8px; border: 0 solid transparent; border-width: 0 2.7px; }
+.sd-panel .sd-tall .sd-step-up::before { top: 5px; border-bottom: 5px solid #7a7a7a; }
+.sd-panel .sd-tall .sd-step-down::before { bottom: 5px; border-top: 5px solid #7a7a7a; }
 
 /* ——— Numeric, enum and string ——— */
 
 /* The field is sunk into a 4 px bevel, white on a control and grey on an indicator; it starts 4 px inside the
-   incrementer. An enum's box is 49 px wide but its field is a numeric's 55, as the old drawing had it (unverified
-   against LabVIEW). */
+   incrementer. */
 .sd-panel :is(.sd-numeric, .sd-enum, .sd-string) { display: block; }
 .sd-panel :is(.sd-numeric, .sd-enum, .sd-string) .sd-field {
   position: absolute; top: 0; bottom: 0; left: 0; width: 55px; min-width: auto; justify-content: normal; align-items: center;
@@ -37,10 +47,10 @@
   font-size: var(--fuente); line-height: 1; font-variant-numeric: normal;
 }
 .sd-panel :is(.sd-numeric, .sd-enum) .sd-incrementer + .sd-field { left: 12px; }
-/* A numeric's field fills its box, so a widened numeric widens its field (reports/2026-11-19-control-resizing.md §4);
-   an enum's stays 6 px wider than its box, as drawn (unverified). */
-.sd-panel .sd-numeric .sd-field { width: auto; right: 0; }
-.sd-panel .sd-enum .sd-field { width: auto; right: -6px; }
+/* A numeric's field fills its box, so a widened numeric widens its field (reports/2026-11-19-control-resizing.md §4).
+   An enum's does too: the old drawing gave it a numeric's 55 px in a 49 px box, 6 px out of it
+   (reports/2026-10-17-panel-old-school-numeric.md), which no LabVIEW control does. */
+.sd-panel :is(.sd-numeric, .sd-enum) .sd-field { width: auto; right: 0; }
 .sd-panel .sd-indicator:is(.sd-numeric, .sd-enum, .sd-string) .sd-field { background: var(--numeric-indicator-background); }
 .sd-panel :is(.sd-numeric, .sd-enum, .sd-string) .sd-value { flex: initial; min-width: auto; overflow: visible; }
 /* The old drawing showed no caret in a field, nor in an array's element: an inline element with no content. */
@@ -121,6 +131,12 @@
   box-shadow: inset 1px 1px 0 #e3e3e3, inset -1px -1px 0 #696969, inset 2px 2px 0 #fff, inset -2px -2px 0 #a0a0a0;
 }
 .sd-panel .sd-visa .sd-dropdown::before { position: absolute; left: 5px; top: 7px; border-top-color: #000; }
+/* A taller VISA resource name or DAQ name: the icon cell and the dropdown cell stretch over the full height, the I/O
+   glyph and the 7 × 4 arrow keep their size, centred (reports/2026-11-24-control-resizing-2.md §5). */
+.sd-panel .sd-tall.sd-visa .sd-visa-icon { bottom: 4px; height: auto; }
+.sd-panel .sd-tall.sd-visa .sd-visa-glyph { top: calc(50% - 6.5px); }
+.sd-panel .sd-tall.sd-visa .sd-dropdown { bottom: 4px; height: auto; }
+.sd-panel .sd-tall.sd-visa .sd-dropdown::before { top: calc(50% - 2px); }
 .sd-panel .sd-visa .sd-dropdown:hover::before { border-top-color: #000; }
 /* A DAQ name's control is 168 wide (reports/2026-11-06-daqmx-types.md, "Panel"), 64 more than a VISA resource name's:
    the field and the button follow the box as they do on a widened VISA resource name. */

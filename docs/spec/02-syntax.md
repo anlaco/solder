@@ -205,13 +205,15 @@ updated: the file is needed to keep the object up to date, not to read it. An `.
 with its copy and is **not executable**: one error per object, `Type Definition '<label>': Type definition not found
 or contains errors.`, as LabVIEW reports it.
 
-An `.octl` file ([`../schema/octl.schema.json`](../schema/octl.schema.json)) holds one panel object as a cluster holds
-an element, with the format's version and its kind, the control editor's ring: `control`, `type-def` or
-`strict-type-def`.
+An `.octl` file ([`../schema/octl.schema.json`](../schema/octl.schema.json)) holds the control editor's panel: its
+`objects`, zero or more, each as a cluster holds an element, with the format's version and its kind, the control
+editor's ring: `control`, `type-def` or `strict-type-def`. Only a file with exactly one object is placed on a panel or
+followed; LabVIEW saves a `.ctl` with zero, one or several controls and places only one of one (DT-107). Before version
+10 the file held its one `object`, which is read as the list of it.
 
 ```json
-{ "solder": 8, "type-definition": "type-def", "object": { "kind": "cluster-control", "label": "PointTD", "elements": [
-    { "kind": "control", "label": "a", "type": "number", "default": 3, "x": 4, "y": 19 } ], "x": 10, "y": 10 } }
+{ "solder": 10, "type-definition": "type-def", "objects": [ { "kind": "cluster-control", "label": "PointTD", "elements": [
+    { "kind": "control", "label": "a", "type": "number", "default": 3, "x": 4, "y": 19 } ], "x": 10, "y": 10 } ] }
 ```
 
 ### 4.5 `connector` *(optional)*

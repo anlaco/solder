@@ -14,28 +14,30 @@ export const definitionObjectOf = (node) => ({ tipo: node.tipo, label: node.labe
 /** The size a panel object was given (its `w` and `h`), or nothing when it has the default one. */
 const sizeOf = (panel) => (panel?.w !== undefined && panel?.h !== undefined ? { w: panel.w, h: panel.h } : {});
 
-/**
- * The graph of the control editor for an `.octl`'s text: `{ kind, g, id, comments }`, `id` the one object's node. Its
- * label and configuration are the file's; a cluster's elements are set as the panel sets them (user-cluster.mjs).
- */
-export function controlEditorGraph(text, catalog) {
-  const { kind, object, comments } = readTypeDefinition(text, catalog);
+/** `g` with the object `id` given what the file stores as it is: its label, even empty (crearEnPanel numbers a new one, "Numeric 2"), and its size. */
+function withStoredLabelAndSize(g, id, object) {
+  const panelOf = (node) => (object.w !== undefined ? { ...node.panel, w: object.w, h: object.h } : node.panel);
+  return { ...g, nodos: g.nodos.map((node) => (node.id === id ? { ...node, label: { text: object.label?.text ?? "" }, panel: panelOf(node) } : node)) };
+}
+
+/** `g` with one of the file's objects placed on it: its label and configuration are the file's, a cluster's elements set as the panel sets them (user-cluster.mjs). */
+function placeObject(g, catalog, object) {
   const { elements, ...config } = object.config ?? {};
-  const placed = Gr.crearEnPanel(Gr.nuevo(), catalog, object.tipo, object.x, object.y, object.label?.text ?? "", config);
-  // The file's label as it is, even empty: crearEnPanel would number a new one ("Numeric 2").
-  let g = { ...placed.g, nodos: placed.g.nodos.map((node) => (node.id === placed.id ? { ...node, label: { text: object.label?.text ?? "" } } : node)) };
-  // The size the object was saved with (a resized cluster), so that its elements are not clipped by a default shell.
-  if (object.w !== undefined) g = { ...g, nodos: g.nodos.map((node) => (node.id === placed.id ? { ...node, panel: { ...node.panel, w: object.w, h: object.h } } : node)) };
-  if (elements) g = setClusterElements(g, catalog, placed.id, elements);
-  return { kind, g, id: placed.id, comments };
+  const placed = Gr.crearEnPanel(g, catalog, object.tipo, object.x, object.y, object.label?.text ?? "", config);
+  // The size it was saved with (a resized cluster), so that its elements are not clipped by a default shell.
+  const stored = withStoredLabelAndSize(placed.g, placed.id, object);
+  return elements ? setClusterElements(stored, catalog, placed.id, elements) : stored;
 }
 
-/** The one object of the control editor's graph: its first panel object that is not a free label. */
-export const editedObjectOf = (g, catalog) => g.nodos.find((node) => node.panel && !isFreeLabel(node) && catalog.bloque(node.tipo)?.panel);
-
-/** The `.octl` text of the control editor's graph `g` as `kind` (the ring's), with the comments it was read with. */
-export function controlEditorText(kind, g, catalog, comments) {
-  const node = editedObjectOf(g, catalog);
-  if (!node) throw new Error("the control editor holds no object");
-  return typeDefinitionText(kind, definitionObjectOf(node), comments);
+/** The graph of the control editor for an `.octl`'s text: `{ kind, g, comments }`, its panel holding the file's objects, none or several (DT-107). */
+export function controlEditorGraph(text, catalog) {
+  const { kind, objects, comments } = readTypeDefinition(text, catalog);
+  const g = objects.reduce((graph, object) => placeObject(graph, catalog, object), Gr.nuevo());
+  return { kind, g, comments };
 }
+
+/** The objects of the control editor's graph, in its order: its panel objects that are not free labels. */
+export const editedObjectsOf = (g, catalog) => g.nodos.filter((node) => node.panel && !node.inside && !isFreeLabel(node) && catalog.bloque(node.tipo)?.panel);
+
+/** The `.octl` text of the control editor's graph `g` as `kind` (the ring's), with the comments it was read with: every object of its panel, or none. */
+export const controlEditorText = (kind, g, catalog, comments) => typeDefinitionText(kind, editedObjectsOf(g, catalog).map(definitionObjectOf), comments);
