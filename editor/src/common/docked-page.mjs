@@ -33,14 +33,17 @@ function pressToolbarElement(id, from, at) {
 export function connectDockedPage({ layoutApi, buildModel, runMenuRow, repaint }) {
   let docked = false;
   let sent = null;
-  const apply = (layout) => {
-    docked = layout === "docked";
+  // Whether this page is docked, not whether the docked view is on: a window that stays floating keeps its own menus and
+  // toolbar (the control editor, opened on 2026-11-25 with none in the docked view).
+  const apply = (pageDocked) => {
+    docked = pageDocked;
     document.body.classList.toggle("docked", docked);
     sent = null;
     repaint();
   };
-  layoutApi?.get().then(apply);
-  layoutApi?.onChanged(apply);
+  const askWhetherDocked = () => layoutApi?.isPageDocked().then(apply);
+  askWhetherDocked();
+  layoutApi?.onChanged(askWhetherDocked);
   layoutApi?.onRun(({ id, from, at }) => (from === "menu" ? runMenuRow(id) : pressToolbarElement(id, from, at)));
   return {
     isDocked: () => docked,

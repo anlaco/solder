@@ -70,6 +70,8 @@ export function createLayoutManager(host) {
 
   function registerRequests() {
     ipcMain.handle("layout:get", () => layout);
+    // A window that is not one of these pages stays floating in the docked view (DT-101 §3): it keeps its own menus.
+    ipcMain.handle("layout:page-docked", (event) => isDocked() && !!pageOfContents(event.sender));
     ipcMain.on("page:painted", (event) => pageOfContents(event.sender)?.markPainted());
     ipcMain.on("layout:set", (_event, newLayout) => setLayout(newLayout));
     // The bar asks once it is listening, so its first state is never lost while it loads.

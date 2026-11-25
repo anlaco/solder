@@ -177,6 +177,8 @@ contextBridge.exposeInMainWorld("solder", {
     set: (layout) => ipcRenderer.send("layout:set", layout),
     /** The layout was switched, from any window: `callback(layout)`. */
     onChanged: (callback) => ipcRenderer.on("layout:changed", (_event, layout) => callback(layout)),
+    /** Whether this page is in the docked window now: a window that stays floating (the control editor) never is. */
+    isPageDocked: () => ipcRenderer.invoke("layout:page-docked"),
     /** The bar of tabs: its state `{ tabs: [{ id, label, active }], shown, split }`, and what it asks for. */
     onState: (callback) => ipcRenderer.on("dock:state", (_event, state) => callback(state)),
     requestState: () => ipcRenderer.send("dock:request-state"),
