@@ -51,6 +51,19 @@ export function compilar(g, cat, { name } = {}) {
 }
 
 /**
+ * The function that reserves `bytes` of the module's data space (DT-042), aligned to `alignment`, and gives their
+ * address: one buffer each; the constants go elsewhere, in the static zone.
+ */
+function dataSpaceReserver(module) {
+  return (bytes, alignment = 8) => {
+    module.space = (module.space + alignment - 1) & ~(alignment - 1);
+    const address = CELDAS + module.space;
+    module.space += bytes;
+    return address;
+  };
+}
+
+/**
  * What the OVIs of one module share: the data space and its static data, the
  * globals, the subplans run by the host, the nodes that may raise the automatic
  * error dialog and the functions of synchronous subOVIs, called directly.
@@ -73,14 +86,9 @@ function newModule() {
     // The OVIs an error source names (spec/04 Rule 21k): by chain index, the OVI's name and the cell
     // where each call to it writes the chain index of its caller; the top-level OVI has no cell.
     callChain: [],
+    firstCallFlags: [], // DT-109: the flags of the Feedback Nodes that initialize on the first call, cleared every Run
   };
-  // El data space (DT-042): una celda por búfer; las constantes, aparte.
-  module.bufer = (tam, al = 8) => {
-    module.space = (module.space + al - 1) & ~(al - 1);
-    const d = CELDAS + module.space;
-    module.space += tam;
-    return d;
-  };
+  module.bufer = dataSpaceReserver(module);
   // DT-047: the host writes 1 here while debugging; the hooks read it after each node.
   module.debugFlag = module.bufer(4, 4);
   return module;
@@ -169,5 +177,5 @@ function assemble(module, vi) {
     ],
   };
   const plan = (lista) => lista.map((k) => ({ deps: [...k.deps], largo: k.largo }));
-  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: fullClusterLayout(ERROR), disposicionVisa: fullClusterLayout(VISA_RESOURCE_LAYOUT), usesInstrumentIo: !!module.usesInstrumentIo, debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, propertyNodes: module.propertyNodes, callLibraries: module.callLibraries, controlReferences: module.controlReferences, frames };
+  return { bytes: codificar(modulo), memoryPages: modulo.memoria.paginas, modulo, controles, indicadores, clumps: plan(clumps), planes: planes.map(plan), automaticos, disposicionError: fullClusterLayout(ERROR), disposicionVisa: fullClusterLayout(VISA_RESOURCE_LAYOUT), usesInstrumentIo: !!module.usesInstrumentIo, debugFlag: module.debugFlag, debugNodes: module.debugNodes, callChain: module.callChain, propertyNodes: module.propertyNodes, callLibraries: module.callLibraries, controlReferences: module.controlReferences, frames, firstCallFlags: module.firstCallFlags };
 }

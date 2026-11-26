@@ -16,6 +16,7 @@ import { connectorPattern, connectorTerminals } from "./connector.mjs";
 import { LINKED_CONTROL_TYPE, isImplicit, loadProperties } from "./property-node.mjs";
 import { callLibraryPorts } from "./call-library.mjs";
 import { isDaqTask } from "./daq-name.mjs";
+import { FEEDBACK_STORE, feedbackTypeHints, withFeedbackHalves, withNodeTerminals, wiredTerminals } from "./feedback-node.mjs";
 import { DIFFERENT_TYPES_MESSAGE, automaticChoice, isAutomatic, noInstanceFitsDetail, renamedByCell, selectedInstance } from "./polymorphic.mjs";
 
 /** The type of every frame's side of a Case output tunnel and of its outside: one type for all, of any class. */
@@ -1162,7 +1163,9 @@ export function adaptPolymorphicNodes(g, cat) {
   return adapted;
 }
 
-export function tipos(g, cat) {
+export function tipos(original, cat) {
+  // A Feedback Node is resolved as its two halves (DT-109); its terminals get their types back below.
+  const g = withFeedbackHalves(original);
   const r = resolverTipos(g, cat, new Map());
   // Un shift register sin valor inicial cableado toma el tipo de lo que le entra
   // por la derecha, que se resuelve después que él: segunda pasada (DT-041).
@@ -1173,7 +1176,9 @@ export function tipos(g, cat) {
     const t = c && r.salidas.get(`${c.de.nodo}.${c.de.puerto}`);
     if (t !== undefined) pistas.set(n.id, t);
   }
-  return pistas.size ? resolverTipos(g, cat, pistas) : r;
+  for (const [id, hint] of feedbackTypeHints(g, r)) pistas.set(id, hint);
+  const resolved = pistas.size ? resolverTipos(g, cat, pistas) : r;
+  return g === original ? resolved : withNodeTerminals(g, resolved);
 }
 
 function resolverTipos(g, cat, pistas) {
@@ -1193,6 +1198,8 @@ function resolverTipos(g, cat, pistas) {
     const b = cat.bloque(n.tipo);
     const { in: ins, out: outs } = cat.puertos(n);
     const vars = {};
+    // A Feedback Node's store half takes its node's type before its wire's, which is coerced or broken there (DT-109).
+    if (n.tipo === FEEDBACK_STORE && pistas.has(n.id)) vars.T = pistas.get(n.id);
     // El tipo de un nodo que lo toma de su configuración: el suyo o, si no lo
     // tiene escrito, el que declara el catálogo (un control sin tocar es DBL).
     const configured = b["type-from"] === "config" ? (n.config?.type ?? b.config?.default?.type) : undefined;
@@ -1347,7 +1354,7 @@ function cablesEnCicloDeEstructura(g, cat) {
 export function ejecutable(g, cat, resueltos) {
   if ([...resueltos.cables.values()].some((c) => c.roto)) return false;
   if (undefinedArrayNodes(g).length || nodesWithUndefinedInput(g, resueltos).size) return false;
-  const llegan = new Set(g.cables.map((c) => `${c.a.nodo}.${c.a.puerto}`));
+  const llegan = wiredTerminals(g);
   return g.nodos.every((n) => cat.bloque(n.tipo).panel || cat.puertos(n).in.every((p) => !requerido(g, n, p) || llegan.has(`${n.id}.${p.name}`)));
 }
 

@@ -46,6 +46,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [104](#dt-104) | The control editor is the Front Panel page editing one object: an entry of its own kind with an `.octl`, one window, the Control / Type Def. / Strict Type Def. ring | Accepted · being built |
 | [107](#dt-107) | A new control is created the ways LabVIEW creates one; an `.octl` holds zero, one or more objects (format 10) | Accepted · built |
 | [108](#dt-108) | Inf, -Inf and NaN are written in files as the texts "Inf", "-Inf" and "NaN" | Accepted · built |
+| [109](#dt-109) | The Feedback Node: one node in the file and the editor, two halves for the compiler, its memory in the data space | Accepted · core being built |
 
 ## The 34 Red decisions
 
@@ -5590,3 +5591,53 @@ one or more objects (format version 10, `objects`). Only an `.octl` with exactly
 |------|------|-------|
 | Inf, -Inf and NaN in a constant, a control, an array and a cluster element survive saving and opening, and run with their value | `test/core/special-numbers.test.mjs` | Built (2026-11-26) |
 | A fragment copied into another OVI keeps them: the clipboard's JSON carries each as `{ "solder-non-finite-number": "Inf" }`, since there a string may be any text | `test/core/special-numbers.test.mjs` | Built (2026-11-26) |
+
+## DT-109
+
+**The Feedback Node is one node, `feedback-node`, in the file and in the editor. The compiler splits it into two halves:
+the one that gives the stored value, ordered with no wire before it but its initializer's, and the one that stores the
+incoming value, ordered after its input and after the first half. Its memory lives in the OVI's data space, as an
+uninitialized shift register's does.**
+
+- **Status:** Accepted on 2026-11-26 by the developer ("Sí, adelante"), from the measurements of the same day
+  (`labview-captures/reports/2026-11-26-feedback-node-behavior.md`).
+- **Why:** LabVIEW itself keeps the node in two parts (scripting lists a companion node holding the input terminal), so
+  a wire from the node's output back to its own input is not a cycle. Splitting it only inside the type resolution and
+  the compiler keeps one object to select, move and save, while the ordering, the clumps and the types stay the generic
+  ones. The memory is the shift register's (DT-045): kept in the data space, it survives from one Run to the next while
+  the OVI stays loaded, and a reentrant clone has its own.
+
+### Decision
+
+1. **The node.** Inputs `input`, `initializer` (optional) and `enable` (optional, TRUE unwired; the editor shows it
+   only when Show Enable Terminal is on); output `output`. Its type is the initializer's or, unwired, the type of what
+   comes into `input`. Config: `delay` (an integer ≥ 1, default 1; LabVIEW ignores 0 and less) and
+   `initializerLoopsOut` (0 on the node; n after Move Initializer One Loop Out n times).
+2. **What it does (measured).** The output is the value stored `delay` executions ago; before that, the initializer,
+   which fills every slot. With `enable` FALSE the output is the same and the incoming value is not stored.
+3. **When it initializes (measured).** Unwired and on the node: never again while the OVI stays loaded (the type's
+   default first). Wired and on the node ("Initialize On First Call"): at the first execution of each Run, also in a
+   subOVI and in nested loops. Moved n loops out: each time the n-th enclosing loop starts.
+4. **The halves.** `withFeedbackHalves` (core/model/feedback-node.mjs) adds an internal `feedback-store` node beside each
+   Feedback Node and moves the wires of `input` and `enable` to it; the type resolution and the compiler work on that
+   graph, and the types are given back under the Feedback Node's own terminals. Each store half is ordered after its
+   node's first half by an edge that is not a wire.
+5. **The memory.** A ring of `delay` slots, its position and an "initialized" flag, in the data space. A string, an
+   array or a cluster is copied into a slot of the node's own and out of it into the node's output place: a wire
+   carries a value, never a place. The flags of the nodes that initialize on first call are cleared by the runtime
+   at the start of every Run (`firstCallFlags`, as the parked frames are).
+
+### Not decided or not measured yet
+
+Initialize On Compile Or Load; the Z-transform view; `enable` with a delay above 1 (built as: the ring does not advance);
+an unwired initializer moved out of a loop (built as: the type's default at each start of that loop); the look, the
+palette, the menus and the automatic insertion when a wire closes a cycle (the editor stage, measured first).
+
+### How it is verified
+
+| What | Test | State |
+|------|------|-------|
+| The measured sequences: 0..4; 5..9 and 10..14 on later Runs unwired; delay 3; enable; a wired initializer per Run; nested loops with the initializer on the node and moved out; strings, arrays and clusters; no loop; a non-reentrant subOVI; saved and opened as one node | `test/core/feedback-node.test.mjs` | Built (2026-11-26) |
+| The two halves in different clumps of the pool keep one memory | `test/core/pool-runtime.test.mjs` | Built (2026-11-26) |
+| Random diagrams fed back through a Feedback Node of delay 1 to 3 give the reference evaluator's values | `test/core/compiler-properties.test.mjs` | Built (2026-11-26) |
+| Its look, menus, palette and automatic insertion | — | Not built: the editor stage |

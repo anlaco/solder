@@ -830,6 +830,8 @@ export async function ejecutar(compilado, valores = {}, opciones = {}) {
   restoreState(opciones.estado, bytes, ex.memoria);
   // A Run that was aborted left its parked clumps' frames behind: every clump starts afresh.
   for (const frame of compilado.frames ?? []) memoria().setInt32(frame, 0, true);
+  // A Feedback Node with its initializer on the node initializes on the first call of each Run (DT-109).
+  for (const flag of compilado.firstCallFlags ?? []) memoria().setInt32(flag, 0, true);
   if (depurador && compilado.debugFlag !== undefined) {
     depurador.activar = (on) => memoria().setInt32(compilado.debugFlag, on ? 1 : 0, true);
     depurador.alConectar?.();

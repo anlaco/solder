@@ -18,6 +18,8 @@ import { createLoopStructures } from "./loop-structures.mjs";
 import { createNodeEmission } from "./node-emission.mjs";
 import { createDebugHooks } from "./debug-hooks.mjs";
 import { createPanelRegistry } from "./panel-registry.mjs";
+import { createFeedbackNodes } from "./feedback-nodes.mjs";
+import { withFeedbackHalves, wiredTerminals } from "../model/feedback-node.mjs";
 
 /** The resolved types of an OVI with each terminal's type as it is laid out in memory (`inMemory`). */
 function laidOutInMemory(resolved) {
@@ -26,21 +28,26 @@ function laidOutInMemory(resolved) {
 }
 
 /**
+ * The graph that is compiled: without free labels and other decorations (DT-085), which are presentation, with no
+ * ports and nothing to emit; and with each Feedback Node as its two halves (DT-109).
+ */
+const graphToCompile = (withDecorations, cat) => withFeedbackHalves({ ...withDecorations, nodos: withDecorations.nodos.filter((node) => !cat.bloque(node.tipo).decoracion) });
+
+/**
  * Compiles one OVI into `module`. `asSubOVI` is null for the top-level OVI, whose
  * controls and indicators are the panel's; for a subOVI it maps the name of each
  * connector control and indicator to its slot in the data space, through which
  * the caller passes inputs and reads outputs (DT-045).
  */
 export function compileOVI(withDecorations, cat, module, asSubOVI, instanceKey, chainIndex) {
-  // Free labels and other decorations (DT-085) are presentation: they have no ports and nothing to emit.
-  const g = { ...withDecorations, nodos: withDecorations.nodos.filter((n) => !cat.bloque(n.tipo).decoracion) };
+  const g = graphToCompile(withDecorations, cat);
   // A path is laid out as a string's handle, so the functions that take a path or a string, and the
   // panel, look at the types as the graph has them.
   const logicalTypes = tipos(g, cat);
   const resueltos = laidOutInMemory(logicalTypes);
   if (!ejecutable(g, cat, resueltos)) {
     const errores = [...resueltos.cables.entries()].filter(([, c]) => c.roto).map(([id, c]) => ({ cable: id, motivo: c.roto }));
-    const llegan = new Set(g.cables.map((c) => `${c.a.nodo}.${c.a.puerto}`));
+    const llegan = wiredTerminals(g);
     for (const n of g.nodos) {
       if (cat.bloque(n.tipo).panel) continue;
       for (const p of cat.puertos(n).in) {
@@ -210,6 +217,7 @@ export function compileOVI(withDecorations, cat, module, asSubOVI, instanceKey, 
   const ovi = { withDecorations, cat, module, asSubOVI, instanceKey, chainIndex, g, logicalTypes, resueltos, calls, porId, llegaA, esEstructura, deMarco, esFlat, esLargo, marcoEnFlat, representante, raiz, conMarcos, deArriba, arriba, clumpDe, nuevaCelda, tamMax, cadena, arrayConstante, clusterConstante, autoErrores, valor, controles, indicadores, errores, constantes, datosFijos, planes, automaticos, bufer, ids, clumpRaiz, clumps };
   Object.assign(ovi, createPanelRegistry(ovi));
   Object.assign(ovi, createDebugHooks(ovi));
+  Object.assign(ovi, createFeedbackNodes(ovi));
   Object.assign(ovi, createNodeEmission(ovi));
   Object.assign(ovi, createLoopStructures(ovi));
   Object.assign(ovi, createCaseStructure(ovi));

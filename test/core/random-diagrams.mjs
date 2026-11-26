@@ -217,7 +217,7 @@ export function expectedValues(diagram, built, types, panel, cat) {
   return Object.fromEntries(built.shown.map(({ indicator, node, port }) => [indicator, values.get(`${node}.${port}`)]));
 }
 
-// ——— A diagram run turn after turn, its first control fed back through a shift register ———
+// ——— A diagram run turn after turn, its first control fed back through a shift register or a Feedback Node ———
 
 const CONVERSION_TO = { i8: "to-byte-integer", i16: "to-word-integer", i32: "to-long-integer", i64: "to-quad-integer", u8: "to-unsigned-byte-integer", u16: "to-unsigned-word-integer", u32: "to-unsigned-long-integer", u64: "to-unsigned-quad-integer", sgl: "to-single-precision-float", number: "to-double-precision-float" };
 export const FINAL = "final";
@@ -230,11 +230,29 @@ function fedBack(diagram, cat) {
 }
 
 /**
- * Builds `diagram` inside a For Loop of `turns` turns. Its first control starts a shift register, which the nodes read
- * in its place; each turn leaves in the register one of the diagram's outputs, converted to the control's type. The
- * indicator FINAL shows the register when the loop ends, and one indicator per output shows its last turn's value.
+ * The memory that carries a value from one turn to the next, started by the control `first`: a shift register or, with
+ * `feedbackDelay`, a Feedback Node of that delay (DT-109). Returns the output the nodes read in the control's place,
+ * the input that takes the next turn's value, and the output the indicator FINAL shows when the loop ends: the
+ * register's, or for a Feedback Node what was stored last, through an output tunnel.
  */
-export function buildIteratedDiagram(diagram, turns, waits, cat) {
+function turnMemory(b, first, feedbackDelay) {
+  if (!feedbackDelay) {
+    b.shiftRegister("register", STRUCTURE);
+    b.wire(`${first.name}.result`, "register.left.init");
+    return { read: "register.left.value", store: "register.right.value", final: "register.right.result" };
+  }
+  b.node("feedback", "feedback-node", { delay: feedbackDelay }, STRUCTURE);
+  b.wire(`${throughInputTunnel(b, first.name)}.y`, "feedback.initializer");
+  b.tunnel("stored last", STRUCTURE, "out");
+  return { read: "feedback.output", store: "feedback.input", final: "stored last.y", storedLast: "stored last.x" };
+}
+
+/**
+ * Builds `diagram` inside a For Loop of `turns` turns. Its first control starts the turn memory (turnMemory), which the
+ * nodes read in its place; each turn leaves in it one of the diagram's outputs, converted to the control's type. The
+ * indicator FINAL shows the memory when the loop ends, and one indicator per output shows its last turn's value.
+ */
+export function buildIteratedDiagram(diagram, turns, waits, cat, { feedbackDelay = 0 } = {}) {
   const [first, ...others] = diagram.controls;
   const isBoolean = booleanOutputs(diagram, cat);
   const shown = [];
@@ -242,10 +260,9 @@ export function buildIteratedDiagram(diagram, turns, waits, cat) {
     b.loop(STRUCTURE, "for-loop");
     b.node("turns", "num-const", { value: turns });
     b.wire("turns.result", `${STRUCTURE}:N.count`);
-    b.shiftRegister("register", STRUCTURE);
     b.node(first.name, "control");
-    b.wire(`${first.name}.result`, "register.left.init");
-    const controlOutput = new Map([[first.name, "register.left.value"]]);
+    const memory = turnMemory(b, first, feedbackDelay);
+    const controlOutput = new Map([[first.name, memory.read]]);
     for (const control of others) {
       b.node(control.name, "control");
       controlOutput.set(control.name, `${throughInputTunnel(b, control.name)}.y`);
@@ -263,9 +280,10 @@ export function buildIteratedDiagram(diagram, turns, waits, cat) {
     }
     b.node("to the register", CONVERSION_TO[first.type], null, STRUCTURE);
     b.wire(controlOutput.get(fedBack(diagram, cat).split(".")[0]) ?? fedBack(diagram, cat), "to the register.number");
-    b.wire("to the register.result", "register.right.value");
+    b.wire("to the register.result", memory.store);
+    if (memory.storedLast) b.wire("to the register.result", memory.storedLast);
     b.node(FINAL, "indicator");
-    b.wire("register.right.result", `${FINAL}.value`);
+    b.wire(memory.final, `${FINAL}.value`);
   });
   for (const control of diagram.controls) vi.g = Gr.fijarRepresentacion(vi.g, vi.id[control.name], control.type);
   vi.g = Gr.fijarRepresentacion(vi.g, vi.id[FINAL], first.type);
@@ -275,16 +293,23 @@ export function buildIteratedDiagram(diagram, turns, waits, cat) {
 /** The default value of `type`: what an output tunnel gives when its loop runs no turn. */
 const defaultOf = (type) => (type === "boolean" ? false : NUMERIC_TYPES.includes(type) && type !== "sgl" && type !== "number" ? 0n : 0);
 
-/** What the OVI of buildIteratedDiagram must show after `turns` turns, by indicator name. */
-export function expectedAfterTurns(diagram, built, types, panel, turns, cat) {
+/**
+ * What the OVI of buildIteratedDiagram must show after `turns` turns, by indicator name. The turn memory is a ring of
+ * `feedbackDelay` slots (one for a shift register), all holding the first control's value at the start: each turn reads
+ * the slot at the ring's position and stores its new value there (DT-109).
+ */
+export function expectedAfterTurns(diagram, built, types, panel, turns, cat, { feedbackDelay = 0 } = {}) {
   const controlValues = inControlTypes(diagram, panel);
   const first = diagram.controls[0];
   const output = fedBack(diagram, cat);
+  const ring = Array(Math.max(1, feedbackDelay)).fill(controlValues[first.name]);
   let last = null;
+  let stored = feedbackDelay ? defaultOf(first.type) : controlValues[first.name];
   for (let turn = 0; turn < turns; turn++) {
+    controlValues[first.name] = ring[turn % ring.length];
     last = evaluate(diagram, built, types, controlValues, cat);
-    controlValues[first.name] = convert(last.values.get(output), last.typeOf.get(output), first.type);
+    stored = ring[turn % ring.length] = convert(last.values.get(output), last.typeOf.get(output), first.type);
   }
   const shownValue = ({ node, port }) => (last ? last.values.get(`${node}.${port}`) : defaultOf(types.salidas.get(`${built.id[node]}.${port}`)));
-  return { [FINAL]: controlValues[first.name], ...Object.fromEntries(built.shown.map((output_) => [output_.indicator, shownValue(output_)])) };
+  return { [FINAL]: stored, ...Object.fromEntries(built.shown.map((output_) => [output_.indicator, shownValue(output_)])) };
 }

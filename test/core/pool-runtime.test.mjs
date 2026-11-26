@@ -265,3 +265,35 @@ test("Abort pressed while the Run on the pool is getting ready stops it", async 
     WebAssembly.compile = compileModule;
   }
 });
+
+// DT-109: a Feedback Node whose stored value comes out of a loop that takes time has its two halves in different
+// clumps, which the pool may run on different threads: the store half still runs after the first one, and the memory
+// is the same.
+test("a Feedback Node whose two halves run in different clumps keeps its value from one Run to the next", async () => {
+  const vi = buildOVI(CAT, (b) => {
+    b.node("fb", "feedback-node");
+    b.node("one", "num-const", { value: 1, type: "i32" });
+    b.node("plus", "add");
+    b.wire("fb.output", "plus.a");
+    b.wire("one.result", "plus.b");
+    b.loop("loop", "for-loop");
+    b.node("turns", "num-const", { value: 2, type: "i32" });
+    b.wire("turns.result", "loop:N.count");
+    b.node("ms", "num-const", { value: 1, type: "u32" }, "loop");
+    b.node("wait", "wait-ms", null, "loop");
+    b.wire("ms.result", "wait.ms");
+    b.tunnel("in", "loop", "in");
+    b.tunnel("out", "loop", "out");
+    b.wire("plus.result", "in.x");
+    b.wire("in.y", "out.x");
+    b.wire("out.y", "fb.input");
+    b.node("shown", "indicator", { type: "i32" });
+    b.wire("fb.output", "shown.value");
+  });
+  const compiled = compilar(vi.g, CAT);
+  assert.ok(compiled.clumps.length >= 3, "the store half runs in a clump after the loop's");
+  const estado = {};
+  const shown = [];
+  for (let run = 0; run < 3; run++) shown.push((await runOnPool(vi, {}, { estado })).shown);
+  assert.deepEqual(shown, [0, 1, 2]);
+});

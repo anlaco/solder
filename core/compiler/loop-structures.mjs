@@ -121,7 +121,8 @@ export function createLoopStructures(ovi) {
         c.push(ins("i32.const", 0), ins("local.set", t.indexado.n), ins("i32.const", t.indexado.celda), ins("i32.const", 0), ins("i32.const", el.tam), ins("i32.const", el.ref ? 1 : 0), callMemory("nuevo_array"), ins("drop"));
       } else c.push(...constantOf(contexto(t.id, k).tOut(0), 0), ins("local.set", t.l));
     }
-    c.push(...frameHook(sid, "start"), ins("block"));
+    // The Feedback Nodes whose initializer was moved out to this loop initialize again at each of its starts (DT-109).
+    c.push(...ovi.feedbackResetsAt(sid), ...frameHook(sid, "start"), ins("block"));
     if (n !== null) c.push(ins("local.get", n), ins("i32.const", 0), ins("i32.le_s"), ins("br_if", 0));
     c.push(ins("loop"));
     // El arrayElement de cada túnel indexado en esta vuelta (fuera del array, el valor por defecto).

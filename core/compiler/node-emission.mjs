@@ -16,6 +16,7 @@ import { convertValue, wasmTypeOf } from "./wasm-types.mjs";
 import { i32 } from "./linear-memory.mjs";
 import { DEFAULT_CHART_HISTORY } from "./panel-memory.mjs";
 import { NODE_EMITTERS } from "./node-table.mjs";
+import { FEEDBACK_NODE } from "../model/feedback-node.mjs";
 
 export function createNodeEmission(ovi) {
   const { cat, module, asSubOVI, chainIndex, g, logicalTypes, resueltos, calls, porId, llegaA, clumpDe, nuevaCelda, cadena, arrayConstante, clusterConstante, autoErrores, valor, controles, errores, automaticos, bufer } = ovi;
@@ -135,7 +136,7 @@ export function createNodeEmission(ovi) {
     // VISA and the file functions are served by the same I/O (the editor's I/O process).
     // VISA's Property Node too (DT-072 §5).
     if (VISA_FUNCTIONS.has(n.tipo) || FILE_FUNCTIONS.has(n.tipo) || (n.tipo === "property-node" && n.config?.class === "Instr") || n.tipo === "call-library") module.usesInstrumentIo = true;
-    const emitir = n.tipo === "subvi" ? (e) => callSubOVI(e, calls.get(id)) : asSubOVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subOVIControl(e, asSubOVI.get(n.name)) : NODE_EMITTERS[n.tipo];
+    const emitir = n.tipo === "subvi" ? (e) => callSubOVI(e, calls.get(id)) : n.tipo === FEEDBACK_NODE ? ovi.emitFeedbackRead : asSubOVI && PANEL_CONTROLS.includes(n.tipo) ? (e) => subOVIControl(e, asSubOVI.get(n.name)) : NODE_EMITTERS[n.tipo];
     if (!emitir) return errores.push({ nodo: id, motivo: `The compiler cannot emit "${nombre}" (${n.tipo}) yet.` });
     const e = { nodo: n, cat, tIn, tOut, logicalTIn, logicalTOut, entrada, cableada, temporal: nuevoLocal, indice: controles.length, celda: nuevaCelda, cadena, bufer, clusterConstante, arrayConstante, chainIndex, registerPropertyNode, registerCallLibrary, registerControlReference };
     if (!asSubOVI && PANEL_CONTROLS.includes(n.tipo)) {

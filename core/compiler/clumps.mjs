@@ -2,8 +2,16 @@
 // as one node of its scope (`representativeOf`), and it takes time. `extraEdges` are the dependencies that are not
 // wires, as the order of the error chain.
 
-/** The edges of a scope between the representatives of its wires' ends, then the extra ones. */
-const scopeEdges = (graph, representativeOf, extraEdges) => [...graph.cables.map((wire) => [representativeOf(wire.de.nodo), representativeOf(wire.a.nodo)]), ...extraEdges];
+import { feedbackOrderEdges } from "../model/feedback-node.mjs";
+
+/**
+ * The edges of a scope between the representatives of its wires' ends, then those that are not wires: each Feedback
+ * Node's store half after its first half (DT-109), and the extra ones.
+ */
+const scopeEdges = (graph, representativeOf, extraEdges) => [
+  ...[...graph.cables.map((wire) => [wire.de.nodo, wire.a.nodo]), ...feedbackOrderEdges(graph)].map(([from, to]) => [representativeOf(from), representativeOf(to)]),
+  ...extraEdges,
+];
 
 /**
  * A topological order (Kahn's) of the nodes of a scope, `scopeIds`, joining each node to its representative in it (the

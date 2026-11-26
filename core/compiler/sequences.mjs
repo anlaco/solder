@@ -8,6 +8,7 @@ import { ins } from "./instructions.mjs";
 import { wasmTypeOf } from "./wasm-types.mjs";
 import { i32 } from "./linear-memory.mjs";
 import { splitIntoClumps, topologicalOrder } from "./clumps.mjs";
+import { FEEDBACK_STORE } from "../model/feedback-node.mjs";
 
 export function createSequences(ovi) {
   const { g, porId, esEstructura, deMarco, esLargo, marcoEnFlat, representante, conMarcos, clumpDe, valor, planes, ids, clumps } = ovi;
@@ -102,6 +103,7 @@ export function createSequences(ovi) {
     const m = deMarco(id);
     if (m) return emitirMarcoFlat(m[0], Number(m[1]), k);
     const tipo = porId.get(id).tipo;
+    if (tipo === FEEDBACK_STORE) return ovi.emitFeedbackStore(id, k);
     if (tipo === "case-structure") return emitirCase(id, k);
     if (tipo === "flat-sequence" || tipo === "stacked-sequence") return emitirSecuencia(id, k);
     return esEstructura(id) ? emitirEstructura(id, k) : emitirNodo(id, k);

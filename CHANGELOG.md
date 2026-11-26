@@ -9,6 +9,10 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- The Feedback Node runs (DT-109), as measured in LabVIEW: its initializer, its delay, its enable terminal, the memory
+  it keeps from one Run to the next when nothing initializes it, and an initializer moved out to a loop. It is not on
+  the palette yet: its look, menus and automatic insertion come next.
+
 ## 0.15.2-beta — 2026-11-26
 
 - Fix: a numeric value of Inf, -Inf or NaN (a constant, a control's default, an array's element, a cluster's element)
