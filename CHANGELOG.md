@@ -9,6 +9,16 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Fix: a numeric value of Inf, -Inf or NaN (a constant, a control's default, an array's element, a cluster's element)
+  was saved as nothing and came back as 0 when the OVI was opened again, changing what the OVI computes without a
+  word; the same when it was copied into another OVI. It is saved as LabVIEW shows it, `"Inf"`, `"-Inf"` or `"NaN"`
+  (DT-108). An OVI saved before with such a value still opens with 0 there: the value is not in the file.
+
+- Fix (#22): an `.ovi` whose constant or control holds a value of the wrong kind, such as a String Constant's value
+  written `{ "type": "string", "value": "X" }` instead of `"X"` by a tool, is refused when it is opened, with a message
+  that names the object and says what its value must be. Before, it was read, the compiler failed with a JavaScript
+  error and the editor's window closed without a word. Files that Solder writes were never affected.
+
 - Fix: Abort pressed in the first instant of a Run, while it was still getting ready, could be lost, and the OVI ran
   on to its end as if nothing had been pressed. It now stops, however early it is pressed.
 

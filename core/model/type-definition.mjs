@@ -11,6 +11,7 @@
 
 import { commentTable, fromTable, putComments, takeComments } from "./file-comments.mjs";
 import { elementFromFile, elementToFile, ErrorQvi, VERSION } from "./qvi-format.mjs";
+import { specialNumbersAsText } from "./constant-values.mjs";
 
 /** The control editor's three kinds, in the ring's order (measured), as the `.octl` stores them. */
 export const TYPE_DEFINITION_KINDS = Object.freeze(["control", "type-def", "strict-type-def"]);
@@ -74,7 +75,7 @@ export function writeTypeDefinition(kind, objects, comments) {
 }
 
 /** The text of an `.octl`: JSON indented by two spaces, as an `.ovi` is written. */
-export const typeDefinitionText = (kind, objects, comments) => `${JSON.stringify(writeTypeDefinition(kind, objects, comments), null, 2)}\n`;
+export const typeDefinitionText = (kind, objects, comments) => `${JSON.stringify(writeTypeDefinition(kind, objects, comments), specialNumbersAsText, 2)}\n`;
 
 /** A file of a version before `objects` held its one `object`: read as the list of it, before its comments are taken by place. */
 function withObjectsList(file) {

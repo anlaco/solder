@@ -22,6 +22,7 @@ import { DEFAULT_PATTERN } from "./connector-patterns.mjs";
 import { FREE_LABEL, isFreeLabel } from "./free-label.mjs";
 import { storedClusterConfig, withDerivedCluster } from "./user-cluster.mjs";
 import { putOviComments, separateOviComments, withOviComments } from "./ovi-comments.mjs";
+import { checkScalarValue, specialNumbersAsText, valueFromFile } from "./constant-values.mjs";
 
 /** A free label in the file: where it is, its text, its structure and frame, and its size once it was resized. */
 const freeLabelToFile = (n, place, inside, frame) => limpio({ x: place.x, y: place.y, text: n.label?.text ?? "", inside, frame, width: n.tam?.ancho, height: n.tam?.alto });
@@ -139,6 +140,7 @@ export function elementFromFile(item, cat) {
   const { kind, label, x, y, ...config } = item;
   if (!cat.tiene(kind)) throw new ErrorQvi(`the block "${kind}" of a cluster element is not in the catalog`);
   const read = aGrafo(config);
+  if (read.value !== undefined) read.value = storedValue(label ?? kind, read.type ?? cat.bloque(kind).config?.default?.type, read.value);
   // An element that is itself a user's cluster holds its own elements (DT-095), its type and value derived from them.
   if (Array.isArray(read.elements)) read.elements = read.elements.map((inner) => elementFromFile(inner, cat));
   const element = limpio({ tipo: kind, label: label !== undefined ? { text: label } : undefined, config: Object.keys(read).length ? read : undefined, x: x ?? 0, y: y ?? 0 });
@@ -163,6 +165,12 @@ const graphToFile = (config) => {
   return Object.keys(settings).length ? settings : undefined;
 };
 const graphFromFile = (graph) => Object.fromEntries(Object.entries(GRAPH_SETTINGS).filter(([, fileKey]) => graph?.[fileKey] !== undefined).map(([key, fileKey]) => [key, graph[fileKey]]));
+
+/** A value of the file for an object named `name` of `type`, checked (issue #22) and read back (DT-108). */
+function storedValue(name, type, value) {
+  checkScalarValue({ name, type, value, ErrorType: ErrorQvi });
+  return valueFromFile(value, type);
+}
 
 /** Quita las claves sin valor, para que el fichero no lleve `undefined` ni objetos vacíos. */
 function limpio(o) {
@@ -324,7 +332,7 @@ export function escribir(g, cat) {
 }
 
 /** El texto del fichero: JSON con sangría de dos espacios, siempre igual para el mismo OVI. */
-export const aTexto = (g, cat) => `${JSON.stringify(escribir(g, cat), null, 2)}\n`;
+export const aTexto = (g, cat) => `${JSON.stringify(escribir(g, cat), specialNumbersAsText, 2)}\n`;
 
 /** Un fichero que no se puede leer, con el motivo. */
 export class ErrorQvi extends Error {}
@@ -380,12 +388,13 @@ export function leer(datos, cat) {
           const item = fp.get(nodo.name);
           const tipoBase = cat.bloque(nodo.type).config?.default?.type ?? "number";
           // Lo que no es de fábrica del bloque se conserva; lo demás lo pone el bloque al crearse.
-          const config = limpio({ type: item && item.type !== tipoBase ? item.type : undefined, value: item?.default, style: item?.style, items: item?.["ring-items"], "allow-undefined": item?.["allow-undefined"], visibles: item?.["visible-elements"], indice: item?.index, mechanical: item?.["mechanical-action"], typedef: item?.typedef, ...graphFromFile(item?.graph) });
+          const config = limpio({ type: item && item.type !== tipoBase ? item.type : undefined, value: storedValue(nodo.name, item?.type ?? tipoBase, item?.default), style: item?.style, items: item?.["ring-items"], "allow-undefined": item?.["allow-undefined"], visibles: item?.["visible-elements"], indice: item?.index, mechanical: item?.["mechanical-action"], typedef: item?.typedef, ...graphFromFile(item?.graph) });
           const elements = item?.elements?.map((element) => elementFromFile(element, cat));
           n.config = { ...n.config, ...config, ...(elements && { elements }) };
           if (!Object.keys(n.config).length) delete n.config;
         } else if (nodo.config) {
           const read = aGrafo(nodo.config);
+          if (read.value !== undefined) read.value = storedValue(nodo.name, read.type ?? cat.bloque(nodo.type).config?.default?.type, read.value);
           if (Array.isArray(read.elements)) read.elements = read.elements.map((element) => elementFromFile(element, cat));
           n.config = { ...n.config, ...read };
         }

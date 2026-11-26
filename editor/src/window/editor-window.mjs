@@ -41,6 +41,7 @@ import * as E from "./window-state.mjs";
 import * as G from "../common/glyphs.mjs";
 import * as Gr from "../../../core/model/graph.mjs";
 import { isFreeLabel } from "../../../core/model/free-label.mjs";
+import { clipboardPacket, clipboardText } from "../../../core/model/constant-values.mjs";
 import * as H from "../block-diagram/undo-history.mjs";
 import { cargarInventario, esHueco, shortcutBlocked, ultimo } from "../common/labview-inventory.mjs";
 import { addressFromText } from "../common/array-grid.mjs";
@@ -1238,13 +1239,13 @@ function dondePegar() {
 
 /** What the main process says was copied in any OVI (it tells every window, and a new window asks). */
 function recibirPortapapeles(texto) {
-  if (texto) portapapeles = { paquete: JSON.parse(texto), memoria: null };
+  if (texto) portapapeles = { paquete: clipboardPacket(texto), memoria: null };
 }
 
 /** Keeps what was copied here and tells the main process, which hands it to the other OVIs. */
 function guardarEnPortapapeles(fragment) {
   portapapeles = { paquete: { oviKey, fragment }, memoria: null };
-  window.solder?.portapapeles.guardar(JSON.stringify(portapapeles.paquete));
+  window.solder?.portapapeles.guardar(clipboardText(portapapeles.paquete));
 }
 
 /** The fragment as it reads in this OVI: the paths of its subOVIs are relative to the file it came from. */

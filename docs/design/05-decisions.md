@@ -44,6 +44,8 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [102](#dt-102) | A subOVI behaves in memory as LabVIEW's subVI: reserved while a caller runs, held by Defer Decision, broken by an unsaved connector change | Accepted · partly built |
 | [103](#dt-103) | A compiled application is the Solder Runtime: wasmtime, a web server and a desktop window at once, with the HTML front panel reachable from any browser and from a remote viewer built with it | Accepted as the end result · not built |
 | [104](#dt-104) | The control editor is the Front Panel page editing one object: an entry of its own kind with an `.octl`, one window, the Control / Type Def. / Strict Type Def. ring | Accepted · being built |
+| [107](#dt-107) | A new control is created the ways LabVIEW creates one; an `.octl` holds zero, one or more objects (format 10) | Accepted · built |
+| [108](#dt-108) | Inf, -Inf and NaN are written in files as the texts "Inf", "-Inf" and "NaN" | Accepted · built |
 
 ## The 34 Red decisions
 
@@ -5556,3 +5558,35 @@ one or more objects (format version 10, `objects`). Only an `.octl` with exactly
 | Format 10 reads and writes 0, 1 and 2 objects; version 9's `object` still reads | `test/core/type-definitions.test.mjs`, `test/core/control-editor.test.mjs`, `test/end-to-end/format-versions.test.mjs` | Built (2026-11-25) |
 | The ways in, their titles, rings, sizes and project items | `test/editor/new-controls.test.mjs`, `project-new-control.test.mjs`, `new-dialog.test.mjs`, `customize-control.test.mjs`; tried under Xvfb | Built (2026-11-25) |
 | Placing: Select a Control..., Select an OVI... of a type definition, dragging from the tree | `test/editor/customize-control.test.mjs`, `dropped-file.test.mjs`; tried under Xvfb | Built (2026-11-25) |
+
+## DT-108
+
+**A number that JSON cannot hold, Inf, -Inf or NaN, is written in Solder's files as the text LabVIEW shows for it:
+`"Inf"`, `"-Inf"`, `"NaN"`. A numeric value read as one of those three texts is that number.**
+
+- **Status:** Accepted on 2026-11-26 by the developer ("Como texto \"Inf\""), found while fixing issue #22 · built the
+  same day.
+- **Why:** JSON has no Inf or NaN, and `JSON.stringify` writes them as `null`, which reads back as nothing and runs as 0.
+  A Numeric Constant set to Inf gave Inf until the OVI was saved, and 0 after it was opened again, with no message: a
+  wrong result. LabVIEW shows these values as Inf, -Inf and NaN (Solder's `formatear` and `leerNumero` already use
+  those words), so the file says what the user sees.
+
+### Decision
+
+1. **Writing:** every file written through the OVI and type definition writers (`aTexto`, `typeDefinitionText`) turns a
+   non-finite number, wherever it is, into `"Inf"`, `"-Inf"` or `"NaN"`. No other field of these files holds such a number,
+   and before this one it was lost anyway. The editor's clipboard, which carries graph fragments between windows as JSON, tags them as
+   objects instead (`clipboardText`, `clipboardPacket`), because a string there may be any text.
+2. **Reading:** only where a value is read with its type (a constant's or a control's value, an array's elements, a
+   cluster element's value) is one of the three texts, exactly so spelt, turned into its number; the same text in a
+   string stays text. Any other text where a number is expected is refused by the check of issue #22, naming the object.
+3. **Older files:** a `null` written before this decision cannot be told apart (Inf, -Inf or NaN) and keeps reading as
+   before (the block's default, 0). No format version is raised: a file of this version that holds no such number is
+   unchanged, and an older Solder reading `"Inf"` was already as wrong as with `null`.
+
+### How it is verified
+
+| What | Test | State |
+|------|------|-------|
+| Inf, -Inf and NaN in a constant, a control, an array and a cluster element survive saving and opening, and run with their value | `test/core/special-numbers.test.mjs` | Built (2026-11-26) |
+| A fragment copied into another OVI keeps them: the clipboard's JSON carries each as `{ "solder-non-finite-number": "Inf" }`, since there a string may be any text | `test/core/special-numbers.test.mjs` | Built (2026-11-26) |
