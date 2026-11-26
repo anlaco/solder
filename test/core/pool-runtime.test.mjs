@@ -166,12 +166,20 @@ test("a reentrant subOVI that never waits is called with no lock", () => {
   assert.ok(!callsScheduler(compilar(echoCallers(cat, 2, 1).g, cat), "enter_subvi"));
 });
 
+// Abort is pressed once a loop has shown a turn, and "at once" is counted in turns, not milliseconds, so that a loaded
+// machine neither presses it before the Run starts nor makes the stop look slow (rule 6).
 test("Abort stops a Run on the pool at once, and the pool serves the next Run", async () => {
+  const TURNS = 1000;
+  const vi = waitingLoops(4, TURNS, 5);
   const abort = new AbortController();
-  setTimeout(() => abort.abort(), 30);
-  const start = performance.now();
-  await assert.rejects(runOnPool(waitingLoops(4, 1000, 5), {}, { senal: abort.signal }), (error) => error.abortado);
-  assert.ok(performance.now() - start < 300, "at once");
+  let lastTurnShown = 0;
+  const abortAfterATurn = (nodeId, value) => {
+    if (nodeId !== vi.id.shown0) return;
+    lastTurnShown = value;
+    if (value > 0) abort.abort();
+  };
+  await assert.rejects(runOnPool(vi, {}, { senal: abort.signal, alEscribir: abortAfterATurn }), (error) => error.abortado);
+  assert.ok(lastTurnShown < TURNS - 1, `stopped at once, at turn ${lastTurnShown} of ${TURNS}`);
   assert.deepEqual(await runOnPool(waitingLoops(2, 3, 1)), { shown0: 2, shown1: 2 });
 });
 
@@ -223,11 +231,37 @@ test("debugging turned on in the middle of a Run on the pool reaches its nodes a
   const compiled = compilar(vi.g, CAT);
   const nodes = [];
   const values = [];
-  const depurador = { alValor: (node, output, value) => values.push(value), alNodo: (node) => void nodes.push(node), unoACadaVez: () => false };
-  setTimeout(() => depurador.activar(true), 30);
-  setTimeout(() => depurador.activar(false), 80);
-  const written = await ejecutar(compiled, {}, { depurador, poolPorts: pool.connect() });
+  // Turned on once the loop has shown a turn and off after some nodes, not after fixed times: under load those times
+  // fell before the threads had started (rule 6).
+  const NODES_TO_SEE = 20;
+  const turnOff = () => nodes.length >= NODES_TO_SEE && depurador.activar(false);
+  const depurador = { alValor: (node, output, value) => values.push(value), alNodo: (node) => void (nodes.push(node), turnOff()), unoACadaVez: () => false };
+  let turnedOn = false;
+  // The panel is read at the display's pace, so the first turn it shows may be any.
+  const turnOnAfterATurn = (nodeId, value) => {
+    if (nodeId !== vi.id.shown0 || value === 0 || turnedOn) return;
+    turnedOn = true;
+    depurador.activar(true);
+  };
+  const written = await ejecutar(compiled, {}, { depurador, poolPorts: pool.connect(), alEscribir: turnOnAfterATurn });
   assert.equal(written[vi.id.shown0], 299);
   assert.ok(nodes.length > 0, "the debugger saw nodes run on the pool");
   assert.ok(values.some((value) => typeof value === "number" && value > 0), `and the values of their outputs: ${values.slice(0, 5)}`);
+});
+
+// An Abort pressed while the Run on the pool was still getting ready (compiling the module for the threads) was lost:
+// the Run listened for it only afterwards, and preparing the Run cleared the abort flag, so the OVI ran to its end.
+// Under load it happened by itself, about one Run in fifty; here the Abort comes exactly in that gap, every time.
+test("Abort pressed while the Run on the pool is getting ready stops it", async () => {
+  const abort = new AbortController();
+  const compileModule = WebAssembly.compile;
+  WebAssembly.compile = (bytes) => {
+    abort.abort();
+    return compileModule(bytes);
+  };
+  try {
+    await assert.rejects(runOnPool(waitingLoops(4, 1000, 5), {}, { senal: abort.signal }), (error) => error.abortado);
+  } finally {
+    WebAssembly.compile = compileModule;
+  }
 });

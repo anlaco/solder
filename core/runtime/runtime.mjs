@@ -991,9 +991,12 @@ async function runOnPool({ ex, memory, bytes, compilado, separador, pathRules, p
     ex.request_abort();
   };
   const abortRun = () => ex.request_abort();
-  senal?.addEventListener("abort", abortRun, { once: true });
   passOverPanel();
   ex.prepare_run(threads, sharedClock());
+  // Only after prepare_run, which clears the abort flag; and an Abort pressed while the module compiled has already
+  // fired, so it is read here rather than waited for.
+  if (senal?.aborted) abortRun();
+  else senal?.addEventListener("abort", abortRun, { once: true });
   const pass = setInterval(passOverPanel, DISPLAY_PASS_MS);
   const answerExternalWait = ({ name, clump, args }) => {
     Promise.resolve()

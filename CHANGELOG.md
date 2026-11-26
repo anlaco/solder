@@ -9,6 +9,9 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Fix: Abort pressed in the first instant of a Run, while it was still getting ready, could be lost, and the OVI ran
+  on to its end as if nothing had been pressed. It now stops, however early it is pressed.
+
 ## 0.15.1-beta — 2026-11-26
 
 - Fix (#23): VISA, the file functions and the Call Library Function Node work in the installed app. Every installed
