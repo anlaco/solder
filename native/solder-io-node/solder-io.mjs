@@ -20,7 +20,21 @@ import { fileURLToPath } from "node:url";
 /** The addon's file for a system and processor: one per platform, so a release can carry Linux's and Windows'. */
 export const addonFileName = (platform = process.platform, arch = process.arch) => `solder-io-${platform}-${arch}.node`;
 
-export const ADDON_PATH = fileURLToPath(new URL(`./${addonFileName()}`, import.meta.url));
+/** The folder electron-builder packs the app into: an archive, which only Electron's own `fs` and `require` read. */
+const PACKED_APP_FOLDER = /([\\/])app\.asar([\\/])/;
+/** Where electron-builder copies the files `asarUnpack` lists (package.json), as real files the system can load. */
+const UNPACKED_APP_FOLDER = "$1app.asar.unpacked$2";
+
+/**
+ * The path of a native file beside this module, outside the archive when the app is installed (issue #23): the
+ * system's loader (LoadLibraryExW, dlopen) cannot open a file inside `app.asar`. `windows` gives Windows' path on
+ * any system, for the tests.
+ */
+export function nativeFilePath(relativePath, moduleUrl = import.meta.url, { windows = process.platform === "win32" } = {}) {
+  return fileURLToPath(new URL(`./${relativePath}`, moduleUrl), { windows }).replace(PACKED_APP_FOLDER, UNPACKED_APP_FOLDER);
+}
+
+export const ADDON_PATH = nativeFilePath(addonFileName());
 
 /**
  * The memory bridge's file on each system (DT-088 §4): the library that offers LabVIEW's memory functions, by LabVIEW's
@@ -32,7 +46,7 @@ const MEMORY_BRIDGE_FILE = { linux: "libsolder_memory_bridge.so", darwin: "libso
 /** Where the memory bridge of a system and processor sits, beside the addon: a folder of its own, since its name is fixed. */
 export const memoryBridgeRelativePath = (platform = process.platform, arch = process.arch) => `memory-bridge/${platform}-${arch}/${MEMORY_BRIDGE_FILE[platform]}`;
 
-export const MEMORY_BRIDGE_PATH = fileURLToPath(new URL(`./${memoryBridgeRelativePath()}`, import.meta.url));
+export const MEMORY_BRIDGE_PATH = nativeFilePath(memoryBridgeRelativePath());
 
 let solderIo = null;
 

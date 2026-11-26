@@ -9,6 +9,11 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+- Fix (#23): VISA, the file functions and the Call Library Function Node work in the installed app. Every installed
+  copy, on Windows and on Linux, stopped the first OVI that used them with "Solder's I/O could not be loaded: the
+  memory bridge does not load" (LoadLibraryExW or dlopen failed): the bridge was looked for inside the app's archive,
+  which the system cannot load a library from, instead of beside it. Running from the repository was not affected.
+
 ## 0.15.0-beta — 2026-11-25
 
 - Fix: in the docked view, a control editor's window (it stays floating) opened with no menu bar and no toolbar; it
