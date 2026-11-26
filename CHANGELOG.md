@@ -9,6 +9,8 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+## 0.15.2-beta — 2026-11-26
+
 - Fix: a numeric value of Inf, -Inf or NaN (a constant, a control's default, an array's element, a cluster's element)
   was saved as nothing and came back as 0 when the OVI was opened again, changing what the OVI computes without a
   word; the same when it was copied into another OVI. It is saved as LabVIEW shows it, `"Inf"`, `"-Inf"` or `"NaN"`
