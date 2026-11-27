@@ -303,3 +303,13 @@ test("las constantes de cadena fijas", async () => {
     assert.deepEqual(await correr(v), { r: texto }, tipo);
   }
 });
+
+test("a byte that is not UTF-8 keeps being one byte through constants, controls, functions and indicators (DT-110)", async () => {
+  const escapedFF = "\udcff";
+  const v = vi(
+    [["a", "str-const", { value: `A${escapedFF}\r\n` }], ["x", "str-control"], ["c", "concatenate-strings"], ["l", "string-length"], ["r", "str-indicator"], ["n", "indicator", { type: "i32" }]],
+    [["a.result", "c.string-0"], ["x.result", "c.string-1"], ["c.concatenated-string", "r.value"], ["c.concatenated-string", "l.string"], ["l.length", "n.value"]],
+  );
+  // Before DT-110 the byte became U+FFFD, three bytes: the length was 9 and the indicator lost the byte.
+  assert.deepEqual(await correr(v, { x: `\udc80B` }), { r: `A${escapedFF}\r\n\udc80B`, n: 6 });
+});

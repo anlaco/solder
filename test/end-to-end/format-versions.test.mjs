@@ -78,9 +78,15 @@ test("an .ovi or .octl of version 8 opens as version 9 with nothing else changed
 // DT-107: version 10 gives an .octl its list of `objects` (type-definition.mjs reads a version 9 `object` as that list,
 // test/core/type-definitions.test.mjs); an .ovi has nothing to change.
 test("an .ovi of version 9 opens as version 10 with nothing else changed", () => {
-  assert.equal(VERSION, 10);
   const version9 = { solder: 9, "front-panel": [{ name: "Pt", typedef: { path: "PointTD.octl", strict: false, "auto-update": false } }] };
-  assert.deepEqual(migrar(version9), { ...version9, solder: 10 });
+  assert.deepEqual(migrar(version9, MIGRATIONS, 10), { ...version9, solder: 10 });
+});
+
+// DT-110: version 11 lets a string object say `"display": "codes"`; without it the object is in Normal Display.
+test("an .ovi of version 10 opens as version 11 with nothing else changed", () => {
+  assert.equal(VERSION, 11);
+  const version10 = { solder: 10, "front-panel": [{ name: "s", role: "control", type: "string", default: "*IDN?\n" }] };
+  assert.deepEqual(migrar(version10), { ...version10, solder: 11 });
 });
 
 test("a .sdp and a .sdproj of version 1 open unchanged and are saved as version 2; version 3 is refused", async () => {

@@ -68,10 +68,12 @@ import * as CL from "./call-library-nodes.mjs";
 import * as CallLibraryDialog from "./call-library-dialog.mjs";
 import * as FB from "./feedback-node-geometry.mjs";
 import * as FM from "./feedback-node-menus.mjs";
+import * as SM from "./string-menus.mjs";
 import { connectedToMovedOutInitializer, initializersInTheirLoops, isMovedOutInitializerWire } from "./feedback-node-edits.mjs";
 import { insertedFeedbackNode } from "./feedback-node-insertion.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { constantElementType, constantForElement, emptyArrayAgain, flipArrayKind, isEmptyArrayShell, setArrayRepresentation, typeEmptyArray } from "../common/array-typing.mjs";
+import { typedValue } from "../../../core/model/backslash-codes.mjs";
 import { CONSTANT_DIGITS, DBL, NUMERICOS, PATH, POR_ABREVIATURA, VISA_RESOURCE, convertirValor, esArray, isUndefinedArray, esEntero, esEnum, esError, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
 import * as CV from "../../../core/model/control-values.mjs";
 import * as SI from "./select-item-dialog.mjs";
@@ -1486,9 +1488,9 @@ function commitTyping(d, ctx) {
   }
   // Una expresión se guarda tal cual: si no vale, la dirá el compilador.
   if (n.tipo === "expression-node") return { ...d, g: Gr.fijarConfig(d.g, n.id, { expression: e.texto }), edicion: null };
-  // A string is kept as typed, with its newlines; so are a VISA resource name and a DAQ name, which carry none (Enter
-  // confirms).
-  if (TEXT_CONSTANTS.has(n.tipo)) return { ...d, g: Gr.fijarValor(d.g, n.id, e.texto), edicion: null };
+  // A string is kept as typed, with its newlines, and read in its display style (DT-110); so are a VISA resource name and a
+  // DAQ name, which carry none (Enter confirms).
+  if (TEXT_CONSTANTS.has(n.tipo)) return { ...d, g: Gr.fijarValor(d.g, n.id, typedValue(e.texto, n.config)), edicion: null };
   // A path is read from the text as String To Path reads it, with the rules of the host: every text is a path (DT-067).
   if (n.tipo === "path-constant") return { ...d, g: Gr.fijarValor(d.g, n.id, pathFromText(e.texto, ctx.pathRules)), edicion: null };
   const b = ctx.cat.bloque(n.tipo);
@@ -1566,6 +1568,9 @@ export function orden(d, id, ctx, inv) {
   const repair = (g) => alojar(g, ctx, []);
   const feedbackResult = FM.menuCommand(d, id, ctx, repair) ?? FM.shiftRegisterCommand(d, id, ctx, repair);
   if (feedbackResult) return feedbackResult;
+  // Normal Display and '\' Codes Display of a string object (string-menus.mjs, DT-110).
+  const stringResult = SM.menuCommand(d, id);
+  if (stringResult) return stringResult;
   const { nodo, puerto } = d.menu;
   const cerrar = (g) => ({ ...d, g, menu: null });
   if (id.endsWith(".size-to-text") && isFreeLabel(nodoPor(d.g, nodo))) return cerrar(FL.toggleSizeToText(d.g, nodo, ctx.medir, FL.canvasOf(nodoPor(d.g, nodo))));
@@ -2054,6 +2059,7 @@ function ownMarks(d, ctx) {
   if (CL.isCallLibraryNode(n)) for (const mark of r === CLT.TERMINAL_MENU_ROOT ? CLT.NAME_FORMAT_MARKS : CL.NAME_FORMAT_MARKS) m.add(mark);
   if (VSR.isOviServerReference(n)) for (const mark of VSR.menuMarks(n)) m.add(mark);
   if (FB.isFeedbackNode(n)) for (const mark of FM.menuMarks(n)) m.add(mark);
+  for (const mark of SM.menuMarks(r, n)) m.add(mark);
   if (n.config?.mode) m.add(`${r}.change-mode.${n.config.mode}`);
   if (n.config?.mechanical) m.add(`${r}.mechanical-action.${n.config.mechanical}`);
   const abrev = (r.startsWith("context.numeric-") || isRingMenu(r)) && NUMERICOS[n.config?.type ?? (isRing(n) ? RING_REPRESENTATION : DBL)]?.abrev;

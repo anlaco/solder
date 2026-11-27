@@ -24,6 +24,7 @@ import * as VN from "./visa-nodes.mjs";
 import * as CL from "./call-library-nodes.mjs";
 import * as CLT from "./call-library-terminal-menu.mjs";
 import * as FB from "./feedback-node-geometry.mjs";
+import * as SM from "./string-menus.mjs";
 import { feedbackBody } from "./feedback-node-view.mjs";
 import * as FileNodes from "./file-nodes.mjs";
 import * as ExpressNodes from "./express-nodes.mjs";
@@ -39,6 +40,7 @@ import { brokenWireMarks, endPoint } from "./broken-wire.mjs";
 import { junctionPoints } from "./wire-tree.mjs";
 import { CONSTANTES_MATEMATICAS } from "../../../core/model/math-constants.mjs";
 import { isErrorFrameValue, isNoError } from "../../../core/model/error-case.mjs";
+import { shownText } from "../../../core/model/backslash-codes.mjs";
 import { COLORES, CONSTANT_DIGITS, PATH, VISA_RESOURCE, aspecto, isUndefinedArray, esArray, esCluster, esEntero, esEnum, esError, esNumerico, formatear, nombre } from "../../../core/model/types.mjs";
 import { GRAPH_KINDS, labelShown } from "../front-panel/graph-state.mjs";
 import { elementMenuRoot } from "../common/array-typing.mjs";
@@ -113,7 +115,8 @@ export const CONSTANTES = {
   // Cadenas: una caja con el borde rosa. La de la paleta se escribe, con varias líneas
   // (Intro baja de línea y se confirma con Enter Text o con un clic fuera); las fijas
   // llevan un signo y no se editan.
-  "str-const": { editable: true, cadena: true, texto: (n) => n.config?.value ?? "" },
+  // It shows its value in its display style: Normal, or '\' Codes (DT-110).
+  "str-const": { editable: true, cadena: true, texto: (n) => shownText(n.config?.value, n.config) },
   // A VISA resource name: a box in the type's colour with an I/O glyph, the resource's text, a divider and a dropdown
   // arrow (labview-captures/reports/2026-10-26-visa-resource-name-look.md Q1). One line only.
   "visa-resource-constant": { editable: true, visa: true, growsRight: true, texto: (n) => n.config?.value ?? "" },
@@ -1826,8 +1829,10 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   if (n.tipo === "bool-control") return "context.boolean-control-terminal";
   // El menú de la constante booleana no está capturado.
   if (n.tipo === "bool-const") return null;
-  // Los menús de la constante, el control y el indicador de cadena tampoco (M3: sin capturar).
-  if (n.tipo === "str-control" || n.tipo === "str-indicator" || CONSTANTES[n.tipo]?.cadena) return null;
+  // The String Constant and the terminals of a string control and indicator (reports/2026-11-27-string-menus.md); the
+  // fixed string constants' menus were not captured.
+  if (SM.diagramMenuRoot(n)) return SM.diagramMenuRoot(n);
+  if (CONSTANTES[n.tipo]?.cadena) return null;
   if (n.tipo === "indicator") return "context.numeric-indicator";
   // The menu of the array constant (labview-captures/array-2d/constant-2d-menu-index.png and constant-2d-menu-shell.png).
   // The element of a typed array constant has its own menu; the index and the margin of the shell keep the array's.

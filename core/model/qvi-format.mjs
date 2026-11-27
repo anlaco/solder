@@ -28,7 +28,7 @@ import { checkScalarValue, specialNumbersAsText, valueFromFile } from "./constan
 const freeLabelToFile = (n, place, inside, frame) => limpio({ x: place.x, y: place.y, text: n.label?.text ?? "", inside, frame, width: n.tam?.ancho, height: n.tam?.alto });
 const freeLabelSize = (label) => (label.width === undefined ? undefined : limpio({ ancho: label.width, alto: label.height }));
 
-export const VERSION = 10;
+export const VERSION = 11;
 
 /** Solder's own numbering of 4-2-2-4's cells in version 1: 0–3 the left column down, 4–7 the middle, 8–11 the right column down. */
 const VERSION_1_PATTERN = "4-2-2-4";
@@ -101,12 +101,15 @@ const withAutoUpdateVersion = (vi) => ({ ...vi, solder: 9 });
  */
 const withControlObjectsVersion = (vi) => ({ ...vi, solder: 10 });
 
+/** Version 10 → 11 (DT-110): a string object may say `"display": "codes"`, '\\' Codes Display. Optional: nothing to change. */
+const withDisplayStylesVersion = (vi) => ({ ...vi, solder: 11 });
+
 /**
  * The format is frozen from 0.4.0-beta on (DT-055, spec/02 §4.1): a change to it raises VERSION and adds here the
  * function that turns a file of the version before into one of the new version, so every file a released Solder
  * saved still opens. `MIGRATIONS[n - 1]` migrates version n to n + 1.
  */
-export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion, withFreeLabelsVersion, withRingPairsVersion, withUserClustersVersion, withTypeDefinitionsVersion, withCommentsVersion, withAutoUpdateVersion, withControlObjectsVersion];
+export const MIGRATIONS = [connectorWithLabVIEWIndices, withWindowsVersion, withFreeLabelsVersion, withRingPairsVersion, withUserClustersVersion, withTypeDefinitionsVersion, withCommentsVersion, withAutoUpdateVersion, withControlObjectsVersion, withDisplayStylesVersion];
 
 /** A file of an older version brought up to `version`, one migration after another. */
 export function migrar(vi, migrations = MIGRATIONS, version = VERSION) {
@@ -261,7 +264,7 @@ export function escribir(g, cat) {
       const salida = cat.puertos(n).out.length > 0;
       const tipoBase = b.config?.default?.type ?? "number";
       const elements = n.config?.elements?.map(elementToFile);
-      panel.push(limpio({ name: n.name, role: salida ? "control" : "indicator", type: elements ? undefined : n.config?.type ?? tipoBase, default: elements ? undefined : n.config?.value, elements, style: n.config?.style, "ring-items": n.config?.items, "allow-undefined": n.config?.["allow-undefined"], "visible-elements": n.config?.visibles, index: n.config?.indice || undefined, "mechanical-action": n.config?.mechanical, graph: graphToFile(n.config), typedef: n.config?.typedef }));
+      panel.push(limpio({ name: n.name, role: salida ? "control" : "indicator", type: elements ? undefined : n.config?.type ?? tipoBase, default: elements ? undefined : n.config?.value, elements, style: n.config?.style, "ring-items": n.config?.items, "allow-undefined": n.config?.["allow-undefined"], "visible-elements": n.config?.visibles, index: n.config?.indice || undefined, "mechanical-action": n.config?.mechanical, display: n.config?.display, graph: graphToFile(n.config), typedef: n.config?.typedef }));
       if (n.panel) placPanel[n.name] = limpio({ x: n.panel.x, y: n.panel.y, w: n.panel.w, h: n.panel.h, label: etiqueta, "label-offset": n.panel.etiqueta });
     }
   }
@@ -388,7 +391,7 @@ export function leer(datos, cat) {
           const item = fp.get(nodo.name);
           const tipoBase = cat.bloque(nodo.type).config?.default?.type ?? "number";
           // Lo que no es de fábrica del bloque se conserva; lo demás lo pone el bloque al crearse.
-          const config = limpio({ type: item && item.type !== tipoBase ? item.type : undefined, value: storedValue(nodo.name, item?.type ?? tipoBase, item?.default), style: item?.style, items: item?.["ring-items"], "allow-undefined": item?.["allow-undefined"], visibles: item?.["visible-elements"], indice: item?.index, mechanical: item?.["mechanical-action"], typedef: item?.typedef, ...graphFromFile(item?.graph) });
+          const config = limpio({ type: item && item.type !== tipoBase ? item.type : undefined, value: storedValue(nodo.name, item?.type ?? tipoBase, item?.default), style: item?.style, items: item?.["ring-items"], "allow-undefined": item?.["allow-undefined"], visibles: item?.["visible-elements"], indice: item?.index, mechanical: item?.["mechanical-action"], display: item?.display, typedef: item?.typedef, ...graphFromFile(item?.graph) });
           const elements = item?.elements?.map((element) => elementFromFile(element, cat));
           n.config = { ...n.config, ...config, ...(elements && { elements }) };
           if (!Object.keys(n.config).length) delete n.config;

@@ -24,6 +24,7 @@ import { arrayToSpreadsheetString, endOfLineFor, spreadsheetStringToArray } from
 import { abortedError, createRealHost } from "./scheduler.mjs";
 import { CLUMP, CLUMP_BYTES, HEADER, PARK_KIND, RUN_STATUS, STATE } from "../compiler/pool-scheduler.mjs";
 import { elementValueIn } from "../model/cluster-values.mjs";
+import { bytesToText, textToBytes } from "../model/string-bytes.mjs";
 import { SCHEDULER } from "../compiler/linear-memory.mjs";
 import { PANEL_RECORD } from "../compiler/panel-memory.mjs";
 import { VISA_FUNCTION_NAMES, createVisaFunctions } from "./instrument-io.mjs";
@@ -34,9 +35,9 @@ import { CALL_LIBRARY_FUNCTION_NAMES, createCallLibraryFunction } from "./call-l
 /** The size of one row record of Format Into String and Scan From String in memory (the compiler's FORMAT_ROW_BYTES). */
 const FORMAT_ROW_BYTES = 16;
 // Strings travel as "binary strings" (one character per byte, see CADENAS); the
-// format engine works on text, so UTF-8 is decoded on the way in and encoded out.
-const decodificar = (binaria) => new TextDecoder().decode(Uint8Array.from(binaria, (c) => c.charCodeAt(0)));
-const codificar = (texto) => aBinario(new TextEncoder().encode(texto));
+// format engine works on text, so UTF-8 is decoded on the way in and encoded out, every byte kept (DT-110).
+const decodificar = (binaria) => bytesToText(Uint8Array.from(binaria, (c) => c.charCodeAt(0)));
+const codificar = (texto) => aBinario(textToBytes(texto));
 
 
 // ——— Funciones de cadena que dependen del formato de LabVIEW (DT-042 b) ———
@@ -229,7 +230,8 @@ export function createHostFunctions({ compilado, separador = ".", pathRules = ho
   // Los clusters (DT-042): campo a campo, según la disposición que da el
   // compilador; sus cadenas, en sus celdas. Un valor de cluster es un objeto con
   // un valor por nombre de campo.
-  // A LabVIEW string is bytes: an instrument's answer goes in as it came, text goes in as UTF-8.
+  // A LabVIEW string is bytes: an instrument's answer goes in as it came, text goes in as UTF-8, and bytes that are not
+  // UTF-8 come back to the panel as the escaped text they were (DT-110).
   const putBytes = (cell, bytes) => {
     const block = exports().redimensionar(cell, 4 + bytes.length);
     memoria().setInt32(block, bytes.length, true);
@@ -241,8 +243,8 @@ export function createHostFunctions({ compilado, separador = ".", pathRules = ho
     const length = block ? m.getInt32(block, true) : 0;
     return new Uint8Array(memory.buffer, block + 4, length).slice();
   };
-  const ponerCadena = (celda, texto) => putBytes(celda, new TextEncoder().encode(String(texto ?? "")));
-  const leerCadena = (handle) => new TextDecoder().decode(readBytes(handle));
+  const ponerCadena = (celda, texto) => putBytes(celda, textToBytes(texto));
+  const leerCadena = (handle) => bytesToText(readBytes(handle));
   // A cluster's value is a list in cluster order, or a record by name for Solder's own clusters (cluster-values.mjs).
   const ponerCluster = (dir, d, v = []) => {
     for (const [index, c] of d.campos.entries()) {

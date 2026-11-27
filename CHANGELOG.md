@@ -18,6 +18,12 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   and a Feedback Node swap with Replace with Feedback Node and Replace with Shift Register, the initializer and the
   wires of the pair going where LabVIEW puts them.
 
+- '\' Codes Display on string constants, controls and indicators (#23, DT-110): `\n`, `\r`, `\t`, `\s`, `\b`, `\f`,
+  `\\` and `\XX` are shown and typed as in LabVIEW, so `*IDN?\n` typed in '\' Codes ends with a real line feed. The
+  display style is saved with the OVI. Strings now keep every byte: a byte that is not valid UTF-8 (an instrument's
+  binary answer, a `\FF` typed in '\' Codes) is no longer turned into U+FFFD on its way through the panel, the file
+  and the runtime.
+
 ## 0.15.2-beta — 2026-11-26
 
 - Fix: a numeric value of Inf, -Inf or NaN (a constant, a control's default, an array's element, a cluster's element)

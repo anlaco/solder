@@ -17,6 +17,8 @@
 //
 // Las funciones de aquí se emiten en cada módulo, antes que las del OVI.
 
+import { textToBytes } from "../model/string-bytes.mjs";
+
 export const CIMA = 4;
 export const LISTAS = 8;
 export const HEAP_LOCK = LISTAS + 32 * 4;
@@ -292,7 +294,7 @@ export const EXPORTADAS = ["redimensionar", "nuevo_array", "read_lock", "read_un
  * alineado a 4. Devuelve el bloque y su tamaño.
  */
 export function bloqueCadena(texto) {
-  const b = typeof texto === "string" ? new TextEncoder().encode(texto) : texto;
+  const b = typeof texto === "string" ? textToBytes(texto) : texto;
   const r = new Uint8Array(4 + b.length);
   new DataView(r.buffer).setInt32(0, b.length, true);
   r.set(b, 4);

@@ -15,6 +15,7 @@
 import { FILE_DIALOG_CODES, READ_MODE } from "../compiler/nodes/files.mjs";
 import { CANCELLING_DIALOGS, deleteConfirmation, fileDialogOf, fileDialogRequest, replaceConfirmation } from "./file-dialogs.mjs";
 import { arrayToSpreadsheetString, endOfLineFor, firstRowOf, readDelimitedRows, rowsToArray, transposeArray } from "./spreadsheet.mjs";
+import { bytesToText, textToBytes } from "../model/string-bytes.mjs";
 import { EMPTY_PATH, NOT_A_PATH, NOT_A_PATH_TEXT, PATH_KIND, isEmptyPath, isNotAPath, pathFromText, pathToText } from "../model/paths.mjs";
 
 /** What the import answers its clump with: the work is in the outputs it wrote. */
@@ -389,7 +390,7 @@ export function createFileFunctions({ io, dialogs = CANCELLING_DIALOGS, host, me
         const { refnum, error } = await files.fileOpen(name, append ? OPEN_OR_CREATE : REPLACE_OR_CREATE, READ_WRITE);
         if (error !== NO_ERROR_CODE) return fail(error, name);
         const moved = append ? await files.fileMoveToEnd(refnum) : NO_ERROR_CODE;
-        const written = moved !== NO_ERROR_CODE ? moved : await files.fileWrite(refnum, new TextEncoder().encode(text), false);
+        const written = moved !== NO_ERROR_CODE ? moved : await files.fileWrite(refnum, textToBytes(text), false);
         await files.fileClose(refnum);
         if (written !== NO_ERROR_CODE) return fail(written, name);
         writePath(newPathCell, wanted);
@@ -431,7 +432,7 @@ export function createFileFunctions({ io, dialogs = CANCELLING_DIALOGS, host, me
         if (error !== NO_ERROR_CODE) return fail(error, READ_DELIMITED_SOURCE.open);
         const read = await files.fileRead(refnum, -1, false);
         await files.fileClose(refnum);
-        const text = new TextDecoder().decode(read.text);
+        const text = bytesToText(read.text);
         const steps = readDelimitedRows({ text, rows, offset, maxCharacters });
         let array = rowsToArray({ rows: steps.rows, format: host.textOf(format), element, delimiter: host.textOf(delimiter) });
         if (transpose) array = transposeArray(array);

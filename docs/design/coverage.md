@@ -27,7 +27,7 @@
 | Structures | 10 / 22 (45 %) | `█████░░░░░` |
 | Execution | 8 / 15 (53 %) | `█████░░░░░` |
 | Diagram editing | 13 / 30 (43 %) | `████░░░░░░` |
-| Front panel editing | 10 / 22 (45 %) | `█████░░░░░` |
+| Front panel editing | 11 / 23 (48 %) | `█████░░░░░` |
 | SubOVIs, libraries and projects | 8 / 22 (36 %) | `████░░░░░░` |
 | Debugging | 8 / 16 (50 %) | `█████░░░░░` |
 | Files | 5 / 15 (33 %) | `███░░░░░░░` |
@@ -35,7 +35,7 @@
 | Functions palette | 215 / 563 (38 %) | `████░░░░░░` |
 | Controls palette | 34 / 92 (37 %) | `████░░░░░░` |
 | Windows and dialogs | 229 / 669 (34 %) | `███░░░░░░░` |
-| Right-click menus | 739 / 2617 (28 %) | `███░░░░░░░` |
+| Right-click menus | 755 / 2791 (27 %) | `███░░░░░░░` |
 <!-- /coverage:summary -->
 
 ## Features
@@ -157,6 +157,7 @@
 - [ ] Invoke Node
 - [ ] Properties dialog of a control (Appearance, Display Format, Data Entry…)
 - [ ] Display format and precision
+- [x] String display styles (Normal and '\' Codes Display on string constants, controls and indicators, 2026-11-27; Password and Hex Display not yet)
 - [ ] Data Entry limits
 - [x] Resizing every control by its handles
 - [ ] Customize Control (control editor)
@@ -357,5 +358,5 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Menus | Covered | |
 |-------|---------|---|
-| Every right-click menu captured | 739 / 2617 (28 %) | `███░░░░░░░` |
+| Every right-click menu captured | 755 / 2791 (27 %) | `███░░░░░░░` |
 <!-- /coverage:inventory -->

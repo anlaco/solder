@@ -118,8 +118,9 @@ entities: they are the two faces of one. That is why `layout` needs to separate 
 
 ### 4.1 `solder` *(required)*
 
-Format version. Its value is `8` (version 1 until DT-075, 2 until DT-078, 3 until DT-085, 4 until DT-091, 5 until DT-095,
-6 until DT-096, 7 until DT-100 §6, which allowed a `comment` on any object: §10).
+Format version. Its value is `11` (version 1 until DT-075, 2 until DT-078, 3 until DT-085, 4 until DT-091, 5 until DT-095,
+6 until DT-096, 7 until DT-100 §6, which allowed a `comment` on any object: §10; 8 until DT-104 stage b, 9 until DT-107,
+10 until DT-110, which lets a string object say `"display": "codes"` for '\' Codes Display).
 A reader **MUST** reject a value greater than the one it knows, instead of trying to read it halfway.
 
 **The format is frozen from `0.4.0-beta` on** (DT-055). Any later change to it

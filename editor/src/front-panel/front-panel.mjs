@@ -49,6 +49,8 @@ import { clipPathOf, handlesHost } from "./cluster-element-view.mjs";
 import { clusterObject } from "./cluster-view.mjs";
 import { CLUSTER_MENU_ROOT } from "./cluster-menus.mjs";
 import * as HC from "./html-controls.mjs";
+import * as SM from "../block-diagram/string-menus.mjs";
+import { shownText, typedValue } from "../../../core/model/backslash-codes.mjs";
 import { controlHandlesHtml, isTall, resizeRule, sizedBox, stretchedControl } from "./control-resize.mjs";
 import { DISABLED, disabledOf, isVisible } from "./panel-properties.mjs";
 import { isGraph, labelShown, wireTypeOf } from "./graph-state.mjs";
@@ -390,7 +392,8 @@ const textoValor = (n, ctx, valores) => {
   if (esEnum(tipoDe(n))) return (n.config?.type?.enum ?? [])[valores?.[n.id] ?? valorActual(n) ?? 0] ?? "";
   // A ring shows the text of the item with its value, or <value> (DT-091), also while running.
   if (isPanelRing(n)) return shownRingText(n, valores);
-  return esCadena(n) ? String(valores?.[n.id] ?? valorActual(n) ?? "") : formatear(valores?.[n.id] ?? valorActual(n) ?? 0, tipoDe(n), ctx.separador);
+  // A string shows its value in its display style, Normal or '\' Codes (DT-110).
+  return esCadena(n) ? shownText(valores?.[n.id] ?? valorActual(n), n.config) : formatear(valores?.[n.id] ?? valorActual(n) ?? 0, tipoDe(n), ctx.separador);
 };
 
 /** El valor de un booleano: el que le dejó el último Run, si es un indicador, o el suyo por defecto. */
@@ -949,7 +952,8 @@ export function menuDe(n, onElement = false) {
   if (n.tipo === "control") return "context.numeric-panel-control";
   if (n.tipo === "bool-control") return "context.boolean-control";
   if (n.tipo === "bool-indicator") return "context.boolean-indicator";
-  return null;
+  // A String Control and Indicator (reports/2026-11-27-string-menus.md).
+  return SM.panelMenuRoot(n);
 }
 
 // ——— Escribir en una etiqueta ———
@@ -1113,10 +1117,11 @@ export function confirmar(p) {
     const { [e.nodo]: _, ...valores } = p.valores ?? {};
     return { ...p, g: CV.setCurrentValue(p.g, e.nodo, { ...valorError(n, p.valores), [e.campo]: valor }), valores, edicion: null };
   }
-  // Una cadena se guarda tal cual, con sus saltos de línea; el nombre de un recurso VISA, también.
+  // A string is kept as typed, with its newlines, and read in its display style (DT-110); a VISA resource name as typed.
   if (e.cadena || e.resourceName) {
     const { [e.nodo]: _, ...valores } = p.valores ?? {};
-    return { ...p, g: CV.setCurrentValue(p.g, e.nodo, e.texto), valores, edicion: null };
+    const node = p.g.nodos.find((m) => m.id === e.nodo);
+    return { ...p, g: CV.setCurrentValue(p.g, e.nodo, e.cadena ? typedValue(e.texto, node?.config) : e.texto), valores, edicion: null };
   }
   // Every text is a path: Not A Path when it says so, the empty path when it is empty (measured, reports/2026-10-26-path-type.md §4).
   if (e.pathRules) {

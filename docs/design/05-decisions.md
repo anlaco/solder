@@ -47,6 +47,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [107](#dt-107) | A new control is created the ways LabVIEW creates one; an `.octl` holds zero, one or more objects (format 10) | Accepted · built |
 | [108](#dt-108) | Inf, -Inf and NaN are written in files as the texts "Inf", "-Inf" and "NaN" | Accepted · built |
 | [109](#dt-109) | The Feedback Node: one node in the file and the editor, two halves for the compiler, its memory in the data space | Accepted · built |
+| [110](#dt-110) | A string keeps every byte: valid UTF-8 as text, other bytes as escaped surrogates; '\\' Codes Display shows and reads them as LabVIEW does | Accepted · built |
 
 ## The 34 Red decisions
 
@@ -5650,3 +5651,48 @@ palette, the menus and the automatic insertion when a wire closes a cycle (the e
 | Random diagrams fed back through a Feedback Node of delay 1 to 3 give the reference evaluator's values | `test/core/compiler-properties.test.mjs` | Built (2026-11-26) |
 | Its palette place, look (sizes per delay, enable, header and moved initializer; colors per type), terminals, menu and Properties dialog | `test/editor/feedback-node.test.mjs` | Built (2026-11-26) |
 | The automatic insertion when a wire closes a cycle (place, direction, no wire cut, one step of undo); Replace with Feedback Node and Replace with Shift Register, their wires, the broken ones, nested loops and the round trip; the runs of each ([0..4], [7..11]) | `test/editor/feedback-node-insertion.test.mjs` | Built (2026-11-26) |
+
+## DT-110
+
+**A Solder string keeps every byte. Its value is still JavaScript text (DT-042 §6), but each byte that is not part of
+valid UTF-8 travels as one lone surrogate, U+DC80 plus the byte (Python's "surrogateescape"). On that, a string
+constant, control and indicator can show their value in '\' Codes Display, as LabVIEW shows and reads it.**
+
+- **Status:** Accepted on 2026-11-27 by the developer ("Lossless"), for issue #23, from the measurements of the same
+  day (`labview-captures/reports/2026-11-27-string-codes-display.md`).
+- **Why:** issue #23 sent `*IDN?\n` to an instrument with a backslash and an `n` instead of a line feed, because Solder
+  had no '\' Codes Display: what LabVIEW users type to end a command was taken literally. '\' Codes can write any byte
+  (`\FF`), and an instrument can answer any byte, but DT-042 §6 turned bytes that are not UTF-8 into U+FFFD on the way to
+  the panel. Escaping them keeps every byte through the panel, the `.ovi` (JSON writes `"\udcff"`), the pool's
+  messages and the runtime, while every valid UTF-8 string stays the same text it always was.
+
+### Decision
+
+1. **The codec** (`core/model/string-bytes.mjs`): `textToBytes` writes a text's UTF-8, each escaped byte as itself and any
+   other lone surrogate as U+FFFD (as `TextEncoder`); `bytesToText` reads strict UTF-8 and escapes every byte outside a
+   valid sequence. Every byte sequence goes to text and back unchanged. It replaces `TextEncoder`/`TextDecoder` where a
+   string value meets bytes: string constants in the static zone, the runtime's string cells, the format engine's
+   binary strings and the text file functions. Paths and DAQ names stay plain UTF-8.
+2. **'\' Codes Display** (`core/model/backslash-codes.mjs`), measured: the bytes 0x08, 0x09, 0x0A, 0x0C, 0x0D, 0x20 and
+   0x5C show as `\b \t \n \f \r \s \\`; `!` to `~` as themselves; every other byte as `\XX`, two uppercase hex digits.
+   Typed text: after a backslash, one or two uppercase hex digits are a byte, a lowercase letter code or a second
+   backslash its byte, any other character is kept without the backslash, and a backslash at the end is kept. A
+   newline shows as `\n` on the same line. The display style never changes the value.
+3. **Where it is kept:** the config key `display`, `"codes"` for '\' Codes and absent for Normal Display (LabVIEW's
+   default); in the `.ovi`, `display` on the panel object and on a string constant's config. Saved, as LabVIEW saves it.
+   The format goes to version 11; a file of version 10 opens unchanged.
+5. **The menus** of the String Constant, the String Control and Indicator on the panel and their terminals are LabVIEW's
+   (`reports/2026-11-27-string-menus.md`). Normal Display and '\' Codes Display are a radio group on the constant and the
+   panel objects (a terminal has no display rows); Data Operations and View As Icon work as on other objects; every other
+   row is greyed with its reason.
+4. **Departure:** LabVIEW's bytes for text are the system's ANSI code page (`é` is `\E9`); Solder's are UTF-8 (`é` is
+   `\C3\A9`), the departure DT-067 §3 and §4 already make for files. Password Display and Hex Display are shown greyed, not built.
+
+### How it is verified
+
+| What | Test | State |
+|------|------|-------|
+| Every byte's code, the space, the newline, the 60 typed cases of the report, switching both ways, the codec's round trip over random bytes | `test/core/backslash-codes.test.mjs` | Built (2026-11-27) |
+| A byte that is not UTF-8 stays one byte through a constant, a control, Concatenate, String Length and an indicator | `test/core/strings.test.mjs` | Built (2026-11-27) |
+| Typing `*IDN?\n` in '\' Codes gives a line feed; a control, an indicator and a constant show and read codes; the menus, their ticks and the display rows; saved and read back, valid against the schema | `test/editor/string-codes-display.test.mjs` | Built (2026-11-27) |
+| A file of version 10 opens as version 11 unchanged | `test/end-to-end/format-versions.test.mjs` | Built (2026-11-27) |

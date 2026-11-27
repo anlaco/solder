@@ -35145,6 +35145,1652 @@
       "separado": true
     },
     {
+      "id": "context.string-control",
+      "etiqueta": "String Control",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::the string objects have their measured menus",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Label, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.visible-items.caption",
+      "etiqueta": "Caption",
+      "estado": "todo",
+      "labview": "Caption, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.visible-items.display-style",
+      "etiqueta": "Display Style",
+      "estado": "todo",
+      "labview": "Display Style, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.visible-items.vertical-scrollbar",
+      "etiqueta": "Vertical Scrollbar",
+      "estado": "todo",
+      "labview": "Vertical Scrollbar, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.visible-items.horizontal-scrollbar",
+      "etiqueta": "Horizontal Scrollbar",
+      "estado": "todo",
+      "labview": "Horizontal Scrollbar, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.visible-items.text-overflow",
+      "etiqueta": "Text Overflow",
+      "estado": "todo",
+      "labview": "Text Overflow, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns the control into an indicator.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the object into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "string-menus/ctl-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.find",
+      "etiqueta": "Find",
+      "estado": "todo",
+      "labview": "Finds the objects tied to this one.",
+      "necesita": "resaltar-terminal",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.find.terminal",
+      "etiqueta": "Terminal",
+      "estado": "todo",
+      "labview": "Terminal, in Find.",
+      "necesita": "resaltar-terminal",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.find.property-nodes",
+      "etiqueta": "Property Nodes",
+      "estado": "todo",
+      "labview": "Property Nodes, in Find.",
+      "necesita": "resaltar-terminal",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to this one.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "Local Variable, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "Reference, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "Property Node, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Invoke Node, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Cluster from Selection, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Swaps the object for another from a palette.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::Data Operations of a string control makes its current value its default",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::Data Operations of a string control makes its current value its default",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::Data Operations of a string control makes its current value its default",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cut Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/ctl-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copy Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Paste Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Less common settings of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.advanced.key-navigation",
+      "etiqueta": "Key Navigation...",
+      "estado": "todo",
+      "labview": "Key Navigation..., in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.advanced.synchronous-display",
+      "etiqueta": "Synchronous Display",
+      "estado": "todo",
+      "labview": "Synchronous Display, in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Customize..., in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.advanced.run-time-shortcut-menu",
+      "etiqueta": "Run-Time Shortcut Menu",
+      "estado": "todo",
+      "labview": "Run-Time Shortcut Menu, in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.advanced.hide-control",
+      "etiqueta": "Hide Control",
+      "estado": "todo",
+      "labview": "Hide Control, in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control.advanced.enabled-state",
+      "etiqueta": "Enabled State",
+      "estado": "todo",
+      "labview": "Enabled State, in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.advanced.allow-dragging",
+      "etiqueta": "Allow Dragging",
+      "estado": "todo",
+      "labview": "Allow Dragging, in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.advanced.allow-dropping",
+      "etiqueta": "Allow Dropping",
+      "estado": "todo",
+      "labview": "Allow Dropping, in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.fit-control-to-pane",
+      "etiqueta": "Fit Control to Pane",
+      "estado": "todo",
+      "labview": "The object fills the pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.scale-object-with-pane",
+      "etiqueta": "Scale Object with Pane",
+      "estado": "todo",
+      "labview": "The object grows and shrinks with the pane when the window is resized.",
+      "necesita": "ajuste-al-panel",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.representation",
+      "etiqueta": "Representation",
+      "estado": "todo",
+      "labview": "Whether the string's bytes are UTF-8 or the system's encoding.",
+      "necesita": "utf8",
+      "captura": "string-menus/ctl-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control.representation.utf-8-encoding",
+      "etiqueta": "UTF-8 Encoding",
+      "estado": "todo",
+      "labview": "UTF-8 Encoding, in Representation.",
+      "necesita": "utf8",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.representation.system-encoding",
+      "etiqueta": "System Encoding",
+      "estado": "todo",
+      "labview": "System Encoding, in Representation.",
+      "necesita": "utf8",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.normal-display",
+      "etiqueta": "Normal Display",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::the display rows of a string switch it between Normal and codes",
+      "captura": "string-menus/ctl-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control.codes-display",
+      "etiqueta": "'\\' Codes Display",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::the display rows of a string switch it between Normal and codes",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.password-display",
+      "etiqueta": "Password Display",
+      "estado": "todo",
+      "labview": "Shows an asterisk for each character.",
+      "necesita": "formato-de-presentacion",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.hex-display",
+      "etiqueta": "Hex Display",
+      "estado": "todo",
+      "labview": "Shows each byte as two hexadecimal digits.",
+      "necesita": "formato-de-presentacion",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.limit-to-single-line",
+      "etiqueta": "Limit to Single Line",
+      "estado": "todo",
+      "labview": "The text cannot break onto a second line.",
+      "necesita": "propiedades",
+      "captura": "string-menus/ctl-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control.update-value-while-typing",
+      "etiqueta": "Update Value while Typing",
+      "estado": "todo",
+      "labview": "The value changes with each key instead of when the text is confirmed.",
+      "necesita": "propiedades",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.enable-wrapping",
+      "etiqueta": "Enable Wrapping",
+      "estado": "todo",
+      "labview": "Long text continues on the next line; ticked by default.",
+      "necesita": "propiedades",
+      "captura": "string-menus/ctl-panel-normal.png"
+    },
+    {
+      "id": "context.string-control.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "control-properties",
+      "captura": "string-menus/ctl-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator",
+      "etiqueta": "String Indicator",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::the string objects have their measured menus",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Label, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.visible-items.caption",
+      "etiqueta": "Caption",
+      "estado": "todo",
+      "labview": "Caption, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.visible-items.display-style",
+      "etiqueta": "Display Style",
+      "estado": "todo",
+      "labview": "Display Style, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.visible-items.vertical-scrollbar",
+      "etiqueta": "Vertical Scrollbar",
+      "estado": "todo",
+      "labview": "Vertical Scrollbar, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.visible-items.horizontal-scrollbar",
+      "etiqueta": "Horizontal Scrollbar",
+      "estado": "todo",
+      "labview": "Horizontal Scrollbar, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.visible-items.text-overflow",
+      "etiqueta": "Text Overflow",
+      "estado": "todo",
+      "labview": "Text Overflow, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.find-terminal",
+      "etiqueta": "Find Terminal",
+      "estado": "todo",
+      "labview": "Finds the object's terminal on the diagram.",
+      "necesita": "resaltar-terminal",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Turns the object into a control.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the object into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "string-menus/ind-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "string-menus/ind-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to this one.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "Local Variable, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "Reference, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "Property Node, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Invoke Node, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Cluster from Selection, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Swaps the object for another from a palette.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::Data Operations of a string control makes its current value its default",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::Data Operations of a string control makes its current value its default",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::Data Operations of a string control makes its current value its default",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cut Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/ind-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copy Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Paste Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Less common settings of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.advanced.key-navigation",
+      "etiqueta": "Key Navigation...",
+      "estado": "todo",
+      "labview": "Key Navigation..., in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.advanced.synchronous-display",
+      "etiqueta": "Synchronous Display",
+      "estado": "todo",
+      "labview": "Synchronous Display, in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Customize..., in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.advanced.run-time-shortcut-menu",
+      "etiqueta": "Run-Time Shortcut Menu",
+      "estado": "todo",
+      "labview": "Run-Time Shortcut Menu, in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.advanced.hide-indicator",
+      "etiqueta": "Hide Indicator",
+      "estado": "todo",
+      "labview": "Hide Indicator, in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator.advanced.enabled-state",
+      "etiqueta": "Enabled State",
+      "estado": "todo",
+      "labview": "Enabled State, in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.advanced.allow-dragging",
+      "etiqueta": "Allow Dragging",
+      "estado": "todo",
+      "labview": "Allow Dragging, in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.advanced.allow-dropping",
+      "etiqueta": "Allow Dropping",
+      "estado": "todo",
+      "labview": "Allow Dropping, in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.fit-control-to-pane",
+      "etiqueta": "Fit Control to Pane",
+      "estado": "todo",
+      "labview": "The object fills the pane.",
+      "necesita": "ajuste-al-panel",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.scale-object-with-pane",
+      "etiqueta": "Scale Object with Pane",
+      "estado": "todo",
+      "labview": "The object grows and shrinks with the pane when the window is resized.",
+      "necesita": "ajuste-al-panel",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.representation",
+      "etiqueta": "Representation",
+      "estado": "todo",
+      "labview": "Whether the string's bytes are UTF-8 or the system's encoding.",
+      "necesita": "utf8",
+      "captura": "string-menus/ind-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator.representation.utf-8-encoding",
+      "etiqueta": "UTF-8 Encoding",
+      "estado": "todo",
+      "labview": "UTF-8 Encoding, in Representation.",
+      "necesita": "utf8",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.representation.system-encoding",
+      "etiqueta": "System Encoding",
+      "estado": "todo",
+      "labview": "System Encoding, in Representation.",
+      "necesita": "utf8",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.normal-display",
+      "etiqueta": "Normal Display",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::the display rows of a string switch it between Normal and codes",
+      "captura": "string-menus/ind-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator.codes-display",
+      "etiqueta": "'\\' Codes Display",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::the display rows of a string switch it between Normal and codes",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.password-display",
+      "etiqueta": "Password Display",
+      "estado": "todo",
+      "labview": "Shows an asterisk for each character.",
+      "necesita": "formato-de-presentacion",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.hex-display",
+      "etiqueta": "Hex Display",
+      "estado": "todo",
+      "labview": "Shows each byte as two hexadecimal digits.",
+      "necesita": "formato-de-presentacion",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.limit-to-single-line",
+      "etiqueta": "Limit to Single Line",
+      "estado": "todo",
+      "labview": "The text cannot break onto a second line.",
+      "necesita": "propiedades",
+      "captura": "string-menus/ind-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator.update-value-while-typing",
+      "etiqueta": "Update Value while Typing",
+      "estado": "todo",
+      "labview": "The value changes with each key instead of when the text is confirmed.",
+      "necesita": "propiedades",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.enable-wrapping",
+      "etiqueta": "Enable Wrapping",
+      "estado": "todo",
+      "labview": "Long text continues on the next line; ticked by default.",
+      "necesita": "propiedades",
+      "captura": "string-menus/ind-panel-normal.png"
+    },
+    {
+      "id": "context.string-indicator.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "control-properties",
+      "captura": "string-menus/ind-panel-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control-terminal",
+      "etiqueta": "String Control Terminal",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::the string objects have their measured menus",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Label, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.find",
+      "etiqueta": "Find",
+      "estado": "todo",
+      "labview": "Finds the objects tied to this one.",
+      "necesita": "resaltar-terminal",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.find.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Control, in Find.",
+      "necesita": "resaltar-terminal",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.find.property-nodes",
+      "etiqueta": "Property Nodes",
+      "estado": "todo",
+      "labview": "Property Nodes, in Find.",
+      "necesita": "resaltar-terminal",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.hide-control",
+      "etiqueta": "Hide Control",
+      "estado": "todo",
+      "labview": "Hides the control on the panel.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control-terminal.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns the control into an indicator.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the object into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.change-to-constant",
+      "etiqueta": "Change to Constant",
+      "estado": "todo",
+      "labview": "Turns the terminal into a constant.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.string-palette",
+      "etiqueta": "String Palette",
+      "estado": "todo",
+      "labview": "Opens the String palette as a submenu.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control-terminal.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to this one.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.create.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Constant, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.create.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Control, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "todo",
+      "labview": "Indicator, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "Local Variable, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control-terminal.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "Reference, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "Property Node, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Invoke Node, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Channel Writer..., in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Cluster from Selection, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::Data Operations of a string control makes its current value its default",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::Data Operations of a string control makes its current value its default",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::Data Operations of a string control makes its current value its default",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cut Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/ctl-term.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control-terminal.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copy Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Paste Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Less common settings of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.advanced.synchronous-display",
+      "etiqueta": "Synchronous Display",
+      "estado": "todo",
+      "labview": "Synchronous Display, in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Customize..., in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ctl-term.png"
+    },
+    {
+      "id": "context.string-control-terminal.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "string-menus/ctl-term.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control-terminal.view-as-icon",
+      "etiqueta": "View As Icon",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::a string terminal toggles View As Icon",
+      "captura": "string-menus/ctl-term.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-control-terminal.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "control-properties",
+      "captura": "string-menus/ctl-term.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator-terminal",
+      "etiqueta": "String Indicator Terminal",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::the string objects have their measured menus",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Label, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.find-indicator",
+      "etiqueta": "Find Indicator",
+      "estado": "todo",
+      "labview": "Finds the indicator on the panel.",
+      "necesita": "resaltar-terminal",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "string-menus/ind-term.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator-terminal.hide-indicator",
+      "etiqueta": "Hide Indicator",
+      "estado": "todo",
+      "labview": "Hides the indicator on the panel.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator-terminal.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Turns the object into a control.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the object into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.change-to-constant",
+      "etiqueta": "Change to Constant",
+      "estado": "todo",
+      "labview": "Turns the terminal into a constant.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.string-palette",
+      "etiqueta": "String Palette",
+      "estado": "todo",
+      "labview": "Opens the String palette as a submenu.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator-terminal.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to this one.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.create.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Constant, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.create.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Control, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "todo",
+      "labview": "Indicator, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.create.local-variable",
+      "etiqueta": "Local Variable",
+      "estado": "todo",
+      "labview": "Local Variable, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator-terminal.create.reference",
+      "etiqueta": "Reference",
+      "estado": "todo",
+      "labview": "Reference, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.create.property-node",
+      "etiqueta": "Property Node",
+      "estado": "todo",
+      "labview": "Property Node, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.create.invoke-node",
+      "etiqueta": "Invoke Node",
+      "estado": "todo",
+      "labview": "Invoke Node, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Channel Writer..., in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Cluster from Selection, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::Data Operations of a string control makes its current value its default",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.data-operations.reinitialize-to-default-value",
+      "etiqueta": "Reinitialize to Default Value",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::Data Operations of a string control makes its current value its default",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.data-operations.make-current-value-default",
+      "etiqueta": "Make Current Value Default",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::Data Operations of a string control makes its current value its default",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cut Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/ind-term.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator-terminal.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copy Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Paste Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Less common settings of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.advanced.synchronous-display",
+      "etiqueta": "Synchronous Display",
+      "estado": "todo",
+      "labview": "Synchronous Display, in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Customize..., in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/ind-term.png"
+    },
+    {
+      "id": "context.string-indicator-terminal.view-as-icon",
+      "etiqueta": "View As Icon",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::a string terminal toggles View As Icon",
+      "captura": "string-menus/ind-term.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-indicator-terminal.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "control-properties",
+      "captura": "string-menus/ind-term.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-constant",
+      "etiqueta": "String Constant",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::the string objects have their measured menus",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Which parts of the object are shown.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Label, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.visible-items.display-style",
+      "etiqueta": "Display Style",
+      "estado": "todo",
+      "labview": "Display Style, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.visible-items.vertical-scrollbar",
+      "etiqueta": "Vertical Scrollbar",
+      "estado": "todo",
+      "labview": "Vertical Scrollbar, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.visible-items.horizontal-scrollbar",
+      "etiqueta": "Horizontal Scrollbar",
+      "estado": "todo",
+      "labview": "Horizontal Scrollbar, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.visible-items.text-overflow",
+      "etiqueta": "Text Overflow",
+      "estado": "todo",
+      "labview": "Text Overflow, in Visible Items.",
+      "necesita": "etiquetas",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.change-to-control",
+      "etiqueta": "Change to Control",
+      "estado": "todo",
+      "labview": "Turns the object into a control.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.change-to-indicator",
+      "etiqueta": "Change to Indicator",
+      "estado": "todo",
+      "labview": "Turns the control into an indicator.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.change-to-array",
+      "etiqueta": "Change to Array",
+      "estado": "todo",
+      "labview": "Turns the object into an array of its type.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.make-type-def",
+      "etiqueta": "Make Type Def.",
+      "estado": "todo",
+      "labview": "Turns the object into a type definition saved separately.",
+      "necesita": "definiciones-de-tipo",
+      "captura": "string-menus/const-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-constant.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the object's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "string-menus/const-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-constant.string-palette",
+      "etiqueta": "String Palette",
+      "estado": "todo",
+      "labview": "Opens the String palette as a submenu.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/const-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-constant.create",
+      "etiqueta": "Create",
+      "estado": "todo",
+      "labview": "Creates objects related to this one.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.create.constant",
+      "etiqueta": "Constant",
+      "estado": "todo",
+      "labview": "Constant, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.create.control",
+      "etiqueta": "Control",
+      "estado": "todo",
+      "labview": "Control, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "todo",
+      "labview": "Indicator, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.create.channel-writer",
+      "etiqueta": "Channel Writer...",
+      "estado": "todo",
+      "labview": "Channel Writer..., in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.create.cluster-from-selection",
+      "etiqueta": "Cluster from Selection",
+      "estado": "todo",
+      "labview": "Cluster from Selection, in Create.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.replace",
+      "etiqueta": "Replace",
+      "estado": "todo",
+      "labview": "Swaps the object for another from a palette.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.data-operations",
+      "etiqueta": "Data Operations",
+      "estado": "todo",
+      "labview": "Cut, copy and paste data, and the default value.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.data-operations.cut-data",
+      "etiqueta": "Cut Data",
+      "estado": "todo",
+      "labview": "Cut Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.data-operations.copy-data",
+      "etiqueta": "Copy Data",
+      "estado": "todo",
+      "labview": "Copy Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.data-operations.paste-data",
+      "etiqueta": "Paste Data",
+      "estado": "todo",
+      "labview": "Paste Data, in Data Operations.",
+      "necesita": "copiar-datos",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.advanced",
+      "etiqueta": "Advanced",
+      "estado": "todo",
+      "labview": "Less common settings of the object.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.advanced.customize",
+      "etiqueta": "Customize...",
+      "estado": "todo",
+      "labview": "Customize..., in Advanced.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.representation",
+      "etiqueta": "Representation",
+      "estado": "todo",
+      "labview": "Whether the string's bytes are UTF-8 or the system's encoding.",
+      "necesita": "utf8",
+      "captura": "string-menus/const-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-constant.representation.utf-8-encoding",
+      "etiqueta": "UTF-8 Encoding",
+      "estado": "todo",
+      "labview": "UTF-8 Encoding, in Representation.",
+      "necesita": "utf8",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.representation.system-encoding",
+      "etiqueta": "System Encoding",
+      "estado": "todo",
+      "labview": "System Encoding, in Representation.",
+      "necesita": "utf8",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.size-to-text",
+      "etiqueta": "Size To Text",
+      "estado": "todo",
+      "labview": "The constant grows and shrinks with its text.",
+      "necesita": "justificar-constantes",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.edit",
+      "etiqueta": "Edit...",
+      "estado": "todo",
+      "labview": "Starts typing into the constant.",
+      "necesita": "menus-contextuales",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.left-justify-text",
+      "etiqueta": "Left Justify Text",
+      "estado": "todo",
+      "labview": "The text is aligned to the left.",
+      "necesita": "justificar-constantes",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.right-justify-text",
+      "etiqueta": "Right Justify Text",
+      "estado": "todo",
+      "labview": "The text is aligned to the right.",
+      "necesita": "justificar-constantes",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.normal-display",
+      "etiqueta": "Normal Display",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::the display rows of a string switch it between Normal and codes",
+      "captura": "string-menus/const-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-constant.codes-display",
+      "etiqueta": "'\\' Codes Display",
+      "estado": "built",
+      "prueba": "test/editor/string-codes-display.test.mjs::the display rows of a string switch it between Normal and codes",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.password-display",
+      "etiqueta": "Password Display",
+      "estado": "todo",
+      "labview": "Shows an asterisk for each character.",
+      "necesita": "formato-de-presentacion",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.hex-display",
+      "etiqueta": "Hex Display",
+      "estado": "todo",
+      "labview": "Shows each byte as two hexadecimal digits.",
+      "necesita": "formato-de-presentacion",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.limit-to-single-line",
+      "etiqueta": "Limit to Single Line",
+      "estado": "todo",
+      "labview": "The text cannot break onto a second line.",
+      "necesita": "propiedades",
+      "captura": "string-menus/const-normal.png",
+      "separado": true
+    },
+    {
+      "id": "context.string-constant.enable-wrapping",
+      "etiqueta": "Enable Wrapping",
+      "estado": "todo",
+      "labview": "Long text continues on the next line; ticked by default.",
+      "necesita": "propiedades",
+      "captura": "string-menus/const-normal.png"
+    },
+    {
+      "id": "context.string-constant.properties",
+      "etiqueta": "Properties",
+      "estado": "todo",
+      "labview": "The object's properties dialog.",
+      "necesita": "control-properties",
+      "captura": "string-menus/const-normal.png",
+      "separado": true
+    },
+    {
       "id": "dialog.feedback-node",
       "etiqueta": "Object Properties",
       "estado": "built",

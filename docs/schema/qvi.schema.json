@@ -13,7 +13,7 @@
       "description": "Versión del formato. Un lector DEBE rechazar una versión mayor que la que conoce.",
       "type": "integer",
       "minimum": 1,
-      "maximum": 10
+      "maximum": 11
     },
 
     "meta": {
@@ -457,6 +457,10 @@
             }
           }
         },
+        "display": {
+          "description": "A string object's display style (DT-110): \"codes\" for '\\' Codes Display; absent for Normal Display, LabVIEW's default. Presentation: it never changes the value.",
+          "enum": ["codes"]
+        },
         "mechanical-action": {
           "description": "Cómo cambia el valor de un control booleano al pulsarlo. SEMÁNTICO: define cuándo cambia el valor. Si falta, la de fábrica de su `style`.",
           "enum": ["switch-when-pressed", "switch-when-released", "switch-until-released", "latch-when-pressed", "latch-when-released", "latch-until-released"]
@@ -544,6 +548,10 @@
             "selector": {
               "description": "For a call to a polymorphic OVI: whether Visible Items ▸ Polymorphic VI Selector is on (DT-074 §4).",
               "type": "boolean"
+            },
+            "display": {
+              "description": "A string object's display style (DT-110): \"codes\" for '\\' Codes Display; absent for Normal Display, LabVIEW's default. Presentation: it never changes the value.",
+              "enum": ["codes"]
             },
             "mode": {
               "description": "Para compound-arithmetic: la operación (add, multiply, and, or, xor).",
