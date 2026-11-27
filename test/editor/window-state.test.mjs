@@ -212,7 +212,7 @@ test("la carpeta timing abre su subpaleta", () => {
 });
 
 // structures/paleta.png y nombres.png, capturadas en LabVIEW 2026 Q3: cuatro
-// columnas y 16 elementos. Hechos el For Loop, el While Loop y el Case Structure; los demás, en gris.
+// columnas y 16 elementos. Hechos el For Loop, el While Loop, el Case Structure, la Flat Sequence y el Feedback Node; los demás, en gris.
 test("la carpeta structures abre su subpaleta", () => {
   const id = "palette.functions.programming.structures";
   const abierta = clic(conPaleta(), INV, id, AQUI);
@@ -227,7 +227,8 @@ test("la carpeta structures abre su subpaleta", () => {
   ];
   assert.deepEqual(sitios.map((s) => [s.fila, s.columna, s.e.etiqueta]), nombres.flatMap((fila, f) => fila.map((n, c) => [f, c, n])));
   const hechos = INV.hijos(id).filter((e) => !esHueco(e)).map((e) => e.id.slice(id.length + 1));
-  assert.deepEqual(hechos, ["for-loop", "while-loop", "case-structure", "flat-sequence-structure"]);
+  assert.deepEqual(hechos, ["for-loop", "while-loop", "case-structure", "flat-sequence-structure", "feedback-node"]);
+  assert.equal(INV.entrada(`${id}.feedback-node`).bloque, "feedback-node");
   assert.equal(INV.entrada(`${id}.while-loop`).bloque, "while-loop");
   assert.equal(INV.entrada(`${id}.for-loop`).bloque, "for-loop");
   assert.equal(INV.entrada(`${id}.case-structure`).bloque, "case-structure");

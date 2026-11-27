@@ -10,8 +10,13 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 ## Unreleased
 
 - The Feedback Node runs (DT-109), as measured in LabVIEW: its initializer, its delay, its enable terminal, the memory
-  it keeps from one Run to the next when nothing initializes it, and an initializer moved out to a loop. It is not on
-  the palette yet: its look, menus and automatic insertion come next.
+  it keeps from one Run to the next when nothing initializes it, and an initializer moved out to a loop. It is on the
+  Structures palette, drawn as in LabVIEW (its delay, enable terminal, Z-transform header and an initializer on a loop's
+  border), with its menu (Show Enable Terminal, Change Direction, Move Initializer One Loop Out and In) and its
+  Properties dialog. A wire finished from an output to an input that would close a cycle becomes a Feedback Node, as
+  LabVIEW does (arrow left for a wire that goes leftwards, right for one that goes forwards), and a shift register
+  and a Feedback Node swap with Replace with Feedback Node and Replace with Shift Register, the initializer and the
+  wires of the pair going where LabVIEW puts them.
 
 ## 0.15.2-beta — 2026-11-26
 

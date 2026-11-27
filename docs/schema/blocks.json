@@ -405,7 +405,7 @@
     "feedback-node":  { "cat": "structure", "desc": "Feedback Node (DT-109): gives the value it stored `delay` executions ago, the initializer before that, and stores what comes into `input` when `enable` is TRUE. One node; the compiler splits it into two halves",
                         "in": [{ "name": "input", "label": "", "type": { "var": "T" } }, { "name": "initializer", "label": "", "type": { "var": "T" }, "optional": true }, { "name": "enable", "label": "", "type": "boolean", "default": true }],
                         "out": [{ "name": "output", "label": "", "type": { "var": "T" } }],
-                        "config": { "delay": { "type": "number", "value": 1 }, "initializerLoopsOut": { "type": "number", "value": 0 } } },
+                        "config": { "delay": { "type": "number", "value": 1 }, "initializerLoopsOut": { "type": "number", "value": 0 }, "direction": { "type": "string", "value": "left" }, "showEnable": { "type": "boolean", "value": false }, "header": { "type": "string", "value": "arrow" } } },
     "feedback-store": { "cat": "structure", "desc": "Internal: the half of a Feedback Node that stores its input (DT-109). Never in a file nor in the editor; `config.of` is its Feedback Node",
                         "interno": true, "in": [{ "name": "input", "label": "", "type": { "var": "T" }, "optional": true }, { "name": "enable", "label": "", "type": "boolean", "default": true }], "out": [],
                         "config": { "of": { "type": "string", "value": "" } } },

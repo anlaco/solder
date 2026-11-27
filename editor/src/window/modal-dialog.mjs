@@ -1,4 +1,4 @@
-// The modal dialogs of the OVI window — Edit Items… and Select Item… of an enum, Chart History Length… and the configuration of an Express OVI —:
+// The modal dialogs of the OVI window — Edit Items… and Select Item… of an enum, Chart History Length…, the configuration of an Express OVI and the Properties of a Feedback Node —:
 // which one is open and what a key or a click means for it.
 //
 // It exists because of the review of the enum commit (#32, 2026-10-14): the routing used to live
@@ -13,6 +13,7 @@
 
 import * as CH from "../front-panel/chart-history-dialog.mjs";
 import * as CLD from "../block-diagram/call-library-dialog.mjs";
+import * as FD from "../block-diagram/feedback-node-dialog.mjs";
 import * as EI from "../block-diagram/edit-items-dialog.mjs";
 import * as RI from "../block-diagram/ring-items-dialog.mjs";
 import * as XD from "../block-diagram/express-dialog.mjs";
@@ -29,6 +30,7 @@ export const DIALOGS = [
   { field: "graphDialog", side: "panel", mod: CH },
   { field: "expressDialog", side: "diagram", mod: XD },
   { field: "callLibraryDialog", side: "diagram", mod: CLD },
+  { field: "feedbackDialog", side: "diagram", mod: FD },
   { field: "selectItemDialog", side: "diagram", mod: SI },
   { field: "selectItemDialog", side: "panel", mod: SI },
 ];

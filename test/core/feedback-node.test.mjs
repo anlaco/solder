@@ -348,7 +348,7 @@ test("a Feedback Node is saved as one node, with its delay and where its initial
   const vi = feedbackLoop({ initial: 0, fbConfig: { delay: 3, initializerLoopsOut: 1 } });
   const file = JSON.parse(aTexto(vi.g, CAT));
   const saved = file["block-diagram"].structures[0].body.nodes.filter((node) => node.type.startsWith("feedback"));
-  assert.deepEqual(saved.map((node) => [node.type, node.config]), [["feedback-node", { delay: 3, initializerLoopsOut: 1 }]]);
+  assert.deepEqual(saved.map((node) => [node.type, node.config]), [["feedback-node", { delay: 3, initializerLoopsOut: 1, direction: "left", showEnable: false, header: "arrow" }]], "the look-only fields (DT-109 §6) are saved with the node and the run is the same");
   const opened = leer(file, CAT);
   const outputsOf = async (graph) => {
     const written = await ejecutar(compilar(graph, CAT), {});

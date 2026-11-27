@@ -673,6 +673,10 @@
     "review-and-update": {
       "desc": "the Review and Update from Type Def... window, which shows what an update would change in an instance and applies it once approved: stage (c) of the type definitions. Until then an instance whose update waits for a review is only reported in the Error list",
       "ref": "design/05-decisions.md DT-096 §4; design/labview-plan.md step 3, stage (c)"
+    },
+    "feedback-initialize-on-load": {
+      "desc": "the Feedback Node's Initialize On Compile Or Load, which initializes it once when the OVI is compiled or loaded; it is not built yet, and the Show Initializer row, which exists only while the initializer is hidden, waits with it",
+      "ref": "design/05-decisions.md DT-109"
     }
   },
   "entradas": [
@@ -6006,10 +6010,10 @@
     {
       "id": "palette.functions.programming.structures.feedback-node",
       "etiqueta": "Feedback Node",
-      "estado": "todo",
-      "labview": "Keeps the value from one iteration to the next in a loop, like a shift register shaped as a node.",
-      "necesita": "variables-y-feedback",
-      "captura": "structures/paleta.png"
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::the Feedback Node is placeable from Structures and a dropped one has the palette's configuration",
+      "captura": "feedback-node-look/pal2d.png",
+      "bloque": "feedback-node"
     },
     {
       "id": "palette.functions.programming.array",
@@ -21789,9 +21793,8 @@
     {
       "id": "context.shift-register.replace-with-feedback-node",
       "etiqueta": "Replace with Feedback Node",
-      "estado": "todo",
-      "labview": "Swaps the shift register for a Feedback Node.",
-      "necesita": "variables-y-feedback",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node-insertion.test.mjs::Replace with Feedback Node on a shift register puts the node where LabVIEW does and rewires the pair's wires",
       "captura": "structures/menu-shift-register.png"
     },
     {
@@ -34941,6 +34944,242 @@
       "necesita": "propiedades",
       "captura": "daqname-menus/k5.png",
       "separado": true
+    },
+    {
+      "id": "context.feedback-node",
+      "etiqueta": "Feedback Node",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::the right-click menu of the Feedback Node has LabVIEW's rows in order and greys what does not apply",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.visible-items",
+      "etiqueta": "Visible Items",
+      "estado": "todo",
+      "labview": "Shows or hides the node's label.",
+      "necesita": "etiquetas",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.visible-items.label",
+      "etiqueta": "Label",
+      "estado": "todo",
+      "labview": "Shows or hides the node's label.",
+      "necesita": "etiquetas",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the node's help.",
+      "necesita": "ayuda-contextual",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.examples",
+      "etiqueta": "Examples",
+      "estado": "todo",
+      "labview": "Looks for examples that use the node.",
+      "necesita": "ejemplos",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.description-and-tip",
+      "etiqueta": "Description and Tip...",
+      "estado": "todo",
+      "labview": "Edits the node's description and tip strip.",
+      "necesita": "descripciones",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.add-breakpoint",
+      "etiqueta": "Add Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::Create works from a terminal of the Feedback Node and Add Breakpoint is one of its rows",
+      "captura": "feedback-node-look/menu2c.png",
+      "separado": true
+    },
+    {
+      "id": "context.feedback-node.disable-breakpoint",
+      "etiqueta": "Disable Breakpoint",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::Create works from a terminal of the Feedback Node and Add Breakpoint is one of its rows",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.structures-palette",
+      "etiqueta": "Structures Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the Structures palette.",
+      "necesita": "menus-contextuales",
+      "captura": "feedback-node-look/menu2c.png",
+      "separado": true
+    },
+    {
+      "id": "context.feedback-node.type-palette",
+      "etiqueta": "Numeric Palette",
+      "estado": "todo",
+      "labview": "Opens, as a submenu, the palette of the type that goes through the node: it reads String Palette on a string.",
+      "necesita": "menus-contextuales",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.create",
+      "etiqueta": "Create",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::Create works from a terminal of the Feedback Node and Add Breakpoint is one of its rows",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.create.constant",
+      "etiqueta": "Constant",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::Create works from a terminal of the Feedback Node and Add Breakpoint is one of its rows",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.create.control",
+      "etiqueta": "Control",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::Create works from a terminal of the Feedback Node and Add Breakpoint is one of its rows",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.create.indicator",
+      "etiqueta": "Indicator",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::Create works from a terminal of the Feedback Node and Add Breakpoint is one of its rows",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.show-enable-terminal",
+      "etiqueta": "Show Enable Terminal",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::Show Enable Terminal, Change Direction and Move Initializer One Loop Out and In change the node's configuration",
+      "captura": "feedback-node-look/menu2c.png",
+      "separado": true
+    },
+    {
+      "id": "context.feedback-node.globally-initialize",
+      "etiqueta": "Globally Initialize",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::the right-click menu of the Feedback Node has LabVIEW's rows in order and greys what does not apply",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.globally-initialize.initialize-on-first-call",
+      "etiqueta": "Initialize On First Call",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::the right-click menu of the Feedback Node has LabVIEW's rows in order and greys what does not apply",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.globally-initialize.initialize-on-compile-or-load",
+      "etiqueta": "Initialize On Compile Or Load",
+      "estado": "todo",
+      "labview": "Initializes the node once, when the OVI is compiled or loaded, instead of at its first call.",
+      "necesita": "feedback-initialize-on-load",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.move-initializer-one-loop-out",
+      "etiqueta": "Move Initializer One Loop Out",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::Show Enable Terminal, Change Direction and Move Initializer One Loop Out and In change the node's configuration",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.move-initializer-one-loop-in",
+      "etiqueta": "Move Initializer One Loop In",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::Show Enable Terminal, Change Direction and Move Initializer One Loop Out and In change the node's configuration",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.show-initializer",
+      "etiqueta": "Show Initializer",
+      "estado": "todo",
+      "labview": "Shows the initializer cell again once it has been hidden. LabVIEW offers it only while the initializer is hidden, which Solder never does.",
+      "necesita": "feedback-initialize-on-load",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.change-direction",
+      "etiqueta": "Change Direction",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::Show Enable Terminal, Change Direction and Move Initializer One Loop Out and In change the node's configuration",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.appearance",
+      "etiqueta": "Appearance",
+      "estado": "todo",
+      "labview": "A submenu of the node's looks; it was not opened in LabVIEW.",
+      "necesita": "menus-contextuales",
+      "captura": "feedback-node-look/menu2c.png"
+    },
+    {
+      "id": "context.feedback-node.replace-with-shift-register",
+      "etiqueta": "Replace with Shift Register",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node-insertion.test.mjs::Replace with Shift Register on a Feedback Node puts the pair on the n-th loop and a round trip gives back the same places",
+      "captura": "feedback-node-look/menu2c.png",
+      "separado": true
+    },
+    {
+      "id": "context.feedback-node.remove-and-rewire",
+      "etiqueta": "Remove and Rewire",
+      "estado": "todo",
+      "labview": "Removes the node and joins the wire that went in to the one that came out.",
+      "necesita": "menus-contextuales",
+      "captura": "feedback-node-look/menu2c.png",
+      "separado": true
+    },
+    {
+      "id": "context.feedback-node.properties",
+      "etiqueta": "Properties",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::the Properties dialog opens with the node's configuration and OK applies it as one undo step",
+      "captura": "feedback-node-look/menu2c.png",
+      "separado": true
+    },
+    {
+      "id": "dialog.feedback-node",
+      "etiqueta": "Object Properties",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::the Properties dialog opens with the node's configuration and OK applies it as one undo step",
+      "captura": "feedback-node-look/dlg1c.png"
+    },
+    {
+      "id": "dialog.feedback-node.ok",
+      "etiqueta": "OK",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::the Properties dialog opens with the node's configuration and OK applies it as one undo step",
+      "captura": "feedback-node-look/dlg1c.png"
+    },
+    {
+      "id": "dialog.feedback-node.cancel",
+      "etiqueta": "Cancel",
+      "estado": "built",
+      "prueba": "test/editor/feedback-node.test.mjs::Cancel and Escape leave the Feedback Node unchanged",
+      "captura": "feedback-node-look/dlg1c.png"
+    },
+    {
+      "id": "dialog.feedback-node.help",
+      "etiqueta": "Help",
+      "estado": "todo",
+      "labview": "Opens the help of the Object Properties dialog.",
+      "necesita": "ayuda-contextual",
+      "captura": "feedback-node-look/dlg1c.png"
+    },
+    {
+      "id": "dialog.feedback-node.initialize-compile-or-load",
+      "etiqueta": "Compile or load",
+      "estado": "todo",
+      "labview": "Initializes the node once, when the OVI is compiled or loaded, instead of at its first call.",
+      "necesita": "feedback-initialize-on-load",
+      "captura": "feedback-node-look/dlg2c.png"
     },
     {
       "id": "dialog.call-library",

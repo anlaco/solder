@@ -23,6 +23,8 @@ import * as BM from "./bundle-menus.mjs";
 import * as VN from "./visa-nodes.mjs";
 import * as CL from "./call-library-nodes.mjs";
 import * as CLT from "./call-library-terminal-menu.mjs";
+import * as FB from "./feedback-node-geometry.mjs";
+import { feedbackBody } from "./feedback-node-view.mjs";
 import * as FileNodes from "./file-nodes.mjs";
 import * as ExpressNodes from "./express-nodes.mjs";
 import * as SpreadsheetNodes from "./spreadsheet-nodes.mjs";
@@ -483,6 +485,8 @@ export function oculto(g, n) {
 const terminalVisible = (n, t, g) => {
   // An element of a Cluster Constant has no terminal of its own.
   if (isElementNode(n)) return false;
+  // The enable terminal of a Feedback Node is there only while Show Enable Terminal is on.
+  if (FB.isFeedbackNode(n)) return t.puerto !== "enable" || FB.feedbackConfig(n).showEnable;
   if (n.tipo !== "case-tunnel-out" || t.dir !== "in") return true;
   const caso = g.nodos.find((k) => k.id === n.dentro);
   return !caso || Number(t.puerto.slice(2)) === activoDe(caso);
@@ -498,7 +502,7 @@ const terminalVisible = (n, t, g) => {
 export function borderFaceFor(g, ctx, terminal, wireDirection) {
   const n = g.nodos.find((candidate) => candidate.id === terminal.nodo);
   if (!n || !esBorde(n) || terminal.dir !== wireDirection) return terminal;
-  const faces = terminales(n, ctx).filter((t) => t.dir !== wireDirection && terminalVisible(n, t, g));
+  const faces = terminales(n, ctx, undefined, g).filter((t) => t.dir !== wireDirection && terminalVisible(n, t, g));
   return faces.length === 1 ? { nodo: n.id, puerto: faces[0].puerto, dir: faces[0].dir } : terminal;
 }
 
@@ -582,6 +586,7 @@ export function caja(n, ctx, edicion) {
   if (BN.isBundleNode(n)) return { x: n.x, y: n.y, ...BN.size(n) };
   if (PN.isPropertyNode(n)) return { x: n.x, y: n.y, ...PN.propertyNodeSize(n, ctx.cat, ctx.medir) };
   if (CL.isCallLibraryNode(n)) return { x: n.x, y: n.y, ...CL.callLibrarySize(n) };
+  if (FB.isFeedbackNode(n)) return { x: n.x, y: n.y, ...FB.feedbackSize(n) };
   if (CR.isControlReference(n)) return { x: n.x, y: n.y, ...CR.referenceSize(n, ctx.medir) };
   if (VSR.isOviServerReference(n)) return { x: n.x, y: n.y, ...VSR.size(n, ctx.medir) };
   if (FileNodes.isFileNode(n)) return { x: n.x, y: n.y, ...FileNodes.fileNodeSize() };
@@ -674,13 +679,28 @@ const FIXED_TERMINAL_ROWS = {
 const fixedTerminalRows = (n) => FIXED_TERMINAL_ROWS[n.tipo];
 
 /**
+ * The box of a Feedback Node's initializer terminal on its loop's left border (DT-109), or undefined while the initializer is on
+ * the node, when the node's graph is not known, or when the loop it was moved out of is gone.
+ */
+function feedbackLoopBox(n, g, ctx) {
+  const loop = g && g.nodos.find((candidate) => candidate.id === FB.initializerLoopId(g, n));
+  return loop && FB.loopTerminalBox(caja(loop, ctx), MEDIDAS_ESTRUCTURA.sobreElPie);
+}
+
+/** What the picture of a Feedback Node needs from its graph: which terminals are wired and where its loop's terminal is. */
+function feedbackBodyState(n, g, ctx) {
+  const wired = (port) => g.cables.some((wire) => wire.a.nodo === n.id && wire.a.puerto === port);
+  return { wired: { initializer: wired("initializer"), enable: wired("enable") }, loopTerminalBox: feedbackLoopBox(n, g, ctx) };
+}
+
+/**
  * Los terminales de un nodo: las entradas repartidas por el borde izquierdo y
  * las salidas por el derecho, en el orden del catálogo, como el connector
  * pane de las primitivas de LabVIEW (Add: x arriba, y abajo, x+y en la punta).
  * `x`, `y` es donde entra el cable; `zona`, lo que se pulsa, y `centro`, de
  * donde sale el cable mientras se tira de él, como en LabVIEW.
  */
-export function terminales(n, ctx, edicion) {
+export function terminales(n, ctx, edicion, g) {
   const k = caja(n, ctx, edicion);
   if (isClusterConstant(n)) return [outputTerminal(n, "")];
   if (isSubOVI(n)) return terminalesSubOVI(n, k, ctx);
@@ -691,6 +711,7 @@ export function terminales(n, ctx, edicion) {
   if (VN.isVisaNode(n)) return VN.visaTerminals(n, k, ctx.cat);
   if (PN.isPropertyNode(n)) return PN.propertyNodeTerminals(n, k, ctx.cat);
   if (CL.isCallLibraryNode(n)) return CL.callLibraryTerminals(n, k);
+  if (FB.isFeedbackNode(n)) return FB.feedbackTerminals(n, k, feedbackLoopBox(n, g, ctx));
   if (CR.isControlReference(n)) return CR.referenceTerminals(n, k);
   if (VSR.isOviServerReference(n)) return VSR.terminals(n, k);
   if (FileNodes.isFileNode(n)) return FileNodes.fileNodeTerminals(n, k, ctx.cat);
@@ -757,7 +778,7 @@ function terminalesSubOVI(n, k, ctx) {
 /** Todos los terminales del diagrama, por `nodo.puerto`. */
 export function extremos(g, ctx, edicion) {
   const m = new Map();
-  for (const n of g.nodos) for (const t of terminales(n, ctx, edicion)) m.set(`${n.id}.${t.puerto}`, t);
+  for (const n of g.nodos) for (const t of terminales(n, ctx, edicion, g)) m.set(`${n.id}.${t.puerto}`, t);
   return m;
 }
 
@@ -1114,7 +1135,7 @@ function pistasTerminales(n, d, ctx, resueltos) {
   if (!n) return "";
   const cableadas = new Set(d.g.cables.flatMap((c) => [`${c.a.nodo}.${c.a.puerto}`, `${c.de.nodo}.${c.de.puerto}`]));
   let h = "";
-  for (const t of terminales(n, ctx, d.edicion)) {
+  for (const t of terminales(n, ctx, d.edicion, d.completo ?? d.g)) {
     const clave = `${n.id}.${t.puerto}`;
     if (cableadas.has(clave) && d.sobre.puerto !== t.puerto) continue;
     const tipo = (t.dir === "in" ? resueltos.entradas : resueltos.salidas).get(clave);
@@ -1374,6 +1395,8 @@ function nodo(n, d, ctx, resueltos, elegido) {
     cuerpo = `<div class="glifo-formato">${PN.propertyNodeBody(graph, ctx.cat, n, k)}</div>${PN.linkedLabel(graph, n)}${PN.rowZones(n, k)}`;
   } else if (CL.isCallLibraryNode(n)) {
     cuerpo = `<div class="glifo-formato">${CL.callLibraryBody(n, k)}</div>`;
+  } else if (FB.isFeedbackNode(n)) {
+    cuerpo = `<div class="glifo-formato">${feedbackBody(n, k, resueltos, feedbackBodyState(n, d.completo ?? d.g, ctx))}</div>`;
   } else if (CR.isControlReference(n)) {
     const graph = d.completo ?? d.g;
     cuerpo = `<div class="glifo-formato">${CR.referenceBody(graph, ctx.cat, n, k)}</div>${PN.labelAbove(graph, n.config?.link)}`;
@@ -1392,7 +1415,7 @@ function nodo(n, d, ctx, resueltos, elegido) {
     const [gw, gh] = G.TAMANOS[clave] ?? [];
     cuerpo = `<div class="glifo-nodo" style="left:${px(-k.dx)};top:${px(-k.dy)}${gw ? `;width:${px(gw)};height:${px(gh)}` : ""}">${glifo}</div>`;
   }
-  let zonas = terminales(n, ctx, d.edicion)
+  let zonas = terminales(n, ctx, d.edicion, d.completo ?? d.g)
     .filter((t) => terminalVisible(n, t, d.g) && !(elegido && (esDelPanel(n, ctx) || CONSTANTES[n.tipo] || isClusterConstant(n))))
     .map(
       (t) =>
@@ -1822,6 +1845,8 @@ export function menuDe(n, puerto, g, onElement = false, cat = undefined) {
   // The Call Library Function Node has one menu for the whole node (reports/2026-11-06-clfn.md "Right-click"), and a parameter's
   // terminal has its own (reports/2026-11-15-daqname-menus.md Q4).
   if (CL.isCallLibraryNode(n)) return CLT.isParameterPort(puerto) ? CLT.TERMINAL_MENU_ROOT : CL.MENU_ROOT;
+  // The Feedback Node has one menu for the whole node and its terminals (reports/2026-11-26-feedback-node-behavior.md Q10).
+  if (FB.isFeedbackNode(n)) return FB.MENU_ROOT;
   // The control reference constant (reports/2026-11-03-control-references.md Q3).
   if (CR.isControlReference(n)) return "context.control-reference";
   // The OVI Server Reference constant (reports/2026-11-14-vi-server-reference.md "Menu").

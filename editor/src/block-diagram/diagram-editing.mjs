@@ -66,6 +66,10 @@ import * as ExpressNodes from "./express-nodes.mjs";
 import * as ExpressDialog from "./express-dialog.mjs";
 import * as CL from "./call-library-nodes.mjs";
 import * as CallLibraryDialog from "./call-library-dialog.mjs";
+import * as FB from "./feedback-node-geometry.mjs";
+import * as FM from "./feedback-node-menus.mjs";
+import { connectedToMovedOutInitializer, initializersInTheirLoops, isMovedOutInitializerWire } from "./feedback-node-edits.mjs";
+import { insertedFeedbackNode } from "./feedback-node-insertion.mjs";
 import { copyFragment, pasteFragment } from "../../../core/model/clipboard.mjs";
 import { constantElementType, constantForElement, emptyArrayAgain, flipArrayKind, isEmptyArrayShell, setArrayRepresentation, typeEmptyArray } from "../common/array-typing.mjs";
 import { CONSTANT_DIGITS, DBL, NUMERICOS, PATH, POR_ABREVIATURA, VISA_RESOURCE, convertirValor, esArray, isUndefinedArray, esEntero, esEnum, esError, esNumerico, formatear, leerElemento, leerNumero } from "../../../core/model/types.mjs";
@@ -89,6 +93,8 @@ const grabPoint = (block, ctx, config) => {
   if (PN.isPropertyNode({ tipo: block }) && config) return PN.propertyNodeGrabPoint(config, ctx.cat, ctx.medir);
   // The Call Library Function Node hangs by its middle (unverified, as the Property Node's).
   if (block === CL.CALL_LIBRARY) return CL.callLibraryGrabPoint({ tipo: block, config });
+  // The Feedback Node hangs by its middle too (unverified).
+  if (block === FB.FEEDBACK_NODE) return FB.feedbackGrabPoint({ tipo: block, config });
   // A control reference hangs by its centre too (reports/2026-11-03-control-references.md Q1).
   if (CR.isControlReference({ tipo: block }) && config) return CR.referenceGrabPoint(config, ctx.medir);
   // So does the OVI Server Reference constant (reports/2026-11-14-vi-server-reference.md "Placed"; unverified how it hangs).
@@ -321,7 +327,7 @@ export function alojar(g, ctx, ids) {
 
 /** Túneles que sobran, cables sin túnel y bordes en su sitio. */
 function reparar(g, ctx) {
-  return fijarBordes(cruzarCables(colapsarTuneles(limpiarSecuencias(ajustarSecuencias(g), ctx), ctx), ctx), ctx.cat);
+  return initializersInTheirLoops(fijarBordes(cruzarCables(colapsarTuneles(limpiarSecuencias(ajustarSecuencias(g), ctx), ctx), ctx), ctx.cat));
 }
 
 /**
@@ -389,7 +395,7 @@ function colapsarTuneles(g, ctx) {
 function cruzarCables(g, ctx) {
   const { cat } = ctx;
   for (const c of [...g.cables]) {
-    if (!Gr.conectado(c) || !g.cables.some((k) => k.id === c.id)) continue;
+    if (!Gr.conectado(c) || !g.cables.some((k) => k.id === c.id) || isMovedOutInitializerWire(g, c)) continue;
     const [t1, t2] = [{ nodo: c.de.nodo, puerto: c.de.puerto, dir: "out" }, { nodo: c.a.nodo, puerto: c.a.puerto, dir: "in" }];
     if (Gr.ambitoDe(g, cat, t1.nodo, t1.puerto, "out") === Gr.ambitoDe(g, cat, t2.nodo, t2.puerto, "in")) continue;
     const sin = { ...g, cables: g.cables.filter((k) => k.id !== c.id) };
@@ -455,6 +461,13 @@ function clearOtherBorderObjects(g, newIds) {
 /** Une dos terminales: un cable normal, o el que pasa por los túneles de los bordes que cruza. */
 function unir(g, ctx, t1, t2, codos) {
   const { cat } = ctx;
+  if (t1.dir !== t2.dir) {
+    // A wire that would close a cycle becomes a Feedback Node (feedback-node-insertion.mjs); one into the initializer
+    // moved out of its loop is made as it is, with no tunnel (feedback-node-edits.mjs).
+    const [source, sink] = t1.dir === "out" ? [t1, t2] : [t2, t1];
+    const direct = connectedToMovedOutInitializer(g, cat, source, sink) ?? insertedFeedbackNode(g, ctx, source, sink);
+    if (direct) return direct;
+  }
   const cruza = t1.dir !== t2.dir && Gr.ambitoDe(g, cat, t1.nodo, t1.puerto, t1.dir) !== Gr.ambitoDe(g, cat, t2.nodo, t2.puerto, t2.dir);
   if (!cruza) return Gr.conectar(g, cat, t1, t2, codos);
   const [de, a] = t1.dir === "out" ? [t1, t2] : [t2, t1];
@@ -1549,6 +1562,10 @@ export function orden(d, id, ctx, inv) {
   // Add Input and Remove Input of a Bundle's input row (bundle-menus.mjs).
   const bundleResult = BM.menuCommand(d, id);
   if (bundleResult) return bundleResult;
+  // The Feedback Node's own rows (feedback-node-menus.mjs).
+  const repair = (g) => alojar(g, ctx, []);
+  const feedbackResult = FM.menuCommand(d, id, ctx, repair) ?? FM.shiftRegisterCommand(d, id, ctx, repair);
+  if (feedbackResult) return feedbackResult;
   const { nodo, puerto } = d.menu;
   const cerrar = (g) => ({ ...d, g, menu: null });
   if (id.endsWith(".size-to-text") && isFreeLabel(nodoPor(d.g, nodo))) return cerrar(FL.toggleSizeToText(d.g, nodo, ctx.medir, FL.canvasOf(nodoPor(d.g, nodo))));
@@ -1841,6 +1858,7 @@ function nodeVariants(d, ctx) {
   if (n && BN.isBundleNode(n) && ctx) return BM.menuVariants(d, ctx, n);
   if (PN.isPropertyNode(n) && ctx) return PNM.nodeVariants(d, ctx);
   if (VSR.isOviServerReference(n)) return VSR.menuVariants(n);
+  if (n && FM.isFeedbackMenu(r)) return FM.menuVariants(d, ctx);
   if (n && (r === PolymorphicNodes.MENU_ROOT || r === PolymorphicNodes.RING_MENU_ROOT) && ctx) return PolymorphicNodes.menuVariants(n, ctx.cat, r === PolymorphicNodes.MENU_ROOT ? PolymorphicNodes.SELECT_TYPE_ROW : r);
   // LabVIEW greys Advanced on the terminals of a VISA resource name (reports/2026-10-26-visa-resource-name-look.md Q5; why is unverified).
   if (r === "context.visa-control-terminal" || r === "context.visa-indicator-terminal") return { desactivados: new Set([`${r}.advanced`]) };
@@ -2035,6 +2053,7 @@ function ownMarks(d, ctx) {
   if (PN.isPropertyNode(n) && ctx) for (const mark of PNM.marks(d, ctx)) m.add(mark);
   if (CL.isCallLibraryNode(n)) for (const mark of r === CLT.TERMINAL_MENU_ROOT ? CLT.NAME_FORMAT_MARKS : CL.NAME_FORMAT_MARKS) m.add(mark);
   if (VSR.isOviServerReference(n)) for (const mark of VSR.menuMarks(n)) m.add(mark);
+  if (FB.isFeedbackNode(n)) for (const mark of FM.menuMarks(n)) m.add(mark);
   if (n.config?.mode) m.add(`${r}.change-mode.${n.config.mode}`);
   if (n.config?.mechanical) m.add(`${r}.mechanical-action.${n.config.mechanical}`);
   const abrev = (r.startsWith("context.numeric-") || isRingMenu(r)) && NUMERICOS[n.config?.type ?? (isRing(n) ? RING_REPRESENTATION : DBL)]?.abrev;

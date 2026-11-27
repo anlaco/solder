@@ -168,7 +168,8 @@ step 3, the cosmetic list for the MINOR.*
 rules. Next: step 4, release 0.15.0-beta.*
 
 *2026-11-26: phase 0 closed (0.15.0, then 0.15.1 and 0.15.2 with issues #23 and #22). Phase 1 step 1 begun: the
-Feedback Node's core (DT-109). Next: its editor stage, measured first.*
+Feedback Node built (DT-109): its core, then its editor (look, palette, menu, Properties, automatic insertion, Replace
+with Shift Register and back), each measured first. Next: local variables.*
 
 *2026-11-22: type definitions' stage (a2) done for the panel cluster: Make Type Def. links it to an untitled "Control N"
 kept in memory, Open Type Def. opens its editor, the linked instance's menu, links moved when it is saved. Next: (a2b),
@@ -366,8 +367,11 @@ Find and Replace).
       its core built (DT-109): `core/model/feedback-node.mjs` splits it into two halves for the types and the compiler,
       `core/compiler/feedback-nodes.mjs` keeps its ring of slots in the data space, the runtime clears the first-call
       flags at every Run; the measured sequences in `test/core/feedback-node.test.mjs`, a pool case, and a property
-      test through delays 1 to 3. Next: its editor stage, measured first (look, palette place, menus, Properties,
-      the automatic insertion when a wire closes a cycle, Replace with Shift Register and back).*
+      test through delays 1 to 3. The same day its editor stage, measured first
+      (reports/2026-11-26-feedback-node-look.md, -insert.md): `editor/src/block-diagram/feedback-node-*.mjs`, tests in
+      `test/editor/feedback-node.test.mjs` and `feedback-node-insertion.test.mjs`. Feedback Node done 2026-11-26.
+      Unverified: the forward closing wire's x, the above/below threshold, "Move Initializer One Loop In" seen greyed
+      once after one Move Out. Next: local variables.*
    2. Mathematics ▸ Elementary & Special Functions: trigonometric, exponential and logarithmic, hyperbolic; then the
       special functions.
    3. Array: Reshape, Transpose 2D, Sort 2D, Shuffle, Interleave, Decimate, Interpolate, Threshold, Remove Duplicates,

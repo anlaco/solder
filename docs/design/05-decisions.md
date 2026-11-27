@@ -46,7 +46,7 @@ the whole history of the project, with no need to say which stage it belongs to.
 | [104](#dt-104) | The control editor is the Front Panel page editing one object: an entry of its own kind with an `.octl`, one window, the Control / Type Def. / Strict Type Def. ring | Accepted · being built |
 | [107](#dt-107) | A new control is created the ways LabVIEW creates one; an `.octl` holds zero, one or more objects (format 10) | Accepted · built |
 | [108](#dt-108) | Inf, -Inf and NaN are written in files as the texts "Inf", "-Inf" and "NaN" | Accepted · built |
-| [109](#dt-109) | The Feedback Node: one node in the file and the editor, two halves for the compiler, its memory in the data space | Accepted · core being built |
+| [109](#dt-109) | The Feedback Node: one node in the file and the editor, two halves for the compiler, its memory in the data space | Accepted · built |
 
 ## The 34 Red decisions
 
@@ -5627,9 +5627,17 @@ uninitialized shift register's does.**
    carries a value, never a place. The flags of the nodes that initialize on first call are cleared by the runtime
    at the start of every Run (`firstCallFlags`, as the parked frames are).
 
+6. **The editor (accepted on 2026-11-26, "Yes, go ahead", from `reports/2026-11-26-feedback-node-look.md`).** What only
+   changes the look is config of the node and never reaches the compiler: `direction` (`"left"`, the palette's, scripting's
+   and the automatic insertion's when the closing wire goes leftwards, or `"right"`, the automatic insertion's when it
+   goes forwards; `reports/2026-11-26-feedback-node-insert.md` Q1–Q2), `showEnable` (false) and `header`
+   (`"arrow"` or `"z-transform"`). An initializer moved out keeps its wire on the node's `initializer` terminal in the
+   file; the editor only draws that wire's end on a terminal of the n-th enclosing loop's left border. "Compile or
+   load" is shown as LabVIEW shows it, greyed, saying it is not built yet.
+
 ### Not decided or not measured yet
 
-Initialize On Compile Or Load; the Z-transform view; `enable` with a delay above 1 (built as: the ring does not advance);
+Initialize On Compile Or Load; `enable` with a delay above 1 (built as: the ring does not advance);
 an unwired initializer moved out of a loop (built as: the type's default at each start of that loop); the look, the
 palette, the menus and the automatic insertion when a wire closes a cycle (the editor stage, measured first).
 
@@ -5640,4 +5648,5 @@ palette, the menus and the automatic insertion when a wire closes a cycle (the e
 | The measured sequences: 0..4; 5..9 and 10..14 on later Runs unwired; delay 3; enable; a wired initializer per Run; nested loops with the initializer on the node and moved out; strings, arrays and clusters; no loop; a non-reentrant subOVI; saved and opened as one node | `test/core/feedback-node.test.mjs` | Built (2026-11-26) |
 | The two halves in different clumps of the pool keep one memory | `test/core/pool-runtime.test.mjs` | Built (2026-11-26) |
 | Random diagrams fed back through a Feedback Node of delay 1 to 3 give the reference evaluator's values | `test/core/compiler-properties.test.mjs` | Built (2026-11-26) |
-| Its look, menus, palette and automatic insertion | — | Not built: the editor stage |
+| Its palette place, look (sizes per delay, enable, header and moved initializer; colors per type), terminals, menu and Properties dialog | `test/editor/feedback-node.test.mjs` | Built (2026-11-26) |
+| The automatic insertion when a wire closes a cycle (place, direction, no wire cut, one step of undo); Replace with Feedback Node and Replace with Shift Register, their wires, the broken ones, nested loops and the round trip; the runs of each ([0..4], [7..11]) | `test/editor/feedback-node-insertion.test.mjs` | Built (2026-11-26) |

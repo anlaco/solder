@@ -243,6 +243,7 @@
   --call-library-ui-thread-fill: #ffaf00; /* The Call Library Function Node's header: Run in UI thread (measured in LabVIEW 2026 Q3, DT-080). */
   --call-library-any-thread-fill: #ffffcc; /* Run in any thread. */
   --call-library-void-cell-fill: #cccccc; /* The cells of the node that carry nothing: the return row of a void function. */
+  --feedback-node-fill: #ffffcc; /* The Feedback Node's inside, under its border, dividers and arrow in the colour of the type (measured in LabVIEW 2026 Q3, DT-109). */
   --format-node-border: #4c4c3d;
   --path-node-border: #4c4c3d;
   --structure-terminal-fill: #ffffcc;

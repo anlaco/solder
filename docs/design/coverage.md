@@ -24,7 +24,7 @@
 | Area | Covered | |
 |------|---------|---|
 | Language and types | 14 / 25 (56 %) | `██████░░░░` |
-| Structures | 9 / 22 (41 %) | `████░░░░░░` |
+| Structures | 10 / 22 (45 %) | `█████░░░░░` |
 | Execution | 8 / 15 (53 %) | `█████░░░░░` |
 | Diagram editing | 13 / 30 (43 %) | `████░░░░░░` |
 | Front panel editing | 10 / 22 (45 %) | `█████░░░░░` |
@@ -32,10 +32,10 @@
 | Debugging | 8 / 16 (50 %) | `█████░░░░░` |
 | Files | 5 / 15 (33 %) | `███░░░░░░░` |
 | Instruments and communication | 14 / 30 (47 %) | `█████░░░░░` |
-| Functions palette | 214 / 563 (38 %) | `████░░░░░░` |
+| Functions palette | 215 / 563 (38 %) | `████░░░░░░` |
 | Controls palette | 34 / 92 (37 %) | `████░░░░░░` |
-| Windows and dialogs | 227 / 665 (34 %) | `███░░░░░░░` |
-| Right-click menus | 726 / 2595 (28 %) | `███░░░░░░░` |
+| Windows and dialogs | 229 / 669 (34 %) | `███░░░░░░░` |
+| Right-click menus | 739 / 2617 (28 %) | `███░░░░░░░` |
 <!-- /coverage:summary -->
 
 ## Features
@@ -88,7 +88,7 @@
 - [ ] Timed Loop and Timed Sequence
 - [ ] Diagram Disable and Conditional Disable
 - [ ] In Place Element Structure
-- [ ] Feedback Node
+- [x] Feedback Node
 - [ ] Local variables
 - [ ] Global variables
 - [ ] Structure auto-grow
@@ -273,7 +273,7 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Subpalette | Covered | |
 |------------|---------|---|
-| Programming ▸ Structures | 4 / 16 (25 %) | `███░░░░░░░` |
+| Programming ▸ Structures | 5 / 16 (31 %) | `███░░░░░░░` |
 | Programming ▸ Array | 17 / 34 (50 %) | `█████░░░░░` |
 | Programming ▸ Cluster, Class, & Variant | 5 / 19 (26 %) | `███░░░░░░░` |
 | Programming ▸ Numeric | 71 / 92 (77 %) | `████████░░` |
@@ -349,6 +349,7 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 | New | 9 / 21 (43 %) | `████░░░░░░` |
 | Create Project | 5 / 26 (19 %) | `██░░░░░░░░` |
 | Open Items | 2 / 4 (50 %) | `█████░░░░░` |
+| Object Properties | 2 / 4 (50 %) | `█████░░░░░` |
 | Call Library Function | 2 / 9 (22 %) | `██░░░░░░░░` |
 | Control Editor | 23 / 71 (32 %) | `███░░░░░░░` |
 
@@ -356,5 +357,5 @@ Counted from the inventory by `node scripts/coverage.mjs`; do not edit these tab
 
 | Menus | Covered | |
 |-------|---------|---|
-| Every right-click menu captured | 726 / 2595 (28 %) | `███░░░░░░░` |
+| Every right-click menu captured | 739 / 2617 (28 %) | `███░░░░░░░` |
 <!-- /coverage:inventory -->
