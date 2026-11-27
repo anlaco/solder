@@ -87,6 +87,32 @@ for (const [where, options] of [["on one thread", () => ({})], ["on a pool", () 
   });
 }
 
+/** Resolves once `condition()` holds, or after `patienceMs`: a socket closed by Solder reaches the instrument a moment later. */
+async function eventually(condition, patienceMs = 1000) {
+  const deadline = Date.now() + patienceMs;
+  while (!condition() && Date.now() < deadline) await new Promise((resolve) => setTimeout(resolve, 10));
+  return condition();
+}
+
+// Measured (labview-captures/reports/2026-11-27-visa-close-error-in.md): VISA Close closes its session even when an error
+// comes in, and gives that error out unchanged. Before, Solder skipped Close after a Read that timed out, as the VI of
+// issue #23 does, and every Run left a connection open.
+for (const [where, options] of [["on one thread", () => ({})], ["on a pool", () => ({ poolPorts: pool.connect() })]]) {
+  test(`VISA Close closes its session even after a Read that timed out ${where}`, async () => {
+    const instrument = await startInstrument();
+    try {
+      const shown = await run(identityQuery(instrument.resource, 128), options());
+      const timeout = { status: true, code: -1073807339, source: "VISA Read" };
+      assert.equal(shown.buffer, IDENTITY, "the bytes that came before the timeout are kept");
+      assert.deepEqual(shown.readError, timeout);
+      assert.deepEqual(shown.closeError, timeout, "Close gives the error that came in, unchanged");
+      assert.ok(await eventually(() => instrument.openConnections() === 0), "the connection was closed");
+    } finally {
+      instrument.stop();
+    }
+  });
+}
+
 test("with an error in, the VISA functions do nothing and pass the error on", async () => {
   const instrument = await startInstrument();
   try {

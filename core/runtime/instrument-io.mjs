@@ -42,7 +42,7 @@ export function createVisaFunctions({ io, host, memory, compilado }) {
   };
 
   /**
-   * A VISA function's common shape: with an error in it does no work (measured): the error passes
+   * A VISA function's common shape: with an error in it does no work (measured; Close is the exception): the error passes
    * unchanged, the resource name passes through and a read buffer and a return count give their
    * defaults. Otherwise `work(resource)` talks to the instrument and gives the status.
    */
@@ -79,6 +79,12 @@ export function createVisaFunctions({ io, host, memory, compilado }) {
     if (opened.status < 0) return { status: opened.status };
     sessionsByName.set(name, opened.session);
     return useSession(resource, resourceOut, opened.session);
+  };
+  /** Closes the session of `resource`: its status, or a warning when it is not open (what it does with an error in: unverified). */
+  const closeSession = async (visa, resource) => {
+    if (!(await isLive(visa, resource.session))) return VI_WARN_NULL_OBJECT;
+    if (sessionsByName.get(resource["resource name"]) === resource.session) sessionsByName.delete(resource["resource name"]);
+    return visa.close(resource.session);
   };
   const useSession = (resource, resourceOut, session) => {
     if (resourceOut) writeResource(resourceOut, { ...resource, session });
@@ -118,13 +124,15 @@ export function createVisaFunctions({ io, host, memory, compilado }) {
         writeCount(countOut, data.length);
         return status;
       }),
-    // Closing a session that is not open is a warning, not an error (measured).
-    visa_close: (resourceIn, errorIn, errorOut, chainIndex) =>
-      visaFunction("VISA Close", { resourceIn, errorIn, resourceOut: 0, errorOut, chainIndex }, async (visa, resource) => {
-        if (!(await isLive(visa, resource.session))) return VI_WARN_NULL_OBJECT;
-        if (sessionsByName.get(resource["resource name"]) === resource.session) sessionsByName.delete(resource["resource name"]);
-        return visa.close(resource.session);
-      }),
+    // Closing a session that is not open is a warning, not an error (measured). Unlike the other VISA functions, Close
+    // runs with an error in too, and gives that error out unchanged (measured,
+    // labview-captures/reports/2026-11-27-visa-close-error-in.md): a Read that timed out does not leave its session open.
+    visa_close: (resourceIn, errorIn, errorOut, chainIndex) => {
+      const incoming = readError(errorIn);
+      if (!incoming.status) return visaFunction("VISA Close", { resourceIn, errorIn, resourceOut: 0, errorOut, chainIndex }, closeSession);
+      ponerCluster(errorOut, errorLayout, incoming);
+      return io ? Promise.resolve(closeSession(io, readResource(resourceIn))).then(() => ANSWERED) : ANSWERED;
+    },
   };
 }
 

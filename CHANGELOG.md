@@ -24,6 +24,11 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
   binary answer, a `\FF` typed in '\' Codes) is no longer turned into U+FFFD on its way through the panel, the file
   and the runtime.
 
+- Fix: VISA Close did nothing when an error came into it, so an OVI whose VISA Read ended in a timeout (the usual
+  ending of a Read over a SOCKET resource, as in #23) left its connection to the instrument open, one more on every
+  Run, until an instrument that takes few connections stopped answering. Close now closes its session with an error in
+  too and passes that error on unchanged, as LabVIEW does (measured).
+
 ## 0.15.2-beta — 2026-11-26
 
 - Fix: a numeric value of Inf, -Inf or NaN (a constant, a control's default, an array's element, a cluster's element)

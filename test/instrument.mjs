@@ -9,8 +9,8 @@ import { fileURLToPath } from "node:url";
 export const IDENTITY = "Solder,Test Instrument,0,1.0\n";
 
 /**
- * Starts the instrument; resolves to its resource string and a way to stop it, which also drops the
- * connections of sessions left open.
+ * Starts the instrument; resolves to its resource string, a way to stop it, which also drops the
+ * connections of sessions left open, and the count of connections open.
  */
 export async function startInstrument() {
   const connections = new Set();
@@ -33,7 +33,9 @@ export async function startInstrument() {
     server.close();
     for (const connection of connections) connection.destroy();
   };
-  return { resource, stop };
+  // How many connections are open now: a session Solder left open keeps its connection.
+  const openConnections = () => connections.size;
+  return { resource, stop, openConnections };
 }
 
 /** What the serial test instrument answers to `*IDN?` (native/solder-io/tests/pseudo_terminal). */

@@ -2817,7 +2817,9 @@ Write, Read and Close are compiled as external waits that the Run's coordinator 
    comes in passes a clean function unchanged; an error or warning carries `"<function> in <call chain>"` as its
    source; Write and Read on a name with no live session (never opened, or closed) open it from the name and go on;
    every Open gives a new session; Close of a session that is not open is the warning VI_WARN_NULL_OBJECT
-   (1073676418).
+   (1073676418). *Amended on 2026-11-27 (`reports/2026-11-27-visa-close-error-in.md`):* Close is the exception to
+   "with an error in nothing runs": it closes its session with an error in too and gives that error out unchanged,
+   so a Read that timed out does not leave its connection open.
 5. **The I/O is given to the Run** (`ejecutar`'s `io` option): the addon in Node (the command line loads it itself,
    the tests pass it). A Run without it that reaches a VISA function fails, saying that instrument I/O is not
    available: the editor until its `utilityProcess` exists.
@@ -2828,8 +2830,9 @@ Write, Read and Close are compiled as external waits that the Run's coordinator 
   (2026-10-26): the main process starts it with the first Run that has a VISA function (`usesInstrumentIo`), and
   each such Run gets its own `MessagePort` to it, which the page hands to the run worker. A packaged Solder does not
   carry the addon yet; its I/O process then answers every operation with that error.
-- The sessions a Run opens by name stay open after it. Whether LabVIEW closes a VI's VISA sessions when it stops is
-  **unverified**, and so are: a refnum 0 on entry (LabVIEW gives a name a refnum as soon as it is set), Open with a
+- The sessions a Run opens and does not close stay open after it, as in LabVIEW with its default options (measured
+  2026-11-27: "Automatically close VISA sessions" is unchecked, and a VI that ends with a session open leaves it open).
+  Unverified: a refnum 0 on entry (LabVIEW gives a name a refnum as soon as it is set), Open with a
   nonzero timeout, access mode or duplicate session, which status wins when a warning comes in and the function
   gives its own, and a failed auto-open's error.
 
@@ -2839,6 +2842,7 @@ Write, Read and Close are compiled as external waits that the Run's coordinator 
 |-----------|-----------|--------|
 | Open, Write, Read and Close run against an instrument, on one thread and on a pool, with LabVIEW's warning passed through Close | `test/core/visa.test.mjs` against a local responder | **Verified** |
 | With an error in, nothing runs and the outputs give their defaults | `test/core/visa.test.mjs` | **Verified** |
+| Close closes its session even with an error in (a Read that timed out), on one thread and on a pool, and gives the error out unchanged | `test/core/visa.test.mjs` against `reports/2026-11-27-visa-close-error-in.md` | **Verified** (2026-11-27) |
 | Write and Read with no Open, and after a Close, open from the name; a second Close is a warning | `test/core/visa.test.mjs` | **Verified** against LabVIEW's measurements of 2026-10-26 |
 | A Run without I/O fails saying why | `test/core/visa.test.mjs` | **Verified** |
 
