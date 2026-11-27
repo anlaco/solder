@@ -9,6 +9,8 @@ release is tagged on `main` (DT-062); 0.4.1 to 0.4.3 came from `release/0.4`.
 
 ## Unreleased
 
+## 0.15.3-beta — 2026-11-27
+
 - The Feedback Node runs (DT-109), as measured in LabVIEW: its initializer, its delay, its enable terminal, the memory
   it keeps from one Run to the next when nothing initializes it, and an initializer moved out to a loop. It is on the
   Structures palette, drawn as in LabVIEW (its delay, enable terminal, Z-transform header and an initializer on a loop's
